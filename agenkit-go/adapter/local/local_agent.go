@@ -187,7 +187,8 @@ func (l *LocalAgent) handleClient(ctx context.Context, conn net.Conn) {
 		// Read length prefix (4 bytes, big-endian)
 		var length uint32
 		if err := binary.Read(conn, binary.BigEndian, &length); err != nil {
-			if err != io.EOF {
+			// Don't log expected disconnection errors
+			if err != io.EOF && !l.isExpectedDisconnect(err) {
 				log.Printf("Error reading length prefix: %v\n", err)
 			}
 			break
@@ -399,4 +400,16 @@ func (l *LocalAgent) sendError(conn net.Conn, requestID, errorCode, errorMessage
 	errorEnv := codec.CreateErrorEnvelope(requestID, errorCode, errorMessage, details)
 	errorBytes, _ := codec.EncodeBytes(errorEnv)
 	l.sendFramed(conn, errorBytes)
+}
+
+// isExpectedDisconnect checks if an error is an expected disconnection.
+func (l *LocalAgent) isExpectedDisconnect(err error) bool {
+	if err == nil {
+		return false
+	}
+	// Check for "use of closed network connection" error
+	errStr := err.Error()
+	return errStr == "use of closed network connection" ||
+		// Also check if server is shutting down
+		!l.running
 }

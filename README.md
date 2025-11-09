@@ -150,6 +150,12 @@ Copyright 2025 Scott Friedman
 
 See [LICENSE](LICENSE) for details.
 
+## Releasing
+
+See [RELEASING.md](RELEASING.md) for the release process.
+
+**Important:** Release notes are MANDATORY for all releases.
+
 ## Contributing
 
 Not accepting contributions yet - core implementation in progress.

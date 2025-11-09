@@ -26,6 +26,7 @@ from .registry import AgentRegistration, AgentRegistry, heartbeat_loop
 from .remote_agent import RemoteAgent
 from .transport import (
     InMemoryTransport,
+    TCPTransport,
     Transport,
     UnixSocketTransport,
     create_memory_transport_pair,
@@ -42,6 +43,7 @@ __all__ = [
     # Transports
     "Transport",
     "UnixSocketTransport",
+    "TCPTransport",
     "InMemoryTransport",
     "create_memory_transport_pair",
     # Errors

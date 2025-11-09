@@ -172,6 +172,43 @@ def create_error_envelope(
     }
 
 
+def create_stream_chunk_envelope(request_id: str, message: dict[str, Any]) -> dict[str, Any]:
+    """Create a protocol stream chunk envelope.
+
+    Args:
+        request_id: ID of the streaming request
+        message: Message chunk payload
+
+    Returns:
+        Stream chunk envelope dictionary
+    """
+    return {
+        "version": PROTOCOL_VERSION,
+        "type": "stream_chunk",
+        "id": request_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "payload": {"message": message},
+    }
+
+
+def create_stream_end_envelope(request_id: str) -> dict[str, Any]:
+    """Create a protocol stream end envelope.
+
+    Args:
+        request_id: ID of the streaming request
+
+    Returns:
+        Stream end envelope dictionary
+    """
+    return {
+        "version": PROTOCOL_VERSION,
+        "type": "stream_end",
+        "id": request_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "payload": {},
+    }
+
+
 def validate_envelope(envelope: dict[str, Any]) -> None:
     """Validate a protocol envelope.
 
@@ -194,7 +231,16 @@ def validate_envelope(envelope: dict[str, Any]) -> None:
     if "type" not in envelope:
         raise InvalidMessageError("Missing 'type' field in envelope")
 
-    valid_types = {"request", "response", "error", "heartbeat", "register", "unregister"}
+    valid_types = {
+        "request",
+        "response",
+        "error",
+        "heartbeat",
+        "register",
+        "unregister",
+        "stream_chunk",
+        "stream_end",
+    }
     if envelope["type"] not in valid_types:
         raise InvalidMessageError(
             f"Invalid message type: {envelope['type']}", {"type": envelope["type"]}

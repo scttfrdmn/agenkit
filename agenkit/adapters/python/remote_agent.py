@@ -170,8 +170,6 @@ class RemoteAgent(Agent):
     async def stream(self, message: Message) -> AsyncIterator[Message]:
         """Stream responses from remote agent.
 
-        Note: Streaming is not yet implemented in v0.1.0.
-
         Args:
             message: Input message
 
@@ -179,12 +177,67 @@ class RemoteAgent(Agent):
             Response messages from remote agent
 
         Raises:
-            NotImplementedError: Streaming not yet supported
+            ConnectionError: If connection fails
+            AgentTimeoutError: If request times out
+            RemoteExecutionError: If remote agent raises an error
+            ProtocolError: If protocol error occurs
         """
-        # Make this an async generator for type checker
-        if False:
-            yield  # type: ignore[unreachable]
-        raise NotImplementedError(f"{self.name} does not support streaming (not yet implemented)")
+        await self._ensure_connected()
+
+        # Create stream request envelope
+        request = create_request_envelope(
+            method="stream", agent_name=self._name, payload={"message": encode_message(message)}
+        )
+
+        # Serialize requests on same connection to prevent interleaving
+        async with self._lock:
+            try:
+                # Send request
+                request_bytes = encode_bytes(request)
+                await asyncio.wait_for(
+                    self._transport.send_framed(request_bytes), timeout=self._timeout
+                )
+
+                # Receive stream chunks
+                while True:
+                    # Receive next frame
+                    response_bytes = await asyncio.wait_for(
+                        self._transport.receive_framed(), timeout=self._timeout
+                    )
+                    response = decode_bytes(response_bytes)
+
+                    # Handle response type
+                    if response["type"] == "error":
+                        error_payload = response["payload"]
+                        raise RemoteExecutionError(
+                            self._name,
+                            error_payload["error_message"],
+                            error_payload.get("error_details"),
+                        )
+
+                    elif response["type"] == "stream_chunk":
+                        # Yield chunk message
+                        chunk = decode_message(response["payload"]["message"])
+                        yield chunk
+
+                    elif response["type"] == "stream_end":
+                        # Stream complete
+                        break
+
+                    else:
+                        raise InvalidMessageError(
+                            f"Expected 'stream_chunk' or 'stream_end' but got '{response['type']}'",
+                            {"response": response},
+                        )
+
+            except asyncio.TimeoutError as e:
+                raise AgentTimeoutError(self._name, self._timeout) from e
+            except (ConnectionError, ProtocolError):
+                # Re-raise protocol/connection errors as-is
+                raise
+            except Exception as e:
+                # Wrap unexpected errors
+                raise RemoteExecutionError(self._name, str(e)) from e
 
     @property
     def capabilities(self) -> list[str]:

@@ -19,7 +19,7 @@ from .errors import (
     ProtocolError,
     RemoteExecutionError,
 )
-from .transport import Transport, UnixSocketTransport
+from .transport import TCPTransport, Transport, UnixSocketTransport
 
 
 class RemoteAgent(Agent):
@@ -56,12 +56,13 @@ class RemoteAgent(Agent):
         self._transport = transport or self._create_transport(endpoint)  # type: ignore
         self._timeout = timeout
         self._connected = False
+        self._lock = asyncio.Lock()  # Serialize requests on same connection
 
     def _create_transport(self, endpoint: str) -> Transport:
         """Create transport from endpoint URL.
 
         Args:
-            endpoint: Endpoint URL (e.g., "unix:///tmp/agent.sock")
+            endpoint: Endpoint URL (e.g., "unix:///tmp/agent.sock" or "tcp://host:port")
 
         Returns:
             Transport instance
@@ -72,7 +73,20 @@ class RemoteAgent(Agent):
         if endpoint.startswith("unix://"):
             socket_path = endpoint[7:]  # Remove "unix://" prefix
             return UnixSocketTransport(socket_path)
-        # Add TCP and other transports here in future
+        elif endpoint.startswith("tcp://"):
+            # Parse TCP endpoint: tcp://host:port
+            tcp_parts = endpoint[6:]  # Remove "tcp://" prefix
+            if ":" not in tcp_parts:
+                raise ValueError(f"Invalid TCP endpoint format: {endpoint}")
+
+            host, port_str = tcp_parts.rsplit(":", 1)
+            try:
+                port = int(port_str)
+            except ValueError:
+                raise ValueError(f"Invalid port in endpoint: {endpoint}")
+
+            return TCPTransport(host, port)
+        # Add other transports here in future
         raise ValueError(f"Unsupported endpoint format: {endpoint}")
 
     async def _ensure_connected(self) -> None:
@@ -112,44 +126,46 @@ class RemoteAgent(Agent):
             method="process", agent_name=self._name, payload={"message": encode_message(message)}
         )
 
-        try:
-            # Send request
-            request_bytes = encode_bytes(request)
-            await asyncio.wait_for(
-                self._transport.send_framed(request_bytes), timeout=self._timeout
-            )
-
-            # Receive response
-            response_bytes = await asyncio.wait_for(
-                self._transport.receive_framed(), timeout=self._timeout
-            )
-            response = decode_bytes(response_bytes)
-
-            # Handle response
-            if response["type"] == "error":
-                error_payload = response["payload"]
-                raise RemoteExecutionError(
-                    self._name,
-                    error_payload["error_message"],
-                    error_payload.get("error_details"),
+        # Serialize requests on same connection to prevent interleaving
+        async with self._lock:
+            try:
+                # Send request
+                request_bytes = encode_bytes(request)
+                await asyncio.wait_for(
+                    self._transport.send_framed(request_bytes), timeout=self._timeout
                 )
 
-            if response["type"] != "response":
-                raise InvalidMessageError(
-                    f"Expected 'response' but got '{response['type']}'", {"response": response}
+                # Receive response
+                response_bytes = await asyncio.wait_for(
+                    self._transport.receive_framed(), timeout=self._timeout
                 )
+                response = decode_bytes(response_bytes)
 
-            # Decode and return message
-            return decode_message(response["payload"]["message"])
+                # Handle response
+                if response["type"] == "error":
+                    error_payload = response["payload"]
+                    raise RemoteExecutionError(
+                        self._name,
+                        error_payload["error_message"],
+                        error_payload.get("error_details"),
+                    )
 
-        except asyncio.TimeoutError as e:
-            raise AgentTimeoutError(self._name, self._timeout) from e
-        except (ConnectionError, ProtocolError):
-            # Re-raise protocol/connection errors as-is
-            raise
-        except Exception as e:
-            # Wrap unexpected errors
-            raise RemoteExecutionError(self._name, str(e)) from e
+                if response["type"] != "response":
+                    raise InvalidMessageError(
+                        f"Expected 'response' but got '{response['type']}'", {"response": response}
+                    )
+
+                # Decode and return message
+                return decode_message(response["payload"]["message"])
+
+            except asyncio.TimeoutError as e:
+                raise AgentTimeoutError(self._name, self._timeout) from e
+            except (ConnectionError, ProtocolError):
+                # Re-raise protocol/connection errors as-is
+                raise
+            except Exception as e:
+                # Wrap unexpected errors
+                raise RemoteExecutionError(self._name, str(e)) from e
 
     async def stream(self, message: Message) -> AsyncIterator[Message]:
         """Stream responses from remote agent.

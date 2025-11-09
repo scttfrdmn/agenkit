@@ -108,6 +108,24 @@ class LocalAgent:
                 os.chmod(socket_path, 0o600)
 
                 logger.info(f"Agent '{self._agent.name}' listening on {socket_path}")
+            elif self._endpoint.startswith("tcp://"):
+                # Parse TCP endpoint: tcp://host:port
+                tcp_parts = self._endpoint[6:]  # Remove "tcp://" prefix
+                if ":" not in tcp_parts:
+                    raise ValueError(f"Invalid TCP endpoint format: {self._endpoint}")
+
+                host, port_str = tcp_parts.rsplit(":", 1)
+                try:
+                    port = int(port_str)
+                except ValueError:
+                    raise ValueError(f"Invalid port in endpoint: {self._endpoint}")
+
+                # Start TCP server
+                self._server = await asyncio.start_server(
+                    self._handle_client, host=host, port=port
+                )
+
+                logger.info(f"Agent '{self._agent.name}' listening on {host}:{port}")
             else:
                 raise ValueError(f"Unsupported endpoint format: {self._endpoint}")
         elif self._transport:

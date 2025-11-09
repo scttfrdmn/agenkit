@@ -231,6 +231,118 @@ class UnixSocketTransport(Transport):
         return self._reader is not None and self._writer is not None
 
 
+class TCPTransport(Transport):
+    """TCP socket transport."""
+
+    def __init__(self, host: str, port: int):
+        """Initialize TCP transport.
+
+        Args:
+            host: Hostname or IP address
+            port: Port number
+        """
+        self._host = host
+        self._port = port
+        self._reader: asyncio.StreamReader | None = None
+        self._writer: asyncio.StreamWriter | None = None
+
+    async def connect(self) -> None:
+        """Connect to TCP socket.
+
+        Raises:
+            ConnectionError: If connection fails
+        """
+        try:
+            self._reader, self._writer = await asyncio.open_connection(self._host, self._port)
+        except (OSError, ConnectionRefusedError) as e:
+            raise ConnError(f"Failed to connect to {self._host}:{self._port}: {e}") from e
+
+    async def send(self, data: bytes) -> None:
+        """Send data over TCP socket.
+
+        Args:
+            data: Bytes to send
+
+        Raises:
+            ConnectionError: If not connected or send fails
+        """
+        if not self.is_connected:
+            raise ConnError("Not connected")
+
+        assert self._writer is not None
+        try:
+            self._writer.write(data)
+            await self._writer.drain()
+        except (OSError, ConnectionError) as e:
+            raise ConnError(f"Failed to send data: {e}") from e
+
+    async def receive(self) -> bytes:
+        """Receive data from TCP socket.
+
+        Returns:
+            Received bytes (up to 64KB)
+
+        Raises:
+            ConnectionError: If not connected or receive fails
+            ConnectionClosedError: If connection is closed
+        """
+        if not self.is_connected:
+            raise ConnError("Not connected")
+
+        assert self._reader is not None
+        try:
+            data = await self._reader.read(65536)  # Read up to 64KB
+            if not data:
+                raise ConnectionClosedError("Connection closed by peer")
+            return data
+        except (OSError, ConnectionError) as e:
+            raise ConnError(f"Failed to receive data: {e}") from e
+
+    async def receive_exactly(self, n: int) -> bytes:
+        """Receive exactly n bytes from TCP socket.
+
+        Args:
+            n: Number of bytes to receive
+
+        Returns:
+            Exactly n bytes
+
+        Raises:
+            ConnectionError: If not connected or receive fails
+            ConnectionClosedError: If connection closes before receiving all bytes
+        """
+        if not self.is_connected:
+            raise ConnError("Not connected")
+
+        assert self._reader is not None
+        try:
+            data = await self._reader.readexactly(n)
+            return data
+        except asyncio.IncompleteReadError as e:
+            raise ConnectionClosedError(
+                f"Connection closed while expecting {n - len(e.partial)} more bytes"
+            ) from e
+        except (OSError, ConnectionError) as e:
+            raise ConnError(f"Failed to receive data: {e}") from e
+
+    async def close(self) -> None:
+        """Close TCP socket connection."""
+        if self._writer:
+            self._writer.close()
+            await self._writer.wait_closed()
+        self._reader = None
+        self._writer = None
+
+    @property
+    def is_connected(self) -> bool:
+        """Check if TCP socket is connected.
+
+        Returns:
+            True if connected, False otherwise
+        """
+        return self._reader is not None and self._writer is not None
+
+
 class InMemoryTransport(Transport):
     """In-memory transport for testing."""
 

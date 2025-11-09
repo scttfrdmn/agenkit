@@ -144,7 +144,11 @@ See [CHANGELOG.md](CHANGELOG.md) for release history (following [Keep a Changelo
 
 ## License
 
-BSD-3-Clause
+Apache License 2.0
+
+Copyright 2025 Scott Friedman
+
+See [LICENSE](LICENSE) for details.
 
 ## Contributing
 

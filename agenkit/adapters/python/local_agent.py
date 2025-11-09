@@ -11,6 +11,8 @@ from agenkit.interfaces import Agent
 from .codec import (
     create_error_envelope,
     create_response_envelope,
+    create_stream_chunk_envelope,
+    create_stream_end_envelope,
     decode_bytes,
     decode_message,
     encode_bytes,
@@ -218,14 +220,22 @@ class LocalAgent:
                     logger.error("Incomplete message received")
                     break
 
-                # Process request
+                # Check if this is a streaming request
                 try:
-                    response_bytes = await self._process_request(payload_bytes)
+                    request = decode_bytes(payload_bytes)
+                    method = request.get("payload", {}).get("method")
 
-                    # Send response with length prefix
-                    response_length = struct.pack(">I", len(response_bytes))
-                    writer.write(response_length + response_bytes)
-                    await writer.drain()
+                    if method == "stream":
+                        # Handle streaming request
+                        await self._process_stream_request(request, writer)
+                    else:
+                        # Handle regular request
+                        response_bytes = await self._process_request(payload_bytes)
+
+                        # Send response with length prefix
+                        response_length = struct.pack(">I", len(response_bytes))
+                        writer.write(response_length + response_bytes)
+                        await writer.drain()
                 except Exception as e:
                     logger.error(f"Error processing request: {e}", exc_info=True)
                     # Try to send error response
@@ -301,3 +311,73 @@ class LocalAgent:
                 str(e),
             )
             return encode_bytes(error_response)
+
+    async def _process_stream_request(
+        self, request: dict[str, Any], writer: asyncio.StreamWriter
+    ) -> None:
+        """Process a streaming request.
+
+        Args:
+            request: Decoded request envelope
+            writer: Stream writer for sending responses
+
+        Raises:
+            ProtocolError: If request is invalid
+        """
+        import struct
+
+        try:
+            if request["type"] != "request":
+                raise InvalidMessageError(
+                    f"Expected 'request' but got '{request['type']}'", {"request": request}
+                )
+
+            request_id = request["id"]
+            payload = request["payload"]
+            method = payload.get("method")
+
+            if method != "stream":
+                raise InvalidMessageError(f"Expected 'stream' but got '{method}'", {"method": method})
+
+            # Decode input message
+            input_message = decode_message(payload["message"])
+
+            # Stream through agent
+            async for chunk in self._agent.stream(input_message):
+                # Create stream chunk envelope
+                chunk_envelope = create_stream_chunk_envelope(request_id, encode_message(chunk))
+                chunk_bytes = encode_bytes(chunk_envelope)
+
+                # Send chunk with length prefix
+                chunk_length = struct.pack(">I", len(chunk_bytes))
+                writer.write(chunk_length + chunk_bytes)
+                await writer.drain()
+
+            # Send stream end
+            end_envelope = create_stream_end_envelope(request_id)
+            end_bytes = encode_bytes(end_envelope)
+            end_length = struct.pack(">I", len(end_bytes))
+            writer.write(end_length + end_bytes)
+            await writer.drain()
+
+        except ProtocolError as e:
+            # Send error response
+            error_response = create_error_envelope(
+                request.get("id", "unknown"), e.code, e.message, e.details
+            )
+            error_bytes = encode_bytes(error_response)
+            error_length = struct.pack(">I", len(error_bytes))
+            writer.write(error_length + error_bytes)
+            await writer.drain()
+        except Exception as e:
+            # Unexpected error
+            logger.error(f"Unexpected error in stream: {e}", exc_info=True)
+            error_response = create_error_envelope(
+                request.get("id", "unknown"),
+                "INTERNAL_ERROR",
+                str(e),
+            )
+            error_bytes = encode_bytes(error_response)
+            error_length = struct.pack(">I", len(error_bytes))
+            writer.write(error_length + error_bytes)
+            await writer.drain()

@@ -22,6 +22,7 @@ from .errors import (
     UnsupportedVersionError,
 )
 from .local_agent import LocalAgent
+from .registry import AgentRegistration, AgentRegistry, heartbeat_loop
 from .remote_agent import RemoteAgent
 from .transport import (
     InMemoryTransport,
@@ -34,6 +35,10 @@ __all__ = [
     # Core classes
     "LocalAgent",
     "RemoteAgent",
+    # Registry
+    "AgentRegistry",
+    "AgentRegistration",
+    "heartbeat_loop",
     # Transports
     "Transport",
     "UnixSocketTransport",

@@ -42,9 +42,9 @@ Focus: Complete documentation with WHY explanations and runnable examples for al
 
 #### [#32](https://github.com/scttfrdmn/agenkit/issues/32) Tools/Function Calling Examples and Documentation
 - [x] Calculator tool example
-- [ ] Search tool example
-- [ ] Database tool example
-- [ ] TOOLS.md guide
+- [x] Search tool example
+- [x] Database tool example
+- [x] TOOLS.md guide
 - [ ] Go examples for tools
 - [ ] Security best practices documentation
 

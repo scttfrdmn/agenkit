@@ -19,7 +19,7 @@ from .errors import (
     ProtocolError,
     RemoteExecutionError,
 )
-from .transport import TCPTransport, Transport, UnixSocketTransport
+from .transport import TCPTransport, Transport, UnixSocketTransport, parse_endpoint
 
 
 class RemoteAgent(Agent):
@@ -61,8 +61,10 @@ class RemoteAgent(Agent):
     def _create_transport(self, endpoint: str) -> Transport:
         """Create transport from endpoint URL.
 
+        Supports unix://, tcp://, http://, https://, h2c://, and h3:// protocols.
+
         Args:
-            endpoint: Endpoint URL (e.g., "unix:///tmp/agent.sock" or "tcp://host:port")
+            endpoint: Endpoint URL
 
         Returns:
             Transport instance
@@ -70,24 +72,7 @@ class RemoteAgent(Agent):
         Raises:
             ValueError: If endpoint format is not supported
         """
-        if endpoint.startswith("unix://"):
-            socket_path = endpoint[7:]  # Remove "unix://" prefix
-            return UnixSocketTransport(socket_path)
-        elif endpoint.startswith("tcp://"):
-            # Parse TCP endpoint: tcp://host:port
-            tcp_parts = endpoint[6:]  # Remove "tcp://" prefix
-            if ":" not in tcp_parts:
-                raise ValueError(f"Invalid TCP endpoint format: {endpoint}")
-
-            host, port_str = tcp_parts.rsplit(":", 1)
-            try:
-                port = int(port_str)
-            except ValueError:
-                raise ValueError(f"Invalid port in endpoint: {endpoint}")
-
-            return TCPTransport(host, port)
-        # Add other transports here in future
-        raise ValueError(f"Unsupported endpoint format: {endpoint}")
+        return parse_endpoint(endpoint)
 
     async def _ensure_connected(self) -> None:
         """Ensure transport is connected."""

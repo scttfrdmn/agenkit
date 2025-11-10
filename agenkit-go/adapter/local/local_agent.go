@@ -342,15 +342,26 @@ func (l *LocalAgent) handleStreamRequest(ctx context.Context, conn net.Conn, req
 	// Stream through agent
 	messageChan, errorChan := streamingAgent.Stream(ctx, inputMessage)
 
+	// Track channel closures
+	messageChanClosed := false
+	errorChanClosed := false
+
 	for {
 		select {
 		case chunk, ok := <-messageChan:
 			if !ok {
-				// Stream complete - send end marker
-				endEnv := codec.CreateStreamEndEnvelope(request.ID)
-				endBytes, _ := codec.EncodeBytes(endEnv)
-				l.sendFramed(conn, endBytes)
-				return
+				// Message channel closed
+				messageChanClosed = true
+				if errorChanClosed {
+					// Both channels closed - stream complete
+					endEnv := codec.CreateStreamEndEnvelope(request.ID)
+					endBytes, _ := codec.EncodeBytes(endEnv)
+					l.sendFramed(conn, endBytes)
+					return
+				}
+				// Set messageChan to nil to disable this case
+				messageChan = nil
+				continue
 			}
 
 			// Send chunk
@@ -366,11 +377,25 @@ func (l *LocalAgent) handleStreamRequest(ctx context.Context, conn net.Conn, req
 				return
 			}
 
-		case err := <-errorChan:
-			if err != nil {
+		case err, ok := <-errorChan:
+			if ok && err != nil {
 				l.sendError(conn, request.ID, "STREAM_ERROR", err.Error(), nil)
+				return
 			}
-			return
+			if !ok {
+				// Error channel closed
+				errorChanClosed = true
+				if messageChanClosed {
+					// Both channels closed - stream complete
+					endEnv := codec.CreateStreamEndEnvelope(request.ID)
+					endBytes, _ := codec.EncodeBytes(endEnv)
+					l.sendFramed(conn, endBytes)
+					return
+				}
+				// Set errorChan to nil to disable this case
+				errorChan = nil
+				continue
+			}
 
 		case <-ctx.Done():
 			l.sendError(conn, request.ID, "CANCELLED", "context cancelled", nil)

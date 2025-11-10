@@ -327,3 +327,116 @@ class TestBytesCodec:
         assert decoded["version"] == original["version"]
         assert decoded["type"] == original["type"]
         assert decoded["payload"] == original["payload"]
+
+
+class TestStreamEnvelopes:
+    """Tests for stream envelope creation."""
+
+    def test_create_stream_envelopes(self):
+        """Test creating stream chunk and stream end envelopes."""
+        from agenkit.adapters.python.codec import (
+            create_stream_chunk_envelope,
+            create_stream_end_envelope,
+        )
+
+        request_id = "test-stream-123"
+        msg = Message(role="agent", content="chunk content")
+        msg_data = encode_message(msg)
+
+        # Test stream chunk envelope
+        chunk_env = create_stream_chunk_envelope(request_id, msg_data)
+
+        assert chunk_env["version"] == "1.0"
+        assert chunk_env["type"] == "stream_chunk"
+        assert chunk_env["id"] == request_id
+        assert "timestamp" in chunk_env
+        assert "message" in chunk_env["payload"]
+        assert chunk_env["payload"]["message"]["role"] == "agent"
+        assert chunk_env["payload"]["message"]["content"] == "chunk content"
+
+        # Test stream end envelope
+        end_env = create_stream_end_envelope(request_id)
+
+        assert end_env["version"] == "1.0"
+        assert end_env["type"] == "stream_end"
+        assert end_env["id"] == request_id
+        assert "timestamp" in end_env
+
+
+class TestCombinedCodecOperations:
+    """Tests for combined encode/decode operations."""
+
+    def test_encode_decode_message(self):
+        """Test encoding then decoding a message in one test."""
+        # Create message
+        msg = Message(role="user", content="test content", metadata={"key": "value"})
+
+        # Encode
+        encoded = encode_message(msg)
+
+        # Verify encoded
+        assert encoded["role"] == "user"
+        assert encoded["content"] == "test content"
+        assert encoded["metadata"]["key"] == "value"
+
+        # Decode
+        decoded = decode_message(encoded)
+
+        # Verify decoded matches original
+        assert decoded.role == msg.role
+        assert decoded.content == msg.content
+        assert decoded.metadata == msg.metadata
+
+    def test_encode_decode_tool_result(self):
+        """Test encoding then decoding a tool result in one test."""
+        # Create successful result
+        result = ToolResult(success=True, data={"answer": 42}, metadata={"time": 100})
+
+        # Encode
+        encoded = encode_tool_result(result)
+
+        # Verify encoded
+        assert encoded["success"] is True
+        assert encoded["data"] == {"answer": 42}
+        assert encoded["error"] is None
+
+        # Decode
+        decoded = decode_tool_result(encoded)
+
+        # Verify decoded matches original
+        assert decoded.success == result.success
+        assert decoded.data == result.data
+        assert decoded.metadata["time"] == 100
+
+        # Test with error result
+        error_result = ToolResult(success=False, data=None, error="Test error")
+        encoded_error = encode_tool_result(error_result)
+        decoded_error = decode_tool_result(encoded_error)
+
+        assert decoded_error.success is False
+        assert decoded_error.error == "Test error"
+
+    def test_encode_bytes_decode_bytes(self):
+        """Test encoding then decoding bytes in one test."""
+        # Create envelope
+        envelope = create_request_envelope(
+            method="process", agent_name="test_agent", payload={"data": "test data"}
+        )
+
+        # Encode to bytes
+        encoded = encode_bytes(envelope)
+
+        # Verify bytes
+        assert isinstance(encoded, bytes)
+        assert len(encoded) > 0
+
+        # Decode from bytes
+        decoded = decode_bytes(encoded)
+
+        # Verify decoded matches original
+        assert decoded["version"] == envelope["version"]
+        assert decoded["type"] == envelope["type"]
+        assert decoded["id"] == envelope["id"]
+        assert decoded["payload"]["method"] == "process"
+        assert decoded["payload"]["agent_name"] == "test_agent"
+        assert decoded["payload"]["data"] == "test data"

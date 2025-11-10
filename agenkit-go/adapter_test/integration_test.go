@@ -75,6 +75,28 @@ func (e *ErrorAgent) Capabilities() []string {
 	return []string{}
 }
 
+// SlowAgent simulates a slow agent for timeout testing
+type SlowAgent struct {
+	delay time.Duration
+}
+
+func (s *SlowAgent) Name() string {
+	return "slow"
+}
+
+func (s *SlowAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	select {
+	case <-time.After(s.delay):
+		return agenkit.NewMessage("agent", "Slow response"), nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func (s *SlowAgent) Capabilities() []string {
+	return []string{}
+}
+
 func TestBasicCommunicationUnixSocket(t *testing.T) {
 	ctx := context.Background()
 

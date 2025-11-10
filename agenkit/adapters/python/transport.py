@@ -443,3 +443,50 @@ def create_memory_transport_pair() -> tuple[InMemoryTransport, InMemoryTransport
     client_transport = InMemoryTransport(client_to_server, server_to_client)
 
     return server_transport, client_transport
+
+
+def parse_endpoint(endpoint: str) -> Transport:
+    """Parse endpoint string and return appropriate transport.
+
+    Supported formats:
+        - unix:///path/to/socket -> UnixSocketTransport
+        - tcp://host:port -> TCPTransport
+        - http://host:port -> HTTPTransport (HTTP/1.1 with HTTP/2 upgrade)
+        - https://host:port -> HTTPTransport (HTTPS with HTTP/2 upgrade)
+        - h2c://host:port -> HTTPTransport (HTTP/2 cleartext)
+        - h3://host:port -> HTTPTransport (HTTP/3 over QUIC)
+
+    Args:
+        endpoint: Endpoint string
+
+    Returns:
+        Appropriate Transport instance
+
+    Raises:
+        ValueError: If endpoint format is unsupported
+    """
+    if endpoint.startswith("unix://"):
+        socket_path = endpoint[7:]
+        return UnixSocketTransport(socket_path)
+
+    if endpoint.startswith("tcp://"):
+        tcp_part = endpoint[6:]
+        # Find last colon to split host:port
+        colon_idx = tcp_part.rfind(':')
+        if colon_idx == -1:
+            raise ValueError(f"Invalid TCP endpoint format: {endpoint}")
+        host = tcp_part[:colon_idx]
+        try:
+            port = int(tcp_part[colon_idx + 1:])
+        except ValueError:
+            raise ValueError(f"Invalid port in TCP endpoint: {endpoint}")
+        if not (0 < port <= 65535):
+            raise ValueError(f"Invalid port in endpoint: {endpoint}")
+        return TCPTransport(host, port)
+
+    if endpoint.startswith(("http://", "https://", "h2c://", "h3://")):
+        # Import here to avoid circular dependency
+        from .http_transport import HTTPTransport
+        return HTTPTransport(endpoint)
+
+    raise ValueError(f"Unsupported endpoint format: {endpoint}")

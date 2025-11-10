@@ -204,6 +204,7 @@ func (t *TCPTransport) IsConnected() bool {
 // Supported formats:
 //   - unix:///path/to/socket
 //   - tcp://host:port
+//   - http://host:port or https://host:port
 func ParseEndpoint(endpoint string) (Transport, error) {
 	if len(endpoint) == 0 {
 		return nil, fmt.Errorf("empty endpoint")
@@ -239,6 +240,11 @@ func ParseEndpoint(endpoint string) (Transport, error) {
 			return nil, fmt.Errorf("invalid port in endpoint: %s", endpoint)
 		}
 		return NewTCPTransport(host, port), nil
+	}
+
+	// HTTP/HTTPS
+	if len(endpoint) >= 7 && (endpoint[:7] == "http://" || endpoint[:8] == "https://") {
+		return NewHTTPTransport(endpoint), nil
 	}
 
 	return nil, fmt.Errorf("unsupported endpoint format: %s", endpoint)

@@ -399,3 +399,187 @@ func TestHTTPEndpointParsing(t *testing.T) {
 		}
 	}
 }
+
+func TestHTTP2BasicCommunication(t *testing.T) {
+	ctx := context.Background()
+
+	// Start HTTP/2 server
+	agent := &EchoAgent{}
+	server := http.NewHTTPAgentWithOptions(agent, "localhost:18088", http.ServerOptions{
+		EnableHTTP2: true,
+		EnableHTTP3: false,
+	})
+
+	if err := server.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer server.Stop()
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Connect client using h2c://
+	endpoint := "h2c://localhost:18088"
+	client, err := remote.NewRemoteAgent("echo", endpoint, 5*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	// Send message
+	msg := agenkit.NewMessage("user", "test message http2")
+	response, err := client.Process(ctx, msg)
+	if err != nil {
+		t.Fatalf("Process failed: %v", err)
+	}
+
+	// Verify response
+	if response.Role != "agent" {
+		t.Errorf("Expected role 'agent', got '%s'", response.Role)
+	}
+	if response.Content != "Echo: test message http2" {
+		t.Errorf("Expected 'Echo: test message http2', got '%s'", response.Content)
+	}
+}
+
+func TestHTTP2Streaming(t *testing.T) {
+	ctx := context.Background()
+
+	// Start HTTP/2 server with streaming agent
+	agent := &StreamingEchoAgent{}
+	server := http.NewHTTPAgentWithOptions(agent, "localhost:18089", http.ServerOptions{
+		EnableHTTP2: true,
+		EnableHTTP3: false,
+	})
+
+	if err := server.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer server.Stop()
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Connect client using h2c://
+	endpoint := "h2c://localhost:18089"
+	client, err := remote.NewRemoteAgent("echo", endpoint, 10*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	// Stream messages
+	msg := agenkit.NewMessage("user", "test")
+	messageChan, errorChan := client.Stream(ctx, msg)
+
+	// Collect chunks
+	chunks := []*agenkit.Message{}
+	done := false
+	for !done {
+		select {
+		case chunk, ok := <-messageChan:
+			if !ok {
+				done = true
+			} else {
+				chunks = append(chunks, chunk)
+			}
+
+		case err, ok := <-errorChan:
+			if ok && err != nil {
+				t.Fatalf("Stream error: %v", err)
+			}
+			if !ok {
+				done = true
+			}
+		}
+	}
+
+	// Verify we got all chunks
+	if len(chunks) != 5 {
+		t.Errorf("Expected 5 chunks, got %d", len(chunks))
+	}
+	for i, chunk := range chunks {
+		expected := fmt.Sprintf("Chunk %d: test", i)
+		if chunk.Content != expected {
+			t.Errorf("Chunk %d: expected '%s', got '%s'", i, expected, chunk.Content)
+		}
+	}
+}
+
+func TestHTTP2ConcurrentRequests(t *testing.T) {
+	ctx := context.Background()
+
+	// Start HTTP/2 server
+	agent := &EchoAgent{}
+	server := http.NewHTTPAgentWithOptions(agent, "localhost:18090", http.ServerOptions{
+		EnableHTTP2: true,
+		EnableHTTP3: false,
+	})
+
+	if err := server.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer server.Stop()
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Create multiple clients
+	clients := make([]*remote.RemoteAgent, 10)
+	for i := 0; i < 10; i++ {
+		endpoint := "h2c://localhost:18090"
+		client, err := remote.NewRemoteAgent("echo", endpoint, 5*time.Second)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer client.Close()
+		clients[i] = client
+	}
+
+	// Send concurrent requests (HTTP/2 multiplexing)
+	done := make(chan bool, 10)
+	for i, client := range clients {
+		go func(idx int, c *remote.RemoteAgent) {
+			msg := agenkit.NewMessage("user", fmt.Sprintf("message %d", idx))
+			response, err := c.Process(ctx, msg)
+			if err != nil {
+				t.Errorf("Client %d failed: %v", idx, err)
+			}
+			expected := fmt.Sprintf("Echo: message %d", idx)
+			if response.Content != expected {
+				t.Errorf("Client %d: expected '%s', got '%s'", idx, expected, response.Content)
+			}
+			done <- true
+		}(i, client)
+	}
+
+	// Wait for all to complete
+	for i := 0; i < 10; i++ {
+		select {
+		case <-done:
+		case <-time.After(5 * time.Second):
+			t.Fatal("Timeout waiting for concurrent requests")
+		}
+	}
+}
+
+func TestHTTPProtocolDetection(t *testing.T) {
+	// Test URL scheme detection
+	testCases := []struct {
+		url             string
+		expectsError    bool
+		expectedVersion string
+	}{
+		{"http://localhost:8080", false, "HTTP/1.1"},
+		{"https://example.com", false, "HTTP/1.1 with HTTP/2 upgrade"},
+		{"h2c://localhost:8080", false, "HTTP/2 cleartext"},
+		{"h3://localhost:8080", false, "HTTP/3"},
+	}
+
+	for _, tc := range testCases {
+		_, err := remote.NewRemoteAgent("test", tc.url, 5*time.Second)
+		if tc.expectsError && err == nil {
+			t.Errorf("Expected error for URL: %s", tc.url)
+		}
+		if !tc.expectsError && err != nil {
+			t.Errorf("Unexpected error for URL %s: %v", tc.url, err)
+		}
+	}
+}

@@ -4,19 +4,37 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/quic-go/quic-go/http3"
+	"golang.org/x/net/http2"
 
 	"github.com/agenkit/agenkit-go/adapter/codec"
 	"github.com/agenkit/agenkit-go/adapter/errors"
 )
 
-// HTTPTransport implements transport over HTTP.
+// HTTPVersion represents the HTTP protocol version.
+type HTTPVersion int
+
+const (
+	// HTTP1 uses HTTP/1.1
+	HTTP1 HTTPVersion = iota
+	// HTTP2 uses HTTP/2 (h2 for TLS, h2c for cleartext)
+	HTTP2
+	// HTTP3 uses HTTP/3 over QUIC
+	HTTP3
+)
+
+// HTTPTransport implements transport over HTTP with support for HTTP/1.1, HTTP/2, and HTTP/3.
 type HTTPTransport struct {
 	baseURL string
+	version HTTPVersion
 	client  *http.Client
 	mu      sync.Mutex
 
@@ -28,15 +46,91 @@ type HTTPTransport struct {
 	streamConn   io.ReadCloser
 }
 
-// NewHTTPTransport creates a new HTTP transport.
+// NewHTTPTransport creates a new HTTP transport with auto-detected protocol version.
+// URL schemes:
+//   - http:// or https:// -> HTTP/1.1 (with automatic HTTP/2 upgrade for HTTPS)
+//   - h2c:// -> HTTP/2 cleartext
+//   - h3:// -> HTTP/3 over QUIC
 func NewHTTPTransport(baseURL string) *HTTPTransport {
 	// Ensure base URL doesn't end with /
 	baseURL = strings.TrimRight(baseURL, "/")
 
+	// Detect protocol version from URL scheme
+	version := HTTP1
+	normalizedURL := baseURL
+
+	if strings.HasPrefix(baseURL, "h2c://") {
+		version = HTTP2
+		normalizedURL = "http://" + baseURL[6:]
+	} else if strings.HasPrefix(baseURL, "h3://") {
+		version = HTTP3
+		normalizedURL = "https://" + baseURL[5:]
+	}
+
+	return newHTTPTransportWithVersion(normalizedURL, version)
+}
+
+// newHTTPTransportWithVersion creates an HTTP transport with explicit protocol version.
+func newHTTPTransportWithVersion(baseURL string, version HTTPVersion) *HTTPTransport {
+	var client *http.Client
+
+	switch version {
+	case HTTP2:
+		// HTTP/2 Cleartext (h2c) support
+		transport := &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				return (&net.Dialer{}).DialContext(ctx, network, addr)
+			},
+		}
+		http2.ConfigureTransport(transport)
+
+		client = &http.Client{
+			Transport: &h2cTransport{transport: transport},
+		}
+
+	case HTTP3:
+		// HTTP/3 over QUIC
+		client = &http.Client{
+			Transport: &http3.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: false,
+				},
+			},
+		}
+
+	default:
+		// HTTP/1.1 (with automatic HTTP/2 upgrade for HTTPS)
+		transport := &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: false,
+			},
+		}
+		// Enable HTTP/2 support for HTTPS connections
+		http2.ConfigureTransport(transport)
+
+		client = &http.Client{
+			Transport: transport,
+		}
+	}
+
 	return &HTTPTransport{
 		baseURL: baseURL,
-		client:  &http.Client{},
+		version: version,
+		client:  client,
 	}
+}
+
+// h2cTransport wraps an http.Transport to force HTTP/2 cleartext.
+type h2cTransport struct {
+	transport *http.Transport
+}
+
+func (t *h2cTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.URL.Scheme = "http"
+	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
+	return t.transport.RoundTrip(req)
 }
 
 // Connect establishes connection to HTTP endpoint.

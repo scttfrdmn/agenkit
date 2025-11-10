@@ -242,8 +242,17 @@ func ParseEndpoint(endpoint string) (Transport, error) {
 		return NewTCPTransport(host, port), nil
 	}
 
-	// HTTP/HTTPS
-	if len(endpoint) >= 7 && (endpoint[:7] == "http://" || endpoint[:8] == "https://") {
+	// HTTP/HTTPS/H2C/H3
+	if len(endpoint) >= 8 && endpoint[:8] == "https://" {
+		return NewHTTPTransport(endpoint), nil
+	}
+	if len(endpoint) >= 7 && endpoint[:7] == "http://" {
+		return NewHTTPTransport(endpoint), nil
+	}
+	if len(endpoint) >= 6 && endpoint[:6] == "h2c://" {
+		return NewHTTPTransport(endpoint), nil
+	}
+	if len(endpoint) >= 5 && endpoint[:5] == "h3://" {
 		return NewHTTPTransport(endpoint), nil
 	}
 

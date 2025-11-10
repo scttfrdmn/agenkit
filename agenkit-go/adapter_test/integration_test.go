@@ -518,25 +518,34 @@ func TestStreamingTCP(t *testing.T) {
 
 	// Count chunks
 	chunkCount := 0
-	for {
+	done := false
+	for !done {
 		select {
 		case chunk, ok := <-messageChan:
 			if !ok {
-				if chunkCount != 5 {
-					t.Errorf("Expected 5 chunks, got %d", chunkCount)
+				// Message channel closed
+				done = true
+			} else {
+				chunkCount++
+				if chunk.Role != "agent" {
+					t.Errorf("Expected role 'agent', got '%s'", chunk.Role)
 				}
-				return
-			}
-			chunkCount++
-			if chunk.Role != "agent" {
-				t.Errorf("Expected role 'agent', got '%s'", chunk.Role)
 			}
 
-		case err := <-errorChan:
-			if err != nil {
+		case err, ok := <-errorChan:
+			if ok && err != nil {
 				t.Fatalf("Stream error: %v", err)
 			}
+			if !ok {
+				// Error channel closed
+				done = true
+			}
 		}
+	}
+
+	// Verify chunk count
+	if chunkCount != 5 {
+		t.Errorf("Expected 5 chunks, got %d", chunkCount)
 	}
 }
 

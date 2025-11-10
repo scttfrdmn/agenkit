@@ -52,7 +52,7 @@ func (g *GreetingAgent) Capabilities() []string {
 }
 
 func main() {
-	fmt.Println("=== Go Protocol Adapter - Basic Example ===\n")
+	fmt.Println("=== Go Protocol Adapter - Basic Example ===")
 
 	// Create temporary directory for Unix sockets
 	tmpDir, err := os.MkdirTemp("", "agenkit-go-example-*")

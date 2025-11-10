@@ -24,7 +24,7 @@ Focus: Complete documentation with WHY explanations and runnable examples for al
 - [x] Retry middleware example with real-world scenarios
 - [x] Metrics middleware example with observability use cases
 - [x] MIDDLEWARE.md pattern guide
-- [ ] Go examples for middleware patterns
+- [x] Go examples for middleware patterns
 - [ ] Video tutorial for middleware patterns
 
 **Why**: Help developers understand when and how to use middleware for production resilience and observability.
@@ -35,7 +35,7 @@ Focus: Complete documentation with WHY explanations and runnable examples for al
 - [x] Fallback agent example with HA patterns
 - [x] Conditional agent example with routing scenarios
 - [x] COMPOSITION.md pattern guide
-- [ ] Go examples for composition patterns
+- [x] Go examples for composition patterns
 - [ ] Video tutorials for each pattern
 
 **Why**: Demonstrate how to build complex multi-agent systems with clear trade-offs.
@@ -44,8 +44,9 @@ Focus: Complete documentation with WHY explanations and runnable examples for al
 - [x] Calculator tool example
 - [x] Search tool example
 - [x] Database tool example
+- [x] OS tools example (files, shell, git, editing, processes)
 - [x] TOOLS.md guide
-- [ ] Go examples for tools
+- [x] Go examples for tools
 - [ ] Security best practices documentation
 
 **Why**: Show how tools extend agent capabilities with deterministic operations.

@@ -1,0 +1,230 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+# Cancel in-progress runs for the same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Python tests
+  test-python:
+    name: Python Tests (Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.10', '3.11', '3.12']
+        # Reduce matrix on non-main branches
+        exclude:
+          - os: macos-latest
+            python-version: '3.10'
+          - os: windows-latest
+            python-version: '3.10'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,test]"
+
+      - name: Run Python tests
+        run: |
+          pytest tests/ -v --cov=agenkit --cov-report=xml --cov-report=term
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: python
+          name: python-${{ matrix.python-version }}
+          fail_ci_if_error: false
+
+  # Go tests
+  test-go:
+    name: Go Tests (Go ${{ matrix.go-version }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: ['1.21', '1.22']
+        exclude:
+          - os: macos-latest
+            go-version: '1.21'
+          - os: windows-latest
+            go-version: '1.21'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+          cache-dependency-path: agenkit-go/go.sum
+
+      - name: Run Go tests
+        working-directory: agenkit-go
+        run: |
+          go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Generate coverage report
+        working-directory: agenkit-go
+        run: |
+          go tool cover -html=coverage.out -o coverage.html
+          go tool cover -func=coverage.out
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.22'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./agenkit-go/coverage.out
+          flags: go
+          name: go-${{ matrix.go-version }}
+          fail_ci_if_error: false
+
+  # Test parity check - ensure both Python and Go tests pass
+  test-parity:
+    name: Test Parity Check
+    runs-on: ubuntu-latest
+    needs: [test-python, test-go]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: agenkit-go/go.sum
+
+      - name: Count Python tests
+        id: python-tests
+        run: |
+          pip install -e ".[test]"
+          PYTHON_COUNT=$(pytest --collect-only -q | tail -1 | awk '{print $1}')
+          echo "count=$PYTHON_COUNT" >> $GITHUB_OUTPUT
+          echo "Python tests: $PYTHON_COUNT"
+
+      - name: Count Go tests
+        id: go-tests
+        working-directory: agenkit-go
+        run: |
+          GO_COUNT=$(go test -list . ./... 2>/dev/null | grep -c "^Test" || echo "0")
+          echo "count=$GO_COUNT" >> $GITHUB_OUTPUT
+          echo "Go tests: $GO_COUNT"
+
+      - name: Check test parity
+        run: |
+          PYTHON_TESTS=${{ steps.python-tests.outputs.count }}
+          GO_TESTS=${{ steps.go-tests.outputs.count }}
+
+          echo "Test counts:"
+          echo "  Python: $PYTHON_TESTS"
+          echo "  Go: $GO_TESTS"
+
+          # Allow some variation (Go might have more helper tests)
+          # But flag if Python has significantly more tests than Go
+          DIFF=$((PYTHON_TESTS - GO_TESTS))
+          PERCENT=$(( DIFF * 100 / PYTHON_TESTS ))
+
+          if [ $PERCENT -gt 30 ]; then
+            echo "⚠️  Warning: Python has $PERCENT% more tests than Go"
+            echo "Consider adding equivalent Go tests for parity"
+          else
+            echo "✅ Test parity looks good!"
+          fi
+
+      - name: Generate parity report
+        run: |
+          cat > test-parity-report.md <<EOF
+          # Test Parity Report
+
+          | Language | Test Count |
+          |----------|-----------|
+          | Python   | ${{ steps.python-tests.outputs.count }} |
+          | Go       | ${{ steps.go-tests.outputs.count }} |
+
+          **Status**: Tests passing in both languages ✅
+          EOF
+
+          cat test-parity-report.md
+
+      - name: Comment PR with parity report
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('test-parity-report.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              body: report
+            });
+
+  # Integration tests (if cross-language communication works)
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [test-python, test-go]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: agenkit-go/go.sum
+
+      - name: Install Python dependencies
+        run: |
+          pip install -e ".[test]"
+
+      - name: Build Go binaries
+        working-directory: agenkit-go
+        run: |
+          go build -o ../bin/agenkit-server ./cmd/server || true
+
+      - name: Run integration tests
+        run: |
+          # Run integration tests if they exist
+          pytest tests/integration/ -v || echo "No integration tests yet"

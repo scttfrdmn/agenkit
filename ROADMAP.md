@@ -54,71 +54,78 @@ Focus: Complete documentation with WHY explanations and runnable examples for al
 ---
 
 ## Phase 2: Production Hardening (v0.3.0) 🛡️
-**Status**: Planned | **Due**: January 2026
+**Status**: ✅ Completed | **Completed**: November 2025
 
-Focus: Production-ready features including circuit breaker, auth, logging, and CI/CD.
+Focus: Production-ready middleware and CI/CD infrastructure with test parity.
 
-### Priority: High
+### ✅ Completed
 
 #### Circuit Breaker Middleware
 Prevent cascading failures in distributed systems.
 
-**Why**: Circuit breakers protect systems from repeated failures by failing fast when a service is unhealthy, allowing time for recovery.
+**Implementation**: `agenkit/middleware/circuit_breaker.py`, `agenkit-go/middleware/circuit_breaker.go`
 
 **Features**:
-- Configurable failure threshold
-- Configurable timeout/recovery period
-- Half-open state for testing recovery
-- Metrics integration
-- Thread-safe implementation
+- Three states: CLOSED, OPEN, HALF_OPEN for intelligent failure handling
+- Configurable failure threshold, recovery timeout, success threshold
+- Request timeout handling
+- Comprehensive metrics tracking
+- Thread-safe implementation (asyncio.Lock, sync.Mutex)
+- **Test parity**: 8 tests in Python, 8 tests in Go ✅
 
-**Trade-offs**: Complexity vs reliability, fail fast vs retry exhaustion
+**Why it matters**: Protects systems from cascading failures by failing fast when services are unhealthy, allowing time for recovery.
 
 #### Rate Limiting Middleware
 Control request throughput and prevent API quota exhaustion.
 
-**Why**:
-- Protect downstream services from overload
-- Comply with API rate limits (OpenAI, Anthropic, etc.)
+**Implementation**: `agenkit/middleware/rate_limiter.py`, `agenkit-go/middleware/rate_limiter.go`
+
+**Features**:
+- Token bucket algorithm with configurable rate and burst capacity
+- Automatic token refill over time
+- Wait-based throttling (blocks until tokens available)
+- Comprehensive metrics tracking
+- Thread-safe implementation (asyncio.Lock, sync.Mutex)
+- **Test parity**: 8 tests in Python, 8 tests in Go ✅
+
+**Why it matters**:
+- Protects downstream services from overload
+- Complies with API rate limits (OpenAI: 3500 RPM, Anthropic: 50 RPM)
 - Fair resource allocation across tenants
 - Cost control
 
-**Features**:
-- Token bucket algorithm
-- Sliding window rate limiting
-- Per-user/per-tenant limits
-- Configurable burst handling
-- Integration with metrics
-
-**Trade-offs**: Request queueing vs rejection, memory overhead, distributed vs local
-
-#### Authentication & Authorization Middleware
-Secure agent communication for production deployments.
-
-**Why**: Secure production deployments, multi-tenant isolation, API key management, audit trail.
-
-**Features**:
-- API key authentication
-- JWT token support
-- Role-based access control (RBAC)
-- Permission checking
-- Integration with external auth providers
-
-**Trade-offs**: Security vs latency overhead, flexibility vs complexity
-
-### Priority: Medium
-
 #### CI/CD Pipeline (GitHub Actions)
-Automate testing, linting, and release processes.
+Automate testing, linting, and release processes with test parity enforcement.
 
-**Why**: Catch bugs early, ensure code quality, automate releases, cross-platform testing.
+**Implementation**: `.github/workflows/test.yml`, `.github/workflows/lint.yml`
 
-**Workflows**:
-1. **Test Workflow** (on PR/push): Go tests, Python tests, coverage, multi-OS
-2. **Lint Workflow**: golangci-lint, ruff, mypy, markdownlint
-3. **Release Workflow** (on tag): Build binaries, GitHub release, PyPI publish
+**Features**:
+- **Test Workflow**: Multi-OS (Ubuntu, macOS, Windows), multi-version testing
+  - Python 3.10-3.12, Go 1.21-1.22
+  - Automatic test parity checking (warns if >30% divergence)
+  - Coverage upload to Codecov
+  - PR comments with parity reports
+- **Lint Workflow**: Comprehensive code quality checks
+  - Python: Ruff, Black, isort, MyPy
+  - Go: golangci-lint, go vet, go fmt, staticcheck
+  - Security scanning: Trivy, Bandit, gosec
+  - Dependency checking, license verification
 
-**Success Criteria**: All tests on every PR, coverage tracking, fast CI (<5 min)
+**Why it matters**: Catches bugs early, ensures code quality, enforces test parity between languages.
+
+### Priority: Low (Future Consideration)
+
+#### Authentication & Authorization Examples
+Show users how to integrate their own auth when needed.
+
+**Rationale**: Auth is highly application-specific and users typically have existing auth infrastructure. Rather than building opinionated auth middleware, we'll provide examples showing how to write custom auth middleware for common patterns.
+
+**Potential Examples** (low priority):
+- API key validation middleware
+- JWT verification middleware
+- Integration with existing auth systems
+
+**Why low priority**: Not core to agenkit's mission (agent patterns, composition, transport). Users can implement their own auth middleware using the established decorator pattern
 
 ---
 

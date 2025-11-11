@@ -47,7 +47,7 @@ Focus: Complete documentation with WHY explanations and runnable examples for al
 - [x] OS tools example (files, shell, git, editing, processes)
 - [x] TOOLS.md guide
 - [x] Go examples for tools
-- [ ] Security best practices documentation
+- [x] Security best practices documentation
 
 **Why**: Show how tools extend agent capabilities with deterministic operations.
 

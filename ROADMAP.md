@@ -130,7 +130,7 @@ Show users how to integrate their own auth when needed.
 ---
 
 ## Phase 3: Performance & Features (v0.4.0) ⚡
-**Status**: Planned | **Due**: March 2026
+**Status**: In Progress | **Due**: March 2026
 
 Focus: Performance optimization, benchmarks, and additional transport protocols.
 
@@ -139,14 +139,27 @@ Establish baselines and regression tests.
 
 **Why**: Understand overhead, compare protocols, detect regressions, guide optimization.
 
-**Benchmarks**:
-- Middleware overhead (retry, metrics, circuit breaker)
-- Composition patterns (sequential vs parallel latency)
-- Transport protocols (HTTP/1.1 vs HTTP/2 vs HTTP/3)
-- Message sizes (small, medium, large, streaming)
-- Concurrent connections (1, 10, 100, 1000)
+**Status**: ✅ Infrastructure Complete | ⏳ Baseline Collection In Progress
 
-**Tools**: pytest-benchmark, Go benchmarks, load testing
+**Completed**:
+- ✅ Middleware overhead benchmarks (Python: 8 tests, Go: 10 tests)
+- ✅ Composition pattern benchmarks (Python: 8 tests)
+- ✅ Baseline documentation and methodology (BASELINES.md)
+- ✅ Benchmark validation (Python: 12.16% retry overhead, Go: 72.96ns/op)
+
+**Implementation**:
+- Python: `benchmarks/test_middleware_overhead.py` (~520 lines)
+- Python: `benchmarks/test_composition_overhead.py` (~700 lines)
+- Go: `agenkit-go/benchmarks/middleware_overhead_test.go` (~350 lines)
+- Docs: `benchmarks/BASELINES.md` (comprehensive baseline documentation)
+
+**Remaining**:
+- Transport protocol benchmarks (HTTP/1.1 vs HTTP/2 vs HTTP/3)
+- Message size benchmarks (small, medium, large, streaming)
+- Concurrent load benchmarks (1, 10, 100, 1000 connections)
+- CI integration for regression detection
+
+**Tools**: pytest (Python), testing.B (Go), benchmark comparison tools
 
 ### Additional Transports
 

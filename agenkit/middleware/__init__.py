@@ -9,6 +9,12 @@ from .circuit_breaker import (
     CircuitBreakerMetrics,
     CircuitState,
 )
+from .rate_limiter import (
+    RateLimiterConfig,
+    RateLimiterDecorator,
+    RateLimitError,
+    RateLimiterMetrics,
+)
 
 __all__ = [
     "RetryConfig",
@@ -20,4 +26,8 @@ __all__ = [
     "CircuitBreakerError",
     "CircuitBreakerMetrics",
     "CircuitState",
+    "RateLimiterConfig",
+    "RateLimiterDecorator",
+    "RateLimitError",
+    "RateLimiterMetrics",
 ]

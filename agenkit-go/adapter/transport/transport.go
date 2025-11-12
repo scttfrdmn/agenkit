@@ -205,6 +205,7 @@ func (t *TCPTransport) IsConnected() bool {
 //   - unix:///path/to/socket
 //   - tcp://host:port
 //   - http://host:port or https://host:port
+//   - ws://host:port or wss://host:port
 func ParseEndpoint(endpoint string) (Transport, error) {
 	if len(endpoint) == 0 {
 		return nil, fmt.Errorf("empty endpoint")
@@ -240,6 +241,14 @@ func ParseEndpoint(endpoint string) (Transport, error) {
 			return nil, fmt.Errorf("invalid port in endpoint: %s", endpoint)
 		}
 		return NewTCPTransport(host, port), nil
+	}
+
+	// WebSocket
+	if len(endpoint) >= 6 && endpoint[:6] == "wss://" {
+		return NewWebSocketTransport(endpoint), nil
+	}
+	if len(endpoint) >= 5 && endpoint[:5] == "ws://" {
+		return NewWebSocketTransport(endpoint), nil
 	}
 
 	// HTTP/HTTPS/H2C/H3

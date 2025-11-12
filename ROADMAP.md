@@ -139,7 +139,7 @@ Establish baselines and regression tests.
 
 **Why**: Understand overhead, compare protocols, detect regressions, guide optimization.
 
-**Status**: ✅ Core Benchmarks Complete | ⏳ CI Integration Pending
+**Status**: ✅ Complete (Benchmarks + CI Integration)
 
 **Completed**:
 - ✅ Middleware overhead benchmarks (Python: 8 tests, Go: 10 tests)
@@ -152,6 +152,10 @@ Establish baselines and regression tests.
 - ✅ HTTP/3 over QUIC benchmarks with TLS (7 comprehensive tests)
 - ✅ Streaming response benchmarks (Python: 8 tests, Go: 11 tests) ✅
 - ✅ Python vs Go streaming performance comparison ✅
+- ✅ CI integration with GitHub Actions (automated regression detection)
+- ✅ HTTP/3 in CI with mkcert-generated TLS certificates
+- ✅ Automated PR comments with benchmark comparison reports
+- ✅ Benchstat integration for statistical significance testing
 
 **Implementation**:
 - Python: `benchmarks/test_middleware_overhead.py` (~520 lines)
@@ -161,7 +165,9 @@ Establish baselines and regression tests.
 - Go: `agenkit-go/benchmarks/middleware_overhead_test.go` (~415 lines)
 - Go: `agenkit-go/benchmarks/transport_overhead_test.go` (~802 lines) ✅
 - Go: `agenkit-go/benchmarks/streaming_overhead_test.go` (~550 lines) ✅
+- CI: `.github/workflows/benchmarks.yml` (automated regression detection with PR comments)
 - Docs: `benchmarks/BASELINES.md` (comprehensive baseline documentation with results)
+- Docs: `benchmarks/CI_BENCHMARKS.md` (CI usage and interpretation guide)
 
 **Key Results**:
 - Go transport: 18.5x faster than Python (0.055ms vs 1.02ms avg latency)
@@ -177,9 +183,8 @@ Establish baselines and regression tests.
 - Python HTTP/2 streaming: 17% faster than batch, async generator efficiency ✅
 - HTTP/2 best memory efficiency for streaming (112KB vs 163KB HTTP/1.1) ✅
 
-**Remaining**:
-- ✅ CI integration for regression detection (benchmarks.yml workflow) ✅
-- Performance dashboard for tracking trends (future work)
+**Future Enhancements**:
+- Performance dashboard for tracking benchmark trends over time (planned)
 
 **Tools**: pytest (Python), testing.B (Go), benchmark comparison tools
 

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gorilla/websocket"
 	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -35,12 +36,13 @@ type ServerOptions struct {
 
 // HTTPAgent is an HTTP server wrapper for exposing agents over HTTP.
 type HTTPAgent struct {
-	agent   agenkit.Agent
-	server  *http.Server
+	agent     agenkit.Agent
+	server    *http.Server
 	http3Server *http3.Server
-	mux     *http.ServeMux
-	mu      sync.Mutex
-	options ServerOptions
+	mux       *http.ServeMux
+	mu        sync.Mutex
+	options   ServerOptions
+	upgrader  websocket.Upgrader
 }
 
 // NewHTTPAgent creates a new HTTP agent server with default options (HTTP/1.1 only).
@@ -67,12 +69,20 @@ func NewHTTPAgentWithOptions(agent agenkit.Agent, addr string, options ServerOpt
 		agent:   agent,
 		mux:     mux,
 		options: options,
+		upgrader: websocket.Upgrader{
+			ReadBufferSize:  4096,
+			WriteBufferSize: 4096,
+			CheckOrigin: func(r *http.Request) bool {
+				return true // Allow all origins for now
+			},
+		},
 	}
 
 	// Register handlers
 	mux.HandleFunc("/health", h.handleHealth)
 	mux.HandleFunc("/process", h.handleProcess)
 	mux.HandleFunc("/stream", h.handleStream)
+	mux.HandleFunc("/ws", h.handleWebSocket)
 
 	// Configure HTTP/1.1 and HTTP/2 server
 	var handler http.Handler = mux
@@ -413,6 +423,201 @@ func (h *HTTPAgent) sendError(w http.ResponseWriter, id, errorCode, errorMessage
 
 	w.WriteHeader(statusCode)
 	w.Write(responseBytes)
+}
+
+// handleWebSocket handles WebSocket upgrade and communication.
+func (h *HTTPAgent) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	// Upgrade connection to WebSocket
+	conn, err := h.upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("WebSocket upgrade error: %v\n", err)
+		return
+	}
+	defer conn.Close()
+
+	log.Printf("WebSocket client connected: %s\n", r.RemoteAddr)
+
+	// Set message size limit (10 MB)
+	conn.SetReadLimit(10 * 1024 * 1024)
+
+	// Handle messages
+	for {
+		// Read message
+		messageType, message, err := conn.ReadMessage()
+		if err != nil {
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				log.Printf("WebSocket client disconnected: %s\n", r.RemoteAddr)
+			} else {
+				log.Printf("WebSocket read error: %v\n", err)
+			}
+			break
+		}
+
+		// Only handle binary messages
+		if messageType != websocket.BinaryMessage {
+			h.sendWebSocketError(conn, "unknown", "INVALID_MESSAGE", "only binary messages are supported", nil)
+			continue
+		}
+
+		// Decode request envelope
+		envelope, err := codec.DecodeBytes(message)
+		if err != nil {
+			h.sendWebSocketError(conn, "unknown", "INVALID_MESSAGE", "failed to decode request", nil)
+			continue
+		}
+
+		// Extract method
+		method, ok := envelope.Payload["method"].(string)
+		if !ok {
+			h.sendWebSocketError(conn, envelope.ID, "INVALID_MESSAGE", "missing method in payload", nil)
+			continue
+		}
+
+		// Handle different methods
+		switch method {
+		case "process":
+			h.handleWebSocketProcess(conn, *envelope)
+		case "stream":
+			h.handleWebSocketStream(conn, *envelope)
+		default:
+			h.sendWebSocketError(conn, envelope.ID, "INVALID_MESSAGE", fmt.Sprintf("unknown method: %s", method), nil)
+		}
+	}
+}
+
+// handleWebSocketProcess handles a regular process request over WebSocket.
+func (h *HTTPAgent) handleWebSocketProcess(conn *websocket.Conn, envelope codec.Envelope) {
+	// Extract message
+	messageData, ok := envelope.Payload["message"].(map[string]interface{})
+	if !ok {
+		h.sendWebSocketError(conn, envelope.ID, "INVALID_MESSAGE", "invalid message format", nil)
+		return
+	}
+
+	msgData := codec.MessageData{
+		Role:      messageData["role"].(string),
+		Content:   messageData["content"].(string),
+		Metadata:  messageData["metadata"].(map[string]interface{}),
+		Timestamp: messageData["timestamp"].(string),
+	}
+
+	inputMessage, err := codec.DecodeMessage(msgData)
+	if err != nil {
+		h.sendWebSocketError(conn, envelope.ID, "INVALID_MESSAGE", err.Error(), nil)
+		return
+	}
+
+	// Process message through agent
+	result, err := h.agent.Process(context.Background(), inputMessage)
+	if err != nil {
+		h.sendWebSocketError(conn, envelope.ID, "EXECUTION_ERROR", err.Error(), nil)
+		return
+	}
+
+	// Create response envelope
+	responsePayload := map[string]interface{}{
+		"message": codec.EncodeMessage(result),
+	}
+	response := codec.CreateResponseEnvelope(envelope.ID, responsePayload)
+
+	// Send response
+	responseBytes, err := codec.EncodeBytes(response)
+	if err != nil {
+		h.sendWebSocketError(conn, envelope.ID, "INTERNAL_ERROR", "failed to encode response", nil)
+		return
+	}
+
+	if err := conn.WriteMessage(websocket.BinaryMessage, responseBytes); err != nil {
+		log.Printf("WebSocket write error: %v\n", err)
+	}
+}
+
+// handleWebSocketStream handles a streaming request over WebSocket.
+func (h *HTTPAgent) handleWebSocketStream(conn *websocket.Conn, envelope codec.Envelope) {
+	// Check if agent supports streaming
+	streamingAgent, ok := h.agent.(agenkit.StreamingAgent)
+	if !ok {
+		h.sendWebSocketError(conn, envelope.ID, "NOT_IMPLEMENTED", "agent does not support streaming", nil)
+		return
+	}
+
+	// Extract message
+	messageData, ok := envelope.Payload["message"].(map[string]interface{})
+	if !ok {
+		h.sendWebSocketError(conn, envelope.ID, "INVALID_MESSAGE", "invalid message format", nil)
+		return
+	}
+
+	msgData := codec.MessageData{
+		Role:      messageData["role"].(string),
+		Content:   messageData["content"].(string),
+		Metadata:  messageData["metadata"].(map[string]interface{}),
+		Timestamp: messageData["timestamp"].(string),
+	}
+
+	inputMessage, err := codec.DecodeMessage(msgData)
+	if err != nil {
+		h.sendWebSocketError(conn, envelope.ID, "INVALID_MESSAGE", err.Error(), nil)
+		return
+	}
+
+	// Start streaming
+	messageChan, errorChan := streamingAgent.Stream(context.Background(), inputMessage)
+
+	// Track channel closures
+	messageChanClosed := false
+	errorChanClosed := false
+
+	for {
+		select {
+		case chunk, ok := <-messageChan:
+			if !ok {
+				messageChanClosed = true
+				if errorChanClosed {
+					// Both channels closed - stream complete
+					endEnv := codec.CreateStreamEndEnvelope(envelope.ID)
+					endBytes, _ := codec.EncodeBytes(endEnv)
+					conn.WriteMessage(websocket.BinaryMessage, endBytes)
+					return
+				}
+				messageChan = nil
+				continue
+			}
+
+			// Send chunk
+			chunkEnv := codec.CreateStreamChunkEnvelope(envelope.ID, codec.EncodeMessage(chunk))
+			chunkBytes, _ := codec.EncodeBytes(chunkEnv)
+			if err := conn.WriteMessage(websocket.BinaryMessage, chunkBytes); err != nil {
+				log.Printf("WebSocket write error: %v\n", err)
+				return
+			}
+
+		case err, ok := <-errorChan:
+			if ok && err != nil {
+				h.sendWebSocketError(conn, envelope.ID, "STREAM_ERROR", err.Error(), nil)
+				return
+			}
+			if !ok {
+				errorChanClosed = true
+				if messageChanClosed {
+					// Both channels closed - stream complete
+					endEnv := codec.CreateStreamEndEnvelope(envelope.ID)
+					endBytes, _ := codec.EncodeBytes(endEnv)
+					conn.WriteMessage(websocket.BinaryMessage, endBytes)
+					return
+				}
+				errorChan = nil
+				continue
+			}
+		}
+	}
+}
+
+// sendWebSocketError sends an error response over WebSocket.
+func (h *HTTPAgent) sendWebSocketError(conn *websocket.Conn, id, errorCode, errorMessage string, details map[string]interface{}) {
+	envelope := codec.CreateErrorEnvelope(id, errorCode, errorMessage, details)
+	responseBytes, _ := codec.EncodeBytes(envelope)
+	conn.WriteMessage(websocket.BinaryMessage, responseBytes)
 }
 
 // ParseHTTPEndpoint parses an HTTP endpoint string.

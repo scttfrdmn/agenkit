@@ -26,6 +26,11 @@ from .batching import (
     BatchingDecorator,
     BatchingMetrics,
 )
+from .caching import (
+    CachingConfig,
+    CachingDecorator,
+    CachingMetrics,
+)
 
 __all__ = [
     "RetryConfig",
@@ -48,4 +53,7 @@ __all__ = [
     "BatchingConfig",
     "BatchingDecorator",
     "BatchingMetrics",
+    "CachingConfig",
+    "CachingDecorator",
+    "CachingMetrics",
 ]

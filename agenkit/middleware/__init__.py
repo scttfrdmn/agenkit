@@ -15,6 +15,17 @@ from .rate_limiter import (
     RateLimitError,
     RateLimiterMetrics,
 )
+from .timeout import (
+    TimeoutConfig,
+    TimeoutDecorator,
+    TimeoutError,
+    TimeoutMetrics,
+)
+from .batching import (
+    BatchingConfig,
+    BatchingDecorator,
+    BatchingMetrics,
+)
 
 __all__ = [
     "RetryConfig",
@@ -30,4 +41,11 @@ __all__ = [
     "RateLimiterDecorator",
     "RateLimitError",
     "RateLimiterMetrics",
+    "TimeoutConfig",
+    "TimeoutDecorator",
+    "TimeoutError",
+    "TimeoutMetrics",
+    "BatchingConfig",
+    "BatchingDecorator",
+    "BatchingMetrics",
 ]

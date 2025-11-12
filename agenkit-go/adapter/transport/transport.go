@@ -204,6 +204,7 @@ func (t *TCPTransport) IsConnected() bool {
 // Supported formats:
 //   - unix:///path/to/socket
 //   - tcp://host:port
+//   - grpc://host:port
 //   - http://host:port or https://host:port
 //   - ws://host:port or wss://host:port
 func ParseEndpoint(endpoint string) (Transport, error) {
@@ -241,6 +242,11 @@ func ParseEndpoint(endpoint string) (Transport, error) {
 			return nil, fmt.Errorf("invalid port in endpoint: %s", endpoint)
 		}
 		return NewTCPTransport(host, port), nil
+	}
+
+	// gRPC
+	if len(endpoint) >= 7 && endpoint[:7] == "grpc://" {
+		return NewGRPCTransport(endpoint)
 	}
 
 	// WebSocket

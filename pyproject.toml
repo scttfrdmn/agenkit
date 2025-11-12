@@ -28,6 +28,8 @@ dependencies = [
     "aiohttp>=3.9.0",
     "aioquic>=1.0.0",
     "websockets>=12.0",
+    "grpcio>=1.60.0",
+    "protobuf>=4.25.0",
 ]
 
 [project.optional-dependencies]
@@ -38,6 +40,7 @@ dev = [
     "mypy>=1.5.0",
     "ruff>=0.1.0",
     "black>=23.0.0",
+    "grpcio-tools>=1.60.0",
 ]
 benchmarks = [
     "pytest-benchmark>=4.0.0",
@@ -50,7 +53,7 @@ Repository = "https://github.com/agenkit/agenkit"
 Issues = "https://github.com/agenkit/agenkit/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["agenkit"]
+packages = ["agenkit", "proto"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

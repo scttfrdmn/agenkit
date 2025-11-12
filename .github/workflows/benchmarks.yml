@@ -42,8 +42,8 @@ jobs:
       - name: Run current benchmarks (PR)
         working-directory: agenkit-go/benchmarks
         run: |
-          echo "Running benchmarks on PR branch..."
-          go test -bench=. -benchmem -benchtime=100ms -count=5 -timeout=30m > /tmp/new.txt 2>&1 || {
+          echo "Running benchmarks on PR branch (excluding HTTP/3 due to TLS requirements)..."
+          go test -bench=. -benchmem -benchtime=100ms -count=5 -timeout=30m -run='^$' -bench='^Benchmark(?!HTTP3)' > /tmp/new.txt 2>&1 || {
             echo "❌ Benchmarks failed! Output:"
             cat /tmp/new.txt
             exit 1
@@ -66,9 +66,9 @@ jobs:
         run: |
           echo "Checking if benchmarks exist on base branch..."
           if [ -d "agenkit-go/benchmarks" ] && [ -f "agenkit-go/benchmarks/middleware_overhead_test.go" ]; then
-            echo "Running benchmarks on base branch..."
+            echo "Running benchmarks on base branch (excluding HTTP/3)..."
             cd agenkit-go/benchmarks
-            go test -bench=. -benchmem -benchtime=100ms -count=5 -timeout=30m > /tmp/old.txt 2>&1 || true
+            go test -bench=. -benchmem -benchtime=100ms -count=5 -timeout=30m -run='^$' -bench='^Benchmark(?!HTTP3)' > /tmp/old.txt 2>&1 || true
             echo "Baseline benchmarks complete"
           else
             echo "⚠️  Benchmarks directory not found on base branch - this is the first benchmark run"

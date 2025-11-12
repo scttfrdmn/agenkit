@@ -265,6 +265,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [benchmark-go, benchmark-python]
     if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+      issues: write
 
     steps:
       - name: Download Go results

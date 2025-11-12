@@ -190,16 +190,31 @@ Establish baselines and regression tests.
 
 ### Additional Transports
 
-#### WebSocket Transport
+#### WebSocket Transport ✅
 Bidirectional communication and better streaming.
+
+**Status**: ✅ Complete (Python + Go + Examples + Tests)
 
 **Why**: True bidirectional communication, better streaming performance, lower latency, browser compatibility.
 
+**Implementation**:
+- Python: `agenkit/adapters/python/websocket_transport.py` (25 tests)
+- Go: `agenkit-go/adapter/transport/websocket_transport.go` (13 tests)
+- Example: `examples/transport/websocket_example.py` (4 scenarios)
+- Integration tests: `tests/adapters/python/test_websocket_integration.py` (11 tests)
+
 **Features**:
-- Automatic reconnection
-- Ping/pong keepalive
-- Message framing
-- TLS support
+- ✅ Automatic reconnection with exponential backoff
+- ✅ Ping/pong keepalive mechanism
+- ✅ Native WebSocket framing (no length prefixes needed)
+- ✅ TLS support (ws:// and wss://)
+- ✅ Binary message protocol
+- ✅ Server and client support in LocalAgent and HTTPAgent
+- ✅ Streaming support with async generators
+
+**Libraries**:
+- Python: `websockets>=12.0` (asyncio-native)
+- Go: `github.com/gorilla/websocket v1.5.3` (industry standard)
 
 **Trade-offs**: Stateful connection vs HTTP stateless, connection management complexity
 

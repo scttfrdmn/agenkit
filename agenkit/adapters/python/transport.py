@@ -455,6 +455,8 @@ def parse_endpoint(endpoint: str) -> Transport:
         - https://host:port -> HTTPTransport (HTTPS with HTTP/2 upgrade)
         - h2c://host:port -> HTTPTransport (HTTP/2 cleartext)
         - h3://host:port -> HTTPTransport (HTTP/3 over QUIC)
+        - ws://host:port -> WebSocketTransport (WebSocket)
+        - wss://host:port -> WebSocketTransport (WebSocket Secure)
 
     Args:
         endpoint: Endpoint string
@@ -488,5 +490,10 @@ def parse_endpoint(endpoint: str) -> Transport:
         # Import here to avoid circular dependency
         from .http_transport import HTTPTransport
         return HTTPTransport(endpoint)
+
+    if endpoint.startswith(("ws://", "wss://")):
+        # Import here to avoid circular dependency
+        from .websocket_transport import WebSocketTransport
+        return WebSocketTransport(endpoint)
 
     raise ValueError(f"Unsupported endpoint format: {endpoint}")

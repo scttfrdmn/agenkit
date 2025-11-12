@@ -313,7 +313,7 @@ func (h *HTTPAgent) handleStream(w http.ResponseWriter, r *http.Request) {
 	// Set headers for SSE
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
+	// Note: Connection header not set - HTTP/2 and HTTP/3 don't allow hop-by-hop headers
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {

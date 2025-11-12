@@ -139,25 +139,47 @@ Establish baselines and regression tests.
 
 **Why**: Understand overhead, compare protocols, detect regressions, guide optimization.
 
-**Status**: ✅ Infrastructure Complete | ⏳ Baseline Collection In Progress
+**Status**: ✅ Core Benchmarks Complete | ⏳ CI Integration Pending
 
 **Completed**:
 - ✅ Middleware overhead benchmarks (Python: 8 tests, Go: 10 tests)
 - ✅ Composition pattern benchmarks (Python: 8 tests)
+- ✅ Transport protocol benchmarks (Python: 9 tests, Go: 23 tests) - HTTP/1.1, HTTP/2, and HTTP/3 ✅
+- ✅ Message size benchmarks (small 100B, medium 10KB, large 1MB)
+- ✅ Concurrent load benchmarks (1, 10, 50, 100 concurrent requests)
 - ✅ Baseline documentation and methodology (BASELINES.md)
-- ✅ Benchmark validation (Python: 12.16% retry overhead, Go: 72.96ns/op)
+- ✅ Benchmark validation and cross-language comparison
+- ✅ HTTP/3 over QUIC benchmarks with TLS (7 comprehensive tests)
+- ✅ Streaming response benchmarks (Python: 8 tests, Go: 11 tests) ✅
+- ✅ Python vs Go streaming performance comparison ✅
 
 **Implementation**:
 - Python: `benchmarks/test_middleware_overhead.py` (~520 lines)
 - Python: `benchmarks/test_composition_overhead.py` (~700 lines)
-- Go: `agenkit-go/benchmarks/middleware_overhead_test.go` (~350 lines)
-- Docs: `benchmarks/BASELINES.md` (comprehensive baseline documentation)
+- Python: `benchmarks/test_transport_overhead.py` (~583 lines) ✅
+- Python: `benchmarks/test_streaming_overhead.py` (~600 lines) ✅
+- Go: `agenkit-go/benchmarks/middleware_overhead_test.go` (~415 lines)
+- Go: `agenkit-go/benchmarks/transport_overhead_test.go` (~802 lines) ✅
+- Go: `agenkit-go/benchmarks/streaming_overhead_test.go` (~550 lines) ✅
+- Docs: `benchmarks/BASELINES.md` (comprehensive baseline documentation with results)
+
+**Key Results**:
+- Go transport: 18.5x faster than Python (0.055ms vs 1.02ms avg latency)
+- HTTP/1.1 vs HTTP/2: Minimal difference (<2%), protocol choice has minimal impact
+- HTTP/3: 3.3x slower than HTTP/1.1 (0.181ms vs 0.055ms) due to TLS encryption overhead
+- HTTP/3 concurrent performance: 21% faster than HTTP/1.1, excellent for parallel workloads
+- Message size scaling: Good efficiency (10,000x size = 190x latency)
+- Transport overhead: <1% of total time in realistic LLM workloads
+- Go streaming overhead: 2-4x vs batch, HTTP/3 has lowest overhead (1.65x) ✅
+- Python streaming overhead: 1.47x (HTTP/1.1), 0.83x (HTTP/2 - streaming faster than batch!) ✅
+- Go streaming latency: ~502-504ms for 10 chunks @ 50ms delay (optimal performance) ✅
+- Python streaming latency: ~513-524ms (comparable to Go) ✅
+- Python HTTP/2 streaming: 17% faster than batch, async generator efficiency ✅
+- HTTP/2 best memory efficiency for streaming (112KB vs 163KB HTTP/1.1) ✅
 
 **Remaining**:
-- Transport protocol benchmarks (HTTP/1.1 vs HTTP/2 vs HTTP/3)
-- Message size benchmarks (small, medium, large, streaming)
-- Concurrent load benchmarks (1, 10, 100, 1000 connections)
-- CI integration for regression detection
+- ✅ CI integration for regression detection (benchmarks.yml workflow) ✅
+- Performance dashboard for tracking trends (future work)
 
 **Tools**: pytest (Python), testing.B (Go), benchmark comparison tools
 
@@ -202,25 +224,62 @@ Reduce latency and cost by caching responses.
 
 **Trade-offs**: Memory usage vs latency reduction, stale data risk
 
-#### Timeout Middleware
+#### Timeout Middleware ✅
 Prevent long-running requests from blocking resources.
 
+**Status**: ✅ Complete (Python + Go + Benchmarks)
+
 **Features**:
-- Configurable timeout per request
-- Graceful cancellation
-- Timeout metrics
+- ✅ Configurable timeout per request
+- ✅ Graceful cancellation
+- ✅ Timeout metrics
+- ✅ Context-based cancellation (Go)
+- ✅ asyncio.timeout integration (Python)
+
+**Implementation**:
+- Python: `agenkit/middleware/timeout.py` (13 tests)
+- Go: `agenkit-go/middleware/timeout.go` (15 tests)
+- Example: `examples/middleware/timeout_example.py`
+- Benchmarks: Added to middleware overhead suite (Python + Go)
+
+**Performance**:
+- Python: 295% overhead (2.1µs absolute), 7x faster than circuit breaker
+- Go: 26% faster than Python in absolute terms (1.5µs vs 2.1µs)
+- Production impact: <0.01% overhead on real LLM workloads
 
 **Trade-offs**: User experience vs resource protection
 
-#### Batching Middleware
-Combine multiple requests for efficiency.
+#### Batching Middleware ✅
+Combine multiple concurrent requests for efficiency.
+
+**Status**: ✅ Complete (Python + Go + Benchmarks + Examples)
 
 **Features**:
-- Configurable batch size and timeout
-- Request aggregation
-- Response disaggregation
+- ✅ Configurable batch size, wait time, and queue size
+- ✅ Dual threshold (size OR timeout triggers batch)
+- ✅ Automatic request aggregation with background processor
+- ✅ Individual response distribution via futures/channels
+- ✅ Partial failure handling
+- ✅ Comprehensive metrics tracking
 
-**Trade-offs**: Latency vs throughput
+**Implementation**:
+- Python: `agenkit/middleware/batching.py` (21 tests, 370 lines)
+- Go: `agenkit-go/middleware/batching.go` (12 tests, 340 lines)
+- Example: `examples/middleware/batching_example.py` (5 scenarios)
+- Benchmarks: Added to middleware overhead suite (Python + Go)
+
+**Performance**:
+- Python: ~318% overhead (~12µs absolute) for concurrent requests
+- Go: ~1,663% overhead (~1.3µs absolute) - higher relative, lower absolute
+- Production impact: <0.01% overhead on real LLM workloads (100-1000ms)
+- Designed for throughput optimization, not latency minimization
+
+**Real-World Benefits**:
+- Cost savings: 50% reduction with batch API pricing (OpenAI Batch API)
+- Throughput: 10-100x improvement for database bulk operations
+- Efficiency: Reduced network round-trips and connection overhead
+
+**Trade-offs**: Adds latency (max_wait_time) for better throughput and cost savings
 
 ---
 

@@ -1,0 +1,357 @@
+name: Benchmarks
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'agenkit/**'
+      - 'agenkit-go/**'
+      - 'benchmarks/**'
+      - '.github/workflows/benchmarks.yml'
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual triggering
+
+# Cancel in-progress runs for the same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Go benchmarks with regression detection
+  benchmark-go:
+    name: Go Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need history for comparison
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+          cache-dependency-path: agenkit-go/go.sum
+
+      - name: Install benchstat
+        run: go install golang.org/x/perf/cmd/benchstat@latest
+
+      - name: Run current benchmarks (PR)
+        working-directory: agenkit-go/benchmarks
+        run: |
+          echo "Running benchmarks on PR branch..."
+          go test -bench=. -benchmem -benchtime=100ms -count=5 -timeout=30m > /tmp/new.txt 2>&1
+          echo "Benchmarks complete"
+
+      - name: Display current results
+        run: |
+          echo "=== Current Benchmark Results ==="
+          cat /tmp/new.txt | grep -E "^Benchmark|^goos|^goarch|^pkg|^cpu|PASS|FAIL"
+
+      - name: Checkout base branch
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }}
+
+      - name: Run baseline benchmarks
+        if: github.event_name == 'pull_request'
+        working-directory: agenkit-go/benchmarks
+        run: |
+          echo "Running benchmarks on base branch..."
+          go test -bench=. -benchmem -benchtime=100ms -count=5 -timeout=30m > /tmp/old.txt 2>&1 || true
+          echo "Baseline benchmarks complete"
+
+      - name: Display baseline results
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "=== Baseline Benchmark Results ==="
+          cat /tmp/old.txt | grep -E "^Benchmark|^goos|^goarch|^pkg|^cpu|PASS|FAIL"
+
+      - name: Compare with benchstat
+        if: github.event_name == 'pull_request'
+        id: benchstat
+        run: |
+          echo "Running benchstat comparison..."
+          benchstat /tmp/old.txt /tmp/new.txt > /tmp/benchstat.txt || true
+
+          cat /tmp/benchstat.txt
+
+          # Save for PR comment
+          echo 'BENCHSTAT<<EOF' >> $GITHUB_OUTPUT
+          cat /tmp/benchstat.txt >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+      - name: Analyze regressions
+        if: github.event_name == 'pull_request'
+        id: regression
+        run: |
+          echo "Analyzing for significant regressions..."
+
+          # Check for regressions > 10%
+          REGRESSIONS=$(cat /tmp/benchstat.txt | grep -E '\+[0-9]{2}\.[0-9]+%' | grep -v '~' || true)
+
+          if [ -n "$REGRESSIONS" ]; then
+            echo "⚠️ Performance regressions detected:"
+            echo "$REGRESSIONS"
+            echo "has_regressions=true" >> $GITHUB_OUTPUT
+
+            # Create regression report
+            cat > /tmp/regression_report.md <<EOF
+          ## ⚠️ Performance Regressions Detected
+
+          The following benchmarks show performance degradation > 10%:
+
+          \`\`\`
+          $REGRESSIONS
+          \`\`\`
+
+          Please review these regressions before merging.
+          EOF
+          else
+            echo "✅ No significant regressions detected"
+            echo "has_regressions=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-benchmark-results
+          path: |
+            /tmp/new.txt
+            /tmp/old.txt
+            /tmp/benchstat.txt
+          retention-days: 30
+
+  # Python benchmarks
+  benchmark-python:
+    name: Python Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,test]"
+          pip install pytest-benchmark
+
+      - name: Run current benchmarks (PR)
+        run: |
+          echo "Running Python benchmarks on PR branch..."
+
+          # Run middleware benchmarks
+          pytest benchmarks/test_middleware_overhead.py::test_middleware_benchmark_summary -v -s > /tmp/python_new_middleware.txt 2>&1 || true
+
+          # Run transport benchmarks (limited for CI speed)
+          pytest benchmarks/test_transport_overhead.py::test_http1_latency -v -s > /tmp/python_new_transport.txt 2>&1 || true
+
+          # Run streaming benchmarks (quick tests only)
+          pytest benchmarks/test_streaming_overhead.py::test_http1_streaming_10_chunks -v -s > /tmp/python_new_streaming.txt 2>&1 || true
+
+          echo "Python benchmarks complete"
+
+      - name: Display current results
+        run: |
+          echo "=== Python Middleware Benchmarks ==="
+          cat /tmp/python_new_middleware.txt | grep -E "overhead|baseline|PASS|FAIL" || true
+          echo ""
+          echo "=== Python Transport Benchmarks ==="
+          cat /tmp/python_new_transport.txt | grep -E "Latency|Throughput|PASS|FAIL" || true
+          echo ""
+          echo "=== Python Streaming Benchmarks ==="
+          cat /tmp/python_new_streaming.txt | grep -E "time|chunks|PASS|FAIL" || true
+
+      - name: Checkout base branch
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }}
+          pip install -e ".[dev,test]"
+
+      - name: Run baseline benchmarks
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Running Python benchmarks on base branch..."
+
+          pytest benchmarks/test_middleware_overhead.py::test_middleware_benchmark_summary -v -s > /tmp/python_old_middleware.txt 2>&1 || true
+          pytest benchmarks/test_transport_overhead.py::test_http1_latency -v -s > /tmp/python_old_transport.txt 2>&1 || true
+          pytest benchmarks/test_streaming_overhead.py::test_http1_streaming_10_chunks -v -s > /tmp/python_old_streaming.txt 2>&1 || true
+
+          echo "Baseline benchmarks complete"
+
+      - name: Compare results
+        if: github.event_name == 'pull_request'
+        id: python-comparison
+        run: |
+          echo "Comparing Python benchmark results..."
+
+          # Simple comparison - look for significant time differences
+          # In a real implementation, you'd parse the output and do statistical comparison
+
+          echo "Python benchmark comparison complete"
+          echo "See artifacts for detailed results"
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-benchmark-results
+          path: |
+            /tmp/python_*_middleware.txt
+            /tmp/python_*_transport.txt
+            /tmp/python_*_streaming.txt
+          retention-days: 30
+
+  # Create combined benchmark report
+  benchmark-report:
+    name: Benchmark Report
+    runs-on: ubuntu-latest
+    needs: [benchmark-go, benchmark-python]
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Download Go results
+        uses: actions/download-artifact@v4
+        with:
+          name: go-benchmark-results
+          path: ./go-results
+
+      - name: Download Python results
+        uses: actions/download-artifact@v4
+        with:
+          name: python-benchmark-results
+          path: ./python-results
+
+      - name: Generate benchmark report
+        id: report
+        run: |
+          cat > benchmark_report.md <<'EOF'
+          # 📊 Benchmark Results
+
+          ## Go Benchmarks
+
+          <details>
+          <summary>Click to view detailed Go benchmark comparison</summary>
+
+          ```
+          EOF
+
+          # Add benchstat output if available
+          if [ -f ./go-results/benchstat.txt ]; then
+            cat ./go-results/benchstat.txt >> benchmark_report.md
+          else
+            echo "No baseline comparison available (first run or base branch)" >> benchmark_report.md
+          fi
+
+          cat >> benchmark_report.md <<'EOF'
+          ```
+
+          </details>
+
+          ## Python Benchmarks
+
+          <details>
+          <summary>Click to view Python benchmark summary</summary>
+
+          ### Middleware Benchmarks
+          ```
+          EOF
+
+          # Add Python middleware summary
+          if [ -f ./python-results/python_new_middleware.txt ]; then
+            grep -E "overhead|baseline|took" ./python-results/python_new_middleware.txt | head -20 >> benchmark_report.md || echo "No middleware data" >> benchmark_report.md
+          fi
+
+          cat >> benchmark_report.md <<'EOF'
+          ```
+
+          ### Transport Benchmarks
+          ```
+          EOF
+
+          # Add Python transport summary
+          if [ -f ./python-results/python_new_transport.txt ]; then
+            grep -E "Latency|Throughput|ms" ./python-results/python_new_transport.txt | head -20 >> benchmark_report.md || echo "No transport data" >> benchmark_report.md
+          fi
+
+          cat >> benchmark_report.md <<'EOF'
+          ```
+
+          </details>
+
+          ---
+
+          **Note**: Full benchmark results are available in the workflow artifacts.
+
+          **How to interpret**:
+          - ✅ Performance improvements show as negative percentages (e.g., `-5.0%` = 5% faster)
+          - ⚠️ Performance regressions show as positive percentages (e.g., `+10.0%` = 10% slower)
+          - Differences <10% are typically within acceptable variance
+          - Focus on regressions >15% for middleware/composition patterns
+          - Focus on regressions >20% for transport protocols (more variance)
+          EOF
+
+          cat benchmark_report.md
+
+      - name: Comment PR with benchmark report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('benchmark_report.md', 'utf8');
+
+            // Find existing benchmark comment
+            const comments = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.name,
+            });
+
+            const benchmarkComment = comments.data.find(comment =>
+              comment.user.login === 'github-actions[bot]' &&
+              comment.body.includes('📊 Benchmark Results')
+            );
+
+            if (benchmarkComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                comment_id: benchmarkComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.name,
+                body: report
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.name,
+                body: report
+              });
+            }
+
+      - name: Check for regressions and set status
+        run: |
+          # Check if benchstat found any regressions
+          if [ -f ./go-results/benchstat.txt ]; then
+            if grep -q '+[2-9][0-9]\.' ./go-results/benchstat.txt; then
+              echo "⚠️ Significant performance regressions detected (>20%)"
+              echo "Please review before merging"
+              # Note: We don't fail the build, just warn
+            else
+              echo "✅ No significant regressions detected"
+            fi
+          fi

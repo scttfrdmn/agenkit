@@ -79,9 +79,18 @@ func (a *SlowAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 // TLS Certificate Generation
 // ============================================
 
-// generateSelfSignedCert generates a self-signed TLS certificate for localhost testing.
+// generateSelfSignedCert generates or loads a TLS certificate for localhost testing.
+// Tries to load mkcert-generated certificates first (for CI), falls back to self-signed.
 // Returns a tls.Certificate that can be used for HTTPS and HTTP/3 servers.
 func generateSelfSignedCert() (tls.Certificate, error) {
+	// First, try to load mkcert-generated certificates (for CI)
+	cert, err := tls.LoadX509KeyPair("localhost.pem", "localhost-key.pem")
+	if err == nil {
+		// Successfully loaded mkcert certificates
+		return cert, nil
+	}
+
+	// Fall back to generating self-signed certificate (for local development)
 	// Generate private key
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -115,7 +124,7 @@ func generateSelfSignedCert() (tls.Certificate, error) {
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
 
 	// Load as tls.Certificate
-	cert, err := tls.X509KeyPair(certPEM, keyPEM)
+	cert, err = tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {
 		return tls.Certificate{}, err
 	}

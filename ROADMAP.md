@@ -218,18 +218,38 @@ Bidirectional communication and better streaming.
 
 **Trade-offs**: Stateful connection vs HTTP stateless, connection management complexity
 
-#### gRPC Transport
+#### gRPC Transport ✅
 High-performance RPC with native streaming support.
+
+**Status**: ✅ Complete (Python + Go + Examples + Tests)
 
 **Why**: Better performance than HTTP/REST, native streaming, strong typing, code generation.
 
-**Features**:
-- Protobuf message definitions
-- Bidirectional streaming
-- Connection multiplexing
-- Load balancing integration
+**Implementation**:
+- Proto: `proto/agent.proto` (protobuf definitions)
+- Python: `agenkit/adapters/python/grpc_transport.py` (29 tests)
+- Python: `agenkit/adapters/python/grpc_server.py` (gRPC server)
+- Go: `agenkit-go/adapter/transport/grpc_transport.go` (15 tests, 40 test cases)
+- Go: `agenkit-go/adapter/grpc/grpc_server.go` (gRPC server)
+- Go: `agenkit-go/proto/agentpb/` (generated stubs)
+- Example: `examples/transport/grpc_example.py` (5 scenarios)
 
-**Trade-offs**: Additional complexity (protobuf), less universal than HTTP
+**Features**:
+- ✅ Protobuf message definitions with schema validation
+- ✅ Unary RPC (Process) and streaming RPC (ProcessStream)
+- ✅ HTTP/2 connection multiplexing
+- ✅ Binary protocol with Protocol Buffers
+- ✅ Strong typing and code generation
+- ✅ Server and client support in both languages
+- ✅ Metadata propagation
+- ✅ Rich error handling with gRPC status codes
+- ✅ grpc:// endpoint support (default port: 50051)
+
+**Libraries**:
+- Python: `grpcio>=1.60.0`, `protobuf>=4.25.0`, `grpcio-tools>=1.60.0`
+- Go: `google.golang.org/grpc v1.76.0`, `google.golang.org/protobuf v1.36.10`
+
+**Trade-offs**: Additional complexity (protobuf), less universal than HTTP, but better performance and type safety
 
 ### Additional Middleware
 

@@ -451,6 +451,7 @@ def parse_endpoint(endpoint: str) -> Transport:
     Supported formats:
         - unix:///path/to/socket -> UnixSocketTransport
         - tcp://host:port -> TCPTransport
+        - grpc://host:port -> GRPCTransport
         - http://host:port -> HTTPTransport (HTTP/1.1 with HTTP/2 upgrade)
         - https://host:port -> HTTPTransport (HTTPS with HTTP/2 upgrade)
         - h2c://host:port -> HTTPTransport (HTTP/2 cleartext)
@@ -485,6 +486,11 @@ def parse_endpoint(endpoint: str) -> Transport:
         if not (0 < port <= 65535):
             raise ValueError(f"Invalid port in endpoint: {endpoint}")
         return TCPTransport(host, port)
+
+    if endpoint.startswith("grpc://"):
+        # Import here to avoid circular dependency
+        from .grpc_transport import GRPCTransport
+        return GRPCTransport(endpoint)
 
     if endpoint.startswith(("http://", "https://", "h2c://", "h3://")):
         # Import here to avoid circular dependency

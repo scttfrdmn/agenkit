@@ -24,6 +24,8 @@ from .errors import (
 from .local_agent import LocalAgent
 from .registry import AgentRegistration, AgentRegistry, heartbeat_loop
 from .remote_agent import RemoteAgent
+from .grpc_transport import GRPCTransport
+from .grpc_server import GRPCServer
 from .transport import (
     InMemoryTransport,
     TCPTransport,
@@ -31,6 +33,7 @@ from .transport import (
     UnixSocketTransport,
     create_memory_transport_pair,
 )
+from .websocket_transport import WebSocketTransport
 
 __all__ = [
     # Core classes
@@ -44,6 +47,9 @@ __all__ = [
     "Transport",
     "UnixSocketTransport",
     "TCPTransport",
+    "GRPCTransport",
+    "GRPCServer",
+    "WebSocketTransport",
     "InMemoryTransport",
     "create_memory_transport_pair",
     # Errors

@@ -361,7 +361,7 @@ jobs:
             const comments = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
-              repo: context.repo.name,
+              repo: context.repo.repo,
             });
 
             const benchmarkComment = comments.data.find(comment =>
@@ -374,7 +374,7 @@ jobs:
               await github.rest.issues.updateComment({
                 comment_id: benchmarkComment.id,
                 owner: context.repo.owner,
-                repo: context.repo.name,
+                repo: context.repo.repo,
                 body: report
               });
             } else {
@@ -382,7 +382,7 @@ jobs:
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
-                repo: context.repo.name,
+                repo: context.repo.repo,
                 body: report
               });
             }

@@ -164,8 +164,8 @@ func BenchmarkRateLimiterMiddleware(b *testing.B) {
 	msg := agenkit.NewMessage("user", "test")
 
 	rlAgent := middleware.NewRateLimiterDecorator(agent, middleware.RateLimiterConfig{
-		Rate:             1000000.0,
-		Capacity:         1000000,
+		Rate:             100000000.0, // 100M tokens/sec = 100 tokens/µs (FastAgent runs at 70ns/op = 14 ops/µs)
+		Capacity:         100000000,
 		TokensPerRequest: 1,
 	})
 
@@ -178,13 +178,71 @@ func BenchmarkRateLimiterMiddleware(b *testing.B) {
 	}
 }
 
+// BenchmarkTimeoutMiddleware measures timeout middleware overhead (no timeout).
+//
+// Target: <15% overhead when requests complete within timeout
+//
+// Timeout middleware adds:
+// - Context with timeout setup
+// - Timer start/stop
+// - Success/timeout tracking
+func BenchmarkTimeoutMiddleware(b *testing.B) {
+	ctx := context.Background()
+	agent := &FastAgent{}
+	msg := agenkit.NewMessage("user", "test")
+
+	timeoutAgent := middleware.NewTimeoutDecorator(agent, middleware.TimeoutConfig{
+		Timeout: 30 * time.Second, // 30 second timeout, agent responds instantly
+	})
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := timeoutAgent.Process(ctx, msg)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkBatchingMiddleware measures batching middleware overhead (batch size 1).
+//
+// Target: <20% overhead when batch size is 1 (no actual batching)
+//
+// Batching middleware adds:
+// - Channel enqueue/dequeue
+// - Result channel creation and coordination
+// - Background goroutine batch processor coordination
+//
+// Note: With batch_size=1, each request is processed individually,
+// measuring pure batching infrastructure overhead.
+func BenchmarkBatchingMiddleware(b *testing.B) {
+	ctx := context.Background()
+	agent := &FastAgent{}
+	msg := agenkit.NewMessage("user", "test")
+
+	batchingAgent := middleware.NewBatchingDecorator(agent, middleware.BatchingConfig{
+		MaxBatchSize: 1,
+		MaxWaitTime:  1 * time.Millisecond,
+		MaxQueueSize: 1000,
+	})
+	defer batchingAgent.Shutdown()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := batchingAgent.Process(ctx, msg)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // ============================================
 // Stacked Middleware Benchmarks
 // ============================================
 
 // BenchmarkStackedMiddleware measures multiple middleware layers.
 //
-// Target: <50% overhead for 4 middleware layers (retry + metrics + CB + RL)
+// Target: <60% overhead for 5 middleware layers (timeout + retry + metrics + CB + RL)
 //
 // This represents a realistic production setup with full observability
 // and resilience patterns.
@@ -193,7 +251,7 @@ func BenchmarkStackedMiddleware(b *testing.B) {
 	agent := &FastAgent{}
 	msg := agenkit.NewMessage("user", "test")
 
-	// Build stack: Metrics → Retry → Circuit Breaker → Rate Limiter → Agent
+	// Build stack: Metrics → Retry → Timeout → Circuit Breaker → Rate Limiter → Agent
 
 	// Layer 1: Rate limiter (innermost)
 	agentWithRL := middleware.NewRateLimiterDecorator(agent, middleware.RateLimiterConfig{
@@ -209,14 +267,19 @@ func BenchmarkStackedMiddleware(b *testing.B) {
 		SuccessThreshold: 2,
 	})
 
-	// Layer 3: Retry
-	agentWithRetry := middleware.NewRetryDecorator(agentWithCB, middleware.RetryConfig{
+	// Layer 3: Timeout
+	agentWithTimeout := middleware.NewTimeoutDecorator(agentWithCB, middleware.TimeoutConfig{
+		Timeout: 30 * time.Second,
+	})
+
+	// Layer 4: Retry
+	agentWithRetry := middleware.NewRetryDecorator(agentWithTimeout, middleware.RetryConfig{
 		MaxAttempts:    3,
 		InitialBackoff: 100 * time.Millisecond,
 		MaxBackoff:     1000 * time.Millisecond,
 	})
 
-	// Layer 4: Metrics (outermost)
+	// Layer 5: Metrics (outermost)
 	agentWithAll := middleware.NewMetricsDecorator(agentWithRetry)
 
 	b.ResetTimer()
@@ -313,7 +376,7 @@ func BenchmarkStackedMiddlewareParallel(b *testing.B) {
 	agent := &FastAgent{}
 	msg := agenkit.NewMessage("user", "test")
 
-	// Build full stack
+	// Build full stack: Metrics → Retry → Timeout → Circuit Breaker → Rate Limiter → Agent
 
 	agentWithRL := middleware.NewRateLimiterDecorator(agent, middleware.RateLimiterConfig{
 		Rate:             1000000.0,
@@ -327,7 +390,11 @@ func BenchmarkStackedMiddlewareParallel(b *testing.B) {
 		SuccessThreshold: 2,
 	})
 
-	agentWithRetry := middleware.NewRetryDecorator(agentWithCB, middleware.RetryConfig{
+	agentWithTimeout := middleware.NewTimeoutDecorator(agentWithCB, middleware.TimeoutConfig{
+		Timeout: 30 * time.Second,
+	})
+
+	agentWithRetry := middleware.NewRetryDecorator(agentWithTimeout, middleware.RetryConfig{
 		MaxAttempts:    3,
 		InitialBackoff: 100 * time.Millisecond,
 		MaxBackoff:     1000 * time.Millisecond,

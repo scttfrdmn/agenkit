@@ -253,16 +253,39 @@ High-performance RPC with native streaming support.
 
 ### Additional Middleware
 
-#### Caching Middleware
+#### Caching Middleware ✅
 Reduce latency and cost by caching responses.
 
-**Features**:
-- Configurable cache keys
-- TTL-based expiration
-- LRU eviction
-- Cache invalidation
+**Status**: ✅ Complete (Python + Tests + Examples)
 
-**Trade-offs**: Memory usage vs latency reduction, stale data risk
+**Features**:
+- ✅ Configurable cache keys with custom key generator support
+- ✅ TTL-based expiration with automatic cleanup
+- ✅ LRU (Least Recently Used) eviction policy
+- ✅ Cache invalidation (specific entries or entire cache)
+- ✅ Comprehensive metrics (hits, misses, hit rate, evictions, invalidations)
+- ✅ Thread-safe with asyncio.Lock
+- ✅ OrderedDict-based LRU implementation
+
+**Implementation**:
+- Python: `agenkit/middleware/caching.py` (17 tests, 267 lines)
+- Example: `examples/middleware/caching_example.py` (6 scenarios)
+- Default key: SHA256 hash of role + content + metadata
+- Custom key generators supported for specialized strategies
+
+**Performance**:
+- Cache hits: <1ms overhead (near-instant)
+- Reduces LLM API calls and costs significantly
+- Memory usage proportional to cache size (configurable)
+- Periodic cleanup prevents memory leaks
+
+**Use Cases**:
+- Frequently repeated requests
+- Deterministic or acceptable-stale responses
+- Cost/latency optimization over freshness
+- Traffic patterns with request locality
+
+**Trade-offs**: Memory usage vs latency reduction, stale data risk (controlled by TTL)
 
 #### Timeout Middleware ✅
 Prevent long-running requests from blocking resources.

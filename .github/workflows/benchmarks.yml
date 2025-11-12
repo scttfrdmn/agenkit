@@ -59,24 +59,40 @@ jobs:
 
       - name: Run baseline benchmarks
         if: github.event_name == 'pull_request'
-        working-directory: agenkit-go/benchmarks
         run: |
-          echo "Running benchmarks on base branch..."
-          go test -bench=. -benchmem -benchtime=100ms -count=5 -timeout=30m > /tmp/old.txt 2>&1 || true
-          echo "Baseline benchmarks complete"
+          echo "Checking if benchmarks exist on base branch..."
+          if [ -d "agenkit-go/benchmarks" ] && [ -f "agenkit-go/benchmarks/middleware_overhead_test.go" ]; then
+            echo "Running benchmarks on base branch..."
+            cd agenkit-go/benchmarks
+            go test -bench=. -benchmem -benchtime=100ms -count=5 -timeout=30m > /tmp/old.txt 2>&1 || true
+            echo "Baseline benchmarks complete"
+          else
+            echo "⚠️  Benchmarks directory not found on base branch - this is the first benchmark run"
+            echo "Skipping baseline comparison"
+            echo "no-comparison" > /tmp/old.txt
+          fi
 
       - name: Display baseline results
         if: github.event_name == 'pull_request'
         run: |
           echo "=== Baseline Benchmark Results ==="
-          cat /tmp/old.txt | grep -E "^Benchmark|^goos|^goarch|^pkg|^cpu|PASS|FAIL"
+          if grep -q "no-comparison" /tmp/old.txt; then
+            echo "No baseline comparison available (first benchmark run)"
+          else
+            cat /tmp/old.txt | grep -E "^Benchmark|^goos|^goarch|^pkg|^cpu|PASS|FAIL" || echo "No benchmarks found"
+          fi
 
       - name: Compare with benchstat
         if: github.event_name == 'pull_request'
         id: benchstat
         run: |
-          echo "Running benchstat comparison..."
-          benchstat /tmp/old.txt /tmp/new.txt > /tmp/benchstat.txt || true
+          if grep -q "no-comparison" /tmp/old.txt; then
+            echo "⚠️  No baseline available - skipping benchstat comparison"
+            echo "This is expected for the first benchmark run" > /tmp/benchstat.txt
+          else
+            echo "Running benchstat comparison..."
+            benchstat /tmp/old.txt /tmp/new.txt > /tmp/benchstat.txt || true
+          fi
 
           cat /tmp/benchstat.txt
 
@@ -185,13 +201,20 @@ jobs:
       - name: Run baseline benchmarks
         if: github.event_name == 'pull_request'
         run: |
-          echo "Running Python benchmarks on base branch..."
-
-          pytest benchmarks/test_middleware_overhead.py::test_middleware_benchmark_summary -v -s > /tmp/python_old_middleware.txt 2>&1 || true
-          pytest benchmarks/test_transport_overhead.py::test_http1_latency -v -s > /tmp/python_old_transport.txt 2>&1 || true
-          pytest benchmarks/test_streaming_overhead.py::test_http1_streaming_10_chunks -v -s > /tmp/python_old_streaming.txt 2>&1 || true
-
-          echo "Baseline benchmarks complete"
+          echo "Checking if Python benchmarks exist on base branch..."
+          if [ -f "benchmarks/test_middleware_overhead.py" ]; then
+            echo "Running Python benchmarks on base branch..."
+            pytest benchmarks/test_middleware_overhead.py::test_middleware_benchmark_summary -v -s > /tmp/python_old_middleware.txt 2>&1 || true
+            pytest benchmarks/test_transport_overhead.py::test_http1_latency -v -s > /tmp/python_old_transport.txt 2>&1 || true
+            pytest benchmarks/test_streaming_overhead.py::test_http1_streaming_10_chunks -v -s > /tmp/python_old_streaming.txt 2>&1 || true
+            echo "Baseline benchmarks complete"
+          else
+            echo "⚠️  Python benchmarks not found on base branch - this is the first benchmark run"
+            echo "Skipping baseline comparison"
+            echo "no-comparison" > /tmp/python_old_middleware.txt
+            echo "no-comparison" > /tmp/python_old_transport.txt
+            echo "no-comparison" > /tmp/python_old_streaming.txt
+          fi
 
       - name: Compare results
         if: github.event_name == 'pull_request'

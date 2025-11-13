@@ -68,3 +68,19 @@ try:
     __all__.append("GeminiLLM")
 except ImportError:
     pass
+
+# Amazon Bedrock adapter (optional dependency)
+try:
+    from agenkit.adapters.llm.bedrock import BedrockLLM
+
+    __all__.append("BedrockLLM")
+except ImportError:
+    pass
+
+# Ollama adapter (optional dependency)
+try:
+    from agenkit.adapters.llm.ollama import OllamaLLM
+
+    __all__.append("OllamaLLM")
+except ImportError:
+    pass

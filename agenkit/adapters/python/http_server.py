@@ -34,7 +34,8 @@ class HTTPAgentServer:
         self.host = host
         self.port = port
         self.enable_http2 = enable_http2
-        self.app = web.Application()
+        # Increase max request size to 10MB for large messages
+        self.app = web.Application(client_max_size=10 * 1024 * 1024)
         self.runner: web.AppRunner | None = None
         self.site: web.TCPSite | None = None
 
@@ -75,6 +76,7 @@ class HTTPAgentServer:
 
     async def handle_process(self, request: Request) -> Response:
         """Handle process requests."""
+        envelope = None
         try:
             # Read request body
             body = await request.read()
@@ -115,14 +117,14 @@ class HTTPAgentServer:
 
         except InvalidMessageError as e:
             return self._error_response(
-                envelope.get("id", "unknown"),
+                envelope.get("id", "unknown") if envelope else "unknown",
                 "INVALID_MESSAGE",
                 str(e),
                 400
             )
         except Exception as e:
             return self._error_response(
-                envelope.get("id", "unknown"),
+                envelope.get("id", "unknown") if envelope else "unknown",
                 "EXECUTION_ERROR",
                 str(e),
                 500

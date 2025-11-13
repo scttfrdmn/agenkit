@@ -75,6 +75,9 @@ markers = [
     "cross_language: marks tests as cross-language integration tests (Python ↔ Go)",
     "slow: marks tests as slow running tests (deselect with '-m \"not slow\"')",
     "chaos: marks tests as chaos engineering tests (deselect with '-m \"not chaos\"')",
+    "chaos_network: marks tests as network chaos tests (timeouts, drops, latency)",
+    "chaos_service: marks tests as service chaos tests (crashes, slow responses)",
+    "chaos_middleware: marks tests as middleware validation under chaos",
     "property: marks tests as property-based tests with Hypothesis (deselect with '-m \"not property\"')",
 ]
 

@@ -18,6 +18,7 @@ import (
 
 	"github.com/agenkit/agenkit-go/adapter/grpc"
 	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/agenkit/agenkit-go/observability"
 )
 
 // CrossLanguageTestAgent is a test agent for cross-language integration tests.
@@ -59,10 +60,19 @@ func main() {
 		}
 	}
 
-	// Create agent and gRPC server wrapper
+	// Initialize tracing (no exporters for test server, just W3C propagation)
+	_, err := observability.InitTracing("test-grpc-server", "", false)
+	if err != nil {
+		log.Printf("Warning: Failed to initialize tracing: %v", err)
+	}
+
+	// Create agent and wrap with tracing middleware
 	agent := &CrossLanguageTestAgent{}
+	tracedAgent := observability.NewTracingMiddleware(agent, "")
+
+	// Create gRPC server wrapper
 	addr := fmt.Sprintf("localhost:%d", port)
-	server, err := grpc.NewGRPCServer(agent, addr)
+	server, err := grpc.NewGRPCServer(tracedAgent, addr)
 	if err != nil {
 		log.Fatalf("Failed to create gRPC server: %v", err)
 	}
@@ -70,6 +80,7 @@ func main() {
 	fmt.Printf("Starting Go gRPC test server on port %d...\n", port)
 	fmt.Printf("Agent: %s\n", agent.Name())
 	fmt.Printf("Capabilities: %v\n", agent.Capabilities())
+	fmt.Println("Tracing enabled for cross-language observability tests")
 	fmt.Println("Press Ctrl+C to stop")
 
 	// Start server
@@ -85,5 +96,10 @@ func main() {
 	fmt.Println("\nShutting down...")
 	if err := server.Stop(); err != nil {
 		log.Printf("Error stopping server: %v", err)
+	}
+
+	// Shutdown tracing
+	if err := observability.Shutdown(context.Background()); err != nil {
+		log.Printf("Error shutting down tracing: %v", err)
 	}
 }

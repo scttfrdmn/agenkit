@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/agenkit/agenkit-go/agenkit"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/prometheus"
@@ -58,7 +59,7 @@ func GetMeter(name string) metric.Meter {
 
 // MetricsMiddleware wraps an agent with metrics collection.
 type MetricsMiddleware struct {
-	agent             Agent
+	agent             agenkit.Agent
 	meter             metric.Meter
 	requestCounter    metric.Int64Counter
 	errorCounter      metric.Int64Counter
@@ -67,7 +68,7 @@ type MetricsMiddleware struct {
 }
 
 // NewMetricsMiddleware creates a new metrics middleware.
-func NewMetricsMiddleware(agent Agent) (*MetricsMiddleware, error) {
+func NewMetricsMiddleware(agent agenkit.Agent) (*MetricsMiddleware, error) {
 	meter := GetMeter("agenkit.observability")
 
 	// Create request counter
@@ -131,7 +132,7 @@ func (m *MetricsMiddleware) Capabilities() []string {
 }
 
 // Process processes a message with metrics collection.
-func (m *MetricsMiddleware) Process(ctx context.Context, message *Message) (*Message, error) {
+func (m *MetricsMiddleware) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	startTime := time.Now()
 
 	// Common attributes

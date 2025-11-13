@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/agenkit/agenkit-go/agenkit"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -146,27 +147,13 @@ func InjectTraceContext(ctx context.Context, metadata map[string]interface{}) ma
 
 // TracingMiddleware wraps an agent with distributed tracing.
 type TracingMiddleware struct {
-	agent    Agent
+	agent    agenkit.Agent
 	spanName string
 	tracer   trace.Tracer
 }
 
-// Agent interface for middleware
-type Agent interface {
-	Name() string
-	Capabilities() []string
-	Process(ctx context.Context, message *Message) (*Message, error)
-}
-
-// Message represents an agent message (simplified for this module)
-type Message struct {
-	Role     string
-	Content  string
-	Metadata map[string]interface{}
-}
-
 // NewTracingMiddleware creates a new tracing middleware.
-func NewTracingMiddleware(agent Agent, spanName string) *TracingMiddleware {
+func NewTracingMiddleware(agent agenkit.Agent, spanName string) *TracingMiddleware {
 	if spanName == "" {
 		spanName = fmt.Sprintf("agent.%s.process", agent.Name())
 	}
@@ -189,7 +176,7 @@ func (t *TracingMiddleware) Capabilities() []string {
 }
 
 // Process processes a message with distributed tracing.
-func (t *TracingMiddleware) Process(ctx context.Context, message *Message) (*Message, error) {
+func (t *TracingMiddleware) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Extract parent context from message metadata
 	if message.Metadata != nil {
 		ctx = ExtractTraceContext(ctx, message.Metadata)

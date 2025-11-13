@@ -77,6 +77,43 @@ router = RouterPattern(
 )
 ```
 
+## Observability
+
+Built-in OpenTelemetry observability for production AI systems:
+
+```python
+from agenkit.observability import (
+    init_tracing,
+    init_metrics,
+    configure_logging,
+    TracingMiddleware,
+    MetricsMiddleware,
+)
+
+# Initialize observability
+init_tracing("my-service", console_export=True)
+init_metrics("my-service", port=8001)
+configure_logging(structured=True, include_trace_context=True)
+
+# Wrap agents with observability
+base_agent = MyAgent()
+traced_agent = TracingMiddleware(base_agent)
+monitored_agent = MetricsMiddleware(traced_agent)
+
+# Automatic distributed tracing, metrics, and structured logging!
+response = await monitored_agent.process(message)
+```
+
+**Features:**
+- ✨ **Distributed Tracing**: W3C Trace Context propagation across agents and languages
+- 📊 **Prometheus Metrics**: Request counts, latencies, error rates, message sizes
+- 📝 **Structured Logging**: JSON logs with automatic trace correlation
+- 🔗 **Cross-Language**: Works across Python and Go agent systems
+
+View metrics at `http://localhost:8001/metrics`
+
+See [Observability Guide](docs/observability.md) for complete documentation.
+
 ## Performance
 
 All benchmarks show minimal interface overhead:

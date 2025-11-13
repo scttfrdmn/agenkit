@@ -184,3 +184,62 @@ def is_port_in_use(port: int) -> bool:
             return False
         except OSError:
             return True
+
+
+@asynccontextmanager
+async def python_websocket_server(port: Optional[int] = None):
+    """Start a Python WebSocket server for testing.
+
+    This starts a LocalAgent WebSocket server in the current process.
+
+    Args:
+        port: Port to use. If None, a free port is found automatically.
+
+    Yields:
+        tuple: (port, agent, server_task) - The port number, local agent, and asyncio task
+
+    Example:
+        async with python_websocket_server() as (port, agent, task):
+            # Connect WebSocket client to ws://localhost:{port}
+            pass
+    """
+    from agenkit.adapters.python.local_agent import LocalAgent
+    from agenkit.interfaces import Agent, Message
+
+    if port is None:
+        port = find_free_port()
+
+    # Create a simple test agent
+    class TestAgent(Agent):
+        @property
+        def name(self) -> str:
+            return "test-agent"
+
+        @property
+        def capabilities(self) -> list[str]:
+            return ["test"]
+
+        async def process(self, message: Message) -> Message:
+            return Message(
+                role="agent",
+                content=f"Echo: {message.content}",
+                metadata={
+                    "original": message.content,
+                    "language": "python",
+                }
+            )
+
+    agent = TestAgent()
+    local_agent = LocalAgent(agent, endpoint=f"ws://localhost:{port}")
+
+    # Start server in background task
+    server_task = asyncio.create_task(local_agent.start())
+
+    try:
+        # Wait for server to be ready (WebSocket doesn't have health check, just wait)
+        await asyncio.sleep(0.5)
+
+        yield port, local_agent, server_task
+    finally:
+        # Cleanup
+        await local_agent.stop()

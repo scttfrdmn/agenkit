@@ -63,6 +63,10 @@ addopts = [
     "--strict-config",
     "-ra",
 ]
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+    "slow: marks tests as slow running tests (deselect with '-m \"not slow\"')",
+]
 
 [tool.mypy]
 strict = true

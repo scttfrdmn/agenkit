@@ -1,6 +1,7 @@
 """Test helpers for cross-language integration tests."""
 
 import asyncio
+import os
 import socket
 import subprocess
 import time
@@ -338,7 +339,7 @@ async def go_grpc_server(port: Optional[int] = None):
     try:
         # Wait for server to be ready (gRPC doesn't have health check endpoint by default)
         # We'll just wait a bit for it to start
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(2.0)
 
         yield port, process
     finally:

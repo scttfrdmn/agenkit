@@ -1,7 +1,7 @@
 """Conditional agent composition pattern."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, List, Optional
 
 from agenkit.interfaces import Agent, Message
 
@@ -28,7 +28,7 @@ class ConditionalAgent(Agent):
             default_agent: Agent to use when no condition matches
         """
         self._name = name
-        self._routes: List[ConditionalRoute] = []
+        self._routes: list[ConditionalRoute] = []
         self._default_agent = default_agent
 
     def add_route(self, condition: Condition, agent: Agent) -> None:
@@ -103,7 +103,7 @@ class ConditionalAgent(Agent):
         except Exception as e:
             raise Exception(f"Default agent ({self._default_agent.name}) failed: {e}") from e
 
-    def get_routes(self) -> List[ConditionalRoute]:
+    def get_routes(self) -> list[ConditionalRoute]:
         """Return the conditional routes."""
         return self._routes
 

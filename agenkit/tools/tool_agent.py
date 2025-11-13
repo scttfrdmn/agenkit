@@ -1,6 +1,6 @@
 """Tool agent wrapper for adding tool calling capabilities."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from agenkit.interfaces import Agent, Message, ToolResult
 
@@ -72,11 +72,17 @@ class ToolAgent(Agent):
         # Create response with tool results
         response = Message(role="agent", content=self._format_tool_results(results))
         response.metadata["tool_results"] = [
-            {"success": r.success, "data": r.data, "error": r.error, "metadata": r.metadata} for r in results
+            {
+                "success": r.success,
+                "data": r.data,
+                "error": r.error,
+                "metadata": r.metadata,
+            }
+            for r in results
         ]
         return response
 
-    def _parse_tool_calls(self, data: Any) -> List[ToolCall]:
+    def _parse_tool_calls(self, data: Any) -> list[ToolCall]:
         """Convert metadata to ToolCall structures.
 
         Args:
@@ -122,7 +128,7 @@ class ToolAgent(Agent):
 
         return await tool.execute(**call.parameters)
 
-    def _format_tool_results(self, results: List[ToolResult]) -> str:
+    def _format_tool_results(self, results: list[ToolResult]) -> str:
         """Format tool results into a readable message.
 
         Args:

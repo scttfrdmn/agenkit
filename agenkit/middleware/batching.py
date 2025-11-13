@@ -15,9 +15,9 @@ Trade-offs:
 """
 
 import asyncio
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+import contextlib
 import time
+from dataclasses import dataclass
 
 from agenkit.interfaces import Agent, Message
 
@@ -50,8 +50,8 @@ class BatchingMetrics:
     failed_batches: int = 0
     partial_batches: int = 0  # Batches with some failures
     total_wait_time: float = 0.0  # Total time requests spent waiting
-    min_batch_size: Optional[int] = None
-    max_batch_size: Optional[int] = None
+    min_batch_size: int | None = None
+    max_batch_size: int | None = None
 
     @property
     def avg_batch_size(self) -> float:
@@ -106,7 +106,7 @@ class BatchingDecorator(Agent):
         ... )
     """
 
-    def __init__(self, agent: Agent, config: Optional[BatchingConfig] = None):
+    def __init__(self, agent: Agent, config: BatchingConfig | None = None):
         """Initialize batching decorator.
 
         Args:
@@ -123,7 +123,7 @@ class BatchingDecorator(Agent):
         )
 
         # Background task for processing batches
-        self._batch_task: Optional[asyncio.Task] = None
+        self._batch_task: asyncio.Task | None = None
         self._shutdown = False
 
     @property
@@ -163,13 +163,13 @@ class BatchingDecorator(Agent):
                 # Log error but don't crash the processor
                 print(f"Batch processor error: {e}")
 
-    async def _collect_batch(self) -> List[BatchRequest]:
+    async def _collect_batch(self) -> list[BatchRequest]:
         """Collect a batch of requests from the queue.
 
         Returns:
             List of batch requests, empty if queue is empty
         """
-        batch: List[BatchRequest] = []
+        batch: list[BatchRequest] = []
         deadline = None
 
         try:
@@ -200,7 +200,7 @@ class BatchingDecorator(Agent):
 
         return batch
 
-    async def _process_batch(self, batch: List[BatchRequest]):
+    async def _process_batch(self, batch: list[BatchRequest]):
         """Process a batch of requests.
 
         Args:
@@ -243,7 +243,7 @@ class BatchingDecorator(Agent):
         successes = 0
         failures = 0
 
-        for req, result in zip(batch, results):
+        for req, result in zip(batch, results, strict=False):
             if isinstance(result, Exception):
                 req.future.set_exception(result)
                 failures += 1
@@ -327,10 +327,8 @@ class BatchingDecorator(Agent):
         # Cancel batch processor
         if self._batch_task and not self._batch_task.done():
             self._batch_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._batch_task
-            except asyncio.CancelledError:
-                pass
 
     def __del__(self):
         """Cleanup on deletion."""

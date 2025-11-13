@@ -14,11 +14,11 @@ Design principles:
 """
 
 import asyncio
-from typing import Any, Callable, Optional
+from collections.abc import Callable
 
 from agenkit.interfaces import Agent, Message
 
-__all__ = ["SequentialPattern", "ParallelPattern", "RouterPattern"]
+__all__ = ["ParallelPattern", "RouterPattern", "SequentialPattern"]
 
 
 class SequentialPattern(Agent):
@@ -41,8 +41,8 @@ class SequentialPattern(Agent):
         self,
         agents: list[Agent],
         name: str = "sequential",
-        before_agent: Optional[Callable[[Agent, Message], None]] = None,
-        after_agent: Optional[Callable[[Agent, Message], None]] = None,
+        before_agent: Callable[[Agent, Message], None] | None = None,
+        after_agent: Callable[[Agent, Message], None] | None = None,
     ) -> None:
         """
         Create a sequential execution pattern.
@@ -148,7 +148,7 @@ class ParallelPattern(Agent):
     def __init__(
         self,
         agents: list[Agent],
-        aggregator: Optional[Callable[[list[Message]], Message]] = None,
+        aggregator: Callable[[list[Message]], Message] | None = None,
         name: str = "parallel",
     ) -> None:
         """
@@ -272,7 +272,7 @@ class RouterPattern(Agent):
         self,
         router: Callable[[Message], str],
         handlers: dict[str, Agent],
-        default: Optional[Agent] = None,
+        default: Agent | None = None,
         name: str = "router",
     ) -> None:
         """

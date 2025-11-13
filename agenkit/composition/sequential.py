@@ -1,6 +1,5 @@
 """Sequential agent composition pattern."""
 
-from typing import List
 
 from agenkit.interfaces import Agent, Message
 
@@ -11,7 +10,7 @@ class SequentialAgent(Agent):
     The output of one agent becomes the input to the next agent.
     """
 
-    def __init__(self, name: str, agents: List[Agent]):
+    def __init__(self, name: str, agents: list[Agent]):
         """Initialize sequential agent.
 
         Args:
@@ -65,6 +64,6 @@ class SequentialAgent(Agent):
 
         return current
 
-    def get_agents(self) -> List[Agent]:
+    def get_agents(self) -> list[Agent]:
         """Return the list of agents in the sequence."""
         return self._agents

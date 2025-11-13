@@ -5,8 +5,8 @@ import hashlib
 import json
 import time
 from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Optional
 
 from agenkit.interfaces import Agent, Message
 
@@ -17,7 +17,7 @@ class CachingConfig:
 
     max_cache_size: int = 1000
     default_ttl: float = 300.0  # 5 minutes in seconds
-    key_generator: Optional[Callable[[Message], str]] = None
+    key_generator: Callable[[Message], str] | None = None
 
     def __post_init__(self):
         """Validate configuration."""
@@ -69,7 +69,7 @@ class CacheEntry:
 class CachingDecorator(Agent):
     """Agent decorator that caches responses with LRU eviction and TTL expiration."""
 
-    def __init__(self, agent: Agent, config: Optional[CachingConfig] = None):
+    def __init__(self, agent: Agent, config: CachingConfig | None = None):
         """Initialize caching decorator.
 
         Args:
@@ -212,7 +212,7 @@ class CachingDecorator(Agent):
         async for chunk in self._agent.stream(message):
             yield chunk
 
-    async def invalidate(self, message: Optional[Message] = None) -> None:
+    async def invalidate(self, message: Message | None = None) -> None:
         """Invalidate cache entries.
 
         Args:

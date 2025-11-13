@@ -1,16 +1,18 @@
 """WebSocket transport implementation with automatic reconnection and keepalive."""
 
 import asyncio
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import websockets
-from websockets.asyncio.client import ClientConnection
 from websockets.exceptions import ConnectionClosed, WebSocketException
 from websockets.protocol import State
 
 from .errors import ConnectionClosedError
 from .errors import ConnectionError as ConnError
 from .transport import Transport
+
+if TYPE_CHECKING:
+    from websockets.asyncio.client import ClientConnection
 
 
 class WebSocketTransport(Transport):
@@ -44,7 +46,7 @@ class WebSocketTransport(Transport):
         self._initial_retry_delay = initial_retry_delay
         self._ping_interval = ping_interval
         self._ping_timeout = ping_timeout
-        self._websocket: Optional[ClientConnection] = None
+        self._websocket: ClientConnection | None = None
         self._connected = False
         self._reconnect_lock = asyncio.Lock()
         self._receive_buffer = bytearray()
@@ -213,8 +215,9 @@ class WebSocketTransport(Transport):
                 self._receive_buffer.extend(chunk)
             except ConnectionClosedError:
                 if len(self._receive_buffer) > 0:
+                    bytes_remaining = n - len(self._receive_buffer)
                     raise ConnectionClosedError(
-                        f"Connection closed while expecting {n - len(self._receive_buffer)} more bytes"
+                        f"Connection closed while expecting {bytes_remaining} more bytes"
                     )
                 raise
 

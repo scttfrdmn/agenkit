@@ -1,0 +1,118 @@
+# golangci-lint configuration for Agenkit Go
+version: 2
+
+run:
+  timeout: 5m
+  tests: true
+  skip-dirs:
+    - vendor
+    - examples
+  skip-files:
+    - ".*\\.pb\\.go$"
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - revive
+    - gocyclo
+    - dupl
+    - nakedret
+    - bodyclose
+    - nilerr
+    - gosec
+    - errname
+    - errorlint
+    - misspell
+    - durationcheck
+    - makezero
+    - predeclared
+  disable:
+    - unparam    # Unused parameters often required for interface compliance
+    - goconst    # Repeated constants are acceptable for readability
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - shadow
+
+  staticcheck:
+    checks: ["all"]
+
+  revive:
+    rules:
+      - name: exported
+      - name: package-comments
+      - name: var-naming
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: if-return
+      - name: var-declaration
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: blank-imports
+      - name: context-as-argument
+      - name: dot-imports
+      - name: empty-block
+      - name: superfluous-else
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  gocyclo:
+    min-complexity: 15
+
+  dupl:
+    threshold: 100
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  nakedret:
+    max-func-lines: 30
+
+  gosec:
+    severity: medium
+    confidence: medium
+    excludes:
+      - G104
+      - G601
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: false
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+        - dupl
+        - gocyclo
+    - path: examples/
+      linters:
+        - errcheck
+        - gosec
+    - linters:
+        - revive
+      text: "exported (type|method|function) .* should have comment or be unexported"
+
+output:
+  formats:
+    colored-line-number:
+      path: stdout
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+  sort-results: true

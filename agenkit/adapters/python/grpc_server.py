@@ -1,6 +1,5 @@
 """gRPC server implementation for protocol adapter."""
 
-import asyncio
 import json
 import logging
 from datetime import datetime, timezone

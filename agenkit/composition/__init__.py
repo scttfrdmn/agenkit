@@ -1,34 +1,34 @@
 """Composition patterns for agents."""
 
-from .sequential import SequentialAgent
-from .parallel import ParallelAgent, AgentResult
-from .fallback import FallbackAgent
 from .conditional import (
-    ConditionalAgent,
     Condition,
+    ConditionalAgent,
     ConditionalRoute,
-    content_contains,
-    role_equals,
-    metadata_has_key,
-    metadata_equals,
     and_conditions,
-    or_conditions,
+    content_contains,
+    metadata_equals,
+    metadata_has_key,
     not_condition,
+    or_conditions,
+    role_equals,
 )
+from .fallback import FallbackAgent
+from .parallel import AgentResult, ParallelAgent
+from .sequential import SequentialAgent
 
 __all__ = [
-    "SequentialAgent",
-    "ParallelAgent",
     "AgentResult",
-    "FallbackAgent",
-    "ConditionalAgent",
     "Condition",
+    "ConditionalAgent",
     "ConditionalRoute",
-    "content_contains",
-    "role_equals",
-    "metadata_has_key",
-    "metadata_equals",
+    "FallbackAgent",
+    "ParallelAgent",
+    "SequentialAgent",
     "and_conditions",
-    "or_conditions",
+    "content_contains",
+    "metadata_equals",
+    "metadata_has_key",
     "not_condition",
+    "or_conditions",
+    "role_equals",
 ]

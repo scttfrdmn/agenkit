@@ -2,7 +2,6 @@
 
 import asyncio
 from dataclasses import dataclass
-from typing import List, Optional
 
 from agenkit.interfaces import Agent, Message
 
@@ -12,14 +11,14 @@ class AgentResult:
     """Result from a single agent execution."""
 
     agent_name: str
-    message: Optional[Message]
-    error: Optional[Exception]
+    message: Message | None
+    error: Exception | None
 
 
 class ParallelAgent(Agent):
     """Agent that executes multiple agents concurrently and combines their results."""
 
-    def __init__(self, name: str, agents: List[Agent]):
+    def __init__(self, name: str, agents: list[Agent]):
         """Initialize parallel agent.
 
         Args:
@@ -96,7 +95,7 @@ class ParallelAgent(Agent):
         except Exception as e:
             return AgentResult(agent_name=agent.name, message=None, error=e)
 
-    def _combine_responses(self, results: List[AgentResult]) -> Message:
+    def _combine_responses(self, results: list[AgentResult]) -> Message:
         """Combine multiple agent responses into a single message.
 
         Args:
@@ -121,6 +120,6 @@ class ParallelAgent(Agent):
         response.metadata = combined_metadata
         return response
 
-    def get_agents(self) -> List[Agent]:
+    def get_agents(self) -> list[Agent]:
         """Return the list of agents that run in parallel."""
         return self._agents

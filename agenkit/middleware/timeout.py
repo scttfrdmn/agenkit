@@ -2,8 +2,7 @@
 
 import asyncio
 import time
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from agenkit.interfaces import Agent, Message
 
@@ -35,8 +34,8 @@ class TimeoutMetrics:
     timed_out_requests: int = 0
     failed_requests: int = 0  # Failed for reasons other than timeout
     total_timeout_duration: float = 0.0  # Sum of all timeout durations
-    min_duration: Optional[float] = None
-    max_duration: Optional[float] = None
+    min_duration: float | None = None
+    max_duration: float | None = None
     avg_duration: float = 0.0
 
     def record_success(self, duration: float):
@@ -99,7 +98,7 @@ class TimeoutDecorator(Agent):
         ```
     """
 
-    def __init__(self, agent: Agent, config: Optional[TimeoutConfig] = None):
+    def __init__(self, agent: Agent, config: TimeoutConfig | None = None):
         """Initialize timeout decorator.
 
         Args:
@@ -162,7 +161,7 @@ class TimeoutDecorator(Agent):
                 f"Request to agent '{self.name}' timed out after {self._config.timeout}s"
             )
 
-        except Exception as e:
+        except Exception:
             duration = time.time() - start_time
             async with self._lock:
                 self._metrics.record_failure(duration)
@@ -214,7 +213,7 @@ class TimeoutDecorator(Agent):
                 f"Streaming request to agent '{self.name}' timed out after {self._config.timeout}s"
             )
 
-        except Exception as e:
+        except Exception:
             duration = time.time() - start_time
             async with self._lock:
                 self._metrics.record_failure(duration)

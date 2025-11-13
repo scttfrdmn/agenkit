@@ -19,7 +19,7 @@ from .errors import (
     ProtocolError,
     RemoteExecutionError,
 )
-from .transport import TCPTransport, Transport, UnixSocketTransport, parse_endpoint
+from .transport import Transport, parse_endpoint
 
 
 class RemoteAgent(Agent):

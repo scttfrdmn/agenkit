@@ -1,9 +1,8 @@
 """HTTP server implementation for protocol adapter."""
 
-import asyncio
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from aiohttp import web
 from aiohttp.web import Request, Response, StreamResponse
@@ -36,8 +35,8 @@ class HTTPAgentServer:
         self.port = port
         self.enable_http2 = enable_http2
         self.app = web.Application()
-        self.runner: Optional[web.AppRunner] = None
-        self.site: Optional[web.TCPSite] = None
+        self.runner: web.AppRunner | None = None
+        self.site: web.TCPSite | None = None
 
         # Register routes (add_get automatically adds HEAD)
         self.app.router.add_get("/health", self.handle_health)
@@ -218,10 +217,10 @@ class HTTPAgentServer:
                 500
             )
 
-    async def _send_sse_event(self, response: StreamResponse, data: Dict[str, Any]) -> None:
+    async def _send_sse_event(self, response: StreamResponse, data: dict[str, Any]) -> None:
         """Send a Server-Sent Event."""
         json_data = json.dumps(data)
-        await response.write(f"data: {json_data}\n\n".encode('utf-8'))
+        await response.write(f"data: {json_data}\n\n".encode())
         await response.drain()
 
     def _error_response(self, id: str, code: str, message: str, status: int) -> Response:

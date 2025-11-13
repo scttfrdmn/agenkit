@@ -3,7 +3,6 @@
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Optional
 
 from agenkit.interfaces import Agent, Message
 
@@ -128,12 +127,11 @@ class MetricsDecorator(Agent):
                 # Update min/max latency
                 if self._metrics.min_latency == 0 or latency < self._metrics.min_latency:
                     self._metrics.min_latency = latency
-                if latency > self._metrics.max_latency:
-                    self._metrics.max_latency = latency
+                self._metrics.max_latency = max(self._metrics.max_latency, latency)
 
             return response
 
-        except Exception as e:
+        except Exception:
             # Record latency even on error
             latency = time.time() - start
 
@@ -146,8 +144,7 @@ class MetricsDecorator(Agent):
                 # Update min/max latency
                 if self._metrics.min_latency == 0 or latency < self._metrics.min_latency:
                     self._metrics.min_latency = latency
-                if latency > self._metrics.max_latency:
-                    self._metrics.max_latency = latency
+                self._metrics.max_latency = max(self._metrics.max_latency, latency)
 
             raise
 

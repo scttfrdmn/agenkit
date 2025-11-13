@@ -2,8 +2,7 @@
 
 import asyncio
 import time
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from agenkit.interfaces import Agent, Message
 
@@ -62,7 +61,7 @@ class RateLimiterDecorator(Agent):
     """
 
     def __init__(
-        self, agent: Agent, config: Optional[RateLimiterConfig] = None
+        self, agent: Agent, config: RateLimiterConfig | None = None
     ):
         """Initialize rate limiter decorator.
 
@@ -177,7 +176,7 @@ class RateLimiterDecorator(Agent):
         try:
             await self._acquire_tokens(self._config.tokens_per_request, wait=True)
             self._metrics.allowed_requests += 1
-        except RateLimitError as e:
+        except RateLimitError:
             self._metrics.rejected_requests += 1
             raise
 

@@ -15,11 +15,12 @@ Performance characteristics:
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, AsyncIterator, Optional
+from typing import Any
 
-__all__ = ["Message", "ToolResult", "Agent", "Tool"]
+__all__ = ["Agent", "Message", "Tool", "ToolResult"]
 
 
 # ============================================
@@ -78,7 +79,7 @@ class ToolResult:
 
     success: bool
     data: Any
-    error: Optional[str] = None
+    error: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -161,7 +162,7 @@ class Tool(ABC):
         pass
 
     @property
-    def parameters_schema(self) -> Optional[dict[str, Any]]:
+    def parameters_schema(self) -> dict[str, Any] | None:
         """
         JSON schema for tool parameters. Override if needed.
 

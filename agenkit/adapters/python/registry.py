@@ -1,6 +1,7 @@
 """Agent registry for discovery and health monitoring."""
 
 import asyncio
+import contextlib
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -56,10 +57,8 @@ class AgentRegistry:
         """Stop the registry and background tasks."""
         if self._prune_task:
             self._prune_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._prune_task
-            except asyncio.CancelledError:
-                pass
             self._prune_task = None
             logger.info("Agent registry stopped")
 

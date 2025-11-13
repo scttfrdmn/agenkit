@@ -1,7 +1,6 @@
 """Tool registry for managing available tools."""
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 from agenkit.interfaces import Tool
 
@@ -11,7 +10,7 @@ class ToolCall:
     """Request to execute a tool."""
 
     tool_name: str
-    parameters: Dict[str, any]
+    parameters: dict[str, any]
 
 
 class ToolRegistry:
@@ -19,7 +18,7 @@ class ToolRegistry:
 
     def __init__(self):
         """Initialize tool registry."""
-        self._tools: Dict[str, Tool] = {}
+        self._tools: dict[str, Tool] = {}
 
     def register(self, tool: Tool) -> None:
         """Add a tool to the registry.
@@ -39,7 +38,7 @@ class ToolRegistry:
 
         self._tools[tool.name] = tool
 
-    def get(self, name: str) -> Optional[Tool]:
+    def get(self, name: str) -> Tool | None:
         """Retrieve a tool by name.
 
         Args:
@@ -50,7 +49,7 @@ class ToolRegistry:
         """
         return self._tools.get(name)
 
-    def list(self) -> List[str]:
+    def list(self) -> list[str]:
         """Return all registered tool names.
 
         Returns:

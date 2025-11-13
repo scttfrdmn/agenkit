@@ -21,11 +21,11 @@ from .errors import (
     ToolNotFoundError,
     UnsupportedVersionError,
 )
+from .grpc_server import GRPCServer
+from .grpc_transport import GRPCTransport
 from .local_agent import LocalAgent
 from .registry import AgentRegistration, AgentRegistry, heartbeat_loop
 from .remote_agent import RemoteAgent
-from .grpc_transport import GRPCTransport
-from .grpc_server import GRPCServer
 from .transport import (
     InMemoryTransport,
     TCPTransport,
@@ -36,39 +36,39 @@ from .transport import (
 from .websocket_transport import WebSocketTransport
 
 __all__ = [
-    # Core classes
-    "LocalAgent",
-    "RemoteAgent",
-    # Registry
-    "AgentRegistry",
-    "AgentRegistration",
-    "heartbeat_loop",
-    # Transports
-    "Transport",
-    "UnixSocketTransport",
-    "TCPTransport",
-    "GRPCTransport",
-    "GRPCServer",
-    "WebSocketTransport",
-    "InMemoryTransport",
-    "create_memory_transport_pair",
     # Errors
-    "ProtocolError",
-    "ProtocolErrorCode",
+    "AgentNotFoundError",
+    # Registry
+    "AgentRegistration",
+    "AgentRegistry",
+    "AgentTimeoutError",
+    "AgentUnavailableError",
+    "ConnectionClosedError",
     "ConnectionError",
     "ConnectionTimeoutError",
-    "ConnectionClosedError",
-    "InvalidMessageError",
-    "UnsupportedVersionError",
-    "MalformedPayloadError",
-    "AgentNotFoundError",
-    "AgentUnavailableError",
-    "AgentTimeoutError",
-    "ToolNotFoundError",
-    "ToolExecutionFailedError",
-    "RegistrationFailedError",
     "DuplicateAgentError",
+    # Transports
+    "GRPCServer",
+    "GRPCTransport",
+    "InMemoryTransport",
+    "InvalidMessageError",
+    # Core classes
+    "LocalAgent",
+    "MalformedPayloadError",
+    "ProtocolError",
+    "ProtocolErrorCode",
+    "RegistrationFailedError",
+    "RemoteAgent",
     "RemoteExecutionError",
+    "TCPTransport",
+    "ToolExecutionFailedError",
+    "ToolNotFoundError",
+    "Transport",
+    "UnixSocketTransport",
+    "UnsupportedVersionError",
+    "WebSocketTransport",
+    "create_memory_transport_pair",
+    "heartbeat_loop",
 ]
 
 __version__ = "0.1.0"

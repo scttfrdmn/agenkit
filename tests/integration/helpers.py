@@ -243,3 +243,109 @@ async def python_websocket_server(port: Optional[int] = None):
     finally:
         # Cleanup
         await local_agent.stop()
+
+
+@asynccontextmanager
+async def python_grpc_server(port: Optional[int] = None):
+    """Start a Python gRPC server for testing.
+
+    This starts a GRPCServer in the current process.
+
+    Args:
+        port: Port to use. If None, a free port is found automatically.
+
+    Yields:
+        tuple: (port, server) - The port number and server instance
+
+    Example:
+        async with python_grpc_server() as (port, server):
+            # Connect gRPC client to localhost:{port}
+            pass
+    """
+    from agenkit.adapters.python.grpc_server import GRPCServer
+    from agenkit.interfaces import Agent, Message
+
+    if port is None:
+        port = find_free_port()
+
+    # Create a simple test agent
+    class TestAgent(Agent):
+        @property
+        def name(self) -> str:
+            return "test-agent"
+
+        @property
+        def capabilities(self) -> list[str]:
+            return ["test"]
+
+        async def process(self, message: Message) -> Message:
+            return Message(
+                role="agent",
+                content=f"Echo: {message.content}",
+                metadata={
+                    "original": message.content,
+                    "language": "python",
+                }
+            )
+
+    agent = TestAgent()
+    server = GRPCServer(agent, f"localhost:{port}")
+
+    try:
+        # Start server
+        await server.start()
+
+        # Wait for server to be ready (gRPC needs a brief moment to start)
+        await asyncio.sleep(0.5)
+
+        yield port, server
+    finally:
+        # Cleanup
+        await server.stop()
+
+
+@asynccontextmanager
+async def go_grpc_server(port: Optional[int] = None):
+    """Start a Go gRPC server for testing.
+
+    This starts the Go gRPC test server as a subprocess.
+
+    Args:
+        port: Port to use. If None, a free port is found automatically.
+
+    Yields:
+        tuple: (port, process) - The port number and subprocess handle
+
+    Example:
+        async with go_grpc_server() as (port, proc):
+            # Connect gRPC client to localhost:{port}
+            pass
+    """
+    if port is None:
+        port = find_free_port()
+
+    # Get the path to the agenkit-go directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    go_test_dir = os.path.join(current_dir, "..", "..", "agenkit-go", "tests", "integration")
+
+    process = subprocess.Popen(
+        ["go", "run", "test_grpc_server.go", str(port)],
+        cwd=go_test_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    try:
+        # Wait for server to be ready (gRPC doesn't have health check endpoint by default)
+        # We'll just wait a bit for it to start
+        await asyncio.sleep(1.0)
+
+        yield port, process
+    finally:
+        # Cleanup
+        process.terminate()
+        try:
+            process.wait(timeout=5.0)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()

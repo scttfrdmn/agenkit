@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: agenkit-go-http
+  namespace: agenkit
+  labels:
+    app: agenkit
+    component: agent
+    language: go
+    transport: http
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+    protocol: TCP
+  selector:
+    app: agenkit
+    component: agent
+    language: go
+    transport: http
+  sessionAffinity: None

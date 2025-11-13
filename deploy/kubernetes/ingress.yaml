@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agenkit-ingress
+  namespace: agenkit
+  labels:
+    app: agenkit
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - agenkit.example.com
+    secretName: agenkit-tls
+  rules:
+  - host: agenkit.example.com
+    http:
+      paths:
+      - path: /python
+        pathType: Prefix
+        backend:
+          service:
+            name: agenkit-python-http
+            port:
+              number: 8080
+      - path: /go
+        pathType: Prefix
+        backend:
+          service:
+            name: agenkit-go-http
+            port:
+              number: 8080

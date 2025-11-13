@@ -1,0 +1,48 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'agenkit-local'
+    environment: 'development'
+
+scrape_configs:
+  # Python HTTP Agent
+  - job_name: 'python-http-agent'
+    static_configs:
+      - targets: ['python-http-agent:8080']
+        labels:
+          service: 'python-http-agent'
+          language: 'python'
+          transport: 'http'
+
+  # Go HTTP Agent
+  - job_name: 'go-http-agent'
+    static_configs:
+      - targets: ['go-http-agent:8080']
+        labels:
+          service: 'go-http-agent'
+          language: 'go'
+          transport: 'http'
+
+  # Python gRPC Agent
+  - job_name: 'python-grpc-agent'
+    static_configs:
+      - targets: ['python-grpc-agent:50051']
+        labels:
+          service: 'python-grpc-agent'
+          language: 'python'
+          transport: 'grpc'
+
+  # Go gRPC Agent
+  - job_name: 'go-grpc-agent'
+    static_configs:
+      - targets: ['go-grpc-agent:50051']
+        labels:
+          service: 'go-grpc-agent'
+          language: 'go'
+          transport: 'grpc'
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agenkit-config
+  namespace: agenkit
+  labels:
+    app: agenkit
+data:
+  # Logging configuration
+  log_level: "INFO"
+  log_format: "json"
+
+  # OpenTelemetry configuration
+  otel_enabled: "true"
+  otel_service_name: "agenkit"
+  otel_exporter_otlp_endpoint: "http://jaeger-collector:4317"
+
+  # Agent configuration
+  agent_timeout: "30s"
+  agent_max_concurrent_requests: "100"
+
+  # Transport configuration
+  http_port: "8080"
+  grpc_port: "50051"
+  websocket_port: "8081"

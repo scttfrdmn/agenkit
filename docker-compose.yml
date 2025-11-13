@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # Python HTTP Agent Example
+  python-http-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    image: agenkit/python:0.1.0
+    container_name: agenkit-python-http
+    ports:
+      - "8080:8080"
+    environment:
+      - AGENKIT_LOG_LEVEL=INFO
+      - OTEL_SERVICE_NAME=python-http-agent
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    volumes:
+      - ./examples:/app/examples:ro
+    command: python -m examples.transport.http_example
+    networks:
+      - agenkit
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Go HTTP Agent Example
+  go-http-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.go
+    image: agenkit/go:0.1.0
+    container_name: agenkit-go-http
+    ports:
+      - "8081:8080"
+    environment:
+      - AGENKIT_LOG_LEVEL=INFO
+      - OTEL_SERVICE_NAME=go-http-agent
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    networks:
+      - agenkit
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Python gRPC Agent Example
+  python-grpc-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    image: agenkit/python:0.1.0
+    container_name: agenkit-python-grpc
+    ports:
+      - "50051:50051"
+    environment:
+      - AGENKIT_LOG_LEVEL=INFO
+      - OTEL_SERVICE_NAME=python-grpc-agent
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    volumes:
+      - ./examples:/app/examples:ro
+    command: python -m examples.transport.grpc_example
+    networks:
+      - agenkit
+
+  # Go gRPC Agent Example
+  go-grpc-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.go
+    image: agenkit/go:0.1.0
+    container_name: agenkit-go-grpc
+    ports:
+      - "50052:50051"
+    environment:
+      - AGENKIT_LOG_LEVEL=INFO
+      - OTEL_SERVICE_NAME=go-grpc-agent
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    networks:
+      - agenkit
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.51
+    container_name: agenkit-jaeger
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - agenkit
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: agenkit-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - agenkit
+
+networks:
+  agenkit:
+    driver: bridge
+
+volumes:
+  prometheus-data:

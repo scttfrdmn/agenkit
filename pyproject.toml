@@ -56,6 +56,7 @@ llm = [
     "anthropic>=0.40.0",
     "openai>=1.50.0",
     "litellm>=1.50.0",
+    "google-genai>=0.3.0",
 ]
 
 [project.urls]

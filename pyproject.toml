@@ -52,6 +52,11 @@ dev = [
 benchmarks = [
     "pytest-benchmark>=4.0.0",
 ]
+llm = [
+    "anthropic>=0.40.0",
+    "openai>=1.50.0",
+    "litellm>=1.50.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/agenkit/agenkit"

@@ -34,4 +34,29 @@ Swapping providers:
 
 from agenkit.adapters.llm.base import LLM
 
+# Import adapters with graceful fallback for missing dependencies
 __all__ = ["LLM"]
+
+# Anthropic adapter (optional dependency)
+try:
+    from agenkit.adapters.llm.anthropic import AnthropicLLM
+
+    __all__.append("AnthropicLLM")
+except ImportError:
+    pass
+
+# OpenAI adapter (optional dependency)
+try:
+    from agenkit.adapters.llm.openai import OpenAILLM
+
+    __all__.append("OpenAILLM")
+except ImportError:
+    pass
+
+# LiteLLM adapter (optional dependency)
+try:
+    from agenkit.adapters.llm.litellm import LiteLLMLLM
+
+    __all__.append("LiteLLMLLM")
+except ImportError:
+    pass

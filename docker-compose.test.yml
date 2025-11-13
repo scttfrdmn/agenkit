@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: agenkit-ollama-test
+    ports:
+      - "11434:11434"
+    # Uncomment to persist models between runs
+    # volumes:
+    #   - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# Uncomment to persist models
+# volumes:
+#   ollama-data:

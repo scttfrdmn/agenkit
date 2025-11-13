@@ -42,16 +42,21 @@ def decode_message(data: dict[str, Any]) -> Message:
         MalformedPayloadError: If message data is invalid
     """
     try:
+        # Parse timestamp if present, otherwise use current time
+        timestamp_str = data.get("timestamp", "")
+        if timestamp_str:
+            # Handle 'Z' suffix (convert to '+00:00' for fromisoformat)
+            if timestamp_str.endswith('Z'):
+                timestamp_str = timestamp_str[:-1] + '+00:00'
+            timestamp = datetime.fromisoformat(timestamp_str)
+        else:
+            timestamp = datetime.now(timezone.utc)
+
         return Message(
             role=data["role"],
             content=data["content"],
             metadata=data.get("metadata", {}),
-            # Parse timestamp if present, otherwise use current time
-            timestamp=(
-                datetime.fromisoformat(data["timestamp"])
-                if "timestamp" in data
-                else datetime.now(timezone.utc)
-            ),
+            timestamp=timestamp,
         )
     except (KeyError, ValueError, TypeError) as e:
         raise MalformedPayloadError(f"Failed to decode message: {e}", {"data": data}) from e

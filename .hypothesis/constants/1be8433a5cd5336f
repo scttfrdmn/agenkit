@@ -1,0 +1,4 @@
+# file: /Users/scttfrdmn/src/agenkit/agenkit/interfaces.py
+# hypothesis_version: 6.147.0
+
+['Agent', 'Message', 'Tool', 'ToolResult']

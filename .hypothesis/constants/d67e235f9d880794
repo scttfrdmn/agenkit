@@ -1,0 +1,4 @@
+# file: /Users/scttfrdmn/src/agenkit/agenkit/patterns.py
+# hypothesis_version: 6.147.0
+
+['ParallelPattern', 'RouterPattern', 'SequentialPattern', 'content', 'metadata', 'parallel', 'parallel_results', 'role', 'router', 'sequential']

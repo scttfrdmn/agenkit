@@ -81,7 +81,7 @@ func main() {
 	<-sigChan
 
 	fmt.Println("\nShutting down...")
-	if err := server.Stop(ctx); err != nil {
+	if err := server.Stop(); err != nil {
 		log.Printf("Error stopping server: %v", err)
 	}
 }

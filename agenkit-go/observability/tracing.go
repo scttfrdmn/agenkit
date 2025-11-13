@@ -86,12 +86,10 @@ func InitTracing(serviceName string, otlpEndpoint string, consoleExport bool) (*
 	return tp, nil
 }
 
-// GetTracer returns a tracer for the given name.
+// GetTracer returns a tracer from the current global tracer provider.
 func GetTracer(name string) trace.Tracer {
-	if globalTracerProvider == nil {
-		// Initialize with defaults if not already initialized
-		_, _ = InitTracing("agenkit", "", false)
-	}
+	// Always get tracer from current global provider
+	// This allows tests to inject their own provider
 	return otel.Tracer(name)
 }
 

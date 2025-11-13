@@ -49,12 +49,10 @@ func InitMetrics(serviceName string, port int) (*sdkmetric.MeterProvider, error)
 	return provider, nil
 }
 
-// GetMeter returns a meter for the given name.
+// GetMeter returns a meter from the current global meter provider.
 func GetMeter(name string) metric.Meter {
-	if globalMeterProvider == nil {
-		// Initialize with defaults if not already initialized
-		_, _ = InitMetrics("agenkit", 8000)
-	}
+	// Always get meter from current global provider
+	// This allows tests to inject their own provider
 	return otel.Meter(name)
 }
 

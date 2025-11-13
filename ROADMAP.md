@@ -19,9 +19,11 @@ This document outlines the development roadmap for agenkit, organized by phases 
 ---
 
 ## Phase 1: Documentation & Examples (v0.2.0) 📚
-**Status**: In Progress | **Due**: December 2025
+**Status**: ✅ Complete | **Completed**: November 2025
 
 Focus: Complete documentation with WHY explanations and runnable examples for all patterns.
+
+**Note**: Video tutorials have been deferred to a future phase (post-v1.0).
 
 ### Priority: High
 
@@ -30,9 +32,10 @@ Focus: Complete documentation with WHY explanations and runnable examples for al
 - [x] Metrics middleware example with observability use cases
 - [x] MIDDLEWARE.md pattern guide
 - [x] Go examples for middleware patterns
-- [ ] Video tutorial for middleware patterns
 
 **Why**: Help developers understand when and how to use middleware for production resilience and observability.
+
+**Status**: ✅ Complete
 
 #### [#31](https://github.com/scttfrdmn/agenkit/issues/31) Composition Pattern Examples and Documentation
 - [x] Sequential agent example with pipeline use cases
@@ -41,9 +44,10 @@ Focus: Complete documentation with WHY explanations and runnable examples for al
 - [x] Conditional agent example with routing scenarios
 - [x] COMPOSITION.md pattern guide
 - [x] Go examples for composition patterns
-- [ ] Video tutorials for each pattern
 
 **Why**: Demonstrate how to build complex multi-agent systems with clear trade-offs.
+
+**Status**: ✅ Complete
 
 #### [#32](https://github.com/scttfrdmn/agenkit/issues/32) Tools/Function Calling Examples and Documentation
 - [x] Calculator tool example
@@ -522,13 +526,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/milestones):
 
-- **Phase 1: Documentation & Examples (v0.2.0)** - ~85% complete (missing video tutorials)
+- **Phase 1: Documentation & Examples (v0.2.0)** - ✅ 100% complete
 - **Phase 2: Production Hardening (v0.3.0)** - ✅ 100% complete
 - **Phase 3: Performance & Features (v0.4.0)** - ✅ 100% complete
 - **Phase 4: Testing & Quality (v0.4.0)** - In Progress (integration tests, chaos tests pending)
 - **Phase 5: DevOps & Release (v1.0.0)** - 33% complete (1/3: observability ✅, Docker & K8s planned)
 - **Phase 6: Community & Polish (v1.0.0)** - 0% complete
 - **Phase 7: Language Ports (v1.1.0+)** - Future
+
+### Deferred Items
+- **Video Tutorials**: Deferred to post-v1.0 (middleware, composition, and tool usage tutorials)
 
 ---
 

@@ -368,25 +368,37 @@ Focus: Comprehensive testing across all layers for production readiness.
 
 **Test Plan**: See [PHASE4_TEST_PLAN.md](docs/PHASE4_TEST_PLAN.md) for detailed test plan.
 
-### Cross-Language Integration Tests
+### Cross-Language Integration Tests ✅
 End-to-end tests across Go<->Python communication.
 
-**Status**: Planned
+**Status**: ✅ **Phase 4.1 Complete** (42/47 tests passing, 90% success rate)
 
 **Why**: Ensure cross-language compatibility works in production, detect integration issues early.
 
-**Scope** (~35-45 tests):
-- HTTP Transport: Python ↔ Go (both directions)
-- WebSocket Transport: Python ↔ Go (bidirectional)
-- gRPC Transport: Python ↔ Go (unary + streaming)
-- Observability: Trace context propagation across languages
-- Large messages, Unicode, streaming, error handling
+**Completed** (42 tests):
+- ✅ **HTTP Transport**: 18/18 tests (Python ↔ Go, both directions)
+  - Basic messages, metadata, Unicode, large messages (1MB)
+  - Concurrent requests (10, 50), HTTP/2, connection reuse
+  - Error handling, health checks
+- ✅ **WebSocket Transport**: 10/10 tests (Python ↔ Go, bidirectional)
+  - Basic messages, metadata, Unicode, large messages
+  - Multiple messages, concurrent connections, connection reuse
+- ✅ **gRPC Transport**: 12/12 tests (Python ↔ Go, unary)
+  - Basic messages, metadata, Unicode, large messages
+  - Multiple messages, concurrent requests, connection reuse
+- ⚠️ **Observability**: 2/7 tests (Format validation ✅, server-side tracing pending)
+  - W3C Trace Context format validation ✅
+  - Trace context extraction ✅
+  - Server trace propagation tests need TracingMiddleware (Issue #53)
 
 **Implementation**:
 - Python: `tests/integration/test_*_cross_language.py`
-- Go: `agenkit-go/tests/integration/*_cross_language_test.go`
+- Test Infrastructure: `tests/integration/helpers.py`
+- Go Test Servers: `agenkit-go/tests/integration/test_*_server.go`
 
 **Priority**: 🔴 Critical (Required for v1.0)
+
+**Next Steps**: See Phase 4.2 (Chaos Engineering) and Phase 4.3 (Property-Based Testing)
 
 ### Chaos Engineering Tests
 Test resilience under failure conditions.

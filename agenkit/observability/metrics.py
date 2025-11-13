@@ -16,9 +16,6 @@ from opentelemetry.sdk.resources import Resource, SERVICE_NAME
 
 from agenkit.interfaces import Agent, Message
 
-# Global meter instance
-_meter: metrics.Meter | None = None
-
 
 def init_metrics(
     service_name: str = "agenkit",
@@ -29,20 +26,24 @@ def init_metrics(
 
     Args:
         service_name: Name of the service for metric identification
-        port: Port for Prometheus metrics endpoint
+        port: Port for Prometheus metrics endpoint (currently unused, kept for API compatibility)
 
     Returns:
         Configured MeterProvider
-    """
-    global _meter
 
+    Note:
+        The port parameter is currently unused as the Prometheus exporter
+        uses a pull-based model accessed via HTTP scraping.
+    """
     # Create resource
     resource = Resource(attributes={
         SERVICE_NAME: service_name,
     })
 
     # Create Prometheus exporter
-    reader = PrometheusMetricReader(port=port)
+    # Note: PrometheusMetricReader doesn't accept port parameter
+    # Metrics are available via prometheus_client's HTTP server
+    reader = PrometheusMetricReader()
 
     # Create meter provider
     provider = MeterProvider(
@@ -53,19 +54,19 @@ def init_metrics(
     # Set as global provider
     metrics.set_meter_provider(provider)
 
-    # Get meter
-    _meter = metrics.get_meter(__name__)
-
     return provider
 
 
 def get_meter() -> metrics.Meter:
-    """Get the global meter instance."""
-    global _meter
-    if _meter is None:
-        # Initialize with defaults if not already initialized
-        init_metrics()
-    return _meter  # type: ignore
+    """
+    Get a meter instance from the current meter provider.
+
+    Returns:
+        A meter instance for creating metrics.
+    """
+    # Always get meter from current provider (don't cache)
+    # This allows tests to inject their own provider
+    return metrics.get_meter("agenkit.observability")
 
 
 class MetricsMiddleware:

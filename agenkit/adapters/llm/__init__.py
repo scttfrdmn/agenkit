@@ -60,3 +60,11 @@ try:
     __all__.append("LiteLLMLLM")
 except ImportError:
     pass
+
+# Google Gemini adapter (optional dependency)
+try:
+    from agenkit.adapters.llm.gemini import GeminiLLM
+
+    __all__.append("GeminiLLM")
+except ImportError:
+    pass

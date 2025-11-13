@@ -1,6 +1,5 @@
 """Fallback agent composition pattern."""
 
-from typing import List
 
 from agenkit.interfaces import Agent, Message
 
@@ -11,7 +10,7 @@ class FallbackAgent(Agent):
     This implements the Fallback/Retry pattern for reliability.
     """
 
-    def __init__(self, name: str, agents: List[Agent]):
+    def __init__(self, name: str, agents: list[Agent]):
         """Initialize fallback agent.
 
         Args:
@@ -71,6 +70,6 @@ class FallbackAgent(Agent):
         # All agents failed
         raise Exception(f"All {len(self._agents)} agents failed: {'; '.join(errors)}")
 
-    def get_agents(self) -> List[Agent]:
+    def get_agents(self) -> list[Agent]:
         """Return the list of fallback agents."""
         return self._agents

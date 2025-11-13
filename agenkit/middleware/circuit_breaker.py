@@ -4,7 +4,6 @@ import asyncio
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 from agenkit.interfaces import Agent, Message
 
@@ -53,7 +52,7 @@ class CircuitBreakerMetrics:
     failed_requests: int = 0
     rejected_requests: int = 0  # Rejected due to open circuit
     state_changes: dict[str, int] = field(default_factory=dict)
-    last_state_change: Optional[float] = None
+    last_state_change: float | None = None
     current_state: CircuitState = CircuitState.CLOSED
 
 
@@ -75,7 +74,7 @@ class CircuitBreakerDecorator(Agent):
     """
 
     def __init__(
-        self, agent: Agent, config: Optional[CircuitBreakerConfig] = None
+        self, agent: Agent, config: CircuitBreakerConfig | None = None
     ):
         """Initialize circuit breaker decorator.
 
@@ -88,7 +87,7 @@ class CircuitBreakerDecorator(Agent):
         self._state = CircuitState.CLOSED
         self._failure_count = 0
         self._success_count = 0
-        self._last_failure_time: Optional[float] = None
+        self._last_failure_time: float | None = None
         self._lock = asyncio.Lock()
         self._metrics = CircuitBreakerMetrics()
 
@@ -220,7 +219,7 @@ class CircuitBreakerDecorator(Agent):
                 f"Request exceeded timeout of {self._config.timeout}s"
             ) from e
 
-        except Exception as e:
+        except Exception:
             async with self._lock:
                 await self._on_failure()
             raise

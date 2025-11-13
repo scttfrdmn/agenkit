@@ -1,19 +1,17 @@
 """HTTP transport implementation with HTTP/1.1, HTTP/2, and HTTP/3 support."""
 
-import asyncio
 import json
 from enum import Enum
-from typing import AsyncIterator, Optional
-from urllib.parse import urlparse
+from typing import TYPE_CHECKING
 
 import httpx
-from aioquic.asyncio import connect as quic_connect
-from aioquic.h3.connection import H3Connection
-from aioquic.h3.events import DataReceived, HeadersReceived
 
-from .errors import ConnectionError as ConnError
 from .errors import ConnectionClosedError
+from .errors import ConnectionError as ConnError
 from .transport import Transport
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 class HTTPVersion(Enum):
@@ -42,9 +40,9 @@ class HTTPTransport(Transport):
         self.url = url
         self.version = self._detect_version(url)
         self.normalized_url = self._normalize_url(url)
-        self.client: Optional[httpx.AsyncClient] = None
-        self.response_stream: Optional[httpx.Response] = None
-        self._stream_iterator: Optional[AsyncIterator[str]] = None
+        self.client: httpx.AsyncClient | None = None
+        self.response_stream: httpx.Response | None = None
+        self._stream_iterator: AsyncIterator[str] | None = None
         self._connected = False
 
     def _detect_version(self, url: str) -> HTTPVersion:
@@ -89,7 +87,7 @@ class HTTPTransport(Transport):
                 )
 
             # Test connectivity with HEAD request
-            response = await self.client.head(f"{self.normalized_url}/health")
+            await self.client.head(f"{self.normalized_url}/health")
             self._connected = True
 
         except Exception as e:

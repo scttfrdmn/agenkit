@@ -7,7 +7,6 @@ import struct
 from pathlib import Path
 from typing import Any
 
-import websockets
 from websockets.asyncio.server import ServerConnection, serve
 
 from agenkit.interfaces import Agent
@@ -338,7 +337,7 @@ class LocalAgent:
             # Unexpected error - return generic error
             logger.error(f"Unexpected error: {e}", exc_info=True)
             error_response = create_error_envelope(
-                request.get("id", "unknown") if "request" in locals() else "unknown",  # noqa: F821
+                request.get("id", "unknown") if "request" in locals() else "unknown",
                 "INTERNAL_ERROR",
                 str(e),
             )
@@ -356,7 +355,6 @@ class LocalAgent:
         Raises:
             ProtocolError: If request is invalid
         """
-        import struct
 
         try:
             if request["type"] != "request":
@@ -369,7 +367,9 @@ class LocalAgent:
             method = payload.get("method")
 
             if method != "stream":
-                raise InvalidMessageError(f"Expected 'stream' but got '{method}'", {"method": method})
+                raise InvalidMessageError(
+                    f"Expected 'stream' but got '{method}'", {"method": method}
+                )
 
             # Decode input message
             input_message = decode_message(payload["message"])
@@ -426,10 +426,7 @@ class LocalAgent:
         try:
             async for message in websocket:
                 # Ensure we have bytes
-                if isinstance(message, str):
-                    message_bytes = message.encode('utf-8')
-                else:
-                    message_bytes = message
+                message_bytes = message.encode('utf-8') if isinstance(message, str) else message
 
                 # Check if this is a streaming request
                 try:
@@ -486,7 +483,9 @@ class LocalAgent:
             method = payload.get("method")
 
             if method != "stream":
-                raise InvalidMessageError(f"Expected 'stream' but got '{method}'", {"method": method})
+                raise InvalidMessageError(
+                    f"Expected 'stream' but got '{method}'", {"method": method}
+                )
 
             # Decode input message
             input_message = decode_message(payload["message"])

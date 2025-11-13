@@ -93,7 +93,9 @@ func newHTTPTransportWithVersion(baseURL string, version HTTPVersion) *HTTPTrans
 		client = &http.Client{
 			Transport: &http3.Transport{
 				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: false,
+					// For benchmarks and local testing with self-signed certificates
+					// Production deployments should use proper CA-signed certificates
+					InsecureSkipVerify: true,
 				},
 			},
 		}

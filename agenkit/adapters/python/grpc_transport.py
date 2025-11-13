@@ -11,8 +11,8 @@ from grpc import aio
 
 from proto import agent_pb2, agent_pb2_grpc
 
-from .errors import ConnectionError as ConnError
 from .errors import ConnectionClosedError, InvalidMessageError, MalformedPayloadError
+from .errors import ConnectionError as ConnError
 from .transport import Transport
 
 
@@ -82,7 +82,9 @@ class GRPCTransport(Transport):
             self._response_queue = asyncio.Queue()
 
         except Exception as e:
-            raise ConnError(f"Failed to connect to gRPC server at {self._host}:{self._port}: {e}") from e
+            raise ConnError(
+                f"Failed to connect to gRPC server at {self._host}:{self._port}: {e}"
+            ) from e
 
     async def send(self, data: bytes) -> None:
         """Send data over gRPC (not used - gRPC has native framing).
@@ -348,7 +350,10 @@ class GRPCTransport(Transport):
                 "timestamp": response.message.timestamp
             }
 
-        elif response.type == agent_pb2.RESPONSE_TYPE_TOOL_RESULT and response.HasField("tool_result"):
+        elif (
+            response.type == agent_pb2.RESPONSE_TYPE_TOOL_RESULT
+            and response.HasField("tool_result")
+        ):
             payload["tool_result"] = {
                 "success": response.tool_result.success,
                 "data": self._deserialize_content(response.tool_result.data),

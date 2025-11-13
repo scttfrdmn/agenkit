@@ -9,10 +9,12 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/agenkit/agenkit-go/adapter/codec"
 	"github.com/agenkit/agenkit-go/adapter/errors"
+	"github.com/agenkit/agenkit-go/adapter/http"
 	"github.com/agenkit/agenkit-go/adapter/transport"
 	"github.com/agenkit/agenkit-go/agenkit"
 )
@@ -22,6 +24,7 @@ type LocalAgent struct {
 	agent       agenkit.Agent
 	endpoint    string
 	listener    net.Listener
+	httpAgent   *http.HTTPAgent
 	running     bool
 	mu          sync.Mutex
 	wg          sync.WaitGroup
@@ -93,6 +96,28 @@ func (l *LocalAgent) Start(ctx context.Context) error {
 		}
 		log.Printf("Agent '%s' listening on %s:%d\n", l.agent.Name(), host, port)
 
+	} else if strings.HasPrefix(l.endpoint, "ws://") || strings.HasPrefix(l.endpoint, "wss://") {
+		// WebSocket endpoint - use HTTP server
+		// Parse endpoint to extract host:port
+		urlParts := strings.TrimPrefix(l.endpoint, "ws://")
+		urlParts = strings.TrimPrefix(urlParts, "wss://")
+
+		// Extract host:port (remove path if any)
+		hostPort := urlParts
+		if idx := strings.Index(urlParts, "/"); idx != -1 {
+			hostPort = urlParts[:idx]
+		}
+
+		// Create HTTP agent
+		l.httpAgent = http.NewHTTPAgent(l.agent, hostPort)
+		if err := l.httpAgent.Start(ctx); err != nil {
+			return err
+		}
+
+		l.running = true
+		log.Printf("Agent '%s' listening on WebSocket %s\n", l.agent.Name(), l.endpoint)
+		return nil
+
 	} else {
 		return fmt.Errorf("unsupported endpoint format: %s", l.endpoint)
 	}
@@ -117,6 +142,16 @@ func (l *LocalAgent) Stop() error {
 	}
 
 	l.running = false
+
+	// Stop HTTP agent if using WebSocket
+	if l.httpAgent != nil {
+		if err := l.httpAgent.Stop(); err != nil {
+			log.Printf("Error stopping HTTP agent: %v\n", err)
+		}
+		l.httpAgent = nil
+		log.Printf("Agent '%s' stopped\n", l.agent.Name())
+		return nil
+	}
 
 	// Close listener
 	if l.listener != nil {

@@ -1,8 +1,8 @@
 """Retry middleware with exponential backoff."""
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional
 
 from agenkit.interfaces import Agent, Message
 
@@ -15,7 +15,7 @@ class RetryConfig:
     initial_backoff: float = 1.0  # seconds
     max_backoff: float = 30.0  # seconds
     backoff_multiplier: float = 2.0
-    should_retry: Optional[Callable[[Exception], bool]] = None
+    should_retry: Callable[[Exception], bool] | None = None
 
     def __post_init__(self):
         """Validate configuration."""
@@ -32,7 +32,7 @@ class RetryConfig:
 class RetryDecorator(Agent):
     """Agent decorator that adds retry logic with exponential backoff."""
 
-    def __init__(self, agent: Agent, config: Optional[RetryConfig] = None):
+    def __init__(self, agent: Agent, config: RetryConfig | None = None):
         """Initialize retry decorator.
 
         Args:
@@ -64,7 +64,7 @@ class RetryDecorator(Agent):
         Raises:
             Exception: If all retry attempts fail
         """
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
         backoff = self._config.initial_backoff
 
         for attempt in range(1, self._config.max_attempts + 1):
@@ -86,4 +86,6 @@ class RetryDecorator(Agent):
                 backoff = min(backoff * self._config.backoff_multiplier, self._config.max_backoff)
 
         # All attempts failed
-        raise Exception(f"Max retry attempts ({self._config.max_attempts}) exceeded: {last_error}") from last_error
+        raise Exception(
+            f"Max retry attempts ({self._config.max_attempts}) exceeded: {last_error}"
+        ) from last_error

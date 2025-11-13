@@ -6,9 +6,11 @@ This document outlines the development roadmap for agenkit, organized by phases 
 
 ### ✅ Completed
 - **HTTP/2 and HTTP/3 Support**: Full support for HTTP/1.1, HTTP/2 (h2c cleartext), and HTTP/3 over QUIC
-- **Python Feature Parity**: Complete implementation of middleware, composition, and tools patterns
-- **Test Coverage**: 208 Python tests, 136 Go tests
-- **Comprehensive Examples**: 6 runnable examples with WHY explanations (~3,600 lines)
+- **Python-Go Feature Parity**: ✅ Complete implementation parity across middleware, examples, and transports
+- **Test Coverage**: 225 Python tests, 153 Go tests (caching: 17 tests in both languages)
+- **Comprehensive Examples**: 12 runnable examples with WHY explanations (~6,700 lines)
+  - Python: 6 middleware + 2 transport examples
+  - Go: 7 middleware + 2 transport examples
 - **Pattern Documentation**: In-depth guides for middleware and composition patterns
 
 ---
@@ -200,7 +202,8 @@ Bidirectional communication and better streaming.
 **Implementation**:
 - Python: `agenkit/adapters/python/websocket_transport.py` (25 tests)
 - Go: `agenkit-go/adapter/transport/websocket_transport.go` (13 tests)
-- Example: `examples/transport/websocket_example.py` (4 scenarios)
+- Python Example: `examples/transport/websocket_example.py` (4 scenarios)
+- Go Example: `agenkit-go/examples/transport/websocket_example.go` (4 scenarios)
 - Integration tests: `tests/adapters/python/test_websocket_integration.py` (11 tests)
 
 **Features**:
@@ -232,7 +235,8 @@ High-performance RPC with native streaming support.
 - Go: `agenkit-go/adapter/transport/grpc_transport.go` (15 tests, 40 test cases)
 - Go: `agenkit-go/adapter/grpc/grpc_server.go` (gRPC server)
 - Go: `agenkit-go/proto/agentpb/` (generated stubs)
-- Example: `examples/transport/grpc_example.py` (5 scenarios)
+- Python Example: `examples/transport/grpc_example.py` (5 scenarios)
+- Go Example: `agenkit-go/examples/transport/grpc_example.go` (5 scenarios)
 
 **Features**:
 - ✅ Protobuf message definitions with schema validation
@@ -256,7 +260,7 @@ High-performance RPC with native streaming support.
 #### Caching Middleware ✅
 Reduce latency and cost by caching responses.
 
-**Status**: ✅ Complete (Python + Tests + Examples)
+**Status**: ✅ Complete (Python + Go + Tests + Examples)
 
 **Features**:
 - ✅ Configurable cache keys with custom key generator support
@@ -264,12 +268,14 @@ Reduce latency and cost by caching responses.
 - ✅ LRU (Least Recently Used) eviction policy
 - ✅ Cache invalidation (specific entries or entire cache)
 - ✅ Comprehensive metrics (hits, misses, hit rate, evictions, invalidations)
-- ✅ Thread-safe with asyncio.Lock
-- ✅ OrderedDict-based LRU implementation
+- ✅ Thread-safe (asyncio.Lock in Python, sync.Mutex in Go)
+- ✅ Efficient LRU implementation (OrderedDict in Python, container/list in Go)
 
 **Implementation**:
 - Python: `agenkit/middleware/caching.py` (17 tests, 267 lines)
-- Example: `examples/middleware/caching_example.py` (6 scenarios)
+- Go: `agenkit-go/middleware/caching.go` (17 tests, 456 lines)
+- Python Example: `examples/middleware/caching_example.py` (6 scenarios)
+- Go Example: `agenkit-go/examples/middleware/caching_example.go` (6 scenarios)
 - Default key: SHA256 hash of role + content + metadata
 - Custom key generators supported for specialized strategies
 
@@ -290,7 +296,7 @@ Reduce latency and cost by caching responses.
 #### Timeout Middleware ✅
 Prevent long-running requests from blocking resources.
 
-**Status**: ✅ Complete (Python + Go + Benchmarks)
+**Status**: ✅ Complete (Python + Go + Tests + Examples + Benchmarks)
 
 **Features**:
 - ✅ Configurable timeout per request
@@ -300,9 +306,10 @@ Prevent long-running requests from blocking resources.
 - ✅ asyncio.timeout integration (Python)
 
 **Implementation**:
-- Python: `agenkit/middleware/timeout.py` (13 tests)
+- Python: `agenkit/middleware/timeout.py` (18 tests)
 - Go: `agenkit-go/middleware/timeout.go` (15 tests)
-- Example: `examples/middleware/timeout_example.py`
+- Python Example: `examples/middleware/timeout_example.py` (6 scenarios)
+- Go Example: `agenkit-go/examples/middleware/timeout_example.go` (6 scenarios)
 - Benchmarks: Added to middleware overhead suite (Python + Go)
 
 **Performance**:
@@ -327,8 +334,9 @@ Combine multiple concurrent requests for efficiency.
 
 **Implementation**:
 - Python: `agenkit/middleware/batching.py` (21 tests, 370 lines)
-- Go: `agenkit-go/middleware/batching.go` (12 tests, 340 lines)
-- Example: `examples/middleware/batching_example.py` (5 scenarios)
+- Go: `agenkit-go/middleware/batching.go` (15 tests, 340 lines)
+- Python Example: `examples/middleware/batching_example.py` (5 scenarios)
+- Go Example: `agenkit-go/examples/middleware/batching_example.go` (5 scenarios)
 - Benchmarks: Added to middleware overhead suite (Python + Go)
 
 **Performance**:

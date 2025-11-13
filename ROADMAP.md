@@ -7,11 +7,14 @@ This document outlines the development roadmap for agenkit, organized by phases 
 ### ✅ Completed
 - **HTTP/2 and HTTP/3 Support**: Full support for HTTP/1.1, HTTP/2 (h2c cleartext), and HTTP/3 over QUIC
 - **Python-Go Feature Parity**: ✅ Complete implementation parity across middleware, examples, and transports
-- **Test Coverage**: 225 Python tests, 153 Go tests (caching: 17 tests in both languages)
+- **Test Coverage**: 278 Python tests, 181 Go tests (459 total)
+  - Observability: 25 Python tests, 28 Go tests (53 tests)
+  - Caching: 17 tests in both languages
 - **Comprehensive Examples**: 12 runnable examples with WHY explanations (~6,700 lines)
   - Python: 6 middleware + 2 transport examples
   - Go: 7 middleware + 2 transport examples
 - **Pattern Documentation**: In-depth guides for middleware and composition patterns
+- **Observability**: Full OpenTelemetry integration with distributed tracing, metrics, and structured logging
 
 ---
 
@@ -391,12 +394,44 @@ Test invariants across many inputs.
 ---
 
 ## Phase 5: DevOps & Release (v1.0.0) 🔧
-**Status**: Planned | **Due**: June 2026
+**Status**: In Progress | **Due**: June 2026
 
 Focus: Production deployment, Docker, Kubernetes, observability.
 
+### Observability ✅
+OpenTelemetry integration for tracing and metrics.
+
+**Status**: ✅ Complete (Python + Go + Tests + Documentation)
+
+**Why**: Production debugging, performance analysis, SLA monitoring, distributed tracing.
+
+**Implementation**:
+- Python: `agenkit/observability/` (~900 lines)
+- Go: `agenkit-go/observability/` (~1,100 lines)
+- Python Tests: 25 tests (test_tracing.py, test_metrics.py, test_logging.py)
+- Go Tests: 28 tests (tracing_test.go, metrics_test.go, logging_test.go)
+- Documentation: `docs/observability.md`, `docs/observability-python-api.md`, `docs/observability-go-api.md`
+
+**Features**:
+- ✅ Distributed tracing with W3C Trace Context propagation
+- ✅ Automatic span creation for agent processing
+- ✅ Parent-child span relationships across agents and languages
+- ✅ Prometheus metrics export (request counts, latencies, error rates, message sizes)
+- ✅ Structured JSON logging with trace correlation
+- ✅ TracingMiddleware and MetricsMiddleware for easy integration
+- ✅ Configurable exporters (console, OTLP, Prometheus)
+- ✅ Cross-language compatibility (Python ↔ Go trace continuity)
+
+**Libraries**:
+- Python: `opentelemetry-api>=1.20.0`, `opentelemetry-sdk>=1.20.0`
+- Go: `go.opentelemetry.io/otel v1.32.0`
+
+**Completed**: November 2025 (Issue #46)
+
 ### Docker Images
 Official Docker images for easy deployment.
+
+**Status**: Planned
 
 **Why**: Simplified deployment, consistent environments, container orchestration.
 
@@ -408,6 +443,8 @@ Official Docker images for easy deployment.
 ### Kubernetes Deployment
 Production-ready Kubernetes manifests.
 
+**Status**: Planned
+
 **Why**: Cloud-native deployment, scaling, service discovery, health checks.
 
 **Resources**:
@@ -415,17 +452,6 @@ Production-ready Kubernetes manifests.
 - Service definitions
 - ConfigMaps for configuration
 - Helm charts
-
-### Observability
-OpenTelemetry integration for tracing and metrics.
-
-**Why**: Production debugging, performance analysis, SLA monitoring, distributed tracing.
-
-**Features**:
-- Distributed tracing
-- Metrics export (Prometheus)
-- Logging integration
-- Span context propagation
 
 ---
 
@@ -496,10 +522,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/milestones):
 
-- **Phase 2: Protocol Adapters** - 29% complete (2/7)
-- **Phase 3: Framework Components** - 0% complete (0/7)
-- **Phase 4: Documentation & Tools** - In Progress
-- **Phase 5: Launch** - 0% complete (0/6)
+- **Phase 1: Documentation & Examples (v0.2.0)** - ~85% complete (missing video tutorials)
+- **Phase 2: Production Hardening (v0.3.0)** - ✅ 100% complete
+- **Phase 3: Performance & Features (v0.4.0)** - ✅ 100% complete
+- **Phase 4: Testing & Quality (v0.4.0)** - In Progress (integration tests, chaos tests pending)
+- **Phase 5: DevOps & Release (v1.0.0)** - 33% complete (1/3: observability ✅, Docker & K8s planned)
+- **Phase 6: Community & Polish (v1.0.0)** - 0% complete
+- **Phase 7: Language Ports (v1.1.0+)** - Future
 
 ---
 
@@ -510,4 +539,4 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: November 10, 2025
+Last updated: November 12, 2025

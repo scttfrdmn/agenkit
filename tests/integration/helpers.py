@@ -72,10 +72,14 @@ async def go_http_server(port: Optional[int] = None):
         port = find_free_port()
 
     # Start Go server
-    # This assumes we have a test server binary or can run it with go run
+    # Get the path to the agenkit-go directory
+    import os
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    go_test_dir = os.path.join(current_dir, "..", "..", "agenkit-go", "tests", "integration")
+
     process = subprocess.Popen(
-        ["go", "run", "./test_server.go", str(port)],
-        cwd="../agenkit-go/tests/integration",
+        ["go", "run", "test_server.go", str(port)],
+        cwd=go_test_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )

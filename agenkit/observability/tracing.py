@@ -7,6 +7,7 @@ across process and language boundaries.
 
 from typing import Any
 from contextvars import ContextVar
+from dataclasses import replace
 
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -17,12 +18,6 @@ from opentelemetry.trace import Status, StatusCode, SpanKind
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 from agenkit.interfaces import Agent, Message
-
-# Global tracer instance
-_tracer: trace.Tracer | None = None
-
-# Context variable for current span
-_current_span: ContextVar[trace.Span | None] = ContextVar("current_span", default=None)
 
 
 def init_tracing(
@@ -63,19 +58,19 @@ def init_tracing(
     # Set as global provider
     trace.set_tracer_provider(provider)
 
-    # Get tracer
-    _tracer = trace.get_tracer(__name__)
-
     return provider
 
 
 def get_tracer() -> trace.Tracer:
-    """Get the global tracer instance."""
-    global _tracer
-    if _tracer is None:
-        # Initialize with defaults if not already initialized
-        init_tracing()
-    return _tracer  # type: ignore
+    """
+    Get a tracer instance from the current tracer provider.
+
+    Returns:
+        A tracer instance for creating spans.
+    """
+    # Always get tracer from current provider (don't cache)
+    # This allows tests to inject their own provider
+    return trace.get_tracer("agenkit.observability")
 
 
 def extract_trace_context(metadata: dict[str, Any]) -> dict[str, str]:
@@ -180,9 +175,10 @@ class TracingMiddleware:
                 span.set_status(Status(StatusCode.OK))
 
                 # Inject trace context into response
-                if response.metadata is None:
-                    response.metadata = {}
-                response.metadata = inject_trace_context(response.metadata)
+                updated_metadata = inject_trace_context(
+                    response.metadata if response.metadata else {}
+                )
+                response = replace(response, metadata=updated_metadata)
 
                 return response
 

@@ -1,0 +1,56 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv/
+ENV/
+env/
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.hypothesis
+*.egg-info
+dist/
+build/
+*.whl
+
+# Go
+agenkit-go/vendor/
+agenkit-go/*.test
+agenkit-go/*.out
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+docs/_build/
+*.md
+!README.md
+
+# Tests
+tests/
+benchmarks/
+
+# CI/CD
+.github/
+.pre-commit-config.yaml
+
+# Other
+*.log
+.env
+.env.local
+tmp/
+temp/

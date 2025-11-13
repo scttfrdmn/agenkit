@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agenkit-go-http
+  namespace: agenkit
+  labels:
+    app: agenkit
+    component: agent
+    language: go
+    transport: http
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: agenkit
+      component: agent
+      language: go
+      transport: http
+  template:
+    metadata:
+      labels:
+        app: agenkit
+        component: agent
+        language: go
+        transport: http
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: agent
+        image: agenkit/go:0.1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: AGENKIT_LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: agenkit-config
+              key: log_level
+        - name: OTEL_SERVICE_NAME
+          value: "go-http-agent"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: agenkit-config
+              key: otel_exporter_otlp_endpoint
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        fsGroup: 1000
+      restartPolicy: Always

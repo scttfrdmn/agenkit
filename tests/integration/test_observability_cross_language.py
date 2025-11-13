@@ -21,7 +21,7 @@ from agenkit.observability.tracing import (
 from .helpers import go_http_server, python_http_server, go_grpc_server, python_grpc_server
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def tracing_setup():
     """Set up OpenTelemetry tracing with in-memory exporter for testing."""
     # Create in-memory span exporter to capture spans
@@ -36,7 +36,18 @@ def tracing_setup():
 
     yield provider, span_exporter
 
-    # Cleanup
+    # Cleanup - force flush and shutdown provider
+    provider.force_flush()
+    provider.shutdown()
+
+
+@pytest.fixture(autouse=True)
+def clear_spans(tracing_setup):
+    """Clear spans before each test."""
+    _, span_exporter = tracing_setup
+    span_exporter.clear()
+    yield
+    # Clear again after test
     span_exporter.clear()
 
 
@@ -82,16 +93,17 @@ async def test_trace_propagation_python_to_go_http(tracing_setup):
             # Verify trace context is in response metadata
             assert "trace_context" in response.metadata
 
-            # Get captured spans
-            spans = span_exporter.get_finished_spans()
+        # Get captured spans (after span context exits)
+        provider.force_flush()  # Ensure all spans are exported
+        spans = span_exporter.get_finished_spans()
 
-            # Verify parent span was created
-            assert len(spans) >= 1
-            assert any(span.name == "test-parent-span" for span in spans)
+        # Verify parent span was created
+        assert len(spans) >= 1
+        assert any(span.name == "test-parent-span" for span in spans)
 
-            # Verify trace ID consistency
-            parent_span_obj = next(span for span in spans if span.name == "test-parent-span")
-            assert parent_span_obj.context.trace_id == parent_trace_id
+        # Verify trace ID consistency
+        parent_span_obj = next(span for span in spans if span.name == "test-parent-span")
+        assert parent_span_obj.context.trace_id == parent_trace_id
 
 
 @pytest.mark.asyncio
@@ -199,16 +211,17 @@ async def test_go_to_python_http_trace_propagation(tracing_setup):
             # Verify trace context propagated
             assert "trace_context" in response.metadata
 
-            # Get spans
-            spans = span_exporter.get_finished_spans()
+        # Get spans (after span context exits)
+        provider.force_flush()  # Ensure all spans are exported
+        spans = span_exporter.get_finished_spans()
 
-            # Verify spans were created
-            assert len(spans) >= 1
+        # Verify spans were created
+        assert len(spans) >= 1
 
-            # Look for our client span
-            client_spans = [s for s in spans if s.name == "client-span"]
-            assert len(client_spans) == 1
-            assert client_spans[0].context.trace_id == client_trace_id
+        # Look for our client span
+        client_spans = [s for s in spans if s.name == "client-span"]
+        assert len(client_spans) == 1
+        assert client_spans[0].context.trace_id == client_trace_id
 
     finally:
         await server.stop()
@@ -253,14 +266,15 @@ async def test_trace_propagation_python_to_go_grpc(tracing_setup):
             # Verify trace context is in response metadata
             assert "trace_context" in response.metadata
 
-            # Get captured spans
-            spans = span_exporter.get_finished_spans()
+        # Get captured spans (after span context exits)
+        provider.force_flush()  # Ensure all spans are exported
+        spans = span_exporter.get_finished_spans()
 
-            # Verify parent span was created
-            assert len(spans) >= 1
-            parent_spans = [s for s in spans if s.name == "grpc-parent-span"]
-            assert len(parent_spans) == 1
-            assert parent_spans[0].context.trace_id == parent_trace_id
+        # Verify parent span was created
+        assert len(spans) >= 1
+        parent_spans = [s for s in spans if s.name == "grpc-parent-span"]
+        assert len(parent_spans) == 1
+        assert parent_spans[0].context.trace_id == parent_trace_id
 
 
 @pytest.mark.asyncio
@@ -332,16 +346,17 @@ async def test_trace_propagation_go_to_python_grpc(tracing_setup):
             # Verify trace context propagated
             assert "trace_context" in response.metadata
 
-            # Get spans
-            spans = span_exporter.get_finished_spans()
+        # Get spans (after span context exits)
+        provider.force_flush()  # Ensure all spans are exported
+        spans = span_exporter.get_finished_spans()
 
-            # Verify spans were created
-            assert len(spans) >= 1
+        # Verify spans were created
+        assert len(spans) >= 1
 
-            # Look for our client span
-            client_spans = [s for s in spans if s.name == "grpc-client-span"]
-            assert len(client_spans) == 1
-            assert client_spans[0].context.trace_id == client_trace_id
+        # Look for our client span
+        client_spans = [s for s in spans if s.name == "grpc-client-span"]
+        assert len(client_spans) == 1
+        assert client_spans[0].context.trace_id == client_trace_id
 
     finally:
         await server.stop()

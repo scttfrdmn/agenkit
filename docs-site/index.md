@@ -1,6 +1,6 @@
 # Agenkit
 
-**The foundation layer for AI agents.**
+**The foundation for AI agents.**
 
 A production-ready framework for building distributed AI agent systems with cross-language support, comprehensive middleware, and full observability.
 

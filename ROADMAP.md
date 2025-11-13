@@ -362,38 +362,71 @@ Combine multiple concurrent requests for efficiency.
 ---
 
 ## Phase 4: Testing & Quality (v0.4.0) ✅
-**Status**: Ongoing
+**Status**: In Progress | **Target**: December 2025
 
-Focus: Comprehensive testing across all layers.
+Focus: Comprehensive testing across all layers for production readiness.
 
-### Integration Tests
+**Test Plan**: See [PHASE4_TEST_PLAN.md](docs/PHASE4_TEST_PLAN.md) for detailed test plan.
+
+### Cross-Language Integration Tests
 End-to-end tests across Go<->Python communication.
 
-**Why**: Ensure cross-language compatibility, detect integration issues early.
+**Status**: Planned
 
-**Coverage**:
-- Cross-language agent communication
-- All transport protocols
-- Streaming scenarios
-- Error handling
+**Why**: Ensure cross-language compatibility works in production, detect integration issues early.
+
+**Scope** (~35-45 tests):
+- HTTP Transport: Python ↔ Go (both directions)
+- WebSocket Transport: Python ↔ Go (bidirectional)
+- gRPC Transport: Python ↔ Go (unary + streaming)
+- Observability: Trace context propagation across languages
+- Large messages, Unicode, streaming, error handling
+
+**Implementation**:
+- Python: `tests/integration/test_*_cross_language.py`
+- Go: `agenkit-go/tests/integration/*_cross_language_test.go`
+
+**Priority**: 🔴 Critical (Required for v1.0)
 
 ### Chaos Engineering Tests
 Test resilience under failure conditions.
 
-**Why**: Validate production resilience, identify weak points, build confidence.
+**Status**: Planned
 
-**Scenarios**:
-- Network failures (timeouts, connection drops)
-- Service unavailability
-- Slow responses
-- Partial failures
+**Why**: Validate production resilience claims, prove middleware works under chaos, build confidence for production use.
 
-### Property-Based Testing
+**Scope** (~20-30 tests):
+- Network Chaos: Timeouts, connection drops, latency injection, network partitions
+- Service Chaos: Crashes, slow responses, memory pressure, CPU saturation
+- Partial Failures: Intermittent failures, inconsistent responses, message corruption
+- Middleware Validation: Circuit breaker, retry, timeout under real chaos
+
+**Implementation**:
+- Python: `tests/chaos/test_*_failures.py`
+- Go: `agenkit-go/tests/chaos/*_failures_test.go`
+- Tools: toxiproxy (network chaos), manual injection
+
+**Priority**: 🟡 High (Production confidence)
+
+### Property-Based Testing Enhancement
 Test invariants across many inputs.
 
-**Why**: Find edge cases that unit tests miss, validate correctness properties.
+**Status**: Foundation complete (Issue #45), expansion planned
 
-**Tools**: Hypothesis (Python), rapid (Go)
+**Why**: Find edge cases that unit tests miss, validate correctness properties, ensure robustness.
+
+**Scope** (~15-25 tests):
+- Middleware Properties: Circuit breaker state transitions, rate limiter accuracy, cache consistency, timeout guarantees, batching invariants
+- Composition Properties: Sequential order preservation, parallel independence, fallback precedence
+- Transport Properties: Serialization round-trips, metadata preservation, Unicode handling
+
+**Implementation**:
+- Python: `tests/property/test_*_properties.py` (Hypothesis)
+- Go: `agenkit-go/tests/property/*_properties_test.go` (rapid/gopter)
+
+**Priority**: 🟢 Medium (Quality improvement)
+
+**Tools**: Hypothesis (Python), rapid or gopter (Go)
 
 ---
 

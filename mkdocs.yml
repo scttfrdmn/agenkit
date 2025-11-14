@@ -107,6 +107,7 @@ nav:
       - Middleware: features/middleware.md
       - Composition: features/composition.md
       - Observability: features/observability.md
+      - LLM Adapters: features/llm-adapters.md
       - Tools: features/tools.md
   - Guides:
       - guides/index.md
@@ -124,6 +125,7 @@ nav:
       - api/index.md
       - Python API: api/python.md
       - Go API: api/go.md
+      - LLM Adapters: api/llm.md
   - Examples:
       - examples/index.md
   - Performance:

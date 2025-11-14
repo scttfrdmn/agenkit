@@ -1,0 +1,190 @@
+/**
+ * Core interfaces for agenkit TypeScript implementation.
+ *
+ * Minimal, composable interfaces for AI agents with focus on:
+ * - Simplicity: Few required methods
+ * - Composability: Easy to wrap and extend
+ * - Type safety: Full TypeScript support
+ * - Performance: Minimal overhead
+ */
+
+/**
+ * Universal message format for agent communication.
+ *
+ * Design decisions:
+ * - role: Identifies message source ("user", "assistant", "system", "tool")
+ * - content: Flexible type - string, object, array, or any serializable data
+ * - metadata: Extension point for framework-specific data
+ * - timestamp: ISO 8601 timestamp for ordering and debugging
+ *
+ * Usage:
+ *   const msg: Message = {
+ *     role: 'user',
+ *     content: 'Hello, agent!',
+ *   };
+ *   const response = await agent.process(msg);
+ */
+export interface Message {
+  /** Message source: "user", "assistant", "system", or "tool" */
+  role: string;
+
+  /** Message content - can be string, object, or any serializable data */
+  content: unknown;
+
+  /** Optional metadata for framework-specific data */
+  metadata?: Record<string, unknown>;
+
+  /** ISO 8601 timestamp - defaults to now if not provided */
+  timestamp?: string;
+}
+
+/**
+ * Result from tool execution.
+ *
+ * Contains the output from a tool call along with metadata about the execution.
+ */
+export interface ToolResult {
+  /** Tool output - can be any serializable data */
+  output: unknown;
+
+  /** Whether the tool execution was successful */
+  success: boolean;
+
+  /** Optional error message if execution failed */
+  error?: string;
+
+  /** Optional metadata about the execution */
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Tool interface - deterministic operations for agents.
+ *
+ * Design decisions:
+ * - Async execute: Tools typically do I/O
+ * - Flexible parameters: Tools accept any JSON-serializable input
+ * - Rich metadata: name, description, and schema for LLM selection
+ *
+ * Usage:
+ *   class SearchTool implements Tool {
+ *     name = 'search';
+ *     description = 'Search the web';
+ *
+ *     async execute(params: { query: string }): Promise<ToolResult> {
+ *       const results = await searchAPI(params.query);
+ *       return { output: results, success: true };
+ *     }
+ *   }
+ */
+export interface Tool {
+  /** Tool identifier - must be unique within a tool set */
+  readonly name: string;
+
+  /** What this tool does - used by LLMs to decide when to call it */
+  readonly description: string;
+
+  /**
+   * JSON schema for tool parameters.
+   * Used by LLMs to understand how to call the tool.
+   */
+  parametersSchema?: Record<string, unknown>;
+
+  /**
+   * Execute the tool with given parameters.
+   *
+   * @param params Tool parameters (validated against schema if provided)
+   * @returns Tool execution result
+   */
+  execute(params: Record<string, unknown>): Promise<ToolResult>;
+}
+
+/**
+ * Agent interface - minimal contract for agent communication.
+ *
+ * Design decisions:
+ * - Only 2 required methods (name, process)
+ * - Optional streaming support via processStream
+ * - No state in interface (agents manage their own state)
+ * - Async process (agents typically do I/O)
+ *
+ * Performance characteristics:
+ * - Minimal overhead vs direct function call
+ * - No dynamic dispatch on hot path
+ * - Single allocation per message
+ *
+ * Usage:
+ *   class SimpleAgent implements Agent {
+ *     name = 'simple';
+ *
+ *     async process(message: Message): Promise<Message> {
+ *       return {
+ *         role: 'assistant',
+ *         content: `Processed: ${message.content}`,
+ *       };
+ *     }
+ *   }
+ */
+export interface Agent {
+  /** Agent identifier */
+  readonly name: string;
+
+  /**
+   * Process a message and return a response.
+   *
+   * @param message Input message
+   * @returns Response message
+   */
+  process(message: Message): Promise<Message>;
+
+  /**
+   * Process a message with streaming response (optional).
+   *
+   * @param message Input message
+   * @returns Async iterator of response chunks
+   */
+  processStream?(message: Message): AsyncGenerator<Message, void, undefined>;
+
+  /**
+   * What this agent can do (optional).
+   *
+   * @returns List of capabilities
+   */
+  readonly capabilities?: string[];
+}
+
+/**
+ * Helper function to create a Message with defaults.
+ *
+ * @param role Message role
+ * @param content Message content
+ * @param metadata Optional metadata
+ * @returns Complete message with timestamp
+ */
+export function createMessage(
+  role: string,
+  content: unknown,
+  metadata?: Record<string, unknown>,
+): Message {
+  return {
+    role,
+    content,
+    metadata: metadata || {},
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Helper function to validate a message.
+ *
+ * @param message Message to validate
+ * @throws Error if message is invalid
+ */
+export function validateMessage(message: Message): void {
+  if (!message.role || typeof message.role !== 'string') {
+    throw new Error('Message role must be a non-empty string');
+  }
+
+  if (message.content === undefined || message.content === null) {
+    throw new Error('Message content cannot be undefined or null');
+  }
+}

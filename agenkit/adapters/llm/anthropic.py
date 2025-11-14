@@ -59,7 +59,7 @@ class AnthropicLLM(LLM):
     def __init__(
         self,
         api_key: str | None = None,
-        model: str = "claude-3-5-sonnet-20241022",
+        model: str = "claude-3-haiku-20240307",
         **client_kwargs: Any,
     ):
         """Initialize Anthropic LLM adapter."""

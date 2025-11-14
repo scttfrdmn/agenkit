@@ -16,7 +16,13 @@ module.exports = {
       statements: 70,
     },
   },
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+    },
+  },
   testEnvironmentOptions: {
     url: 'http://localhost',
   },
+  setupFiles: ['<rootDir>/jest.setup.js'],
 };

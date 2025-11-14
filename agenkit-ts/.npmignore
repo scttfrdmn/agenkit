@@ -1,0 +1,33 @@
+# Source files (only include dist/)
+src/
+tsconfig.json
+
+# Tests
+**/__tests__/
+**/*.test.ts
+vitest.config.ts
+jest.config.js
+jest.setup.js
+coverage/
+
+# Development files
+.eslintrc.js
+.prettierrc
+node_modules/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store

@@ -87,6 +87,27 @@ const response = await agent.process({
 });
 ```
 
+### WebSocket Transport
+
+```typescript
+import { WebSocketAgent } from '@agenkit/core';
+
+const agent = new WebSocketAgent({
+  url: 'ws://localhost:8080',
+  maxRetries: 5,
+  pingInterval: 30000,
+});
+
+await agent.connect();
+
+const response = await agent.process({
+  role: 'user',
+  content: 'Hello',
+});
+
+await agent.close();
+```
+
 ### Middleware
 
 Apply retry, timeout, or custom middleware:

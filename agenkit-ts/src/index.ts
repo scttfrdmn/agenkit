@@ -31,6 +31,13 @@ export { HTTPAgent, HttpTransportConfig, HttpTransportError } from './transports
 export { Middleware, applyMiddleware, BaseMiddleware } from './middleware/base';
 export { RetryMiddleware, RetryConfig, retry } from './middleware/retry';
 export { TimeoutMiddleware, TimeoutConfig, TimeoutError, timeout } from './middleware/timeout';
+export {
+  CircuitBreakerMiddleware,
+  CircuitBreakerConfig,
+  CircuitBreakerError,
+  CircuitState,
+  circuitBreaker,
+} from './middleware/circuit-breaker';
 
 // LLM Adapters
 export { OpenAIAgent, OpenAIConfig } from './llm/openai';

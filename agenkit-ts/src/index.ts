@@ -26,6 +26,11 @@ export {
 
 // Transports
 export { HTTPAgent, HttpTransportConfig, HttpTransportError } from './transports/http';
+export {
+  WebSocketAgent,
+  WebSocketTransportConfig,
+  WebSocketTransportError,
+} from './transports/websocket';
 
 // Middleware
 export { Middleware, applyMiddleware, BaseMiddleware } from './middleware/base';

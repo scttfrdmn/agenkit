@@ -1,0 +1,59 @@
+{
+  "name": "@agenkit/core",
+  "version": "0.1.0",
+  "description": "Minimal, composable interfaces for AI agents - TypeScript implementation",
+  "keywords": [
+    "ai",
+    "agents",
+    "llm",
+    "framework",
+    "typescript",
+    "openai",
+    "anthropic",
+    "claude"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/scttfrdmn/agenkit.git",
+    "directory": "agenkit-ts"
+  },
+  "author": "Scott Freedman",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "openai": "^4.67.0",
+    "@anthropic-ai/sdk": "^0.28.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/ws": "^8.5.10",
+    "@types/jest": "^29.5.11",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.3.3",
+    "prettier": "^3.1.1"
+  }
+}

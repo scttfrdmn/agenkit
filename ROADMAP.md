@@ -4,9 +4,30 @@ This document outlines the development roadmap for agenkit, organized by phases 
 
 ## Current Status (November 2025)
 
-### ✅ Completed
+### 🚀 Strategic Context: The Year Agents Went to Production
+
+**November 2025** marks a watershed moment for AI agents:
+
+1. **30-Hour Autonomous Operation**: Claude Sonnet 4.5 can work independently for 30+ hours
+2. **Deep Reasoning**: OpenAI o3, Claude 4 Opus with extended thinking modes
+3. **Production Reality**: AutoGen, LangGraph deployed in production at scale
+4. **Tool-Use Evolution**: Models use tools during reasoning (not just sequential)
+
+**Agenkit's 2026 Mission:** Provide minimal, composable interfaces for **production-scale autonomous agents**.
+
+**Key Challenges:**
+- **Memory**: 30-hour sessions exceed even 200K context windows
+- **Cost**: Reasoning models expensive (o3: $5-15/1M, Opus 4: $15-75/1M)
+- **Durability**: Long-running agents need checkpointing and resume
+- **Safety**: Autonomous agents need guardrails (prompt injection, resource limits)
+- **Evaluation**: How to measure 30-hour agent success?
+
+See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for comprehensive 2026 strategy.
+
+### ✅ Completed (Phases 1-5)
 - **HTTP/2 and HTTP/3 Support**: Full support for HTTP/1.1, HTTP/2 (h2c cleartext), and HTTP/3 over QUIC
 - **Python-Go Feature Parity**: ✅ Complete implementation parity across middleware, examples, and transports
+- **Go LLM Adapters**: ✅ OpenAI and Anthropic support (#58, completed Nov 2025)
 - **Test Coverage**: 278 Python tests, 181 Go tests (459 total)
   - Observability: 25 Python tests, 28 Go tests (53 tests)
   - Caching: 17 tests in both languages
@@ -15,6 +36,7 @@ This document outlines the development roadmap for agenkit, organized by phases 
   - Go: 7 middleware + 2 transport examples
 - **Pattern Documentation**: In-depth guides for middleware and composition patterns
 - **Observability**: Full OpenTelemetry integration with distributed tracing, metrics, and structured logging
+- **Community Infrastructure**: Contributing guidelines, code of conduct, issue templates
 
 ---
 
@@ -598,26 +620,54 @@ Production-ready Kubernetes manifests.
 
 ---
 
-## Phase 6: Community & Polish (v1.0.0) 🌟
-**Status**: Planned | **Due**: June 2026
+## Phase 6: Autonomous Agents Foundation (v1.0.0) 🤖
+**Status**: In Progress (Q4 2025) | **Due**: December 2025
 
-Focus: Community building, documentation polish, release preparation.
+**Context:** November 2025 - Agents can now run for 30+ hours autonomously (Claude Sonnet 4.5, OpenAI o3). New challenges: memory, cost, durability.
 
-### Release Preparation
-- [x] Version 0.1.0 initial release
-- [ ] Version 0.2.0 (Documentation & Examples)
-- [ ] Version 0.3.0 (Production Hardening)
-- [ ] Version 0.4.0 (Performance & Features)
-- [ ] Version 1.0.0 production release
+Focus: Core infrastructure for production-scale autonomous agents.
 
-### Documentation
-- [ ] Contributing guidelines
-- [ ] Code of conduct
-- [ ] Security policy
-- [ ] Issue/PR templates
-- [ ] Compatibility matrix
+### Q4 2025 Priorities (Nov-Dec)
 
-### Marketing & Community
+#### [#67](https://github.com/scttfrdmn/agenkit/issues/67) Memory Systems ✅ CRITICAL
+- [ ] Memory interface (ABC) for pluggable storage
+- [ ] InMemory, Redis, Vector implementations
+- [ ] Integration with endless project (infinite context)
+- [ ] Sliding window, summarization, importance weighting strategies
+- [ ] ConversationalAgent with memory support
+
+**Why**: 30-hour agents need persistent memory beyond context windows.
+
+#### [#68](https://github.com/scttfrdmn/agenkit/issues/68) Cost Tracking & Budget Management ✅ CRITICAL
+- [ ] CostTracker (per session, per agent, global)
+- [ ] BudgetLimiter middleware (stop at threshold)
+- [ ] ModelOptimizer (route based on complexity/cost)
+- [ ] Model pricing data (current as of Nov 2025)
+
+**Why**: Reasoning models expensive (o3: $5-15/1M, Opus 4: $15-75/1M). 30-hour runs could cost hundreds.
+
+#### [#69](https://github.com/scttfrdmn/agenkit/issues/69) Long-Running Agent Pattern ✅ CRITICAL
+- [ ] Checkpointing interface
+- [ ] State persistence
+- [ ] Resume from checkpoint
+- [ ] Durable execution (LangGraph-style)
+
+**Why**: Claude Sonnet 4.5 works for 30 hours autonomously. Need durability.
+
+### Community & Documentation (Ongoing)
+
+#### Documentation (✅ Done in Nov 2025)
+- [x] Contributing guidelines (CONTRIBUTING.md)
+- [x] Code of conduct (CODE_OF_CONDUCT.md)
+- [x] Issue/PR templates
+- [ ] Security policy (#66)
+- [ ] Compatibility matrix (#66)
+
+#### Release Preparation
+- [x] Version 0.1.0-0.4.0 (complete)
+- [ ] Version 1.0.0 production release (June 2026)
+
+#### Marketing & Community (Future)
 - [ ] Blog post series
 - [ ] Conference talks
 - [ ] Tutorial videos
@@ -626,25 +676,95 @@ Focus: Community building, documentation polish, release preparation.
 
 ---
 
-## Phase 7: Language Ports (v1.1.0+) 🌍
-**Status**: Future
+## Phase 7: Language Expansion (v1.1.0) 🌍
+**Status**: Q1-Q3 2026 | **Due**: September 2026
 
-Focus: Extend to other popular languages while maintaining protocol compatibility.
+Focus: TypeScript and Rust ports for web/edge computing.
 
-### TypeScript/JavaScript
-**Why**: Browser support, Node.js ecosystem, large developer base.
+### Q1 2026: TypeScript/JavaScript Port ✅ HIGH PRIORITY
 
-**Challenges**: Async patterns, type safety, package management.
+#### [#70](https://github.com/scttfrdmn/agenkit/issues/70) TypeScript Implementation
+- [ ] Core interfaces (Agent, Message, Tool)
+- [ ] HTTP/WebSocket/gRPC transports
+- [ ] Middleware system
+- [ ] LLM adapters (OpenAI, Anthropic)
+- [ ] npm package publication
 
-### Rust
-**Why**: Performance, memory safety, systems programming.
+**Why First**: Massive web developer market (LangChain.js mature but heavy - opportunity for minimal alternative).
 
-**Challenges**: Async runtime (tokio), error handling, FFI bindings.
+**Market Size**: Node.js + browser agents + serverless functions.
 
-### Java/JVM
-**Why**: Enterprise adoption, Spring ecosystem, Android.
+### Q3 2026: Rust Port ✅ PERFORMANCE TIER
 
-**Challenges**: Thread model, GC impact, verbosity.
+#### [#76](https://github.com/scttfrdmn/agenkit/issues/76) Rust Implementation (Planned)
+- [ ] Core interfaces with Tokio async (4.5k req/sec proven)
+- [ ] HTTP/WebSocket/gRPC transports
+- [ ] LLM adapters
+- [ ] Cargo package publication
+
+**Why**: Edge computing, embedded agents, performance-critical systems.
+
+**Differentiation**: 10-100x faster than Python for CPU-bound tasks.
+
+### Future Consideration: Java/C# (Enterprise)
+- **Java**: Spring Boot ecosystem, Android
+- **C#**: .NET ecosystem, Azure integration
+- **Timeline**: Post-v1.1 (based on demand)
+
+---
+
+## Phase 8: Advanced Patterns (v1.2.0) 🚀
+**Status**: Q1-Q2 2026 | **Due**: June 2026
+
+Focus: New agent patterns from 2025 research + production capabilities.
+
+### Q1 2026: Safety & Reasoning
+
+#### [#71](https://github.com/scttfrdmn/agenkit/issues/71) Agent Safety Framework ✅ HIGH PRIORITY
+- [ ] Input validation (prompt injection defense)
+- [ ] Output validation (schema, content filtering)
+- [ ] Action constraints (sandboxing, permissions)
+- [ ] Anomaly detection
+
+**Why**: Autonomous agents need guardrails. Research: "prompt injection = complete control."
+
+#### [#72](https://github.com/scttfrdmn/agenkit/issues/72) Reasoning Budget Pattern ✅ NEW IN 2025
+- [ ] Dynamic allocation (instant vs extended thinking)
+- [ ] Complexity detection
+- [ ] Model router (o3 for hard, Sonnet for medium, Haiku for simple)
+- [ ] Cost-quality tradeoff
+
+**Why**: Hybrid models (Claude 4, o3) have dual modes. Need orchestration.
+
+### Q2 2026: Evaluation & Routing
+
+#### [#73](https://github.com/scttfrdmn/agenkit/issues/73) Evaluation Framework ✅ CRITICAL GAP (Planned)
+- [ ] Success/failure metrics
+- [ ] Session replay
+- [ ] Regression detection
+- [ ] A/B testing for agents
+
+**Why**: How do you know 30-hour agent succeeded? Need measurement.
+
+#### [#74](https://github.com/scttfrdmn/agenkit/issues/74) Routing & Semantic Tool Selection (Planned)
+- [ ] Semantic tool selection (inspired by AWS AgentCore Gateway)
+- [ ] Load balancer (route to least-loaded agent)
+- [ ] Enhanced circuit breaker
+- [ ] MCP protocol support
+
+**Why**: Production systems have hundreds of tools. Need intelligent routing.
+
+#### [#75](https://github.com/scttfrdmn/agenkit/issues/75) Tool-Use During Reasoning Pattern (Planned)
+- [ ] Interleaved reasoning + tool calls
+- [ ] Different from ReAct (reasoning inside tool selection)
+- [ ] Support for Claude 4 / o3 style
+
+**Why**: Claude 4: "Use tools during extended thinking." New capability.
+
+#### Complete Core Agent Patterns
+- [ ] Implement #64 (Agent Pattern Implementations)
+- [ ] Implement #65 (End-to-End Examples)
+- [ ] Implement #66 (Security & Compatibility)
 
 ---
 
@@ -670,8 +790,18 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 - **Phase 3: Performance & Features (v0.4.0)** - ✅ 100% complete
 - **Phase 4: Testing & Quality (v0.4.0)** - ✅ 100% complete (137/137 tests passing)
 - **Phase 5: DevOps & Release (v1.0.0)** - ✅ 100% complete (Docker + Kubernetes + Observability)
-- **Phase 6: Community & Polish (v1.0.0)** - 0% complete
-- **Phase 7: Language Ports (v1.1.0+)** - Future
+- **Phase 6: Autonomous Agents Foundation (v1.0.0)** - 🔄 In Progress (Q4 2025 - memory, cost, durability)
+- **Phase 7: Language Expansion (v1.1.0)** - 📋 Planned (Q1-Q3 2026 - TypeScript, Rust)
+- **Phase 8: Advanced Patterns (v1.2.0)** - 📋 Planned (Q1-Q2 2026 - safety, evaluation, routing)
+
+### 2026 Strategic Priorities
+
+**Q4 2025 (Now):** Memory, Cost Tracking, Long-Running Agents (#67-69)
+**Q1 2026:** TypeScript Port, Safety Framework, Reasoning Budget (#70-72)
+**Q2 2026:** Evaluation, Routing, Tool-Use During Reasoning (#73-75)
+**Q3 2026:** Rust Port, Advanced Memory, Reference Architectures (#76-78)
+
+See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for detailed 2026 strategy.
 
 ### Deferred Items
 - **Video Tutorials**: Deferred to post-v1.0 (middleware, composition, and tool usage tutorials)
@@ -685,4 +815,4 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: November 13, 2025
+Last updated: November 13, 2025 (Updated with 2026 strategic roadmap)

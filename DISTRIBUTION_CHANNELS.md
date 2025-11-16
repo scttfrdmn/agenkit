@@ -9,7 +9,7 @@ Agenkit is a cross-language framework with implementations in multiple languages
 | Language   | Registry       | Status | Package Name | Installation |
 |------------|----------------|--------|--------------|--------------|
 | Python     | PyPI           | 🔄 Ready to publish | `agenkit` | `pip install agenkit` |
-| Go         | Go Modules     | 🔄 Setup needed | `github.com/scttfrdmn/agenkit/agenkit-go` | `go get github.com/scttfrdmn/agenkit/agenkit-go` |
+| Go         | Go Modules     | ✅ Live | `github.com/scttfrdmn/agenkit-go` | `go get github.com/scttfrdmn/agenkit-go@v0.9.0` |
 | TypeScript | npm            | 📅 Planned | `@agenkit/core` | `npm install @agenkit/core` |
 | Rust       | crates.io      | 📅 Planned | `agenkit` | `cargo add agenkit` |
 
@@ -44,116 +44,59 @@ uv run python -m twine upload dist/*
 
 ## 2. Go → Go Modules
 
-### Current Status: 🔄 **Setup Needed**
+### Current Status: ✅ **Live**
 
-**Current Path:** `github.com/scttfrdmn/agenkit/agenkit-go` (monorepo subdirectory)
+**Module Path:** `github.com/scttfrdmn/agenkit-go`
 **Registry:** Go Modules (via GitHub)
+**Distribution Repository:** https://github.com/scttfrdmn/agenkit-go
 
-### Current Situation:
+**Documentation:** See `GO_DISTRIBUTION_SYNC.md` for sync process
 
-The Go implementation lives in the monorepo at `/agenkit-go`. For Go modules to work cleanly, we have two options:
+### Distribution Strategy: Mirror Repository
 
-#### Option A: Separate Repository (Recommended)
+The Go implementation uses a **distribution mirror pattern**:
 
-Create a dedicated `agenkit-go` repository:
+- **Development**: Main repository at `/agenkit-go/` (this repo)
+- **Distribution**: Separate mirror at https://github.com/scttfrdmn/agenkit-go
 
-**Pros:**
-- Clean Go module path: `github.com/scttfrdmn/agenkit-go`
-- Better Go ecosystem integration
-- Independent versioning
-- Cleaner `pkg.go.dev` documentation
-- Standard Go community practice
+This provides:
+- ✅ Clean Go module path: `github.com/scttfrdmn/agenkit-go`
+- ✅ Better Go ecosystem integration
+- ✅ Standard Go community practice
+- ✅ Unified development in main repository
+- ✅ Automatic sync process (see `GO_DISTRIBUTION_SYNC.md`)
 
-**Cons:**
-- Maintain two repositories
-- Cross-repo version synchronization needed
+### Installation:
 
-**Setup:**
-```bash
-# Create new repo
-gh repo create scttfrdmn/agenkit-go --public --description "Agenkit - Go implementation"
-
-# Copy Go code
-cp -r agenkit-go/ /tmp/agenkit-go/
-cd /tmp/agenkit-go
-
-# Initialize
-git init
-git add .
-git commit -m "Initial commit: Agenkit Go v0.9.0"
-git tag v0.9.0
-git remote add origin https://github.com/scttfrdmn/agenkit-go.git
-git push -u origin main --tags
-```
-
-**Then users can:**
 ```bash
 go get github.com/scttfrdmn/agenkit-go@v0.9.0
 ```
 
-#### Option B: Monorepo with Go Workspace (Alternative)
+### Usage:
 
-Keep in monorepo but set up properly:
-
-**Add go.mod to /agenkit-go:**
 ```go
-module github.com/scttfrdmn/agenkit/agenkit-go
-
-go 1.21
-
-require (
-    google.golang.org/grpc v1.60.0
-    google.golang.org/protobuf v1.32.0
-    github.com/gorilla/websocket v1.5.1
+import (
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/adapter/local"
 )
 ```
 
-**Then users can:**
-```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go@v0.9.0
-```
-
-**Pros:**
-- Single repository
-- Easier cross-language versioning
-
-**Cons:**
-- Longer import path
-- Less idiomatic for Go users
-- More complex for Go tooling
-
-### Recommendation:
-
-**For v0.9.0:** Use Option B (monorepo) for simplicity
-**For v1.0.0:** Consider Option A (separate repo) for better Go ecosystem integration
-
-### Setup Steps for Option B (Immediate):
-
-1. Create `go.mod` in `/agenkit-go`:
-```bash
-cd /Users/scttfrdmn/src/agenkit/agenkit-go
-go mod init github.com/scttfrdmn/agenkit/agenkit-go
-go mod tidy
-```
-
-2. Commit and push:
-```bash
-git add agenkit-go/go.mod agenkit-go/go.sum
-git commit -m "feat(go): Add go.mod for Go modules support"
-git push
-```
-
-3. Test installation:
-```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go@v0.9.0
-```
-
-### Verification (After Setup):
+### Verification:
 
 ```bash
-go list -m github.com/scttfrdmn/agenkit/agenkit-go@v0.9.0
-# Should show: github.com/scttfrdmn/agenkit/agenkit-go v0.9.0
+go list -m github.com/scttfrdmn/agenkit-go@v0.9.0
+# Output: github.com/scttfrdmn/agenkit-go v0.9.0
 ```
+
+### Sync Process:
+
+When Go code changes in the main repository:
+
+1. Run sync script: `./scripts/sync-go-distribution.sh`
+2. Tag new version if applicable
+3. Verify installation works
+
+See `GO_DISTRIBUTION_SYNC.md` for complete sync documentation.
 
 ---
 

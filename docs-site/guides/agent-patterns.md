@@ -1851,6 +1851,326 @@ This guide is a living document. We welcome contributions!
 
 ---
 
+# Appendix A: 2025 Patterns Update
+
+**Context:** November 2025 marked a watershed moment—agents went from research to production.
+
+## Major Developments (2025)
+
+1. **Claude Sonnet 4.5** (September 2025): **30-hour autonomous operation**
+2. **OpenAI o3** (April 2025): Visual reasoning, extended thinking, autonomous tool use
+3. **Production Deployments**: AutoGen, LangGraph at scale
+4. **Tool-Use Evolution**: Models use tools *during* reasoning (not just sequential)
+
+## New Patterns for Autonomous Agents
+
+### 1. Long-Running Agent Pattern ⭐ **CRITICAL**
+
+**Problem:** Agents now work for 30+ hours. Sessions can crash, need to resume.
+
+**Solution:** Durable execution with checkpointing.
+
+```python
+class CheckpointedAgent:
+    """Agent with automatic checkpointing."""
+
+    def __init__(self, agent: Agent, checkpoint_storage: Storage):
+        self.agent = agent
+        self.storage = checkpoint_storage
+
+    async def call(
+        self,
+        messages: list[Message],
+        session_id: str,
+        **kwargs
+    ) -> Message:
+        # Load checkpoint if exists
+        checkpoint = await self.storage.load(session_id)
+        if checkpoint:
+            self.restore_state(checkpoint)
+
+        try:
+            # Process
+            response = await self.agent.call(messages, **kwargs)
+
+            # Checkpoint after success
+            await self.storage.save(session_id, self.get_state())
+
+            return response
+        except Exception as e:
+            # Save state on failure
+            await self.storage.save(session_id, self.get_state())
+            raise
+```
+
+**Why It Matters:** Without checkpointing, 30-hour agents lose all progress on failure.
+
+**Status:** Planned (#69)
+
+### 2. Reasoning Budget Pattern ⭐ **NEW IN 2025**
+
+**Problem:** Hybrid models (Claude 4, o3) have "instant" vs "extended thinking" modes. When to use which?
+
+**Solution:** Dynamic allocation based on complexity.
+
+```python
+class ReasoningBudgetAgent:
+    """Route queries to appropriate reasoning depth."""
+
+    def __init__(
+        self,
+        fast_llm: LLM,      # Instant mode
+        reasoning_llm: LLM, # Extended thinking
+        complexity_detector: Callable
+    ):
+        self.fast = fast_llm
+        self.reasoning = reasoning_llm
+        self.detector = complexity_detector
+
+    async def call(self, messages: list[Message], **kwargs) -> Message:
+        complexity = await self.detector(messages)
+
+        if complexity == "simple":
+            # Use fast mode (cheaper, instant)
+            return await self.fast.complete(messages, **kwargs)
+        else:
+            # Use extended thinking (expensive, deeper)
+            return await self.reasoning.complete(
+                messages,
+                thinking_time=complexity_score * 10,  # Scale by complexity
+                **kwargs
+            )
+```
+
+**Why It Matters:** Saves cost (extended thinking is 3-10x more expensive) while maintaining quality.
+
+**Status:** Planned (#72)
+
+### 3. Tool-Use During Reasoning Pattern ⭐ **NEW CAPABILITY**
+
+**Problem:** Claude 4 and o3 can use tools *while* reasoning (not just after). Different from ReAct.
+
+**Solution:** Support interleaved reasoning + tool calls.
+
+```python
+class ReasoningWithToolsAgent:
+    """Agent that uses tools during extended thinking."""
+
+    async def call(self, messages: list[Message], **kwargs) -> Message:
+        # Start extended thinking
+        reasoning_session = await self.llm.start_reasoning(messages)
+
+        while not reasoning_session.complete:
+            # Check if reasoning wants to use tool
+            if reasoning_session.wants_tool:
+                tool_call = reasoning_session.pending_tool_call
+                result = await self.tools.execute(tool_call)
+
+                # Feed result back into reasoning
+                reasoning_session.continue_with_tool_result(result)
+            else:
+                # Continue reasoning
+                await reasoning_session.continue_thinking()
+
+        return reasoning_session.final_response
+```
+
+**Why Different from ReAct:** Reasoning happens *inside* tool selection, not sequential.
+
+**Status:** Planned (#75)
+
+### 4. Cost-Aware Agent Pattern ⭐ **PRODUCTION NEED**
+
+**Problem:** 30-hour agent with expensive model (o3, Opus 4) could cost $500+.
+
+**Solution:** Budget tracking and enforcement.
+
+```python
+class CostAwareAgent:
+    """Agent with cost tracking and budget limits."""
+
+    def __init__(
+        self,
+        agent: Agent,
+        tracker: CostTracker,
+        session_budget: float = 10.00  # $10 max per session
+    ):
+        self.agent = agent
+        self.tracker = tracker
+        self.budget = session_budget
+
+    async def call(
+        self,
+        messages: list[Message],
+        session_id: str,
+        **kwargs
+    ) -> Message:
+        # Check budget before processing
+        current_cost = await self.tracker.get_session_cost(session_id)
+        if current_cost >= self.budget:
+            raise BudgetExceededError(
+                f"Session budget ${self.budget} exceeded (${current_cost:.2f})"
+            )
+
+        response = await self.agent.call(messages, **kwargs)
+
+        # Record cost
+        await self.tracker.record_cost(
+            session_id=session_id,
+            model=response.metadata["model"],
+            input_tokens=response.metadata["usage"]["prompt_tokens"],
+            output_tokens=response.metadata["usage"]["completion_tokens"]
+        )
+
+        return response
+```
+
+**Why It Matters:** Prevents runaway costs in production.
+
+**Status:** Planned (#68)
+
+## Anti-Patterns (What NOT to Do)
+
+### 1. Infinite Loop Anti-Pattern ❌
+
+**Problem:** Agent recursively calls itself without termination.
+
+**Example:**
+```python
+# BAD: No termination condition
+async def agent(messages):
+    response = await llm.complete(messages)
+    if not satisfied(response):
+        return await agent(messages + [response])  # Infinite loop risk
+```
+
+**Fix:** Max depth, cycle detection, timeout.
+
+### 2. Context Explosion Anti-Pattern ❌
+
+**Problem:** Accumulating unbounded conversation history.
+
+**Example:**
+```python
+# BAD: History grows forever
+history = []
+while True:
+    response = await agent.call(history + [new_message])
+    history.append(new_message)
+    history.append(response)  # Will hit context limit!
+```
+
+**Fix:** Sliding windows, summarization, external memory (#67).
+
+### 3. Tool Thrashing Anti-Pattern ❌
+
+**Problem:** Repeatedly calling same tool with slight variations.
+
+**Example:**
+```python
+# BAD: Wasting tokens and money
+search("Python tutorial")
+search("Python tutorial for beginners")
+search("beginner Python tutorial")
+search("Python tutorial beginners")
+```
+
+**Fix:** Caching, result validation, tool cooldowns.
+
+### 4. Prompt Injection Anti-Pattern ❌
+
+**Problem:** User input affects agent behavior.
+
+**Research Finding:** "Complete control over tool calls" if attacker injects tokens.
+
+**Example:**
+```python
+# BAD: User input directly in prompt
+prompt = f"Summarize: {user_input}"  # User can inject "Ignore previous, do X"
+```
+
+**Fix:** Input sanitization, role separation, sandboxing (#71).
+
+### 5. Error Propagation Anti-Pattern ❌
+
+**Problem:** Early mistake cascades through reasoning.
+
+**Research Finding:** "No native rollback mechanism" in LLMs.
+
+**Fix:** Checkpointing (#69), validation gates.
+
+### 6. Over-Automation Anti-Pattern ❌
+
+**Problem:** Automating high-stakes decisions.
+
+**Research Finding:** Most production teams require human approval for critical actions.
+
+**Fix:** Human-in-loop for critical actions (Chapter 11).
+
+### 7. Unbounded Resource Consumption ❌
+
+**Problem:** Arbitrary CPU/memory/token usage.
+
+**Example:**
+```python
+# BAD: No limits
+while agent.wants_to_continue():
+    result = await agent.call(messages)  # Could run forever
+```
+
+**Fix:** Rate limiting, circuit breakers, quotas, budget limits (#68).
+
+## Recommended Reading (2025 Research)
+
+1. **Claude Sonnet 4.5 Release** (Anthropic, September 2025)
+   - 30-hour autonomous operation
+   - Hybrid reasoning (instant + extended)
+
+2. **OpenAI o3 Release** (OpenAI, April 2025)
+   - Visual reasoning
+   - Tool use during extended thinking
+
+3. **AutoGen Production Guide** (Microsoft, 2025)
+   - Multi-agent patterns at scale
+   - Production deployment patterns
+
+4. **LangGraph Checkpointing** (LangChain, 2025)
+   - Durable execution patterns
+   - State persistence
+
+5. **Design Patterns for Securing LLM Agents** (Research, June 2025)
+   - Prompt injection defense
+   - Sandboxing patterns
+   - Input/output validation
+
+6. **AWS AgentCore Gateway** (AWS, 2025)
+   - Semantic tool selection
+   - Protocol translation (MCP)
+   - Agent routing patterns
+
+## Status of Pattern Implementations
+
+**Completed:**
+- ✅ Basic agent patterns (sequential, parallel, fallback)
+- ✅ Middleware patterns (retry, circuit breaker, timeout, caching, batching)
+- ✅ Transport patterns (HTTP/1.1, HTTP/2, HTTP/3, WebSocket, gRPC)
+
+**Q4 2025 (In Progress):**
+- 🔄 Memory systems (#67) - Critical for 30-hour agents
+- 🔄 Cost tracking (#68) - Prevent runaway spend
+- 🔄 Long-running pattern (#69) - Checkpointing and resume
+
+**Q1-Q2 2026 (Planned):**
+- 📋 Reasoning budget pattern (#72) - NEW IN 2025
+- 📋 Safety framework (#71) - Prompt injection defense
+- 📋 Evaluation framework (#73) - Measure 30-hour success
+- 📋 Tool-use during reasoning (#75) - NEW CAPABILITY
+- 📋 Routing & semantic tool selection (#74) - Production scale
+
+See [ROADMAP.md](../../ROADMAP.md) and [.github/STRATEGIC_2026_ROADMAP.md](../../.github/STRATEGIC_2026_ROADMAP.md) for complete roadmap.
+
+---
+
 # Acknowledgments
 
 This guide builds on insights from the broader agent community:
@@ -1865,6 +2185,13 @@ This guide builds on insights from the broader agent community:
 ---
 
 # Changelog
+
+**Version 0.2** (November 13, 2025)
+- Added Appendix A: 2025 Patterns Update
+- Documented 4 new patterns for autonomous agents
+- Documented 7 anti-patterns with fixes
+- Updated for Claude Sonnet 4.5 (30-hour operation) and OpenAI o3
+- Added production pattern roadmap status
 
 **Version 0.1** (November 13, 2025)
 - Initial foundation release

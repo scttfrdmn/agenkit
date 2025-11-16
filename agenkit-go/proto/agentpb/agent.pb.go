@@ -756,7 +756,7 @@ const file_proto_agent_proto_rawDesc = "" +
 	"\fAgentService\x12.\n" +
 	"\aProcess\x12\x10.agenkit.Request\x1a\x11.agenkit.Response\x129\n" +
 	"\rProcessStream\x12\x10.agenkit.Request\x1a\x14.agenkit.StreamChunk0\x01\x12>\n" +
-	"\x13BidirectionalStream\x12\x10.agenkit.Request\x1a\x11.agenkit.Response(\x010\x01B-Z+github.com/agenkit/agenkit-go/proto/agentpbb\x06proto3"
+	"\x13BidirectionalStream\x12\x10.agenkit.Request\x1a\x11.agenkit.Response(\x010\x01B-Z+github.com/scttfrdmn/agenkit/agenkit-go/proto/agentpbb\x06proto3"
 
 var (
 	file_proto_agent_proto_rawDescOnce sync.Once

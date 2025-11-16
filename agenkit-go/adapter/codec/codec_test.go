@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 func TestEncodeDecodeMessage(t *testing.T) {

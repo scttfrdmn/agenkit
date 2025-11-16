@@ -12,11 +12,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/agenkit/agenkit-go/adapter/codec"
-	"github.com/agenkit/agenkit-go/adapter/errors"
-	"github.com/agenkit/agenkit-go/adapter/http"
-	"github.com/agenkit/agenkit-go/adapter/transport"
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/codec"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/errors"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/http"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/transport"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // LocalAgent is a server-side wrapper for exposing a local agent over the protocol adapter.

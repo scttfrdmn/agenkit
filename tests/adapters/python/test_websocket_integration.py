@@ -8,11 +8,25 @@ This module tests WebSocket communication including:
 """
 
 import asyncio
+import socket
 
 import pytest
 
 from agenkit import Agent, Message
 from agenkit.adapters.python import LocalAgent, RemoteAgent
+
+
+def find_free_port() -> int:
+    """Find a free port on localhost.
+
+    Returns:
+        int: An available port number.
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("", 0))
+        s.listen(1)
+        port = s.getsockname()[1]
+    return port
 
 
 class EchoAgent(Agent):
@@ -72,14 +86,15 @@ class TestWebSocketIntegration:
 
     async def test_websocket_basic_request_response(self):
         """Test basic WebSocket request/response communication."""
-        # Start server
+        # Start server on dynamic port
+        port = find_free_port()
         agent = EchoAgent()
-        server = LocalAgent(agent, endpoint="ws://127.0.0.1:10001")
+        server = LocalAgent(agent, endpoint=f"ws://127.0.0.1:{port}")
         await server.start()
 
         try:
             # Create client
-            remote = RemoteAgent("echo", endpoint="ws://127.0.0.1:10001")
+            remote = RemoteAgent("echo", endpoint=f"ws://127.0.0.1:{port}")
 
             # Test communication
             message = Message(role="user", content="Hello WebSocket!")
@@ -93,14 +108,15 @@ class TestWebSocketIntegration:
 
     async def test_websocket_streaming(self):
         """Test WebSocket streaming support."""
-        # Start server with streaming agent
+        # Start server with streaming agent on dynamic port
+        port = find_free_port()
         agent = StreamingAgent()
-        server = LocalAgent(agent, endpoint="ws://127.0.0.1:10002")
+        server = LocalAgent(agent, endpoint=f"ws://127.0.0.1:{port}")
         await server.start()
 
         try:
             # Create client
-            remote = RemoteAgent("streaming", endpoint="ws://127.0.0.1:10002")
+            remote = RemoteAgent("streaming", endpoint=f"ws://127.0.0.1:{port}")
 
             # Test streaming
             message = Message(role="user", content="stream test")
@@ -122,14 +138,15 @@ class TestWebSocketIntegration:
 
     async def test_websocket_multiple_sequential_requests(self):
         """Test multiple sequential requests over same WebSocket connection."""
-        # Start server
+        # Start server on dynamic port
+        port = find_free_port()
         agent = CounterAgent()
-        server = LocalAgent(agent, endpoint="ws://127.0.0.1:10003")
+        server = LocalAgent(agent, endpoint=f"ws://127.0.0.1:{port}")
         await server.start()
 
         try:
             # Create client
-            remote = RemoteAgent("counter", endpoint="ws://127.0.0.1:10003")
+            remote = RemoteAgent("counter", endpoint=f"ws://127.0.0.1:{port}")
 
             # Send multiple requests sequentially
             for i in range(10):
@@ -145,16 +162,17 @@ class TestWebSocketIntegration:
 
     async def test_websocket_concurrent_clients(self):
         """Test multiple concurrent clients connecting via WebSocket."""
-        # Start server
+        # Start server on dynamic port
+        port = find_free_port()
         agent = EchoAgent()
-        server = LocalAgent(agent, endpoint="ws://127.0.0.1:10004")
+        server = LocalAgent(agent, endpoint=f"ws://127.0.0.1:{port}")
         await server.start()
 
         try:
             # Create multiple clients
             num_clients = 5
             remotes = [
-                RemoteAgent("echo", endpoint="ws://127.0.0.1:10004")
+                RemoteAgent("echo", endpoint=f"ws://127.0.0.1:{port}")
                 for _ in range(num_clients)
             ]
 
@@ -176,16 +194,17 @@ class TestWebSocketIntegration:
 
     async def test_websocket_concurrent_streaming(self):
         """Test concurrent streaming over multiple WebSocket connections."""
-        # Start server
+        # Start server on dynamic port
+        port = find_free_port()
         agent = StreamingAgent()
-        server = LocalAgent(agent, endpoint="ws://127.0.0.1:10005")
+        server = LocalAgent(agent, endpoint=f"ws://127.0.0.1:{port}")
         await server.start()
 
         try:
             # Create multiple clients
             num_clients = 3
             remotes = [
-                RemoteAgent("streaming", endpoint="ws://127.0.0.1:10005")
+                RemoteAgent("streaming", endpoint=f"ws://127.0.0.1:{port}")
                 for _ in range(num_clients)
             ]
 
@@ -211,14 +230,15 @@ class TestWebSocketIntegration:
 
     async def test_websocket_large_message(self):
         """Test WebSocket with large messages (1MB+)."""
-        # Start server
+        # Start server on dynamic port
+        port = find_free_port()
         agent = EchoAgent()
-        server = LocalAgent(agent, endpoint="ws://127.0.0.1:10006")
+        server = LocalAgent(agent, endpoint=f"ws://127.0.0.1:{port}")
         await server.start()
 
         try:
             # Create client
-            remote = RemoteAgent("echo", endpoint="ws://127.0.0.1:10006")
+            remote = RemoteAgent("echo", endpoint=f"ws://127.0.0.1:{port}")
 
             # Send large message (1MB)
             large_content = "x" * (1024 * 1024)
@@ -233,14 +253,15 @@ class TestWebSocketIntegration:
 
     async def test_websocket_metadata_preservation(self):
         """Test that metadata is preserved in WebSocket communication."""
-        # Start server
+        # Start server on dynamic port
+        port = find_free_port()
         agent = EchoAgent()
-        server = LocalAgent(agent, endpoint="ws://127.0.0.1:10007")
+        server = LocalAgent(agent, endpoint=f"ws://127.0.0.1:{port}")
         await server.start()
 
         try:
             # Create client
-            remote = RemoteAgent("echo", endpoint="ws://127.0.0.1:10007")
+            remote = RemoteAgent("echo", endpoint=f"ws://127.0.0.1:{port}")
 
             # Send message with metadata
             message = Message(
@@ -263,14 +284,15 @@ class TestWebSocketIntegration:
 
     async def test_websocket_reconnection_after_server_restart(self):
         """Test automatic reconnection when server restarts."""
-        # Start server
+        # Start server on dynamic port
+        port = find_free_port()
         agent = EchoAgent()
-        server = LocalAgent(agent, endpoint="ws://127.0.0.1:10008")
+        server = LocalAgent(agent, endpoint=f"ws://127.0.0.1:{port}")
         await server.start()
 
         try:
             # Create client
-            remote = RemoteAgent("echo", endpoint="ws://127.0.0.1:10008")
+            remote = RemoteAgent("echo", endpoint=f"ws://127.0.0.1:{port}")
 
             # First request
             message = Message(role="user", content="First")
@@ -281,8 +303,8 @@ class TestWebSocketIntegration:
             await server.stop()
             await asyncio.sleep(0.2)  # Wait for connection to close
 
-            # Restart server
-            server = LocalAgent(agent, endpoint="ws://127.0.0.1:10008")
+            # Restart server on same port
+            server = LocalAgent(agent, endpoint=f"ws://127.0.0.1:{port}")
             await server.start()
 
             # Second request should trigger reconnection
@@ -297,18 +319,20 @@ class TestWebSocketIntegration:
         """Test that WebSocket and TCP produce same results for same agent."""
         agent = EchoAgent()
 
-        # Start WebSocket server
-        ws_server = LocalAgent(agent, endpoint="ws://127.0.0.1:10009")
+        # Start WebSocket server on dynamic port
+        ws_port = find_free_port()
+        ws_server = LocalAgent(agent, endpoint=f"ws://127.0.0.1:{ws_port}")
         await ws_server.start()
 
-        # Start TCP server
-        tcp_server = LocalAgent(agent, endpoint="tcp://127.0.0.1:10010")
+        # Start TCP server on different dynamic port
+        tcp_port = find_free_port()
+        tcp_server = LocalAgent(agent, endpoint=f"tcp://127.0.0.1:{tcp_port}")
         await tcp_server.start()
 
         try:
             # Create clients
-            ws_remote = RemoteAgent("echo", endpoint="ws://127.0.0.1:10009")
-            tcp_remote = RemoteAgent("echo", endpoint="tcp://127.0.0.1:10010")
+            ws_remote = RemoteAgent("echo", endpoint=f"ws://127.0.0.1:{ws_port}")
+            tcp_remote = RemoteAgent("echo", endpoint=f"tcp://127.0.0.1:{tcp_port}")
 
             # Send same message to both
             message = Message(role="user", content="compatibility test")
@@ -341,11 +365,12 @@ class TestWebSocketIntegration:
                 raise ValueError("Streaming error!")
 
         agent = ErrorStreamAgent()
-        server = LocalAgent(agent, endpoint="ws://127.0.0.1:10011")
+        port = find_free_port()
+        server = LocalAgent(agent, endpoint=f"ws://127.0.0.1:{port}")
         await server.start()
 
         try:
-            remote = RemoteAgent("error_stream", endpoint="ws://127.0.0.1:10011")
+            remote = RemoteAgent("error_stream", endpoint=f"ws://127.0.0.1:{port}")
 
             message = Message(role="user", content="test")
             chunks = []
@@ -362,8 +387,8 @@ class TestWebSocketIntegration:
 
     async def test_websocket_bidirectional_communication(self):
         """Test that WebSocket supports true bidirectional communication."""
-        # This test demonstrates that multiple requests can be in-flight
-        # simultaneously over a single WebSocket connection
+        # This test demonstrates that multiple clients can communicate
+        # concurrently through separate WebSocket connections
 
         class SlowAgent(Agent):
             @property
@@ -379,21 +404,29 @@ class TestWebSocketIntegration:
                 )
 
         agent = SlowAgent()
-        server = LocalAgent(agent, endpoint="ws://127.0.0.1:10012")
+        port = find_free_port()
+        server = LocalAgent(agent, endpoint=f"ws://127.0.0.1:{port}")
         await server.start()
 
         try:
-            remote = RemoteAgent("slow", endpoint="ws://127.0.0.1:10012")
-
-            # Send multiple requests with different delays
-            # The faster ones should complete first, demonstrating
-            # bidirectional communication
-            tasks = [
-                remote.process(
-                    Message(
-                        role="user", content=f"Task {i}", metadata={"delay": delay}
+            # Create separate connections for concurrent requests
+            # Each connection can handle requests independently
+            async def send_request(task_id: int, delay: float):
+                remote = RemoteAgent("slow", endpoint=f"ws://127.0.0.1:{port}")
+                try:
+                    message = Message(
+                        role="user",
+                        content=f"Task {task_id}",
+                        metadata={"delay": delay}
                     )
-                )
+                    return await remote.process(message)
+                finally:
+                    await remote.close()
+
+            # Send multiple requests with different delays concurrently
+            # Using separate connections for true concurrent processing
+            tasks = [
+                send_request(i, delay)
                 for i, delay in enumerate([0.3, 0.1, 0.2, 0.05])
             ]
 

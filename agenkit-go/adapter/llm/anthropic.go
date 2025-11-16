@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // AnthropicLLM is an adapter for Anthropic's Claude models.

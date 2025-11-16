@@ -195,23 +195,33 @@ class TimeoutDecorator(Agent):
                 yield chunk
 
         try:
-            # Use asyncio.timeout for the entire streaming operation
-            async with asyncio.timeout(self._config.timeout):
+            # Python 3.10 compatible timeout for streaming
+            # Create a task for the streaming operation
+            stream_task = None
+            try:
                 async for chunk in stream_with_timeout():
+                    # Check if we've exceeded timeout
+                    elapsed = time.time() - start_time
+                    if elapsed > self._config.timeout:
+                        raise asyncio.TimeoutError()
                     yield chunk
 
-            duration = time.time() - start_time
-            async with self._lock:
-                self._metrics.record_success(duration)
+                duration = time.time() - start_time
+                async with self._lock:
+                    self._metrics.record_success(duration)
 
-        except asyncio.TimeoutError:
-            duration = time.time() - start_time
-            async with self._lock:
-                self._metrics.record_timeout(duration)
+            except asyncio.TimeoutError:
+                duration = time.time() - start_time
+                async with self._lock:
+                    self._metrics.record_timeout(duration)
 
-            raise TimeoutError(
-                f"Streaming request to agent '{self.name}' timed out after {self._config.timeout}s"
-            )
+                raise TimeoutError(
+                    f"Streaming request to agent '{self.name}' timed out after {self._config.timeout}s"
+                )
+
+        except TimeoutError:
+            # Re-raise our custom TimeoutError
+            raise
 
         except Exception:
             duration = time.time() - start_time

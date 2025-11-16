@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // Condition is a function that determines whether to use an agent.

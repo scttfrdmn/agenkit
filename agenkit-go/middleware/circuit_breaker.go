@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // CircuitState represents the state of the circuit breaker.

@@ -18,8 +18,8 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
-	"github.com/agenkit/agenkit-go/adapter/codec"
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/codec"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // ServerOptions configures HTTP server behavior.

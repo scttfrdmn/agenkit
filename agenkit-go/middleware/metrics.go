@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // Metrics holds observability metrics for an agent.

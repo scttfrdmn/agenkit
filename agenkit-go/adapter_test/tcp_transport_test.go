@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/agenkit/agenkit-go/adapter/local"
-	"github.com/agenkit/agenkit-go/adapter/remote"
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/local"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/remote"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 func TestTCPBasicCommunication(t *testing.T) {

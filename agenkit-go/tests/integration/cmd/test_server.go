@@ -10,8 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/agenkit/agenkit-go/adapter/http"
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/http"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // EchoAgent is a simple echo agent for testing.

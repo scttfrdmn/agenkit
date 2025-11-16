@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"github.com/sashabaranov/go-openai"
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // OpenAILLM is an adapter for OpenAI's GPT models.

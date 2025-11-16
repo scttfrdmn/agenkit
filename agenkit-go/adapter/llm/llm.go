@@ -8,7 +8,7 @@ package llm
 import (
 	"context"
 
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // LLM is the minimal interface for agent-LLM interaction.

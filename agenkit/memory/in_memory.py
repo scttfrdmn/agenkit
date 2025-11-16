@@ -5,7 +5,6 @@ Provides simple in-memory storage with LRU eviction for testing
 and simple applications that don't need persistence.
 """
 
-from collections import OrderedDict
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -49,8 +48,10 @@ class InMemoryMemory(Memory):
                      before LRU eviction
         """
         self.max_size = max_size
-        # session_id -> OrderedDict of (timestamp, (message, metadata))
-        self._storage: dict[str, OrderedDict[float, tuple[Message, dict]]] = {}
+        # session_id -> list of (timestamp, message, metadata)
+        self._storage: dict[str, list[tuple[float, Message, dict]]] = {}
+        # Counter to ensure unique ordering even for same-timestamp messages
+        self._counter = 0
 
     async def store(
         self,
@@ -60,18 +61,19 @@ class InMemoryMemory(Memory):
     ) -> None:
         """Store message in memory with optional metadata."""
         if session_id not in self._storage:
-            self._storage[session_id] = OrderedDict()
+            self._storage[session_id] = []
 
         session_storage = self._storage[session_id]
 
-        # Add message with timestamp
-        timestamp = datetime.now(timezone.utc).timestamp()
-        session_storage[timestamp] = (message, metadata or {})
+        # Add message with timestamp (use counter to ensure unique ordering)
+        timestamp = datetime.now(timezone.utc).timestamp() + (self._counter * 0.000001)
+        self._counter += 1
+        session_storage.append((timestamp, message, metadata or {}))
 
         # LRU eviction if over limit
         if len(session_storage) > self.max_size:
-            # Remove oldest (first item in OrderedDict)
-            session_storage.popitem(last=False)
+            # Remove oldest (first item in list)
+            session_storage.pop(0)
 
     async def retrieve(
         self,
@@ -94,12 +96,11 @@ class InMemoryMemory(Memory):
         session_storage = self._storage[session_id]
 
         # Get all messages (most recent first)
-        messages_with_metadata = list(session_storage.items())
-        messages_with_metadata.reverse()  # Most recent first
+        messages_with_metadata = list(reversed(session_storage))
 
         # Apply filters
         filtered = []
-        for timestamp, (message, metadata) in messages_with_metadata:
+        for timestamp, message, metadata in messages_with_metadata:
             # Time range filter
             if "time_range" in kwargs:
                 start_time, end_time = kwargs["time_range"]

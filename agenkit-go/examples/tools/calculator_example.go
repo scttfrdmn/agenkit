@@ -40,8 +40,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/agenkit/agenkit-go/agenkit"
-	"github.com/agenkit/agenkit-go/tools"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/tools"
 )
 
 // AddTool adds numbers accurately

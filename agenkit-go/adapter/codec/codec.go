@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"github.com/google/uuid"
 )
 

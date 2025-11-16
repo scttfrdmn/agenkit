@@ -9,12 +9,15 @@ Requires: redis>=5.0.0
 
 import json
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-try:
+if TYPE_CHECKING:
     import redis.asyncio as redis
-except ImportError:
-    redis = None  # type: ignore
+else:
+    try:
+        import redis.asyncio as redis
+    except ImportError:
+        redis = None  # type: ignore
 
 from .base import Memory
 from ..interfaces import Message
@@ -78,9 +81,9 @@ class RedisMemory(Memory):
         self.redis_url = redis_url
         self.ttl = ttl
         self.key_prefix = key_prefix
-        self._client: Optional[redis.Redis] = None
+        self._client: Optional["redis.Redis"] = None
 
-    async def _get_client(self) -> redis.Redis:
+    async def _get_client(self) -> "redis.Redis":
         """Get or create Redis client."""
         if self._client is None:
             self._client = redis.from_url(self.redis_url, decode_responses=True)

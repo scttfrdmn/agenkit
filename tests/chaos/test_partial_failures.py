@@ -154,9 +154,12 @@ async def test_partial_failure_with_retry():
     assert successes_with_retry > successes_no_retry, \
         f"Retry ({successes_with_retry}) should improve success rate over no retry ({successes_no_retry})"
 
-    # With retry, expect >85% success rate (allow some variance due to randomness)
-    assert successes_with_retry >= 17, \
-        f"Expected >=17 successes with retry, got {successes_with_retry}"
+    # With 70% failure rate and 5 retries:
+    # - Theoretical success rate: 1 - 0.7^5 = 83.2%
+    # - Expected successes: 16.64 out of 20
+    # - Allow variance: accept >= 15 successes (75%)
+    assert successes_with_retry >= 15, \
+        f"Expected >=15 successes with retry (75% success rate), got {successes_with_retry}"
 
 
 # ============================================

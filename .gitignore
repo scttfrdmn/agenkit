@@ -58,3 +58,25 @@ dmypy.json
 *.pem
 *.key
 credentials.json
+
+# Development artifacts
+.archive/
+.research/
+checkpoints/
+*.exe
+agenkit-go/basic
+agenkit-go/batching_example
+agenkit-go/timeout_example
+agenkit-go/rate_limiter_example
+
+# Go build artifacts
+*.test
+*.out
+agenkit-go/test_client
+
+# Documentation build
+site/
+.cache/
+
+# Ruff cache
+.ruff_cache/

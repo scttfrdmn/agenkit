@@ -112,7 +112,7 @@ async def test_store_with_metadata():
 
     # Verify storage (internal check)
     session_storage = memory._storage["session-1"]
-    stored_msg, stored_metadata = list(session_storage.values())[0]
+    timestamp, stored_msg, stored_metadata = session_storage[0]
 
     assert stored_msg.content == "Important message"
     assert stored_metadata["importance"] == 0.9

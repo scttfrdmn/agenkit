@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // UnreliableAgent simulates an agent that fails based on a controllable pattern.

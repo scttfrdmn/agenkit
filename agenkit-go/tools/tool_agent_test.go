@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // MockTool is a test tool that returns predefined results.

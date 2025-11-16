@@ -10,7 +10,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/agenkit/agenkit-go/observability"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/observability"
 )
 
 // SimpleAgent is a simple agent for demonstration.
@@ -38,7 +39,7 @@ func (a *SimpleAgent) Capabilities() []string {
 }
 
 // Process processes a message.
-func (a *SimpleAgent) Process(ctx context.Context, message *observability.Message) (*observability.Message, error) {
+func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	a.logger.InfoContext(ctx, fmt.Sprintf("Agent %s processing message", a.name),
 		slog.String("agent", a.name),
 		slog.Int("content_length", len(message.Content)),
@@ -54,7 +55,7 @@ func (a *SimpleAgent) Process(ctx context.Context, message *observability.Messag
 		slog.Int("response_length", len(responseContent)),
 	)
 
-	return &observability.Message{
+	return &agenkit.Message{
 		Role:    "agent",
 		Content: responseContent,
 		Metadata: map[string]interface{}{
@@ -130,7 +131,7 @@ func main() {
 	// Process messages through agent chain
 	fmt.Println("3. Processing messages through agents...")
 	ctx := context.Background()
-	message := &observability.Message{
+	message := &agenkit.Message{
 		Role:    "user",
 		Content: "Hello from the Go observability example!",
 	}

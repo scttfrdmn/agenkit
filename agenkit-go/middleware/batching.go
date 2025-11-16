@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // BatchingConfig configures batching behavior.

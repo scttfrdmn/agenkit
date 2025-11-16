@@ -39,8 +39,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/agenkit/agenkit-go/agenkit"
-	"github.com/agenkit/agenkit-go/composition"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/composition"
 )
 
 // SentimentAgent analyzes sentiment using a specific approach

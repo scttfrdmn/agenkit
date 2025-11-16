@@ -41,8 +41,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/agenkit/agenkit-go/agenkit"
-	"github.com/agenkit/agenkit-go/middleware"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/middleware"
 )
 
 // SlowLLMAgent simulates an LLM that sometimes takes too long to respond

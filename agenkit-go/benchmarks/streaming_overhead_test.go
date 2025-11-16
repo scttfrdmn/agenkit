@@ -33,9 +33,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/agenkit/agenkit-go/adapter/remote"
-	"github.com/agenkit/agenkit-go/adapter/transport"
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/remote"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/transport"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // ============================================

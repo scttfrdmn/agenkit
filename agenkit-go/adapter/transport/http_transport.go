@@ -15,8 +15,8 @@ import (
 	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 
-	"github.com/agenkit/agenkit-go/adapter/codec"
-	"github.com/agenkit/agenkit-go/adapter/errors"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/codec"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/errors"
 )
 
 // HTTPVersion represents the HTTP protocol version.

@@ -50,8 +50,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/agenkit/agenkit-go/agenkit"
-	"github.com/agenkit/agenkit-go/middleware"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/middleware"
 )
 
 // MockLLMBatchAgent simulates an LLM that benefits from batch processing.

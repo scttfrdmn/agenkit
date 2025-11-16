@@ -10,7 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/agenkit/agenkit-go/adapter/errors"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/errors"
 )
 
 // WebSocketTransport implements transport over WebSocket with automatic reconnection and keepalive.

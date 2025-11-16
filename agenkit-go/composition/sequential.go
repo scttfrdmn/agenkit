@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // SequentialAgent executes multiple agents in sequence, passing output from

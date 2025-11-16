@@ -586,6 +586,6 @@ class TestGRPCTransportErrorHandling:
             await transport.connect()
 
             # Don't send anything, just try to receive (should timeout)
-            # Note: asyncio.wait_for raises TimeoutError in Python 3.14+
-            with pytest.raises((ConnectionClosedError, TimeoutError)):
+            # Note: asyncio.wait_for raises asyncio.TimeoutError
+            with pytest.raises((ConnectionClosedError, asyncio.TimeoutError)):
                 await asyncio.wait_for(transport.receive_framed(), timeout=0.1)

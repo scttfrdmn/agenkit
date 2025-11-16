@@ -9,6 +9,7 @@ Classes:
     InMemoryMemory: Simple in-memory storage with LRU eviction
     RedisMemory: Redis-backed memory with persistence
     VectorMemory: Vector database for semantic retrieval
+    EndlessMemory: Integration with endless project for infinite context
 
 Strategies:
     MemoryStrategy: Base class for memory strategies
@@ -32,6 +33,7 @@ from .vector_memory import (
     VectorStore,
     InMemoryVectorStore
 )
+from .endless_memory import EndlessMemory, EndlessClient
 
 # Import strategies
 from .strategies import (
@@ -49,6 +51,8 @@ try:
         "InMemoryMemory",
         "RedisMemory",
         "VectorMemory",
+        "EndlessMemory",
+        "EndlessClient",
         "EmbeddingProvider",
         "VectorStore",
         "InMemoryVectorStore",
@@ -62,6 +66,8 @@ except ImportError:
         "Memory",
         "InMemoryMemory",
         "VectorMemory",
+        "EndlessMemory",
+        "EndlessClient",
         "EmbeddingProvider",
         "VectorStore",
         "InMemoryVectorStore",

@@ -57,7 +57,8 @@ class RetryPolicy:
     def get_next_delay(self) -> float:
         """Get delay for next retry."""
         # Exponential backoff with cap
-        delay = self._backoff_base * (self._backoff_multiplier ** self._retry_count)
+        # Use (retry_count - 1) since retry_count is incremented before calling this
+        delay = self._backoff_base * (self._backoff_multiplier ** (self._retry_count - 1))
         delay = min(delay, self._max_delay)
         return delay
 
@@ -341,7 +342,6 @@ async def test_exponential_growth_formula(max_retries, backoff_base, backoff_mul
 
 @pytest.mark.property
 @pytest.mark.asyncio
-@settings(max_examples=50, deadline=None)
 async def test_zero_retries_means_no_retries():
     """Property: max_retries=0 means no retries (only initial attempt)."""
     policy = RetryPolicy(max_retries=0, backoff_base=0.01)

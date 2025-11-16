@@ -62,10 +62,10 @@ llm = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/agenkit/agenkit"
-Documentation = "https://docs.agenkit.dev"
-Repository = "https://github.com/agenkit/agenkit"
-Issues = "https://github.com/agenkit/agenkit/issues"
+Homepage = "https://agenkit.dev"
+Documentation = "https://agenkit.dev"
+Repository = "https://github.com/scttfrdmn/agenkit"
+Issues = "https://github.com/scttfrdmn/agenkit/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["agenkit", "proto"]

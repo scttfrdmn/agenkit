@@ -13,7 +13,7 @@ from agenkit.composition import (
 from agenkit.interfaces import Agent, Message, Tool, ToolResult
 from agenkit.patterns import Task
 
-__version__ = "0.1.0"
+__version__ = "0.9.0"
 
 __all__ = [
     # Core interfaces

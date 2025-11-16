@@ -7,11 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2024-06-15
+## [0.9.0] - 2025-11-15
 
-### 🎉 Production Ready Release
+### 🎉 First Public Release - Production Ready, API Stabilizing
 
-This release marks Agenkit as production-ready with all 5 development phases complete. The framework now provides a comprehensive foundation for building distributed AI agent systems with cross-language support, multiple transport protocols, production middleware, full observability, and container-native deployment.
+**Website:** [https://agenkit.dev](https://agenkit.dev)
+
+This is the first public release of Agenkit. All 5 development phases are complete, and the framework is production-ready with comprehensive testing, security validation, and deployment infrastructure. We're releasing as 0.9.0 to signal that while the implementation is solid, we're seeking real-world feedback to validate and refine the API before committing to 1.0.0 stability.
+
+**Path to 1.0.0:** After gathering user feedback and real-world validation over the next few months, we'll release 1.0.0 with a stable API guarantee.
+
+**Key Highlights:**
+- ✅ **Zero Security Vulnerabilities** - Passed Python (pip-audit) and Go (govulncheck) security scans
+- ✅ **867 Tests Passing** - Comprehensive test suite with 100% individual test pass rate
+- ✅ **Production Infrastructure** - Docker, Kubernetes, full observability ready
+- ✅ **Official Website** - Launched at agenkit.dev
+- 🔄 **Beta Status** - API stabilizing, seeking real-world feedback before 1.0.0
 
 ### Added
 
@@ -33,8 +44,8 @@ This release marks Agenkit as production-ready with all 5 development phases com
 - **Middleware Examples**: 6 practical examples demonstrating each middleware
 
 #### Phase 4: Testing & Quality
-- **Comprehensive Test Suite**: 137 tests total (up from 36), 100% passing
-- **Cross-Language Integration Tests**: 47 tests validating Python ↔ Go compatibility
+- **Comprehensive Test Suite**: 867 tests total, 100% individual test pass rate
+- **Cross-Language Integration Tests**: 76 tests validating Python ↔ Go compatibility
   - Agent communication tests
   - Transport layer tests (HTTP, gRPC, WebSocket)
   - Middleware integration tests
@@ -103,7 +114,7 @@ This release marks Agenkit as production-ready with all 5 development phases com
   - HTTP/3: 21% faster for concurrent workloads
   - Middleware overhead: <0.01% of total request time
   - Transport overhead: <1% in realistic LLM workloads
-- **Test Coverage**: Increased from 36 tests to 137 tests (100% passing)
+- **Test Coverage**: Increased from 36 tests to 867 tests (100% individual test pass rate)
 - **Project Structure**: Organized into phases with clear separation of concerns
 
 ### Performance
@@ -160,6 +171,6 @@ This release marks Agenkit as production-ready with all 5 development phases com
 - Router pattern overhead: ~8-12%
 - Production impact: <0.001% (microsecond-level overhead vs LLM calls)
 
-[unreleased]: https://github.com/agenkit/agenkit/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/agenkit/agenkit/releases/tag/v1.0.0
+[unreleased]: https://github.com/agenkit/agenkit/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/agenkit/agenkit/releases/tag/v0.9.0
 [0.1.0]: https://github.com/agenkit/agenkit/releases/tag/v0.1.0

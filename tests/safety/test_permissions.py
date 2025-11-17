@@ -343,3 +343,233 @@ class TestPermissionMiddleware:
         response = await agent.process(message)
 
         assert response.content == message.content
+
+    @pytest.mark.asyncio
+    async def test_detects_delete_file_operations(self, echo_agent):
+        """Test detection of file delete operations."""
+        agent = PermissionMiddleware(echo_agent, role=Role.USER)
+
+        message = Message(role="user", content="delete file /tmp/test.txt")
+
+        with pytest.raises(PermissionDeniedError) as exc_info:
+            await agent.process(message)
+
+        assert "delete:files" in str(exc_info.value).lower()
+
+    @pytest.mark.asyncio
+    async def test_detects_database_insert_operations(self, echo_agent):
+        """Test detection of database insert operations."""
+        agent = PermissionMiddleware(echo_agent, role=Role.READONLY)
+
+        message = Message(role="user", content="insert into users (name) values ('Bob')")
+
+        with pytest.raises(PermissionDeniedError) as exc_info:
+            await agent.process(message)
+
+        assert "write:database" in str(exc_info.value).lower()
+
+    @pytest.mark.asyncio
+    async def test_detects_database_update_operations(self, echo_agent):
+        """Test detection of database update operations."""
+        agent = PermissionMiddleware(echo_agent, role=Role.READONLY)
+
+        message = Message(role="user", content="update users set active = true")
+
+        with pytest.raises(PermissionDeniedError) as exc_info:
+            await agent.process(message)
+
+        assert "write:database" in str(exc_info.value).lower()
+
+    @pytest.mark.asyncio
+    async def test_detects_drop_table_operations(self, echo_agent):
+        """Test detection of drop table operations."""
+        agent = PermissionMiddleware(echo_agent, role=Role.READONLY)
+
+        message = Message(role="user", content="drop table old_data")
+
+        with pytest.raises(PermissionDeniedError) as exc_info:
+            await agent.process(message)
+
+        assert "write:database" in str(exc_info.value).lower()
+
+    @pytest.mark.asyncio
+    async def test_allows_database_queries(self, echo_agent):
+        """Test that database queries are allowed for READONLY."""
+        agent = PermissionMiddleware(echo_agent, role=Role.READONLY)
+
+        message = Message(role="user", content="select * from users")
+        response = await agent.process(message)
+
+        assert response.content == message.content
+
+    @pytest.mark.asyncio
+    async def test_permission_denied_error_includes_permission(self, echo_agent):
+        """Test that PermissionDeniedError includes the required permission."""
+        agent = PermissionMiddleware(echo_agent, role=Role.RESTRICTED)
+
+        message = Message(role="user", content="write file test.txt")
+
+        with pytest.raises(PermissionDeniedError) as exc_info:
+            await agent.process(message)
+
+        assert exc_info.value.required_permission == Permission.WRITE_FILES
+
+
+class TestSandboxExtended:
+    """Extended tests for Sandbox edge cases."""
+
+    def test_sandbox_resource_limits(self):
+        """Test sandbox resource limit configuration."""
+        sandbox = Sandbox(
+            max_file_size=5 * 1024 * 1024,  # 5MB
+            max_execution_time=60,
+            max_memory_mb=1024
+        )
+
+        assert sandbox.max_file_size == 5 * 1024 * 1024
+        assert sandbox.max_execution_time == 60
+        assert sandbox.max_memory_mb == 1024
+
+    def test_sandbox_custom_denied_paths(self):
+        """Test custom denied paths configuration."""
+        sandbox = Sandbox(
+            denied_paths={"/etc", "/var", "/usr/local/sensitive"}
+        )
+
+        is_allowed, error = sandbox.is_path_allowed("/var/log/test.log")
+        assert is_allowed is False
+        assert "denied directory" in error
+
+    def test_sandbox_custom_allowed_commands(self):
+        """Test custom allowed commands configuration."""
+        sandbox = Sandbox(
+            allowed_commands={"echo", "date", "whoami"}
+        )
+
+        is_allowed, _ = sandbox.is_command_allowed("echo hello")
+        assert is_allowed is True
+
+        is_allowed, error = sandbox.is_command_allowed("curl example.com")
+        assert is_allowed is False
+        assert "not in allowed list" in error
+
+    def test_sandbox_sql_with_custom_operations(self):
+        """Test SQL sandbox with custom allowed operations."""
+        sandbox = Sandbox(
+            allowed_sql_operations={"SELECT", "EXPLAIN", "DESCRIBE"}
+        )
+
+        is_allowed, _ = sandbox.is_sql_operation_allowed("DESCRIBE users")
+        assert is_allowed is True
+
+        is_allowed, error = sandbox.is_sql_operation_allowed("INSERT INTO users VALUES (1)")
+        assert is_allowed is False
+        assert "not allowed" in error
+
+    def test_command_with_empty_string(self):
+        """Test command validation with empty string."""
+        sandbox = Sandbox()
+
+        is_allowed, error = sandbox.is_command_allowed("")
+        assert is_allowed is False  # Empty command is not in allowed list
+        assert "not in allowed list" in error
+
+    def test_sql_with_empty_string(self):
+        """Test SQL validation with empty string."""
+        sandbox = Sandbox()
+
+        is_allowed, error = sandbox.is_sql_operation_allowed("")
+        assert is_allowed is False
+        assert "not allowed" in error
+
+    def test_domain_with_subdomain(self):
+        """Test domain validation with subdomains."""
+        sandbox = Sandbox(
+            allowed_domains={"example.com", "api.example.com"}
+        )
+
+        is_allowed, _ = sandbox.is_domain_allowed("api.example.com")
+        assert is_allowed is True
+
+        # Subdomain not explicitly allowed
+        is_allowed, error = sandbox.is_domain_allowed("staging.example.com")
+        assert is_allowed is False
+        assert "not in allowed list" in error
+
+
+def test_permissions_decorator():
+    """Test permissions decorator function."""
+    from agenkit.safety.permissions import permissions
+
+    class TestAgent(Agent):
+        @property
+        def name(self) -> str:
+            return "test"
+
+        @property
+        def capabilities(self) -> list[str]:
+            return []
+
+        async def process(self, message: Message) -> Message:
+            return Message(role="assistant", content="test")
+
+    base_agent = TestAgent()
+    middleware_fn = permissions(role=Role.USER)
+
+    agent = middleware_fn(base_agent)
+
+    assert isinstance(agent, PermissionMiddleware)
+    assert agent.role == Role.USER
+
+
+def test_permissions_decorator_with_sandbox():
+    """Test permissions decorator with custom sandbox."""
+    from agenkit.safety.permissions import permissions
+
+    class TestAgent(Agent):
+        @property
+        def name(self) -> str:
+            return "test"
+
+        @property
+        def capabilities(self) -> list[str]:
+            return []
+
+        async def process(self, message: Message) -> Message:
+            return Message(role="assistant", content="test")
+
+    sandbox = Sandbox(allowed_paths={"/app/data"})
+    base_agent = TestAgent()
+    middleware_fn = permissions(role=Role.READONLY, sandbox=sandbox)
+
+    agent = middleware_fn(base_agent)
+
+    assert isinstance(agent, PermissionMiddleware)
+    assert agent.role == Role.READONLY
+    assert agent.sandbox == sandbox
+
+
+def test_permissions_decorator_with_custom_permissions():
+    """Test permissions decorator with custom permissions."""
+    from agenkit.safety.permissions import permissions
+
+    class TestAgent(Agent):
+        @property
+        def name(self) -> str:
+            return "test"
+
+        @property
+        def capabilities(self) -> list[str]:
+            return []
+
+        async def process(self, message: Message) -> Message:
+            return Message(role="assistant", content="test")
+
+    custom_perms = {Permission.READ_FILES, Permission.QUERY_DATABASE}
+    base_agent = TestAgent()
+    middleware_fn = permissions(custom_permissions=custom_perms)
+
+    agent = middleware_fn(base_agent)
+
+    assert isinstance(agent, PermissionMiddleware)
+    assert agent.permissions == custom_perms

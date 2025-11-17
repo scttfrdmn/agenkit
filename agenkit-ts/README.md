@@ -108,6 +108,38 @@ const response = await agent.process({
 await agent.close();
 ```
 
+### gRPC Transport
+
+High-performance RPC with Protocol Buffers:
+
+```typescript
+import { GrpcAgent, GrpcServer } from '@agenkit/core';
+
+// Client
+const client = new GrpcAgent('my-service', {
+  address: 'localhost:50051',
+  timeout: 5000,
+  useTLS: false,
+});
+
+const response = await client.process({
+  role: 'user',
+  content: 'Hello',
+});
+
+await client.close();
+
+// Server
+const server = new GrpcServer(myAgent, {
+  address: '0.0.0.0:50051',
+  useTLS: false,
+});
+
+await server.start();
+// ... handle requests ...
+await server.stop();
+```
+
 ### Middleware
 
 Apply retry, timeout, or custom middleware:
@@ -194,13 +226,16 @@ interface Tool {
 
 - **LocalAgent**: Wrap TypeScript functions as agents
 - **HTTPAgent**: Communicate over HTTP/REST
-- **OpenAIAgent**: OpenAI Chat Completion API
-- **AnthropicAgent**: Anthropic Messages API
+- **WebSocketAgent**: Real-time bidirectional communication
+- **GrpcAgent**: High-performance gRPC transport ✨ NEW
+- **OpenAIAgent**: OpenAI Chat Completion API (GPT-4, GPT-3.5)
+- **AnthropicAgent**: Anthropic Messages API (Claude 3)
 
 ## Middleware
 
 - **retry**: Automatic retries with exponential backoff
 - **timeout**: Prevent long-running requests
+- **circuitBreaker**: Fail fast when service is unhealthy
 - **Custom**: Easy to implement your own
 
 ## Why Agenkit?
@@ -223,12 +258,17 @@ Built-in resilience patterns and LLM integrations.
 
 ## Examples
 
-See `examples/` directory for complete examples:
-- Basic usage
-- LLM integration (OpenAI, Anthropic)
-- Middleware patterns
-- HTTP transport
-- Streaming responses
+See `examples/` directory for complete, runnable examples:
+
+- **basic-usage.ts**: Simple getting started examples
+- **middleware-example.ts**: Production resilience patterns (retry, timeout, circuit breaker) ✨ NEW
+- **transport-comparison.ts**: HTTP vs WebSocket vs gRPC comparison ✨ NEW
+- **llm-integration.ts**: OpenAI & Anthropic integration with best practices ✨ NEW
+
+Run any example:
+```bash
+npx ts-node examples/middleware-example.ts
+```
 
 ## Development
 

@@ -92,11 +92,6 @@ markers = [
     "flaky: marks tests that may be flaky due to timing/resource contention (auto-retry)",
 ]
 
-[tool.pytest.asyncio]
-# Increase timeout for individual async tests
-asyncio_default_fixture_loop_scope = "function"
-asyncio_default_test_loop_scope = "function"
-
 [tool.mypy]
 strict = true
 warn_unreachable = true

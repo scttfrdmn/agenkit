@@ -35,9 +35,9 @@ class PromptInjectionDetector:
     # Patterns indicating prompt injection attempts
     dangerous_patterns: List[str] = field(
         default_factory=lambda: [
-            r"ignore\s+(previous|all|above|prior)\s+instructions?",
-            r"disregard\s+(previous|all|above|prior)",
-            r"forget\s+(everything|all|previous)",
+            r"ignore\s+.*?(previous|all|above|prior).*?instructions?",
+            r"disregard\s+.*?(previous|all|above|prior)",
+            r"forget\s+.*?(everything|all|previous)",
             r"new\s+instructions?:",
             r"system\s*(prompt|message)?:",
             r"you\s+are\s+now",
@@ -76,7 +76,7 @@ class PromptInjectionDetector:
     )
 
     # Score threshold for blocking (0-100)
-    threshold: int = 10
+    threshold: int = 8
 
     def detect(self, text: str) -> tuple[bool, int, List[str]]:
         """

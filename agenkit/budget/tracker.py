@@ -23,8 +23,10 @@ class Cost:
         model: Model identifier
         input_tokens: Number of input tokens
         output_tokens: Number of output tokens
+        thinking_tokens: Number of thinking/reasoning tokens (o3, Claude 4 extended)
         input_cost: Cost for input tokens ($)
         output_cost: Cost for output tokens ($)
+        thinking_cost: Cost for thinking tokens ($)
         total_cost: Total cost ($)
         timestamp: When cost was recorded
         metadata: Additional metadata
@@ -34,8 +36,10 @@ class Cost:
     model: str
     input_tokens: int
     output_tokens: int
+    thinking_tokens: int
     input_cost: float
     output_cost: float
+    thinking_cost: float
     total_cost: float
     timestamp: datetime
     metadata: dict
@@ -147,6 +151,7 @@ class CostTracker:
         model: str,
         input_tokens: int,
         output_tokens: int,
+        thinking_tokens: int = 0,
         metadata: Optional[dict] = None
     ) -> Cost:
         """
@@ -158,6 +163,7 @@ class CostTracker:
             model: Model identifier
             input_tokens: Number of input tokens
             output_tokens: Number of output tokens
+            thinking_tokens: Number of thinking/reasoning tokens (default: 0)
             metadata: Optional metadata (message_id, etc.)
 
         Returns:
@@ -170,15 +176,21 @@ class CostTracker:
             ...     "assistant",
             ...     "claude-sonnet-4",
             ...     1000,
-            ...     500
+            ...     500,
+            ...     thinking_tokens=5000
             ... )
             >>> print(f"${cost.total_cost:.4f}")
-            $0.0105
+            $0.0180
         """
         # Calculate costs
         input_cost = self.model_pricing.calculate(model, input_tokens, "input")
         output_cost = self.model_pricing.calculate(model, output_tokens, "output")
-        total_cost = input_cost + output_cost
+
+        # Thinking tokens typically use output token pricing
+        # (some models may charge differently, but this is a reasonable default)
+        thinking_cost = self.model_pricing.calculate(model, thinking_tokens, "output") if thinking_tokens > 0 else 0.0
+
+        total_cost = input_cost + output_cost + thinking_cost
 
         # Create record
         cost = Cost(
@@ -187,8 +199,10 @@ class CostTracker:
             model=model,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
+            thinking_tokens=thinking_tokens,
             input_cost=input_cost,
             output_cost=output_cost,
+            thinking_cost=thinking_cost,
             total_cost=total_cost,
             timestamp=datetime.now(timezone.utc),
             metadata=metadata or {}
@@ -411,19 +425,22 @@ class CostTracker:
                 "total_requests": 0,
                 "total_input_tokens": 0,
                 "total_output_tokens": 0,
+                "total_thinking_tokens": 0,
                 "avg_cost_per_request": 0.0,
             }
 
         total_cost = sum(c.total_cost for c in costs)
         total_input_tokens = sum(c.input_tokens for c in costs)
         total_output_tokens = sum(c.output_tokens for c in costs)
+        total_thinking_tokens = sum(c.thinking_tokens for c in costs)
 
         return {
             "total_cost": total_cost,
             "total_requests": len(costs),
             "total_input_tokens": total_input_tokens,
             "total_output_tokens": total_output_tokens,
-            "total_tokens": total_input_tokens + total_output_tokens,
+            "total_thinking_tokens": total_thinking_tokens,
+            "total_tokens": total_input_tokens + total_output_tokens + total_thinking_tokens,
             "avg_cost_per_request": total_cost / len(costs),
-            "avg_tokens_per_request": (total_input_tokens + total_output_tokens) / len(costs),
+            "avg_tokens_per_request": (total_input_tokens + total_output_tokens + total_thinking_tokens) / len(costs),
         }

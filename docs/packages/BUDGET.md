@@ -683,19 +683,172 @@ See the `examples/budget/` directory:
 - `AddTokens(model string, prompt, completion int)`
 - `GetBreakdown() map[string]BudgetStats`
 
+## Extended Thinking & Reasoning Budgets
+
+Some models (like o3, Claude 4 extended) support **extended thinking mode** where they spend additional computation/tokens on reasoning before generating output.
+
+### ThinkingBudgetAllocator
+
+Dynamically allocates thinking budgets based on complexity and cost constraints:
+
+```python
+from agenkit.budget import ThinkingBudgetAllocator, ThinkingMode
+
+allocator = ThinkingBudgetAllocator(
+    instant_thinking_tokens=0,       # No thinking (instant mode)
+    light_thinking_tokens=3000,      # Light reasoning
+    full_thinking_tokens=15000,      # Deep reasoning
+    min_budget_for_extended=0.50     # Require $0.50 for extended thinking
+)
+
+# Allocate based on complexity
+budget = await allocator.allocate(
+    messages=messages,
+    complexity="complex",  # "simple", "medium", or "complex"
+    budget_remaining=5.0   # Remaining budget
+)
+
+print(f"Mode: {budget.mode.value}")  # "instant" or "extended"
+print(f"Thinking tokens: {budget.max_thinking_tokens}")
+print(f"Estimated cost: ${budget.estimated_cost:.4f}")
+```
+
+**Strategy:**
+- Simple queries → Instant mode (0 thinking tokens)
+- Medium queries → Light extended (2-5k thinking tokens)
+- Complex queries → Full extended (10-20k thinking tokens)
+- Insufficient budget → Force instant mode
+
+### Thinking Token Tracking
+
+CostTracker now tracks thinking tokens separately:
+
+```python
+from agenkit.budget import CostTracker
+
+tracker = CostTracker()
+
+# Record cost with thinking tokens
+cost = await tracker.record_cost(
+    session_id="session-1",
+    agent_name="reasoning-agent",
+    model="claude-sonnet-4",
+    input_tokens=1000,
+    output_tokens=500,
+    thinking_tokens=10000  # Extended thinking
+)
+
+print(f"Thinking cost: ${cost.thinking_cost:.4f}")
+print(f"Total cost: ${cost.total_cost:.4f}")
+
+# Statistics include thinking tokens
+stats = await tracker.get_statistics(session_id="session-1")
+print(f"Total thinking tokens: {stats['total_thinking_tokens']:,}")
+```
+
+### ModelOptimizer with Extended Thinking
+
+Use `complete_with_thinking()` for automatic model + thinking mode selection:
+
+```python
+from agenkit.budget import ModelOptimizer, ThinkingBudgetAllocator
+
+allocator = ThinkingBudgetAllocator()
+optimizer = ModelOptimizer(
+    cheap_model="claude-haiku-3",
+    medium_model="claude-sonnet-4",
+    expensive_model="claude-opus-4",
+    llm_clients=clients,
+    thinking_budget_allocator=allocator
+)
+
+# Automatically selects model AND thinking mode
+response = await optimizer.complete_with_thinking(
+    messages=messages,
+    budget_remaining=5.0
+)
+
+print(f"Model: {response.metadata['selected_model']}")
+print(f"Thinking mode: {response.metadata['thinking_mode']}")
+print(f"Thinking tokens: {response.metadata['thinking_tokens']}")
+```
+
+### ThinkingModeDetector
+
+Automatically detect if queries need extended thinking:
+
+```python
+from agenkit.budget import ThinkingModeDetector
+
+detector = ThinkingModeDetector()
+
+messages = [Message(
+    role="user",
+    content="Analyze step by step and evaluate trade-offs"
+)]
+
+needs_extended = await detector.needs_extended_thinking(messages)
+print(f"Needs extended thinking: {needs_extended}")
+```
+
+**Detection heuristics:**
+- Reasoning keywords ("step by step", "analyze", "think through")
+- Long substantial queries
+- Mathematical or coding problems
+- Multiple reasoning patterns
+
+### Cost-Quality Trade-offs
+
+Extended thinking provides better reasoning at higher cost:
+
+```python
+# Instant mode: Fast, cheap, good for simple tasks
+cost_instant = await tracker.record_cost(..., thinking_tokens=0)
+# Cost: ~$0.01, Time: ~1x
+
+# Extended mode: Slower, more expensive, better for complex reasoning
+cost_extended = await tracker.record_cost(..., thinking_tokens=10000)
+# Cost: ~$0.18, Time: ~4x, Quality: Higher
+```
+
+**Use extended thinking for:**
+- Multi-step reasoning problems
+- Complex analysis and evaluation
+- Trade-off comparisons
+- Problem-solving tasks
+
+**Use instant mode for:**
+- Simple Q&A
+- Greetings and small talk
+- Quick lookups
+- Budget-constrained scenarios
+
+### Example
+
+See `examples/budget/extended_thinking_demo.py` for a comprehensive demonstration with 6 scenarios:
+1. Basic allocation by complexity
+2. Budget-constrained allocation
+3. Automatic thinking mode detection
+4. Cost tracking with thinking tokens
+5. Adaptive allocation strategies
+6. Cost comparisons (instant vs extended)
+
 ## Troubleshooting
 
 **Issue**: Costs higher than expected
-**Solution**: Check model pricing, verify token counts, review caching effectiveness
+**Solution**: Check model pricing, verify token counts, review caching effectiveness, check thinking token usage
 
 **Issue**: Budget exceeded too quickly
-**Solution**: Increase limits, switch to cheaper model, implement caching, reduce context size
+**Solution**: Increase limits, switch to cheaper model, implement caching, reduce context size, use instant mode instead of extended thinking
 
 **Issue**: Inaccurate token estimates
 **Solution**: Update token counter, calibrate estimator, use actual counts from API
 
 **Issue**: Can't track multi-model usage
 **Solution**: Use MultiModelBudgetTracker or separate trackers per model
+
+**Issue**: Extended thinking too expensive
+**Solution**: Adjust thinking budget allocator settings, use light extended instead of full, implement stricter budget constraints
 
 ## Related Packages
 

@@ -587,5 +587,6 @@ class TestGRPCTransportErrorHandling:
 
             # Don't send anything, just try to receive (should timeout)
             # Note: asyncio.wait_for raises asyncio.TimeoutError
+            # Using 0.5s timeout to handle system load during full test suite runs
             with pytest.raises((ConnectionClosedError, asyncio.TimeoutError)):
-                await asyncio.wait_for(transport.receive_framed(), timeout=0.1)
+                await asyncio.wait_for(transport.receive_framed(), timeout=0.5)

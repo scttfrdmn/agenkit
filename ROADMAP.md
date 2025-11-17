@@ -737,11 +737,20 @@ Focus: New agent patterns from 2025 research + production capabilities.
 
 ### Q1 2026: Safety & Reasoning
 
-#### [#71](https://github.com/scttfrdmn/agenkit/issues/71) Agent Safety Framework ✅ HIGH PRIORITY
-- [ ] Input validation (prompt injection defense)
-- [ ] Output validation (schema, content filtering)
-- [ ] Action constraints (sandboxing, permissions)
-- [ ] Anomaly detection
+#### [#71](https://github.com/scttfrdmn/agenkit/issues/71) Agent Safety Framework ⏳ IN PROGRESS
+- [x] Input validation (prompt injection defense) - Python ✅ Go ✅
+- [x] Output validation (schema, content filtering) - Python ✅ Go ✅
+- [x] Action constraints (sandboxing, permissions) - Python ✅ Go ✅
+- [x] Anomaly detection - Python ✅ Go ✅
+- [x] Audit logging - Python ✅ Go ✅
+- [x] Python examples (4 examples) ✅
+- [x] Python tests for input_validation (39 tests) ✅
+- [x] Documentation (docs/safety.md) ✅
+- [ ] Tests for other modules (output, permissions, anomaly, audit)
+- [ ] Go examples
+- [ ] Go tests
+
+**Status:** Core implementation complete. Testing in progress.
 
 **Why**: Autonomous agents need guardrails. Research: "prompt injection = complete control."
 

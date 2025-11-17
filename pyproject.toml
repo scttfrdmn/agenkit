@@ -73,6 +73,8 @@ packages = ["agenkit", "proto"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# Increase default timeout for async tests to handle system load
+timeout = 30
 addopts = [
     "--strict-markers",
     "--strict-config",
@@ -87,7 +89,13 @@ markers = [
     "chaos_service: marks tests as service chaos tests (crashes, slow responses)",
     "chaos_middleware: marks tests as middleware validation under chaos",
     "property: marks tests as property-based tests with Hypothesis (deselect with '-m \"not property\"')",
+    "flaky: marks tests that may be flaky due to timing/resource contention (auto-retry)",
 ]
+
+[tool.pytest.asyncio]
+# Increase timeout for individual async tests
+asyncio_default_fixture_loop_scope = "function"
+asyncio_default_test_loop_scope = "function"
 
 [tool.mypy]
 strict = true

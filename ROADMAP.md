@@ -737,7 +737,7 @@ Focus: New agent patterns from 2025 research + production capabilities.
 
 ### Q1 2026: Safety & Reasoning
 
-#### [#71](https://github.com/scttfrdmn/agenkit/issues/71) Agent Safety Framework ⏳ PYTHON COMPLETE
+#### [#71](https://github.com/scttfrdmn/agenkit/issues/71) Agent Safety Framework ✅ COMPLETE
 - [x] Input validation (prompt injection defense) - Python ✅ Go ✅
 - [x] Output validation (schema, content filtering) - Python ✅ Go ✅
 - [x] Action constraints (sandboxing, permissions) - Python ✅ Go ✅
@@ -746,10 +746,10 @@ Focus: New agent patterns from 2025 research + production capabilities.
 - [x] Python examples (4 examples) ✅
 - [x] Python tests - 162 tests ✅ (input:39, output:40, permissions:45, anomaly:21, audit:17)
 - [x] Documentation (docs/safety.md) ✅
-- [ ] Go examples
-- [ ] Go tests
+- [x] Go examples (2 examples) ✅
+- [x] Go tests - 94 tests ✅ (input:30, permissions:34, anomaly:17, audit:13)
 
-**Status:** Python implementation and testing complete (162/162 tests passing). Go examples and tests remaining.
+**Status:** ✅ Complete. Full Python and Go implementation with comprehensive test coverage (256 total tests) and practical examples.
 
 **Why**: Autonomous agents need guardrails. Research: "prompt injection = complete control."
 

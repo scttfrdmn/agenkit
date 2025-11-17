@@ -34,6 +34,15 @@ from agenkit.patterns.planning import (
     StepStatus,
     StepExecutor,
 )
+from agenkit.patterns.multiagent import (
+    MultiAgentOrchestrator,
+    ConsensusAgent,
+    AgentTask,
+)
+from agenkit.patterns.autonomous import (
+    AutonomousAgent,
+    Goal,
+)
 
 __all__ = [
     "Task",
@@ -53,4 +62,9 @@ __all__ = [
     "PlanStep",
     "StepStatus",
     "StepExecutor",
+    "MultiAgentOrchestrator",
+    "ConsensusAgent",
+    "AgentTask",
+    "AutonomousAgent",
+    "Goal",
 ]

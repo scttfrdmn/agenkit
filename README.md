@@ -324,6 +324,8 @@ See [benchmarks/BASELINES.md](benchmarks/BASELINES.md) for detailed performance 
 - **[API Reference](docs/API.md)** - Complete API documentation
 - **[Deployment Guide](deploy/README.md)** - Docker and Kubernetes
 - **[Examples](examples/README.md)** - 27+ comprehensive examples
+- **[Security Policy](SECURITY.md)** - Vulnerability reporting and best practices
+- **[Compatibility Matrix](COMPATIBILITY.md)** - Language, platform, and version support
 
 ### Package-Specific Docs
 - [Memory Management](agenkit/memory/README.md) - Context retention strategies

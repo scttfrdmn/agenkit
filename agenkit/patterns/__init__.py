@@ -6,6 +6,7 @@ This module provides high-level patterns for working with agents, including:
 - Sequential, Parallel, Router: Orchestration patterns
 - ConversationalAgent: Maintains conversation history for context-aware responses
 - ReActAgent: Reasoning and acting with tools (ReAct pattern)
+- PlanningAgent: Creates and executes multi-step plans
 """
 
 from agenkit.patterns.task import Task
@@ -26,6 +27,13 @@ from agenkit.patterns.react import (
     ToolRegistry,
     ReActStep,
 )
+from agenkit.patterns.planning import (
+    PlanningAgent,
+    Plan,
+    PlanStep,
+    StepStatus,
+    StepExecutor,
+)
 
 __all__ = [
     "Task",
@@ -40,4 +48,9 @@ __all__ = [
     "ToolResult",
     "ToolRegistry",
     "ReActStep",
+    "PlanningAgent",
+    "Plan",
+    "PlanStep",
+    "StepStatus",
+    "StepExecutor",
 ]

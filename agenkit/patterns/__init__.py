@@ -5,6 +5,7 @@ This module provides high-level patterns for working with agents, including:
 - Task: One-shot agent execution with lifecycle management
 - Sequential, Parallel, Router: Orchestration patterns
 - ConversationalAgent: Maintains conversation history for context-aware responses
+- ReActAgent: Reasoning and acting with tools (ReAct pattern)
 """
 
 from agenkit.patterns.task import Task
@@ -18,6 +19,13 @@ from agenkit.patterns.conversational import (
     StreamingConversationalAgent,
     LLMClient,
 )
+from agenkit.patterns.react import (
+    ReActAgent,
+    Tool,
+    ToolResult,
+    ToolRegistry,
+    ReActStep,
+)
 
 __all__ = [
     "Task",
@@ -27,4 +35,9 @@ __all__ = [
     "ConversationalAgent",
     "StreamingConversationalAgent",
     "LLMClient",
+    "ReActAgent",
+    "Tool",
+    "ToolResult",
+    "ToolRegistry",
+    "ReActStep",
 ]

@@ -31,6 +31,13 @@ export {
   WebSocketTransportConfig,
   WebSocketTransportError,
 } from './transports/websocket';
+export {
+  GrpcAgent,
+  GrpcServer,
+  GrpcTransportConfig,
+  GrpcServerConfig,
+  GrpcTransportError,
+} from './transports/grpc';
 
 // Middleware
 export { Middleware, applyMiddleware, BaseMiddleware } from './middleware/base';

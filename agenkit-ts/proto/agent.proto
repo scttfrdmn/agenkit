@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package agenkit;
+
+option go_package = "github.com/agenkit/agenkit-go/proto/agentpb";
+
+// AgentService defines the gRPC service for agent communication
+service AgentService {
+  // Process sends a request and receives a single response
+  rpc Process(Request) returns (Response);
+
+  // ProcessStream sends a request and receives a stream of response chunks
+  rpc ProcessStream(Request) returns (stream StreamChunk);
+
+  // BidirectionalStream enables full-duplex streaming
+  rpc BidirectionalStream(stream Request) returns (stream Response);
+}
+
+// Request represents a client request to the agent
+message Request {
+  string version = 1;          // Protocol version (e.g., "1.0")
+  string id = 2;               // Unique request ID (UUID)
+  string timestamp = 3;        // ISO 8601 timestamp
+  string method = 4;           // Method name ("process", "execute", "stream")
+  string agent_name = 5;       // Target agent name (optional)
+  repeated Message messages = 6;  // Messages for processing
+  map<string, string> metadata = 7;  // Additional metadata
+  ToolCall tool_call = 8;      // Tool execution request (optional)
+}
+
+// Response represents a server response
+message Response {
+  string version = 1;          // Protocol version
+  string id = 2;               // Request ID being responded to
+  string timestamp = 3;        // ISO 8601 timestamp
+  ResponseType type = 4;       // Response type
+  Message message = 5;         // Response message (for process)
+  ToolResult tool_result = 6;  // Tool execution result (for execute)
+  Error error = 7;             // Error details (if failed)
+  map<string, string> metadata = 8;  // Additional metadata
+}
+
+// ResponseType indicates what kind of response this is
+enum ResponseType {
+  RESPONSE_TYPE_UNSPECIFIED = 0;
+  RESPONSE_TYPE_MESSAGE = 1;      // Normal message response
+  RESPONSE_TYPE_TOOL_RESULT = 2;  // Tool execution result
+  RESPONSE_TYPE_ERROR = 3;        // Error response
+}
+
+// StreamChunk represents a chunk in a streaming response
+message StreamChunk {
+  string version = 1;          // Protocol version
+  string id = 2;               // Request ID
+  string timestamp = 3;        // ISO 8601 timestamp
+  ChunkType type = 4;          // Chunk type
+  Message message = 5;         // Message chunk (optional)
+  Error error = 6;             // Error (optional)
+}
+
+// ChunkType indicates what kind of chunk this is
+enum ChunkType {
+  CHUNK_TYPE_UNSPECIFIED = 0;
+  CHUNK_TYPE_MESSAGE = 1;    // Message chunk
+  CHUNK_TYPE_END = 2;        // End of stream
+  CHUNK_TYPE_ERROR = 3;      // Error chunk
+}
+
+// Message represents a conversational message
+message Message {
+  string role = 1;                    // Message role (user, assistant, system, tool)
+  string content = 2;                 // Message content (text or JSON)
+  map<string, string> metadata = 3;   // Additional metadata
+  string timestamp = 4;               // ISO 8601 timestamp
+}
+
+// ToolCall represents a request to execute a tool
+message ToolCall {
+  string name = 1;                    // Tool name
+  string arguments = 2;               // Tool arguments (JSON string)
+  map<string, string> metadata = 3;   // Additional metadata
+}
+
+// ToolResult represents the result of tool execution
+message ToolResult {
+  bool success = 1;                   // Whether execution succeeded
+  string data = 2;                    // Result data (JSON string)
+  string error = 3;                   // Error message (if failed)
+  map<string, string> metadata = 4;   // Additional metadata
+}
+
+// Error represents an error response
+message Error {
+  string code = 1;                    // Error code
+  string message = 2;                 // Human-readable error message
+  map<string, string> details = 3;    // Additional error details
+}

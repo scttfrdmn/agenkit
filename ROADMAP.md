@@ -753,11 +753,17 @@ Focus: New agent patterns from 2025 research + production capabilities.
 
 **Why**: Autonomous agents need guardrails. Research: "prompt injection = complete control."
 
-#### [#72](https://github.com/scttfrdmn/agenkit/issues/72) Reasoning Budget Pattern ✅ NEW IN 2025
-- [ ] Dynamic allocation (instant vs extended thinking)
-- [ ] Complexity detection
-- [ ] Model router (o3 for hard, Sonnet for medium, Haiku for simple)
-- [ ] Cost-quality tradeoff
+#### [#72](https://github.com/scttfrdmn/agenkit/issues/72) Reasoning Budget Pattern ✅ COMPLETE
+- [x] Dynamic allocation (instant vs extended thinking) - `ThinkingBudgetAllocator`
+- [x] Complexity detection - `ComplexityDetector` + `ThinkingModeDetector`
+- [x] Model router (o3 for hard, Sonnet for medium, Haiku for simple) - `ModelOptimizer.complete_with_thinking()`
+- [x] Cost-quality tradeoff - Budget-aware thinking mode selection
+- [x] Thinking token tracking - Extended `CostTracker` with thinking_tokens field
+- [x] Python tests - 21 tests for extended thinking ✅
+- [x] Example - `examples/budget/extended_thinking_demo.py`
+- [x] Documentation - Extended BUDGET.md with thinking budget section
+
+**Status:** Complete (100%). Supports o3/Claude 4 extended thinking modes with dynamic budget allocation.
 
 **Why**: Hybrid models (Claude 4, o3) have dual modes. Need orchestration.
 

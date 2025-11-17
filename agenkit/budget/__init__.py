@@ -11,6 +11,10 @@ Classes:
     BudgetLimiter: Middleware for enforcing cost budgets
     BudgetWarning: Middleware for budget warnings
     ModelOptimizer: Route queries to models based on complexity/cost
+    ThinkingBudgetAllocator: Dynamic thinking budget allocation
+    ThinkingMode: Enum for instant vs extended thinking
+    ThinkingBudget: Thinking budget allocation dataclass
+    ThinkingModeDetector: Detect if queries need extended thinking
 
 Example:
     >>> from agenkit.budget import CostTracker, BudgetLimiter
@@ -28,6 +32,11 @@ Example:
     >>> # Enforce budget
     >>> limiter = BudgetLimiter(tracker, session_budget=10.00)
     >>> wrapped_agent = limiter(agent)
+    >>>
+    >>> # Extended thinking
+    >>> from agenkit.budget import ThinkingBudgetAllocator
+    >>> allocator = ThinkingBudgetAllocator()
+    >>> budget = await allocator.allocate(messages, complexity="complex")
 """
 
 from .models import ModelPricing
@@ -38,6 +47,12 @@ from .optimizer import (
     ComplexityDetector,
     HeuristicComplexityDetector,
     LLMBasedComplexityDetector
+)
+from .reasoning import (
+    ThinkingBudgetAllocator,
+    ThinkingMode,
+    ThinkingBudget,
+    ThinkingModeDetector
 )
 
 __all__ = [
@@ -60,4 +75,10 @@ __all__ = [
     "ComplexityDetector",
     "HeuristicComplexityDetector",
     "LLMBasedComplexityDetector",
+
+    # Extended Thinking
+    "ThinkingBudgetAllocator",
+    "ThinkingMode",
+    "ThinkingBudget",
+    "ThinkingModeDetector",
 ]

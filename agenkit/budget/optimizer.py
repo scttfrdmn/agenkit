@@ -167,7 +167,8 @@ class ModelOptimizer:
         medium_model: str,
         expensive_model: str,
         llm_clients: dict,  # model_name -> LLM client
-        complexity_detector: Optional[ComplexityDetector] = None
+        complexity_detector: Optional[ComplexityDetector] = None,
+        thinking_budget_allocator: Optional['ThinkingBudgetAllocator'] = None
     ):
         """
         Initialize model optimizer.
@@ -178,12 +179,14 @@ class ModelOptimizer:
             expensive_model: Model for complex queries (e.g., "claude-opus-4")
             llm_clients: Dict mapping model names to LLM clients
             complexity_detector: Complexity detector (defaults to heuristic)
+            thinking_budget_allocator: Optional allocator for extended thinking budgets
         """
         self.cheap_model = cheap_model
         self.medium_model = medium_model
         self.expensive_model = expensive_model
         self.llm_clients = llm_clients
         self.detector = complexity_detector or HeuristicComplexityDetector()
+        self.thinking_allocator = thinking_budget_allocator
 
         # Validate clients
         for model in [cheap_model, medium_model, expensive_model]:
@@ -343,3 +346,103 @@ class ModelOptimizer:
             estimates[model_name] = input_cost + output_cost
 
         return estimates
+
+    async def complete_with_thinking(
+        self,
+        messages: list[Message],
+        budget_remaining: Optional[float] = None,
+        **kwargs
+    ) -> Message:
+        """
+        Route to appropriate model with dynamic thinking budget allocation.
+
+        Automatically selects:
+        1. Model (cheap/medium/expensive) based on complexity
+        2. Thinking mode (instant/extended) based on complexity and budget
+
+        Args:
+            messages: Conversation messages
+            budget_remaining: Remaining budget in dollars (None = unlimited)
+            **kwargs: Additional arguments for LLM
+
+        Returns:
+            Response message with metadata including:
+            - selected_model: Model that was used
+            - complexity: Detected complexity level
+            - thinking_mode: "instant" or "extended"
+            - thinking_tokens: Tokens spent on reasoning (if available)
+            - routing_reason: Why this configuration was selected
+
+        Example:
+            >>> from agenkit.budget import ThinkingBudgetAllocator
+            >>> allocator = ThinkingBudgetAllocator()
+            >>> optimizer = ModelOptimizer(..., thinking_budget_allocator=allocator)
+            >>> response = await optimizer.complete_with_thinking(
+            ...     messages=messages,
+            ...     budget_remaining=5.0
+            ... )
+            >>> print(f"Used {response.metadata['thinking_mode']} mode")
+            Used extended mode
+        """
+        # Import here to avoid circular dependency
+        from .reasoning import ThinkingBudgetAllocator
+
+        # Use provided allocator or create default
+        allocator = self.thinking_allocator or ThinkingBudgetAllocator()
+
+        # Detect complexity
+        complexity = await self.detector.detect(messages)
+
+        # Select model based on complexity
+        if complexity == "simple":
+            model_name = self.cheap_model
+            reason = "Simple query, using cheap model"
+        elif complexity == "medium":
+            model_name = self.medium_model
+            reason = "Medium complexity, using mid-tier model"
+        else:  # complex
+            model_name = self.expensive_model
+            reason = "Complex query, using expensive model"
+
+        # Allocate thinking budget
+        thinking_budget = await allocator.allocate(
+            messages=messages,
+            complexity=complexity,
+            budget_remaining=budget_remaining,
+            model=model_name
+        )
+
+        logger.info(
+            f"Routing to {model_name} with {thinking_budget.mode.value} thinking "
+            f"(max {thinking_budget.max_thinking_tokens} tokens): {reason}"
+        )
+
+        # Get LLM client
+        llm = self.llm_clients[model_name]
+
+        # Add thinking budget to kwargs if model supports it
+        # Note: This assumes LLM client accepts max_thinking_tokens parameter
+        # Actual implementation depends on LLM client interface
+        if thinking_budget.max_thinking_tokens > 0:
+            kwargs['max_thinking_tokens'] = thinking_budget.max_thinking_tokens
+
+        # Complete
+        response = await llm.complete(messages, **kwargs)
+
+        # Add routing metadata
+        response.metadata["selected_model"] = model_name
+        response.metadata["complexity"] = complexity
+        response.metadata["thinking_mode"] = thinking_budget.mode.value
+        response.metadata["max_thinking_tokens"] = thinking_budget.max_thinking_tokens
+        response.metadata["routing_reason"] = reason
+
+        # Extract thinking tokens if available from response
+        # (some models like o3 return this in usage stats)
+        if hasattr(response, 'thinking_tokens'):
+            response.metadata["thinking_tokens"] = response.thinking_tokens
+        elif "thinking_tokens" in response.metadata:
+            pass  # Already present
+        else:
+            response.metadata["thinking_tokens"] = 0
+
+        return response

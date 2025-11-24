@@ -20,13 +20,10 @@ All benchmarks run with high iteration counts for statistical significance.
 """
 
 import asyncio
-import pytest
 import time
-from typing import Any
 
 from agenkit.interfaces import Agent, Message, Tool, ToolResult
-from agenkit.patterns import SequentialPattern, ParallelPattern, RouterPattern
-
+from agenkit.patterns import ParallelPattern, RouterPattern, SequentialPattern
 
 # ============================================
 # Baseline Functions (No Framework)
@@ -150,7 +147,7 @@ def test_agent_interface_overhead():
     # Calculate overhead
     overhead = calculate_overhead(baseline_time, framework_time)
 
-    print(f"\nAgent Interface Overhead Benchmark:")
+    print("\nAgent Interface Overhead Benchmark:")
     print(f"  Iterations: {iterations:,}")
     print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
     print(f"  Framework:  {framework_time:.4f}s ({framework_time/iterations*1000:.6f}ms per call)")
@@ -187,7 +184,7 @@ def test_tool_interface_overhead():
     # Calculate overhead
     overhead = calculate_overhead(baseline_time, framework_time)
 
-    print(f"\nTool Interface Overhead Benchmark:")
+    print("\nTool Interface Overhead Benchmark:")
     print(f"  Iterations: {iterations:,}")
     print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
     print(f"  Framework:  {framework_time:.4f}s ({framework_time/iterations*1000:.6f}ms per call)")
@@ -235,9 +232,9 @@ def test_sequential_pattern_overhead():
     # Calculate overhead
     overhead = calculate_overhead(baseline_time, framework_time)
 
-    print(f"\nSequential Pattern Overhead Benchmark:")
+    print("\nSequential Pattern Overhead Benchmark:")
     print(f"  Iterations: {iterations:,}")
-    print(f"  Agents:     3")
+    print("  Agents:     3")
     print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
     print(f"  Framework:  {framework_time:.4f}s ({framework_time/iterations*1000:.6f}ms per call)")
     print(f"  Overhead:   {overhead*100:.2f}%")
@@ -281,9 +278,9 @@ def test_parallel_pattern_overhead():
     # Calculate overhead
     overhead = calculate_overhead(baseline_time, framework_time)
 
-    print(f"\nParallel Pattern Overhead Benchmark:")
+    print("\nParallel Pattern Overhead Benchmark:")
     print(f"  Iterations: {iterations:,}")
-    print(f"  Agents:     3")
+    print("  Agents:     3")
     print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
     print(f"  Framework:  {framework_time:.4f}s ({framework_time/iterations*1000:.6f}ms per call)")
     print(f"  Overhead:   {overhead*100:.2f}%")
@@ -337,9 +334,9 @@ def test_router_pattern_overhead():
     # Calculate overhead
     overhead = calculate_overhead(baseline_time, framework_time)
 
-    print(f"\nRouter Pattern Overhead Benchmark:")
+    print("\nRouter Pattern Overhead Benchmark:")
     print(f"  Iterations: {iterations:,}")
-    print(f"  Handlers:   2")
+    print("  Handlers:   2")
     print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
     print(f"  Framework:  {framework_time:.4f}s ({framework_time/iterations*1000:.6f}ms per call)")
     print(f"  Overhead:   {overhead*100:.2f}%")
@@ -393,13 +390,13 @@ def test_message_creation_overhead():
     # Calculate overhead
     overhead = calculate_overhead(baseline_time, framework_time)
 
-    print(f"\nMessage Creation Overhead Benchmark:")
+    print("\nMessage Creation Overhead Benchmark:")
     print(f"  Iterations: {iterations:,}")
     print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000000:.6f}μs per creation)")
     print(f"  Framework:  {framework_time:.4f}s ({framework_time/iterations*1000000:.6f}μs per creation)")
     print(f"  Overhead:   {overhead*100:.2f}%")
     print(f"  Absolute:   {(framework_time-baseline_time)/iterations*1000000:.3f}μs per Message")
-    print(f"  Note: High overhead is intentional - we trade creation cost for immutability & safety")
+    print("  Note: High overhead is intentional - we trade creation cost for immutability & safety")
 
     # Accept high overhead for safety/immutability benefits
     # Absolute cost is ~0.5μs per Message - negligible in production

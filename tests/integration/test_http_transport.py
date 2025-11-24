@@ -194,7 +194,7 @@ async def test_go_client_to_python_server(python_server):
     """Test Go client connecting to Python server via HTTP/1.1."""
     # We'll execute a Go test client (run from agenkit-go directory) with dynamic port
     # S603, S607, ASYNC221: Safe in test infrastructure - port is from test fixture
-    result = subprocess.run(  # noqa: S603, S607, ASYNC221
+    result = subprocess.run(  # noqa: S603, ASYNC221
         [
             "go",
             "run",
@@ -228,7 +228,7 @@ async def test_bidirectional_communication(python_server, go_server):
 
     # Go → Python (via subprocess, run from agenkit-go directory) with dynamic port
     # S603, S607, ASYNC221: Safe in test infrastructure - port is from test fixture
-    result = subprocess.run(  # noqa: S603, S607, ASYNC221
+    result = subprocess.run(  # noqa: S603, ASYNC221
         [
             "go",
             "run",

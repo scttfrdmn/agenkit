@@ -16,16 +16,15 @@ Target: Establish baselines for streaming overhead and identify protocol advanta
 """
 
 import asyncio
-import pytest
 import time
-from typing import List, Optional
-from dataclasses import dataclass
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 
-from agenkit.interfaces import Agent, Message
+import pytest
+
 from agenkit.adapters.python import RemoteAgent
 from agenkit.adapters.python.http_server import HTTPAgentServer
-
+from agenkit.interfaces import Agent, Message
 
 # ============================================
 # Streaming Metrics
@@ -245,10 +244,10 @@ async def test_http1_streaming_latency():
 
         avg_time = total_time / iterations
         print(f"\n{'='*60}")
-        print(f"HTTP/1.1 Streaming Latency (10 chunks @ 50ms)")
+        print("HTTP/1.1 Streaming Latency (10 chunks @ 50ms)")
         print(f"{'='*60}")
         print(f"Average total time: {avg_time*1000:.2f}ms")
-        print(f"Expected: ~500ms")
+        print("Expected: ~500ms")
         print(f"Status: {'✅ PASS' if 450 <= avg_time*1000 <= 600 else '❌ FAIL'}")
         print(f"{'='*60}\n")
 
@@ -282,10 +281,10 @@ async def test_http1_streaming_10_chunks():
 
         avg_time = total_time / iterations
         print(f"\n{'='*60}")
-        print(f"HTTP/1.1 Streaming 10 Chunks (no delay)")
+        print("HTTP/1.1 Streaming 10 Chunks (no delay)")
         print(f"{'='*60}")
         print(f"Average time: {avg_time*1000:.2f}ms ({avg_time*1000000:.0f}µs)")
-        print(f"Memory footprint: ~1-2KB per chunk")
+        print("Memory footprint: ~1-2KB per chunk")
         print(f"{'='*60}\n")
 
 
@@ -318,7 +317,7 @@ async def test_http1_streaming_50_chunks():
 
         avg_time = total_time / iterations
         print(f"\n{'='*60}")
-        print(f"HTTP/1.1 Streaming 50 Chunks (no delay)")
+        print("HTTP/1.1 Streaming 50 Chunks (no delay)")
         print(f"{'='*60}")
         print(f"Average time: {avg_time*1000:.2f}ms")
         print(f"Throughput: {50/avg_time:.0f} chunks/sec")
@@ -366,7 +365,7 @@ async def test_http1_streaming_vs_batch():
         overhead = (streaming_avg / batch_avg) if batch_avg > 0 else 0
 
         print(f"\n{'='*60}")
-        print(f"HTTP/1.1 Streaming vs Batch Comparison")
+        print("HTTP/1.1 Streaming vs Batch Comparison")
         print(f"{'='*60}")
         print(f"Streaming: {streaming_avg*1000:.2f}ms ({streaming_avg*1000000:.0f}µs)")
         print(f"Batch:     {batch_avg*1000:.2f}ms ({batch_avg*1000000:.0f}µs)")
@@ -400,7 +399,7 @@ async def test_http1_streaming_realistic():
         overhead = (metrics.total_time - expected_time) * 1000  # in ms
 
         print(f"\n{'='*60}")
-        print(f"HTTP/1.1 Realistic LLM Streaming (50 tokens @ 50ms)")
+        print("HTTP/1.1 Realistic LLM Streaming (50 tokens @ 50ms)")
         print(f"{'='*60}")
         print(f"Total time:      {metrics.total_time*1000:.0f}ms ({metrics.total_time:.3f}s)")
         print(f"Expected time:   {expected_time*1000:.0f}ms ({expected_time:.3f}s)")
@@ -445,10 +444,10 @@ async def test_http2_streaming_latency():
 
         avg_time = total_time / iterations
         print(f"\n{'='*60}")
-        print(f"HTTP/2 Streaming Latency (10 chunks @ 50ms)")
+        print("HTTP/2 Streaming Latency (10 chunks @ 50ms)")
         print(f"{'='*60}")
         print(f"Average total time: {avg_time*1000:.2f}ms")
-        print(f"Expected: ~500ms")
+        print("Expected: ~500ms")
         print(f"Status: {'✅ PASS' if 450 <= avg_time*1000 <= 600 else '❌ FAIL'}")
         print(f"{'='*60}\n")
 
@@ -482,11 +481,11 @@ async def test_http2_streaming_50_chunks():
 
         avg_time = total_time / iterations
         print(f"\n{'='*60}")
-        print(f"HTTP/2 Streaming 50 Chunks (no delay)")
+        print("HTTP/2 Streaming 50 Chunks (no delay)")
         print(f"{'='*60}")
         print(f"Average time: {avg_time*1000:.2f}ms")
         print(f"Throughput: {50/avg_time:.0f} chunks/sec")
-        print(f"Memory efficiency: Better than HTTP/1.1")
+        print("Memory efficiency: Better than HTTP/1.1")
         print(f"{'='*60}\n")
 
 
@@ -531,7 +530,7 @@ async def test_http2_streaming_vs_batch():
         overhead = (streaming_avg / batch_avg) if batch_avg > 0 else 0
 
         print(f"\n{'='*60}")
-        print(f"HTTP/2 Streaming vs Batch Comparison")
+        print("HTTP/2 Streaming vs Batch Comparison")
         print(f"{'='*60}")
         print(f"Streaming: {streaming_avg*1000:.2f}ms ({streaming_avg*1000000:.0f}µs)")
         print(f"Batch:     {batch_avg*1000:.2f}ms ({batch_avg*1000000:.0f}µs)")
@@ -550,8 +549,8 @@ if __name__ == "__main__":
     print("\n" + "="*70)
     print(" AGENKIT PYTHON STREAMING BENCHMARKS")
     print("="*70)
-    print(f"\nRunning comprehensive streaming performance tests...")
-    print(f"Comparing HTTP/1.1 and HTTP/2 cleartext (h2c) protocols\n")
+    print("\nRunning comprehensive streaming performance tests...")
+    print("Comparing HTTP/1.1 and HTTP/2 cleartext (h2c) protocols\n")
 
     # Run pytest with verbose output
     pytest.main([__file__, "-v", "-s"])

@@ -16,15 +16,14 @@ Target: Establish baselines and identify optimal protocols for different scenari
 """
 
 import asyncio
-import pytest
 import time
-from typing import Any, List
 from contextlib import asynccontextmanager
 
-from agenkit.interfaces import Agent, Message
+import pytest
+
 from agenkit.adapters.python import RemoteAgent
 from agenkit.adapters.python.http_server import HTTPAgentServer
-
+from agenkit.interfaces import Agent, Message
 
 # ============================================
 # Test Agents
@@ -536,7 +535,7 @@ async def test_realistic_workload():
 
     print("\n" + "="*70)
     print("Analysis:")
-    print(f"  Expected latency: ~10ms (agent processing) + network overhead")
+    print("  Expected latency: ~10ms (agent processing) + network overhead")
     for protocol, stats in results.items():
         overhead = stats["avg_latency_ms"] - 10
         print(f"  {protocol:10s} overhead: {overhead:.2f}ms ({overhead/10*100:.1f}% of processing time)")
@@ -570,7 +569,7 @@ async def test_transport_benchmark_summary():
     print("2. HTTP/2 (h2c): Better for concurrent load due to multiplexing")
     print("3. Message size impacts all protocols similarly")
     print("4. Transport overhead is minimal compared to agent processing time")
-    print("")
+    print()
     print("Note: HTTP/3 benchmarks require SSL/TLS configuration and are not")
     print("included in this test suite. HTTP/2 cleartext (h2c) provides a good")
     print("comparison for protocol efficiency without SSL overhead.")

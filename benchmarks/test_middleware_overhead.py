@@ -21,26 +21,22 @@ the minimal performance cost.
 """
 
 import asyncio
-import pytest
 import time
-from typing import Any
 
 from agenkit.interfaces import Agent, Message
 from agenkit.middleware import (
-    RetryConfig,
-    RetryDecorator,
-    Metrics,
-    MetricsDecorator,
-    CircuitBreakerConfig,
-    CircuitBreakerDecorator,
-    RateLimiterConfig,
-    RateLimiterDecorator,
-    TimeoutConfig,
-    TimeoutDecorator,
     BatchingConfig,
     BatchingDecorator,
+    CircuitBreakerConfig,
+    CircuitBreakerDecorator,
+    MetricsDecorator,
+    RateLimiterConfig,
+    RateLimiterDecorator,
+    RetryConfig,
+    RetryDecorator,
+    TimeoutConfig,
+    TimeoutDecorator,
 )
-
 
 # ============================================
 # Benchmark Agent
@@ -524,7 +520,7 @@ def test_stacked_middleware_overhead():
         threshold=0.60
     )
 
-    print(f"  Layers:     Metrics → Retry → Timeout → Circuit Breaker → Rate Limiter → Agent")
+    print("  Layers:     Metrics → Retry → Timeout → Circuit Breaker → Rate Limiter → Agent")
     print(f"  Per-layer:  ~{overhead*100/5:.2f}% average overhead per middleware")
 
     assert overhead < 0.60, f"Stacked middleware overhead {overhead*100:.2f}% exceeds 60%"
@@ -577,7 +573,7 @@ def test_minimal_stack_overhead():
         threshold=0.25
     )
 
-    print(f"  Layers:     Metrics → Retry → Agent")
+    print("  Layers:     Metrics → Retry → Agent")
     print(f"  Per-layer:  ~{overhead*100/2:.2f}% average overhead per middleware")
 
     assert overhead < 0.25, f"Minimal stack overhead {overhead*100:.2f}% exceeds 25%"

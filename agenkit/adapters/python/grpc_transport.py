@@ -31,14 +31,31 @@ class GRPCTransport(Transport):
         >>> response = await transport.receive_framed()
     """
 
-    def __init__(self, url: str):
+    def __init__(
+        self,
+        url: str,
+        use_tls: bool = True,
+        root_certificates: bytes | None = None,
+        private_key: bytes | None = None,
+        certificate_chain: bytes | None = None,
+    ):
         """Initialize gRPC transport.
 
         Args:
-            url: gRPC endpoint URL (e.g., "grpc://localhost:50051")
+            url: gRPC endpoint URL (e.g., "grpc://localhost:50051" or "grpcs://host:443")
+            use_tls: Whether to use TLS encryption (default: True for security)
+            root_certificates: Optional PEM-encoded root certificates for server verification
+            private_key: Optional PEM-encoded private key for mutual TLS
+            certificate_chain: Optional PEM-encoded certificate chain for mutual TLS
 
         Raises:
             ValueError: If URL format is invalid
+
+        Security Note:
+            - TLS is ENABLED by default (use_tls=True) for production security
+            - Only disable TLS (use_tls=False) for local development/testing
+            - For production, provide root_certificates for proper server verification
+            - Use mutual TLS (private_key + certificate_chain) for strongest security
         """
         self._url = url
         self._channel: aio.Channel | None = None
@@ -47,16 +64,26 @@ class GRPCTransport(Transport):
         self._response_queue: asyncio.Queue[bytes] | None = None
         self._lock = asyncio.Lock()
 
+        # TLS configuration
+        self._use_tls = use_tls
+        self._root_certificates = root_certificates
+        self._private_key = private_key
+        self._certificate_chain = certificate_chain
+
         # Parse URL
         parsed = urlparse(url)
-        if parsed.scheme != "grpc":
-            raise ValueError(f"Invalid gRPC URL scheme: {parsed.scheme}")
+        if parsed.scheme not in ("grpc", "grpcs"):
+            raise ValueError(f"Invalid gRPC URL scheme: {parsed.scheme} (use 'grpc' or 'grpcs')")
+
+        # grpcs:// implies TLS
+        if parsed.scheme == "grpcs":
+            self._use_tls = True
 
         if not parsed.hostname:
             raise ValueError(f"Missing hostname in gRPC URL: {url}")
 
         self._host = parsed.hostname
-        self._port = parsed.port or 50051  # Default gRPC port
+        self._port = parsed.port or (443 if self._use_tls else 50051)
 
     async def connect(self) -> None:
         """Establish gRPC connection.
@@ -70,7 +97,19 @@ class GRPCTransport(Transport):
         try:
             # Create async gRPC channel
             target = f"{self._host}:{self._port}"
-            self._channel = aio.insecure_channel(target)
+
+            if self._use_tls:
+                # Create TLS credentials
+                credentials = grpc.ssl_channel_credentials(
+                    root_certificates=self._root_certificates,
+                    private_key=self._private_key,
+                    certificate_chain=self._certificate_chain,
+                )
+                self._channel = aio.secure_channel(target, credentials)
+            else:
+                # INSECURE: Only for local development/testing
+                # Production should ALWAYS use TLS (use_tls=True)
+                self._channel = aio.insecure_channel(target)
 
             # Create stub
             self._stub = agent_pb2_grpc.AgentServiceStub(self._channel)
@@ -82,8 +121,9 @@ class GRPCTransport(Transport):
             self._response_queue = asyncio.Queue()
 
         except Exception as e:
+            tls_note = " (TLS enabled)" if self._use_tls else " (INSECURE: no TLS)"
             raise ConnError(
-                f"Failed to connect to gRPC server at {self._host}:{self._port}: {e}"
+                f"Failed to connect to gRPC server at {self._host}:{self._port}{tls_note}: {e}"
             ) from e
 
     async def send(self, data: bytes) -> None:

@@ -3,6 +3,7 @@ package agenkit
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -15,6 +16,8 @@ type Message struct {
 }
 
 // NewMessage creates a new message with the given role and content.
+// NOTE: This function does not validate the message. For production code,
+// consider using NewValidatedMessage or calling Validate() explicitly.
 func NewMessage(role, content string) *Message {
 	return &Message{
 		Role:      role,
@@ -24,10 +27,89 @@ func NewMessage(role, content string) *Message {
 	}
 }
 
+// NewValidatedMessage creates a new message with automatic validation.
+// This ensures the message meets security constraints before creation.
+// Returns an error if the message is invalid.
+func NewValidatedMessage(role, content string) (*Message, error) {
+	m := NewMessage(role, content)
+	if err := m.Validate(); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // WithMetadata adds metadata to the message and returns the message for chaining.
 func (m *Message) WithMetadata(key string, value interface{}) *Message {
 	m.Metadata[key] = value
 	return m
+}
+
+// Validate validates the message according to security constraints.
+func (m *Message) Validate() error {
+	// Role validation
+	if m.Role == "" {
+		return fmt.Errorf("message role cannot be empty")
+	}
+	if len(m.Role) > 20 {
+		return fmt.Errorf("message role exceeds maximum length of 20 characters (got %d)", len(m.Role))
+	}
+
+	// Validate role is one of the allowed values
+	allowedRoles := map[string]bool{
+		"user":      true,
+		"assistant": true,
+		"system":    true,
+		"tool":      true,
+		"agent":     true,
+	}
+	if !allowedRoles[m.Role] {
+		return fmt.Errorf("invalid message role: %s. Must be one of: user, assistant, system, tool, agent", m.Role)
+	}
+
+	// Content validation - max 1MB
+	contentSize := len(m.Content)
+	maxContentSize := 1024 * 1024 // 1MB
+	if contentSize > maxContentSize {
+		return fmt.Errorf("message content exceeds maximum size of %d bytes (got %d bytes)", maxContentSize, contentSize)
+	}
+
+	// Metadata validation
+	if m.Metadata != nil {
+		// Max 100 keys
+		if len(m.Metadata) > 100 {
+			return fmt.Errorf("message metadata exceeds maximum of 100 keys (got %d)", len(m.Metadata))
+		}
+
+		// Validate each key and value
+		maxKeyLength := 50
+		maxValueSize := 10 * 1024 // 10KB
+
+		for key, value := range m.Metadata {
+			// Key length validation
+			if len(key) > maxKeyLength {
+				return fmt.Errorf("metadata key '%s...' exceeds maximum length of %d characters (got %d)",
+					key[:min(20, len(key))], maxKeyLength, len(key))
+			}
+
+			// Value size validation
+			valueStr := fmt.Sprintf("%v", value)
+			valueSize := len(valueStr)
+			if valueSize > maxValueSize {
+				return fmt.Errorf("metadata value for key '%s' exceeds maximum size of %d bytes (got %d bytes)",
+					key, maxValueSize, valueSize)
+			}
+		}
+	}
+
+	return nil
+}
+
+// min returns the minimum of two integers.
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // ToolResult represents the result of a tool execution.

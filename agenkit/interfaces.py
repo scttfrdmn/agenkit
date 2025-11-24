@@ -53,10 +53,56 @@ class Message:
 
     def __post_init__(self) -> None:
         """Validate message after initialization."""
+        # Role validation
         if not self.role:
             raise ValueError("Message role cannot be empty")
-        # Content can be anything - no validation
-        # Metadata can be anything - no validation
+        if len(self.role) > 20:
+            raise ValueError(f"Message role exceeds maximum length of 20 characters (got {len(self.role)})")
+
+        # Validate role is one of the allowed values
+        allowed_roles = {"user", "assistant", "system", "tool", "agent"}
+        if self.role not in allowed_roles:
+            raise ValueError(f"Invalid message role: {self.role}. Must be one of {allowed_roles}")
+
+        # Content validation - max 1MB
+        if self.content is not None:
+            content_str = str(self.content)
+            content_size = len(content_str.encode('utf-8'))
+            max_content_size = 1024 * 1024  # 1MB
+            if content_size > max_content_size:
+                raise ValueError(
+                    f"Message content exceeds maximum size of {max_content_size} bytes "
+                    f"(got {content_size} bytes)"
+                )
+
+        # Metadata validation
+        if self.metadata:
+            # Max 100 keys
+            if len(self.metadata) > 100:
+                raise ValueError(
+                    f"Message metadata exceeds maximum of 100 keys (got {len(self.metadata)})"
+                )
+
+            # Validate each key and value
+            max_key_length = 50
+            max_value_size = 10 * 1024  # 10KB
+
+            for key, value in self.metadata.items():
+                # Key length validation
+                if len(key) > max_key_length:
+                    raise ValueError(
+                        f"Metadata key '{key[:20]}...' exceeds maximum length of {max_key_length} "
+                        f"characters (got {len(key)})"
+                    )
+
+                # Value size validation
+                value_str = str(value)
+                value_size = len(value_str.encode('utf-8'))
+                if value_size > max_value_size:
+                    raise ValueError(
+                        f"Metadata value for key '{key}' exceeds maximum size of {max_value_size} bytes "
+                        f"(got {value_size} bytes)"
+                    )
 
 
 @dataclass(frozen=True)

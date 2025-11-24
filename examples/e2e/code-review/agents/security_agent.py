@@ -110,11 +110,12 @@ class SecurityAgent(Agent):
         for i, line in enumerate(lines, 1):
             for pattern in dangerous_functions:
                 if re.search(pattern, line):
+                    clean_pattern = pattern.replace("\\", "")
                     issues.append(
                         CodeIssue(
                             category=IssueCategory.SECURITY,
                             severity=IssueSeverity.HIGH,
-                            message=f"Potentially dangerous function: {pattern.replace('\\', '')}",
+                            message=f"Potentially dangerous function: {clean_pattern}",
                             line_number=i,
                             file_path=submission.file_path,
                             code_snippet=line.strip(),

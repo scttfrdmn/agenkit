@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"sync"
 	"time"
@@ -17,6 +18,27 @@ import (
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"github.com/scttfrdmn/agenkit/agenkit-go/proto/agentpb"
 )
+
+// sanitizeErrorMessage sanitizes error messages to prevent information disclosure.
+// Logs the full error server-side and returns a safe generic message.
+func sanitizeErrorMessage(errorCode string, err error) string {
+	// Log the full error server-side for debugging
+	if err != nil {
+		log.Printf("gRPC Error %s: %T: %v", errorCode, err, err)
+	}
+
+	// Return generic messages based on error code
+	sanitizedMessages := map[string]string{
+		"AGENT_ERROR":     "An error occurred while processing your request",
+		"INVALID_MESSAGE": "Invalid message format",
+		"INTERNAL_ERROR":  "An internal server error occurred",
+	}
+
+	if msg, ok := sanitizedMessages[errorCode]; ok {
+		return msg
+	}
+	return "An error occurred"
+}
 
 // GRPCServer implements a gRPC server for agent communication.
 type GRPCServer struct {
@@ -92,7 +114,7 @@ func (s *GRPCServer) Process(ctx context.Context, req *agentpb.Request) (*agentp
 	// Process with agent
 	response, err := s.agent.Process(ctx, message)
 	if err != nil {
-		return s.createErrorResponse(req.Id, "AGENT_ERROR", err.Error()), nil
+		return s.createErrorResponse(req.Id, "AGENT_ERROR", sanitizeErrorMessage("AGENT_ERROR", err)), nil
 	}
 
 	// Convert response to protobuf
@@ -188,7 +210,7 @@ func (s *GRPCServer) ProcessStream(req *agentpb.Request, stream agentpb.AgentSer
 					Type:      agentpb.ChunkType_CHUNK_TYPE_ERROR,
 					Error: &agentpb.Error{
 						Code:    "AGENT_ERROR",
-						Message: err.Error(),
+						Message: sanitizeErrorMessage("AGENT_ERROR", err),
 						Details: make(map[string]string),
 					},
 				}

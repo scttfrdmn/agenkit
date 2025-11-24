@@ -22,6 +22,30 @@ import (
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
+// sanitizeErrorMessage sanitizes error messages to prevent information disclosure.
+// Logs the full error server-side and returns a safe generic message.
+func sanitizeErrorMessage(errorCode string, err error) string {
+	// Log the full error server-side for debugging
+	if err != nil {
+		log.Printf("Error %s: %T: %v", errorCode, err, err)
+	}
+
+	// Return generic messages based on error code
+	sanitizedMessages := map[string]string{
+		"INVALID_MESSAGE":   "Invalid message format",
+		"INVALID_REQUEST":   "Invalid request",
+		"EXECUTION_ERROR":   "An error occurred while processing your request",
+		"INTERNAL_ERROR":    "An internal server error occurred",
+		"NOT_IMPLEMENTED":   "This operation is not supported",
+		"AGENT_NOT_FOUND":   "Agent not found",
+	}
+
+	if msg, ok := sanitizedMessages[errorCode]; ok {
+		return msg
+	}
+	return "An error occurred"
+}
+
 // ServerOptions configures HTTP server behavior.
 type ServerOptions struct {
 	// EnableHTTP2 enables HTTP/2 support (both h2 and h2c)
@@ -242,14 +266,14 @@ func (h *HTTPAgent) handleProcess(w http.ResponseWriter, r *http.Request) {
 
 	inputMessage, err := codec.DecodeMessage(msgData)
 	if err != nil {
-		h.sendError(w, envelope.ID, "INVALID_MESSAGE", err.Error(), nil)
+		h.sendError(w, envelope.ID, "INVALID_MESSAGE", sanitizeErrorMessage("INVALID_MESSAGE", err), nil)
 		return
 	}
 
 	// Process message through agent
 	result, err := h.agent.Process(r.Context(), inputMessage)
 	if err != nil {
-		h.sendError(w, envelope.ID, "EXECUTION_ERROR", err.Error(), nil)
+		h.sendError(w, envelope.ID, "EXECUTION_ERROR", sanitizeErrorMessage("EXECUTION_ERROR", err), nil)
 		return
 	}
 
@@ -316,7 +340,7 @@ func (h *HTTPAgent) handleStream(w http.ResponseWriter, r *http.Request) {
 
 	inputMessage, err := codec.DecodeMessage(msgData)
 	if err != nil {
-		h.sendError(w, envelope.ID, "INVALID_MESSAGE", err.Error(), nil)
+		h.sendError(w, envelope.ID, "INVALID_MESSAGE", sanitizeErrorMessage("INVALID_MESSAGE", err), nil)
 		return
 	}
 

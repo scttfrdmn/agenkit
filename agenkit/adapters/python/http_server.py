@@ -14,6 +14,33 @@ from .errors import InvalidMessageError
 logger = logging.getLogger(__name__)
 
 
+def _sanitize_error_message(error_code: str, error: Exception) -> str:
+    """Sanitize error messages to prevent information disclosure.
+
+    Logs the full error server-side and returns a safe generic message.
+
+    Args:
+        error_code: The error code (e.g., "INVALID_MESSAGE", "EXECUTION_ERROR")
+        error: The exception that occurred
+
+    Returns:
+        A sanitized error message safe to send to clients
+    """
+    # Log the full error server-side for debugging
+    logger.error(f"Error {error_code}: {type(error).__name__}: {str(error)}", exc_info=True)
+
+    # Return generic messages based on error code
+    sanitized_messages = {
+        "INVALID_MESSAGE": "Invalid message format",
+        "EXECUTION_ERROR": "An error occurred while processing your request",
+        "STREAM_ERROR": "An error occurred during streaming",
+        "INTERNAL_ERROR": "An internal server error occurred",
+        "NOT_IMPLEMENTED": "This operation is not supported",
+    }
+
+    return sanitized_messages.get(error_code, "An error occurred")
+
+
 class HTTPAgentServer:
     """HTTP server wrapper for exposing agents over HTTP.
 
@@ -119,14 +146,14 @@ class HTTPAgentServer:
             return self._error_response(
                 envelope.get("id", "unknown") if envelope else "unknown",
                 "INVALID_MESSAGE",
-                str(e),
+                _sanitize_error_message("INVALID_MESSAGE", e),
                 400
             )
         except Exception as e:
             return self._error_response(
                 envelope.get("id", "unknown") if envelope else "unknown",
                 "EXECUTION_ERROR",
-                str(e),
+                _sanitize_error_message("EXECUTION_ERROR", e),
                 500
             )
 
@@ -203,7 +230,7 @@ class HTTPAgentServer:
                     "payload": {
                         "error": {
                             "code": "STREAM_ERROR",
-                            "message": str(e)
+                            "message": _sanitize_error_message("STREAM_ERROR", e)
                         }
                     }
                 }
@@ -215,7 +242,7 @@ class HTTPAgentServer:
             return self._error_response(
                 envelope.get("id", "unknown"),
                 "INTERNAL_ERROR",
-                str(e),
+                _sanitize_error_message("INTERNAL_ERROR", e),
                 500
             )
 

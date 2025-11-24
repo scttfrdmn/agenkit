@@ -354,7 +354,8 @@ async def main():
     print("\n" + "=" * 60)
     print("KEY TAKEAWAYS")
     print("=" * 60)
-    print("""
+    print(
+        """
 1. Circuit breakers protect your system by failing fast when services are down
 2. Three states: CLOSED (normal), OPEN (failing), HALF_OPEN (testing recovery)
 3. Configure failure_threshold based on your tolerance for errors
@@ -363,7 +364,8 @@ async def main():
    breaker handles persistent failures
 6. Monitor state changes and rejection rates for early warning of issues
 7. Adjust thresholds based on your service's failure patterns and SLOs
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

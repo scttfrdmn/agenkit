@@ -199,9 +199,9 @@ class SecurityAuditLogger:
     ):
         """Log permission check."""
         event = AuditEvent(
-            event_type=AuditEventType.PERMISSION_GRANTED
-            if granted
-            else AuditEventType.PERMISSION_DENIED,
+            event_type=(
+                AuditEventType.PERMISSION_GRANTED if granted else AuditEventType.PERMISSION_DENIED
+            ),
             severity=AuditSeverity.INFO if granted else AuditSeverity.WARNING,
             user_id=user_id,
             agent_name=agent_name,
@@ -227,9 +227,11 @@ class SecurityAuditLogger:
             )
 
         event = AuditEvent(
-            event_type=AuditEventType.INPUT_VALIDATION_FAILED
-            if validation_type == "input"
-            else AuditEventType.OUTPUT_VALIDATION_FAILED,
+            event_type=(
+                AuditEventType.INPUT_VALIDATION_FAILED
+                if validation_type == "input"
+                else AuditEventType.OUTPUT_VALIDATION_FAILED
+            ),
             severity=AuditSeverity.ERROR,
             user_id=user_id,
             agent_name=agent_name or "",

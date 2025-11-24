@@ -188,7 +188,9 @@ class StreamingChaosAgent(StreamingAgent):
                 await asyncio.sleep(self._delay_per_chunk_ms / 1000.0)
 
             # Random failures (before yielding)
-            if self._chaos_mode == ChaosMode.INTERMITTENT and random.random() < self._failure_rate:  # noqa: S311
+            if (
+                self._chaos_mode == ChaosMode.INTERMITTENT and random.random() < self._failure_rate
+            ):  # noqa: S311
                 raise ConnectionError(f"Intermittent stream failure at chunk {chunk_count}")
 
             # Yield chunk

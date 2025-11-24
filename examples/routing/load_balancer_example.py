@@ -297,7 +297,8 @@ async def example_6_production_patterns():
     print("Example 6: Production Patterns")
     print("=" * 60)
 
-    print("""
+    print(
+        """
 💡 Production Best Practices:
 
 1. **Configure Appropriate Capacities**:
@@ -353,7 +354,8 @@ async def example_6_production_patterns():
    # Scale down when idle
    if stats['total_active_requests'] < threshold:
        balancer.remove_instance(least_used_instance)
-""")
+"""
+    )
 
     print("\n✅ Load balancing enables:")
     print("  - Horizontal scaling")

@@ -89,9 +89,11 @@ class ContextMetrics(Metric):
             "min": min(measurements),
             "max": max(measurements),
             "final": measurements[-1],
-            "growth_rate": (measurements[-1] - measurements[0]) / len(measurements)
-            if len(measurements) > 1
-            else 0.0,
+            "growth_rate": (
+                (measurements[-1] - measurements[0]) / len(measurements)
+                if len(measurements) > 1
+                else 0.0
+            ),
         }
 
     def _estimate_tokens(self, content: str) -> int:

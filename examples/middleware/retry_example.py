@@ -218,14 +218,16 @@ async def main():
     print("\n" + "=" * 60)
     print("KEY TAKEAWAYS")
     print("=" * 60)
-    print("""
+    print(
+        """
 1. Always use retry for external API calls (LLMs, databases, web services)
 2. Use exponential backoff to avoid overwhelming failing services
 3. Implement custom retry logic to distinguish transient vs permanent errors
 4. Fail fast on permanent errors (auth, validation) - don't waste retries
 5. Configure max_backoff to prevent excessive delays
 6. Monitor retry metrics to detect systemic issues
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

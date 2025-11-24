@@ -535,7 +535,8 @@ async def main():
     print("\n" + "=" * 70)
     print("KEY TAKEAWAYS")
     print("=" * 70)
-    print("""
+    print(
+        """
 1. Use parallel composition when:
    - Operations are independent (no data dependencies)
    - Latency matters more than resource cost
@@ -577,7 +578,8 @@ TRADE-OFF SUMMARY:
 ✅ Pros: Lower latency, redundancy, consensus
 ❌ Cons: Higher resource cost, complexity
 🎯 Choose when: Latency reduction > cost increase
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

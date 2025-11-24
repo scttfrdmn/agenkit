@@ -140,7 +140,8 @@ async def example_3_production_pattern():
     print("Example 3: Production Pattern")
     print("=" * 60)
 
-    print("""
+    print(
+        """
 💡 Production Best Practices:
 
 1. **Use Environment Variables for Tokens**:
@@ -185,7 +186,8 @@ async def example_3_production_pattern():
    - Use short-lived tokens (e.g., JWTs with expiration)
    - Implement token refresh mechanisms
    - Revoke compromised tokens immediately
-""")
+"""
+    )
 
     print("\n✅ Security checklist for production:")
     print("  ✓ TLS/HTTPS enabled")

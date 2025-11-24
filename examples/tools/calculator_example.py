@@ -610,7 +610,8 @@ async def main():
     print("\n" + "=" * 70)
     print("KEY TAKEAWAYS")
     print("=" * 70)
-    print("""
+    print(
+        """
 1. When to use tools:
    - Math: LLMs hallucinate, tools compute correctly
    - External data: Databases, APIs, filesystems
@@ -662,7 +663,8 @@ TRADE-OFF SUMMARY:
 ✅ Pros: Accurate, deterministic, auditable, cost-efficient
 ❌ Cons: Development overhead, maintenance, inflexible
 🎯 Choose when: Correctness > flexibility
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

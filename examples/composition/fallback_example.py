@@ -554,7 +554,8 @@ async def main():
     print("\n" + "=" * 70)
     print("KEY TAKEAWAYS")
     print("=" * 70)
-    print("""
+    print(
+        """
 1. Use fallback composition when:
    - High availability is critical (99.9%+ uptime)
    - Have multiple tiers of service quality
@@ -598,7 +599,8 @@ TRADE-OFF SUMMARY:
 ✅ Pros: High availability, cost optimization, graceful degradation
 ❌ Cons: Latency from retries, masks underlying issues
 🎯 Choose when: Reliability requirements > latency sensitivity
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

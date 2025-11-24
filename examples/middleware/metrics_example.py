@@ -331,7 +331,8 @@ async def main():
     print("\n" + "=" * 70)
     print("KEY TAKEAWAYS")
     print("=" * 70)
-    print("""
+    print(
+        """
 1. ALWAYS instrument production agents - metrics pay for themselves
 2. Track the 4 golden signals: Latency, Traffic, Errors, Saturation
 3. Use metrics for:
@@ -352,7 +353,8 @@ REAL-WORLD TIPS:
 - Tag metrics with context (user_id, model, region) for better insights
 - Set up dashboards before you need them
 - Correlate metrics across the stack (agent -> API -> database)
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

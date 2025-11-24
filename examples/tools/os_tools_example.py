@@ -545,9 +545,9 @@ class CodeEditorTool:
         if write_result["success"]:
             return {
                 "success": True,
-                "replacements": content.count(old_text)
-                if count == -1
-                else min(count, content.count(old_text)),
+                "replacements": (
+                    content.count(old_text) if count == -1 else min(count, content.count(old_text))
+                ),
                 "path": file_path,
             }
 
@@ -834,7 +834,8 @@ async def main():
     print("\n" + "=" * 80)
     print("KEY TAKEAWAYS")
     print("=" * 80)
-    print("""
+    print(
+        """
 1. WHEN TO USE OS TOOLS:
    - Coding assistants (Claude Code, Cursor, GitHub Copilot)
    - DevOps automation (CI/CD, deployment, monitoring)
@@ -897,7 +898,8 @@ Next steps:
 - Implement syntax-aware editing (AST-based refactoring)
 - Add Docker container management tools
 - Create cloud resource management tools (AWS, GCP, Azure)
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

@@ -41,11 +41,11 @@ def pytest_runtest_makereport(item, call):
             item._flaky_retry_count = 0
 
         if item._flaky_retry_count < max_retries:
-                item._flaky_retry_count += 1
-                # Add small delay between retries to avoid resource contention
-                time.sleep(0.1 * item._flaky_retry_count)
-                # Mark for rerun
-                rep.outcome = "rerun"
+            item._flaky_retry_count += 1
+            # Add small delay between retries to avoid resource contention
+            time.sleep(0.1 * item._flaky_retry_count)
+            # Mark for rerun
+            rep.outcome = "rerun"
 
 
 @pytest.fixture(scope="function", autouse=True)

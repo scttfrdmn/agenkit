@@ -569,7 +569,8 @@ async def main():
     print("\n" + "=" * 70)
     print("KEY TAKEAWAYS")
     print("=" * 70)
-    print("""
+    print(
+        """
 1. Use conditional composition when:
    - Multiple specialized agents (code, docs, data)
    - Optimization opportunities (simple vs complex)
@@ -615,7 +616,8 @@ TRADE-OFF SUMMARY:
 ✅ Pros: Specialized agents, optimization, personalization
 ❌ Cons: Routing complexity, maintenance burden
 🎯 Choose when: Specialization benefits > routing cost
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

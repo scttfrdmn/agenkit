@@ -523,7 +523,8 @@ async def main():
     print("\n" + "=" * 70)
     print("KEY TAKEAWAYS")
     print("=" * 70)
-    print("""
+    print(
+        """
 1. Use sequential composition when:
    - Stages depend on previous stage's output
    - Order of operations matters
@@ -557,7 +558,8 @@ TRADE-OFF SUMMARY:
 ✅ Pros: Simple, clear, testable, composable
 ❌ Cons: Sequential latency, no parallelism
 🎯 Choose when: Clarity and correctness > maximum throughput
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

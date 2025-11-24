@@ -27,11 +27,12 @@ func (a *ExampleAgent) Process(ctx context.Context, msg *agenkit.Message) (*agen
 	content := msg.Content
 	var response string
 
-	if content == "What is the capital of France?" {
+	switch content {
+	case "What is the capital of France?":
 		response = "The capital of France is Paris."
-	} else if content == "What is 2+2?" {
+	case "What is 2+2?":
 		response = "2+2 equals 4."
-	} else {
+	default:
 		response = "I don't know the answer to that question."
 	}
 

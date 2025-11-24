@@ -23,7 +23,7 @@ func TestWebSocketBasicCommunication(t *testing.T) {
 	if err := httpAgent.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer httpAgent.Stop()
+	defer func() { _ = httpAgent.Stop() }()
 
 	// Give server time to start
 	time.Sleep(100 * time.Millisecond)
@@ -61,7 +61,7 @@ func TestWebSocketMultipleRequests(t *testing.T) {
 	if err := httpAgent.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer httpAgent.Stop()
+	defer func() { _ = httpAgent.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -97,7 +97,7 @@ func TestWebSocketConcurrentRequests(t *testing.T) {
 	if err := httpAgent.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer httpAgent.Stop()
+	defer func() { _ = httpAgent.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -175,7 +175,7 @@ func TestWebSocketLargeMessage(t *testing.T) {
 	if err := httpAgent.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer httpAgent.Stop()
+	defer func() { _ = httpAgent.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -245,7 +245,7 @@ func TestWebSocketReconnection(t *testing.T) {
 	if err := httpAgent.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer httpAgent.Stop()
+	defer func() { _ = httpAgent.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -269,7 +269,7 @@ func TestWebSocketBinaryData(t *testing.T) {
 	if err := httpAgent.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer httpAgent.Stop()
+	defer func() { _ = httpAgent.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -306,7 +306,7 @@ func TestWebSocketIsConnectedProperty(t *testing.T) {
 	if err := httpAgent.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer httpAgent.Stop()
+	defer func() { _ = httpAgent.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -347,7 +347,7 @@ func TestWebSocketMessageMetadataPreserved(t *testing.T) {
 	if err := httpAgent.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer httpAgent.Stop()
+	defer func() { _ = httpAgent.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -484,7 +484,7 @@ func TestWebSocketHealthCheck(t *testing.T) {
 	if err := httpAgent.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer httpAgent.Stop()
+	defer func() { _ = httpAgent.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 

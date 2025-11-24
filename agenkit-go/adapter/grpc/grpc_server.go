@@ -78,7 +78,7 @@ func NewGRPCServerWithOptions(agent agenkit.Agent, address string, options GRPCS
 		timeoutConf := options.TimeoutConfig
 		if timeoutConf == nil {
 			timeoutConf = &middleware.TimeoutConfig{
-				Timeout: 30.0, // 30 seconds
+				Timeout: 30 * time.Second,
 			}
 		}
 		agent = middleware.NewTimeoutDecorator(agent, *timeoutConf)
@@ -96,7 +96,7 @@ func NewGRPCServerWithOptions(agent agenkit.Agent, address string, options GRPCS
 
 		log.Printf(
 			"gRPC: Default security middleware enabled: rate_limit=%.1f req/s (burst=%d), timeout=%.1fs",
-			rateLimitConf.Rate, rateLimitConf.Capacity, timeoutConf.Timeout,
+			rateLimitConf.Rate, rateLimitConf.Capacity, timeoutConf.Timeout.Seconds(),
 		)
 	}
 
@@ -129,7 +129,7 @@ func (s *GRPCServer) Start() error {
 
 	go func() {
 		if err := s.server.Serve(s.listener); err != nil {
-			// Server stopped
+			log.Printf("gRPC server stopped: %v", err)
 		}
 	}()
 

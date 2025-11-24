@@ -202,7 +202,8 @@ func (c *CircuitBreakerDecorator) onSuccess() {
 	c.metrics.SuccessfulRequests++
 	c.metrics.mu.Unlock()
 
-	if c.state == StateHalfOpen {
+	switch c.state {
+	case StateHalfOpen:
 		c.successCount++
 		if c.successCount >= c.config.SuccessThreshold {
 			// Recovered! Close the circuit
@@ -210,7 +211,7 @@ func (c *CircuitBreakerDecorator) onSuccess() {
 			c.failureCount = 0
 			c.successCount = 0
 		}
-	} else if c.state == StateClosed {
+	case StateClosed:
 		// Reset failure count on success
 		c.failureCount = 0
 	}
@@ -226,11 +227,12 @@ func (c *CircuitBreakerDecorator) onFailure() {
 	now := time.Now()
 	c.lastFailureTime = &now
 
-	if c.state == StateHalfOpen {
+	switch c.state {
+	case StateHalfOpen:
 		// Failed during recovery test, reopen circuit
 		c.changeState(StateOpen)
 		c.successCount = 0
-	} else if c.state == StateClosed {
+	case StateClosed:
 		if c.failureCount >= c.config.FailureThreshold {
 			// Too many failures, open circuit
 			c.changeState(StateOpen)

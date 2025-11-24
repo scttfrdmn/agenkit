@@ -84,7 +84,7 @@ func StartPythonHTTPServer(port int) (*PythonHTTPServer, error) {
 	healthURL := fmt.Sprintf("%s/health", server.BaseURL)
 	if err := WaitForServer(healthURL, 10*time.Second); err != nil {
 		server.Stop()
-		return nil, fmt.Errorf("Python server failed to start: %w", err)
+		return nil, fmt.Errorf("python server failed to start: %w", err)
 	}
 
 	return server, nil
@@ -159,7 +159,7 @@ func StartGoHTTPServer(port int) (*GoHTTPServer, error) {
 	healthURL := fmt.Sprintf("%s/health", goServer.BaseURL)
 	if err := WaitForServer(healthURL, 10*time.Second); err != nil {
 		goServer.Stop(context.Background())
-		return nil, fmt.Errorf("Go server failed to start: %w", err)
+		return nil, fmt.Errorf("go server failed to start: %w", err)
 	}
 
 	return goServer, nil

@@ -105,7 +105,7 @@ func TestBasicCommunicationUnixSocket(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	socketPath := filepath.Join(tmpDir, "echo.sock")
 	endpoint := fmt.Sprintf("unix://%s", socketPath)
@@ -194,7 +194,7 @@ func TestMultipleSequentialRequests(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	socketPath := filepath.Join(tmpDir, "echo.sock")
 	endpoint := fmt.Sprintf("unix://%s", socketPath)
@@ -308,7 +308,7 @@ func TestMetadataPreservation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	socketPath := filepath.Join(tmpDir, "echo.sock")
 	endpoint := fmt.Sprintf("unix://%s", socketPath)
@@ -437,7 +437,7 @@ func TestBasicStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	socketPath := filepath.Join(tmpDir, "stream.sock")
 	endpoint := fmt.Sprintf("unix://%s", socketPath)
@@ -578,7 +578,7 @@ func TestServerStartStop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	socketPath := filepath.Join(tmpDir, "test.sock")
 	endpoint := fmt.Sprintf("unix://%s", socketPath)

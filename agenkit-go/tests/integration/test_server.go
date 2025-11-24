@@ -1,5 +1,4 @@
 //go:build ignore
-// +build ignore
 
 // Package main provides a simple HTTP test server for cross-language integration tests.
 //

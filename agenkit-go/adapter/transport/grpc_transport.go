@@ -3,6 +3,8 @@ package transport
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -11,6 +13,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
@@ -18,6 +21,18 @@ import (
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/errors"
 	"github.com/scttfrdmn/agenkit/agenkit-go/proto/agentpb"
 )
+
+// GRPCTransportConfig configures gRPC transport security.
+type GRPCTransportConfig struct {
+	// UseTLS enables TLS encryption (default: true for security)
+	UseTLS bool
+	// TLSConfig provides custom TLS configuration
+	TLSConfig *tls.Config
+	// RootCAs provides root certificates for server verification
+	RootCAs *x509.CertPool
+	// ServerName overrides the server name used in TLS verification
+	ServerName string
+}
 
 // GRPCTransport implements transport over gRPC.
 type GRPCTransport struct {
@@ -29,19 +44,35 @@ type GRPCTransport struct {
 	mu            sync.Mutex
 	connected     bool
 	responseQueue chan []byte
+	config        *GRPCTransportConfig
 }
 
-// NewGRPCTransport creates a new gRPC transport.
-// URL format: grpc://host:port
+// NewGRPCTransport creates a new gRPC transport with TLS enabled by default.
+// URL format: grpc://host:port (no TLS) or grpcs://host:port (TLS)
+// For production, use TLS: grpcs://host:443
 func NewGRPCTransport(endpoint string) (*GRPCTransport, error) {
+	return NewGRPCTransportWithConfig(endpoint, &GRPCTransportConfig{UseTLS: true})
+}
+
+// NewGRPCTransportWithConfig creates a new gRPC transport with custom config.
+// Security Note:
+//   - TLS is ENABLED by default (config.UseTLS=true) for production security
+//   - Only disable TLS for local development/testing
+//   - For production, provide RootCAs for proper server verification
+func NewGRPCTransportWithConfig(endpoint string, config *GRPCTransportConfig) (*GRPCTransport, error) {
 	// Parse URL
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("invalid gRPC URL: %w", err)
 	}
 
-	if u.Scheme != "grpc" {
-		return nil, fmt.Errorf("invalid gRPC URL scheme: %s", u.Scheme)
+	if u.Scheme != "grpc" && u.Scheme != "grpcs" {
+		return nil, fmt.Errorf("invalid gRPC URL scheme: %s (use 'grpc' or 'grpcs')", u.Scheme)
+	}
+
+	// grpcs:// implies TLS
+	if u.Scheme == "grpcs" {
+		config.UseTLS = true
 	}
 
 	if u.Hostname() == "" {
@@ -50,7 +81,11 @@ func NewGRPCTransport(endpoint string) (*GRPCTransport, error) {
 
 	port := u.Port()
 	if port == "" {
-		port = "50051" // Default gRPC port
+		if config.UseTLS {
+			port = "443" // Default HTTPS port for TLS
+		} else {
+			port = "50051" // Default gRPC port
+		}
 	}
 
 	return &GRPCTransport{
@@ -58,6 +93,7 @@ func NewGRPCTransport(endpoint string) (*GRPCTransport, error) {
 		host:          u.Hostname(),
 		port:          port,
 		responseQueue: make(chan []byte, 100),
+		config:        config,
 	}, nil
 }
 
@@ -72,9 +108,40 @@ func (t *GRPCTransport) Connect(ctx context.Context) error {
 
 	// Create gRPC connection
 	target := fmt.Sprintf("%s:%s", t.host, t.port)
-	conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	var opts []grpc.DialOption
+
+	if t.config.UseTLS {
+		// Create TLS credentials
+		tlsConfig := t.config.TLSConfig
+		if tlsConfig == nil {
+			// Default TLS config
+			tlsConfig = &tls.Config{
+				ServerName: t.config.ServerName,
+				RootCAs:    t.config.RootCAs,
+			}
+			if t.config.ServerName == "" {
+				tlsConfig.ServerName = t.host
+			}
+		}
+
+		creds := credentials.NewTLS(tlsConfig)
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else {
+		// INSECURE: Only for local development/testing
+		// Production should ALWAYS use TLS (config.UseTLS=true)
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	}
+
+	conn, err := grpc.NewClient(target, opts...)
 	if err != nil {
-		return errors.NewConnectionError(fmt.Sprintf("failed to connect to %s", target), err)
+		tlsNote := ""
+		if t.config.UseTLS {
+			tlsNote = " (TLS enabled)"
+		} else {
+			tlsNote = " (INSECURE: no TLS)"
+		}
+		return errors.NewConnectionError(fmt.Sprintf("failed to connect to %s%s", target, tlsNote), err)
 	}
 
 	t.conn = conn

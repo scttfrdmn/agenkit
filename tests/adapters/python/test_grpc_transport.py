@@ -23,25 +23,37 @@ class TestGRPCTransportInit:
 
     def test_valid_url(self):
         """Test initialization with valid gRPC URL."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
         assert transport._host == "localhost"
         assert transport._port == 50051
 
     def test_valid_url_default_port(self):
         """Test initialization with default port."""
-        transport = GRPCTransport("grpc://example.com")
+        transport = GRPCTransport("grpc://example.com", use_tls=False)
         assert transport._host == "example.com"
         assert transport._port == 50051
+
+    def test_grpcs_url_enables_tls(self):
+        """Test that grpcs:// scheme enables TLS."""
+        transport = GRPCTransport("grpcs://example.com:443")
+        assert transport._use_tls is True
+        assert transport._port == 443
+
+    def test_tls_enabled_by_default(self):
+        """Test that TLS is enabled by default for security."""
+        transport = GRPCTransport("grpc://example.com")
+        assert transport._use_tls is True
+        assert transport._port == 443  # Default TLS port
 
     def test_invalid_scheme(self):
         """Test initialization with invalid scheme."""
         with pytest.raises(ValueError, match="Invalid gRPC URL scheme"):
-            GRPCTransport("http://localhost:50051")
+            GRPCTransport("http://localhost:50051", use_tls=False)
 
     def test_missing_hostname(self):
         """Test initialization with missing hostname."""
         with pytest.raises(ValueError, match="Missing hostname"):
-            GRPCTransport("grpc://")
+            GRPCTransport("grpc://", use_tls=False)
 
 
 class TestGRPCTransportConnection:
@@ -50,7 +62,7 @@ class TestGRPCTransportConnection:
     @pytest.mark.asyncio
     async def test_connect_success(self):
         """Test successful connection."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel") as mock_channel:
             mock_channel.return_value = MagicMock()
@@ -62,7 +74,7 @@ class TestGRPCTransportConnection:
     @pytest.mark.asyncio
     async def test_connect_already_connected(self):
         """Test connecting when already connected."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel") as mock_channel:
             mock_channel.return_value = MagicMock()
@@ -74,7 +86,7 @@ class TestGRPCTransportConnection:
     @pytest.mark.asyncio
     async def test_connect_failure(self):
         """Test connection failure."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel") as mock_channel:
             mock_channel.side_effect = Exception("Connection failed")
@@ -87,7 +99,7 @@ class TestGRPCTransportConnection:
     @pytest.mark.asyncio
     async def test_close(self):
         """Test closing connection."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel") as mock_channel:
             mock_ch = MagicMock()
@@ -108,7 +120,7 @@ class TestGRPCTransportUnaryRPC:
     @pytest.mark.asyncio
     async def test_send_receive_unary_success(self):
         """Test successful unary RPC."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         # Create request envelope
         request_envelope = {
@@ -169,7 +181,7 @@ class TestGRPCTransportUnaryRPC:
     @pytest.mark.asyncio
     async def test_send_not_connected(self):
         """Test sending when not connected."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         request_envelope = {
             "version": "1.0",
@@ -187,7 +199,7 @@ class TestGRPCTransportUnaryRPC:
     @pytest.mark.asyncio
     async def test_receive_not_connected(self):
         """Test receiving when not connected."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         with pytest.raises(ConnError, match="Not connected"):
             await transport.receive_framed()
@@ -195,7 +207,7 @@ class TestGRPCTransportUnaryRPC:
     @pytest.mark.asyncio
     async def test_send_invalid_json(self):
         """Test sending invalid JSON."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel"):
             await transport.connect()
@@ -206,7 +218,7 @@ class TestGRPCTransportUnaryRPC:
     @pytest.mark.asyncio
     async def test_unary_rpc_error(self):
         """Test handling gRPC errors in unary RPC."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         request_envelope = {
             "version": "1.0",
@@ -250,7 +262,7 @@ class TestGRPCTransportStreamingRPC:
     @pytest.mark.asyncio
     async def test_send_receive_streaming_success(self):
         """Test successful streaming RPC."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         request_envelope = {
             "version": "1.0",
@@ -339,7 +351,7 @@ class TestGRPCTransportStreamingRPC:
     @pytest.mark.asyncio
     async def test_streaming_rpc_error(self):
         """Test handling gRPC errors in streaming RPC."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         request_envelope = {
             "version": "1.0",
@@ -387,7 +399,7 @@ class TestGRPCTransportProtocolConversion:
     @pytest.mark.asyncio
     async def test_convert_request_with_tool_call(self):
         """Test converting request with tool call."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         request_envelope = {
             "version": "1.0",
@@ -417,7 +429,7 @@ class TestGRPCTransportProtocolConversion:
     @pytest.mark.asyncio
     async def test_convert_response_with_tool_result(self):
         """Test converting response with tool result."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         pb_response = agent_pb2.Response(
             version="1.0",
@@ -443,7 +455,7 @@ class TestGRPCTransportProtocolConversion:
     @pytest.mark.asyncio
     async def test_convert_error_response(self):
         """Test converting error response."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         pb_response = agent_pb2.Response(
             version="1.0",
@@ -469,7 +481,7 @@ class TestGRPCTransportProtocolConversion:
     @pytest.mark.asyncio
     async def test_convert_stream_chunk_with_message(self):
         """Test converting stream chunk with message."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         pb_chunk = agent_pb2.StreamChunk(
             version="1.0",
@@ -495,7 +507,7 @@ class TestGRPCTransportProtocolConversion:
     @pytest.mark.asyncio
     async def test_convert_stream_end(self):
         """Test converting stream end chunk."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         pb_chunk = agent_pb2.StreamChunk(
             version="1.0",
@@ -515,7 +527,7 @@ class TestGRPCTransportProtocolConversion:
     @pytest.mark.asyncio
     async def test_serialize_deserialize_content(self):
         """Test content serialization and deserialization."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel"):
             await transport.connect()
@@ -541,7 +553,7 @@ class TestGRPCTransportErrorHandling:
     @pytest.mark.asyncio
     async def test_grpc_status_to_error_code(self):
         """Test gRPC status code to error code conversion."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel"):
             await transport.connect()
@@ -556,7 +568,7 @@ class TestGRPCTransportErrorHandling:
     @pytest.mark.asyncio
     async def test_send_not_implemented(self):
         """Test that send() raises NotImplementedError."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         with pytest.raises(NotImplementedError, match="Use send_framed"):
             await transport.send(b"data")
@@ -564,7 +576,7 @@ class TestGRPCTransportErrorHandling:
     @pytest.mark.asyncio
     async def test_receive_not_implemented(self):
         """Test that receive() raises NotImplementedError."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         with pytest.raises(NotImplementedError, match="Use receive_framed"):
             await transport.receive()
@@ -572,7 +584,7 @@ class TestGRPCTransportErrorHandling:
     @pytest.mark.asyncio
     async def test_receive_exactly_not_implemented(self):
         """Test that receive_exactly() raises NotImplementedError."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         with pytest.raises(NotImplementedError, match="gRPC has native framing"):
             await transport.receive_exactly(100)
@@ -580,7 +592,7 @@ class TestGRPCTransportErrorHandling:
     @pytest.mark.asyncio
     async def test_receive_timeout(self):
         """Test receive timeout."""
-        transport = GRPCTransport("grpc://localhost:50051")
+        transport = GRPCTransport("grpc://localhost:50051", use_tls=False)
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel"):
             await transport.connect()

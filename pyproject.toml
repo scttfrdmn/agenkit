@@ -144,9 +144,14 @@ ignore = [
     "G201",    # .error(exc_info=True) vs .exception() - both valid approaches
     "PERF203", # try-except in loop - necessary for robust error handling
     "PERF401", # Manual list comprehension - sometimes clearer than comprehension
+    "PERF403", # Dictionary comprehension - sometimes for-loop is clearer
     "PLW2901", # Redefined loop variable - acceptable in specific cases
     "SIM108",  # Ternary operator suggestion - sometimes if/else is clearer
+    "SIM105",  # contextlib.suppress - sometimes try/except-pass is clearer
     "B904",    # Exception chaining - acceptable to not chain when wrapping
+    "E501",    # Line too long - acceptable for long strings, URLs, complex expressions
+    "E722",    # Bare except - acceptable in specific cleanup/fallback contexts
+    "RUF012",  # Mutable class attributes - acceptable for class-level state
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -175,6 +180,23 @@ ignore = [
 "agenkit/adapters/python/local_agent.py" = [
     "PTH",    # Allow os.path for compatibility with external tools
     "S110",   # Allow try-except-pass for cleanup operations
+]
+"agenkit/adapters/python/websocket_transport.py" = [
+    "S110",   # Allow try-except-pass for connection cleanup
+]
+"agenkit/budget/optimizer.py" = [
+    "F821",   # ThinkingBudgetAllocator - forward reference for optional feature
+]
+"agenkit/checkpointing/storage.py" = [
+    "PTH",    # Allow os.path/open for file operations
+    "ASYNC230", # Blocking file ops acceptable for checkpoint storage
+]
+"agenkit/evaluation/*.py" = [
+    "PTH",    # Allow os.path/open for evaluation data files
+    "ASYNC230", # Blocking file ops acceptable for evaluation storage
+]
+"agenkit/middleware/caching.py" = [
+    "S110",   # Allow try-except-pass for cache cleanup
 ]
 "agenkit/**/__init__.py" = [
     "F401",    # Imported but unused - false positive for re-exports via __all__

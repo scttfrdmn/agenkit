@@ -78,7 +78,8 @@ async def go_http_server(port: int | None = None):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     go_test_dir = os.path.join(current_dir, "..", "..", "agenkit-go", "tests", "integration")
 
-    process = subprocess.Popen(
+    # S603, S607, ASYNC220: Safe in test infrastructure - port is test parameter, not user input
+    process = subprocess.Popen(  # noqa: S603, S607, ASYNC220
         ["go", "run", "test_server.go", str(port)],
         cwd=go_test_dir,
         stdout=subprocess.PIPE,
@@ -329,7 +330,8 @@ async def go_grpc_server(port: int | None = None):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     go_test_dir = os.path.join(current_dir, "..", "..", "agenkit-go", "tests", "integration")
 
-    process = subprocess.Popen(
+    # S603, S607, ASYNC220: Safe in test infrastructure - port is test parameter, not user input
+    process = subprocess.Popen(  # noqa: S603, S607, ASYNC220
         ["go", "run", "test_grpc_server.go", str(port)],
         cwd=go_test_dir,
         stdout=subprocess.PIPE,

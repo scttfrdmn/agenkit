@@ -320,10 +320,10 @@ class RegressionDetector:
                 "current": result_b.accuracy,
                 "change": result_b.accuracy - result_a.accuracy,
                 "change_percent": (
-                    (result_b.accuracy - result_a.accuracy) / result_a.accuracy * 100
-                )
-                if result_a.accuracy != 0
-                else 0,
+                    ((result_b.accuracy - result_a.accuracy) / result_a.accuracy * 100)
+                    if result_a.accuracy != 0
+                    else 0
+                ),
             }
 
         # Compare quality
@@ -333,10 +333,14 @@ class RegressionDetector:
                 "current": result_b.quality_score,
                 "change": result_b.quality_score - result_a.quality_score,
                 "change_percent": (
-                    (result_b.quality_score - result_a.quality_score) / result_a.quality_score * 100
-                )
-                if result_a.quality_score != 0
-                else 0,
+                    (
+                        (result_b.quality_score - result_a.quality_score)
+                        / result_a.quality_score
+                        * 100
+                    )
+                    if result_a.quality_score != 0
+                    else 0
+                ),
             }
 
         # Compare latency
@@ -346,12 +350,14 @@ class RegressionDetector:
                 "current": result_b.avg_latency_ms,
                 "change": result_b.avg_latency_ms - result_a.avg_latency_ms,
                 "change_percent": (
-                    (result_b.avg_latency_ms - result_a.avg_latency_ms)
-                    / result_a.avg_latency_ms
-                    * 100
-                )
-                if result_a.avg_latency_ms != 0
-                else 0,
+                    (
+                        (result_b.avg_latency_ms - result_a.avg_latency_ms)
+                        / result_a.avg_latency_ms
+                        * 100
+                    )
+                    if result_a.avg_latency_ms != 0
+                    else 0
+                ),
             }
 
         return comparisons

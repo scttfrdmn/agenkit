@@ -249,7 +249,8 @@ async def example_5_production_patterns():
     print("Example 5: Production Patterns")
     print("=" * 60)
 
-    print("""
+    print(
+        """
 💡 Production Best Practices:
 
 1. **Use Real Embedding Providers**:
@@ -287,7 +288,8 @@ async def example_5_production_patterns():
 6. **Category-Based Filtering**:
    # Include category in tool descriptions for better organization
    # Tools in same category will have more similar embeddings
-""")
+"""
+    )
 
     print("\n✅ Semantic tool selection enables:")
     print("  - Natural language tool selection")

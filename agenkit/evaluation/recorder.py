@@ -497,12 +497,14 @@ class SessionReplay:
             "interaction_count": len(results_a["interactions"]),
             "latency_diff_ms": results_b["total_latency_ms"] - results_a["total_latency_ms"],
             "latency_diff_percent": (
-                (results_b["total_latency_ms"] - results_a["total_latency_ms"])
-                / results_a["total_latency_ms"]
-                * 100
-            )
-            if results_a["total_latency_ms"] > 0
-            else 0,
+                (
+                    (results_b["total_latency_ms"] - results_a["total_latency_ms"])
+                    / results_a["total_latency_ms"]
+                    * 100
+                )
+                if results_a["total_latency_ms"] > 0
+                else 0
+            ),
             "error_diff": results_b["error_count"] - results_a["error_count"],
             "output_differences": [],
         }

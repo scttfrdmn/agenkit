@@ -68,7 +68,8 @@ class MockDatabase:
         cursor = conn.cursor()
 
         # Create tables
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -76,9 +77,11 @@ class MockDatabase:
                 role TEXT DEFAULT 'user',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS orders (
                 id INTEGER PRIMARY KEY,
                 user_id INTEGER NOT NULL,
@@ -89,7 +92,8 @@ class MockDatabase:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
-        """)
+        """
+        )
 
         # Insert sample data
         cursor.executemany(
@@ -824,7 +828,8 @@ async def main():
     print("\n" + "=" * 80)
     print("KEY TAKEAWAYS")
     print("=" * 80)
-    print("""
+    print(
+        """
 1. WHEN TO USE DATABASE TOOLS:
    - Structured data access (users, orders, products)
    - Analytics and reporting
@@ -873,7 +878,8 @@ Next steps:
 - Add query monitoring and slow query logging
 - Set up read replicas for scaling
 - Implement comprehensive error handling
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

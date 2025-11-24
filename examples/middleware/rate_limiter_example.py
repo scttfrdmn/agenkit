@@ -294,7 +294,8 @@ async def main():
     print("\n" + "=" * 60)
     print("KEY TAKEAWAYS")
     print("=" * 60)
-    print("""
+    print(
+        """
 1. Rate limiting prevents API quota exhaustion and cost overruns
 2. Token bucket algorithm allows bursts while maintaining average rate
 3. Configure rate based on provider limits (OpenAI: 58 RPS, Anthropic: 0.83 RPS)
@@ -310,7 +311,8 @@ RECOMMENDED CONFIGURATIONS:
 - Embeddings (expensive): rate=10, capacity=20, tokens_per_request=5
 - Free tier: rate=5, capacity=10, tokens_per_request=1
 - Pro tier: rate=50, capacity=100, tokens_per_request=1
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

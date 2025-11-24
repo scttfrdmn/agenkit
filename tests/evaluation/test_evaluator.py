@@ -170,9 +170,7 @@ async def test_evaluator_no_expected():
     agent = MockAgent(responses=["Response"])
     evaluator = Evaluator(agent)
 
-    test_cases = [
-        {"input": "Test"}  # No expected output
-    ]
+    test_cases = [{"input": "Test"}]  # No expected output
 
     result = await evaluator.evaluate(test_cases)
 

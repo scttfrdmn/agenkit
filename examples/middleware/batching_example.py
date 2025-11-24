@@ -473,7 +473,8 @@ async def main():
     print("\n" + "=" * 70)
     print("BATCHING BEST PRACTICES")
     print("=" * 70)
-    print("""
+    print(
+        """
 1. Choose batch size based on your use case:
    - LLM APIs: 5-50 (API limits vary)
    - Database: 10-100 (balance transaction size)
@@ -498,7 +499,8 @@ async def main():
    - Set max_queue_size based on traffic patterns
    - Monitor queue depth in production
    - Use backpressure signals upstream if needed
-""")
+"""
+    )
 
 
 if __name__ == "__main__":

@@ -142,7 +142,7 @@ func TestMetricsErrorRate(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		metrics1.Process(ctx, msg)
+		_, _ = metrics1.Process(ctx, msg)
 	}
 
 	errorRate := metrics1.GetMetrics().ErrorRate()
@@ -156,7 +156,7 @@ func TestMetricsErrorRate(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		metrics2.Process(ctx, msg)
+		_, _ = metrics2.Process(ctx, msg)
 	}
 
 	errorRate = metrics2.GetMetrics().ErrorRate()
@@ -179,7 +179,7 @@ func TestMetricsInFlightRequests(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			msg := agenkit.NewMessage("user", "test")
-			metrics.Process(ctx, msg)
+			_, _ = metrics.Process(ctx, msg)
 		}()
 	}
 
@@ -214,7 +214,7 @@ func TestMetricsSnapshot(t *testing.T) {
 	// Make some requests
 	for i := 0; i < 3; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		metrics.Process(ctx, msg)
+		_, _ = metrics.Process(ctx, msg)
 	}
 
 	// Get snapshot
@@ -223,7 +223,7 @@ func TestMetricsSnapshot(t *testing.T) {
 	// Make more requests
 	for i := 0; i < 2; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		metrics.Process(ctx, msg)
+		_, _ = metrics.Process(ctx, msg)
 	}
 
 	// Snapshot should still have old values
@@ -246,7 +246,7 @@ func TestMetricsReset(t *testing.T) {
 	// Make some requests
 	for i := 0; i < 5; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		metrics.Process(ctx, msg)
+		_, _ = metrics.Process(ctx, msg)
 	}
 
 	// Verify metrics are non-zero
@@ -334,7 +334,7 @@ func TestMetricsConcurrentAccess(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < requestsPerGoroutine; j++ {
 				msg := agenkit.NewMessage("user", "test")
-				metrics.Process(ctx, msg)
+				_, _ = metrics.Process(ctx, msg)
 			}
 		}()
 	}

@@ -33,7 +33,7 @@ type ProtocolError struct {
 }
 
 func (e *ProtocolError) Error() string {
-	if e.Details != nil && len(e.Details) > 0 {
+	if len(e.Details) > 0 {
 		return fmt.Sprintf("protocol error [%s]: %s (details: %v)", e.Code, e.Message, e.Details)
 	}
 	return fmt.Sprintf("protocol error [%s]: %s", e.Code, e.Message)
@@ -51,7 +51,7 @@ type InvalidMessageError struct {
 }
 
 func (e *InvalidMessageError) Error() string {
-	if e.Details != nil && len(e.Details) > 0 {
+	if len(e.Details) > 0 {
 		return fmt.Sprintf("invalid message: %s (details: %v)", e.Message, e.Details)
 	}
 	return fmt.Sprintf("invalid message: %s", e.Message)
@@ -70,7 +70,7 @@ type RemoteExecutionError struct {
 }
 
 func (e *RemoteExecutionError) Error() string {
-	if e.Details != nil && len(e.Details) > 0 {
+	if len(e.Details) > 0 {
 		return fmt.Sprintf("remote execution error in agent '%s': %s (details: %v)", e.AgentName, e.Message, e.Details)
 	}
 	return fmt.Sprintf("remote execution error in agent '%s': %s", e.AgentName, e.Message)

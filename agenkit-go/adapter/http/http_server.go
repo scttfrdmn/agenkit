@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/quic-go/quic-go/http3"
@@ -104,7 +105,7 @@ func NewHTTPAgentWithOptions(agent agenkit.Agent, addr string, options ServerOpt
 		timeoutConf := options.TimeoutConfig
 		if timeoutConf == nil {
 			timeoutConf = &middleware.TimeoutConfig{
-				Timeout: 30.0, // 30 seconds
+				Timeout: 30 * time.Second,
 			}
 		}
 		agent = middleware.NewTimeoutDecorator(agent, *timeoutConf)
@@ -122,7 +123,7 @@ func NewHTTPAgentWithOptions(agent agenkit.Agent, addr string, options ServerOpt
 
 		log.Printf(
 			"Default security middleware enabled: rate_limit=%.1f req/s (burst=%d), timeout=%.1fs",
-			rateLimitConf.Rate, rateLimitConf.Capacity, timeoutConf.Timeout,
+			rateLimitConf.Rate, rateLimitConf.Capacity, timeoutConf.Timeout.Seconds(),
 		)
 	}
 
@@ -161,7 +162,9 @@ func NewHTTPAgentWithOptions(agent agenkit.Agent, addr string, options ServerOpt
 
 	// Configure HTTP/2 over TLS if TLS is enabled
 	if options.TLSConfig != nil {
-		http2.ConfigureServer(h.server, &http2.Server{})
+		if err := http2.ConfigureServer(h.server, &http2.Server{}); err != nil {
+			log.Printf("Failed to configure HTTP/2: %v", err)
+		}
 	}
 
 	// Configure HTTP/3 server if enabled
@@ -279,7 +282,7 @@ func (h *HTTPAgent) handleProcess(w http.ResponseWriter, r *http.Request) {
 		h.sendError(w, "unknown", "INVALID_REQUEST", "failed to read request body", nil)
 		return
 	}
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 
 	// Decode request envelope
 	envelope, err := codec.DecodeBytes(body)
@@ -330,7 +333,9 @@ func (h *HTTPAgent) handleProcess(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(responseBytes)
+	if _, err := w.Write(responseBytes); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
 }
 
 // handleStream handles streaming requests.
@@ -353,7 +358,7 @@ func (h *HTTPAgent) handleStream(w http.ResponseWriter, r *http.Request) {
 		h.sendError(w, "unknown", "INVALID_REQUEST", "failed to read request body", nil)
 		return
 	}
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 
 	// Decode request envelope
 	envelope, err := codec.DecodeBytes(body)
@@ -452,9 +457,13 @@ func (h *HTTPAgent) handleStream(w http.ResponseWriter, r *http.Request) {
 func (h *HTTPAgent) sendSSEEvent(w http.ResponseWriter, id, eventType string, data interface{}) {
 	if data != nil {
 		jsonData, _ := json.Marshal(data)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		if _, err := fmt.Fprintf(w, "data: %s\n\n", jsonData); err != nil {
+			log.Printf("Failed to write SSE event: %v", err)
+		}
 	} else {
-		fmt.Fprintf(w, "data: {\"type\":\"%s\",\"id\":\"%s\"}\n\n", eventType, id)
+		if _, err := fmt.Fprintf(w, "data: {\"type\":\"%s\",\"id\":\"%s\"}\n\n", eventType, id); err != nil {
+			log.Printf("Failed to write SSE event: %v", err)
+		}
 	}
 }
 
@@ -462,7 +471,9 @@ func (h *HTTPAgent) sendSSEEvent(w http.ResponseWriter, id, eventType string, da
 func (h *HTTPAgent) sendSSEError(w http.ResponseWriter, id, errorCode, errorMessage string) {
 	errorEnv := codec.CreateErrorEnvelope(id, errorCode, errorMessage, nil)
 	jsonData, _ := json.Marshal(errorEnv)
-	fmt.Fprintf(w, "data: %s\n\n", jsonData)
+	if _, err := fmt.Fprintf(w, "data: %s\n\n", jsonData); err != nil {
+		log.Printf("Failed to write SSE error: %v", err)
+	}
 }
 
 // sendError sends an error response.
@@ -484,7 +495,9 @@ func (h *HTTPAgent) sendError(w http.ResponseWriter, id, errorCode, errorMessage
 	}
 
 	w.WriteHeader(statusCode)
-	w.Write(responseBytes)
+	if _, err := w.Write(responseBytes); err != nil {
+		log.Printf("Failed to write error response: %v", err)
+	}
 }
 
 // handleWebSocket handles WebSocket upgrade and communication.
@@ -495,7 +508,7 @@ func (h *HTTPAgent) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		log.Printf("WebSocket upgrade error: %v\n", err)
 		return
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	log.Printf("WebSocket client connected: %s\n", r.RemoteAddr)
 
@@ -639,7 +652,9 @@ func (h *HTTPAgent) handleWebSocketStream(conn *websocket.Conn, envelope codec.E
 					// Both channels closed - stream complete
 					endEnv := codec.CreateStreamEndEnvelope(envelope.ID)
 					endBytes, _ := codec.EncodeBytes(endEnv)
-					conn.WriteMessage(websocket.BinaryMessage, endBytes)
+					if err := conn.WriteMessage(websocket.BinaryMessage, endBytes); err != nil {
+						log.Printf("WebSocket write error: %v", err)
+					}
 					return
 				}
 				messageChan = nil
@@ -665,7 +680,9 @@ func (h *HTTPAgent) handleWebSocketStream(conn *websocket.Conn, envelope codec.E
 					// Both channels closed - stream complete
 					endEnv := codec.CreateStreamEndEnvelope(envelope.ID)
 					endBytes, _ := codec.EncodeBytes(endEnv)
-					conn.WriteMessage(websocket.BinaryMessage, endBytes)
+					if err := conn.WriteMessage(websocket.BinaryMessage, endBytes); err != nil {
+						log.Printf("WebSocket write error: %v", err)
+					}
 					return
 				}
 				errorChan = nil
@@ -679,7 +696,9 @@ func (h *HTTPAgent) handleWebSocketStream(conn *websocket.Conn, envelope codec.E
 func (h *HTTPAgent) sendWebSocketError(conn *websocket.Conn, id, errorCode, errorMessage string, details map[string]interface{}) {
 	envelope := codec.CreateErrorEnvelope(id, errorCode, errorMessage, details)
 	responseBytes, _ := codec.EncodeBytes(envelope)
-	conn.WriteMessage(websocket.BinaryMessage, responseBytes)
+	if err := conn.WriteMessage(websocket.BinaryMessage, responseBytes); err != nil {
+		log.Printf("WebSocket write error: %v", err)
+	}
 }
 
 // ParseHTTPEndpoint parses an HTTP endpoint string.

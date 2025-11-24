@@ -142,7 +142,7 @@ func TestCircuitBreakerRejectsWhenOpen(t *testing.T) {
 	// Open the circuit
 	for i := 0; i < 2; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		cb.Process(ctx, msg)
+		_, _ = cb.Process(ctx, msg)
 	}
 
 	// Circuit should be open
@@ -188,7 +188,7 @@ func TestCircuitBreakerHalfOpen(t *testing.T) {
 	// Open the circuit
 	for i := 0; i < 2; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		cb.Process(ctx, msg)
+		_, _ = cb.Process(ctx, msg)
 	}
 
 	if cb.State() != StateOpen {
@@ -235,7 +235,7 @@ func TestCircuitBreakerRecovery(t *testing.T) {
 	// Open the circuit
 	for i := 0; i < 2; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		cb.Process(ctx, msg)
+		_, _ = cb.Process(ctx, msg)
 	}
 
 	// Wait for recovery timeout
@@ -291,7 +291,7 @@ func TestCircuitBreakerReopensFromHalfOpen(t *testing.T) {
 	// Open the circuit
 	for i := 0; i < 2; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		cb.Process(ctx, msg)
+		_, _ = cb.Process(ctx, msg)
 	}
 
 	// Wait for recovery timeout
@@ -384,7 +384,7 @@ func TestCircuitBreakerMetrics(t *testing.T) {
 	// Make requests
 	for i := 0; i < 5; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		cb.Process(ctx, msg)
+		_, _ = cb.Process(ctx, msg)
 	}
 
 	metrics := cb.Metrics()

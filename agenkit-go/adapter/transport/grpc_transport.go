@@ -605,18 +605,3 @@ func getStringFromMap(m map[string]interface{}, key string, defaultValue string)
 	}
 	return defaultValue
 }
-
-// createErrorEnvelope creates a JSON error envelope.
-func createErrorEnvelope(requestID string, errorCode string, errorMessage string) *codec.Envelope {
-	return &codec.Envelope{
-		Version:   codec.ProtocolVersion,
-		Type:      codec.TypeError,
-		ID:        requestID,
-		Timestamp: time.Now().UTC().Format(time.RFC3339Nano),
-		Payload: map[string]interface{}{
-			"error_code":    errorCode,
-			"error_message": errorMessage,
-			"error_details": make(map[string]interface{}),
-		},
-	}
-}

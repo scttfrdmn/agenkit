@@ -26,7 +26,7 @@ func TestGRPCBasicCommunication(t *testing.T) {
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	// Give server time to start
 	time.Sleep(100 * time.Millisecond)
@@ -36,7 +36,7 @@ func TestGRPCBasicCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test communication
 	message := agenkit.NewMessage("user", "Hello")
@@ -68,7 +68,7 @@ func TestGRPCMultipleRequests(t *testing.T) {
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -77,7 +77,7 @@ func TestGRPCMultipleRequests(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send multiple requests
 	for i := 0; i < 5; i++ {
@@ -108,7 +108,7 @@ func TestGRPCConcurrentRequests(t *testing.T) {
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -128,7 +128,7 @@ func TestGRPCConcurrentRequests(t *testing.T) {
 				errors <- fmt.Errorf("client %d: failed to connect: %w", id, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			message := agenkit.NewMessage("user", fmt.Sprintf("Message %d", id))
 			response, err := client.Process(ctx, message)
@@ -167,7 +167,7 @@ func TestGRPCMultipleClients(t *testing.T) {
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -186,7 +186,7 @@ func TestGRPCMultipleClients(t *testing.T) {
 				errors <- fmt.Errorf("client %d: failed to connect: %w", id, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			message := agenkit.NewMessage("user", fmt.Sprintf("Client %d", id))
 			response, err := client.Process(ctx, message)
@@ -220,7 +220,7 @@ func TestGRPCConnectionFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	message := agenkit.NewMessage("user", "test")
 	_, err = client.Process(ctx, message)
@@ -248,7 +248,7 @@ func TestGRPCLargeMessage(t *testing.T) {
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -257,7 +257,7 @@ func TestGRPCLargeMessage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send large message (1MB)
 	largeContent := string(make([]byte, 1024*1024))
@@ -288,7 +288,7 @@ func TestGRPCMessageMetadataPreserved(t *testing.T) {
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -297,7 +297,7 @@ func TestGRPCMessageMetadataPreserved(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send message with metadata
 	message := agenkit.NewMessage("user", "test").
@@ -380,7 +380,7 @@ func TestGRPCStreamingSupport(t *testing.T) {
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -389,7 +389,7 @@ func TestGRPCStreamingSupport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test streaming
 	message := agenkit.NewMessage("user", "test")
@@ -437,7 +437,7 @@ func TestGRPCErrorHandling(t *testing.T) {
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -446,7 +446,7 @@ func TestGRPCErrorHandling(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test error handling
 	message := agenkit.NewMessage("user", "test")
@@ -526,7 +526,7 @@ func TestGRPCTransportTimeout(t *testing.T) {
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -535,7 +535,7 @@ func TestGRPCTransportTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test timeout
 	message := agenkit.NewMessage("user", "test")
@@ -572,7 +572,7 @@ func TestGRPCTransportReconnect(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test communication
 	message := agenkit.NewMessage("user", "Hello")
@@ -598,7 +598,7 @@ func TestGRPCTransportReconnect(t *testing.T) {
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -607,7 +607,7 @@ func TestGRPCTransportReconnect(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client2.Close()
+	defer func() { _ = client2.Close() }()
 
 	// Test communication again
 	response, err = client2.Process(ctx, message)
@@ -628,7 +628,7 @@ func TestGRPCDefaultPort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// We don't test actual connection as there's no server on default port
 }
@@ -647,7 +647,7 @@ func TestGRPCProtocolConversion(t *testing.T) {
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -656,7 +656,7 @@ func TestGRPCProtocolConversion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test various content types
 	tests := []struct {

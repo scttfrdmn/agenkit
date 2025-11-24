@@ -106,7 +106,7 @@ func TestNewSecurityAuditLogger(t *testing.T) {
 		t.Errorf("Failed to create logger: %v", err)
 	}
 	if logger == nil {
-		t.Error("Expected logger to be created")
+		t.Fatal("Expected logger to be created")
 	}
 	if logger.logFile != logFile {
 		t.Errorf("Expected logFile %s, got %s", logFile, logger.logFile)
@@ -422,7 +422,7 @@ func TestGlobalAuditLogger(t *testing.T) {
 
 	logger = GetAuditLogger()
 	if logger == nil {
-		t.Error("Expected configured logger to be returned")
+		t.Fatal("Expected configured logger to be returned")
 	}
 	if logger.logFile != logFile {
 		t.Errorf("Expected configured log file %s, got %s", logFile, logger.logFile)

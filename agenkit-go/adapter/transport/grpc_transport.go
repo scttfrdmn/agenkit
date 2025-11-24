@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/codec"
@@ -97,7 +98,7 @@ func NewGRPCTransportWithConfig(endpoint string, config *GRPCTransportConfig) (*
 	}, nil
 }
 
-// Connect establishes connection to gRPC endpoint.
+// Connect establishes connection to gRPC endpoint with keepalive and connection pooling.
 func (t *GRPCTransport) Connect(ctx context.Context) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -106,7 +107,7 @@ func (t *GRPCTransport) Connect(ctx context.Context) error {
 		return nil
 	}
 
-	// Create gRPC connection
+	// Create gRPC connection with keepalive options
 	target := fmt.Sprintf("%s:%s", t.host, t.port)
 
 	var opts []grpc.DialOption
@@ -132,6 +133,15 @@ func (t *GRPCTransport) Connect(ctx context.Context) error {
 		// Production should ALWAYS use TLS (config.UseTLS=true)
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
+
+	// Add keepalive options for connection pooling and reuse
+	// These options improve performance by maintaining persistent connections
+	kaParams := grpc.WithKeepaliveParams(keepalive.ClientParameters{
+		Time:                10 * time.Second, // Send keepalive ping every 10s
+		Timeout:             5 * time.Second,  // Wait 5s for keepalive response
+		PermitWithoutStream: true,             // Allow keepalive pings when no streams
+	})
+	opts = append(opts, kaParams)
 
 	conn, err := grpc.NewClient(target, opts...)
 	if err != nil {

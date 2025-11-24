@@ -70,17 +70,23 @@ func NewHTTPTransport(baseURL string) *HTTPTransport {
 	return newHTTPTransportWithVersion(normalizedURL, version)
 }
 
-// newHTTPTransportWithVersion creates an HTTP transport with explicit protocol version.
+// newHTTPTransportWithVersion creates an HTTP transport with explicit protocol version and connection pooling.
 func newHTTPTransportWithVersion(baseURL string, version HTTPVersion) *HTTPTransport {
 	var client *http.Client
 
 	switch version {
 	case HTTP2:
-		// HTTP/2 Cleartext (h2c) support
+		// HTTP/2 Cleartext (h2c) support with connection pooling
 		transport := &http.Transport{
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				return (&net.Dialer{}).DialContext(ctx, network, addr)
 			},
+			// Connection pooling settings
+			MaxIdleConns:        100, // Maximum idle connections across all hosts
+			MaxIdleConnsPerHost: 20,  // Maximum idle connections per host
+			MaxConnsPerHost:     100, // Maximum connections per host (0 = unlimited)
+			IdleConnTimeout:     90,  // How long idle connections are kept alive (seconds)
+			DisableKeepAlives:   false,
 		}
 		http2.ConfigureTransport(transport)
 
@@ -89,7 +95,7 @@ func newHTTPTransportWithVersion(baseURL string, version HTTPVersion) *HTTPTrans
 		}
 
 	case HTTP3:
-		// HTTP/3 over QUIC
+		// HTTP/3 over QUIC with connection pooling
 		client = &http.Client{
 			Transport: &http3.Transport{
 				TLSClientConfig: &tls.Config{
@@ -97,15 +103,22 @@ func newHTTPTransportWithVersion(baseURL string, version HTTPVersion) *HTTPTrans
 					// Production deployments should use proper CA-signed certificates
 					InsecureSkipVerify: true,
 				},
+				// HTTP/3 connection pooling is handled internally by quic-go
 			},
 		}
 
 	default:
-		// HTTP/1.1 (with automatic HTTP/2 upgrade for HTTPS)
+		// HTTP/1.1 (with automatic HTTP/2 upgrade for HTTPS) and connection pooling
 		transport := &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: false,
 			},
+			// Connection pooling settings
+			MaxIdleConns:        100, // Maximum idle connections across all hosts
+			MaxIdleConnsPerHost: 20,  // Maximum idle connections per host
+			MaxConnsPerHost:     100, // Maximum connections per host (0 = unlimited)
+			IdleConnTimeout:     90,  // How long idle connections are kept alive (seconds)
+			DisableKeepAlives:   false,
 		}
 		// Enable HTTP/2 support for HTTPS connections
 		http2.ConfigureTransport(transport)

@@ -26,7 +26,7 @@ func TestTCPBasicCommunication(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	// Give server time to start
 	time.Sleep(50 * time.Millisecond)
@@ -36,7 +36,7 @@ func TestTCPBasicCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test communication
 	message := agenkit.NewMessage("user", "Hello")
@@ -68,7 +68,7 @@ func TestTCPMultipleRequests(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -77,7 +77,7 @@ func TestTCPMultipleRequests(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send multiple requests
 	for i := 0; i < 5; i++ {
@@ -108,7 +108,7 @@ func TestTCPConcurrentRequests(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -128,7 +128,7 @@ func TestTCPConcurrentRequests(t *testing.T) {
 				errors <- fmt.Errorf("client %d: failed to connect: %w", id, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			message := agenkit.NewMessage("user", fmt.Sprintf("Message %d", id))
 			response, err := client.Process(ctx, message)
@@ -167,7 +167,7 @@ func TestTCPMultipleClients(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -186,7 +186,7 @@ func TestTCPMultipleClients(t *testing.T) {
 				errors <- fmt.Errorf("client %d: failed to connect: %w", id, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			message := agenkit.NewMessage("user", fmt.Sprintf("Client %d", id))
 			response, err := client.Process(ctx, message)
@@ -220,7 +220,7 @@ func TestTCPConnectionFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	message := agenkit.NewMessage("user", "test")
 	_, err = client.Process(ctx, message)
@@ -248,7 +248,7 @@ func TestTCPLargeMessage(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -257,7 +257,7 @@ func TestTCPLargeMessage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send large message (1MB)
 	largeContent := string(make([]byte, 1024*1024))
@@ -288,7 +288,7 @@ func TestTCPMessageMetadataPreserved(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -297,7 +297,7 @@ func TestTCPMessageMetadataPreserved(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send message with metadata
 	message := agenkit.NewMessage("user", "test").
@@ -354,7 +354,7 @@ func TestTCPServerStartStopMultipleTimes(t *testing.T) {
 			t.Errorf("Iteration %d: expected '%s', got '%s'", i, expected, response.Content)
 		}
 
-		client.Close()
+		_ = client.Close()
 
 		// Stop server
 		if err := server.Stop(); err != nil {

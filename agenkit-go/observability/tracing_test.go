@@ -79,7 +79,7 @@ func setupTestTracing(t *testing.T) (*sdktrace.TracerProvider, *tracetest.InMemo
 
 func TestTracingMiddlewareCreatesSpan(t *testing.T) {
 	provider, exporter := setupTestTracing(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	// Reset exporter to ensure clean state
 	exporter.Reset()
@@ -94,7 +94,7 @@ func TestTracingMiddlewareCreatesSpan(t *testing.T) {
 	}
 
 	// Force flush to get spans
-	provider.ForceFlush(context.Background())
+	_ = provider.ForceFlush(context.Background())
 
 	spans := exporter.GetSpans()
 	if len(spans) != 1 {
@@ -112,7 +112,7 @@ func TestTracingMiddlewareCreatesSpan(t *testing.T) {
 
 func TestTracingMiddlewareSetsAttributes(t *testing.T) {
 	provider, exporter := setupTestTracing(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
 	traced := NewTracingMiddleware(agent, "")
@@ -129,7 +129,7 @@ func TestTracingMiddlewareSetsAttributes(t *testing.T) {
 		t.Fatalf("Process failed: %v", err)
 	}
 
-	provider.ForceFlush(context.Background())
+	_ = provider.ForceFlush(context.Background())
 
 	spans := exporter.GetSpans()
 	if len(spans) != 1 {
@@ -186,7 +186,7 @@ func TestTracingMiddlewareSetsAttributes(t *testing.T) {
 
 func TestTracingMiddlewareInjectsTraceContext(t *testing.T) {
 	provider, exporter := setupTestTracing(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 	_ = exporter // Unused but needed for setup
 
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
@@ -198,7 +198,7 @@ func TestTracingMiddlewareInjectsTraceContext(t *testing.T) {
 		t.Fatalf("Process failed: %v", err)
 	}
 
-	provider.ForceFlush(context.Background())
+	_ = provider.ForceFlush(context.Background())
 
 	// Check that trace context was injected
 	if response.Metadata == nil {
@@ -222,7 +222,7 @@ func TestTracingMiddlewareInjectsTraceContext(t *testing.T) {
 
 func TestTracingMiddlewarePropagatesContext(t *testing.T) {
 	provider, exporter := setupTestTracing(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	agent1 := &SimpleTestAgent{name: "agent1", response: "response1"}
 	agent2 := &SimpleTestAgent{name: "agent2", response: "response2"}
@@ -243,7 +243,7 @@ func TestTracingMiddlewarePropagatesContext(t *testing.T) {
 		t.Fatalf("Process 2 failed: %v", err)
 	}
 
-	provider.ForceFlush(context.Background())
+	_ = provider.ForceFlush(context.Background())
 
 	spans := exporter.GetSpans()
 	if len(spans) != 2 {
@@ -269,7 +269,7 @@ func TestTracingMiddlewarePropagatesContext(t *testing.T) {
 
 func TestTracingMiddlewareRecordsErrors(t *testing.T) {
 	provider, exporter := setupTestTracing(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	agent := &ErrorTestAgent{}
 	traced := NewTracingMiddleware(agent, "")
@@ -280,7 +280,7 @@ func TestTracingMiddlewareRecordsErrors(t *testing.T) {
 		t.Fatal("Expected error, got nil")
 	}
 
-	provider.ForceFlush(context.Background())
+	_ = provider.ForceFlush(context.Background())
 
 	spans := exporter.GetSpans()
 	if len(spans) != 1 {
@@ -314,7 +314,7 @@ func TestTracingMiddlewareRecordsErrors(t *testing.T) {
 
 func TestTracingMiddlewareCustomSpanName(t *testing.T) {
 	provider, exporter := setupTestTracing(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
 	traced := NewTracingMiddleware(agent, "custom.operation")
@@ -325,7 +325,7 @@ func TestTracingMiddlewareCustomSpanName(t *testing.T) {
 		t.Fatalf("Process failed: %v", err)
 	}
 
-	provider.ForceFlush(context.Background())
+	_ = provider.ForceFlush(context.Background())
 
 	spans := exporter.GetSpans()
 	if len(spans) != 1 {
@@ -339,7 +339,7 @@ func TestTracingMiddlewareCustomSpanName(t *testing.T) {
 
 func TestTracingMiddlewarePreservesAgentInterface(t *testing.T) {
 	provider, exporter := setupTestTracing(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 	_ = exporter // Unused but needed for setup
 
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
@@ -371,7 +371,7 @@ func TestInitTracingWithConsoleExport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InitTracing failed: %v", err)
 	}
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	if provider == nil {
 		t.Fatal("Expected provider, got nil")

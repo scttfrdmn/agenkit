@@ -438,7 +438,7 @@ func (s *FileStorage) DeleteSession(ctx context.Context, sessionID string) (int,
 	}
 
 	// Try to remove session directory if empty
-	os.Remove(sessionDir) // Ignore error if directory not empty
+	_ = os.Remove(sessionDir) // Ignore error if directory not empty
 
 	return count, nil
 }

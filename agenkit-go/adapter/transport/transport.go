@@ -295,7 +295,7 @@ func CreateUnixSocketServer(socketPath string) (net.Listener, error) {
 
 	// Set socket permissions
 	if err := os.Chmod(socketPath, 0600); err != nil {
-		listener.Close()
+		_ = listener.Close()
 		return nil, fmt.Errorf("failed to set socket permissions: %w", err)
 	}
 

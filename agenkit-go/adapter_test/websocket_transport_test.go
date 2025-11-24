@@ -34,7 +34,7 @@ func TestWebSocketBasicCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test communication
 	message := agenkit.NewMessage("user", "Hello")
@@ -71,7 +71,7 @@ func TestWebSocketMultipleRequests(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send multiple requests
 	for i := 0; i < 5; i++ {
@@ -118,7 +118,7 @@ func TestWebSocketConcurrentRequests(t *testing.T) {
 				errors <- fmt.Errorf("client %d: failed to connect: %w", id, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			message := agenkit.NewMessage("user", fmt.Sprintf("Message %d", id))
 			response, err := client.Process(ctx, message)
@@ -152,7 +152,7 @@ func TestWebSocketConnectionFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	message := agenkit.NewMessage("user", "test")
 	_, err = client.Process(ctx, message)
@@ -185,7 +185,7 @@ func TestWebSocketLargeMessage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send large message (1MB)
 	largeContent := string(make([]byte, 1024*1024))
@@ -220,7 +220,7 @@ func TestWebSocketReconnection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// First request
 	message := agenkit.NewMessage("user", "First")
@@ -279,7 +279,7 @@ func TestWebSocketBinaryData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test with message containing special characters
 	message := agenkit.NewMessage("user", "Binary data: \x00\x01\x02\xff")
@@ -316,7 +316,7 @@ func TestWebSocketIsConnectedProperty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Make a request to establish connection
 	message := agenkit.NewMessage("user", "test")
@@ -357,7 +357,7 @@ func TestWebSocketMessageMetadataPreserved(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send message with metadata
 	message := agenkit.NewMessage("user", "test").
@@ -410,7 +410,7 @@ func TestWebSocketServerStartStopMultipleTimes(t *testing.T) {
 			t.Errorf("Iteration %d: expected '%s', got '%s'", i, expected, response.Content)
 		}
 
-		client.Close()
+		_ = client.Close()
 
 		// Stop server
 		if err := httpAgent.Stop(); err != nil {
@@ -446,7 +446,7 @@ func TestWebSocketWithLocalAgent(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	// Give server time to start
 	time.Sleep(100 * time.Millisecond)
@@ -457,7 +457,7 @@ func TestWebSocketWithLocalAgent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test communication
 	message := agenkit.NewMessage("user", "Hello from LocalAgent")
@@ -493,7 +493,7 @@ func TestWebSocketHealthCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != nethttp.StatusOK {
 		t.Errorf("Expected status code %d, got %d", nethttp.StatusOK, resp.StatusCode)

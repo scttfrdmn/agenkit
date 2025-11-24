@@ -237,7 +237,7 @@ func TestAnomalyDetectionMiddlewareCallbackInvoked(t *testing.T) {
 	}
 
 	for i := 0; i < 15; i++ {
-		middleware.Process(context.Background(), message)
+		_, _ = middleware.Process(context.Background(), message)
 		time.Sleep(10 * time.Millisecond)
 		if eventCaptured != "" {
 			break

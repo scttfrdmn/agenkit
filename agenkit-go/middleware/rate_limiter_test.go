@@ -76,7 +76,7 @@ func TestRateLimiterRefill(t *testing.T) {
 	// Consume all tokens
 	for i := 0; i < 5; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		rl.Process(ctx, msg)
+		_, _ = rl.Process(ctx, msg)
 	}
 
 	// Wait for 500ms (should refill 5 tokens)
@@ -115,7 +115,7 @@ func TestRateLimiterWait(t *testing.T) {
 	// Consume all tokens
 	for i := 0; i < 5; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		rl.Process(ctx, msg)
+		_, _ = rl.Process(ctx, msg)
 	}
 
 	// Next request should wait for tokens
@@ -207,7 +207,7 @@ func TestRateLimiterContextCancellation(t *testing.T) {
 
 	// Consume the token
 	msg := agenkit.NewMessage("user", "test")
-	rl.Process(context.Background(), msg)
+	_, _ = rl.Process(context.Background(), msg)
 
 	// Create context with short timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
@@ -241,7 +241,7 @@ func TestRateLimiterMetrics(t *testing.T) {
 	// Make 5 requests (consume all tokens)
 	for i := 0; i < 5; i++ {
 		msg := agenkit.NewMessage("user", "test")
-		rl.Process(ctx, msg)
+		_, _ = rl.Process(ctx, msg)
 	}
 
 	metrics := rl.Metrics()

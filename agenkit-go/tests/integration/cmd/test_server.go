@@ -70,5 +70,5 @@ func main() {
 	<-sigChan
 
 	fmt.Println("\nShutting down server...")
-	server.Stop()
+	_ = server.Stop()
 }

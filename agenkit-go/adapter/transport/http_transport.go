@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -88,7 +89,9 @@ func newHTTPTransportWithVersion(baseURL string, version HTTPVersion) *HTTPTrans
 			IdleConnTimeout:     90,  // How long idle connections are kept alive (seconds)
 			DisableKeepAlives:   false,
 		}
-		http2.ConfigureTransport(transport)
+		if err := http2.ConfigureTransport(transport); err != nil {
+			log.Printf("Failed to configure HTTP/2: %v", err)
+		}
 
 		client = &http.Client{
 			Transport: &h2cTransport{transport: transport},
@@ -121,7 +124,9 @@ func newHTTPTransportWithVersion(baseURL string, version HTTPVersion) *HTTPTrans
 			DisableKeepAlives:   false,
 		}
 		// Enable HTTP/2 support for HTTPS connections
-		http2.ConfigureTransport(transport)
+		if err := http2.ConfigureTransport(transport); err != nil {
+			log.Printf("Failed to configure HTTP/2: %v", err)
+		}
 
 		client = &http.Client{
 			Transport: transport,
@@ -161,7 +166,7 @@ func (t *HTTPTransport) Connect(ctx context.Context) error {
 	if err != nil {
 		return errors.NewConnectionError(fmt.Sprintf("failed to connect to %s", t.baseURL), err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Any response means server is reachable
 	return nil
@@ -212,7 +217,7 @@ func (t *HTTPTransport) SendFramed(ctx context.Context, data []byte) error {
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 			body, _ := io.ReadAll(resp.Body)
 			return errors.NewConnectionError(fmt.Sprintf("HTTP error %d: %s", resp.StatusCode, string(body)), nil)
 		}
@@ -228,7 +233,7 @@ func (t *HTTPTransport) SendFramed(ctx context.Context, data []byte) error {
 	if err != nil {
 		return errors.NewConnectionError("failed to send HTTP request", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -275,7 +280,7 @@ func (t *HTTPTransport) readSSEEvent() ([]byte, error) {
 			if err == io.EOF {
 				// Clean up stream
 				if t.streamConn != nil {
-					t.streamConn.Close()
+					_ = t.streamConn.Close()
 					t.streamConn = nil
 					t.streamReader = nil
 				}

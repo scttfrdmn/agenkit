@@ -299,7 +299,7 @@ func TestCircuitBreakerReopensFromHalfOpen(t *testing.T) {
 
 	// First request succeeds (half-open)
 	msg := agenkit.NewMessage("user", "test")
-	cb.Process(ctx, msg)
+	_, _ = cb.Process(ctx, msg)
 
 	if cb.State() != StateHalfOpen {
 		t.Errorf("Expected StateHalfOpen, got %s", cb.State())

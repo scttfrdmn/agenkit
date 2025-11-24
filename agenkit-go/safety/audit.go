@@ -147,7 +147,7 @@ func NewSecurityAuditLogger(logFile string, maxBytes int, backupCount int, minSe
 func (l *SecurityAuditLogger) openLogFile() error {
 	// Close existing file if open
 	if l.currentFile != nil {
-		l.currentFile.Close()
+		_ = l.currentFile.Close()
 	}
 
 	// Create directory if needed
@@ -167,7 +167,7 @@ func (l *SecurityAuditLogger) openLogFile() error {
 	// Get current file size
 	info, err := file.Stat()
 	if err != nil {
-		file.Close()
+		_ = file.Close()
 		return fmt.Errorf("failed to stat log file: %w", err)
 	}
 
@@ -181,7 +181,7 @@ func (l *SecurityAuditLogger) openLogFile() error {
 func (l *SecurityAuditLogger) rotateLogFile() error {
 	// Close current file
 	if l.currentFile != nil {
-		l.currentFile.Close()
+		_ = l.currentFile.Close()
 		l.currentFile = nil
 	}
 
@@ -194,7 +194,7 @@ func (l *SecurityAuditLogger) rotateLogFile() error {
 		}
 
 		if _, err := os.Stat(oldName); err == nil {
-			os.Rename(oldName, newName)
+			_ = os.Rename(oldName, newName)
 		}
 	}
 
@@ -435,7 +435,7 @@ func ConfigureAuditLogger(logFile string, maxBytes int, backupCount int, minSeve
 
 	// Close old logger if exists
 	if globalAuditLogger != nil {
-		globalAuditLogger.Close()
+		_ = globalAuditLogger.Close()
 	}
 
 	globalAuditLogger = logger

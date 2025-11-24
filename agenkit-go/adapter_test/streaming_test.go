@@ -125,7 +125,7 @@ func TestStreamingEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	socketPath := filepath.Join(tmpDir, "empty.sock")
 	endpoint := fmt.Sprintf("unix://%s", socketPath)
@@ -140,7 +140,7 @@ func TestStreamingEmpty(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -149,7 +149,7 @@ func TestStreamingEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Stream - should complete without yielding anything
 	msg := agenkit.NewMessage("user", "test")
@@ -188,7 +188,7 @@ func TestStreamingLargeChunks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	socketPath := filepath.Join(tmpDir, "large.sock")
 	endpoint := fmt.Sprintf("unix://%s", socketPath)
@@ -203,7 +203,7 @@ func TestStreamingLargeChunks(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -212,7 +212,7 @@ func TestStreamingLargeChunks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Stream large chunks
 	msg := agenkit.NewMessage("user", "test")
@@ -257,7 +257,7 @@ func TestStreamingErrorInStream(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	socketPath := filepath.Join(tmpDir, "error.sock")
 	endpoint := fmt.Sprintf("unix://%s", socketPath)
@@ -272,7 +272,7 @@ func TestStreamingErrorInStream(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -281,7 +281,7 @@ func TestStreamingErrorInStream(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Stream - should get error
 	msg := agenkit.NewMessage("user", "test")
@@ -328,7 +328,7 @@ func TestStreamingMultipleClients(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	socketPath := filepath.Join(tmpDir, "multi.sock")
 	endpoint := fmt.Sprintf("unix://%s", socketPath)
@@ -343,7 +343,7 @@ func TestStreamingMultipleClients(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -363,7 +363,7 @@ func TestStreamingMultipleClients(t *testing.T) {
 				errors <- fmt.Errorf("client %d: failed to connect: %w", id, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			msg := agenkit.NewMessage("user", fmt.Sprintf("client_%d", id))
 			messageChan, errorChan := client.Stream(ctx, msg)
@@ -423,7 +423,7 @@ func TestNonStreamingAgentError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	socketPath := filepath.Join(tmpDir, "nostream.sock")
 	endpoint := fmt.Sprintf("unix://%s", socketPath)
@@ -438,7 +438,7 @@ func TestNonStreamingAgentError(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -447,7 +447,7 @@ func TestNonStreamingAgentError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Try to stream - should get error
 	msg := agenkit.NewMessage("user", "test")
@@ -487,7 +487,7 @@ func TestStreamingMetadataPreserved(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	socketPath := filepath.Join(tmpDir, "meta.sock")
 	endpoint := fmt.Sprintf("unix://%s", socketPath)
@@ -502,7 +502,7 @@ func TestStreamingMetadataPreserved(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -511,7 +511,7 @@ func TestStreamingMetadataPreserved(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send message with metadata
 	msg := agenkit.NewMessage("user", "test").WithMetadata("key", "value")

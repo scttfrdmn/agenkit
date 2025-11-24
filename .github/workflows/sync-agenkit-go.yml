@@ -32,7 +32,7 @@ jobs:
           mkdir -p /tmp/agenkit-go-sync
           cd /tmp/agenkit-go-sync
           git init
-          git remote add origin ${{ github.repositoryUrl }}
+          git remote add origin https://github.com/${{ github.repository }}.git
           git fetch origin ${{ steps.split.outputs.split_commit }}
           git checkout ${{ steps.split.outputs.split_commit }}
 

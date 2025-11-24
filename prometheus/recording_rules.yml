@@ -1,0 +1,178 @@
+# Prometheus Recording Rules for Agenkit SLOs
+#
+# These rules pre-compute SLO metrics to improve query performance
+# and enable efficient SLO tracking and alerting.
+#
+# Load these rules in your Prometheus configuration with:
+#   rule_files:
+#     - 'recording_rules.yml'
+
+groups:
+  # SLI (Service Level Indicator) Recording Rules
+  # These capture the raw measurements used to calculate SLOs
+  - name: agenkit_sli
+    interval: 30s
+    rules:
+      # Total request rate
+      - record: agenkit:requests:rate5m
+        expr: rate(agenkit_agent_requests_total[5m])
+
+      # Success request rate
+      - record: agenkit:requests_success:rate5m
+        expr: rate(agenkit_agent_requests_total{status="success"}[5m])
+
+      # Error request rate
+      - record: agenkit:requests_error:rate5m
+        expr: rate(agenkit_agent_requests_total{status="error"}[5m])
+
+      # P50 latency
+      - record: agenkit:latency:p50
+        expr: |
+          histogram_quantile(0.50,
+            rate(agenkit_agent_latency_bucket[5m])
+          )
+
+      # P95 latency
+      - record: agenkit:latency:p95
+        expr: |
+          histogram_quantile(0.95,
+            rate(agenkit_agent_latency_bucket[5m])
+          )
+
+      # P99 latency
+      - record: agenkit:latency:p99
+        expr: |
+          histogram_quantile(0.99,
+            rate(agenkit_agent_latency_bucket[5m])
+          )
+
+  # SLO Recording Rules
+  # These calculate the actual SLO compliance metrics
+  - name: agenkit_slo
+    interval: 30s
+    rules:
+      # Availability SLO: Success rate
+      # Target: 99.9% (3 nines)
+      - record: agenkit:slo:availability:ratio
+        expr: |
+          (
+            sum(rate(agenkit_agent_requests_total{status="success"}[5m]))
+            /
+            sum(rate(agenkit_agent_requests_total[5m]))
+          )
+
+      # Error rate (inverse of availability)
+      - record: agenkit:slo:error_rate:ratio
+        expr: |
+          (
+            sum(rate(agenkit_agent_requests_total{status="error"}[5m]))
+            /
+            sum(rate(agenkit_agent_requests_total[5m]))
+          )
+
+      # Latency SLO: Percentage of requests under 1s
+      # Target: 95% of requests < 1000ms
+      - record: agenkit:slo:latency:ratio
+        expr: |
+          (
+            sum(rate(agenkit_agent_latency_bucket{le="1000"}[5m]))
+            /
+            sum(rate(agenkit_agent_latency_count[5m]))
+          )
+
+      # Latency SLO compliance (boolean: 1 if compliant, 0 if not)
+      - record: agenkit:slo:latency:compliant
+        expr: |
+          (
+            agenkit:latency:p95 < 1000
+          )
+
+      # Availability SLO compliance (boolean: 1 if compliant, 0 if not)
+      - record: agenkit:slo:availability:compliant
+        expr: |
+          (
+            agenkit:slo:availability:ratio > 0.999
+          )
+
+  # Error Budget Recording Rules
+  # Error budget = 1 - SLO target
+  # For 99.9% availability: error budget is 0.1% (43 minutes/month)
+  - name: agenkit_error_budget
+    interval: 1m
+    rules:
+      # Remaining error budget (% of monthly budget remaining)
+      # Calculated over 30-day window
+      - record: agenkit:error_budget:availability:remaining_ratio
+        expr: |
+          1 - (
+            (
+              sum(increase(agenkit_agent_requests_total{status="error"}[30d]))
+              /
+              sum(increase(agenkit_agent_requests_total[30d]))
+            ) / 0.001
+          )
+
+      # Error budget burn rate (multiplier of normal consumption rate)
+      # >1 = burning faster than expected, <1 = burning slower
+      - record: agenkit:error_budget:availability:burn_rate:1h
+        expr: |
+          (
+            sum(rate(agenkit_agent_requests_total{status="error"}[1h]))
+            /
+            sum(rate(agenkit_agent_requests_total[1h]))
+          ) / 0.001
+
+      # 6-hour burn rate for slower burn detection
+      - record: agenkit:error_budget:availability:burn_rate:6h
+        expr: |
+          (
+            sum(rate(agenkit_agent_requests_total{status="error"}[6h]))
+            /
+            sum(rate(agenkit_agent_requests_total[6h]))
+          ) / 0.001
+
+  # Resource Utilization Recording Rules
+  - name: agenkit_resources
+    interval: 30s
+    rules:
+      # Memory utilization ratio
+      - record: agenkit:memory:utilization:ratio
+        expr: |
+          (
+            process_runtime_go_mem_alloc
+            /
+            process_runtime_go_mem_sys
+          )
+
+      # Goroutine growth rate
+      - record: agenkit:goroutines:growth:rate5m
+        expr: rate(process_runtime_go_goroutines[5m])
+
+  # Agent-specific SLIs (per-agent breakdown)
+  - name: agenkit_agent_sli
+    interval: 30s
+    rules:
+      # Success rate per agent
+      - record: agenkit:requests_success:rate5m:by_agent
+        expr: |
+          (
+            rate(agenkit_agent_requests_total{status="success"}[5m])
+            /
+            rate(agenkit_agent_requests_total[5m])
+          )
+
+      # Error rate per agent
+      - record: agenkit:requests_error:rate5m:by_agent
+        expr: |
+          (
+            rate(agenkit_agent_requests_total{status="error"}[5m])
+            /
+            rate(agenkit_agent_requests_total[5m])
+          )
+
+      # P95 latency per agent
+      - record: agenkit:latency:p95:by_agent
+        expr: |
+          histogram_quantile(0.95,
+            rate(agenkit_agent_latency_bucket[5m])
+          )

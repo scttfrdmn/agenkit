@@ -1,0 +1,213 @@
+# Prometheus Alert Rules for Agenkit
+#
+# These alerts monitor critical service health metrics and SLO compliance.
+# Load these rules in your Prometheus configuration with:
+#   rule_files:
+#     - 'alerts.yml'
+
+groups:
+  # Service Health Alerts
+  - name: agenkit_service_health
+    interval: 30s
+    rules:
+      # Alert on high error rate (>1% of requests failing)
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(agenkit_agent_requests_total{status="error"}[5m])
+            /
+            rate(agenkit_agent_requests_total[5m])
+          ) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          component: agent
+        annotations:
+          summary: "High error rate detected for agent {{ $labels.agent_name }}"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 1%)"
+          runbook_url: "https://github.com/scttfrdmn/agenkit/wiki/runbooks/high-error-rate"
+
+      # Alert on very high error rate (>5% of requests failing)
+      - alert: CriticalErrorRate
+        expr: |
+          (
+            rate(agenkit_agent_requests_total{status="error"}[5m])
+            /
+            rate(agenkit_agent_requests_total[5m])
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: agent
+        annotations:
+          summary: "Critical error rate detected for agent {{ $labels.agent_name }}"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://github.com/scttfrdmn/agenkit/wiki/runbooks/high-error-rate"
+
+      # Alert on high P95 latency (>1s)
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(agenkit_agent_latency_bucket[5m])
+          ) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: agent
+        annotations:
+          summary: "High P95 latency detected for agent {{ $labels.agent_name }}"
+          description: "P95 latency is {{ $value }}ms (threshold: 1000ms)"
+          runbook_url: "https://github.com/scttfrdmn/agenkit/wiki/runbooks/high-latency"
+
+      # Alert on very high P95 latency (>5s)
+      - alert: CriticalLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(agenkit_agent_latency_bucket[5m])
+          ) > 5000
+        for: 2m
+        labels:
+          severity: critical
+          component: agent
+        annotations:
+          summary: "Critical P95 latency detected for agent {{ $labels.agent_name }}"
+          description: "P95 latency is {{ $value }}ms (threshold: 5000ms)"
+          runbook_url: "https://github.com/scttfrdmn/agenkit/wiki/runbooks/high-latency"
+
+      # Alert on low success rate (<99%)
+      - alert: LowSuccessRate
+        expr: |
+          (
+            rate(agenkit_agent_requests_total{status="success"}[5m])
+            /
+            rate(agenkit_agent_requests_total[5m])
+          ) < 0.99
+        for: 5m
+        labels:
+          severity: warning
+          component: agent
+        annotations:
+          summary: "Low success rate detected for agent {{ $labels.agent_name }}"
+          description: "Success rate is {{ $value | humanizePercentage }} (threshold: 99%)"
+          runbook_url: "https://github.com/scttfrdmn/agenkit/wiki/runbooks/low-success-rate"
+
+      # Alert on critical success rate (<95%)
+      - alert: CriticalSuccessRate
+        expr: |
+          (
+            rate(agenkit_agent_requests_total{status="success"}[5m])
+            /
+            rate(agenkit_agent_requests_total[5m])
+          ) < 0.95
+        for: 2m
+        labels:
+          severity: critical
+          component: agent
+        annotations:
+          summary: "Critical success rate detected for agent {{ $labels.agent_name }}"
+          description: "Success rate is {{ $value | humanizePercentage }} (threshold: 95%)"
+          runbook_url: "https://github.com/scttfrdmn/agenkit/wiki/runbooks/low-success-rate"
+
+  # Resource Exhaustion Alerts
+  - name: agenkit_resource_exhaustion
+    interval: 30s
+    rules:
+      # Alert on high memory usage (>90%)
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            process_runtime_go_mem_alloc
+            /
+            process_runtime_go_mem_sys
+          ) > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          component: runtime
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanizePercentage }} of allocated memory (threshold: 90%)"
+          runbook_url: "https://github.com/scttfrdmn/agenkit/wiki/runbooks/high-memory-usage"
+
+      # Alert on critical memory usage (>95%)
+      - alert: CriticalMemoryUsage
+        expr: |
+          (
+            process_runtime_go_mem_alloc
+            /
+            process_runtime_go_mem_sys
+          ) > 0.95
+        for: 2m
+        labels:
+          severity: critical
+          component: runtime
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Memory usage is {{ $value | humanizePercentage }} of allocated memory (threshold: 95%)"
+          runbook_url: "https://github.com/scttfrdmn/agenkit/wiki/runbooks/high-memory-usage"
+
+      # Alert on high goroutine count (potential goroutine leak)
+      - alert: HighGoroutineCount
+        expr: process_runtime_go_goroutines > 10000
+        for: 10m
+        labels:
+          severity: warning
+          component: runtime
+        annotations:
+          summary: "High goroutine count detected"
+          description: "Goroutine count is {{ $value }} (threshold: 10000)"
+          runbook_url: "https://github.com/scttfrdmn/agenkit/wiki/runbooks/high-goroutine-count"
+
+      # Alert on rapid goroutine growth
+      - alert: RapidGoroutineGrowth
+        expr: |
+          rate(process_runtime_go_goroutines[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: runtime
+        annotations:
+          summary: "Rapid goroutine growth detected"
+          description: "Goroutines growing at {{ $value }}/s (threshold: 100/s)"
+          runbook_url: "https://github.com/scttfrdmn/agenkit/wiki/runbooks/goroutine-leak"
+
+  # SLO Burn Rate Alerts
+  # Based on Google SRE Workbook multi-window, multi-burn-rate alerts
+  - name: agenkit_slo_burn_rate
+    interval: 30s
+    rules:
+      # Fast burn: 2% budget consumed in 1 hour (exhausts 99.9% SLO in 2 days)
+      - alert: ErrorBudgetFastBurn
+        expr: |
+          (
+            rate(agenkit_agent_requests_total{status="error"}[1h])
+            /
+            rate(agenkit_agent_requests_total[1h])
+          ) > (0.001 * 14.4)  # 14.4x error budget burn (2% in 1h)
+        for: 2m
+        labels:
+          severity: critical
+          component: slo
+          slo_type: availability
+        annotations:
+          summary: "Fast error budget burn detected"
+          description: "Burning through 99.9% SLO error budget at {{ $value | humanizePercentage }}/hr (threshold: 1.44%)"
+          runbook_url: "https://github.com/scttfrdmn/agenkit/wiki/runbooks/error-budget-burn"
+
+      # Slow burn: 5% budget consumed in 1 day (exhausts 99.9% SLO in 20 days)
+      - alert: ErrorBudgetSlowBurn
+        expr: |
+          (
+            rate(agenkit_agent_requests_total{status="error"}[6h])
+            /
+            rate(agenkit_agent_requests_total[6h])
+          ) > (0.001 * 3)  # 3x error budget burn
+        for: 15m
+        labels:
+          severity: warning
+          component: slo
+          slo_type: availability
+        annotations:
+          summary: "Slow error budget burn detected"
+          description: "Burning through 99.9% SLO error budget at {{ $value | humanizePercentage }} over 6h (threshold: 0.3%)"
+          runbook_url: "https://github.com/scttfrdmn/agenkit/wiki/runbooks/error-budget-burn"

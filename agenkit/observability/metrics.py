@@ -13,6 +13,7 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.sdk.resources import Resource, SERVICE_NAME
+from opentelemetry.instrumentation.system_metrics import SystemMetricsInstrumentor
 
 from agenkit.interfaces import Agent, Message
 
@@ -67,6 +68,30 @@ def get_meter() -> metrics.Meter:
     # Always get meter from current provider (don't cache)
     # This allows tests to inject their own provider
     return metrics.get_meter("agenkit.observability")
+
+
+def init_resource_metrics() -> SystemMetricsInstrumentor:
+    """
+    Initialize system resource metrics collection.
+
+    Collects and exports:
+    - process.cpu.utilization: CPU usage percentage
+    - process.memory.usage: Memory usage (RSS)
+    - process.runtime.python.threads: Active thread count
+    - system.cpu.utilization: System-wide CPU usage
+    - system.memory.usage: System-wide memory usage
+    - system.network.io: Network I/O metrics
+
+    Returns:
+        SystemMetricsInstrumentor instance
+
+    Note:
+        This should be called after init_metrics() to ensure the
+        meter provider is properly configured.
+    """
+    instrumentor = SystemMetricsInstrumentor()
+    instrumentor.instrument()
+    return instrumentor
 
 
 class MetricsMiddleware:

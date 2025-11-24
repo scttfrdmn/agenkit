@@ -172,6 +172,10 @@ ignore = [
 "agenkit/adapters/python/grpc_server.py" = [
     "N802",   # Function names must be CamelCase for protobuf compatibility
 ]
+"agenkit/adapters/python/local_agent.py" = [
+    "PTH",    # Allow os.path for compatibility with external tools
+    "S110",   # Allow try-except-pass for cleanup operations
+]
 "agenkit/**/__init__.py" = [
     "F401",    # Imported but unused - false positive for re-exports via __all__
 ]

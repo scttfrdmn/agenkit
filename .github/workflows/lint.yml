@@ -69,7 +69,7 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v2
+          version: v2.0.0
           working-directory: agenkit-go
           args: --timeout=5m
 

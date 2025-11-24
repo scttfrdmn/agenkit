@@ -86,7 +86,7 @@ class GRPCTransport(Transport):
         self._port = parsed.port or (443 if self._use_tls else 50051)
 
     async def connect(self) -> None:
-        """Establish gRPC connection.
+        """Establish gRPC connection with keepalive and connection pooling.
 
         Raises:
             ConnectionError: If connection fails
@@ -95,8 +95,26 @@ class GRPCTransport(Transport):
             return
 
         try:
-            # Create async gRPC channel
+            # Create async gRPC channel with keepalive options
             target = f"{self._host}:{self._port}"
+
+            # Configure gRPC channel options for connection pooling and keepalive
+            # These options improve performance by reusing connections
+            options = [
+                # Keep connections alive with periodic pings
+                ('grpc.keepalive_time_ms', 10000),  # Send keepalive ping every 10s
+                ('grpc.keepalive_timeout_ms', 5000),  # Wait 5s for keepalive response
+                ('grpc.keepalive_permit_without_calls', 1),  # Allow keepalive pings when no calls
+                ('grpc.http2.max_pings_without_data', 0),  # Unlimited pings without data
+
+                # Connection management
+                ('grpc.max_connection_idle_ms', 30000),  # Close connection after 30s idle
+                ('grpc.max_connection_age_ms', 300000),  # Max connection age 5 minutes
+
+                # Performance tuning
+                ('grpc.http2.min_time_between_pings_ms', 10000),  # Min 10s between pings
+                ('grpc.http2.max_ping_strikes', 2),  # Allow 2 bad pings before closing
+            ]
 
             if self._use_tls:
                 # Create TLS credentials
@@ -105,11 +123,11 @@ class GRPCTransport(Transport):
                     private_key=self._private_key,
                     certificate_chain=self._certificate_chain,
                 )
-                self._channel = aio.secure_channel(target, credentials)
+                self._channel = aio.secure_channel(target, credentials, options=options)
             else:
                 # INSECURE: Only for local development/testing
                 # Production should ALWAYS use TLS (use_tls=True)
-                self._channel = aio.insecure_channel(target)
+                self._channel = aio.insecure_channel(target, options=options)
 
             # Create stub
             self._stub = agent_pb2_grpc.AgentServiceStub(self._channel)

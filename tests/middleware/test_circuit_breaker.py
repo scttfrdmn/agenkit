@@ -203,7 +203,7 @@ async def test_circuit_breaker_recovery():
     )
 
     # Open the circuit
-    for i in range(2):
+    for _i in range(2):
         msg = Message(role="user", content="test")
         with pytest.raises(Exception):
             await cb.process(msg)
@@ -333,8 +333,8 @@ async def test_circuit_breaker_metrics():
         msg = Message(role="user", content="test")
         try:
             await cb.process(msg)
-        except Exception:
-            pass  # Expected failures
+        except Exception:  # noqa: S110
+            pass  # Expected failures - testing circuit breaker metrics
 
     metrics = cb.metrics
 

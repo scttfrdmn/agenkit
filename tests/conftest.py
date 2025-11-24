@@ -105,8 +105,8 @@ def event_loop_with_timeout():
             loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
 
         loop.close()
-    except Exception:
-        pass
+    except Exception:  # noqa: S110
+        pass  # Event loop cleanup - silent failure acceptable
 
 
 @pytest.fixture(scope="function")

@@ -343,7 +343,6 @@ async def test_w3c_trace_context_format():
     tracer = trace.get_tracer("test")
     with tracer.start_as_current_span("test-span") as span:
         trace_id = span.get_span_context().trace_id
-        span.get_span_context().span_id
 
         # Inject trace context
         metadata = inject_trace_context({})
@@ -377,9 +376,7 @@ async def test_trace_context_extraction():
 
     # Create trace context
     tracer = trace.get_tracer("test")
-    with tracer.start_as_current_span("parent-span") as parent:
-        parent.get_span_context().trace_id
-
+    with tracer.start_as_current_span("parent-span"):
         # Inject into metadata
         metadata = inject_trace_context({"custom_field": "value"})
 

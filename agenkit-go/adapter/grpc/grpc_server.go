@@ -16,6 +16,7 @@ import (
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/codec"
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/middleware"
 	"github.com/scttfrdmn/agenkit/agenkit-go/proto/agentpb"
 )
 
@@ -40,6 +41,17 @@ func sanitizeErrorMessage(errorCode string, err error) string {
 	return "An error occurred"
 }
 
+// GRPCServerOptions configures gRPC server behavior.
+type GRPCServerOptions struct {
+	// EnableDefaultMiddleware enables default security middleware (rate limiting, timeout)
+	// Defaults to true for secure-by-default operation
+	EnableDefaultMiddleware bool
+	// RateLimitConfig custom rate limiter configuration (uses secure defaults if nil)
+	RateLimitConfig *middleware.RateLimiterConfig
+	// TimeoutConfig custom timeout configuration (uses 30s default if nil)
+	TimeoutConfig *middleware.TimeoutConfig
+}
+
 // GRPCServer implements a gRPC server for agent communication.
 type GRPCServer struct {
 	agentpb.UnimplementedAgentServiceServer
@@ -50,8 +62,44 @@ type GRPCServer struct {
 	running  bool
 }
 
-// NewGRPCServer creates a new gRPC server.
+// NewGRPCServer creates a new gRPC server with default middleware enabled.
+// Security: Default middleware (rate limiting, timeout) is enabled for protection.
 func NewGRPCServer(agent agenkit.Agent, address string) (*GRPCServer, error) {
+	return NewGRPCServerWithOptions(agent, address, GRPCServerOptions{
+		EnableDefaultMiddleware: true,
+	})
+}
+
+// NewGRPCServerWithOptions creates a new gRPC server with custom options.
+func NewGRPCServerWithOptions(agent agenkit.Agent, address string, options GRPCServerOptions) (*GRPCServer, error) {
+	// Apply default security middleware if enabled
+	if options.EnableDefaultMiddleware {
+		// Apply timeout first (innermost), then rate limiting (outermost)
+		timeoutConf := options.TimeoutConfig
+		if timeoutConf == nil {
+			timeoutConf = &middleware.TimeoutConfig{
+				Timeout: 30.0, // 30 seconds
+			}
+		}
+		agent = middleware.NewTimeoutDecorator(agent, *timeoutConf)
+
+		// Use production-appropriate rate limits: 100 req/sec with burst of 200
+		rateLimitConf := options.RateLimitConfig
+		if rateLimitConf == nil {
+			rateLimitConf = &middleware.RateLimiterConfig{
+				Rate:             100.0, // 100 requests/second
+				Capacity:         200,   // Allow bursts up to 200 requests
+				TokensPerRequest: 1,
+			}
+		}
+		agent = middleware.NewRateLimiterDecorator(agent, *rateLimitConf)
+
+		log.Printf(
+			"gRPC: Default security middleware enabled: rate_limit=%.1f req/s (burst=%d), timeout=%.1fs",
+			rateLimitConf.Rate, rateLimitConf.Capacity, timeoutConf.Timeout,
+		)
+	}
+
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		return nil, fmt.Errorf("failed to listen on %s: %w", address, err)

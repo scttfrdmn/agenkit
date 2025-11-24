@@ -8,6 +8,8 @@ from aiohttp import web
 from aiohttp.web import Request, Response, StreamResponse
 
 from ...interfaces import Agent
+from ...middleware.rate_limiter import RateLimiterDecorator, RateLimiterConfig
+from ...middleware.timeout import TimeoutDecorator, TimeoutConfig
 from .codec import decode_message, encode_message
 from .errors import InvalidMessageError
 
@@ -45,10 +47,21 @@ class HTTPAgentServer:
     """HTTP server wrapper for exposing agents over HTTP.
 
     Provides HTTP/1.1 and HTTP/2 support with Server-Sent Events (SSE) for streaming.
+
+    Security: By default, applies rate limiting and timeout middleware for protection.
+    Disable with enable_default_middleware=False if you have custom middleware.
     """
 
-    def __init__(self, agent: Agent, host: str = "localhost", port: int = 8080,
-                 enable_http2: bool = False):
+    def __init__(
+        self,
+        agent: Agent,
+        host: str = "localhost",
+        port: int = 8080,
+        enable_http2: bool = False,
+        enable_default_middleware: bool = True,
+        rate_limit_config: RateLimiterConfig | None = None,
+        timeout_config: TimeoutConfig | None = None
+    ):
         """Initialize HTTP agent server.
 
         Args:
@@ -56,7 +69,30 @@ class HTTPAgentServer:
             host: Server host address
             port: Server port
             enable_http2: Enable HTTP/2 support (requires SSL/TLS)
+            enable_default_middleware: Enable default security middleware (rate limiting, timeout)
+            rate_limit_config: Custom rate limiter configuration (uses secure defaults if None)
+            timeout_config: Custom timeout configuration (uses 30s default if None)
         """
+        # Apply default security middleware if enabled
+        if enable_default_middleware:
+            # Apply timeout first (innermost), then rate limiting (outermost)
+            timeout_conf = timeout_config or TimeoutConfig(timeout=30.0)
+            agent = TimeoutDecorator(agent, timeout_conf)
+
+            # Use production-appropriate rate limits: 100 req/sec with burst of 200
+            rate_conf = rate_limit_config or RateLimiterConfig(
+                rate=100.0,  # 100 requests/second
+                capacity=200,  # Allow bursts up to 200 requests
+                tokens_per_request=1
+            )
+            agent = RateLimiterDecorator(agent, rate_conf)
+
+            logger.info(
+                f"Default security middleware enabled: "
+                f"rate_limit={rate_conf.rate} req/s (burst={rate_conf.capacity}), "
+                f"timeout={timeout_conf.timeout}s"
+            )
+
         self.agent = agent
         self.host = host
         self.port = port

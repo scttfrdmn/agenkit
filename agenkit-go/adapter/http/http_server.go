@@ -20,6 +20,7 @@ import (
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/codec"
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/middleware"
 )
 
 // sanitizeErrorMessage sanitizes error messages to prevent information disclosure.
@@ -56,6 +57,13 @@ type ServerOptions struct {
 	TLSConfig *tls.Config
 	// HTTP3Addr is the UDP address for HTTP/3 (defaults to HTTP addr)
 	HTTP3Addr string
+	// EnableDefaultMiddleware enables default security middleware (rate limiting, timeout)
+	// Defaults to true for secure-by-default operation
+	EnableDefaultMiddleware bool
+	// RateLimitConfig custom rate limiter configuration (uses secure defaults if nil)
+	RateLimitConfig *middleware.RateLimiterConfig
+	// TimeoutConfig custom timeout configuration (uses 30s default if nil)
+	TimeoutConfig *middleware.TimeoutConfig
 }
 
 // HTTPAgent is an HTTP server wrapper for exposing agents over HTTP.
@@ -70,14 +78,16 @@ type HTTPAgent struct {
 }
 
 // NewHTTPAgent creates a new HTTP agent server with default options (HTTP/1.1 only).
+// Security: Default middleware (rate limiting, timeout) is enabled for protection.
 //
 // Args:
 //   - agent: The local agent to expose
 //   - addr: HTTP server address (e.g., "localhost:8080")
 func NewHTTPAgent(agent agenkit.Agent, addr string) *HTTPAgent {
 	return NewHTTPAgentWithOptions(agent, addr, ServerOptions{
-		EnableHTTP2: false,
-		EnableHTTP3: false,
+		EnableHTTP2:             false,
+		EnableHTTP3:             false,
+		EnableDefaultMiddleware: true,
 	})
 }
 
@@ -88,6 +98,34 @@ func NewHTTPAgent(agent agenkit.Agent, addr string) *HTTPAgent {
 //   - addr: HTTP server address (e.g., "localhost:8080")
 //   - options: Server configuration options
 func NewHTTPAgentWithOptions(agent agenkit.Agent, addr string, options ServerOptions) *HTTPAgent {
+	// Apply default security middleware if enabled
+	if options.EnableDefaultMiddleware {
+		// Apply timeout first (innermost), then rate limiting (outermost)
+		timeoutConf := options.TimeoutConfig
+		if timeoutConf == nil {
+			timeoutConf = &middleware.TimeoutConfig{
+				Timeout: 30.0, // 30 seconds
+			}
+		}
+		agent = middleware.NewTimeoutDecorator(agent, *timeoutConf)
+
+		// Use production-appropriate rate limits: 100 req/sec with burst of 200
+		rateLimitConf := options.RateLimitConfig
+		if rateLimitConf == nil {
+			rateLimitConf = &middleware.RateLimiterConfig{
+				Rate:              100.0, // 100 requests/second
+				Capacity:          200,   // Allow bursts up to 200 requests
+				TokensPerRequest:  1,
+			}
+		}
+		agent = middleware.NewRateLimiterDecorator(agent, *rateLimitConf)
+
+		log.Printf(
+			"Default security middleware enabled: rate_limit=%.1f req/s (burst=%d), timeout=%.1fs",
+			rateLimitConf.Rate, rateLimitConf.Capacity, timeoutConf.Timeout,
+		)
+	}
+
 	mux := http.NewServeMux()
 	h := &HTTPAgent{
 		agent:   agent,

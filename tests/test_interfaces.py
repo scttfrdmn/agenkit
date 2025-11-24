@@ -70,6 +70,97 @@ def test_message_empty_role_raises():
         Message(role="", content="test")
 
 
+def test_message_role_length_validation():
+    """Test that role exceeding max length raises ValueError."""
+    long_role = "a" * 21  # 21 chars, max is 20
+    with pytest.raises(ValueError, match="exceeds maximum length of 20 characters"):
+        Message(role=long_role, content="test")
+
+
+def test_message_invalid_role_raises():
+    """Test that invalid role value raises ValueError."""
+    with pytest.raises(ValueError, match="Invalid message role"):
+        Message(role="invalid_role", content="test")
+
+
+def test_message_valid_roles():
+    """Test that all valid roles are accepted."""
+    valid_roles = ["user", "assistant", "system", "tool", "agent"]
+    for role in valid_roles:
+        msg = Message(role=role, content="test")
+        assert msg.role == role
+
+
+def test_message_content_size_validation():
+    """Test that content exceeding max size raises ValueError."""
+    # Create content larger than 1MB
+    large_content = "a" * (1024 * 1024 + 1)  # 1MB + 1 byte
+    with pytest.raises(ValueError, match="exceeds maximum size"):
+        Message(role="user", content=large_content)
+
+
+def test_message_content_at_max_size():
+    """Test that content at exactly max size is accepted."""
+    # Create content at exactly 1MB
+    max_content = "a" * (1024 * 1024)  # Exactly 1MB
+    msg = Message(role="user", content=max_content)
+    assert msg.content == max_content
+
+
+def test_message_metadata_key_count_validation():
+    """Test that metadata with too many keys raises ValueError."""
+    # Create 101 keys (max is 100)
+    metadata = {f"key_{i}": f"value_{i}" for i in range(101)}
+    with pytest.raises(ValueError, match="exceeds maximum of 100 keys"):
+        Message(role="user", content="test", metadata=metadata)
+
+
+def test_message_metadata_at_max_keys():
+    """Test that metadata with exactly 100 keys is accepted."""
+    # Create exactly 100 keys
+    metadata = {f"key_{i}": f"value_{i}" for i in range(100)}
+    msg = Message(role="user", content="test", metadata=metadata)
+    assert len(msg.metadata) == 100
+
+
+def test_message_metadata_key_length_validation():
+    """Test that metadata key exceeding max length raises ValueError."""
+    long_key = "a" * 51  # 51 chars, max is 50
+    metadata = {long_key: "value"}
+    with pytest.raises(ValueError, match="exceeds maximum length of 50"):
+        Message(role="user", content="test", metadata=metadata)
+
+
+def test_message_metadata_value_size_validation():
+    """Test that metadata value exceeding max size raises ValueError."""
+    # Create value larger than 10KB
+    large_value = "a" * (10 * 1024 + 1)  # 10KB + 1 byte
+    metadata = {"key": large_value}
+    with pytest.raises(ValueError, match="exceeds maximum size of"):
+        Message(role="user", content="test", metadata=metadata)
+
+
+def test_message_metadata_value_at_max_size():
+    """Test that metadata value at exactly max size is accepted."""
+    # Create value at exactly 10KB
+    max_value = "a" * (10 * 1024)  # Exactly 10KB
+    metadata = {"key": max_value}
+    msg = Message(role="user", content="test", metadata=metadata)
+    assert msg.metadata["key"] == max_value
+
+
+def test_message_none_content_accepted():
+    """Test that None content is accepted."""
+    msg = Message(role="user", content=None)
+    assert msg.content is None
+
+
+def test_message_empty_metadata_accepted():
+    """Test that empty metadata is accepted."""
+    msg = Message(role="user", content="test", metadata={})
+    assert len(msg.metadata) == 0
+
+
 # ============================================
 # ToolResult Tests
 # ============================================

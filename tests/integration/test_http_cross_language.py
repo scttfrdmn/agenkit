@@ -159,39 +159,37 @@ async def test_python_to_go_multiple_sequential_requests():
 @pytest.mark.cross_language
 async def test_go_to_python_basic_message():
     """Test basic message exchange: Go client → Python server."""
-    async with python_http_server() as (port, _server):
-        # Use httpx to simulate Go client behavior
-        async with httpx.AsyncClient() as client:
-            # Create request envelope
-            envelope = {
-                "id": "test-001",
-                "type": "request",
-                "version": "1.0",
-                "payload": {
-                    "message": {
-                        "role": "user",
-                        "content": "Hello from Go client!",
-                        "metadata": None,
-                    }
-                },
-            }
+    async with python_http_server() as (port, _server), httpx.AsyncClient() as client:
+        # Create request envelope
+        envelope = {
+            "id": "test-001",
+            "type": "request",
+            "version": "1.0",
+            "payload": {
+                "message": {
+                    "role": "user",
+                    "content": "Hello from Go client!",
+                    "metadata": None,
+                }
+            },
+        }
 
-            # Send request
-            response = await client.post(
-                f"http://localhost:{port}/process",
-                json=envelope,
-                headers={"Content-Type": "application/json"},
-            )
+        # Send request
+        response = await client.post(
+            f"http://localhost:{port}/process",
+            json=envelope,
+            headers={"Content-Type": "application/json"},
+        )
 
-            # Validate response
-            assert response.status_code == 200
-            response_data = response.json()
+        # Validate response
+        assert response.status_code == 200
+        response_data = response.json()
 
-            assert response_data["type"] == "response"
-            message_data = response_data["payload"]["message"]
-            assert message_data["role"] == "agent"
-            assert "Echo: Hello from Go client!" in message_data["content"]
-            assert message_data["metadata"]["language"] == "python"
+        assert response_data["type"] == "response"
+        message_data = response_data["payload"]["message"]
+        assert message_data["role"] == "agent"
+        assert "Echo: Hello from Go client!" in message_data["content"]
+        assert message_data["metadata"]["language"] == "python"
 
 
 @pytest.mark.asyncio
@@ -262,30 +260,29 @@ async def test_go_to_python_unicode_content():
 @pytest.mark.cross_language
 async def test_go_to_python_large_message():
     """Test large message: Go client → Python server."""
-    async with python_http_server() as (port, _server):
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            large_content = "A" * (1024 * 1024)  # 1MB
-            envelope = {
-                "id": "test-004",
-                "type": "request",
-                "version": "1.0",
-                "payload": {
-                    "message": {
-                        "role": "user",
-                        "content": large_content,
-                        "metadata": None,
-                    }
-                },
-            }
+    async with python_http_server() as (port, _server), httpx.AsyncClient(timeout=30.0) as client:
+        large_content = "A" * (1024 * 1024)  # 1MB
+        envelope = {
+            "id": "test-004",
+            "type": "request",
+            "version": "1.0",
+            "payload": {
+                "message": {
+                    "role": "user",
+                    "content": large_content,
+                    "metadata": None,
+                }
+            },
+        }
 
-            response = await client.post(f"http://localhost:{port}/process", json=envelope)
+        response = await client.post(f"http://localhost:{port}/process", json=envelope)
 
-            assert response.status_code == 200
-            response_data = response.json()
-            message_data = response_data["payload"]["message"]
+        assert response.status_code == 200
+        response_data = response.json()
+        message_data = response_data["payload"]["message"]
 
-            assert message_data["role"] == "agent"
-            assert len(message_data["metadata"]["original"]) == 1024 * 1024
+        assert message_data["role"] == "agent"
+        assert len(message_data["metadata"]["original"]) == 1024 * 1024
 
 
 # Concurrent Request Tests
@@ -340,34 +337,33 @@ async def test_python_to_go_concurrent_requests_50():
 @pytest.mark.cross_language
 async def test_go_to_python_concurrent_requests():
     """Test concurrent requests: Go client → Python server."""
-    async with python_http_server() as (port, _server):
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            # Send 10 concurrent requests
-            import asyncio
+    async with python_http_server() as (port, _server), httpx.AsyncClient(timeout=30.0) as client:
+        # Send 10 concurrent requests
+        import asyncio
 
-            async def send_request(i):
-                envelope = {
-                    "id": f"concurrent-{i}",
-                    "type": "request",
-                    "version": "1.0",
-                    "payload": {
-                        "message": {
-                            "role": "user",
-                            "content": f"Concurrent {i}",
-                            "metadata": None,
-                        }
-                    },
-                }
-                response = await client.post(f"http://localhost:{port}/process", json=envelope)
-                return response
+        async def send_request(i):
+            envelope = {
+                "id": f"concurrent-{i}",
+                "type": "request",
+                "version": "1.0",
+                "payload": {
+                    "message": {
+                        "role": "user",
+                        "content": f"Concurrent {i}",
+                        "metadata": None,
+                    }
+                },
+            }
+            response = await client.post(f"http://localhost:{port}/process", json=envelope)
+            return response
 
-            tasks = [send_request(i) for i in range(10)]
-            responses = await asyncio.gather(*tasks)
+        tasks = [send_request(i) for i in range(10)]
+        responses = await asyncio.gather(*tasks)
 
-            # Validate all responses
-            assert len(responses) == 10
-            for response in responses:
-                assert response.status_code == 200
+        # Validate all responses
+        assert len(responses) == 10
+        for response in responses:
+            assert response.status_code == 200
 
 
 # Error Handling Tests

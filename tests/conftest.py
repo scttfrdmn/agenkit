@@ -31,17 +31,16 @@ def pytest_runtest_makereport(item, call):
     rep = outcome.get_result()
 
     # Only retry failed tests marked as flaky
-    if rep.when == "call" and rep.failed:
-        if "flaky" in [mark.name for mark in item.iter_markers()]:
-            # Get retry count from marker or use default
-            flaky_marker = item.get_closest_marker("flaky")
-            max_retries = flaky_marker.kwargs.get("retries", 2) if flaky_marker else 2
+    if rep.when == "call" and rep.failed and "flaky" in [mark.name for mark in item.iter_markers()]:
+        # Get retry count from marker or use default
+        flaky_marker = item.get_closest_marker("flaky")
+        max_retries = flaky_marker.kwargs.get("retries", 2) if flaky_marker else 2
 
-            # Track retries
-            if not hasattr(item, "_flaky_retry_count"):
-                item._flaky_retry_count = 0
+        # Track retries
+        if not hasattr(item, "_flaky_retry_count"):
+            item._flaky_retry_count = 0
 
-            if item._flaky_retry_count < max_retries:
+        if item._flaky_retry_count < max_retries:
                 item._flaky_retry_count += 1
                 # Add small delay between retries to avoid resource contention
                 time.sleep(0.1 * item._flaky_retry_count)

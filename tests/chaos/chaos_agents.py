@@ -105,7 +105,8 @@ class ChaosAgent(Agent):
             raise ConnectionError("Connection dropped (simulated)")
 
         elif self._chaos_mode == ChaosMode.RANDOM_ERROR:
-            if random.random() < self._failure_rate:
+            # S311: Pseudo-random for chaos testing, not cryptographic use
+            if random.random() < self._failure_rate:  # noqa: S311
                 self._failure_count += 1
                 raise RuntimeError(f"Random failure (rate={self._failure_rate})")
 
@@ -115,7 +116,8 @@ class ChaosAgent(Agent):
 
         elif self._chaos_mode == ChaosMode.INTERMITTENT:
             # Randomly fail or succeed
-            if random.random() < self._failure_rate:
+            # S311: Pseudo-random for chaos testing, not cryptographic use
+            if random.random() < self._failure_rate:  # noqa: S311
                 self._failure_count += 1
                 raise ConnectionError("Intermittent failure (simulated)")
 
@@ -186,9 +188,8 @@ class StreamingChaosAgent(StreamingAgent):
                 await asyncio.sleep(self._delay_per_chunk_ms / 1000.0)
 
             # Random failures (before yielding)
-            if self._chaos_mode == ChaosMode.INTERMITTENT:
-                if random.random() < self._failure_rate:
-                    raise ConnectionError(f"Intermittent stream failure at chunk {chunk_count}")
+            if self._chaos_mode == ChaosMode.INTERMITTENT and random.random() < self._failure_rate:  # noqa: S311
+                raise ConnectionError(f"Intermittent stream failure at chunk {chunk_count}")
 
             # Yield chunk
             yield chunk
@@ -291,7 +292,8 @@ class OverloadedAgent(Agent):
         self._request_count += 1
 
         # If overloaded, fail probabilistically
-        if self.is_overloaded() and random.random() < self._overload_failure_rate:
+        # S311: Pseudo-random for chaos testing, not cryptographic use
+        if self.is_overloaded() and random.random() < self._overload_failure_rate:  # noqa: S311
             raise RuntimeError(
                 f"Service overloaded (requests={self._request_count}, "
                 f"threshold={self._overload_threshold})"

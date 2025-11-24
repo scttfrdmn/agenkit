@@ -139,7 +139,8 @@ async def test_tail_latency_spikes():
 
         async def process(self, message: Message) -> Message:
             # Most requests are fast, but 10% have spikes
-            if random.random() < self._spike_probability:
+            # S311: Pseudo-random for chaos testing, not cryptographic use
+            if random.random() < self._spike_probability:  # noqa: S311
                 await asyncio.sleep(0.2)  # 200ms spike
             else:
                 await asyncio.sleep(0.01)  # 10ms normal
@@ -394,7 +395,8 @@ async def test_slow_response_percentiles():
 
         async def process(self, message: Message) -> Message:
             # Variable latency: 10-100ms
-            delay = random.uniform(0.01, 0.1)
+            # S311: Pseudo-random for chaos testing, not cryptographic use
+            delay = random.uniform(0.01, 0.1)  # noqa: S311
             await asyncio.sleep(delay)
 
             return Message(role="agent", content=f"Processed: {message.content}")

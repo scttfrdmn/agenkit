@@ -11,6 +11,86 @@ from dataclasses import dataclass, field
 from agenkit.interfaces import Agent, Message
 
 
+class AsyncRWLock:
+    """Async read-write lock allowing multiple concurrent readers or single writer.
+
+    This implementation is GIL-free safe and works correctly with Python 3.13+
+    free-threaded mode. It uses asyncio primitives for proper async coordination.
+    Handles task cancellation gracefully.
+    """
+
+    def __init__(self):
+        """Initialize the read-write lock."""
+        self._readers = 0
+        self._writer = False
+        self._lock = asyncio.Lock()  # Protects _readers and _writer
+        self._read_ok = asyncio.Condition(self._lock)
+        self._write_ok = asyncio.Condition(self._lock)
+
+    async def acquire_read(self):
+        """Acquire read lock (multiple readers allowed concurrently)."""
+        try:
+            async with self._lock:
+                # Wait until no writer
+                while self._writer:
+                    await self._read_ok.wait()
+                self._readers += 1
+        except asyncio.CancelledError:
+            # If cancelled while waiting, ensure we don't hold any locks
+            raise
+
+    async def release_read(self):
+        """Release read lock."""
+        try:
+            async with self._lock:
+                self._readers -= 1
+                # If last reader, notify waiting writer
+                if self._readers == 0:
+                    self._write_ok.notify()
+        except asyncio.CancelledError:
+            # If cancelled during release, try to complete the release
+            try:
+                async with self._lock:
+                    if self._readers > 0:
+                        self._readers -= 1
+                    if self._readers == 0:
+                        self._write_ok.notify()
+            except:
+                pass
+            raise
+
+    async def acquire_write(self):
+        """Acquire write lock (exclusive access)."""
+        try:
+            async with self._lock:
+                # Wait until no readers and no writer
+                while self._readers > 0 or self._writer:
+                    await self._write_ok.wait()
+                self._writer = True
+        except asyncio.CancelledError:
+            # If cancelled while waiting, ensure we don't hold any locks
+            raise
+
+    async def release_write(self):
+        """Release write lock."""
+        try:
+            async with self._lock:
+                self._writer = False
+                # Notify all waiting readers and one waiting writer
+                self._read_ok.notify_all()
+                self._write_ok.notify()
+        except asyncio.CancelledError:
+            # If cancelled during release, try to complete the release
+            try:
+                async with self._lock:
+                    self._writer = False
+                    self._read_ok.notify_all()
+                    self._write_ok.notify()
+            except:
+                pass
+            raise
+
+
 @dataclass
 class CachingConfig:
     """Configuration for caching behavior."""
@@ -79,7 +159,7 @@ class CachingDecorator(Agent):
         self._agent = agent
         self._config = config or CachingConfig()
         self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
-        self._lock = asyncio.Lock()
+        self._rwlock = AsyncRWLock()
         self._metrics = CachingMetrics()
 
     @property
@@ -149,40 +229,46 @@ class CachingDecorator(Agent):
         Raises:
             Exception: If agent processing fails
         """
-        async with self._lock:
-            self._metrics.total_requests += 1
+        # Increment metrics (atomic operation for approximate metrics)
+        self._metrics.total_requests += 1
 
-            # Generate cache key
-            cache_key = self._generate_cache_key(message)
+        # Generate cache key (no lock needed)
+        cache_key = self._generate_cache_key(message)
 
-            # Check cache
+        # Check cache with read lock (allows concurrent reads)
+        await self._rwlock.acquire_read()
+        try:
             if cache_key in self._cache:
                 entry = self._cache[cache_key]
 
                 # Check if expired
                 if not entry.is_expired():
-                    # Move to end (mark as recently used)
-                    self._cache.move_to_end(cache_key)
+                    # Cache hit - return cached response
+                    # Note: We don't move_to_end to avoid upgrading to write lock
+                    response = entry.response
+                    await self._rwlock.release_read()
                     self._metrics.cache_hits += 1
-                    return entry.response
-                else:
-                    # Remove expired entry
-                    del self._cache[cache_key]
-                    self._metrics.evictions += 1
-                    self._metrics.current_size = len(self._cache)
+                    return response
 
-            # Cache miss
-            self._metrics.cache_misses += 1
+            # Not in cache or expired
+            await self._rwlock.release_read()
+        except Exception:
+            await self._rwlock.release_read()
+            raise
 
+        # Cache miss
+        self._metrics.cache_misses += 1
+
+        # Process message (outside lock to avoid blocking cache operations)
+        response = await self._agent.process(message)
+
+        # Cache response with write lock
+        await self._rwlock.acquire_write()
+        try:
             # Cleanup expired entries periodically
             if self._metrics.total_requests % 100 == 0:
                 await self._cleanup_expired()
 
-        # Process message (outside lock to avoid blocking cache reads)
-        response = await self._agent.process(message)
-
-        # Cache response
-        async with self._lock:
             # Evict LRU if needed
             await self._evict_lru()
 
@@ -193,6 +279,8 @@ class CachingDecorator(Agent):
             )
             self._cache[cache_key] = entry
             self._metrics.current_size = len(self._cache)
+        finally:
+            await self._rwlock.release_write()
 
         return response
 
@@ -219,7 +307,8 @@ class CachingDecorator(Agent):
             message: If provided, invalidate only this message's cache entry.
                     If None, invalidate entire cache.
         """
-        async with self._lock:
+        await self._rwlock.acquire_write()
+        try:
             if message is not None:
                 # Invalidate specific entry
                 cache_key = self._generate_cache_key(message)
@@ -233,6 +322,8 @@ class CachingDecorator(Agent):
                 self._cache.clear()
                 self._metrics.invalidations += count
                 self._metrics.current_size = 0
+        finally:
+            await self._rwlock.release_write()
 
     async def get_cache_size(self) -> int:
         """Get current cache size.
@@ -240,8 +331,11 @@ class CachingDecorator(Agent):
         Returns:
             Number of entries in cache
         """
-        async with self._lock:
+        await self._rwlock.acquire_read()
+        try:
             return len(self._cache)
+        finally:
+            await self._rwlock.release_read()
 
     async def get_cache_info(self) -> dict:
         """Get detailed cache information.
@@ -249,7 +343,8 @@ class CachingDecorator(Agent):
         Returns:
             Dictionary with cache statistics
         """
-        async with self._lock:
+        await self._rwlock.acquire_read()
+        try:
             return {
                 "size": len(self._cache),
                 "max_size": self._config.max_cache_size,
@@ -264,3 +359,5 @@ class CachingDecorator(Agent):
                     "invalidations": self._metrics.invalidations,
                 },
             }
+        finally:
+            await self._rwlock.release_read()

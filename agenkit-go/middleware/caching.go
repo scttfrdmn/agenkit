@@ -193,7 +193,7 @@ type CachingDecorator struct {
 	config  CachingConfig
 	metrics *CachingMetrics
 
-	mu       sync.Mutex
+	mu       sync.RWMutex // Read-write lock for concurrent cache reads
 	cache    map[string]*list.Element // key -> list element
 	lruList  *list.List                // doubly linked list for LRU
 	cleanupCounter int64
@@ -308,52 +308,56 @@ func (c *CachingDecorator) cleanupExpired() {
 
 // Process implements the Agent interface with caching.
 func (c *CachingDecorator) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	c.mu.Lock()
-
-	// Generate cache key
+	// Generate cache key (no lock needed)
 	cacheKey := c.generateCacheKey(message)
 
-	// Check cache
-	if elem, ok := c.cache[cacheKey]; ok {
+	// Check cache with read lock (allows concurrent reads)
+	c.mu.RLock()
+	elem, ok := c.cache[cacheKey]
+	if ok {
 		item := elem.Value.(*lruItem)
 
 		// Check if expired
 		if !item.entry.isExpired() {
-			// Move to front (mark as recently used)
-			c.lruList.MoveToFront(elem)
-			c.metrics.RecordHit()
+			// Cache hit - return cached response
+			// Note: We don't MoveToFront here to avoid lock upgrade
+			// This slightly reduces LRU accuracy but improves concurrency
 			response := item.entry.Response
-			c.mu.Unlock()
+			c.mu.RUnlock()
+			c.metrics.RecordHit()
 			return response, nil
 		}
+	}
+	c.mu.RUnlock()
 
-		// Remove expired entry
-		c.lruList.Remove(elem)
-		delete(c.cache, cacheKey)
-		c.metrics.RecordEviction()
-		c.metrics.UpdateSize(int64(len(c.cache)))
+	// Cache miss or expired - update metrics
+	c.metrics.RecordMiss()
+
+	// Process message (outside lock to avoid blocking cache operations)
+	response, err := c.agent.Process(ctx, message)
+	if err != nil {
+		return nil, err
 	}
 
-	// Cache miss
-	c.metrics.RecordMiss()
+	// Cache response (use write lock)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Clean up expired entry if present
+	if elem, ok := c.cache[cacheKey]; ok {
+		item := elem.Value.(*lruItem)
+		if item.entry.isExpired() {
+			c.lruList.Remove(elem)
+			delete(c.cache, cacheKey)
+			c.metrics.RecordEviction()
+		}
+	}
 
 	// Periodic cleanup (every 100 requests)
 	c.cleanupCounter++
 	if c.cleanupCounter%100 == 0 {
 		c.cleanupExpired()
 	}
-
-	c.mu.Unlock()
-
-	// Process message (outside lock to avoid blocking cache reads)
-	response, err := c.agent.Process(ctx, message)
-	if err != nil {
-		return nil, err
-	}
-
-	// Cache response
-	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	// Evict LRU if needed
 	c.evictLRU()
@@ -370,7 +374,7 @@ func (c *CachingDecorator) Process(ctx context.Context, message *agenkit.Message
 		entry: entry,
 	}
 
-	elem := c.lruList.PushFront(item)
+	elem = c.lruList.PushFront(item)
 	c.cache[cacheKey] = elem
 	c.metrics.UpdateSize(int64(len(c.cache)))
 
@@ -408,16 +412,16 @@ func (c *CachingDecorator) Invalidate(message *agenkit.Message) {
 
 // GetCacheSize returns the current cache size.
 func (c *CachingDecorator) GetCacheSize() int {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return len(c.cache)
 }
 
 // GetCacheInfo returns detailed cache information.
 func (c *CachingDecorator) GetCacheInfo() map[string]interface{} {
-	c.mu.Lock()
+	c.mu.RLock()
 	size := len(c.cache)
-	c.mu.Unlock()
+	c.mu.RUnlock()
 
 	return map[string]interface{}{
 		"size":        size,

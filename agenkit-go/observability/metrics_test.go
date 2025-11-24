@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -29,7 +30,7 @@ func TestMetricsMiddlewareCollectsRequestCount(t *testing.T) {
 		t.Fatalf("NewMetricsMiddleware failed: %v", err)
 	}
 
-	message := &Message{Role: "user", Content: "test"}
+	message := &agenkit.Message{Role: "user", Content: "test"}
 	_, err = metricsAgent.Process(context.Background(), message)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
@@ -106,7 +107,7 @@ func TestMetricsMiddlewareRecordsLatency(t *testing.T) {
 		t.Fatalf("NewMetricsMiddleware failed: %v", err)
 	}
 
-	message := &Message{Role: "user", Content: "test"}
+	message := &agenkit.Message{Role: "user", Content: "test"}
 	_, err = metricsAgent.Process(context.Background(), message)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
@@ -165,7 +166,7 @@ func TestMetricsMiddlewareRecordsMessageSize(t *testing.T) {
 	}
 
 	testContent := "test message content"
-	message := &Message{Role: "user", Content: testContent}
+	message := &agenkit.Message{Role: "user", Content: testContent}
 	_, err = metricsAgent.Process(context.Background(), message)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
@@ -223,7 +224,7 @@ func TestMetricsMiddlewareRecordsErrors(t *testing.T) {
 		t.Fatalf("NewMetricsMiddleware failed: %v", err)
 	}
 
-	message := &Message{Role: "user", Content: "test"}
+	message := &agenkit.Message{Role: "user", Content: "test"}
 	_, err = metricsAgent.Process(context.Background(), message)
 	if err == nil {
 		t.Fatal("Expected error, got nil")
@@ -299,7 +300,7 @@ func TestMetricsMiddlewareSetsCorrectAttributes(t *testing.T) {
 		t.Fatalf("NewMetricsMiddleware failed: %v", err)
 	}
 
-	message := &Message{Role: "user", Content: "test"}
+	message := &agenkit.Message{Role: "user", Content: "test"}
 	_, err = metricsAgent.Process(context.Background(), message)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
@@ -371,7 +372,7 @@ func TestMetricsMiddlewareMultipleRequests(t *testing.T) {
 
 	// Process multiple messages
 	for i := 0; i < 5; i++ {
-		message := &Message{Role: "user", Content: "test"}
+		message := &agenkit.Message{Role: "user", Content: "test"}
 		_, err = metricsAgent.Process(context.Background(), message)
 		if err != nil {
 			t.Fatalf("Process %d failed: %v", i, err)
@@ -449,7 +450,7 @@ func TestMetricsMiddlewarePreservesAgentInterface(t *testing.T) {
 	}
 
 	// Check that process works
-	message := &Message{Role: "user", Content: "test"}
+	message := &agenkit.Message{Role: "user", Content: "test"}
 	response, err := metricsAgent.Process(context.Background(), message)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
@@ -480,4 +481,26 @@ func TestInitMetrics(t *testing.T) {
 	}
 
 	counter.Add(context.Background(), 1)
+}
+
+func TestInitResourceMetrics(t *testing.T) {
+	// Initialize metrics provider first
+	provider, err := InitMetrics("test-service", 0)
+	if err != nil {
+		t.Fatalf("InitMetrics failed: %v", err)
+	}
+	defer provider.Shutdown(context.Background())
+
+	// Initialize resource metrics
+	collector, err := InitResourceMetrics()
+	if err != nil {
+		t.Fatalf("InitResourceMetrics failed: %v", err)
+	}
+
+	if collector == nil {
+		t.Fatal("Expected collector, got nil")
+	}
+
+	// Stop the collector
+	collector.Stop()
 }

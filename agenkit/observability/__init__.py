@@ -6,7 +6,7 @@ for monitoring agent interactions across Python and Go implementations.
 """
 
 from .tracing import TracingMiddleware, get_tracer, init_tracing
-from .metrics import MetricsMiddleware, get_meter, init_metrics
+from .metrics import MetricsMiddleware, get_meter, init_metrics, init_resource_metrics
 from .logging import configure_logging, get_logger_with_trace
 
 __all__ = [
@@ -18,6 +18,7 @@ __all__ = [
     "MetricsMiddleware",
     "get_meter",
     "init_metrics",
+    "init_resource_metrics",
     # Logging
     "configure_logging",
     "get_logger_with_trace",

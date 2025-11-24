@@ -6,7 +6,7 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
 from agenkit.interfaces import Agent, Message
-from agenkit.observability import MetricsMiddleware, init_metrics
+from agenkit.observability import MetricsMiddleware, init_metrics, init_resource_metrics
 
 
 class SimpleAgent(Agent):
@@ -285,4 +285,19 @@ async def test_init_metrics():
     counter = meter.create_counter("test_counter")
     counter.add(1)
 
+    provider.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_init_resource_metrics():
+    """Test init_resource_metrics function."""
+    # Initialize metrics provider first
+    provider = init_metrics(service_name="test-service", port=0)
+
+    # Initialize resource metrics
+    instrumentor = init_resource_metrics()
+    assert instrumentor is not None
+
+    # Clean up
+    instrumentor.uninstrument()
     provider.shutdown()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
@@ -25,8 +26,8 @@ func (a *SimpleTestAgent) Capabilities() []string {
 	return []string{"test"}
 }
 
-func (a *SimpleTestAgent) Process(ctx context.Context, message *Message) (*Message, error) {
-	return &Message{
+func (a *SimpleTestAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	return &agenkit.Message{
 		Role:    "agent",
 		Content: a.response,
 		Metadata: map[string]interface{}{
@@ -46,7 +47,7 @@ func (a *ErrorTestAgent) Capabilities() []string {
 	return []string{}
 }
 
-func (a *ErrorTestAgent) Process(ctx context.Context, message *Message) (*Message, error) {
+func (a *ErrorTestAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return nil, &TestError{Msg: "test error"}
 }
 
@@ -86,7 +87,7 @@ func TestTracingMiddlewareCreatesSpan(t *testing.T) {
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
 	traced := NewTracingMiddleware(agent, "")
 
-	message := &Message{Role: "user", Content: "test message"}
+	message := &agenkit.Message{Role: "user", Content: "test message"}
 	_, err := traced.Process(context.Background(), message)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
@@ -116,7 +117,7 @@ func TestTracingMiddlewareSetsAttributes(t *testing.T) {
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
 	traced := NewTracingMiddleware(agent, "")
 
-	message := &Message{
+	message := &agenkit.Message{
 		Role:    "user",
 		Content: "test message",
 		Metadata: map[string]interface{}{
@@ -191,7 +192,7 @@ func TestTracingMiddlewareInjectsTraceContext(t *testing.T) {
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
 	traced := NewTracingMiddleware(agent, "")
 
-	message := &Message{Role: "user", Content: "test"}
+	message := &agenkit.Message{Role: "user", Content: "test"}
 	response, err := traced.Process(context.Background(), message)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
@@ -230,7 +231,7 @@ func TestTracingMiddlewarePropagatesContext(t *testing.T) {
 	traced2 := NewTracingMiddleware(agent2, "")
 
 	// Process through agent1
-	message := &Message{Role: "user", Content: "test"}
+	message := &agenkit.Message{Role: "user", Content: "test"}
 	response1, err := traced1.Process(context.Background(), message)
 	if err != nil {
 		t.Fatalf("Process 1 failed: %v", err)
@@ -273,7 +274,7 @@ func TestTracingMiddlewareRecordsErrors(t *testing.T) {
 	agent := &ErrorTestAgent{}
 	traced := NewTracingMiddleware(agent, "")
 
-	message := &Message{Role: "user", Content: "test"}
+	message := &agenkit.Message{Role: "user", Content: "test"}
 	_, err := traced.Process(context.Background(), message)
 	if err == nil {
 		t.Fatal("Expected error, got nil")
@@ -318,7 +319,7 @@ func TestTracingMiddlewareCustomSpanName(t *testing.T) {
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
 	traced := NewTracingMiddleware(agent, "custom.operation")
 
-	message := &Message{Role: "user", Content: "test"}
+	message := &agenkit.Message{Role: "user", Content: "test"}
 	_, err := traced.Process(context.Background(), message)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
@@ -355,7 +356,7 @@ func TestTracingMiddlewarePreservesAgentInterface(t *testing.T) {
 	}
 
 	// Check that process works
-	message := &Message{Role: "user", Content: "test"}
+	message := &agenkit.Message{Role: "user", Content: "test"}
 	response, err := traced.Process(context.Background(), message)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)

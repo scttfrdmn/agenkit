@@ -3,6 +3,7 @@ package observability
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
@@ -178,4 +179,114 @@ func ShutdownMetrics(ctx context.Context) error {
 		return globalMeterProvider.Shutdown(ctx)
 	}
 	return nil
+}
+
+// ResourceMetricsCollector collects runtime resource metrics.
+type ResourceMetricsCollector struct {
+	meter              metric.Meter
+	goroutineGauge     metric.Int64ObservableGauge
+	memAllocGauge      metric.Int64ObservableGauge
+	memTotalAllocGauge metric.Int64ObservableGauge
+	memSysGauge        metric.Int64ObservableGauge
+	numGCGauge         metric.Int64ObservableGauge
+	stopChan           chan struct{}
+}
+
+// InitResourceMetrics initializes runtime resource metrics collection.
+// Collects and exports:
+// - process.runtime.go.goroutines: Number of active goroutines
+// - process.runtime.go.mem.alloc: Allocated heap memory in bytes
+// - process.runtime.go.mem.total_alloc: Cumulative allocated memory in bytes
+// - process.runtime.go.mem.sys: Total memory obtained from OS in bytes
+// - process.runtime.go.gc.count: Number of completed GC cycles
+func InitResourceMetrics() (*ResourceMetricsCollector, error) {
+	meter := GetMeter("agenkit.observability")
+
+	collector := &ResourceMetricsCollector{
+		meter:    meter,
+		stopChan: make(chan struct{}),
+	}
+
+	var err error
+
+	// Goroutine count gauge
+	collector.goroutineGauge, err = meter.Int64ObservableGauge(
+		"process.runtime.go.goroutines",
+		metric.WithDescription("Number of active goroutines"),
+		metric.WithUnit("1"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create goroutine gauge: %w", err)
+	}
+
+	// Memory allocation gauge
+	collector.memAllocGauge, err = meter.Int64ObservableGauge(
+		"process.runtime.go.mem.alloc",
+		metric.WithDescription("Allocated heap memory"),
+		metric.WithUnit("bytes"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mem alloc gauge: %w", err)
+	}
+
+	// Total allocation gauge
+	collector.memTotalAllocGauge, err = meter.Int64ObservableGauge(
+		"process.runtime.go.mem.total_alloc",
+		metric.WithDescription("Cumulative allocated memory"),
+		metric.WithUnit("bytes"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create total alloc gauge: %w", err)
+	}
+
+	// System memory gauge
+	collector.memSysGauge, err = meter.Int64ObservableGauge(
+		"process.runtime.go.mem.sys",
+		metric.WithDescription("Total memory obtained from OS"),
+		metric.WithUnit("bytes"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mem sys gauge: %w", err)
+	}
+
+	// GC count gauge
+	collector.numGCGauge, err = meter.Int64ObservableGauge(
+		"process.runtime.go.gc.count",
+		metric.WithDescription("Number of completed GC cycles"),
+		metric.WithUnit("1"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GC count gauge: %w", err)
+	}
+
+	// Register callbacks to collect metrics
+	_, err = meter.RegisterCallback(
+		func(ctx context.Context, observer metric.Observer) error {
+			var m runtime.MemStats
+			runtime.ReadMemStats(&m)
+
+			observer.ObserveInt64(collector.goroutineGauge, int64(runtime.NumGoroutine()))
+			observer.ObserveInt64(collector.memAllocGauge, int64(m.Alloc))
+			observer.ObserveInt64(collector.memTotalAllocGauge, int64(m.TotalAlloc))
+			observer.ObserveInt64(collector.memSysGauge, int64(m.Sys))
+			observer.ObserveInt64(collector.numGCGauge, int64(m.NumGC))
+
+			return nil
+		},
+		collector.goroutineGauge,
+		collector.memAllocGauge,
+		collector.memTotalAllocGauge,
+		collector.memSysGauge,
+		collector.numGCGauge,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to register callback: %w", err)
+	}
+
+	return collector, nil
+}
+
+// Stop stops the resource metrics collector.
+func (c *ResourceMetricsCollector) Stop() {
+	close(c.stopChan)
 }

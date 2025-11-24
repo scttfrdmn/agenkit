@@ -199,7 +199,8 @@ class DatabaseTool:
             params.append(status)
 
         where_clause = " AND ".join(conditions) if conditions else "1=1"
-        sql = f"SELECT * FROM orders WHERE {where_clause}"
+        # S608: False positive - where_clause built from hardcoded conditions with ? placeholders
+        sql = f"SELECT * FROM orders WHERE {where_clause}"  # noqa: S608
 
         return await self.db.query(sql, tuple(params))
 
@@ -273,7 +274,8 @@ class SecureDatabaseTool:
         NEVER do this in production!
         """
         # ❌ String interpolation allows SQL injection
-        sql = f"SELECT * FROM users WHERE name LIKE '%{search_term}%'"
+        # S608: Intentionally vulnerable for educational demonstration
+        sql = f"SELECT * FROM users WHERE name LIKE '%{search_term}%'"  # noqa: S608
         return await self.db.query(sql)
 
     async def search_users_safe(self, search_term: str) -> list[dict]:
@@ -318,7 +320,8 @@ async def example2_sql_injection_prevention():
     print(f"Malicious input: '{malicious_input}'")
 
     print("\n⚠️ Unsafe query (would return ALL users):")
-    print(f"   SELECT * FROM users WHERE name LIKE '%{malicious_input}%'")
+    # S608: Just a print statement for education, not executing SQL
+    print(f"   SELECT * FROM users WHERE name LIKE '%{malicious_input}%'")  # noqa: S608
     print("   → This becomes: WHERE name LIKE '%' OR '1'='1%'")
     print("   → Returns all users (security breach!)")
 

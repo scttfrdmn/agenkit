@@ -11,14 +11,15 @@ Measures:
 import asyncio
 import time
 from statistics import mean, stdev
+
 from agenkit.interfaces import Message
 from agenkit.memory import (
-    InMemoryMemory,
-    VectorMemory,
     EmbeddingProvider,
-    SlidingWindowStrategy,
     ImportanceWeightingStrategy,
-    SummarizationStrategy
+    InMemoryMemory,
+    SlidingWindowStrategy,
+    SummarizationStrategy,
+    VectorMemory,
 )
 
 

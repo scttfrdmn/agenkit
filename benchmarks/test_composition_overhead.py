@@ -20,13 +20,10 @@ far outweigh the minimal performance cost.
 """
 
 import asyncio
-import pytest
 import time
-from typing import Any
 
 from agenkit.interfaces import Agent, Message
-from agenkit.patterns import SequentialPattern, ParallelPattern, FallbackPattern, ConditionalPattern
-
+from agenkit.patterns import ConditionalPattern, FallbackPattern, ParallelPattern, SequentialPattern
 
 # ============================================
 # Benchmark Agents
@@ -511,7 +508,7 @@ def test_nested_composition_overhead():
         threshold=0.30
     )
 
-    print(f"  Structure:  Parallel[Sequential[3 agents], Sequential[3 agents]]")
+    print("  Structure:  Parallel[Sequential[3 agents], Sequential[3 agents]]")
 
     assert overhead < 0.30, f"Nested composition overhead {overhead*100:.2f}% exceeds 30%"
 

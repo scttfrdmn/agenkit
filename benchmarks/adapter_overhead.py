@@ -164,7 +164,7 @@ async def main():
         else:
             print(f"\n⚠️  WARN: Overhead {overhead_pct:.1f}% > 5% target")
 
-        print(f"\n💡 Note: This measures microsecond-level overhead.")
+        print("\n💡 Note: This measures microsecond-level overhead.")
         print(f"   Absolute overhead is only {overhead_ms:.3f}ms ({overhead_ms * 1000:.1f}μs)")
 
         await server.stop()
@@ -203,10 +203,10 @@ async def main():
         else:
             print(f"\n⚠️  WARN: Overhead {overhead_pct:.2f}% > 5% target")
 
-        print(f"\n💡 Production context:")
-        print(f"   - Protocol overhead: ~0.1ms")
-        print(f"   - Typical LLM call: 100-1000ms")
-        print(f"   - Real impact: <0.1% of total latency")
+        print("\n💡 Production context:")
+        print("   - Protocol overhead: ~0.1ms")
+        print("   - Typical LLM call: 100-1000ms")
+        print("   - Real impact: <0.1% of total latency")
 
         await server.stop()
 

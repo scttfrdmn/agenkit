@@ -18,6 +18,8 @@ from .agent_pb2_grpc import (
 )
 
 __all__ = [
+    "AgentServiceServicer",
+    "AgentServiceStub",
     "ChunkType",
     "Error",
     "Message",
@@ -27,7 +29,5 @@ __all__ = [
     "StreamChunk",
     "ToolCall",
     "ToolResult",
-    "AgentServiceServicer",
-    "AgentServiceStub",
     "add_AgentServiceServicer_to_server",
 ]

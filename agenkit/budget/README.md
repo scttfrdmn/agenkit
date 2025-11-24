@@ -30,13 +30,17 @@ wrapped_agent = limiter(agent)
 ## Components
 
 ### 1. ModelPricing
+
 Pricing data for major LLM providers (November 2025 rates):
+
 - **OpenAI**: GPT-4o, o3, o3-mini
 - **Anthropic**: Claude Opus 4, Sonnet 4/4.5, Haiku 3
 - **Google**: Gemini 2.0, Pro
 
 ### 2. CostTracker
+
 Track costs per session, agent, and globally:
+
 - Per-session cost tracking
 - Per-agent cost tracking
 - Cost breakdown by model
@@ -44,14 +48,18 @@ Track costs per session, agent, and globally:
 - Multiple storage backends (InMemory, Redis, Postgres)
 
 ### 3. BudgetLimiter (Middleware)
+
 Enforce cost budgets:
+
 - Session budgets
 - Agent budgets
 - Global budgets
 - Actions: error, warning, switch_model
 
 ### 4. ModelOptimizer
+
 Intelligent model routing based on complexity:
+
 - Simple queries → Cheap model (Haiku)
 - Medium queries → Mid-tier (Sonnet 4)
 - Complex queries → Expensive (Opus 4, o3)
@@ -60,7 +68,8 @@ Intelligent model routing based on complexity:
 ## Real-World Scenario
 
 **30-hour autonomous agent without budget control:**
-```
+
+```text
 Processes: 1000 requests
 Tokens: 10M input + 5M output
 Model: Claude Opus 4
@@ -68,6 +77,7 @@ Cost: $150 (input) + $375 (output) = $525 💸
 ```
 
 **With budget management:**
+
 ```python
 tracker = CostTracker()
 limiter = BudgetLimiter(tracker, session_budget=100.00, action="error")
@@ -79,6 +89,7 @@ optimizer = ModelOptimizer(cheap, medium, expensive)  # Route intelligently
 ## Examples
 
 See `examples/budget/cost_tracking_demo.py` for:
+
 1. Basic cost tracking
 2. Budget enforcement
 3. Cost analysis and reporting
@@ -177,7 +188,7 @@ python examples/budget/cost_tracking_demo.py
 
 - [Memory Systems](../memory/) - Context management for long-running agents
 - [Agent Safety Framework](../safety/) - Security for autonomous agents
-- [Long-Running Agents](#) - Checkpointing and state management
+- [Checkpointing](../checkpointing/) - State management for long-running agents
 
 ## Contributing
 

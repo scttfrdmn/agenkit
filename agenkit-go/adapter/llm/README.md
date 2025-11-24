@@ -184,12 +184,14 @@ type Message struct {
 ### Role Mapping
 
 **OpenAI:**
+
 - `user` → `user`
 - `agent` → `assistant`
 - `system` → `system`
 - `tool` → `tool`
 
 **Anthropic:**
+
 - `user` → `user`
 - `agent` → `assistant`
 - `system` → Separate `system` parameter
@@ -305,6 +307,7 @@ go run examples/llm/provider_swap_example.go
 ## Best Practices
 
 1. **Code against the interface**, not concrete types:
+
    ```go
    func processWithLLM(llm llm.LLM, messages []*agenkit.Message) error {
        // Works with any provider!
@@ -312,6 +315,7 @@ go run examples/llm/provider_swap_example.go
    ```
 
 2. **Use functional options** for parameters:
+
    ```go
    response, err := llmAdapter.Complete(
        ctx,
@@ -322,6 +326,7 @@ go run examples/llm/provider_swap_example.go
    ```
 
 3. **Handle errors consistently**:
+
    ```go
    response, err := llmAdapter.Complete(ctx, messages)
    if err != nil {

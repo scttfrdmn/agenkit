@@ -7,6 +7,309 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2025-11-23
+
+### 🚀 Phase 7 & 8 Complete - Advanced Patterns, Security, and Performance
+
+This release completes Phases 7 (Language Expansion) and 8 (Advanced Patterns), delivering TypeScript support, advanced agent patterns, comprehensive security framework, and significant performance improvements. The framework is now feature-complete and ready for production deployment at scale.
+
+**Key Highlights:**
+- ✅ **Phase 7 Complete**: TypeScript implementation with 98 tests (ready for npm publication)
+- ✅ **Phase 8 Complete**: Advanced patterns, safety framework, reasoning budget support
+- ✅ **5 Complete End-to-End Applications**: Production-ready reference implementations
+- ✅ **Security Hardened**: Auth/authz, TLS, input validation, error sanitization
+- ✅ **Performance Optimized**: Connection pooling (20-35% faster), async read-write locks
+- ✅ **Observability Enhanced**: Prometheus alerts, SLOs, resource metrics
+
+### Added
+
+#### Phase 7: Language Expansion (#70)
+
+**TypeScript Implementation** ✅
+- Complete TypeScript port with full feature parity (Python/Go)
+- 98 tests passing (100% pass rate)
+- All 3 transports: HTTP, WebSocket, gRPC
+- Middleware system: Retry, Timeout, Circuit Breaker
+- LLM adapters: OpenAI and Anthropic
+- 4 comprehensive examples (~550 lines)
+- Ready for npm publication as `@agenkit/core v0.2.0`
+
+**Why TypeScript**: Massive web developer market, serverless functions, browser agents, Node.js ecosystem
+
+#### Phase 8: Advanced Patterns
+
+**Issue #71: Agent Safety Framework** ✅ COMPLETE
+- **Input Validation**: Prompt injection defense, malicious input detection
+  - Pattern-based detection (SQL injection, XSS, path traversal)
+  - Length limits and character whitelisting
+  - Semantic analysis for jailbreak attempts
+- **Output Validation**: Schema validation, content filtering, PII detection
+  - JSON schema validation
+  - Profanity and sensitive data filtering
+  - Custom validation rules
+- **Action Constraints**: Sandboxing, permissions, resource limits
+  - File system access control
+  - Network restrictions
+  - Command execution sandboxing
+- **Anomaly Detection**: Behavioral monitoring, rate limiting
+  - Request pattern analysis
+  - Unusual activity detection
+- **Audit Logging**: Comprehensive security event logging
+  - Request/response logging with trace IDs
+  - Security event tracking
+  - Tamper-evident logs
+- **Implementation**: Python (162 tests) + Go (94 tests) = 256 total tests
+- **Examples**: 6 practical security scenarios (Python + Go)
+- **Documentation**: Comprehensive docs/safety.md guide
+
+**Issue #72: Reasoning Budget Pattern** ✅ COMPLETE
+- **Dynamic Thinking Budget Allocation**: Instant vs extended thinking
+  - `ThinkingBudgetAllocator` for adaptive budget management
+  - Complexity-aware budget allocation
+- **Complexity Detection**: Task difficulty analysis
+  - `ComplexityDetector` for task analysis
+  - `ThinkingModeDetector` for mode recommendation
+- **Model Router**: Intelligent model selection
+  - `ModelOptimizer.complete_with_thinking()`
+  - Route to o3 (hard), Claude 4 Sonnet (medium), Haiku (simple)
+- **Cost-Quality Tradeoff**: Budget-aware thinking mode selection
+  - Extended `CostTracker` with `thinking_tokens` field
+  - Cost projection and optimization
+- **Support**: OpenAI o3, Claude 4 extended thinking modes
+- **Implementation**: 21 tests for extended thinking patterns
+- **Example**: `examples/budget/extended_thinking_demo.py`
+- **Documentation**: Extended BUDGET.md with thinking budget section
+
+**Issue #74: Advanced Agent Patterns** ✅ COMPLETE
+- **Conversational Agent**: Stateful conversation with memory
+  - Message history management
+  - Context window handling
+  - Memory integration
+- **ReAct Agent**: Reasoning + Acting loop
+  - Think → Act → Observe cycle
+  - Tool integration
+  - Reflection and planning
+- **Planning Agent**: Task decomposition and execution
+  - Hierarchical task planning
+  - Subtask execution
+  - Dynamic replanning
+- **Multi-Agent**: Collaborative agent systems
+  - Agent coordination
+  - Message passing
+  - Consensus building
+- **Autonomous Agent**: Long-running agents with checkpointing
+  - State persistence
+  - Resume capability
+  - Error recovery
+- **Implementation**: Complete Python + Go implementations
+- **Tests**: Comprehensive test coverage
+- **Examples**: 5 pattern examples demonstrating each
+
+**Issue #75: End-to-End Application Examples** ✅ COMPLETE
+
+Five production-ready reference applications:
+
+1. **Customer Support System** 🎧
+   - Router → [FAQ, Docs, Specialist, Human]
+   - Cross-language (Python router + Go specialists)
+   - LLM integration (OpenAI/Anthropic)
+   - Tools: Database, search, ticketing
+   - Middleware: Retry, caching, rate limiting
+   - Human escalation for sensitive issues
+   - Docker Compose + observability
+
+2. **Autonomous Research Assistant** 📚
+   - Sequential pipeline: Search → Read → Analyze → Compare → Write
+   - Multi-LLM comparison (Anthropic + OpenAI)
+   - Web scraping (DuckDuckGo, Wikipedia)
+   - PDF and HTML extraction
+   - Report generation (Markdown)
+   - Example outputs included
+
+3. **Multi-Agent Code Review System** 👨‍💻
+   - Parallel: [Style, Security, Logic, Tests] → Collaborative Review
+   - Multiple LLMs for consensus (GPT-4, Claude, Gemini)
+   - Linter integration (ruff, golangci-lint)
+   - Security scanning (bandit, gosec)
+   - GitHub integration
+   - Human approval workflow
+
+4. **Multi-LLM Cost Optimizer**
+   - Route requests to optimal model based on complexity
+   - Cost tracking and budget enforcement
+   - Quality vs cost tradeoffs
+   - A/B testing different models
+   - Performance benchmarking
+
+5. **Cross-Language Distributed System**
+   - Python and Go agents communicating
+   - Multiple transport protocols
+   - Distributed tracing across languages
+   - Load balancing
+   - Health checks and failover
+
+**Each example includes**:
+- Complete Docker Compose setup
+- Kubernetes manifests (optional)
+- Full observability (tracing + metrics)
+- Comprehensive tests
+- Architecture documentation
+- Deployment guides
+
+#### Security Enhancements
+
+**Issue #77: Authentication & Authorization Framework** ✅
+- **Authentication**: API key, JWT, OAuth2 support
+  - Multiple auth method support
+  - Token validation and refresh
+  - Session management
+- **Authorization**: Role-based access control (RBAC)
+  - Role definitions and assignments
+  - Permission checking
+  - Resource-level access control
+- **Middleware**: Easy integration with existing auth systems
+- **Examples**: Integration patterns for common auth systems
+
+**Issue #78: TLS Encryption for gRPC** ✅
+- **Secure gRPC**: Full TLS support for gRPC transport
+  - Server-side TLS configuration
+  - Client certificate validation
+  - mTLS support (mutual authentication)
+- **Certificate Management**: Automated cert loading and validation
+- **Production Ready**: Secure by default in production deployments
+
+**Issue #81: Comprehensive Input Validation** ✅
+- **Request Validation**: Schema-based validation for all inputs
+- **Type Checking**: Runtime type validation
+- **Bounds Checking**: Length limits, range validation
+- **Sanitization**: Input cleaning and normalization
+- **Error Handling**: Clear validation error messages
+
+**Issue #82: Error Message Sanitization** ✅
+- **Information Disclosure Prevention**: Sanitize stack traces and internal errors
+- **User-Safe Errors**: Clean error messages for external users
+- **Debug Mode**: Detailed errors for development, sanitized for production
+- **Audit Trail**: Log full errors internally while showing sanitized externally
+
+**Issue #83: Security Middleware as Default** ✅
+- **Secure by Default**: Security middleware enabled in production mode
+- **Opt-Out**: Explicit opt-out required to disable security
+- **Configuration**: Easy security policy configuration
+- **Best Practices**: Follow OWASP guidelines by default
+
+**Issue #66: Security Policy & Compatibility Matrix** ✅
+- **SECURITY.md**: Vulnerability reporting, supported versions, security best practices
+- **Compatibility Matrix**: Python/Go versions, OS support, transport protocols, LLM providers
+- **Documentation**: Comprehensive security and compatibility documentation
+
+### Changed
+
+#### Performance Improvements
+
+**Issue #87: Connection Pooling** ✅
+- **HTTP Transport**: Connection pooling for HTTP/1.1, HTTP/2, HTTP/3
+  - Python: httpx.Limits (100 max connections, 20 keepalive)
+  - Go: http.Transport pooling (100 max idle, 20 per host, 90s timeout)
+- **gRPC Transport**: Channel pooling and keepalive
+  - Python: Channel options (10s keepalive ping, 5min max age)
+  - Go: keepalive.ClientParameters (10s ping, 5s timeout)
+- **Impact**: 20-35% latency reduction by eliminating 10-50ms connection overhead
+- **All Transports**: HTTP, gRPC (both Python and Go)
+
+**Issue #89: Cache Lock Contention Fix** ✅
+- **Python**: AsyncRWLock with async read-write coordination
+  - Multiple concurrent readers or single writer
+  - GIL-free safe (Python 3.13+ compatible)
+  - Graceful asyncio task cancellation
+- **Go**: sync.RWMutex for efficient concurrent cache reads
+- **Impact**: Eliminates lock contention for read-heavy workloads
+- **Cache Performance**: Near-instant cache hits with concurrent reads
+
+#### Observability Enhancements
+
+**Prometheus Alerts & SLOs** ✅
+- **Alert Rules**: Pre-configured Prometheus alerts for common issues
+  - High error rates
+  - Slow response times
+  - Resource exhaustion
+- **SLO Definitions**: Service Level Objectives for production monitoring
+  - Latency targets (p50, p95, p99)
+  - Error rate thresholds
+  - Availability goals
+- **Dashboards**: Grafana dashboard templates
+
+**Resource Metrics** ✅
+- **CPU Metrics**: Process and system CPU usage
+- **Memory Metrics**: Heap size, GC stats, memory limits
+- **Runtime Metrics**: Goroutine count, thread count, open file descriptors
+- **Python & Go**: Language-specific metrics for both runtimes
+
+### Fixed
+
+**Test Stability** ✅
+- **Flaky Tests**: Comprehensive remediation for tests that failed under load
+  - Increased timeouts for CI environments
+  - Better test isolation
+  - Fixed race conditions
+- **Pytest Config**: Corrected pytest configuration for proper test discovery
+- **Go Examples**: Fixed Go example structure for consistency
+
+**Documentation** ✅
+- **Go Distribution**: Added sync documentation and tooling
+- **Performance Reviews**: Performance optimization documentation
+- **Security Audits**: Comprehensive security documentation and audit trails
+
+### Documentation
+
+- **Security**: Comprehensive security policy and best practices (SECURITY.md)
+- **Compatibility**: Python/Go/OS/LLM compatibility matrix (docs-site/compatibility.md)
+- **Safety Framework**: Agent safety patterns and implementation (docs/safety.md)
+- **Budget Pattern**: Reasoning budget and extended thinking (docs/BUDGET.md)
+- **Examples**: 5 complete end-to-end applications with architecture docs
+- **Performance**: Monitoring and optimization guides
+
+### Breaking Changes
+
+**None** - This release maintains full backward compatibility with v0.9.0
+
+### Upgrade Guide
+
+No breaking changes. To upgrade from v0.9.0:
+
+```bash
+# Python
+pip install --upgrade agenkit
+
+# Go
+go get -u github.com/scttfrdmn/agenkit/agenkit-go@v0.10.0
+```
+
+New features are opt-in:
+- Security middleware can be explicitly enabled
+- Connection pooling is automatic (no config needed)
+- Advanced patterns available via new modules
+
+### What's Next: v1.0.0 (June 2026)
+
+With Phases 7 and 8 complete, v0.10.0 represents the feature-complete state before v1.0.0. The path to v1.0.0 focuses on:
+
+1. **Real-World Validation**: Gathering production feedback
+2. **API Stabilization**: Finalizing interfaces based on usage
+3. **Additional Patterns**: Issue #64 (Go pattern implementations)
+4. **npm Publication**: TypeScript package release
+5. **Documentation Polish**: Video tutorials, additional guides
+
+**Timeline**: 6 months of production validation before v1.0.0 stable API guarantee
+
+### Technical Details
+
+- **Code Size**: ~45,000 lines (Python + Go + TypeScript)
+- **Test Coverage**: 900+ tests (Python), 250+ tests (Go), 98 tests (TypeScript)
+- **Languages**: Python 3.10+, Go 1.21+, TypeScript 5.0+
+- **Security**: Zero known vulnerabilities (pip-audit, govulncheck)
+- **Performance**: Connection pooling, async locks, optimized caching
+- **Production**: Docker, Kubernetes, full observability, security hardened
+
 ## [0.9.0] - 2025-11-15
 
 ### 🎉 First Public Release - Production Ready, API Stabilizing

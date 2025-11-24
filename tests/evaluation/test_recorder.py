@@ -4,19 +4,21 @@ Tests for session recording and replay.
 Tests SessionRecorder, SessionReplay, and storage backends.
 """
 
+import shutil
+import tempfile
+from datetime import datetime, timezone
+
 import pytest
+
 from agenkit.evaluation.recorder import (
-    SessionRecorder,
-    SessionReplay,
-    InMemoryRecordingStorage,
     FileRecordingStorage,
+    InMemoryRecordingStorage,
     InteractionRecord,
-    SessionRecording
+    SessionRecorder,
+    SessionRecording,
+    SessionReplay,
 )
 from agenkit.interfaces import Message
-from datetime import datetime, timezone
-import tempfile
-import shutil
 
 
 class MockAgent:
@@ -44,12 +46,7 @@ async def test_session_recorder_basic():
     input_msg = Message(role="user", content="Hello")
     output_msg = Message(role="assistant", content="Hi there")
 
-    await recorder.record_interaction(
-        "test-session",
-        input_msg,
-        output_msg,
-        latency_ms=10.5
-    )
+    await recorder.record_interaction("test-session", input_msg, output_msg, latency_ms=10.5)
 
     recording = await recorder.finalize_session("test-session")
 
@@ -72,10 +69,7 @@ async def test_session_recorder_multiple_interactions():
         output_msg = Message(role="assistant", content=f"Response {i}")
 
         await recorder.record_interaction(
-            "test-session",
-            input_msg,
-            output_msg,
-            latency_ms=10.0 + i
+            "test-session", input_msg, output_msg, latency_ms=10.0 + i
         )
 
     recording = await recorder.finalize_session("test-session")
@@ -94,12 +88,7 @@ async def test_session_recorder_auto_start():
     input_msg = Message(role="user", content="Hello")
     output_msg = Message(role="assistant", content="Response")
 
-    await recorder.record_interaction(
-        "auto-session",
-        input_msg,
-        output_msg,
-        latency_ms=10.0
-    )
+    await recorder.record_interaction("auto-session", input_msg, output_msg, latency_ms=10.0)
 
     recording = await recorder.finalize_session("auto-session")
 
@@ -141,12 +130,7 @@ async def test_session_recorder_load():
     input_msg = Message(role="user", content="Hello")
     output_msg = Message(role="assistant", content="Response")
 
-    await recorder.record_interaction(
-        "test-session",
-        input_msg,
-        output_msg,
-        latency_ms=10.0
-    )
+    await recorder.record_interaction("test-session", input_msg, output_msg, latency_ms=10.0)
 
     await recorder.finalize_session("test-session")
 
@@ -171,7 +155,7 @@ async def test_session_recorder_list():
             f"session-{i}",
             Message(role="user", content="Test"),
             Message(role="assistant", content="Response"),
-            latency_ms=10.0
+            latency_ms=10.0,
         )
         await recorder.finalize_session(f"session-{i}")
 
@@ -191,7 +175,7 @@ async def test_session_recorder_delete():
         "test-session",
         Message(role="user", content="Test"),
         Message(role="assistant", content="Response"),
-        latency_ms=10.0
+        latency_ms=10.0,
     )
     await recorder.finalize_session("test-session")
 
@@ -218,7 +202,7 @@ async def test_file_recording_storage():
             "test-session",
             Message(role="user", content="Test"),
             Message(role="assistant", content="Response"),
-            latency_ms=10.0
+            latency_ms=10.0,
         )
         await recorder.finalize_session("test-session")
 
@@ -270,10 +254,7 @@ async def test_session_replay_multiple_interactions():
     wrapped = recorder.wrap(agent)
 
     for i in range(3):
-        await wrapped.process(
-            Message(role="user", content=f"Message {i}"),
-            session_id="test"
-        )
+        await wrapped.process(Message(role="user", content=f"Message {i}"), session_id="test")
 
     recording = await recorder.finalize_session("test")
 
@@ -307,9 +288,9 @@ async def test_session_replay_with_errors():
                 input_message={"role": "user", "content": "Hello", "metadata": {}},
                 output_message={"role": "assistant", "content": "Response", "metadata": {}},
                 timestamp=datetime.now(timezone.utc),
-                latency_ms=10.0
+                latency_ms=10.0,
             )
-        ]
+        ],
     )
 
     replay = SessionReplay()
@@ -334,9 +315,9 @@ async def test_session_replay_compare():
                 input_message={"role": "user", "content": "Hello", "metadata": {}},
                 output_message={"role": "assistant", "content": "Original", "metadata": {}},
                 timestamp=datetime.now(timezone.utc),
-                latency_ms=10.0
+                latency_ms=10.0,
             )
-        ]
+        ],
     )
 
     # Replay with two different agents
@@ -363,7 +344,7 @@ def test_interaction_record_serialization():
         input_message={"role": "user", "content": "Hello"},
         output_message={"role": "assistant", "content": "Hi"},
         timestamp=datetime.now(timezone.utc),
-        latency_ms=10.5
+        latency_ms=10.5,
     )
 
     data = record.to_dict()
@@ -392,7 +373,7 @@ def test_session_recording_properties():
                 input_message={},
                 output_message={},
                 timestamp=datetime.now(timezone.utc),
-                latency_ms=10.0
+                latency_ms=10.0,
             ),
             InteractionRecord(
                 interaction_id="2",
@@ -400,9 +381,9 @@ def test_session_recording_properties():
                 input_message={},
                 output_message={},
                 timestamp=datetime.now(timezone.utc),
-                latency_ms=20.0
-            )
-        ]
+                latency_ms=20.0,
+            ),
+        ],
     )
 
     assert recording.interaction_count == 2

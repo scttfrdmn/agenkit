@@ -34,7 +34,9 @@ TRADE-OFFS:
 """
 
 import asyncio
+import contextlib
 import random
+
 from agenkit.interfaces import Agent, Message
 from agenkit.middleware import MetricsDecorator
 
@@ -43,8 +45,7 @@ from agenkit.middleware import MetricsDecorator
 class LLMAgent(Agent):
     """Simulates an LLM API call with realistic latency patterns."""
 
-    def __init__(self, name: str = "llm", mean_latency: float = 0.5,
-                 error_rate: float = 0.0):
+    def __init__(self, name: str = "llm", mean_latency: float = 0.5, error_rate: float = 0.0):
         """
         Args:
             name: Agent identifier
@@ -68,7 +69,7 @@ class LLMAgent(Agent):
         # Simulate realistic latency distribution (log-normal)
         latency = random.lognormvariate(
             self._mean_latency,
-            0.3  # Standard deviation
+            0.3,  # Standard deviation
         )
         await asyncio.sleep(latency)
 
@@ -79,7 +80,7 @@ class LLMAgent(Agent):
         return Message(
             role="agent",
             content=f"Response from {self._name}",
-            metadata={"model": "gpt-4", "tokens": 150}
+            metadata={"model": "gpt-4", "tokens": 150},
         )
 
 
@@ -96,15 +97,13 @@ async def example_basic_metrics():
     print("Simulating 20 API calls...")
     for i in range(20):
         try:
-            await monitored_agent.process(
-                Message(role="user", content=f"Request {i+1}")
-            )
+            await monitored_agent.process(Message(role="user", content=f"Request {i + 1}"))
         except Exception:
             pass  # Expected - some will fail
 
     # Analyze metrics
     metrics = monitored_agent.get_metrics()
-    print(f"\n📊 Metrics Report:")
+    print("\n📊 Metrics Report:")
     print(f"   Total Requests:   {metrics.total_requests}")
     print(f"   Successful:       {metrics.success_requests}")
     print(f"   Failed:           {metrics.error_requests}")
@@ -126,34 +125,20 @@ async def example_performance_comparison():
     print("Use case: A/B test different LLM providers\n")
 
     # Create agents for different providers
-    gpt4_agent = MetricsDecorator(
-        LLMAgent(name="gpt-4", mean_latency=0.3, error_rate=0.02)
-    )
+    gpt4_agent = MetricsDecorator(LLMAgent(name="gpt-4", mean_latency=0.3, error_rate=0.02))
 
-    claude_agent = MetricsDecorator(
-        LLMAgent(name="claude-3", mean_latency=0.2, error_rate=0.01)
-    )
+    claude_agent = MetricsDecorator(LLMAgent(name="claude-3", mean_latency=0.2, error_rate=0.01))
 
-    gemini_agent = MetricsDecorator(
-        LLMAgent(name="gemini-pro", mean_latency=0.15, error_rate=0.05)
-    )
+    gemini_agent = MetricsDecorator(LLMAgent(name="gemini-pro", mean_latency=0.15, error_rate=0.05))
 
     # Run same workload on all agents
-    agents = [
-        ("GPT-4", gpt4_agent),
-        ("Claude-3", claude_agent),
-        ("Gemini Pro", gemini_agent)
-    ]
+    agents = [("GPT-4", gpt4_agent), ("Claude-3", claude_agent), ("Gemini Pro", gemini_agent)]
 
     print("Running 10 requests on each provider...")
     for name, agent in agents:
         for i in range(10):
-            try:
-                await agent.process(
-                    Message(role="user", content=f"Test query {i+1}")
-                )
-            except Exception:
-                pass
+            with contextlib.suppress(Exception):
+                await agent.process(Message(role="user", content=f"Test query {i + 1}"))
 
     # Compare metrics
     print("\n📊 Performance Comparison:\n")
@@ -162,8 +147,10 @@ async def example_performance_comparison():
 
     for name, agent in agents:
         metrics = agent.get_metrics()
-        print(f"{name:<15} {metrics.average_latency():<15.3f} "
-              f"{metrics.error_rate():<15.1%} {metrics.max_latency:<15.3f}")
+        print(
+            f"{name:<15} {metrics.average_latency():<15.3f} "
+            f"{metrics.error_rate():<15.1%} {metrics.max_latency:<15.3f}"
+        )
 
     print("\n💡 Decision Framework:")
     print("   - Gemini Pro: Fastest but highest error rate")
@@ -191,8 +178,7 @@ async def example_capacity_planning():
 
         # Simulate concurrent requests
         tasks = [
-            monitored_agent.process(Message(role="user", content=f"Req {i}"))
-            for i in range(load)
+            monitored_agent.process(Message(role="user", content=f"Req {i}")) for i in range(load)
         ]
         await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -204,11 +190,11 @@ async def example_capacity_planning():
 
         # Decision logic
         if metrics.average_latency() > 1.0:
-            print(f"  ⚠️  WARNING: Latency exceeds SLA (>1s)")
+            print("  ⚠️  WARNING: Latency exceeds SLA (>1s)")
             print(f"  📈 Action: Scale up before reaching {load} concurrent users")
             break
         else:
-            print(f"  ✅ Within SLA")
+            print("  ✅ Within SLA")
         print()
 
     print("💡 Capacity Planning Insights:")
@@ -228,38 +214,32 @@ async def example_anomaly_detection():
     # Establish baseline
     print("Phase 1: Establishing baseline (normal operation)...")
     for i in range(20):
-        await monitored_agent.process(
-            Message(role="user", content=f"Normal request {i}")
-        )
+        await monitored_agent.process(Message(role="user", content=f"Normal request {i}"))
 
     baseline_metrics = monitored_agent.get_metrics().snapshot()
     baseline_latency = baseline_metrics.average_latency()
     baseline_error_rate = baseline_metrics.error_rate()
 
-    print(f"Baseline established:")
+    print("Baseline established:")
     print(f"  Avg Latency: {baseline_latency:.3f}s")
     print(f"  Error Rate:  {baseline_error_rate:.1%}")
 
     # Simulate anomaly (degraded service)
     print("\nPhase 2: Simulating service degradation...")
     agent._mean_latency = 0.5  # 5x slower
-    agent._error_rate = 0.2     # 20% errors
+    agent._error_rate = 0.2  # 20% errors
 
     await monitored_agent.get_metrics().reset()
 
     for i in range(20):
-        try:
-            await monitored_agent.process(
-                Message(role="user", content=f"Degraded request {i}")
-            )
-        except Exception:
-            pass
+        with contextlib.suppress(Exception):
+            await monitored_agent.process(Message(role="user", content=f"Degraded request {i}"))
 
     current_metrics = monitored_agent.get_metrics()
     current_latency = current_metrics.average_latency()
     current_error_rate = current_metrics.error_rate()
 
-    print(f"\nCurrent metrics:")
+    print("\nCurrent metrics:")
     print(f"  Avg Latency: {current_latency:.3f}s")
     print(f"  Error Rate:  {current_error_rate:.1%}")
 
@@ -269,12 +249,12 @@ async def example_anomaly_detection():
     latency_increase = (current_latency - baseline_latency) / baseline_latency
     if latency_increase > 0.5:  # 50% increase
         print(f"  🚨 ALERT: Latency increased by {latency_increase:.1%}")
-        print(f"     Action: Investigate backend services")
+        print("     Action: Investigate backend services")
 
     error_increase = current_error_rate - baseline_error_rate
     if error_increase > 0.1:  # 10% increase
         print(f"  🚨 ALERT: Error rate increased by {error_increase:.1%}")
-        print(f"     Action: Check service health, review recent deployments")
+        print("     Action: Check service health, review recent deployments")
 
     print("\n💡 Anomaly Detection Best Practices:")
     print("   - Use moving averages to smooth out noise")
@@ -289,17 +269,11 @@ async def example_multi_agent_monitoring():
     print("Use case: Monitor a pipeline with multiple stages\n")
 
     # Create a pipeline of agents
-    validator = MetricsDecorator(
-        LLMAgent(name="validator", mean_latency=0.05)
-    )
+    validator = MetricsDecorator(LLMAgent(name="validator", mean_latency=0.05))
 
-    processor = MetricsDecorator(
-        LLMAgent(name="processor", mean_latency=0.2)
-    )
+    processor = MetricsDecorator(LLMAgent(name="processor", mean_latency=0.2))
 
-    formatter = MetricsDecorator(
-        LLMAgent(name="formatter", mean_latency=0.03)
-    )
+    formatter = MetricsDecorator(LLMAgent(name="formatter", mean_latency=0.03))
 
     # Run requests through the pipeline
     print("Processing 10 requests through 3-stage pipeline...")
@@ -318,11 +292,7 @@ async def example_multi_agent_monitoring():
     print("-" * 60)
 
     total_latency = 0.0
-    stages = [
-        ("Validator", validator),
-        ("Processor", processor),
-        ("Formatter", formatter)
-    ]
+    stages = [("Validator", validator), ("Processor", processor), ("Formatter", formatter)]
 
     for name, agent in stages:
         metrics = agent.get_metrics()
@@ -331,8 +301,10 @@ async def example_multi_agent_monitoring():
     for name, agent in stages:
         metrics = agent.get_metrics()
         pct = (metrics.average_latency() / total_latency) * 100
-        print(f"{name:<15} {metrics.total_requests:<12} "
-              f"{metrics.average_latency():<15.3f} {pct:<12.1f}%")
+        print(
+            f"{name:<15} {metrics.total_requests:<12} "
+            f"{metrics.average_latency():<15.3f} {pct:<12.1f}%"
+        )
 
     print(f"\nTotal Pipeline Latency: {total_latency:.3f}s")
 
@@ -344,9 +316,9 @@ async def example_multi_agent_monitoring():
 
 async def main():
     """Run all examples."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("METRICS MIDDLEWARE EXAMPLES")
-    print("="*70)
+    print("=" * 70)
     print("\nMetrics are the foundation of observable, reliable systems.")
     print("These examples show why and how to instrument your agents.\n")
 
@@ -356,9 +328,9 @@ async def main():
     await example_anomaly_detection()
     await example_multi_agent_monitoring()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("KEY TAKEAWAYS")
-    print("="*70)
+    print("=" * 70)
     print("""
 1. ALWAYS instrument production agents - metrics pay for themselves
 2. Track the 4 golden signals: Latency, Traffic, Errors, Saturation

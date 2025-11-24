@@ -11,7 +11,6 @@ from agenkit.interfaces import Message
 
 from .helpers import go_http_server, python_http_server
 
-
 # Python Client → Go Server Tests
 
 
@@ -20,12 +19,9 @@ from .helpers import go_http_server, python_http_server
 @pytest.mark.cross_language
 async def test_python_to_go_basic_message():
     """Test basic message exchange: Python client → Go server."""
-    async with go_http_server() as (port, process):
+    async with go_http_server() as (port, _process):
         # Create remote agent client
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"http://localhost:{port}"
-        )
+        agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
         # Send message
         message = Message(role="user", content="Hello from Python!")
@@ -43,7 +39,7 @@ async def test_python_to_go_basic_message():
 @pytest.mark.cross_language
 async def test_python_to_go_with_metadata():
     """Test message with metadata: Python client → Go server."""
-    async with go_http_server() as (port, process):
+    async with go_http_server() as (port, _process):
         agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
         # Send message with metadata
@@ -54,7 +50,7 @@ async def test_python_to_go_with_metadata():
                 "request_id": "test-123",
                 "user": "alice",
                 "tags": ["test", "integration"],
-            }
+            },
         )
         response = await agent.process(message)
 
@@ -76,7 +72,7 @@ async def test_python_to_go_with_metadata():
 @pytest.mark.cross_language
 async def test_python_to_go_unicode_content():
     """Test Unicode content handling: Python client → Go server."""
-    async with go_http_server() as (port, process):
+    async with go_http_server() as (port, _process):
         agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
         # Send message with Unicode content
@@ -95,7 +91,7 @@ async def test_python_to_go_unicode_content():
 @pytest.mark.cross_language
 async def test_python_to_go_empty_content():
     """Test empty content handling: Python client → Go server."""
-    async with go_http_server() as (port, process):
+    async with go_http_server() as (port, _process):
         agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
         # Send message with empty content
@@ -113,7 +109,7 @@ async def test_python_to_go_empty_content():
 @pytest.mark.cross_language
 async def test_python_to_go_large_message():
     """Test large message handling: Python client → Go server."""
-    async with go_http_server() as (port, process):
+    async with go_http_server() as (port, _process):
         agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
         # Send large message (1MB)
@@ -132,10 +128,9 @@ async def test_python_to_go_large_message():
 @pytest.mark.cross_language
 async def test_python_to_go_health_check():
     """Test health check endpoint: Python client → Go server."""
-    async with go_http_server() as (port, process):
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://localhost:{port}/health")
-            assert response.status_code == 200
+    async with go_http_server() as (port, _process), httpx.AsyncClient() as client:
+        response = await client.get(f"http://localhost:{port}/health")
+        assert response.status_code == 200
 
 
 @pytest.mark.asyncio
@@ -143,7 +138,7 @@ async def test_python_to_go_health_check():
 @pytest.mark.cross_language
 async def test_python_to_go_multiple_sequential_requests():
     """Test multiple sequential requests: Python client → Go server."""
-    async with go_http_server() as (port, process):
+    async with go_http_server() as (port, _process):
         agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
         # Send multiple messages sequentially
@@ -164,7 +159,7 @@ async def test_python_to_go_multiple_sequential_requests():
 @pytest.mark.cross_language
 async def test_go_to_python_basic_message():
     """Test basic message exchange: Go client → Python server."""
-    async with python_http_server() as (port, server):
+    async with python_http_server() as (port, _server):
         # Use httpx to simulate Go client behavior
         async with httpx.AsyncClient() as client:
             # Create request envelope
@@ -178,14 +173,14 @@ async def test_go_to_python_basic_message():
                         "content": "Hello from Go client!",
                         "metadata": None,
                     }
-                }
+                },
             }
 
             # Send request
             response = await client.post(
                 f"http://localhost:{port}/process",
                 json=envelope,
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
             )
 
             # Validate response
@@ -204,36 +199,32 @@ async def test_go_to_python_basic_message():
 @pytest.mark.cross_language
 async def test_go_to_python_with_metadata():
     """Test message with metadata: Go client → Python server."""
-    async with python_http_server() as (port, server):
-        async with httpx.AsyncClient() as client:
-            envelope = {
-                "id": "test-002",
-                "type": "request",
-                "version": "1.0",
-                "payload": {
-                    "message": {
-                        "role": "user",
-                        "content": "Test with metadata",
-                        "metadata": {
-                            "request_id": "go-123",
-                            "priority": "high",
-                        }
-                    }
+    async with python_http_server() as (port, _server), httpx.AsyncClient() as client:
+        envelope = {
+            "id": "test-002",
+            "type": "request",
+            "version": "1.0",
+            "payload": {
+                "message": {
+                    "role": "user",
+                    "content": "Test with metadata",
+                    "metadata": {
+                        "request_id": "go-123",
+                        "priority": "high",
+                    },
                 }
-            }
+            },
+        }
 
-            response = await client.post(
-                f"http://localhost:{port}/process",
-                json=envelope
-            )
+        response = await client.post(f"http://localhost:{port}/process", json=envelope)
 
-            assert response.status_code == 200
-            response_data = response.json()
-            message_data = response_data["payload"]["message"]
+        assert response.status_code == 200
+        response_data = response.json()
+        message_data = response_data["payload"]["message"]
 
-            assert message_data["role"] == "agent"
-            assert "Echo: Test with metadata" in message_data["content"]
-            assert message_data["metadata"]["original"] == "Test with metadata"
+        assert message_data["role"] == "agent"
+        assert "Echo: Test with metadata" in message_data["content"]
+        assert message_data["metadata"]["original"] == "Test with metadata"
 
 
 @pytest.mark.asyncio
@@ -241,33 +232,29 @@ async def test_go_to_python_with_metadata():
 @pytest.mark.cross_language
 async def test_go_to_python_unicode_content():
     """Test Unicode content: Go client → Python server."""
-    async with python_http_server() as (port, server):
-        async with httpx.AsyncClient() as client:
-            unicode_content = "Hello 世界 🌍 Привет مرحبا"
-            envelope = {
-                "id": "test-003",
-                "type": "request",
-                "version": "1.0",
-                "payload": {
-                    "message": {
-                        "role": "user",
-                        "content": unicode_content,
-                        "metadata": None,
-                    }
+    async with python_http_server() as (port, _server), httpx.AsyncClient() as client:
+        unicode_content = "Hello 世界 🌍 Привет مرحبا"
+        envelope = {
+            "id": "test-003",
+            "type": "request",
+            "version": "1.0",
+            "payload": {
+                "message": {
+                    "role": "user",
+                    "content": unicode_content,
+                    "metadata": None,
                 }
-            }
+            },
+        }
 
-            response = await client.post(
-                f"http://localhost:{port}/process",
-                json=envelope
-            )
+        response = await client.post(f"http://localhost:{port}/process", json=envelope)
 
-            assert response.status_code == 200
-            response_data = response.json()
-            message_data = response_data["payload"]["message"]
+        assert response.status_code == 200
+        response_data = response.json()
+        message_data = response_data["payload"]["message"]
 
-            assert f"Echo: {unicode_content}" in message_data["content"]
-            assert message_data["metadata"]["original"] == unicode_content
+        assert f"Echo: {unicode_content}" in message_data["content"]
+        assert message_data["metadata"]["original"] == unicode_content
 
 
 @pytest.mark.asyncio
@@ -275,7 +262,7 @@ async def test_go_to_python_unicode_content():
 @pytest.mark.cross_language
 async def test_go_to_python_large_message():
     """Test large message: Go client → Python server."""
-    async with python_http_server() as (port, server):
+    async with python_http_server() as (port, _server):
         async with httpx.AsyncClient(timeout=30.0) as client:
             large_content = "A" * (1024 * 1024)  # 1MB
             envelope = {
@@ -288,13 +275,10 @@ async def test_go_to_python_large_message():
                         "content": large_content,
                         "metadata": None,
                     }
-                }
+                },
             }
 
-            response = await client.post(
-                f"http://localhost:{port}/process",
-                json=envelope
-            )
+            response = await client.post(f"http://localhost:{port}/process", json=envelope)
 
             assert response.status_code == 200
             response_data = response.json()
@@ -313,15 +297,13 @@ async def test_go_to_python_large_message():
 @pytest.mark.slow
 async def test_python_to_go_concurrent_requests_10():
     """Test 10 concurrent requests: Python client → Go server."""
-    async with go_http_server() as (port, process):
+    async with go_http_server() as (port, _process):
         agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
         # Send 10 concurrent requests
         import asyncio
-        tasks = [
-            agent.process(Message(role="user", content=f"Concurrent {i}"))
-            for i in range(10)
-        ]
+
+        tasks = [agent.process(Message(role="user", content=f"Concurrent {i}")) for i in range(10)]
         responses = await asyncio.gather(*tasks)
 
         # Validate all responses
@@ -337,15 +319,13 @@ async def test_python_to_go_concurrent_requests_10():
 @pytest.mark.slow
 async def test_python_to_go_concurrent_requests_50():
     """Test 50 concurrent requests: Python client → Go server."""
-    async with go_http_server() as (port, process):
+    async with go_http_server() as (port, _process):
         agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
         # Send 50 concurrent requests
         import asyncio
-        tasks = [
-            agent.process(Message(role="user", content=f"Concurrent {i}"))
-            for i in range(50)
-        ]
+
+        tasks = [agent.process(Message(role="user", content=f"Concurrent {i}")) for i in range(50)]
         responses = await asyncio.gather(*tasks)
 
         # Validate all responses
@@ -360,7 +340,7 @@ async def test_python_to_go_concurrent_requests_50():
 @pytest.mark.cross_language
 async def test_go_to_python_concurrent_requests():
     """Test concurrent requests: Go client → Python server."""
-    async with python_http_server() as (port, server):
+    async with python_http_server() as (port, _server):
         async with httpx.AsyncClient(timeout=30.0) as client:
             # Send 10 concurrent requests
             import asyncio
@@ -376,12 +356,9 @@ async def test_go_to_python_concurrent_requests():
                             "content": f"Concurrent {i}",
                             "metadata": None,
                         }
-                    }
+                    },
                 }
-                response = await client.post(
-                    f"http://localhost:{port}/process",
-                    json=envelope
-                )
+                response = await client.post(f"http://localhost:{port}/process", json=envelope)
                 return response
 
             tasks = [send_request(i) for i in range(10)]
@@ -403,7 +380,7 @@ async def test_python_to_go_invalid_endpoint():
     """Test connection error with invalid endpoint: Python client."""
     agent = RemoteAgent(
         name="test-agent",
-        endpoint="http://localhost:59999"  # Invalid port
+        endpoint="http://localhost:59999",  # Invalid port
     )
 
     message = Message(role="user", content="Test")
@@ -418,21 +395,17 @@ async def test_python_to_go_invalid_endpoint():
 @pytest.mark.cross_language
 async def test_go_to_python_invalid_request_format():
     """Test invalid request format: Go client → Python server."""
-    async with python_http_server() as (port, server):
-        async with httpx.AsyncClient() as client:
-            # Send malformed request
-            invalid_envelope = {
-                "type": "request",
-                "payload": {}  # Missing message
-            }
+    async with python_http_server() as (port, _server), httpx.AsyncClient() as client:
+        # Send malformed request
+        invalid_envelope = {
+            "type": "request",
+            "payload": {},  # Missing message
+        }
 
-            response = await client.post(
-                f"http://localhost:{port}/process",
-                json=invalid_envelope
-            )
+        response = await client.post(f"http://localhost:{port}/process", json=invalid_envelope)
 
-            # Should return error status
-            assert response.status_code == 400
+        # Should return error status
+        assert response.status_code == 400
 
 
 # HTTP/2 Protocol Tests
@@ -443,12 +416,9 @@ async def test_go_to_python_invalid_request_format():
 @pytest.mark.cross_language
 async def test_python_to_go_http2():
     """Test HTTP/2 protocol: Python client → Go server."""
-    async with go_http_server() as (port, process):
+    async with go_http_server() as (port, _process):
         # Create agent with h2c:// endpoint for HTTP/2 cleartext
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"h2c://localhost:{port}"
-        )
+        agent = RemoteAgent(name="test-agent", endpoint=f"h2c://localhost:{port}")
 
         message = Message(role="user", content="HTTP/2 test")
         response = await agent.process(message)
@@ -464,11 +434,8 @@ async def test_python_to_go_http2():
 @pytest.mark.cross_language
 async def test_connection_reuse():
     """Test connection reuse across multiple requests."""
-    async with go_http_server() as (port, process):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"http://localhost:{port}"
-        )
+    async with go_http_server() as (port, _process):
+        agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
         # Send multiple requests on the same agent (should reuse connection)
         for i in range(10):

@@ -114,9 +114,7 @@ class Task:
             >>> # Cannot call execute() again - will raise RuntimeError
         """
         if self._completed:
-            raise RuntimeError(
-                "Task already completed. Create a new Task for another execution."
-            )
+            raise RuntimeError("Task already completed. Create a new Task for another execution.")
 
         # Merge kwargs with config
         call_kwargs = {**self._config, **kwargs}

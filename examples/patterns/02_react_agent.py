@@ -15,12 +15,10 @@ replace with real LLM clients and tools.
 """
 
 import asyncio
-from typing import List
 from datetime import datetime
 
 from agenkit import Message
-from agenkit.patterns import ReActAgent, Tool, ToolRegistry
-
+from agenkit.patterns import ReActAgent, ToolRegistry
 
 # ============================================================================
 # Mock Tools for Demonstration
@@ -36,7 +34,9 @@ class Calculator:
     """
 
     name = "calculator"
-    description = "Performs mathematical calculations. Input should be a mathematical expression as a string."
+    description = (
+        "Performs mathematical calculations. Input should be a mathematical expression as a string."
+    )
 
     async def execute(self, input: str) -> str:
         """Execute a calculation."""
@@ -112,7 +112,7 @@ class MockReActLLM:
     def __init__(self):
         self.call_count = 0
 
-    async def chat(self, messages: List[Message]) -> Message:
+    async def chat(self, messages: list[Message]) -> Message:
         """Generate mock ReAct-style responses."""
         self.call_count += 1
 
@@ -120,7 +120,8 @@ class MockReActLLM:
         user_messages = [msg for msg in messages if msg.role == "user"]
         if not user_messages:
             return Message(
-                role="assistant", content="Thought: I need more information\nAction: Final Answer\nAction Input: Hello! How can I help you?"
+                role="assistant",
+                content="Thought: I need more information\nAction: Final Answer\nAction Input: Hello! How can I help you?",
             )
 
         last_message = user_messages[-1].content.lower()
@@ -142,7 +143,12 @@ class MockReActLLM:
                 )
 
         # Initial reasoning based on user query
-        if "calculate" in last_message or "%" in last_message or "+" in last_message or "*" in last_message:
+        if (
+            "calculate" in last_message
+            or "%" in last_message
+            or "+" in last_message
+            or "*" in last_message
+        ):
             # Extract math expression
             if "15% of 240" in last_message:
                 return Message(
@@ -208,9 +214,7 @@ async def basic_tool_usage_example():
 
     # Test calculation
     print("\nUser: What is 15% of 240?")
-    response = await agent.process(
-        Message(role="user", content="What is 15% of 240?")
-    )
+    response = await agent.process(Message(role="user", content="What is 15% of 240?"))
     print(f"Agent: {response.content}")
 
     # Show reasoning steps
@@ -255,14 +259,10 @@ async def verbose_mode_example():
     registry.register(Calculator())
 
     llm = MockReActLLM()
-    agent = ReActAgent(
-        llm_client=llm, tool_registry=registry, max_iterations=5, verbose=True
-    )
+    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5, verbose=True)
 
     print("\nUser: Calculate 123 + 456")
-    response = await agent.process(
-        Message(role="user", content="Calculate 123 + 456")
-    )
+    response = await agent.process(Message(role="user", content="Calculate 123 + 456"))
     print(f"Agent:\n{response.content}")
 
 
@@ -310,9 +310,7 @@ async def error_handling_example():
 
     # This will cause the calculator to error
     print("\nUser: Calculate invalid expression")
-    response = await agent.process(
-        Message(role="user", content="Calculate 2 + + 3")
-    )
+    response = await agent.process(Message(role="user", content="Calculate 2 + + 3"))
     print(f"Agent: {response.content}")
 
     # Check if any errors occurred in steps

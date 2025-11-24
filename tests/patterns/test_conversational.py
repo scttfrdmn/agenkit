@@ -3,6 +3,7 @@ Tests for ConversationalAgent pattern.
 """
 
 import pytest
+
 from agenkit import Message
 from agenkit.patterns import ConversationalAgent, StreamingConversationalAgent
 
@@ -93,9 +94,7 @@ async def test_conversational_agent_history_pruning():
 async def test_conversational_agent_preserves_system_prompt():
     """Test that system prompts are preserved during pruning."""
     llm = MockLLM()
-    agent = ConversationalAgent(
-        llm_client=llm, max_history=5, system_prompt="System instruction"
-    )
+    agent = ConversationalAgent(llm_client=llm, max_history=5, system_prompt="System instruction")
 
     # Fill history beyond limit
     for i in range(5):
@@ -111,9 +110,7 @@ async def test_conversational_agent_preserves_system_prompt():
 async def test_conversational_agent_clear_history():
     """Test clearing conversation history."""
     llm = MockLLM()
-    agent = ConversationalAgent(
-        llm_client=llm, max_history=10, system_prompt="System instruction"
-    )
+    agent = ConversationalAgent(llm_client=llm, max_history=10, system_prompt="System instruction")
 
     # Add some messages
     await agent.process(Message(role="user", content="Hello"))
@@ -155,9 +152,7 @@ async def test_conversational_agent_export_import():
 async def test_conversational_agent_context_passed_to_llm():
     """Test that full context is passed to LLM."""
     llm = MockLLM()
-    agent = ConversationalAgent(
-        llm_client=llm, max_history=10, system_prompt="System"
-    )
+    agent = ConversationalAgent(llm_client=llm, max_history=10, system_prompt="System")
 
     # First message
     await agent.process(Message(role="user", content="First"))

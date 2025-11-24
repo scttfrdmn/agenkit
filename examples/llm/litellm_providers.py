@@ -29,9 +29,7 @@ async def openai_via_litellm():
     # LiteLLM uses OpenAI's model naming
     llm = LiteLLMLLM(model="gpt-4o-mini", api_key=api_key)
 
-    messages = [
-        Message(role="user", content="What is LiteLLM?")
-    ]
+    messages = [Message(role="user", content="What is LiteLLM?")]
 
     response = await llm.complete(messages, max_tokens=100)
     print(f"Response: {response.content}\n")
@@ -55,9 +53,7 @@ async def anthropic_via_litellm():
         api_key=api_key,
     )
 
-    messages = [
-        Message(role="user", content="Explain the benefits of using LiteLLM.")
-    ]
+    messages = [Message(role="user", content="Explain the benefits of using LiteLLM.")]
 
     response = await llm.complete(messages, max_tokens=100)
     print(f"Response: {response.content}\n")
@@ -73,9 +69,7 @@ async def ollama_via_litellm():
         # LiteLLM format: "ollama/" prefix
         llm = LiteLLMLLM(model="ollama/llama2")
 
-        messages = [
-            Message(role="user", content="What is a local LLM?")
-        ]
+        messages = [Message(role="user", content="What is a local LLM?")]
 
         print("Attempting to connect to Ollama at http://localhost:11434...")
         response = await llm.complete(messages, max_tokens=100)
@@ -98,9 +92,7 @@ async def provider_agnostic_function():
         """Ask a question using any LiteLLM-supported provider."""
         llm = LiteLLMLLM(model=model, api_key=api_key)
 
-        messages = [
-            Message(role="user", content="What is 2+2?")
-        ]
+        messages = [Message(role="user", content="What is 2+2?")]
 
         response = await llm.complete(messages, max_tokens=50)
         return response.content
@@ -138,9 +130,7 @@ async def streaming_via_litellm():
 
     llm = LiteLLMLLM(model="gpt-4o-mini", api_key=api_key)
 
-    messages = [
-        Message(role="user", content="Count from 1 to 10.")
-    ]
+    messages = [Message(role="user", content="Count from 1 to 10.")]
 
     print("Streaming: ", end="", flush=True)
 

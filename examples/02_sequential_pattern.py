@@ -5,6 +5,7 @@ This example shows how to chain agents in a pipeline.
 """
 
 import asyncio
+
 from agenkit import Agent, Message, SequentialPattern
 
 
@@ -20,16 +21,10 @@ class ValidatorAgent(Agent):
 
         if len(text) < 3:
             return Message(
-                role="agent",
-                content="ERROR: Input too short",
-                metadata={"valid": False}
+                role="agent", content="ERROR: Input too short", metadata={"valid": False}
             )
 
-        return Message(
-            role="agent",
-            content=text,
-            metadata={"valid": True}
-        )
+        return Message(role="agent", content=text, metadata={"valid": True})
 
 
 class ProcessorAgent(Agent):
@@ -47,11 +42,7 @@ class ProcessorAgent(Agent):
         text = str(message.content)
         processed = text.upper().strip()
 
-        return Message(
-            role="agent",
-            content=processed,
-            metadata={"processed": True}
-        )
+        return Message(role="agent", content=processed, metadata={"processed": True})
 
 
 class FormatterAgent(Agent):
@@ -69,21 +60,13 @@ class FormatterAgent(Agent):
 
         formatted = f"✓ Result: {text}"
 
-        return Message(
-            role="agent",
-            content=formatted,
-            metadata={"formatted": True}
-        )
+        return Message(role="agent", content=formatted, metadata={"formatted": True})
 
 
 async def main():
     """Run the example."""
     # Create pipeline: validate → process → format
-    pipeline = SequentialPattern([
-        ValidatorAgent(),
-        ProcessorAgent(),
-        FormatterAgent()
-    ])
+    pipeline = SequentialPattern([ValidatorAgent(), ProcessorAgent(), FormatterAgent()])
 
     # Test valid input
     print("Test 1: Valid input")

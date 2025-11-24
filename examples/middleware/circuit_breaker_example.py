@@ -32,12 +32,12 @@ TRADE-OFFS:
 
 import asyncio
 import time
+
 from agenkit.interfaces import Agent, Message
 from agenkit.middleware import (
     CircuitBreakerConfig,
     CircuitBreakerDecorator,
     CircuitBreakerError,
-    CircuitState,
     RetryConfig,
     RetryDecorator,
 )
@@ -73,8 +73,8 @@ class UnstableExternalAPI(Agent):
 
         return Message(
             role="agent",
-            content=f"Weather data: 72°F, Sunny",
-            metadata={"call_count": self.call_count}
+            content="Weather data: 72°F, Sunny",
+            metadata={"call_count": self.call_count},
         )
 
     def recover(self):
@@ -94,11 +94,11 @@ async def example_basic_circuit_breaker():
     protected_api = CircuitBreakerDecorator(
         api,
         CircuitBreakerConfig(
-            failure_threshold=3,    # Open after 3 failures
-            recovery_timeout=2.0,   # Try recovery after 2 seconds
-            success_threshold=2,    # Need 2 successes to fully recover
-            timeout=1.0             # 1 second request timeout
-        )
+            failure_threshold=3,  # Open after 3 failures
+            recovery_timeout=2.0,  # Try recovery after 2 seconds
+            success_threshold=2,  # Need 2 successes to fully recover
+            timeout=1.0,  # 1 second request timeout
+        ),
     )
 
     message = Message(role="user", content="Get weather for San Francisco")
@@ -108,9 +108,9 @@ async def example_basic_circuit_breaker():
     for i in range(3):
         try:
             response = await protected_api.process(message)
-            print(f"✅ Call {i+1}: {response.content}")
+            print(f"✅ Call {i + 1}: {response.content}")
         except Exception as e:
-            print(f"❌ Call {i+1}: {e}")
+            print(f"❌ Call {i + 1}: {e}")
 
     # Now the service goes down
     print("\n💥 Service goes down!")
@@ -119,11 +119,11 @@ async def example_basic_circuit_breaker():
     for i in range(5):
         try:
             response = await protected_api.process(message)
-            print(f"✅ Call {i+4}: {response.content}")
+            print(f"✅ Call {i + 4}: {response.content}")
         except CircuitBreakerError as e:
-            print(f"⚡ Call {i+4}: Circuit breaker OPEN - {e}")
+            print(f"⚡ Call {i + 4}: Circuit breaker OPEN - {e}")
         except Exception as e:
-            print(f"❌ Call {i+4}: Failed - {e}")
+            print(f"❌ Call {i + 4}: Failed - {e}")
 
     print(f"\n📊 Circuit State: {protected_api.state.value.upper()}")
     print(f"   Total requests: {protected_api.metrics.total_requests}")
@@ -140,11 +140,8 @@ async def example_recovery_scenario():
     protected_api = CircuitBreakerDecorator(
         api,
         CircuitBreakerConfig(
-            failure_threshold=2,
-            recovery_timeout=1.0,
-            success_threshold=2,
-            timeout=0.5
-        )
+            failure_threshold=2, recovery_timeout=1.0, success_threshold=2, timeout=0.5
+        ),
     )
 
     message = Message(role="user", content="Get data")
@@ -157,7 +154,7 @@ async def example_recovery_scenario():
         try:
             await protected_api.process(message)
         except Exception as e:
-            print(f"❌ Failure {i+1}: {type(e).__name__}")
+            print(f"❌ Failure {i + 1}: {type(e).__name__}")
 
     print(f"⚡ Circuit State: {protected_api.state.value.upper()}")
 
@@ -220,32 +217,22 @@ async def example_circuit_breaker_with_retry():
                 raise Exception("DatabaseError: Connection pool exhausted")
 
             return Message(
-                role="agent",
-                content="Query result: [data]",
-                metadata={"call": self.call_count}
+                role="agent", content="Query result: [data]", metadata={"call": self.call_count}
             )
 
     db = FlakeyDatabase()
 
     # Layer 1: Retry for transient failures (inner)
     retry_db = RetryDecorator(
-        db,
-        RetryConfig(
-            max_attempts=2,
-            initial_backoff=0.1,
-            backoff_multiplier=2.0
-        )
+        db, RetryConfig(max_attempts=2, initial_backoff=0.1, backoff_multiplier=2.0)
     )
 
     # Layer 2: Circuit breaker for persistent failures (outer)
     protected_db = CircuitBreakerDecorator(
         retry_db,
         CircuitBreakerConfig(
-            failure_threshold=3,
-            recovery_timeout=1.5,
-            success_threshold=1,
-            timeout=2.0
-        )
+            failure_threshold=3, recovery_timeout=1.5, success_threshold=1, timeout=2.0
+        ),
     )
 
     message = Message(role="user", content="SELECT * FROM users")
@@ -255,17 +242,17 @@ async def example_circuit_breaker_with_retry():
     for i in range(8):
         try:
             response = await protected_db.process(message)
-            print(f"✅ Call {i+1}: Success - {response.content}")
-        except CircuitBreakerError as e:
-            print(f"⚡ Call {i+1}: Circuit OPEN - failing fast")
+            print(f"✅ Call {i + 1}: Success - {response.content}")
+        except CircuitBreakerError:
+            print(f"⚡ Call {i + 1}: Circuit OPEN - failing fast")
         except Exception as e:
-            print(f"❌ Call {i+1}: Failed after retries - {type(e).__name__}")
+            print(f"❌ Call {i + 1}: Failed after retries - {type(e).__name__}")
 
         # Small delay between calls
         await asyncio.sleep(0.1)
 
     print(f"\n📊 Final State: {protected_db.state.value.upper()}")
-    print(f"   This pattern prevents: retry storms on failing services!")
+    print("   This pattern prevents: retry storms on failing services!")
 
 
 async def example_metrics_tracking():
@@ -300,11 +287,8 @@ async def example_metrics_tracking():
     protected_service = CircuitBreakerDecorator(
         service,
         CircuitBreakerConfig(
-            failure_threshold=3,
-            recovery_timeout=1.0,
-            success_threshold=2,
-            timeout=1.0
-        )
+            failure_threshold=3, recovery_timeout=1.0, success_threshold=2, timeout=1.0
+        ),
     )
 
     message = Message(role="user", content="Process job")
@@ -314,30 +298,36 @@ async def example_metrics_tracking():
     for i in range(10):
         try:
             await protected_service.process(message)
-            print(f"✅ Request {i+1}: Success")
+            print(f"✅ Request {i + 1}: Success")
         except CircuitBreakerError:
-            print(f"⚡ Request {i+1}: Rejected (circuit open)")
+            print(f"⚡ Request {i + 1}: Rejected (circuit open)")
         except Exception:
-            print(f"❌ Request {i+1}: Failed")
+            print(f"❌ Request {i + 1}: Failed")
 
         await asyncio.sleep(0.05)
 
     # Display comprehensive metrics
     metrics = protected_service.metrics
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print("📊 CIRCUIT BREAKER METRICS")
-    print("="*50)
+    print("=" * 50)
     print(f"Total Requests:       {metrics.total_requests}")
-    print(f"Successful:           {metrics.successful_requests} ({metrics.successful_requests/metrics.total_requests*100:.1f}%)")
-    print(f"Failed:               {metrics.failed_requests} ({metrics.failed_requests/metrics.total_requests*100:.1f}%)")
-    print(f"Rejected (Fast-Fail): {metrics.rejected_requests} ({metrics.rejected_requests/metrics.total_requests*100:.1f}%)")
+    print(
+        f"Successful:           {metrics.successful_requests} ({metrics.successful_requests / metrics.total_requests * 100:.1f}%)"
+    )
+    print(
+        f"Failed:               {metrics.failed_requests} ({metrics.failed_requests / metrics.total_requests * 100:.1f}%)"
+    )
+    print(
+        f"Rejected (Fast-Fail): {metrics.rejected_requests} ({metrics.rejected_requests / metrics.total_requests * 100:.1f}%)"
+    )
     print(f"\nCurrent State:        {metrics.current_state.value.upper()}")
 
     if metrics.last_state_change:
         elapsed = time.time() - metrics.last_state_change
         print(f"Time in State:        {elapsed:.2f}s")
 
-    print(f"\nState Transition History:")
+    print("\nState Transition History:")
     for transition, count in metrics.state_changes.items():
         print(f"  {transition}: {count}")
 
@@ -350,9 +340,9 @@ async def example_metrics_tracking():
 
 async def main():
     """Run all examples."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("CIRCUIT BREAKER MIDDLEWARE EXAMPLES")
-    print("="*60)
+    print("=" * 60)
     print("\nThese examples show how circuit breakers prevent cascading")
     print("failures and protect your system from unhealthy dependencies.\n")
 
@@ -361,9 +351,9 @@ async def main():
     await example_circuit_breaker_with_retry()
     await example_metrics_tracking()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("KEY TAKEAWAYS")
-    print("="*60)
+    print("=" * 60)
     print("""
 1. Circuit breakers protect your system by failing fast when services are down
 2. Three states: CLOSED (normal), OPEN (failing), HALF_OPEN (testing recovery)

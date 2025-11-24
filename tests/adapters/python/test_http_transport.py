@@ -1,6 +1,7 @@
 """Tests for HTTP transport with HTTP/2 support."""
 
 import asyncio
+
 import pytest
 
 from agenkit.adapters.python.http_server import HTTPAgentServer
@@ -184,11 +185,7 @@ async def test_http_metadata_preservation(http_server):
     """Test that metadata is preserved in HTTP requests."""
     client = RemoteAgent("echo", "http://localhost:18080")
 
-    message = Message(
-        role="user",
-        content="test",
-        metadata={"key1": "value1", "key2": 42}
-    )
+    message = Message(role="user", content="test", metadata={"key1": "value1", "key2": 42})
     response = await client.process(message)
 
     # Verify response was received

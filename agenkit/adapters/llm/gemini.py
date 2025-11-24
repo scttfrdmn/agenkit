@@ -128,9 +128,7 @@ class GeminiLLM(LLM):
         if hasattr(response, "usage_metadata") and response.usage_metadata:
             metadata["usage"] = {
                 "prompt_tokens": getattr(response.usage_metadata, "prompt_token_count", 0),
-                "completion_tokens": getattr(
-                    response.usage_metadata, "candidates_token_count", 0
-                ),
+                "completion_tokens": getattr(response.usage_metadata, "candidates_token_count", 0),
                 "total_tokens": getattr(response.usage_metadata, "total_token_count", 0),
             }
 

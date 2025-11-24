@@ -1,6 +1,8 @@
 """Tests for metrics middleware."""
 
 import asyncio
+import contextlib
+
 import pytest
 
 from agenkit.interfaces import Agent, Message
@@ -126,10 +128,8 @@ async def test_metrics_mixed_success_error():
     msg = Message(role="user", content="test")
 
     for _ in range(4):
-        try:
+        with contextlib.suppress(Exception):
             await metrics_agent.process(msg)
-        except Exception:
-            pass
 
     metrics = metrics_agent.get_metrics()
     assert metrics.total_requests == 4

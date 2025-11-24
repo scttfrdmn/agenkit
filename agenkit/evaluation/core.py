@@ -6,8 +6,8 @@ Provides base interfaces and orchestration for agent evaluation.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Optional, Dict, List
 from datetime import datetime, timezone
+from typing import Any
 
 from ..interfaces import Agent, Message
 
@@ -36,7 +36,7 @@ class Metric(ABC):
         agent: Agent,
         input_message: Message,
         output_message: Message,
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None,
     ) -> float:
         """
         Measure metric for a single agent interaction.
@@ -53,7 +53,7 @@ class Metric(ABC):
         pass
 
     @abstractmethod
-    def aggregate(self, measurements: List[float]) -> Dict[str, float]:
+    def aggregate(self, measurements: list[float]) -> dict[str, float]:
         """
         Aggregate multiple measurements.
 
@@ -80,21 +80,21 @@ class EvaluationResult:
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Metrics
-    metrics: Dict[str, float] = field(default_factory=dict)
-    aggregated_metrics: Dict[str, Dict[str, float]] = field(default_factory=dict)
+    metrics: dict[str, float] = field(default_factory=dict)
+    aggregated_metrics: dict[str, dict[str, float]] = field(default_factory=dict)
 
     # Context information
-    context_length: Optional[int] = None
-    compressed_length: Optional[int] = None
-    compression_ratio: Optional[float] = None
+    context_length: int | None = None
+    compressed_length: int | None = None
+    compression_ratio: float | None = None
 
     # Quality scores
-    accuracy: Optional[float] = None
-    quality_score: Optional[float] = None
+    accuracy: float | None = None
+    quality_score: float | None = None
 
     # Performance
-    avg_latency_ms: Optional[float] = None
-    p95_latency_ms: Optional[float] = None
+    avg_latency_ms: float | None = None
+    p95_latency_ms: float | None = None
 
     # Test details
     total_tests: int = 0
@@ -102,7 +102,7 @@ class EvaluationResult:
     failed_tests: int = 0
 
     # Additional metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def success_rate(self) -> float:
@@ -130,7 +130,7 @@ class EvaluationResult:
             "passed_tests": self.passed_tests,
             "failed_tests": self.failed_tests,
             "success_rate": self.success_rate,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 
@@ -148,10 +148,7 @@ class Evaluator:
     """
 
     def __init__(
-        self,
-        agent: Agent,
-        metrics: Optional[List[Metric]] = None,
-        session_id: Optional[str] = None
+        self, agent: Agent, metrics: list[Metric] | None = None, session_id: str | None = None
     ):
         """
         Initialize evaluator.
@@ -166,9 +163,7 @@ class Evaluator:
         self.session_id = session_id or f"eval-{datetime.now(timezone.utc).timestamp()}"
 
     async def evaluate(
-        self,
-        test_cases: List[Dict[str, Any]],
-        evaluation_id: Optional[str] = None
+        self, test_cases: list[dict[str, Any]], evaluation_id: str | None = None
     ) -> EvaluationResult:
         """
         Evaluate agent on test cases.
@@ -186,40 +181,35 @@ class Evaluator:
         result = EvaluationResult(
             evaluation_id=eval_id,
             agent_name=getattr(self.agent, "name", "unknown"),
-            total_tests=len(test_cases)
+            total_tests=len(test_cases),
         )
 
         # Run tests and collect metrics
         for test_case in test_cases:
             # Handle both dict and TestCase objects
-            if hasattr(test_case, 'input'):
+            if hasattr(test_case, "input"):
                 # TestCase object
                 input_content = test_case.input
-                expected = test_case.expected if hasattr(test_case, 'expected') else None
+                expected = test_case.expected if hasattr(test_case, "expected") else None
             else:
                 # Dictionary
                 input_content = test_case["input"]
                 expected = test_case.get("expected")
 
             input_msg = Message(
-                role="user",
-                content=input_content,
-                metadata={"session_id": self.session_id}
+                role="user", content=input_content, metadata={"session_id": self.session_id}
             )
 
             try:
                 # Run agent
                 import time
+
                 start = time.perf_counter()
                 output_msg = await self.agent.process(input_msg)
                 latency = (time.perf_counter() - start) * 1000  # ms
 
                 # Collect metrics
-                context = {
-                    "expected": expected,
-                    "test_case": test_case,
-                    "latency_ms": latency
-                }
+                context = {"expected": expected, "test_case": test_case, "latency_ms": latency}
 
                 test_passed = await self._check_test(output_msg, test_case)
                 if test_passed:
@@ -234,12 +224,7 @@ class Evaluator:
 
                 # Run metrics
                 for metric in self.metrics:
-                    metric_value = await metric.measure(
-                        self.agent,
-                        input_msg,
-                        output_msg,
-                        context
-                    )
+                    metric_value = await metric.measure(self.agent, input_msg, output_msg, context)
                     if metric.name not in result.metrics:
                         result.metrics[metric.name] = []
                     result.metrics[metric.name].append(metric_value)
@@ -265,11 +250,7 @@ class Evaluator:
 
         return result
 
-    async def _check_test(
-        self,
-        output: Message,
-        test_case: Any
-    ) -> bool:
+    async def _check_test(self, output: Message, test_case: Any) -> bool:
         """
         Check if output passes test case.
 
@@ -281,7 +262,7 @@ class Evaluator:
             True if test passed
         """
         # Handle both dict and TestCase objects
-        if hasattr(test_case, 'expected'):
+        if hasattr(test_case, "expected"):
             expected = test_case.expected
         elif isinstance(test_case, dict) and "expected" in test_case:
             expected = test_case["expected"]
@@ -299,10 +280,8 @@ class Evaluator:
         return True
 
     async def evaluate_single(
-        self,
-        input_message: Message,
-        expected_output: Optional[Any] = None
-    ) -> Dict[str, float]:
+        self, input_message: Message, expected_output: Any | None = None
+    ) -> dict[str, float]:
         """
         Evaluate single interaction.
 
@@ -319,12 +298,7 @@ class Evaluator:
         context = {"expected": expected_output}
 
         for metric in self.metrics:
-            value = await metric.measure(
-                self.agent,
-                input_message,
-                output_message,
-                context
-            )
+            value = await metric.measure(self.agent, input_message, output_message, context)
             metrics_results[metric.name] = value
 
         return metrics_results

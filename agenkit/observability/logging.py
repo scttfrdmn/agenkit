@@ -5,8 +5,8 @@ Provides structured logging with automatic trace ID injection for
 correlating logs with distributed traces.
 """
 
-import logging
 import json
+import logging
 from typing import Any
 
 from opentelemetry import trace
@@ -28,8 +28,8 @@ class TraceContextFilter(logging.Filter):
 
         if span_context.is_valid:
             # Add trace context as attributes
-            record.trace_id = format(span_context.trace_id, '032x')
-            record.span_id = format(span_context.span_id, '016x')
+            record.trace_id = format(span_context.trace_id, "032x")
+            record.span_id = format(span_context.span_id, "016x")
             record.trace_flags = span_context.trace_flags
         else:
             # No active trace
@@ -60,7 +60,7 @@ class StructuredFormatter(logging.Formatter):
         }
 
         # Add trace context if available
-        if hasattr(record, 'trace_id') and record.trace_id:
+        if hasattr(record, "trace_id") and record.trace_id:
             log_data["trace_id"] = record.trace_id
             log_data["span_id"] = record.span_id
 
@@ -71,11 +71,30 @@ class StructuredFormatter(logging.Formatter):
         # Add extra fields
         for key, value in record.__dict__.items():
             if key not in [
-                'name', 'msg', 'args', 'created', 'filename', 'funcName',
-                'levelname', 'levelno', 'lineno', 'module', 'msecs', 'message',
-                'pathname', 'process', 'processName', 'relativeCreated', 'thread',
-                'threadName', 'exc_info', 'exc_text', 'stack_info', 'trace_id',
-                'span_id', 'trace_flags',
+                "name",
+                "msg",
+                "args",
+                "created",
+                "filename",
+                "funcName",
+                "levelname",
+                "levelno",
+                "lineno",
+                "module",
+                "msecs",
+                "message",
+                "pathname",
+                "process",
+                "processName",
+                "relativeCreated",
+                "thread",
+                "threadName",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+                "trace_id",
+                "span_id",
+                "trace_flags",
             ]:
                 log_data[key] = value
 
@@ -111,9 +130,7 @@ def configure_logging(
     if structured:
         formatter = StructuredFormatter()
     else:
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     handler.setFormatter(formatter)
 
     # Add trace context filter if requested
@@ -137,9 +154,7 @@ def get_logger_with_trace(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
 
     # Ensure trace context filter is added
-    has_trace_filter = any(
-        isinstance(f, TraceContextFilter) for f in logger.filters
-    )
+    has_trace_filter = any(isinstance(f, TraceContextFilter) for f in logger.filters)
     if not has_trace_filter:
         logger.addFilter(TraceContextFilter())
 

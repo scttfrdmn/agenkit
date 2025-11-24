@@ -9,10 +9,10 @@ Detects:
 """
 
 import time
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
 from collections import defaultdict, deque
+from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 from agenkit import Agent, Message
 
@@ -65,11 +65,11 @@ class AnomalyDetector:
     failure_rate_threshold: float = 0.5  # 50%
 
     # Tracking data structures
-    request_timestamps: Dict[str, deque] = field(
+    request_timestamps: dict[str, deque] = field(
         default_factory=lambda: defaultdict(lambda: deque(maxlen=1000))
     )
-    failure_counts: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
-    success_counts: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    failure_counts: dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    success_counts: dict[str, int] = field(default_factory=lambda: defaultdict(int))
 
     # Statistics (rolling averages)
     input_sizes: deque = field(default_factory=lambda: deque(maxlen=100))
@@ -77,13 +77,11 @@ class AnomalyDetector:
     processing_times: deque = field(default_factory=lambda: deque(maxlen=100))
 
     # Content tracking (for repetition detection)
-    recent_content: Dict[str, deque] = field(
+    recent_content: dict[str, deque] = field(
         default_factory=lambda: defaultdict(lambda: deque(maxlen=10))
     )
 
-    def detect_rate_anomaly(
-        self, user_id: str
-    ) -> Optional[tuple[SecurityEvent, Dict[str, Any]]]:
+    def detect_rate_anomaly(self, user_id: str) -> tuple[SecurityEvent, dict[str, Any]] | None:
         """
         Detect rate-based anomalies.
 
@@ -99,9 +97,7 @@ class AnomalyDetector:
         self.request_timestamps[user_id].append(now)
 
         # Clean old timestamps (> 60 seconds)
-        while self.request_timestamps[user_id] and (
-            now - self.request_timestamps[user_id][0] > 60
-        ):
+        while self.request_timestamps[user_id] and (now - self.request_timestamps[user_id][0] > 60):
             self.request_timestamps[user_id].popleft()
 
         # Check request rate (per minute)
@@ -114,9 +110,7 @@ class AnomalyDetector:
             }
 
         # Check burst rate (per second)
-        recent = sum(
-            1 for ts in self.request_timestamps[user_id] if now - ts < 1.0
-        )
+        recent = sum(1 for ts in self.request_timestamps[user_id] if now - ts < 1.0)
         if recent > self.max_burst_size:
             return SecurityEvent.BURST_DETECTED, {
                 "user_id": user_id,
@@ -128,7 +122,7 @@ class AnomalyDetector:
 
     def detect_failure_anomaly(
         self, user_id: str, is_failure: bool
-    ) -> Optional[tuple[SecurityEvent, Dict[str, Any]]]:
+    ) -> tuple[SecurityEvent, dict[str, Any]] | None:
         """
         Detect failure rate anomalies.
 
@@ -162,7 +156,7 @@ class AnomalyDetector:
 
     def detect_size_anomaly(
         self, input_size: int, output_size: int
-    ) -> Optional[tuple[SecurityEvent, Dict[str, Any]]]:
+    ) -> tuple[SecurityEvent, dict[str, Any]] | None:
         """
         Detect unusual input/output sizes.
 
@@ -216,7 +210,7 @@ class AnomalyDetector:
 
     def detect_content_anomaly(
         self, user_id: str, content: str
-    ) -> Optional[tuple[SecurityEvent, Dict[str, Any]]]:
+    ) -> tuple[SecurityEvent, dict[str, Any]] | None:
         """
         Detect content-based anomalies.
 
@@ -269,9 +263,9 @@ class AnomalyDetectionMiddleware(Agent):
     def __init__(
         self,
         agent: Agent,
-        detector: Optional[AnomalyDetector] = None,
+        detector: AnomalyDetector | None = None,
         user_id: str = "default",
-        on_anomaly: Optional[callable] = None,
+        on_anomaly: callable | None = None,
     ):
         """
         Initialize anomaly detection middleware.
@@ -297,9 +291,7 @@ class AnomalyDetectionMiddleware(Agent):
         """Return capabilities of the underlying agent."""
         return self._agent.capabilities
 
-    def _default_anomaly_handler(
-        self, event: SecurityEvent, details: Dict[str, Any]
-    ):
+    def _default_anomaly_handler(self, event: SecurityEvent, details: dict[str, Any]):
         """Default handler: log to console."""
         print(f"SECURITY ANOMALY DETECTED: {event.value}")
         print(f"Details: {details}")
@@ -315,9 +307,7 @@ class AnomalyDetectionMiddleware(Agent):
 
         # 2. Check content anomaly
         content_str = str(message.content) if message.content else ""
-        content_anomaly = self.detector.detect_content_anomaly(
-            self.user_id, content_str
-        )
+        content_anomaly = self.detector.detect_content_anomaly(self.user_id, content_str)
         if content_anomaly:
             self.on_anomaly(*content_anomaly)
 
@@ -326,14 +316,12 @@ class AnomalyDetectionMiddleware(Agent):
         response = None
         try:
             response = await self._agent.process(message)
-        except Exception as e:
+        except Exception:
             is_failure = True
             raise
         finally:
             # 4. Check failure anomaly
-            failure_anomaly = self.detector.detect_failure_anomaly(
-                self.user_id, is_failure
-            )
+            failure_anomaly = self.detector.detect_failure_anomaly(self.user_id, is_failure)
             if failure_anomaly:
                 self.on_anomaly(*failure_anomaly)
 
@@ -343,9 +331,7 @@ class AnomalyDetectionMiddleware(Agent):
                 input_size = len(content_str)
                 output_size = len(str(response.content) if response.content else "")
 
-                size_anomaly = self.detector.detect_size_anomaly(
-                    input_size, output_size
-                )
+                size_anomaly = self.detector.detect_size_anomaly(input_size, output_size)
                 if size_anomaly:
                     self.on_anomaly(*size_anomaly)
 
@@ -364,9 +350,9 @@ class AnomalyDetectionMiddleware(Agent):
 
 
 def anomaly_detection(
-    detector: Optional[AnomalyDetector] = None,
+    detector: AnomalyDetector | None = None,
     user_id: str = "default",
-    on_anomaly: Optional[callable] = None,
+    on_anomaly: callable | None = None,
 ):
     """
     Create anomaly detection middleware function.
@@ -387,6 +373,7 @@ def anomaly_detection(
             anomaly_detection(user_id="user_123", on_anomaly=my_anomaly_handler),
         ])
     """
+
     def middleware(agent: Agent) -> Agent:
         return AnomalyDetectionMiddleware(agent, detector, user_id, on_anomaly)
 

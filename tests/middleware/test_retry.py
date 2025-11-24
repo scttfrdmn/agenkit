@@ -1,6 +1,7 @@
 """Tests for retry middleware."""
 
 import asyncio
+
 import pytest
 
 from agenkit.interfaces import Agent, Message
@@ -34,7 +35,9 @@ class FailingAgent(Agent):
 @pytest.mark.asyncio
 async def test_retry_success():
     """Test successful retry after failures."""
-    agent = FailingAgent(fail_count=2, success_msg="success after retries", failure_msg="temporary failure")
+    agent = FailingAgent(
+        fail_count=2, success_msg="success after retries", failure_msg="temporary failure"
+    )
 
     retry = RetryDecorator(
         agent, RetryConfig(max_attempts=3, initial_backoff=0.01, backoff_multiplier=2.0)
@@ -50,7 +53,9 @@ async def test_retry_success():
 @pytest.mark.asyncio
 async def test_retry_max_attempts_exceeded():
     """Test failure when max attempts exceeded."""
-    agent = FailingAgent(fail_count=10, success_msg="should not succeed", failure_msg="persistent failure")
+    agent = FailingAgent(
+        fail_count=10, success_msg="should not succeed", failure_msg="persistent failure"
+    )
 
     retry = RetryDecorator(
         agent, RetryConfig(max_attempts=3, initial_backoff=0.01, backoff_multiplier=2.0)
@@ -68,7 +73,9 @@ async def test_retry_max_attempts_exceeded():
 @pytest.mark.asyncio
 async def test_retry_immediate_success():
     """Test immediate success without retries."""
-    agent = FailingAgent(fail_count=0, success_msg="immediate success", failure_msg="should not fail")
+    agent = FailingAgent(
+        fail_count=0, success_msg="immediate success", failure_msg="should not fail"
+    )
 
     retry = RetryDecorator(
         agent, RetryConfig(max_attempts=3, initial_backoff=0.01, backoff_multiplier=2.0)
@@ -88,9 +95,7 @@ async def test_retry_backoff_timing():
 
     retry = RetryDecorator(
         agent,
-        RetryConfig(
-            max_attempts=4, initial_backoff=0.1, max_backoff=1.0, backoff_multiplier=2.0
-        ),
+        RetryConfig(max_attempts=4, initial_backoff=0.1, max_backoff=1.0, backoff_multiplier=2.0),
     )
 
     msg = Message(role="user", content="test")
@@ -110,9 +115,7 @@ async def test_retry_max_backoff():
 
     retry = RetryDecorator(
         agent,
-        RetryConfig(
-            max_attempts=6, initial_backoff=0.1, max_backoff=0.2, backoff_multiplier=3.0
-        ),
+        RetryConfig(max_attempts=6, initial_backoff=0.1, max_backoff=0.2, backoff_multiplier=3.0),
     )
 
     msg = Message(role="user", content="test")
@@ -136,7 +139,7 @@ async def test_retry_should_retry_predicate():
     class OtherError(Exception):
         pass
 
-    agent = FailingAgent(fail_count=1, success_msg="success", failure_msg="")
+    FailingAgent(fail_count=1, success_msg="success", failure_msg="")
 
     # Only retry on CustomError
     def should_retry(error: Exception) -> bool:

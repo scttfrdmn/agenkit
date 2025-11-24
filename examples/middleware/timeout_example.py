@@ -32,6 +32,7 @@ TRADE-OFFS:
 
 import asyncio
 import random
+
 from agenkit.interfaces import Agent, Message
 from agenkit.middleware import TimeoutConfig, TimeoutDecorator, TimeoutError
 
@@ -57,7 +58,7 @@ class SlowLLMAgent(Agent):
         return Message(
             role="agent",
             content=f"Generated response for: {message.content}",
-            metadata={"processing_time": self.response_time}
+            metadata={"processing_time": self.response_time},
         )
 
 
@@ -87,7 +88,7 @@ class UnpredictableAgent(Agent):
         return Message(
             role="agent",
             content=f"Analysis complete for: {message.content}",
-            metadata={"response_time": response_time}
+            metadata={"response_time": response_time},
         )
 
 
@@ -100,10 +101,7 @@ async def example_basic_timeout():
     agent = SlowLLMAgent(response_time=2.0)
 
     # Wrap with timeout middleware (1 second limit)
-    timeout_agent = TimeoutDecorator(
-        agent,
-        TimeoutConfig(timeout=1.0)
-    )
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=1.0))
 
     message = Message(role="user", content="Explain quantum computing")
 
@@ -125,10 +123,7 @@ async def example_successful_with_timeout():
     agent = SlowLLMAgent(response_time=0.5)
 
     # Wrap with timeout middleware (2 second limit)
-    timeout_agent = TimeoutDecorator(
-        agent,
-        TimeoutConfig(timeout=2.0)
-    )
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=2.0))
 
     message = Message(role="user", content="Hello!")
 
@@ -149,10 +144,7 @@ async def example_multiple_requests_with_metrics():
     agent = UnpredictableAgent()
 
     # Set timeout at 2 seconds
-    timeout_agent = TimeoutDecorator(
-        agent,
-        TimeoutConfig(timeout=2.0)
-    )
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=2.0))
 
     message = Message(role="user", content="Analyze this data")
 
@@ -160,10 +152,10 @@ async def example_multiple_requests_with_metrics():
     print("Sending 5 requests with unpredictable response times...")
     for i in range(5):
         try:
-            response = await timeout_agent.process(message)
-            print(f"   ✅ Request {i+1}: Success")
+            await timeout_agent.process(message)
+            print(f"   ✅ Request {i + 1}: Success")
         except TimeoutError:
-            print(f"   ❌ Request {i+1}: Timeout")
+            print(f"   ❌ Request {i + 1}: Timeout")
 
     # Check metrics
     metrics = timeout_agent.metrics
@@ -171,7 +163,7 @@ async def example_multiple_requests_with_metrics():
     print(f"   Total requests: {metrics.total_requests}")
     print(f"   Successful: {metrics.successful_requests}")
     print(f"   Timed out: {metrics.timed_out_requests}")
-    print(f"   Success rate: {metrics.successful_requests/metrics.total_requests*100:.1f}%")
+    print(f"   Success rate: {metrics.successful_requests / metrics.total_requests * 100:.1f}%")
 
     if metrics.min_duration:
         print(f"   Min duration: {metrics.min_duration:.3f}s")
@@ -199,15 +191,12 @@ async def example_fallback_on_timeout():
             return Message(
                 role="agent",
                 content="[Cached response] I'm a general assistant. How can I help?",
-                metadata={"source": "cache"}
+                metadata={"source": "cache"},
             )
 
     # Primary agent (slow)
     primary = SlowLLMAgent(response_time=5.0)
-    primary_with_timeout = TimeoutDecorator(
-        primary,
-        TimeoutConfig(timeout=1.0)
-    )
+    primary_with_timeout = TimeoutDecorator(primary, TimeoutConfig(timeout=1.0))
 
     # Fallback agent (fast)
     fallback = CachedResponseAgent()
@@ -253,18 +242,14 @@ async def example_streaming_timeout():
             for i in range(self.num_chunks):
                 await asyncio.sleep(self.chunk_delay)
                 yield Message(
-                    role="agent",
-                    content=f"Chunk {i+1}/{self.num_chunks}: Processing..."
+                    role="agent", content=f"Chunk {i + 1}/{self.num_chunks}: Processing..."
                 )
 
     # Create streaming agent (5 chunks × 0.5s = 2.5s total)
     agent = StreamingAgent(chunk_delay=0.5, num_chunks=5)
 
     # Wrap with 2-second timeout
-    timeout_agent = TimeoutDecorator(
-        agent,
-        TimeoutConfig(timeout=2.0)
-    )
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=2.0))
 
     message = Message(role="user", content="Generate long response")
 
@@ -287,13 +272,13 @@ async def example_different_timeout_strategies():
     # Strategy 1: Strict timeout for interactive responses
     interactive_agent = TimeoutDecorator(
         agent,
-        TimeoutConfig(timeout=1.0)  # 1 second
+        TimeoutConfig(timeout=1.0),  # 1 second
     )
 
     # Strategy 2: Relaxed timeout for background processing
     background_agent = TimeoutDecorator(
         agent,
-        TimeoutConfig(timeout=5.0)  # 5 seconds
+        TimeoutConfig(timeout=5.0),  # 5 seconds
     )
 
     message = Message(role="user", content="Process this")

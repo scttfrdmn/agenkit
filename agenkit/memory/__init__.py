@@ -26,53 +26,49 @@ Example:
 """
 
 from .base import Memory
+from .endless_memory import EndlessClient, EndlessMemory
 from .in_memory import InMemoryMemory
-from .vector_memory import (
-    VectorMemory,
-    EmbeddingProvider,
-    VectorStore,
-    InMemoryVectorStore
-)
-from .endless_memory import EndlessMemory, EndlessClient
 
 # Import strategies
 from .strategies import (
+    ImportanceWeightingStrategy,
     MemoryStrategy,
     SlidingWindowStrategy,
-    ImportanceWeightingStrategy,
-    SummarizationStrategy
+    SummarizationStrategy,
 )
+from .vector_memory import EmbeddingProvider, InMemoryVectorStore, VectorMemory, VectorStore
 
 # Optional imports (require extra dependencies)
 try:
     from .redis_memory import RedisMemory
+
     __all__ = [
-        "Memory",
-        "InMemoryMemory",
-        "RedisMemory",
-        "VectorMemory",
-        "EndlessMemory",
-        "EndlessClient",
         "EmbeddingProvider",
-        "VectorStore",
-        "InMemoryVectorStore",
-        "MemoryStrategy",
-        "SlidingWindowStrategy",
+        "EndlessClient",
+        "EndlessMemory",
         "ImportanceWeightingStrategy",
+        "InMemoryMemory",
+        "InMemoryVectorStore",
+        "Memory",
+        "MemoryStrategy",
+        "RedisMemory",
+        "SlidingWindowStrategy",
         "SummarizationStrategy",
+        "VectorMemory",
+        "VectorStore",
     ]
 except ImportError:
     __all__ = [
-        "Memory",
-        "InMemoryMemory",
-        "VectorMemory",
-        "EndlessMemory",
-        "EndlessClient",
         "EmbeddingProvider",
-        "VectorStore",
+        "EndlessClient",
+        "EndlessMemory",
+        "ImportanceWeightingStrategy",
+        "InMemoryMemory",
         "InMemoryVectorStore",
+        "Memory",
         "MemoryStrategy",
         "SlidingWindowStrategy",
-        "ImportanceWeightingStrategy",
         "SummarizationStrategy",
+        "VectorMemory",
+        "VectorStore",
     ]

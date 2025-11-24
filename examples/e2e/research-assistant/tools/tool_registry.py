@@ -1,9 +1,9 @@
 """Tool registry for managing available tools."""
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Callable, Optional, Awaitable
 from datetime import datetime
-import inspect
+from typing import Any
 
 
 @dataclass
@@ -12,8 +12,8 @@ class ToolResult:
 
     success: bool
     output: Any
-    error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
     execution_time: float = 0.0
 
 
@@ -28,14 +28,14 @@ class Tool:
 
     name: str
     description: str
-    parameters: Dict[str, Any]  # JSON schema for parameters
+    parameters: dict[str, Any]  # JSON schema for parameters
     function: Callable[..., Awaitable[ToolResult]]
     cost: float = 0.0  # Cost per invocation (for budget tracking)
     category: str = "general"
     usage_count: int = 0
     total_execution_time: float = 0.0
 
-    def get_schema(self) -> Dict[str, Any]:
+    def get_schema(self) -> dict[str, Any]:
         """Get OpenAI function calling schema for this tool."""
         return {
             "name": self.name,
@@ -125,14 +125,14 @@ class ToolRegistry:
 
     def __init__(self):
         """Initialize tool registry."""
-        self.tools: Dict[str, Tool] = {}
-        self._execution_history: List[Dict[str, Any]] = []
+        self.tools: dict[str, Tool] = {}
+        self._execution_history: list[dict[str, Any]] = []
 
     def register(
         self,
         name: str,
         description: str,
-        parameters: Dict[str, Any],
+        parameters: dict[str, Any],
         function: Callable[..., Awaitable[ToolResult]],
         cost: float = 0.0,
         category: str = "general",
@@ -182,7 +182,7 @@ class ToolRegistry:
         self.tools[tool.name] = tool
         return tool
 
-    def get(self, name: str) -> Optional[Tool]:
+    def get(self, name: str) -> Tool | None:
         """
         Get a tool by name.
 
@@ -194,7 +194,7 @@ class ToolRegistry:
         """
         return self.tools.get(name)
 
-    def list_tools(self, category: Optional[str] = None) -> List[Tool]:
+    def list_tools(self, category: str | None = None) -> list[Tool]:
         """
         List all available tools.
 
@@ -211,7 +211,7 @@ class ToolRegistry:
 
         return sorted(tools, key=lambda t: t.name)
 
-    def get_schemas(self, category: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_schemas(self, category: str | None = None) -> list[dict[str, Any]]:
         """
         Get OpenAI function calling schemas for all tools.
 
@@ -259,7 +259,7 @@ class ToolRegistry:
 
         return result
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """
         Get usage statistics for all tools.
 
@@ -267,9 +267,7 @@ class ToolRegistry:
             Dict with statistics
         """
         total_executions = sum(t.usage_count for t in self.tools.values())
-        total_cost = sum(
-            t.usage_count * t.cost for t in self.tools.values()
-        )
+        total_cost = sum(t.usage_count * t.cost for t in self.tools.values())
         total_time = sum(t.total_execution_time for t in self.tools.values())
 
         by_tool = {
@@ -277,9 +275,7 @@ class ToolRegistry:
                 "usage_count": tool.usage_count,
                 "total_time": tool.total_execution_time,
                 "avg_time": (
-                    tool.total_execution_time / tool.usage_count
-                    if tool.usage_count > 0
-                    else 0.0
+                    tool.total_execution_time / tool.usage_count if tool.usage_count > 0 else 0.0
                 ),
                 "total_cost": tool.usage_count * tool.cost,
             }
@@ -294,9 +290,7 @@ class ToolRegistry:
             "by_tool": by_tool,
         }
 
-    def get_execution_history(
-        self, limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+    def get_execution_history(self, limit: int | None = None) -> list[dict[str, Any]]:
         """
         Get execution history.
 

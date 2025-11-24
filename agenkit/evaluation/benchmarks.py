@@ -4,12 +4,9 @@ Benchmark suites for agent evaluation.
 Provides standard benchmarks and extreme-scale tests (1M-25M tokens).
 """
 
-from typing import Dict, Any, List, Optional, Callable
-from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
-import random
-
-from ..interfaces import Message
+from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -22,8 +19,8 @@ class TestCase:
 
     input: str
     expected: Any  # String, callable, or validation function
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    tags: List[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    tags: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Convert to dictionary."""
@@ -31,7 +28,7 @@ class TestCase:
             "input": self.input,
             "expected": self.expected if not callable(self.expected) else "<function>",
             "metadata": self.metadata,
-            "tags": self.tags
+            "tags": self.tags,
         }
 
 
@@ -55,7 +52,7 @@ class Benchmark(ABC):
         pass
 
     @abstractmethod
-    async def generate_test_cases(self) -> List[TestCase]:
+    async def generate_test_cases(self) -> list[TestCase]:
         """
         Generate test cases for this benchmark.
 
@@ -80,34 +77,28 @@ class SimpleQABenchmark(Benchmark):
     def description(self) -> str:
         return "Basic question-answering tasks"
 
-    async def generate_test_cases(self) -> List[TestCase]:
+    async def generate_test_cases(self) -> list[TestCase]:
         """Generate simple Q&A test cases."""
         return [
+            TestCase(input="What is 2+2?", expected="4", tags=["math", "easy"]),
             TestCase(
-                input="What is 2+2?",
-                expected="4",
-                tags=["math", "easy"]
-            ),
-            TestCase(
-                input="What is the capital of France?",
-                expected="Paris",
-                tags=["knowledge", "easy"]
+                input="What is the capital of France?", expected="Paris", tags=["knowledge", "easy"]
             ),
             TestCase(
                 input="What is the largest planet in our solar system?",
                 expected="Jupiter",
-                tags=["knowledge", "easy"]
+                tags=["knowledge", "easy"],
             ),
             TestCase(
                 input="If a train leaves at 2pm and travels for 3 hours, when does it arrive?",
                 expected="5",  # "5pm" or "5:00pm" both match
-                tags=["reasoning", "easy"]
+                tags=["reasoning", "easy"],
             ),
             TestCase(
                 input="What comes next in the sequence: 2, 4, 6, 8, ?",
                 expected="10",
-                tags=["reasoning", "easy"]
-            )
+                tags=["reasoning", "easy"],
+            ),
         ]
 
 
@@ -120,10 +111,7 @@ class NeedleInHaystackBenchmark(Benchmark):
     """
 
     def __init__(
-        self,
-        context_length: int = 10_000,
-        needle_count: int = 5,
-        haystack_multiplier: int = 10
+        self, context_length: int = 10_000, needle_count: int = 5, haystack_multiplier: int = 10
     ):
         """
         Initialize needle-in-haystack benchmark.
@@ -145,7 +133,7 @@ class NeedleInHaystackBenchmark(Benchmark):
     def description(self) -> str:
         return f"Retrieve {self.needle_count} facts from {self.context_length} token context"
 
-    async def generate_test_cases(self) -> List[TestCase]:
+    async def generate_test_cases(self) -> list[TestCase]:
         """Generate needle-in-haystack test cases."""
         test_cases = []
 
@@ -162,17 +150,19 @@ class NeedleInHaystackBenchmark(Benchmark):
         context = self._embed_needles(haystack, needles)
 
         # Create test cases asking for each needle
-        for i, needle in enumerate(needles):
-            test_cases.append(TestCase(
-                input=f"Context: {context}\n\nQuestion: What is the secret code for vault {i}?",
-                expected=f"ALPHA-{i:04d}-OMEGA",
-                metadata={
-                    "context_length": len(context.split()) // 4,  # Rough token estimate
-                    "needle_position": i,
-                    "total_needles": self.needle_count
-                },
-                tags=["retrieval", "context", f"length_{self.context_length}"]
-            ))
+        for i, _needle in enumerate(needles):
+            test_cases.append(
+                TestCase(
+                    input=f"Context: {context}\n\nQuestion: What is the secret code for vault {i}?",
+                    expected=f"ALPHA-{i:04d}-OMEGA",
+                    metadata={
+                        "context_length": len(context.split()) // 4,  # Rough token estimate
+                        "needle_position": i,
+                        "total_needles": self.needle_count,
+                    },
+                    tags=["retrieval", "context", f"length_{self.context_length}"],
+                )
+            )
 
         return test_cases
 
@@ -199,7 +189,7 @@ class NeedleInHaystackBenchmark(Benchmark):
 
         return haystack
 
-    def _embed_needles(self, haystack: str, needles: List[str]) -> str:
+    def _embed_needles(self, haystack: str, needles: list[str]) -> str:
         """Embed needles at regular intervals in haystack."""
         words = haystack.split()
         interval = len(words) // (len(needles) + 1)
@@ -225,11 +215,7 @@ class ExtremeScaleBenchmark(Benchmark):
     operate at unprecedented context lengths.
     """
 
-    def __init__(
-        self,
-        test_lengths: Optional[List[int]] = None,
-        needles_per_length: int = 10
-    ):
+    def __init__(self, test_lengths: list[int] | None = None, needles_per_length: int = 10):
         """
         Initialize extreme-scale benchmark.
 
@@ -238,9 +224,9 @@ class ExtremeScaleBenchmark(Benchmark):
             needles_per_length: Number of needles per context length
         """
         self.test_lengths = test_lengths or [
-            1_000_000,    # 1M tokens
-            10_000_000,   # 10M tokens
-            25_000_000    # 25M tokens (endless scale)
+            1_000_000,  # 1M tokens
+            10_000_000,  # 10M tokens
+            25_000_000,  # 25M tokens (endless scale)
         ]
         self.needles_per_length = needles_per_length
 
@@ -253,15 +239,14 @@ class ExtremeScaleBenchmark(Benchmark):
         max_length = max(self.test_lengths) // 1_000_000
         return f"Test retrieval and quality at 1M-{max_length}M tokens"
 
-    async def generate_test_cases(self) -> List[TestCase]:
+    async def generate_test_cases(self) -> list[TestCase]:
         """Generate extreme-scale test cases."""
         test_cases = []
 
         for length in self.test_lengths:
             # Create needle-in-haystack tests at this scale
             benchmark = NeedleInHaystackBenchmark(
-                context_length=length,
-                needle_count=self.needles_per_length
+                context_length=length, needle_count=self.needles_per_length
             )
 
             cases = await benchmark.generate_test_cases()
@@ -285,11 +270,7 @@ class InformationRetentionBenchmark(Benchmark):
     from earlier in the conversation, even after compression.
     """
 
-    def __init__(
-        self,
-        conversation_length: int = 100,
-        recall_points: Optional[List[int]] = None
-    ):
+    def __init__(self, conversation_length: int = 100, recall_points: list[int] | None = None):
         """
         Initialize information retention benchmark.
 
@@ -298,9 +279,7 @@ class InformationRetentionBenchmark(Benchmark):
             recall_points: Turns at which to test recall (defaults to checkpoints)
         """
         self.conversation_length = conversation_length
-        self.recall_points = recall_points or [
-            10, 25, 50, 75, 100
-        ]
+        self.recall_points = recall_points or [10, 25, 50, 75, 100]
 
     @property
     def name(self) -> str:
@@ -310,7 +289,7 @@ class InformationRetentionBenchmark(Benchmark):
     def description(self) -> str:
         return f"Test recall of facts across {self.conversation_length} turns"
 
-    async def generate_test_cases(self) -> List[TestCase]:
+    async def generate_test_cases(self) -> list[TestCase]:
         """Generate information retention test cases."""
         test_cases = []
 
@@ -320,7 +299,7 @@ class InformationRetentionBenchmark(Benchmark):
             ("birth_city", "Paris", "I was born in Paris."),
             ("occupation", "engineer", "I work as an engineer."),
             ("pet_name", "Max", "My dog's name is Max."),
-            ("hobby", "painting", "I enjoy painting in my free time.")
+            ("hobby", "painting", "I enjoy painting in my free time."),
         ]
 
         # Create conversation with embedded facts
@@ -329,31 +308,32 @@ class InformationRetentionBenchmark(Benchmark):
             if turn > 0 and turn % 20 == 0 and len(facts) > 0:
                 fact_key, fact_value, fact_statement = facts.pop(0)
 
-                test_cases.append(TestCase(
-                    input=fact_statement,
-                    expected="I'll remember that",  # Acknowledgment
-                    metadata={
-                        "turn": turn,
-                        "type": "fact_plant",
-                        "fact_key": fact_key,
-                        "fact_value": fact_value
-                    },
-                    tags=["retention", "plant"]
-                ))
+                test_cases.append(
+                    TestCase(
+                        input=fact_statement,
+                        expected="I'll remember that",  # Acknowledgment
+                        metadata={
+                            "turn": turn,
+                            "type": "fact_plant",
+                            "fact_key": fact_key,
+                            "fact_value": fact_value,
+                        },
+                        tags=["retention", "plant"],
+                    )
+                )
 
             # Test recall at checkpoints
             if turn in self.recall_points:
                 # Ask about a previously planted fact
                 # For now, just add filler
-                test_cases.append(TestCase(
-                    input="What's the weather like?",
-                    expected=lambda msg: len(str(msg.content)) > 0,  # Any response
-                    metadata={
-                        "turn": turn,
-                        "type": "filler"
-                    },
-                    tags=["retention", "filler"]
-                ))
+                test_cases.append(
+                    TestCase(
+                        input="What's the weather like?",
+                        expected=lambda msg: len(str(msg.content)) > 0,  # Any response
+                        metadata={"turn": turn, "type": "filler"},
+                        tags=["retention", "filler"],
+                    )
+                )
 
         # Final recall tests
         # Ask about all planted facts
@@ -362,20 +342,22 @@ class InformationRetentionBenchmark(Benchmark):
             ("birth_city", "Paris", "Where did I tell you I was born?"),
             ("occupation", "engineer", "What is my occupation?"),
             ("pet_name", "Max", "What is my dog's name?"),
-            ("hobby", "painting", "What hobby did I mention?")
+            ("hobby", "painting", "What hobby did I mention?"),
         ]
 
         for fact_key, expected_value, question in fact_questions:
-            test_cases.append(TestCase(
-                input=question,
-                expected=expected_value,
-                metadata={
-                    "turn": self.conversation_length,
-                    "type": "recall_test",
-                    "fact_key": fact_key
-                },
-                tags=["retention", "recall"]
-            ))
+            test_cases.append(
+                TestCase(
+                    input=question,
+                    expected=expected_value,
+                    metadata={
+                        "turn": self.conversation_length,
+                        "type": "recall_test",
+                        "fact_key": fact_key,
+                    },
+                    tags=["retention", "recall"],
+                )
+            )
 
         return test_cases
 
@@ -387,11 +369,7 @@ class BenchmarkSuite:
     Provides standard and extreme-scale benchmark suites.
     """
 
-    def __init__(
-        self,
-        benchmarks: Optional[List[Benchmark]] = None,
-        name: str = "custom"
-    ):
+    def __init__(self, benchmarks: list[Benchmark] | None = None, name: str = "custom"):
         """
         Initialize benchmark suite.
 
@@ -413,9 +391,9 @@ class BenchmarkSuite:
             benchmarks=[
                 SimpleQABenchmark(),
                 NeedleInHaystackBenchmark(context_length=10_000),
-                InformationRetentionBenchmark(conversation_length=50)
+                InformationRetentionBenchmark(conversation_length=50),
             ],
-            name="standard"
+            name="standard",
         )
 
     @classmethod
@@ -428,12 +406,11 @@ class BenchmarkSuite:
         return cls(
             benchmarks=[
                 ExtremeScaleBenchmark(
-                    test_lengths=[1_000_000, 10_000_000, 25_000_000],
-                    needles_per_length=10
+                    test_lengths=[1_000_000, 10_000_000, 25_000_000], needles_per_length=10
                 ),
-                InformationRetentionBenchmark(conversation_length=1000)
+                InformationRetentionBenchmark(conversation_length=1000),
             ],
-            name="extreme_scale"
+            name="extreme_scale",
         )
 
     @classmethod
@@ -446,12 +423,12 @@ class BenchmarkSuite:
         return cls(
             benchmarks=[
                 SimpleQABenchmark(),
-                NeedleInHaystackBenchmark(context_length=1_000, needle_count=3)
+                NeedleInHaystackBenchmark(context_length=1_000, needle_count=3),
             ],
-            name="quick"
+            name="quick",
         )
 
-    async def generate_all_test_cases(self) -> List[TestCase]:
+    async def generate_all_test_cases(self) -> list[TestCase]:
         """
         Generate all test cases from all benchmarks.
 
@@ -470,7 +447,7 @@ class BenchmarkSuite:
 
         return all_cases
 
-    def get_benchmark(self, name: str) -> Optional[Benchmark]:
+    def get_benchmark(self, name: str) -> Benchmark | None:
         """Get benchmark by name."""
         for benchmark in self.benchmarks:
             if benchmark.name == name:
@@ -483,20 +460,11 @@ class BenchmarkSuite:
 
     def remove_benchmark(self, name: str) -> None:
         """Remove benchmark from suite."""
-        self.benchmarks = [
-            b for b in self.benchmarks
-            if b.name != name
-        ]
+        self.benchmarks = [b for b in self.benchmarks if b.name != name]
 
     def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
             "suite_name": self.suite_name,
-            "benchmarks": [
-                {
-                    "name": b.name,
-                    "description": b.description
-                }
-                for b in self.benchmarks
-            ]
+            "benchmarks": [{"name": b.name, "description": b.description} for b in self.benchmarks],
         }

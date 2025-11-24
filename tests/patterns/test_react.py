@@ -3,9 +3,9 @@ Tests for ReAct (Reasoning + Acting) Agent pattern.
 """
 
 import pytest
-from agenkit import Message
-from agenkit.patterns import ReActAgent, Tool, ToolRegistry, ToolResult, ReActStep
 
+from agenkit import Message
+from agenkit.patterns import ReActAgent, ReActStep, ToolRegistry, ToolResult
 
 # ============================================================================
 # Mock Tools
@@ -276,7 +276,7 @@ async def test_react_agent_multiple_steps():
 
     agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5)
 
-    response = await agent.process(Message(role="user", content="Test"))
+    await agent.process(Message(role="user", content="Test"))
 
     assert len(agent.get_steps()) == 2  # Two tool executions
     assert agent.get_steps()[0].action == "calculator"
@@ -321,7 +321,7 @@ async def test_react_agent_tool_error():
 
     agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5)
 
-    response = await agent.process(Message(role="user", content="Test"))
+    await agent.process(Message(role="user", content="Test"))
 
     # Check that error was recorded
     assert len(agent.get_steps()) == 1
@@ -341,9 +341,7 @@ async def test_react_agent_verbose_mode():
         ]
     )
 
-    agent = ReActAgent(
-        llm_client=llm, tool_registry=registry, max_iterations=5, verbose=True
-    )
+    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5, verbose=True)
 
     response = await agent.process(Message(role="user", content="Calculate 2+2"))
 
@@ -366,9 +364,7 @@ async def test_react_agent_non_verbose_mode():
         ]
     )
 
-    agent = ReActAgent(
-        llm_client=llm, tool_registry=registry, max_iterations=5, verbose=False
-    )
+    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5, verbose=False)
 
     response = await agent.process(Message(role="user", content="Calculate 2+2"))
 
@@ -430,9 +426,7 @@ async def test_react_agent_custom_system_prompt():
 
     custom_prompt = "You are a test assistant."
 
-    llm = MockReActLLM(
-        responses=["Thought: Answer\nAction: Final Answer\nAction Input: OK"]
-    )
+    llm = MockReActLLM(responses=["Thought: Answer\nAction: Final Answer\nAction Input: OK"])
 
     agent = ReActAgent(
         llm_client=llm,

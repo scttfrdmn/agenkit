@@ -2,10 +2,11 @@
 Tests for CostTracker.
 """
 
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
-from agenkit.budget.tracker import CostTracker, Cost, InMemoryStorage
+import pytest
+
+from agenkit.budget.tracker import CostTracker
 
 
 @pytest.mark.asyncio
@@ -18,7 +19,7 @@ async def test_record_cost():
         agent_name="assistant",
         model="claude-sonnet-4",
         input_tokens=1000,
-        output_tokens=500
+        output_tokens=500,
     )
 
     assert cost.session_id == "session-1"
@@ -107,9 +108,13 @@ async def test_get_top_sessions():
     tracker = CostTracker()
 
     # Record costs with different amounts
-    await tracker.record_cost("session-1", "agent-1", "claude-sonnet-4", 10000, 5000)  # More expensive
-    await tracker.record_cost("session-2", "agent-1", "claude-sonnet-4", 1000, 500)    # Less expensive
-    await tracker.record_cost("session-3", "agent-1", "claude-sonnet-4", 5000, 2500)   # Medium
+    await tracker.record_cost(
+        "session-1", "agent-1", "claude-sonnet-4", 10000, 5000
+    )  # More expensive
+    await tracker.record_cost(
+        "session-2", "agent-1", "claude-sonnet-4", 1000, 500
+    )  # Less expensive
+    await tracker.record_cost("session-3", "agent-1", "claude-sonnet-4", 5000, 2500)  # Medium
 
     top_sessions = await tracker.get_top_sessions(limit=3)
 
@@ -192,10 +197,7 @@ async def test_time_range_filtering():
     await tracker.record_cost("session-1", "agent-1", "claude-sonnet-4", 2000, 1000)
 
     # Get costs after the first one
-    recent_cost = await tracker.get_session_cost(
-        "session-1",
-        start_time=now
-    )
+    recent_cost = await tracker.get_session_cost("session-1", start_time=now)
 
     # Should only include the second cost
     assert recent_cost > 0
@@ -215,7 +217,7 @@ async def test_metadata_storage():
         "claude-sonnet-4",
         1000,
         500,
-        metadata={"message_id": "msg-123", "user": "alice"}
+        metadata={"message_id": "msg-123", "user": "alice"},
     )
 
     assert cost.metadata["message_id"] == "msg-123"
@@ -227,13 +229,7 @@ async def test_cost_to_dict():
     """Test converting cost to dictionary."""
     tracker = CostTracker()
 
-    cost = await tracker.record_cost(
-        "session-1",
-        "agent-1",
-        "claude-sonnet-4",
-        1000,
-        500
-    )
+    cost = await tracker.record_cost("session-1", "agent-1", "claude-sonnet-4", 1000, 500)
 
     cost_dict = cost.to_dict()
 
@@ -271,7 +267,7 @@ async def test_zero_cost_recording():
         "agent-1",
         "gemini-2.0-flash-exp",  # Free model
         1000,
-        500
+        500,
     )
 
     assert cost.total_cost == 0.0
@@ -290,7 +286,7 @@ async def test_large_token_counts():
         "agent-1",
         "claude-opus-4",
         10000000,  # 10M input
-        5000000    # 5M output
+        5000000,  # 5M output
     )
 
     # Should be $150 (input) + $375 (output) = $525

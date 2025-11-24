@@ -17,17 +17,19 @@ Or programmatically:
 """
 
 import asyncio
-from typing import Dict, Any
-from agenkit import Message
+from typing import Any
+
+from agents import (
+    ClassifierAgent,
+    EscalationAgent,
+    QAAgent,
+    SynthesisAgent,
+)
 
 # Import our components
 from knowledge_base import create_sample_knowledge_base
-from agents import (
-    ClassifierAgent,
-    QAAgent,
-    EscalationAgent,
-    SynthesisAgent,
-)
+
+from agenkit import Message
 
 
 class CustomerSupportSystem:
@@ -65,9 +67,7 @@ class CustomerSupportSystem:
 
         print("✓ All agents initialized")
 
-    async def handle_ticket(
-        self, ticket_content: str, verbose: bool = False
-    ) -> Dict[str, Any]:
+    async def handle_ticket(self, ticket_content: str, verbose: bool = False) -> dict[str, Any]:
         """
         Process a customer support ticket through the agent pipeline.
 
@@ -110,9 +110,7 @@ class CustomerSupportSystem:
         if verbose:
             print("\n[2/4] Searching knowledge base...")
 
-        qa_result = await self.qa_agent.process(
-            Message(role="user", content=ticket_content)
-        )
+        qa_result = await self.qa_agent.process(Message(role="user", content=ticket_content))
 
         qa_response = qa_result.content
         qa_confidence = qa_result.metadata.get("confidence", 0.0)
@@ -264,7 +262,7 @@ async def interactive_mode():
         if not ticket:
             continue
 
-        result = await system.handle_ticket(ticket, verbose=True)
+        await system.handle_ticket(ticket, verbose=True)
 
 
 async def main():

@@ -9,62 +9,58 @@ This module provides high-level patterns for working with agents, including:
 - PlanningAgent: Creates and executes multi-step plans
 """
 
-from agenkit.patterns.task import Task
-from agenkit.patterns.orchestration import (
-    SequentialPattern,
-    ParallelPattern,
-    RouterPattern
-)
-from agenkit.patterns.conversational import (
-    ConversationalAgent,
-    StreamingConversationalAgent,
-    LLMClient,
-)
-from agenkit.patterns.react import (
-    ReActAgent,
-    Tool,
-    ToolResult,
-    ToolRegistry,
-    ReActStep,
-)
-from agenkit.patterns.planning import (
-    PlanningAgent,
-    Plan,
-    PlanStep,
-    StepStatus,
-    StepExecutor,
-)
-from agenkit.patterns.multiagent import (
-    MultiAgentOrchestrator,
-    ConsensusAgent,
-    AgentTask,
-)
 from agenkit.patterns.autonomous import (
     AutonomousAgent,
     Goal,
 )
+from agenkit.patterns.conversational import (
+    ConversationalAgent,
+    LLMClient,
+    StreamingConversationalAgent,
+)
+from agenkit.patterns.multiagent import (
+    AgentTask,
+    ConsensusAgent,
+    MultiAgentOrchestrator,
+)
+from agenkit.patterns.orchestration import ParallelPattern, RouterPattern, SequentialPattern
+from agenkit.patterns.planning import (
+    Plan,
+    PlanningAgent,
+    PlanStep,
+    StepExecutor,
+    StepStatus,
+)
+from agenkit.patterns.react import (
+    ReActAgent,
+    ReActStep,
+    Tool,
+    ToolRegistry,
+    ToolResult,
+)
+from agenkit.patterns.task import Task
 
 __all__ = [
-    "Task",
-    "SequentialPattern",
-    "ParallelPattern",
-    "RouterPattern",
-    "ConversationalAgent",
-    "StreamingConversationalAgent",
-    "LLMClient",
-    "ReActAgent",
-    "Tool",
-    "ToolResult",
-    "ToolRegistry",
-    "ReActStep",
-    "PlanningAgent",
-    "Plan",
-    "PlanStep",
-    "StepStatus",
-    "StepExecutor",
-    "MultiAgentOrchestrator",
-    "ConsensusAgent",
     "AgentTask",
     "AutonomousAgent",
+    "ConsensusAgent",
+    "ConversationalAgent",
     "Goal",
+    "LLMClient",
+    "MultiAgentOrchestrator",
+    "ParallelPattern",
+    "Plan",
+    "PlanStep",
+    "PlanningAgent",
+    "ReActAgent",
+    "ReActStep",
+    "RouterPattern",
+    "SequentialPattern",
+    "StepExecutor",
+    "StepStatus",
+    "StreamingConversationalAgent",
+    "Task",
+    "Tool",
+    "ToolRegistry",
+    "ToolResult",
 ]

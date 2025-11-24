@@ -26,26 +26,26 @@ Example:
     >>> response = await auth.process(message)  # Checks metadata for token
 """
 
+from .middleware import (
+    APIKeyAuth,
+    BearerTokenAuth,
+)
 from .providers import (
-    AuthProvider,
-    SimpleTokenProvider,
-    EnvTokenProvider,
-    User,
     AuthenticationError,
     AuthorizationError,
-)
-from .middleware import (
-    BearerTokenAuth,
-    APIKeyAuth,
+    AuthProvider,
+    EnvTokenProvider,
+    SimpleTokenProvider,
+    User,
 )
 
 __all__ = [
-    "BearerTokenAuth",
     "APIKeyAuth",
+    "AuthProvider",
     "AuthenticationError",
     "AuthorizationError",
-    "AuthProvider",
-    "SimpleTokenProvider",
+    "BearerTokenAuth",
     "EnvTokenProvider",
+    "SimpleTokenProvider",
     "User",
 ]

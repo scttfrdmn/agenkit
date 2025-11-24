@@ -4,10 +4,11 @@ Checkpoint manager for high-level checkpoint operations.
 Provides operations like create, resume, replay, and time-travel debugging.
 """
 
-import uuid
 import logging
+import uuid
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
-from typing import Optional, Any, Dict, Callable, Awaitable
+from typing import Any
 
 from .checkpoint import Checkpoint, CheckpointStorage
 from .storage import InMemoryCheckpointStorage
@@ -44,9 +45,7 @@ class CheckpointManager:
     """
 
     def __init__(
-        self,
-        storage: Optional[CheckpointStorage] = None,
-        auto_checkpoint_interval: Optional[int] = None
+        self, storage: CheckpointStorage | None = None, auto_checkpoint_interval: int | None = None
     ):
         """
         Initialize checkpoint manager.
@@ -59,18 +58,18 @@ class CheckpointManager:
         self.auto_checkpoint_interval = auto_checkpoint_interval
 
         # Track step counts for auto-checkpointing
-        self._session_steps: Dict[str, int] = {}
-        self._session_last_checkpoint: Dict[str, str] = {}
+        self._session_steps: dict[str, int] = {}
+        self._session_last_checkpoint: dict[str, str] = {}
 
     async def create_checkpoint(
         self,
         session_id: str,
         agent_name: str,
         step_number: int,
-        state: Dict[str, Any],
+        state: dict[str, Any],
         messages: list,
-        metadata: Optional[Dict[str, Any]] = None,
-        parent_checkpoint_id: Optional[str] = None
+        metadata: dict[str, Any] | None = None,
+        parent_checkpoint_id: str | None = None,
     ) -> str:
         """
         Create new checkpoint.
@@ -111,7 +110,7 @@ class CheckpointManager:
             state=state,
             messages=messages,
             metadata=metadata or {},
-            parent_checkpoint_id=parent_checkpoint_id
+            parent_checkpoint_id=parent_checkpoint_id,
         )
 
         await self.storage.save(checkpoint)
@@ -143,7 +142,7 @@ class CheckpointManager:
 
         return steps_since_checkpoint >= self.auto_checkpoint_interval
 
-    async def get_latest(self, session_id: str) -> Optional[Checkpoint]:
+    async def get_latest(self, session_id: str) -> Checkpoint | None:
         """
         Get latest checkpoint for session.
 
@@ -155,7 +154,7 @@ class CheckpointManager:
         """
         return await self.storage.get_latest(session_id)
 
-    async def load_checkpoint(self, checkpoint_id: str) -> Optional[Checkpoint]:
+    async def load_checkpoint(self, checkpoint_id: str) -> Checkpoint | None:
         """
         Load specific checkpoint.
 
@@ -167,11 +166,7 @@ class CheckpointManager:
         """
         return await self.storage.load(checkpoint_id)
 
-    async def list_checkpoints(
-        self,
-        session_id: str,
-        limit: Optional[int] = None
-    ) -> list[Checkpoint]:
+    async def list_checkpoints(self, session_id: str, limit: int | None = None) -> list[Checkpoint]:
         """
         List all checkpoints for session.
 
@@ -184,10 +179,7 @@ class CheckpointManager:
         """
         return await self.storage.list_checkpoints(session_id, limit=limit)
 
-    async def restore_state(
-        self,
-        checkpoint: Checkpoint
-    ) -> Dict[str, Any]:
+    async def restore_state(self, checkpoint: Checkpoint) -> dict[str, Any]:
         """
         Restore agent state from checkpoint.
 
@@ -204,9 +196,7 @@ class CheckpointManager:
         return checkpoint.state.copy()
 
     async def get_checkpoint_history(
-        self,
-        checkpoint_id: str,
-        max_depth: int = 10
+        self, checkpoint_id: str, max_depth: int = 10
     ) -> list[Checkpoint]:
         """
         Get checkpoint history by following parent links.
@@ -224,7 +214,7 @@ class CheckpointManager:
         self,
         checkpoint_id: str,
         replay_fn: Callable[[Checkpoint, Any], Awaitable[Any]],
-        up_to_step: Optional[int] = None
+        up_to_step: int | None = None,
     ) -> list[Any]:
         """
         Replay execution from checkpoint.
@@ -314,7 +304,7 @@ class CheckpointManager:
                 "total_checkpoints": 0,
                 "first_checkpoint": None,
                 "latest_checkpoint": None,
-                "steps_covered": 0
+                "steps_covered": 0,
             }
 
         return {
@@ -324,14 +314,10 @@ class CheckpointManager:
             "first_step": checkpoints[-1].step_number,
             "latest_step": checkpoints[0].step_number,
             "steps_covered": checkpoints[0].step_number - checkpoints[-1].step_number,
-            "time_span": (checkpoints[0].timestamp - checkpoints[-1].timestamp).total_seconds()
+            "time_span": (checkpoints[0].timestamp - checkpoints[-1].timestamp).total_seconds(),
         }
 
-    async def prune_old_checkpoints(
-        self,
-        session_id: str,
-        keep_last: int = 10
-    ) -> int:
+    async def prune_old_checkpoints(self, session_id: str, keep_last: int = 10) -> int:
         """
         Prune old checkpoints, keeping only the most recent N.
 
@@ -361,8 +347,7 @@ class CheckpointManager:
                 deleted_count += 1
 
         logger.info(
-            f"Pruned {deleted_count} old checkpoints for {session_id}, "
-            f"kept {keep_last} most recent"
+            f"Pruned {deleted_count} old checkpoints for {session_id}, kept {keep_last} most recent"
         )
 
         return deleted_count

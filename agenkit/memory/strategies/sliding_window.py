@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 from .base import MemoryStrategy
 
 if TYPE_CHECKING:
-    from ..base import Memory
     from ...interfaces import Message
+    from ..base import Memory
 
 
 class SlidingWindowStrategy(MemoryStrategy):
@@ -47,11 +47,7 @@ class SlidingWindowStrategy(MemoryStrategy):
         self.window_size = window_size
 
     async def select(
-        self,
-        memory: "Memory",
-        session_id: str,
-        context_limit: int,
-        **kwargs
+        self, memory: "Memory", session_id: str, context_limit: int, **kwargs
     ) -> list["Message"]:
         """
         Select most recent messages.

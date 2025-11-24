@@ -8,9 +8,8 @@ Provides:
 - Resource constraints
 """
 
-from enum import Enum
-from typing import Set, Optional, List, Dict, Any
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 
 from agenkit import Agent, Message
@@ -63,7 +62,7 @@ class Role(Enum):
 
 
 # Role -> Permissions mapping
-ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
+ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
     Role.ADMIN: {
         Permission.READ_FILES,
         Permission.WRITE_FILES,
@@ -103,9 +102,7 @@ ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
 class PermissionDeniedError(Exception):
     """Raised when permission check fails."""
 
-    def __init__(
-        self, message: str, required_permission: Optional[Permission] = None
-    ):
+    def __init__(self, message: str, required_permission: Permission | None = None):
         super().__init__(message)
         self.required_permission = required_permission
 
@@ -124,34 +121,28 @@ class Sandbox:
     """
 
     # File system sandbox
-    allowed_paths: Set[str] = field(default_factory=set)
-    denied_paths: Set[str] = field(default_factory=lambda: {"/etc", "/sys", "/proc"})
+    allowed_paths: set[str] = field(default_factory=set)
+    denied_paths: set[str] = field(default_factory=lambda: {"/etc", "/sys", "/proc"})
 
     # Command sandbox
-    allowed_commands: Set[str] = field(
+    allowed_commands: set[str] = field(
         default_factory=lambda: {"ls", "cat", "grep", "git", "python"}
     )
-    denied_commands: Set[str] = field(
-        default_factory=lambda: {"rm", "sudo", "chmod", "chown"}
-    )
+    denied_commands: set[str] = field(default_factory=lambda: {"rm", "sudo", "chmod", "chown"})
 
     # Database sandbox
-    allowed_sql_operations: Set[str] = field(
-        default_factory=lambda: {"SELECT", "EXPLAIN"}
-    )
+    allowed_sql_operations: set[str] = field(default_factory=lambda: {"SELECT", "EXPLAIN"})
 
     # Network sandbox
-    allowed_domains: Set[str] = field(default_factory=set)  # Empty = allow all
-    denied_domains: Set[str] = field(
-        default_factory=lambda: {"localhost", "127.0.0.1", "0.0.0.0"}
-    )
+    allowed_domains: set[str] = field(default_factory=set)  # Empty = allow all
+    denied_domains: set[str] = field(default_factory=lambda: {"localhost", "127.0.0.1", "0.0.0.0"})
 
     # Resource limits
     max_file_size: int = 10 * 1024 * 1024  # 10MB
     max_execution_time: int = 30  # seconds
     max_memory_mb: int = 512  # MB
 
-    def is_path_allowed(self, path: str) -> tuple[bool, Optional[str]]:
+    def is_path_allowed(self, path: str) -> tuple[bool, str | None]:
         """
         Check if path is within sandbox.
 
@@ -191,7 +182,7 @@ class Sandbox:
         except Exception as e:
             return False, f"Path validation error: {e}"
 
-    def is_command_allowed(self, command: str) -> tuple[bool, Optional[str]]:
+    def is_command_allowed(self, command: str) -> tuple[bool, str | None]:
         """
         Check if command is allowed in sandbox.
 
@@ -208,13 +199,12 @@ class Sandbox:
             return False, f"Command is denied: {cmd_name}"
 
         # Check allowed commands
-        if self.allowed_commands:
-            if cmd_name not in self.allowed_commands:
-                return False, f"Command not in allowed list: {cmd_name}"
+        if self.allowed_commands and cmd_name not in self.allowed_commands:
+            return False, f"Command not in allowed list: {cmd_name}"
 
         return True, None
 
-    def is_sql_operation_allowed(self, sql: str) -> tuple[bool, Optional[str]]:
+    def is_sql_operation_allowed(self, sql: str) -> tuple[bool, str | None]:
         """
         Check if SQL operation is allowed.
 
@@ -231,7 +221,7 @@ class Sandbox:
 
         return True, None
 
-    def is_domain_allowed(self, domain: str) -> tuple[bool, Optional[str]]:
+    def is_domain_allowed(self, domain: str) -> tuple[bool, str | None]:
         """
         Check if domain is allowed for network requests.
 
@@ -246,9 +236,8 @@ class Sandbox:
             return False, f"Domain is denied: {domain}"
 
         # If allowed_domains specified, must be in list
-        if self.allowed_domains:
-            if domain not in self.allowed_domains:
-                return False, f"Domain not in allowed list: {domain}"
+        if self.allowed_domains and domain not in self.allowed_domains:
+            return False, f"Domain not in allowed list: {domain}"
 
         return True, None
 
@@ -279,8 +268,8 @@ class PermissionMiddleware(Agent):
         self,
         agent: Agent,
         role: Role = Role.USER,
-        custom_permissions: Optional[Set[Permission]] = None,
-        sandbox: Optional[Sandbox] = None,
+        custom_permissions: set[Permission] | None = None,
+        sandbox: Sandbox | None = None,
     ):
         """
         Initialize permission middleware.
@@ -293,9 +282,7 @@ class PermissionMiddleware(Agent):
         """
         self._agent = agent
         self.role = role
-        self.permissions = custom_permissions or ROLE_PERMISSIONS.get(
-            role, set()
-        )
+        self.permissions = custom_permissions or ROLE_PERMISSIONS.get(role, set())
         self.sandbox = sandbox or Sandbox()
 
     @property
@@ -360,10 +347,15 @@ class PermissionMiddleware(Agent):
 
         # Detect database operations
         # Check for write operations first (more specific)
-        if any(op in content_str for op in ["insert", "update", "delete", "drop", "alter", "create table"]):
+        if any(
+            op in content_str
+            for op in ["insert", "update", "delete", "drop", "alter", "create table"]
+        ):
             # Likely a SQL write operation
             self.check_permission(Permission.WRITE_DATABASE)
-        elif any(keyword in content_str for keyword in ["query", "database", "sql", "select", "from"]):
+        elif any(
+            keyword in content_str for keyword in ["query", "database", "sql", "select", "from"]
+        ):
             # Database read operation
             self.check_permission(Permission.QUERY_DATABASE)
 
@@ -373,8 +365,8 @@ class PermissionMiddleware(Agent):
 
 def permissions(
     role: Role = Role.USER,
-    custom_permissions: Optional[Set[Permission]] = None,
-    sandbox: Optional[Sandbox] = None,
+    custom_permissions: set[Permission] | None = None,
+    sandbox: Sandbox | None = None,
 ):
     """
     Create permission middleware function.
@@ -395,6 +387,7 @@ def permissions(
             retry(),
         ])
     """
+
     def middleware(agent: Agent) -> Agent:
         return PermissionMiddleware(agent, role, custom_permissions, sandbox)
 

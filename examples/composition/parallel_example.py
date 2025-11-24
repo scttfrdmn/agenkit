@@ -37,9 +37,9 @@ TRADE-OFFS:
 
 import asyncio
 import random
-from typing import List
-from agenkit.interfaces import Agent, Message
+
 from agenkit.composition import ParallelAgent
+from agenkit.interfaces import Agent, Message
 
 
 # Example 1: Ensemble Decision Making
@@ -76,29 +76,24 @@ class SentimentAgent(Agent):
             score = 0.5 + random.uniform(-0.2, 0.2)
             if "love" in text or "great" in text:
                 score += 0.3
-        else:  # rule_based
-            # Simple rules
-            if "!" in text:
-                score = 0.8
-            elif "?" in text:
-                score = 0.5
-            else:
-                score = 0.6
+        # Simple rules
+        elif "!" in text:
+            score = 0.8
+        elif "?" in text:
+            score = 0.5
+        else:
+            score = 0.6
 
         sentiment = "positive" if score > 0.6 else "negative" if score < 0.4 else "neutral"
 
         return Message(
             role="agent",
             content=sentiment,
-            metadata={
-                "sentiment": sentiment,
-                "score": score,
-                "approach": self.approach
-            }
+            metadata={"sentiment": sentiment, "score": score, "approach": self.approach},
         )
 
 
-def majority_vote_aggregator(messages: List[Message]) -> Message:
+def majority_vote_aggregator(messages: list[Message]) -> Message:
     """Aggregate by majority vote."""
     # Count votes
     votes = {}
@@ -122,12 +117,14 @@ def majority_vote_aggregator(messages: List[Message]) -> Message:
             "total_votes": len(messages),
             "average_score": avg_score,
             "all_results": [
-                {"approach": m.metadata.get("approach"),
-                 "sentiment": m.metadata.get("sentiment"),
-                 "score": m.metadata.get("score")}
+                {
+                    "approach": m.metadata.get("approach"),
+                    "sentiment": m.metadata.get("sentiment"),
+                    "score": m.metadata.get("score"),
+                }
                 for m in messages
-            ]
-        }
+            ],
+        },
     )
 
 
@@ -142,15 +139,15 @@ async def example_ensemble_voting():
         agents=[
             SentimentAgent("lexicon-analyzer", "lexicon"),
             SentimentAgent("ml-analyzer", "ml_model"),
-            SentimentAgent("rule-analyzer", "rule_based")
+            SentimentAgent("rule-analyzer", "rule_based"),
         ],
-        aggregator=majority_vote_aggregator
+        aggregator=majority_vote_aggregator,
     )
 
     test_texts = [
         "I love this product! It's great!",
         "This is terrible. Very disappointed.",
-        "It's okay, nothing special."
+        "It's okay, nothing special.",
     ]
 
     for text in test_texts:
@@ -158,8 +155,8 @@ async def example_ensemble_voting():
         result = await ensemble.process(Message(role="user", content=text))
         print(f"Result: {result.content}")
         print(f"Average Score: {result.metadata['average_score']:.2f}")
-        print(f"Individual Results:")
-        for r in result.metadata['all_results']:
+        print("Individual Results:")
+        for r in result.metadata["all_results"]:
             print(f"  - {r['approach']}: {r['sentiment']} ({r['score']:.2f})")
         print()
 
@@ -191,32 +188,23 @@ class SearchAgent(Agent):
         query = str(message.content)
 
         # Simulate different latencies per source
-        latencies = {
-            "database": 0.05,
-            "cache": 0.01,
-            "api": 0.3,
-            "web": 0.5
-        }
+        latencies = {"database": 0.05, "cache": 0.01, "api": 0.3, "web": 0.5}
         await asyncio.sleep(latencies.get(self.source, 0.1))
 
         # Simulate search results
         results = [
-            f"{self.source.upper()} result {i+1} for '{query}'"
+            f"{self.source.upper()} result {i + 1} for '{query}'"
             for i in range(random.randint(0, 3))
         ]
 
         return Message(
             role="agent",
             content=f"Found {len(results)} results",
-            metadata={
-                "source": self.source,
-                "results": results,
-                "count": len(results)
-            }
+            metadata={"source": self.source, "results": results, "count": len(results)},
         )
 
 
-def merge_search_results(messages: List[Message]) -> Message:
+def merge_search_results(messages: list[Message]) -> Message:
     """Merge and deduplicate search results."""
     all_results = []
     sources = []
@@ -230,11 +218,7 @@ def merge_search_results(messages: List[Message]) -> Message:
     return Message(
         role="agent",
         content=f"Found {len(all_results)} total results from {len(messages)} sources",
-        metadata={
-            "total_results": len(all_results),
-            "sources": sources,
-            "results": all_results
-        }
+        metadata={"total_results": len(all_results), "sources": sources, "results": all_results},
     )
 
 
@@ -250,9 +234,9 @@ async def example_multisource_search():
             SearchAgent("cache-search", "cache"),
             SearchAgent("db-search", "database"),
             SearchAgent("api-search", "api"),
-            SearchAgent("web-search", "web")
+            SearchAgent("web-search", "web"),
         ],
-        aggregator=merge_search_results
+        aggregator=merge_search_results,
     )
 
     query = "agenkit framework"
@@ -260,6 +244,7 @@ async def example_multisource_search():
     print("Searching: cache, database, API, web...\n")
 
     import time
+
     start = time.time()
     result = await search.process(Message(role="user", content=query))
     elapsed = time.time() - start
@@ -267,11 +252,11 @@ async def example_multisource_search():
     print(f"Result: {result.content}")
     print(f"Sources: {', '.join(result.metadata['sources'])}")
     print(f"Total Time: {elapsed:.2f}s")
-    print(f"\n💡 Performance Comparison:")
+    print("\n💡 Performance Comparison:")
     print(f"   Parallel:   {elapsed:.2f}s (actual)")
-    print(f"   Sequential: ~0.86s (0.01 + 0.05 + 0.3 + 0.5)")
-    print(f"   Speedup:    ~{0.86/elapsed:.1f}x faster")
-    print(f"\n   Latency = max(all sources), not sum!")
+    print("   Sequential: ~0.86s (0.01 + 0.05 + 0.3 + 0.5)")
+    print(f"   Speedup:    ~{0.86 / elapsed:.1f}x faster")
+    print("\n   Latency = max(all sources), not sum!")
 
 
 # Example 3: A/B Testing
@@ -308,25 +293,23 @@ class LLMAgent(Agent):
         return Message(
             role="agent",
             content=response,
-            metadata={
-                "model": self.model,
-                "latency": self.latency,
-                "quality": self.quality
-            }
+            metadata={"model": self.model, "latency": self.latency, "quality": self.quality},
         )
 
 
-def compare_models_aggregator(messages: List[Message]) -> Message:
+def compare_models_aggregator(messages: list[Message]) -> Message:
     """Compare model results for A/B testing."""
     results = []
 
     for msg in messages:
-        results.append({
-            "model": msg.metadata.get("model"),
-            "latency": msg.metadata.get("latency"),
-            "quality": msg.metadata.get("quality"),
-            "response": msg.content
-        })
+        results.append(
+            {
+                "model": msg.metadata.get("model"),
+                "latency": msg.metadata.get("latency"),
+                "quality": msg.metadata.get("quality"),
+                "response": msg.content,
+            }
+        )
 
     # Sort by quality (for comparison)
     results.sort(key=lambda x: x["quality"], reverse=True)
@@ -337,11 +320,7 @@ def compare_models_aggregator(messages: List[Message]) -> Message:
     return Message(
         role="agent",
         content=comparison,
-        metadata={
-            "results": results,
-            "best_model": best["model"],
-            "best_quality": best["quality"]
-        }
+        metadata={"results": results, "best_model": best["model"], "best_quality": best["quality"]},
     )
 
 
@@ -357,15 +336,16 @@ async def example_ab_testing():
             LLMAgent("gpt-4", "GPT-4", latency=0.5, quality=0.95),
             LLMAgent("gpt-3.5", "GPT-3.5-Turbo", latency=0.2, quality=0.75),
             LLMAgent("claude", "Claude-3", latency=0.3, quality=0.90),
-            LLMAgent("llama", "Llama-3", latency=0.1, quality=0.70)
+            LLMAgent("llama", "Llama-3", latency=0.1, quality=0.70),
         ],
-        aggregator=compare_models_aggregator
+        aggregator=compare_models_aggregator,
     )
 
     prompt = Message(role="user", content="Explain quantum computing")
 
     print("Testing 4 models in parallel...")
     import time
+
     start = time.time()
     result = await ab_test.process(prompt)
     elapsed = time.time() - start
@@ -376,7 +356,7 @@ async def example_ab_testing():
     print("Model Comparison:")
     print(f"{'Model':<20} {'Quality':<10} {'Latency':<10}")
     print("-" * 40)
-    for r in result.metadata['results']:
+    for r in result.metadata["results"]:
         print(f"{r['model']:<20} {r['quality']:<10.2f} {r['latency']:<10.2f}s")
 
     print("\n💡 A/B Testing Benefits:")
@@ -410,13 +390,11 @@ class UnreliableAgent(Agent):
             raise Exception(f"{self.name} failed (simulated)")
 
         return Message(
-            role="agent",
-            content=f"Success from {self.name}",
-            metadata={"agent": self.name}
+            role="agent", content=f"Success from {self.name}", metadata={"agent": self.name}
         )
 
 
-def first_success_aggregator(messages: List[Message]) -> Message:
+def first_success_aggregator(messages: list[Message]) -> Message:
     """Return first successful result."""
     # With gather, all run to completion
     # In practice, could use return_when=FIRST_COMPLETED
@@ -437,9 +415,9 @@ async def example_redundant_requests():
         agents=[
             UnreliableAgent("instance-1", failure_rate=0.3),
             UnreliableAgent("instance-2", failure_rate=0.3),
-            UnreliableAgent("instance-3", failure_rate=0.3)
+            UnreliableAgent("instance-3", failure_rate=0.3),
         ],
-        aggregator=first_success_aggregator
+        aggregator=first_success_aggregator,
     )
 
     print("Simulating 10 requests to unreliable service (30% failure rate)...")
@@ -448,24 +426,22 @@ async def example_redundant_requests():
     successes = 0
     for i in range(10):
         try:
-            result = await redundant.process(
-                Message(role="user", content=f"Request {i+1}")
-            )
+            await redundant.process(Message(role="user", content=f"Request {i + 1}"))
             successes += 1
         except Exception:
             pass
 
     success_rate = successes / 10
     single_success = 0.7  # 1 - failure_rate
-    parallel_success = 1 - (0.3 ** 3)  # Probability at least one succeeds
+    parallel_success = 1 - (0.3**3)  # Probability at least one succeeds
 
-    print(f"Results:")
+    print("Results:")
     print(f"  Successful Requests: {successes}/10 ({success_rate:.0%})")
-    print(f"\n💡 Reliability Improvement:")
-    print(f"   Single instance:  ~70% success rate")
-    print(f"   3× redundant:     ~97% success rate")
-    print(f"   Improvement:      ~{parallel_success/single_success:.1f}x better")
-    print(f"\n   Trade-off: 3× cost for ~1.4x reliability")
+    print("\n💡 Reliability Improvement:")
+    print("   Single instance:  ~70% success rate")
+    print("   3× redundant:     ~97% success rate")
+    print(f"   Improvement:      ~{parallel_success / single_success:.1f}x better")
+    print("\n   Trade-off: 3× cost for ~1.4x reliability")
 
 
 # Example 5: Handling Partial Failures
@@ -492,12 +468,10 @@ async def example_partial_failures():
             if self.will_fail:
                 raise Exception(f"{self.name} failed")
             return Message(
-                role="agent",
-                content=f"Result from {self.name}",
-                metadata={"agent": self.name}
+                role="agent", content=f"Result from {self.name}", metadata={"agent": self.name}
             )
 
-    def partial_results_aggregator(messages: List[Message]) -> Message:
+    def partial_results_aggregator(messages: list[Message]) -> Message:
         """Aggregate even with some failures."""
         # Note: gather with return_exceptions=True would include exceptions
         # This is simplified - would need error handling in real code
@@ -505,7 +479,7 @@ async def example_partial_failures():
         return Message(
             role="agent",
             content=f"Got {success_count} successful results",
-            metadata={"success_count": success_count, "results": messages}
+            metadata={"success_count": success_count, "results": messages},
         )
 
     # Create parallel execution where some agents fail
@@ -514,9 +488,9 @@ async def example_partial_failures():
         agents=[
             MaybeFailAgent("agent-1", will_fail=False),
             MaybeFailAgent("agent-2", will_fail=False),
-            MaybeFailAgent("agent-3", will_fail=False)
+            MaybeFailAgent("agent-3", will_fail=False),
         ],
-        aggregator=partial_results_aggregator
+        aggregator=partial_results_aggregator,
     )
 
     print("Test 1: All agents succeed")
@@ -535,7 +509,7 @@ async def example_partial_failures():
         print(f"  ✅ {result.content}")
     except Exception as e:
         print(f"  ❌ Failed: {e}")
-        print(f"     (ParallelAgent fails if any agent fails)")
+        print("     (ParallelAgent fails if any agent fails)")
 
     print("\n💡 Partial Failure Handling:")
     print("   - By default, one failure fails entire parallel group")
@@ -546,9 +520,9 @@ async def example_partial_failures():
 
 async def main():
     """Run all examples."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("PARALLEL COMPOSITION EXAMPLES")
-    print("="*70)
+    print("=" * 70)
     print("\nParallel composition reduces latency and enables ensemble methods.")
     print("Use it for independent operations that can run concurrently.\n")
 
@@ -558,9 +532,9 @@ async def main():
     await example_redundant_requests()
     await example_partial_failures()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("KEY TAKEAWAYS")
-    print("="*70)
+    print("=" * 70)
     print("""
 1. Use parallel composition when:
    - Operations are independent (no data dependencies)

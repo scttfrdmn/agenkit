@@ -1,7 +1,5 @@
 """Tests for parse_endpoint with gRPC URLs."""
 
-import pytest
-
 from agenkit.adapters.python.grpc_transport import GRPCTransport
 from agenkit.adapters.python.transport import parse_endpoint
 

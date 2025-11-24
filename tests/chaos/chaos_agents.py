@@ -4,16 +4,18 @@ Chaos Agent Infrastructure
 Provides base classes and utilities for injecting chaos into agent behavior.
 These agents wrap normal agents and inject various failure modes for testing.
 """
+
 import asyncio
 import random
 import time
-from typing import AsyncIterator, Optional
+from collections.abc import AsyncIterator
 
 from agenkit.interfaces import Agent, Message
 
 try:
     from agenkit.interfaces import StreamingAgent
 except ImportError:
+
     class StreamingAgent(Agent):
         async def stream(self, message: Message) -> AsyncIterator[Message]:
             raise NotImplementedError
@@ -21,6 +23,7 @@ except ImportError:
 
 class ChaosMode:
     """Enumeration of chaos injection modes."""
+
     NONE = "none"
     TIMEOUT = "timeout"
     CONNECTION_REFUSED = "connection_refused"
@@ -49,7 +52,7 @@ class ChaosAgent(Agent):
         failure_rate: float = 0.0,
         delay_ms: float = 0.0,
         chaos_mode: str = ChaosMode.NONE,
-        name: Optional[str] = None,
+        name: str | None = None,
     ):
         self._agent = agent
         self._failure_rate = failure_rate
@@ -120,9 +123,7 @@ class ChaosAgent(Agent):
             # Simulate memory pressure with large response
             large_content = "x" * (10 * 1024 * 1024)  # 10MB
             return Message(
-                role="agent",
-                content=large_content,
-                metadata={"chaos": "memory_pressure"}
+                role="agent", content=large_content, metadata={"chaos": "memory_pressure"}
             )
 
         elif self._chaos_mode == ChaosMode.CRASH:
@@ -148,10 +149,10 @@ class StreamingChaosAgent(StreamingAgent):
         self,
         agent: StreamingAgent,
         failure_rate: float = 0.0,
-        fail_after_chunks: Optional[int] = None,
+        fail_after_chunks: int | None = None,
         delay_per_chunk_ms: float = 0.0,
         chaos_mode: str = ChaosMode.NONE,
-        name: Optional[str] = None,
+        name: str | None = None,
     ):
         self._agent = agent
         self._failure_rate = failure_rate
@@ -209,7 +210,7 @@ class FlakeyAgent(Agent):
         self,
         agent: Agent,
         failure_pattern: list[bool],
-        name: Optional[str] = None,
+        name: str | None = None,
     ):
         """
         Args:
@@ -237,9 +238,7 @@ class FlakeyAgent(Agent):
     async def process(self, message: Message) -> Message:
         """Process with configured failure pattern."""
         # Get current position in pattern (cycle if exceeded)
-        should_succeed = self._failure_pattern[
-            self._request_index % len(self._failure_pattern)
-        ]
+        should_succeed = self._failure_pattern[self._request_index % len(self._failure_pattern)]
         self._request_index += 1
 
         if not should_succeed:
@@ -261,7 +260,7 @@ class OverloadedAgent(Agent):
         agent: Agent,
         overload_threshold: int = 10,
         overload_failure_rate: float = 0.8,
-        name: Optional[str] = None,
+        name: str | None = None,
     ):
         self._agent = agent
         self._overload_threshold = overload_threshold
@@ -292,11 +291,10 @@ class OverloadedAgent(Agent):
         self._request_count += 1
 
         # If overloaded, fail probabilistically
-        if self.is_overloaded():
-            if random.random() < self._overload_failure_rate:
-                raise RuntimeError(
-                    f"Service overloaded (requests={self._request_count}, "
-                    f"threshold={self._overload_threshold})"
-                )
+        if self.is_overloaded() and random.random() < self._overload_failure_rate:
+            raise RuntimeError(
+                f"Service overloaded (requests={self._request_count}, "
+                f"threshold={self._overload_threshold})"
+            )
 
         return await self._agent.process(message)

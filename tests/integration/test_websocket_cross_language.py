@@ -11,7 +11,6 @@ from agenkit.interfaces import Message
 
 from .helpers import go_http_server, python_websocket_server
 
-
 # Python Client → Go Server Tests
 
 
@@ -20,12 +19,9 @@ from .helpers import go_http_server, python_websocket_server
 @pytest.mark.cross_language
 async def test_python_to_go_websocket_basic():
     """Test basic WebSocket message exchange: Python client → Go server."""
-    async with go_http_server() as (port, process):
+    async with go_http_server() as (port, _process):
         # Create remote agent with WebSocket endpoint
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"ws://localhost:{port}/ws"
-        )
+        agent = RemoteAgent(name="test-agent", endpoint=f"ws://localhost:{port}/ws")
 
         # Send message
         message = Message(role="user", content="Hello via WebSocket!")
@@ -43,11 +39,8 @@ async def test_python_to_go_websocket_basic():
 @pytest.mark.cross_language
 async def test_python_to_go_websocket_with_metadata():
     """Test WebSocket with metadata: Python client → Go server."""
-    async with go_http_server() as (port, process):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"ws://localhost:{port}/ws"
-        )
+    async with go_http_server() as (port, _process):
+        agent = RemoteAgent(name="test-agent", endpoint=f"ws://localhost:{port}/ws")
 
         # Send message with metadata
         message = Message(
@@ -57,7 +50,7 @@ async def test_python_to_go_websocket_with_metadata():
                 "request_id": "ws-123",
                 "priority": "high",
                 "tags": ["websocket", "test"],
-            }
+            },
         )
         response = await agent.process(message)
 
@@ -77,11 +70,8 @@ async def test_python_to_go_websocket_with_metadata():
 @pytest.mark.cross_language
 async def test_python_to_go_websocket_unicode():
     """Test Unicode over WebSocket: Python client → Go server."""
-    async with go_http_server() as (port, process):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"ws://localhost:{port}/ws"
-        )
+    async with go_http_server() as (port, _process):
+        agent = RemoteAgent(name="test-agent", endpoint=f"ws://localhost:{port}/ws")
 
         # Send message with Unicode content
         unicode_content = "Hello 世界 🌍 Привет مرحبا"
@@ -99,11 +89,8 @@ async def test_python_to_go_websocket_unicode():
 @pytest.mark.cross_language
 async def test_python_to_go_websocket_large_message():
     """Test large message over WebSocket: Python client → Go server."""
-    async with go_http_server() as (port, process):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"ws://localhost:{port}/ws"
-        )
+    async with go_http_server() as (port, _process):
+        agent = RemoteAgent(name="test-agent", endpoint=f"ws://localhost:{port}/ws")
 
         # Send large message (1MB)
         large_content = "A" * (1024 * 1024)  # 1MB
@@ -120,11 +107,8 @@ async def test_python_to_go_websocket_large_message():
 @pytest.mark.cross_language
 async def test_python_to_go_websocket_multiple_messages():
     """Test multiple messages over same WebSocket: Python client → Go server."""
-    async with go_http_server() as (port, process):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"ws://localhost:{port}/ws"
-        )
+    async with go_http_server() as (port, _process):
+        agent = RemoteAgent(name="test-agent", endpoint=f"ws://localhost:{port}/ws")
 
         # Send multiple messages over the same connection
         for i in range(5):
@@ -144,12 +128,9 @@ async def test_python_to_go_websocket_multiple_messages():
 @pytest.mark.cross_language
 async def test_go_to_python_websocket_basic():
     """Test basic WebSocket message: Go client → Python server."""
-    async with python_websocket_server() as (port, local_agent, task):
+    async with python_websocket_server() as (port, _local_agent, _task):
         # Use Python RemoteAgent as a proxy for Go client behavior
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"ws://localhost:{port}"
-        )
+        agent = RemoteAgent(name="test-agent", endpoint=f"ws://localhost:{port}")
 
         message = Message(role="user", content="Hello from Go!")
         response = await agent.process(message)
@@ -165,11 +146,8 @@ async def test_go_to_python_websocket_basic():
 @pytest.mark.cross_language
 async def test_go_to_python_websocket_with_metadata():
     """Test WebSocket with metadata: Go client → Python server."""
-    async with python_websocket_server() as (port, local_agent, task):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"ws://localhost:{port}"
-        )
+    async with python_websocket_server() as (port, _local_agent, _task):
+        agent = RemoteAgent(name="test-agent", endpoint=f"ws://localhost:{port}")
 
         message = Message(
             role="user",
@@ -177,7 +155,7 @@ async def test_go_to_python_websocket_with_metadata():
             metadata={
                 "request_id": "go-ws-123",
                 "client": "go",
-            }
+            },
         )
         response = await agent.process(message)
 
@@ -192,11 +170,8 @@ async def test_go_to_python_websocket_with_metadata():
 @pytest.mark.cross_language
 async def test_go_to_python_websocket_unicode():
     """Test Unicode over WebSocket: Go client → Python server."""
-    async with python_websocket_server() as (port, local_agent, task):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"ws://localhost:{port}"
-        )
+    async with python_websocket_server() as (port, _local_agent, _task):
+        agent = RemoteAgent(name="test-agent", endpoint=f"ws://localhost:{port}")
 
         unicode_content = "Hello 世界 🌍 Привет مرحبا"
         message = Message(role="user", content=unicode_content)
@@ -217,15 +192,12 @@ async def test_go_to_python_websocket_unicode():
 @pytest.mark.slow
 async def test_websocket_concurrent_connections():
     """Test multiple concurrent WebSocket connections: Python → Go."""
-    async with go_http_server() as (port, process):
+    async with go_http_server() as (port, _process):
         import asyncio
 
         # Create multiple concurrent connections
         async def send_message(i):
-            agent = RemoteAgent(
-                name=f"test-agent-{i}",
-                endpoint=f"ws://localhost:{port}/ws"
-            )
+            agent = RemoteAgent(name=f"test-agent-{i}", endpoint=f"ws://localhost:{port}/ws")
             message = Message(role="user", content=f"Concurrent WS {i}")
             response = await agent.process(message)
             return response
@@ -246,11 +218,8 @@ async def test_websocket_concurrent_connections():
 @pytest.mark.cross_language
 async def test_websocket_connection_reuse():
     """Test connection reuse over WebSocket."""
-    async with go_http_server() as (port, process):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"ws://localhost:{port}/ws"
-        )
+    async with go_http_server() as (port, _process):
+        agent = RemoteAgent(name="test-agent", endpoint=f"ws://localhost:{port}/ws")
 
         # Send multiple messages - connection should be reused
         for i in range(10):

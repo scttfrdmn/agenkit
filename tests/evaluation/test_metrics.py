@@ -5,16 +5,9 @@ Tests AccuracyMetric, QualityMetrics, ContextMetrics, etc.
 """
 
 import pytest
-from agenkit.evaluation import (
-    AccuracyMetric,
-    QualityMetrics,
-    PrecisionRecallMetric
-)
-from agenkit.evaluation.context_metrics import (
-    ContextMetrics,
-    CompressionMetrics,
-    LatencyMetric
-)
+
+from agenkit.evaluation import AccuracyMetric, PrecisionRecallMetric, QualityMetrics
+from agenkit.evaluation.context_metrics import CompressionMetrics, ContextMetrics, LatencyMetric
 from agenkit.interfaces import Message
 
 
@@ -45,12 +38,7 @@ async def test_accuracy_metric_correct():
     input_msg = Message(role="user", content="What is 2+2?")
     output_msg = Message(role="assistant", content="The answer is 4")
 
-    score = await metric.measure(
-        agent,
-        input_msg,
-        output_msg,
-        context={"expected": "4"}
-    )
+    score = await metric.measure(agent, input_msg, output_msg, context={"expected": "4"})
 
     assert score == 1.0
 
@@ -64,12 +52,7 @@ async def test_accuracy_metric_incorrect():
     input_msg = Message(role="user", content="What is 2+2?")
     output_msg = Message(role="assistant", content="The answer is 5")
 
-    score = await metric.measure(
-        agent,
-        input_msg,
-        output_msg,
-        context={"expected": "4"}
-    )
+    score = await metric.measure(agent, input_msg, output_msg, context={"expected": "4"})
 
     assert score == 0.0
 
@@ -83,12 +66,7 @@ async def test_accuracy_metric_case_insensitive():
     input_msg = Message(role="user", content="Capital of France?")
     output_msg = Message(role="assistant", content="PARIS")
 
-    score = await metric.measure(
-        agent,
-        input_msg,
-        output_msg,
-        context={"expected": "paris"}
-    )
+    score = await metric.measure(agent, input_msg, output_msg, context={"expected": "paris"})
 
     assert score == 1.0
 
@@ -106,12 +84,7 @@ async def test_accuracy_metric_custom_validator():
     input_msg = Message(role="user", content="Test")
     output_msg = Message(role="assistant", content="This is a long response")
 
-    score = await metric.measure(
-        agent,
-        input_msg,
-        output_msg,
-        context={"expected": "ignored"}
-    )
+    score = await metric.measure(agent, input_msg, output_msg, context={"expected": "ignored"})
 
     assert score == 1.0
 
@@ -137,7 +110,9 @@ async def test_quality_metrics_rule_based():
     metric = QualityMetrics(use_llm_judge=False)
 
     input_msg = Message(role="user", content="What is the capital of France?")
-    output_msg = Message(role="assistant", content="The capital of France is Paris, which is a beautiful city.")
+    output_msg = Message(
+        role="assistant", content="The capital of France is Paris, which is a beautiful city."
+    )
 
     score = await metric.measure(agent, input_msg, output_msg)
 
@@ -167,12 +142,7 @@ async def test_context_metrics():
     input_msg = Message(role="user", content="Test")
     output_msg = Message(role="assistant", content="Response")
 
-    length = await metric.measure(
-        agent,
-        input_msg,
-        output_msg,
-        context={"session_id": "test"}
-    )
+    length = await metric.measure(agent, input_msg, output_msg, context={"session_id": "test"})
 
     assert length == 1000.0
 
@@ -195,21 +165,13 @@ async def test_context_metrics_aggregate():
 @pytest.mark.asyncio
 async def test_compression_metrics():
     """Test compression quality measurement."""
-    agent = MockAgent(compression_stats={
-        "raw_tokens": 10000,
-        "compressed_tokens": 100
-    })
+    agent = MockAgent(compression_stats={"raw_tokens": 10000, "compressed_tokens": 100})
     metric = CompressionMetrics()
 
     input_msg = Message(role="user", content="Test")
     output_msg = Message(role="assistant", content="Response")
 
-    ratio = await metric.measure(
-        agent,
-        input_msg,
-        output_msg,
-        context={"session_id": "test"}
-    )
+    ratio = await metric.measure(agent, input_msg, output_msg, context={"session_id": "test"})
 
     assert ratio == 100.0  # 10000 / 100
 
@@ -236,12 +198,7 @@ async def test_latency_metric():
     input_msg = Message(role="user", content="Test")
     output_msg = Message(role="assistant", content="Response")
 
-    latency = await metric.measure(
-        agent,
-        input_msg,
-        output_msg,
-        context={"latency_ms": 123.45}
-    )
+    latency = await metric.measure(agent, input_msg, output_msg, context={"latency_ms": 123.45})
 
     assert latency == 123.45
 
@@ -274,7 +231,7 @@ async def test_precision_recall_metric():
         agent,
         Message(role="user", content="Test"),
         Message(role="assistant", content="positive"),
-        context={"true_label": True, "predicted_label": True}
+        context={"true_label": True, "predicted_label": True},
     )
 
     # False positive
@@ -282,7 +239,7 @@ async def test_precision_recall_metric():
         agent,
         Message(role="user", content="Test"),
         Message(role="assistant", content="positive"),
-        context={"true_label": False, "predicted_label": True}
+        context={"true_label": False, "predicted_label": True},
     )
 
     # False negative
@@ -290,7 +247,7 @@ async def test_precision_recall_metric():
         agent,
         Message(role="user", content="Test"),
         Message(role="assistant", content="negative"),
-        context={"true_label": True, "predicted_label": False}
+        context={"true_label": True, "predicted_label": False},
     )
 
     # True negative
@@ -298,7 +255,7 @@ async def test_precision_recall_metric():
         agent,
         Message(role="user", content="Test"),
         Message(role="assistant", content="negative"),
-        context={"true_label": False, "predicted_label": False}
+        context={"true_label": False, "predicted_label": False},
     )
 
     stats = metric.aggregate([])
@@ -322,7 +279,7 @@ async def test_precision_recall_reset():
         MockAgent(),
         Message(role="user", content="Test"),
         Message(role="assistant", content="positive"),
-        context={"true_label": True, "predicted_label": True}
+        context={"true_label": True, "predicted_label": True},
     )
 
     assert metric.true_positives == 1

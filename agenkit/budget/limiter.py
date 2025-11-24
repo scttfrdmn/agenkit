@@ -7,7 +7,7 @@ when budgets are exceeded.
 
 import functools
 import logging
-from typing import Optional, Callable, Awaitable
+from collections.abc import Callable
 
 from ..interfaces import Agent, Message
 from .tracker import CostTracker
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class BudgetExceededError(Exception):
     """Raised when budget is exceeded."""
+
     pass
 
 
@@ -46,12 +47,12 @@ class BudgetLimiter:
     def __init__(
         self,
         tracker: CostTracker,
-        session_budget: Optional[float] = None,  # $ per session
-        agent_budget: Optional[float] = None,    # $ per agent
-        global_budget: Optional[float] = None,   # $ global
+        session_budget: float | None = None,  # $ per session
+        agent_budget: float | None = None,  # $ per agent
+        global_budget: float | None = None,  # $ global
         action: str = "error",  # "error", "warning", "switch_model"
-        model_switcher: Optional[Callable[[str], str]] = None,  # For switch_model action
-        agent_name: Optional[str] = None  # Override agent name for tracking
+        model_switcher: Callable[[str], str] | None = None,  # For switch_model action
+        agent_name: str | None = None,  # Override agent name for tracking
     ):
         """
         Initialize budget limiter.
@@ -124,7 +125,7 @@ class BudgetLimiter:
             if current_cost >= self.session_budget:
                 await self._handle_budget_exceeded(
                     f"Session budget ${self.session_budget:.2f} exceeded (current: ${current_cost:.2f})",
-                    session_id=session_id
+                    session_id=session_id,
                 )
 
         # Check agent budget
@@ -133,7 +134,7 @@ class BudgetLimiter:
             if current_cost >= self.agent_budget:
                 await self._handle_budget_exceeded(
                     f"Agent '{agent_name}' budget ${self.agent_budget:.2f} exceeded (current: ${current_cost:.2f})",
-                    agent_name=agent_name
+                    agent_name=agent_name,
                 )
 
         # Check global budget
@@ -145,10 +146,7 @@ class BudgetLimiter:
                 )
 
     async def _handle_budget_exceeded(
-        self,
-        message: str,
-        session_id: Optional[str] = None,
-        agent_name: Optional[str] = None
+        self, message: str, session_id: str | None = None, agent_name: str | None = None
     ) -> None:
         """Handle budget exceeded based on action."""
 
@@ -162,12 +160,7 @@ class BudgetLimiter:
             # Model switching handled by optimizer, just log
             logger.info(f"Budget threshold reached: {message}")
 
-    async def _record_cost(
-        self,
-        session_id: str,
-        agent_name: str,
-        response: Message
-    ) -> None:
+    async def _record_cost(self, session_id: str, agent_name: str, response: Message) -> None:
         """Record cost from response metadata."""
 
         # Check if response has usage metadata
@@ -185,17 +178,12 @@ class BudgetLimiter:
             model=model,
             input_tokens=usage.get("prompt_tokens", 0),
             output_tokens=usage.get("completion_tokens", 0),
-            metadata={
-                "message_id": response.metadata.get("message_id"),
-                "model": model
-            }
+            metadata={"message_id": response.metadata.get("message_id"), "model": model},
         )
 
     async def get_remaining_budget(
-        self,
-        session_id: Optional[str] = None,
-        agent_name: Optional[str] = None
-    ) -> dict[str, Optional[float]]:
+        self, session_id: str | None = None, agent_name: str | None = None
+    ) -> dict[str, float | None]:
         """
         Get remaining budget(s).
 
@@ -212,11 +200,7 @@ class BudgetLimiter:
             >>> print(remaining)
             {"session": 8.50, "agent": None, "global": None}
         """
-        remaining = {
-            "session": None,
-            "agent": None,
-            "global": None
-        }
+        remaining = {"session": None, "agent": None, "global": None}
 
         # Session budget
         if self.session_budget is not None and session_id:
@@ -254,11 +238,11 @@ class BudgetWarning:
     def __init__(
         self,
         tracker: CostTracker,
-        session_budget: Optional[float] = None,
-        agent_budget: Optional[float] = None,
-        global_budget: Optional[float] = None,
-        warning_thresholds: list[float] = None,  # [0.5, 0.75, 0.9]
-        agent_name: Optional[str] = None
+        session_budget: float | None = None,
+        agent_budget: float | None = None,
+        global_budget: float | None = None,
+        warning_thresholds: list[float] | None = None,  # [0.5, 0.75, 0.9]
+        agent_name: str | None = None,
     ):
         """Initialize budget warning middleware."""
         self.tracker = tracker
@@ -297,7 +281,7 @@ class BudgetWarning:
                     agent_name=agent_name,
                     model=model,
                     input_tokens=usage.get("prompt_tokens", 0),
-                    output_tokens=usage.get("completion_tokens", 0)
+                    output_tokens=usage.get("completion_tokens", 0),
                 )
 
             return response
@@ -319,7 +303,7 @@ class BudgetWarning:
             for threshold in self.warning_thresholds:
                 if usage_pct >= threshold and threshold not in self._session_warnings[session_id]:
                     logger.warning(
-                        f"Session {session_id} at {usage_pct*100:.0f}% of budget "
+                        f"Session {session_id} at {usage_pct * 100:.0f}% of budget "
                         f"(${current:.2f} / ${self.session_budget:.2f})"
                     )
                     self._session_warnings[session_id].add(threshold)
@@ -335,7 +319,7 @@ class BudgetWarning:
             for threshold in self.warning_thresholds:
                 if usage_pct >= threshold and threshold not in self._agent_warnings[agent_name]:
                     logger.warning(
-                        f"Agent {agent_name} at {usage_pct*100:.0f}% of budget "
+                        f"Agent {agent_name} at {usage_pct * 100:.0f}% of budget "
                         f"(${current:.2f} / ${self.agent_budget:.2f})"
                     )
                     self._agent_warnings[agent_name].add(threshold)
@@ -348,7 +332,7 @@ class BudgetWarning:
             for threshold in self.warning_thresholds:
                 if usage_pct >= threshold and threshold not in self._global_warnings:
                     logger.warning(
-                        f"Global cost at {usage_pct*100:.0f}% of budget "
+                        f"Global cost at {usage_pct * 100:.0f}% of budget "
                         f"(${current:.2f} / ${self.global_budget:.2f})"
                     )
                     self._global_warnings.add(threshold)

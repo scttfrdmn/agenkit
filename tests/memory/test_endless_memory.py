@@ -1,8 +1,9 @@
 """Tests for EndlessMemory integration."""
 
 import pytest
+
 from agenkit.interfaces import Message
-from agenkit.memory.endless_memory import EndlessMemory, EndlessClient
+from agenkit.memory.endless_memory import EndlessMemory
 
 
 # Mock EndlessClient for testing
@@ -13,10 +14,7 @@ class MockEndlessClient:
         self.storage: dict[str, list[dict]] = {}
 
     async def store_context(
-        self,
-        session_id: str,
-        messages: list[dict],
-        metadata: dict = None
+        self, session_id: str, messages: list[dict], metadata: dict | None = None
     ) -> None:
         """Store messages in mock storage."""
         if session_id not in self.storage:
@@ -24,10 +22,7 @@ class MockEndlessClient:
         self.storage[session_id].extend(messages)
 
     async def retrieve_context(
-        self,
-        session_id: str,
-        query: str = None,
-        limit: int = 10
+        self, session_id: str, query: str | None = None, limit: int = 10
     ) -> list[dict]:
         """Retrieve from mock storage."""
         if session_id not in self.storage:
@@ -38,8 +33,7 @@ class MockEndlessClient:
         # Simple query matching (if query provided)
         if query:
             messages = [
-                msg for msg in messages
-                if query.lower() in str(msg.get("content", "")).lower()
+                msg for msg in messages if query.lower() in str(msg.get("content", "")).lower()
             ]
 
         return messages[-limit:] if messages else []
@@ -242,7 +236,7 @@ async def test_long_conversation():
     for i in range(100):
         await memory.store(
             "long-session",
-            Message(role="user" if i % 2 == 0 else "assistant", content=f"Message {i}")
+            Message(role="user" if i % 2 == 0 else "assistant", content=f"Message {i}"),
         )
 
     # Should be able to retrieve with limit
@@ -261,10 +255,7 @@ async def test_message_conversion():
     memory = EndlessMemory(client)
 
     # Create message with complex content
-    original = Message(
-        role="assistant",
-        content="This is a test message with special chars: !@#$%"
-    )
+    original = Message(role="assistant", content="This is a test message with special chars: !@#$%")
 
     # Store and retrieve
     await memory.store("session-1", original)

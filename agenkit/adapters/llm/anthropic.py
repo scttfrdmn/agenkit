@@ -196,9 +196,7 @@ class AnthropicLLM(LLM):
             # Map roles
             role = "user" if msg.role == "user" else "assistant"
 
-            anthropic_messages.append(
-                {"role": role, "content": str(msg.content)}
-            )
+            anthropic_messages.append({"role": role, "content": str(msg.content)})
 
         return anthropic_messages
 

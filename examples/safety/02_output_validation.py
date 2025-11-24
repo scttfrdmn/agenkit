@@ -6,12 +6,13 @@ agent outputs and automatically redact sensitive information.
 """
 
 import asyncio
+
 from agenkit.interfaces import Agent, Message
 from agenkit.safety.output_validation import (
+    OutputValidationError,
     OutputValidationMiddleware,
     SchemaValidator,
     SensitiveDataRedactor,
-    OutputValidationError,
 )
 
 
@@ -33,8 +34,8 @@ class DataAgent(Agent):
             content={
                 "status": "success",
                 "data": {"user": "alice", "age": 30},
-                "timestamp": "2025-11-14T10:00:00Z"
-            }
+                "timestamp": "2025-11-14T10:00:00Z",
+            },
         )
 
 
@@ -58,10 +59,10 @@ class SensitiveAgent(Agent):
                     "name": "Alice",
                     "email": "alice@example.com",
                     "api_key": "sk-1234567890abcdefghij1234567890ab",
-                    "password": "my_secret_password"
+                    "password": "my_secret_password",
                 },
-                "message": "User data retrieved successfully"
-            }
+                "message": "User data retrieved successfully",
+            },
         )
 
 
@@ -77,7 +78,7 @@ async def main():
 
     schema = SchemaValidator(
         expected_fields={"status": str, "data": dict, "timestamp": str},
-        required_fields={"status", "data"}
+        required_fields={"status", "data"},
     )
 
     data_agent = DataAgent()
@@ -96,14 +97,14 @@ async def main():
     sensitive_agent = SensitiveAgent()
     redacting_agent = OutputValidationMiddleware(
         sensitive_agent,
-        auto_redact=True  # Enable automatic redaction
+        auto_redact=True,  # Enable automatic redaction
     )
 
     try:
         response = await redacting_agent.process(Message(role="user", content="get user"))
         print("✓ Response with redacted sensitive data:")
         print(f"  {response.content}")
-        print(f"\n  Note: API key, password, and email are redacted!")
+        print("\n  Note: API key, password, and email are redacted!")
     except OutputValidationError as e:
         print(f"✗ Error: {e}")
 
@@ -117,7 +118,7 @@ async def main():
         "username": "alice",
         "password": "secret123",
         "api_key": "sk-abc123",
-        "public_info": "This is fine"
+        "public_info": "This is fine",
     }
 
     # Check for sensitive data
@@ -133,7 +134,7 @@ async def main():
     strict_schema = SchemaValidator(
         expected_fields={"status": str, "code": int},
         required_fields={"status", "code"},
-        allow_additional=False  # Don't allow extra fields
+        allow_additional=False,  # Don't allow extra fields
     )
 
     strict_agent = OutputValidationMiddleware(data_agent, schema=strict_schema)

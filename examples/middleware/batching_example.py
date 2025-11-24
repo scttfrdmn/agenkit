@@ -40,7 +40,7 @@ CONFIGURATION:
 
 import asyncio
 import time
-from typing import List
+
 from agenkit.interfaces import Agent, Message
 from agenkit.middleware import BatchingConfig, BatchingDecorator
 
@@ -82,7 +82,7 @@ class MockLLMBatchAgent(Agent):
             metadata={
                 "model": "gpt-4-batch",
                 "cost_savings": "50%",  # Batch API pricing
-            }
+            },
         )
 
 
@@ -124,7 +124,7 @@ class MockDatabaseAgent(Agent):
             metadata={
                 "table": "users",
                 "operation": "INSERT",
-            }
+            },
         )
 
 
@@ -161,7 +161,7 @@ class MockAnalyticsAgent(Agent):
             metadata={
                 "pipeline": "clickstream",
                 "timestamp": time.time(),
-            }
+            },
         )
 
 
@@ -172,9 +172,9 @@ async def example_1_llm_batch_processing():
     Demonstrates cost savings with batch LLM API endpoints.
     OpenAI Batch API: 50% cost reduction, 24-hour turnaround.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 1: LLM Batch Processing (Cost Optimization)")
-    print("="*70)
+    print("=" * 70)
 
     print("\nScenario: Processing 20 LLM requests")
     print("Real-world: OpenAI Batch API offers 50% cost savings")
@@ -184,9 +184,9 @@ async def example_1_llm_batch_processing():
 
     # Configure batching for LLM: larger batches, willing to wait longer
     config = BatchingConfig(
-        max_batch_size=5,       # Batch up to 5 requests
-        max_wait_time=0.1,      # Wait up to 100ms to fill batch
-        max_queue_size=100
+        max_batch_size=5,  # Batch up to 5 requests
+        max_wait_time=0.1,  # Wait up to 100ms to fill batch
+        max_queue_size=100,
     )
 
     batching_agent = BatchingDecorator(agent, config)
@@ -197,10 +197,7 @@ async def example_1_llm_batch_processing():
 
     tasks = []
     for i in range(20):
-        msg = Message(
-            role="user",
-            content=f"Summarize document {i+1}"
-        )
+        msg = Message(role="user", content=f"Summarize document {i + 1}")
         tasks.append(batching_agent.process(msg))
 
     results = await asyncio.gather(*tasks)
@@ -212,11 +209,11 @@ async def example_1_llm_batch_processing():
 
     # Show batching metrics
     metrics = batching_agent.metrics
-    print(f"\n📊 Batching Metrics:")
+    print("\n📊 Batching Metrics:")
     print(f"   Total batches: {metrics.total_batches}")
     print(f"   Avg batch size: {metrics.avg_batch_size:.1f}")
     print(f"   Requests/batch ratio: {metrics.total_requests}/{metrics.total_batches}")
-    print(f"   💰 Cost savings: ~50% (batch API pricing)")
+    print("   💰 Cost savings: ~50% (batch API pricing)")
 
     await batching_agent.shutdown()
 
@@ -228,9 +225,9 @@ async def example_2_database_bulk_operations():
     Demonstrates throughput improvement for database operations.
     Bulk INSERT can be 10-100x faster than individual INSERTs.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 2: Database Bulk Operations (Throughput Optimization)")
-    print("="*70)
+    print("=" * 70)
 
     print("\nScenario: Inserting 50 database records")
     print("Real-world: Bulk INSERT 10-100x faster than individual INSERTs")
@@ -240,9 +237,9 @@ async def example_2_database_bulk_operations():
 
     # Configure batching for database: medium batches, short wait time
     config = BatchingConfig(
-        max_batch_size=10,      # Batch up to 10 records
-        max_wait_time=0.05,     # Wait max 50ms
-        max_queue_size=200
+        max_batch_size=10,  # Batch up to 10 records
+        max_wait_time=0.05,  # Wait max 50ms
+        max_queue_size=200,
     )
 
     batching_agent = BatchingDecorator(agent, config)
@@ -253,13 +250,10 @@ async def example_2_database_bulk_operations():
 
     tasks = []
     for i in range(50):
-        msg = Message(
-            role="user",
-            content=f"user_{i+1}@example.com"
-        )
+        msg = Message(role="user", content=f"user_{i + 1}@example.com")
         tasks.append(batching_agent.process(msg))
 
-    results = await asyncio.gather(*tasks)
+    await asyncio.gather(*tasks)
     elapsed = time.time() - start_time
 
     print(f"✅ Completed in {elapsed:.2f}s")
@@ -268,11 +262,11 @@ async def example_2_database_bulk_operations():
 
     # Show batching efficiency
     metrics = batching_agent.metrics
-    print(f"\n📊 Batching Metrics:")
+    print("\n📊 Batching Metrics:")
     print(f"   Total batches: {metrics.total_batches}")
     print(f"   Avg batch size: {metrics.avg_batch_size:.1f}")
-    print(f"   Efficiency gain: ~{50/agent.db_calls:.1f}x fewer DB round-trips")
-    print(f"   ⚡ Throughput: {agent.records_inserted/elapsed:.0f} records/sec")
+    print(f"   Efficiency gain: ~{50 / agent.db_calls:.1f}x fewer DB round-trips")
+    print(f"   ⚡ Throughput: {agent.records_inserted / elapsed:.0f} records/sec")
 
     await batching_agent.shutdown()
 
@@ -284,9 +278,9 @@ async def example_3_high_throughput_analytics():
     Demonstrates batching for high-volume event processing.
     Real streaming systems process millions of events per second.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 3: High-Throughput Analytics (Stream Processing)")
-    print("="*70)
+    print("=" * 70)
 
     print("\nScenario: Processing 100 analytics events")
     print("Real-world: Data pipelines batch events for warehouse writes")
@@ -296,9 +290,9 @@ async def example_3_high_throughput_analytics():
 
     # Configure batching for analytics: aggressive batching
     config = BatchingConfig(
-        max_batch_size=20,      # Large batches for throughput
-        max_wait_time=0.05,     # Quick batching
-        max_queue_size=500
+        max_batch_size=20,  # Large batches for throughput
+        max_wait_time=0.05,  # Quick batching
+        max_queue_size=500,
     )
 
     batching_agent = BatchingDecorator(agent, config)
@@ -309,13 +303,10 @@ async def example_3_high_throughput_analytics():
 
     tasks = []
     for i in range(100):
-        msg = Message(
-            role="user",
-            content=f"click_event_{i+1}"
-        )
+        msg = Message(role="user", content=f"click_event_{i + 1}")
         tasks.append(batching_agent.process(msg))
 
-    results = await asyncio.gather(*tasks)
+    await asyncio.gather(*tasks)
     elapsed = time.time() - start_time
 
     print(f"✅ Completed in {elapsed:.2f}s")
@@ -323,11 +314,11 @@ async def example_3_high_throughput_analytics():
 
     # Show batching performance
     metrics = batching_agent.metrics
-    print(f"\n📊 Batching Metrics:")
+    print("\n📊 Batching Metrics:")
     print(f"   Total batches: {metrics.total_batches}")
     print(f"   Avg batch size: {metrics.avg_batch_size:.1f}")
-    print(f"   Avg wait time: {metrics.avg_wait_time*1000:.1f}ms")
-    print(f"   ⚡ Throughput: {agent.events_processed/elapsed:.0f} events/sec")
+    print(f"   Avg wait time: {metrics.avg_wait_time * 1000:.1f}ms")
+    print(f"   ⚡ Throughput: {agent.events_processed / elapsed:.0f} events/sec")
 
     await batching_agent.shutdown()
 
@@ -339,9 +330,9 @@ async def example_4_partial_failures():
     Demonstrates how batching handles individual request failures
     without affecting other requests in the batch.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 4: Partial Failure Handling")
-    print("="*70)
+    print("=" * 70)
 
     print("\nScenario: Batch with some failing requests")
     print("Real-world: Individual requests can fail independently")
@@ -364,10 +355,7 @@ async def example_4_partial_failures():
             if "fail" in message.content.lower():
                 raise ValueError(f"Processing failed for: {message.content}")
 
-            return Message(
-                role="agent",
-                content=f"Success: {message.content}"
-            )
+            return Message(role="agent", content=f"Success: {message.content}")
 
     agent = PartialFailAgent()
     config = BatchingConfig(max_batch_size=5, max_wait_time=0.05)
@@ -385,22 +373,21 @@ async def example_4_partial_failures():
     print("Processing batch with mixed success/failure...")
 
     results = await asyncio.gather(
-        *[batching_agent.process(msg) for msg in messages],
-        return_exceptions=True
+        *[batching_agent.process(msg) for msg in messages], return_exceptions=True
     )
 
     # Show results
     print("\nResults:")
     for i, result in enumerate(results):
         if isinstance(result, Exception):
-            print(f"   ❌ Request {i+1}: {type(result).__name__} - {result}")
+            print(f"   ❌ Request {i + 1}: {type(result).__name__} - {result}")
         else:
-            print(f"   ✅ Request {i+1}: {result.content}")
+            print(f"   ✅ Request {i + 1}: {result.content}")
 
     metrics = batching_agent.metrics
-    print(f"\n📊 Batch Metrics:")
+    print("\n📊 Batch Metrics:")
     print(f"   Partial batches: {metrics.partial_batches}")
-    print(f"   ℹ️  Only failed requests raised errors - others succeeded")
+    print("   ℹ️  Only failed requests raised errors - others succeeded")
 
     await batching_agent.shutdown()
 
@@ -412,26 +399,35 @@ async def example_5_configuration_tuning():
     Demonstrates the impact of different configuration settings
     on latency and throughput.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 5: Configuration Tuning (Latency vs Throughput)")
-    print("="*70)
+    print("=" * 70)
 
     print("\nComparing different batching configurations:\n")
 
     # Test configurations
     configs = [
-        ("Aggressive (low latency)", BatchingConfig(
-            max_batch_size=3,
-            max_wait_time=0.01,  # 10ms
-        )),
-        ("Balanced (default)", BatchingConfig(
-            max_batch_size=10,
-            max_wait_time=0.1,   # 100ms
-        )),
-        ("Throughput-optimized", BatchingConfig(
-            max_batch_size=20,
-            max_wait_time=0.2,   # 200ms
-        )),
+        (
+            "Aggressive (low latency)",
+            BatchingConfig(
+                max_batch_size=3,
+                max_wait_time=0.01,  # 10ms
+            ),
+        ),
+        (
+            "Balanced (default)",
+            BatchingConfig(
+                max_batch_size=10,
+                max_wait_time=0.1,  # 100ms
+            ),
+        ),
+        (
+            "Throughput-optimized",
+            BatchingConfig(
+                max_batch_size=20,
+                max_wait_time=0.2,  # 200ms
+            ),
+        ),
     ]
 
     for name, config in configs:
@@ -441,8 +437,7 @@ async def example_5_configuration_tuning():
         # Send 30 requests
         start = time.time()
         tasks = [
-            batching_agent.process(Message(role="user", content=f"event_{i}"))
-            for i in range(30)
+            batching_agent.process(Message(role="user", content=f"event_{i}")) for i in range(30)
         ]
         await asyncio.gather(*tasks)
         elapsed = time.time() - start
@@ -452,17 +447,17 @@ async def example_5_configuration_tuning():
         print(f"   Total time: {elapsed:.3f}s")
         print(f"   Batches: {metrics.total_batches}")
         print(f"   Avg batch: {metrics.avg_batch_size:.1f} requests")
-        print(f"   Avg wait: {metrics.avg_wait_time*1000:.1f}ms")
-        print(f"   Throughput: {30/elapsed:.0f} req/sec\n")
+        print(f"   Avg wait: {metrics.avg_wait_time * 1000:.1f}ms")
+        print(f"   Throughput: {30 / elapsed:.0f} req/sec\n")
 
         await batching_agent.shutdown()
 
 
 async def main():
     """Run all batching examples."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("BATCHING MIDDLEWARE EXAMPLES")
-    print("="*70)
+    print("=" * 70)
     print("\nBatching collects concurrent requests and processes them together")
     print("to improve throughput at the cost of added latency.")
     print("\nKey benefits: Lower costs, better throughput, fewer round-trips")
@@ -475,9 +470,9 @@ async def main():
     await example_4_partial_failures()
     await example_5_configuration_tuning()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("BATCHING BEST PRACTICES")
-    print("="*70)
+    print("=" * 70)
     print("""
 1. Choose batch size based on your use case:
    - LLM APIs: 5-50 (API limits vary)

@@ -14,12 +14,13 @@ Run: python examples/budget/extended_thinking_demo.py
 """
 
 import asyncio
+
 from agenkit import Message
 from agenkit.budget import (
+    CostTracker,
     ThinkingBudgetAllocator,
     ThinkingMode,
     ThinkingModeDetector,
-    CostTracker,
 )
 
 
@@ -30,9 +31,7 @@ async def demo_basic_allocation():
     print("=" * 80)
 
     allocator = ThinkingBudgetAllocator(
-        instant_thinking_tokens=0,
-        light_thinking_tokens=3000,
-        full_thinking_tokens=15000
+        instant_thinking_tokens=0, light_thinking_tokens=3000, full_thinking_tokens=15000
     )
 
     queries = [
@@ -61,27 +60,26 @@ async def demo_budget_constraints():
 
     allocator = ThinkingBudgetAllocator(
         full_thinking_tokens=15000,
-        min_budget_for_extended=0.50  # Require $0.50 remaining for extended thinking
+        min_budget_for_extended=0.50,  # Require $0.50 remaining for extended thinking
     )
 
-    messages = [Message(
-        role="user",
-        content="Provide a comprehensive analysis of this complex system"
-    )]
+    messages = [
+        Message(role="user", content="Provide a comprehensive analysis of this complex system")
+    ]
 
     budgets = [10.0, 1.0, 0.30, 0.05]
 
     for remaining in budgets:
         budget = await allocator.allocate(
-            messages=messages,
-            complexity="complex",
-            budget_remaining=remaining
+            messages=messages, complexity="complex", budget_remaining=remaining
         )
 
         print(f"\nBudget Remaining: ${remaining:.2f}")
         print(f"Selected Mode: {budget.mode.value}")
         print(f"Thinking Tokens: {budget.max_thinking_tokens:,}")
-        print(f"Reason: {'Extended thinking allowed' if budget.mode == ThinkingMode.EXTENDED else 'Insufficient budget, using instant'}")
+        print(
+            f"Reason: {'Extended thinking allowed' if budget.mode == ThinkingMode.EXTENDED else 'Insufficient budget, using instant'}"
+        )
 
 
 async def demo_thinking_mode_detector():
@@ -138,7 +136,7 @@ async def demo_cost_tracking_with_thinking():
             model="claude-sonnet-4",
             input_tokens=input_tokens,
             output_tokens=output_tokens,
-            thinking_tokens=budget.max_thinking_tokens
+            thinking_tokens=budget.max_thinking_tokens,
         )
 
         print(f"\nQuery: {content}")
@@ -176,32 +174,30 @@ async def demo_adaptive_thinking():
         "cost_optimized": ThinkingBudgetAllocator(
             light_thinking_tokens=1000,
             full_thinking_tokens=5000,
-            min_budget_for_extended=1.0  # Strict budget requirement
+            min_budget_for_extended=1.0,  # Strict budget requirement
         ),
         "quality_optimized": ThinkingBudgetAllocator(
             light_thinking_tokens=5000,
             full_thinking_tokens=20000,
-            min_budget_for_extended=0.10  # Lenient budget requirement
+            min_budget_for_extended=0.10,  # Lenient budget requirement
         ),
         "balanced": ThinkingBudgetAllocator(
-            light_thinking_tokens=3000,
-            full_thinking_tokens=12000,
-            min_budget_for_extended=0.50
+            light_thinking_tokens=3000, full_thinking_tokens=12000, min_budget_for_extended=0.50
         ),
     }
 
-    messages = [Message(
-        role="user",
-        content="Analyze this complex problem step by step and evaluate all alternatives"
-    )]
+    messages = [
+        Message(
+            role="user",
+            content="Analyze this complex problem step by step and evaluate all alternatives",
+        )
+    ]
 
     print("\nComplex query with different allocation strategies:")
 
     for strategy, allocator in allocators.items():
         budget = await allocator.allocate(
-            messages=messages,
-            complexity="complex",
-            budget_remaining=2.0
+            messages=messages, complexity="complex", budget_remaining=2.0
         )
 
         print(f"\n{strategy.upper()} Strategy:")
@@ -231,7 +227,7 @@ async def demo_thinking_cost_comparison():
         model="claude-sonnet-4",
         input_tokens=input_tokens,
         output_tokens=output_tokens,
-        thinking_tokens=0
+        thinking_tokens=0,
     )
 
     # Extended mode (with thinking tokens)
@@ -241,23 +237,27 @@ async def demo_thinking_cost_comparison():
         model="claude-sonnet-4",
         input_tokens=input_tokens,
         output_tokens=output_tokens,
-        thinking_tokens=10000  # Extended thinking
+        thinking_tokens=10000,  # Extended thinking
     )
 
     print("\nSame Query - Different Thinking Modes:")
     print("-" * 80)
 
-    print(f"\nINSTANT MODE (0 thinking tokens):")
+    print("\nINSTANT MODE (0 thinking tokens):")
     print(f"  Total tokens: {cost_instant.input_tokens + cost_instant.output_tokens:,}")
     print(f"  Total cost: ${cost_instant.total_cost:.4f}")
 
-    print(f"\nEXTENDED MODE (10,000 thinking tokens):")
-    print(f"  Total tokens: {cost_extended.input_tokens + cost_extended.output_tokens + cost_extended.thinking_tokens:,}")
+    print("\nEXTENDED MODE (10,000 thinking tokens):")
+    print(
+        f"  Total tokens: {cost_extended.input_tokens + cost_extended.output_tokens + cost_extended.thinking_tokens:,}"
+    )
     print(f"  Thinking cost: ${cost_extended.thinking_cost:.4f}")
     print(f"  Total cost: ${cost_extended.total_cost:.4f}")
 
-    print(f"\nCost Increase: ${cost_extended.total_cost - cost_instant.total_cost:.4f} ({((cost_extended.total_cost / cost_instant.total_cost - 1) * 100):.1f}%)")
-    print(f"Trade-off: Higher cost for better reasoning quality")
+    print(
+        f"\nCost Increase: ${cost_extended.total_cost - cost_instant.total_cost:.4f} ({((cost_extended.total_cost / cost_instant.total_cost - 1) * 100):.1f}%)"
+    )
+    print("Trade-off: Higher cost for better reasoning quality")
 
 
 async def main():

@@ -12,7 +12,7 @@ Design principles:
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
+
 from ..interfaces import Message
 
 
@@ -38,12 +38,7 @@ class Memory(ABC):
     """
 
     @abstractmethod
-    async def store(
-        self,
-        session_id: str,
-        message: Message,
-        metadata: Optional[dict] = None
-    ) -> None:
+    async def store(self, session_id: str, message: Message, metadata: dict | None = None) -> None:
         """
         Store message in memory with optional metadata.
 
@@ -63,11 +58,7 @@ class Memory(ABC):
 
     @abstractmethod
     async def retrieve(
-        self,
-        session_id: str,
-        query: Optional[str] = None,
-        limit: int = 10,
-        **kwargs
+        self, session_id: str, query: str | None = None, limit: int = 10, **kwargs
     ) -> list[Message]:
         """
         Retrieve messages from memory.
@@ -105,11 +96,7 @@ class Memory(ABC):
         pass
 
     @abstractmethod
-    async def summarize(
-        self,
-        session_id: str,
-        **kwargs
-    ) -> Message:
+    async def summarize(self, session_id: str, **kwargs) -> Message:
         """
         Create summary of conversation history.
 

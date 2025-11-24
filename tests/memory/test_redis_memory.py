@@ -5,23 +5,23 @@ Note: These tests require a running Redis server.
 They will be skipped if Redis is not available.
 """
 
-import pytest
 from datetime import datetime, timezone
+
+import pytest
 
 from agenkit.interfaces import Message
 
 # Try to import RedisMemory
 try:
-    from agenkit.memory.redis_memory import RedisMemory
     import redis.asyncio as redis
+
+    from agenkit.memory.redis_memory import RedisMemory
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
 
-pytestmark = pytest.mark.skipif(
-    not REDIS_AVAILABLE,
-    reason="redis package not installed"
-)
+pytestmark = pytest.mark.skipif(not REDIS_AVAILABLE, reason="redis package not installed")
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ async def redis_memory():
     memory = RedisMemory(
         redis_url="redis://localhost:6379",
         ttl=60,  # 60 seconds for tests
-        key_prefix="agenkit:test"
+        key_prefix="agenkit:test",
     )
 
     # Check if Redis is running
@@ -99,14 +99,8 @@ async def test_retrieve_with_limit(redis_memory):
 async def test_multiple_sessions(redis_memory):
     """Test isolation between sessions."""
     # Store in different sessions
-    await redis_memory.store(
-        "test-session-3a",
-        Message(role="user", content="Session 3a msg")
-    )
-    await redis_memory.store(
-        "test-session-3b",
-        Message(role="user", content="Session 3b msg")
-    )
+    await redis_memory.store("test-session-3a", Message(role="user", content="Session 3a msg"))
+    await redis_memory.store("test-session-3b", Message(role="user", content="Session 3b msg"))
 
     messages_a = await redis_memory.retrieve("test-session-3a", limit=10)
     messages_b = await redis_memory.retrieve("test-session-3b", limit=10)
@@ -133,11 +127,7 @@ async def test_store_with_metadata(redis_memory):
     await redis_memory.store("test-session-4", msg, metadata=metadata)
 
     # Retrieve and verify (metadata filtering tests this implicitly)
-    messages = await redis_memory.retrieve(
-        "test-session-4",
-        limit=10,
-        importance_threshold=0.8
-    )
+    messages = await redis_memory.retrieve("test-session-4", limit=10, importance_threshold=0.8)
 
     assert len(messages) == 1
     assert messages[0].content == "Important message"
@@ -148,27 +138,21 @@ async def test_retrieve_with_importance_threshold(redis_memory):
     """Test retrieving with importance threshold filter."""
     # Store messages with different importance
     await redis_memory.store(
-        "test-session-5",
-        Message(role="user", content="Low priority"),
-        metadata={"importance": 0.3}
+        "test-session-5", Message(role="user", content="Low priority"), metadata={"importance": 0.3}
     )
     await redis_memory.store(
         "test-session-5",
         Message(role="user", content="High priority"),
-        metadata={"importance": 0.9}
+        metadata={"importance": 0.9},
     )
     await redis_memory.store(
         "test-session-5",
         Message(role="user", content="Medium priority"),
-        metadata={"importance": 0.6}
+        metadata={"importance": 0.6},
     )
 
     # Retrieve only high importance
-    messages = await redis_memory.retrieve(
-        "test-session-5",
-        limit=10,
-        importance_threshold=0.7
-    )
+    messages = await redis_memory.retrieve("test-session-5", limit=10, importance_threshold=0.7)
 
     assert len(messages) == 1
     assert messages[0].content == "High priority"
@@ -181,25 +165,21 @@ async def test_retrieve_with_tags(redis_memory):
     await redis_memory.store(
         "test-session-6",
         Message(role="user", content="Bug report"),
-        metadata={"tags": ["bug", "urgent"]}
+        metadata={"tags": ["bug", "urgent"]},
     )
     await redis_memory.store(
         "test-session-6",
         Message(role="user", content="Feature request"),
-        metadata={"tags": ["feature", "enhancement"]}
+        metadata={"tags": ["feature", "enhancement"]},
     )
     await redis_memory.store(
         "test-session-6",
         Message(role="user", content="Critical bug"),
-        metadata={"tags": ["bug", "critical"]}
+        metadata={"tags": ["bug", "critical"]},
     )
 
     # Retrieve only bug-tagged messages
-    messages = await redis_memory.retrieve(
-        "test-session-6",
-        limit=10,
-        tags=["bug"]
-    )
+    messages = await redis_memory.retrieve("test-session-6", limit=10, tags=["bug"])
 
     assert len(messages) == 2
     assert any("Bug report" in msg.content for msg in messages)
@@ -210,27 +190,20 @@ async def test_retrieve_with_tags(redis_memory):
 async def test_retrieve_with_time_range(redis_memory):
     """Test retrieving with time range filter."""
     # Store messages
-    await redis_memory.store(
-        "test-session-7",
-        Message(role="user", content="Old message")
-    )
+    await redis_memory.store("test-session-7", Message(role="user", content="Old message"))
 
     # Wait and record time
     import asyncio
+
     await asyncio.sleep(0.1)
     cutoff_time = datetime.now(timezone.utc)
     await asyncio.sleep(0.1)
 
-    await redis_memory.store(
-        "test-session-7",
-        Message(role="user", content="New message")
-    )
+    await redis_memory.store("test-session-7", Message(role="user", content="New message"))
 
     # Retrieve only messages after cutoff
     messages = await redis_memory.retrieve(
-        "test-session-7",
-        limit=10,
-        time_range=(cutoff_time, datetime.now(timezone.utc))
+        "test-session-7", limit=10, time_range=(cutoff_time, datetime.now(timezone.utc))
     )
 
     assert len(messages) == 1
@@ -243,8 +216,7 @@ async def test_summarize(redis_memory):
     # Store some messages
     for i in range(5):
         await redis_memory.store(
-            "test-session-8",
-            Message(role="user", content=f"Message {i} with some content")
+            "test-session-8", Message(role="user", content=f"Message {i} with some content")
         )
 
     summary = await redis_memory.summarize("test-session-8")
@@ -267,14 +239,8 @@ async def test_summarize_empty_session(redis_memory):
 async def test_clear(redis_memory):
     """Test clearing session memory."""
     # Store messages
-    await redis_memory.store(
-        "test-session-9",
-        Message(role="user", content="Message 1")
-    )
-    await redis_memory.store(
-        "test-session-9",
-        Message(role="user", content="Message 2")
-    )
+    await redis_memory.store("test-session-9", Message(role="user", content="Message 1"))
+    await redis_memory.store("test-session-9", Message(role="user", content="Message 2"))
 
     # Verify stored
     messages = await redis_memory.retrieve("test-session-9", limit=10)
@@ -310,10 +276,7 @@ async def test_get_session_count(redis_memory):
 
     # Add messages
     for i in range(3):
-        await redis_memory.store(
-            "test-session-10",
-            Message(role="user", content=f"Message {i}")
-        )
+        await redis_memory.store("test-session-10", Message(role="user", content=f"Message {i}"))
 
     count = await redis_memory.get_session_count("test-session-10")
     assert count == 3
@@ -323,18 +286,9 @@ async def test_get_session_count(redis_memory):
 async def test_get_all_sessions(redis_memory):
     """Test get_all_sessions utility method."""
     # Add to multiple sessions
-    await redis_memory.store(
-        "test-session-11a",
-        Message(role="user", content="Msg 1")
-    )
-    await redis_memory.store(
-        "test-session-11b",
-        Message(role="user", content="Msg 2")
-    )
-    await redis_memory.store(
-        "test-session-11c",
-        Message(role="user", content="Msg 3")
-    )
+    await redis_memory.store("test-session-11a", Message(role="user", content="Msg 1"))
+    await redis_memory.store("test-session-11b", Message(role="user", content="Msg 2"))
+    await redis_memory.store("test-session-11c", Message(role="user", content="Msg 3"))
 
     sessions = await redis_memory.get_all_sessions()
 
@@ -348,15 +302,9 @@ async def test_get_memory_usage(redis_memory):
     """Test get_memory_usage utility method."""
     # Add messages to multiple sessions
     for i in range(3):
-        await redis_memory.store(
-            "test-session-12a",
-            Message(role="user", content=f"Msg {i}")
-        )
+        await redis_memory.store("test-session-12a", Message(role="user", content=f"Msg {i}"))
     for i in range(2):
-        await redis_memory.store(
-            "test-session-12b",
-            Message(role="user", content=f"Msg {i}")
-        )
+        await redis_memory.store("test-session-12b", Message(role="user", content=f"Msg {i}"))
 
     usage = await redis_memory.get_memory_usage()
 
@@ -369,19 +317,13 @@ async def test_get_memory_usage(redis_memory):
 async def test_persistence(redis_memory):
     """Test that data persists across connections."""
     # Store message
-    await redis_memory.store(
-        "test-session-13",
-        Message(role="user", content="Persistent message")
-    )
+    await redis_memory.store("test-session-13", Message(role="user", content="Persistent message"))
 
     # Close connection
     await redis_memory.close()
 
     # Create new connection
-    new_memory = RedisMemory(
-        redis_url="redis://localhost:6379",
-        key_prefix="agenkit:test"
-    )
+    new_memory = RedisMemory(redis_url="redis://localhost:6379", key_prefix="agenkit:test")
 
     try:
         # Retrieve message (should still exist)
@@ -397,14 +339,8 @@ async def test_persistence(redis_memory):
 @pytest.mark.asyncio
 async def test_context_manager(redis_memory):
     """Test context manager usage."""
-    async with RedisMemory(
-        redis_url="redis://localhost:6379",
-        key_prefix="agenkit:test"
-    ) as memory:
-        await memory.store(
-            "test-session-14",
-            Message(role="user", content="Context manager test")
-        )
+    async with RedisMemory(redis_url="redis://localhost:6379", key_prefix="agenkit:test") as memory:
+        await memory.store("test-session-14", Message(role="user", content="Context manager test"))
 
         messages = await memory.retrieve("test-session-14", limit=10)
         assert len(messages) == 1

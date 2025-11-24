@@ -86,7 +86,7 @@ class ConditionalAgent(Agent):
                     return result
 
                 except Exception as e:
-                    raise Exception(f"Route {i+1} ({route.agent.name}) failed: {e}") from e
+                    raise Exception(f"Route {i + 1} ({route.agent.name}) failed: {e}") from e
 
         # No condition matched, use default agent
         if not self._default_agent:

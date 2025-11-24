@@ -35,9 +35,9 @@ TRADE-OFFS:
 """
 
 import asyncio
-from typing import Any
-from agenkit.interfaces import Agent, Message
+
 from agenkit.composition import SequentialAgent
+from agenkit.interfaces import Agent, Message
 
 
 # Example 1: Content Processing Pipeline
@@ -76,11 +76,7 @@ class TranslationAgent(Agent):
         return Message(
             role="agent",
             content=translated,
-            metadata={
-                **message.metadata,
-                "source_language": lang,
-                "translated": lang != "English"
-            }
+            metadata={**message.metadata, "source_language": lang, "translated": lang != "English"},
         )
 
 
@@ -117,8 +113,8 @@ class SummarizationAgent(Agent):
                 **message.metadata,
                 "original_length": len(text),
                 "summary_length": len(summary),
-                "compression_ratio": len(summary) / len(text) if len(text) > 0 else 0
-            }
+                "compression_ratio": len(summary) / len(text) if len(text) > 0 else 0,
+            },
         )
 
 
@@ -160,11 +156,7 @@ class SentimentAgent(Agent):
         return Message(
             role="agent",
             content=f"{message.content} [Sentiment: {sentiment}]",
-            metadata={
-                **message.metadata,
-                "sentiment": sentiment,
-                "sentiment_score": score
-            }
+            metadata={**message.metadata, "sentiment": sentiment, "sentiment_score": score},
         )
 
 
@@ -177,18 +169,14 @@ async def example_content_pipeline():
     # Build pipeline
     pipeline = SequentialAgent(
         name="content-processor",
-        agents=[
-            TranslationAgent(),
-            SummarizationAgent(),
-            SentimentAgent()
-        ]
+        agents=[TranslationAgent(), SummarizationAgent(), SentimentAgent()],
     )
 
     # Test with French input
     french_input = Message(
         role="user",
         content="Bonjour. This product is amazing! The quality is excellent. "
-                "Very happy with my purchase."
+        "Very happy with my purchase.",
     )
 
     print("\nInput (French):")
@@ -196,9 +184,9 @@ async def example_content_pipeline():
 
     result = await pipeline.process(french_input)
 
-    print(f"\nOutput:")
+    print("\nOutput:")
     print(f"  {result.content}")
-    print(f"\nMetadata:")
+    print("\nMetadata:")
     print(f"  Source Language: {result.metadata.get('source_language')}")
     print(f"  Sentiment: {result.metadata.get('sentiment')}")
     print(f"  Sentiment Score: {result.metadata.get('sentiment_score'):.1f}")
@@ -240,14 +228,10 @@ class ValidationAgent(Agent):
             return Message(
                 role="agent",
                 content=f"VALIDATION FAILED: {'; '.join(errors)}",
-                metadata={"valid": False, "errors": errors}
+                metadata={"valid": False, "errors": errors},
             )
 
-        return Message(
-            role="agent",
-            content=text,
-            metadata={"valid": True}
-        )
+        return Message(role="agent", content=text, metadata={"valid": True})
 
 
 class NormalizationAgent(Agent):
@@ -273,9 +257,7 @@ class NormalizationAgent(Agent):
         normalized = " ".join(text.split()).strip().lower()
 
         return Message(
-            role="agent",
-            content=normalized,
-            metadata={**message.metadata, "normalized": True}
+            role="agent", content=normalized, metadata={**message.metadata, "normalized": True}
         )
 
 
@@ -309,8 +291,8 @@ class EnrichmentAgent(Agent):
                 **message.metadata,
                 "word_count": word_count,
                 "char_count": char_count,
-                "enriched": True
-            }
+                "enriched": True,
+            },
         )
 
 
@@ -321,20 +303,12 @@ async def example_validation_pipeline():
     print("Pipeline: Validate → Normalize → Enrich")
 
     pipeline = SequentialAgent(
-        name="etl-pipeline",
-        agents=[
-            ValidationAgent(),
-            NormalizationAgent(),
-            EnrichmentAgent()
-        ]
+        name="etl-pipeline", agents=[ValidationAgent(), NormalizationAgent(), EnrichmentAgent()]
     )
 
     # Test valid input
     print("\nTest 1: Valid input")
-    valid_input = Message(
-        role="user",
-        content="  This is   VALID input   with  extra   spaces.  "
-    )
+    valid_input = Message(role="user", content="  This is   VALID input   with  extra   spaces.  ")
     result = await pipeline.process(valid_input)
     print(f"  Input:  '{valid_input.content}'")
     print(f"  Output: '{result.content}'")
@@ -384,7 +358,7 @@ class RouterAgent(Agent):
         return Message(
             role="agent",
             content=message.content,
-            metadata={**message.metadata, "request_type": request_type}
+            metadata={**message.metadata, "request_type": request_type},
         )
 
 
@@ -409,15 +383,13 @@ class ProcessorAgent(Agent):
             "code": "Here's the code implementation: ...",
             "translation": "Translation: ...",
             "summarization": "Summary: ...",
-            "general": "General response: ..."
+            "general": "General response: ...",
         }
 
         response = responses.get(request_type, "Response: ...")
 
         return Message(
-            role="agent",
-            content=response,
-            metadata={**message.metadata, "processed": True}
+            role="agent", content=response, metadata={**message.metadata, "processed": True}
         )
 
 
@@ -440,9 +412,7 @@ class FormatterAgent(Agent):
         formatted = f"[{request_type.upper()}]\n{content}"
 
         return Message(
-            role="agent",
-            content=formatted,
-            metadata={**message.metadata, "formatted": True}
+            role="agent", content=formatted, metadata={**message.metadata, "formatted": True}
         )
 
 
@@ -453,18 +423,13 @@ async def example_llm_pipeline():
     print("Pipeline: Route → Process → Format")
 
     pipeline = SequentialAgent(
-        name="llm-pipeline",
-        agents=[
-            RouterAgent(),
-            ProcessorAgent(),
-            FormatterAgent()
-        ]
+        name="llm-pipeline", agents=[RouterAgent(), ProcessorAgent(), FormatterAgent()]
     )
 
     test_queries = [
         "Write a function to calculate factorial",
         "Summarize this article",
-        "How are you today?"
+        "How are you today?",
     ]
 
     for query in test_queries:
@@ -506,7 +471,7 @@ async def example_error_handling():
             return Message(
                 role="agent",
                 content=f"{message.content} -> {self._name}",
-                metadata={**message.metadata, self._name: True}
+                metadata={**message.metadata, self._name: True},
             )
 
     pipeline = SequentialAgent(
@@ -514,8 +479,8 @@ async def example_error_handling():
         agents=[
             FailingAgent("stage1", "error1"),
             FailingAgent("stage2", "error2"),
-            FailingAgent("stage3", "error3")
-        ]
+            FailingAgent("stage3", "error3"),
+        ],
     )
 
     # Test successful case
@@ -533,7 +498,7 @@ async def example_error_handling():
         print(f"  ✅ Success: {result.content}")
     except Exception as e:
         print(f"  ❌ Failed: {e}")
-        print(f"     Pipeline stopped at failing stage")
+        print("     Pipeline stopped at failing stage")
 
     print("\n💡 Error Handling Strategy:")
     print("   - Sequential pipelines stop at first error (fail-fast)")
@@ -544,9 +509,9 @@ async def example_error_handling():
 
 async def main():
     """Run all examples."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("SEQUENTIAL COMPOSITION EXAMPLES")
-    print("="*70)
+    print("=" * 70)
     print("\nSequential composition is the foundation of data pipelines.")
     print("Use it when stages depend on each other's output.\n")
 
@@ -555,9 +520,9 @@ async def main():
     await example_llm_pipeline()
     await example_error_handling()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("KEY TAKEAWAYS")
-    print("="*70)
+    print("=" * 70)
     print("""
 1. Use sequential composition when:
    - Stages depend on previous stage's output

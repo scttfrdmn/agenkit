@@ -8,8 +8,8 @@ Requires: redis>=5.0.0
 """
 
 import json
-from datetime import datetime, timezone, timedelta
-from typing import Optional, TYPE_CHECKING
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import redis.asyncio as redis
@@ -19,8 +19,8 @@ else:
     except ImportError:
         redis = None  # type: ignore
 
-from .base import Memory
 from ..interfaces import Message
+from .base import Memory
 
 
 class RedisMemory(Memory):
@@ -59,7 +59,7 @@ class RedisMemory(Memory):
         self,
         redis_url: str = "redis://localhost:6379",
         ttl: int = 86400,  # 24 hours
-        key_prefix: str = "agenkit:memory"
+        key_prefix: str = "agenkit:memory",
     ):
         """
         Initialize Redis memory.
@@ -74,14 +74,13 @@ class RedisMemory(Memory):
         """
         if redis is None:
             raise ImportError(
-                "redis package required for RedisMemory. "
-                "Install with: pip install redis>=5.0.0"
+                "redis package required for RedisMemory. Install with: pip install redis>=5.0.0"
             )
 
         self.redis_url = redis_url
         self.ttl = ttl
         self.key_prefix = key_prefix
-        self._client: Optional["redis.Redis"] = None
+        self._client: redis.Redis | None = None
 
     async def _get_client(self) -> "redis.Redis":
         """Get or create Redis client."""
@@ -95,29 +94,17 @@ class RedisMemory(Memory):
 
     def _serialize_message(self, message: Message, metadata: dict) -> str:
         """Serialize message and metadata to JSON."""
-        data = {
-            "role": message.role,
-            "content": message.content,
-            "metadata": metadata
-        }
+        data = {"role": message.role, "content": message.content, "metadata": metadata}
         return json.dumps(data)
 
     def _deserialize_message(self, data: str) -> tuple[Message, dict]:
         """Deserialize JSON to message and metadata."""
         parsed = json.loads(data)
-        message = Message(
-            role=parsed["role"],
-            content=parsed["content"]
-        )
+        message = Message(role=parsed["role"], content=parsed["content"])
         metadata = parsed.get("metadata", {})
         return message, metadata
 
-    async def store(
-        self,
-        session_id: str,
-        message: Message,
-        metadata: Optional[dict] = None
-    ) -> None:
+    async def store(self, session_id: str, message: Message, metadata: dict | None = None) -> None:
         """Store message in Redis with optional metadata."""
         client = await self._get_client()
 
@@ -134,11 +121,7 @@ class RedisMemory(Memory):
             await client.expire(key, self.ttl)
 
     async def retrieve(
-        self,
-        session_id: str,
-        query: Optional[str] = None,
-        limit: int = 10,
-        **kwargs
+        self, session_id: str, query: str | None = None, limit: int = 10, **kwargs
     ) -> list[Message]:
         """
         Retrieve messages from Redis.
@@ -191,11 +174,7 @@ class RedisMemory(Memory):
 
         return filtered[:limit]
 
-    async def summarize(
-        self,
-        session_id: str,
-        **kwargs
-    ) -> Message:
+    async def summarize(self, session_id: str, **kwargs) -> Message:
         """
         Create summary of conversation history.
 
@@ -205,10 +184,7 @@ class RedisMemory(Memory):
         messages = await self.retrieve(session_id, limit=100)
 
         if not messages:
-            return Message(
-                role="system",
-                content="No messages in session."
-            )
+            return Message(role="system", content="No messages in session.")
 
         # Simple concatenation summary
         summary_parts = []
@@ -218,12 +194,11 @@ class RedisMemory(Memory):
                 preview += "..."
             summary_parts.append(f"{i}. [{msg.role}] {preview}")
 
-        summary_content = f"Session summary ({len(messages)} messages):\n" + "\n".join(summary_parts)
-
-        return Message(
-            role="system",
-            content=summary_content
+        summary_content = f"Session summary ({len(messages)} messages):\n" + "\n".join(
+            summary_parts
         )
+
+        return Message(role="system", content=summary_content)
 
     async def clear(self, session_id: str) -> None:
         """Clear memory for session."""
@@ -240,7 +215,7 @@ class RedisMemory(Memory):
             "ttl",
             "time_filtering",
             "importance_filtering",
-            "tag_filtering"
+            "tag_filtering",
         ]
 
     # Additional utility methods
@@ -268,7 +243,7 @@ class RedisMemory(Memory):
 
     async def get_memory_usage(self) -> dict[str, int]:
         """Get memory usage statistics."""
-        client = await self._get_client()
+        await self._get_client()
         sessions = await self.get_all_sessions()
 
         total_messages = 0
@@ -276,11 +251,7 @@ class RedisMemory(Memory):
             count = await self.get_session_count(session_id)
             total_messages += count
 
-        return {
-            "total_sessions": len(sessions),
-            "total_messages": total_messages,
-            "ttl": self.ttl
-        }
+        return {"total_sessions": len(sessions), "total_messages": total_messages, "ttl": self.ttl}
 
     async def close(self):
         """Close Redis connection."""

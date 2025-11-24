@@ -9,6 +9,7 @@ Tests system behavior under performance degradation:
 
 These tests validate timeout behavior and performance under load.
 """
+
 import asyncio
 import time
 
@@ -34,15 +35,14 @@ class SimpleAgent(Agent):
 
     async def process(self, message: Message) -> Message:
         return Message(
-            role="agent",
-            content=f"Processed: {message.content}",
-            metadata={"agent": self.name}
+            role="agent", content=f"Processed: {message.content}", metadata={"agent": self.name}
         )
 
 
 # ============================================
 # Slow Processing Tests
 # ============================================
+
 
 @pytest.mark.asyncio
 @pytest.mark.chaos
@@ -52,7 +52,7 @@ async def test_slow_agent_processing():
     slow_agent = ChaosAgent(
         base_agent,
         chaos_mode=ChaosMode.SLOW_RESPONSE,
-        delay_ms=200  # 200ms delay
+        delay_ms=200,  # 200ms delay
     )
 
     message = Message(role="user", content="Test")
@@ -94,7 +94,7 @@ async def test_gradual_performance_degradation():
             return Message(
                 role="agent",
                 content=f"Processed: {message.content}",
-                metadata={"request_number": self._request_count, "delay_ms": delay * 1000}
+                metadata={"request_number": self._request_count, "delay_ms": delay * 1000},
             )
 
     agent = DegradingAgent()
@@ -102,7 +102,7 @@ async def test_gradual_performance_degradation():
 
     # First request should be fast
     start = time.time()
-    response1 = await agent.process(message)
+    await agent.process(message)
     elapsed1 = time.time() - start
 
     assert elapsed1 < 0.05, f"First request should be fast, took {elapsed1:.3f}s"
@@ -112,7 +112,7 @@ async def test_gradual_performance_degradation():
         await agent.process(message)
 
     start = time.time()
-    response5 = await agent.process(message)
+    await agent.process(message)
     elapsed5 = time.time() - start
 
     assert elapsed5 >= 0.06, f"6th request should take >=60ms, took {elapsed5:.3f}s"
@@ -160,22 +160,25 @@ async def test_tail_latency_spikes():
 
     # P50 should be fast (<50ms)
     p50 = latencies[25]
-    assert p50 < 0.05, f"P50 latency should be <50ms, got {p50*1000:.1f}ms"
+    assert p50 < 0.05, f"P50 latency should be <50ms, got {p50 * 1000:.1f}ms"
 
     # P95 should show the spikes (>=100ms)
     p95 = latencies[47]
     # With 10% spike rate, P90-P95 may or may not include spikes (probabilistic)
     # We just verify P95 >= P50 (tail latency not faster than median)
-    assert p95 >= p50, f"P95 ({p95*1000:.1f}ms) should be >= P50 ({p50*1000:.1f}ms)"
+    assert p95 >= p50, f"P95 ({p95 * 1000:.1f}ms) should be >= P50 ({p50 * 1000:.1f}ms)"
 
     # Also check that max latency shows spikes exist
     max_latency = latencies[-1]
-    assert max_latency > 0.15, f"Max latency ({max_latency*1000:.1f}ms) should show spikes (>150ms)"
+    assert max_latency > 0.15, (
+        f"Max latency ({max_latency * 1000:.1f}ms) should show spikes (>150ms)"
+    )
 
 
 # ============================================
 # Memory Pressure Tests
 # ============================================
+
 
 @pytest.mark.asyncio
 @pytest.mark.chaos
@@ -215,7 +218,7 @@ async def test_large_input_payload():
             return Message(
                 role="agent",
                 content=f"Processed {input_size} bytes",
-                metadata={"input_size": input_size}
+                metadata={"input_size": input_size},
             )
 
     agent = LargePayloadAgent()
@@ -251,7 +254,7 @@ async def test_concurrent_large_payloads():
             return Message(
                 role="agent",
                 content="x" * (1 * 1024 * 1024),  # 1MB
-                metadata={"size_mb": 1}
+                metadata={"size_mb": 1},
             )
 
     agent = MemoryAgent()
@@ -275,6 +278,7 @@ async def test_concurrent_large_payloads():
 # ============================================
 # Performance Degradation Under Load
 # ============================================
+
 
 @pytest.mark.asyncio
 @pytest.mark.chaos
@@ -307,7 +311,7 @@ async def test_performance_under_sustained_load():
                 return Message(
                     role="agent",
                     content=f"Processed: {message.content}",
-                    metadata={"concurrent": self._concurrent_requests}
+                    metadata={"concurrent": self._concurrent_requests},
                 )
             finally:
                 self._concurrent_requests -= 1
@@ -328,8 +332,9 @@ async def test_performance_under_sustained_load():
     concurrent_time = time.time() - start
 
     # Concurrent should be faster than sequential despite per-request slowdown
-    assert concurrent_time < sequential_time, \
+    assert concurrent_time < sequential_time, (
         f"Concurrent ({concurrent_time:.2f}s) should be faster than sequential ({sequential_time:.2f}s)"
+    )
 
 
 @pytest.mark.asyncio
@@ -413,10 +418,10 @@ async def test_slow_response_percentiles():
     p99 = latencies[99]
 
     # Validate percentiles are in expected range
-    assert 0.01 <= p50 <= 0.1, f"P50={p50*1000:.1f}ms should be 10-100ms"
-    assert 0.01 <= p90 <= 0.1, f"P90={p90*1000:.1f}ms should be 10-100ms"
-    assert p95 > p50, f"P95 should be greater than P50"
-    assert p99 > p95, f"P99 should be greater than P95"
+    assert 0.01 <= p50 <= 0.1, f"P50={p50 * 1000:.1f}ms should be 10-100ms"
+    assert 0.01 <= p90 <= 0.1, f"P90={p90 * 1000:.1f}ms should be 10-100ms"
+    assert p95 > p50, "P95 should be greater than P50"
+    assert p99 > p95, "P99 should be greater than P95"
 
 
 if __name__ == "__main__":

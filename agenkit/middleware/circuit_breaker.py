@@ -73,9 +73,7 @@ class CircuitBreakerDecorator(Agent):
     - HALF_OPEN -> OPEN: On any failure
     """
 
-    def __init__(
-        self, agent: Agent, config: CircuitBreakerConfig | None = None
-    ):
+    def __init__(self, agent: Agent, config: CircuitBreakerConfig | None = None):
         """Initialize circuit breaker decorator.
 
         Args:
@@ -215,9 +213,7 @@ class CircuitBreakerDecorator(Agent):
         except asyncio.TimeoutError as e:
             async with self._lock:
                 await self._on_failure()
-            raise TimeoutError(
-                f"Request exceeded timeout of {self._config.timeout}s"
-            ) from e
+            raise TimeoutError(f"Request exceeded timeout of {self._config.timeout}s") from e
 
         except Exception:
             async with self._lock:

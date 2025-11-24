@@ -37,20 +37,22 @@ TRADE-OFFS:
 import asyncio
 import hashlib
 import time
-from typing import List, Dict, Optional, Literal
 from dataclasses import dataclass
+
 import httpx
+
 from agenkit import Agent
 from agenkit.tools import Tool, ToolRegistry
-
 
 # ============================================================================
 # MOCK SEARCH SERVICE (Replace with real API in production)
 # ============================================================================
 
+
 @dataclass
 class SearchResult:
     """A single search result."""
+
     title: str
     url: str
     snippet: str
@@ -74,7 +76,7 @@ class MockSearchService:
         self.latency_ms = latency_ms
         self.call_count = 0
 
-    async def search(self, query: str, max_results: int = 10) -> List[SearchResult]:
+    async def search(self, query: str, max_results: int = 10) -> list[SearchResult]:
         """Simulate search API call."""
         await asyncio.sleep(self.latency_ms / 1000)
         self.call_count += 1
@@ -82,11 +84,11 @@ class MockSearchService:
         # Mock results based on query
         return [
             SearchResult(
-                title=f"Result {i+1} for '{query}'",
-                url=f"https://example.com/{i+1}",
+                title=f"Result {i + 1} for '{query}'",
+                url=f"https://example.com/{i + 1}",
                 snippet=f"This is a relevant snippet about {query}...",
                 source="web",
-                relevance_score=1.0 - (i * 0.1)
+                relevance_score=1.0 - (i * 0.1),
             )
             for i in range(min(max_results, 5))
         ]
@@ -96,6 +98,7 @@ class MockSearchService:
 # BASIC SEARCH TOOL
 # ============================================================================
 
+
 class WebSearchTool:
     """
     Basic web search tool.
@@ -104,15 +107,11 @@ class WebSearchTool:
     Search tools bridge the knowledge gap between training cutoff and present.
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         self.api_key = api_key
         self.service = MockSearchService()
 
-    async def search(
-        self,
-        query: str,
-        max_results: int = 10
-    ) -> List[Dict[str, str]]:
+    async def search(self, query: str, max_results: int = 10) -> list[dict[str, str]]:
         """
         Search the web for query.
 
@@ -125,19 +124,13 @@ class WebSearchTool:
         """
         results = await self.service.search(query, max_results)
 
-        return [
-            {
-                "title": r.title,
-                "url": r.url,
-                "snippet": r.snippet
-            }
-            for r in results
-        ]
+        return [{"title": r.title, "url": r.url, "snippet": r.snippet} for r in results]
 
 
 # ============================================================================
 # EXAMPLE 1: Basic Web Search
 # ============================================================================
+
 
 async def example1_basic_search():
     """
@@ -150,9 +143,9 @@ async def example1_basic_search():
     - Pros: Access to current information, source attribution
     - Cons: 200ms+ latency, depends on external service
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 1: Basic Web Search")
-    print("="*80)
+    print("=" * 80)
 
     # Create search tool
     search_tool = WebSearchTool()
@@ -164,19 +157,16 @@ async def example1_basic_search():
         parameters={
             "type": "object",
             "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "Search query"
-                },
+                "query": {"type": "string", "description": "Search query"},
                 "max_results": {
                     "type": "integer",
                     "description": "Maximum results to return",
-                    "default": 10
-                }
+                    "default": 10,
+                },
             },
-            "required": ["query"]
+            "required": ["query"],
         },
-        function=search_tool.search
+        function=search_tool.search,
     )
 
     # Register tool
@@ -184,11 +174,11 @@ async def example1_basic_search():
     registry.register(tool)
 
     # Create agent with search capability
-    agent = Agent(
+    Agent(
         name="SearchAgent",
         instructions="You are a helpful assistant with web search capabilities. "
-                    "When asked about current information, use the web_search tool.",
-        tools=registry
+        "When asked about current information, use the web_search tool.",
+        tools=registry,
     )
 
     # Query requiring current information
@@ -213,6 +203,7 @@ async def example1_basic_search():
 # EXAMPLE 2: Multi-Source Search (Parallel)
 # ============================================================================
 
+
 class MultiSourceSearchTool:
     """
     Search multiple sources in parallel.
@@ -227,10 +218,8 @@ class MultiSourceSearchTool:
         self.academic_search = MockSearchService(latency_ms=300)
 
     async def search_all(
-        self,
-        query: str,
-        max_results_per_source: int = 5
-    ) -> Dict[str, List[Dict[str, str]]]:
+        self, query: str, max_results_per_source: int = 5
+    ) -> dict[str, list[dict[str, str]]]:
         """
         Search multiple sources in parallel.
 
@@ -248,7 +237,7 @@ class MultiSourceSearchTool:
             web_task,
             news_task,
             academic_task,
-            return_exceptions=True  # Don't fail if one source fails
+            return_exceptions=True,  # Don't fail if one source fails
         )
 
         # Handle failures gracefully
@@ -256,20 +245,17 @@ class MultiSourceSearchTool:
 
         if not isinstance(web_results, Exception):
             results["web"] = [
-                {"title": r.title, "url": r.url, "snippet": r.snippet}
-                for r in web_results
+                {"title": r.title, "url": r.url, "snippet": r.snippet} for r in web_results
             ]
 
         if not isinstance(news_results, Exception):
             results["news"] = [
-                {"title": r.title, "url": r.url, "snippet": r.snippet}
-                for r in news_results
+                {"title": r.title, "url": r.url, "snippet": r.snippet} for r in news_results
             ]
 
         if not isinstance(academic_results, Exception):
             results["academic"] = [
-                {"title": r.title, "url": r.url, "snippet": r.snippet}
-                for r in academic_results
+                {"title": r.title, "url": r.url, "snippet": r.snippet} for r in academic_results
             ]
 
         return results
@@ -287,9 +273,9 @@ async def example2_multi_source_search():
     - Latency = max(sources) when parallel (300ms vs 650ms sequential)
     - Graceful degradation if one source fails
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 2: Multi-Source Search (Parallel)")
-    print("="*80)
+    print("=" * 80)
 
     search_tool = MultiSourceSearchTool()
 
@@ -301,7 +287,7 @@ async def example2_multi_source_search():
     results = await search_tool.search_all(query, max_results_per_source=3)
     elapsed = time.time() - start
 
-    print(f"\n✓ Retrieved results from {len(results)} sources in {elapsed*1000:.0f}ms")
+    print(f"\n✓ Retrieved results from {len(results)} sources in {elapsed * 1000:.0f}ms")
 
     for source, source_results in results.items():
         print(f"\n{source.upper()} ({len(source_results)} results):")
@@ -309,7 +295,7 @@ async def example2_multi_source_search():
             print(f"  {i}. {result['title']}")
 
     print("\n💡 KEY INSIGHT:")
-    print(f"   Parallel execution: {elapsed*1000:.0f}ms total")
+    print(f"   Parallel execution: {elapsed * 1000:.0f}ms total")
     print("   Sequential would take: ~650ms (200+150+300)")
     print("   Speedup: 2.2× faster with parallel execution")
 
@@ -317,6 +303,7 @@ async def example2_multi_source_search():
 # ============================================================================
 # EXAMPLE 3: Search with Ranking and Filtering
 # ============================================================================
+
 
 class RankedSearchTool:
     """
@@ -334,8 +321,8 @@ class RankedSearchTool:
         query: str,
         max_results: int = 10,
         min_relevance: float = 0.5,
-        preferred_domains: Optional[List[str]] = None
-    ) -> List[Dict[str, any]]:
+        preferred_domains: list[str] | None = None,
+    ) -> list[dict[str, any]]:
         """
         Search with relevance ranking and domain filtering.
 
@@ -366,12 +353,7 @@ class RankedSearchTool:
 
         # Return top results
         return [
-            {
-                "title": r.title,
-                "url": r.url,
-                "snippet": r.snippet,
-                "relevance": r.relevance_score
-            }
+            {"title": r.title, "url": r.url, "snippet": r.snippet, "relevance": r.relevance_score}
             for r in filtered[:max_results]
         ]
 
@@ -388,9 +370,9 @@ async def example3_ranked_search():
     - Latency: Ranking adds ~10-50ms processing overhead
     - Complexity: More configuration options for users
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 3: Search with Ranking and Filtering")
-    print("="*80)
+    print("=" * 80)
 
     search_tool = RankedSearchTool()
 
@@ -402,7 +384,7 @@ async def example3_ranked_search():
         query,
         max_results=5,
         min_relevance=0.6,
-        preferred_domains=["stackoverflow.com", "python.org", "realpython.com"]
+        preferred_domains=["stackoverflow.com", "python.org", "realpython.com"],
     )
 
     print(f"\n✓ Found {len(results)} high-quality results:")
@@ -421,6 +403,7 @@ async def example3_ranked_search():
 # EXAMPLE 4: Semantic Search
 # ============================================================================
 
+
 class SemanticSearchTool:
     """
     Semantic search using embeddings.
@@ -434,7 +417,7 @@ class SemanticSearchTool:
         # In production, use real embeddings (OpenAI, Cohere, etc.)
         self.cache = {}
 
-    def _compute_embedding(self, text: str) -> List[float]:
+    def _compute_embedding(self, text: str) -> list[float]:
         """
         Compute text embedding.
 
@@ -447,19 +430,16 @@ class SemanticSearchTool:
         hash_val = int(hashlib.md5(text.encode()).hexdigest(), 16)
         return [float((hash_val >> i) & 0xFF) / 255.0 for i in range(0, 128, 8)]
 
-    def _cosine_similarity(self, a: List[float], b: List[float]) -> float:
+    def _cosine_similarity(self, a: list[float], b: list[float]) -> float:
         """Compute cosine similarity between embeddings."""
-        dot_product = sum(x * y for x, y in zip(a, b))
+        dot_product = sum(x * y for x, y in zip(a, b, strict=False))
         norm_a = sum(x * x for x in a) ** 0.5
         norm_b = sum(y * y for y in b) ** 0.5
         return dot_product / (norm_a * norm_b) if norm_a and norm_b else 0.0
 
     async def search_semantic(
-        self,
-        query: str,
-        max_results: int = 10,
-        min_similarity: float = 0.7
-    ) -> List[Dict[str, any]]:
+        self, query: str, max_results: int = 10, min_similarity: float = 0.7
+    ) -> list[dict[str, any]]:
         """
         Search using semantic similarity.
 
@@ -485,12 +465,14 @@ class SemanticSearchTool:
             similarity = self._cosine_similarity(query_embedding, result_embedding)
 
             if similarity >= min_similarity:
-                scored_results.append({
-                    "title": result.title,
-                    "url": result.url,
-                    "snippet": result.snippet,
-                    "similarity": similarity
-                })
+                scored_results.append(
+                    {
+                        "title": result.title,
+                        "url": result.url,
+                        "snippet": result.snippet,
+                        "similarity": similarity,
+                    }
+                )
 
         # Sort by similarity
         scored_results.sort(key=lambda r: r["similarity"], reverse=True)
@@ -510,20 +492,16 @@ async def example4_semantic_search():
     - Higher latency: ~100ms for embedding generation
     - Higher cost: Embedding API fees (~$0.10/1M tokens)
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 4: Semantic Search")
-    print("="*80)
+    print("=" * 80)
 
     search_tool = SemanticSearchTool()
 
     query = "How to write asynchronous code in Python?"
     print(f"\nQuery: {query}")
 
-    results = await search_tool.search_semantic(
-        query,
-        max_results=5,
-        min_similarity=0.5
-    )
+    results = await search_tool.search_semantic(query, max_results=5, min_similarity=0.5)
 
     print(f"\n✓ Found {len(results)} semantically similar results:")
     for i, result in enumerate(results, 1):
@@ -540,6 +518,7 @@ async def example4_semantic_search():
 # EXAMPLE 5: Search with Fallback
 # ============================================================================
 
+
 class ResilientSearchTool:
     """
     Search with fallback sources for high availability.
@@ -553,11 +532,7 @@ class ResilientSearchTool:
         self.secondary = MockSearchService(latency_ms=300)
         self.cache = {}
 
-    async def search_with_fallback(
-        self,
-        query: str,
-        max_results: int = 10
-    ) -> Dict[str, any]:
+    async def search_with_fallback(self, query: str, max_results: int = 10) -> dict[str, any]:
         """
         Search with fallback to secondary source.
 
@@ -569,54 +544,34 @@ class ResilientSearchTool:
         # Check cache first
         cache_key = hashlib.md5(f"{query}:{max_results}".encode()).hexdigest()
         if cache_key in self.cache:
-            return {
-                "results": self.cache[cache_key],
-                "source": "cache",
-                "latency_ms": 0
-            }
+            return {"results": self.cache[cache_key], "source": "cache", "latency_ms": 0}
 
         # Try primary search
         start = time.time()
         try:
-            results = await asyncio.wait_for(
-                self.primary.search(query, max_results),
-                timeout=2.0
-            )
+            results = await asyncio.wait_for(self.primary.search(query, max_results), timeout=2.0)
             latency = (time.time() - start) * 1000
 
             # Cache results
-            result_dicts = [
-                {"title": r.title, "url": r.url, "snippet": r.snippet}
-                for r in results
-            ]
+            result_dicts = [{"title": r.title, "url": r.url, "snippet": r.snippet} for r in results]
             self.cache[cache_key] = result_dicts
 
-            return {
-                "results": result_dicts,
-                "source": "primary",
-                "latency_ms": latency
-            }
+            return {"results": result_dicts, "source": "primary", "latency_ms": latency}
         except Exception as e:
             print(f"   ⚠ Primary search failed: {e}")
 
             # Fallback to secondary
             try:
                 results = await asyncio.wait_for(
-                    self.secondary.search(query, max_results),
-                    timeout=3.0
+                    self.secondary.search(query, max_results), timeout=3.0
                 )
                 latency = (time.time() - start) * 1000
 
                 result_dicts = [
-                    {"title": r.title, "url": r.url, "snippet": r.snippet}
-                    for r in results
+                    {"title": r.title, "url": r.url, "snippet": r.snippet} for r in results
                 ]
 
-                return {
-                    "results": result_dicts,
-                    "source": "secondary",
-                    "latency_ms": latency
-                }
+                return {"results": result_dicts, "source": "secondary", "latency_ms": latency}
             except Exception as e2:
                 print(f"   ⚠ Secondary search failed: {e2}")
 
@@ -625,7 +580,7 @@ class ResilientSearchTool:
                     return {
                         "results": self.cache[cache_key],
                         "source": "stale_cache",
-                        "latency_ms": (time.time() - start) * 1000
+                        "latency_ms": (time.time() - start) * 1000,
                     }
 
                 # No results available
@@ -633,7 +588,7 @@ class ResilientSearchTool:
                     "results": [],
                     "source": "none",
                     "latency_ms": (time.time() - start) * 1000,
-                    "error": "All search sources failed"
+                    "error": "All search sources failed",
                 }
 
 
@@ -649,9 +604,9 @@ async def example5_search_with_fallback():
     - Slower on failure: 200ms (primary) + 300ms (secondary) = 500ms
     - Stale data risk: Cache may be outdated
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 5: Search with Fallback")
-    print("="*80)
+    print("=" * 80)
 
     search_tool = ResilientSearchTool()
 
@@ -684,6 +639,7 @@ async def example5_search_with_fallback():
 # EXAMPLE 6: Rate-Limited Search
 # ============================================================================
 
+
 class RateLimitedSearchTool:
     """
     Search tool with rate limiting.
@@ -697,11 +653,7 @@ class RateLimitedSearchTool:
         self.max_calls = max_calls_per_minute
         self.call_timestamps = []
 
-    async def search_rate_limited(
-        self,
-        query: str,
-        max_results: int = 10
-    ) -> Dict[str, any]:
+    async def search_rate_limited(self, query: str, max_results: int = 10) -> dict[str, any]:
         """
         Search with rate limiting.
 
@@ -714,7 +666,8 @@ class RateLimitedSearchTool:
 
         # Remove old timestamps (outside window)
         self.call_timestamps = [
-            ts for ts in self.call_timestamps
+            ts
+            for ts in self.call_timestamps
             if now - ts < 60  # Keep last minute
         ]
 
@@ -722,11 +675,7 @@ class RateLimitedSearchTool:
         if len(self.call_timestamps) >= self.max_calls:
             oldest = self.call_timestamps[0]
             wait_time = 60 - (now - oldest)
-            return {
-                "results": [],
-                "error": "Rate limit exceeded",
-                "retry_after_seconds": wait_time
-            }
+            return {"results": [], "error": "Rate limit exceeded", "retry_after_seconds": wait_time}
 
         # Record call
         self.call_timestamps.append(now)
@@ -735,11 +684,8 @@ class RateLimitedSearchTool:
         results = await self.service.search(query, max_results)
 
         return {
-            "results": [
-                {"title": r.title, "url": r.url, "snippet": r.snippet}
-                for r in results
-            ],
-            "calls_remaining": self.max_calls - len(self.call_timestamps)
+            "results": [{"title": r.title, "url": r.url, "snippet": r.snippet} for r in results],
+            "calls_remaining": self.max_calls - len(self.call_timestamps),
         }
 
 
@@ -755,25 +701,22 @@ async def example6_rate_limited_search():
     - May reject requests during traffic spikes
     - Minimal overhead (~1ms per request)
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 6: Rate-Limited Search")
-    print("="*80)
+    print("=" * 80)
 
     search_tool = RateLimitedSearchTool(max_calls_per_minute=5)
 
     print("\nSimulating 7 searches (limit: 5/minute):")
 
     for i in range(7):
-        result = await search_tool.search_rate_limited(
-            f"query {i+1}",
-            max_results=3
-        )
+        result = await search_tool.search_rate_limited(f"query {i + 1}", max_results=3)
 
         if "error" in result:
-            print(f"\n  {i+1}. ⚠ Rate limit exceeded")
+            print(f"\n  {i + 1}. ⚠ Rate limit exceeded")
             print(f"     Retry after: {result['retry_after_seconds']:.1f}s")
         else:
-            print(f"\n  {i+1}. ✓ Search successful")
+            print(f"\n  {i + 1}. ✓ Search successful")
             print(f"     Calls remaining: {result['calls_remaining']}")
 
     print("\n💡 KEY INSIGHT:")
@@ -785,6 +728,7 @@ async def example6_rate_limited_search():
 # ============================================================================
 # EXAMPLE 7: Error Handling
 # ============================================================================
+
 
 async def example7_error_handling():
     """
@@ -800,14 +744,14 @@ async def example7_error_handling():
     - User experience: Detailed errors vs generic messages
     - Debugging: Logging vs privacy
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 7: Error Handling")
-    print("="*80)
+    print("=" * 80)
 
     class ErrorHandlingSearchTool:
         """Search tool with comprehensive error handling."""
 
-        async def search(self, query: str) -> Dict[str, any]:
+        async def search(self, query: str) -> dict[str, any]:
             """Search with error handling."""
             try:
                 # Validate input
@@ -815,28 +759,23 @@ async def example7_error_handling():
                     return {
                         "success": False,
                         "error": "Query cannot be empty",
-                        "error_type": "validation_error"
+                        "error_type": "validation_error",
                     }
 
                 # Simulate API call
                 async with httpx.AsyncClient() as client:
                     try:
                         response = await client.get(
-                            "https://api.example.com/search",
-                            params={"q": query},
-                            timeout=5.0
+                            "https://api.example.com/search", params={"q": query}, timeout=5.0
                         )
                         response.raise_for_status()
 
-                        return {
-                            "success": True,
-                            "results": response.json()
-                        }
+                        return {"success": True, "results": response.json()}
                     except httpx.TimeoutException:
                         return {
                             "success": False,
                             "error": "Search request timed out",
-                            "error_type": "timeout_error"
+                            "error_type": "timeout_error",
                         }
                     except httpx.HTTPStatusError as e:
                         if e.response.status_code == 429:
@@ -844,26 +783,26 @@ async def example7_error_handling():
                                 "success": False,
                                 "error": "Rate limit exceeded",
                                 "error_type": "rate_limit_error",
-                                "retry_after": e.response.headers.get("Retry-After")
+                                "retry_after": e.response.headers.get("Retry-After"),
                             }
                         elif e.response.status_code == 401:
                             return {
                                 "success": False,
                                 "error": "Invalid API key",
-                                "error_type": "auth_error"
+                                "error_type": "auth_error",
                             }
                         else:
                             return {
                                 "success": False,
                                 "error": f"HTTP error: {e.response.status_code}",
-                                "error_type": "http_error"
+                                "error_type": "http_error",
                             }
-            except Exception as e:
+            except Exception:
                 # Catch-all for unexpected errors
                 return {
                     "success": False,
                     "error": "Unexpected error occurred",
-                    "error_type": "unknown_error"
+                    "error_type": "unknown_error",
                 }
 
     search_tool = ErrorHandlingSearchTool()
@@ -873,7 +812,7 @@ async def example7_error_handling():
         ("valid query", "This would succeed in production"),
         ("", "Empty query should fail validation"),
         ("timeout query", "Would timeout in production"),
-        ("rate limit query", "Would hit rate limit")
+        ("rate limit query", "Would hit rate limit"),
     ]
 
     print("\nTesting error handling:")
@@ -897,12 +836,13 @@ async def example7_error_handling():
 # MAIN RUNNER
 # ============================================================================
 
+
 async def main():
     """Run all search tool examples."""
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("SEARCH TOOL EXAMPLES FOR AGENKIT")
-    print("="*80)
+    print("=" * 80)
     print("\nThese examples demonstrate WHY and HOW to use search tools with agents.")
     print("Each example includes real-world scenarios, trade-offs, and key insights.")
 
@@ -916,16 +856,16 @@ async def main():
         ("Error Handling", example7_error_handling),
     ]
 
-    for i, (name, example_func) in enumerate(examples, 1):
+    for i, (_name, example_func) in enumerate(examples, 1):
         await example_func()
 
         if i < len(examples):
             input("\nPress Enter to continue to next example...")
 
     # Summary
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("KEY TAKEAWAYS")
-    print("="*80)
+    print("=" * 80)
     print("""
 1. WHEN TO USE SEARCH TOOLS:
    - Current information beyond LLM training data

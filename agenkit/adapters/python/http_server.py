@@ -8,8 +8,8 @@ from aiohttp import web
 from aiohttp.web import Request, Response, StreamResponse
 
 from ...interfaces import Agent
-from ...middleware.rate_limiter import RateLimiterDecorator, RateLimiterConfig
-from ...middleware.timeout import TimeoutDecorator, TimeoutConfig
+from ...middleware.rate_limiter import RateLimiterConfig, RateLimiterDecorator
+from ...middleware.timeout import TimeoutConfig, TimeoutDecorator
 from .codec import decode_message, encode_message
 from .errors import InvalidMessageError
 
@@ -29,7 +29,7 @@ def _sanitize_error_message(error_code: str, error: Exception) -> str:
         A sanitized error message safe to send to clients
     """
     # Log the full error server-side for debugging
-    logger.error(f"Error {error_code}: {type(error).__name__}: {str(error)}", exc_info=True)
+    logger.error(f"Error {error_code}: {type(error).__name__}: {error!s}")
 
     # Return generic messages based on error code
     sanitized_messages = {
@@ -60,7 +60,7 @@ class HTTPAgentServer:
         enable_http2: bool = False,
         enable_default_middleware: bool = True,
         rate_limit_config: RateLimiterConfig | None = None,
-        timeout_config: TimeoutConfig | None = None
+        timeout_config: TimeoutConfig | None = None,
     ):
         """Initialize HTTP agent server.
 
@@ -83,7 +83,7 @@ class HTTPAgentServer:
             rate_conf = rate_limit_config or RateLimiterConfig(
                 rate=100.0,  # 100 requests/second
                 capacity=200,  # Allow bursts up to 200 requests
-                tokens_per_request=1
+                tokens_per_request=1,
             )
             agent = RateLimiterDecorator(agent, rate_conf)
 
@@ -143,7 +143,7 @@ class HTTPAgentServer:
         try:
             # Read request body
             body = await request.read()
-            envelope = json.loads(body.decode('utf-8'))
+            envelope = json.loads(body.decode("utf-8"))
 
             # Extract message
             message_data = envelope.get("payload", {}).get("message")
@@ -152,7 +152,7 @@ class HTTPAgentServer:
                     envelope.get("id", "unknown"),
                     "INVALID_MESSAGE",
                     "Missing message in payload",
-                    400
+                    400,
                 )
 
             # Decode message
@@ -162,20 +162,18 @@ class HTTPAgentServer:
             result = await self.agent.process(input_message)
 
             # Create response envelope
-            response_payload = {
-                "message": encode_message(result)
-            }
+            response_payload = {"message": encode_message(result)}
             response_envelope = {
                 "id": envelope.get("id", ""),
                 "type": "response",
                 "version": "1.0",
-                "payload": response_payload
+                "payload": response_payload,
             }
 
             return Response(
-                body=json.dumps(response_envelope).encode('utf-8'),
+                body=json.dumps(response_envelope).encode("utf-8"),
                 content_type="application/json",
-                status=200
+                status=200,
             )
 
         except InvalidMessageError as e:
@@ -183,14 +181,14 @@ class HTTPAgentServer:
                 envelope.get("id", "unknown") if envelope else "unknown",
                 "INVALID_MESSAGE",
                 _sanitize_error_message("INVALID_MESSAGE", e),
-                400
+                400,
             )
         except Exception as e:
             return self._error_response(
                 envelope.get("id", "unknown") if envelope else "unknown",
                 "EXECUTION_ERROR",
                 _sanitize_error_message("EXECUTION_ERROR", e),
-                500
+                500,
             )
 
     async def handle_stream(self, request: Request) -> StreamResponse:
@@ -198,7 +196,7 @@ class HTTPAgentServer:
         try:
             # Read request body
             body = await request.read()
-            envelope = json.loads(body.decode('utf-8'))
+            envelope = json.loads(body.decode("utf-8"))
 
             # Extract message
             message_data = envelope.get("payload", {}).get("message")
@@ -207,30 +205,30 @@ class HTTPAgentServer:
                     envelope.get("id", "unknown"),
                     "INVALID_MESSAGE",
                     "Missing message in payload",
-                    400
+                    400,
                 )
 
             # Decode message
             input_message = decode_message(message_data)
 
             # Check if agent supports streaming
-            if not hasattr(self.agent, 'stream'):
+            if not hasattr(self.agent, "stream"):
                 return self._error_response(
                     envelope.get("id", "unknown"),
                     "NOT_IMPLEMENTED",
                     "Agent does not support streaming",
-                    501
+                    501,
                 )
 
             # Set up SSE response
             response = StreamResponse(
                 status=200,
-                reason='OK',
+                reason="OK",
                 headers={
-                    'Content-Type': 'text/event-stream',
-                    'Cache-Control': 'no-cache',
-                    'Connection': 'keep-alive',
-                }
+                    "Content-Type": "text/event-stream",
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                },
             )
             await response.prepare(request)
 
@@ -242,9 +240,7 @@ class HTTPAgentServer:
                         "id": envelope.get("id", ""),
                         "type": "stream_chunk",
                         "version": "1.0",
-                        "payload": {
-                            "message": encode_message(chunk)
-                        }
+                        "payload": {"message": encode_message(chunk)},
                     }
                     await self._send_sse_event(response, chunk_envelope)
 
@@ -253,7 +249,7 @@ class HTTPAgentServer:
                     "id": envelope.get("id", ""),
                     "type": "stream_end",
                     "version": "1.0",
-                    "payload": {}
+                    "payload": {},
                 }
                 await self._send_sse_event(response, end_envelope)
 
@@ -266,9 +262,9 @@ class HTTPAgentServer:
                     "payload": {
                         "error": {
                             "code": "STREAM_ERROR",
-                            "message": _sanitize_error_message("STREAM_ERROR", e)
+                            "message": _sanitize_error_message("STREAM_ERROR", e),
                         }
-                    }
+                    },
                 }
                 await self._send_sse_event(response, error_envelope)
 
@@ -279,7 +275,7 @@ class HTTPAgentServer:
                 envelope.get("id", "unknown"),
                 "INTERNAL_ERROR",
                 _sanitize_error_message("INTERNAL_ERROR", e),
-                500
+                500,
             )
 
     async def _send_sse_event(self, response: StreamResponse, data: dict[str, Any]) -> None:
@@ -294,16 +290,11 @@ class HTTPAgentServer:
             "id": id,
             "type": "error",
             "version": "1.0",
-            "payload": {
-                "error": {
-                    "code": code,
-                    "message": message
-                }
-            }
+            "payload": {"error": {"code": code, "message": message}},
         }
 
         return Response(
-            body=json.dumps(envelope).encode('utf-8'),
+            body=json.dumps(envelope).encode("utf-8"),
             content_type="application/json",
-            status=status
+            status=status,
         )

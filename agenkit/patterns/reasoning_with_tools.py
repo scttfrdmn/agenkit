@@ -35,13 +35,13 @@ Example:
     >>> # 5. Complete reasoning with final answer
 """
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Callable
-from enum import Enum
 import json
 import time
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
-from ..interfaces import Agent, Message, Tool, ToolResult
+from ..interfaces import Agent, Message, Tool
 
 
 class ReasoningStepType(Enum):
@@ -60,13 +60,13 @@ class ReasoningStep:
     step_number: int
     step_type: ReasoningStepType
     content: str
-    tool_name: Optional[str] = None
-    tool_parameters: Optional[Dict[str, Any]] = None
-    tool_result: Optional[Any] = None
-    confidence: Optional[float] = None
+    tool_name: str | None = None
+    tool_parameters: dict[str, Any] | None = None
+    tool_result: Any | None = None
+    confidence: float | None = None
     timestamp: float = field(default_factory=time.time)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "step_number": self.step_number,
@@ -84,11 +84,11 @@ class ReasoningStep:
 class ReasoningTrace:
     """Complete trace of reasoning process."""
 
-    steps: List[ReasoningStep] = field(default_factory=list)
+    steps: list[ReasoningStep] = field(default_factory=list)
     total_tools_used: int = 0
     total_thinking_steps: int = 0
     start_time: float = field(default_factory=time.time)
-    end_time: Optional[float] = None
+    end_time: float | None = None
 
     def add_step(self, step: ReasoningStep) -> None:
         """Add a step to the trace."""
@@ -109,7 +109,7 @@ class ReasoningTrace:
         end = self.end_time or time.time()
         return end - self.start_time
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "steps": [s.to_dict() for s in self.steps],
@@ -159,9 +159,9 @@ class ReasoningWithToolsAgent(Agent):
     def __init__(
         self,
         llm: Agent,
-        tools: List[Tool],
+        tools: list[Tool],
         max_reasoning_steps: int = 20,
-        tool_use_prompt: Optional[str] = None,
+        tool_use_prompt: str | None = None,
         enable_trace: bool = True,
         confidence_threshold: float = 0.8,
     ):
@@ -207,7 +207,7 @@ Continue reasoning after you get the tool result."""
         return f"reasoning_with_tools_{self.llm.name}"
 
     @property
-    def capabilities(self) -> List[str]:
+    def capabilities(self) -> list[str]:
         """Agent capabilities."""
         caps = self.llm.capabilities.copy()
         caps.extend(["reasoning_with_tools", "extended_thinking", "tool_integration"])
@@ -232,9 +232,7 @@ USER QUESTION:
 
 Begin reasoning. Use tools as needed while thinking."""
 
-        enhanced_message = Message(
-            role=message.role, content=enhanced_content, metadata=message.metadata or {}
-        )
+        Message(role=message.role, content=enhanced_content, metadata=message.metadata or {})
 
         # Reasoning loop
         current_context = enhanced_content
@@ -242,17 +240,13 @@ Begin reasoning. Use tools as needed while thinking."""
 
         for step_num in range(self.max_reasoning_steps):
             # Get next reasoning step from LLM
-            response = await self.llm.process(
-                Message(role="user", content=current_context)
-            )
+            response = await self.llm.process(Message(role="user", content=current_context))
 
             response_text = str(response.content)
 
             # Check if this is a tool call
             if "TOOL_CALL:" in response_text:
-                tool_name, parameters, remaining_text = self._parse_tool_call(
-                    response_text
-                )
+                tool_name, parameters, remaining_text = self._parse_tool_call(response_text)
 
                 if tool_name and tool_name in self.tools:
                     # Record thinking before tool call
@@ -301,7 +295,7 @@ Continue reasoning with this information."""
 
                     except Exception as e:
                         # Tool execution failed
-                        error_msg = f"Tool {tool_name} failed: {str(e)}"
+                        error_msg = f"Tool {tool_name} failed: {e!s}"
                         if trace:
                             trace.add_step(
                                 ReasoningStep(
@@ -383,7 +377,7 @@ Continue reasoning or provide final answer."""
 
         return response_message
 
-    def _parse_tool_call(self, text: str) -> tuple[Optional[str], Dict[str, Any], str]:
+    def _parse_tool_call(self, text: str) -> tuple[str | None, dict[str, Any], str]:
         """Parse tool call from text.
 
         Args:
@@ -475,7 +469,7 @@ Continue reasoning or provide final answer."""
 
         return text
 
-    def get_tool(self, name: str) -> Optional[Tool]:
+    def get_tool(self, name: str) -> Tool | None:
         """Get tool by name.
 
         Args:

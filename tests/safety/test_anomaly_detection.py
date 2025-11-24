@@ -1,7 +1,9 @@
 """Tests for anomaly detection and behavioral monitoring."""
 
-import pytest
 import asyncio
+
+import pytest
+
 from agenkit.interfaces import Agent, Message
 from agenkit.safety.anomaly_detection import (
     AnomalyDetectionMiddleware,
@@ -82,7 +84,7 @@ class TestAnomalyDetector:
         detector = AnomalyDetector(max_requests_per_minute=10)
 
         # Simulate 11 requests in quick succession
-        for i in range(11):
+        for _i in range(11):
             result = detector.detect_rate_anomaly("user_123")
 
         # Last request should trigger anomaly
@@ -96,7 +98,7 @@ class TestAnomalyDetector:
         detector = AnomalyDetector(max_burst_size=5)
 
         # Simulate 6 requests in under 1 second
-        for i in range(6):
+        for _i in range(6):
             result = detector.detect_rate_anomaly("user_123")
 
         # Should detect burst
@@ -110,11 +112,11 @@ class TestAnomalyDetector:
         detector = AnomalyDetector(max_requests_per_minute=10)
 
         # User 1 makes 5 requests
-        for i in range(5):
+        for _i in range(5):
             detector.detect_rate_anomaly("user_1")
 
         # User 2 makes 5 requests
-        for i in range(5):
+        for _i in range(5):
             detector.detect_rate_anomaly("user_2")
 
         # Neither should trigger anomaly (separate tracking)
@@ -129,7 +131,7 @@ class TestAnomalyDetector:
         detector = AnomalyDetector(failure_rate_threshold=0.5)
 
         # Simulate 10 failures
-        for i in range(10):
+        for _i in range(10):
             result = detector.detect_failure_anomaly("user_123", is_failure=True)
 
         # Should detect high failure rate
@@ -143,11 +145,11 @@ class TestAnomalyDetector:
         detector = AnomalyDetector(failure_rate_threshold=0.6)
 
         # 6 successes
-        for i in range(6):
+        for _i in range(6):
             detector.detect_failure_anomaly("user_123", is_failure=False)
 
         # 4 failures (total 10, rate = 0.4)
-        for i in range(4):
+        for _i in range(4):
             result = detector.detect_failure_anomaly("user_123", is_failure=True)
 
         # Should not trigger (0.4 < 0.6)
@@ -158,7 +160,7 @@ class TestAnomalyDetector:
         detector = AnomalyDetector()
 
         # Only 3 failures (below minimum of 10)
-        for i in range(3):
+        for _i in range(3):
             result = detector.detect_failure_anomaly("user_123", is_failure=True)
 
         # Should not trigger (not enough data)
@@ -169,7 +171,7 @@ class TestAnomalyDetector:
         detector = AnomalyDetector(input_size_threshold=3.0)
 
         # Build baseline with normal sizes (around 100 bytes)
-        for i in range(25):
+        for _i in range(25):
             detector.detect_size_anomaly(100, 200)
 
         # Send very large input (10x normal)
@@ -186,7 +188,7 @@ class TestAnomalyDetector:
         detector = AnomalyDetector(output_size_threshold=3.0)
 
         # Build baseline with normal sizes (around 200 bytes)
-        for i in range(25):
+        for _i in range(25):
             detector.detect_size_anomaly(100, 200)
 
         # Send very large output (10x normal)
@@ -203,7 +205,7 @@ class TestAnomalyDetector:
         detector = AnomalyDetector()
 
         # Only 5 data points (below minimum of 20)
-        for i in range(5):
+        for _i in range(5):
             result = detector.detect_size_anomaly(100, 200)
 
         # Should not trigger (not enough data)
@@ -216,7 +218,7 @@ class TestAnomalyDetector:
         same_content = "This is the same message repeated"
 
         # Send same content 5 times
-        for i in range(5):
+        for _i in range(5):
             result = detector.detect_content_anomaly("user_123", same_content)
 
         # Last one should trigger
@@ -230,7 +232,7 @@ class TestAnomalyDetector:
         detector = AnomalyDetector()
 
         # User 1 sends same content 5 times
-        for i in range(5):
+        for _i in range(5):
             detector.detect_content_anomaly("user_1", "content_a")
 
         # User 2 sends different content
@@ -258,11 +260,7 @@ class TestAnomalyDetectionMiddleware:
     async def test_processes_normal_requests(self, echo_agent):
         """Test that normal requests pass through."""
         detector = AnomalyDetector(max_requests_per_minute=100)
-        agent = AnomalyDetectionMiddleware(
-            echo_agent,
-            detector=detector,
-            user_id="user_123"
-        )
+        agent = AnomalyDetectionMiddleware(echo_agent, detector=detector, user_id="user_123")
 
         message = Message(role="user", content="Hello")
         response = await agent.process(message)
@@ -279,10 +277,7 @@ class TestAnomalyDetectionMiddleware:
 
         detector = AnomalyDetector(max_requests_per_minute=5)
         agent = AnomalyDetectionMiddleware(
-            echo_agent,
-            detector=detector,
-            user_id="user_123",
-            on_anomaly=capture_anomaly
+            echo_agent, detector=detector, user_id="user_123", on_anomaly=capture_anomaly
         )
 
         # Send 6 requests quickly
@@ -302,13 +297,11 @@ class TestAnomalyDetectionMiddleware:
             anomalies_detected.append((event, details))
 
         agent = AnomalyDetectionMiddleware(
-            echo_agent,
-            user_id="user_123",
-            on_anomaly=capture_anomaly
+            echo_agent, user_id="user_123", on_anomaly=capture_anomaly
         )
 
         # Send same content 5 times
-        for i in range(5):
+        for _i in range(5):
             await agent.process(Message(role="user", content="Same message"))
 
         # Should have detected repetitive content
@@ -324,14 +317,11 @@ class TestAnomalyDetectionMiddleware:
 
         detector = AnomalyDetector(failure_rate_threshold=0.5)
         agent = AnomalyDetectionMiddleware(
-            failing_agent,
-            detector=detector,
-            user_id="user_123",
-            on_anomaly=capture_anomaly
+            failing_agent, detector=detector, user_id="user_123", on_anomaly=capture_anomaly
         )
 
         # Try 10 requests (all will fail)
-        for i in range(10):
+        for _i in range(10):
             try:
                 await agent.process(Message(role="user", content="Test"))
             except ValueError:
@@ -350,17 +340,16 @@ class TestAnomalyDetectionMiddleware:
 
         detector = AnomalyDetector(processing_time_threshold=0.05)  # 50ms
         agent = AnomalyDetectionMiddleware(
-            slow_agent,
-            detector=detector,
-            user_id="user_123",
-            on_anomaly=capture_anomaly
+            slow_agent, detector=detector, user_id="user_123", on_anomaly=capture_anomaly
         )
 
         # Process slow request
         await agent.process(Message(role="user", content="Test"))
 
         # Should detect slow processing
-        assert any(event == SecurityEvent.UNUSUAL_PROCESSING_TIME for event, _ in anomalies_detected)
+        assert any(
+            event == SecurityEvent.UNUSUAL_PROCESSING_TIME for event, _ in anomalies_detected
+        )
 
     @pytest.mark.asyncio
     async def test_default_anomaly_handler_prints(self, echo_agent, capsys):
@@ -369,7 +358,7 @@ class TestAnomalyDetectionMiddleware:
         agent = AnomalyDetectionMiddleware(
             echo_agent,
             detector=detector,
-            user_id="user_123"
+            user_id="user_123",
             # Using default handler
         )
 
@@ -402,13 +391,11 @@ class TestAnomalyDetectionMiddleware:
             anomalies_detected.append((event, details))
 
         agent = AnomalyDetectionMiddleware(
-            echo_agent,
-            user_id="user_123",
-            on_anomaly=capture_anomaly
+            echo_agent, user_id="user_123", on_anomaly=capture_anomaly
         )
 
         # Build baseline with normal messages
-        for i in range(25):
+        for _i in range(25):
             await agent.process(Message(role="user", content="Normal message"))
 
         # Send very large message
@@ -417,7 +404,8 @@ class TestAnomalyDetectionMiddleware:
 
         # Should detect size anomaly
         size_anomalies = [
-            event for event, _ in anomalies_detected
+            event
+            for event, _ in anomalies_detected
             if event in [SecurityEvent.UNUSUAL_INPUT_SIZE, SecurityEvent.UNUSUAL_OUTPUT_SIZE]
         ]
         assert len(size_anomalies) > 0

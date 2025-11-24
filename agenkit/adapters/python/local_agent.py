@@ -127,9 +127,7 @@ class LocalAgent:
                     raise ValueError(f"Invalid port in endpoint: {self._endpoint}")
 
                 # Start TCP server
-                self._server = await asyncio.start_server(
-                    self._handle_client, host=host, port=port
-                )
+                self._server = await asyncio.start_server(self._handle_client, host=host, port=port)
 
                 logger.info(f"Agent '{self._agent.name}' listening on {host}:{port}")
             elif self._endpoint.startswith("ws://") or self._endpoint.startswith("wss://"):
@@ -426,7 +424,7 @@ class LocalAgent:
         try:
             async for message in websocket:
                 # Ensure we have bytes
-                message_bytes = message.encode('utf-8') if isinstance(message, str) else message
+                message_bytes = message.encode("utf-8") if isinstance(message, str) else message
 
                 # Check if this is a streaming request
                 try:

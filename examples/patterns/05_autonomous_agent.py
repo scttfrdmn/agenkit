@@ -18,11 +18,9 @@ This example uses mock implementations for demonstration.
 """
 
 import asyncio
-from typing import List, Dict, Any
+from typing import Any
 
-from agenkit import Message
 from agenkit.patterns import AutonomousAgent, Goal
-
 
 # ============================================================================
 # Example 1: Basic Autonomous Operation
@@ -46,9 +44,7 @@ async def basic_autonomous_example():
     print("=" * 60)
 
     # Create agent with an objective
-    agent = BasicResearchAgent(
-        objective="Research AI trends in 2024", max_iterations=5
-    )
+    agent = BasicResearchAgent(objective="Research AI trends in 2024", max_iterations=5)
 
     # Add goals for the agent to pursue
     agent.add_goal("Review latest AI papers", priority=3)
@@ -62,7 +58,7 @@ async def basic_autonomous_example():
     print("\nStarting autonomous operation...")
     result = await agent.run()
 
-    print(f"\nCompleted!")
+    print("\nCompleted!")
     print(f"Iterations: {result['iterations']}")
     print(f"Goals completed: {result['goals_completed']}/{len(agent.goals)}")
     print(f"Progress: {agent.get_progress():.1f}%")
@@ -95,7 +91,7 @@ async def goal_priority_example():
     print("\nRunning agent...")
     result = await agent.run()
 
-    print(f"\nExecution order (by priority):")
+    print("\nExecution order (by priority):")
     for i, res in enumerate(result["results"], 1):
         print(f"  {i}. {res}")
 
@@ -131,9 +127,7 @@ async def progress_tracking_example():
 
         if progress != last_progress or iteration != last_iteration:
             status = "Running" if agent.is_running else "Stopped"
-            print(
-                f"Status: {status} | Iteration: {iteration} | Progress: {progress:.1f}%"
-            )
+            print(f"Status: {status} | Iteration: {iteration} | Progress: {progress:.1f}%")
             last_progress = progress
             last_iteration = iteration
 
@@ -248,7 +242,7 @@ async def adaptive_goals_example():
             # Simulate discovery
             if "explore" in goal.description.lower() and len(self.discoveries) < 2:
                 new_goal_desc = f"Follow up on discovery {len(self.discoveries) + 1}"
-                new_goal = self.add_goal(new_goal_desc, priority=5)
+                self.add_goal(new_goal_desc, priority=5)
                 self.discoveries.append(new_goal_desc)
                 return f"Completed: {goal.description} (discovered new goal!)"
 
@@ -269,10 +263,8 @@ async def adaptive_goals_example():
     print(f"Discoveries made: {len(agent.discoveries)}")
 
     print("\nAll goals:")
-    for i, goal in enumerate(agent.goals, 1):
-        status_icon = {"active": "○", "completed": "✓", "abandoned": "✗"}.get(
-            goal.status, "?"
-        )
+    for _i, goal in enumerate(agent.goals, 1):
+        status_icon = {"active": "○", "completed": "✓", "abandoned": "✗"}.get(goal.status, "?")
         print(f"  {status_icon} {goal.description} (priority: {goal.priority})")
 
 
@@ -292,7 +284,7 @@ async def multi_goal_coordination_example():
 
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self.goal_results: Dict[str, Any] = {}
+            self.goal_results: dict[str, Any] = {}
 
         async def _work_on_goal(self, goal: Goal) -> str:
             """Work on goal and store results."""
@@ -317,15 +309,13 @@ async def multi_goal_coordination_example():
 
     print("Multi-phase project with coordinated goals\n")
 
-    result = await agent.run()
+    await agent.run()
 
     print("\nProject phases completed:")
     for goal in agent.goals:
         status = goal.status
         progress = int(goal.progress * 100)
-        status_icon = {"active": "○", "completed": "✓", "abandoned": "✗"}.get(
-            status, "?"
-        )
+        status_icon = {"active": "○", "completed": "✓", "abandoned": "✗"}.get(status, "?")
         print(f"  {status_icon} {goal.description}: {progress}% ({status})")
 
     print(f"\nOverall progress: {agent.get_progress():.1f}%")

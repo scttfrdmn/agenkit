@@ -2,11 +2,12 @@
 Tests for InMemoryMemory implementation.
 """
 
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
-from agenkit.memory.in_memory import InMemoryMemory
+import pytest
+
 from agenkit.interfaces import Message
+from agenkit.memory.in_memory import InMemoryMemory
 
 
 @pytest.mark.asyncio
@@ -112,7 +113,7 @@ async def test_store_with_metadata():
 
     # Verify storage (internal check)
     session_storage = memory._storage["session-1"]
-    timestamp, stored_msg, stored_metadata = session_storage[0]
+    _timestamp, stored_msg, stored_metadata = session_storage[0]
 
     assert stored_msg.content == "Important message"
     assert stored_metadata["importance"] == 0.9
@@ -126,27 +127,17 @@ async def test_retrieve_with_importance_threshold():
 
     # Store messages with different importance
     await memory.store(
-        "session-1",
-        Message(role="user", content="Low priority"),
-        metadata={"importance": 0.3}
+        "session-1", Message(role="user", content="Low priority"), metadata={"importance": 0.3}
     )
     await memory.store(
-        "session-1",
-        Message(role="user", content="High priority"),
-        metadata={"importance": 0.9}
+        "session-1", Message(role="user", content="High priority"), metadata={"importance": 0.9}
     )
     await memory.store(
-        "session-1",
-        Message(role="user", content="Medium priority"),
-        metadata={"importance": 0.6}
+        "session-1", Message(role="user", content="Medium priority"), metadata={"importance": 0.6}
     )
 
     # Retrieve only high importance
-    messages = await memory.retrieve(
-        "session-1",
-        limit=10,
-        importance_threshold=0.7
-    )
+    messages = await memory.retrieve("session-1", limit=10, importance_threshold=0.7)
 
     assert len(messages) == 1
     assert messages[0].content == "High priority"
@@ -161,25 +152,21 @@ async def test_retrieve_with_tags():
     await memory.store(
         "session-1",
         Message(role="user", content="Bug report"),
-        metadata={"tags": ["bug", "urgent"]}
+        metadata={"tags": ["bug", "urgent"]},
     )
     await memory.store(
         "session-1",
         Message(role="user", content="Feature request"),
-        metadata={"tags": ["feature", "enhancement"]}
+        metadata={"tags": ["feature", "enhancement"]},
     )
     await memory.store(
         "session-1",
         Message(role="user", content="Critical bug"),
-        metadata={"tags": ["bug", "critical"]}
+        metadata={"tags": ["bug", "critical"]},
     )
 
     # Retrieve only bug-tagged messages
-    messages = await memory.retrieve(
-        "session-1",
-        limit=10,
-        tags=["bug"]
-    )
+    messages = await memory.retrieve("session-1", limit=10, tags=["bug"])
 
     assert len(messages) == 2
     assert any("Bug report" in msg.content for msg in messages)
@@ -196,6 +183,7 @@ async def test_retrieve_with_time_range():
 
     # Wait a bit and record time
     import asyncio
+
     await asyncio.sleep(0.1)
     cutoff_time = datetime.now(timezone.utc)
     await asyncio.sleep(0.1)
@@ -204,9 +192,7 @@ async def test_retrieve_with_time_range():
 
     # Retrieve only messages after cutoff
     messages = await memory.retrieve(
-        "session-1",
-        limit=10,
-        time_range=(cutoff_time, datetime.now(timezone.utc))
+        "session-1", limit=10, time_range=(cutoff_time, datetime.now(timezone.utc))
     )
 
     assert len(messages) == 1
@@ -221,8 +207,7 @@ async def test_summarize():
     # Store some messages
     for i in range(5):
         await memory.store(
-            "session-1",
-            Message(role="user", content=f"Message {i} with some content")
+            "session-1", Message(role="user", content=f"Message {i} with some content")
         )
 
     summary = await memory.summarize("session-1")
@@ -351,7 +336,7 @@ async def test_concurrent_access():
     await asyncio.gather(
         store_messages("session-1", 5),
         store_messages("session-2", 5),
-        store_messages("session-3", 5)
+        store_messages("session-3", 5),
     )
 
     # Verify all messages stored correctly
@@ -369,25 +354,22 @@ async def test_combined_filters():
     await memory.store(
         "session-1",
         Message(role="user", content="Important bug"),
-        metadata={"importance": 0.9, "tags": ["bug", "urgent"]}
+        metadata={"importance": 0.9, "tags": ["bug", "urgent"]},
     )
     await memory.store(
         "session-1",
         Message(role="user", content="Minor bug"),
-        metadata={"importance": 0.3, "tags": ["bug", "minor"]}
+        metadata={"importance": 0.3, "tags": ["bug", "minor"]},
     )
     await memory.store(
         "session-1",
         Message(role="user", content="Important feature"),
-        metadata={"importance": 0.8, "tags": ["feature", "urgent"]}
+        metadata={"importance": 0.8, "tags": ["feature", "urgent"]},
     )
 
     # Retrieve with combined filters (urgent + high importance)
     messages = await memory.retrieve(
-        "session-1",
-        limit=10,
-        importance_threshold=0.7,
-        tags=["urgent"]
+        "session-1", limit=10, importance_threshold=0.7, tags=["urgent"]
     )
 
     # Should get both urgent + important messages

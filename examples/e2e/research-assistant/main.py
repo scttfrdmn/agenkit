@@ -22,7 +22,7 @@ Or programmatically:
 """
 
 import asyncio
-from typing import Optional
+
 from agents import ResearchAgent, ResearchConfig
 from memory import MemoryStore
 from tools import ToolRegistry, create_default_tools
@@ -63,7 +63,7 @@ class ResearchAssistant:
 
     def __init__(
         self,
-        config: Optional[ResearchConfig] = None,
+        config: ResearchConfig | None = None,
         enable_verbose: bool = True,
     ):
         """
@@ -189,11 +189,11 @@ async def demo_tasks():
 
         # Print summary
         print(f"\n{'=' * 70}")
-        print(f"RESULT:")
+        print("RESULT:")
         print(f"{'=' * 70}")
         print(f"\n{result.answer}")
         print(f"\n{'=' * 70}")
-        print(f"SUMMARY:")
+        print("SUMMARY:")
         print(f"  Success: {result.success}")
         print(f"  Iterations: {result.iterations}")
         print(f"  Cost: ${result.cost:.4f}")
@@ -209,11 +209,11 @@ async def demo_tasks():
     print(f"{'=' * 70}")
 
     status = assistant.get_status()
-    print(f"\nMemory:")
+    print("\nMemory:")
     for mem_type, stats in status["memory_summary"]["by_type"].items():
         print(f"  {mem_type}: {stats['count']} entries")
 
-    print(f"\nTools:")
+    print("\nTools:")
     for tool_name, stats in status["tool_stats"]["by_tool"].items():
         if stats["usage_count"] > 0:
             print(
@@ -278,7 +278,7 @@ async def interactive_mode():
 
         if user_input.lower() == "status":
             status = assistant.get_status()
-            print(f"\nSystem Status:")
+            print("\nSystem Status:")
             print(f"  Memory: {status['memory_summary']['total_memories']} entries")
             print(f"  Tools: {status['tool_stats']['total_tools']} available")
             print(f"  Total cost: ${status['tool_stats']['total_cost']:.4f}")

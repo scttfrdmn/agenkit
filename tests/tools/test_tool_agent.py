@@ -7,9 +7,9 @@ Tests verify:
 """
 
 import pytest
-from agenkit.interfaces import Agent, Message, Tool, ToolResult
-from agenkit.tools import ToolRegistry, ToolAgent
 
+from agenkit.interfaces import Agent, Message, Tool, ToolResult
+from agenkit.tools import ToolAgent, ToolRegistry
 
 # ============================================
 # Test Helper Tools
@@ -63,9 +63,7 @@ class SearchTool(Tool):
             return ToolResult(success=False, data=None, error="Query cannot be empty")
 
         # Simulate search results
-        results = [
-            {"title": f"Result for {query}", "url": f"http://example.com/{query}"}
-        ]
+        results = [{"title": f"Result for {query}", "url": f"http://example.com/{query}"}]
         return ToolResult(success=True, data={"results": results})
 
 
@@ -99,10 +97,8 @@ class ValidationTool(Tool):
     def parameters_schema(self) -> dict:
         return {
             "type": "object",
-            "properties": {
-                "value": {"type": "number", "minimum": 0, "maximum": 100}
-            },
-            "required": ["value"]
+            "properties": {"value": {"type": "number", "minimum": 0, "maximum": 100}},
+            "required": ["value"],
         }
 
     async def validate(self, **kwargs) -> bool:
@@ -327,6 +323,7 @@ async def test_tool_agent_basic_creation():
 @pytest.mark.asyncio
 async def test_tool_agent_capabilities():
     """Test tool agent adds tool_calling capability."""
+
     class CapableAgent(Agent):
         @property
         def name(self) -> str:
@@ -375,12 +372,9 @@ async def test_tool_agent_execute_single_tool():
         content="calculate",
         metadata={
             "tool_calls": [
-                {
-                    "tool_name": "calculator",
-                    "parameters": {"operation": "add", "a": 2, "b": 3}
-                }
+                {"tool_name": "calculator", "parameters": {"operation": "add", "a": 2, "b": 3}}
             ]
-        }
+        },
     )
 
     result = await tool_agent.process(msg)
@@ -407,14 +401,11 @@ async def test_tool_agent_execute_multiple_tools():
             "tool_calls": [
                 {
                     "tool_name": "calculator",
-                    "parameters": {"operation": "multiply", "a": 4, "b": 5}
+                    "parameters": {"operation": "multiply", "a": 4, "b": 5},
                 },
-                {
-                    "tool_name": "echo",
-                    "parameters": {"message": "hello"}
-                }
+                {"tool_name": "echo", "parameters": {"message": "hello"}},
             ]
-        }
+        },
     )
 
     result = await tool_agent.process(msg)
@@ -438,12 +429,9 @@ async def test_tool_agent_tool_failure_handled():
         content="calculate",
         metadata={
             "tool_calls": [
-                {
-                    "tool_name": "calculator",
-                    "parameters": {"operation": "divide", "a": 1, "b": 0}
-                }
+                {"tool_name": "calculator", "parameters": {"operation": "divide", "a": 1, "b": 0}}
             ]
-        }
+        },
     )
 
     result = await tool_agent.process(msg)
@@ -462,14 +450,7 @@ async def test_tool_agent_tool_not_found():
     msg = Message(
         role="user",
         content="calculate",
-        metadata={
-            "tool_calls": [
-                {
-                    "tool_name": "nonexistent",
-                    "parameters": {}
-                }
-            ]
-        }
+        metadata={"tool_calls": [{"tool_name": "nonexistent", "parameters": {}}]},
     )
 
     result = await tool_agent.process(msg)
@@ -493,16 +474,10 @@ async def test_tool_agent_mixed_success_and_failure():
         content="execute",
         metadata={
             "tool_calls": [
-                {
-                    "tool_name": "calculator",
-                    "parameters": {"operation": "add", "a": 1, "b": 1}
-                },
-                {
-                    "tool_name": "error_tool",
-                    "parameters": {}
-                }
+                {"tool_name": "calculator", "parameters": {"operation": "add", "a": 1, "b": 1}},
+                {"tool_name": "error_tool", "parameters": {}},
             ]
-        }
+        },
     )
 
     result = await tool_agent.process(msg)
@@ -525,12 +500,9 @@ async def test_tool_agent_tool_results_metadata():
         content="calculate",
         metadata={
             "tool_calls": [
-                {
-                    "tool_name": "calculator",
-                    "parameters": {"operation": "add", "a": 5, "b": 3}
-                }
+                {"tool_name": "calculator", "parameters": {"operation": "add", "a": 5, "b": 3}}
             ]
-        }
+        },
     )
 
     result = await tool_agent.process(msg)
@@ -550,13 +522,7 @@ async def test_tool_agent_invalid_tool_calls_not_list():
 
     tool_agent = ToolAgent(agent, registry)
 
-    msg = Message(
-        role="user",
-        content="execute",
-        metadata={
-            "tool_calls": "not_a_list"
-        }
-    )
+    msg = Message(role="user", content="execute", metadata={"tool_calls": "not_a_list"})
 
     # ToolAgent raises ValueError when tool_calls is not a list
     with pytest.raises(ValueError, match="tool_calls must be a list"):
@@ -571,17 +537,7 @@ async def test_tool_agent_invalid_tool_calls_missing_name():
 
     tool_agent = ToolAgent(agent, registry)
 
-    msg = Message(
-        role="user",
-        content="execute",
-        metadata={
-            "tool_calls": [
-                {
-                    "parameters": {}
-                }
-            ]
-        }
-    )
+    msg = Message(role="user", content="execute", metadata={"tool_calls": [{"parameters": {}}]})
 
     # ToolAgent raises ValueError when tool_name is missing
     with pytest.raises(ValueError, match="tool_name"):
@@ -597,15 +553,7 @@ async def test_tool_agent_invalid_tool_calls_missing_parameters():
     tool_agent = ToolAgent(agent, registry)
 
     msg = Message(
-        role="user",
-        content="execute",
-        metadata={
-            "tool_calls": [
-                {
-                    "tool_name": "calculator"
-                }
-            ]
-        }
+        role="user", content="execute", metadata={"tool_calls": [{"tool_name": "calculator"}]}
     )
 
     # ToolAgent raises ValueError when parameters are missing
@@ -628,16 +576,10 @@ async def test_tool_agent_format_results():
         content="execute",
         metadata={
             "tool_calls": [
-                {
-                    "tool_name": "calculator",
-                    "parameters": {"operation": "add", "a": 10, "b": 20}
-                },
-                {
-                    "tool_name": "search",
-                    "parameters": {"query": "python"}
-                }
+                {"tool_name": "calculator", "parameters": {"operation": "add", "a": 10, "b": 20}},
+                {"tool_name": "search", "parameters": {"query": "python"}},
             ]
-        }
+        },
     )
 
     result = await tool_agent.process(msg)
@@ -678,13 +620,10 @@ async def test_tool_agent_complex_parameters():
             "tool_calls": [
                 {
                     "tool_name": "counter",
-                    "parameters": {
-                        "text": "hello world hello",
-                        "substring": "hello"
-                    }
+                    "parameters": {"text": "hello world hello", "substring": "hello"},
                 }
             ]
-        }
+        },
     )
 
     result = await tool_agent.process(msg)
@@ -700,13 +639,7 @@ async def test_tool_agent_empty_tool_calls_list():
 
     tool_agent = ToolAgent(agent, registry)
 
-    msg = Message(
-        role="user",
-        content="execute",
-        metadata={
-            "tool_calls": []
-        }
-    )
+    msg = Message(role="user", content="execute", metadata={"tool_calls": []})
 
     result = await tool_agent.process(msg)
 
@@ -725,14 +658,7 @@ async def test_tool_agent_validation_tool():
     msg = Message(
         role="user",
         content="validate",
-        metadata={
-            "tool_calls": [
-                {
-                    "tool_name": "validator",
-                    "parameters": {"value": 50}
-                }
-            ]
-        }
+        metadata={"tool_calls": [{"tool_name": "validator", "parameters": {"value": 50}}]},
     )
 
     result = await tool_agent.process(msg)
@@ -752,14 +678,7 @@ async def test_tool_agent_validation_tool_invalid():
     msg = Message(
         role="user",
         content="validate",
-        metadata={
-            "tool_calls": [
-                {
-                    "tool_name": "validator",
-                    "parameters": {"value": 150}
-                }
-            ]
-        }
+        metadata={"tool_calls": [{"tool_name": "validator", "parameters": {"value": 150}}]},
     )
 
     result = await tool_agent.process(msg)
@@ -770,6 +689,7 @@ async def test_tool_agent_validation_tool_invalid():
 @pytest.mark.asyncio
 async def test_tool_agent_names_match():
     """Test tool agent name matches underlying agent."""
+
     class CustomAgent(Agent):
         @property
         def name(self) -> str:
@@ -798,20 +718,11 @@ async def test_tool_agent_sequential_execution():
         content="count",
         metadata={
             "tool_calls": [
-                {
-                    "tool_name": "counter",
-                    "parameters": {"text": "aaa", "substring": "a"}
-                },
-                {
-                    "tool_name": "counter",
-                    "parameters": {"text": "bbb", "substring": "b"}
-                },
-                {
-                    "tool_name": "counter",
-                    "parameters": {"text": "ccc", "substring": "c"}
-                }
+                {"tool_name": "counter", "parameters": {"text": "aaa", "substring": "a"}},
+                {"tool_name": "counter", "parameters": {"text": "bbb", "substring": "b"}},
+                {"tool_name": "counter", "parameters": {"text": "ccc", "substring": "c"}},
             ]
-        }
+        },
     )
 
     result = await tool_agent.process(msg)

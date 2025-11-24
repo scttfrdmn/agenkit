@@ -37,18 +37,14 @@ TRADE-OFFS:
 
 import asyncio
 import hashlib
-import time
-from typing import List, Dict, Optional, Any
-from dataclasses import dataclass
-from contextlib import asynccontextmanager
 import sqlite3
-from agenkit import Agent
-from agenkit.tools import Tool, ToolRegistry
-
+import time
+from typing import Any
 
 # ============================================================================
 # MOCK DATABASE (Using SQLite for demonstration)
 # ============================================================================
+
 
 class MockDatabase:
     """
@@ -102,7 +98,7 @@ class MockDatabase:
                 (1, "Alice Johnson", "alice@example.com", "admin"),
                 (2, "Bob Smith", "bob@example.com", "user"),
                 (3, "Charlie Brown", "charlie@example.com", "user"),
-            ]
+            ],
         )
 
         cursor.executemany(
@@ -113,7 +109,7 @@ class MockDatabase:
                 (3, 2, "Keyboard", 1, 80.00, "pending"),
                 (4, 2, "Monitor", 1, 300.00, "shipped"),
                 (5, 3, "Headphones", 1, 150.00, "pending"),
-            ]
+            ],
         )
 
         conn.commit()
@@ -126,7 +122,7 @@ class MockDatabase:
             self.connection.row_factory = sqlite3.Row  # Return rows as dicts
         return self.connection
 
-    async def query(self, sql: str, params: tuple = ()) -> List[Dict]:
+    async def query(self, sql: str, params: tuple = ()) -> list[dict]:
         """Execute SQL query."""
         await asyncio.sleep(0.01)  # Simulate network latency
         conn = self.connect()
@@ -149,6 +145,7 @@ class MockDatabase:
 # EXAMPLE 1: Basic Database Queries
 # ============================================================================
 
+
 class DatabaseTool:
     """
     Basic database query tool.
@@ -160,7 +157,7 @@ class DatabaseTool:
     def __init__(self, db: MockDatabase):
         self.db = db
 
-    async def query_users(self, role: Optional[str] = None) -> List[Dict]:
+    async def query_users(self, role: str | None = None) -> list[dict]:
         """
         Query users from database.
 
@@ -178,10 +175,8 @@ class DatabaseTool:
             return await self.db.query(sql)
 
     async def query_orders(
-        self,
-        user_id: Optional[int] = None,
-        status: Optional[str] = None
-    ) -> List[Dict]:
+        self, user_id: int | None = None, status: str | None = None
+    ) -> list[dict]:
         """
         Query orders from database.
 
@@ -220,9 +215,9 @@ async def example1_basic_queries():
     - Pros: Accurate, fast (10-50ms), structured data
     - Cons: Requires schema knowledge, limited to database contents
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 1: Basic Database Queries")
-    print("="*80)
+    print("=" * 80)
 
     # Create database and tool
     db = MockDatabase()
@@ -247,7 +242,9 @@ async def example1_basic_queries():
     pending_orders = await db_tool.query_orders(status="pending")
     print(f"✓ Found {len(pending_orders)} pending orders:")
     for order in pending_orders:
-        print(f"  - Order #{order['id']}: {order['product']} x{order['quantity']} = ${order['price']}")
+        print(
+            f"  - Order #{order['id']}: {order['product']} x{order['quantity']} = ${order['price']}"
+        )
 
     print("\n💡 KEY INSIGHT:")
     print("   Database tools provide accurate, real-time data access.")
@@ -257,6 +254,7 @@ async def example1_basic_queries():
 # ============================================================================
 # EXAMPLE 2: SQL Injection Prevention
 # ============================================================================
+
 
 class SecureDatabaseTool:
     """
@@ -269,7 +267,7 @@ class SecureDatabaseTool:
     def __init__(self, db: MockDatabase):
         self.db = db
 
-    async def search_users_unsafe(self, search_term: str) -> List[Dict]:
+    async def search_users_unsafe(self, search_term: str) -> list[dict]:
         """
         ⚠️ UNSAFE: Vulnerable to SQL injection.
         NEVER do this in production!
@@ -278,7 +276,7 @@ class SecureDatabaseTool:
         sql = f"SELECT * FROM users WHERE name LIKE '%{search_term}%'"
         return await self.db.query(sql)
 
-    async def search_users_safe(self, search_term: str) -> List[Dict]:
+    async def search_users_safe(self, search_term: str) -> list[dict]:
         """
         ✅ SAFE: Uses parameterized queries.
         Always use this approach!
@@ -299,9 +297,9 @@ async def example2_sql_injection_prevention():
     - Parameterized queries: Slightly more verbose but CRITICAL for security
     - Input validation: Additional layer of defense
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 2: SQL Injection Prevention")
-    print("="*80)
+    print("=" * 80)
 
     db = MockDatabase()
     db_tool = SecureDatabaseTool(db)
@@ -339,6 +337,7 @@ async def example2_sql_injection_prevention():
 # EXAMPLE 3: Connection Pooling
 # ============================================================================
 
+
 class PooledDatabaseTool:
     """
     Database tool with connection pooling.
@@ -350,11 +349,7 @@ class PooledDatabaseTool:
     def __init__(self, pool_size: int = 10):
         self.pool_size = pool_size
         self.pool = []  # Simplified pool (use asyncpg.create_pool in production)
-        self.stats = {
-            "queries": 0,
-            "pool_hits": 0,
-            "pool_misses": 0
-        }
+        self.stats = {"queries": 0, "pool_hits": 0, "pool_misses": 0}
 
     async def _get_connection(self):
         """Get connection from pool or create new one."""
@@ -371,7 +366,7 @@ class PooledDatabaseTool:
             self.pool.append(conn)
         # else: discard connection (pool full)
 
-    async def query(self, sql: str, params: tuple = ()) -> List[Dict]:
+    async def query(self, sql: str, params: tuple = ()) -> list[dict]:
         """Execute query using pooled connection."""
         self.stats["queries"] += 1
 
@@ -394,9 +389,9 @@ async def example3_connection_pooling():
     - Memory: Each pooled connection uses ~1-10MB
     - Complexity: Pool management and configuration
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 3: Connection Pooling")
-    print("="*80)
+    print("=" * 80)
 
     # Create pooled database tool
     db_tool = PooledDatabaseTool(pool_size=5)
@@ -407,11 +402,11 @@ async def example3_connection_pooling():
     start = time.time()
     for i in range(10):
         results = await db_tool.query("SELECT * FROM users")
-        print(f"  Query {i+1}: {len(results)} users")
+        print(f"  Query {i + 1}: {len(results)} users")
     elapsed = time.time() - start
 
-    print(f"\n✓ Completed in {elapsed*1000:.0f}ms")
-    print(f"\nPool Statistics:")
+    print(f"\n✓ Completed in {elapsed * 1000:.0f}ms")
+    print("\nPool Statistics:")
     print(f"  Total queries: {db_tool.stats['queries']}")
     print(f"  Pool hits: {db_tool.stats['pool_hits']}")
     print(f"  Pool misses: {db_tool.stats['pool_misses']}")
@@ -428,6 +423,7 @@ async def example3_connection_pooling():
 # EXAMPLE 4: Transaction Management
 # ============================================================================
 
+
 class TransactionalDatabaseTool:
     """
     Database tool with transaction support.
@@ -440,12 +436,8 @@ class TransactionalDatabaseTool:
         self.db = db
 
     async def create_order_with_validation(
-        self,
-        user_id: int,
-        product: str,
-        quantity: int,
-        price: float
-    ) -> Dict[str, Any]:
+        self, user_id: int, product: str, quantity: int, price: float
+    ) -> dict[str, Any]:
         """
         Create order with validation in a transaction.
 
@@ -459,42 +451,30 @@ class TransactionalDatabaseTool:
             # In production: async with conn.transaction()
 
             # 1. Validate user exists
-            users = await self.db.query(
-                "SELECT id FROM users WHERE id = ?",
-                (user_id,)
-            )
+            users = await self.db.query("SELECT id FROM users WHERE id = ?", (user_id,))
             if not users:
-                return {
-                    "success": False,
-                    "error": f"User {user_id} not found"
-                }
+                return {"success": False, "error": f"User {user_id} not found"}
 
             # 2. Validate quantity
             if quantity <= 0:
-                return {
-                    "success": False,
-                    "error": "Quantity must be positive"
-                }
+                return {"success": False, "error": "Quantity must be positive"}
 
             # 3. Create order
             order_id = await self.db.execute(
                 "INSERT INTO orders (user_id, product, quantity, price, status) VALUES (?, ?, ?, ?, ?)",
-                (user_id, product, quantity, price, "pending")
+                (user_id, product, quantity, price, "pending"),
             )
 
             # 4. Commit transaction (implicit)
             return {
                 "success": True,
                 "order_id": order_id,
-                "message": f"Order #{order_id} created successfully"
+                "message": f"Order #{order_id} created successfully",
             }
 
         except Exception as e:
             # Rollback transaction on error
-            return {
-                "success": False,
-                "error": f"Transaction failed: {e}"
-            }
+            return {"success": False, "error": f"Transaction failed: {e}"}
 
 
 async def example4_transactions():
@@ -509,9 +489,9 @@ async def example4_transactions():
     - Performance: ~10-20ms transaction overhead
     - Complexity: Requires error handling and rollback logic
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 4: Transaction Management")
-    print("="*80)
+    print("=" * 80)
 
     db = MockDatabase()
     db_tool = TransactionalDatabaseTool(db)
@@ -519,30 +499,21 @@ async def example4_transactions():
     # Valid order
     print("\n--- Creating Valid Order ---")
     result = await db_tool.create_order_with_validation(
-        user_id=1,
-        product="Tablet",
-        quantity=1,
-        price=500.00
+        user_id=1, product="Tablet", quantity=1, price=500.00
     )
     print(f"✓ {result['message']}")
 
     # Invalid order (user doesn't exist)
     print("\n--- Creating Invalid Order (user not found) ---")
     result = await db_tool.create_order_with_validation(
-        user_id=999,
-        product="Phone",
-        quantity=1,
-        price=800.00
+        user_id=999, product="Phone", quantity=1, price=800.00
     )
     print(f"✗ {result['error']}")
 
     # Invalid order (negative quantity)
     print("\n--- Creating Invalid Order (invalid quantity) ---")
     result = await db_tool.create_order_with_validation(
-        user_id=1,
-        product="Charger",
-        quantity=-1,
-        price=20.00
+        user_id=1, product="Charger", quantity=-1, price=20.00
     )
     print(f"✗ {result['error']}")
 
@@ -555,6 +526,7 @@ async def example4_transactions():
 # ============================================================================
 # EXAMPLE 5: Read Replicas (Read/Write Splitting)
 # ============================================================================
+
 
 class ReplicatedDatabaseTool:
     """
@@ -571,7 +543,7 @@ class ReplicatedDatabaseTool:
         self.read_index = 0
         self.stats = {"reads": 0, "writes": 0}
 
-    async def query(self, sql: str, params: tuple = ()) -> List[Dict]:
+    async def query(self, sql: str, params: tuple = ()) -> list[dict]:
         """Execute read query on replica."""
         self.stats["reads"] += 1
 
@@ -599,9 +571,9 @@ async def example5_read_replicas():
     - Consistency: Eventual consistency (replica lag ~10-1000ms)
     - Cost: 2-3× database hosting costs for replicas
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 5: Read Replicas (Read/Write Splitting)")
-    print("="*80)
+    print("=" * 80)
 
     db_tool = ReplicatedDatabaseTool()
 
@@ -617,11 +589,11 @@ async def example5_read_replicas():
         else:
             await db_tool.execute(
                 "INSERT INTO orders (user_id, product, quantity, price) VALUES (?, ?, ?, ?)",
-                (1, "Test Product", 1, 10.00)
+                (1, "Test Product", 1, 10.00),
             )
             print(f"  {i}. Write → Primary")
 
-    print(f"\nStatistics:")
+    print("\nStatistics:")
     print(f"  Total reads: {db_tool.stats['reads']} (sent to replicas)")
     print(f"  Total writes: {db_tool.stats['writes']} (sent to primary)")
 
@@ -635,6 +607,7 @@ async def example5_read_replicas():
 # ============================================================================
 # EXAMPLE 6: Query Caching
 # ============================================================================
+
 
 class CachedDatabaseTool:
     """
@@ -655,7 +628,7 @@ class CachedDatabaseTool:
         key_str = f"{sql}:{params}"
         return hashlib.md5(key_str.encode()).hexdigest()
 
-    async def query(self, sql: str, params: tuple = ()) -> List[Dict]:
+    async def query(self, sql: str, params: tuple = ()) -> list[dict]:
         """Execute query with caching."""
         self.stats["queries"] += 1
 
@@ -694,9 +667,9 @@ async def example6_query_caching():
     - Consistency: Stale data risk (TTL-based expiration)
     - Memory: Cache storage (~1-10KB per entry)
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 6: Query Caching")
-    print("="*80)
+    print("=" * 80)
 
     db = MockDatabase()
     db_tool = CachedDatabaseTool(db, ttl_seconds=60)
@@ -708,7 +681,7 @@ async def example6_query_caching():
     elapsed = (time.time() - start) * 1000
     print(f"✓ Found {len(result)} admin(s)")
     print(f"  Latency: {elapsed:.1f}ms")
-    print(f"  Cache: MISS")
+    print("  Cache: MISS")
 
     # Second query (cache hit)
     print("\n--- Second Query (cache hit) ---")
@@ -717,7 +690,7 @@ async def example6_query_caching():
     elapsed = (time.time() - start) * 1000
     print(f"✓ Found {len(result)} admin(s)")
     print(f"  Latency: {elapsed:.1f}ms")
-    print(f"  Cache: HIT")
+    print("  Cache: HIT")
 
     # Different query (cache miss)
     print("\n--- Different Query (cache miss) ---")
@@ -726,9 +699,9 @@ async def example6_query_caching():
     elapsed = (time.time() - start) * 1000
     print(f"✓ Found {len(result)} user(s)")
     print(f"  Latency: {elapsed:.1f}ms")
-    print(f"  Cache: MISS")
+    print("  Cache: MISS")
 
-    print(f"\nCache Statistics:")
+    print("\nCache Statistics:")
     print(f"  Total queries: {db_tool.stats['queries']}")
     print(f"  Cache hits: {db_tool.stats['cache_hits']}")
     print(f"  Cache misses: {db_tool.stats['cache_misses']}")
@@ -744,6 +717,7 @@ async def example6_query_caching():
 # EXAMPLE 7: Error Handling and Retries
 # ============================================================================
 
+
 class ResilientDatabaseTool:
     """
     Database tool with error handling and retries.
@@ -756,11 +730,7 @@ class ResilientDatabaseTool:
         self.db = db
         self.max_retries = max_retries
 
-    async def query_with_retry(
-        self,
-        sql: str,
-        params: tuple = ()
-    ) -> Dict[str, Any]:
+    async def query_with_retry(self, sql: str, params: tuple = ()) -> dict[str, Any]:
         """
         Execute query with exponential backoff retry.
 
@@ -774,23 +744,15 @@ class ResilientDatabaseTool:
         for attempt in range(self.max_retries):
             try:
                 result = await self.db.query(sql, params)
-                return {
-                    "success": True,
-                    "result": result,
-                    "attempts": attempt + 1
-                }
+                return {"success": True, "result": result, "attempts": attempt + 1}
             except Exception as e:
                 last_error = e
                 if attempt < self.max_retries - 1:
                     # Exponential backoff: 10ms, 20ms, 40ms
-                    backoff = 0.01 * (2 ** attempt)
+                    backoff = 0.01 * (2**attempt)
                     await asyncio.sleep(backoff)
 
-        return {
-            "success": False,
-            "error": str(last_error),
-            "attempts": self.max_retries
-        }
+        return {"success": False, "error": str(last_error), "attempts": self.max_retries}
 
 
 async def example7_error_handling():
@@ -805,9 +767,9 @@ async def example7_error_handling():
     - Latency: Slower on failures (70ms worst case vs 10ms success)
     - Idempotency: Only retry safe operations (SELECT, not INSERT)
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLE 7: Error Handling and Retries")
-    print("="*80)
+    print("=" * 80)
 
     db = MockDatabase()
     db_tool = ResilientDatabaseTool(db, max_retries=3)
@@ -829,12 +791,13 @@ async def example7_error_handling():
 # MAIN RUNNER
 # ============================================================================
 
+
 async def main():
     """Run all database tool examples."""
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("DATABASE TOOL EXAMPLES FOR AGENKIT")
-    print("="*80)
+    print("=" * 80)
     print("\nThese examples demonstrate WHY and HOW to use database tools with agents.")
     print("Each example includes real-world scenarios, trade-offs, and key insights.")
 
@@ -848,16 +811,16 @@ async def main():
         ("Error Handling and Retries", example7_error_handling),
     ]
 
-    for i, (name, example_func) in enumerate(examples, 1):
+    for i, (_name, example_func) in enumerate(examples, 1):
         await example_func()
 
         if i < len(examples):
             input("\nPress Enter to continue to next example...")
 
     # Summary
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("KEY TAKEAWAYS")
-    print("="*80)
+    print("=" * 80)
     print("""
 1. WHEN TO USE DATABASE TOOLS:
    - Structured data access (users, orders, products)

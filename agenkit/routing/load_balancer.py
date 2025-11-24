@@ -29,11 +29,12 @@ Example:
 """
 
 import asyncio
+import contextlib
+import random
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
-import random
+from typing import Any
 
 from ..interfaces import Agent, Message
 
@@ -57,8 +58,8 @@ class InstanceMetrics:
     successful_requests: int = 0
     failed_requests: int = 0
     total_response_time: float = 0.0
-    last_request_time: Optional[float] = None
-    errors: List[str] = field(default_factory=list)
+    last_request_time: float | None = None
+    errors: list[str] = field(default_factory=list)
 
     @property
     def avg_response_time(self) -> float:
@@ -105,10 +106,7 @@ class AgentInstance:
     @property
     def can_accept_request(self) -> bool:
         """Check if instance can accept another request."""
-        return (
-            self.enabled
-            and self.metrics.active_requests < self.max_concurrent
-        )
+        return self.enabled and self.metrics.active_requests < self.max_concurrent
 
 
 class LoadBalancerError(Exception):
@@ -144,7 +142,7 @@ class LoadBalancerRouter(Agent):
 
     def __init__(
         self,
-        instances: List[AgentInstance],
+        instances: list[AgentInstance],
         strategy: LoadBalancingStrategy = LoadBalancingStrategy.LEAST_CONNECTIONS,
         name: str = "load_balancer",
         health_check_interval: float = 30.0,
@@ -177,7 +175,7 @@ class LoadBalancerRouter(Agent):
         self._wrr_index = 0
 
         # Health check task
-        self._health_check_task: Optional[asyncio.Task] = None
+        self._health_check_task: asyncio.Task | None = None
 
     @property
     def name(self) -> str:
@@ -185,7 +183,7 @@ class LoadBalancerRouter(Agent):
         return self._name
 
     @property
-    def capabilities(self) -> List[str]:
+    def capabilities(self) -> list[str]:
         """Combined capabilities of all instances."""
         caps = set()
         for instance in self.instances:
@@ -201,10 +199,8 @@ class LoadBalancerRouter(Agent):
         """Stop background health check task."""
         if self._health_check_task:
             self._health_check_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._health_check_task
-            except asyncio.CancelledError:
-                pass
             self._health_check_task = None
 
     async def _health_check_loop(self) -> None:
@@ -285,7 +281,7 @@ class LoadBalancerRouter(Agent):
             # Always decrement active requests
             instance.metrics.active_requests -= 1
 
-    async def _select_instance(self) -> Optional[AgentInstance]:
+    async def _select_instance(self) -> AgentInstance | None:
         """Select best instance based on strategy.
 
         Returns:
@@ -304,7 +300,7 @@ class LoadBalancerRouter(Agent):
         else:
             raise ValueError(f"Unknown strategy: {self.strategy}")
 
-    async def _select_round_robin(self) -> Optional[AgentInstance]:
+    async def _select_round_robin(self) -> AgentInstance | None:
         """Select next instance in round-robin order."""
         async with self._rr_lock:
             available = [i for i in self.instances if i.can_accept_request]
@@ -325,7 +321,7 @@ class LoadBalancerRouter(Agent):
 
             return None
 
-    def _select_least_connections(self) -> Optional[AgentInstance]:
+    def _select_least_connections(self) -> AgentInstance | None:
         """Select instance with fewest active connections."""
         available = [i for i in self.instances if i.can_accept_request]
 
@@ -336,7 +332,7 @@ class LoadBalancerRouter(Agent):
         available.sort(key=lambda x: x.metrics.active_requests)
         return available[0]
 
-    def _select_least_response_time(self) -> Optional[AgentInstance]:
+    def _select_least_response_time(self) -> AgentInstance | None:
         """Select instance with lowest average response time."""
         available = [i for i in self.instances if i.can_accept_request]
 
@@ -347,7 +343,7 @@ class LoadBalancerRouter(Agent):
         available.sort(key=lambda x: x.metrics.avg_response_time)
         return available[0]
 
-    def _select_weighted_round_robin(self) -> Optional[AgentInstance]:
+    def _select_weighted_round_robin(self) -> AgentInstance | None:
         """Select instance based on weight (higher weight = more requests)."""
         available = [i for i in self.instances if i.can_accept_request]
 
@@ -355,7 +351,7 @@ class LoadBalancerRouter(Agent):
             return None
 
         # Smooth weighted round robin (SWRR) algorithm
-        total_weight = sum(i.weight for i in available)
+        sum(i.weight for i in available)
 
         # Find instance with highest (weight - current_weight)
         best_instance = None
@@ -369,7 +365,7 @@ class LoadBalancerRouter(Agent):
 
         return best_instance
 
-    def _select_random(self) -> Optional[AgentInstance]:
+    def _select_random(self) -> AgentInstance | None:
         """Select random available instance."""
         available = [i for i in self.instances if i.can_accept_request]
 
@@ -401,7 +397,7 @@ class LoadBalancerRouter(Agent):
                 return True
         return False
 
-    def get_instance(self, agent_name: str) -> Optional[AgentInstance]:
+    def get_instance(self, agent_name: str) -> AgentInstance | None:
         """Get instance by agent name.
 
         Args:
@@ -415,7 +411,7 @@ class LoadBalancerRouter(Agent):
                 return instance
         return None
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get load balancer statistics.
 
         Returns:

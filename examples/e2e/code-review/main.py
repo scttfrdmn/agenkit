@@ -8,9 +8,9 @@ Usage:
 """
 
 import asyncio
+
 from agents.review_types import CodeSubmission
 from orchestration import ReviewOrchestrator
-
 
 # Sample code submissions for demo
 GOOD_CODE = '''def calculate_sum(numbers):
@@ -23,7 +23,7 @@ def greet_user(name):
     return f"Hello, {name}!"
 '''
 
-BAD_CODE = '''import os
+BAD_CODE = """import os
 
 password = "admin123"  # Hardcoded password
 api_key = "sk_test_1234567890"  # Hardcoded API key
@@ -44,9 +44,9 @@ class user_account:  # snake_case instead of PascalCase
             risky_operation()
         except:  # Bare except
             pass
-'''
+"""
 
-MEDIUM_CODE = '''def find_duplicates(lst):
+MEDIUM_CODE = """def find_duplicates(lst):
     duplicates = []
     for i in range(len(lst)):
         for j in range(i + 1, len(lst)):  # Nested loop - O(n²)
@@ -60,14 +60,14 @@ def format_data(items):
     for item in items:
         result += str(item) + "\\n"  # String concat in loop
     return result
-'''
+"""
 
 
 async def demo():
     """Run code review demos."""
-    print("="*70)
+    print("=" * 70)
     print("CODE REVIEW SYSTEM - MULTI-AGENT DEMO")
-    print("="*70)
+    print("=" * 70)
     print("\nDemonstrating parallel agent execution for code review.")
     print("4 specialized agents: Style, Security, Performance, Correctness")
     print()
@@ -93,10 +93,10 @@ async def demo():
     ]
 
     for i, test_case in enumerate(test_cases, 1):
-        print(f"\n\n{'*'*70}")
+        print(f"\n\n{'*' * 70}")
         print(f"TEST CASE #{i}: {test_case['name']}")
         print(f"Description: {test_case['description']}")
-        print(f"{'*'*70}")
+        print(f"{'*' * 70}")
 
         submission = CodeSubmission(
             content=test_case["code"],
@@ -109,14 +109,14 @@ async def demo():
 
         await asyncio.sleep(0.5)
 
-    print(f"\n\n{'='*70}")
+    print(f"\n\n{'=' * 70}")
     print("DEMO COMPLETE")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
 
 async def review_file(filepath: str):
     """Review a specific file."""
-    with open(filepath, "r") as f:
+    with open(filepath) as f:
         content = f.read()
 
     submission = CodeSubmission(

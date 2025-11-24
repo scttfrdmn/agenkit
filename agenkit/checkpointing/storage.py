@@ -4,11 +4,8 @@ Checkpoint storage implementations.
 Provides in-memory and file-based storage for checkpoints.
 """
 
-import os
-import json
-from pathlib import Path
-from typing import Optional
 from collections import defaultdict
+from pathlib import Path
 
 from .checkpoint import Checkpoint, CheckpointStorage
 
@@ -43,19 +40,14 @@ class InMemoryCheckpointStorage(CheckpointStorage):
 
             # Sort by timestamp (most recent first)
             self._session_checkpoints[checkpoint.session_id].sort(
-                key=lambda cid: self._checkpoints[cid].timestamp,
-                reverse=True
+                key=lambda cid: self._checkpoints[cid].timestamp, reverse=True
             )
 
-    async def load(self, checkpoint_id: str) -> Optional[Checkpoint]:
+    async def load(self, checkpoint_id: str) -> Checkpoint | None:
         """Load checkpoint from memory."""
         return self._checkpoints.get(checkpoint_id)
 
-    async def list_checkpoints(
-        self,
-        session_id: str,
-        limit: Optional[int] = None
-    ) -> list[Checkpoint]:
+    async def list_checkpoints(self, session_id: str, limit: int | None = None) -> list[Checkpoint]:
         """List checkpoints for session."""
         checkpoint_ids = self._session_checkpoints.get(session_id, [])
 
@@ -64,7 +56,7 @@ class InMemoryCheckpointStorage(CheckpointStorage):
 
         return [self._checkpoints[cid] for cid in checkpoint_ids]
 
-    async def get_latest(self, session_id: str) -> Optional[Checkpoint]:
+    async def get_latest(self, session_id: str) -> Checkpoint | None:
         """Get latest checkpoint for session."""
         checkpoints = await self.list_checkpoints(session_id, limit=1)
         return checkpoints[0] if checkpoints else None
@@ -96,9 +88,7 @@ class InMemoryCheckpointStorage(CheckpointStorage):
         return count
 
     async def get_checkpoint_history(
-        self,
-        checkpoint_id: str,
-        max_depth: int = 10
+        self, checkpoint_id: str, max_depth: int = 10
     ) -> list[Checkpoint]:
         """Get checkpoint history by following parent links."""
         history = []
@@ -126,7 +116,7 @@ class InMemoryCheckpointStorage(CheckpointStorage):
             "checkpoints_per_session": {
                 session_id: len(checkpoint_ids)
                 for session_id, checkpoint_ids in self._session_checkpoints.items()
-            }
+            },
         }
 
 
@@ -175,15 +165,12 @@ class FileCheckpointStorage(CheckpointStorage):
 
     async def save(self, checkpoint: Checkpoint) -> None:
         """Save checkpoint to file."""
-        checkpoint_path = self._get_checkpoint_path(
-            checkpoint.session_id,
-            checkpoint.checkpoint_id
-        )
+        checkpoint_path = self._get_checkpoint_path(checkpoint.session_id, checkpoint.checkpoint_id)
 
-        with open(checkpoint_path, 'w') as f:
+        with open(checkpoint_path, "w") as f:
             f.write(checkpoint.to_json())
 
-    async def load(self, checkpoint_id: str) -> Optional[Checkpoint]:
+    async def load(self, checkpoint_id: str) -> Checkpoint | None:
         """Load checkpoint from file."""
         # Need to search through session directories
         for session_dir in self.checkpoint_dir.iterdir():
@@ -192,16 +179,12 @@ class FileCheckpointStorage(CheckpointStorage):
 
             checkpoint_path = session_dir / f"{checkpoint_id}.json"
             if checkpoint_path.exists():
-                with open(checkpoint_path, 'r') as f:
+                with open(checkpoint_path) as f:
                     return Checkpoint.from_json(f.read())
 
         return None
 
-    async def list_checkpoints(
-        self,
-        session_id: str,
-        limit: Optional[int] = None
-    ) -> list[Checkpoint]:
+    async def list_checkpoints(self, session_id: str, limit: int | None = None) -> list[Checkpoint]:
         """List checkpoints for session."""
         session_dir = self._get_session_dir(session_id)
 
@@ -211,7 +194,7 @@ class FileCheckpointStorage(CheckpointStorage):
         # Load all checkpoints
         checkpoints = []
         for checkpoint_file in session_dir.glob("*.json"):
-            with open(checkpoint_file, 'r') as f:
+            with open(checkpoint_file) as f:
                 checkpoint = Checkpoint.from_json(f.read())
                 checkpoints.append(checkpoint)
 
@@ -223,7 +206,7 @@ class FileCheckpointStorage(CheckpointStorage):
 
         return checkpoints
 
-    async def get_latest(self, session_id: str) -> Optional[Checkpoint]:
+    async def get_latest(self, session_id: str) -> Checkpoint | None:
         """Get latest checkpoint for session."""
         checkpoints = await self.list_checkpoints(session_id, limit=1)
         return checkpoints[0] if checkpoints else None
@@ -265,9 +248,7 @@ class FileCheckpointStorage(CheckpointStorage):
         return count
 
     async def get_checkpoint_history(
-        self,
-        checkpoint_id: str,
-        max_depth: int = 10
+        self, checkpoint_id: str, max_depth: int = 10
     ) -> list[Checkpoint]:
         """Get checkpoint history by following parent links."""
         history = []
@@ -293,7 +274,7 @@ class FileCheckpointStorage(CheckpointStorage):
             "total_sessions": 0,
             "total_checkpoints": 0,
             "checkpoint_dir": str(self.checkpoint_dir),
-            "disk_usage_bytes": 0
+            "disk_usage_bytes": 0,
         }
 
         for session_dir in self.checkpoint_dir.iterdir():

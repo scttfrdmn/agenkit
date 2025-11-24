@@ -9,10 +9,10 @@ Tests system behavior with partial failures:
 
 These tests validate graceful degradation and partial success handling.
 """
+
 import asyncio
-import random
 import time
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 import pytest
 
@@ -22,6 +22,7 @@ from tests.chaos.chaos_agents import ChaosAgent, ChaosMode, StreamingChaosAgent
 try:
     from agenkit.interfaces import StreamingAgent
 except ImportError:
+
     class StreamingAgent(Agent):
         async def stream(self, message: Message) -> AsyncIterator[Message]:
             raise NotImplementedError
@@ -43,9 +44,7 @@ class SimpleAgent(Agent):
 
     async def process(self, message: Message) -> Message:
         return Message(
-            role="agent",
-            content=f"Processed: {message.content}",
-            metadata={"agent": self.name}
+            role="agent", content=f"Processed: {message.content}", metadata={"agent": self.name}
         )
 
 
@@ -71,16 +70,13 @@ class SimpleStreamingAgent(StreamingAgent):
         words = message.content.split()
         for i, word in enumerate(words):
             await asyncio.sleep(0.01)
-            yield Message(
-                role="agent",
-                content=word,
-                metadata={"chunk": i, "total": len(words)}
-            )
+            yield Message(role="agent", content=word, metadata={"chunk": i, "total": len(words)})
 
 
 # ============================================
 # Partial Success Tests
 # ============================================
+
 
 @pytest.mark.asyncio
 @pytest.mark.chaos
@@ -90,7 +86,7 @@ async def test_some_requests_succeed_others_fail():
     chaos_agent = ChaosAgent(
         base_agent,
         chaos_mode=ChaosMode.INTERMITTENT,
-        failure_rate=0.5  # 50% failure rate
+        failure_rate=0.5,  # 50% failure rate
     )
 
     message = Message(role="user", content="Test")
@@ -123,7 +119,7 @@ async def test_partial_failure_with_retry():
     chaos_agent = ChaosAgent(
         base_agent,
         chaos_mode=ChaosMode.INTERMITTENT,
-        failure_rate=0.7  # 70% failure rate
+        failure_rate=0.7,  # 70% failure rate
     )
 
     message = Message(role="user", content="Test")
@@ -151,20 +147,23 @@ async def test_partial_failure_with_retry():
                     await asyncio.sleep(0.01)
 
     # Retry should significantly improve success rate
-    assert successes_with_retry > successes_no_retry, \
+    assert successes_with_retry > successes_no_retry, (
         f"Retry ({successes_with_retry}) should improve success rate over no retry ({successes_no_retry})"
+    )
 
     # With 70% failure rate and 5 retries:
     # - Theoretical success rate: 1 - 0.7^5 = 83.2%
     # - Expected successes: 16.64 out of 20
     # - Allow variance: accept >= 15 successes (75%)
-    assert successes_with_retry >= 15, \
+    assert successes_with_retry >= 15, (
         f"Expected >=15 successes with retry (75% success rate), got {successes_with_retry}"
+    )
 
 
 # ============================================
 # Streaming Partial Failures
 # ============================================
+
 
 @pytest.mark.asyncio
 @pytest.mark.chaos
@@ -173,7 +172,7 @@ async def test_stream_fails_mid_stream():
     base_agent = SimpleStreamingAgent()
     chaos_agent = StreamingChaosAgent(
         base_agent,
-        fail_after_chunks=3  # Fail after 3 chunks
+        fail_after_chunks=3,  # Fail after 3 chunks
     )
 
     message = Message(role="user", content="one two three four five six")
@@ -201,7 +200,7 @@ async def test_stream_with_intermittent_failures():
     chaos_agent = StreamingChaosAgent(
         base_agent,
         chaos_mode=ChaosMode.INTERMITTENT,
-        failure_rate=0.3  # 30% chance of failure per chunk
+        failure_rate=0.3,  # 30% chance of failure per chunk
     )
 
     message = Message(role="user", content="one two three four five")
@@ -230,7 +229,7 @@ async def test_stream_slow_chunks():
     base_agent = SimpleStreamingAgent()
     chaos_agent = StreamingChaosAgent(
         base_agent,
-        delay_per_chunk_ms=50  # 50ms delay per chunk
+        delay_per_chunk_ms=50,  # 50ms delay per chunk
     )
 
     message = Message(role="user", content="one two three")
@@ -285,6 +284,7 @@ async def test_stream_cancellation_cleanup():
 # Batch Processing Failures
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.chaos
 async def test_batch_with_individual_failures():
@@ -306,7 +306,9 @@ async def test_batch_with_individual_failures():
             """Single message process (required by Agent interface)."""
             return Message(role="agent", content=f"Processed: {message.content}")
 
-        async def process_batch(self, messages: list[Message]) -> list[tuple[bool, Message | Exception]]:
+        async def process_batch(
+            self, messages: list[Message]
+        ) -> list[tuple[bool, Message | Exception]]:
             """Process batch, returning success/failure for each item."""
             results = []
 
@@ -315,9 +317,7 @@ async def test_batch_with_individual_failures():
                     results.append((False, RuntimeError(f"Item {i} failed")))
                 else:
                     response = Message(
-                        role="agent",
-                        content=f"Processed: {msg.content}",
-                        metadata={"index": i}
+                        role="agent", content=f"Processed: {msg.content}", metadata={"index": i}
                     )
                     results.append((True, response))
 
@@ -342,7 +342,7 @@ async def test_batch_with_individual_failures():
 
     # Verify failed indices
     failed_indices = []
-    for i, (success, result) in enumerate(results):
+    for i, (success, _result) in enumerate(results):
         if not success:
             failed_indices.append(i)
 
@@ -377,8 +377,7 @@ async def test_batch_with_timeout():
                     delay = 0.05 if i % 3 == 0 else 0.15  # Every 3rd is fast, others slow
 
                     response = await asyncio.wait_for(
-                        self._process_one(msg, delay),
-                        timeout=timeout
+                        self._process_one(msg, delay), timeout=timeout
                     )
                     results.append((True, response))
                 except asyncio.TimeoutError:
@@ -411,11 +410,11 @@ async def test_batch_with_timeout():
 # Mixed Timeout Scenarios
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.chaos
 async def test_some_requests_timeout_others_succeed():
     """Test scenario where some requests timeout, others succeed."""
-    import time
 
     class VariableDelayAgent(Agent):
         def __init__(self):
@@ -468,7 +467,7 @@ async def test_graceful_degradation_with_partial_failures():
     chaos_agent = ChaosAgent(
         base_agent,
         chaos_mode=ChaosMode.INTERMITTENT,
-        failure_rate=0.4  # 40% failure rate
+        failure_rate=0.4,  # 40% failure rate
     )
 
     message = Message(role="user", content="Test")
@@ -494,8 +493,7 @@ async def test_graceful_degradation_with_partial_failures():
 
     # Expect ~60% success rate (allow variance)
     success_rate = successes / total_requests
-    assert 0.4 <= success_rate <= 0.8, \
-        f"Expected ~60% success rate, got {success_rate:.1%}"
+    assert 0.4 <= success_rate <= 0.8, f"Expected ~60% success rate, got {success_rate:.1%}"
 
     # All requests completed (no hangs)
     assert successes + failures == total_requests

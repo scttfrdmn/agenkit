@@ -28,9 +28,7 @@ class SlowAgent(Agent):
         # Simulate expensive operation (e.g., LLM API call)
         await asyncio.sleep(0.5)
         return Message(
-            role="agent",
-            content=f"Processed: {message.content}",
-            metadata={"processing_time": 0.5}
+            role="agent", content=f"Processed: {message.content}", metadata={"processing_time": 0.5}
         )
 
 
@@ -45,7 +43,7 @@ async def scenario_1_basic_caching():
     agent = SlowAgent()
     config = CachingConfig(
         max_cache_size=1000,
-        default_ttl=300.0  # 5 minutes
+        default_ttl=300.0,  # 5 minutes
     )
     cached_agent = CachingDecorator(agent, config)
 
@@ -57,7 +55,7 @@ async def scenario_1_basic_caching():
     response = await cached_agent.process(message)
     elapsed = time.time() - start
     print(f"  Response: {response.content}")
-    print(f"  Time: {elapsed*1000:.0f}ms")
+    print(f"  Time: {elapsed * 1000:.0f}ms")
     print()
 
     # Second request - cache hit
@@ -66,7 +64,7 @@ async def scenario_1_basic_caching():
     response = await cached_agent.process(message)
     elapsed = time.time() - start
     print(f"  Response: {response.content}")
-    print(f"  Time: {elapsed*1000:.0f}ms")
+    print(f"  Time: {elapsed * 1000:.0f}ms")
     print()
 
     # Show metrics
@@ -74,7 +72,7 @@ async def scenario_1_basic_caching():
     print(f"  Total requests: {cached_agent.metrics.total_requests}")
     print(f"  Cache hits: {cached_agent.metrics.cache_hits}")
     print(f"  Cache misses: {cached_agent.metrics.cache_misses}")
-    print(f"  Hit rate: {cached_agent.metrics.hit_rate*100:.1f}%")
+    print(f"  Hit rate: {cached_agent.metrics.hit_rate * 100:.1f}%")
     print()
 
 
@@ -89,7 +87,7 @@ async def scenario_2_ttl_expiration():
     agent = SlowAgent()
     config = CachingConfig(
         max_cache_size=1000,
-        default_ttl=1.0  # 1 second TTL
+        default_ttl=1.0,  # 1 second TTL
     )
     cached_agent = CachingDecorator(agent, config)
 
@@ -100,7 +98,7 @@ async def scenario_2_ttl_expiration():
     start = time.time()
     await cached_agent.process(message)
     elapsed = time.time() - start
-    print(f"  Time: {elapsed*1000:.0f}ms (cache miss)")
+    print(f"  Time: {elapsed * 1000:.0f}ms (cache miss)")
     print()
 
     # Second request (within TTL)
@@ -108,7 +106,7 @@ async def scenario_2_ttl_expiration():
     start = time.time()
     await cached_agent.process(message)
     elapsed = time.time() - start
-    print(f"  Time: {elapsed*1000:.0f}ms (cache hit)")
+    print(f"  Time: {elapsed * 1000:.0f}ms (cache hit)")
     print()
 
     # Wait for expiration
@@ -121,7 +119,7 @@ async def scenario_2_ttl_expiration():
     start = time.time()
     await cached_agent.process(message)
     elapsed = time.time() - start
-    print(f"  Time: {elapsed*1000:.0f}ms (cache miss - expired)")
+    print(f"  Time: {elapsed * 1000:.0f}ms (cache miss - expired)")
     print()
 
 
@@ -136,7 +134,7 @@ async def scenario_3_lru_eviction():
     agent = SlowAgent()
     config = CachingConfig(
         max_cache_size=3,  # Only 3 entries
-        default_ttl=300.0
+        default_ttl=300.0,
     )
     cached_agent = CachingDecorator(agent, config)
 
@@ -156,7 +154,7 @@ async def scenario_3_lru_eviction():
     start = time.time()
     await cached_agent.process(msg0)
     elapsed = time.time() - start
-    print(f"  Time: {elapsed*1000:.0f}ms (cache hit)")
+    print(f"  Time: {elapsed * 1000:.0f}ms (cache hit)")
     print()
 
     # Add new entry - should evict Question 1 (LRU)
@@ -171,7 +169,7 @@ async def scenario_3_lru_eviction():
     start = time.time()
     await cached_agent.process(msg0)
     elapsed = time.time() - start
-    print(f"  Time: {elapsed*1000:.0f}ms (cache hit)")
+    print(f"  Time: {elapsed * 1000:.0f}ms (cache hit)")
     print()
 
     # Verify Question 1 was evicted
@@ -180,7 +178,7 @@ async def scenario_3_lru_eviction():
     start = time.time()
     await cached_agent.process(msg1)
     elapsed = time.time() - start
-    print(f"  Time: {elapsed*1000:.0f}ms (cache miss - evicted)")
+    print(f"  Time: {elapsed * 1000:.0f}ms (cache miss - evicted)")
     print()
 
 
@@ -215,12 +213,12 @@ async def scenario_4_cache_invalidation():
     start = time.time()
     await cached_agent.process(msg1)
     elapsed1 = time.time() - start
-    print(f"  Weather today: {elapsed1*1000:.0f}ms (cache miss)")
+    print(f"  Weather today: {elapsed1 * 1000:.0f}ms (cache miss)")
 
     start = time.time()
     await cached_agent.process(msg2)
     elapsed2 = time.time() - start
-    print(f"  Stock price: {elapsed2*1000:.0f}ms (cache hit)")
+    print(f"  Stock price: {elapsed2 * 1000:.0f}ms (cache hit)")
     print()
 
     # Invalidate entire cache
@@ -243,11 +241,7 @@ async def scenario_5_custom_key_generator():
         return f"key:{message.content}"
 
     agent = SlowAgent()
-    config = CachingConfig(
-        max_cache_size=1000,
-        default_ttl=300.0,
-        key_generator=content_only_key
-    )
+    config = CachingConfig(max_cache_size=1000, default_ttl=300.0, key_generator=content_only_key)
     cached_agent = CachingDecorator(agent, config)
 
     # Same content, different metadata
@@ -258,14 +252,14 @@ async def scenario_5_custom_key_generator():
     start = time.time()
     await cached_agent.process(msg1)
     elapsed = time.time() - start
-    print(f"  Time: {elapsed*1000:.0f}ms (cache miss)")
+    print(f"  Time: {elapsed * 1000:.0f}ms (cache miss)")
     print()
 
     print("Request 2 (French - same content, different metadata):")
     start = time.time()
     await cached_agent.process(msg2)
     elapsed = time.time() - start
-    print(f"  Time: {elapsed*1000:.0f}ms (cache hit - key ignores metadata)")
+    print(f"  Time: {elapsed * 1000:.0f}ms (cache hit - key ignores metadata)")
     print()
 
     print("Note: Custom key generator treats these as same request")
@@ -305,8 +299,8 @@ async def scenario_6_cache_metrics():
     print(f"  Total requests: {info['metrics']['total_requests']}")
     print(f"  Cache hits: {info['metrics']['cache_hits']}")
     print(f"  Cache misses: {info['metrics']['cache_misses']}")
-    print(f"  Hit rate: {info['metrics']['hit_rate']*100:.1f}%")
-    print(f"  Miss rate: {info['metrics']['miss_rate']*100:.1f}%")
+    print(f"  Hit rate: {info['metrics']['hit_rate'] * 100:.1f}%")
+    print(f"  Miss rate: {info['metrics']['miss_rate'] * 100:.1f}%")
     print(f"  Evictions: {info['metrics']['evictions']}")
     print(f"  Invalidations: {info['metrics']['invalidations']}")
     print()

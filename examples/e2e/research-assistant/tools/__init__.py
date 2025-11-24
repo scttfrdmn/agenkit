@@ -1,21 +1,21 @@
 """Tools for autonomous research assistant."""
 
-from tools.tool_registry import ToolRegistry, Tool, ToolResult
 from tools.built_in_tools import (
-    SearchTool,
     CalculatorTool,
     DocumentReaderTool,
     NoteTakerTool,
+    SearchTool,
     create_default_tools,
 )
+from tools.tool_registry import Tool, ToolRegistry, ToolResult
 
 __all__ = [
-    "ToolRegistry",
-    "Tool",
-    "ToolResult",
-    "SearchTool",
     "CalculatorTool",
     "DocumentReaderTool",
     "NoteTakerTool",
+    "SearchTool",
+    "Tool",
+    "ToolRegistry",
+    "ToolResult",
     "create_default_tools",
 ]

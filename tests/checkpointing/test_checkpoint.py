@@ -2,22 +2,22 @@
 Tests for checkpoint core functionality and storage.
 """
 
-import pytest
-import tempfile
 import shutil
+import tempfile
 from datetime import datetime, timezone
-from pathlib import Path
+
+import pytest
 
 from agenkit.checkpointing import (
     Checkpoint,
-    InMemoryCheckpointStorage,
+    CheckpointManager,
     FileCheckpointStorage,
-    CheckpointManager
+    InMemoryCheckpointStorage,
 )
 from agenkit.interfaces import Message
 
-
 # ===== Checkpoint Tests =====
+
 
 def test_checkpoint_creation():
     """Test creating a checkpoint."""
@@ -29,7 +29,7 @@ def test_checkpoint_creation():
         step_number=10,
         state={"counter": 10, "mode": "active"},
         messages=[Message(role="user", content="Hello")],
-        metadata={"cost": 0.05}
+        metadata={"cost": 0.05},
     )
 
     assert checkpoint.checkpoint_id == "checkpoint-1"
@@ -48,7 +48,7 @@ def test_checkpoint_to_dict():
         step_number=10,
         state={"counter": 10},
         messages=[],
-        metadata={}
+        metadata={},
     )
 
     checkpoint_dict = checkpoint.to_dict()
@@ -69,7 +69,7 @@ def test_checkpoint_from_dict():
         "state": {"counter": 10},
         "messages": [],
         "metadata": {},
-        "parent_checkpoint_id": None
+        "parent_checkpoint_id": None,
     }
 
     checkpoint = Checkpoint.from_dict(data)
@@ -88,7 +88,7 @@ def test_checkpoint_json_serialization():
         step_number=10,
         state={"counter": 10, "data": [1, 2, 3]},
         messages=[],
-        metadata={"cost": 0.05}
+        metadata={"cost": 0.05},
     )
 
     # Serialize
@@ -104,6 +104,7 @@ def test_checkpoint_json_serialization():
 
 # ===== InMemoryCheckpointStorage Tests =====
 
+
 @pytest.mark.asyncio
 async def test_inmemory_save_and_load():
     """Test saving and loading checkpoints in memory."""
@@ -117,7 +118,7 @@ async def test_inmemory_save_and_load():
         step_number=10,
         state={"counter": 10},
         messages=[],
-        metadata={}
+        metadata={},
     )
 
     await storage.save(checkpoint)
@@ -143,7 +144,7 @@ async def test_inmemory_list_checkpoints():
             step_number=i,
             state={"counter": i},
             messages=[],
-            metadata={}
+            metadata={},
         )
         await storage.save(checkpoint)
 
@@ -169,7 +170,7 @@ async def test_inmemory_get_latest():
             step_number=i,
             state={"counter": i},
             messages=[],
-            metadata={}
+            metadata={},
         )
         await storage.save(checkpoint)
 
@@ -192,7 +193,7 @@ async def test_inmemory_delete():
         step_number=10,
         state={},
         messages=[],
-        metadata={}
+        metadata={},
     )
 
     await storage.save(checkpoint)
@@ -220,7 +221,7 @@ async def test_inmemory_delete_session():
                 step_number=i,
                 state={},
                 messages=[],
-                metadata={}
+                metadata={},
             )
             await storage.save(checkpoint)
 
@@ -254,7 +255,7 @@ async def test_inmemory_checkpoint_history():
             state={"counter": i},
             messages=[],
             metadata={},
-            parent_checkpoint_id=parent_id
+            parent_checkpoint_id=parent_id,
         )
         await storage.save(checkpoint)
         parent_id = f"checkpoint-{i}"
@@ -268,6 +269,7 @@ async def test_inmemory_checkpoint_history():
 
 
 # ===== FileCheckpointStorage Tests =====
+
 
 @pytest.fixture
 def temp_checkpoint_dir():
@@ -290,7 +292,7 @@ async def test_file_save_and_load(temp_checkpoint_dir):
         step_number=10,
         state={"counter": 10},
         messages=[],
-        metadata={}
+        metadata={},
     )
 
     await storage.save(checkpoint)
@@ -315,7 +317,7 @@ async def test_file_persistence(temp_checkpoint_dir):
         step_number=10,
         state={"counter": 10},
         messages=[],
-        metadata={}
+        metadata={},
     )
 
     await storage1.save(checkpoint)
@@ -344,7 +346,7 @@ async def test_file_get_stats(temp_checkpoint_dir):
             step_number=i,
             state={},
             messages=[],
-            metadata={}
+            metadata={},
         )
         await storage.save(checkpoint)
 
@@ -357,6 +359,7 @@ async def test_file_get_stats(temp_checkpoint_dir):
 
 # ===== CheckpointManager Tests =====
 
+
 @pytest.mark.asyncio
 async def test_manager_create_checkpoint():
     """Test creating checkpoints with manager."""
@@ -368,7 +371,7 @@ async def test_manager_create_checkpoint():
         step_number=10,
         state={"counter": 10},
         messages=[Message(role="user", content="Hello")],
-        metadata={"cost": 0.05}
+        metadata={"cost": 0.05},
     )
 
     assert checkpoint_id is not None
@@ -406,7 +409,7 @@ async def test_manager_restore_state():
         step_number=10,
         state={"counter": 10, "mode": "active"},
         messages=[],
-        metadata={}
+        metadata={},
     )
 
     # Load and restore
@@ -430,7 +433,7 @@ async def test_manager_prune_old_checkpoints():
             step_number=i,
             state={"counter": i},
             messages=[],
-            metadata={}
+            metadata={},
         )
 
     # Keep only last 5
@@ -456,7 +459,7 @@ async def test_manager_session_stats():
             step_number=i * 10,
             state={},
             messages=[],
-            metadata={}
+            metadata={},
         )
 
     stats = await manager.get_session_stats("session-1")

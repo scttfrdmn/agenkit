@@ -1,18 +1,19 @@
 """Authentication providers for validating tokens and users."""
 
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
-import os
 
 
 class AuthenticationError(Exception):
     """Raised when authentication fails."""
+
     pass
 
 
 class AuthorizationError(Exception):
     """Raised when user lacks required permissions."""
+
     pass
 
 
@@ -21,9 +22,9 @@ class User:
     """Authenticated user information."""
 
     user_id: str
-    roles: List[str] = field(default_factory=list)
-    permissions: Set[str] = field(default_factory=set)
-    metadata: Dict[str, any] = field(default_factory=dict)
+    roles: list[str] = field(default_factory=list)
+    permissions: set[str] = field(default_factory=set)
+    metadata: dict[str, any] = field(default_factory=dict)
 
     def has_role(self, role: str) -> bool:
         """Check if user has a specific role."""
@@ -72,7 +73,7 @@ class SimpleTokenProvider(AuthProvider):
         >>> user = await provider.authenticate("admin-token")
     """
 
-    def __init__(self, tokens: Dict[str, Dict]):
+    def __init__(self, tokens: dict[str, dict]):
         """Initialize with token mapping.
 
         Args:
@@ -83,14 +84,14 @@ class SimpleTokenProvider(AuthProvider):
     async def authenticate(self, token: str) -> User:
         """Authenticate token."""
         if token not in self.tokens:
-            raise AuthenticationError(f"Invalid token")
+            raise AuthenticationError("Invalid token")
 
         user_data = self.tokens[token]
         return User(
             user_id=user_data["user_id"],
             roles=user_data.get("roles", []),
             permissions=set(user_data.get("permissions", [])),
-            metadata=user_data.get("metadata", {})
+            metadata=user_data.get("metadata", {}),
         )
 
 
@@ -109,7 +110,7 @@ class EnvTokenProvider(AuthProvider):
         self,
         env_var: str = "AGENKIT_API_KEY",
         user_id: str = "api_user",
-        roles: Optional[List[str]] = None
+        roles: list[str] | None = None,
     ):
         """Initialize with environment variable name.
 
@@ -135,5 +136,5 @@ class EnvTokenProvider(AuthProvider):
             user_id=self.user_id,
             roles=self.roles,
             permissions=set(),
-            metadata={"auth_method": "env_token"}
+            metadata={"auth_method": "env_token"},
         )

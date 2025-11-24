@@ -9,8 +9,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..base import Memory
     from ...interfaces import Message
+    from ..base import Memory
 
 
 class MemoryStrategy(ABC):
@@ -34,11 +34,7 @@ class MemoryStrategy(ABC):
 
     @abstractmethod
     async def select(
-        self,
-        memory: "Memory",
-        session_id: str,
-        context_limit: int,
-        **kwargs
+        self, memory: "Memory", session_id: str, context_limit: int, **kwargs
     ) -> list["Message"]:
         """
         Select which messages to include in context.

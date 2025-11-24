@@ -7,7 +7,7 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
     InMemorySpanExporter,
 )
-from opentelemetry.trace import Status, StatusCode
+from opentelemetry.trace import StatusCode
 
 from agenkit.interfaces import Agent, Message
 from agenkit.observability import TracingMiddleware, init_tracing
@@ -101,9 +101,7 @@ async def test_tracing_middleware_sets_attributes(span_exporter):
     agent = SimpleAgent(name="agent1")
     traced_agent = TracingMiddleware(agent)
 
-    message = Message(
-        role="user", content="test message", metadata={"key": "value"}
-    )
+    message = Message(role="user", content="test message", metadata={"key": "value"})
     await traced_agent.process(message)
 
     spans = span_exporter.get_finished_spans()
@@ -151,8 +149,7 @@ async def test_tracing_middleware_extracts_trace_context(span_exporter):
             metadata={
                 "trace_context": {
                     "traceparent": (
-                        f"00-{parent_context.trace_id:032x}-"
-                        f"{parent_context.span_id:016x}-01"
+                        f"00-{parent_context.trace_id:032x}-{parent_context.span_id:016x}-01"
                     )
                 }
             },
@@ -165,9 +162,7 @@ async def test_tracing_middleware_extracts_trace_context(span_exporter):
     assert len(spans) >= 1
 
     # Find the child span
-    child_span = next(
-        (s for s in spans if s.name == "agent.agent1.process"), None
-    )
+    child_span = next((s for s in spans if s.name == "agent.agent1.process"), None)
     assert child_span is not None
 
     # Verify parent-child relationship
@@ -191,7 +186,7 @@ async def test_tracing_middleware_propagates_context_across_agents(
     response1 = await traced_agent1.process(message)
 
     # Process through agent2 with response1 (which has trace context)
-    response2 = await traced_agent2.process(response1)
+    await traced_agent2.process(response1)
 
     spans = span_exporter.get_finished_spans()
     assert len(spans) == 2
@@ -255,9 +250,7 @@ async def test_tracing_init_with_console_export():
     trace._TRACER_PROVIDER_SET_ONCE._done = False
 
     try:
-        provider = init_tracing(
-            service_name="test-service", console_export=True
-        )
+        provider = init_tracing(service_name="test-service", console_export=True)
         assert isinstance(provider, TracerProvider)
 
         # Verify tracer works

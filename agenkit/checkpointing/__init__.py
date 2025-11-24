@@ -30,23 +30,20 @@ Example:
 """
 
 from .checkpoint import Checkpoint, CheckpointStorage
-from .storage import InMemoryCheckpointStorage, FileCheckpointStorage
-from .manager import CheckpointManager
 from .durable import DurableAgent, make_durable
+from .manager import CheckpointManager
+from .storage import FileCheckpointStorage, InMemoryCheckpointStorage
 
 __all__ = [
     # Core
     "Checkpoint",
-    "CheckpointStorage",
-
-    # Storage
-    "InMemoryCheckpointStorage",
-    "FileCheckpointStorage",
-
     # Management
     "CheckpointManager",
-
+    "CheckpointStorage",
     # Durable execution
     "DurableAgent",
+    "FileCheckpointStorage",
+    # Storage
+    "InMemoryCheckpointStorage",
     "make_durable",
 ]

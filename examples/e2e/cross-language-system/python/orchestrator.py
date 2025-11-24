@@ -16,27 +16,29 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 from agenkit.adapters.python.remote_agent import RemoteAgent
 from agenkit.interfaces import Message
-
 
 # ============================================================================
 # Data Models
 # ============================================================================
 
+
 class ProcessingTask(Enum):
     """Types of image processing tasks."""
+
     METADATA_EXTRACT = "metadata_extract"  # Extract EXIF, dimensions, etc.
-    THUMBNAIL = "thumbnail"               # Generate thumbnail
-    OPTIMIZE = "optimize"                 # Optimize file size
-    WATERMARK = "watermark"               # Add watermark
-    ANALYZE = "analyze"                   # ML-based analysis
+    THUMBNAIL = "thumbnail"  # Generate thumbnail
+    OPTIMIZE = "optimize"  # Optimize file size
+    WATERMARK = "watermark"  # Add watermark
+    ANALYZE = "analyze"  # ML-based analysis
 
 
 class TaskPriority(Enum):
     """Task priority levels."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -46,29 +48,32 @@ class TaskPriority(Enum):
 @dataclass
 class ImageJob:
     """Represents an image processing job."""
+
     job_id: str
     image_path: str
-    tasks: List[ProcessingTask]
+    tasks: list[ProcessingTask]
     priority: TaskPriority = TaskPriority.MEDIUM
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
 class ProcessingResult:
     """Result of image processing."""
+
     job_id: str
     task: ProcessingTask
     success: bool
-    data: Dict[str, Any]
+    data: dict[str, Any]
     processing_time_ms: float
     worker_language: str
-    error: Optional[str] = None
+    error: str | None = None
 
 
 # ============================================================================
 # Distributed Processing Orchestrator
 # ============================================================================
+
 
 class ImageProcessingOrchestrator:
     """
@@ -77,7 +82,7 @@ class ImageProcessingOrchestrator:
     Uses gRPC for high-performance cross-language communication.
     """
 
-    def __init__(self, go_workers: List[str]):
+    def __init__(self, go_workers: list[str]):
         """
         Initialize orchestrator.
 
@@ -86,16 +91,16 @@ class ImageProcessingOrchestrator:
                        (e.g., ["grpc://localhost:50051", "grpc://localhost:50052"])
         """
         self.go_workers = go_workers
-        self.workers: List[RemoteAgent] = []
+        self.workers: list[RemoteAgent] = []
         self.next_worker_idx = 0
-        self.job_stats: Dict[str, Any] = {
+        self.job_stats: dict[str, Any] = {
             "total_jobs": 0,
             "total_tasks": 0,
             "successful_tasks": 0,
             "failed_tasks": 0,
             "total_time_ms": 0,
             "by_task": {},
-            "by_language": {"python": 0, "go": 0}
+            "by_language": {"python": 0, "go": 0},
         }
 
     async def start(self):
@@ -121,7 +126,7 @@ class ImageProcessingOrchestrator:
         self.next_worker_idx = (self.next_worker_idx + 1) % len(self.workers)
         return worker
 
-    async def process_job(self, job: ImageJob, verbose: bool = True) -> List[ProcessingResult]:
+    async def process_job(self, job: ImageJob, verbose: bool = True) -> list[ProcessingResult]:
         """
         Process a complete image job.
 
@@ -138,9 +143,9 @@ class ImageProcessingOrchestrator:
         self.job_stats["total_tasks"] += len(job.tasks)
 
         if verbose:
-            print(f"=" * 70)
+            print("=" * 70)
             print(f"Processing Job: {job.job_id}")
-            print(f"=" * 70)
+            print("=" * 70)
             print(f"Image: {job.image_path}")
             print(f"Tasks: {len(job.tasks)}")
             print(f"Priority: {job.priority.value}")
@@ -148,10 +153,7 @@ class ImageProcessingOrchestrator:
 
         # Process tasks in parallel across workers
         start_time = time.time()
-        tasks_coroutines = [
-            self._process_task(job, task, verbose)
-            for task in job.tasks
-        ]
+        tasks_coroutines = [self._process_task(job, task, verbose) for task in job.tasks]
         results = await asyncio.gather(*tasks_coroutines)
         total_time = (time.time() - start_time) * 1000
 
@@ -180,10 +182,7 @@ class ImageProcessingOrchestrator:
         return results
 
     async def _process_task(
-        self,
-        job: ImageJob,
-        task: ProcessingTask,
-        verbose: bool
+        self, job: ImageJob, task: ProcessingTask, verbose: bool
     ) -> ProcessingResult:
         """Process a single task using appropriate worker."""
 
@@ -198,14 +197,10 @@ class ImageProcessingOrchestrator:
             "task": task.value,
             "image_path": job.image_path,
             "priority": job.priority.value,
-            "metadata": job.metadata
+            "metadata": job.metadata,
         }
 
-        message = Message(
-            role="user",
-            content=f"process:{task.value}",
-            metadata=request
-        )
+        message = Message(role="user", content=f"process:{task.value}", metadata=request)
 
         if verbose:
             print(f"  → Task: {task.value} (via {worker.name})")
@@ -223,7 +218,7 @@ class ImageProcessingOrchestrator:
                 success=True,
                 data=response.metadata,
                 processing_time_ms=processing_time,
-                worker_language=response.metadata.get("worker_language", "go")
+                worker_language=response.metadata.get("worker_language", "go"),
             )
 
             if verbose:
@@ -241,7 +236,7 @@ class ImageProcessingOrchestrator:
                 data={},
                 processing_time_ms=processing_time,
                 worker_language="unknown",
-                error=str(e)
+                error=str(e),
             )
 
             if verbose:
@@ -250,10 +245,8 @@ class ImageProcessingOrchestrator:
             return result
 
     async def process_batch(
-        self,
-        jobs: List[ImageJob],
-        verbose: bool = True
-    ) -> Dict[str, List[ProcessingResult]]:
+        self, jobs: list[ImageJob], verbose: bool = True
+    ) -> dict[str, list[ProcessingResult]]:
         """
         Process multiple jobs in parallel.
 
@@ -267,16 +260,13 @@ class ImageProcessingOrchestrator:
         start_time = time.time()
 
         # Process all jobs in parallel
-        results = await asyncio.gather(*[
-            self.process_job(job, verbose=False)
-            for job in jobs
-        ])
+        results = await asyncio.gather(*[self.process_job(job, verbose=False) for job in jobs])
 
         total_time = (time.time() - start_time) * 1000
 
         # Group results by job_id
         results_by_job = {}
-        for job, job_results in zip(jobs, results):
+        for job, job_results in zip(jobs, results, strict=False):
             results_by_job[job.job_id] = job_results
 
         if verbose:
@@ -286,13 +276,15 @@ class ImageProcessingOrchestrator:
             print(f"\nBatch completed in {total_time:.1f}ms")
             print(f"  Jobs: {len(jobs)}")
             print(f"  Tasks: {total_tasks}")
-            print(f"  Success Rate: {successful}/{total_tasks} ({successful/total_tasks*100:.1f}%)")
-            print(f"  Throughput: {total_tasks/(total_time/1000):.1f} tasks/sec")
+            print(
+                f"  Success Rate: {successful}/{total_tasks} ({successful / total_tasks * 100:.1f}%)"
+            )
+            print(f"  Throughput: {total_tasks / (total_time / 1000):.1f} tasks/sec")
             print()
 
         return results_by_job
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get orchestrator statistics."""
         avg_time = (
             self.job_stats["total_time_ms"] / self.job_stats["total_jobs"]
@@ -314,5 +306,5 @@ class ImageProcessingOrchestrator:
                 self.job_stats["total_tasks"] / (self.job_stats["total_time_ms"] / 1000)
                 if self.job_stats["total_time_ms"] > 0
                 else 0
-            )
+            ),
         }

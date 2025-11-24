@@ -12,10 +12,10 @@ Provides comprehensive security event logging:
 import json
 import logging
 import logging.handlers
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
+from typing import Any
 
 
 class AuditEventType(Enum):
@@ -64,12 +64,12 @@ class AuditEvent:
     event_type: AuditEventType
     severity: AuditSeverity
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    user_id: Optional[str] = None
-    agent_name: Optional[str] = None
-    message: Optional[str] = None
-    details: Dict[str, Any] = field(default_factory=dict)
+    user_id: str | None = None
+    agent_name: str | None = None
+    message: str | None = None
+    details: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "event_type": self.event_type.value,
@@ -176,13 +176,11 @@ class SecurityAuditLogger:
         user_id: str,
         agent_name: str,
         action: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         """Log access attempt."""
         event = AuditEvent(
-            event_type=AuditEventType.ACCESS_GRANTED
-            if granted
-            else AuditEventType.ACCESS_DENIED,
+            event_type=AuditEventType.ACCESS_GRANTED if granted else AuditEventType.ACCESS_DENIED,
             severity=AuditSeverity.INFO if granted else AuditSeverity.WARNING,
             user_id=user_id,
             agent_name=agent_name,
@@ -197,7 +195,7 @@ class SecurityAuditLogger:
         user_id: str,
         agent_name: str,
         permission: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         """Log permission check."""
         event = AuditEvent(
@@ -217,14 +215,16 @@ class SecurityAuditLogger:
         user_id: str,
         validation_type: str,
         reason: str,
-        content_preview: Optional[str] = None,
-        agent_name: Optional[str] = None,
+        content_preview: str | None = None,
+        agent_name: str | None = None,
     ):
         """Log validation failure."""
         # Truncate content preview
         truncated_preview = ""
         if content_preview:
-            truncated_preview = content_preview[:200] + ("..." if len(content_preview) > 200 else "")
+            truncated_preview = content_preview[:200] + (
+                "..." if len(content_preview) > 200 else ""
+            )
 
         event = AuditEvent(
             event_type=AuditEventType.INPUT_VALIDATION_FAILED
@@ -247,14 +247,16 @@ class SecurityAuditLogger:
         user_id: str,
         score: int,
         matched_patterns: list,
-        content_preview: Optional[str] = None,
-        agent_name: Optional[str] = None,
+        content_preview: str | None = None,
+        agent_name: str | None = None,
     ):
         """Log prompt injection detection."""
         # Truncate content preview
         truncated_preview = ""
         if content_preview:
-            truncated_preview = content_preview[:200] + ("..." if len(content_preview) > 200 else "")
+            truncated_preview = content_preview[:200] + (
+                "..." if len(content_preview) > 200 else ""
+            )
 
         event = AuditEvent(
             event_type=AuditEventType.PROMPT_INJECTION_DETECTED,
@@ -274,8 +276,8 @@ class SecurityAuditLogger:
         self,
         user_id: str,
         anomaly_type: str,
-        details: Optional[Dict[str, Any]] = None,
-        agent_name: Optional[str] = None,
+        details: dict[str, Any] | None = None,
+        agent_name: str | None = None,
     ):
         """Log anomaly detection."""
         event_details = details or {}
@@ -296,9 +298,9 @@ class SecurityAuditLogger:
         user_id: str,
         agent_name: str,
         status: str,  # "started", "completed", "failed"
-        duration: Optional[float] = None,
-        error: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        duration: float | None = None,
+        error: str | None = None,
+        details: dict[str, Any] | None = None,
     ):
         """Log agent execution."""
         event_type_map = {
@@ -336,7 +338,7 @@ class SecurityAuditLogger:
         user_id: str,
         resource: str,
         permission: str,
-        agent_name: Optional[str] = None,
+        agent_name: str | None = None,
     ):
         """Log successful access grant."""
         event = AuditEvent(
@@ -355,7 +357,7 @@ class SecurityAuditLogger:
         resource: str,
         permission: str,
         reason: str,
-        agent_name: Optional[str] = None,
+        agent_name: str | None = None,
     ):
         """Log access denial."""
         event = AuditEvent(
@@ -373,7 +375,7 @@ class SecurityAuditLogger:
         user_id: str,
         fields_redacted: list,
         output_preview: str,
-        agent_name: Optional[str] = None,
+        agent_name: str | None = None,
     ):
         """Log sensitive data redaction."""
         # Truncate output preview
@@ -394,7 +396,7 @@ class SecurityAuditLogger:
 
 
 # Global audit logger instance (can be configured once)
-_global_audit_logger: Optional[SecurityAuditLogger] = None
+_global_audit_logger: SecurityAuditLogger | None = None
 
 
 def get_audit_logger() -> SecurityAuditLogger:

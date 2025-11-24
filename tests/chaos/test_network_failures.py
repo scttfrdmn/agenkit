@@ -11,6 +11,7 @@ Tests system resilience under various network failure conditions:
 These tests validate that the system handles network failures gracefully
 and that resilience middleware (retry, circuit breaker, timeout) works correctly.
 """
+
 import asyncio
 import time
 
@@ -36,9 +37,7 @@ class SimpleAgent(Agent):
 
     async def process(self, message: Message) -> Message:
         return Message(
-            role="agent",
-            content=f"Processed: {message.content}",
-            metadata={"agent": self.name}
+            role="agent", content=f"Processed: {message.content}", metadata={"agent": self.name}
         )
 
 
@@ -46,15 +45,13 @@ class SimpleAgent(Agent):
 # Connection Timeout Tests
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.chaos
 async def test_connection_timeout():
     """Test behavior when connection times out."""
     base_agent = SimpleAgent()
-    chaos_agent = ChaosAgent(
-        base_agent,
-        chaos_mode=ChaosMode.TIMEOUT
-    )
+    chaos_agent = ChaosAgent(base_agent, chaos_mode=ChaosMode.TIMEOUT)
 
     message = Message(role="user", content="Test timeout")
 
@@ -68,21 +65,15 @@ async def test_connection_timeout():
 async def test_timeout_with_retry():
     """Test that retry doesn't help with timeouts (each retry times out)."""
     base_agent = SimpleAgent()
-    chaos_agent = ChaosAgent(
-        base_agent,
-        chaos_mode=ChaosMode.TIMEOUT
-    )
+    chaos_agent = ChaosAgent(base_agent, chaos_mode=ChaosMode.TIMEOUT)
 
     message = Message(role="user", content="Test")
 
     # Simulate retry logic
     max_retries = 3
-    for attempt in range(max_retries):
+    for _attempt in range(max_retries):
         try:
-            response = await asyncio.wait_for(
-                chaos_agent.process(message),
-                timeout=0.1
-            )
+            await asyncio.wait_for(chaos_agent.process(message), timeout=0.1)
             pytest.fail("Should have timed out")
         except asyncio.TimeoutError:
             pass  # Expected
@@ -99,7 +90,7 @@ async def test_slow_response_within_timeout():
     chaos_agent = ChaosAgent(
         base_agent,
         chaos_mode=ChaosMode.SLOW_RESPONSE,
-        delay_ms=50  # 50ms delay
+        delay_ms=50,  # 50ms delay
     )
 
     message = Message(role="user", content="Test")
@@ -117,15 +108,13 @@ async def test_slow_response_within_timeout():
 # Connection Refused Tests
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.chaos
 async def test_connection_refused():
     """Test behavior when connection is refused."""
     base_agent = SimpleAgent()
-    chaos_agent = ChaosAgent(
-        base_agent,
-        chaos_mode=ChaosMode.CONNECTION_REFUSED
-    )
+    chaos_agent = ChaosAgent(base_agent, chaos_mode=ChaosMode.CONNECTION_REFUSED)
 
     message = Message(role="user", content="Test")
 
@@ -141,10 +130,7 @@ async def test_connection_refused():
 async def test_connection_refused_with_retry():
     """Test retry behavior with connection refused."""
     base_agent = SimpleAgent()
-    chaos_agent = ChaosAgent(
-        base_agent,
-        chaos_mode=ChaosMode.CONNECTION_REFUSED
-    )
+    chaos_agent = ChaosAgent(base_agent, chaos_mode=ChaosMode.CONNECTION_REFUSED)
 
     message = Message(role="user", content="Test")
 
@@ -154,7 +140,7 @@ async def test_connection_refused_with_retry():
 
     for attempt in range(max_retries + 1):
         try:
-            response = await chaos_agent.process(message)
+            await chaos_agent.process(message)
             break
         except ConnectionRefusedError as e:
             last_error = e
@@ -172,15 +158,13 @@ async def test_connection_refused_with_retry():
 # Connection Drop Tests
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.chaos
 async def test_connection_drop():
     """Test behavior when connection drops mid-request."""
     base_agent = SimpleAgent()
-    chaos_agent = ChaosAgent(
-        base_agent,
-        chaos_mode=ChaosMode.CONNECTION_DROP
-    )
+    chaos_agent = ChaosAgent(base_agent, chaos_mode=ChaosMode.CONNECTION_DROP)
 
     message = Message(role="user", content="Test")
 
@@ -214,6 +198,7 @@ async def test_connection_drop_recovery():
 # Intermittent Connectivity Tests
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.chaos
 async def test_intermittent_connectivity():
@@ -222,7 +207,7 @@ async def test_intermittent_connectivity():
     chaos_agent = ChaosAgent(
         base_agent,
         chaos_mode=ChaosMode.INTERMITTENT,
-        failure_rate=0.5  # 50% of requests fail
+        failure_rate=0.5,  # 50% of requests fail
     )
 
     message = Message(role="user", content="Test")
@@ -256,14 +241,13 @@ async def test_intermittent_with_retry_succeeds():
     chaos_agent = ChaosAgent(
         base_agent,
         chaos_mode=ChaosMode.INTERMITTENT,
-        failure_rate=0.7  # 70% failure rate
+        failure_rate=0.7,  # 70% failure rate
     )
 
     message = Message(role="user", content="Test")
 
     # Retry up to 10 times - should eventually succeed
     max_retries = 10
-    last_error = None
 
     for attempt in range(max_retries + 1):
         try:
@@ -271,8 +255,7 @@ async def test_intermittent_with_retry_succeeds():
             # Success!
             assert response.content == "Processed: Test"
             break
-        except ConnectionError as e:
-            last_error = e
+        except ConnectionError:
             if attempt < max_retries:
                 await asyncio.sleep(0.01)
             continue
@@ -286,6 +269,7 @@ async def test_intermittent_with_retry_succeeds():
 # Random Error Tests
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.chaos
 async def test_random_errors():
@@ -294,7 +278,7 @@ async def test_random_errors():
     chaos_agent = ChaosAgent(
         base_agent,
         chaos_mode=ChaosMode.RANDOM_ERROR,
-        failure_rate=0.3  # 30% error rate
+        failure_rate=0.3,  # 30% error rate
     )
 
     message = Message(role="user", content="Test")
@@ -322,11 +306,7 @@ async def test_random_errors():
 async def test_concurrent_requests_with_network_chaos():
     """Test concurrent requests under network chaos."""
     base_agent = SimpleAgent()
-    chaos_agent = ChaosAgent(
-        base_agent,
-        chaos_mode=ChaosMode.INTERMITTENT,
-        failure_rate=0.5
-    )
+    chaos_agent = ChaosAgent(base_agent, chaos_mode=ChaosMode.INTERMITTENT, failure_rate=0.5)
 
     message = Message(role="user", content="Test")
 

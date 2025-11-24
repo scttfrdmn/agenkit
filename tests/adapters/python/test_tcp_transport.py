@@ -1,17 +1,14 @@
 """Tests for TCP transport."""
 
 import asyncio
-from pathlib import Path
 
 import pytest
 
 from agenkit import Agent, Message
 from agenkit.adapters.python import (
-    AgentNotFoundError,
     ConnectionError,
     LocalAgent,
     RemoteAgent,
-    TCPTransport,
 )
 
 
@@ -80,14 +77,12 @@ class TestTCPTransport:
 
         try:
             # Create separate clients for concurrent requests (more realistic)
-            remotes = [
-                RemoteAgent("echo", endpoint="tcp://127.0.0.1:9878") for _ in range(5)
-            ]
+            remotes = [RemoteAgent("echo", endpoint="tcp://127.0.0.1:9878") for _ in range(5)]
 
             # Send concurrent requests
             messages = [Message(role="user", content=f"Message {i}") for i in range(5)]
             responses = await asyncio.gather(
-                *[remote.process(msg) for remote, msg in zip(remotes, messages)]
+                *[remote.process(msg) for remote, msg in zip(remotes, messages, strict=False)]
             )
 
             # Verify all responses
@@ -106,9 +101,7 @@ class TestTCPTransport:
 
         try:
             # Create multiple clients
-            remotes = [
-                RemoteAgent("echo", endpoint="tcp://127.0.0.1:9879") for _ in range(3)
-            ]
+            remotes = [RemoteAgent("echo", endpoint="tcp://127.0.0.1:9879") for _ in range(3)]
 
             # Each client sends a request
             responses = await asyncio.gather(
@@ -168,9 +161,7 @@ class TestTCPTransport:
             remote = RemoteAgent("echo", endpoint="tcp://127.0.0.1:9881")
 
             # Send message with metadata
-            message = Message(
-                role="user", content="test", metadata={"key": "value", "number": 42}
-            )
+            message = Message(role="user", content="test", metadata={"key": "value", "number": 42})
             response = await remote.process(message)
 
             # Verify response

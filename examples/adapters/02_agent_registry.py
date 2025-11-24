@@ -5,6 +5,7 @@ and health monitoring.
 """
 
 import asyncio
+import contextlib
 import tempfile
 from pathlib import Path
 
@@ -171,10 +172,8 @@ async def main() -> None:
         print("Cleaning up...")
         math_heartbeat_task.cancel()
         echo_heartbeat_task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await asyncio.gather(math_heartbeat_task, echo_heartbeat_task)
-        except asyncio.CancelledError:
-            pass
 
         await math_server.stop()
         await echo_server.stop()

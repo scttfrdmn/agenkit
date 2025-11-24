@@ -153,8 +153,7 @@ class AgentRegistry:
             for name in stale_agents:
                 del self._agents[name]
                 logger.warning(
-                    f"Pruned stale agent: {name} "
-                    f"(no heartbeat for {time_since_heartbeat:.1f}s)"
+                    f"Pruned stale agent: {name} (no heartbeat for {time_since_heartbeat:.1f}s)"
                 )
                 pruned += 1
 
@@ -182,9 +181,7 @@ class AgentRegistry:
         return len(self._agents)
 
 
-async def heartbeat_loop(
-    registry: AgentRegistry, agent_name: str, interval: float = 30.0
-) -> None:
+async def heartbeat_loop(registry: AgentRegistry, agent_name: str, interval: float = 30.0) -> None:
     """Background task to send periodic heartbeats.
 
     Args:

@@ -4,20 +4,15 @@ Tests for regression detection.
 Tests RegressionDetector, Severity, and comparison functions.
 """
 
-import pytest
 from agenkit.evaluation import EvaluationResult, RegressionDetector
-from agenkit.evaluation.regression import Severity, Regression
+from agenkit.evaluation.regression import Regression, Severity
 
 
 def test_regression_detector_no_baseline():
     """Test detector with no baseline returns no regressions."""
     detector = RegressionDetector()
 
-    result = EvaluationResult(
-        evaluation_id="test-1",
-        agent_name="test",
-        accuracy=0.8
-    )
+    result = EvaluationResult(evaluation_id="test-1", agent_name="test", accuracy=0.8)
 
     regressions = detector.detect(result)
 
@@ -27,10 +22,7 @@ def test_regression_detector_no_baseline():
 def test_regression_detector_no_degradation():
     """Test detector when performance is stable."""
     baseline = EvaluationResult(
-        evaluation_id="baseline",
-        agent_name="test",
-        accuracy=0.9,
-        quality_score=0.85
+        evaluation_id="baseline", agent_name="test", accuracy=0.9, quality_score=0.85
     )
 
     detector = RegressionDetector(baseline=baseline)
@@ -39,7 +31,7 @@ def test_regression_detector_no_degradation():
         evaluation_id="current",
         agent_name="test",
         accuracy=0.91,  # Slightly better
-        quality_score=0.86
+        quality_score=0.86,
     )
 
     regressions = detector.detect(current)
@@ -49,18 +41,14 @@ def test_regression_detector_no_degradation():
 
 def test_regression_detector_accuracy_degradation():
     """Test detector identifies accuracy degradation."""
-    baseline = EvaluationResult(
-        evaluation_id="baseline",
-        agent_name="test",
-        accuracy=0.9
-    )
+    baseline = EvaluationResult(evaluation_id="baseline", agent_name="test", accuracy=0.9)
 
     detector = RegressionDetector(baseline=baseline)
 
     current = EvaluationResult(
         evaluation_id="current",
         agent_name="test",
-        accuracy=0.7  # 22% degradation (beyond 10% threshold)
+        accuracy=0.7,  # 22% degradation (beyond 10% threshold)
     )
 
     regressions = detector.detect(current)
@@ -74,18 +62,14 @@ def test_regression_detector_accuracy_degradation():
 
 def test_regression_detector_latency_degradation():
     """Test detector identifies latency degradation."""
-    baseline = EvaluationResult(
-        evaluation_id="baseline",
-        agent_name="test",
-        avg_latency_ms=100.0
-    )
+    baseline = EvaluationResult(evaluation_id="baseline", agent_name="test", avg_latency_ms=100.0)
 
     detector = RegressionDetector(baseline=baseline)
 
     current = EvaluationResult(
         evaluation_id="current",
         agent_name="test",
-        avg_latency_ms=150.0  # 50% slower (beyond 20% threshold)
+        avg_latency_ms=150.0,  # 50% slower (beyond 20% threshold)
     )
 
     regressions = detector.detect(current)
@@ -102,7 +86,7 @@ def test_regression_detector_multiple_regressions():
         agent_name="test",
         accuracy=0.9,
         quality_score=0.85,
-        avg_latency_ms=100.0
+        avg_latency_ms=100.0,
     )
 
     detector = RegressionDetector(baseline=baseline)
@@ -112,7 +96,7 @@ def test_regression_detector_multiple_regressions():
         agent_name="test",
         accuracy=0.7,  # Degraded
         quality_score=0.65,  # Degraded
-        avg_latency_ms=200.0  # Degraded
+        avg_latency_ms=200.0,  # Degraded
     )
 
     regressions = detector.detect(current)
@@ -126,22 +110,18 @@ def test_regression_detector_multiple_regressions():
 
 def test_regression_detector_custom_thresholds():
     """Test detector with custom thresholds."""
-    baseline = EvaluationResult(
-        evaluation_id="baseline",
-        agent_name="test",
-        accuracy=0.9
-    )
+    baseline = EvaluationResult(evaluation_id="baseline", agent_name="test", accuracy=0.9)
 
     # Very strict threshold
     detector = RegressionDetector(
         baseline=baseline,
-        thresholds={"accuracy": 0.05}  # Only 5% degradation allowed
+        thresholds={"accuracy": 0.05},  # Only 5% degradation allowed
     )
 
     current = EvaluationResult(
         evaluation_id="current",
         agent_name="test",
-        accuracy=0.85  # 5.6% degradation
+        accuracy=0.85,  # 5.6% degradation
     )
 
     regressions = detector.detect(current)
@@ -151,11 +131,7 @@ def test_regression_detector_custom_thresholds():
 
 def test_regression_severity_calculation():
     """Test severity level calculation."""
-    baseline = EvaluationResult(
-        evaluation_id="baseline",
-        agent_name="test",
-        accuracy=1.0
-    )
+    baseline = EvaluationResult(evaluation_id="baseline", agent_name="test", accuracy=1.0)
 
     detector = RegressionDetector(baseline=baseline)
 
@@ -163,7 +139,7 @@ def test_regression_severity_calculation():
     current = EvaluationResult(
         evaluation_id="current",
         agent_name="test",
-        accuracy=0.85  # 15% degradation
+        accuracy=0.85,  # 15% degradation
     )
 
     regressions = detector.detect(current)
@@ -173,7 +149,7 @@ def test_regression_severity_calculation():
     current = EvaluationResult(
         evaluation_id="current",
         agent_name="test",
-        accuracy=0.7  # 30% degradation
+        accuracy=0.7,  # 30% degradation
     )
 
     regressions = detector.detect(current)
@@ -183,7 +159,7 @@ def test_regression_severity_calculation():
     current = EvaluationResult(
         evaluation_id="current",
         agent_name="test",
-        accuracy=0.4  # 60% degradation
+        accuracy=0.4,  # 60% degradation
     )
 
     regressions = detector.detect(current)
@@ -192,25 +168,13 @@ def test_regression_severity_calculation():
 
 def test_regression_detector_history():
     """Test detector stores history when requested."""
-    baseline = EvaluationResult(
-        evaluation_id="baseline",
-        agent_name="test",
-        accuracy=0.9
-    )
+    baseline = EvaluationResult(evaluation_id="baseline", agent_name="test", accuracy=0.9)
 
     detector = RegressionDetector(baseline=baseline)
 
-    result1 = EvaluationResult(
-        evaluation_id="test-1",
-        agent_name="test",
-        accuracy=0.85
-    )
+    result1 = EvaluationResult(evaluation_id="test-1", agent_name="test", accuracy=0.85)
 
-    result2 = EvaluationResult(
-        evaluation_id="test-2",
-        agent_name="test",
-        accuracy=0.82
-    )
+    result2 = EvaluationResult(evaluation_id="test-2", agent_name="test", accuracy=0.82)
 
     detector.detect(result1, store_history=True)
     detector.detect(result2, store_history=True)
@@ -227,7 +191,7 @@ def test_regression_detector_trend():
         result = EvaluationResult(
             evaluation_id=f"test-{i}",
             agent_name="test",
-            accuracy=0.9 - (i * 0.05)  # Degrading: 0.9, 0.85, 0.8, 0.75, 0.7
+            accuracy=0.9 - (i * 0.05),  # Degrading: 0.9, 0.85, 0.8, 0.75, 0.7
         )
         detector.detect(result, store_history=True)
 
@@ -241,17 +205,11 @@ def test_regression_detector_trend():
 def test_regression_detector_compare_results():
     """Test comparing two evaluation results."""
     result_a = EvaluationResult(
-        evaluation_id="a",
-        agent_name="test",
-        accuracy=0.9,
-        avg_latency_ms=100.0
+        evaluation_id="a", agent_name="test", accuracy=0.9, avg_latency_ms=100.0
     )
 
     result_b = EvaluationResult(
-        evaluation_id="b",
-        agent_name="test",
-        accuracy=0.85,
-        avg_latency_ms=120.0
+        evaluation_id="b", agent_name="test", accuracy=0.85, avg_latency_ms=120.0
     )
 
     detector = RegressionDetector()
@@ -270,11 +228,7 @@ def test_regression_detector_clear_history():
     """Test clearing history."""
     detector = RegressionDetector()
 
-    result = EvaluationResult(
-        evaluation_id="test",
-        agent_name="test",
-        accuracy=0.9
-    )
+    result = EvaluationResult(evaluation_id="test", agent_name="test", accuracy=0.9)
 
     detector.detect(result, store_history=True)
     assert len(detector.history) == 1
@@ -285,11 +239,7 @@ def test_regression_detector_clear_history():
 
 def test_regression_detector_summary():
     """Test getting detector summary."""
-    baseline = EvaluationResult(
-        evaluation_id="baseline",
-        agent_name="test",
-        accuracy=0.9
-    )
+    baseline = EvaluationResult(evaluation_id="baseline", agent_name="test", accuracy=0.9)
 
     detector = RegressionDetector(baseline=baseline)
 
@@ -307,7 +257,7 @@ def test_regression_to_dict():
         baseline_value=0.9,
         current_value=0.7,
         degradation_percent=22.2,
-        severity=Severity.MODERATE
+        severity=Severity.MODERATE,
     )
 
     data = regression.to_dict()
@@ -327,7 +277,7 @@ def test_regression_is_regression():
         baseline_value=0.9,
         current_value=0.7,
         degradation_percent=22.2,
-        severity=Severity.MODERATE
+        severity=Severity.MODERATE,
     )
 
     assert regression.is_regression is True
@@ -338,7 +288,7 @@ def test_regression_is_regression():
         baseline_value=0.7,
         current_value=0.9,
         degradation_percent=-22.2,
-        severity=Severity.NONE
+        severity=Severity.NONE,
     )
 
     assert improvement.is_regression is False

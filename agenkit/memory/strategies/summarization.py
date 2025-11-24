@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 from .base import MemoryStrategy
 
 if TYPE_CHECKING:
-    from ..base import Memory
     from ...interfaces import Message
+    from ..base import Memory
 
 
 class SummarizationStrategy(MemoryStrategy):
@@ -40,11 +40,7 @@ class SummarizationStrategy(MemoryStrategy):
         # Returns: [summary_message, msg1, msg2, msg3, msg4, msg5]
     """
 
-    def __init__(
-        self,
-        recent_count: int = 10,
-        summarize_older: bool = True
-    ):
+    def __init__(self, recent_count: int = 10, summarize_older: bool = True):
         """
         Initialize summarization strategy.
 
@@ -56,11 +52,7 @@ class SummarizationStrategy(MemoryStrategy):
         self.summarize_older = summarize_older
 
     async def select(
-        self,
-        memory: "Memory",
-        session_id: str,
-        context_limit: int,
-        **kwargs
+        self, memory: "Memory", session_id: str, context_limit: int, **kwargs
     ) -> list["Message"]:
         """
         Select messages with summarization.
@@ -97,6 +89,6 @@ class SummarizationStrategy(MemoryStrategy):
         # Combine summary + recent (summary first, then chronological recent)
         # Reserve 1 slot for summary
         recent_budget = context_limit - 1
-        result = [summary] + list(reversed(recent[:recent_budget]))
+        result = [summary, *list(reversed(recent[:recent_budget]))]
 
         return result

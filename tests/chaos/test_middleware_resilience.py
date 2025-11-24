@@ -5,9 +5,11 @@ Tests that resilience middleware (Retry, Circuit Breaker, Timeout, Rate Limiter)
 behaves correctly under chaos conditions. These are the most critical tests
 for validating production readiness.
 """
+
 import asyncio
+import builtins
+import contextlib
 import time
-from typing import Optional
 
 import pytest
 
@@ -16,7 +18,6 @@ from tests.chaos.chaos_agents import (
     ChaosAgent,
     ChaosMode,
     FlakeyAgent,
-    OverloadedAgent,
 )
 
 
@@ -36,15 +37,14 @@ class SimpleAgent(Agent):
 
     async def process(self, message: Message) -> Message:
         return Message(
-            role="agent",
-            content=f"Processed: {message.content}",
-            metadata={"agent": self.name}
+            role="agent", content=f"Processed: {message.content}", metadata={"agent": self.name}
         )
 
 
 # ============================================
 # Retry Middleware Under Chaos
 # ============================================
+
 
 class RetryMiddleware:
     """Simple retry middleware for testing."""
@@ -83,12 +83,12 @@ class RetryMiddleware:
                 response = await self._agent.process(message)
                 self._retry_counts.append(retries)
                 return response
-            except Exception as e:
+            except Exception:
                 retries += 1
                 if attempt < self._max_retries:
                     # Calculate backoff
                     if self._exponential:
-                        delay = self._backoff_base * (2 ** attempt)
+                        delay = self._backoff_base * (2**attempt)
                     else:
                         delay = self._backoff_base
 
@@ -107,7 +107,7 @@ async def test_retry_with_intermittent_failures():
     chaos_agent = ChaosAgent(
         base_agent,
         chaos_mode=ChaosMode.INTERMITTENT,
-        failure_rate=0.6  # 60% failure rate
+        failure_rate=0.6,  # 60% failure rate
     )
     retry_agent = RetryMiddleware(chaos_agent, max_retries=5)
 
@@ -175,7 +175,7 @@ async def test_retry_exponential_backoff():
         flakey_agent,
         max_retries=3,
         backoff_base=0.05,  # 50ms base
-        exponential=True
+        exponential=True,
     )
 
     message = Message(role="user", content="Test")
@@ -193,6 +193,7 @@ async def test_retry_exponential_backoff():
 # ============================================
 # Circuit Breaker Under Chaos
 # ============================================
+
 
 class CircuitBreakerMiddleware:
     """Simple circuit breaker for testing."""
@@ -212,7 +213,7 @@ class CircuitBreakerMiddleware:
         self._state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
         self._failure_count = 0
         self._success_count = 0
-        self._last_failure_time: Optional[float] = None
+        self._last_failure_time: float | None = None
 
     @property
     def name(self) -> str:
@@ -255,7 +256,7 @@ class CircuitBreakerMiddleware:
 
             return response
 
-        except Exception as e:
+        except Exception:
             # Failure
             self._last_failure_time = time.time()
 
@@ -282,7 +283,7 @@ async def test_circuit_breaker_opens_after_failures():
     message = Message(role="user", content="Test")
 
     # First 3 failures should reach the agent
-    for i in range(3):
+    for _i in range(3):
         with pytest.raises(ConnectionRefusedError):
             await cb_agent.process(message)
 
@@ -305,16 +306,13 @@ async def test_circuit_breaker_half_open_recovery():
     base_agent = SimpleAgent()
 
     # Fail 3 times, then succeed
-    flakey_agent = FlakeyAgent(
-        base_agent,
-        failure_pattern=[False, False, False, True, True]
-    )
+    flakey_agent = FlakeyAgent(base_agent, failure_pattern=[False, False, False, True, True])
 
     cb_agent = CircuitBreakerMiddleware(
         flakey_agent,
         failure_threshold=3,
         success_threshold=2,
-        timeout=0.1  # 100ms timeout
+        timeout=0.1,  # 100ms timeout
     )
 
     message = Message(role="user", content="Test")
@@ -352,10 +350,8 @@ async def test_circuit_breaker_prevents_cascade():
 
     # Open the circuit with 5 failures
     for _ in range(5):
-        try:
+        with contextlib.suppress(builtins.BaseException):
             await cb_agent.process(message)
-        except:
-            pass
 
     assert cb_agent.get_state() == "OPEN"
 
@@ -374,6 +370,7 @@ async def test_circuit_breaker_prevents_cascade():
 # ============================================
 # Timeout Middleware Under Chaos
 # ============================================
+
 
 class TimeoutMiddleware:
     """Simple timeout middleware for testing."""
@@ -397,10 +394,7 @@ class TimeoutMiddleware:
     async def process(self, message: Message) -> Message:
         """Process with timeout."""
         try:
-            return await asyncio.wait_for(
-                self._agent.process(message),
-                timeout=self._timeout
-            )
+            return await asyncio.wait_for(self._agent.process(message), timeout=self._timeout)
         except asyncio.TimeoutError:
             self._timeout_count += 1
             raise
@@ -414,7 +408,7 @@ async def test_timeout_with_slow_service():
     chaos_agent = ChaosAgent(
         base_agent,
         chaos_mode=ChaosMode.SLOW_RESPONSE,
-        delay_ms=500  # 500ms delay
+        delay_ms=500,  # 500ms delay
     )
     timeout_agent = TimeoutMiddleware(chaos_agent, timeout=0.2)
 
@@ -450,6 +444,7 @@ async def test_timeout_prevents_hang():
 # Combined Middleware Under Chaos
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.chaos
 async def test_retry_with_circuit_breaker():
@@ -483,11 +478,7 @@ async def test_retry_with_circuit_breaker():
 async def test_timeout_with_retry():
     """Test timeout + retry combination."""
     base_agent = SimpleAgent()
-    chaos_agent = ChaosAgent(
-        base_agent,
-        chaos_mode=ChaosMode.SLOW_RESPONSE,
-        delay_ms=200
-    )
+    chaos_agent = ChaosAgent(base_agent, chaos_mode=ChaosMode.SLOW_RESPONSE, delay_ms=200)
 
     # Timeout wraps chaos agent
     timeout_agent = TimeoutMiddleware(chaos_agent, timeout=0.1)
@@ -513,10 +504,7 @@ async def test_full_resilience_stack():
 
     # Intermittent failures with slow responses
     chaos_agent = ChaosAgent(
-        base_agent,
-        chaos_mode=ChaosMode.INTERMITTENT,
-        failure_rate=0.3,
-        delay_ms=50
+        base_agent, chaos_mode=ChaosMode.INTERMITTENT, failure_rate=0.3, delay_ms=50
     )
 
     # Stack: Timeout -> Circuit Breaker -> Retry -> Chaos

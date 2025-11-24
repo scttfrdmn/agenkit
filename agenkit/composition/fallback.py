@@ -1,6 +1,5 @@
 """Fallback agent composition pattern."""
 
-
 from agenkit.interfaces import Agent, Message
 
 
@@ -65,7 +64,7 @@ class FallbackAgent(Agent):
                 return result
 
             except Exception as e:
-                errors.append(f"agent {i+1} ({agent.name}): {e}")
+                errors.append(f"agent {i + 1} ({agent.name}): {e}")
 
         # All agents failed
         raise Exception(f"All {len(self._agents)} agents failed: {'; '.join(errors)}")

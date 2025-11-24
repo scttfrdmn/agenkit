@@ -2,14 +2,14 @@
 
 import re
 from datetime import datetime
-from typing import List
+
 from agenkit import Agent, Message
 from agents.review_types import (
-    ReviewResult,
     CodeIssue,
     CodeSubmission,
-    IssueSeverity,
     IssueCategory,
+    IssueSeverity,
+    ReviewResult,
 )
 
 
@@ -50,7 +50,7 @@ class SecurityAgent(Agent):
 
     def _review_security(self, submission: CodeSubmission) -> ReviewResult:
         """Perform security review."""
-        issues: List[CodeIssue] = []
+        issues: list[CodeIssue] = []
         lines = submission.get_lines()
         content = submission.content
 
@@ -180,5 +180,11 @@ class SecurityAgent(Agent):
             summary=summary,
             overall_score=score,
             passed=critical_count == 0,
-            metadata={"issues_by_severity": {"critical": critical_count, "high": high_count, "medium": medium_count}},
+            metadata={
+                "issues_by_severity": {
+                    "critical": critical_count,
+                    "high": high_count,
+                    "medium": medium_count,
+                }
+            },
         )

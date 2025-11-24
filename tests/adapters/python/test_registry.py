@@ -1,7 +1,7 @@
 """Tests for agent registry."""
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+import contextlib
 
 import pytest
 
@@ -281,10 +281,8 @@ class TestHeartbeatLoop:
 
         finally:
             heartbeat_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await heartbeat_task
-            except asyncio.CancelledError:
-                pass
 
     async def test_heartbeat_loop_stops_when_unregistered(self):
         """Test that heartbeat loop stops when agent is unregistered."""

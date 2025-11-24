@@ -33,6 +33,7 @@ TRADE-OFFS:
 """
 
 import asyncio
+
 from agenkit.interfaces import Agent, Message
 from agenkit.middleware import RateLimiterConfig, RateLimiterDecorator
 
@@ -60,7 +61,7 @@ class HighVolumeAgent(Agent):
         return Message(
             role="agent",
             content=f"Response {self.request_count}: {message.content}",
-            metadata={"request_number": self.request_count}
+            metadata={"request_number": self.request_count},
         )
 
 
@@ -76,10 +77,10 @@ async def example_basic_rate_limiting():
     rate_limiter = RateLimiterDecorator(
         agent,
         RateLimiterConfig(
-            rate=58.0,           # 58 tokens per second
-            capacity=100,        # Allow bursts up to 100 requests
-            tokens_per_request=1 # 1 token per request
-        )
+            rate=58.0,  # 58 tokens per second
+            capacity=100,  # Allow bursts up to 100 requests
+            tokens_per_request=1,  # 1 token per request
+        ),
     )
 
     print("Sending 10 rapid requests to OpenAI API...")
@@ -90,7 +91,7 @@ async def example_basic_rate_limiting():
     # Send 10 requests rapidly
     tasks = []
     for i in range(10):
-        message = Message(role="user", content=f"Request {i+1}")
+        message = Message(role="user", content=f"Request {i + 1}")
         tasks.append(rate_limiter.process(message))
 
     responses = await asyncio.gather(*tasks)
@@ -98,10 +99,14 @@ async def example_basic_rate_limiting():
     elapsed = asyncio.get_event_loop().time() - start_time
 
     print(f"✅ Completed {len(responses)} requests in {elapsed:.2f}s")
-    print(f"   Average: {len(responses)/elapsed:.1f} RPS")
-    print(f"   Metrics: {rate_limiter.metrics.total_requests} total, "
-          f"{rate_limiter.metrics.allowed_requests} allowed")
-    print(f"   Current tokens: {rate_limiter.metrics.current_tokens:.1f}/{rate_limiter._config.capacity}")
+    print(f"   Average: {len(responses) / elapsed:.1f} RPS")
+    print(
+        f"   Metrics: {rate_limiter.metrics.total_requests} total, "
+        f"{rate_limiter.metrics.allowed_requests} allowed"
+    )
+    print(
+        f"   Current tokens: {rate_limiter.metrics.current_tokens:.1f}/{rate_limiter._config.capacity}"
+    )
 
 
 async def example_burst_handling():
@@ -116,25 +121,24 @@ async def example_burst_handling():
     rate_limiter = RateLimiterDecorator(
         agent,
         RateLimiterConfig(
-            rate=5.0,           # 5 requests per second for demo purposes
-            capacity=10,        # Allow burst of 10 requests
-            tokens_per_request=1
-        )
+            rate=5.0,  # 5 requests per second for demo purposes
+            capacity=10,  # Allow burst of 10 requests
+            tokens_per_request=1,
+        ),
     )
 
     print("Sending burst of 8 requests (should succeed immediately)...")
     start_time = asyncio.get_event_loop().time()
 
     # First burst - should succeed immediately (under capacity)
-    tasks = [
-        rate_limiter.process(Message(role="user", content=f"Burst {i+1}"))
-        for i in range(8)
-    ]
-    responses = await asyncio.gather(*tasks)
+    tasks = [rate_limiter.process(Message(role="user", content=f"Burst {i + 1}")) for i in range(8)]
+    await asyncio.gather(*tasks)
     burst_time = asyncio.get_event_loop().time() - start_time
 
     print(f"✅ Burst completed in {burst_time:.2f}s (no waiting!)")
-    print(f"   Tokens remaining: {rate_limiter.metrics.current_tokens:.1f}/{rate_limiter._config.capacity}")
+    print(
+        f"   Tokens remaining: {rate_limiter.metrics.current_tokens:.1f}/{rate_limiter._config.capacity}"
+    )
 
     print("\nWaiting 2 seconds for token refill...")
     await asyncio.sleep(2)
@@ -144,12 +148,12 @@ async def example_burst_handling():
 
     # Second burst - send sequentially to avoid race condition
     for i in range(15):
-        await rate_limiter.process(Message(role="user", content=f"Request {i+1}"))
+        await rate_limiter.process(Message(role="user", content=f"Request {i + 1}"))
 
     wait_time = asyncio.get_event_loop().time() - start_time
 
     print(f"✅ Completed 15 requests in {wait_time:.2f}s (rate limited)")
-    print(f"   Average: {15/wait_time:.2f} RPS (respects 5.0 RPS limit)")
+    print(f"   Average: {15 / wait_time:.2f} RPS (respects 5.0 RPS limit)")
     print(f"   Total wait time: {rate_limiter.metrics.total_wait_time:.2f}s")
 
 
@@ -179,7 +183,7 @@ async def example_weighted_rate_limiting():
             return Message(
                 role="agent",
                 content=f"Response from {model} model",
-                metadata={"model": model, "request_number": self.request_count}
+                metadata={"model": model, "request_number": self.request_count},
             )
 
     # Small model: 1 token per request (fast, cheap)
@@ -187,10 +191,10 @@ async def example_weighted_rate_limiting():
     small_limiter = RateLimiterDecorator(
         small_agent,
         RateLimiterConfig(
-            rate=10.0,           # 10 tokens/second
-            capacity=20,         # Burst of 20
-            tokens_per_request=1 # Small model = 1 token
-        )
+            rate=10.0,  # 10 tokens/second
+            capacity=20,  # Burst of 20
+            tokens_per_request=1,  # Small model = 1 token
+        ),
     )
 
     # Large model: 5 tokens per request (slow, expensive)
@@ -198,20 +202,18 @@ async def example_weighted_rate_limiting():
     large_limiter = RateLimiterDecorator(
         large_agent,
         RateLimiterConfig(
-            rate=10.0,           # Same token rate
-            capacity=20,         # Same capacity
-            tokens_per_request=5 # Large model = 5 tokens (5x cost)
-        )
+            rate=10.0,  # Same token rate
+            capacity=20,  # Same capacity
+            tokens_per_request=5,  # Large model = 5 tokens (5x cost)
+        ),
     )
 
     print("Sending 10 requests to SMALL model (1 token each)...")
     start_time = asyncio.get_event_loop().time()
     for i in range(10):
-        await small_limiter.process(Message(
-            role="user",
-            content=f"Small {i}",
-            metadata={"model": "small"}
-        ))
+        await small_limiter.process(
+            Message(role="user", content=f"Small {i}", metadata={"model": "small"})
+        )
     small_time = asyncio.get_event_loop().time() - start_time
 
     print(f"✅ Small model: 10 requests in {small_time:.2f}s")
@@ -219,15 +221,13 @@ async def example_weighted_rate_limiting():
     print("\nSending 10 requests to LARGE model (5 tokens each)...")
     start_time = asyncio.get_event_loop().time()
     for i in range(10):
-        await large_limiter.process(Message(
-            role="user",
-            content=f"Large {i}",
-            metadata={"model": "large"}
-        ))
+        await large_limiter.process(
+            Message(role="user", content=f"Large {i}", metadata={"model": "large"})
+        )
     large_time = asyncio.get_event_loop().time() - start_time
 
     print(f"✅ Large model: 10 requests in {large_time:.2f}s")
-    print(f"\n💡 Large model took {large_time/small_time:.1f}x longer due to 5x token cost")
+    print(f"\n💡 Large model took {large_time / small_time:.1f}x longer due to 5x token cost")
     print("   This prevents expensive operations from consuming all resources!")
 
 
@@ -242,20 +242,20 @@ async def example_multi_tenant_fairness():
     free_tier = RateLimiterDecorator(
         base_agent,
         RateLimiterConfig(
-            rate=5.0,            # 5 requests/second
-            capacity=10,         # Small burst capacity
-            tokens_per_request=1
-        )
+            rate=5.0,  # 5 requests/second
+            capacity=10,  # Small burst capacity
+            tokens_per_request=1,
+        ),
     )
 
     # Pro tier: 50 requests per second, large burst
     pro_tier = RateLimiterDecorator(
         base_agent,
         RateLimiterConfig(
-            rate=50.0,           # 10x faster
-            capacity=100,        # 10x burst capacity
-            tokens_per_request=1
-        )
+            rate=50.0,  # 10x faster
+            capacity=100,  # 10x burst capacity
+            tokens_per_request=1,
+        ),
     )
 
     print("Free tier user sending 20 requests...")
@@ -264,7 +264,7 @@ async def example_multi_tenant_fairness():
         await free_tier.process(Message(role="user", content=f"Free {i}"))
     free_time = asyncio.get_event_loop().time() - start_time
 
-    print(f"✅ Free tier: {free_time:.2f}s ({20/free_time:.1f} RPS)")
+    print(f"✅ Free tier: {free_time:.2f}s ({20 / free_time:.1f} RPS)")
 
     print("\nPro tier user sending 20 requests...")
     start_time = asyncio.get_event_loop().time()
@@ -272,17 +272,17 @@ async def example_multi_tenant_fairness():
         await pro_tier.process(Message(role="user", content=f"Pro {i}"))
     pro_time = asyncio.get_event_loop().time() - start_time
 
-    print(f"✅ Pro tier: {pro_time:.2f}s ({20/pro_time:.1f} RPS)")
-    print(f"\n💡 Pro tier is {free_time/pro_time:.1f}x faster - fair resource allocation!")
+    print(f"✅ Pro tier: {pro_time:.2f}s ({20 / pro_time:.1f} RPS)")
+    print(f"\n💡 Pro tier is {free_time / pro_time:.1f}x faster - fair resource allocation!")
     print("   Free tier metrics:", free_tier.metrics)
     print("   Pro tier metrics: ", pro_tier.metrics)
 
 
 async def main():
     """Run all examples."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("RATE LIMITER MIDDLEWARE EXAMPLES")
-    print("="*60)
+    print("=" * 60)
     print("\nThese examples show how rate limiting protects APIs,")
     print("controls costs, and ensures fair resource allocation.\n")
 
@@ -291,9 +291,9 @@ async def main():
     await example_weighted_rate_limiting()
     await example_multi_tenant_fairness()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("KEY TAKEAWAYS")
-    print("="*60)
+    print("=" * 60)
     print("""
 1. Rate limiting prevents API quota exhaustion and cost overruns
 2. Token bucket algorithm allows bursts while maintaining average rate

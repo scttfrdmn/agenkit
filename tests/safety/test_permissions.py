@@ -1,14 +1,15 @@
 """Tests for permission-based access control and sandboxing."""
 
 import pytest
+
 from agenkit.interfaces import Agent, Message
 from agenkit.safety.permissions import (
-    PermissionMiddleware,
-    Permission,
-    Role,
-    PermissionDeniedError,
-    Sandbox,
     ROLE_PERMISSIONS,
+    Permission,
+    PermissionDeniedError,
+    PermissionMiddleware,
+    Role,
+    Sandbox,
 )
 
 
@@ -290,7 +291,7 @@ class TestPermissionMiddleware:
         agent = PermissionMiddleware(
             echo_agent,
             role=Role.ADMIN,  # Would normally have all permissions
-            custom_permissions=custom_perms
+            custom_permissions=custom_perms,
         )
 
         # Should block execute (not in custom perms)
@@ -423,7 +424,7 @@ class TestSandboxExtended:
         sandbox = Sandbox(
             max_file_size=5 * 1024 * 1024,  # 5MB
             max_execution_time=60,
-            max_memory_mb=1024
+            max_memory_mb=1024,
         )
 
         assert sandbox.max_file_size == 5 * 1024 * 1024
@@ -432,9 +433,7 @@ class TestSandboxExtended:
 
     def test_sandbox_custom_denied_paths(self):
         """Test custom denied paths configuration."""
-        sandbox = Sandbox(
-            denied_paths={"/etc", "/var", "/usr/local/sensitive"}
-        )
+        sandbox = Sandbox(denied_paths={"/etc", "/var", "/usr/local/sensitive"})
 
         is_allowed, error = sandbox.is_path_allowed("/var/log/test.log")
         assert is_allowed is False
@@ -442,9 +441,7 @@ class TestSandboxExtended:
 
     def test_sandbox_custom_allowed_commands(self):
         """Test custom allowed commands configuration."""
-        sandbox = Sandbox(
-            allowed_commands={"echo", "date", "whoami"}
-        )
+        sandbox = Sandbox(allowed_commands={"echo", "date", "whoami"})
 
         is_allowed, _ = sandbox.is_command_allowed("echo hello")
         assert is_allowed is True
@@ -455,9 +452,7 @@ class TestSandboxExtended:
 
     def test_sandbox_sql_with_custom_operations(self):
         """Test SQL sandbox with custom allowed operations."""
-        sandbox = Sandbox(
-            allowed_sql_operations={"SELECT", "EXPLAIN", "DESCRIBE"}
-        )
+        sandbox = Sandbox(allowed_sql_operations={"SELECT", "EXPLAIN", "DESCRIBE"})
 
         is_allowed, _ = sandbox.is_sql_operation_allowed("DESCRIBE users")
         assert is_allowed is True
@@ -484,9 +479,7 @@ class TestSandboxExtended:
 
     def test_domain_with_subdomain(self):
         """Test domain validation with subdomains."""
-        sandbox = Sandbox(
-            allowed_domains={"example.com", "api.example.com"}
-        )
+        sandbox = Sandbox(allowed_domains={"example.com", "api.example.com"})
 
         is_allowed, _ = sandbox.is_domain_allowed("api.example.com")
         assert is_allowed is True

@@ -7,11 +7,11 @@ Tests verify:
 - Edge cases and error handling
 """
 
+from datetime import datetime
+
 import pytest
-from datetime import datetime, timezone
 
 from agenkit.interfaces import Agent, Message, Tool, ToolResult
-
 
 # ============================================
 # Message Tests
@@ -31,11 +31,7 @@ def test_message_creation():
 
 def test_message_with_metadata():
     """Test message with custom metadata."""
-    msg = Message(
-        role="agent",
-        content="Response",
-        metadata={"source": "test", "confidence": 0.95}
-    )
+    msg = Message(role="agent", content="Response", metadata={"source": "test", "confidence": 0.95})
 
     assert msg.metadata["source"] == "test"
     assert msg.metadata["confidence"] == 0.95
@@ -259,10 +255,8 @@ class ToolWithSchema(Tool):
     def parameters_schema(self) -> dict:
         return {
             "type": "object",
-            "properties": {
-                "query": {"type": "string"}
-            },
-            "required": ["query"]
+            "properties": {"query": {"type": "string"}},
+            "required": ["query"],
         }
 
     async def execute(self, **kwargs) -> ToolResult:
@@ -293,10 +287,7 @@ class MockAgent(Agent):
         return "mock_agent"
 
     async def process(self, message: Message) -> Message:
-        return Message(
-            role="agent",
-            content=f"Processed: {message.content}"
-        )
+        return Message(role="agent", content=f"Processed: {message.content}")
 
 
 @pytest.mark.asyncio

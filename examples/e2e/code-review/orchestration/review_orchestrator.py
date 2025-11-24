@@ -1,18 +1,19 @@
 """Review orchestrator - coordinates parallel agent execution."""
 
 import asyncio
-from typing import List
 from datetime import datetime
-from agenkit import Message
+
 from agents import (
-    StyleAgent,
-    SecurityAgent,
-    PerformanceAgent,
-    CorrectnessAgent,
-    SynthesisAgent,
-    ReviewResult,
     CodeSubmission,
+    CorrectnessAgent,
+    PerformanceAgent,
+    ReviewResult,
+    SecurityAgent,
+    StyleAgent,
+    SynthesisAgent,
 )
+
+from agenkit import Message
 
 
 class ReviewOrchestrator:
@@ -54,10 +55,12 @@ class ReviewOrchestrator:
             Final review report as string
         """
         if self.verbose:
-            print(f"\n{'='*70}")
+            print(f"\n{'=' * 70}")
             print(f"CODE REVIEW: {submission.file_path or 'Inline Code'}")
-            print(f"{'='*70}")
-            print(f"Lines: {submission.get_line_count()}, Language: {submission.language or 'unknown'}")
+            print(f"{'=' * 70}")
+            print(
+                f"Lines: {submission.get_line_count()}, Language: {submission.language or 'unknown'}"
+            )
             print(f"\nExecuting {len(self.review_agents)} review agents in parallel...")
 
         start_time = datetime.now()
@@ -81,7 +84,7 @@ class ReviewOrchestrator:
             print(f"✓ Parallel review complete in {parallel_time:.2f}s")
 
         # Extract review results
-        review_results: List[ReviewResult] = []
+        review_results: list[ReviewResult] = []
         for msg in review_messages:
             if "review_result" in msg.metadata:
                 result = msg.metadata["review_result"]
@@ -89,11 +92,13 @@ class ReviewOrchestrator:
 
                 if self.verbose:
                     status = "✓" if result.passed else "✗"
-                    print(f"  {status} {result.agent_name}: {result.overall_score:.1f}/10 - {len(result.issues)} issues ({result.execution_time:.3f}s)")
+                    print(
+                        f"  {status} {result.agent_name}: {result.overall_score:.1f}/10 - {len(result.issues)} issues ({result.execution_time:.3f}s)"
+                    )
 
         # Synthesize results
         if self.verbose:
-            print(f"\nSynthesizing final report...")
+            print("\nSynthesizing final report...")
 
         synthesis_msg = await self.synthesis_agent.process(
             Message(

@@ -1,9 +1,9 @@
 """Shared types for code review system."""
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
 
 class IssueSeverity(Enum):
@@ -34,11 +34,11 @@ class CodeIssue:
     category: IssueCategory
     severity: IssueSeverity
     message: str
-    line_number: Optional[int] = None
-    file_path: Optional[str] = None
-    code_snippet: Optional[str] = None
-    suggestion: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    line_number: int | None = None
+    file_path: str | None = None
+    code_snippet: str | None = None
+    suggestion: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __str__(self) -> str:
         location = f" at {self.file_path}:{self.line_number}" if self.line_number else ""
@@ -54,17 +54,15 @@ class ReviewResult:
     """
 
     agent_name: str
-    issues: List[CodeIssue] = field(default_factory=list)
+    issues: list[CodeIssue] = field(default_factory=list)
     summary: str = ""
     overall_score: float = 0.0  # 0.0 to 10.0
     passed: bool = True
     execution_time: float = 0.0
     timestamp: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def get_issues_by_severity(
-        self, severity: IssueSeverity
-    ) -> List[CodeIssue]:
+    def get_issues_by_severity(self, severity: IssueSeverity) -> list[CodeIssue]:
         """Get all issues of a specific severity."""
         return [issue for issue in self.issues if issue.severity == severity]
 
@@ -98,12 +96,12 @@ class CodeSubmission:
     """
 
     content: str
-    file_path: Optional[str] = None
-    language: Optional[str] = None
+    file_path: str | None = None
+    language: str | None = None
     diff_mode: bool = False  # Whether content is a git diff
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def get_lines(self) -> List[str]:
+    def get_lines(self) -> list[str]:
         """Get code as list of lines."""
         return self.content.split("\n")
 

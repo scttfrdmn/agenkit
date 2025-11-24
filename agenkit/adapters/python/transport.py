@@ -475,12 +475,12 @@ def parse_endpoint(endpoint: str) -> Transport:
     if endpoint.startswith("tcp://"):
         tcp_part = endpoint[6:]
         # Find last colon to split host:port
-        colon_idx = tcp_part.rfind(':')
+        colon_idx = tcp_part.rfind(":")
         if colon_idx == -1:
             raise ValueError(f"Invalid TCP endpoint format: {endpoint}")
         host = tcp_part[:colon_idx]
         try:
-            port = int(tcp_part[colon_idx + 1:])
+            port = int(tcp_part[colon_idx + 1 :])
         except ValueError:
             raise ValueError(f"Invalid port in TCP endpoint: {endpoint}")
         if not (0 < port <= 65535):
@@ -490,16 +490,19 @@ def parse_endpoint(endpoint: str) -> Transport:
     if endpoint.startswith("grpc://"):
         # Import here to avoid circular dependency
         from .grpc_transport import GRPCTransport
+
         return GRPCTransport(endpoint)
 
     if endpoint.startswith(("http://", "https://", "h2c://", "h3://")):
         # Import here to avoid circular dependency
         from .http_transport import HTTPTransport
+
         return HTTPTransport(endpoint)
 
     if endpoint.startswith(("ws://", "wss://")):
         # Import here to avoid circular dependency
         from .websocket_transport import WebSocketTransport
+
         return WebSocketTransport(endpoint)
 
     raise ValueError(f"Unsupported endpoint format: {endpoint}")

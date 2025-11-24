@@ -5,6 +5,7 @@ This example shows how to create a simple agent that processes messages.
 """
 
 import asyncio
+
 from agenkit import Agent, Message
 
 
@@ -20,11 +21,7 @@ class GreetingAgent(Agent):
         name = str(message.content)
         greeting = f"Hello, {name}! Welcome to agenkit."
 
-        return Message(
-            role="agent",
-            content=greeting,
-            metadata={"greeted": True}
-        )
+        return Message(role="agent", content=greeting, metadata={"greeted": True})
 
 
 async def main():
@@ -32,10 +29,7 @@ async def main():
     agent = GreetingAgent()
 
     # Create a message
-    msg = Message(
-        role="user",
-        content="Alice"
-    )
+    msg = Message(role="user", content="Alice")
 
     # Process it
     response = await agent.process(msg)

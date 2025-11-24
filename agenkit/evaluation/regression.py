@@ -5,20 +5,21 @@ Detects performance degradation over time by comparing
 current results to baseline and historical results.
 """
 
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from enum import Enum
+from typing import Any
 
 from .core import EvaluationResult
 
 
 class Severity(Enum):
     """Regression severity levels."""
+
     NONE = "none"
-    MINOR = "minor"        # <10% degradation
+    MINOR = "minor"  # <10% degradation
     MODERATE = "moderate"  # 10-20% degradation
-    MAJOR = "major"        # 20-50% degradation
+    MAJOR = "major"  # 20-50% degradation
     CRITICAL = "critical"  # >50% degradation
 
 
@@ -36,7 +37,7 @@ class Regression:
     degradation_percent: float
     severity: Severity
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    context: Dict[str, Any] = field(default_factory=dict)
+    context: dict[str, Any] = field(default_factory=dict)
 
     @property
     def is_regression(self) -> bool:
@@ -52,7 +53,7 @@ class Regression:
             "degradation_percent": self.degradation_percent,
             "severity": self.severity.value,
             "timestamp": self.timestamp.isoformat(),
-            "context": self.context
+            "context": self.context,
         }
 
 
@@ -76,9 +77,7 @@ class RegressionDetector:
     """
 
     def __init__(
-        self,
-        thresholds: Optional[Dict[str, float]] = None,
-        baseline: Optional[EvaluationResult] = None
+        self, thresholds: dict[str, float] | None = None, baseline: EvaluationResult | None = None
     ):
         """
         Initialize regression detector.
@@ -88,13 +87,13 @@ class RegressionDetector:
             baseline: Baseline evaluation result to compare against
         """
         self.thresholds = thresholds or {
-            "accuracy": 0.10,      # 10% degradation threshold
+            "accuracy": 0.10,  # 10% degradation threshold
             "quality": 0.10,
-            "latency": 0.20,       # 20% slower acceptable
-            "context_length": 0.30  # 30% larger context acceptable
+            "latency": 0.20,  # 20% slower acceptable
+            "context_length": 0.30,  # 30% larger context acceptable
         }
         self.baseline = baseline
-        self.history: List[EvaluationResult] = []
+        self.history: list[EvaluationResult] = []
 
     def set_baseline(self, result: EvaluationResult) -> None:
         """
@@ -105,11 +104,7 @@ class RegressionDetector:
         """
         self.baseline = result
 
-    def detect(
-        self,
-        result: EvaluationResult,
-        store_history: bool = True
-    ) -> List[Regression]:
+    def detect(self, result: EvaluationResult, store_history: bool = True) -> list[Regression]:
         """
         Detect regressions in evaluation result.
 
@@ -135,10 +130,7 @@ class RegressionDetector:
         # Check accuracy
         if result.accuracy is not None and self.baseline.accuracy is not None:
             reg = self._check_metric(
-                "accuracy",
-                self.baseline.accuracy,
-                result.accuracy,
-                higher_is_better=True
+                "accuracy", self.baseline.accuracy, result.accuracy, higher_is_better=True
             )
             if reg:
                 regressions.append(reg)
@@ -146,10 +138,7 @@ class RegressionDetector:
         # Check quality_score
         if result.quality_score is not None and self.baseline.quality_score is not None:
             reg = self._check_metric(
-                "quality",
-                self.baseline.quality_score,
-                result.quality_score,
-                higher_is_better=True
+                "quality", self.baseline.quality_score, result.quality_score, higher_is_better=True
             )
             if reg:
                 regressions.append(reg)
@@ -160,7 +149,7 @@ class RegressionDetector:
                 "latency",
                 self.baseline.avg_latency_ms,
                 result.avg_latency_ms,
-                higher_is_better=False
+                higher_is_better=False,
             )
             if reg:
                 regressions.append(reg)
@@ -171,7 +160,7 @@ class RegressionDetector:
                 "context_length",
                 self.baseline.context_length,
                 result.context_length,
-                higher_is_better=False
+                higher_is_better=False,
             )
             if reg:
                 regressions.append(reg)
@@ -182,7 +171,7 @@ class RegressionDetector:
                 "compression_ratio",
                 self.baseline.compression_ratio,
                 result.compression_ratio,
-                higher_is_better=True
+                higher_is_better=True,
             )
             if reg:
                 regressions.append(reg)
@@ -190,12 +179,8 @@ class RegressionDetector:
         return regressions
 
     def _check_metric(
-        self,
-        name: str,
-        baseline: float,
-        current: float,
-        higher_is_better: bool = True
-    ) -> Optional[Regression]:
+        self, name: str, baseline: float, current: float, higher_is_better: bool = True
+    ) -> Regression | None:
         """
         Check single metric for regression.
 
@@ -213,13 +198,12 @@ class RegressionDetector:
             if current == 0:
                 return None
             degradation = 1.0 if higher_is_better else -1.0
+        elif higher_is_better:
+            # For accuracy, quality: lower is worse
+            degradation = (baseline - current) / baseline
         else:
-            if higher_is_better:
-                # For accuracy, quality: lower is worse
-                degradation = (baseline - current) / baseline
-            else:
-                # For latency, context_length: higher is worse
-                degradation = (current - baseline) / baseline
+            # For latency, context_length: higher is worse
+            degradation = (current - baseline) / baseline
 
         # Check if exceeds threshold
         threshold = self.thresholds.get(name, 0.10)
@@ -233,8 +217,8 @@ class RegressionDetector:
                 severity=severity,
                 context={
                     "threshold_percent": threshold * 100,
-                    "higher_is_better": higher_is_better
-                }
+                    "higher_is_better": higher_is_better,
+                },
             )
 
         return None
@@ -258,11 +242,7 @@ class RegressionDetector:
         else:
             return Severity.CRITICAL
 
-    def get_trend(
-        self,
-        metric_name: str,
-        window: int = 10
-    ) -> Optional[Dict[str, Any]]:
+    def get_trend(self, metric_name: str, window: int = 10) -> dict[str, Any] | None:
         """
         Get trend for metric over recent history.
 
@@ -315,14 +295,12 @@ class RegressionDetector:
             "variance": variance,
             "current": values[-1],
             "mean": y_mean,
-            "window_size": n
+            "window_size": n,
         }
 
     def compare_results(
-        self,
-        result_a: EvaluationResult,
-        result_b: EvaluationResult
-    ) -> Dict[str, Dict[str, float]]:
+        self, result_a: EvaluationResult, result_b: EvaluationResult
+    ) -> dict[str, dict[str, float]]:
         """
         Compare two evaluation results.
 
@@ -341,8 +319,11 @@ class RegressionDetector:
                 "baseline": result_a.accuracy,
                 "current": result_b.accuracy,
                 "change": result_b.accuracy - result_a.accuracy,
-                "change_percent": ((result_b.accuracy - result_a.accuracy) / result_a.accuracy * 100)
-                                 if result_a.accuracy != 0 else 0
+                "change_percent": (
+                    (result_b.accuracy - result_a.accuracy) / result_a.accuracy * 100
+                )
+                if result_a.accuracy != 0
+                else 0,
             }
 
         # Compare quality
@@ -351,8 +332,11 @@ class RegressionDetector:
                 "baseline": result_a.quality_score,
                 "current": result_b.quality_score,
                 "change": result_b.quality_score - result_a.quality_score,
-                "change_percent": ((result_b.quality_score - result_a.quality_score) / result_a.quality_score * 100)
-                                 if result_a.quality_score != 0 else 0
+                "change_percent": (
+                    (result_b.quality_score - result_a.quality_score) / result_a.quality_score * 100
+                )
+                if result_a.quality_score != 0
+                else 0,
             }
 
         # Compare latency
@@ -361,8 +345,13 @@ class RegressionDetector:
                 "baseline": result_a.avg_latency_ms,
                 "current": result_b.avg_latency_ms,
                 "change": result_b.avg_latency_ms - result_a.avg_latency_ms,
-                "change_percent": ((result_b.avg_latency_ms - result_a.avg_latency_ms) / result_a.avg_latency_ms * 100)
-                                 if result_a.avg_latency_ms != 0 else 0
+                "change_percent": (
+                    (result_b.avg_latency_ms - result_a.avg_latency_ms)
+                    / result_a.avg_latency_ms
+                    * 100
+                )
+                if result_a.avg_latency_ms != 0
+                else 0,
             }
 
         return comparisons
@@ -371,7 +360,7 @@ class RegressionDetector:
         """Clear evaluation history."""
         self.history = []
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """
         Get summary of detector state.
 
@@ -382,5 +371,5 @@ class RegressionDetector:
             "has_baseline": self.baseline is not None,
             "baseline_id": self.baseline.evaluation_id if self.baseline else None,
             "history_count": len(self.history),
-            "thresholds": self.thresholds
+            "thresholds": self.thresholds,
         }

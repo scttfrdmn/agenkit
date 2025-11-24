@@ -6,8 +6,8 @@ optimizing for the best cost-quality balance.
 """
 
 import logging
-from typing import Callable, Optional, Awaitable
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from ..interfaces import Message
 
@@ -42,17 +42,22 @@ class HeuristicComplexityDetector(ComplexityDetector):
     """
 
     COMPLEX_KEYWORDS = [
-        "analyze", "compare", "reasoning", "explain why",
-        "step by step", "think through", "evaluate",
-        "pros and cons", "trade-offs", "implications",
-        "in detail", "comprehensive", "thorough"
+        "analyze",
+        "compare",
+        "reasoning",
+        "explain why",
+        "step by step",
+        "think through",
+        "evaluate",
+        "pros and cons",
+        "trade-offs",
+        "implications",
+        "in detail",
+        "comprehensive",
+        "thorough",
     ]
 
-    def __init__(
-        self,
-        long_query_threshold: int = 500,
-        long_history_threshold: int = 10
-    ):
+    def __init__(self, long_query_threshold: int = 500, long_history_threshold: int = 10):
         """
         Initialize heuristic detector.
 
@@ -72,9 +77,7 @@ class HeuristicComplexityDetector(ComplexityDetector):
 
         # Check for complex keywords
         latest_lower = latest.lower()
-        has_complex_keywords = any(
-            kw in latest_lower for kw in self.COMPLEX_KEYWORDS
-        )
+        has_complex_keywords = any(kw in latest_lower for kw in self.COMPLEX_KEYWORDS)
 
         # Check query length
         is_long_query = len(latest) > self.long_query_threshold
@@ -167,8 +170,8 @@ class ModelOptimizer:
         medium_model: str,
         expensive_model: str,
         llm_clients: dict,  # model_name -> LLM client
-        complexity_detector: Optional[ComplexityDetector] = None,
-        thinking_budget_allocator: Optional['ThinkingBudgetAllocator'] = None
+        complexity_detector: ComplexityDetector | None = None,
+        thinking_budget_allocator: Optional["ThinkingBudgetAllocator"] = None,
     ):
         """
         Initialize model optimizer.
@@ -193,11 +196,7 @@ class ModelOptimizer:
             if model not in llm_clients:
                 raise ValueError(f"LLM client for {model} not provided")
 
-    async def complete(
-        self,
-        messages: list[Message],
-        **kwargs
-    ) -> Message:
+    async def complete(self, messages: list[Message], **kwargs) -> Message:
         """
         Route to appropriate model based on complexity.
 
@@ -246,10 +245,7 @@ class ModelOptimizer:
         return response
 
     async def complete_with_fallback(
-        self,
-        messages: list[Message],
-        max_attempts: int = 3,
-        **kwargs
+        self, messages: list[Message], max_attempts: int = 3, **kwargs
     ) -> Message:
         """
         Complete with automatic fallback to cheaper models on budget constraints.
@@ -319,10 +315,7 @@ class ModelOptimizer:
             raise ValueError(f"Unknown complexity: {complexity}")
 
     async def estimate_cost(
-        self,
-        messages: list[Message],
-        input_tokens: int,
-        output_tokens: int
+        self, messages: list[Message], input_tokens: int, output_tokens: int
     ) -> dict[str, float]:
         """
         Estimate cost for different models.
@@ -348,10 +341,7 @@ class ModelOptimizer:
         return estimates
 
     async def complete_with_thinking(
-        self,
-        messages: list[Message],
-        budget_remaining: Optional[float] = None,
-        **kwargs
+        self, messages: list[Message], budget_remaining: float | None = None, **kwargs
     ) -> Message:
         """
         Route to appropriate model with dynamic thinking budget allocation.
@@ -409,7 +399,7 @@ class ModelOptimizer:
             messages=messages,
             complexity=complexity,
             budget_remaining=budget_remaining,
-            model=model_name
+            model=model_name,
         )
 
         logger.info(
@@ -424,7 +414,7 @@ class ModelOptimizer:
         # Note: This assumes LLM client accepts max_thinking_tokens parameter
         # Actual implementation depends on LLM client interface
         if thinking_budget.max_thinking_tokens > 0:
-            kwargs['max_thinking_tokens'] = thinking_budget.max_thinking_tokens
+            kwargs["max_thinking_tokens"] = thinking_budget.max_thinking_tokens
 
         # Complete
         response = await llm.complete(messages, **kwargs)
@@ -438,7 +428,7 @@ class ModelOptimizer:
 
         # Extract thinking tokens if available from response
         # (some models like o3 return this in usage stats)
-        if hasattr(response, 'thinking_tokens'):
+        if hasattr(response, "thinking_tokens"):
             response.metadata["thinking_tokens"] = response.thinking_tokens
         elif "thinking_tokens" in response.metadata:
             pass  # Already present

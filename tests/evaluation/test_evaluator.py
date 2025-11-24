@@ -5,7 +5,8 @@ Tests Evaluator, Metric, EvaluationResult.
 """
 
 import pytest
-from agenkit.evaluation import Evaluator, EvaluationResult, Metric, AccuracyMetric
+
+from agenkit.evaluation import AccuracyMetric, EvaluationResult, Evaluator
 from agenkit.interfaces import Message
 
 
@@ -31,7 +32,7 @@ async def test_evaluator_basic():
 
     test_cases = [
         {"input": "What is the capital of France?", "expected": "Paris"},
-        {"input": "What is 2+2?", "expected": "4"}
+        {"input": "What is 2+2?", "expected": "4"},
     ]
 
     result = await evaluator.evaluate(test_cases)
@@ -50,7 +51,7 @@ async def test_evaluator_with_failures():
 
     test_cases = [
         {"input": "What is the capital of France?", "expected": "Paris"},
-        {"input": "What is 2+2?", "expected": "4"}
+        {"input": "What is 2+2?", "expected": "4"},
     ]
 
     result = await evaluator.evaluate(test_cases)
@@ -68,9 +69,7 @@ async def test_evaluator_with_metrics():
     metric = AccuracyMetric()
     evaluator = Evaluator(agent, metrics=[metric])
 
-    test_cases = [
-        {"input": "What is the capital of France?", "expected": "Paris"}
-    ]
+    test_cases = [{"input": "What is the capital of France?", "expected": "Paris"}]
 
     result = await evaluator.evaluate(test_cases)
 
@@ -116,7 +115,7 @@ async def test_evaluation_result_to_dict():
         agent_name="test_agent",
         total_tests=10,
         passed_tests=8,
-        failed_tests=2
+        failed_tests=2,
     )
 
     data = result.to_dict()
@@ -158,9 +157,7 @@ async def test_evaluator_callable_expected():
     def check_length(output):
         return len(str(output.content)) > 10
 
-    test_cases = [
-        {"input": "Test", "expected": check_length}
-    ]
+    test_cases = [{"input": "Test", "expected": check_length}]
 
     result = await evaluator.evaluate(test_cases)
 

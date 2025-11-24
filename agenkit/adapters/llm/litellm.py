@@ -209,9 +209,7 @@ class LiteLLMLLM(LLM):
                     metadata={"streaming": True, "model": self._model},
                 )
 
-    def _convert_messages(
-        self, messages: list[Message]
-    ) -> list[dict[str, str]]:
+    def _convert_messages(self, messages: list[Message]) -> list[dict[str, str]]:
         """
         Convert Agenkit Messages to LiteLLM format.
 
@@ -228,9 +226,7 @@ class LiteLLMLLM(LLM):
                 # Map "agent" and others to "assistant"
                 role = "assistant"
 
-            litellm_messages.append(
-                {"role": role, "content": str(msg.content)}
-            )
+            litellm_messages.append({"role": role, "content": str(msg.content)})
 
         return litellm_messages
 

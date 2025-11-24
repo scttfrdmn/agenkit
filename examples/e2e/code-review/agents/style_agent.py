@@ -2,14 +2,14 @@
 
 import re
 from datetime import datetime
-from typing import List
+
 from agenkit import Agent, Message
 from agents.review_types import (
-    ReviewResult,
     CodeIssue,
     CodeSubmission,
-    IssueSeverity,
     IssueCategory,
+    IssueSeverity,
+    ReviewResult,
 )
 
 
@@ -50,7 +50,7 @@ class StyleAgent(Agent):
 
     def _review_style(self, submission: CodeSubmission) -> ReviewResult:
         """Perform style review."""
-        issues: List[CodeIssue] = []
+        issues: list[CodeIssue] = []
         lines = submission.get_lines()
 
         # Check line length
@@ -164,7 +164,14 @@ class StyleAgent(Agent):
             summary=summary,
             overall_score=score,
             passed=critical_count == 0 and high_count == 0,
-            metadata={"issues_by_severity": {"critical": critical_count, "high": high_count, "medium": medium_count, "low": low_count}},
+            metadata={
+                "issues_by_severity": {
+                    "critical": critical_count,
+                    "high": high_count,
+                    "medium": medium_count,
+                    "low": low_count,
+                }
+            },
         )
 
     def _to_snake_case(self, name: str) -> str:

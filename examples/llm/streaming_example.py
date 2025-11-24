@@ -57,9 +57,7 @@ async def streaming_with_progress():
 
     llm = OpenAILLM(api_key=api_key, model="gpt-4o-mini")
 
-    messages = [
-        Message(role="user", content="Explain neural networks in 100 words.")
-    ]
+    messages = [Message(role="user", content="Explain neural networks in 100 words.")]
 
     print("Streaming response (with character count):\n")
     print("-" * 60)
@@ -74,7 +72,9 @@ async def streaming_with_progress():
     elapsed = time.time() - start_time
 
     print("\n" + "-" * 60)
-    print(f"Characters: {char_count} | Time: {elapsed:.2f}s | Rate: {char_count/elapsed:.0f} chars/sec")
+    print(
+        f"Characters: {char_count} | Time: {elapsed:.2f}s | Rate: {char_count / elapsed:.0f} chars/sec"
+    )
     print()
 
 
@@ -91,9 +91,7 @@ async def streaming_with_callback():
 
     llm = AnthropicLLM(api_key=api_key)
 
-    messages = [
-        Message(role="user", content="List 5 benefits of using agents.")
-    ]
+    messages = [Message(role="user", content="List 5 benefits of using agents.")]
 
     print("Processing stream with custom callback:\n")
 
@@ -141,9 +139,7 @@ async def multiple_providers():
     print("Provider Streaming Comparison")
     print("=" * 60)
 
-    messages = [
-        Message(role="user", content="Count from 1 to 20.")
-    ]
+    messages = [Message(role="user", content="Count from 1 to 20.")]
 
     # Test Anthropic
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
@@ -204,7 +200,7 @@ async def streaming_conversation():
 
     for question in questions:
         print(f"User: {question}")
-        print(f"Assistant: ", end="", flush=True)
+        print("Assistant: ", end="", flush=True)
 
         # Add user message
         conversation.append(Message(role="user", content=question))

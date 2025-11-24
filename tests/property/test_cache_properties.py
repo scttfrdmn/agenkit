@@ -8,19 +8,19 @@ Validates invariants that should hold for caching behavior:
 - Size bounds (cache size never exceeds max)
 - Idempotency (same key returns same cached result)
 """
+
 import asyncio
 import time
 from collections import OrderedDict
 
 import pytest
-from hypothesis import given, settings, assume, strategies as st
+from hypothesis import assume, given, settings
+from hypothesis import strategies as st
 
 from agenkit.interfaces import Agent, Message
 from tests.property.strategies import (
-    positive_int_strategy,
-    small_positive_int_strategy,
     short_content_strategy,
-    message_strategy,
+    small_positive_int_strategy,
 )
 
 
@@ -44,7 +44,7 @@ class SimpleAgent(Agent):
         return Message(
             role="agent",
             content=f"Processed: {message.content}",
-            metadata={"call_count": self._call_count}
+            metadata={"call_count": self._call_count},
         )
 
     def get_call_count(self) -> int:
@@ -79,7 +79,7 @@ class SimpleCache:
             return None
 
         # Check if expired
-        if time.time() > self._expiry.get(key, float('inf')):
+        if time.time() > self._expiry.get(key, float("inf")):
             self._cache.pop(key, None)
             self._expiry.pop(key, None)
             self._misses += 1
@@ -118,6 +118,7 @@ class SimpleCache:
 # Property: Cache Size Never Exceeds Max
 # ============================================
 
+
 @pytest.mark.property
 @given(
     max_size=st.integers(min_value=1, max_value=50),
@@ -135,13 +136,15 @@ def test_cache_size_never_exceeds_max(max_size, num_requests):
         cache.put(key, value)
 
         # Property: size never exceeds max
-        assert cache.get_cache_size() <= max_size, \
+        assert cache.get_cache_size() <= max_size, (
             f"Cache size {cache.get_cache_size()} exceeds max {max_size}"
+        )
 
 
 # ============================================
 # Property: Hit Rate is in [0.0, 1.0]
 # ============================================
+
 
 @pytest.mark.property
 @given(
@@ -173,6 +176,7 @@ def test_hit_rate_always_valid(max_size, num_puts, num_gets):
 # ============================================
 # Property: LRU Ordering
 # ============================================
+
 
 @pytest.mark.property
 @given(
@@ -207,6 +211,7 @@ def test_lru_ordering_most_recent_not_evicted(max_size):
 # Property: TTL Expiration
 # ============================================
 
+
 @pytest.mark.property
 @pytest.mark.asyncio
 @given(
@@ -236,6 +241,7 @@ async def test_ttl_expiration_never_returns_expired(ttl):
 # Property: Idempotency
 # ============================================
 
+
 @pytest.mark.property
 @given(
     content=short_content_strategy,
@@ -262,15 +268,14 @@ def test_cache_idempotency_same_key_same_result(content, num_accesses):
     assert len(results) > 0, "Should have at least one result"
     first_result = results[0]
     for result in results[1:]:
-        assert result.content == first_result.content, \
-            "Same key should return same content"
-        assert result.role == first_result.role, \
-            "Same key should return same role"
+        assert result.content == first_result.content, "Same key should return same content"
+        assert result.role == first_result.role, "Same key should return same role"
 
 
 # ============================================
 # Property: Cache Statistics Consistency
 # ============================================
+
 
 @pytest.mark.property
 @given(
@@ -278,10 +283,10 @@ def test_cache_idempotency_same_key_same_result(content, num_accesses):
     operations=st.lists(
         st.tuples(
             st.sampled_from(["put", "get"]),
-            st.integers(min_value=0, max_value=20)  # key index
+            st.integers(min_value=0, max_value=20),  # key index
         ),
         min_size=1,
-        max_size=50
+        max_size=50,
     ),
 )
 @settings(max_examples=100, deadline=None)
@@ -303,13 +308,15 @@ def test_cache_statistics_consistency(max_size, operations):
 
     # Property: hits + misses = total get requests
     stats = cache.get_stats()
-    assert stats["hits"] + stats["misses"] == total_gets, \
+    assert stats["hits"] + stats["misses"] == total_gets, (
         f"hits ({stats['hits']}) + misses ({stats['misses']}) != total gets ({total_gets})"
+    )
 
 
 # ============================================
 # Property: Size Bounds After Eviction
 # ============================================
+
 
 @pytest.mark.property
 @given(
@@ -328,13 +335,15 @@ def test_cache_size_bounds_after_eviction(max_size, num_entries):
         cache.put(f"key_{i}", Message(role="user", content=f"Value {i}"))
 
     # Property: Cache should be exactly at max_size
-    assert cache.get_cache_size() == max_size, \
+    assert cache.get_cache_size() == max_size, (
         f"Cache size {cache.get_cache_size()} should equal max_size {max_size} after eviction"
+    )
 
 
 # ============================================
 # Property: No Duplicate Keys
 # ============================================
+
 
 @pytest.mark.property
 @given(
@@ -354,8 +363,7 @@ def test_cache_no_duplicate_keys(max_size, key_indices):
 
     # Property: All keys in cache are unique
     keys_in_cache = list(cache._cache.keys())
-    assert len(keys_in_cache) == len(set(keys_in_cache)), \
-        "Cache should not contain duplicate keys"
+    assert len(keys_in_cache) == len(set(keys_in_cache)), "Cache should not contain duplicate keys"
 
 
 if __name__ == "__main__":

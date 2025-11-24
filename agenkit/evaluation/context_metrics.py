@@ -4,12 +4,12 @@ Context-aware metrics for extreme-scale evaluation.
 Designed for systems like endless that operate at 1M-25M+ token contexts.
 """
 
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Any
 
-from .core import Metric
 from ..interfaces import Agent, Message
+from .core import Metric
 
 
 class ContextMetrics(Metric):
@@ -38,7 +38,7 @@ class ContextMetrics(Metric):
         agent: Agent,
         input_message: Message,
         output_message: Message,
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None,
     ) -> float:
         """
         Measure context length metrics.
@@ -56,9 +56,7 @@ class ContextMetrics(Metric):
 
         # Get context length from agent metadata if available
         if hasattr(agent, "get_context_stats"):
-            stats = await agent.get_context_stats(
-                context.get("session_id", "default")
-            )
+            stats = await agent.get_context_stats(context.get("session_id", "default"))
             return float(stats.get("context_length", 0))
 
         # Fallback: estimate from message metadata
@@ -68,15 +66,12 @@ class ContextMetrics(Metric):
         # Fallback: count from conversation history
         if "conversation_history" in context:
             history = context["conversation_history"]
-            total_tokens = sum(
-                self._estimate_tokens(msg.content)
-                for msg in history
-            )
+            total_tokens = sum(self._estimate_tokens(msg.content) for msg in history)
             return float(total_tokens)
 
         return 0.0
 
-    def aggregate(self, measurements: List[float]) -> Dict[str, float]:
+    def aggregate(self, measurements: list[float]) -> dict[str, float]:
         """
         Aggregate context length measurements.
 
@@ -87,13 +82,7 @@ class ContextMetrics(Metric):
             Statistics: mean, min, max, final, growth_rate
         """
         if not measurements:
-            return {
-                "mean": 0.0,
-                "min": 0.0,
-                "max": 0.0,
-                "final": 0.0,
-                "growth_rate": 0.0
-            }
+            return {"mean": 0.0, "min": 0.0, "max": 0.0, "final": 0.0, "growth_rate": 0.0}
 
         return {
             "mean": sum(measurements) / len(measurements),
@@ -101,7 +90,8 @@ class ContextMetrics(Metric):
             "max": max(measurements),
             "final": measurements[-1],
             "growth_rate": (measurements[-1] - measurements[0]) / len(measurements)
-                          if len(measurements) > 1 else 0.0
+            if len(measurements) > 1
+            else 0.0,
         }
 
     def _estimate_tokens(self, content: str) -> int:
@@ -132,7 +122,7 @@ class CompressionStats:
             "compression_ratio": self.compression_ratio,
             "retrieval_accuracy": self.retrieval_accuracy,
             "context_length_tested": self.context_length_tested,
-            "timestamp": self.timestamp.isoformat()
+            "timestamp": self.timestamp.isoformat(),
         }
 
 
@@ -156,11 +146,7 @@ class CompressionMetrics(Metric):
         ...     print(f"{length/1e6}M tokens: {stat.compression_ratio}x compression")
     """
 
-    def __init__(
-        self,
-        test_lengths: Optional[List[int]] = None,
-        needle_count: int = 10
-    ):
+    def __init__(self, test_lengths: list[int] | None = None, needle_count: int = 10):
         """
         Initialize compression metrics.
 
@@ -169,9 +155,9 @@ class CompressionMetrics(Metric):
             needle_count: Number of "needle" facts to test retrieval
         """
         self.test_lengths = test_lengths or [
-            1_000_000,    # 1M tokens
-            10_000_000,   # 10M tokens
-            25_000_000    # 25M tokens (endless scale)
+            1_000_000,  # 1M tokens
+            10_000_000,  # 10M tokens
+            25_000_000,  # 25M tokens (endless scale)
         ]
         self.needle_count = needle_count
 
@@ -184,7 +170,7 @@ class CompressionMetrics(Metric):
         agent: Agent,
         input_message: Message,
         output_message: Message,
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None,
     ) -> float:
         """
         Measure compression quality for single interaction.
@@ -196,9 +182,7 @@ class CompressionMetrics(Metric):
 
         # Get compression stats from agent if available
         if hasattr(agent, "get_compression_stats"):
-            stats = await agent.get_compression_stats(
-                context.get("session_id", "default")
-            )
+            stats = await agent.get_compression_stats(context.get("session_id", "default"))
             raw = stats.get("raw_tokens", 0)
             compressed = stats.get("compressed_tokens", 0)
             if compressed > 0:
@@ -210,7 +194,7 @@ class CompressionMetrics(Metric):
 
         return 1.0  # No compression
 
-    def aggregate(self, measurements: List[float]) -> Dict[str, float]:
+    def aggregate(self, measurements: list[float]) -> dict[str, float]:
         """
         Aggregate compression ratios.
 
@@ -221,30 +205,17 @@ class CompressionMetrics(Metric):
             Statistics: mean, min, max, std
         """
         if not measurements:
-            return {
-                "mean": 1.0,
-                "min": 1.0,
-                "max": 1.0,
-                "std": 0.0
-            }
+            return {"mean": 1.0, "min": 1.0, "max": 1.0, "std": 0.0}
 
         mean_ratio = sum(measurements) / len(measurements)
         variance = sum((x - mean_ratio) ** 2 for x in measurements) / len(measurements)
-        std = variance ** 0.5
+        std = variance**0.5
 
-        return {
-            "mean": mean_ratio,
-            "min": min(measurements),
-            "max": max(measurements),
-            "std": std
-        }
+        return {"mean": mean_ratio, "min": min(measurements), "max": max(measurements), "std": std}
 
     async def evaluate_at_lengths(
-        self,
-        agent: Agent,
-        session_id: str,
-        needle_content: Optional[List[str]] = None
-    ) -> Dict[int, CompressionStats]:
+        self, agent: Agent, session_id: str, needle_content: list[str] | None = None
+    ) -> dict[int, CompressionStats]:
         """
         Evaluate compression quality at multiple context lengths.
 
@@ -264,16 +235,12 @@ class CompressionMetrics(Metric):
         for length in self.test_lengths:
             # Create test messages to reach target length
             test_messages = await self._generate_test_context(
-                length,
-                needle_content or self._default_needles()
+                length, needle_content or self._default_needles()
             )
 
             # Process messages through agent
             for msg in test_messages:
-                await agent.process(
-                    Message(role="user", content=msg),
-                    session_id=session_id
-                )
+                await agent.process(Message(role="user", content=msg), session_id=session_id)
 
             # Get compression stats
             if hasattr(agent, "get_compression_stats"):
@@ -281,26 +248,21 @@ class CompressionMetrics(Metric):
 
                 # Test retrieval accuracy
                 accuracy = await self._test_retrieval(
-                    agent,
-                    session_id,
-                    needle_content or self._default_needles()
+                    agent, session_id, needle_content or self._default_needles()
                 )
 
                 results[length] = CompressionStats(
                     raw_tokens=stats.get("raw_tokens", 0),
                     compressed_tokens=stats.get("compressed_tokens", 0),
-                    compression_ratio=stats.get("raw_tokens", 0) / max(stats.get("compressed_tokens", 1), 1),
+                    compression_ratio=stats.get("raw_tokens", 0)
+                    / max(stats.get("compressed_tokens", 1), 1),
                     retrieval_accuracy=accuracy,
-                    context_length_tested=length
+                    context_length_tested=length,
                 )
 
         return results
 
-    async def _generate_test_context(
-        self,
-        target_tokens: int,
-        needles: List[str]
-    ) -> List[str]:
+    async def _generate_test_context(self, target_tokens: int, needles: list[str]) -> list[str]:
         """
         Generate test context with embedded needles.
 
@@ -337,12 +299,7 @@ class CompressionMetrics(Metric):
 
         return messages
 
-    async def _test_retrieval(
-        self,
-        agent: Agent,
-        session_id: str,
-        needles: List[str]
-    ) -> float:
+    async def _test_retrieval(self, agent: Agent, session_id: str, needles: list[str]) -> float:
         """
         Test retrieval accuracy of needles from context.
 
@@ -358,10 +315,7 @@ class CompressionMetrics(Metric):
 
         for needle in needles:
             # Ask agent to retrieve the fact
-            query = Message(
-                role="user",
-                content=f"Recall: What was mentioned about {needle[:50]}?"
-            )
+            query = Message(role="user", content=f"Recall: What was mentioned about {needle[:50]}?")
 
             response = await agent.process(query, session_id=session_id)
 
@@ -371,7 +325,7 @@ class CompressionMetrics(Metric):
 
         return correct / len(needles) if needles else 0.0
 
-    def _default_needles(self) -> List[str]:
+    def _default_needles(self) -> list[str]:
         """Generate default needle facts for testing."""
         return [
             f"NEEDLE FACT {i}: The secret code is ALPHA-{i:04d}-OMEGA."
@@ -396,7 +350,7 @@ class LatencyMetric(Metric):
         agent: Agent,
         input_message: Message,
         output_message: Message,
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None,
     ) -> float:
         """
         Get latency for this interaction.
@@ -407,7 +361,7 @@ class LatencyMetric(Metric):
         context = context or {}
         return float(context.get("latency_ms", 0.0))
 
-    def aggregate(self, measurements: List[float]) -> Dict[str, float]:
+    def aggregate(self, measurements: list[float]) -> dict[str, float]:
         """
         Aggregate latency measurements.
 
@@ -415,14 +369,7 @@ class LatencyMetric(Metric):
             mean, p50, p95, p99, min, max
         """
         if not measurements:
-            return {
-                "mean": 0.0,
-                "p50": 0.0,
-                "p95": 0.0,
-                "p99": 0.0,
-                "min": 0.0,
-                "max": 0.0
-            }
+            return {"mean": 0.0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "min": 0.0, "max": 0.0}
 
         sorted_measurements = sorted(measurements)
         n = len(sorted_measurements)
@@ -433,5 +380,5 @@ class LatencyMetric(Metric):
             "p95": sorted_measurements[int(n * 0.95)],
             "p99": sorted_measurements[int(n * 0.99)],
             "min": sorted_measurements[0],
-            "max": sorted_measurements[-1]
+            "max": sorted_measurements[-1],
         }

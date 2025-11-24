@@ -18,10 +18,10 @@ This pattern is useful for:
 - Tasks needing dynamic replanning
 """
 
-from typing import Any, Dict, List, Optional, Protocol
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from typing import Any, Protocol
 
 from agenkit import Agent, Message
 
@@ -51,15 +51,15 @@ class PlanStep:
     """
 
     description: str
-    dependencies: List[int] = field(default_factory=list)
+    dependencies: list[int] = field(default_factory=list)
     status: StepStatus = StepStatus.PENDING
     result: Any = None
-    error: Optional[str] = None
+    error: str | None = None
     step_number: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     timestamp: datetime = field(default_factory=lambda: datetime.now())
 
-    def can_execute(self, completed_steps: List[int]) -> bool:
+    def can_execute(self, completed_steps: list[int]) -> bool:
         """Check if this step's dependencies are met."""
         return all(dep in completed_steps for dep in self.dependencies)
 
@@ -77,19 +77,17 @@ class Plan:
     """
 
     goal: str
-    steps: List[PlanStep] = field(default_factory=list)
+    steps: list[PlanStep] = field(default_factory=list)
     created_at: datetime = field(default_factory=lambda: datetime.now())
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def get_next_steps(self) -> List[PlanStep]:
+    def get_next_steps(self) -> list[PlanStep]:
         """
         Get all steps that can be executed now.
 
         Returns steps that are pending and have their dependencies met.
         """
-        completed = [
-            i for i, step in enumerate(self.steps) if step.status == StepStatus.COMPLETED
-        ]
+        completed = [i for i, step in enumerate(self.steps) if step.status == StepStatus.COMPLETED]
 
         next_steps = []
         for step in self.steps:
@@ -100,10 +98,7 @@ class Plan:
 
     def is_complete(self) -> bool:
         """Check if all steps are completed or skipped."""
-        return all(
-            step.status in (StepStatus.COMPLETED, StepStatus.SKIPPED)
-            for step in self.steps
-        )
+        return all(step.status in (StepStatus.COMPLETED, StepStatus.SKIPPED) for step in self.steps)
 
     def has_failures(self) -> bool:
         """Check if any steps failed."""
@@ -115,9 +110,7 @@ class Plan:
             return 0.0
 
         completed = sum(
-            1
-            for step in self.steps
-            if step.status in (StepStatus.COMPLETED, StepStatus.SKIPPED)
+            1 for step in self.steps if step.status in (StepStatus.COMPLETED, StepStatus.SKIPPED)
         )
         return (completed / len(self.steps)) * 100
 
@@ -125,7 +118,7 @@ class Plan:
 class LLMClient(Protocol):
     """Protocol for LLM clients that can be used with PlanningAgent."""
 
-    async def chat(self, messages: List[Message]) -> Message:
+    async def chat(self, messages: list[Message]) -> Message:
         """Generate a response given conversation history."""
         ...
 
@@ -133,7 +126,7 @@ class LLMClient(Protocol):
 class StepExecutor(Protocol):
     """Protocol for executing individual plan steps."""
 
-    async def execute(self, step: PlanStep, context: Dict[str, Any]) -> Any:
+    async def execute(self, step: PlanStep, context: dict[str, Any]) -> Any:
         """
         Execute a plan step.
 
@@ -188,17 +181,17 @@ class PlanningAgent(Agent):
     def __init__(
         self,
         llm_client: LLMClient,
-        step_executor: Optional[StepExecutor] = None,
+        step_executor: StepExecutor | None = None,
         max_steps: int = 10,
         allow_replanning: bool = False,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
     ):
         self.llm = llm_client
         self.executor = step_executor or DefaultStepExecutor()
         self.max_steps = max_steps
         self.allow_replanning = allow_replanning
         self.system_prompt = system_prompt or self._default_system_prompt()
-        self.current_plan: Optional[Plan] = None
+        self.current_plan: Plan | None = None
 
     @property
     def name(self) -> str:
@@ -337,7 +330,7 @@ Guidelines:
         Returns:
             Summary of execution results
         """
-        context: Dict[str, Any] = {}
+        context: dict[str, Any] = {}
         results = []
 
         while not plan.is_complete():
@@ -369,9 +362,7 @@ Guidelines:
                 except Exception as e:
                     step.error = str(e)
                     step.status = StepStatus.FAILED
-                    results.append(
-                        f"Step {step.step_number + 1}: {step.description} ✗ ({e})"
-                    )
+                    results.append(f"Step {step.step_number + 1}: {step.description} ✗ ({e})")
 
         # Generate summary
         summary = "\n".join(results)
@@ -393,9 +384,7 @@ Guidelines:
             failed_plan: The plan that has failures
         """
         # Get failed steps
-        failed_steps = [
-            step for step in failed_plan.steps if step.status == StepStatus.FAILED
-        ]
+        failed_steps = [step for step in failed_plan.steps if step.status == StepStatus.FAILED]
 
         if not failed_steps:
             return
@@ -413,14 +402,14 @@ Guidelines:
             ),
         ]
 
-        response = await self.llm.chat(messages)
+        await self.llm.chat(messages)
 
         # Parse new steps and replace failed ones
         # For simplicity, mark failed steps as skipped
         for step in failed_steps:
             step.status = StepStatus.SKIPPED
 
-    def get_plan(self) -> Optional[Plan]:
+    def get_plan(self) -> Plan | None:
         """
         Get the current plan.
 
@@ -451,7 +440,7 @@ class DefaultStepExecutor:
     - Interacts with external systems
     """
 
-    async def execute(self, step: PlanStep, context: Dict[str, Any]) -> str:
+    async def execute(self, step: PlanStep, context: dict[str, Any]) -> str:
         """Execute a step (mock implementation)."""
         # Mock execution - just return success
         return f"Completed: {step.description}"

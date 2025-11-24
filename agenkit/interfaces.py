@@ -57,7 +57,9 @@ class Message:
         if not self.role:
             raise ValueError("Message role cannot be empty")
         if len(self.role) > 20:
-            raise ValueError(f"Message role exceeds maximum length of 20 characters (got {len(self.role)})")
+            raise ValueError(
+                f"Message role exceeds maximum length of 20 characters (got {len(self.role)})"
+            )
 
         # Validate role is one of the allowed values
         allowed_roles = {"user", "assistant", "system", "tool", "agent"}
@@ -67,7 +69,7 @@ class Message:
         # Content validation - max 1MB
         if self.content is not None:
             content_str = str(self.content)
-            content_size = len(content_str.encode('utf-8'))
+            content_size = len(content_str.encode("utf-8"))
             max_content_size = 1024 * 1024  # 1MB
             if content_size > max_content_size:
                 raise ValueError(
@@ -97,7 +99,7 @@ class Message:
 
                 # Value size validation
                 value_str = str(value)
-                value_size = len(value_str.encode('utf-8'))
+                value_size = len(value_str.encode("utf-8"))
                 if value_size > max_value_size:
                     raise ValueError(
                         f"Metadata value for key '{key}' exceeds maximum size of {max_value_size} bytes "

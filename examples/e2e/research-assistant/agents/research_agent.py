@@ -2,10 +2,12 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Any, Optional
-from agenkit import Agent, Message
+from typing import Any
+
 from memory import MemoryStore, MemoryType
 from tools import ToolRegistry
+
+from agenkit import Agent, Message
 
 
 @dataclass
@@ -28,9 +30,9 @@ class ResearchResult:
     answer: str
     iterations: int
     cost: float
-    tools_used: List[str]
-    error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    tools_used: list[str]
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class ResearchAgent(Agent):
@@ -67,7 +69,7 @@ class ResearchAgent(Agent):
         self,
         tools: ToolRegistry,
         memory: MemoryStore,
-        config: Optional[ResearchConfig] = None,
+        config: ResearchConfig | None = None,
     ):
         """
         Initialize research agent.
@@ -106,9 +108,7 @@ class ResearchAgent(Agent):
             },
         )
 
-    async def research(
-        self, task: str, context: Optional[Dict[str, Any]] = None
-    ) -> ResearchResult:
+    async def research(self, task: str, context: dict[str, Any] | None = None) -> ResearchResult:
         """
         Execute an autonomous research task.
 
@@ -126,9 +126,9 @@ class ResearchAgent(Agent):
             ResearchResult with answer and metadata
         """
         if self.config.verbose:
-            print(f"\n{'='*70}")
+            print(f"\n{'=' * 70}")
             print(f"RESEARCH TASK: {task}")
-            print(f"{'='*70}")
+            print(f"{'=' * 70}")
 
         # Reset state
         self._current_cost = 0.0
@@ -148,7 +148,7 @@ class ResearchAgent(Agent):
         if self.config.enable_planning:
             plan = self._create_plan(task)
             if self.config.verbose:
-                print(f"\nPLAN:")
+                print("\nPLAN:")
                 for i, step in enumerate(plan, 1):
                     print(f"  {i}. {step}")
 
@@ -192,13 +192,13 @@ class ResearchAgent(Agent):
             )
 
         if self.config.verbose:
-            print(f"\n{'='*70}")
-            print(f"RESEARCH COMPLETE")
+            print(f"\n{'=' * 70}")
+            print("RESEARCH COMPLETE")
             print(f"  Success: {success}")
             print(f"  Iterations: {self._current_iteration}")
             print(f"  Cost: ${self._current_cost:.4f}")
             print(f"  Tools used: {', '.join(set(tools_used)) if tools_used else 'None'}")
-            print(f"{'='*70}\n")
+            print(f"{'=' * 70}\n")
 
         return ResearchResult(
             success=success,
@@ -214,7 +214,7 @@ class ResearchAgent(Agent):
         )
 
     async def _execute_research_loop(
-        self, task: str, plan: List[str], tools_used: List[str]
+        self, task: str, plan: list[str], tools_used: list[str]
     ) -> str:
         """Execute the main research loop."""
         consecutive_failures = 0
@@ -306,7 +306,7 @@ class ResearchAgent(Agent):
         answer = self._synthesize_answer(task, findings)
         return answer
 
-    def _create_plan(self, task: str) -> List[str]:
+    def _create_plan(self, task: str) -> list[str]:
         """
         Create a multi-step plan to answer the task.
 
@@ -317,8 +317,7 @@ class ResearchAgent(Agent):
 
         # Check if task involves search
         if any(
-            word in task_lower
-            for word in ["what", "how", "why", "explain", "find", "research"]
+            word in task_lower for word in ["what", "how", "why", "explain", "find", "research"]
         ):
             # Research-type task
             return [
@@ -329,9 +328,7 @@ class ResearchAgent(Agent):
             ]
 
         # Check if task involves calculation
-        elif any(
-            word in task_lower for word in ["calculate", "compute", "math", "number"]
-        ):
+        elif any(word in task_lower for word in ["calculate", "compute", "math", "number"]):
             return [
                 "Identify the calculation needed",
                 "Perform the calculation",
@@ -346,9 +343,7 @@ class ResearchAgent(Agent):
                 "Formulate answer",
             ]
 
-    def _decide_tool(
-        self, step: str, context: str
-    ) -> tuple[Optional[str], Dict[str, Any]]:
+    def _decide_tool(self, step: str, context: str) -> tuple[str | None, dict[str, Any]]:
         """
         Decide which tool to use for a step.
 
@@ -368,9 +363,7 @@ class ResearchAgent(Agent):
             return "read_document", {"url": "https://example.com/article"}
 
         # Calculator
-        elif any(
-            word in step_lower for word in ["calculate", "compute", "math"]
-        ):
+        elif any(word in step_lower for word in ["calculate", "compute", "math"]):
             # In a real system, extract the expression
             return "calculator", {"expression": "2 + 2"}
 
@@ -381,7 +374,7 @@ class ResearchAgent(Agent):
         # No tool needed
         return None, {}
 
-    def _reason_about(self, step: str, findings: List[str]) -> str:
+    def _reason_about(self, step: str, findings: list[str]) -> str:
         """
         Perform reasoning without tools.
 
@@ -392,7 +385,7 @@ class ResearchAgent(Agent):
 
         return f"Based on {len(findings)} findings, continuing with: {step}"
 
-    def _reflect_on_progress(self, task: str, findings: List[str]) -> str:
+    def _reflect_on_progress(self, task: str, findings: list[str]) -> str:
         """
         Reflect on progress so far.
 
@@ -403,7 +396,7 @@ class ResearchAgent(Agent):
 
         return f"Made progress: {len(findings)} findings so far. Continuing research."
 
-    def _synthesize_answer(self, task: str, findings: List[str]) -> str:
+    def _synthesize_answer(self, task: str, findings: list[str]) -> str:
         """
         Synthesize final answer from findings.
 
@@ -420,9 +413,7 @@ class ResearchAgent(Agent):
 
         for i, finding in enumerate(findings, 1):
             # Truncate long findings
-            finding_short = (
-                finding[:100] + "..." if len(finding) > 100 else finding
-            )
+            finding_short = finding[:100] + "..." if len(finding) > 100 else finding
             answer_parts.append(f"{i}. {finding_short}")
 
         answer_parts.append("")
@@ -473,7 +464,7 @@ class ResearchAgent(Agent):
         """
         import json
 
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             checkpoint = json.load(f)
 
         self._current_cost = checkpoint["cost"]
@@ -494,7 +485,7 @@ class ResearchAgent(Agent):
         if self.config.verbose:
             print(f"✓ Checkpoint loaded from {filepath}")
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current agent status."""
         return {
             "current_iteration": self._current_iteration,

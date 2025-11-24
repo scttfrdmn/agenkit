@@ -208,9 +208,7 @@ class CachingDecorator(Agent):
 
     async def _cleanup_expired(self) -> None:
         """Remove expired entries from cache."""
-        expired_keys = [
-            key for key, entry in self._cache.items() if entry.is_expired()
-        ]
+        expired_keys = [key for key, entry in self._cache.items() if entry.is_expired()]
         for key in expired_keys:
             del self._cache[key]
             self._metrics.evictions += 1

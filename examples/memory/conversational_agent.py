@@ -12,12 +12,13 @@ This example shows:
 """
 
 import asyncio
-from agenkit.interfaces import Message, Agent
+
+from agenkit.interfaces import Message
 from agenkit.memory import (
+    ImportanceWeightingStrategy,
     InMemoryMemory,
     SlidingWindowStrategy,
-    ImportanceWeightingStrategy,
-    SummarizationStrategy
+    SummarizationStrategy,
 )
 
 
@@ -29,13 +30,7 @@ class ConversationalAgent:
     and selects context using a MemoryStrategy.
     """
 
-    def __init__(
-        self,
-        name: str,
-        memory,
-        strategy=None,
-        context_limit: int = 10
-    ):
+    def __init__(self, name: str, memory, strategy=None, context_limit: int = 10):
         """
         Initialize conversational agent.
 
@@ -66,18 +61,15 @@ class ConversationalAgent:
 
         # Retrieve context using strategy
         context = await self.strategy.select(
-            memory=self.memory,
-            session_id=session_id,
-            context_limit=self.context_limit
+            memory=self.memory, session_id=session_id, context_limit=self.context_limit
         )
 
         # Generate response (simplified - in real agent, would use LLM)
-        response_content = f"[{self.name}] Received: '{message.content}' (with {len(context)} messages in context)"
-
-        response = Message(
-            role="assistant",
-            content=response_content
+        response_content = (
+            f"[{self.name}] Received: '{message.content}' (with {len(context)} messages in context)"
         )
+
+        response = Message(role="assistant", content=response_content)
 
         # Store response
         await self.memory.store(session_id, response)
@@ -87,6 +79,7 @@ class ConversationalAgent:
 
 # ===== Example 1: Basic Conversational Agent =====
 
+
 async def example_basic_conversation():
     """Example: Basic conversation with memory."""
     print("\n=== Example 1: Basic Conversation ===\n")
@@ -94,9 +87,7 @@ async def example_basic_conversation():
     # Create agent with memory
     memory = InMemoryMemory(max_size=100)
     agent = ConversationalAgent(
-        name="Assistant",
-        memory=memory,
-        strategy=SlidingWindowStrategy(window_size=5)
+        name="Assistant", memory=memory, strategy=SlidingWindowStrategy(window_size=5)
     )
 
     # Simulate conversation
@@ -122,6 +113,7 @@ async def example_basic_conversation():
 
 # ===== Example 2: Importance-Based Memory =====
 
+
 async def example_importance_memory():
     """Example: Using importance weighting strategy."""
     print("\n=== Example 2: Importance-Based Memory ===\n")
@@ -131,11 +123,9 @@ async def example_importance_memory():
         name="PriorityAssistant",
         memory=memory,
         strategy=ImportanceWeightingStrategy(
-            importance_threshold=0.5,
-            recency_weight=0.3,
-            min_recent=2
+            importance_threshold=0.5, recency_weight=0.3, min_recent=2
         ),
-        context_limit=5
+        context_limit=5,
     )
 
     session_id = "priority-session"
@@ -157,16 +147,11 @@ async def example_importance_memory():
 
         # Get context (will prioritize high-importance messages)
         context = await agent.strategy.select(
-            memory=memory,
-            session_id=session_id,
-            context_limit=agent.context_limit
+            memory=memory, session_id=session_id, context_limit=agent.context_limit
         )
 
         # Generate simple response
-        response = Message(
-            role="assistant",
-            content=f"Understood (context size: {len(context)})"
-        )
+        response = Message(role="assistant", content=f"Understood (context size: {len(context)})")
         await memory.store(session_id, response, metadata={"importance": 0.5})
 
         print(f"User: {content} [importance: {importance}]")
@@ -176,6 +161,7 @@ async def example_importance_memory():
 
 # ===== Example 3: Summarization Strategy =====
 
+
 async def example_summarization():
     """Example: Using summarization strategy for long conversations."""
     print("\n=== Example 3: Summarization Strategy ===\n")
@@ -184,11 +170,8 @@ async def example_summarization():
     agent = ConversationalAgent(
         name="SummarizingAssistant",
         memory=memory,
-        strategy=SummarizationStrategy(
-            recent_count=3,
-            summarize_older=True
-        ),
-        context_limit=10
+        strategy=SummarizationStrategy(recent_count=3, summarize_older=True),
+        context_limit=10,
     )
 
     session_id = "long-conversation"
@@ -204,9 +187,7 @@ async def example_summarization():
 
             # Show context
             context = await agent.strategy.select(
-                memory=memory,
-                session_id=session_id,
-                context_limit=agent.context_limit
+                memory=memory, session_id=session_id, context_limit=agent.context_limit
             )
 
             print(f"\nFinal context ({len(context)} messages):")
@@ -219,6 +200,7 @@ async def example_summarization():
 
 # ===== Example 4: Multi-Session Management =====
 
+
 async def example_multi_session():
     """Example: Managing multiple sessions with isolated memory."""
     print("\n=== Example 4: Multi-Session Management ===\n")
@@ -227,16 +209,10 @@ async def example_multi_session():
     memory = InMemoryMemory(max_size=1000)
 
     # Create agents for different sessions
-    sessions = {
-        "user-alice": "Alice",
-        "user-bob": "Bob",
-        "user-charlie": "Charlie"
-    }
+    sessions = {"user-alice": "Alice", "user-bob": "Bob", "user-charlie": "Charlie"}
 
     agent = ConversationalAgent(
-        name="MultiSessionAssistant",
-        memory=memory,
-        strategy=SlidingWindowStrategy(window_size=5)
+        name="MultiSessionAssistant", memory=memory, strategy=SlidingWindowStrategy(window_size=5)
     )
 
     # Simulate conversations in different sessions
@@ -248,13 +224,14 @@ async def example_multi_session():
 
     # Check memory usage
     usage = memory.get_memory_usage()
-    print(f"Memory usage:")
+    print("Memory usage:")
     print(f"  Total sessions: {usage['total_sessions']}")
     print(f"  Total messages: {usage['total_messages']}")
     print(f"  Sessions: {memory.get_all_sessions()}")
 
 
 # ===== Example 5: Strategy Comparison =====
+
 
 async def example_strategy_comparison():
     """Example: Comparing different memory strategies."""
@@ -269,28 +246,18 @@ async def example_strategy_comparison():
         await memory.store(
             session_id,
             Message(role="user", content=f"Message {i}"),
-            metadata={"importance": importance}
+            metadata={"importance": importance},
         )
 
     # Try different strategies
     strategies = {
         "Sliding Window": SlidingWindowStrategy(window_size=5),
-        "Importance Weighting": ImportanceWeightingStrategy(
-            importance_threshold=0.5,
-            min_recent=2
-        ),
-        "Summarization": SummarizationStrategy(
-            recent_count=5,
-            summarize_older=True
-        )
+        "Importance Weighting": ImportanceWeightingStrategy(importance_threshold=0.5, min_recent=2),
+        "Summarization": SummarizationStrategy(recent_count=5, summarize_older=True),
     }
 
     for name, strategy in strategies.items():
-        context = await strategy.select(
-            memory=memory,
-            session_id=session_id,
-            context_limit=6
-        )
+        context = await strategy.select(memory=memory, session_id=session_id, context_limit=6)
 
         print(f"{name}:")
         print(f"  Selected {len(context)} messages")
@@ -299,6 +266,7 @@ async def example_strategy_comparison():
 
 
 # ===== Main =====
+
 
 async def main():
     """Run all examples."""

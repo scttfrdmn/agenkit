@@ -12,14 +12,8 @@ Usage:
 import asyncio
 import sys
 import uuid
-from datetime import datetime
 
-from orchestrator import (
-    ImageProcessingOrchestrator,
-    ImageJob,
-    ProcessingTask,
-    TaskPriority
-)
+from orchestrator import ImageJob, ImageProcessingOrchestrator, ProcessingTask, TaskPriority
 
 
 async def demo():
@@ -37,12 +31,9 @@ async def demo():
     # Initialize orchestrator with Go workers
     # Note: In this demo, we simulate Go workers
     # In production, these would be real Go gRPC servers
-    workers = [
-        "grpc://localhost:50051",
-        "grpc://localhost:50052"
-    ]
+    workers = ["grpc://localhost:50051", "grpc://localhost:50052"]
 
-    orchestrator = ImageProcessingOrchestrator(workers)
+    ImageProcessingOrchestrator(workers)
 
     print("=" * 70)
     print("DEMO 1: Single Job Processing")
@@ -63,7 +54,7 @@ async def demo():
             ProcessingTask.OPTIMIZE,
         ],
         priority=TaskPriority.HIGH,
-        metadata={"user_id": "user123", "album": "vacation"}
+        metadata={"user_id": "user123", "album": "vacation"},
     )
 
     print(f"Job ID: {job1.job_id}")
@@ -88,7 +79,7 @@ async def demo():
                 ProcessingTask.THUMBNAIL,
             ],
             priority=TaskPriority.MEDIUM,
-            metadata={"batch_id": "batch-001", "index": i}
+            metadata={"batch_id": "batch-001", "index": i},
         )
         jobs.append(job)
 
@@ -112,7 +103,7 @@ async def demo():
             ProcessingTask.ANALYZE,
         ],
         priority=TaskPriority.CRITICAL,
-        metadata={"user_id": "vip_user", "profile_update": True}
+        metadata={"user_id": "vip_user", "profile_update": True},
     )
 
     print(f"Job ID: {job3.job_id}")
@@ -233,10 +224,7 @@ async def with_real_workers():
     print("=" * 70)
     print()
 
-    workers = [
-        "grpc://localhost:50051",
-        "grpc://localhost:50052"
-    ]
+    workers = ["grpc://localhost:50051", "grpc://localhost:50052"]
 
     orchestrator = ImageProcessingOrchestrator(workers)
 
@@ -252,7 +240,7 @@ async def with_real_workers():
                 ProcessingTask.THUMBNAIL,
                 ProcessingTask.OPTIMIZE,
             ],
-            priority=TaskPriority.HIGH
+            priority=TaskPriority.HIGH,
         )
 
         # Process job
@@ -273,7 +261,7 @@ async def with_real_workers():
         stats = orchestrator.get_stats()
         print(f"Total jobs: {stats['total_jobs']}")
         print(f"Total tasks: {stats['total_tasks']}")
-        print(f"Success rate: {stats['success_rate']*100:.1f}%")
+        print(f"Success rate: {stats['success_rate'] * 100:.1f}%")
         print(f"Avg time per job: {stats['avg_time_per_job_ms']:.1f}ms")
         print(f"Throughput: {stats['throughput_tasks_per_sec']:.1f} tasks/sec")
         print()

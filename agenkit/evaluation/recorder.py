@@ -4,11 +4,11 @@ Session recording and replay for evaluation.
 Records agent interactions for later replay, analysis, and A/B testing.
 """
 
-from typing import Dict, Any, List, Optional, Protocol
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
 import json
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Protocol
 
 from ..interfaces import Agent, Message
 
@@ -23,11 +23,11 @@ class InteractionRecord:
 
     interaction_id: str
     session_id: str
-    input_message: Dict[str, Any]
-    output_message: Dict[str, Any]
+    input_message: dict[str, Any]
+    output_message: dict[str, Any]
     timestamp: datetime
     latency_ms: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Convert to dictionary."""
@@ -38,7 +38,7 @@ class InteractionRecord:
             "output_message": self.output_message,
             "timestamp": self.timestamp.isoformat(),
             "latency_ms": self.latency_ms,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -51,7 +51,7 @@ class InteractionRecord:
             output_message=data["output_message"],
             timestamp=datetime.fromisoformat(data["timestamp"]),
             latency_ms=data["latency_ms"],
-            metadata=data.get("metadata", {})
+            metadata=data.get("metadata", {}),
         )
 
 
@@ -66,9 +66,9 @@ class SessionRecording:
     session_id: str
     agent_name: str
     start_time: datetime
-    end_time: Optional[datetime] = None
-    interactions: List[InteractionRecord] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    end_time: datetime | None = None
+    interactions: list[InteractionRecord] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def duration_seconds(self) -> float:
@@ -95,7 +95,7 @@ class SessionRecording:
             "start_time": self.start_time.isoformat(),
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "interactions": [i.to_dict() for i in self.interactions],
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -107,7 +107,7 @@ class SessionRecording:
             start_time=datetime.fromisoformat(data["start_time"]),
             end_time=datetime.fromisoformat(data["end_time"]) if data.get("end_time") else None,
             interactions=[InteractionRecord.from_dict(i) for i in data.get("interactions", [])],
-            metadata=data.get("metadata", {})
+            metadata=data.get("metadata", {}),
         )
 
 
@@ -122,15 +122,11 @@ class RecordingStorage(Protocol):
         """Save recording."""
         ...
 
-    async def load_recording(self, session_id: str) -> Optional[SessionRecording]:
+    async def load_recording(self, session_id: str) -> SessionRecording | None:
         """Load recording by session ID."""
         ...
 
-    async def list_recordings(
-        self,
-        limit: int = 100,
-        offset: int = 0
-    ) -> List[SessionRecording]:
+    async def list_recordings(self, limit: int = 100, offset: int = 0) -> list[SessionRecording]:
         """List recordings."""
         ...
 
@@ -162,31 +158,25 @@ class FileRecordingStorage:
         with open(file_path, "w") as f:
             json.dump(recording.to_dict(), f, indent=2)
 
-    async def load_recording(self, session_id: str) -> Optional[SessionRecording]:
+    async def load_recording(self, session_id: str) -> SessionRecording | None:
         """Load recording from file."""
         file_path = self.recordings_dir / f"{session_id}.json"
         if not file_path.exists():
             return None
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             data = json.load(f)
             return SessionRecording.from_dict(data)
 
-    async def list_recordings(
-        self,
-        limit: int = 100,
-        offset: int = 0
-    ) -> List[SessionRecording]:
+    async def list_recordings(self, limit: int = 100, offset: int = 0) -> list[SessionRecording]:
         """List all recordings."""
         recordings = []
         json_files = sorted(
-            self.recordings_dir.glob("*.json"),
-            key=lambda p: p.stat().st_mtime,
-            reverse=True
+            self.recordings_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True
         )
 
-        for file_path in json_files[offset:offset + limit]:
-            with open(file_path, "r") as f:
+        for file_path in json_files[offset : offset + limit]:
+            with open(file_path) as f:
                 data = json.load(f)
                 recordings.append(SessionRecording.from_dict(data))
 
@@ -207,26 +197,22 @@ class InMemoryRecordingStorage:
     """
 
     def __init__(self):
-        self._recordings: Dict[str, SessionRecording] = {}
+        self._recordings: dict[str, SessionRecording] = {}
 
     async def save_recording(self, recording: SessionRecording) -> None:
         """Save recording to memory."""
         self._recordings[recording.session_id] = recording
 
-    async def load_recording(self, session_id: str) -> Optional[SessionRecording]:
+    async def load_recording(self, session_id: str) -> SessionRecording | None:
         """Load recording from memory."""
         return self._recordings.get(session_id)
 
-    async def list_recordings(
-        self,
-        limit: int = 100,
-        offset: int = 0
-    ) -> List[SessionRecording]:
+    async def list_recordings(self, limit: int = 100, offset: int = 0) -> list[SessionRecording]:
         """List recordings from memory."""
         recordings = list(self._recordings.values())
         # Sort by start time (most recent first)
         recordings.sort(key=lambda r: r.start_time, reverse=True)
-        return recordings[offset:offset + limit]
+        return recordings[offset : offset + limit]
 
     async def delete_recording(self, session_id: str) -> None:
         """Delete recording from memory."""
@@ -254,10 +240,7 @@ class SessionRecorder:
         >>> recording = await recorder.load_recording("test-123")
     """
 
-    def __init__(
-        self,
-        storage: Optional[RecordingStorage] = None
-    ):
+    def __init__(self, storage: RecordingStorage | None = None):
         """
         Initialize session recorder.
 
@@ -265,7 +248,7 @@ class SessionRecorder:
             storage: Storage backend (defaults to in-memory)
         """
         self.storage = storage or InMemoryRecordingStorage()
-        self._active_sessions: Dict[str, SessionRecording] = {}
+        self._active_sessions: dict[str, SessionRecording] = {}
 
     def wrap(self, agent: Agent) -> Agent:
         """
@@ -277,6 +260,7 @@ class SessionRecorder:
         Returns:
             Wrapped agent that records all interactions
         """
+
         # Create inline wrapper
         class RecordingWrapper:
             def __init__(self, base_agent: Agent, recorder: "SessionRecorder"):
@@ -284,21 +268,14 @@ class SessionRecorder:
                 self._recorder = recorder
                 self.name = getattr(base_agent, "name", "recording_wrapper")
 
-            async def process(
-                self,
-                message: Message,
-                session_id: Optional[str] = None
-            ) -> Message:
+            async def process(self, message: Message, session_id: str | None = None) -> Message:
                 import time
 
                 sid = session_id or "default"
 
                 # Start session if not already started
                 if sid not in self._recorder._active_sessions:
-                    await self._recorder.start_session(
-                        sid,
-                        self.name
-                    )
+                    await self._recorder.start_session(sid, self.name)
 
                 # Process with timing
                 start = time.perf_counter()
@@ -306,22 +283,14 @@ class SessionRecorder:
                 latency = (time.perf_counter() - start) * 1000
 
                 # Record interaction
-                await self._recorder.record_interaction(
-                    sid,
-                    message,
-                    output,
-                    latency
-                )
+                await self._recorder.record_interaction(sid, message, output, latency)
 
                 return output
 
         return RecordingWrapper(agent, self)  # type: ignore
 
     async def start_session(
-        self,
-        session_id: str,
-        agent_name: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, session_id: str, agent_name: str, metadata: dict[str, Any] | None = None
     ) -> None:
         """
         Start recording session.
@@ -335,7 +304,7 @@ class SessionRecorder:
             session_id=session_id,
             agent_name=agent_name,
             start_time=datetime.now(timezone.utc),
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
     async def record_interaction(
@@ -344,7 +313,7 @@ class SessionRecorder:
         input_message: Message,
         output_message: Message,
         latency_ms: float,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """
         Record single interaction.
@@ -372,7 +341,7 @@ class SessionRecorder:
             output_message=self._message_to_dict(output_message),
             timestamp=datetime.now(timezone.utc),
             latency_ms=latency_ms,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         session.interactions.append(record)
@@ -398,7 +367,7 @@ class SessionRecorder:
 
         return session
 
-    async def load_recording(self, session_id: str) -> Optional[SessionRecording]:
+    async def load_recording(self, session_id: str) -> SessionRecording | None:
         """
         Load recording from storage.
 
@@ -410,11 +379,7 @@ class SessionRecorder:
         """
         return await self.storage.load_recording(session_id)
 
-    async def list_recordings(
-        self,
-        limit: int = 100,
-        offset: int = 0
-    ) -> List[SessionRecording]:
+    async def list_recordings(self, limit: int = 100, offset: int = 0) -> list[SessionRecording]:
         """List all recordings."""
         return await self.storage.list_recordings(limit, offset)
 
@@ -427,7 +392,7 @@ class SessionRecorder:
         return {
             "role": message.role,
             "content": message.content,
-            "metadata": message.metadata or {}
+            "metadata": message.metadata or {},
         }
 
 
@@ -453,11 +418,8 @@ class SessionReplay:
     """
 
     async def replay(
-        self,
-        recording: SessionRecording,
-        agent: Agent,
-        session_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, recording: SessionRecording, agent: Agent, session_id: str | None = None
+    ) -> dict[str, Any]:
         """
         Replay session through agent.
 
@@ -477,7 +439,7 @@ class SessionReplay:
             "original_session_id": recording.session_id,
             "interactions": [],
             "total_latency_ms": 0.0,
-            "error_count": 0
+            "error_count": 0,
         }
 
         for interaction in recording.interactions:
@@ -485,7 +447,7 @@ class SessionReplay:
             input_msg = Message(
                 role=interaction.input_message["role"],
                 content=interaction.input_message["content"],
-                metadata=interaction.input_message.get("metadata", {})
+                metadata=interaction.input_message.get("metadata", {}),
             )
 
             try:
@@ -494,31 +456,31 @@ class SessionReplay:
                 output_msg = await agent.process(input_msg, session_id=session_id)
                 latency = (time.perf_counter() - start) * 1000
 
-                results["interactions"].append({
-                    "input": interaction.input_message,
-                    "original_output": interaction.output_message,
-                    "replay_output": self._message_to_dict(output_msg),
-                    "original_latency_ms": interaction.latency_ms,
-                    "replay_latency_ms": latency
-                })
+                results["interactions"].append(
+                    {
+                        "input": interaction.input_message,
+                        "original_output": interaction.output_message,
+                        "replay_output": self._message_to_dict(output_msg),
+                        "original_latency_ms": interaction.latency_ms,
+                        "replay_latency_ms": latency,
+                    }
+                )
 
                 results["total_latency_ms"] += latency
 
             except Exception as e:
                 results["error_count"] += 1
-                results["interactions"].append({
-                    "input": interaction.input_message,
-                    "original_output": interaction.output_message,
-                    "error": str(e)
-                })
+                results["interactions"].append(
+                    {
+                        "input": interaction.input_message,
+                        "original_output": interaction.output_message,
+                        "error": str(e),
+                    }
+                )
 
         return results
 
-    async def compare(
-        self,
-        results_a: Dict[str, Any],
-        results_b: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def compare(self, results_a: dict[str, Any], results_b: dict[str, Any]) -> dict[str, Any]:
         """
         Compare two replay results.
 
@@ -536,17 +498,19 @@ class SessionReplay:
             "latency_diff_ms": results_b["total_latency_ms"] - results_a["total_latency_ms"],
             "latency_diff_percent": (
                 (results_b["total_latency_ms"] - results_a["total_latency_ms"])
-                / results_a["total_latency_ms"] * 100
-            ) if results_a["total_latency_ms"] > 0 else 0,
+                / results_a["total_latency_ms"]
+                * 100
+            )
+            if results_a["total_latency_ms"] > 0
+            else 0,
             "error_diff": results_b["error_count"] - results_a["error_count"],
-            "output_differences": []
+            "output_differences": [],
         }
 
         # Compare outputs
-        for i, (ia, ib) in enumerate(zip(
-            results_a["interactions"],
-            results_b["interactions"]
-        )):
+        for i, (ia, ib) in enumerate(
+            zip(results_a["interactions"], results_b["interactions"], strict=False)
+        ):
             if "error" in ia or "error" in ib:
                 continue
 
@@ -554,11 +518,9 @@ class SessionReplay:
             output_b = ib.get("replay_output", {}).get("content", "")
 
             if output_a != output_b:
-                comparison["output_differences"].append({
-                    "interaction_index": i,
-                    "output_a": output_a,
-                    "output_b": output_b
-                })
+                comparison["output_differences"].append(
+                    {"interaction_index": i, "output_a": output_a, "output_b": output_b}
+                )
 
         return comparison
 
@@ -567,5 +529,5 @@ class SessionReplay:
         return {
             "role": message.role,
             "content": message.content,
-            "metadata": message.metadata or {}
+            "metadata": message.metadata or {},
         }

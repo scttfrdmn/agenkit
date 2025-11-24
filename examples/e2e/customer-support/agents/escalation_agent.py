@@ -35,9 +35,7 @@ class EscalationAgent(Agent):
         priority = metadata.get("priority", "medium")
         content = message.content.lower()
 
-        should_escalate, reason = self._should_escalate(
-            confidence, priority, content
-        )
+        should_escalate, reason = self._should_escalate(confidence, priority, content)
 
         return Message(
             role="assistant",
@@ -49,9 +47,7 @@ class EscalationAgent(Agent):
             },
         )
 
-    def _should_escalate(
-        self, confidence: float, priority: str, content: str
-    ) -> tuple[bool, str]:
+    def _should_escalate(self, confidence: float, priority: str, content: str) -> tuple[bool, str]:
         """Determine escalation with reasoning."""
         # Critical issues always escalate
         if priority == "critical":
@@ -62,10 +58,7 @@ class EscalationAgent(Agent):
             return True, f"Low confidence ({confidence:.2f}) in automated response"
 
         # Explicit requests for human
-        if any(
-            phrase in content
-            for phrase in ["speak to human", "talk to person", "real person"]
-        ):
+        if any(phrase in content for phrase in ["speak to human", "talk to person", "real person"]):
             return True, "Customer explicitly requested human agent"
 
         # Sensitive topics

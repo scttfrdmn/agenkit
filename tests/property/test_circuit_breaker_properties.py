@@ -8,17 +8,20 @@ Validates circuit breaker invariants:
 - Closes after exactly success_threshold successes in HALF_OPEN
 - Failure count never decreases except on reset
 """
+
 import asyncio
 import time
 
 import pytest
-from hypothesis import given, settings, assume, strategies as st
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from tests.property.strategies import small_positive_int_strategy
 
 
 class CircuitBreakerState:
     """Valid circuit breaker states."""
+
     CLOSED = "CLOSED"
     OPEN = "OPEN"
     HALF_OPEN = "HALF_OPEN"
@@ -59,8 +62,10 @@ class SimpleCircuitBreaker:
             return True
         elif self._state == CircuitBreakerState.OPEN:
             # Check if recovery timeout has passed
-            if self._last_failure_time and \
-               (time.time() - self._last_failure_time) >= self._recovery_timeout:
+            if (
+                self._last_failure_time
+                and (time.time() - self._last_failure_time) >= self._recovery_timeout
+            ):
                 self._transition_to(CircuitBreakerState.HALF_OPEN)
                 self._success_count = 0
                 return True
@@ -101,6 +106,7 @@ class SimpleCircuitBreaker:
 # Property: State Transitions Follow Valid State Machine
 # ============================================
 
+
 @pytest.mark.property
 @given(
     failure_threshold=st.integers(min_value=1, max_value=5),
@@ -112,7 +118,7 @@ def test_state_transitions_are_valid(failure_threshold, success_threshold):
     cb = SimpleCircuitBreaker(
         failure_threshold=failure_threshold,
         success_threshold=success_threshold,
-        recovery_timeout=0.1
+        recovery_timeout=0.1,
     )
 
     # Valid transitions map
@@ -141,13 +147,15 @@ def test_state_transitions_are_valid(failure_threshold, success_threshold):
         next_state = history[i + 1]
 
         # Property: Transition must be valid
-        assert next_state in valid_transitions.get(current, set()), \
+        assert next_state in valid_transitions.get(current, set()), (
             f"Invalid transition from {current} to {next_state}"
+        )
 
 
 # ============================================
 # Property: Opens After Exactly failure_threshold Failures
 # ============================================
+
 
 @pytest.mark.property
 @given(
@@ -157,30 +165,31 @@ def test_state_transitions_are_valid(failure_threshold, success_threshold):
 def test_opens_after_exact_threshold(failure_threshold):
     """Property: Circuit opens after exactly failure_threshold failures."""
     cb = SimpleCircuitBreaker(
-        failure_threshold=failure_threshold,
-        success_threshold=2,
-        recovery_timeout=1.0
+        failure_threshold=failure_threshold, success_threshold=2, recovery_timeout=1.0
     )
 
     # Record failures
     for i in range(failure_threshold - 1):
         cb.record_failure()
         # Should still be CLOSED
-        assert cb.get_state() == CircuitBreakerState.CLOSED, \
-            f"Should be CLOSED after {i+1} failures (threshold={failure_threshold})"
+        assert cb.get_state() == CircuitBreakerState.CLOSED, (
+            f"Should be CLOSED after {i + 1} failures (threshold={failure_threshold})"
+        )
 
     # One more failure should open circuit
     cb.record_failure()
 
     # Property: Circuit should be OPEN after exactly failure_threshold failures
-    assert cb.get_state() == CircuitBreakerState.OPEN, \
+    assert cb.get_state() == CircuitBreakerState.OPEN, (
         f"Should be OPEN after {failure_threshold} failures"
+    )
     assert cb.get_failure_count() == failure_threshold
 
 
 # ============================================
 # Property: Transitions to HALF_OPEN After recovery_timeout
 # ============================================
+
 
 @pytest.mark.property
 @pytest.mark.asyncio
@@ -192,9 +201,7 @@ def test_opens_after_exact_threshold(failure_threshold):
 async def test_transitions_to_half_open_after_timeout(failure_threshold, recovery_timeout):
     """Property: Circuit transitions to HALF_OPEN after recovery_timeout."""
     cb = SimpleCircuitBreaker(
-        failure_threshold=failure_threshold,
-        success_threshold=2,
-        recovery_timeout=recovery_timeout
+        failure_threshold=failure_threshold, success_threshold=2, recovery_timeout=recovery_timeout
     )
 
     # Open the circuit
@@ -213,13 +220,15 @@ async def test_transitions_to_half_open_after_timeout(failure_threshold, recover
     # After timeout: should allow request and transition to HALF_OPEN
     # Property: is_request_allowed() returns True and transitions to HALF_OPEN
     assert cb.is_request_allowed(), "Should allow request after recovery timeout"
-    assert cb.get_state() == CircuitBreakerState.HALF_OPEN, \
+    assert cb.get_state() == CircuitBreakerState.HALF_OPEN, (
         "Should transition to HALF_OPEN after recovery timeout"
+    )
 
 
 # ============================================
 # Property: Closes After success_threshold Successes in HALF_OPEN
 # ============================================
+
 
 @pytest.mark.property
 @pytest.mark.asyncio
@@ -233,7 +242,7 @@ async def test_closes_after_success_threshold(failure_threshold, success_thresho
     cb = SimpleCircuitBreaker(
         failure_threshold=failure_threshold,
         success_threshold=success_threshold,
-        recovery_timeout=0.05
+        recovery_timeout=0.05,
     )
 
     # Open circuit
@@ -250,37 +259,34 @@ async def test_closes_after_success_threshold(failure_threshold, success_thresho
     for i in range(success_threshold - 1):
         cb.record_success()
         # Should still be HALF_OPEN
-        assert cb.get_state() == CircuitBreakerState.HALF_OPEN, \
-            f"Should be HALF_OPEN after {i+1} successes (threshold={success_threshold})"
+        assert cb.get_state() == CircuitBreakerState.HALF_OPEN, (
+            f"Should be HALF_OPEN after {i + 1} successes (threshold={success_threshold})"
+        )
 
     # One more success should close circuit
     cb.record_success()
 
     # Property: Circuit should be CLOSED after exactly success_threshold successes
-    assert cb.get_state() == CircuitBreakerState.CLOSED, \
+    assert cb.get_state() == CircuitBreakerState.CLOSED, (
         f"Should be CLOSED after {success_threshold} successes"
+    )
 
 
 # ============================================
 # Property: Failure Count Never Decreases (Except on Reset/Close)
 # ============================================
 
+
 @pytest.mark.property
 @given(
     failure_threshold=small_positive_int_strategy,
-    num_operations=st.lists(
-        st.sampled_from(["failure", "success"]),
-        min_size=1,
-        max_size=20
-    ),
+    num_operations=st.lists(st.sampled_from(["failure", "success"]), min_size=1, max_size=20),
 )
 @settings(max_examples=100, deadline=None)
 def test_failure_count_monotonicity(failure_threshold, num_operations):
     """Property: Failure count never decreases except on reset or close."""
     cb = SimpleCircuitBreaker(
-        failure_threshold=failure_threshold,
-        success_threshold=2,
-        recovery_timeout=1.0
+        failure_threshold=failure_threshold, success_threshold=2, recovery_timeout=1.0
     )
 
     previous_count = 0
@@ -292,9 +298,10 @@ def test_failure_count_monotonicity(failure_threshold, num_operations):
 
         # Property: Failure count only decreases when state changes to CLOSED
         if current_count < previous_count:
-            assert current_state == CircuitBreakerState.CLOSED and \
-                   previous_state != CircuitBreakerState.CLOSED, \
-                "Failure count should only decrease when transitioning to CLOSED"
+            assert (
+                current_state == CircuitBreakerState.CLOSED
+                and previous_state != CircuitBreakerState.CLOSED
+            ), "Failure count should only decrease when transitioning to CLOSED"
 
         # Record operation
         if op == "failure":
@@ -310,6 +317,7 @@ def test_failure_count_monotonicity(failure_threshold, num_operations):
 # Property: Open Circuit Blocks All Requests
 # ============================================
 
+
 @pytest.mark.property
 @given(
     failure_threshold=small_positive_int_strategy,
@@ -321,7 +329,7 @@ def test_open_circuit_blocks_requests(failure_threshold, num_attempts):
     cb = SimpleCircuitBreaker(
         failure_threshold=failure_threshold,
         success_threshold=2,
-        recovery_timeout=10.0  # Long timeout
+        recovery_timeout=10.0,  # Long timeout
     )
 
     # Open circuit
@@ -336,13 +344,15 @@ def test_open_circuit_blocks_requests(failure_threshold, num_attempts):
         if not cb.is_request_allowed():
             blocked_count += 1
 
-    assert blocked_count == num_attempts, \
+    assert blocked_count == num_attempts, (
         f"All {num_attempts} requests should be blocked in OPEN state"
+    )
 
 
 # ============================================
 # Property: Reset Restores Initial State
 # ============================================
+
 
 @pytest.mark.property
 @given(
@@ -353,9 +363,7 @@ def test_open_circuit_blocks_requests(failure_threshold, num_attempts):
 def test_reset_restores_initial_state(failure_threshold, num_failures):
     """Property: Reset restores circuit breaker to initial state."""
     cb = SimpleCircuitBreaker(
-        failure_threshold=failure_threshold,
-        success_threshold=2,
-        recovery_timeout=1.0
+        failure_threshold=failure_threshold, success_threshold=2, recovery_timeout=1.0
     )
 
     # Generate some failures (may or may not open circuit)
@@ -375,6 +383,7 @@ def test_reset_restores_initial_state(failure_threshold, num_failures):
 # Property: HALF_OPEN Failure Immediately Opens Circuit
 # ============================================
 
+
 @pytest.mark.property
 @pytest.mark.asyncio
 @given(
@@ -384,9 +393,7 @@ def test_reset_restores_initial_state(failure_threshold, num_failures):
 async def test_half_open_failure_immediately_opens(failure_threshold):
     """Property: Failure in HALF_OPEN immediately transitions back to OPEN."""
     cb = SimpleCircuitBreaker(
-        failure_threshold=failure_threshold,
-        success_threshold=2,
-        recovery_timeout=0.05
+        failure_threshold=failure_threshold, success_threshold=2, recovery_timeout=0.05
     )
 
     # Open circuit
@@ -403,8 +410,9 @@ async def test_half_open_failure_immediately_opens(failure_threshold):
     cb.record_failure()
 
     # Property: Should immediately transition back to OPEN
-    assert cb.get_state() == CircuitBreakerState.OPEN, \
+    assert cb.get_state() == CircuitBreakerState.OPEN, (
         "Failure in HALF_OPEN should immediately transition to OPEN"
+    )
 
 
 if __name__ == "__main__":

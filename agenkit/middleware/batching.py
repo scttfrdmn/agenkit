@@ -175,7 +175,8 @@ class BatchingDecorator(Agent):
         try:
             # Wait for first request (blocking)
             first_request = await asyncio.wait_for(
-                self._queue.get(), timeout=0.1  # Short timeout to check shutdown
+                self._queue.get(),
+                timeout=0.1,  # Short timeout to check shutdown
             )
             batch.append(first_request)
             deadline = time.time() + self._config.max_wait_time
@@ -187,9 +188,7 @@ class BatchingDecorator(Agent):
                     break
 
                 try:
-                    request = await asyncio.wait_for(
-                        self._queue.get(), timeout=remaining_time
-                    )
+                    request = await asyncio.wait_for(self._queue.get(), timeout=remaining_time)
                     batch.append(request)
                 except asyncio.TimeoutError:
                     break
@@ -235,8 +234,7 @@ class BatchingDecorator(Agent):
         # the underlying agent would need to support batch operations.
         # This implementation processes requests in parallel.
         results = await asyncio.gather(
-            *[self._agent.process(req.message) for req in batch],
-            return_exceptions=True
+            *[self._agent.process(req.message) for req in batch], return_exceptions=True
         )
 
         # Distribute results to individual futures
@@ -284,7 +282,8 @@ class BatchingDecorator(Agent):
         # Enqueue request (may raise QueueFull if at capacity)
         try:
             await asyncio.wait_for(
-                self._queue.put(request), timeout=1.0  # Prevent indefinite blocking
+                self._queue.put(request),
+                timeout=1.0,  # Prevent indefinite blocking
             )
         except asyncio.TimeoutError:
             raise RuntimeError(

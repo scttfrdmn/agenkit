@@ -4,10 +4,9 @@ Cost tracking for LLM usage.
 Tracks costs per session, per agent, and globally for budget management.
 """
 
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
-from typing import Optional
 from collections import defaultdict
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 
 from .models import ModelPricing
 
@@ -31,6 +30,7 @@ class Cost:
         timestamp: When cost was recorded
         metadata: Additional metadata
     """
+
     session_id: str
     agent_name: str
     model: str
@@ -60,10 +60,10 @@ class Storage:
 
     async def query(
         self,
-        session_id: Optional[str] = None,
-        agent_name: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
+        session_id: str | None = None,
+        agent_name: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
     ) -> list[Cost]:
         """Query cost records."""
         raise NotImplementedError
@@ -81,10 +81,10 @@ class InMemoryStorage(Storage):
 
     async def query(
         self,
-        session_id: Optional[str] = None,
-        agent_name: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
+        session_id: str | None = None,
+        agent_name: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
     ) -> list[Cost]:
         """Query cost records from memory."""
         results = []
@@ -134,7 +134,7 @@ class CostTracker:
         Session cost: $0.01
     """
 
-    def __init__(self, storage: Optional[Storage] = None):
+    def __init__(self, storage: Storage | None = None):
         """
         Initialize cost tracker.
 
@@ -152,7 +152,7 @@ class CostTracker:
         input_tokens: int,
         output_tokens: int,
         thinking_tokens: int = 0,
-        metadata: Optional[dict] = None
+        metadata: dict | None = None,
     ) -> Cost:
         """
         Record a cost event.
@@ -188,7 +188,11 @@ class CostTracker:
 
         # Thinking tokens typically use output token pricing
         # (some models may charge differently, but this is a reasonable default)
-        thinking_cost = self.model_pricing.calculate(model, thinking_tokens, "output") if thinking_tokens > 0 else 0.0
+        thinking_cost = (
+            self.model_pricing.calculate(model, thinking_tokens, "output")
+            if thinking_tokens > 0
+            else 0.0
+        )
 
         total_cost = input_cost + output_cost + thinking_cost
 
@@ -205,7 +209,7 @@ class CostTracker:
             thinking_cost=thinking_cost,
             total_cost=total_cost,
             timestamp=datetime.now(timezone.utc),
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Store
@@ -214,10 +218,7 @@ class CostTracker:
         return cost
 
     async def get_session_cost(
-        self,
-        session_id: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
+        self, session_id: str, start_time: datetime | None = None, end_time: datetime | None = None
     ) -> float:
         """
         Get total cost for session (optionally in time range).
@@ -238,17 +239,12 @@ class CostTracker:
             $1.50
         """
         costs = await self.storage.query(
-            session_id=session_id,
-            start_time=start_time,
-            end_time=end_time
+            session_id=session_id, start_time=start_time, end_time=end_time
         )
         return sum(c.total_cost for c in costs)
 
     async def get_agent_cost(
-        self,
-        agent_name: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
+        self, agent_name: str, start_time: datetime | None = None, end_time: datetime | None = None
     ) -> float:
         """
         Get total cost for agent.
@@ -262,16 +258,12 @@ class CostTracker:
             Total cost in dollars
         """
         costs = await self.storage.query(
-            agent_name=agent_name,
-            start_time=start_time,
-            end_time=end_time
+            agent_name=agent_name, start_time=start_time, end_time=end_time
         )
         return sum(c.total_cost for c in costs)
 
     async def get_global_cost(
-        self,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
+        self, start_time: datetime | None = None, end_time: datetime | None = None
     ) -> float:
         """
         Get total global cost.
@@ -283,16 +275,11 @@ class CostTracker:
         Returns:
             Total cost in dollars
         """
-        costs = await self.storage.query(
-            start_time=start_time,
-            end_time=end_time
-        )
+        costs = await self.storage.query(start_time=start_time, end_time=end_time)
         return sum(c.total_cost for c in costs)
 
     async def get_breakdown(
-        self,
-        session_id: Optional[str] = None,
-        agent_name: Optional[str] = None
+        self, session_id: str | None = None, agent_name: str | None = None
     ) -> dict[str, float]:
         """
         Get cost breakdown by model.
@@ -311,10 +298,7 @@ class CostTracker:
             >>> print(breakdown)
             {"claude-sonnet-4": 2.50, "claude-opus-4": 5.75}
         """
-        costs = await self.storage.query(
-            session_id=session_id,
-            agent_name=agent_name
-        )
+        costs = await self.storage.query(session_id=session_id, agent_name=agent_name)
 
         breakdown = defaultdict(float)
         for cost in costs:
@@ -323,10 +307,7 @@ class CostTracker:
         return dict(breakdown)
 
     async def get_top_sessions(
-        self,
-        limit: int = 10,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
+        self, limit: int = 10, start_time: datetime | None = None, end_time: datetime | None = None
     ) -> list[tuple[str, float]]:
         """
         Get top N sessions by cost.
@@ -348,28 +329,18 @@ class CostTracker:
             session-2: $5.25
             ...
         """
-        costs = await self.storage.query(
-            start_time=start_time,
-            end_time=end_time
-        )
+        costs = await self.storage.query(start_time=start_time, end_time=end_time)
 
         session_totals = defaultdict(float)
         for cost in costs:
             session_totals[cost.session_id] += cost.total_cost
 
-        sorted_sessions = sorted(
-            session_totals.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
+        sorted_sessions = sorted(session_totals.items(), key=lambda x: x[1], reverse=True)
 
         return sorted_sessions[:limit]
 
     async def get_top_agents(
-        self,
-        limit: int = 10,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
+        self, limit: int = 10, start_time: datetime | None = None, end_time: datetime | None = None
     ) -> list[tuple[str, float]]:
         """
         Get top N agents by cost.
@@ -382,27 +353,18 @@ class CostTracker:
         Returns:
             List of (agent_name, total_cost) tuples
         """
-        costs = await self.storage.query(
-            start_time=start_time,
-            end_time=end_time
-        )
+        costs = await self.storage.query(start_time=start_time, end_time=end_time)
 
         agent_totals = defaultdict(float)
         for cost in costs:
             agent_totals[cost.agent_name] += cost.total_cost
 
-        sorted_agents = sorted(
-            agent_totals.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
+        sorted_agents = sorted(agent_totals.items(), key=lambda x: x[1], reverse=True)
 
         return sorted_agents[:limit]
 
     async def get_statistics(
-        self,
-        session_id: Optional[str] = None,
-        agent_name: Optional[str] = None
+        self, session_id: str | None = None, agent_name: str | None = None
     ) -> dict:
         """
         Get cost statistics.
@@ -414,10 +376,7 @@ class CostTracker:
         Returns:
             Dict with statistics (total_cost, total_tokens, avg_cost_per_request, etc.)
         """
-        costs = await self.storage.query(
-            session_id=session_id,
-            agent_name=agent_name
-        )
+        costs = await self.storage.query(session_id=session_id, agent_name=agent_name)
 
         if not costs:
             return {
@@ -442,5 +401,8 @@ class CostTracker:
             "total_thinking_tokens": total_thinking_tokens,
             "total_tokens": total_input_tokens + total_output_tokens + total_thinking_tokens,
             "avg_cost_per_request": total_cost / len(costs),
-            "avg_tokens_per_request": (total_input_tokens + total_output_tokens + total_thinking_tokens) / len(costs),
+            "avg_tokens_per_request": (
+                total_input_tokens + total_output_tokens + total_thinking_tokens
+            )
+            / len(costs),
         }

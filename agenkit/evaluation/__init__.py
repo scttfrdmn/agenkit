@@ -30,36 +30,31 @@ Example:
     >>>     print("Quality degradation detected!")
 """
 
-from .core import Metric, Evaluator, EvaluationResult
 from .benchmarks import Benchmark, BenchmarkSuite
-from .context_metrics import ContextMetrics, CompressionMetrics, LatencyMetric
-from .quality_metrics import QualityMetrics, AccuracyMetric, PrecisionRecallMetric
-from .regression import RegressionDetector
+from .context_metrics import CompressionMetrics, ContextMetrics, LatencyMetric
+from .core import EvaluationResult, Evaluator, Metric
+from .quality_metrics import AccuracyMetric, PrecisionRecallMetric, QualityMetrics
 from .recorder import SessionRecorder, SessionReplay
+from .regression import RegressionDetector
 
 __all__ = [
-    # Core
-    "Metric",
-    "Evaluator",
-    "EvaluationResult",
-
+    "AccuracyMetric",
     # Benchmarks
     "Benchmark",
     "BenchmarkSuite",
-
+    "CompressionMetrics",
     # Context tracking
     "ContextMetrics",
-    "CompressionMetrics",
+    "EvaluationResult",
+    "Evaluator",
     "LatencyMetric",
-
+    # Core
+    "Metric",
+    "PrecisionRecallMetric",
     # Quality measurement
     "QualityMetrics",
-    "AccuracyMetric",
-    "PrecisionRecallMetric",
-
     # Regression detection
     "RegressionDetector",
-
     # Session replay
     "SessionRecorder",
     "SessionReplay",

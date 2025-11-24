@@ -68,33 +68,24 @@ class HTTPTransport(Transport):
             # Configure connection pooling limits
             # max_connections: total connections allowed across all hosts
             # max_keepalive_connections: idle connections to keep alive
-            limits = httpx.Limits(
-                max_connections=100,
-                max_keepalive_connections=20
-            )
+            limits = httpx.Limits(max_connections=100, max_keepalive_connections=20)
 
             # Configure HTTP client based on version with connection pooling
             if self.version == HTTPVersion.HTTP2:
                 # HTTP/2 cleartext (h2c) with connection pooling
                 self.client = httpx.AsyncClient(
-                    http2=True,
-                    timeout=httpx.Timeout(30.0),
-                    limits=limits
+                    http2=True, timeout=httpx.Timeout(30.0), limits=limits
                 )
             elif self.version == HTTPVersion.HTTP3:
                 # HTTP/3 over QUIC with connection pooling
                 # Note: httpx doesn't support HTTP/3 yet, so we fall back to HTTP/2
                 self.client = httpx.AsyncClient(
-                    http2=True,
-                    timeout=httpx.Timeout(30.0),
-                    limits=limits
+                    http2=True, timeout=httpx.Timeout(30.0), limits=limits
                 )
             else:
                 # HTTP/1.1 with automatic HTTP/2 upgrade for HTTPS and connection pooling
                 self.client = httpx.AsyncClient(
-                    http2=True,
-                    timeout=httpx.Timeout(30.0),
-                    limits=limits
+                    http2=True, timeout=httpx.Timeout(30.0), limits=limits
                 )
 
             # Test connectivity with HEAD request
@@ -126,7 +117,7 @@ class HTTPTransport(Transport):
 
         try:
             # Decode envelope to determine method
-            envelope = json.loads(data.decode('utf-8'))
+            envelope = json.loads(data.decode("utf-8"))
             method = envelope.get("payload", {}).get("method", "process")
 
             if method == "stream":
@@ -170,7 +161,7 @@ class HTTPTransport(Transport):
             return await self._read_sse_event()
 
         # For non-streaming, return the pending response
-        if hasattr(self, '_pending_response'):
+        if hasattr(self, "_pending_response"):
             response = self._pending_response
             del self._pending_response
             return response
@@ -192,7 +183,7 @@ class HTTPTransport(Transport):
                 if not line:
                     if event_data:
                         # Join all data lines and return
-                        return "".join(event_data).encode('utf-8')
+                        return "".join(event_data).encode("utf-8")
                     continue
 
                 # Parse SSE line

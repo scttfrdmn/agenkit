@@ -195,7 +195,7 @@ func (sm *ServerManager) Shutdown() {
 	defer sm.mu.Unlock()
 
 	for _, server := range sm.servers {
-		server.Stop()
+		_ = server.Stop()
 	}
 	sm.servers = nil
 
@@ -223,7 +223,7 @@ func BenchmarkHTTP1Latency(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "test message")
@@ -252,7 +252,7 @@ func BenchmarkHTTP2Latency(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "test message")
@@ -283,7 +283,7 @@ func BenchmarkHTTP1SmallMessage(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", strings.Repeat("x", 100))
@@ -310,7 +310,7 @@ func BenchmarkHTTP2SmallMessage(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", strings.Repeat("x", 100))
@@ -337,7 +337,7 @@ func BenchmarkHTTP1MediumMessage(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", strings.Repeat("x", 10000))
@@ -364,7 +364,7 @@ func BenchmarkHTTP2MediumMessage(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", strings.Repeat("x", 10000))
@@ -391,7 +391,7 @@ func BenchmarkHTTP1LargeMessage(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", strings.Repeat("x", 1000000))
@@ -418,7 +418,7 @@ func BenchmarkHTTP2LargeMessage(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", strings.Repeat("x", 1000000))
@@ -449,7 +449,7 @@ func BenchmarkHTTP1Concurrent10(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	msg := agenkit.NewMessage("user", "test message")
 
@@ -478,7 +478,7 @@ func BenchmarkHTTP2Concurrent10(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	msg := agenkit.NewMessage("user", "test message")
 
@@ -511,7 +511,7 @@ func BenchmarkHTTP1RealisticWorkload(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("slow-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "process this")
@@ -538,7 +538,7 @@ func BenchmarkHTTP2RealisticWorkload(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("slow-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "process this")
@@ -569,7 +569,7 @@ func BenchmarkHTTP1Parallel(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	msg := agenkit.NewMessage("user", "test")
 
@@ -598,7 +598,7 @@ func BenchmarkHTTP2Parallel(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	msg := agenkit.NewMessage("user", "test")
 
@@ -637,7 +637,7 @@ func BenchmarkHTTP3Latency(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "test message")
@@ -664,7 +664,7 @@ func BenchmarkHTTP3SmallMessage(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", strings.Repeat("x", 100))
@@ -691,7 +691,7 @@ func BenchmarkHTTP3MediumMessage(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", strings.Repeat("x", 10000))
@@ -718,7 +718,7 @@ func BenchmarkHTTP3LargeMessage(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", strings.Repeat("x", 1000000))
@@ -745,7 +745,7 @@ func BenchmarkHTTP3Concurrent10(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	msg := agenkit.NewMessage("user", "test message")
 
@@ -774,7 +774,7 @@ func BenchmarkHTTP3RealisticWorkload(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("slow-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "process this")
@@ -801,7 +801,7 @@ func BenchmarkHTTP3Parallel(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("echo-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	msg := agenkit.NewMessage("user", "test")
 

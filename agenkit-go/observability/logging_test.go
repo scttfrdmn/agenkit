@@ -21,7 +21,7 @@ func TestTraceContextHandlerAddsTraceContext(t *testing.T) {
 		trace.WithSyncer(exporter),
 	)
 	otel.SetTracerProvider(provider)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	// Create a buffer to capture log output
 	var buf bytes.Buffer
@@ -89,7 +89,7 @@ func TestStructuredHandlerProducesJSON(t *testing.T) {
 		trace.WithSyncer(exporter),
 	)
 	otel.SetTracerProvider(provider)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	// Create structured handler with trace context
 	structuredHandler := NewStructuredHandler()
@@ -149,7 +149,7 @@ func TestGetLoggerWithTrace(t *testing.T) {
 		trace.WithSyncer(exporter),
 	)
 	otel.SetTracerProvider(provider)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	logger := GetLoggerWithTrace()
 	if logger == nil {

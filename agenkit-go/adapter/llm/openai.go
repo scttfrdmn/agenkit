@@ -229,7 +229,7 @@ func (o *OpenAILLM) Stream(ctx context.Context, messages []*agenkit.Message, opt
 	// Start goroutine to read stream
 	go func() {
 		defer close(messageChan)
-		defer stream.Close()
+		defer func() { _ = stream.Close() }()
 
 		for {
 			response, err := stream.Recv()

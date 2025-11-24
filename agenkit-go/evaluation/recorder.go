@@ -202,7 +202,7 @@ func NewFileRecordingStorage(recordingsDir string) *FileRecordingStorage {
 	}
 
 	// Create directory if needed
-	os.MkdirAll(recordingsDir, 0755)
+	_ = os.MkdirAll(recordingsDir, 0755)
 
 	return &FileRecordingStorage{
 		recordingsDir: recordingsDir,
@@ -217,7 +217,7 @@ func (s *FileRecordingStorage) SaveRecording(recording *SessionRecording) error 
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
@@ -235,7 +235,7 @@ func (s *FileRecordingStorage) LoadRecording(sessionID string) (*SessionRecordin
 		}
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var data map[string]interface{}
 	decoder := json.NewDecoder(file)
@@ -298,10 +298,10 @@ func (s *FileRecordingStorage) ListRecordings(limit, offset int) ([]*SessionReco
 		var data map[string]interface{}
 		decoder := json.NewDecoder(file)
 		if err := decoder.Decode(&data); err != nil {
-			file.Close()
+			_ = file.Close()
 			continue
 		}
-		file.Close()
+		_ = file.Close()
 
 		recording, err := SessionRecordingFromDict(data)
 		if err != nil {

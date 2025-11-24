@@ -181,7 +181,7 @@ func BenchmarkHTTP1StreamingLatency(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "stream test")
@@ -211,7 +211,7 @@ func BenchmarkHTTP1Streaming10Chunks(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "stream test")
@@ -241,7 +241,7 @@ func BenchmarkHTTP1Streaming50Chunks(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "stream test")
@@ -276,7 +276,7 @@ func BenchmarkHTTP1StreamingVsBatch(b *testing.B) {
 		// Create dedicated client for streaming
 		trans := transport.NewHTTPTransport(endpoint)
 		client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		for i := 0; i < b.N; i++ {
 			_, err := measureStreaming(ctx, client, msg)
@@ -290,7 +290,7 @@ func BenchmarkHTTP1StreamingVsBatch(b *testing.B) {
 		// Create dedicated client for batch
 		trans := transport.NewHTTPTransport(endpoint)
 		client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		for i := 0; i < b.N; i++ {
 			_, err := client.Process(ctx, msg)
@@ -317,7 +317,7 @@ func BenchmarkHTTP1StreamingRealistic(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "stream test")
@@ -351,7 +351,7 @@ func BenchmarkHTTP2StreamingLatency(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "stream test")
@@ -381,7 +381,7 @@ func BenchmarkHTTP2Streaming50Chunks(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "stream test")
@@ -416,7 +416,7 @@ func BenchmarkHTTP2StreamingVsBatch(b *testing.B) {
 		// Create dedicated client for streaming
 		trans := transport.NewHTTPTransport(endpoint)
 		client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		for i := 0; i < b.N; i++ {
 			_, err := measureStreaming(ctx, client, msg)
@@ -430,7 +430,7 @@ func BenchmarkHTTP2StreamingVsBatch(b *testing.B) {
 		// Create dedicated client for batch
 		trans := transport.NewHTTPTransport(endpoint)
 		client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		for i := 0; i < b.N; i++ {
 			_, err := client.Process(ctx, msg)
@@ -458,7 +458,7 @@ func BenchmarkHTTP3StreamingLatency(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "stream test")
@@ -488,7 +488,7 @@ func BenchmarkHTTP3Streaming50Chunks(b *testing.B) {
 
 	trans := transport.NewHTTPTransport(endpoint)
 	client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	msg := agenkit.NewMessage("user", "stream test")
@@ -523,7 +523,7 @@ func BenchmarkHTTP3StreamingVsBatch(b *testing.B) {
 		// Create dedicated client for streaming
 		trans := transport.NewHTTPTransport(endpoint)
 		client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		for i := 0; i < b.N; i++ {
 			_, err := measureStreaming(ctx, client, msg)
@@ -537,7 +537,7 @@ func BenchmarkHTTP3StreamingVsBatch(b *testing.B) {
 		// Create dedicated client for batch
 		trans := transport.NewHTTPTransport(endpoint)
 		client := remote.NewRemoteAgentWithTransport("streaming-agent", trans, 30*time.Second)
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		for i := 0; i < b.N; i++ {
 			_, err := client.Process(ctx, msg)

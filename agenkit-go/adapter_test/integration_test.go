@@ -120,7 +120,7 @@ func TestBasicCommunicationUnixSocket(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	// Give server time to start
 	time.Sleep(50 * time.Millisecond)
@@ -130,7 +130,7 @@ func TestBasicCommunicationUnixSocket(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send message
 	msg := agenkit.NewMessage("user", "Hello World")
@@ -162,7 +162,7 @@ func TestBasicCommunicationTCP(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	// Give server time to start
 	time.Sleep(50 * time.Millisecond)
@@ -172,7 +172,7 @@ func TestBasicCommunicationTCP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send message
 	msg := agenkit.NewMessage("user", "TCP Test")
@@ -209,7 +209,7 @@ func TestMultipleSequentialRequests(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -218,7 +218,7 @@ func TestMultipleSequentialRequests(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send multiple messages
 	for i := 0; i < 10; i++ {
@@ -249,7 +249,7 @@ func TestConcurrentRequests(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -271,7 +271,7 @@ func TestConcurrentRequests(t *testing.T) {
 				errors <- fmt.Errorf("client %d: failed to connect: %w", id, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			for reqID := 0; reqID < requestsPerClient; reqID++ {
 				content := fmt.Sprintf("Client %d Request %d", id, reqID)
@@ -323,7 +323,7 @@ func TestMetadataPreservation(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -332,7 +332,7 @@ func TestMetadataPreservation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send message with metadata
 	msg := agenkit.NewMessage("user", "Test").
@@ -366,7 +366,7 @@ func TestAgentError(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -375,7 +375,7 @@ func TestAgentError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send message - should get error
 	msg := agenkit.NewMessage("user", "Test")
@@ -404,7 +404,7 @@ func TestLargeMessage(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -413,7 +413,7 @@ func TestLargeMessage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Create large message (1MB)
 	largeContent := string(make([]byte, 1024*1024))
@@ -452,7 +452,7 @@ func TestBasicStreaming(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -461,7 +461,7 @@ func TestBasicStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Stream messages
 	msg := agenkit.NewMessage("user", "test")
@@ -523,7 +523,7 @@ func TestStreamingTCP(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -532,7 +532,7 @@ func TestStreamingTCP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Stream messages
 	msg := agenkit.NewMessage("user", "tcp_test")

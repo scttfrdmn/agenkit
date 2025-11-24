@@ -21,7 +21,7 @@ func TestHTTPBasicCommunication(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -31,7 +31,7 @@ func TestHTTPBasicCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send message
 	msg := agenkit.NewMessage("user", "test message")
@@ -59,7 +59,7 @@ func TestHTTPStreaming(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -69,7 +69,7 @@ func TestHTTPStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Stream messages
 	msg := agenkit.NewMessage("user", "test")
@@ -119,7 +119,7 @@ func TestHTTPConcurrentRequests(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -131,7 +131,7 @@ func TestHTTPConcurrentRequests(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 		clients[i] = client
 	}
 
@@ -172,7 +172,7 @@ func TestHTTPErrorHandling(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -182,7 +182,7 @@ func TestHTTPErrorHandling(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send message - should get error
 	msg := agenkit.NewMessage("user", "test")
@@ -207,7 +207,7 @@ func TestHTTPMetadataPreservation(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -217,7 +217,7 @@ func TestHTTPMetadataPreservation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send message with metadata
 	msg := agenkit.NewMessage("user", "test").
@@ -251,7 +251,7 @@ func TestHTTPStreamingEmpty(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -261,7 +261,7 @@ func TestHTTPStreamingEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Stream messages
 	msg := agenkit.NewMessage("user", "test")
@@ -305,7 +305,7 @@ func TestHTTPLargePayload(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -315,7 +315,7 @@ func TestHTTPLargePayload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send large message (100KB)
 	largeContent := string(make([]byte, 100*1024))
@@ -340,7 +340,7 @@ func TestHTTPContextCancellation(t *testing.T) {
 	if err := server.Start(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -350,7 +350,7 @@ func TestHTTPContextCancellation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Create context with short timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
@@ -413,7 +413,7 @@ func TestHTTP2BasicCommunication(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -423,7 +423,7 @@ func TestHTTP2BasicCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Send message
 	msg := agenkit.NewMessage("user", "test message http2")
@@ -454,7 +454,7 @@ func TestHTTP2Streaming(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -464,7 +464,7 @@ func TestHTTP2Streaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Stream messages
 	msg := agenkit.NewMessage("user", "test")
@@ -517,7 +517,7 @@ func TestHTTP2ConcurrentRequests(t *testing.T) {
 	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	time.Sleep(50 * time.Millisecond)
 
@@ -529,7 +529,7 @@ func TestHTTP2ConcurrentRequests(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 		clients[i] = client
 	}
 

@@ -15,7 +15,7 @@ func FindFreePort() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	addr := listener.Addr().(*net.TCPAddr)
 	return addr.Port, nil
@@ -32,7 +32,7 @@ func WaitForServer(url string, timeout time.Duration) error {
 	for time.Now().Before(deadline) {
 		resp, err := client.Get(url)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			if resp.StatusCode < 500 {
 				return nil
 			}
@@ -83,7 +83,7 @@ func StartPythonHTTPServer(port int) (*PythonHTTPServer, error) {
 	// Wait for server to be ready
 	healthURL := fmt.Sprintf("%s/health", server.BaseURL)
 	if err := WaitForServer(healthURL, 10*time.Second); err != nil {
-		server.Stop()
+		_ = server.Stop()
 		return nil, fmt.Errorf("python server failed to start: %w", err)
 	}
 
@@ -96,7 +96,7 @@ func (s *PythonHTTPServer) Stop() error {
 		if err := s.Cmd.Process.Kill(); err != nil {
 			return fmt.Errorf("failed to kill Python server: %w", err)
 		}
-		s.Cmd.Wait() // Wait for process to exit
+		_ = s.Cmd.Wait() // Wait for process to exit
 	}
 	return nil
 }
@@ -125,14 +125,14 @@ func StartGoHTTPServer(port int) (*GoHTTPServer, error) {
 	// Health check endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})
 
 	// Test endpoint
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok","language":"go"}`))
+		_, _ = w.Write([]byte(`{"status":"ok","language":"go"}`))
 	})
 
 	server := &http.Server{
@@ -158,7 +158,7 @@ func StartGoHTTPServer(port int) (*GoHTTPServer, error) {
 	// Wait for server to be ready
 	healthURL := fmt.Sprintf("%s/health", goServer.BaseURL)
 	if err := WaitForServer(healthURL, 10*time.Second); err != nil {
-		goServer.Stop(context.Background())
+		_ = goServer.Stop(context.Background())
 		return nil, fmt.Errorf("go server failed to start: %w", err)
 	}
 
@@ -179,6 +179,6 @@ func IsPortInUse(port int) bool {
 	if err != nil {
 		return true
 	}
-	listener.Close()
+	_ = listener.Close()
 	return false
 }

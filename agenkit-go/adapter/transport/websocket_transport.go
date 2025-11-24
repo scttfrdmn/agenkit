@@ -121,7 +121,7 @@ func (t *WebSocketTransport) connectWithRetry(ctx context.Context) error {
 
 		// Set pong handler
 		conn.SetPongHandler(func(string) error {
-			conn.SetReadDeadline(time.Now().Add(t.pingTimeout))
+			_ = conn.SetReadDeadline(time.Now().Add(t.pingTimeout))
 			return nil
 		})
 
@@ -178,7 +178,7 @@ func (t *WebSocketTransport) startPingLoop() {
 				}
 
 				// Reset write deadline
-				conn.SetWriteDeadline(time.Time{})
+				_ = conn.SetWriteDeadline(time.Time{})
 
 			case <-t.stopPing:
 				return
@@ -247,7 +247,7 @@ func (t *WebSocketTransport) SendFramed(ctx context.Context, data []byte) error 
 
 	// Reset write deadline
 	if ok {
-		t.conn.SetWriteDeadline(time.Time{})
+		_ = t.conn.SetWriteDeadline(time.Time{})
 	}
 
 	return nil
@@ -286,7 +286,7 @@ func (t *WebSocketTransport) ReceiveFramed(ctx context.Context) ([]byte, error) 
 
 	// Reset read deadline
 	if ok {
-		t.conn.SetReadDeadline(time.Time{})
+		_ = t.conn.SetReadDeadline(time.Time{})
 	}
 
 	// Handle different message types

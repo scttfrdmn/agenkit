@@ -198,13 +198,13 @@ func (a *AnthropicLLM) Complete(ctx context.Context, messages []*agenkit.Message
 	if err != nil {
 		return nil, err
 	}
+	defer func() { _ = resp.Body.Close() }()
 
 	// Parse response
 	var anthropicResp anthropicResponse
 	if err := json.NewDecoder(resp.Body).Decode(&anthropicResp); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	resp.Body.Close()
 
 	// Extract text content
 	var content string
@@ -287,7 +287,7 @@ func (a *AnthropicLLM) Stream(ctx context.Context, messages []*agenkit.Message, 
 	// Start goroutine to read stream
 	go func() {
 		defer close(messageChan)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		scanner := bufio.NewScanner(resp.Body)
 		for scanner.Scan() {
@@ -396,7 +396,7 @@ func (a *AnthropicLLM) makeRequest(ctx context.Context, req anthropicRequest) (*
 	// Check status code
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, fmt.Errorf("anthropic api error (status %d): %s", resp.StatusCode, string(body))
 	}
 

@@ -354,7 +354,7 @@ func TestGRPCServerStartStopMultipleTimes(t *testing.T) {
 			t.Errorf("Iteration %d: expected '%s', got '%s'", i, expected, response.Content)
 		}
 
-		client.Close()
+		_ = client.Close()
 
 		// Stop server
 		if err := server.Stop(); err != nil {
@@ -586,7 +586,7 @@ func TestGRPCTransportReconnect(t *testing.T) {
 	}
 
 	// Stop server
-	server.Stop()
+	_ = server.Stop()
 	time.Sleep(200 * time.Millisecond)
 
 	// Start server again

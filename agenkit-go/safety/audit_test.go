@@ -113,7 +113,7 @@ func TestNewSecurityAuditLogger(t *testing.T) {
 	}
 
 	// Clean up
-	logger.Close()
+	_ = logger.Close()
 }
 
 func TestSecurityAuditLoggerLog(t *testing.T) {
@@ -124,7 +124,7 @@ func TestSecurityAuditLoggerLog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	event := NewAuditEvent(AccessGranted, SeverityInfo)
 	event.UserID = "user123"
@@ -154,15 +154,15 @@ func TestSecurityAuditLoggerSeverityFiltering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Info event should be filtered out
 	infoEvent := NewAuditEvent(AccessGranted, SeverityInfo)
-	logger.Log(infoEvent)
+	_ = logger.Log(infoEvent)
 
 	// Warning event should be logged
 	warningEvent := NewAuditEvent(AccessDenied, SeverityWarning)
-	logger.Log(warningEvent)
+	_ = logger.Log(warningEvent)
 
 	// Read log file
 	content, err := os.ReadFile(logFile)
@@ -177,7 +177,7 @@ func TestSecurityAuditLoggerSeverityFiltering(t *testing.T) {
 	}
 	// Should not contain AccessGranted (info level)
 	var parsed map[string]interface{}
-	json.Unmarshal(content, &parsed)
+	_ = json.Unmarshal(content, &parsed)
 	if parsed["event_type"] == string(AccessGranted) {
 		t.Error("Info event should have been filtered out")
 	}
@@ -191,7 +191,7 @@ func TestSecurityAuditLoggerLogAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Test access granted
 	err = logger.LogAccess(true, "user123", "test-agent", "read_file", nil)
@@ -225,7 +225,7 @@ func TestSecurityAuditLoggerLogPermissionCheck(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	err = logger.LogPermissionCheck(false, "user123", "test-agent", "write_files", nil)
 	if err != nil {
@@ -249,7 +249,7 @@ func TestSecurityAuditLoggerLogValidationFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	longContent := "This is a very long content that should be truncated in the log entry because it exceeds the maximum allowed preview length of 200 characters which is the limit set by the audit logger to ensure log entries don't become too large and unwieldy when viewing them"
 
@@ -271,7 +271,7 @@ func TestSecurityAuditLoggerLogValidationFailure(t *testing.T) {
 	if len(contentStr) > 300 { // Allow some overhead for JSON structure
 		// Content should be truncated to 200 chars + "..."
 		var parsed map[string]interface{}
-		json.Unmarshal(content, &parsed)
+		_ = json.Unmarshal(content, &parsed)
 		details := parsed["details"].(map[string]interface{})
 		preview := details["content_preview"].(string)
 		if len(preview) > 203 { // 200 + "..."
@@ -288,7 +288,7 @@ func TestSecurityAuditLoggerLogPromptInjection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	patterns := []string{"ignore previous instructions", "system prompt"}
 	err = logger.LogPromptInjection("user123", 15, patterns, "Ignore all previous instructions", "test-agent")
@@ -313,7 +313,7 @@ func TestSecurityAuditLoggerLogAnomaly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	details := map[string]interface{}{
 		"request_rate": 150.5,
@@ -342,7 +342,7 @@ func TestSecurityAuditLoggerLogAgentExecution(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Test started
 	err = logger.LogAgentExecution("user123", "test-agent", "started", nil, nil, nil)
@@ -382,7 +382,7 @@ func TestSecurityAuditLoggerRotation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Write enough events to trigger rotation
 	for i := 0; i < 10; i++ {
@@ -390,7 +390,7 @@ func TestSecurityAuditLoggerRotation(t *testing.T) {
 		event.UserID = "user123"
 		event.Message = "Test message with enough content to fill up the log file quickly"
 		event.Details["iteration"] = i
-		logger.Log(event)
+		_ = logger.Log(event)
 	}
 
 	// Check if rotation happened (backup files should exist)

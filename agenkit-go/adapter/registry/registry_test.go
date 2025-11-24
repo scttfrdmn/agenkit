@@ -361,7 +361,7 @@ func TestConcurrentOperations(t *testing.T) {
 				Name:     "agent" + string(rune('0'+id)),
 				Endpoint: "unix:///tmp/" + string(rune('0'+id)) + ".sock",
 			}
-			registry.Register(registration)
+			_ = registry.Register(registration)
 		}(i)
 	}
 	wg.Wait()
@@ -389,7 +389,7 @@ func TestConcurrentOperations(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			registry.Heartbeat("agent" + string(rune('0'+id)))
+			_ = registry.Heartbeat("agent" + string(rune('0'+id)))
 		}(i)
 	}
 	wg.Wait()

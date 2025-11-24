@@ -22,7 +22,7 @@ func setupTestMetrics(t *testing.T) (*metric.MeterProvider, *metric.ManualReader
 
 func TestMetricsMiddlewareCollectsRequestCount(t *testing.T) {
 	provider, reader := setupTestMetrics(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
 	metricsAgent, err := NewMetricsMiddleware(agent)
@@ -99,7 +99,7 @@ func TestMetricsMiddlewareCollectsRequestCount(t *testing.T) {
 
 func TestMetricsMiddlewareRecordsLatency(t *testing.T) {
 	provider, reader := setupTestMetrics(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
 	metricsAgent, err := NewMetricsMiddleware(agent)
@@ -157,7 +157,7 @@ func TestMetricsMiddlewareRecordsLatency(t *testing.T) {
 
 func TestMetricsMiddlewareRecordsMessageSize(t *testing.T) {
 	provider, reader := setupTestMetrics(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
 	metricsAgent, err := NewMetricsMiddleware(agent)
@@ -216,7 +216,7 @@ func TestMetricsMiddlewareRecordsMessageSize(t *testing.T) {
 
 func TestMetricsMiddlewareRecordsErrors(t *testing.T) {
 	provider, reader := setupTestMetrics(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	agent := &ErrorTestAgent{}
 	metricsAgent, err := NewMetricsMiddleware(agent)
@@ -292,7 +292,7 @@ func TestMetricsMiddlewareRecordsErrors(t *testing.T) {
 
 func TestMetricsMiddlewareSetsCorrectAttributes(t *testing.T) {
 	provider, reader := setupTestMetrics(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	agent := &SimpleTestAgent{name: "test-agent", response: "response"}
 	metricsAgent, err := NewMetricsMiddleware(agent)
@@ -362,7 +362,7 @@ func TestMetricsMiddlewareSetsCorrectAttributes(t *testing.T) {
 
 func TestMetricsMiddlewareMultipleRequests(t *testing.T) {
 	provider, reader := setupTestMetrics(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
 	metricsAgent, err := NewMetricsMiddleware(agent)
@@ -431,7 +431,7 @@ func TestMetricsMiddlewareMultipleRequests(t *testing.T) {
 
 func TestMetricsMiddlewarePreservesAgentInterface(t *testing.T) {
 	provider, _ := setupTestMetrics(t)
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	agent := &SimpleTestAgent{name: "agent1", response: "response"}
 	metricsAgent, err := NewMetricsMiddleware(agent)
@@ -467,7 +467,7 @@ func TestInitMetrics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InitMetrics failed: %v", err)
 	}
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	if provider == nil {
 		t.Fatal("Expected provider, got nil")
@@ -489,7 +489,7 @@ func TestInitResourceMetrics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InitMetrics failed: %v", err)
 	}
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	// Initialize resource metrics
 	collector, err := InitResourceMetrics()

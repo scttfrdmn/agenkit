@@ -155,14 +155,14 @@ func (l *LocalAgent) Stop() error {
 
 	// Close listener
 	if l.listener != nil {
-		l.listener.Close()
+		_ = l.listener.Close()
 		l.listener = nil
 	}
 
 	// Close all active connections
 	l.connMu.Lock()
 	for conn := range l.connections {
-		conn.Close()
+		_ = conn.Close()
 	}
 	l.connMu.Unlock()
 
@@ -202,7 +202,7 @@ func (l *LocalAgent) acceptConnections(ctx context.Context) {
 // handleClient handles a client connection.
 func (l *LocalAgent) handleClient(ctx context.Context, conn net.Conn) {
 	defer l.wg.Done()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// Register connection
 	l.connMu.Lock()
@@ -391,7 +391,7 @@ func (l *LocalAgent) handleStreamRequest(ctx context.Context, conn net.Conn, req
 					// Both channels closed - stream complete
 					endEnv := codec.CreateStreamEndEnvelope(request.ID)
 					endBytes, _ := codec.EncodeBytes(endEnv)
-					l.sendFramed(conn, endBytes)
+					_ = l.sendFramed(conn, endBytes)
 					return
 				}
 				// Set messageChan to nil to disable this case
@@ -424,7 +424,7 @@ func (l *LocalAgent) handleStreamRequest(ctx context.Context, conn net.Conn, req
 					// Both channels closed - stream complete
 					endEnv := codec.CreateStreamEndEnvelope(request.ID)
 					endBytes, _ := codec.EncodeBytes(endEnv)
-					l.sendFramed(conn, endBytes)
+					_ = l.sendFramed(conn, endBytes)
 					return
 				}
 				// Set errorChan to nil to disable this case
@@ -459,7 +459,7 @@ func (l *LocalAgent) sendFramed(conn net.Conn, data []byte) error {
 func (l *LocalAgent) sendError(conn net.Conn, requestID, errorCode, errorMessage string, details map[string]interface{}) {
 	errorEnv := codec.CreateErrorEnvelope(requestID, errorCode, errorMessage, details)
 	errorBytes, _ := codec.EncodeBytes(errorEnv)
-	l.sendFramed(conn, errorBytes)
+	_ = l.sendFramed(conn, errorBytes)
 }
 
 // isExpectedDisconnect checks if an error is an expected disconnection.

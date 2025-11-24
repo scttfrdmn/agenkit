@@ -80,7 +80,7 @@ func TestToolRegistryRegisterDuplicate(t *testing.T) {
 	tool1 := &MockTool{name: "tool", description: "Tool 1"}
 	tool2 := &MockTool{name: "tool", description: "Tool 2"}
 
-	registry.Register(tool1)
+	_ = registry.Register(tool1)
 	err := registry.Register(tool2)
 	if err == nil {
 		t.Fatal("Expected error when registering duplicate tool")
@@ -110,7 +110,7 @@ func TestToolRegistryGet(t *testing.T) {
 	registry := NewToolRegistry()
 
 	tool := &MockTool{name: "test-tool", description: "Test tool"}
-	registry.Register(tool)
+	_ = registry.Register(tool)
 
 	// Get existing tool
 	retrieved, exists := registry.Get("test-tool")
@@ -138,9 +138,9 @@ func TestToolRegistryList(t *testing.T) {
 	}
 
 	// Add tools
-	registry.Register(&MockTool{name: "tool1", description: "Tool 1"})
-	registry.Register(&MockTool{name: "tool2", description: "Tool 2"})
-	registry.Register(&MockTool{name: "tool3", description: "Tool 3"})
+	_ = registry.Register(&MockTool{name: "tool1", description: "Tool 1"})
+	_ = registry.Register(&MockTool{name: "tool2", description: "Tool 2"})
+	_ = registry.Register(&MockTool{name: "tool3", description: "Tool 3"})
 
 	names = registry.List()
 	if len(names) != 3 {
@@ -169,8 +169,8 @@ func TestToolRegistryGetToolDescriptions(t *testing.T) {
 	}
 
 	// Add tools
-	registry.Register(&MockTool{name: "tool1", description: "Does thing 1"})
-	registry.Register(&MockTool{name: "tool2", description: "Does thing 2"})
+	_ = registry.Register(&MockTool{name: "tool1", description: "Does thing 1"})
+	_ = registry.Register(&MockTool{name: "tool2", description: "Does thing 2"})
 
 	desc = registry.GetToolDescriptions()
 	if desc == "No tools available." {
@@ -209,7 +209,7 @@ func TestToolAgentExecuteTool(t *testing.T) {
 		description: "Performs calculations",
 		result:      agenkit.NewToolResult(42),
 	}
-	registry.Register(calcTool)
+	_ = registry.Register(calcTool)
 
 	toolAgent := NewToolAgent(agent, registry)
 
@@ -259,8 +259,8 @@ func TestToolAgentExecuteMultipleTools(t *testing.T) {
 	// Register multiple tools
 	tool1 := &MockTool{name: "tool1", result: agenkit.NewToolResult("result1")}
 	tool2 := &MockTool{name: "tool2", result: agenkit.NewToolResult("result2")}
-	registry.Register(tool1)
-	registry.Register(tool2)
+	_ = registry.Register(tool1)
+	_ = registry.Register(tool2)
 
 	toolAgent := NewToolAgent(agent, registry)
 
@@ -339,7 +339,7 @@ func TestToolAgentToolExecutionError(t *testing.T) {
 		name: "error-tool",
 		err:  errors.New("tool execution failed"),
 	}
-	registry.Register(errorTool)
+	_ = registry.Register(errorTool)
 
 	toolAgent := NewToolAgent(agent, registry)
 

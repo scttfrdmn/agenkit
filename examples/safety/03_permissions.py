@@ -6,13 +6,14 @@ role-based access control (RBAC) and sandboxing for your agents.
 """
 
 import asyncio
+
 from agenkit.interfaces import Agent, Message
 from agenkit.safety.permissions import (
-    PermissionMiddleware,
     Permission,
+    PermissionDeniedError,
+    PermissionMiddleware,
     Role,
     Sandbox,
-    PermissionDeniedError,
 )
 
 
@@ -59,9 +60,7 @@ async def main():
     print("\nUser Role (standard access):")
     user_agent = PermissionMiddleware(echo_agent, role=Role.USER)
     try:
-        response = await user_agent.process(
-            Message(role="user", content="read file config.json")
-        )
+        response = await user_agent.process(Message(role="user", content="read file config.json"))
         print(f"  ✓ {response.content}")
     except PermissionDeniedError as e:
         print(f"  ✗ {e}")
@@ -102,10 +101,7 @@ async def main():
     print("\n4. Sandboxing - File Path Restrictions")
     print("-" * 60)
 
-    sandbox = Sandbox(
-        allowed_paths={"/app/data", "/tmp"},
-        denied_paths={"/etc", "/sys", "/proc"}
-    )
+    sandbox = Sandbox(allowed_paths={"/app/data", "/tmp"}, denied_paths={"/etc", "/sys", "/proc"})
 
     # Check path permissions
     allowed, error = sandbox.is_path_allowed("/app/data/file.txt")
@@ -119,8 +115,7 @@ async def main():
     print("-" * 60)
 
     command_sandbox = Sandbox(
-        allowed_commands={"ls", "cat", "grep", "git"},
-        denied_commands={"rm", "sudo", "chmod"}
+        allowed_commands={"ls", "cat", "grep", "git"}, denied_commands={"rm", "sudo", "chmod"}
     )
 
     allowed, error = command_sandbox.is_command_allowed("ls -la")
@@ -133,9 +128,7 @@ async def main():
     print("\n6. Sandboxing - SQL Operation Restrictions")
     print("-" * 60)
 
-    sql_sandbox = Sandbox(
-        allowed_sql_operations={"SELECT", "EXPLAIN"}
-    )
+    sql_sandbox = Sandbox(allowed_sql_operations={"SELECT", "EXPLAIN"})
 
     allowed, error = sql_sandbox.is_sql_operation_allowed("SELECT * FROM users")
     print(f"✓ SELECT query allowed: {allowed}")
@@ -149,7 +142,7 @@ async def main():
 
     network_sandbox = Sandbox(
         allowed_domains={"api.example.com", "cdn.example.com"},
-        denied_domains={"localhost", "127.0.0.1"}
+        denied_domains={"localhost", "127.0.0.1"},
     )
 
     allowed, error = network_sandbox.is_domain_allowed("api.example.com")
@@ -165,17 +158,13 @@ async def main():
     combined_sandbox = Sandbox(
         allowed_paths={"/app/data"},
         allowed_commands={"ls", "cat"},
-        allowed_sql_operations={"SELECT"}
+        allowed_sql_operations={"SELECT"},
     )
 
-    secure_agent = PermissionMiddleware(
-        echo_agent,
-        role=Role.USER,
-        sandbox=combined_sandbox
-    )
+    PermissionMiddleware(echo_agent, role=Role.USER, sandbox=combined_sandbox)
 
-    print(f"Secure agent configuration:")
-    print(f"  Role: USER")
+    print("Secure agent configuration:")
+    print("  Role: USER")
     print(f"  Allowed paths: {combined_sandbox.allowed_paths}")
     print(f"  Allowed commands: {combined_sandbox.allowed_commands}")
     print(f"  Allowed SQL: {combined_sandbox.allowed_sql_operations}")

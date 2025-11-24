@@ -14,11 +14,10 @@ from agenkit.adapters.python.remote_agent import RemoteAgent
 from agenkit.interfaces import Agent, Message
 from agenkit.observability.tracing import (
     TracingMiddleware,
-    init_tracing,
     inject_trace_context,
 )
 
-from .helpers import go_http_server, python_http_server, go_grpc_server, python_grpc_server
+from .helpers import go_grpc_server, go_http_server
 
 
 @pytest.fixture(scope="module")
@@ -61,12 +60,9 @@ async def test_trace_propagation_python_to_go_http(tracing_setup):
     """Test trace context propagates from Python → Go over HTTP."""
     provider, span_exporter = tracing_setup
 
-    async with go_http_server() as (port, process):
+    async with go_http_server() as (port, _process):
         # Create remote agent
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"http://localhost:{port}"
-        )
+        agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
         # Create a parent span
         tracer = trace.get_tracer("test")
@@ -79,9 +75,7 @@ async def test_trace_propagation_python_to_go_http(tracing_setup):
             # Inject trace context into message
             message_metadata = inject_trace_context({})
             message = Message(
-                role="user",
-                content="Test trace propagation",
-                metadata=message_metadata
+                role="user", content="Test trace propagation", metadata=message_metadata
             )
 
             response = await agent.process(message)
@@ -111,28 +105,18 @@ async def test_trace_propagation_python_to_go_http(tracing_setup):
 @pytest.mark.cross_language
 async def test_trace_propagation_python_to_go_http_with_metadata(tracing_setup):
     """Test trace propagation preserves message metadata: Python → Go HTTP."""
-    provider, span_exporter = tracing_setup
+    _provider, _span_exporter = tracing_setup
 
-    async with go_http_server() as (port, process):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"http://localhost:{port}"
-        )
+    async with go_http_server() as (port, _process):
+        agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
         tracer = trace.get_tracer("test")
         with tracer.start_as_current_span("test-span"):
             # Create message with both custom metadata and trace context
-            message_metadata = {
-                "request_id": "trace-test-123",
-                "custom_field": "test-value"
-            }
+            message_metadata = {"request_id": "trace-test-123", "custom_field": "test-value"}
             message_metadata = inject_trace_context(message_metadata)
 
-            message = Message(
-                role="user",
-                content="Test with metadata",
-                metadata=message_metadata
-            )
+            message = Message(role="user", content="Test with metadata", metadata=message_metadata)
 
             response = await agent.process(message)
 
@@ -168,7 +152,7 @@ async def test_go_to_python_http_trace_propagation(tracing_setup):
                 metadata={
                     "original": message.content,
                     "language": "python",
-                }
+                },
             )
 
     base_agent = TracedTestAgent()
@@ -176,6 +160,7 @@ async def test_go_to_python_http_trace_propagation(tracing_setup):
 
     # Start Python HTTP server with traced agent
     from agenkit.adapters.python.http_server import HTTPAgentServer
+
     from .helpers import find_free_port
 
     port = find_free_port()
@@ -185,10 +170,7 @@ async def test_go_to_python_http_trace_propagation(tracing_setup):
         await server.start()
 
         # Create client with trace context
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"http://localhost:{port}"
-        )
+        agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
         tracer = trace.get_tracer("test")
         with tracer.start_as_current_span("client-span") as client_span:
@@ -196,11 +178,7 @@ async def test_go_to_python_http_trace_propagation(tracing_setup):
 
             # Send message with trace context
             message_metadata = inject_trace_context({})
-            message = Message(
-                role="user",
-                content="Test Go to Python",
-                metadata=message_metadata
-            )
+            message = Message(role="user", content="Test Go to Python", metadata=message_metadata)
 
             response = await agent.process(message)
 
@@ -237,12 +215,9 @@ async def test_trace_propagation_python_to_go_grpc(tracing_setup):
     """Test trace context propagates from Python → Go over gRPC."""
     provider, span_exporter = tracing_setup
 
-    async with go_grpc_server() as (port, process):
+    async with go_grpc_server() as (port, _process):
         # Create remote agent
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"grpc://localhost:{port}"
-        )
+        agent = RemoteAgent(name="test-agent", endpoint=f"grpc://localhost:{port}")
 
         # Create a parent span
         tracer = trace.get_tracer("test")
@@ -251,11 +226,7 @@ async def test_trace_propagation_python_to_go_grpc(tracing_setup):
 
             # Send message with trace context
             message_metadata = inject_trace_context({})
-            message = Message(
-                role="user",
-                content="gRPC trace test",
-                metadata=message_metadata
-            )
+            message = Message(role="user", content="gRPC trace test", metadata=message_metadata)
 
             response = await agent.process(message)
 
@@ -301,16 +272,18 @@ async def test_trace_propagation_go_to_python_grpc(tracing_setup):
                 metadata={
                     "original": message.content,
                     "language": "python",
-                }
+                },
             )
 
     base_agent = TracedTestAgent()
     traced_agent = TracingMiddleware(base_agent)
 
     # Start Python gRPC server with traced agent
-    from agenkit.adapters.python.grpc_server import GRPCServer
-    from .helpers import find_free_port
     import asyncio
+
+    from agenkit.adapters.python.grpc_server import GRPCServer
+
+    from .helpers import find_free_port
 
     port = find_free_port()
     server = GRPCServer(traced_agent, f"localhost:{port}")
@@ -320,10 +293,7 @@ async def test_trace_propagation_go_to_python_grpc(tracing_setup):
         await asyncio.sleep(0.5)  # Wait for server to start
 
         # Create client with trace context
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"grpc://localhost:{port}"
-        )
+        agent = RemoteAgent(name="test-agent", endpoint=f"grpc://localhost:{port}")
 
         tracer = trace.get_tracer("test")
         with tracer.start_as_current_span("grpc-client-span") as client_span:
@@ -331,11 +301,7 @@ async def test_trace_propagation_go_to_python_grpc(tracing_setup):
 
             # Send message with trace context
             message_metadata = inject_trace_context({})
-            message = Message(
-                role="user",
-                content="gRPC Go to Python",
-                metadata=message_metadata
-            )
+            message = Message(role="user", content="gRPC Go to Python", metadata=message_metadata)
 
             response = await agent.process(message)
 
@@ -370,14 +336,14 @@ async def test_trace_propagation_go_to_python_grpc(tracing_setup):
 @pytest.mark.cross_language
 async def test_w3c_trace_context_format():
     """Test W3C Trace Context format is used for cross-language compatibility."""
-    from agenkit.observability.tracing import inject_trace_context, extract_trace_context
-    from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+
+    from agenkit.observability.tracing import inject_trace_context
 
     # Create a span to establish trace context
     tracer = trace.get_tracer("test")
     with tracer.start_as_current_span("test-span") as span:
         trace_id = span.get_span_context().trace_id
-        span_id = span.get_span_context().span_id
+        span.get_span_context().span_id
 
         # Inject trace context
         metadata = inject_trace_context({})
@@ -407,12 +373,12 @@ async def test_w3c_trace_context_format():
 @pytest.mark.cross_language
 async def test_trace_context_extraction():
     """Test trace context can be extracted from metadata."""
-    from agenkit.observability.tracing import inject_trace_context, extract_trace_context
+    from agenkit.observability.tracing import extract_trace_context, inject_trace_context
 
     # Create trace context
     tracer = trace.get_tracer("test")
     with tracer.start_as_current_span("parent-span") as parent:
-        parent_trace_id = parent.get_span_context().trace_id
+        parent.get_span_context().trace_id
 
         # Inject into metadata
         metadata = inject_trace_context({"custom_field": "value"})

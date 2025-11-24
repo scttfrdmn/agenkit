@@ -10,16 +10,17 @@ Demonstrates:
 """
 
 import asyncio
+
 from agenkit.evaluation import (
-    Evaluator,
     AccuracyMetric,
-    QualityMetrics,
     BenchmarkSuite,
+    Evaluator,
+    QualityMetrics,
     RegressionDetector,
     SessionRecorder,
-    SessionReplay
+    SessionReplay,
 )
-from agenkit.evaluation.context_metrics import ContextMetrics, LatencyMetric
+from agenkit.evaluation.context_metrics import LatencyMetric
 from agenkit.interfaces import Message
 
 
@@ -41,15 +42,9 @@ class SimpleQAAgent:
         # Simple matching
         for key, value in self.knowledge_base.items():
             if key in query:
-                return Message(
-                    role="assistant",
-                    content=f"The answer is {value}."
-                )
+                return Message(role="assistant", content=f"The answer is {value}.")
 
-        return Message(
-            role="assistant",
-            content="I don't know the answer to that."
-        )
+        return Message(role="assistant", content="I don't know the answer to that.")
 
 
 async def demo_basic_evaluation():
@@ -62,35 +57,28 @@ async def demo_basic_evaluation():
     agent = SimpleQAAgent()
 
     # Create evaluator with metrics
-    evaluator = Evaluator(
-        agent,
-        metrics=[
-            AccuracyMetric(),
-            QualityMetrics(),
-            LatencyMetric()
-        ]
-    )
+    evaluator = Evaluator(agent, metrics=[AccuracyMetric(), QualityMetrics(), LatencyMetric()])
 
     # Define test cases
     test_cases = [
         {"input": "What is the capital of France?", "expected": "Paris"},
         {"input": "What is 2+2?", "expected": "4"},
         {"input": "What is the largest planet?", "expected": "Jupiter"},
-        {"input": "Who invented the telephone?", "expected": "Unknown"}  # Should fail
+        {"input": "Who invented the telephone?", "expected": "Unknown"},  # Should fail
     ]
 
     # Run evaluation
     result = await evaluator.evaluate(test_cases, evaluation_id="demo-basic")
 
     # Print results
-    print(f"\n📊 Evaluation Results:")
+    print("\n📊 Evaluation Results:")
     print(f"  Tests: {result.total_tests}")
     print(f"  Passed: {result.passed_tests}")
     print(f"  Failed: {result.failed_tests}")
     print(f"  Accuracy: {result.accuracy:.2%}")
     print(f"  Avg Latency: {result.avg_latency_ms:.2f}ms")
 
-    print(f"\n📈 Metric Details:")
+    print("\n📈 Metric Details:")
     for metric_name, stats in result.aggregated_metrics.items():
         print(f"  {metric_name}:")
         for stat, value in stats.items():
@@ -120,7 +108,7 @@ async def demo_benchmark_suite():
     # Run evaluation (limiting to first 10 for demo)
     result = await evaluator.evaluate(test_cases[:10])
 
-    print(f"\n📊 Results:")
+    print("\n📊 Results:")
     print(f"  Accuracy: {result.accuracy:.2%}")
     print(f"  Success Rate: {result.success_rate:.2%}")
 
@@ -150,10 +138,12 @@ async def demo_regression_detection():
     detector = RegressionDetector(baseline=baseline)
 
     # Simulate degraded agent (wrong answers)
-    degraded_agent = SimpleQAAgent(knowledge_base={
-        "capital of france": "London",  # Wrong!
-        "2+2": "5",  # Wrong!
-    })
+    degraded_agent = SimpleQAAgent(
+        knowledge_base={
+            "capital of france": "London",  # Wrong!
+            "2+2": "5",  # Wrong!
+        }
+    )
 
     # Evaluate degraded version
     print("\n📊 Running evaluation on degraded agent...")
@@ -194,13 +184,9 @@ async def demo_session_recording():
     print("\n📝 Recording session...")
     # Use wrapped agent (automatically recorded)
     await wrapped.process(
-        Message(role="user", content="What is the capital of France?"),
-        session_id="demo-session"
+        Message(role="user", content="What is the capital of France?"), session_id="demo-session"
     )
-    await wrapped.process(
-        Message(role="user", content="What is 2+2?"),
-        session_id="demo-session"
-    )
+    await wrapped.process(Message(role="user", content="What is 2+2?"), session_id="demo-session")
 
     # Finalize recording
     recording = await recorder.finalize_session("demo-session")
@@ -209,10 +195,12 @@ async def demo_session_recording():
 
     # Replay with different agent (A/B testing)
     print("\n🔄 Replaying session with different agent...")
-    agent_v2 = SimpleQAAgent(knowledge_base={
-        "capital of france": "Paris is the capital",  # Different response
-        "2+2": "Four (4)",  # Different format
-    })
+    agent_v2 = SimpleQAAgent(
+        knowledge_base={
+            "capital of france": "Paris is the capital",  # Different response
+            "2+2": "Four (4)",  # Different format
+        }
+    )
 
     replay = SessionReplay()
     results_v1 = await replay.replay(recording, agent_v1, session_id="replay-v1")
@@ -223,8 +211,10 @@ async def demo_session_recording():
 
     # Compare
     comparison = await replay.compare(results_v1, results_v2)
-    print(f"\n📊 Comparison:")
-    print(f"  Latency diff: {comparison['latency_diff_ms']:.2f}ms ({comparison['latency_diff_percent']:.1f}%)")
+    print("\n📊 Comparison:")
+    print(
+        f"  Latency diff: {comparison['latency_diff_ms']:.2f}ms ({comparison['latency_diff_percent']:.1f}%)"
+    )
     print(f"  Output differences: {len(comparison['output_differences'])}")
 
     return recorder

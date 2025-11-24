@@ -3,10 +3,7 @@
 Provides commonly-needed tools like search, calculator, document reader, etc.
 """
 
-import re
-from typing import List, Optional
 from tools.tool_registry import Tool, ToolResult
-
 
 # ============================================================================
 # Search Tool
@@ -22,8 +19,8 @@ async def _search_function(query: str, num_results: int = 5) -> ToolResult:
     # Mock search results
     mock_results = [
         {
-            "title": f"Result about '{query}' - Article {i+1}",
-            "url": f"https://example.com/article-{i+1}",
+            "title": f"Result about '{query}' - Article {i + 1}",
+            "url": f"https://example.com/article-{i + 1}",
             "snippet": f"This article discusses {query} in detail. It covers various aspects including definitions, applications, and recent developments in the field.",
         }
         for i in range(min(num_results, 5))
@@ -110,7 +107,7 @@ async def _calculator_function(expression: str) -> ToolResult:
         return ToolResult(
             success=False,
             output=None,
-            error=f"Failed to evaluate expression: {str(e)}",
+            error=f"Failed to evaluate expression: {e!s}",
         )
 
 
@@ -201,14 +198,14 @@ class NoteTakerState:
     """Shared state for note taker."""
 
     def __init__(self):
-        self.notes: List[str] = []
+        self.notes: list[str] = []
 
 
 _note_taker_state = NoteTakerState()
 
 
 async def _note_taker_function(
-    action: str, content: Optional[str] = None, note_id: Optional[int] = None
+    action: str, content: str | None = None, note_id: int | None = None
 ) -> ToolResult:
     """
     Take and manage notes during research.
@@ -330,7 +327,7 @@ def NoteTakerTool() -> Tool:
 # ============================================================================
 
 
-def create_default_tools() -> List[Tool]:
+def create_default_tools() -> list[Tool]:
     """
     Create the default set of tools for research assistant.
 

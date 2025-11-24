@@ -60,6 +60,7 @@ Use **TCP/Unix Sockets** when:
 
 import asyncio
 import time
+
 from agenkit import Agent, Message
 from agenkit.adapters.python import GRPCServer, GRPCTransport, RemoteAgent
 
@@ -74,9 +75,7 @@ class EchoAgent(Agent):
     async def process(self, message: Message) -> Message:
         """Echo the message back."""
         return Message(
-            role="agent",
-            content=f"Echo: {message.content}",
-            metadata={"original": message.content}
+            role="agent", content=f"Echo: {message.content}", metadata={"original": message.content}
         )
 
 
@@ -89,10 +88,7 @@ class StreamingEchoAgent(Agent):
 
     async def process(self, message: Message) -> Message:
         """Return complete echoed message."""
-        return Message(
-            role="agent",
-            content=f"Echo: {message.content}"
-        )
+        return Message(role="agent", content=f"Echo: {message.content}")
 
     async def stream(self, message: Message):
         """Stream the echo word by word."""
@@ -100,9 +96,7 @@ class StreamingEchoAgent(Agent):
         for i, word in enumerate(words):
             await asyncio.sleep(0.1)  # Simulate processing delay
             yield Message(
-                role="agent",
-                content=word,
-                metadata={"word_index": i, "total_words": len(words)}
+                role="agent", content=word, metadata={"word_index": i, "total_words": len(words)}
             )
 
 
@@ -122,13 +116,11 @@ class MetadataAgent(Agent):
             "received_at": time.time(),
             "message_length": len(str(message.content)),
             "user_metadata": metadata,
-            "processed_by": self.name
+            "processed_by": self.name,
         }
 
         return Message(
-            role="agent",
-            content=f"Processed: {message.content}",
-            metadata=response_metadata
+            role="agent", content=f"Processed: {message.content}", metadata=response_metadata
         )
 
 
@@ -284,16 +276,13 @@ async def scenario_3_concurrent_clients():
 
             remote = RemoteAgent("echo", transport=transport)
 
-            message = Message(
-                role="user",
-                content=f"Message from client {client_id}"
-            )
+            message = Message(role="user", content=f"Message from client {client_id}")
 
             start = time.time()
             response = await remote.process(message)
             elapsed = time.time() - start
 
-            print(f"Client {client_id:2d}: {response.content} (took {elapsed*1000:.1f}ms)")
+            print(f"Client {client_id:2d}: {response.content} (took {elapsed * 1000:.1f}ms)")
 
             await transport.close()
 
@@ -304,7 +293,7 @@ async def scenario_3_concurrent_clients():
         total_time = time.time() - start_time
 
         print(f"\nAll {num_clients} clients completed in {total_time:.2f}s")
-        print(f"Average time per request: {(total_time/num_clients)*1000:.1f}ms")
+        print(f"Average time per request: {(total_time / num_clients) * 1000:.1f}ms")
 
         print("\nBenefits demonstrated:")
         print("  - Connection multiplexing over HTTP/2")
@@ -350,15 +339,15 @@ async def scenario_4_metadata_handling():
         test_cases = [
             {
                 "content": "Request with user ID",
-                "metadata": {"user_id": "user123", "session": "abc-def"}
+                "metadata": {"user_id": "user123", "session": "abc-def"},
             },
             {
                 "content": "Request with trace ID",
-                "metadata": {"trace_id": "trace-456", "priority": "high"}
+                "metadata": {"trace_id": "trace-456", "priority": "high"},
             },
             {
                 "content": "Request with custom headers",
-                "metadata": {"custom": "value", "version": "1.0"}
+                "metadata": {"custom": "value", "version": "1.0"},
             },
         ]
 
@@ -367,11 +356,7 @@ async def scenario_4_metadata_handling():
             print(f"User: {test['content']}")
             print(f"Input metadata: {test['metadata']}")
 
-            message = Message(
-                role="user",
-                content=test["content"],
-                metadata=test["metadata"]
-            )
+            message = Message(role="user", content=test["content"], metadata=test["metadata"])
 
             response = await remote.process(message)
             print(f"Agent: {response.content}")

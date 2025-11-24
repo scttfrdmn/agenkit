@@ -4,23 +4,23 @@ Integration tests for HTTP transport cross-language communication.
 Tests Python client → Go server and Go client → Python server
 across HTTP/1.1, HTTP/2, and HTTP/3 protocols.
 """
+
 import asyncio
-import os
 import subprocess
 import time
-from typing import Optional
 
 import pytest
 
 from agenkit.adapters.python.local_agent import LocalAgent
 from agenkit.adapters.python.remote_agent import RemoteAgent
 from agenkit.interfaces import Agent, Message
-from .helpers import find_free_port
 
+from .helpers import find_free_port
 
 # ============================================
 # Test Fixtures
 # ============================================
+
 
 class EchoAgent(Agent):
     """Simple echo agent for testing."""
@@ -38,7 +38,7 @@ class EchoAgent(Agent):
         return Message(
             role="agent",
             content=f"Echo: {message.content}",
-            metadata={"original": message.content, "language": "python"}
+            metadata={"original": message.content, "language": "python"},
         )
 
 
@@ -58,7 +58,7 @@ class ReverseAgent(Agent):
         return Message(
             role="agent",
             content=message.content[::-1],
-            metadata={"original": message.content, "language": "python"}
+            metadata={"original": message.content, "language": "python"},
         )
 
 
@@ -69,14 +69,15 @@ class ServerProcess:
         self.language = language
         self.port = port
         self.protocol = protocol
-        self.process: Optional[subprocess.Popen] = None
+        self.process: subprocess.Popen | None = None
 
     def start(self):
         """Start the server process."""
         if self.language == "python":
             # Start Python server
             cmd = [
-                "python3", "-c",
+                "python3",
+                "-c",
                 f"""
 import asyncio
 from agenkit.adapters.python.local_agent import LocalAgent
@@ -106,16 +107,12 @@ async def main():
     await asyncio.Event().wait()
 
 asyncio.run(main())
-"""
+""",
             ]
         else:  # go
             # Start Go server from agenkit-go directory where go.mod is located
             # Go server expects port as positional argument
-            cmd = [
-                "go", "run",
-                "tests/integration/test_server.go",
-                str(self.port)
-            ]
+            cmd = ["go", "run", "tests/integration/test_server.go", str(self.port)]
 
         # Set working directory for Go processes (Go files are in agenkit-go/)
         working_dir = "agenkit-go" if self.language == "go" else None
@@ -126,7 +123,7 @@ asyncio.run(main())
             stderr=subprocess.PIPE,
             text=True,
             bufsize=1,
-            cwd=working_dir
+            cwd=working_dir,
         )
 
         # Wait for server to be ready
@@ -174,6 +171,7 @@ async def go_server():
 # HTTP/1.1 Tests
 # ============================================
 
+
 @pytest.mark.asyncio
 async def test_python_client_to_go_server(go_server):
     """Test Python client connecting to Go server via HTTP/1.1."""
@@ -196,14 +194,19 @@ async def test_go_client_to_python_server(python_server):
     # We'll execute a Go test client (run from agenkit-go directory) with dynamic port
     result = subprocess.run(
         [
-            "go", "run", "tests/integration/test_client.go",
-            "-url", f"tcp://localhost:{python_server.port}",
-            "-message", "Hello from Go"
+            "go",
+            "run",
+            "tests/integration/test_client.go",
+            "-url",
+            f"tcp://localhost:{python_server.port}",
+            "-message",
+            "Hello from Go",
         ],
+        check=False,
         capture_output=True,
         text=True,
         timeout=10,
-        cwd="agenkit-go"
+        cwd="agenkit-go",
     )
 
     assert result.returncode == 0, f"Go client failed: {result.stderr}"
@@ -224,14 +227,19 @@ async def test_bidirectional_communication(python_server, go_server):
     # Go → Python (via subprocess, run from agenkit-go directory) with dynamic port
     result = subprocess.run(
         [
-            "go", "run", "tests/integration/test_client.go",
-            "-url", f"tcp://localhost:{python_server.port}",
-            "-message", "Go to Python"
+            "go",
+            "run",
+            "tests/integration/test_client.go",
+            "-url",
+            f"tcp://localhost:{python_server.port}",
+            "-message",
+            "Go to Python",
         ],
+        check=False,
         capture_output=True,
         text=True,
         timeout=10,
-        cwd="agenkit-go"
+        cwd="agenkit-go",
     )
 
     assert result.returncode == 0
@@ -261,8 +269,8 @@ async def test_message_serialization():
                 "float": 3.14,
                 "bool": True,
                 "nested": {"key": "value"},
-                "list": [1, 2, 3]
-            }
+                "list": [1, 2, 3],
+            },
         )
 
         # Send from Python client
@@ -282,7 +290,9 @@ async def test_message_serialization():
 @pytest.mark.asyncio
 async def test_error_handling_connection_refused():
     """Test error handling when server is unavailable."""
-    client = RemoteAgent(name="test-client", endpoint="http://localhost:9999")  # No server on this port
+    client = RemoteAgent(
+        name="test-client", endpoint="http://localhost:9999"
+    )  # No server on this port
 
     message = Message(role="user", content="Test")
 
@@ -333,6 +343,7 @@ async def test_concurrent_requests():
 # HTTP/2 Tests
 # ============================================
 
+
 @pytest.mark.asyncio
 async def test_http2_python_to_go():
     """Test Python client to Go server via HTTP/2."""
@@ -359,6 +370,7 @@ async def test_http2_python_to_go():
 # ============================================
 # Performance Tests
 # ============================================
+
 
 @pytest.mark.asyncio
 async def test_latency_baseline():

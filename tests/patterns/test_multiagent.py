@@ -3,13 +3,13 @@ Tests for Multi-Agent Collaboration patterns.
 """
 
 import pytest
+
 from agenkit import Agent, Message
 from agenkit.patterns import (
-    MultiAgentOrchestrator,
-    ConsensusAgent,
     AgentTask,
+    ConsensusAgent,
+    MultiAgentOrchestrator,
 )
-
 
 # ============================================================================
 # Mock Agents

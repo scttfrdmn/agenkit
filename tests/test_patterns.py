@@ -9,13 +9,12 @@ Tests verify:
 - Hook functionality
 """
 
-import pytest
 import asyncio
-from typing import Optional
+
+import pytest
 
 from agenkit.interfaces import Agent, Message
 from agenkit.patterns import ParallelPattern, RouterPattern, SequentialPattern
-
 
 # ============================================
 # Test Agents
@@ -33,10 +32,7 @@ class EchoAgent(Agent):
         return f"echo_{self._prefix}"
 
     async def process(self, message: Message) -> Message:
-        return Message(
-            role="agent",
-            content=f"{self._prefix}: {message.content}"
-        )
+        return Message(role="agent", content=f"{self._prefix}: {message.content}")
 
 
 class UpperAgent(Agent):
@@ -47,10 +43,7 @@ class UpperAgent(Agent):
         return "upper"
 
     async def process(self, message: Message) -> Message:
-        return Message(
-            role="agent",
-            content=str(message.content).upper()
-        )
+        return Message(role="agent", content=str(message.content).upper())
 
 
 class SlowAgent(Agent):
@@ -66,10 +59,7 @@ class SlowAgent(Agent):
 
     async def process(self, message: Message) -> Message:
         await asyncio.sleep(self._delay)
-        return Message(
-            role="agent",
-            content=f"slow: {message.content}"
-        )
+        return Message(role="agent", content=f"slow: {message.content}")
 
 
 class ErrorAgent(Agent):
@@ -150,11 +140,7 @@ async def test_sequential_hooks():
     def after(agent: Agent, message: Message) -> None:
         calls.append(("after", agent.name, message.content))
 
-    seq = SequentialPattern(
-        [agent1, agent2],
-        before_agent=before,
-        after_agent=after
-    )
+    seq = SequentialPattern([agent1, agent2], before_agent=before, after_agent=after)
 
     msg = Message(role="user", content="hello")
     await seq.process(msg)
@@ -170,6 +156,7 @@ async def test_sequential_hooks():
 @pytest.mark.asyncio
 async def test_sequential_capabilities():
     """Test combined capabilities."""
+
     class CapAgent1(Agent):
         @property
         def name(self) -> str:
@@ -254,10 +241,7 @@ async def test_parallel_custom_aggregator():
         combined = " | ".join(msg.content for msg in messages)
         return Message(role="agent", content=combined)
 
-    parallel = ParallelPattern(
-        [agent1, agent2, agent3],
-        aggregator=combine
-    )
+    parallel = ParallelPattern([agent1, agent2, agent3], aggregator=combine)
 
     msg = Message(role="user", content="x")
     result = await parallel.process(msg)
@@ -309,6 +293,7 @@ async def test_parallel_error_cancels_all():
     msg = Message(role="user", content="test")
 
     import time
+
     start = time.time()
 
     with pytest.raises(RuntimeError, match="Intentional error"):
@@ -352,10 +337,7 @@ async def test_router_basic():
             return "route1"
         return "route2"
 
-    pattern = RouterPattern(
-        router=router,
-        handlers={"route1": agent1, "route2": agent2}
-    )
+    pattern = RouterPattern(router=router, handlers={"route1": agent1, "route2": agent2})
 
     # Route to first
     msg1 = Message(role="user", content="use first")
@@ -376,10 +358,7 @@ async def test_router_unknown_key_raises():
     def router(message: Message) -> str:
         return "unknown_route"
 
-    pattern = RouterPattern(
-        router=router,
-        handlers={"route1": agent1}
-    )
+    pattern = RouterPattern(router=router, handlers={"route1": agent1})
 
     msg = Message(role="user", content="test")
     with pytest.raises(KeyError, match="unknown key"):
@@ -395,11 +374,7 @@ async def test_router_unknown_key_uses_default():
     def router(message: Message) -> str:
         return "unknown_route"
 
-    pattern = RouterPattern(
-        router=router,
-        handlers={"route1": agent1},
-        default=default_agent
-    )
+    pattern = RouterPattern(router=router, handlers={"route1": agent1}, default=default_agent)
 
     msg = Message(role="user", content="test")
     result = await pattern.process(msg)
@@ -408,6 +383,7 @@ async def test_router_unknown_key_uses_default():
 
 def test_router_empty_handlers_raises():
     """Test that empty handlers dict raises."""
+
     def router(message: Message) -> str:
         return "any"
 
@@ -424,10 +400,7 @@ async def test_router_unwrap():
     def router(message: Message) -> str:
         return "route1"
 
-    pattern = RouterPattern(
-        router=router,
-        handlers={"route1": agent1, "route2": agent2}
-    )
+    pattern = RouterPattern(router=router, handlers={"route1": agent1, "route2": agent2})
 
     handlers = pattern.unwrap()
     assert len(handlers) == 2
@@ -456,18 +429,14 @@ async def test_patterns_compose():
 
     # Parallel pattern
     parallel = ParallelPattern(
-        [agent1, agent2],
-        aggregator=lambda msgs: Message(role="agent", content="parallel_done")
+        [agent1, agent2], aggregator=lambda msgs: Message(role="agent", content="parallel_done")
     )
 
     # Router pattern
     def router(msg: Message) -> str:
         return "key1"
 
-    router_pattern = RouterPattern(
-        router=router,
-        handlers={"key1": agent3, "key2": agent4}
-    )
+    router_pattern = RouterPattern(router=router, handlers={"key1": agent3, "key2": agent4})
 
     # Sequential composing both
     seq = SequentialPattern([parallel, router_pattern])

@@ -7,18 +7,20 @@ Validates message serialization/deserialization invariants:
 - Metadata preservation: Metadata survives serialization
 - Size bounds: Serialized size is reasonable
 """
+
 import json
 from datetime import datetime, timezone
 
 import pytest
-from hypothesis import given, settings, assume, strategies as st
+from hypothesis import assume, given, settings
+from hypothesis import strategies as st
 
 from agenkit.interfaces import Message
 from tests.property.strategies import (
-    role_strategy,
     content_strategy,
-    metadata_strategy,
     message_strategy,
+    metadata_strategy,
+    role_strategy,
 )
 
 
@@ -50,7 +52,7 @@ def deserialize_message(json_str: str) -> Message:
         role=data["role"],
         content=data["content"],
         metadata=data.get("metadata"),
-        timestamp=timestamp
+        timestamp=timestamp,
     )
 
 
@@ -58,17 +60,14 @@ def deserialize_message(json_str: str) -> Message:
 # Property: Round-Trip Consistency
 # ============================================
 
+
 @pytest.mark.property
 @given(message=message_strategy())
 @settings(max_examples=200, deadline=None)
 def test_message_round_trip_consistency(message):
     """Property: deserialize(serialize(msg)) preserves all fields."""
     # Clear timestamp for comparison (we'll check it separately)
-    original_msg = Message(
-        role=message.role,
-        content=message.content,
-        metadata=message.metadata
-    )
+    original_msg = Message(role=message.role, content=message.content, metadata=message.metadata)
 
     # Serialize and deserialize
     serialized = serialize_message(original_msg)
@@ -88,6 +87,7 @@ def test_message_round_trip_consistency(message):
 # ============================================
 # Property: Type Preservation
 # ============================================
+
 
 @pytest.mark.property
 @given(
@@ -111,6 +111,7 @@ def test_message_type_preservation(role, content):
 # Property: Metadata Type Preservation
 # ============================================
 
+
 @pytest.mark.property
 @given(metadata=metadata_strategy)
 @settings(max_examples=200, deadline=None)
@@ -130,7 +131,7 @@ def test_metadata_type_preservation(metadata):
         assert key in deserialized.metadata, f"Key {key} should be in metadata"
 
         # Check type preservation
-        original_value = metadata[key]
+        original_value = value
         deserialized_value = deserialized.metadata[key]
 
         if original_value is None:
@@ -140,7 +141,9 @@ def test_metadata_type_preservation(metadata):
         elif isinstance(original_value, int):
             assert isinstance(deserialized_value, int), f"Int type for {key} should be preserved"
         elif isinstance(original_value, float):
-            assert isinstance(deserialized_value, float), f"Float type for {key} should be preserved"
+            assert isinstance(deserialized_value, float), (
+                f"Float type for {key} should be preserved"
+            )
         elif isinstance(original_value, str):
             assert isinstance(deserialized_value, str), f"String type for {key} should be preserved"
 
@@ -148,6 +151,7 @@ def test_metadata_type_preservation(metadata):
 # ============================================
 # Property: Serialized Size is Reasonable
 # ============================================
+
 
 @pytest.mark.property
 @given(message=message_strategy())
@@ -164,13 +168,15 @@ def test_serialized_size_is_reasonable(message):
 
     actual_size = len(serialized)
 
-    assert actual_size <= expected_max_size, \
+    assert actual_size <= expected_max_size, (
         f"Serialized size {actual_size} too large (expected <={expected_max_size})"
+    )
 
 
 # ============================================
 # Property: Empty Content Handling
 # ============================================
+
 
 @pytest.mark.property
 @given(role=role_strategy)
@@ -191,12 +197,13 @@ def test_empty_content_handling(role):
 # Property: Unicode Content Preservation
 # ============================================
 
+
 @pytest.mark.property
 @given(
     unicode_content=st.text(
         alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd", "Sm", "Sc", "So")),
         min_size=1,
-        max_size=100
+        max_size=100,
     )
 )
 @settings(max_examples=200, deadline=None)
@@ -208,13 +215,15 @@ def test_unicode_content_preservation(unicode_content):
     deserialized = deserialize_message(serialized)
 
     # Property: Unicode characters should be preserved exactly
-    assert deserialized.content == unicode_content, \
+    assert deserialized.content == unicode_content, (
         f"Unicode content not preserved: expected {unicode_content!r}, got {deserialized.content!r}"
+    )
 
 
 # ============================================
 # Property: Timestamp Preservation
 # ============================================
+
 
 @pytest.mark.property
 @given(
@@ -241,6 +250,7 @@ def test_timestamp_preservation(content):
 # Property: Large Metadata Handling
 # ============================================
 
+
 @pytest.mark.property
 @given(
     num_keys=st.integers(min_value=1, max_value=50),
@@ -257,24 +267,29 @@ def test_large_metadata_handling(num_keys):
     deserialized = deserialize_message(serialized)
 
     # Property: All metadata keys should be preserved
-    assert len(deserialized.metadata) == num_keys, \
+    assert len(deserialized.metadata) == num_keys, (
         f"Expected {num_keys} keys, got {len(deserialized.metadata)}"
+    )
 
     for i in range(num_keys):
         key = f"key_{i}"
         assert key in deserialized.metadata, f"Key {key} should be in metadata"
-        assert deserialized.metadata[key] == f"value_{i}", \
-            f"Value for {key} should be preserved"
+        assert deserialized.metadata[key] == f"value_{i}", f"Value for {key} should be preserved"
 
 
 # ============================================
 # Property: Nested Metadata (if supported)
 # ============================================
 
+
 @pytest.mark.property
 @given(
-    outer_key=st.text(min_size=1, max_size=20, alphabet=st.characters(whitelist_categories=("Lu", "Ll"))),
-    inner_key=st.text(min_size=1, max_size=20, alphabet=st.characters(whitelist_categories=("Lu", "Ll"))),
+    outer_key=st.text(
+        min_size=1, max_size=20, alphabet=st.characters(whitelist_categories=("Lu", "Ll"))
+    ),
+    inner_key=st.text(
+        min_size=1, max_size=20, alphabet=st.characters(whitelist_categories=("Lu", "Ll"))
+    ),
     value=st.integers(min_value=-1000, max_value=1000),
 )
 @settings(max_examples=100, deadline=None)
@@ -283,11 +298,7 @@ def test_nested_metadata_preservation(outer_key, inner_key, value):
     # Ensure keys are different
     assume(outer_key != inner_key)
 
-    metadata = {
-        outer_key: {
-            inner_key: value
-        }
-    }
+    metadata = {outer_key: {inner_key: value}}
 
     msg = Message(role="user", content="test", metadata=metadata)
 
@@ -305,17 +316,14 @@ def test_nested_metadata_preservation(outer_key, inner_key, value):
 # Property: Serialization is Deterministic
 # ============================================
 
+
 @pytest.mark.property
 @given(message=message_strategy())
 @settings(max_examples=100, deadline=None)
 def test_serialization_is_deterministic(message):
     """Property: Serializing the same message multiple times produces same result."""
     # Clear timestamp for determinism
-    msg = Message(
-        role=message.role,
-        content=message.content,
-        metadata=message.metadata
-    )
+    msg = Message(role=message.role, content=message.content, metadata=message.metadata)
 
     # Serialize multiple times
     serialized1 = serialize_message(msg)
@@ -331,17 +339,14 @@ def test_serialization_is_deterministic(message):
 # Property: Deserialization of Serialization is Idempotent
 # ============================================
 
+
 @pytest.mark.property
 @given(message=message_strategy())
 @settings(max_examples=100, deadline=None)
 def test_deserialization_idempotency(message):
     """Property: deserialize(serialize(msg)) multiple times produces same result."""
     # Clear timestamp
-    msg = Message(
-        role=message.role,
-        content=message.content,
-        metadata=message.metadata
-    )
+    msg = Message(role=message.role, content=message.content, metadata=message.metadata)
 
     serialized = serialize_message(msg)
 

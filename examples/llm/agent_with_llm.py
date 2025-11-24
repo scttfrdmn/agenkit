@@ -12,7 +12,7 @@ import asyncio
 import os
 from typing import Any
 
-from agenkit.adapters.llm import AnthropicLLM, LLM, OpenAILLM
+from agenkit.adapters.llm import LLM, AnthropicLLM, OpenAILLM
 from agenkit.interfaces import Message
 from agenkit.patterns import Task
 
@@ -29,14 +29,10 @@ class ChatAgent:
         """Send a message and get a response."""
         # Add system prompt on first message
         if not self.history:
-            self.history.append(
-                Message(role="system", content=self.system_prompt)
-            )
+            self.history.append(Message(role="system", content=self.system_prompt))
 
         # Add user message
-        self.history.append(
-            Message(role="user", content=user_message)
-        )
+        self.history.append(Message(role="user", content=user_message))
 
         # Get LLM response
         response = await self.llm.complete(self.history, max_tokens=200)
@@ -178,9 +174,7 @@ async def agent_with_task_pattern():
     llm = AnthropicLLM(api_key=api_key, model="claude-3-haiku-20240307")
     agent = SimpleLLMAgent(llm)
 
-    messages = [
-        Message(role="user", content="Explain the Task pattern in one sentence.")
-    ]
+    messages = [Message(role="user", content="Explain the Task pattern in one sentence.")]
 
     # Use Task pattern with timeout
     print("Executing with Task pattern (5s timeout)...")
@@ -218,7 +212,7 @@ class ProductionAgent:
                 if attempt == max_retries - 1:
                     # Last attempt, try fallback
                     if self.fallback_llm:
-                        print(f"Primary failed, using fallback...")
+                        print("Primary failed, using fallback...")
                         try:
                             response = await self.fallback_llm.complete(
                                 self.history,
@@ -231,7 +225,7 @@ class ProductionAgent:
                     raise
 
                 # Retry with exponential backoff
-                wait_time = 2 ** attempt
+                wait_time = 2**attempt
                 print(f"Attempt {attempt + 1} failed, retrying in {wait_time}s...")
                 await asyncio.sleep(wait_time)
 

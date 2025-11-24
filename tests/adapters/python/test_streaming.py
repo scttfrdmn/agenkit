@@ -227,8 +227,7 @@ class TestStreaming:
             try:
                 # Create multiple clients
                 remotes = [
-                    RemoteAgent("streaming", endpoint=f"unix://{socket_path}")
-                    for _ in range(3)
+                    RemoteAgent("streaming", endpoint=f"unix://{socket_path}") for _ in range(3)
                 ]
 
                 # Stream from all clients concurrently
@@ -240,7 +239,7 @@ class TestStreaming:
 
                 messages = [Message(role="user", content=f"client_{i}") for i in range(3)]
                 results = await asyncio.gather(
-                    *[collect_chunks(r, m) for r, m in zip(remotes, messages)]
+                    *[collect_chunks(r, m) for r, m in zip(remotes, messages, strict=False)]
                 )
 
                 # Each client should get all chunks
@@ -268,7 +267,7 @@ class TestStreaming:
 
                 # Should raise NotImplementedError from the agent
                 with pytest.raises(Exception):  # RemoteExecutionError wrapping NotImplementedError
-                    async for chunk in remote.stream(message):
+                    async for _chunk in remote.stream(message):
                         pass
 
             finally:

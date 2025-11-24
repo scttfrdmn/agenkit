@@ -1,7 +1,6 @@
 """Tests for caching middleware."""
 
 import asyncio
-import time
 
 import pytest
 
@@ -31,7 +30,7 @@ class TestAgent:
         return Message(
             role="agent",
             content=f"{self.response_prefix}: {message.content}",
-            metadata={"call_count": self.call_count}
+            metadata={"call_count": self.call_count},
         )
 
     async def stream(self, message: Message):
@@ -53,14 +52,11 @@ def test_default_config():
 
 def test_custom_config():
     """Test custom caching configuration."""
+
     def custom_key_gen(msg: Message) -> str:
         return f"custom-{msg.content}"
 
-    config = CachingConfig(
-        max_cache_size=100,
-        default_ttl=60.0,
-        key_generator=custom_key_gen
-    )
+    config = CachingConfig(max_cache_size=100, default_ttl=60.0, key_generator=custom_key_gen)
     assert config.max_cache_size == 100
     assert config.default_ttl == 60.0
     assert config.key_generator is custom_key_gen
@@ -134,18 +130,18 @@ async def test_ttl_expiration():
     msg = Message(role="user", content="test")
 
     # First call
-    response1 = await cached_agent.process(msg)
+    await cached_agent.process(msg)
     assert agent.call_count == 1
 
     # Second call before expiration - should hit cache
-    response2 = await cached_agent.process(msg)
+    await cached_agent.process(msg)
     assert agent.call_count == 1
 
     # Wait for expiration
     await asyncio.sleep(0.15)
 
     # Third call after expiration - should miss cache
-    response3 = await cached_agent.process(msg)
+    await cached_agent.process(msg)
     assert agent.call_count == 2
     assert cached_agent.metrics.cache_hits == 1
     assert cached_agent.metrics.cache_misses == 2

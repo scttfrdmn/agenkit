@@ -6,10 +6,9 @@ and simple applications that don't need persistence.
 """
 
 from datetime import datetime, timezone
-from typing import Optional
 
-from .base import Memory
 from ..interfaces import Message
+from .base import Memory
 
 
 class InMemoryMemory(Memory):
@@ -53,12 +52,7 @@ class InMemoryMemory(Memory):
         # Counter to ensure unique ordering even for same-timestamp messages
         self._counter = 0
 
-    async def store(
-        self,
-        session_id: str,
-        message: Message,
-        metadata: Optional[dict] = None
-    ) -> None:
+    async def store(self, session_id: str, message: Message, metadata: dict | None = None) -> None:
         """Store message in memory with optional metadata."""
         if session_id not in self._storage:
             self._storage[session_id] = []
@@ -76,11 +70,7 @@ class InMemoryMemory(Memory):
             session_storage.pop(0)
 
     async def retrieve(
-        self,
-        session_id: str,
-        query: Optional[str] = None,
-        limit: int = 10,
-        **kwargs
+        self, session_id: str, query: str | None = None, limit: int = 10, **kwargs
     ) -> list[Message]:
         """
         Retrieve messages from memory.
@@ -130,11 +120,7 @@ class InMemoryMemory(Memory):
 
         return filtered[:limit]
 
-    async def summarize(
-        self,
-        session_id: str,
-        **kwargs
-    ) -> Message:
+    async def summarize(self, session_id: str, **kwargs) -> Message:
         """
         Create summary of conversation history.
 
@@ -144,10 +130,7 @@ class InMemoryMemory(Memory):
         messages = await self.retrieve(session_id, limit=100)
 
         if not messages:
-            return Message(
-                role="system",
-                content="No messages in session."
-            )
+            return Message(role="system", content="No messages in session.")
 
         # Simple concatenation summary
         summary_parts = []
@@ -157,12 +140,11 @@ class InMemoryMemory(Memory):
                 preview += "..."
             summary_parts.append(f"{i}. [{msg.role}] {preview}")
 
-        summary_content = f"Session summary ({len(messages)} messages):\n" + "\n".join(summary_parts)
-
-        return Message(
-            role="system",
-            content=summary_content
+        summary_content = f"Session summary ({len(messages)} messages):\n" + "\n".join(
+            summary_parts
         )
+
+        return Message(role="system", content=summary_content)
 
     async def clear(self, session_id: str) -> None:
         """Clear memory for session."""
@@ -172,12 +154,7 @@ class InMemoryMemory(Memory):
     @property
     def capabilities(self) -> list[str]:
         """Return memory capabilities."""
-        return [
-            "basic_retrieval",
-            "time_filtering",
-            "importance_filtering",
-            "tag_filtering"
-        ]
+        return ["basic_retrieval", "time_filtering", "importance_filtering", "tag_filtering"]
 
     # Additional utility methods
 
@@ -196,5 +173,5 @@ class InMemoryMemory(Memory):
         return {
             "total_sessions": len(self._storage),
             "total_messages": sum(len(storage) for storage in self._storage.values()),
-            "max_size_per_session": self.max_size
+            "max_size_per_session": self.max_size,
         }

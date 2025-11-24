@@ -16,15 +16,12 @@ This example uses mock implementations for demonstration.
 """
 
 import asyncio
-from typing import List
 
 from agenkit import Agent, Message
 from agenkit.patterns import (
-    MultiAgentOrchestrator,
     ConsensusAgent,
-    AgentTask,
+    MultiAgentOrchestrator,
 )
-
 
 # ============================================================================
 # Mock Specialized Agents
@@ -165,9 +162,7 @@ async def basic_orchestration_example():
     print("\nTask: Analyze the AI market")
     print(f"Registered agents: {orchestrator.list_agents()}")
 
-    result = await orchestrator.process(
-        Message(role="user", content="Analyze the AI market")
-    )
+    result = await orchestrator.process(Message(role="user", content="Analyze the AI market"))
 
     print(f"\nCombined result:\n{result.content}")
 
@@ -193,9 +188,7 @@ async def consensus_example():
     print("\nTask: Review code changes")
     print(f"Number of agents: {len(consensus.agents)}")
 
-    result = await consensus.process(
-        Message(role="user", content="Review this code change")
-    )
+    result = await consensus.process(Message(role="user", content="Review this code change"))
 
     print(f"\n{result.content}")
 
@@ -248,9 +241,7 @@ async def agent_management_example():
 
     # Process a task
     print("\nProcessing task...")
-    result = await orchestrator.process(
-        Message(role="user", content="Analyze customer feedback")
-    )
+    result = await orchestrator.process(Message(role="user", content="Analyze customer feedback"))
     print(f"\nResult:\n{result.content}")
 
     # Remove an agent
@@ -261,9 +252,7 @@ async def agent_management_example():
 
     # Process again with fewer agents
     print("\nProcessing task again...")
-    result = await orchestrator.process(
-        Message(role="user", content="Analyze customer feedback")
-    )
+    result = await orchestrator.process(Message(role="user", content="Analyze customer feedback"))
     print(f"\nResult:\n{result.content}")
 
 
@@ -307,9 +296,7 @@ async def task_tracking_example():
     for agent_name, agent_tasks in tasks_by_agent.items():
         print(f"\n  {agent_name}: {len(agent_tasks)} tasks")
         for task in agent_tasks:
-            status_icon = {"completed": "✓", "failed": "✗", "pending": "○"}.get(
-                task.status, "?"
-            )
+            status_icon = {"completed": "✓", "failed": "✗", "pending": "○"}.get(task.status, "?")
             print(f"    {status_icon} {task.description}")
 
 

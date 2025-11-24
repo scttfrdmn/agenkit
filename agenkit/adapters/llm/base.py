@@ -54,9 +54,7 @@ class LLM(ABC):
     """
 
     @abstractmethod
-    async def complete(
-        self, messages: list[Message], **kwargs: Any
-    ) -> Message:
+    async def complete(self, messages: list[Message], **kwargs: Any) -> Message:
         """
         Generate a single completion from the LLM.
 
@@ -96,9 +94,7 @@ class LLM(ABC):
         pass
 
     @abstractmethod
-    async def stream(
-        self, messages: list[Message], **kwargs: Any
-    ) -> AsyncIterator[Message]:
+    async def stream(self, messages: list[Message], **kwargs: Any) -> AsyncIterator[Message]:
         """
         Stream completion chunks from the LLM.
 

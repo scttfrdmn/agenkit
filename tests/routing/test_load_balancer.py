@@ -1,15 +1,16 @@
 """Tests for load balancer router."""
 
-import pytest
 import asyncio
+
+import pytest
+
+from agenkit.interfaces import Message
 from agenkit.routing.load_balancer import (
+    AgentInstance,
+    LoadBalancerError,
     LoadBalancerRouter,
     LoadBalancingStrategy,
-    AgentInstance,
-    InstanceMetrics,
-    LoadBalancerError,
 )
-from agenkit.interfaces import Message
 
 
 # Mock agent for testing
@@ -51,9 +52,7 @@ class MockAgent:
             if random.random() < self.fail_rate:
                 raise Exception(f"Simulated failure from {self._name}")
 
-        return Message(
-            role="assistant", content=f"Response from {self._name}: {message.content}"
-        )
+        return Message(role="assistant", content=f"Response from {self._name}: {message.content}")
 
 
 @pytest.fixture
@@ -439,9 +438,7 @@ async def test_capabilities_aggregation(instances):
 
     # Mock the capabilities property
     for i, instance in enumerate(instances):
-        type(instance.agent).capabilities = property(
-            lambda self, i=i: [f"capability{i+1}"]
-        )
+        type(instance.agent).capabilities = property(lambda self, i=i: [f"capability{i + 1}"])
 
     balancer = LoadBalancerRouter(
         instances=instances,

@@ -3,18 +3,22 @@ Tests for Planning Agent pattern.
 """
 
 import pytest
+
 from agenkit import Message
-from agenkit.patterns import PlanningAgent, Plan, PlanStep, StepStatus, StepExecutor
+from agenkit.patterns import Plan, PlanningAgent, PlanStep, StepStatus
 
 
 # Mock LLM
 class MockPlanningLLM:
     def __init__(self, plan_text=None):
-        self.plan_text = plan_text or """Goal: Test goal
+        self.plan_text = (
+            plan_text
+            or """Goal: Test goal
 Steps:
 1. First step
 2. Second step
 3. Third step"""
+        )
         self.call_count = 0
         self.last_messages = None
 

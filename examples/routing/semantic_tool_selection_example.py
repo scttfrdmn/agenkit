@@ -12,10 +12,10 @@ This example shows:
 """
 
 import asyncio
+
 from agenkit.routing.semantic_selector import (
     SemanticToolSelector,
     ToolDescription,
-    OpenAIEmbeddingProvider,
 )
 
 
@@ -91,9 +91,7 @@ async def example_1_basic_selection():
     ]
 
     # Create selector
-    selector = SemanticToolSelector(
-        tools=tools, provider=SimpleMockProvider(), min_confidence=0.3
-    )
+    selector = SemanticToolSelector(tools=tools, provider=SimpleMockProvider(), min_confidence=0.3)
 
     print("\n📊 Initialized selector with 4 tools")
     print(f"Tools: {', '.join(t.name for t in tools)}")
@@ -118,7 +116,7 @@ async def example_1_basic_selection():
             if top_match.reasoning:
                 print(f"  ✓ Reasoning: {top_match.reasoning}")
         else:
-            print(f"  ✗ No suitable tool found")
+            print("  ✗ No suitable tool found")
 
 
 async def example_2_keyword_vs_semantic():
@@ -155,9 +153,7 @@ async def example_2_keyword_vs_semantic():
     if matches:
         print(f"  ✓ Selected: {matches[0].name}")
         print(f"  ✓ Confidence: {matches[0].confidence:.2%}")
-        print(
-            f"  ✓ Understood: 'arrange a discussion' → scheduling/calendar functionality"
-        )
+        print("  ✓ Understood: 'arrange a discussion' → scheduling/calendar functionality")
 
 
 async def example_3_batch_selection():
@@ -203,7 +199,7 @@ async def example_3_batch_selection():
 
     print(f"✓ Completed in {elapsed:.3f}s")
     print("\nResults:")
-    for query, matches in zip(queries, results):
+    for query, matches in zip(queries, results, strict=False):
         if matches:
             print(f"  '{query[:40]}...' → {matches[0].name}")
 

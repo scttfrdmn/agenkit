@@ -129,7 +129,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
             message = self._protobuf_request_to_message(request)
 
             # Check if agent supports streaming
-            if hasattr(self._agent, 'stream'):
+            if hasattr(self._agent, "stream"):
                 # Stream with agent
                 async for chunk in self._agent.stream(message):
                     # Convert chunk to protobuf
@@ -141,7 +141,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
                     version="1.0",
                     id=request.id,
                     timestamp=datetime.now(timezone.utc).isoformat(),
-                    type=agent_pb2.CHUNK_TYPE_END
+                    type=agent_pb2.CHUNK_TYPE_END,
                 )
             else:
                 # Fall back to unary processing
@@ -156,7 +156,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
                     version="1.0",
                     id=request.id,
                     timestamp=datetime.now(timezone.utc).isoformat(),
-                    type=agent_pb2.CHUNK_TYPE_END
+                    type=agent_pb2.CHUNK_TYPE_END,
                 )
 
         except Exception as e:
@@ -167,10 +167,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
                 id=request.id,
                 timestamp=datetime.now(timezone.utc).isoformat(),
                 type=agent_pb2.CHUNK_TYPE_ERROR,
-                error=agent_pb2.Error(
-                    code="AGENT_ERROR",
-                    message=str(e)
-                )
+                error=agent_pb2.Error(code="AGENT_ERROR", message=str(e)),
             )
 
     def _protobuf_request_to_message(self, request: agent_pb2.Request) -> Any:
@@ -191,15 +188,13 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
             return Message(
                 role=pb_msg.role,
                 content=self._deserialize_content(pb_msg.content),
-                metadata=dict(pb_msg.metadata)
+                metadata=dict(pb_msg.metadata),
             )
         else:
             # Return empty message if no messages in request
             return Message(role="user", content="")
 
-    def _message_to_protobuf_response(
-        self, request_id: str, message: Any
-    ) -> agent_pb2.Response:
+    def _message_to_protobuf_response(self, request_id: str, message: Any) -> agent_pb2.Response:
         """Convert agenkit Message to protobuf Response.
 
         Args:
@@ -212,11 +207,11 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
         pb_message = agent_pb2.Message(
             role=message.role,
             content=self._serialize_content(message.content),
-            timestamp=datetime.now(timezone.utc).isoformat()
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
         # Add metadata
-        if hasattr(message, 'metadata') and message.metadata:
+        if hasattr(message, "metadata") and message.metadata:
             for key, value in message.metadata.items():
                 pb_message.metadata[key] = str(value)
 
@@ -225,12 +220,10 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
             id=request_id,
             timestamp=datetime.now(timezone.utc).isoformat(),
             type=agent_pb2.RESPONSE_TYPE_MESSAGE,
-            message=pb_message
+            message=pb_message,
         )
 
-    def _message_to_protobuf_chunk(
-        self, request_id: str, message: Any
-    ) -> agent_pb2.StreamChunk:
+    def _message_to_protobuf_chunk(self, request_id: str, message: Any) -> agent_pb2.StreamChunk:
         """Convert agenkit Message to protobuf StreamChunk.
 
         Args:
@@ -243,11 +236,11 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
         pb_message = agent_pb2.Message(
             role=message.role,
             content=self._serialize_content(message.content),
-            timestamp=datetime.now(timezone.utc).isoformat()
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
         # Add metadata
-        if hasattr(message, 'metadata') and message.metadata:
+        if hasattr(message, "metadata") and message.metadata:
             for key, value in message.metadata.items():
                 pb_message.metadata[key] = str(value)
 
@@ -256,7 +249,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
             id=request_id,
             timestamp=datetime.now(timezone.utc).isoformat(),
             type=agent_pb2.CHUNK_TYPE_MESSAGE,
-            message=pb_message
+            message=pb_message,
         )
 
     def _create_error_response(
@@ -277,10 +270,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
             id=request_id,
             timestamp=datetime.now(timezone.utc).isoformat(),
             type=agent_pb2.RESPONSE_TYPE_ERROR,
-            error=agent_pb2.Error(
-                code=error_code,
-                message=error_message
-            )
+            error=agent_pb2.Error(code=error_code, message=error_message),
         )
 
     def _serialize_content(self, content: Any) -> str:

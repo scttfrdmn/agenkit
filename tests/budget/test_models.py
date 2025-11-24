@@ -3,6 +3,7 @@ Tests for ModelPricing.
 """
 
 import pytest
+
 from agenkit.budget.models import ModelPricing
 
 
@@ -122,10 +123,7 @@ def test_estimate_conversation_cost():
     pricing = ModelPricing()
 
     cost = pricing.estimate_conversation_cost(
-        "claude-sonnet-4",
-        num_turns=100,
-        avg_input_tokens=1000,
-        avg_output_tokens=500
+        "claude-sonnet-4", num_turns=100, avg_input_tokens=1000, avg_output_tokens=500
     )
 
     # 100 turns * 1000 input = 100K input tokens = $0.30
@@ -141,7 +139,7 @@ def test_compare_models():
     comparison = pricing.compare_models(
         ["claude-haiku-3", "claude-sonnet-4", "claude-opus-4"],
         input_tokens=100000,
-        output_tokens=50000
+        output_tokens=50000,
     )
 
     # Verify all models included
@@ -175,18 +173,16 @@ def test_realistic_30_hour_scenario():
     total_output = 1000 * 5000  # 5M tokens
 
     # Claude Opus 4 (expensive)
-    opus_cost = (
-        pricing.calculate("claude-opus-4", total_input, "input") +
-        pricing.calculate("claude-opus-4", total_output, "output")
+    opus_cost = pricing.calculate("claude-opus-4", total_input, "input") + pricing.calculate(
+        "claude-opus-4", total_output, "output"
     )
 
     # Should be $150 + $375 = $525
     assert abs(opus_cost - 525.0) < 1.0
 
     # Claude Sonnet 4 (medium)
-    sonnet_cost = (
-        pricing.calculate("claude-sonnet-4", total_input, "input") +
-        pricing.calculate("claude-sonnet-4", total_input, "output")
+    sonnet_cost = pricing.calculate("claude-sonnet-4", total_input, "input") + pricing.calculate(
+        "claude-sonnet-4", total_input, "output"
     )
 
     # Should be much cheaper

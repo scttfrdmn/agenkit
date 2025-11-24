@@ -14,17 +14,15 @@ This example uses mock implementations for demonstration.
 """
 
 import asyncio
-from typing import List, Dict, Any
+from typing import Any
 
 from agenkit import Message
 from agenkit.patterns import (
-    PlanningAgent,
     Plan,
+    PlanningAgent,
     PlanStep,
     StepStatus,
-    StepExecutor,
 )
-
 
 # ============================================================================
 # Mock LLM for Planning
@@ -34,7 +32,7 @@ from agenkit.patterns import (
 class MockPlanningLLM:
     """Mock LLM that generates plans."""
 
-    async def chat(self, messages: List[Message]) -> Message:
+    async def chat(self, messages: list[Message]) -> Message:
         """Generate mock plans based on the task."""
         user_message = [msg for msg in messages if msg.role == "user"][-1].content
 
@@ -98,11 +96,11 @@ Steps:
 class MockStepExecutor:
     """Mock executor with custom logic."""
 
-    def __init__(self, fail_steps: List[int] = None):
+    def __init__(self, fail_steps: list[int] | None = None):
         self.fail_steps = fail_steps or []
         self.execution_log = []
 
-    async def execute(self, step: PlanStep, context: Dict[str, Any]) -> str:
+    async def execute(self, step: PlanStep, context: dict[str, Any]) -> str:
         """Execute a step with optional failures."""
         self.execution_log.append(f"Executing step {step.step_number}: {step.description}")
 
@@ -256,9 +254,7 @@ async def progress_tracking_example():
     print("Tracking progress...\n")
 
     # Start execution in background
-    task = asyncio.create_task(
-        agent.process(Message(role="user", content="Organize team event"))
-    )
+    task = asyncio.create_task(agent.process(Message(role="user", content="Organize team event")))
 
     # Monitor progress
     last_progress = 0
@@ -269,7 +265,7 @@ async def progress_tracking_example():
             last_progress = progress
         await asyncio.sleep(0.05)
 
-    result = await task
+    await task
     print(f"\nCompleted! Final progress: {agent.get_progress():.0f}%")
 
 

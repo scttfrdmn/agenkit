@@ -172,8 +172,7 @@ class TestWebSocketIntegration:
             # Create multiple clients
             num_clients = 5
             remotes = [
-                RemoteAgent("echo", endpoint=f"ws://127.0.0.1:{port}")
-                for _ in range(num_clients)
+                RemoteAgent("echo", endpoint=f"ws://127.0.0.1:{port}") for _ in range(num_clients)
             ]
 
             # Send concurrent requests
@@ -399,9 +398,7 @@ class TestWebSocketIntegration:
                 # Variable delay based on message content
                 delay = float(message.metadata.get("delay", 0.1))
                 await asyncio.sleep(delay)
-                return Message(
-                    role="agent", content=f"Processed after {delay}s: {message.content}"
-                )
+                return Message(role="agent", content=f"Processed after {delay}s: {message.content}")
 
         agent = SlowAgent()
         port = find_free_port()
@@ -415,9 +412,7 @@ class TestWebSocketIntegration:
                 remote = RemoteAgent("slow", endpoint=f"ws://127.0.0.1:{port}")
                 try:
                     message = Message(
-                        role="user",
-                        content=f"Task {task_id}",
-                        metadata={"delay": delay}
+                        role="user", content=f"Task {task_id}", metadata={"delay": delay}
                     )
                     return await remote.process(message)
                 finally:
@@ -425,10 +420,7 @@ class TestWebSocketIntegration:
 
             # Send multiple requests with different delays concurrently
             # Using separate connections for true concurrent processing
-            tasks = [
-                send_request(i, delay)
-                for i, delay in enumerate([0.3, 0.1, 0.2, 0.05])
-            ]
+            tasks = [send_request(i, delay) for i, delay in enumerate([0.3, 0.1, 0.2, 0.05])]
 
             responses = await asyncio.gather(*tasks)
 

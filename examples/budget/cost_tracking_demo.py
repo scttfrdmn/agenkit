@@ -13,15 +13,11 @@ This example shows:
 """
 
 import asyncio
-from agenkit.budget import (
-    ModelPricing,
-    CostTracker,
-    BudgetLimiter,
-    BudgetExceededError
-)
 
+from agenkit.budget import BudgetExceededError, BudgetLimiter, CostTracker, ModelPricing
 
 # ===== Example 1: Basic Cost Tracking =====
+
 
 async def example_basic_tracking():
     """Example: Track costs for different models."""
@@ -42,7 +38,7 @@ async def example_basic_tracking():
             agent_name=agent_name,
             model=model,
             input_tokens=input_tokens,
-            output_tokens=output_tokens
+            output_tokens=output_tokens,
         )
 
         print(f"[{session_id}] {agent_name} using {model}:")
@@ -59,6 +55,7 @@ async def example_basic_tracking():
 
 # ===== Example 2: Budget Enforcement =====
 
+
 async def example_budget_enforcement():
     """Example: Enforce session budget and handle exceeding."""
     print("\n=== Example 2: Budget Enforcement ===\n")
@@ -66,11 +63,7 @@ async def example_budget_enforcement():
     tracker = CostTracker()
 
     # Create budget limiter with $1.00 session budget
-    limiter = BudgetLimiter(
-        tracker=tracker,
-        session_budget=1.00,
-        action="error"
-    )
+    BudgetLimiter(tracker=tracker, session_budget=1.00, action="error")
 
     print("Session budget: $1.00")
     print("Recording costs until budget exceeded...\n")
@@ -83,11 +76,11 @@ async def example_budget_enforcement():
                 agent_name="assistant",
                 model="claude-opus-4",  # Expensive model
                 input_tokens=10000,
-                output_tokens=5000
+                output_tokens=5000,
             )
 
             current = await tracker.get_session_cost("budget-test")
-            print(f"Request {i+1}: Session cost = ${current:.2f}")
+            print(f"Request {i + 1}: Session cost = ${current:.2f}")
 
             # Check budget manually (in real usage, middleware does this)
             if current >= 1.00:
@@ -100,6 +93,7 @@ async def example_budget_enforcement():
 
 
 # ===== Example 3: Cost Analysis and Reporting =====
+
 
 async def example_cost_analysis():
     """Example: Analyze costs and generate reports."""
@@ -142,6 +136,7 @@ async def example_cost_analysis():
 
 # ===== Example 4: Model Cost Comparison =====
 
+
 async def example_model_comparison():
     """Example: Compare costs across different models."""
     print("\n=== Example 4: Model Cost Comparison ===\n")
@@ -170,6 +165,7 @@ async def example_model_comparison():
 
 
 # ===== Example 5: 30-Hour Autonomous Agent Scenario =====
+
 
 async def example_30_hour_scenario():
     """Example: Simulate 30-hour autonomous agent cost."""
@@ -212,6 +208,7 @@ async def example_30_hour_scenario():
 
 # ===== Example 6: Budget Warnings =====
 
+
 async def example_budget_warnings():
     """Example: Get warnings before exceeding budget."""
     print("\n=== Example 6: Budget Warnings ===\n")
@@ -222,27 +219,21 @@ async def example_budget_warnings():
     print(f"Session budget: ${session_budget:.2f}")
     print("Recording costs and checking remaining budget...\n")
 
-    limiter = BudgetLimiter(
+    BudgetLimiter(
         tracker=tracker,
         session_budget=session_budget,
-        action="warning"  # Warn instead of error
+        action="warning",  # Warn instead of error
     )
 
     # Simulate requests
     for i in range(5):
-        await tracker.record_cost(
-            "session-budget",
-            "assistant",
-            "claude-sonnet-4",
-            10000,
-            5000
-        )
+        await tracker.record_cost("session-budget", "assistant", "claude-sonnet-4", 10000, 5000)
 
         current = await tracker.get_session_cost("session-budget")
         remaining = session_budget - current
         usage_pct = (current / session_budget) * 100
 
-        print(f"Request {i+1}:")
+        print(f"Request {i + 1}:")
         print(f"  Current: ${current:.2f} ({usage_pct:.0f}% of budget)")
         print(f"  Remaining: ${remaining:.2f}")
 
@@ -253,6 +244,7 @@ async def example_budget_warnings():
 
 # ===== Main =====
 
+
 async def main():
     """Run all examples."""
     await example_basic_tracking()
@@ -262,9 +254,9 @@ async def main():
     await example_30_hour_scenario()
     await example_budget_warnings()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Cost tracking demo complete!")
-    print("="*60)
+    print("=" * 60)
 
 
 if __name__ == "__main__":

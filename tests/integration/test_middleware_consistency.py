@@ -9,18 +9,18 @@ Prerequisites:
 - All middleware implementations must be complete in both languages
 - Tests can run without external dependencies
 """
+
 import asyncio
 import time
-from typing import Optional
 
 import pytest
 
 from agenkit.interfaces import Agent, Message
 
-
 # ============================================
 # Test Agents
 # ============================================
+
 
 class CountingAgent(Agent):
     """Agent that counts how many times it's called."""
@@ -42,7 +42,7 @@ class CountingAgent(Agent):
         return Message(
             role="agent",
             content=f"Call #{self._call_count}: {message.content}",
-            metadata={"call_count": self._call_count}
+            metadata={"call_count": self._call_count},
         )
 
     def get_call_count(self) -> int:
@@ -73,7 +73,7 @@ class FailingAgent(Agent):
         return Message(
             role="agent",
             content=f"Success after {self._fail_count} failures",
-            metadata={"attempt_count": self._attempt_count}
+            metadata={"attempt_count": self._attempt_count},
         )
 
     def get_attempt_count(self) -> int:
@@ -100,13 +100,14 @@ class SlowAgent(Agent):
         return Message(
             role="agent",
             content=f"Completed after {self._delay}s delay",
-            metadata={"delay": self._delay}
+            metadata={"delay": self._delay},
         )
 
 
 # ============================================
 # Retry Middleware Consistency Tests
 # ============================================
+
 
 @pytest.mark.asyncio
 @pytest.mark.integration
@@ -118,14 +119,12 @@ async def test_retry_count_consistency():
     # Manually implement retry logic to test expected behavior
     max_retries = 3
     attempt = 0
-    last_error = None
 
     for attempt in range(max_retries + 1):
         try:
             response = await agent.process(Message(role="user", content="test"))
             break
-        except RuntimeError as e:
-            last_error = e
+        except RuntimeError:
             if attempt < max_retries:
                 await asyncio.sleep(0.01)  # Small delay between retries
             continue
@@ -144,7 +143,7 @@ async def test_retry_backoff_timing():
     # Simulate exponential backoff: 0.1s, 0.2s, 0.4s
     base_delay = 0.1
     for i in range(3):
-        delay = base_delay * (2 ** i)
+        delay = base_delay * (2**i)
         delays.append(delay)
 
     # Expected delays: [0.1, 0.2, 0.4]
@@ -155,6 +154,7 @@ async def test_retry_backoff_timing():
 # ============================================
 # Circuit Breaker Consistency Tests
 # ============================================
+
 
 @pytest.mark.asyncio
 @pytest.mark.integration
@@ -208,6 +208,7 @@ async def test_circuit_breaker_state_transitions():
 # Rate Limiter Consistency Tests
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_rate_limiter_token_bucket():
@@ -238,7 +239,7 @@ async def test_rate_limiter_token_bucket():
 
     # Should be able to consume 10 tokens immediately (burst)
     for i in range(10):
-        assert bucket.consume(), f"Should allow token {i+1}/10"
+        assert bucket.consume(), f"Should allow token {i + 1}/10"
 
     # 11th should fail (no tokens left)
     assert not bucket.consume(), "Should reject when bucket is empty"
@@ -252,6 +253,7 @@ async def test_rate_limiter_token_bucket():
 # Timeout Middleware Consistency Tests
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_timeout_enforcement():
@@ -261,8 +263,7 @@ async def test_timeout_enforcement():
     # Test with 1s timeout (should succeed)
     try:
         response = await asyncio.wait_for(
-            agent.process(Message(role="user", content="test")),
-            timeout=1.0
+            agent.process(Message(role="user", content="test")), timeout=1.0
         )
         assert response.metadata["delay"] == 0.5
     except asyncio.TimeoutError:
@@ -270,15 +271,13 @@ async def test_timeout_enforcement():
 
     # Test with 0.1s timeout (should fail)
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(
-            agent.process(Message(role="user", content="test")),
-            timeout=0.1
-        )
+        await asyncio.wait_for(agent.process(Message(role="user", content="test")), timeout=0.1)
 
 
 # ============================================
 # Batching Middleware Consistency Tests
 # ============================================
+
 
 @pytest.mark.asyncio
 @pytest.mark.integration
@@ -332,6 +331,7 @@ async def test_batch_size_limit():
 # ============================================
 # Caching Middleware Consistency Tests
 # ============================================
+
 
 @pytest.mark.asyncio
 @pytest.mark.integration
@@ -426,6 +426,7 @@ async def test_ttl_expiration_consistency():
 # Metadata Preservation Tests
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_middleware_metadata_preservation():
@@ -435,14 +436,10 @@ async def test_middleware_metadata_preservation():
     message = Message(
         role="user",
         content="test",
-        metadata={
-            "trace_id": "abc-123",
-            "user_id": 42,
-            "nested": {"key": "value"}
-        }
+        metadata={"trace_id": "abc-123", "user_id": 42, "nested": {"key": "value"}},
     )
 
-    response = await agent.process(message)
+    await agent.process(message)
 
     # Middleware should preserve original message metadata
     # (though the response may have different metadata)

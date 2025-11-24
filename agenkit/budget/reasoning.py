@@ -6,9 +6,8 @@ extended reasoning modes (e.g., o3, Claude 4 extended thinking).
 """
 
 import logging
-from enum import Enum
-from typing import Optional
 from dataclasses import dataclass
+from enum import Enum
 
 from ..interfaces import Message
 
@@ -17,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class ThinkingMode(Enum):
     """Thinking mode for model inference."""
+
     INSTANT = "instant"
     EXTENDED = "extended"
 
@@ -32,6 +32,7 @@ class ThinkingBudget:
         estimated_cost: Estimated cost for this thinking budget
         reasoning_time_multiplier: Expected time multiplier (extended = ~2-5x slower)
     """
+
     mode: ThinkingMode
     max_thinking_tokens: int
     estimated_cost: float
@@ -74,7 +75,7 @@ class ThinkingBudgetAllocator:
         light_thinking_tokens: int = 3000,
         full_thinking_tokens: int = 15000,
         thinking_cost_multiplier: float = 1.0,
-        min_budget_for_extended: float = 0.10
+        min_budget_for_extended: float = 0.10,
     ):
         """
         Initialize thinking budget allocator.
@@ -97,8 +98,8 @@ class ThinkingBudgetAllocator:
         self,
         messages: list[Message],
         complexity: str,
-        budget_remaining: Optional[float] = None,
-        model: Optional[str] = None
+        budget_remaining: float | None = None,
+        model: str | None = None,
     ) -> ThinkingBudget:
         """
         Allocate thinking budget based on complexity and constraints.
@@ -137,50 +138,40 @@ class ThinkingBudgetAllocator:
         else:  # complex
             return self._full_extended_budget(model)
 
-    def _instant_budget(self, model: Optional[str] = None) -> ThinkingBudget:
+    def _instant_budget(self, model: str | None = None) -> ThinkingBudget:
         """Create instant thinking budget."""
         return ThinkingBudget(
             mode=ThinkingMode.INSTANT,
             max_thinking_tokens=self.instant_thinking_tokens,
             estimated_cost=0.0,
-            reasoning_time_multiplier=1.0
+            reasoning_time_multiplier=1.0,
         )
 
-    def _light_extended_budget(self, model: Optional[str] = None) -> ThinkingBudget:
+    def _light_extended_budget(self, model: str | None = None) -> ThinkingBudget:
         """Create light extended thinking budget."""
         # Estimate cost for thinking tokens
-        estimated_cost = self._estimate_thinking_cost(
-            self.light_thinking_tokens,
-            model
-        )
+        estimated_cost = self._estimate_thinking_cost(self.light_thinking_tokens, model)
 
         return ThinkingBudget(
             mode=ThinkingMode.EXTENDED,
             max_thinking_tokens=self.light_thinking_tokens,
             estimated_cost=estimated_cost,
-            reasoning_time_multiplier=2.0  # ~2x slower
+            reasoning_time_multiplier=2.0,  # ~2x slower
         )
 
-    def _full_extended_budget(self, model: Optional[str] = None) -> ThinkingBudget:
+    def _full_extended_budget(self, model: str | None = None) -> ThinkingBudget:
         """Create full extended thinking budget."""
         # Estimate cost for thinking tokens
-        estimated_cost = self._estimate_thinking_cost(
-            self.full_thinking_tokens,
-            model
-        )
+        estimated_cost = self._estimate_thinking_cost(self.full_thinking_tokens, model)
 
         return ThinkingBudget(
             mode=ThinkingMode.EXTENDED,
             max_thinking_tokens=self.full_thinking_tokens,
             estimated_cost=estimated_cost,
-            reasoning_time_multiplier=4.0  # ~4x slower
+            reasoning_time_multiplier=4.0,  # ~4x slower
         )
 
-    def _estimate_thinking_cost(
-        self,
-        thinking_tokens: int,
-        model: Optional[str] = None
-    ) -> float:
+    def _estimate_thinking_cost(self, thinking_tokens: int, model: str | None = None) -> float:
         """
         Estimate cost for thinking tokens.
 
@@ -206,10 +197,7 @@ class ThinkingBudgetAllocator:
         return base_cost * self.thinking_cost_multiplier
 
     async def should_use_extended_thinking(
-        self,
-        messages: list[Message],
-        complexity: str,
-        budget_remaining: Optional[float] = None
+        self, messages: list[Message], complexity: str, budget_remaining: float | None = None
     ) -> bool:
         """
         Determine if extended thinking should be used.
@@ -245,30 +233,50 @@ class ThinkingModeDetector:
 
     REASONING_KEYWORDS = [
         # Multi-step reasoning
-        "step by step", "think through", "work through", "let's think",
-        "reason about", "analyze", "break down",
-
+        "step by step",
+        "think through",
+        "work through",
+        "let's think",
+        "reason about",
+        "analyze",
+        "break down",
         # Comparison and evaluation
-        "compare", "contrast", "evaluate", "pros and cons",
-        "trade-offs", "advantages", "disadvantages",
-
+        "compare",
+        "contrast",
+        "evaluate",
+        "pros and cons",
+        "trade-offs",
+        "advantages",
+        "disadvantages",
         # Deep analysis
-        "explain why", "in detail", "comprehensive", "thorough",
-        "deep dive", "implications", "consequences",
-
+        "explain why",
+        "in detail",
+        "comprehensive",
+        "thorough",
+        "deep dive",
+        "implications",
+        "consequences",
         # Problem solving
-        "solve", "figure out", "calculate", "compute",
-        "optimize", "find the best", "determine",
-
+        "solve",
+        "figure out",
+        "calculate",
+        "compute",
+        "optimize",
+        "find the best",
+        "determine",
         # Logical reasoning
-        "if-then", "therefore", "because", "given that",
-        "assuming", "hypothesis", "prove", "demonstrate"
+        "if-then",
+        "therefore",
+        "because",
+        "given that",
+        "assuming",
+        "hypothesis",
+        "prove",
+        "demonstrate",
     ]
 
     def __init__(
-        self,
-        reasoning_keyword_threshold: int = 2,
-        min_query_length_for_extended: int = 100
+        self, reasoning_keyword_threshold: int = 2, min_query_length_for_extended: int = 100
     ):
         """
         Initialize thinking mode detector.
@@ -280,10 +288,7 @@ class ThinkingModeDetector:
         self.reasoning_keyword_threshold = reasoning_keyword_threshold
         self.min_query_length_for_extended = min_query_length_for_extended
 
-    async def needs_extended_thinking(
-        self,
-        messages: list[Message]
-    ) -> bool:
+    async def needs_extended_thinking(self, messages: list[Message]) -> bool:
         """
         Detect if query needs extended thinking.
 
@@ -305,10 +310,7 @@ class ThinkingModeDetector:
         latest = messages[-1].content.lower()
 
         # Count reasoning keywords
-        keyword_count = sum(
-            1 for keyword in self.REASONING_KEYWORDS
-            if keyword in latest
-        )
+        keyword_count = sum(1 for keyword in self.REASONING_KEYWORDS if keyword in latest)
 
         # Check if query suggests reasoning need
         has_reasoning_keywords = keyword_count >= self.reasoning_keyword_threshold
@@ -318,8 +320,7 @@ class ThinkingModeDetector:
 
         # Check for mathematical or coding problems (often benefit from extended thinking)
         has_math_or_code = any(
-            indicator in latest
-            for indicator in ["```", "math", "equation", "formula", "algorithm"]
+            indicator in latest for indicator in ["```", "math", "equation", "formula", "algorithm"]
         )
 
         # Extended thinking beneficial if any condition met

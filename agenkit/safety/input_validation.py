@@ -9,8 +9,8 @@ Provides protection against:
 """
 
 import re
-from typing import Optional, List, Set, Dict, Any
 from dataclasses import dataclass, field
+from typing import Any
 
 from agenkit import Agent, Message
 
@@ -18,7 +18,7 @@ from agenkit import Agent, Message
 class ValidationError(Exception):
     """Raised when input validation fails."""
 
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(message)
         self.details = details or {}
 
@@ -33,7 +33,7 @@ class PromptInjectionDetector:
     """
 
     # Patterns indicating prompt injection attempts
-    dangerous_patterns: List[str] = field(
+    dangerous_patterns: list[str] = field(
         default_factory=lambda: [
             r"ignore\s+.*?(previous|all|above|prior).*?instructions?",
             r"disregard\s+.*?(previous|all|above|prior)",
@@ -57,7 +57,7 @@ class PromptInjectionDetector:
     )
 
     # Suspicious keywords (weighted scoring)
-    suspicious_keywords: Dict[str, int] = field(
+    suspicious_keywords: dict[str, int] = field(
         default_factory=lambda: {
             "ignore": 3,
             "disregard": 3,
@@ -78,7 +78,7 @@ class PromptInjectionDetector:
     # Score threshold for blocking (0-100)
     threshold: int = 8
 
-    def detect(self, text: str) -> tuple[bool, int, List[str]]:
+    def detect(self, text: str) -> tuple[bool, int, list[str]]:
         """
         Detect prompt injection attempts.
 
@@ -141,7 +141,7 @@ class ContentFilter:
     """
 
     # Banned words/phrases
-    banned_words: Set[str] = field(default_factory=set)
+    banned_words: set[str] = field(default_factory=set)
 
     # Maximum content size (characters)
     max_size: int = 10000
@@ -150,9 +150,9 @@ class ContentFilter:
     min_size: int = 1
 
     # Allowed content types (if specified)
-    allowed_content_types: Optional[Set[str]] = None
+    allowed_content_types: set[str] | None = None
 
-    def validate(self, content: Any) -> tuple[bool, Optional[str]]:
+    def validate(self, content: Any) -> tuple[bool, str | None]:
         """
         Validate content against policies.
 
@@ -163,10 +163,7 @@ class ContentFilter:
             Tuple of (is_valid, error_message)
         """
         # Convert to string for validation
-        if not isinstance(content, str):
-            content_str = str(content)
-        else:
-            content_str = content
+        content_str = str(content) if not isinstance(content, str) else content
 
         # Size checks
         if len(content_str) > self.max_size:
@@ -221,8 +218,8 @@ class InputValidationMiddleware(Agent):
     def __init__(
         self,
         agent: Agent,
-        detector: Optional[PromptInjectionDetector] = None,
-        content_filter: Optional[ContentFilter] = None,
+        detector: PromptInjectionDetector | None = None,
+        content_filter: ContentFilter | None = None,
         strict: bool = True,
     ):
         """
@@ -258,8 +255,7 @@ class InputValidationMiddleware(Agent):
         is_injection, score, matched = self.detector.detect(content_str)
         if is_injection:
             error_msg = (
-                f"Potential prompt injection detected (score: {score}, "
-                f"patterns: {len(matched)})"
+                f"Potential prompt injection detected (score: {score}, patterns: {len(matched)})"
             )
             if self.strict:
                 raise ValidationError(
@@ -288,8 +284,8 @@ class InputValidationMiddleware(Agent):
 
 
 def input_validation(
-    detector: Optional[PromptInjectionDetector] = None,
-    content_filter: Optional[ContentFilter] = None,
+    detector: PromptInjectionDetector | None = None,
+    content_filter: ContentFilter | None = None,
     strict: bool = True,
 ):
     """
@@ -309,6 +305,7 @@ def input_validation(
             retry(),
         ])
     """
+
     def middleware(agent: Agent) -> Agent:
         return InputValidationMiddleware(agent, detector, content_filter, strict)
 

@@ -3,7 +3,6 @@
 import asyncio
 
 import pytest
-import websockets
 from websockets.asyncio.server import serve
 
 from agenkit import Agent, Message
@@ -81,14 +80,12 @@ class TestWebSocketTransport:
 
         try:
             # Create separate clients for concurrent requests
-            remotes = [
-                RemoteAgent("echo", endpoint="ws://127.0.0.1:9003") for _ in range(5)
-            ]
+            remotes = [RemoteAgent("echo", endpoint="ws://127.0.0.1:9003") for _ in range(5)]
 
             # Send concurrent requests
             messages = [Message(role="user", content=f"Message {i}") for i in range(5)]
             responses = await asyncio.gather(
-                *[remote.process(msg) for remote, msg in zip(remotes, messages)]
+                *[remote.process(msg) for remote, msg in zip(remotes, messages, strict=False)]
             )
 
             # Verify all responses
@@ -186,6 +183,7 @@ class TestWebSocketTransport:
 
     async def test_websocket_receive_exactly(self):
         """Test receive_exactly functionality."""
+
         # Create a simple WebSocket echo server
         async def echo_handler(websocket):
             async for message in websocket:
@@ -221,9 +219,10 @@ class TestWebSocketTransport:
 
     async def test_websocket_connection_closed_error(self):
         """Test ConnectionClosedError when server closes connection."""
+
         # Create a WebSocket server that closes immediately after first message
         async def close_handler(websocket):
-            async for message in websocket:
+            async for _message in websocket:
                 await websocket.close()
                 break
 
@@ -283,6 +282,7 @@ class TestWebSocketTransport:
 
     async def test_websocket_is_connected_property(self):
         """Test is_connected property behavior."""
+
         # Create a simple WebSocket echo server
         async def echo_handler(websocket):
             async for message in websocket:
@@ -311,6 +311,7 @@ class TestWebSocketTransport:
 
     async def test_websocket_send_after_close(self):
         """Test that send after close attempts reconnection."""
+
         # Create a simple WebSocket echo server
         async def echo_handler(websocket):
             async for message in websocket:

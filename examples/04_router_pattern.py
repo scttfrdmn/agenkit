@@ -5,6 +5,7 @@ This example shows how to route messages to different agents based on content.
 """
 
 import asyncio
+
 from agenkit import Agent, Message, RouterPattern
 
 
@@ -16,10 +17,7 @@ class WeatherAgent(Agent):
         return "weather"
 
     async def process(self, message: Message) -> Message:
-        return Message(
-            role="agent",
-            content="🌤️ The weather is sunny and 72°F"
-        )
+        return Message(role="agent", content="🌤️ The weather is sunny and 72°F")
 
 
 class NewsAgent(Agent):
@@ -30,10 +28,7 @@ class NewsAgent(Agent):
         return "news"
 
     async def process(self, message: Message) -> Message:
-        return Message(
-            role="agent",
-            content="📰 Breaking: Python 4.0 released!"
-        )
+        return Message(role="agent", content="📰 Breaking: Python 4.0 released!")
 
 
 class CalculatorAgent(Agent):
@@ -47,15 +42,9 @@ class CalculatorAgent(Agent):
         # Simple calculator (would be more sophisticated in practice)
         try:
             result = eval(str(message.content))  # Don't use eval in production!
-            return Message(
-                role="agent",
-                content=f"🔢 Result: {result}"
-            )
+            return Message(role="agent", content=f"🔢 Result: {result}")
         except Exception:
-            return Message(
-                role="agent",
-                content="❌ Invalid calculation"
-            )
+            return Message(role="agent", content="❌ Invalid calculation")
 
 
 class GeneralAgent(Agent):
@@ -66,10 +55,7 @@ class GeneralAgent(Agent):
         return "general"
 
     async def process(self, message: Message) -> Message:
-        return Message(
-            role="agent",
-            content=f"💭 You said: {message.content}"
-        )
+        return Message(role="agent", content=f"💭 You said: {message.content}")
 
 
 def route_by_intent(message: Message) -> str:
@@ -101,8 +87,8 @@ async def main():
             "weather": WeatherAgent(),
             "news": NewsAgent(),
             "calculator": CalculatorAgent(),
-            "general": GeneralAgent()
-        }
+            "general": GeneralAgent(),
+        },
     )
 
     # Test different queries
@@ -110,7 +96,7 @@ async def main():
         "What's the weather like?",
         "Show me the latest news",
         "Calculate 15 * 3",
-        "Hello, how are you?"
+        "Hello, how are you?",
     ]
 
     for query in queries:

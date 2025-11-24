@@ -42,7 +42,7 @@ class CrossLanguageTestAgent(Agent):
                 "original_metadata": message.metadata,
                 "server_language": "python",
                 "server_name": self.name,
-            }
+            },
         )
 
 

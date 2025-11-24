@@ -11,7 +11,8 @@ This example shows:
 """
 
 import asyncio
-from agenkit.auth import BearerTokenAuth, SimpleTokenProvider, AuthenticationError
+
+from agenkit.auth import AuthenticationError, BearerTokenAuth, SimpleTokenProvider
 from agenkit.interfaces import Message
 
 
@@ -33,8 +34,7 @@ class EchoAgent:
         user_id = user_info.get("user_id", "unknown")
 
         return Message(
-            role="assistant",
-            content=f"[Authenticated as {user_id}] Echo: {message.content}"
+            role="assistant", content=f"[Authenticated as {user_id}] Echo: {message.content}"
         )
 
 
@@ -45,18 +45,16 @@ async def example_1_basic_auth():
     print("=" * 60)
 
     # Create token provider with valid tokens
-    provider = SimpleTokenProvider({
-        "admin-secret-token": {
-            "user_id": "admin",
-            "roles": ["admin", "user"],
-            "permissions": {"read", "write", "delete"}
-        },
-        "user-secret-token": {
-            "user_id": "user1",
-            "roles": ["user"],
-            "permissions": {"read"}
+    provider = SimpleTokenProvider(
+        {
+            "admin-secret-token": {
+                "user_id": "admin",
+                "roles": ["admin", "user"],
+                "permissions": {"read", "write", "delete"},
+            },
+            "user-secret-token": {"user_id": "user1", "roles": ["user"], "permissions": {"read"}},
         }
-    })
+    )
 
     # Wrap agent with authentication
     base_agent = EchoAgent()
@@ -67,7 +65,7 @@ async def example_1_basic_auth():
     message = Message(
         role="user",
         content="Hello, secure agent!",
-        metadata={"authorization": "Bearer admin-secret-token"}
+        metadata={"authorization": "Bearer admin-secret-token"},
     )
     response = await auth_agent.process(message)
     print(f"Response: {response.content}")
@@ -78,7 +76,7 @@ async def example_1_basic_auth():
         invalid_message = Message(
             role="user",
             content="Trying with bad token",
-            metadata={"authorization": "Bearer invalid-token"}
+            metadata={"authorization": "Bearer invalid-token"},
         )
         await auth_agent.process(invalid_message)
     except AuthenticationError as e:
@@ -87,11 +85,7 @@ async def example_1_basic_auth():
     print("\n❌ Failure: No token")
     # Request without token
     try:
-        no_token_message = Message(
-            role="user",
-            content="No token provided",
-            metadata={}
-        )
+        no_token_message = Message(role="user", content="No token provided", metadata={})
         await auth_agent.process(no_token_message)
     except AuthenticationError as e:
         print(f"Authentication failed: {e}")
@@ -103,31 +97,27 @@ async def example_2_role_based_access():
     print("Example 2: Role-Based Access Control (RBAC)")
     print("=" * 60)
 
-    provider = SimpleTokenProvider({
-        "admin-token": {
-            "user_id": "admin",
-            "roles": ["admin"],
-        },
-        "user-token": {
-            "user_id": "user1",
-            "roles": ["user"],
+    provider = SimpleTokenProvider(
+        {
+            "admin-token": {
+                "user_id": "admin",
+                "roles": ["admin"],
+            },
+            "user-token": {
+                "user_id": "user1",
+                "roles": ["user"],
+            },
         }
-    })
+    )
 
     base_agent = EchoAgent()
 
     # Create admin-only agent
-    admin_agent = BearerTokenAuth(
-        agent=base_agent,
-        provider=provider,
-        required_role="admin"
-    )
+    admin_agent = BearerTokenAuth(agent=base_agent, provider=provider, required_role="admin")
 
     print("\n✅ Admin access with admin token")
     admin_message = Message(
-        role="user",
-        content="Admin command",
-        metadata={"authorization": "Bearer admin-token"}
+        role="user", content="Admin command", metadata={"authorization": "Bearer admin-token"}
     )
     response = await admin_agent.process(admin_message)
     print(f"Response: {response.content}")
@@ -137,7 +127,7 @@ async def example_2_role_based_access():
         user_message = Message(
             role="user",
             content="User trying admin command",
-            metadata={"authorization": "Bearer user-token"}
+            metadata={"authorization": "Bearer user-token"},
         )
         await admin_agent.process(user_message)
     except Exception as e:

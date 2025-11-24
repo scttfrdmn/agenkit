@@ -8,11 +8,10 @@ Supports pluggable embedding providers and vector stores.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Callable
 from datetime import datetime, timezone
 
-from .base import Memory
 from ..interfaces import Message
+from .base import Memory
 
 
 class EmbeddingProvider(ABC):
@@ -40,18 +39,14 @@ class VectorStore(ABC):
         embedding: list[float],
         message: Message,
         metadata: dict,
-        timestamp: float
+        timestamp: float,
     ) -> None:
         """Add message with embedding to store."""
         pass
 
     @abstractmethod
     async def search(
-        self,
-        session_id: str,
-        query_embedding: list[float],
-        limit: int,
-        **kwargs
+        self, session_id: str, query_embedding: list[float], limit: int, **kwargs
     ) -> list[tuple[Message, dict, float]]:
         """
         Search for similar messages.
@@ -62,12 +57,7 @@ class VectorStore(ABC):
         pass
 
     @abstractmethod
-    async def get_recent(
-        self,
-        session_id: str,
-        limit: int,
-        **kwargs
-    ) -> list[tuple[Message, dict]]:
+    async def get_recent(self, session_id: str, limit: int, **kwargs) -> list[tuple[Message, dict]]:
         """
         Get recent messages without search.
 
@@ -99,7 +89,7 @@ class InMemoryVectorStore(VectorStore):
 
     def _cosine_similarity(self, a: list[float], b: list[float]) -> float:
         """Calculate cosine similarity between two vectors."""
-        dot_product = sum(x * y for x, y in zip(a, b))
+        dot_product = sum(x * y for x, y in zip(a, b, strict=False))
         magnitude_a = sum(x * x for x in a) ** 0.5
         magnitude_b = sum(x * x for x in b) ** 0.5
 
@@ -115,22 +105,16 @@ class InMemoryVectorStore(VectorStore):
         embedding: list[float],
         message: Message,
         metadata: dict,
-        timestamp: float
+        timestamp: float,
     ) -> None:
         """Add message with embedding to store."""
         if session_id not in self._storage:
             self._storage[session_id] = []
 
-        self._storage[session_id].append(
-            (message_id, embedding, message, metadata, timestamp)
-        )
+        self._storage[session_id].append((message_id, embedding, message, metadata, timestamp))
 
     async def search(
-        self,
-        session_id: str,
-        query_embedding: list[float],
-        limit: int,
-        **kwargs
+        self, session_id: str, query_embedding: list[float], limit: int, **kwargs
     ) -> list[tuple[Message, dict, float]]:
         """Search for similar messages using cosine similarity."""
         if session_id not in self._storage:
@@ -138,7 +122,7 @@ class InMemoryVectorStore(VectorStore):
 
         # Calculate similarity for all messages
         results = []
-        for msg_id, embedding, message, metadata, timestamp in self._storage[session_id]:
+        for _msg_id, embedding, message, metadata, timestamp in self._storage[session_id]:
             score = self._cosine_similarity(query_embedding, embedding)
             results.append((message, metadata, score, timestamp))
 
@@ -181,12 +165,7 @@ class InMemoryVectorStore(VectorStore):
 
         return filtered[:limit]
 
-    async def get_recent(
-        self,
-        session_id: str,
-        limit: int,
-        **kwargs
-    ) -> list[tuple[Message, dict]]:
+    async def get_recent(self, session_id: str, limit: int, **kwargs) -> list[tuple[Message, dict]]:
         """Get recent messages without search."""
         if session_id not in self._storage:
             return []
@@ -195,12 +174,12 @@ class InMemoryVectorStore(VectorStore):
         messages = sorted(
             self._storage[session_id],
             key=lambda x: x[4],  # timestamp
-            reverse=True
+            reverse=True,
         )
 
         # Apply filters
         filtered = []
-        for msg_id, embedding, message, metadata, timestamp in messages:
+        for _msg_id, _embedding, message, metadata, timestamp in messages:
             # Time range filter
             if "time_range" in kwargs:
                 start_time, end_time = kwargs["time_range"]
@@ -282,9 +261,7 @@ class VectorMemory(Memory):
     """
 
     def __init__(
-        self,
-        embedding_provider: EmbeddingProvider,
-        vector_store: Optional[VectorStore] = None
+        self, embedding_provider: EmbeddingProvider, vector_store: VectorStore | None = None
     ):
         """
         Initialize vector memory.
@@ -302,12 +279,7 @@ class VectorMemory(Memory):
         self._id_counter += 1
         return f"msg-{self._id_counter}"
 
-    async def store(
-        self,
-        session_id: str,
-        message: Message,
-        metadata: Optional[dict] = None
-    ) -> None:
+    async def store(self, session_id: str, message: Message, metadata: dict | None = None) -> None:
         """Store message with embedding in vector store."""
         # Generate embedding
         embedding = await self.embeddings.embed(message.content)
@@ -322,15 +294,11 @@ class VectorMemory(Memory):
             embedding=embedding,
             message=message,
             metadata=metadata or {},
-            timestamp=timestamp
+            timestamp=timestamp,
         )
 
     async def retrieve(
-        self,
-        session_id: str,
-        query: Optional[str] = None,
-        limit: int = 10,
-        **kwargs
+        self, session_id: str, query: str | None = None, limit: int = 10, **kwargs
     ) -> list[Message]:
         """
         Retrieve messages with semantic search.
@@ -348,10 +316,7 @@ class VectorMemory(Memory):
             # Semantic search
             query_embedding = await self.embeddings.embed(query)
             results = await self.vector_store.search(
-                session_id=session_id,
-                query_embedding=query_embedding,
-                limit=limit,
-                **kwargs
+                session_id=session_id, query_embedding=query_embedding, limit=limit, **kwargs
             )
             # Return just messages (drop metadata and scores)
             return [msg for msg, _, _ in results]
@@ -361,11 +326,7 @@ class VectorMemory(Memory):
             return [msg for msg, _ in results]
 
     async def retrieve_with_scores(
-        self,
-        session_id: str,
-        query: str,
-        limit: int = 10,
-        **kwargs
+        self, session_id: str, query: str, limit: int = 10, **kwargs
     ) -> list[tuple[Message, float]]:
         """
         Retrieve messages with similarity scores.
@@ -375,18 +336,11 @@ class VectorMemory(Memory):
         """
         query_embedding = await self.embeddings.embed(query)
         results = await self.vector_store.search(
-            session_id=session_id,
-            query_embedding=query_embedding,
-            limit=limit,
-            **kwargs
+            session_id=session_id, query_embedding=query_embedding, limit=limit, **kwargs
         )
         return [(msg, score) for msg, _, score in results]
 
-    async def summarize(
-        self,
-        session_id: str,
-        **kwargs
-    ) -> Message:
+    async def summarize(self, session_id: str, **kwargs) -> Message:
         """
         Create summary of conversation history.
 
@@ -396,10 +350,7 @@ class VectorMemory(Memory):
         messages = await self.retrieve(session_id, limit=100)
 
         if not messages:
-            return Message(
-                role="system",
-                content="No messages in session."
-            )
+            return Message(role="system", content="No messages in session.")
 
         # Simple concatenation summary
         summary_parts = []
@@ -409,12 +360,11 @@ class VectorMemory(Memory):
                 preview += "..."
             summary_parts.append(f"{i}. [{msg.role}] {preview}")
 
-        summary_content = f"Session summary ({len(messages)} messages):\n" + "\n".join(summary_parts)
-
-        return Message(
-            role="system",
-            content=summary_content
+        summary_content = f"Session summary ({len(messages)} messages):\n" + "\n".join(
+            summary_parts
         )
+
+        return Message(role="system", content=summary_content)
 
     async def clear(self, session_id: str) -> None:
         """Clear memory for session."""
@@ -429,5 +379,5 @@ class VectorMemory(Memory):
             "similarity_retrieval",
             "time_filtering",
             "importance_filtering",
-            "tag_filtering"
+            "tag_filtering",
         ]

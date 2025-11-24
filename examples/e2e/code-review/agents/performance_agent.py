@@ -2,14 +2,14 @@
 
 import re
 from datetime import datetime
-from typing import List
+
 from agenkit import Agent, Message
 from agents.review_types import (
-    ReviewResult,
     CodeIssue,
     CodeSubmission,
-    IssueSeverity,
     IssueCategory,
+    IssueSeverity,
+    ReviewResult,
 )
 
 
@@ -23,7 +23,11 @@ class PerformanceAgent(Agent):
     async def process(self, message: Message) -> Message:
         submission = message.metadata.get("code_submission")
         if not isinstance(submission, CodeSubmission):
-            return Message(role="assistant", content="Invalid code submission", metadata={"error": "Expected CodeSubmission"})
+            return Message(
+                role="assistant",
+                content="Invalid code submission",
+                metadata={"error": "Expected CodeSubmission"},
+            )
 
         start_time = datetime.now()
         result = self._review_performance(submission)
@@ -32,14 +36,16 @@ class PerformanceAgent(Agent):
         return Message(role="assistant", content=result.summary, metadata={"review_result": result})
 
     def _review_performance(self, submission: CodeSubmission) -> ReviewResult:
-        issues: List[CodeIssue] = []
+        issues: list[CodeIssue] = []
         lines = submission.get_lines()
 
         # Check for nested loops
         for i, line in enumerate(lines, 1):
             if re.search(r"for\s+\w+\s+in", line):
                 # Check if we're inside another loop (simplified)
-                if i > 1 and any(re.search(r"for\s+\w+\s+in", lines[j]) for j in range(max(0, i-10), i-1)):
+                if i > 1 and any(
+                    re.search(r"for\s+\w+\s+in", lines[j]) for j in range(max(0, i - 10), i - 1)
+                ):
                     issues.append(
                         CodeIssue(
                             category=IssueCategory.PERFORMANCE,
@@ -54,7 +60,9 @@ class PerformanceAgent(Agent):
 
         # Check for repeated list operations
         for i, line in enumerate(lines, 1):
-            if re.search(r"\.append\(.*\)\s*$", line) and "for" in "".join(lines[max(0,i-3):i]):
+            if re.search(r"\.append\(.*\)\s*$", line) and "for" in "".join(
+                lines[max(0, i - 3) : i]
+            ):
                 issues.append(
                     CodeIssue(
                         category=IssueCategory.PERFORMANCE,
@@ -68,7 +76,7 @@ class PerformanceAgent(Agent):
 
         # Check for string concatenation in loops
         for i, line in enumerate(lines, 1):
-            if re.search(r"\+=\s*['\"]", line) and "for" in "".join(lines[max(0,i-3):i]):
+            if re.search(r"\+=\s*['\"]", line) and "for" in "".join(lines[max(0, i - 3) : i]):
                 issues.append(
                     CodeIssue(
                         category=IssueCategory.PERFORMANCE,
@@ -99,5 +107,12 @@ class PerformanceAgent(Agent):
             summary=summary,
             overall_score=score,
             passed=high_count == 0 and critical_count == 0,
-            metadata={"issues_by_severity": {"critical": critical_count, "high": high_count, "medium": medium_count, "low": low_count}},
+            metadata={
+                "issues_by_severity": {
+                    "critical": critical_count,
+                    "high": high_count,
+                    "medium": medium_count,
+                    "low": low_count,
+                }
+            },
         )

@@ -2,9 +2,9 @@
 QA Agent - Answers questions using the knowledge base (RAG pattern).
 """
 
-from typing import Optional
-from agenkit import Agent, Message
 from knowledge_base import VectorStore
+
+from agenkit import Agent, Message
 
 
 class QAAgent(Agent):
@@ -42,9 +42,7 @@ class QAAgent(Agent):
         query = message.content
 
         # Search knowledge base
-        results = self.knowledge_base.search(
-            query=query, top_k=self.top_k, threshold=0.1
-        )
+        results = self.knowledge_base.search(query=query, top_k=self.top_k, threshold=0.1)
 
         if not results:
             return Message(
@@ -80,9 +78,7 @@ class QAAgent(Agent):
             },
         )
 
-    def _formulate_answer(
-        self, query: str, context_parts: list, confidence: float
-    ) -> str:
+    def _formulate_answer(self, query: str, context_parts: list, confidence: float) -> str:
         """
         Formulate answer from retrieved context.
 

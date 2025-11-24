@@ -10,9 +10,10 @@ import pytest
 
 from agenkit.adapters.python.errors import (
     ConnectionClosedError,
-    ConnectionError as ConnError,
-    InvalidMessageError,
     MalformedPayloadError,
+)
+from agenkit.adapters.python.errors import (
+    ConnectionError as ConnError,
 )
 from agenkit.adapters.python.grpc_transport import GRPCTransport
 from proto import agent_pb2
@@ -135,10 +136,10 @@ class TestGRPCTransportUnaryRPC:
                         "role": "user",
                         "content": "Hello",
                         "metadata": {},
-                        "timestamp": datetime.now(timezone.utc).isoformat()
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
                     }
-                ]
-            }
+                ],
+            },
         }
 
         # Create mock response
@@ -150,8 +151,8 @@ class TestGRPCTransportUnaryRPC:
             message=agent_pb2.Message(
                 role="assistant",
                 content="Hello back!",
-                timestamp=datetime.now(timezone.utc).isoformat()
-            )
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            ),
         )
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel") as mock_channel:
@@ -160,7 +161,9 @@ class TestGRPCTransportUnaryRPC:
             mock_stub.Process = AsyncMock(return_value=mock_response)
             mock_channel.return_value = mock_ch
 
-            with patch("agenkit.adapters.python.grpc_transport.agent_pb2_grpc.AgentServiceStub") as mock_stub_class:
+            with patch(
+                "agenkit.adapters.python.grpc_transport.agent_pb2_grpc.AgentServiceStub"
+            ) as mock_stub_class:
                 mock_stub_class.return_value = mock_stub
 
                 await transport.connect()
@@ -188,7 +191,7 @@ class TestGRPCTransportUnaryRPC:
             "type": "request",
             "id": "test-123",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "payload": {"method": "process", "messages": []}
+            "payload": {"method": "process", "messages": []},
         }
 
         request_bytes = json.dumps(request_envelope).encode("utf-8")
@@ -225,7 +228,7 @@ class TestGRPCTransportUnaryRPC:
             "type": "request",
             "id": "test-123",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "payload": {"method": "process", "messages": []}
+            "payload": {"method": "process", "messages": []},
         }
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel") as mock_channel:
@@ -236,12 +239,14 @@ class TestGRPCTransportUnaryRPC:
                     code=grpc.StatusCode.UNAVAILABLE,
                     initial_metadata=None,
                     trailing_metadata=None,
-                    details="Service unavailable"
+                    details="Service unavailable",
                 )
             )
             mock_channel.return_value = mock_ch
 
-            with patch("agenkit.adapters.python.grpc_transport.agent_pb2_grpc.AgentServiceStub") as mock_stub_class:
+            with patch(
+                "agenkit.adapters.python.grpc_transport.agent_pb2_grpc.AgentServiceStub"
+            ) as mock_stub_class:
                 mock_stub_class.return_value = mock_stub
 
                 await transport.connect()
@@ -276,10 +281,10 @@ class TestGRPCTransportStreamingRPC:
                         "role": "user",
                         "content": "Stream me",
                         "metadata": {},
-                        "timestamp": datetime.now(timezone.utc).isoformat()
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
                     }
-                ]
-            }
+                ],
+            },
         }
 
         # Create mock stream chunks
@@ -292,8 +297,8 @@ class TestGRPCTransportStreamingRPC:
                 message=agent_pb2.Message(
                     role="assistant",
                     content="Chunk 1",
-                    timestamp=datetime.now(timezone.utc).isoformat()
-                )
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                ),
             ),
             agent_pb2.StreamChunk(
                 version="1.0",
@@ -303,15 +308,15 @@ class TestGRPCTransportStreamingRPC:
                 message=agent_pb2.Message(
                     role="assistant",
                     content="Chunk 2",
-                    timestamp=datetime.now(timezone.utc).isoformat()
-                )
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                ),
             ),
             agent_pb2.StreamChunk(
                 version="1.0",
                 id="test-123",
                 timestamp=datetime.now(timezone.utc).isoformat(),
-                type=agent_pb2.CHUNK_TYPE_END
-            )
+                type=agent_pb2.CHUNK_TYPE_END,
+            ),
         ]
 
         async def mock_stream(*args, **kwargs):
@@ -324,7 +329,9 @@ class TestGRPCTransportStreamingRPC:
             mock_stub.ProcessStream = mock_stream
             mock_channel.return_value = mock_ch
 
-            with patch("agenkit.adapters.python.grpc_transport.agent_pb2_grpc.AgentServiceStub") as mock_stub_class:
+            with patch(
+                "agenkit.adapters.python.grpc_transport.agent_pb2_grpc.AgentServiceStub"
+            ) as mock_stub_class:
                 mock_stub_class.return_value = mock_stub
 
                 await transport.connect()
@@ -358,7 +365,7 @@ class TestGRPCTransportStreamingRPC:
             "type": "request",
             "id": "test-123",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "payload": {"method": "stream", "messages": []}
+            "payload": {"method": "stream", "messages": []},
         }
 
         async def mock_stream_error(*args, **kwargs):
@@ -369,7 +376,7 @@ class TestGRPCTransportStreamingRPC:
                 code=grpc.StatusCode.DEADLINE_EXCEEDED,
                 initial_metadata=None,
                 trailing_metadata=None,
-                details="Deadline exceeded"
+                details="Deadline exceeded",
             )
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel") as mock_channel:
@@ -378,7 +385,9 @@ class TestGRPCTransportStreamingRPC:
             mock_stub.ProcessStream = mock_stream_error
             mock_channel.return_value = mock_ch
 
-            with patch("agenkit.adapters.python.grpc_transport.agent_pb2_grpc.AgentServiceStub") as mock_stub_class:
+            with patch(
+                "agenkit.adapters.python.grpc_transport.agent_pb2_grpc.AgentServiceStub"
+            ) as mock_stub_class:
                 mock_stub_class.return_value = mock_stub
 
                 await transport.connect()
@@ -411,9 +420,9 @@ class TestGRPCTransportProtocolConversion:
                 "tool_call": {
                     "name": "calculator",
                     "arguments": {"op": "add", "x": 1, "y": 2},
-                    "metadata": {"priority": "high"}
-                }
-            }
+                    "metadata": {"priority": "high"},
+                },
+            },
         }
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel"):
@@ -436,11 +445,7 @@ class TestGRPCTransportProtocolConversion:
             id="test-123",
             timestamp=datetime.now(timezone.utc).isoformat(),
             type=agent_pb2.RESPONSE_TYPE_TOOL_RESULT,
-            tool_result=agent_pb2.ToolResult(
-                success=True,
-                data='{"result": 3}',
-                error=""
-            )
+            tool_result=agent_pb2.ToolResult(success=True, data='{"result": 3}', error=""),
         )
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel"):
@@ -463,10 +468,8 @@ class TestGRPCTransportProtocolConversion:
             timestamp=datetime.now(timezone.utc).isoformat(),
             type=agent_pb2.RESPONSE_TYPE_ERROR,
             error=agent_pb2.Error(
-                code="AGENT_NOT_FOUND",
-                message="Agent not found",
-                details={"agent_name": "missing"}
-            )
+                code="AGENT_NOT_FOUND", message="Agent not found", details={"agent_name": "missing"}
+            ),
         )
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel"):
@@ -491,8 +494,8 @@ class TestGRPCTransportProtocolConversion:
             message=agent_pb2.Message(
                 role="assistant",
                 content='{"text": "Hello"}',
-                timestamp=datetime.now(timezone.utc).isoformat()
-            )
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            ),
         )
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel"):
@@ -513,7 +516,7 @@ class TestGRPCTransportProtocolConversion:
             version="1.0",
             id="test-123",
             timestamp=datetime.now(timezone.utc).isoformat(),
-            type=agent_pb2.CHUNK_TYPE_END
+            type=agent_pb2.CHUNK_TYPE_END,
         )
 
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel"):
@@ -558,12 +561,28 @@ class TestGRPCTransportErrorHandling:
         with patch("agenkit.adapters.python.grpc_transport.aio.insecure_channel"):
             await transport.connect()
 
-            assert transport._grpc_status_to_error_code(grpc.StatusCode.UNAVAILABLE) == "CONNECTION_FAILED"
-            assert transport._grpc_status_to_error_code(grpc.StatusCode.DEADLINE_EXCEEDED) == "CONNECTION_TIMEOUT"
-            assert transport._grpc_status_to_error_code(grpc.StatusCode.CANCELLED) == "CONNECTION_CLOSED"
-            assert transport._grpc_status_to_error_code(grpc.StatusCode.NOT_FOUND) == "AGENT_NOT_FOUND"
-            assert transport._grpc_status_to_error_code(grpc.StatusCode.INVALID_ARGUMENT) == "INVALID_MESSAGE"
-            assert transport._grpc_status_to_error_code(grpc.StatusCode.UNKNOWN) == "CONNECTION_FAILED"
+            assert (
+                transport._grpc_status_to_error_code(grpc.StatusCode.UNAVAILABLE)
+                == "CONNECTION_FAILED"
+            )
+            assert (
+                transport._grpc_status_to_error_code(grpc.StatusCode.DEADLINE_EXCEEDED)
+                == "CONNECTION_TIMEOUT"
+            )
+            assert (
+                transport._grpc_status_to_error_code(grpc.StatusCode.CANCELLED)
+                == "CONNECTION_CLOSED"
+            )
+            assert (
+                transport._grpc_status_to_error_code(grpc.StatusCode.NOT_FOUND) == "AGENT_NOT_FOUND"
+            )
+            assert (
+                transport._grpc_status_to_error_code(grpc.StatusCode.INVALID_ARGUMENT)
+                == "INVALID_MESSAGE"
+            )
+            assert (
+                transport._grpc_status_to_error_code(grpc.StatusCode.UNKNOWN) == "CONNECTION_FAILED"
+            )
 
     @pytest.mark.asyncio
     async def test_send_not_implemented(self):

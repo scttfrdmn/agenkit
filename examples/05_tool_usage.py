@@ -6,6 +6,7 @@ This example shows how to create and use tools with agents.
 
 import asyncio
 from typing import Any
+
 from agenkit import Agent, Message, Tool, ToolResult
 
 
@@ -26,22 +27,18 @@ class SearchTool(Tool):
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "Search query"},
-                "limit": {"type": "integer", "default": 5}
+                "limit": {"type": "integer", "default": 5},
             },
-            "required": ["query"]
+            "required": ["query"],
         }
 
     async def execute(self, query: str, limit: int = 5) -> ToolResult:
         """Execute search (simulated)."""
         # In reality, this would call a search API
-        results = [
-            f"Result {i+1} for '{query}'"
-            for i in range(limit)
-        ]
+        results = [f"Result {i + 1} for '{query}'" for i in range(limit)]
 
         return ToolResult(
-            success=True,
-            data={"query": query, "results": results, "count": len(results)}
+            success=True, data={"query": query, "results": results, "count": len(results)}
         )
 
 
@@ -63,27 +60,18 @@ class CalculatorTool(Tool):
                 "add": lambda x, y: x + y,
                 "subtract": lambda x, y: x - y,
                 "multiply": lambda x, y: x * y,
-                "divide": lambda x, y: x / y if y != 0 else None
+                "divide": lambda x, y: x / y if y != 0 else None,
             }
 
             if operation not in operations:
-                return ToolResult(
-                    success=False,
-                    error=f"Unknown operation: {operation}"
-                )
+                return ToolResult(success=False, error=f"Unknown operation: {operation}")
 
             result = operations[operation](a, b)
 
             if result is None:
-                return ToolResult(
-                    success=False,
-                    error="Division by zero"
-                )
+                return ToolResult(success=False, error="Division by zero")
 
-            return ToolResult(
-                success=True,
-                data={"operation": operation, "result": result}
-            )
+            return ToolResult(success=True, data={"operation": operation, "result": result})
 
         except Exception as e:
             return ToolResult(success=False, error=str(e))
@@ -140,11 +128,7 @@ class ToolUsingAgent(Agent):
         else:
             response = "I can search or calculate. Try:\n- 'search python'\n- 'add 5 and 3'"
 
-        return Message(
-            role="agent",
-            content=response,
-            metadata={"tools_used": self.capabilities}
-        )
+        return Message(role="agent", content=response, metadata={"tools_used": self.capabilities})
 
 
 async def main():

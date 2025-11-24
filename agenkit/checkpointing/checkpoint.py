@@ -7,11 +7,11 @@ Checkpoints capture agent state at a point in time, enabling:
 - Durable execution for long-running agents
 """
 
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
-from typing import Optional, Any, Dict
-from abc import ABC, abstractmethod
 import json
+from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from typing import Any
 
 
 @dataclass
@@ -30,15 +30,16 @@ class Checkpoint:
         metadata: Additional metadata (cost, tokens, etc.)
         parent_checkpoint_id: ID of previous checkpoint (for history)
     """
+
     checkpoint_id: str
     session_id: str
     agent_name: str
     timestamp: datetime
     step_number: int
-    state: Dict[str, Any]
+    state: dict[str, Any]
     messages: list
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    parent_checkpoint_id: Optional[str] = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    parent_checkpoint_id: str | None = None
 
     def to_dict(self) -> dict:
         """Convert checkpoint to dictionary for serialization."""
@@ -48,10 +49,10 @@ class Checkpoint:
         # Serialize messages (convert datetime timestamps to ISO format)
         serialized_messages = []
         for msg in self.messages:
-            if hasattr(msg, '__dict__'):
-                msg_dict = msg.__dict__.copy() if hasattr(msg, '__dict__') else asdict(msg)
-                if 'timestamp' in msg_dict and hasattr(msg_dict['timestamp'], 'isoformat'):
-                    msg_dict['timestamp'] = msg_dict['timestamp'].isoformat()
+            if hasattr(msg, "__dict__"):
+                msg_dict = msg.__dict__.copy() if hasattr(msg, "__dict__") else asdict(msg)
+                if "timestamp" in msg_dict and hasattr(msg_dict["timestamp"], "isoformat"):
+                    msg_dict["timestamp"] = msg_dict["timestamp"].isoformat()
                 serialized_messages.append(msg_dict)
             else:
                 serialized_messages.append(msg)
@@ -72,8 +73,8 @@ class Checkpoint:
         for msg in data.get("messages", []):
             if isinstance(msg, dict):
                 msg = msg.copy()
-                if 'timestamp' in msg and isinstance(msg['timestamp'], str):
-                    msg['timestamp'] = datetime.fromisoformat(msg['timestamp'])
+                if "timestamp" in msg and isinstance(msg["timestamp"], str):
+                    msg["timestamp"] = datetime.fromisoformat(msg["timestamp"])
                 deserialized_messages.append(Message(**msg))
             else:
                 deserialized_messages.append(msg)
@@ -113,10 +114,7 @@ class CheckpointStorage(ABC):
         pass
 
     @abstractmethod
-    async def load(
-        self,
-        checkpoint_id: str
-    ) -> Optional[Checkpoint]:
+    async def load(self, checkpoint_id: str) -> Checkpoint | None:
         """
         Load checkpoint by ID.
 
@@ -129,11 +127,7 @@ class CheckpointStorage(ABC):
         pass
 
     @abstractmethod
-    async def list_checkpoints(
-        self,
-        session_id: str,
-        limit: Optional[int] = None
-    ) -> list[Checkpoint]:
+    async def list_checkpoints(self, session_id: str, limit: int | None = None) -> list[Checkpoint]:
         """
         List checkpoints for session.
 
@@ -147,10 +141,7 @@ class CheckpointStorage(ABC):
         pass
 
     @abstractmethod
-    async def get_latest(
-        self,
-        session_id: str
-    ) -> Optional[Checkpoint]:
+    async def get_latest(self, session_id: str) -> Checkpoint | None:
         """
         Get latest checkpoint for session.
 
@@ -190,9 +181,7 @@ class CheckpointStorage(ABC):
 
     @abstractmethod
     async def get_checkpoint_history(
-        self,
-        checkpoint_id: str,
-        max_depth: int = 10
+        self, checkpoint_id: str, max_depth: int = 10
     ) -> list[Checkpoint]:
         """
         Get checkpoint history by following parent links.

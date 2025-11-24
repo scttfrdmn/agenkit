@@ -1,8 +1,7 @@
 """Authentication middleware for securing agents."""
 
-from typing import Optional, List
 from ..interfaces import Agent, Message
-from .providers import AuthProvider, AuthenticationError, AuthorizationError, User
+from .providers import AuthenticationError, AuthorizationError, AuthProvider
 
 
 class BearerTokenAuth(Agent):
@@ -36,8 +35,8 @@ class BearerTokenAuth(Agent):
         self,
         agent: Agent,
         provider: AuthProvider,
-        required_role: Optional[str] = None,
-        required_permission: Optional[str] = None
+        required_role: str | None = None,
+        required_permission: str | None = None,
     ):
         """Initialize bearer token authentication.
 
@@ -57,7 +56,7 @@ class BearerTokenAuth(Agent):
         return f"auth_{self.agent.name}"
 
     @property
-    def capabilities(self) -> List[str]:
+    def capabilities(self) -> list[str]:
         caps = self.agent.capabilities.copy()
         caps.append("authentication")
         return caps
@@ -91,13 +90,13 @@ class BearerTokenAuth(Agent):
         message.metadata["authenticated_user"] = {
             "user_id": user.user_id,
             "roles": user.roles,
-            "permissions": list(user.permissions)
+            "permissions": list(user.permissions),
         }
 
         # Process with underlying agent
         return await self.agent.process(message)
 
-    def _extract_token(self, message: Message) -> Optional[str]:
+    def _extract_token(self, message: Message) -> str | None:
         """Extract bearer token from message metadata.
 
         Looks for:
@@ -139,12 +138,7 @@ class APIKeyAuth(Agent):
         >>> response = await auth_agent.process(message)
     """
 
-    def __init__(
-        self,
-        agent: Agent,
-        provider: AuthProvider,
-        key_name: str = "api_key"
-    ):
+    def __init__(self, agent: Agent, provider: AuthProvider, key_name: str = "api_key"):
         """Initialize API key authentication.
 
         Args:
@@ -161,7 +155,7 @@ class APIKeyAuth(Agent):
         return f"apikey_{self.agent.name}"
 
     @property
-    def capabilities(self) -> List[str]:
+    def capabilities(self) -> list[str]:
         caps = self.agent.capabilities.copy()
         caps.append("api_key_auth")
         return caps
@@ -180,10 +174,7 @@ class APIKeyAuth(Agent):
         # Add user info to metadata
         if message.metadata is None:
             message.metadata = {}
-        message.metadata["authenticated_user"] = {
-            "user_id": user.user_id,
-            "roles": user.roles
-        }
+        message.metadata["authenticated_user"] = {"user_id": user.user_id, "roles": user.roles}
 
         # Process with underlying agent
         return await self.agent.process(message)

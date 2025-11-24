@@ -14,10 +14,10 @@ References:
 - ReAct Paper: https://arxiv.org/abs/2210.03629
 """
 
-from typing import Any, Dict, List, Optional, Protocol, Callable
+import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
-import asyncio
+from typing import Any, Protocol
 
 from agenkit import Agent, Message
 
@@ -47,9 +47,9 @@ class ToolResult:
 
     tool_name: str
     result: Any = None
-    error: Optional[str] = None
+    error: str | None = None
     execution_time: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def success(self) -> bool:
@@ -97,7 +97,7 @@ class ToolRegistry:
     """
 
     def __init__(self):
-        self._tools: Dict[str, Tool] = {}
+        self._tools: dict[str, Tool] = {}
 
     def register(self, tool: Tool) -> None:
         """
@@ -122,11 +122,11 @@ class ToolRegistry:
         """
         self._tools.pop(tool_name, None)
 
-    def get_tool(self, name: str) -> Optional[Tool]:
+    def get_tool(self, name: str) -> Tool | None:
         """Get a tool by name."""
         return self._tools.get(name)
 
-    def list_tools(self) -> List[str]:
+    def list_tools(self) -> list[str]:
         """Get list of all registered tool names."""
         return list(self._tools.keys())
 
@@ -158,28 +158,22 @@ class ToolRegistry:
         """
         tool = self.get_tool(tool_name)
         if tool is None:
-            return ToolResult(
-                tool_name=tool_name, error=f"Tool '{tool_name}' not found"
-            )
+            return ToolResult(tool_name=tool_name, error=f"Tool '{tool_name}' not found")
 
         start_time = asyncio.get_event_loop().time()
         try:
             result = await tool.execute(**kwargs)
             execution_time = asyncio.get_event_loop().time() - start_time
-            return ToolResult(
-                tool_name=tool_name, result=result, execution_time=execution_time
-            )
+            return ToolResult(tool_name=tool_name, result=result, execution_time=execution_time)
         except Exception as e:
             execution_time = asyncio.get_event_loop().time() - start_time
-            return ToolResult(
-                tool_name=tool_name, error=str(e), execution_time=execution_time
-            )
+            return ToolResult(tool_name=tool_name, error=str(e), execution_time=execution_time)
 
 
 class LLMClient(Protocol):
     """Protocol for LLM clients that can be used with ReActAgent."""
 
-    async def chat(self, messages: List[Message]) -> Message:
+    async def chat(self, messages: list[Message]) -> Message:
         """Generate a response given conversation history."""
         ...
 
@@ -227,7 +221,7 @@ class ReActAgent(Agent):
         llm_client: LLMClient,
         tool_registry: ToolRegistry,
         max_iterations: int = 10,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         verbose: bool = False,
     ):
         self.llm = llm_client
@@ -235,7 +229,7 @@ class ReActAgent(Agent):
         self.max_iterations = max_iterations
         self.system_prompt = system_prompt or self._default_system_prompt()
         self.verbose = verbose
-        self.steps: List[ReActStep] = []
+        self.steps: list[ReActStep] = []
 
     @property
     def name(self) -> str:
@@ -367,16 +361,15 @@ Begin!"""
                 ]
             )
             content = f"{thought_process}\n\nFinal Answer: {answer}"
+        # Just the answer
+        elif isinstance(answer, dict) and "input" in answer:
+            content = str(answer["input"])
         else:
-            # Just the answer
-            if isinstance(answer, dict) and "input" in answer:
-                content = str(answer["input"])
-            else:
-                content = str(answer)
+            content = str(answer)
 
         return Message(role="assistant", content=content)
 
-    def get_steps(self) -> List[ReActStep]:
+    def get_steps(self) -> list[ReActStep]:
         """
         Get the reasoning steps from the last execution.
 

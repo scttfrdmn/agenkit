@@ -46,8 +46,8 @@ def decode_message(data: dict[str, Any]) -> Message:
         timestamp_str = data.get("timestamp", "")
         if timestamp_str:
             # Handle 'Z' suffix (convert to '+00:00' for fromisoformat)
-            if timestamp_str.endswith('Z'):
-                timestamp_str = timestamp_str[:-1] + '+00:00'
+            if timestamp_str.endswith("Z"):
+                timestamp_str = timestamp_str[:-1] + "+00:00"
             timestamp = datetime.fromisoformat(timestamp_str)
         else:
             timestamp = datetime.now(timezone.utc)

@@ -37,8 +37,9 @@ TRADE-OFFS:
 
 import asyncio
 import re
+
+from agenkit.composition import ConditionalAgent
 from agenkit.interfaces import Agent, Message
-from agenkit.composition import ConditionalAgent, content_contains, metadata_equals
 
 
 # Example 1: Intent-Based Routing
@@ -66,11 +67,7 @@ def fibonacci(n):
         return n
     return fibonacci(n-1) + fibonacci(n-2)
 ```""",
-            metadata={
-                "type": "code",
-                "language": "python",
-                "agent": self.name
-            }
+            metadata={"type": "code", "language": "python", "agent": self.name},
         )
 
 
@@ -100,11 +97,7 @@ Async/await is a pattern for handling asynchronous operations:
 3. **Benefits**: Better than callbacks, cleaner than threads
 
 Example: `result = await fetch_data()`""",
-            metadata={
-                "type": "documentation",
-                "format": "markdown",
-                "agent": self.name
-            }
+            metadata={"type": "documentation", "format": "markdown", "agent": self.name},
         )
 
 
@@ -126,10 +119,7 @@ class GeneralAgent(Agent):
         return Message(
             role="agent",
             content="I'm here to help! I can answer general questions, have conversations, and assist with various tasks.",
-            metadata={
-                "type": "general",
-                "agent": self.name
-            }
+            metadata={"type": "general", "agent": self.name},
         )
 
 
@@ -139,10 +129,7 @@ async def example_intent_routing():
     print("Use case: Multi-domain assistant with specialized agents\n")
 
     # Create router with specialized agents
-    router = ConditionalAgent(
-        name="multi-domain-router",
-        default_agent=GeneralAgent()
-    )
+    router = ConditionalAgent(name="multi-domain-router", default_agent=GeneralAgent())
 
     # Route code requests to code agent
     router.add_route(
@@ -150,7 +137,7 @@ async def example_intent_routing():
             keyword in msg.content.lower()
             for keyword in ["code", "function", "implement", "debug", "bug"]
         ),
-        agent=CodeAgent()
+        agent=CodeAgent(),
     )
 
     # Route documentation requests to docs agent
@@ -159,14 +146,14 @@ async def example_intent_routing():
             keyword in msg.content.lower()
             for keyword in ["explain", "document", "how does", "what is", "tutorial"]
         ),
-        agent=DocsAgent()
+        agent=DocsAgent(),
     )
 
     # Test different request types
     requests = [
         "Write a function to calculate fibonacci",
         "Explain how async/await works",
-        "How are you today?"
+        "How are you today?",
     ]
 
     for query in requests:
@@ -212,11 +199,7 @@ class SimpleQueryAgent(Agent):
         return Message(
             role="agent",
             content=response,
-            metadata={
-                "complexity": "simple",
-                "latency": 0.05,
-                "cost": 0.0001
-            }
+            metadata={"complexity": "simple", "latency": 0.05, "cost": 0.0001},
         )
 
 
@@ -238,11 +221,7 @@ class ComplexQueryAgent(Agent):
         return Message(
             role="agent",
             content="After careful analysis considering multiple perspectives, historical context, and potential implications, here's my comprehensive answer: [detailed response with reasoning]",
-            metadata={
-                "complexity": "complex",
-                "latency": 0.5,
-                "cost": 0.01
-            }
+            metadata={"complexity": "complex", "latency": 0.5, "cost": 0.01},
         )
 
 
@@ -257,7 +236,7 @@ def is_simple_query(message: Message) -> bool:
         r"\bwhere\b",
         r"\bwho\b",
         r"\bweather\b",
-        r"\btime\b"
+        r"\btime\b",
     ]
 
     # Check length
@@ -265,10 +244,7 @@ def is_simple_query(message: Message) -> bool:
         return True
 
     # Check for simple patterns
-    if any(re.search(pattern, text) for pattern in simple_patterns):
-        return True
-
-    return False
+    return bool(any(re.search(pattern, text) for pattern in simple_patterns))
 
 
 async def example_complexity_routing():
@@ -276,22 +252,16 @@ async def example_complexity_routing():
     print("\n=== Example 2: Complexity-Based Routing ===")
     print("Use case: Optimize cost and latency based on query complexity\n")
 
-    router = ConditionalAgent(
-        name="complexity-router",
-        default_agent=ComplexQueryAgent()
-    )
+    router = ConditionalAgent(name="complexity-router", default_agent=ComplexQueryAgent())
 
     # Route simple queries to fast agent
-    router.add_route(
-        condition=is_simple_query,
-        agent=SimpleQueryAgent()
-    )
+    router.add_route(condition=is_simple_query, agent=SimpleQueryAgent())
 
     queries = [
         "What is the weather?",
         "Analyze the socioeconomic impacts of climate change",
         "What time is it?",
-        "Compare and contrast various machine learning architectures"
+        "Compare and contrast various machine learning architectures",
     ]
 
     print("Processing queries with complexity-based routing...\n")
@@ -315,13 +285,15 @@ async def example_complexity_routing():
         print(f"  Cost: ${cost:.4f}")
         print()
 
-    print(f"📊 Performance Summary:")
+    print("📊 Performance Summary:")
     print(f"   Total Latency: {total_latency:.2f}s")
     print(f"   Total Cost: ${total_cost:.4f}")
-    print(f"\n💡 Without Routing (all complex):")
+    print("\n💡 Without Routing (all complex):")
     print(f"   Total Latency: {0.5 * 4:.2f}s")
     print(f"   Total Cost: ${0.01 * 4:.4f}")
-    print(f"\n   Savings: {((0.04 - total_cost) / 0.04):.0%} cost, {((2.0 - total_latency) / 2.0):.0%} latency")
+    print(
+        f"\n   Savings: {((0.04 - total_cost) / 0.04):.0%} cost, {((2.0 - total_latency) / 2.0):.0%} latency"
+    )
 
 
 # Example 3: Language-Specific Routing
@@ -341,7 +313,7 @@ class EnglishAgent(Agent):
         return Message(
             role="agent",
             content="Processed with English-optimized model",
-            metadata={"language": "en", "model": "en-optimized"}
+            metadata={"language": "en", "model": "en-optimized"},
         )
 
 
@@ -361,7 +333,7 @@ class MultilingualAgent(Agent):
         return Message(
             role="agent",
             content="Processed with multilingual model",
-            metadata={"language": "multi", "model": "multilingual"}
+            metadata={"language": "multi", "model": "multilingual"},
         )
 
 
@@ -371,8 +343,14 @@ def detect_language(message: Message) -> bool:
 
     # Very simple detection (in production, use proper library)
     non_english_indicators = [
-        "hola", "bonjour", "hallo", "ciao", "こんにちは",
-        "你好", "안녕", "привет"
+        "hola",
+        "bonjour",
+        "hallo",
+        "ciao",
+        "こんにちは",
+        "你好",
+        "안녕",
+        "привет",
     ]
 
     return not any(indicator in text for indicator in non_english_indicators)
@@ -383,20 +361,14 @@ async def example_language_routing():
     print("\n=== Example 3: Language-Specific Routing ===")
     print("Use case: Use optimized models for common languages\n")
 
-    router = ConditionalAgent(
-        name="language-router",
-        default_agent=MultilingualAgent()
-    )
+    router = ConditionalAgent(name="language-router", default_agent=MultilingualAgent())
 
-    router.add_route(
-        condition=detect_language,
-        agent=EnglishAgent()
-    )
+    router.add_route(condition=detect_language, agent=EnglishAgent())
 
     queries = [
         ("Hello, how are you?", "English"),
         ("Bonjour, comment allez-vous?", "French"),
-        ("What's the weather like?", "English")
+        ("What's the weather like?", "English"),
     ]
 
     for query, expected_lang in queries:
@@ -430,8 +402,8 @@ class PremiumAgent(Agent):
             content="Premium response with advanced analysis, personalization, and priority support.",
             metadata={
                 "tier": "premium",
-                "features": ["advanced_analysis", "priority", "personalization"]
-            }
+                "features": ["advanced_analysis", "priority", "personalization"],
+            },
         )
 
 
@@ -451,10 +423,7 @@ class FreeAgent(Agent):
         return Message(
             role="agent",
             content="Basic response. Upgrade to premium for advanced features!",
-            metadata={
-                "tier": "free",
-                "features": ["basic"]
-            }
+            metadata={"tier": "free", "features": ["basic"]},
         )
 
 
@@ -463,25 +432,17 @@ async def example_tier_routing():
     print("\n=== Example 4: User Tier Routing ===")
     print("Use case: Different service levels for free vs premium users\n")
 
-    router = ConditionalAgent(
-        name="tier-router",
-        default_agent=FreeAgent()
-    )
+    router = ConditionalAgent(name="tier-router", default_agent=FreeAgent())
 
     # Premium users get premium service
     router.add_route(
-        condition=lambda msg: msg.metadata.get("user_tier") == "premium",
-        agent=PremiumAgent()
+        condition=lambda msg: msg.metadata.get("user_tier") == "premium", agent=PremiumAgent()
     )
 
     # Test free user
     print("Test 1: Free user")
     result = await router.process(
-        Message(
-            role="user",
-            content="Analyze this data",
-            metadata={"user_tier": "free"}
-        )
+        Message(role="user", content="Analyze this data", metadata={"user_tier": "free"})
     )
     print(f"  Service: {result.metadata.get('tier')}")
     print(f"  Features: {result.metadata.get('features')}")
@@ -489,11 +450,7 @@ async def example_tier_routing():
     # Test premium user
     print("\nTest 2: Premium user")
     result = await router.process(
-        Message(
-            role="user",
-            content="Analyze this data",
-            metadata={"user_tier": "premium"}
-        )
+        Message(role="user", content="Analyze this data", metadata={"user_tier": "premium"})
     )
     print(f"  Service: {result.metadata.get('tier')}")
     print(f"  Features: {result.metadata.get('features')}")
@@ -521,7 +478,7 @@ class VariantAAgent(Agent):
         return Message(
             role="agent",
             content="Response from Variant A (current)",
-            metadata={"variant": "A", "version": "1.0"}
+            metadata={"variant": "A", "version": "1.0"},
         )
 
 
@@ -541,7 +498,7 @@ class VariantBAgent(Agent):
         return Message(
             role="agent",
             content="Response from Variant B (experimental, faster)",
-            metadata={"variant": "B", "version": "2.0"}
+            metadata={"variant": "B", "version": "2.0"},
         )
 
 
@@ -568,15 +525,9 @@ async def example_ab_testing():
     print("Use case: Test new implementation on subset of users\n")
 
     # 20% rollout to variant B
-    router = ConditionalAgent(
-        name="ab-test-router",
-        default_agent=VariantAAgent()
-    )
+    router = ConditionalAgent(name="ab-test-router", default_agent=VariantAAgent())
 
-    router.add_route(
-        condition=ab_test_routing(rollout_percentage=0.2),
-        agent=VariantBAgent()
-    )
+    router.add_route(condition=ab_test_routing(rollout_percentage=0.2), agent=VariantBAgent())
 
     # Simulate 100 users
     print("Simulating 100 users with 20% rollout to Variant B...")
@@ -585,16 +536,12 @@ async def example_ab_testing():
 
     for i in range(100):
         result = await router.process(
-            Message(
-                role="user",
-                content="test",
-                metadata={"user_id": f"user_{i}"}
-            )
+            Message(role="user", content="test", metadata={"user_id": f"user_{i}"})
         )
         variant = result.metadata.get("variant")
         variant_counts[variant] += 1
 
-    print(f"\n📊 Rollout Distribution:")
+    print("\n📊 Rollout Distribution:")
     print(f"   Variant A: {variant_counts['A']} users ({variant_counts['A']}%)")
     print(f"   Variant B: {variant_counts['B']} users ({variant_counts['B']}%)")
 
@@ -607,9 +554,9 @@ async def example_ab_testing():
 
 async def main():
     """Run all examples."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("CONDITIONAL COMPOSITION EXAMPLES")
-    print("="*70)
+    print("=" * 70)
     print("\nConditional composition routes requests to specialized agents.")
     print("Use it for intent routing, optimization, and personalization.\n")
 
@@ -619,9 +566,9 @@ async def main():
     await example_tier_routing()
     await example_ab_testing()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("KEY TAKEAWAYS")
-    print("="*70)
+    print("=" * 70)
     print("""
 1. Use conditional composition when:
    - Multiple specialized agents (code, docs, data)

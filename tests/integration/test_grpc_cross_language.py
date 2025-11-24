@@ -11,7 +11,6 @@ from agenkit.interfaces import Message
 
 from .helpers import go_grpc_server, python_grpc_server
 
-
 # Python Client → Go Server Tests
 
 
@@ -20,12 +19,9 @@ from .helpers import go_grpc_server, python_grpc_server
 @pytest.mark.cross_language
 async def test_python_to_go_grpc_basic():
     """Test basic gRPC message exchange: Python client → Go server."""
-    async with go_grpc_server() as (port, process):
+    async with go_grpc_server() as (port, _process):
         # Create remote agent with gRPC endpoint
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"grpc://localhost:{port}"
-        )
+        agent = RemoteAgent(name="test-agent", endpoint=f"grpc://localhost:{port}")
 
         # Send message
         message = Message(role="user", content="Hello via gRPC!")
@@ -43,11 +39,8 @@ async def test_python_to_go_grpc_basic():
 @pytest.mark.cross_language
 async def test_python_to_go_grpc_with_metadata():
     """Test gRPC with metadata: Python client → Go server."""
-    async with go_grpc_server() as (port, process):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"grpc://localhost:{port}"
-        )
+    async with go_grpc_server() as (port, _process):
+        agent = RemoteAgent(name="test-agent", endpoint=f"grpc://localhost:{port}")
 
         # Send message with metadata
         message = Message(
@@ -57,7 +50,7 @@ async def test_python_to_go_grpc_with_metadata():
                 "request_id": "grpc-123",
                 "priority": "high",
                 "tags": ["grpc", "test"],
-            }
+            },
         )
         response = await agent.process(message)
 
@@ -75,11 +68,8 @@ async def test_python_to_go_grpc_with_metadata():
 @pytest.mark.cross_language
 async def test_python_to_go_grpc_unicode():
     """Test Unicode over gRPC: Python client → Go server."""
-    async with go_grpc_server() as (port, process):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"grpc://localhost:{port}"
-        )
+    async with go_grpc_server() as (port, _process):
+        agent = RemoteAgent(name="test-agent", endpoint=f"grpc://localhost:{port}")
 
         # Send message with Unicode content
         unicode_content = "Hello 世界 🌍 Привет مرحبا"
@@ -97,11 +87,8 @@ async def test_python_to_go_grpc_unicode():
 @pytest.mark.cross_language
 async def test_python_to_go_grpc_large_message():
     """Test large message over gRPC: Python client → Go server."""
-    async with go_grpc_server() as (port, process):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"grpc://localhost:{port}"
-        )
+    async with go_grpc_server() as (port, _process):
+        agent = RemoteAgent(name="test-agent", endpoint=f"grpc://localhost:{port}")
 
         # Send large message (1MB)
         large_content = "A" * (1024 * 1024)  # 1MB
@@ -118,11 +105,8 @@ async def test_python_to_go_grpc_large_message():
 @pytest.mark.cross_language
 async def test_python_to_go_grpc_multiple_messages():
     """Test multiple messages over same gRPC: Python client → Go server."""
-    async with go_grpc_server() as (port, process):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"grpc://localhost:{port}"
-        )
+    async with go_grpc_server() as (port, _process):
+        agent = RemoteAgent(name="test-agent", endpoint=f"grpc://localhost:{port}")
 
         # Send multiple messages over the same connection
         for i in range(5):
@@ -142,12 +126,9 @@ async def test_python_to_go_grpc_multiple_messages():
 @pytest.mark.cross_language
 async def test_go_to_python_grpc_basic():
     """Test basic gRPC message: Go client → Python server."""
-    async with python_grpc_server() as (port, server):
+    async with python_grpc_server() as (port, _server):
         # Use Python RemoteAgent as a proxy for Go client behavior
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"grpc://localhost:{port}"
-        )
+        agent = RemoteAgent(name="test-agent", endpoint=f"grpc://localhost:{port}")
 
         message = Message(role="user", content="Hello from Go!")
         response = await agent.process(message)
@@ -163,11 +144,8 @@ async def test_go_to_python_grpc_basic():
 @pytest.mark.cross_language
 async def test_go_to_python_grpc_with_metadata():
     """Test gRPC with metadata: Go client → Python server."""
-    async with python_grpc_server() as (port, server):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"grpc://localhost:{port}"
-        )
+    async with python_grpc_server() as (port, _server):
+        agent = RemoteAgent(name="test-agent", endpoint=f"grpc://localhost:{port}")
 
         message = Message(
             role="user",
@@ -175,7 +153,7 @@ async def test_go_to_python_grpc_with_metadata():
             metadata={
                 "request_id": "go-grpc-123",
                 "client": "go",
-            }
+            },
         )
         response = await agent.process(message)
 
@@ -190,11 +168,8 @@ async def test_go_to_python_grpc_with_metadata():
 @pytest.mark.cross_language
 async def test_go_to_python_grpc_unicode():
     """Test Unicode over gRPC: Go client → Python server."""
-    async with python_grpc_server() as (port, server):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"grpc://localhost:{port}"
-        )
+    async with python_grpc_server() as (port, _server):
+        agent = RemoteAgent(name="test-agent", endpoint=f"grpc://localhost:{port}")
 
         unicode_content = "Hello 世界 🌍 Привет مرحبا"
         message = Message(role="user", content=unicode_content)
@@ -211,11 +186,8 @@ async def test_go_to_python_grpc_unicode():
 @pytest.mark.cross_language
 async def test_go_to_python_grpc_large_message():
     """Test large message over gRPC: Go client → Python server."""
-    async with python_grpc_server() as (port, server):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"grpc://localhost:{port}"
-        )
+    async with python_grpc_server() as (port, _server):
+        agent = RemoteAgent(name="test-agent", endpoint=f"grpc://localhost:{port}")
 
         # Send large message (1MB)
         large_content = "A" * (1024 * 1024)  # 1MB
@@ -236,15 +208,12 @@ async def test_go_to_python_grpc_large_message():
 @pytest.mark.slow
 async def test_grpc_concurrent_requests():
     """Test multiple concurrent gRPC requests: Python → Go."""
-    async with go_grpc_server() as (port, process):
+    async with go_grpc_server() as (port, _process):
         import asyncio
 
         # Create multiple concurrent connections
         async def send_message(i):
-            agent = RemoteAgent(
-                name=f"test-agent-{i}",
-                endpoint=f"grpc://localhost:{port}"
-            )
+            agent = RemoteAgent(name=f"test-agent-{i}", endpoint=f"grpc://localhost:{port}")
             message = Message(role="user", content=f"Concurrent gRPC {i}")
             response = await agent.process(message)
             return response
@@ -265,11 +234,8 @@ async def test_grpc_concurrent_requests():
 @pytest.mark.cross_language
 async def test_grpc_connection_reuse():
     """Test connection reuse over gRPC."""
-    async with go_grpc_server() as (port, process):
-        agent = RemoteAgent(
-            name="test-agent",
-            endpoint=f"grpc://localhost:{port}"
-        )
+    async with go_grpc_server() as (port, _process):
+        agent = RemoteAgent(name="test-agent", endpoint=f"grpc://localhost:{port}")
 
         # Send multiple messages - connection should be reused
         for i in range(10):
@@ -290,7 +256,7 @@ async def test_python_to_go_grpc_invalid_endpoint():
     """Test connection error with invalid endpoint: Python client."""
     agent = RemoteAgent(
         name="test-agent",
-        endpoint="grpc://localhost:59999"  # Invalid port
+        endpoint="grpc://localhost:59999",  # Invalid port
     )
 
     message = Message(role="user", content="Test")

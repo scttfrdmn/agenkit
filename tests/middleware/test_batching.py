@@ -2,7 +2,6 @@
 
 import asyncio
 import time
-from typing import List
 
 import pytest
 
@@ -60,9 +59,7 @@ class TestBatchingConfig:
 
     def test_custom_config(self):
         """Test custom configuration values."""
-        config = BatchingConfig(
-            max_batch_size=5, max_wait_time=0.05, max_queue_size=100
-        )
+        config = BatchingConfig(max_batch_size=5, max_wait_time=0.05, max_queue_size=100)
         assert config.max_batch_size == 5
         assert config.max_wait_time == 0.05
         assert config.max_queue_size == 100
@@ -135,9 +132,7 @@ class TestBatchingDecorator:
         try:
             # Send 5 concurrent requests
             messages = [Message(role="user", content=f"msg{i}") for i in range(5)]
-            results = await asyncio.gather(
-                *[batching_agent.process(msg) for msg in messages]
-            )
+            results = await asyncio.gather(*[batching_agent.process(msg) for msg in messages])
 
             # Verify results
             assert len(results) == 5
@@ -165,9 +160,7 @@ class TestBatchingDecorator:
             # Send exactly max_batch_size requests
             messages = [Message(role="user", content=f"msg{i}") for i in range(3)]
             start_time = time.time()
-            results = await asyncio.gather(
-                *[batching_agent.process(msg) for msg in messages]
-            )
+            results = await asyncio.gather(*[batching_agent.process(msg) for msg in messages])
             elapsed = time.time() - start_time
 
             # Should process quickly (not wait for timeout)
@@ -193,9 +186,7 @@ class TestBatchingDecorator:
             # Send fewer requests than batch size
             messages = [Message(role="user", content=f"msg{i}") for i in range(3)]
             start_time = time.time()
-            results = await asyncio.gather(
-                *[batching_agent.process(msg) for msg in messages]
-            )
+            results = await asyncio.gather(*[batching_agent.process(msg) for msg in messages])
             elapsed = time.time() - start_time
 
             # Should wait for timeout (plus processing time)
@@ -307,16 +298,12 @@ class TestBatchingDecorator:
         try:
             # Send first batch
             messages1 = [Message(role="user", content=f"batch1_msg{i}") for i in range(2)]
-            results1 = await asyncio.gather(
-                *[batching_agent.process(msg) for msg in messages1]
-            )
+            results1 = await asyncio.gather(*[batching_agent.process(msg) for msg in messages1])
             assert len(results1) == 2
 
             # Send second batch
             messages2 = [Message(role="user", content=f"batch2_msg{i}") for i in range(2)]
-            results2 = await asyncio.gather(
-                *[batching_agent.process(msg) for msg in messages2]
-            )
+            results2 = await asyncio.gather(*[batching_agent.process(msg) for msg in messages2])
             assert len(results2) == 2
 
             # Verify metrics
@@ -422,9 +409,7 @@ class TestBatchingDecorator:
         try:
             # Send 50 concurrent requests
             messages = [Message(role="user", content=f"msg{i}") for i in range(50)]
-            results = await asyncio.gather(
-                *[batching_agent.process(msg) for msg in messages]
-            )
+            results = await asyncio.gather(*[batching_agent.process(msg) for msg in messages])
 
             # Verify all completed
             assert len(results) == 50

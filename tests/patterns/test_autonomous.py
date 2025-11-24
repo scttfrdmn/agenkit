@@ -2,13 +2,13 @@
 Tests for Autonomous Agent pattern.
 """
 
-import pytest
 import asyncio
 from datetime import datetime
 
+import pytest
+
 from agenkit import Message
 from agenkit.patterns import AutonomousAgent, Goal
-
 
 # ============================================================================
 # Mock Agents
@@ -246,9 +246,7 @@ async def test_autonomous_agent_stop_condition():
         counter["value"] += 1
         return counter["value"] >= 2
 
-    agent = MockAutonomousAgent(
-        objective="Test", max_iterations=100, stop_condition=stop_after_two
-    )
+    agent = MockAutonomousAgent(objective="Test", max_iterations=100, stop_condition=stop_after_two)
     agent.add_goal("Test goal")
 
     result = await agent.run()

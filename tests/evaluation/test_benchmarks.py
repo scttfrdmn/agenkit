@@ -5,12 +5,13 @@ Tests SimpleQA, NeedleInHaystack, ExtremeScale, and BenchmarkSuite.
 """
 
 import pytest
+
 from agenkit.evaluation.benchmarks import (
-    SimpleQABenchmark,
-    NeedleInHaystackBenchmark,
+    BenchmarkSuite,
     ExtremeScaleBenchmark,
     InformationRetentionBenchmark,
-    BenchmarkSuite
+    NeedleInHaystackBenchmark,
+    SimpleQABenchmark,
 )
 
 
@@ -33,10 +34,7 @@ async def test_simple_qa_benchmark():
 @pytest.mark.asyncio
 async def test_needle_in_haystack_benchmark():
     """Test needle-in-haystack benchmark generation."""
-    benchmark = NeedleInHaystackBenchmark(
-        context_length=1000,
-        needle_count=3
-    )
+    benchmark = NeedleInHaystackBenchmark(context_length=1000, needle_count=3)
 
     assert benchmark.name == "needle_in_haystack_1000"
     assert "1000" in benchmark.description
@@ -51,10 +49,7 @@ async def test_needle_in_haystack_benchmark():
 @pytest.mark.asyncio
 async def test_needle_haystack_embedding():
     """Test that needles are properly embedded in haystack."""
-    benchmark = NeedleInHaystackBenchmark(
-        context_length=1000,
-        needle_count=2
-    )
+    benchmark = NeedleInHaystackBenchmark(context_length=1000, needle_count=2)
 
     test_cases = await benchmark.generate_test_cases()
 
@@ -66,10 +61,7 @@ async def test_needle_haystack_embedding():
 @pytest.mark.asyncio
 async def test_extreme_scale_benchmark():
     """Test extreme-scale benchmark generation."""
-    benchmark = ExtremeScaleBenchmark(
-        test_lengths=[10_000, 100_000],
-        needles_per_length=2
-    )
+    benchmark = ExtremeScaleBenchmark(test_lengths=[10_000, 100_000], needles_per_length=2)
 
     assert benchmark.name == "extreme_scale"
     assert "retrieval" in benchmark.description.lower()
@@ -86,7 +78,7 @@ async def test_information_retention_benchmark():
     """Test information retention benchmark."""
     benchmark = InformationRetentionBenchmark(
         conversation_length=100,  # Long enough to have plant events
-        recall_points=[25, 50, 75]
+        recall_points=[25, 50, 75],
     )
 
     assert benchmark.name == "information_retention"

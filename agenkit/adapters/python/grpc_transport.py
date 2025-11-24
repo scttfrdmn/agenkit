@@ -102,18 +102,16 @@ class GRPCTransport(Transport):
             # These options improve performance by reusing connections
             options = [
                 # Keep connections alive with periodic pings
-                ('grpc.keepalive_time_ms', 10000),  # Send keepalive ping every 10s
-                ('grpc.keepalive_timeout_ms', 5000),  # Wait 5s for keepalive response
-                ('grpc.keepalive_permit_without_calls', 1),  # Allow keepalive pings when no calls
-                ('grpc.http2.max_pings_without_data', 0),  # Unlimited pings without data
-
+                ("grpc.keepalive_time_ms", 10000),  # Send keepalive ping every 10s
+                ("grpc.keepalive_timeout_ms", 5000),  # Wait 5s for keepalive response
+                ("grpc.keepalive_permit_without_calls", 1),  # Allow keepalive pings when no calls
+                ("grpc.http2.max_pings_without_data", 0),  # Unlimited pings without data
                 # Connection management
-                ('grpc.max_connection_idle_ms', 30000),  # Close connection after 30s idle
-                ('grpc.max_connection_age_ms', 300000),  # Max connection age 5 minutes
-
+                ("grpc.max_connection_idle_ms", 30000),  # Close connection after 30s idle
+                ("grpc.max_connection_age_ms", 300000),  # Max connection age 5 minutes
                 # Performance tuning
-                ('grpc.http2.min_time_between_pings_ms', 10000),  # Min 10s between pings
-                ('grpc.http2.max_ping_strikes', 2),  # Allow 2 bad pings before closing
+                ("grpc.http2.min_time_between_pings_ms", 10000),  # Min 10s between pings
+                ("grpc.http2.max_ping_strikes", 2),  # Allow 2 bad pings before closing
             ]
 
             if self._use_tls:
@@ -221,7 +219,7 @@ class GRPCTransport(Transport):
                         error_envelope = self._create_error_envelope(
                             envelope.get("id", "unknown"),
                             self._grpc_status_to_error_code(e.code()),
-                            e.details() or str(e)
+                            e.details() or str(e),
                         )
                         error_bytes = json.dumps(error_envelope).encode("utf-8")
                         await self._response_queue.put(error_bytes)
@@ -243,7 +241,7 @@ class GRPCTransport(Transport):
                         error_envelope = self._create_error_envelope(
                             envelope.get("id", "unknown"),
                             self._grpc_status_to_error_code(e.code()),
-                            e.details() or str(e)
+                            e.details() or str(e),
                         )
                         error_bytes = json.dumps(error_envelope).encode("utf-8")
                         await self._response_queue.put(error_bytes)
@@ -335,7 +333,7 @@ class GRPCTransport(Transport):
                 id=envelope.get("id", ""),
                 timestamp=envelope.get("timestamp", datetime.now(timezone.utc).isoformat()),
                 method=payload.get("method", "process"),
-                agent_name=payload.get("agent_name", "")
+                agent_name=payload.get("agent_name", ""),
             )
 
             # Convert messages if present (support both "message" and "messages")
@@ -345,7 +343,7 @@ class GRPCTransport(Transport):
                 pb_msg = agent_pb2.Message(
                     role=msg.get("role", ""),
                     content=self._serialize_content(msg.get("content")),
-                    timestamp=msg.get("timestamp", "")
+                    timestamp=msg.get("timestamp", ""),
                 )
                 # Add metadata
                 if "metadata" in msg:
@@ -358,7 +356,7 @@ class GRPCTransport(Transport):
                     pb_msg = agent_pb2.Message(
                         role=msg.get("role", ""),
                         content=self._serialize_content(msg.get("content")),
-                        timestamp=msg.get("timestamp", "")
+                        timestamp=msg.get("timestamp", ""),
                     )
                     # Add metadata
                     if "metadata" in msg:
@@ -371,7 +369,7 @@ class GRPCTransport(Transport):
                 tool_call = payload["tool_call"]
                 pb_tool_call = agent_pb2.ToolCall(
                     name=tool_call.get("name", ""),
-                    arguments=json.dumps(tool_call.get("arguments", {}))
+                    arguments=json.dumps(tool_call.get("arguments", {})),
                 )
                 if "metadata" in tool_call:
                     for key, value in tool_call["metadata"].items():
@@ -405,18 +403,17 @@ class GRPCTransport(Transport):
                 "role": response.message.role,
                 "content": self._deserialize_content(response.message.content),
                 "metadata": dict(response.message.metadata),
-                "timestamp": response.message.timestamp
+                "timestamp": response.message.timestamp,
             }
 
-        elif (
-            response.type == agent_pb2.RESPONSE_TYPE_TOOL_RESULT
-            and response.HasField("tool_result")
+        elif response.type == agent_pb2.RESPONSE_TYPE_TOOL_RESULT and response.HasField(
+            "tool_result"
         ):
             payload["tool_result"] = {
                 "success": response.tool_result.success,
                 "data": self._deserialize_content(response.tool_result.data),
                 "error": response.tool_result.error if response.tool_result.error else None,
-                "metadata": dict(response.tool_result.metadata)
+                "metadata": dict(response.tool_result.metadata),
             }
 
         elif response.type == agent_pb2.RESPONSE_TYPE_ERROR and response.HasField("error"):
@@ -428,8 +425,8 @@ class GRPCTransport(Transport):
                 "payload": {
                     "error_code": response.error.code,
                     "error_message": response.error.message,
-                    "error_details": dict(response.error.details)
-                }
+                    "error_details": dict(response.error.details),
+                },
             }
 
         # Add metadata
@@ -441,7 +438,7 @@ class GRPCTransport(Transport):
             "type": "response",
             "id": response.id,
             "timestamp": response.timestamp,
-            "payload": payload
+            "payload": payload,
         }
 
     def _protobuf_chunk_to_json(self, chunk: agent_pb2.StreamChunk) -> dict[str, Any]:
@@ -459,7 +456,7 @@ class GRPCTransport(Transport):
                 "type": "stream_end",
                 "id": chunk.id,
                 "timestamp": chunk.timestamp,
-                "payload": {}
+                "payload": {},
             }
 
         elif chunk.type == agent_pb2.CHUNK_TYPE_ERROR and chunk.HasField("error"):
@@ -471,8 +468,8 @@ class GRPCTransport(Transport):
                 "payload": {
                     "error_code": chunk.error.code,
                     "error_message": chunk.error.message,
-                    "error_details": dict(chunk.error.details)
-                }
+                    "error_details": dict(chunk.error.details),
+                },
             }
 
         elif chunk.type == agent_pb2.CHUNK_TYPE_MESSAGE and chunk.HasField("message"):
@@ -486,9 +483,9 @@ class GRPCTransport(Transport):
                         "role": chunk.message.role,
                         "content": self._deserialize_content(chunk.message.content),
                         "metadata": dict(chunk.message.metadata),
-                        "timestamp": chunk.message.timestamp
+                        "timestamp": chunk.message.timestamp,
                     }
-                }
+                },
             }
 
         else:
@@ -498,7 +495,7 @@ class GRPCTransport(Transport):
                 "type": "stream_chunk",
                 "id": chunk.id,
                 "timestamp": chunk.timestamp,
-                "payload": {}
+                "payload": {},
             }
 
     def _serialize_content(self, content: Any) -> str:
@@ -554,8 +551,8 @@ class GRPCTransport(Transport):
             "payload": {
                 "error_code": error_code,
                 "error_message": error_message,
-                "error_details": {}
-            }
+                "error_details": {},
+            },
         }
 
     def _grpc_status_to_error_code(self, status_code: grpc.StatusCode) -> str:

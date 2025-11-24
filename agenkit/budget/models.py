@@ -5,7 +5,6 @@ Pricing data as of November 2025. Rates are per 1 million tokens.
 """
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -31,17 +30,14 @@ class ModelPricing:
         "gpt-3.5-turbo": {"input": 0.50, "output": 1.50},
         "o3": {"input": 5.00, "output": 15.00},
         "o3-mini": {"input": 1.00, "output": 3.00},
-
         # Anthropic
         "claude-opus-4": {"input": 15.00, "output": 75.00},
         "claude-sonnet-4": {"input": 3.00, "output": 15.00},
         "claude-sonnet-4.5": {"input": 3.00, "output": 15.00},
         "claude-haiku-3": {"input": 0.25, "output": 1.25},
-
         # Google
         "gemini-2.0-flash-exp": {"input": 0.00, "output": 0.00},  # Free tier
         "gemini-pro": {"input": 0.50, "output": 1.50},
-
         # Generic fallback
         "default": {"input": 0.01, "output": 0.01},
     }
@@ -50,7 +46,7 @@ class ModelPricing:
         self,
         model: str,
         tokens: int,
-        direction: str  # "input" or "output"
+        direction: str,  # "input" or "output"
     ) -> float:
         """
         Calculate cost for tokens.
@@ -82,7 +78,7 @@ class ModelPricing:
         price_per_million = self.PRICING[model][direction]
         return (tokens / 1_000_000) * price_per_million
 
-    def get_model_pricing(self, model: str) -> Optional[dict]:
+    def get_model_pricing(self, model: str) -> dict | None:
         """
         Get pricing for specific model.
 
@@ -114,15 +110,10 @@ class ModelPricing:
             >>> print(len(models))
             12
         """
-        return [model for model in self.PRICING.keys() if model != "default"]
+        return [model for model in self.PRICING if model != "default"]
 
     @classmethod
-    def update_pricing(
-        cls,
-        model: str,
-        input_price: float,
-        output_price: float
-    ) -> None:
+    def update_pricing(cls, model: str, input_price: float, output_price: float) -> None:
         """
         Update pricing for model (for testing or custom deployments).
 
@@ -139,14 +130,12 @@ class ModelPricing:
             $5.00
         """
         cls.PRICING[model] = {"input": input_price, "output": output_price}
-        logger.info(f"Updated pricing for {model}: ${input_price}/M input, ${output_price}/M output")
+        logger.info(
+            f"Updated pricing for {model}: ${input_price}/M input, ${output_price}/M output"
+        )
 
     def estimate_conversation_cost(
-        self,
-        model: str,
-        num_turns: int,
-        avg_input_tokens: int,
-        avg_output_tokens: int
+        self, model: str, num_turns: int, avg_input_tokens: int, avg_output_tokens: int
     ) -> float:
         """
         Estimate cost for a conversation.
@@ -180,10 +169,7 @@ class ModelPricing:
         return input_cost + output_cost
 
     def compare_models(
-        self,
-        models: list[str],
-        input_tokens: int,
-        output_tokens: int
+        self, models: list[str], input_tokens: int, output_tokens: int
     ) -> dict[str, float]:
         """
         Compare costs across different models.

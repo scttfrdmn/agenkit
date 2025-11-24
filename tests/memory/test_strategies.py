@@ -4,13 +4,13 @@ Tests for memory strategies.
 
 import pytest
 
+from agenkit.interfaces import Message
 from agenkit.memory import InMemoryMemory
 from agenkit.memory.strategies import (
-    SlidingWindowStrategy,
     ImportanceWeightingStrategy,
-    SummarizationStrategy
+    SlidingWindowStrategy,
+    SummarizationStrategy,
 )
-from agenkit.interfaces import Message
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ async def populated_memory():
         await memory.store(
             "test-session",
             Message(role="user", content=f"Message {i}"),
-            metadata={"importance": importance}
+            metadata={"importance": importance},
         )
 
     return memory
@@ -32,15 +32,14 @@ async def populated_memory():
 
 # ===== SlidingWindowStrategy Tests =====
 
+
 @pytest.mark.asyncio
 async def test_sliding_window_basic(populated_memory):
     """Test basic sliding window strategy."""
     strategy = SlidingWindowStrategy(window_size=5)
 
     messages = await strategy.select(
-        memory=populated_memory,
-        session_id="test-session",
-        context_limit=10
+        memory=populated_memory, session_id="test-session", context_limit=10
     )
 
     # Should get 5 most recent messages
@@ -61,7 +60,7 @@ async def test_sliding_window_respects_context_limit(populated_memory):
     messages = await strategy.select(
         memory=populated_memory,
         session_id="test-session",
-        context_limit=3  # Smaller than window_size
+        context_limit=3,  # Smaller than window_size
     )
 
     # Should respect context_limit (min of window_size and context_limit)
@@ -74,16 +73,13 @@ async def test_sliding_window_empty_session():
     memory = InMemoryMemory()
     strategy = SlidingWindowStrategy(window_size=5)
 
-    messages = await strategy.select(
-        memory=memory,
-        session_id="empty-session",
-        context_limit=10
-    )
+    messages = await strategy.select(memory=memory, session_id="empty-session", context_limit=10)
 
     assert len(messages) == 0
 
 
 # ===== ImportanceWeightingStrategy Tests =====
+
 
 @pytest.mark.asyncio
 async def test_importance_weighting_basic(populated_memory):
@@ -91,13 +87,11 @@ async def test_importance_weighting_basic(populated_memory):
     strategy = ImportanceWeightingStrategy(
         importance_threshold=0.5,
         recency_weight=0.0,  # Disable recency for predictable results
-        min_recent=0  # Disable auto-include recent
+        min_recent=0,  # Disable auto-include recent
     )
 
     messages = await strategy.select(
-        memory=populated_memory,
-        session_id="test-session",
-        context_limit=5
+        memory=populated_memory, session_id="test-session", context_limit=5
     )
 
     # Should get messages with importance >= 0.5
@@ -117,13 +111,11 @@ async def test_importance_weighting_always_includes_recent(populated_memory):
     strategy = ImportanceWeightingStrategy(
         importance_threshold=0.9,  # Very high threshold
         recency_weight=0.0,
-        min_recent=3  # Always include 3 most recent
+        min_recent=3,  # Always include 3 most recent
     )
 
     messages = await strategy.select(
-        memory=populated_memory,
-        session_id="test-session",
-        context_limit=10
+        memory=populated_memory, session_id="test-session", context_limit=10
     )
 
     # Should include at least the 3 most recent (Message 7, 8, 9)
@@ -139,13 +131,11 @@ async def test_importance_weighting_with_recency_bonus(populated_memory):
     strategy = ImportanceWeightingStrategy(
         importance_threshold=0.0,
         recency_weight=0.5,  # Significant recency bonus
-        min_recent=0
+        min_recent=0,
     )
 
     messages = await strategy.select(
-        memory=populated_memory,
-        session_id="test-session",
-        context_limit=5
+        memory=populated_memory, session_id="test-session", context_limit=5
     )
 
     # Should prefer more recent messages due to recency bonus
@@ -163,10 +153,7 @@ async def test_importance_weighting_custom_scorer():
 
     # Add messages without importance metadata
     for i in range(5):
-        await memory.store(
-            "test-session",
-            Message(role="user", content=f"Message {i}")
-        )
+        await memory.store("test-session", Message(role="user", content=f"Message {i}"))
 
     # Custom scorer: prefer messages with even numbers
     def custom_scorer(msg: Message) -> float:
@@ -174,16 +161,11 @@ async def test_importance_weighting_custom_scorer():
         return 1.0 if num % 2 == 0 else 0.0
 
     strategy = ImportanceWeightingStrategy(
-        importance_threshold=0.5,
-        recency_weight=0.0,
-        min_recent=0
+        importance_threshold=0.5, recency_weight=0.0, min_recent=0
     )
 
     messages = await strategy.select(
-        memory=memory,
-        session_id="test-session",
-        context_limit=10,
-        custom_scorer=custom_scorer
+        memory=memory, session_id="test-session", context_limit=10, custom_scorer=custom_scorer
     )
 
     # Should prefer even-numbered messages
@@ -195,18 +177,14 @@ async def test_importance_weighting_custom_scorer():
 
 # ===== SummarizationStrategy Tests =====
 
+
 @pytest.mark.asyncio
 async def test_summarization_basic(populated_memory):
     """Test basic summarization strategy."""
-    strategy = SummarizationStrategy(
-        recent_count=3,
-        summarize_older=True
-    )
+    strategy = SummarizationStrategy(recent_count=3, summarize_older=True)
 
     messages = await strategy.select(
-        memory=populated_memory,
-        session_id="test-session",
-        context_limit=10
+        memory=populated_memory, session_id="test-session", context_limit=10
     )
 
     # Should have summary + 3 recent messages = 4 total
@@ -228,13 +206,11 @@ async def test_summarization_no_summary(populated_memory):
     """Test summarization with summary disabled."""
     strategy = SummarizationStrategy(
         recent_count=5,
-        summarize_older=False  # Don't include summary
+        summarize_older=False,  # Don't include summary
     )
 
     messages = await strategy.select(
-        memory=populated_memory,
-        session_id="test-session",
-        context_limit=10
+        memory=populated_memory, session_id="test-session", context_limit=10
     )
 
     # Should only have recent messages (no summary)
@@ -251,15 +227,12 @@ async def test_summarization_no_summary(populated_memory):
 @pytest.mark.asyncio
 async def test_summarization_respects_context_limit(populated_memory):
     """Test that summarization respects context limit."""
-    strategy = SummarizationStrategy(
-        recent_count=10,
-        summarize_older=True
-    )
+    strategy = SummarizationStrategy(recent_count=10, summarize_older=True)
 
     messages = await strategy.select(
         memory=populated_memory,
         session_id="test-session",
-        context_limit=5  # Limit total messages
+        context_limit=5,  # Limit total messages
     )
 
     # Should have at most 5 messages (1 summary + 4 recent)
@@ -270,16 +243,9 @@ async def test_summarization_respects_context_limit(populated_memory):
 async def test_summarization_empty_session():
     """Test summarization with empty session."""
     memory = InMemoryMemory()
-    strategy = SummarizationStrategy(
-        recent_count=5,
-        summarize_older=True
-    )
+    strategy = SummarizationStrategy(recent_count=5, summarize_older=True)
 
-    messages = await strategy.select(
-        memory=memory,
-        session_id="empty-session",
-        context_limit=10
-    )
+    messages = await strategy.select(memory=memory, session_id="empty-session", context_limit=10)
 
     assert len(messages) == 0
 
@@ -291,21 +257,14 @@ async def test_summarization_few_messages():
 
     # Only add 3 messages
     for i in range(3):
-        await memory.store(
-            "test-session",
-            Message(role="user", content=f"Message {i}")
-        )
+        await memory.store("test-session", Message(role="user", content=f"Message {i}"))
 
     strategy = SummarizationStrategy(
         recent_count=10,  # More than available
-        summarize_older=True
+        summarize_older=True,
     )
 
-    messages = await strategy.select(
-        memory=memory,
-        session_id="test-session",
-        context_limit=10
-    )
+    messages = await strategy.select(memory=memory, session_id="test-session", context_limit=10)
 
     # Should have summary + all 3 messages
     # Or just 3 messages if no older messages to summarize
@@ -314,6 +273,7 @@ async def test_summarization_few_messages():
 
 
 # ===== Integration Tests =====
+
 
 @pytest.mark.asyncio
 async def test_strategy_switching():
@@ -325,7 +285,7 @@ async def test_strategy_switching():
         await memory.store(
             "test-session",
             Message(role="user", content=f"Message {i}"),
-            metadata={"importance": 0.5}
+            metadata={"importance": 0.5},
         )
 
     # Try different strategies on same memory
@@ -333,15 +293,9 @@ async def test_strategy_switching():
     importance = ImportanceWeightingStrategy()
     summarization = SummarizationStrategy(recent_count=5)
 
-    messages_sliding = await sliding.select(
-        memory, "test-session", context_limit=10
-    )
-    messages_importance = await importance.select(
-        memory, "test-session", context_limit=10
-    )
-    messages_summarization = await summarization.select(
-        memory, "test-session", context_limit=10
-    )
+    messages_sliding = await sliding.select(memory, "test-session", context_limit=10)
+    messages_importance = await importance.select(memory, "test-session", context_limit=10)
+    messages_summarization = await summarization.select(memory, "test-session", context_limit=10)
 
     # All should return valid results
     assert len(messages_sliding) > 0
@@ -373,20 +327,13 @@ async def test_strategies_with_real_conversation():
 
     for role, content, importance in conversation:
         await memory.store(
-            "conversation",
-            Message(role=role, content=content),
-            metadata={"importance": importance}
+            "conversation", Message(role=role, content=content), metadata={"importance": importance}
         )
 
     # Test importance strategy - should prioritize bug discussion
-    importance_strategy = ImportanceWeightingStrategy(
-        importance_threshold=0.7,
-        min_recent=2
-    )
+    importance_strategy = ImportanceWeightingStrategy(importance_threshold=0.7, min_recent=2)
 
-    important_messages = await importance_strategy.select(
-        memory, "conversation", context_limit=6
-    )
+    important_messages = await importance_strategy.select(memory, "conversation", context_limit=6)
 
     # Should include important bug-related messages
     # Note: The exact messages depend on strategy implementation

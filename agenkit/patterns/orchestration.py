@@ -186,8 +186,7 @@ class ParallelPattern(Agent):
         first = messages[0]
         # Put all results in metadata for inspection
         all_results = [
-            {"role": msg.role, "content": msg.content, "metadata": msg.metadata}
-            for msg in messages
+            {"role": msg.role, "content": msg.content, "metadata": msg.metadata} for msg in messages
         ]
 
         return Message(

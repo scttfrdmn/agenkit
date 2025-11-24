@@ -29,6 +29,7 @@ TRADE-OFFS:
 """
 
 import asyncio
+
 from agenkit.interfaces import Agent, Message
 from agenkit.middleware import RetryConfig, RetryDecorator
 
@@ -59,7 +60,7 @@ class UnreliableAPIAgent(Agent):
         return Message(
             role="agent",
             content=f"Translated: {message.content}",
-            metadata={"attempts": self.attempt_count}
+            metadata={"attempts": self.attempt_count},
         )
 
 
@@ -76,9 +77,9 @@ async def example_basic_retry():
         RetryConfig(
             max_attempts=5,
             initial_backoff=0.5,  # Start with 500ms
-            max_backoff=5.0,      # Cap at 5 seconds
-            backoff_multiplier=2.0 # Double each time: 500ms, 1s, 2s, 4s, 5s
-        )
+            max_backoff=5.0,  # Cap at 5 seconds
+            backoff_multiplier=2.0,  # Double each time: 500ms, 1s, 2s, 4s, 5s
+        ),
     )
 
     message = Message(role="user", content="Hello, world!")
@@ -155,8 +156,8 @@ async def example_custom_retry_logic():
             max_attempts=3,
             initial_backoff=0.1,
             backoff_multiplier=2.0,
-            should_retry=should_retry_error
-        )
+            should_retry=should_retry_error,
+        ),
     )
 
     message = Message(role="user", content="test")
@@ -185,18 +186,11 @@ async def example_no_retry_on_auth_error():
 
     def should_retry_error(error: Exception) -> bool:
         # Never retry authentication errors
-        if "AuthenticationError" in str(error):
-            return False
-        return True
+        return "AuthenticationError" not in str(error)
 
     agent = AuthFailAgent()
     retry_agent = RetryDecorator(
-        agent,
-        RetryConfig(
-            max_attempts=3,
-            initial_backoff=0.1,
-            should_retry=should_retry_error
-        )
+        agent, RetryConfig(max_attempts=3, initial_backoff=0.1, should_retry=should_retry_error)
     )
 
     message = Message(role="user", content="test")
@@ -211,9 +205,9 @@ async def example_no_retry_on_auth_error():
 
 async def main():
     """Run all examples."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("RETRY MIDDLEWARE EXAMPLES")
-    print("="*60)
+    print("=" * 60)
     print("\nThese examples show why retry middleware is essential for")
     print("building resilient distributed systems.\n")
 
@@ -221,9 +215,9 @@ async def main():
     await example_custom_retry_logic()
     await example_no_retry_on_auth_error()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("KEY TAKEAWAYS")
-    print("="*60)
+    print("=" * 60)
     print("""
 1. Always use retry for external API calls (LLMs, databases, web services)
 2. Use exponential backoff to avoid overwhelming failing services

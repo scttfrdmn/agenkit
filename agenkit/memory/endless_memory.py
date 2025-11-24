@@ -7,11 +7,10 @@ through compression. Users provide their own endless client.
 Note: This is an integration interface only. Does NOT include endless code.
 """
 
-from typing import Optional, Protocol, Any
-from datetime import datetime, timezone
+from typing import Protocol
 
-from .base import Memory
 from ..interfaces import Message
+from .base import Memory
 
 
 class EndlessClient(Protocol):
@@ -23,34 +22,22 @@ class EndlessClient(Protocol):
     """
 
     async def store_context(
-        self,
-        session_id: str,
-        messages: list[dict],
-        metadata: Optional[dict] = None
+        self, session_id: str, messages: list[dict], metadata: dict | None = None
     ) -> None:
         """Store messages in endless compressed context."""
         ...
 
     async def retrieve_context(
-        self,
-        session_id: str,
-        query: Optional[str] = None,
-        limit: int = 10
+        self, session_id: str, query: str | None = None, limit: int = 10
     ) -> list[dict]:
         """Retrieve compressed context from endless."""
         ...
 
-    async def summarize_context(
-        self,
-        session_id: str
-    ) -> str:
+    async def summarize_context(self, session_id: str) -> str:
         """Get summary of compressed context."""
         ...
 
-    async def clear_context(
-        self,
-        session_id: str
-    ) -> None:
+    async def clear_context(self, session_id: str) -> None:
         """Clear context for session."""
         ...
 
@@ -110,17 +97,9 @@ class EndlessMemory(Memory):
 
     def _dict_to_message(self, data: dict) -> Message:
         """Convert dict from endless to Message."""
-        return Message(
-            role=data["role"],
-            content=data["content"]
-        )
+        return Message(role=data["role"], content=data["content"])
 
-    async def store(
-        self,
-        session_id: str,
-        message: Message,
-        metadata: Optional[dict] = None
-    ) -> None:
+    async def store(self, session_id: str, message: Message, metadata: dict | None = None) -> None:
         """
         Store message in endless compressed context.
 
@@ -134,18 +113,10 @@ class EndlessMemory(Memory):
             msg_dict["metadata"] = metadata
 
         # Store in endless (compression happens automatically)
-        await self.client.store_context(
-            session_id,
-            [msg_dict],
-            metadata=metadata
-        )
+        await self.client.store_context(session_id, [msg_dict], metadata=metadata)
 
     async def retrieve(
-        self,
-        session_id: str,
-        query: Optional[str] = None,
-        limit: int = 10,
-        **kwargs
+        self, session_id: str, query: str | None = None, limit: int = 10, **kwargs
     ) -> list[Message]:
         """
         Retrieve messages from endless compressed context.
@@ -162,22 +133,14 @@ class EndlessMemory(Memory):
             List of messages from compressed context
         """
         # Retrieve from endless
-        results = await self.client.retrieve_context(
-            session_id,
-            query=query,
-            limit=limit
-        )
+        results = await self.client.retrieve_context(session_id, query=query, limit=limit)
 
         # Convert to Messages
         messages = [self._dict_to_message(data) for data in results]
 
         return messages
 
-    async def summarize(
-        self,
-        session_id: str,
-        **kwargs
-    ) -> Message:
+    async def summarize(self, session_id: str, **kwargs) -> Message:
         """
         Get summary of compressed context from endless.
 
@@ -190,10 +153,7 @@ class EndlessMemory(Memory):
         """
         summary_text = await self.client.summarize_context(session_id)
 
-        return Message(
-            role="system",
-            content=summary_text
-        )
+        return Message(role="system", content=summary_text)
 
     async def clear(self, session_id: str) -> None:
         """
@@ -212,5 +172,5 @@ class EndlessMemory(Memory):
             "compression",
             "semantic_search",
             "cross_session_knowledge",
-            "automatic_summarization"
+            "automatic_summarization",
         ]

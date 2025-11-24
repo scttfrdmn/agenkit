@@ -11,8 +11,7 @@ Key Features:
 - Support for different history strategies
 """
 
-from typing import List, Optional, Protocol
-import asyncio
+from typing import Protocol
 
 from agenkit import Agent, Message
 
@@ -20,7 +19,7 @@ from agenkit import Agent, Message
 class LLMClient(Protocol):
     """Protocol for LLM clients that can be used with ConversationalAgent."""
 
-    async def chat(self, messages: List[Message]) -> Message:
+    async def chat(self, messages: list[Message]) -> Message:
         """Generate a response given a conversation history."""
         ...
 
@@ -68,14 +67,14 @@ class ConversationalAgent(Agent):
         self,
         llm_client: LLMClient,
         max_history: int = 10,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         include_system: bool = True,
     ):
         self.llm = llm_client
         self.max_history = max_history
         self.system_prompt = system_prompt
         self.include_system = include_system
-        self.history: List[Message] = []
+        self.history: list[Message] = []
 
         # Add system prompt to history if provided
         if system_prompt and include_system:
@@ -156,7 +155,7 @@ class ConversationalAgent(Agent):
         else:
             self.history = []
 
-    def get_history(self) -> List[Message]:
+    def get_history(self) -> list[Message]:
         """
         Get a copy of the current conversation history.
 
@@ -174,7 +173,7 @@ class ConversationalAgent(Agent):
         """
         return len(self.history)
 
-    def export_history(self) -> List[dict]:
+    def export_history(self) -> list[dict]:
         """
         Export history in a serializable format.
 
@@ -186,7 +185,7 @@ class ConversationalAgent(Agent):
             for msg in self.history
         ]
 
-    def import_history(self, history: List[dict]) -> None:
+    def import_history(self, history: list[dict]) -> None:
         """
         Import conversation history from serialized format.
 

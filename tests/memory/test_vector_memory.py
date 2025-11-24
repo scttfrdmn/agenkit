@@ -2,15 +2,12 @@
 Tests for VectorMemory implementation.
 """
 
-import pytest
 from datetime import datetime, timezone
 
-from agenkit.memory.vector_memory import (
-    VectorMemory,
-    EmbeddingProvider,
-    InMemoryVectorStore
-)
+import pytest
+
 from agenkit.interfaces import Message
+from agenkit.memory.vector_memory import EmbeddingProvider, InMemoryVectorStore, VectorMemory
 
 
 class MockEmbeddingProvider(EmbeddingProvider):
@@ -29,7 +26,7 @@ class MockEmbeddingProvider(EmbeddingProvider):
         embedding = [0.0] * self._dimension
 
         # Fill embedding with normalized character values
-        for i, char in enumerate(text.lower()[:self._dimension]):
+        for i, char in enumerate(text.lower()[: self._dimension]):
             embedding[i] = ord(char) / 255.0
 
         # Normalize to unit vector
@@ -73,25 +70,12 @@ async def test_store_and_retrieve(vector_memory):
 async def test_semantic_search(vector_memory):
     """Test semantic search functionality."""
     # Store messages with different content
-    await vector_memory.store(
-        "session-1",
-        Message(role="user", content="apple banana orange")
-    )
-    await vector_memory.store(
-        "session-1",
-        Message(role="user", content="apple pear grape")
-    )
-    await vector_memory.store(
-        "session-1",
-        Message(role="user", content="cat dog bird")
-    )
+    await vector_memory.store("session-1", Message(role="user", content="apple banana orange"))
+    await vector_memory.store("session-1", Message(role="user", content="apple pear grape"))
+    await vector_memory.store("session-1", Message(role="user", content="cat dog bird"))
 
     # Search for fruit-related messages
-    messages = await vector_memory.retrieve(
-        "session-1",
-        query="apple fruit",
-        limit=2
-    )
+    messages = await vector_memory.retrieve("session-1", query="apple fruit", limit=2)
 
     # Should get fruit messages, not animal message
     assert len(messages) == 2
@@ -102,24 +86,15 @@ async def test_semantic_search(vector_memory):
 async def test_retrieve_with_scores(vector_memory):
     """Test retrieving messages with similarity scores."""
     # Store messages
+    await vector_memory.store("session-1", Message(role="user", content="machine learning AI"))
     await vector_memory.store(
-        "session-1",
-        Message(role="user", content="machine learning AI")
+        "session-1", Message(role="user", content="deep learning neural networks")
     )
-    await vector_memory.store(
-        "session-1",
-        Message(role="user", content="deep learning neural networks")
-    )
-    await vector_memory.store(
-        "session-1",
-        Message(role="user", content="cooking recipes food")
-    )
+    await vector_memory.store("session-1", Message(role="user", content="cooking recipes food"))
 
     # Search with scores
     results = await vector_memory.retrieve_with_scores(
-        "session-1",
-        query="artificial intelligence",
-        limit=3
+        "session-1", query="artificial intelligence", limit=3
     )
 
     assert len(results) == 3
@@ -152,14 +127,8 @@ async def test_retrieve_with_limit(vector_memory):
 async def test_multiple_sessions(vector_memory):
     """Test isolation between sessions."""
     # Store in different sessions
-    await vector_memory.store(
-        "session-1",
-        Message(role="user", content="Session 1 message")
-    )
-    await vector_memory.store(
-        "session-2",
-        Message(role="user", content="Session 2 message")
-    )
+    await vector_memory.store("session-1", Message(role="user", content="Session 1 message"))
+    await vector_memory.store("session-2", Message(role="user", content="Session 2 message"))
 
     messages_1 = await vector_memory.retrieve("session-1", limit=10)
     messages_2 = await vector_memory.retrieve("session-2", limit=10)
@@ -186,11 +155,7 @@ async def test_store_with_metadata(vector_memory):
     await vector_memory.store("session-1", msg, metadata=metadata)
 
     # Test retrieval with importance filter
-    messages = await vector_memory.retrieve(
-        "session-1",
-        limit=10,
-        importance_threshold=0.8
-    )
+    messages = await vector_memory.retrieve("session-1", limit=10, importance_threshold=0.8)
 
     assert len(messages) == 1
     assert messages[0].content == "Important message"
@@ -201,27 +166,21 @@ async def test_retrieve_with_importance_threshold(vector_memory):
     """Test retrieving with importance threshold filter."""
     # Store messages with different importance
     await vector_memory.store(
-        "session-1",
-        Message(role="user", content="Low priority task"),
-        metadata={"importance": 0.3}
+        "session-1", Message(role="user", content="Low priority task"), metadata={"importance": 0.3}
     )
     await vector_memory.store(
         "session-1",
         Message(role="user", content="High priority task"),
-        metadata={"importance": 0.9}
+        metadata={"importance": 0.9},
     )
     await vector_memory.store(
         "session-1",
         Message(role="user", content="Medium priority task"),
-        metadata={"importance": 0.6}
+        metadata={"importance": 0.6},
     )
 
     # Retrieve only high importance
-    messages = await vector_memory.retrieve(
-        "session-1",
-        limit=10,
-        importance_threshold=0.7
-    )
+    messages = await vector_memory.retrieve("session-1", limit=10, importance_threshold=0.7)
 
     assert len(messages) == 1
     assert messages[0].content == "High priority task"
@@ -234,25 +193,21 @@ async def test_retrieve_with_tags(vector_memory):
     await vector_memory.store(
         "session-1",
         Message(role="user", content="Bug report"),
-        metadata={"tags": ["bug", "urgent"]}
+        metadata={"tags": ["bug", "urgent"]},
     )
     await vector_memory.store(
         "session-1",
         Message(role="user", content="Feature request"),
-        metadata={"tags": ["feature", "enhancement"]}
+        metadata={"tags": ["feature", "enhancement"]},
     )
     await vector_memory.store(
         "session-1",
         Message(role="user", content="Critical bug"),
-        metadata={"tags": ["bug", "critical"]}
+        metadata={"tags": ["bug", "critical"]},
     )
 
     # Retrieve only bug-tagged messages
-    messages = await vector_memory.retrieve(
-        "session-1",
-        limit=10,
-        tags=["bug"]
-    )
+    messages = await vector_memory.retrieve("session-1", limit=10, tags=["bug"])
 
     assert len(messages) == 2
     assert any("Bug report" in msg.content for msg in messages)
@@ -264,24 +219,16 @@ async def test_semantic_search_with_min_similarity(vector_memory):
     """Test semantic search with minimum similarity threshold."""
     # Store messages
     await vector_memory.store(
-        "session-1",
-        Message(role="user", content="python programming language")
+        "session-1", Message(role="user", content="python programming language")
     )
+    await vector_memory.store("session-1", Message(role="user", content="python snake reptile"))
     await vector_memory.store(
-        "session-1",
-        Message(role="user", content="python snake reptile")
-    )
-    await vector_memory.store(
-        "session-1",
-        Message(role="user", content="javascript web development")
+        "session-1", Message(role="user", content="javascript web development")
     )
 
     # Search with high similarity threshold
     messages = await vector_memory.retrieve(
-        "session-1",
-        query="python",
-        limit=10,
-        min_similarity=0.5
+        "session-1", query="python", limit=10, min_similarity=0.5
     )
 
     # Should get python-related messages
@@ -293,27 +240,20 @@ async def test_semantic_search_with_min_similarity(vector_memory):
 async def test_retrieve_with_time_range(vector_memory):
     """Test retrieving with time range filter."""
     # Store messages
-    await vector_memory.store(
-        "session-1",
-        Message(role="user", content="Old message")
-    )
+    await vector_memory.store("session-1", Message(role="user", content="Old message"))
 
     # Wait and record time
     import asyncio
+
     await asyncio.sleep(0.1)
     cutoff_time = datetime.now(timezone.utc)
     await asyncio.sleep(0.1)
 
-    await vector_memory.store(
-        "session-1",
-        Message(role="user", content="New message")
-    )
+    await vector_memory.store("session-1", Message(role="user", content="New message"))
 
     # Retrieve only messages after cutoff
     messages = await vector_memory.retrieve(
-        "session-1",
-        limit=10,
-        time_range=(cutoff_time, datetime.now(timezone.utc))
+        "session-1", limit=10, time_range=(cutoff_time, datetime.now(timezone.utc))
     )
 
     assert len(messages) == 1
@@ -326,8 +266,7 @@ async def test_summarize(vector_memory):
     # Store some messages
     for i in range(5):
         await vector_memory.store(
-            "session-1",
-            Message(role="user", content=f"Message {i} with content")
+            "session-1", Message(role="user", content=f"Message {i} with content")
         )
 
     summary = await vector_memory.summarize("session-1")
@@ -350,14 +289,8 @@ async def test_summarize_empty_session(vector_memory):
 async def test_clear(vector_memory):
     """Test clearing session memory."""
     # Store messages
-    await vector_memory.store(
-        "session-1",
-        Message(role="user", content="Message 1")
-    )
-    await vector_memory.store(
-        "session-1",
-        Message(role="user", content="Message 2")
-    )
+    await vector_memory.store("session-1", Message(role="user", content="Message 1"))
+    await vector_memory.store("session-1", Message(role="user", content="Message 2"))
 
     # Verify stored
     messages = await vector_memory.retrieve("session-1", limit=10)
@@ -409,25 +342,22 @@ async def test_combined_filters(vector_memory):
     await vector_memory.store(
         "session-1",
         Message(role="user", content="Important bug report"),
-        metadata={"importance": 0.9, "tags": ["bug", "urgent"]}
+        metadata={"importance": 0.9, "tags": ["bug", "urgent"]},
     )
     await vector_memory.store(
         "session-1",
         Message(role="user", content="Minor bug report"),
-        metadata={"importance": 0.3, "tags": ["bug", "minor"]}
+        metadata={"importance": 0.3, "tags": ["bug", "minor"]},
     )
     await vector_memory.store(
         "session-1",
         Message(role="user", content="Important feature request"),
-        metadata={"importance": 0.8, "tags": ["feature", "urgent"]}
+        metadata={"importance": 0.8, "tags": ["feature", "urgent"]},
     )
 
     # Retrieve with combined filters (urgent + high importance)
     messages = await vector_memory.retrieve(
-        "session-1",
-        limit=10,
-        importance_threshold=0.7,
-        tags=["urgent"]
+        "session-1", limit=10, importance_threshold=0.7, tags=["urgent"]
     )
 
     # Should get both urgent + important messages

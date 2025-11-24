@@ -236,9 +236,7 @@ async def run_concurrent_example():
         print("Creating 5 concurrent clients...\n")
 
         # Create multiple clients
-        clients = [
-            RemoteAgent("chat", endpoint="ws://127.0.0.1:8767") for _ in range(5)
-        ]
+        clients = [RemoteAgent("chat", endpoint="ws://127.0.0.1:8767") for _ in range(5)]
 
         # Send concurrent requests
         async def send_message(client_id, remote):

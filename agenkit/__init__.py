@@ -18,14 +18,14 @@ __version__ = "0.10.0"
 __all__ = [
     # Core interfaces
     "Agent",
-    "Message",
-    "Tool",
-    "ToolResult",
     # Composition patterns
     "ConditionalAgent",
     "FallbackAgent",
+    "Message",
     "ParallelAgent",
     "SequentialAgent",
     # Agent patterns
     "Task",
+    "Tool",
+    "ToolResult",
 ]

@@ -6,11 +6,12 @@ your agents from prompt injection attacks.
 """
 
 import asyncio
+
 from agenkit.interfaces import Agent, Message
 from agenkit.safety.input_validation import (
+    ContentFilter,
     InputValidationMiddleware,
     PromptInjectionDetector,
-    ContentFilter,
     ValidationError,
 )
 
@@ -67,13 +68,11 @@ async def main():
     lenient_agent = InputValidationMiddleware(
         echo_agent,
         detector=PromptInjectionDetector(threshold=50),  # Higher threshold
-        strict=True
+        strict=True,
     )
 
     try:
-        response = await lenient_agent.process(
-            Message(role="user", content="System help please")
-        )
+        response = await lenient_agent.process(Message(role="user", content="System help please"))
         print(f"✓ Borderline content allowed: {response.content}")
     except ValidationError as e:
         print(f"✗ Blocked: {e}")
@@ -83,19 +82,13 @@ async def main():
     print("-" * 60)
     filtered_agent = InputValidationMiddleware(
         echo_agent,
-        content_filter=ContentFilter(
-            max_size=100,
-            min_size=5,
-            banned_words={"spam", "abuse"}
-        ),
-        strict=True
+        content_filter=ContentFilter(max_size=100, min_size=5, banned_words={"spam", "abuse"}),
+        strict=True,
     )
 
     # Oversized content
     try:
-        response = await filtered_agent.process(
-            Message(role="user", content="x" * 150)
-        )
+        response = await filtered_agent.process(Message(role="user", content="x" * 150))
         print(f"✓ Response: {response.content}")
     except ValidationError as e:
         print(f"✗ Blocked oversized input: {e}")

@@ -31,10 +31,7 @@ Example:
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Protocol
-from abc import ABC, abstractmethod
-import hashlib
-import json
+from typing import Any, Protocol
 
 
 @dataclass
@@ -43,10 +40,10 @@ class ToolDescription:
 
     name: str
     description: str
-    parameters: Optional[Dict[str, Any]] = None
-    examples: List[str] = field(default_factory=list)
-    tags: List[str] = field(default_factory=list)
-    category: Optional[str] = None
+    parameters: dict[str, Any] | None = None
+    examples: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    category: str | None = None
 
     def to_text(self) -> str:
         """Convert to text for embedding."""
@@ -76,14 +73,14 @@ class ToolMatch:
     name: str
     confidence: float  # 0.0 to 1.0
     description: str
-    reasoning: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    reasoning: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class EmbeddingProvider(Protocol):
     """Protocol for embedding providers."""
 
-    async def embed(self, text: str) -> List[float]:
+    async def embed(self, text: str) -> list[float]:
         """Generate embedding for text.
 
         Args:
@@ -94,7 +91,7 @@ class EmbeddingProvider(Protocol):
         """
         ...
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings for multiple texts.
 
         Args:
@@ -109,7 +106,7 @@ class EmbeddingProvider(Protocol):
 class OpenAIEmbeddingProvider:
     """OpenAI embedding provider using text-embedding-3-small."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "text-embedding-3-small"):
+    def __init__(self, api_key: str | None = None, model: str = "text-embedding-3-small"):
         """Initialize OpenAI embeddings.
 
         Args:
@@ -127,7 +124,7 @@ class OpenAIEmbeddingProvider:
         self.client = AsyncOpenAI(api_key=api_key)
         self.model = model
 
-    async def embed(self, text: str) -> List[float]:
+    async def embed(self, text: str) -> list[float]:
         """Generate embedding for text."""
         response = await self.client.embeddings.create(
             input=[text],
@@ -135,7 +132,7 @@ class OpenAIEmbeddingProvider:
         )
         return response.data[0].embedding
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings for multiple texts."""
         response = await self.client.embeddings.create(
             input=texts,
@@ -147,7 +144,7 @@ class OpenAIEmbeddingProvider:
 class VoyageEmbeddingProvider:
     """Voyage AI embedding provider."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "voyage-3"):
+    def __init__(self, api_key: str | None = None, model: str = "voyage-3"):
         """Initialize Voyage embeddings.
 
         Args:
@@ -165,18 +162,18 @@ class VoyageEmbeddingProvider:
         self.client = voyageai.AsyncClient(api_key=api_key)
         self.model = model
 
-    async def embed(self, text: str) -> List[float]:
+    async def embed(self, text: str) -> list[float]:
         """Generate embedding for text."""
         result = await self.client.embed([text], model=self.model)
         return result.embeddings[0]
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings for multiple texts."""
         result = await self.client.embed(texts, model=self.model)
         return result.embeddings
 
 
-def cosine_similarity(a: List[float], b: List[float]) -> float:
+def cosine_similarity(a: list[float], b: list[float]) -> float:
     """Calculate cosine similarity between two vectors.
 
     Args:
@@ -191,7 +188,7 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
     if len(a) != len(b):
         raise ValueError("Vectors must have same length")
 
-    dot_product = sum(x * y for x, y in zip(a, b))
+    dot_product = sum(x * y for x, y in zip(a, b, strict=False))
     magnitude_a = math.sqrt(sum(x * x for x in a))
     magnitude_b = math.sqrt(sum(x * x for x in b))
 
@@ -239,7 +236,7 @@ class SemanticToolSelector:
 
     def __init__(
         self,
-        tools: List[ToolDescription],
+        tools: list[ToolDescription],
         provider: EmbeddingProvider,
         cache_embeddings: bool = True,
         min_confidence: float = 0.3,
@@ -257,7 +254,7 @@ class SemanticToolSelector:
         self.cache_embeddings = cache_embeddings
         self.min_confidence = min_confidence
 
-        self._tool_embeddings: Dict[str, List[float]] = {}
+        self._tool_embeddings: dict[str, list[float]] = {}
         self._initialized = False
 
     async def initialize(self) -> None:
@@ -270,7 +267,7 @@ class SemanticToolSelector:
         embeddings = await self.provider.embed_batch(tool_texts)
 
         # Cache embeddings
-        for tool, embedding in zip(self.tools, embeddings):
+        for tool, embedding in zip(self.tools, embeddings, strict=False):
             self._tool_embeddings[tool.name] = embedding
 
         self._initialized = True
@@ -280,7 +277,7 @@ class SemanticToolSelector:
         query: str,
         top_k: int = 3,
         include_reasoning: bool = False,
-    ) -> List[ToolMatch]:
+    ) -> list[ToolMatch]:
         """Select most relevant tools for a query.
 
         Args:
@@ -328,9 +325,9 @@ class SemanticToolSelector:
 
     async def select_batch(
         self,
-        queries: List[str],
+        queries: list[str],
         top_k: int = 3,
-    ) -> List[List[ToolMatch]]:
+    ) -> list[list[ToolMatch]]:
         """Select tools for multiple queries efficiently.
 
         Args:
@@ -374,9 +371,7 @@ class SemanticToolSelector:
 
         return results
 
-    def _generate_reasoning(
-        self, query: str, tool: ToolDescription, similarity: float
-    ) -> str:
+    def _generate_reasoning(self, query: str, tool: ToolDescription, similarity: float) -> str:
         """Generate human-readable reasoning for why a tool was selected.
 
         Args:
@@ -389,7 +384,9 @@ class SemanticToolSelector:
         """
         confidence_level = "high" if similarity > 0.7 else "moderate" if similarity > 0.5 else "low"
 
-        reasoning = f"Selected '{tool.name}' with {confidence_level} confidence ({similarity:.2f}). "
+        reasoning = (
+            f"Selected '{tool.name}' with {confidence_level} confidence ({similarity:.2f}). "
+        )
 
         # Add category if available
         if tool.category:
@@ -401,7 +398,7 @@ class SemanticToolSelector:
 
         return reasoning
 
-    def get_tool(self, name: str) -> Optional[ToolDescription]:
+    def get_tool(self, name: str) -> ToolDescription | None:
         """Get tool description by name.
 
         Args:
@@ -444,7 +441,7 @@ class SemanticToolSelector:
                 return True
         return False
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get selector statistics.
 
         Returns:
@@ -455,5 +452,5 @@ class SemanticToolSelector:
             "initialized": self._initialized,
             "cached_embeddings": len(self._tool_embeddings),
             "min_confidence": self.min_confidence,
-            "categories": list(set(t.category for t in self.tools if t.category)),
+            "categories": list({t.category for t in self.tools if t.category}),
         }

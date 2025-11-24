@@ -179,9 +179,7 @@ class OpenAILLM(LLM):
                     metadata={"streaming": True, "model": self._model},
                 )
 
-    def _convert_messages(
-        self, messages: list[Message]
-    ) -> list[dict[str, str]]:
+    def _convert_messages(self, messages: list[Message]) -> list[dict[str, str]]:
         """
         Convert Agenkit Messages to OpenAI format.
 
@@ -198,9 +196,7 @@ class OpenAILLM(LLM):
                 # Map "agent" and others to "assistant"
                 role = "assistant"
 
-            openai_messages.append(
-                {"role": role, "content": str(msg.content)}
-            )
+            openai_messages.append({"role": role, "content": str(msg.content)})
 
         return openai_messages
 

@@ -1,12 +1,13 @@
 """Tests for output validation and sensitive data redaction."""
 
 import pytest
+
 from agenkit.interfaces import Agent, Message
 from agenkit.safety.output_validation import (
+    OutputValidationError,
     OutputValidationMiddleware,
     SchemaValidator,
     SensitiveDataRedactor,
-    OutputValidationError,
 )
 
 
@@ -22,10 +23,7 @@ class ResponseAgent(Agent):
         return []
 
     async def process(self, message: Message) -> Message:
-        return Message(
-            role="assistant",
-            content={"result": "success", "data": "test output"}
-        )
+        return Message(role="assistant", content={"result": "success", "data": "test output"})
 
 
 class SensitiveAgent(Agent):
@@ -46,8 +44,8 @@ class SensitiveAgent(Agent):
                 "api_key": "sk-1234567890abcdef",
                 "password": "secret123",
                 "email": "user@example.com",
-                "result": "User data retrieved"
-            }
+                "result": "User data retrieved",
+            },
         )
 
 
@@ -69,8 +67,7 @@ class TestSchemaValidator:
     def test_validates_correct_schema(self):
         """Test validation of correct schema."""
         validator = SchemaValidator(
-            expected_fields={"result": str, "data": str},
-            required_fields={"result"}
+            expected_fields={"result": str, "data": str}, required_fields={"result"}
         )
 
         output = {"result": "success", "data": "test"}
@@ -82,8 +79,7 @@ class TestSchemaValidator:
     def test_catches_missing_required_fields(self):
         """Test detection of missing required fields."""
         validator = SchemaValidator(
-            expected_fields={"result": str, "data": str},
-            required_fields={"result", "data"}
+            expected_fields={"result": str, "data": str}, required_fields={"result", "data"}
         )
 
         output = {"result": "success"}
@@ -95,9 +91,7 @@ class TestSchemaValidator:
 
     def test_catches_wrong_types(self):
         """Test detection of wrong field types."""
-        validator = SchemaValidator(
-            expected_fields={"result": str, "count": int}
-        )
+        validator = SchemaValidator(expected_fields={"result": str, "count": int})
 
         output = {"result": "success", "count": "not_an_int"}
         is_valid, error = validator.validate(output)
@@ -107,22 +101,16 @@ class TestSchemaValidator:
 
     def test_allows_additional_fields(self):
         """Test that additional fields are allowed by default."""
-        validator = SchemaValidator(
-            expected_fields={"result": str},
-            allow_additional=True
-        )
+        validator = SchemaValidator(expected_fields={"result": str}, allow_additional=True)
 
         output = {"result": "success", "extra": "field"}
-        is_valid, error = validator.validate(output)
+        is_valid, _error = validator.validate(output)
 
         assert is_valid is True
 
     def test_rejects_additional_fields_when_disabled(self):
         """Test rejection of additional fields when disabled."""
-        validator = SchemaValidator(
-            expected_fields={"result": str},
-            allow_additional=False
-        )
+        validator = SchemaValidator(expected_fields={"result": str}, allow_additional=False)
 
         output = {"result": "success", "extra": "field"}
         is_valid, error = validator.validate(output)
@@ -132,11 +120,10 @@ class TestSchemaValidator:
 
     def test_parses_json_string(self):
         """Test validation of JSON strings."""
-        validator = SchemaValidator(
-            expected_fields={"name": str, "count": int}
-        )
+        validator = SchemaValidator(expected_fields={"name": str, "count": int})
 
         import json
+
         json_str = json.dumps({"name": "test", "count": 42})
         is_valid, error = validator.validate(json_str)
 
@@ -145,9 +132,7 @@ class TestSchemaValidator:
 
     def test_invalid_json_string(self):
         """Test handling of invalid JSON strings."""
-        validator = SchemaValidator(
-            expected_fields={"name": str}
-        )
+        validator = SchemaValidator(expected_fields={"name": str})
 
         is_valid, error = validator.validate("not valid json")
         assert is_valid is False
@@ -155,9 +140,7 @@ class TestSchemaValidator:
 
     def test_non_dict_non_json_input(self):
         """Test rejection of non-dict, non-JSON input."""
-        validator = SchemaValidator(
-            expected_fields={"name": str}
-        )
+        validator = SchemaValidator(expected_fields={"name": str})
 
         is_valid, error = validator.validate(12345)
         assert is_valid is False
@@ -167,7 +150,7 @@ class TestSchemaValidator:
         """Test validation with optional fields."""
         validator = SchemaValidator(
             expected_fields={"name": str, "age": int, "email": str},
-            required_fields={"name"}  # age and email are optional
+            required_fields={"name"},  # age and email are optional
         )
 
         # Without optional fields
@@ -212,7 +195,7 @@ class TestSensitiveDataRedactor:
             "username": "alice",
             "password": "secret123",
             "api_key": "sk-abcdef",
-            "result": "success"
+            "result": "success",
         }
 
         redacted = redactor.redact(data)
@@ -266,13 +249,7 @@ class TestSensitiveDataRedactor:
         """Test redaction in nested dictionaries."""
         redactor = SensitiveDataRedactor()
 
-        data = {
-            "user": {
-                "name": "Alice",
-                "password": "secret123"
-            },
-            "api_key": "sk-abcdef"
-        }
+        data = {"user": {"name": "Alice", "password": "secret123"}, "api_key": "sk-abcdef"}
 
         redacted = redactor.redact(data)
 
@@ -366,9 +343,7 @@ class TestSensitiveDataRedactor:
 
     def test_custom_sensitive_fields(self):
         """Test adding custom sensitive fields."""
-        redactor = SensitiveDataRedactor(
-            sensitive_fields={"internal_id", "employee_code"}
-        )
+        redactor = SensitiveDataRedactor(sensitive_fields={"internal_id", "employee_code"})
 
         data = {
             "name": "Alice",
@@ -395,21 +370,12 @@ class TestSensitiveDataRedactor:
         """Test detection in nested structures."""
         redactor = SensitiveDataRedactor()
 
-        data = {
-            "user": {
-                "profile": {
-                    "password": "secret"
-                }
-            }
-        }
+        data = {"user": {"profile": {"password": "secret"}}}
 
         assert redactor.has_sensitive_data(data) is True
 
         # Also test list with nested dicts
-        data_list = [
-            {"safe": "data"},
-            {"nested": {"password": "secret"}}
-        ]
+        data_list = [{"safe": "data"}, {"nested": {"password": "secret"}}]
         assert redactor.has_sensitive_data(data_list) is True
 
     def test_redact_primitives_unchanged(self):
@@ -440,9 +406,7 @@ class TestOutputValidationMiddleware:
     @pytest.mark.asyncio
     async def test_allows_valid_output(self, response_agent):
         """Test that valid output passes through."""
-        schema = SchemaValidator(
-            expected_fields={"result": str, "data": str}
-        )
+        schema = SchemaValidator(expected_fields={"result": str, "data": str})
         agent = OutputValidationMiddleware(response_agent, schema=schema)
 
         message = Message(role="user", content="test")
@@ -454,8 +418,7 @@ class TestOutputValidationMiddleware:
     async def test_blocks_invalid_schema(self, response_agent):
         """Test that invalid schema is blocked."""
         schema = SchemaValidator(
-            expected_fields={"result": str, "count": int},
-            required_fields={"count"}
+            expected_fields={"result": str, "count": int}, required_fields={"count"}
         )
         agent = OutputValidationMiddleware(response_agent, schema=schema)
 
@@ -483,6 +446,7 @@ class TestOutputValidationMiddleware:
     @pytest.mark.asyncio
     async def test_blocks_oversized_output(self):
         """Test that oversized output is blocked."""
+
         # Create an agent that returns large output
         class LargeOutputAgent(Agent):
             @property
@@ -546,6 +510,7 @@ class TestOutputValidationMiddleware:
     @pytest.mark.asyncio
     async def test_custom_redactor(self):
         """Test with custom redactor configuration."""
+
         class CustomAgent(Agent):
             @property
             def name(self) -> str:
@@ -557,18 +522,14 @@ class TestOutputValidationMiddleware:
 
             async def process(self, message: Message) -> Message:
                 return Message(
-                    role="assistant",
-                    content={"internal_id": "SECRET-123", "data": "public"}
+                    role="assistant", content={"internal_id": "SECRET-123", "data": "public"}
                 )
 
         custom_redactor = SensitiveDataRedactor(
-            sensitive_fields={"internal_id"},
-            redaction_text="[REMOVED]"
+            sensitive_fields={"internal_id"}, redaction_text="[REMOVED]"
         )
         agent = OutputValidationMiddleware(
-            CustomAgent(),
-            redactor=custom_redactor,
-            auto_redact=True
+            CustomAgent(), redactor=custom_redactor, auto_redact=True
         )
 
         message = Message(role="user", content="test")
@@ -580,6 +541,7 @@ class TestOutputValidationMiddleware:
     @pytest.mark.asyncio
     async def test_combined_schema_and_redaction(self):
         """Test combining schema validation and redaction."""
+
         class CombinedAgent(Agent):
             @property
             def name(self) -> str:
@@ -596,18 +558,14 @@ class TestOutputValidationMiddleware:
                         "username": "alice",
                         "password": "secret",
                         "age": 30,
-                        "status": "active"
-                    }
+                        "status": "active",
+                    },
                 )
 
         schema = SchemaValidator(
             expected_fields={"username": str, "password": str, "age": int, "status": str}
         )
-        agent = OutputValidationMiddleware(
-            CombinedAgent(),
-            schema=schema,
-            auto_redact=True
-        )
+        agent = OutputValidationMiddleware(CombinedAgent(), schema=schema, auto_redact=True)
 
         message = Message(role="user", content="test")
         response = await agent.process(message)

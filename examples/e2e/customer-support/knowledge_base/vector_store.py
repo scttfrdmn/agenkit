@@ -9,9 +9,9 @@ In production, you would use:
 """
 
 import math
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 
 @dataclass
@@ -20,8 +20,8 @@ class Document:
 
     id: str
     content: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    embedding: Optional[List[float]] = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    embedding: list[float] | None = None
     created_at: datetime = field(default_factory=datetime.now)
 
     def __post_init__(self):
@@ -60,9 +60,9 @@ class VectorStore:
 
     def __init__(self):
         """Initialize vector store."""
-        self.documents: Dict[str, Document] = {}
-        self.vocabulary: Dict[str, int] = {}  # word -> index
-        self.idf: Dict[str, float] = {}  # word -> inverse document frequency
+        self.documents: dict[str, Document] = {}
+        self.vocabulary: dict[str, int] = {}  # word -> index
+        self.idf: dict[str, float] = {}  # word -> inverse document frequency
 
     def add_document(self, document: Document) -> None:
         """
@@ -85,7 +85,7 @@ class VectorStore:
         self._update_vocabulary(document.content)
         self._update_idf()
 
-    def add_documents(self, documents: List[Document]) -> None:
+    def add_documents(self, documents: list[Document]) -> None:
         """Add multiple documents."""
         for doc in documents:
             self.add_document(doc)
@@ -101,7 +101,7 @@ class VectorStore:
             del self.documents[document_id]
             self._update_idf()
 
-    def get_document(self, document_id: str) -> Optional[Document]:
+    def get_document(self, document_id: str) -> Document | None:
         """Get a document by ID."""
         return self.documents.get(document_id)
 
@@ -109,9 +109,9 @@ class VectorStore:
         self,
         query: str,
         top_k: int = 5,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         threshold: float = 0.0,
-    ) -> List[tuple[Document, float]]:
+    ) -> list[tuple[Document, float]]:
         """
         Search for similar documents.
 
@@ -132,11 +132,10 @@ class VectorStore:
 
         # Calculate similarities
         results = []
-        for doc_id, doc in self.documents.items():
+        for doc in self.documents.values():
             # Apply metadata filters
-            if filters:
-                if not self._matches_filters(doc, filters):
-                    continue
+            if filters and not self._matches_filters(doc, filters):
+                continue
 
             # Calculate similarity
             similarity = self._cosine_similarity(query_embedding, doc.embedding)
@@ -149,9 +148,7 @@ class VectorStore:
         results.sort(key=lambda x: x[1], reverse=True)
         return results[:top_k]
 
-    def list_documents(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[Document]:
+    def list_documents(self, filters: dict[str, Any] | None = None) -> list[Document]:
         """
         List all documents, optionally filtered by metadata.
 
@@ -164,13 +161,9 @@ class VectorStore:
         if filters is None:
             return list(self.documents.values())
 
-        return [
-            doc
-            for doc in self.documents.values()
-            if self._matches_filters(doc, filters)
-        ]
+        return [doc for doc in self.documents.values() if self._matches_filters(doc, filters)]
 
-    def count(self, filters: Optional[Dict[str, Any]] = None) -> int:
+    def count(self, filters: dict[str, Any] | None = None) -> int:
         """Count documents, optionally filtered."""
         return len(self.list_documents(filters))
 
@@ -180,7 +173,7 @@ class VectorStore:
         self.vocabulary.clear()
         self.idf.clear()
 
-    def _generate_embedding(self, text: str) -> List[float]:
+    def _generate_embedding(self, text: str) -> list[float]:
         """
         Generate a simple TF-IDF embedding for text.
 
@@ -192,7 +185,7 @@ class VectorStore:
         words = self._tokenize(text)
 
         # Calculate term frequency
-        tf: Dict[str, float] = {}
+        tf: dict[str, float] = {}
         for word in words:
             tf[word] = tf.get(word, 0) + 1
 
@@ -203,7 +196,7 @@ class VectorStore:
 
         # Create embedding vector (TF-IDF)
         embedding = []
-        for word, idx in sorted(self.vocabulary.items(), key=lambda x: x[1]):
+        for word, _idx in sorted(self.vocabulary.items(), key=lambda x: x[1]):
             tf_score = tf.get(word, 0)
             idf_score = self.idf.get(word, 0)
             embedding.append(tf_score * idf_score)
@@ -224,7 +217,7 @@ class VectorStore:
             return
 
         # Count documents containing each word
-        doc_freq: Dict[str, int] = {}
+        doc_freq: dict[str, int] = {}
         for doc in self.documents.values():
             words = set(self._tokenize(doc.content))
             for word in words:
@@ -239,7 +232,7 @@ class VectorStore:
             else:
                 self.idf[word] = 0.0
 
-    def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
+    def _cosine_similarity(self, vec1: list[float], vec2: list[float]) -> float:
         """Calculate cosine similarity between two vectors."""
         if not vec1 or not vec2:
             return 0.0
@@ -250,7 +243,7 @@ class VectorStore:
         vec2 = vec2 + [0.0] * (max_len - len(vec2))
 
         # Calculate dot product and magnitudes
-        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+        dot_product = sum(a * b for a, b in zip(vec1, vec2, strict=False))
         magnitude1 = math.sqrt(sum(a * a for a in vec1))
         magnitude2 = math.sqrt(sum(b * b for b in vec2))
 
@@ -260,17 +253,14 @@ class VectorStore:
 
         return dot_product / (magnitude1 * magnitude2)
 
-    def _tokenize(self, text: str) -> List[str]:
+    def _tokenize(self, text: str) -> list[str]:
         """Simple tokenization (lowercase + split on whitespace)."""
         # In production, use proper tokenization (nltk, spacy, etc.)
         return text.lower().split()
 
-    def _matches_filters(self, document: Document, filters: Dict[str, Any]) -> bool:
+    def _matches_filters(self, document: Document, filters: dict[str, Any]) -> bool:
         """Check if document matches metadata filters."""
-        for key, value in filters.items():
-            if document.metadata.get(key) != value:
-                return False
-        return True
+        return all(document.metadata.get(key) == value for key, value in filters.items())
 
 
 def create_sample_knowledge_base() -> VectorStore:

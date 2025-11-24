@@ -9,21 +9,21 @@ Tests verify:
 """
 
 import pytest
-from agenkit.interfaces import Agent, Message
-from agenkit.composition import (
-    SequentialAgent,
-    ParallelAgent,
-    FallbackAgent,
-    ConditionalAgent,
-    content_contains,
-    role_equals,
-    metadata_has_key,
-    metadata_equals,
-    and_conditions,
-    or_conditions,
-    not_condition,
-)
 
+from agenkit.composition import (
+    ConditionalAgent,
+    FallbackAgent,
+    ParallelAgent,
+    SequentialAgent,
+    and_conditions,
+    content_contains,
+    metadata_equals,
+    metadata_has_key,
+    not_condition,
+    or_conditions,
+    role_equals,
+)
+from agenkit.interfaces import Agent, Message
 
 # ============================================
 # Test Helper Agents
@@ -71,10 +71,7 @@ class AppendAgent(Agent):
         return self._name
 
     async def process(self, message: Message) -> Message:
-        return Message(
-            role="agent",
-            content=f"{message.content}{self._suffix}"
-        )
+        return Message(role="agent", content=f"{message.content}{self._suffix}")
 
 
 class CountAgent(Agent):
@@ -89,10 +86,7 @@ class CountAgent(Agent):
 
     async def process(self, message: Message) -> Message:
         count = len(str(message.content).split())
-        return Message(
-            role="agent",
-            content=f"Word count: {count}"
-        )
+        return Message(role="agent", content=f"Word count: {count}")
 
 
 class CapitalizeAgent(Agent):
@@ -106,10 +100,7 @@ class CapitalizeAgent(Agent):
         return self._name
 
     async def process(self, message: Message) -> Message:
-        return Message(
-            role="agent",
-            content=str(message.content).upper()
-        )
+        return Message(role="agent", content=str(message.content).upper())
 
 
 class MetadataAgent(Agent):
@@ -222,6 +213,7 @@ async def test_sequential_agent_empty_agents_raises():
 @pytest.mark.asyncio
 async def test_sequential_agent_capabilities():
     """Test sequential agent combines capabilities."""
+
     class Agent1(Agent):
         @property
         def name(self) -> str:
@@ -374,6 +366,7 @@ async def test_parallel_agent_empty_agents_raises():
 @pytest.mark.asyncio
 async def test_parallel_agent_capabilities():
     """Test parallel agent combines capabilities."""
+
     class Agent1(Agent):
         @property
         def name(self) -> str:
@@ -516,6 +509,7 @@ async def test_fallback_agent_metadata():
 @pytest.mark.asyncio
 async def test_fallback_agent_capabilities():
     """Test fallback agent combines capabilities."""
+
     class Agent1(Agent):
         @property
         def name(self) -> str:
@@ -705,10 +699,7 @@ async def test_conditional_agent_and_conditions():
     default_agent = AppendAgent(name="default", suffix=" [default]")
 
     conditional = ConditionalAgent("conditional", default_agent)
-    condition = and_conditions(
-        content_contains("search"),
-        metadata_has_key("priority")
-    )
+    condition = and_conditions(content_contains("search"), metadata_has_key("priority"))
     conditional.add_route(condition, combined_agent)
 
     # Both conditions met
@@ -729,10 +720,7 @@ async def test_conditional_agent_or_conditions():
     default_agent = AppendAgent(name="default", suffix=" [default]")
 
     conditional = ConditionalAgent("conditional", default_agent)
-    condition = or_conditions(
-        content_contains("search"),
-        content_contains("find")
-    )
+    condition = or_conditions(content_contains("search"), content_contains("find"))
     conditional.add_route(condition, combined_agent)
 
     # First condition met
@@ -840,6 +828,7 @@ async def test_conditional_agent_get_default_agent():
 @pytest.mark.asyncio
 async def test_conditional_agent_capabilities():
     """Test conditional agent combines capabilities."""
+
     class Agent1(Agent):
         @property
         def name(self) -> str:

@@ -337,9 +337,7 @@ class BedrockLLM(LLM):
                 # Map "agent" and others to "assistant"
                 role = "assistant"
 
-            bedrock_messages.append(
-                {"role": role, "content": [{"text": str(msg.content)}]}
-            )
+            bedrock_messages.append({"role": role, "content": [{"text": str(msg.content)}]})
 
         return bedrock_messages, system_prompts
 

@@ -5,12 +5,13 @@ This example shows how to compose patterns to create complex workflows.
 """
 
 import asyncio
-from agenkit import Agent, Message, SequentialPattern, ParallelPattern, RouterPattern
 
+from agenkit import Agent, Message, ParallelPattern, RouterPattern, SequentialPattern
 
 # ============================================
 # Analysis Agents (for parallel step)
 # ============================================
+
 
 class SentimentAgent(Agent):
     @property
@@ -24,7 +25,7 @@ class SentimentAgent(Agent):
         return Message(
             role="agent",
             content=message.content,
-            metadata={**message.metadata, "sentiment": sentiment}
+            metadata={**message.metadata, "sentiment": sentiment},
         )
 
 
@@ -38,15 +39,14 @@ class UrgencyAgent(Agent):
         urgent = any(word in text for word in ["urgent", "asap", "critical", "emergency"])
 
         return Message(
-            role="agent",
-            content=message.content,
-            metadata={**message.metadata, "urgent": urgent}
+            role="agent", content=message.content, metadata={**message.metadata, "urgent": urgent}
         )
 
 
 # ============================================
 # Handler Agents (for router step)
 # ============================================
+
 
 class PriorityHandler(Agent):
     @property
@@ -55,9 +55,7 @@ class PriorityHandler(Agent):
 
     async def process(self, message: Message) -> Message:
         return Message(
-            role="agent",
-            content=f"⚡ PRIORITY: {message.content}",
-            metadata=message.metadata
+            role="agent", content=f"⚡ PRIORITY: {message.content}", metadata=message.metadata
         )
 
 
@@ -68,15 +66,14 @@ class StandardHandler(Agent):
 
     async def process(self, message: Message) -> Message:
         return Message(
-            role="agent",
-            content=f"📝 Standard: {message.content}",
-            metadata=message.metadata
+            role="agent", content=f"📝 Standard: {message.content}", metadata=message.metadata
         )
 
 
 # ============================================
 # Aggregator for Parallel Pattern
 # ============================================
+
 
 def merge_analysis(messages: list[Message]) -> Message:
     """Merge all analysis metadata."""
@@ -88,16 +85,13 @@ def merge_analysis(messages: list[Message]) -> Message:
     for msg in messages:
         combined_metadata.update(msg.metadata)
 
-    return Message(
-        role=merged.role,
-        content=merged.content,
-        metadata=combined_metadata
-    )
+    return Message(role=merged.role, content=merged.content, metadata=combined_metadata)
 
 
 # ============================================
 # Router Function
 # ============================================
+
 
 def route_by_urgency(message: Message) -> str:
     """Route based on urgency analysis."""
@@ -108,6 +102,7 @@ def route_by_urgency(message: Message) -> str:
 # ============================================
 # Build Complex Workflow
 # ============================================
+
 
 def create_workflow() -> Agent:
     """
@@ -128,26 +123,18 @@ def create_workflow() -> Agent:
 
     # Step 1: Parallel analysis
     analysis = ParallelPattern(
-        agents=[SentimentAgent(), UrgencyAgent()],
-        aggregator=merge_analysis,
-        name="analysis"
+        agents=[SentimentAgent(), UrgencyAgent()], aggregator=merge_analysis, name="analysis"
     )
 
     # Step 2: Router based on analysis
     router = RouterPattern(
         router=route_by_urgency,
-        handlers={
-            "priority": PriorityHandler(),
-            "standard": StandardHandler()
-        },
-        name="handler"
+        handlers={"priority": PriorityHandler(), "standard": StandardHandler()},
+        name="handler",
     )
 
     # Compose into sequential workflow
-    workflow = SequentialPattern(
-        agents=[analysis, router],
-        name="message_processor"
-    )
+    workflow = SequentialPattern(agents=[analysis, router], name="message_processor")
 
     return workflow
 
@@ -161,7 +148,7 @@ async def main():
         "This is an urgent request that needs attention ASAP",
         "This is a good standard message",
         "Critical issue needs immediate action",
-        "Just a regular update, no rush"
+        "Just a regular update, no rush",
     ]
 
     for test in test_cases:

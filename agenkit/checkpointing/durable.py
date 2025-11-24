@@ -4,9 +4,8 @@ Durable agent wrapper for automatic checkpointing.
 Wraps agents to provide automatic checkpointing, resume, and error recovery.
 """
 
-import functools
 import logging
-from typing import Optional, Any, Dict, Callable
+from typing import Any
 
 from ..interfaces import Agent, Message
 from .manager import CheckpointManager
@@ -46,10 +45,10 @@ class DurableAgent:
     def __init__(
         self,
         agent: Agent,
-        checkpoint_dir: Optional[str] = None,
+        checkpoint_dir: str | None = None,
         checkpoint_interval: int = 10,
         auto_resume: bool = True,
-        agent_name: Optional[str] = None
+        agent_name: str | None = None,
     ):
         """
         Initialize durable agent.
@@ -70,26 +69,18 @@ class DurableAgent:
         if checkpoint_dir:
             storage = FileCheckpointStorage(checkpoint_dir)
             self.manager = CheckpointManager(
-                storage=storage,
-                auto_checkpoint_interval=checkpoint_interval
+                storage=storage, auto_checkpoint_interval=checkpoint_interval
             )
         else:
-            self.manager = CheckpointManager(
-                auto_checkpoint_interval=checkpoint_interval
-            )
+            self.manager = CheckpointManager(auto_checkpoint_interval=checkpoint_interval)
 
         # Track state per session
-        self._session_state: Dict[str, Dict[str, Any]] = {}
-        self._session_steps: Dict[str, int] = {}
-        self._session_messages: Dict[str, list] = {}
-        self._session_resumed: Dict[str, bool] = {}
+        self._session_state: dict[str, dict[str, Any]] = {}
+        self._session_steps: dict[str, int] = {}
+        self._session_messages: dict[str, list] = {}
+        self._session_resumed: dict[str, bool] = {}
 
-    async def process(
-        self,
-        message: Message,
-        session_id: str = "default",
-        **kwargs
-    ) -> Message:
+    async def process(self, message: Message, session_id: str = "default", **kwargs) -> Message:
         """
         Process message with automatic checkpointing.
 
@@ -146,11 +137,7 @@ class DurableAgent:
 
             raise
 
-    async def checkpoint(
-        self,
-        session_id: str,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> str:
+    async def checkpoint(self, session_id: str, metadata: dict[str, Any] | None = None) -> str:
         """
         Create checkpoint for current state.
 
@@ -171,7 +158,7 @@ class DurableAgent:
             step_number=current_step,
             state=state,
             messages=messages,
-            metadata=metadata
+            metadata=metadata,
         )
 
         logger.info(f"Checkpointed session {session_id} at step {current_step}")
@@ -179,10 +166,8 @@ class DurableAgent:
         return checkpoint_id
 
     async def resume(
-        self,
-        session_id: str,
-        checkpoint_id: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+        self, session_id: str, checkpoint_id: str | None = None
+    ) -> dict[str, Any] | None:
         """
         Resume from checkpoint.
 
@@ -214,11 +199,11 @@ class DurableAgent:
 
         return checkpoint.state
 
-    async def get_state(self, session_id: str) -> Dict[str, Any]:
+    async def get_state(self, session_id: str) -> dict[str, Any]:
         """Get current state for session."""
         return self._session_state.get(session_id, {}).copy()
 
-    async def set_state(self, session_id: str, state: Dict[str, Any]) -> None:
+    async def set_state(self, session_id: str, state: dict[str, Any]) -> None:
         """Set state for session."""
         self._session_state[session_id] = state.copy()
 
@@ -234,10 +219,7 @@ class DurableAgent:
         self._session_resumed.pop(session_id, None)
 
     def _update_state(
-        self,
-        session_id: str,
-        input_message: Message,
-        output_message: Message
+        self, session_id: str, input_message: Message, output_message: Message
     ) -> None:
         """
         Update session state (can be overridden for custom state tracking).
@@ -256,11 +238,7 @@ class DurableAgent:
         if hasattr(output_message, "metadata") and output_message.metadata:
             state["last_metadata"] = output_message.metadata
 
-    async def list_checkpoints(
-        self,
-        session_id: str,
-        limit: Optional[int] = None
-    ) -> list:
+    async def list_checkpoints(self, session_id: str, limit: int | None = None) -> list:
         """List checkpoints for session."""
         return await self.manager.list_checkpoints(session_id, limit=limit)
 
@@ -278,7 +256,7 @@ class DurableAgent:
             **checkpoint_stats,
             "current_step": self._session_steps.get(session_id, 0),
             "message_count": len(self._session_messages.get(session_id, [])),
-            "state_size": len(self._session_state.get(session_id, {}))
+            "state_size": len(self._session_state.get(session_id, {})),
         }
 
 
@@ -286,7 +264,7 @@ def make_durable(
     agent: Agent,
     checkpoint_dir: str = "./checkpoints",
     checkpoint_interval: int = 10,
-    agent_name: Optional[str] = None
+    agent_name: str | None = None,
 ) -> DurableAgent:
     """
     Convenience function to make an agent durable.
@@ -317,5 +295,5 @@ def make_durable(
         agent=agent,
         checkpoint_dir=checkpoint_dir,
         checkpoint_interval=checkpoint_interval,
-        agent_name=agent_name
+        agent_name=agent_name,
     )

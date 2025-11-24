@@ -197,7 +197,6 @@ class TimeoutDecorator(Agent):
         try:
             # Python 3.10 compatible timeout for streaming
             # Create a task for the streaming operation
-            stream_task = None
             try:
                 async for chunk in stream_with_timeout():
                     # Check if we've exceeded timeout

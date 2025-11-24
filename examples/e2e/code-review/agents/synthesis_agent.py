@@ -1,9 +1,9 @@
 """Synthesis agent - combines all review results into final report."""
 
-from typing import List, Dict
 from datetime import datetime
+
 from agenkit import Agent, Message
-from agents.review_types import ReviewResult, CodeIssue, IssueSeverity
+from agents.review_types import CodeIssue, IssueSeverity, ReviewResult
 
 
 class SynthesisAgent(Agent):
@@ -37,14 +37,14 @@ class SynthesisAgent(Agent):
             },
         )
 
-    def _synthesize_report(self, results: List[ReviewResult]) -> str:
+    def _synthesize_report(self, results: list[ReviewResult]) -> str:
         """Create comprehensive review report."""
         all_issues = []
         for result in results:
             all_issues.extend(result.issues)
 
         # Group by severity
-        by_severity: Dict[IssueSeverity, List[CodeIssue]] = {
+        by_severity: dict[IssueSeverity, list[CodeIssue]] = {
             IssueSeverity.CRITICAL: [],
             IssueSeverity.HIGH: [],
             IssueSeverity.MEDIUM: [],
@@ -91,7 +91,9 @@ class SynthesisAgent(Agent):
         lines.append("Agent Results:")
         for result in results:
             status = "✓" if result.passed else "✗"
-            lines.append(f"  {status} {result.agent_name}: {result.overall_score:.1f}/10 - {len(result.issues)} issues")
+            lines.append(
+                f"  {status} {result.agent_name}: {result.overall_score:.1f}/10 - {len(result.issues)} issues"
+            )
         lines.append("")
 
         # Critical issues first

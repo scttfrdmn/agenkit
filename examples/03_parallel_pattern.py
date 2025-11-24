@@ -5,6 +5,7 @@ This example shows how to run multiple agents concurrently.
 """
 
 import asyncio
+
 from agenkit import Agent, Message, ParallelPattern
 
 
@@ -33,8 +34,7 @@ class SentimentAgent(Agent):
             sentiment = "neutral"
 
         return Message(
-            role="agent",
-            content={"sentiment": sentiment, "score": pos_count - neg_count}
+            role="agent", content={"sentiment": sentiment, "score": pos_count - neg_count}
         )
 
 
@@ -51,7 +51,7 @@ class LengthAgent(Agent):
         analysis = {
             "chars": len(text),
             "words": len(text.split()),
-            "category": "short" if len(text) < 50 else "long"
+            "category": "short" if len(text) < 50 else "long",
         }
 
         return Message(role="agent", content=analysis)
@@ -83,23 +83,14 @@ def combine_analyses(messages: list[Message]) -> Message:
         if isinstance(msg.content, dict):
             combined.update(msg.content)
 
-    return Message(
-        role="agent",
-        content=combined,
-        metadata={"analyses": len(messages)}
-    )
+    return Message(role="agent", content=combined, metadata={"analyses": len(messages)})
 
 
 async def main():
     """Run the example."""
     # Create parallel analyzer
     analyzer = ParallelPattern(
-        agents=[
-            SentimentAgent(),
-            LengthAgent(),
-            KeywordAgent()
-        ],
-        aggregator=combine_analyses
+        agents=[SentimentAgent(), LengthAgent(), KeywordAgent()], aggregator=combine_analyses
     )
 
     # Analyze text

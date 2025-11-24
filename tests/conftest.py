@@ -11,7 +11,6 @@ This module provides:
 import asyncio
 import gc
 import time
-from typing import Generator
 
 import pytest
 

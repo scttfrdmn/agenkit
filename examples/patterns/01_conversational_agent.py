@@ -9,7 +9,6 @@ you would use a real LLM client (OpenAI, Anthropic, etc.).
 """
 
 import asyncio
-from typing import List
 
 from agenkit import Message
 from agenkit.patterns import ConversationalAgent
@@ -28,7 +27,7 @@ class MockLLMClient:
     def __init__(self):
         self.call_count = 0
 
-    async def chat(self, messages: List[Message]) -> Message:
+    async def chat(self, messages: list[Message]) -> Message:
         """Generate a mock response based on conversation context."""
         self.call_count += 1
 
@@ -130,7 +129,7 @@ async def history_management_example():
 
     # Fill up history
     for i in range(4):
-        msg = Message(role="user", content=f"Message {i+1}")
+        msg = Message(role="user", content=f"Message {i + 1}")
         await agent.process(msg)
 
     print(f"History after 4 exchanges: {agent.get_context_length()} messages")
@@ -199,7 +198,7 @@ async def streaming_example():
     # In production, use an LLM client that supports streaming
 
     class MockStreamingLLM(MockLLMClient):
-        async def stream(self, messages: List[Message]):
+        async def stream(self, messages: list[Message]):
             """Simulate streaming response by yielding chunks."""
             response = await self.chat(messages)
             # Split response into chunks

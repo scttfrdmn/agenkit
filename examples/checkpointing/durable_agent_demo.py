@@ -12,8 +12,8 @@ import asyncio
 import random
 from datetime import datetime
 
+from agenkit.checkpointing import DurableAgent
 from agenkit.interfaces import Agent, Message
-from agenkit.checkpointing import DurableAgent, make_durable
 
 
 class CounterAgent(Agent):
@@ -31,10 +31,7 @@ class CounterAgent(Agent):
         # Simulate some processing time
         await asyncio.sleep(0.1)
 
-        return Message(
-            role="assistant",
-            content=f"Processed: {message.content}"
-        )
+        return Message(role="assistant", content=f"Processed: {message.content}")
 
 
 class FailingAgent(Agent):
@@ -57,17 +54,14 @@ class FailingAgent(Agent):
         if random.random() < self.fail_probability:
             raise RuntimeError(f"Simulated crash at call {self.call_count}")
 
-        return Message(
-            role="assistant",
-            content=f"Call {self.call_count}: {message.content}"
-        )
+        return Message(role="assistant", content=f"Call {self.call_count}: {message.content}")
 
 
 async def example_1_basic_checkpointing():
     """Example 1: Basic automatic checkpointing."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 1: Basic Automatic Checkpointing")
-    print("="*70)
+    print("=" * 70)
 
     # Create durable agent that checkpoints every 3 steps
     agent = CounterAgent("basic-agent")
@@ -75,7 +69,7 @@ async def example_1_basic_checkpointing():
         agent=agent,
         checkpoint_dir="./checkpoints",
         checkpoint_interval=3,
-        auto_resume=False  # Don't resume for this demo
+        auto_resume=False,  # Don't resume for this demo
     )
 
     print("\n📦 Processing 10 messages with checkpoint_interval=3...")
@@ -94,7 +88,7 @@ async def example_1_basic_checkpointing():
 
     # Get session stats
     stats = await durable.get_session_stats("demo-1")
-    print(f"\n📊 Session Stats:")
+    print("\n📊 Session Stats:")
     print(f"  Current step: {stats['current_step']}")
     print(f"  Message count: {stats['message_count']}")
     print(f"  Checkpoints: {stats['total_checkpoints']}")
@@ -102,16 +96,13 @@ async def example_1_basic_checkpointing():
 
 async def example_2_resume_after_crash():
     """Example 2: Resume from checkpoint after simulated crash."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 2: Resume After Crash")
-    print("="*70)
+    print("=" * 70)
 
     agent = FailingAgent("crash-agent", fail_probability=0.3)
     durable = DurableAgent(
-        agent=agent,
-        checkpoint_dir="./checkpoints",
-        checkpoint_interval=2,
-        auto_resume=False
+        agent=agent, checkpoint_dir="./checkpoints", checkpoint_interval=2, auto_resume=False
     )
 
     session_id = "demo-2"
@@ -134,14 +125,14 @@ async def example_2_resume_after_crash():
 
         except RuntimeError as e:
             print(f"  💥 CRASH: {e}")
-            print(f"     Resuming from checkpoint...")
+            print("     Resuming from checkpoint...")
 
             # Resume from last checkpoint
             state = await durable.resume(session_id)
             if state:
                 print(f"     ↻ Restored to step {durable._session_steps[session_id]}")
             else:
-                print(f"     ↻ Starting fresh (no checkpoint yet)")
+                print("     ↻ Starting fresh (no checkpoint yet)")
 
     # Show final state
     checkpoints = await durable.list_checkpoints(session_id)
@@ -151,9 +142,9 @@ async def example_2_resume_after_crash():
 
 async def example_3_persistence_across_restarts():
     """Example 3: State persists across agent restarts."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 3: Persistence Across Restarts")
-    print("="*70)
+    print("=" * 70)
 
     session_id = "demo-3"
 
@@ -161,15 +152,12 @@ async def example_3_persistence_across_restarts():
     print("\n🚀 First Run: Creating agent and processing messages...")
     agent1 = CounterAgent("persistent-agent")
     durable1 = DurableAgent(
-        agent=agent1,
-        checkpoint_dir="./checkpoints",
-        checkpoint_interval=2,
-        auto_resume=False
+        agent=agent1, checkpoint_dir="./checkpoints", checkpoint_interval=2, auto_resume=False
     )
 
     for i in range(1, 6):
         message = Message(role="user", content=f"Run 1, Message {i}")
-        response = await durable1.process(message, session_id=session_id)
+        await durable1.process(message, session_id=session_id)
         print(f"  Step {i}: Processed")
 
     checkpoints = await durable1.list_checkpoints(session_id)
@@ -183,13 +171,13 @@ async def example_3_persistence_across_restarts():
         agent=agent2,
         checkpoint_dir="./checkpoints",  # Same checkpoint dir
         checkpoint_interval=2,
-        auto_resume=True  # Auto-resume enabled
+        auto_resume=True,  # Auto-resume enabled
     )
 
     # First call will auto-resume
     print("📥 First call after restart (will auto-resume)...")
     message = Message(role="user", content="Run 2, Message 1")
-    response = await durable2.process(message, session_id=session_id)
+    await durable2.process(message, session_id=session_id)
 
     print(f"✅ Resumed from step {durable2._session_steps[session_id] - 1}")
     print(f"📊 Current step: {durable2._session_steps[session_id]}")
@@ -198,22 +186,19 @@ async def example_3_persistence_across_restarts():
     print("\n▶️  Continuing from where we left off...")
     for i in range(2, 5):
         message = Message(role="user", content=f"Run 2, Message {i}")
-        response = await durable2.process(message, session_id=session_id)
+        await durable2.process(message, session_id=session_id)
         print(f"  Step {durable2._session_steps[session_id]}: Processed")
 
 
 async def example_4_time_travel_debugging():
     """Example 4: Time-travel debugging with checkpoint replay."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 4: Time-Travel Debugging")
-    print("="*70)
+    print("=" * 70)
 
     agent = CounterAgent("debug-agent")
     durable = DurableAgent(
-        agent=agent,
-        checkpoint_dir="./checkpoints",
-        checkpoint_interval=2,
-        auto_resume=False
+        agent=agent, checkpoint_dir="./checkpoints", checkpoint_interval=2, auto_resume=False
     )
 
     session_id = "demo-4"
@@ -245,9 +230,7 @@ async def example_4_time_travel_debugging():
             return checkpoint.state
 
         print("\n🎬 Replaying checkpoint history:")
-        history = await durable.manager.get_checkpoint_history(
-            target_checkpoint.checkpoint_id
-        )
+        history = await durable.manager.get_checkpoint_history(target_checkpoint.checkpoint_id)
         print(f"   Found {len(history)} checkpoints in history")
         for cp in reversed(history):
             print(f"   - Step {cp.step_number}: {len(cp.messages)} messages")
@@ -255,16 +238,16 @@ async def example_4_time_travel_debugging():
 
 async def example_5_checkpoint_pruning():
     """Example 5: Pruning old checkpoints to manage storage."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 5: Checkpoint Pruning")
-    print("="*70)
+    print("=" * 70)
 
     agent = CounterAgent("prune-agent")
     durable = DurableAgent(
         agent=agent,
         checkpoint_dir="./checkpoints",
         checkpoint_interval=1,  # Checkpoint every step
-        auto_resume=False
+        auto_resume=False,
     )
 
     session_id = "demo-5"
@@ -289,15 +272,16 @@ async def example_5_checkpoint_pruning():
 
 async def example_6_custom_state_tracking():
     """Example 6: Custom state tracking with durable agent."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 6: Custom State Tracking")
-    print("="*70)
+    print("=" * 70)
 
     class CustomDurableAgent(DurableAgent):
         """DurableAgent with custom state tracking."""
 
-        def _update_state(self, session_id: str, input_message: Message,
-                         output_message: Message) -> None:
+        def _update_state(
+            self, session_id: str, input_message: Message, output_message: Message
+        ) -> None:
             """Track custom metrics in state."""
             state = self._session_state[session_id]
 
@@ -314,10 +298,7 @@ async def example_6_custom_state_tracking():
 
     agent = CounterAgent("custom-agent")
     durable = CustomDurableAgent(
-        agent=agent,
-        checkpoint_dir="./checkpoints",
-        checkpoint_interval=3,
-        auto_resume=False
+        agent=agent, checkpoint_dir="./checkpoints", checkpoint_interval=3, auto_resume=False
     )
 
     session_id = "demo-6"
@@ -328,7 +309,7 @@ async def example_6_custom_state_tracking():
         "How are you doing today?",
         "This is a longer message with more words",
         "Short",
-        "Final message"
+        "Final message",
     ]
 
     for i, content in enumerate(messages, 1):
@@ -338,7 +319,7 @@ async def example_6_custom_state_tracking():
 
     # Show custom state
     state = await durable.get_state(session_id)
-    print(f"\n📊 Custom State Tracking:")
+    print("\n📊 Custom State Tracking:")
     print(f"   Total messages: {state['message_count']}")
     print(f"   Input words: {state['total_input_words']}")
     print(f"   Output words: {state['total_output_words']}")
@@ -347,9 +328,9 @@ async def example_6_custom_state_tracking():
 
 async def main():
     """Run all examples."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("🚀 DURABLE AGENT EXAMPLES - Checkpointing for 30-Hour Agents")
-    print("="*70)
+    print("=" * 70)
 
     try:
         await example_1_basic_checkpointing()
@@ -359,9 +340,9 @@ async def main():
         await example_5_checkpoint_pruning()
         await example_6_custom_state_tracking()
 
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("✅ All Examples Completed Successfully!")
-        print("="*70)
+        print("=" * 70)
         print("\n💡 Key Takeaways:")
         print("   • Automatic checkpointing preserves state every N steps")
         print("   • Resume from checkpoints after crashes or restarts")

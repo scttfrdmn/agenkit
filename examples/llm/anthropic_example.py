@@ -33,9 +33,7 @@ async def basic_completion():
     )
 
     # Create a message
-    messages = [
-        Message(role="user", content="Explain Agenkit in one sentence.")
-    ]
+    messages = [Message(role="user", content="Explain Agenkit in one sentence.")]
 
     # Get a response
     response = await llm.complete(messages, temperature=0.7, max_tokens=100)
@@ -65,9 +63,7 @@ async def streaming_example():
 
     llm = AnthropicLLM(api_key=api_key, model="claude-3-haiku-20240307")
 
-    messages = [
-        Message(role="user", content="Count from 1 to 10, one number per line.")
-    ]
+    messages = [Message(role="user", content="Count from 1 to 10, one number per line.")]
 
     print("Streaming: ", end="", flush=True)
     full_response = ""

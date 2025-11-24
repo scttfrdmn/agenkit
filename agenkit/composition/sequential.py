@@ -1,6 +1,5 @@
 """Sequential agent composition pattern."""
 
-
 from agenkit.interfaces import Agent, Message
 
 
@@ -60,7 +59,7 @@ class SequentialAgent(Agent):
                 result = await agent.process(current)
                 current = result
             except Exception as e:
-                raise Exception(f"Step {i+1} ({agent.name}) failed: {e}") from e
+                raise Exception(f"Step {i + 1} ({agent.name}) failed: {e}") from e
 
         return current
 

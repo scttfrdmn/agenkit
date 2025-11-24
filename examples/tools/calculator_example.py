@@ -38,7 +38,8 @@ TRADE-OFFS:
 import asyncio
 import math
 import statistics
-from typing import Any, List
+from typing import Any
+
 from agenkit.interfaces import Agent, Message, Tool, ToolResult
 
 
@@ -63,23 +64,18 @@ class AdditionTool(Tool):
                     "type": "array",
                     "items": {"type": "number"},
                     "description": "Numbers to add",
-                    "minItems": 2
+                    "minItems": 2,
                 }
             },
-            "required": ["numbers"]
+            "required": ["numbers"],
         }
 
-    async def execute(self, numbers: List[float]) -> ToolResult:
+    async def execute(self, numbers: list[float]) -> ToolResult:
         """Execute addition."""
         try:
             result = sum(numbers)
             return ToolResult(
-                success=True,
-                data={
-                    "operation": "addition",
-                    "inputs": numbers,
-                    "result": result
-                }
+                success=True, data={"operation": "addition", "inputs": numbers, "result": result}
             )
         except Exception as e:
             return ToolResult(success=False, error=str(e))
@@ -104,13 +100,13 @@ class MultiplicationTool(Tool):
                 "numbers": {
                     "type": "array",
                     "items": {"type": "number"},
-                    "description": "Numbers to multiply"
+                    "description": "Numbers to multiply",
                 }
             },
-            "required": ["numbers"]
+            "required": ["numbers"],
         }
 
-    async def execute(self, numbers: List[float]) -> ToolResult:
+    async def execute(self, numbers: list[float]) -> ToolResult:
         """Execute multiplication."""
         try:
             result = 1
@@ -119,11 +115,7 @@ class MultiplicationTool(Tool):
 
             return ToolResult(
                 success=True,
-                data={
-                    "operation": "multiplication",
-                    "inputs": numbers,
-                    "result": result
-                }
+                data={"operation": "multiplication", "inputs": numbers, "result": result},
             )
         except Exception as e:
             return ToolResult(success=False, error=str(e))
@@ -148,18 +140,18 @@ class StatisticsTool(Tool):
                 "numbers": {
                     "type": "array",
                     "items": {"type": "number"},
-                    "description": "Dataset to analyze"
+                    "description": "Dataset to analyze",
                 },
                 "measures": {
                     "type": "array",
                     "items": {"enum": ["mean", "median", "mode", "stdev"]},
-                    "description": "Which measures to calculate"
-                }
+                    "description": "Which measures to calculate",
+                },
             },
-            "required": ["numbers", "measures"]
+            "required": ["numbers", "measures"],
         }
 
-    async def execute(self, numbers: List[float], measures: List[str]) -> ToolResult:
+    async def execute(self, numbers: list[float], measures: list[str]) -> ToolResult:
         """Execute statistical analysis."""
         try:
             results = {}
@@ -182,13 +174,7 @@ class StatisticsTool(Tool):
                 else:
                     results["stdev"] = None
 
-            return ToolResult(
-                success=True,
-                data={
-                    "dataset_size": len(numbers),
-                    "results": results
-                }
-            )
+            return ToolResult(success=True, data={"dataset_size": len(numbers), "results": results})
         except Exception as e:
             return ToolResult(success=False, error=str(e))
 
@@ -212,10 +198,10 @@ class ExpressionEvaluatorTool(Tool):
             "properties": {
                 "expression": {
                     "type": "string",
-                    "description": "Mathematical expression to evaluate"
+                    "description": "Mathematical expression to evaluate",
                 }
             },
-            "required": ["expression"]
+            "required": ["expression"],
         }
 
     async def execute(self, expression: str) -> ToolResult:
@@ -236,25 +222,16 @@ class ExpressionEvaluatorTool(Tool):
                 "log": math.log,
                 "exp": math.exp,
                 "pi": math.pi,
-                "e": math.e
+                "e": math.e,
             }
 
             # Evaluate safely (no exec, no eval with arbitrary code)
             # In production, use a proper expression parser
             result = eval(expression, {"__builtins__": {}}, safe_funcs)
 
-            return ToolResult(
-                success=True,
-                data={
-                    "expression": expression,
-                    "result": result
-                }
-            )
+            return ToolResult(success=True, data={"expression": expression, "result": result})
         except Exception as e:
-            return ToolResult(
-                success=False,
-                error=f"Invalid expression: {str(e)}"
-            )
+            return ToolResult(success=False, error=f"Invalid expression: {e!s}")
 
 
 class UnitConverterTool(Tool):
@@ -275,9 +252,9 @@ class UnitConverterTool(Tool):
             "properties": {
                 "value": {"type": "number", "description": "Value to convert"},
                 "from_unit": {"type": "string", "description": "Source unit"},
-                "to_unit": {"type": "string", "description": "Target unit"}
+                "to_unit": {"type": "string", "description": "Target unit"},
             },
-            "required": ["value", "from_unit", "to_unit"]
+            "required": ["value", "from_unit", "to_unit"],
         }
 
     async def execute(self, value: float, from_unit: str, to_unit: str) -> ToolResult:
@@ -286,11 +263,20 @@ class UnitConverterTool(Tool):
             # Conversion factors (to base unit)
             conversions = {
                 # Length (to meters)
-                "mm": 0.001, "cm": 0.01, "m": 1, "km": 1000,
-                "in": 0.0254, "ft": 0.3048, "yd": 0.9144, "mi": 1609.34,
+                "mm": 0.001,
+                "cm": 0.01,
+                "m": 1,
+                "km": 1000,
+                "in": 0.0254,
+                "ft": 0.3048,
+                "yd": 0.9144,
+                "mi": 1609.34,
                 # Weight (to kg)
-                "mg": 0.000001, "g": 0.001, "kg": 1,
-                "oz": 0.0283495, "lb": 0.453592,
+                "mg": 0.000001,
+                "g": 0.001,
+                "kg": 1,
+                "oz": 0.0283495,
+                "lb": 0.453592,
                 # Temperature (special case)
             }
 
@@ -298,7 +284,7 @@ class UnitConverterTool(Tool):
             if from_unit in ["c", "f", "k"]:
                 # Convert to Celsius first
                 if from_unit == "f":
-                    celsius = (value - 32) * 5/9
+                    celsius = (value - 32) * 5 / 9
                 elif from_unit == "k":
                     celsius = value - 273.15
                 else:
@@ -306,7 +292,7 @@ class UnitConverterTool(Tool):
 
                 # Convert to target
                 if to_unit == "f":
-                    result = celsius * 9/5 + 32
+                    result = celsius * 9 / 5 + 32
                 elif to_unit == "k":
                     result = celsius + 273.15
                 else:
@@ -321,14 +307,11 @@ class UnitConverterTool(Tool):
                 data={
                     "original": {"value": value, "unit": from_unit},
                     "converted": {"value": result, "unit": to_unit},
-                    "conversion_factor": result / value if value != 0 else None
-                }
+                    "conversion_factor": result / value if value != 0 else None,
+                },
             )
         except KeyError:
-            return ToolResult(
-                success=False,
-                error=f"Unknown unit: {from_unit} or {to_unit}"
-            )
+            return ToolResult(success=False, error=f"Unknown unit: {from_unit} or {to_unit}")
         except Exception as e:
             return ToolResult(success=False, error=str(e))
 
@@ -343,7 +326,7 @@ class CalculatorAgent(Agent):
             "multiply": MultiplicationTool(),
             "statistics": StatisticsTool(),
             "eval": ExpressionEvaluatorTool(),
-            "convert": UnitConverterTool()
+            "convert": UnitConverterTool(),
         }
 
     @property
@@ -363,23 +346,28 @@ class CalculatorAgent(Agent):
 
         if "add" in content or "sum" in content:
             # Extract numbers (simplified)
-            numbers = [float(w) for w in content.split() if w.replace('.', '').replace('-', '').isdigit()]
+            numbers = [
+                float(w) for w in content.split() if w.replace(".", "").replace("-", "").isdigit()
+            ]
             if numbers:
                 result = await self.tools["add"].execute(numbers=numbers)
                 result_data = result.data if result.success else {"error": result.error}
 
         elif "multiply" in content or "product" in content:
-            numbers = [float(w) for w in content.split() if w.replace('.', '').replace('-', '').isdigit()]
+            numbers = [
+                float(w) for w in content.split() if w.replace(".", "").replace("-", "").isdigit()
+            ]
             if numbers:
                 result = await self.tools["multiply"].execute(numbers=numbers)
                 result_data = result.data if result.success else {"error": result.error}
 
         elif "statistics" in content or "stats" in content:
-            numbers = [float(w) for w in content.split() if w.replace('.', '').replace('-', '').isdigit()]
+            numbers = [
+                float(w) for w in content.split() if w.replace(".", "").replace("-", "").isdigit()
+            ]
             if numbers:
                 result = await self.tools["statistics"].execute(
-                    numbers=numbers,
-                    measures=["mean", "median", "stdev"]
+                    numbers=numbers, measures=["mean", "median", "stdev"]
                 )
                 result_data = result.data if result.success else {"error": result.error}
 
@@ -391,9 +379,7 @@ class CalculatorAgent(Agent):
                 from_unit = parts[2]
                 to_unit = parts[4]  # assumes "convert X from to Y"
                 result = await self.tools["convert"].execute(
-                    value=value,
-                    from_unit=from_unit,
-                    to_unit=to_unit
+                    value=value, from_unit=from_unit, to_unit=to_unit
                 )
                 result_data = result.data if result.success else {"error": result.error}
             except (IndexError, ValueError):
@@ -421,14 +407,14 @@ class CalculatorAgent(Agent):
             else:
                 response = f"Result: {result_data}"
         else:
-            error = result_data.get("error", "Unknown error") if result_data else "Could not parse request"
+            error = (
+                result_data.get("error", "Unknown error")
+                if result_data
+                else "Could not parse request"
+            )
             response = f"Error: {error}"
 
-        return Message(
-            role="agent",
-            content=response,
-            metadata={"tool_result": result_data}
-        )
+        return Message(role="agent", content=response, metadata={"tool_result": result_data})
 
 
 async def example_basic_math():
@@ -438,10 +424,7 @@ async def example_basic_math():
 
     agent = CalculatorAgent()
 
-    tests = [
-        "add 123 456 789",
-        "multiply 17 23 11"
-    ]
+    tests = ["add 123 456 789", "multiply 17 23 11"]
 
     for test in tests:
         print(f"Query: {test}")
@@ -468,8 +451,8 @@ async def example_statistics():
     agent = CalculatorAgent()
 
     query = "statistics 10 20 30 40 50 60 70 80 90 100"
-    print(f"Query: Calculate statistics for dataset")
-    print(f"Data: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]")
+    print("Query: Calculate statistics for dataset")
+    print("Data: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]")
 
     result = await agent.process(Message(role="user", content=query))
     print(f"\n{result.content}")
@@ -544,10 +527,10 @@ async def example_tool_vs_llm():
     actual = tool_result.get("result")
 
     print(f"Tool result: {actual:,}")
-    print(f"\nWhat an LLM might say:")
-    print(f"  'That's approximately 1,000,000'")
+    print("\nWhat an LLM might say:")
+    print("  'That's approximately 1,000,000'")
     print(f"  (Actually: {actual:,})")
-    print(f"  Error: {abs(1000000 - actual):,} ({abs(1000000 - actual)/actual:.1%})")
+    print(f"  Error: {abs(1000000 - actual):,} ({abs(1000000 - actual) / actual:.1%})")
 
     print("\n💡 Critical Use Cases Requiring Tools:")
     print("   - Financial calculations (no room for approximation)")
@@ -610,9 +593,9 @@ async def example_error_handling():
 
 async def main():
     """Run all examples."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TOOLS USAGE EXAMPLES")
-    print("="*70)
+    print("=" * 70)
     print("\nTools extend agents with deterministic, accurate operations.")
     print("Use them when precision matters more than creativity.\n")
 
@@ -624,9 +607,9 @@ async def main():
     await example_tool_composition()
     await example_error_handling()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("KEY TAKEAWAYS")
-    print("="*70)
+    print("=" * 70)
     print("""
 1. When to use tools:
    - Math: LLMs hallucinate, tools compute correctly

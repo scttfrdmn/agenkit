@@ -6,7 +6,6 @@ import socket
 import subprocess
 import time
 from contextlib import asynccontextmanager
-from typing import Optional
 
 import httpx
 
@@ -53,7 +52,7 @@ async def wait_for_server(
 
 
 @asynccontextmanager
-async def go_http_server(port: Optional[int] = None):
+async def go_http_server(port: int | None = None):
     """Start a Go HTTP server for testing.
 
     This starts the Go test server as a subprocess and waits for it to be ready.
@@ -75,6 +74,7 @@ async def go_http_server(port: Optional[int] = None):
     # Start Go server
     # Get the path to the agenkit-go directory
     import os
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     go_test_dir = os.path.join(current_dir, "..", "..", "agenkit-go", "tests", "integration")
 
@@ -109,7 +109,7 @@ async def go_http_server(port: Optional[int] = None):
 
 
 @asynccontextmanager
-async def python_http_server(port: Optional[int] = None):
+async def python_http_server(port: int | None = None):
     """Start a Python HTTP server for testing.
 
     This starts an HTTPAgentServer in the current process.
@@ -148,7 +148,7 @@ async def python_http_server(port: Optional[int] = None):
                 metadata={
                     "original": message.content,
                     "language": "python",
-                }
+                },
             )
 
     agent = TestAgent()
@@ -188,7 +188,7 @@ def is_port_in_use(port: int) -> bool:
 
 
 @asynccontextmanager
-async def python_websocket_server(port: Optional[int] = None):
+async def python_websocket_server(port: int | None = None):
     """Start a Python WebSocket server for testing.
 
     This starts a LocalAgent WebSocket server in the current process.
@@ -227,7 +227,7 @@ async def python_websocket_server(port: Optional[int] = None):
                 metadata={
                     "original": message.content,
                     "language": "python",
-                }
+                },
             )
 
     agent = TestAgent()
@@ -247,7 +247,7 @@ async def python_websocket_server(port: Optional[int] = None):
 
 
 @asynccontextmanager
-async def python_grpc_server(port: Optional[int] = None):
+async def python_grpc_server(port: int | None = None):
     """Start a Python gRPC server for testing.
 
     This starts a GRPCServer in the current process.
@@ -286,7 +286,7 @@ async def python_grpc_server(port: Optional[int] = None):
                 metadata={
                     "original": message.content,
                     "language": "python",
-                }
+                },
             )
 
     agent = TestAgent()
@@ -306,7 +306,7 @@ async def python_grpc_server(port: Optional[int] = None):
 
 
 @asynccontextmanager
-async def go_grpc_server(port: Optional[int] = None):
+async def go_grpc_server(port: int | None = None):
     """Start a Go gRPC server for testing.
 
     This starts the Go gRPC test server as a subprocess.

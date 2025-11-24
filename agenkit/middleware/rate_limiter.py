@@ -60,9 +60,7 @@ class RateLimiterDecorator(Agent):
     - Cost control
     """
 
-    def __init__(
-        self, agent: Agent, config: RateLimiterConfig | None = None
-    ):
+    def __init__(self, agent: Agent, config: RateLimiterConfig | None = None):
         """Initialize rate limiter decorator.
 
         Args:
@@ -104,9 +102,7 @@ class RateLimiterDecorator(Agent):
         # Update metrics
         self._metrics.current_tokens = self._tokens
 
-    async def _acquire_tokens(
-        self, tokens_needed: int, wait: bool = True
-    ) -> bool:
+    async def _acquire_tokens(self, tokens_needed: int, wait: bool = True) -> bool:
         """Acquire tokens from the bucket.
 
         Args:
@@ -153,9 +149,7 @@ class RateLimiterDecorator(Agent):
                 return True
 
             # Should not happen, but handle defensively
-            raise RateLimitError(
-                f"Failed to acquire {tokens_needed} tokens after waiting"
-            )
+            raise RateLimitError(f"Failed to acquire {tokens_needed} tokens after waiting")
 
     async def process(self, message: Message) -> Message:
         """Process message with rate limiting.

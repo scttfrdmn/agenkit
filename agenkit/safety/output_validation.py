@@ -8,10 +8,10 @@ Provides protection for agent outputs:
 - Output size limits
 """
 
-import re
 import json
-from typing import Optional, Any, Dict, Set, List
+import re
 from dataclasses import dataclass, field
+from typing import Any
 
 from agenkit import Agent, Message
 
@@ -19,7 +19,7 @@ from agenkit import Agent, Message
 class OutputValidationError(Exception):
     """Raised when output validation fails."""
 
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(message)
         self.details = details or {}
 
@@ -33,15 +33,15 @@ class SchemaValidator:
     """
 
     # Expected fields and their types
-    expected_fields: Optional[Dict[str, type]] = None
+    expected_fields: dict[str, type] | None = None
 
     # Required fields (subset of expected_fields)
-    required_fields: Optional[Set[str]] = None
+    required_fields: set[str] | None = None
 
     # Allow additional fields not in schema
     allow_additional: bool = True
 
-    def validate(self, output: Any) -> tuple[bool, Optional[str]]:
+    def validate(self, output: Any) -> tuple[bool, str | None]:
         """
         Validate output against schema.
 
@@ -106,7 +106,7 @@ class SensitiveDataRedactor:
     """
 
     # Sensitive field names (case-insensitive)
-    sensitive_fields: Set[str] = field(
+    sensitive_fields: set[str] = field(
         default_factory=lambda: {
             "password",
             "api_key",
@@ -121,7 +121,7 @@ class SensitiveDataRedactor:
     )
 
     # Patterns for detecting sensitive data
-    sensitive_patterns: List[tuple[str, str]] = field(
+    sensitive_patterns: list[tuple[str, str]] = field(
         default_factory=lambda: [
             # API keys (common formats)
             (r"sk-[a-zA-Z0-9]{32,}", "API_KEY"),
@@ -165,7 +165,7 @@ class SensitiveDataRedactor:
         else:
             return data
 
-    def _redact_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _redact_dict(self, data: dict[str, Any]) -> dict[str, Any]:
         """Redact sensitive fields in dictionary."""
         redacted = {}
         for key, value in data.items():
@@ -189,9 +189,7 @@ class SensitiveDataRedactor:
             matches = re.finditer(pattern, redacted, re.IGNORECASE)
             for match in matches:
                 # Replace with placeholder + type
-                redacted = redacted.replace(
-                    match.group(0), f"{self.redaction_text}_{data_type}"
-                )
+                redacted = redacted.replace(match.group(0), f"{self.redaction_text}_{data_type}")
 
         return redacted
 
@@ -199,7 +197,7 @@ class SensitiveDataRedactor:
         """Check if data contains sensitive information."""
         if isinstance(data, dict):
             # Check field names
-            if any(key.lower() in self.sensitive_fields for key in data.keys()):
+            if any(key.lower() in self.sensitive_fields for key in data):
                 return True
             # Check values recursively
             return any(self.has_sensitive_data(v) for v in data.values())
@@ -238,8 +236,8 @@ class OutputValidationMiddleware(Agent):
     def __init__(
         self,
         agent: Agent,
-        schema: Optional[SchemaValidator] = None,
-        redactor: Optional[SensitiveDataRedactor] = None,
+        schema: SchemaValidator | None = None,
+        redactor: SensitiveDataRedactor | None = None,
         auto_redact: bool = True,
         max_size: int = 100000,
     ):
@@ -296,6 +294,7 @@ class OutputValidationMiddleware(Agent):
             redacted_content = self.redactor.redact(response.content)
             # Create new Message with redacted content (Message is frozen)
             from dataclasses import replace
+
             response = replace(response, content=redacted_content)
 
         # 4. Log if sensitive data detected (even if redacted)
@@ -306,8 +305,8 @@ class OutputValidationMiddleware(Agent):
 
 
 def output_validation(
-    schema: Optional[SchemaValidator] = None,
-    redactor: Optional[SensitiveDataRedactor] = None,
+    schema: SchemaValidator | None = None,
+    redactor: SensitiveDataRedactor | None = None,
     auto_redact: bool = True,
     max_size: int = 100000,
 ):
@@ -329,6 +328,7 @@ def output_validation(
             timeout(30),
         ])
     """
+
     def middleware(agent: Agent) -> Agent:
         return OutputValidationMiddleware(agent, schema, redactor, auto_redact, max_size)
 

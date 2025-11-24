@@ -4,7 +4,6 @@ Classifier Agent - Routes tickets to appropriate categories.
 Determines the category and priority of incoming support tickets.
 """
 
-from typing import Dict, Any
 from agenkit import Agent, Message
 
 
@@ -112,8 +111,7 @@ class ClassifierAgent(Agent):
 
         # Feature request keywords
         if any(
-            word in content
-            for word in ["feature", "request", "add", "could you", "would be nice"]
+            word in content for word in ["feature", "request", "add", "could you", "would be nice"]
         ):
             return "feature"
 
@@ -131,15 +129,12 @@ class ClassifierAgent(Agent):
 
         # High priority keywords
         if any(
-            word in content
-            for word in ["cannot", "can't", "unable", "need help", "not working"]
+            word in content for word in ["cannot", "can't", "unable", "need help", "not working"]
         ):
             return "high"
 
         # Low priority keywords
-        if any(
-            word in content for word in ["question", "how do i", "curious", "wondering"]
-        ):
+        if any(word in content for word in ["question", "how do i", "curious", "wondering"]):
             return "low"
 
         # Default to medium

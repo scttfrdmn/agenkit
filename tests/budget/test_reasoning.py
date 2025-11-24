@@ -3,12 +3,13 @@ Tests for extended thinking and reasoning budget allocation.
 """
 
 import pytest
+
 from agenkit import Message
 from agenkit.budget.reasoning import (
+    ThinkingBudget,
     ThinkingBudgetAllocator,
     ThinkingMode,
-    ThinkingBudget,
-    ThinkingModeDetector
+    ThinkingModeDetector,
 )
 
 
@@ -21,10 +22,7 @@ class TestThinkingBudgetAllocator:
         allocator = ThinkingBudgetAllocator()
 
         messages = [Message(role="user", content="Hello")]
-        budget = await allocator.allocate(
-            messages=messages,
-            complexity="simple"
-        )
+        budget = await allocator.allocate(messages=messages, complexity="simple")
 
         assert budget.mode == ThinkingMode.INSTANT
         assert budget.max_thinking_tokens == 0
@@ -37,10 +35,7 @@ class TestThinkingBudgetAllocator:
         allocator = ThinkingBudgetAllocator(light_thinking_tokens=3000)
 
         messages = [Message(role="user", content="Explain quantum computing")]
-        budget = await allocator.allocate(
-            messages=messages,
-            complexity="medium"
-        )
+        budget = await allocator.allocate(messages=messages, complexity="medium")
 
         assert budget.mode == ThinkingMode.EXTENDED
         assert budget.max_thinking_tokens == 3000
@@ -53,10 +48,7 @@ class TestThinkingBudgetAllocator:
         allocator = ThinkingBudgetAllocator(full_thinking_tokens=15000)
 
         messages = [Message(role="user", content="Analyze this complex system")]
-        budget = await allocator.allocate(
-            messages=messages,
-            complexity="complex"
-        )
+        budget = await allocator.allocate(messages=messages, complexity="complex")
 
         assert budget.mode == ThinkingMode.EXTENDED
         assert budget.max_thinking_tokens == 15000
@@ -72,7 +64,7 @@ class TestThinkingBudgetAllocator:
         budget = await allocator.allocate(
             messages=messages,
             complexity="complex",
-            budget_remaining=0.05  # Below minimum
+            budget_remaining=0.05,  # Below minimum
         )
 
         # Should fall back to instant mode due to insufficient budget
@@ -88,7 +80,7 @@ class TestThinkingBudgetAllocator:
         budget = await allocator.allocate(
             messages=messages,
             complexity="complex",
-            budget_remaining=5.0  # Above minimum
+            budget_remaining=5.0,  # Above minimum
         )
 
         # Should use extended mode
@@ -99,22 +91,18 @@ class TestThinkingBudgetAllocator:
     async def test_allocate_custom_thinking_tokens(self):
         """Test custom thinking token configuration."""
         allocator = ThinkingBudgetAllocator(
-            instant_thinking_tokens=0,
-            light_thinking_tokens=5000,
-            full_thinking_tokens=20000
+            instant_thinking_tokens=0, light_thinking_tokens=5000, full_thinking_tokens=20000
         )
 
         # Medium complexity
         budget = await allocator.allocate(
-            messages=[Message(role="user", content="test")],
-            complexity="medium"
+            messages=[Message(role="user", content="test")], complexity="medium"
         )
         assert budget.max_thinking_tokens == 5000
 
         # Complex complexity
         budget = await allocator.allocate(
-            messages=[Message(role="user", content="test")],
-            complexity="complex"
+            messages=[Message(role="user", content="test")], complexity="complex"
         )
         assert budget.max_thinking_tokens == 20000
 
@@ -126,7 +114,7 @@ class TestThinkingBudgetAllocator:
         budget = await allocator.allocate(
             messages=[Message(role="user", content="test")],
             complexity="complex",
-            model="claude-opus-4"
+            model="claude-opus-4",
         )
 
         # Should estimate cost based on Opus pricing
@@ -141,15 +129,13 @@ class TestThinkingBudgetAllocator:
 
         # Simple should not use extended
         should_extend = await allocator.should_use_extended_thinking(
-            messages=[Message(role="user", content="Hello")],
-            complexity="simple"
+            messages=[Message(role="user", content="Hello")], complexity="simple"
         )
         assert should_extend is False
 
         # Complex should use extended
         should_extend = await allocator.should_use_extended_thinking(
-            messages=[Message(role="user", content="Analyze")],
-            complexity="complex"
+            messages=[Message(role="user", content="Analyze")], complexity="complex"
         )
         assert should_extend is True
 
@@ -158,24 +144,20 @@ class TestThinkingBudgetAllocator:
         """Test thinking cost multiplier affects cost estimation."""
         # Default multiplier
         allocator1 = ThinkingBudgetAllocator(
-            full_thinking_tokens=10000,
-            thinking_cost_multiplier=1.0
+            full_thinking_tokens=10000, thinking_cost_multiplier=1.0
         )
 
         # Double multiplier
         allocator2 = ThinkingBudgetAllocator(
-            full_thinking_tokens=10000,
-            thinking_cost_multiplier=2.0
+            full_thinking_tokens=10000, thinking_cost_multiplier=2.0
         )
 
         budget1 = await allocator1.allocate(
-            messages=[Message(role="user", content="test")],
-            complexity="complex"
+            messages=[Message(role="user", content="test")], complexity="complex"
         )
 
         budget2 = await allocator2.allocate(
-            messages=[Message(role="user", content="test")],
-            complexity="complex"
+            messages=[Message(role="user", content="test")], complexity="complex"
         )
 
         # Budget2 should cost approximately twice as much
@@ -192,10 +174,12 @@ class TestThinkingModeDetector:
         detector = ThinkingModeDetector(reasoning_keyword_threshold=2)
 
         # Query with reasoning keywords
-        messages = [Message(
-            role="user",
-            content="Let's think step by step and analyze the pros and cons of this approach"
-        )]
+        messages = [
+            Message(
+                role="user",
+                content="Let's think step by step and analyze the pros and cons of this approach",
+            )
+        ]
 
         needs_extended = await detector.needs_extended_thinking(messages)
         assert needs_extended is True
@@ -216,10 +200,12 @@ class TestThinkingModeDetector:
         detector = ThinkingModeDetector()
 
         # Need longer query or more keywords to trigger
-        messages = [Message(
-            role="user",
-            content="Please solve this complex math problem step by step: 2x + 5 = 15 and explain the reasoning"
-        )]
+        messages = [
+            Message(
+                role="user",
+                content="Please solve this complex math problem step by step: 2x + 5 = 15 and explain the reasoning",
+            )
+        ]
 
         needs_extended = await detector.needs_extended_thinking(messages)
         assert needs_extended is True
@@ -230,10 +216,12 @@ class TestThinkingModeDetector:
         detector = ThinkingModeDetector()
 
         # Code block plus length should trigger
-        messages = [Message(
-            role="user",
-            content="Please analyze this code and explain what it does step by step:\n```python\ndef factorial(n): return 1 if n <= 1 else n * factorial(n-1)\n```"
-        )]
+        messages = [
+            Message(
+                role="user",
+                content="Please analyze this code and explain what it does step by step:\n```python\ndef factorial(n): return 1 if n <= 1 else n * factorial(n-1)\n```",
+            )
+        ]
 
         needs_extended = await detector.needs_extended_thinking(messages)
         assert needs_extended is True
@@ -256,17 +244,14 @@ class TestThinkingModeDetector:
         detector = ThinkingModeDetector(reasoning_keyword_threshold=3)
 
         # Only 2 keywords (below threshold)
-        messages = [Message(
-            role="user",
-            content="Please analyze and compare these two options"
-        )]
+        messages = [Message(role="user", content="Please analyze and compare these two options")]
 
-        needs_extended = await detector.needs_extended_thinking(messages)
+        await detector.needs_extended_thinking(messages)
         # With threshold=3, this should be False (only has "analyze" and "compare")
         # But it might still be True due to other factors like query length
         # Let's make it short to avoid that
         messages = [Message(role="user", content="analyze compare")]
-        needs_extended = await detector.needs_extended_thinking(messages)
+        await detector.needs_extended_thinking(messages)
         # Still might be True depending on exact matching
 
     @pytest.mark.asyncio
@@ -283,10 +268,12 @@ class TestThinkingModeDetector:
         detector = ThinkingModeDetector()
 
         # Need more keywords or length to trigger
-        messages = [Message(
-            role="user",
-            content="Explain the algorithm for binary search step by step and analyze its complexity"
-        )]
+        messages = [
+            Message(
+                role="user",
+                content="Explain the algorithm for binary search step by step and analyze its complexity",
+            )
+        ]
 
         needs_extended = await detector.needs_extended_thinking(messages)
         assert needs_extended is True
@@ -296,11 +283,13 @@ class TestThinkingModeDetector:
         """Test detection with multiple reasoning patterns."""
         detector = ThinkingModeDetector(reasoning_keyword_threshold=1)
 
-        messages = [Message(
-            role="user",
-            content="Think through this step by step, evaluate the trade-offs, "
-                   "and explain why this approach is better"
-        )]
+        messages = [
+            Message(
+                role="user",
+                content="Think through this step by step, evaluate the trade-offs, "
+                "and explain why this approach is better",
+            )
+        ]
 
         needs_extended = await detector.needs_extended_thinking(messages)
         assert needs_extended is True
@@ -315,7 +304,7 @@ class TestThinkingBudgetDataclass:
             mode=ThinkingMode.EXTENDED,
             max_thinking_tokens=10000,
             estimated_cost=1.5,
-            reasoning_time_multiplier=3.0
+            reasoning_time_multiplier=3.0,
         )
 
         assert budget.mode == ThinkingMode.EXTENDED
@@ -343,10 +332,7 @@ async def test_integration_allocator_with_tracker():
 
     # Allocate budget
     messages = [Message(role="user", content="Complex analysis task")]
-    budget = await allocator.allocate(
-        messages=messages,
-        complexity="complex"
-    )
+    budget = await allocator.allocate(messages=messages, complexity="complex")
 
     # Record cost with thinking tokens
     cost = await tracker.record_cost(
@@ -355,7 +341,7 @@ async def test_integration_allocator_with_tracker():
         model="claude-sonnet-4",
         input_tokens=1000,
         output_tokens=500,
-        thinking_tokens=budget.max_thinking_tokens
+        thinking_tokens=budget.max_thinking_tokens,
     )
 
     assert cost.thinking_tokens == 10000

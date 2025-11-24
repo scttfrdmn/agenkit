@@ -16,12 +16,13 @@ This example shows:
 
 import asyncio
 import time
+
+from agenkit.interfaces import Message
 from agenkit.routing.load_balancer import (
+    AgentInstance,
     LoadBalancerRouter,
     LoadBalancingStrategy,
-    AgentInstance,
 )
-from agenkit.interfaces import Message
 
 
 # Simple echo agent for demonstration
@@ -77,16 +78,14 @@ async def example_1_round_robin():
     ]
 
     # Create load balancer
-    balancer = LoadBalancerRouter(
-        instances=instances, strategy=LoadBalancingStrategy.ROUND_ROBIN
-    )
+    balancer = LoadBalancerRouter(instances=instances, strategy=LoadBalancingStrategy.ROUND_ROBIN)
 
     print("\n🔄 Sending 9 requests with round-robin distribution...")
 
     # Send requests
     for i in range(9):
-        message = Message(role="user", content=f"Request {i+1}")
-        response = await balancer.process(message)
+        message = Message(role="user", content=f"Request {i + 1}")
+        await balancer.process(message)
 
     # Show distribution
     print("\n📊 Request Distribution:")
@@ -94,8 +93,7 @@ async def example_1_round_robin():
         agent = instance.agent
         print(f"  {agent.name}: {agent.processed_count} requests")
 
-    print(
-        "\n✅ Round-robin ensures even distribution (3 requests per instance)")
+    print("\n✅ Round-robin ensures even distribution (3 requests per instance)")
 
 
 async def example_2_least_connections():
@@ -130,7 +128,7 @@ async def example_2_least_connections():
     # Send concurrent requests
     tasks = []
     for i in range(20):
-        message = Message(role="user", content=f"Request {i+1}")
+        message = Message(role="user", content=f"Request {i + 1}")
         tasks.append(balancer.process(message))
 
     start = time.time()
@@ -144,8 +142,7 @@ async def example_2_least_connections():
         agent = instance.agent
         print(f"  {agent.name}: {agent.processed_count} requests")
 
-    print(
-        "\n✅ Fast agents processed more requests (better utilization)")
+    print("\n✅ Fast agents processed more requests (better utilization)")
 
 
 async def example_3_weighted_distribution():
@@ -186,7 +183,7 @@ async def example_3_weighted_distribution():
     print("\n📨 Sending 60 requests...")
 
     for i in range(60):
-        message = Message(role="user", content=f"Request {i+1}")
+        message = Message(role="user", content=f"Request {i + 1}")
         await balancer.process(message)
 
     # Show distribution
@@ -231,7 +228,7 @@ async def example_4_health_monitoring():
 
     print("\n📨 Processing requests...")
     for i in range(10):
-        message = Message(role="user", content=f"Request {i+1}")
+        message = Message(role="user", content=f"Request {i + 1}")
         await balancer.process(message)
 
     print("\n📈 Per-Instance Metrics:")
@@ -240,13 +237,10 @@ async def example_4_health_monitoring():
         print(f"\n  {inst_stats['name']}:")
         print(f"    Total requests: {inst_stats['total_requests']}")
         print(f"    Success rate: {inst_stats['success_rate']:.2%}")
-        print(
-            f"    Avg response time: {inst_stats['avg_response_time']:.3f}s"
-        )
+        print(f"    Avg response time: {inst_stats['avg_response_time']:.3f}s")
         print(f"    Load factor: {inst_stats['load_factor']:.2f}")
 
-    print(
-        f"\n📊 Overall Success Rate: {stats['overall_success_rate']:.2%}")
+    print(f"\n📊 Overall Success Rate: {stats['overall_success_rate']:.2%}")
 
 
 async def example_5_dynamic_scaling():
@@ -270,7 +264,7 @@ async def example_5_dynamic_scaling():
     # Process some requests
     print("📨 Processing initial batch...")
     for i in range(10):
-        await balancer.process(Message(role="user", content=f"Request {i+1}"))
+        await balancer.process(Message(role="user", content=f"Request {i + 1}"))
 
     # Scale up - add instance
     print("\n⬆️  Scaling up: Adding instance-3...")
@@ -282,7 +276,7 @@ async def example_5_dynamic_scaling():
     # Process more requests
     print("\n📨 Processing with scaled infrastructure...")
     for i in range(15):
-        await balancer.process(Message(role="user", content=f"Request {i+1}"))
+        await balancer.process(Message(role="user", content=f"Request {i + 1}"))
 
     # Show distribution
     print("\n📊 Final Distribution:")

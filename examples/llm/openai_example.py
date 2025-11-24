@@ -33,9 +33,7 @@ async def basic_completion():
     )
 
     # Create a message
-    messages = [
-        Message(role="user", content="What is Agenkit and why would I use it?")
-    ]
+    messages = [Message(role="user", content="What is Agenkit and why would I use it?")]
 
     # Get a response
     response = await llm.complete(messages, temperature=0.7, max_tokens=150)
@@ -66,9 +64,7 @@ async def streaming_example():
 
     llm = OpenAILLM(api_key=api_key, model="gpt-4o-mini")
 
-    messages = [
-        Message(role="user", content="Write a haiku about AI agents.")
-    ]
+    messages = [Message(role="user", content="Write a haiku about AI agents.")]
 
     print("Streaming: ", end="", flush=True)
     full_response = ""
@@ -99,7 +95,10 @@ async def conversation_example():
 
     # Build conversation history
     messages = [
-        Message(role="system", content="You are a helpful assistant that explains technical concepts concisely."),
+        Message(
+            role="system",
+            content="You are a helpful assistant that explains technical concepts concisely.",
+        ),
         Message(role="user", content="What is an agent?"),
     ]
 
@@ -128,9 +127,7 @@ async def cost_tracking():
 
     llm = OpenAILLM(api_key=api_key, model="gpt-4o-mini")
 
-    messages = [
-        Message(role="user", content="Explain machine learning in 50 words.")
-    ]
+    messages = [Message(role="user", content="Explain machine learning in 50 words.")]
 
     response = await llm.complete(messages, max_tokens=100)
 

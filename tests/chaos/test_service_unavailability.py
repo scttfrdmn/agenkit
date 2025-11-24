@@ -10,13 +10,15 @@ Tests system resilience when services are unavailable:
 
 These tests validate circuit breaker and retry behavior under service failures.
 """
+
 import asyncio
+import contextlib
 import time
 
 import pytest
 
 from agenkit.interfaces import Agent, Message
-from tests.chaos.chaos_agents import ChaosAgent, ChaosMode, OverloadedAgent, FlakeyAgent
+from tests.chaos.chaos_agents import ChaosAgent, ChaosMode, FlakeyAgent, OverloadedAgent
 
 
 class SimpleAgent(Agent):
@@ -42,9 +44,7 @@ class SimpleAgent(Agent):
         try:
             await asyncio.sleep(0.01)  # Simulate work
             return Message(
-                role="agent",
-                content=f"Processed: {message.content}",
-                metadata={"agent": self.name}
+                role="agent", content=f"Processed: {message.content}", metadata={"agent": self.name}
             )
         finally:
             self._processing = False
@@ -53,6 +53,7 @@ class SimpleAgent(Agent):
 # ============================================
 # Service Crash Tests
 # ============================================
+
 
 @pytest.mark.asyncio
 @pytest.mark.chaos
@@ -80,7 +81,7 @@ async def test_service_crash_after_n_requests():
     message = Message(role="user", content="Test")
 
     # First 3 requests should succeed
-    for i in range(3):
+    for _i in range(3):
         response = await chaos_agent.process(message)
         assert response.content == "Processed: Test"
 
@@ -122,6 +123,7 @@ async def test_crash_mid_request():
 # ============================================
 # Service Startup Delay Tests
 # ============================================
+
 
 @pytest.mark.asyncio
 @pytest.mark.chaos
@@ -172,6 +174,7 @@ async def test_slow_service_startup():
 # ============================================
 # Graceful Shutdown Tests
 # ============================================
+
 
 @pytest.mark.asyncio
 @pytest.mark.chaos
@@ -269,6 +272,7 @@ async def test_shutdown_rejects_new_requests():
 # Service Overload Tests
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.chaos
 async def test_service_overload():
@@ -277,13 +281,13 @@ async def test_service_overload():
     overloaded_agent = OverloadedAgent(
         base_agent,
         overload_threshold=5,  # Overload after 5 requests
-        overload_failure_rate=0.9  # 90% failure when overloaded
+        overload_failure_rate=0.9,  # 90% failure when overloaded
     )
 
     message = Message(role="user", content="Test")
 
     # First 5 requests should succeed
-    for i in range(5):
+    for _i in range(5):
         response = await overloaded_agent.process(message)
         assert response.content == "Processed: Test"
 
@@ -309,20 +313,14 @@ async def test_service_overload():
 async def test_overload_recovery():
     """Test that service can recover from overload."""
     base_agent = SimpleAgent()
-    overloaded_agent = OverloadedAgent(
-        base_agent,
-        overload_threshold=10,
-        overload_failure_rate=0.8
-    )
+    overloaded_agent = OverloadedAgent(base_agent, overload_threshold=10, overload_failure_rate=0.8)
 
     message = Message(role="user", content="Test")
 
     # Overload the service
     for _ in range(15):
-        try:
+        with contextlib.suppress(RuntimeError):
             await overloaded_agent.process(message)
-        except RuntimeError:
-            pass
 
     assert overloaded_agent.is_overloaded()
 
@@ -388,6 +386,7 @@ async def test_queue_full_scenario():
 # Dependency Failure Tests
 # ============================================
 
+
 @pytest.mark.asyncio
 @pytest.mark.chaos
 async def test_dependency_failure_cascade():
@@ -448,18 +447,18 @@ async def test_flakey_service_pattern():
     # Fail twice, then succeed
     flakey_agent = FlakeyAgent(
         base_agent,
-        failure_pattern=[False, False, True, True]  # fail, fail, succeed, succeed
+        failure_pattern=[False, False, True, True],  # fail, fail, succeed, succeed
     )
 
     message = Message(role="user", content="Test")
 
     # First two requests should fail
-    for i in range(2):
+    for _i in range(2):
         with pytest.raises(RuntimeError):
             await flakey_agent.process(message)
 
     # Next two requests should succeed
-    for i in range(2):
+    for _i in range(2):
         response = await flakey_agent.process(message)
         assert response.content == "Processed: Test"
 

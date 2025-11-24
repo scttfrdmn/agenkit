@@ -156,7 +156,7 @@ class WebSocketTransport(Transport):
             message = await self._websocket.recv()
             # Ensure we return bytes (message could be str if server sends text)
             if isinstance(message, str):
-                return message.encode('utf-8')
+                return message.encode("utf-8")
             return message
         except ConnectionClosed as e:
             self._connected = False
@@ -183,6 +183,7 @@ class WebSocketTransport(Transport):
         # Check size limit
         if len(data) > 10 * 1024 * 1024:  # 10 MB max
             from .errors import MalformedPayloadError
+
             raise MalformedPayloadError(
                 f"Message size {len(data)} exceeds maximum 10 MB", {"length": len(data)}
             )
@@ -247,7 +248,5 @@ class WebSocketTransport(Transport):
             True if connected, False otherwise
         """
         return (
-            self._connected
-            and self._websocket is not None
-            and self._websocket.state == State.OPEN
+            self._connected and self._websocket is not None and self._websocket.state == State.OPEN
         )

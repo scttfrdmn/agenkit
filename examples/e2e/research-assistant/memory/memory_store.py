@@ -6,11 +6,11 @@ Provides different types of memory:
 - Long-term Memory: Important facts and findings to retain
 """
 
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Any, Optional
-import json
+from typing import Any
 
 
 class MemoryType(Enum):
@@ -28,7 +28,7 @@ class MemoryEntry:
     id: str
     content: str
     memory_type: MemoryType
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.now)
     importance: float = 0.5  # 0.0 to 1.0, used for memory consolidation
     access_count: int = 0
@@ -86,7 +86,7 @@ class MemoryStore:
             short_term_limit: Max short-term memories before eviction
             long_term_consolidation_threshold: Importance threshold for long-term storage
         """
-        self.memories: Dict[str, MemoryEntry] = {}
+        self.memories: dict[str, MemoryEntry] = {}
         self.short_term_limit = short_term_limit
         self.long_term_consolidation_threshold = long_term_consolidation_threshold
         self._memory_counter = 0
@@ -96,7 +96,7 @@ class MemoryStore:
         memory_id: str,
         content: str,
         memory_type: MemoryType,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
         importance: float = 0.5,
     ) -> MemoryEntry:
         """
@@ -137,7 +137,7 @@ class MemoryStore:
 
         return entry
 
-    def get(self, memory_id: str) -> Optional[MemoryEntry]:
+    def get(self, memory_id: str) -> MemoryEntry | None:
         """
         Retrieve a specific memory by ID.
 
@@ -152,7 +152,7 @@ class MemoryStore:
             entry.access()
         return entry
 
-    def get_by_type(self, memory_type: MemoryType) -> List[MemoryEntry]:
+    def get_by_type(self, memory_type: MemoryType) -> list[MemoryEntry]:
         """
         Get all memories of a specific type.
 
@@ -165,8 +165,8 @@ class MemoryStore:
         return [m for m in self.memories.values() if m.memory_type == memory_type]
 
     def get_recent(
-        self, limit: int = 10, memory_type: Optional[MemoryType] = None
-    ) -> List[MemoryEntry]:
+        self, limit: int = 10, memory_type: MemoryType | None = None
+    ) -> list[MemoryEntry]:
         """
         Get most recent memories.
 
@@ -188,9 +188,9 @@ class MemoryStore:
     def search(
         self,
         query: str,
-        memory_type: Optional[MemoryType] = None,
+        memory_type: MemoryType | None = None,
         min_importance: float = 0.0,
-    ) -> List[MemoryEntry]:
+    ) -> list[MemoryEntry]:
         """
         Simple keyword search across memories.
 
@@ -220,11 +220,7 @@ class MemoryStore:
 
     def clear_working_memory(self):
         """Clear all working memory entries."""
-        to_remove = [
-            mid
-            for mid, m in self.memories.items()
-            if m.memory_type == MemoryType.WORKING
-        ]
+        to_remove = [mid for mid, m in self.memories.items() if m.memory_type == MemoryType.WORKING]
         for mid in to_remove:
             del self.memories[mid]
 
@@ -260,7 +256,7 @@ class MemoryStore:
                 # Less important memories get evicted
                 del self.memories[memory.id]
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """
         Get summary statistics about memory usage.
 
@@ -274,9 +270,7 @@ class MemoryStore:
                 "count": len(memories),
                 "total_size": sum(len(m.content) for m in memories),
                 "avg_importance": (
-                    sum(m.importance for m in memories) / len(memories)
-                    if memories
-                    else 0.0
+                    sum(m.importance for m in memories) / len(memories) if memories else 0.0
                 ),
             }
 
@@ -320,7 +314,7 @@ class MemoryStore:
         Args:
             filepath: Path to checkpoint file
         """
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             checkpoint = json.load(f)
 
         self.memories.clear()

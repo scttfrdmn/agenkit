@@ -1,7 +1,9 @@
 """Tests for circuit breaker middleware."""
 
 import asyncio
+
 import pytest
+
 from agenkit.interfaces import Agent, Message
 from agenkit.middleware import (
     CircuitBreakerConfig,
@@ -67,13 +69,15 @@ async def test_circuit_breaker_closed():
         msg = Message(role="user", content="test")
         response = await cb.process(msg)
 
-        assert response.content == "success", f"Attempt {i+1}: Expected 'success'"
+        assert response.content == "success", f"Attempt {i + 1}: Expected 'success'"
 
     assert cb.state == CircuitState.CLOSED, "Expected CLOSED state"
 
     metrics = cb.metrics
     assert metrics.total_requests == 3, f"Expected 3 total requests, got {metrics.total_requests}"
-    assert metrics.successful_requests == 3, f"Expected 3 successful requests, got {metrics.successful_requests}"
+    assert metrics.successful_requests == 3, (
+        f"Expected 3 successful requests, got {metrics.successful_requests}"
+    )
 
 
 @pytest.mark.asyncio
@@ -93,7 +97,7 @@ async def test_circuit_breaker_opens():
     )
 
     # Trigger failures to open circuit
-    for i in range(3):
+    for _i in range(3):
         msg = Message(role="user", content="test")
         with pytest.raises(Exception):
             await cb.process(msg)
@@ -102,7 +106,9 @@ async def test_circuit_breaker_opens():
     assert cb.state == CircuitState.OPEN, f"Expected OPEN state, got {cb.state.value}"
 
     metrics = cb.metrics
-    assert metrics.failed_requests == 3, f"Expected 3 failed requests, got {metrics.failed_requests}"
+    assert metrics.failed_requests == 3, (
+        f"Expected 3 failed requests, got {metrics.failed_requests}"
+    )
 
 
 @pytest.mark.asyncio
@@ -122,7 +128,7 @@ async def test_circuit_breaker_rejects_when_open():
     )
 
     # Open the circuit
-    for i in range(2):
+    for _i in range(2):
         msg = Message(role="user", content="test")
         with pytest.raises(Exception):
             await cb.process(msg)
@@ -138,7 +144,9 @@ async def test_circuit_breaker_rejects_when_open():
     assert "OPEN" in str(exc_info.value), "Expected CircuitBreakerError with OPEN message"
 
     metrics = cb.metrics
-    assert metrics.rejected_requests == 1, f"Expected 1 rejected request, got {metrics.rejected_requests}"
+    assert metrics.rejected_requests == 1, (
+        f"Expected 1 rejected request, got {metrics.rejected_requests}"
+    )
 
 
 @pytest.mark.asyncio
@@ -158,7 +166,7 @@ async def test_circuit_breaker_half_open():
     )
 
     # Open the circuit
-    for i in range(2):
+    for _i in range(2):
         msg = Message(role="user", content="test")
         with pytest.raises(Exception):
             await cb.process(msg)
@@ -208,15 +216,21 @@ async def test_circuit_breaker_recovery():
         msg = Message(role="user", content="test")
         response = await cb.process(msg)
 
-        assert response.content == "success", f"Attempt {i+1}: Expected 'success'"
+        assert response.content == "success", f"Attempt {i + 1}: Expected 'success'"
 
     # Circuit should be closed
-    assert cb.state == CircuitState.CLOSED, f"Expected CLOSED state after recovery, got {cb.state.value}"
+    assert cb.state == CircuitState.CLOSED, (
+        f"Expected CLOSED state after recovery, got {cb.state.value}"
+    )
 
     metrics = cb.metrics
     assert metrics.state_changes.get("closed->open", 0) == 1, "Expected 1 closed->open transition"
-    assert metrics.state_changes.get("open->half_open", 0) == 1, "Expected 1 open->half_open transition"
-    assert metrics.state_changes.get("half_open->closed", 0) == 1, "Expected 1 half_open->closed transition"
+    assert metrics.state_changes.get("open->half_open", 0) == 1, (
+        "Expected 1 open->half_open transition"
+    )
+    assert metrics.state_changes.get("half_open->closed", 0) == 1, (
+        "Expected 1 half_open->closed transition"
+    )
 
 
 @pytest.mark.asyncio
@@ -236,7 +250,7 @@ async def test_circuit_breaker_reopens_from_half_open():
     )
 
     # Open the circuit
-    for i in range(2):
+    for _i in range(2):
         msg = Message(role="user", content="test")
         with pytest.raises(Exception):
             await cb.process(msg)
@@ -255,10 +269,14 @@ async def test_circuit_breaker_reopens_from_half_open():
     with pytest.raises(Exception):
         await cb.process(msg)
 
-    assert cb.state == CircuitState.OPEN, f"Expected OPEN state after failure in half-open, got {cb.state.value}"
+    assert cb.state == CircuitState.OPEN, (
+        f"Expected OPEN state after failure in half-open, got {cb.state.value}"
+    )
 
     metrics = cb.metrics
-    assert metrics.state_changes.get("half_open->open", 0) == 1, "Expected 1 half_open->open transition"
+    assert metrics.state_changes.get("half_open->open", 0) == 1, (
+        "Expected 1 half_open->open transition"
+    )
 
 
 @pytest.mark.asyncio
@@ -278,16 +296,20 @@ async def test_circuit_breaker_timeout():
     )
 
     # Trigger timeouts to open circuit
-    for i in range(2):
+    for _i in range(2):
         msg = Message(role="user", content="test")
         with pytest.raises((TimeoutError, asyncio.TimeoutError)):
             await cb.process(msg)
 
     # Circuit should be open due to timeouts
-    assert cb.state == CircuitState.OPEN, f"Expected OPEN state after timeouts, got {cb.state.value}"
+    assert cb.state == CircuitState.OPEN, (
+        f"Expected OPEN state after timeouts, got {cb.state.value}"
+    )
 
     metrics = cb.metrics
-    assert metrics.failed_requests == 2, f"Expected 2 failed requests, got {metrics.failed_requests}"
+    assert metrics.failed_requests == 2, (
+        f"Expected 2 failed requests, got {metrics.failed_requests}"
+    )
 
 
 @pytest.mark.asyncio
@@ -307,7 +329,7 @@ async def test_circuit_breaker_metrics():
     )
 
     # Make requests
-    for i in range(5):
+    for _i in range(5):
         msg = Message(role="user", content="test")
         try:
             await cb.process(msg)
@@ -317,7 +339,13 @@ async def test_circuit_breaker_metrics():
     metrics = cb.metrics
 
     assert metrics.total_requests == 5, f"Expected 5 total requests, got {metrics.total_requests}"
-    assert metrics.successful_requests == 2, f"Expected 2 successful requests, got {metrics.successful_requests}"
-    assert metrics.failed_requests == 3, f"Expected 3 failed requests, got {metrics.failed_requests}"
-    assert metrics.current_state == CircuitState.OPEN, f"Expected OPEN state, got {metrics.current_state.value}"
+    assert metrics.successful_requests == 2, (
+        f"Expected 2 successful requests, got {metrics.successful_requests}"
+    )
+    assert metrics.failed_requests == 3, (
+        f"Expected 3 failed requests, got {metrics.failed_requests}"
+    )
+    assert metrics.current_state == CircuitState.OPEN, (
+        f"Expected OPEN state, got {metrics.current_state.value}"
+    )
     assert metrics.last_state_change is not None, "Expected last_state_change to be set"

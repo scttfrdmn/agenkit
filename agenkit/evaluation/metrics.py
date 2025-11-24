@@ -11,12 +11,12 @@ Provides comprehensive metrics for evaluating agent performance:
 Key use case: "How do you know a 30-hour agent succeeded?"
 """
 
+import json
+import statistics
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
-import json
-import statistics
+from typing import Any
 
 
 class SessionStatus(Enum):
@@ -49,9 +49,9 @@ class Metric:
     value: float
     type: MetricType
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "name": self.name,
@@ -62,7 +62,7 @@ class Metric:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Metric":
+    def from_dict(cls, data: dict[str, Any]) -> "Metric":
         """Create from dictionary."""
         return cls(
             name=data["name"],
@@ -81,36 +81,40 @@ class EvaluationResult:
     agent_name: str
     status: SessionStatus
     start_time: str
-    end_time: Optional[str] = None
-    metrics: List[Metric] = field(default_factory=list)
-    errors: List[Dict[str, Any]] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    end_time: str | None = None
+    metrics: list[Metric] = field(default_factory=list)
+    errors: list[dict[str, Any]] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_metric(self, metric: Metric) -> None:
         """Add a metric to this result."""
         self.metrics.append(metric)
 
-    def add_error(self, error_type: str, message: str, details: Optional[Dict[str, Any]] = None) -> None:
+    def add_error(
+        self, error_type: str, message: str, details: dict[str, Any] | None = None
+    ) -> None:
         """Record an error."""
-        self.errors.append({
-            "type": error_type,
-            "message": message,
-            "details": details or {},
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        })
+        self.errors.append(
+            {
+                "type": error_type,
+                "message": message,
+                "details": details or {},
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
 
-    def get_metric(self, name: str) -> Optional[Metric]:
+    def get_metric(self, name: str) -> Metric | None:
         """Get a specific metric by name."""
         for metric in self.metrics:
             if metric.name == name:
                 return metric
         return None
 
-    def get_metrics_by_type(self, metric_type: MetricType) -> List[Metric]:
+    def get_metrics_by_type(self, metric_type: MetricType) -> list[Metric]:
         """Get all metrics of a specific type."""
         return [m for m in self.metrics if m.type == metric_type]
 
-    def duration_seconds(self) -> Optional[float]:
+    def duration_seconds(self) -> float | None:
         """Calculate session duration in seconds."""
         if not self.end_time:
             return None
@@ -119,7 +123,7 @@ class EvaluationResult:
         end = datetime.fromisoformat(self.end_time.replace("Z", "+00:00"))
         return (end - start).total_seconds()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "session_id": self.session_id,
@@ -133,7 +137,7 @@ class EvaluationResult:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "EvaluationResult":
+    def from_dict(cls, data: dict[str, Any]) -> "EvaluationResult":
         """Create from dictionary."""
         return cls(
             session_id=data["session_id"],
@@ -174,13 +178,13 @@ class MetricsCollector:
     """
 
     def __init__(self):
-        self.results: List[EvaluationResult] = []
+        self.results: list[EvaluationResult] = []
 
     def add_result(self, result: EvaluationResult) -> None:
         """Add an evaluation result."""
         self.results.append(result)
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Calculate aggregate statistics across all results."""
         if not self.results:
             return {}
@@ -236,7 +240,7 @@ class MetricsCollector:
         completed = sum(1 for r in self.results if r.status == SessionStatus.COMPLETED)
         return completed / len(self.results)
 
-    def get_results_by_status(self, status: SessionStatus) -> List[EvaluationResult]:
+    def get_results_by_status(self, status: SessionStatus) -> list[EvaluationResult]:
         """Get all results with a specific status."""
         return [r for r in self.results if r.status == status]
 
@@ -254,7 +258,7 @@ class MetricsCollector:
     @classmethod
     def import_from_json(cls, filepath: str) -> "MetricsCollector":
         """Import results from JSON file."""
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             data = json.load(f)
 
         collector = cls()

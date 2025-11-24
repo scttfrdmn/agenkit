@@ -12,11 +12,12 @@ import asyncio
 import os
 from typing import Any
 
-from agenkit.adapters.llm import AnthropicLLM, LLM, OpenAILLM
+from agenkit.adapters.llm import LLM, AnthropicLLM, OpenAILLM
 from agenkit.interfaces import Message
 
 try:
     from agenkit.adapters.llm import GeminiLLM
+
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
@@ -29,9 +30,7 @@ async def basic_swapping():
     print("=" * 60)
 
     # Same messages for all providers
-    messages = [
-        Message(role="user", content="What is the capital of France?")
-    ]
+    messages = [Message(role="user", content="What is the capital of France?")]
 
     # Try Anthropic
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
@@ -64,9 +63,7 @@ async def compare_responses():
     print("Response Comparison")
     print("=" * 60)
 
-    messages = [
-        Message(role="user", content="Write a creative tagline for an AI agent framework.")
-    ]
+    messages = [Message(role="user", content="Write a creative tagline for an AI agent framework.")]
 
     providers: dict[str, LLM] = {}
 
@@ -162,12 +159,12 @@ async def ab_testing():
 
         # Model A
         response_a = await model_a.complete(messages, max_tokens=100)
-        print(f"  Model A (Claude Haiku):")
+        print("  Model A (Claude Haiku):")
         print(f"    {response_a.content[:100]}...")
 
         # Model B
         response_b = await model_b.complete(messages, max_tokens=100)
-        print(f"  Model B (GPT-4o-mini):")
+        print("  Model B (GPT-4o-mini):")
         print(f"    {response_b.content[:100]}...")
         print()
 

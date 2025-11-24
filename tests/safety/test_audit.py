@@ -1,31 +1,31 @@
 """Tests for security audit logging."""
 
-import pytest
+import contextlib
 import json
 import os
 import tempfile
-from pathlib import Path
+
+import pytest
+
 from agenkit.safety.audit import (
-    SecurityAuditLogger,
     AuditEvent,
     AuditEventType,
     AuditSeverity,
+    SecurityAuditLogger,
 )
 
 
 @pytest.fixture
 def temp_log_file():
     """Create a temporary log file for testing."""
-    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.log') as f:
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".log") as f:
         log_path = f.name
 
     yield log_path
 
     # Cleanup
-    try:
+    with contextlib.suppress(FileNotFoundError):
         os.unlink(log_path)
-    except FileNotFoundError:
-        pass
 
 
 class TestAuditEvent:
@@ -37,7 +37,7 @@ class TestAuditEvent:
             event_type=AuditEventType.ACCESS_GRANTED,
             severity=AuditSeverity.INFO,
             user_id="user_123",
-            details={"resource": "file.txt"}
+            details={"resource": "file.txt"},
         )
 
         assert event.timestamp is not None
@@ -52,7 +52,7 @@ class TestAuditEvent:
             severity=AuditSeverity.ERROR,
             user_id="user_123",
             agent_name="test_agent",
-            details={"score": 15, "patterns": ["ignore instructions"]}
+            details={"score": 15, "patterns": ["ignore instructions"]},
         )
 
         event_dict = event.to_dict()
@@ -69,7 +69,7 @@ class TestAuditEvent:
             event_type=AuditEventType.ACCESS_DENIED,
             severity=AuditSeverity.WARNING,
             user_id="user_123",
-            details={"reason": "insufficient permissions"}
+            details={"reason": "insufficient permissions"},
         )
 
         json_str = event.to_json()
@@ -115,7 +115,7 @@ class TestSecurityAuditLogger:
             event_type=AuditEventType.ACCESS_GRANTED,
             severity=AuditSeverity.INFO,
             user_id="user_123",
-            details={}
+            details={},
         )
         logger.log(event)
 
@@ -131,12 +131,12 @@ class TestSecurityAuditLogger:
             event_type=AuditEventType.PROMPT_INJECTION_DETECTED,
             severity=AuditSeverity.ERROR,
             user_id="user_123",
-            details={"score": 15}
+            details={"score": 15},
         )
         logger.log(event)
 
         # Read log file
-        with open(temp_log_file, 'r') as f:
+        with open(temp_log_file) as f:
             log_line = f.read().strip()
 
         # Should be valid JSON
@@ -148,14 +148,10 @@ class TestSecurityAuditLogger:
         """Test logging access granted events."""
         logger = SecurityAuditLogger(log_file=temp_log_file)
 
-        logger.log_access_granted(
-            user_id="user_123",
-            resource="file.txt",
-            permission="read:files"
-        )
+        logger.log_access_granted(user_id="user_123", resource="file.txt", permission="read:files")
 
         # Verify log
-        with open(temp_log_file, 'r') as f:
+        with open(temp_log_file) as f:
             log_line = f.read().strip()
 
         parsed = json.loads(log_line)
@@ -171,11 +167,11 @@ class TestSecurityAuditLogger:
             user_id="user_123",
             resource="secrets.txt",
             permission="access:secrets",
-            reason="insufficient permissions"
+            reason="insufficient permissions",
         )
 
         # Verify log
-        with open(temp_log_file, 'r') as f:
+        with open(temp_log_file) as f:
             log_line = f.read().strip()
 
         parsed = json.loads(log_line)
@@ -191,11 +187,11 @@ class TestSecurityAuditLogger:
             user_id="user_123",
             score=15,
             matched_patterns=["ignore instructions", "system mode"],
-            content_preview="Ignore previous instructions..."
+            content_preview="Ignore previous instructions...",
         )
 
         # Verify log
-        with open(temp_log_file, 'r') as f:
+        with open(temp_log_file) as f:
             log_line = f.read().strip()
 
         parsed = json.loads(log_line)
@@ -211,11 +207,11 @@ class TestSecurityAuditLogger:
         logger.log_sensitive_data_redaction(
             user_id="user_123",
             fields_redacted=["password", "api_key"],
-            output_preview='{"result": "success", ...}'
+            output_preview='{"result": "success", ...}',
         )
 
         # Verify log
-        with open(temp_log_file, 'r') as f:
+        with open(temp_log_file) as f:
             log_line = f.read().strip()
 
         parsed = json.loads(log_line)
@@ -231,11 +227,11 @@ class TestSecurityAuditLogger:
             user_id="user_123",
             validation_type="schema",
             reason="Missing required field: result",
-            content_preview='{"data": "test"}'
+            content_preview='{"data": "test"}',
         )
 
         # Verify log
-        with open(temp_log_file, 'r') as f:
+        with open(temp_log_file) as f:
             log_line = f.read().strip()
 
         parsed = json.loads(log_line)
@@ -251,11 +247,11 @@ class TestSecurityAuditLogger:
         logger.log_anomaly(
             user_id="user_123",
             anomaly_type="high_request_rate",
-            details={"requests_per_minute": 150, "threshold": 100}
+            details={"requests_per_minute": 150, "threshold": 100},
         )
 
         # Verify log
-        with open(temp_log_file, 'r') as f:
+        with open(temp_log_file) as f:
             log_line = f.read().strip()
 
         parsed = json.loads(log_line)
@@ -273,7 +269,7 @@ class TestSecurityAuditLogger:
         logger.log_access_denied("user_3", "secrets.txt", "access:secrets", "denied")
 
         # Verify multiple entries
-        with open(temp_log_file, 'r') as f:
+        with open(temp_log_file) as f:
             lines = f.readlines()
 
         assert len(lines) == 3
@@ -293,12 +289,12 @@ class TestSecurityAuditLogger:
             severity=AuditSeverity.INFO,
             user_id="user_123",
             agent_name="test_agent",
-            details={}
+            details={},
         )
         logger.log(event)
 
         # Verify agent name in log
-        with open(temp_log_file, 'r') as f:
+        with open(temp_log_file) as f:
             log_line = f.read().strip()
 
         parsed = json.loads(log_line)
@@ -313,11 +309,11 @@ class TestSecurityAuditLogger:
             user_id="user_123",
             validation_type="size",
             reason="Too large",
-            content_preview=long_content
+            content_preview=long_content,
         )
 
         # Verify truncation
-        with open(temp_log_file, 'r') as f:
+        with open(temp_log_file) as f:
             log_line = f.read().strip()
 
         parsed = json.loads(log_line)
@@ -334,12 +330,12 @@ class TestSecurityAuditLogger:
             event_type=AuditEventType.ACCESS_GRANTED,
             severity=AuditSeverity.INFO,
             user_id="user_123",
-            details={}
+            details={},
         )
         logger.log(event)
 
         # Should log successfully without agent_name
-        with open(temp_log_file, 'r') as f:
+        with open(temp_log_file) as f:
             log_line = f.read().strip()
 
         parsed = json.loads(log_line)

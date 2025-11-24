@@ -4,13 +4,14 @@ Importance weighting memory strategy.
 Prioritizes messages by importance score with recency bias.
 """
 
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from .base import MemoryStrategy
 
 if TYPE_CHECKING:
-    from ..base import Memory
     from ...interfaces import Message
+    from ..base import Memory
 
 
 class ImportanceWeightingStrategy(MemoryStrategy):
@@ -45,10 +46,7 @@ class ImportanceWeightingStrategy(MemoryStrategy):
     """
 
     def __init__(
-        self,
-        importance_threshold: float = 0.0,
-        recency_weight: float = 0.3,
-        min_recent: int = 3
+        self, importance_threshold: float = 0.0, recency_weight: float = 0.3, min_recent: int = 3
     ):
         """
         Initialize importance weighting strategy.
@@ -63,11 +61,7 @@ class ImportanceWeightingStrategy(MemoryStrategy):
         self.min_recent = min_recent
 
     async def select(
-        self,
-        memory: "Memory",
-        session_id: str,
-        context_limit: int,
-        **kwargs
+        self, memory: "Memory", session_id: str, context_limit: int, **kwargs
     ) -> list["Message"]:
         """
         Select messages by importance score.
@@ -89,11 +83,11 @@ class ImportanceWeightingStrategy(MemoryStrategy):
             return []
 
         # Always include most recent messages
-        recent = all_messages[:self.min_recent]
+        recent = all_messages[: self.min_recent]
 
         # Score remaining messages
         scored = []
-        for i, msg in enumerate(all_messages[self.min_recent:], start=self.min_recent):
+        for i, msg in enumerate(all_messages[self.min_recent :], start=self.min_recent):
             # Get base importance (default 0.5 if not set)
             importance = self._calculate_importance(msg, kwargs.get("custom_scorer"))
 
@@ -119,9 +113,7 @@ class ImportanceWeightingStrategy(MemoryStrategy):
         return selected + recent
 
     def _calculate_importance(
-        self,
-        message: "Message",
-        custom_scorer: Optional[Callable] = None
+        self, message: "Message", custom_scorer: Callable | None = None
     ) -> float:
         """
         Calculate importance score for message.

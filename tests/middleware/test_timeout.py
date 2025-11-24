@@ -1,7 +1,10 @@
 """Tests for timeout middleware."""
 
 import asyncio
+import contextlib
+
 import pytest
+
 from agenkit.interfaces import Agent, Message
 from agenkit.middleware import (
     TimeoutConfig,
@@ -86,7 +89,7 @@ class StreamingAgent(Agent):
         """Stream responses."""
         for i in range(self.chunk_count):
             await asyncio.sleep(self.chunk_delay)
-            yield Message(role="agent", content=f"Chunk {i+1}/{self.chunk_count}")
+            yield Message(role="agent", content=f"Chunk {i + 1}/{self.chunk_count}")
 
 
 class FailingAgent(Agent):
@@ -224,6 +227,7 @@ async def test_timeout_boundary_case():
 @pytest.mark.asyncio
 async def test_timeout_mixed_requests():
     """Test metrics with mix of successful and timed out requests."""
+
     # Agent that alternates between fast and slow
     class VariableAgent(Agent):
         def __init__(self):
@@ -365,7 +369,7 @@ async def test_timeout_streaming_not_supported():
     msg = Message(role="user", content="test")
 
     with pytest.raises(NotImplementedError, match="does not support streaming"):
-        async for chunk in timeout_agent.stream(msg):
+        async for _chunk in timeout_agent.stream(msg):
             pass
 
 
@@ -402,10 +406,8 @@ async def test_timeout_metrics_tracks_timeout_duration():
 
     msg = Message(role="user", content="test")
 
-    try:
+    with contextlib.suppress(TimeoutError):
         await timeout_agent.process(msg)
-    except TimeoutError:
-        pass
 
     metrics = timeout_agent.metrics
     assert metrics.timed_out_requests == 1

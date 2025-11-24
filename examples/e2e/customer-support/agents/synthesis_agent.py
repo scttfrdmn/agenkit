@@ -1,6 +1,5 @@
 """Synthesis Agent - Creates final customer-facing response."""
 
-from typing import Dict, Any
 from agenkit import Agent, Message
 
 

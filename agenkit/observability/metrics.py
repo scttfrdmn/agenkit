@@ -6,14 +6,12 @@ including request counts, latencies, and error rates.
 """
 
 import time
-from typing import Any
 
 from opentelemetry import metrics
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
-from opentelemetry.sdk.resources import Resource, SERVICE_NAME
 from opentelemetry.instrumentation.system_metrics import SystemMetricsInstrumentor
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 
 from agenkit.interfaces import Agent, Message
 
@@ -37,9 +35,11 @@ def init_metrics(
         uses a pull-based model accessed via HTTP scraping.
     """
     # Create resource
-    resource = Resource(attributes={
-        SERVICE_NAME: service_name,
-    })
+    resource = Resource(
+        attributes={
+            SERVICE_NAME: service_name,
+        }
+    )
 
     # Create Prometheus exporter
     # Note: PrometheusMetricReader doesn't accept port parameter
@@ -157,7 +157,7 @@ class MetricsMiddleware:
 
         try:
             # Record message size
-            message_size = len(message.content.encode('utf-8'))
+            message_size = len(message.content.encode("utf-8"))
             self._message_size_histogram.record(
                 message_size,
                 attributes=attributes,

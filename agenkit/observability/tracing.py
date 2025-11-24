@@ -5,16 +5,15 @@ Provides automatic span creation for agent processing with context propagation
 across process and language boundaries.
 """
 
-from typing import Any
-from contextvars import ContextVar
 from dataclasses import replace
+from typing import Any
 
 from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-from opentelemetry.sdk.resources import Resource, SERVICE_NAME
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.trace import Status, StatusCode, SpanKind
+from opentelemetry.trace import SpanKind, Status, StatusCode
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 from agenkit.interfaces import Agent, Message
@@ -39,9 +38,11 @@ def init_tracing(
     global _tracer
 
     # Create resource with service name
-    resource = Resource(attributes={
-        SERVICE_NAME: service_name,
-    })
+    resource = Resource(
+        attributes={
+            SERVICE_NAME: service_name,
+        }
+    )
 
     # Create tracer provider
     provider = TracerProvider(resource=resource)

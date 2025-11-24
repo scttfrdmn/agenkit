@@ -145,6 +145,8 @@ ignore = [
     "PERF203", # try-except in loop - necessary for robust error handling
     "PERF401", # Manual list comprehension - sometimes clearer than comprehension
     "PLW2901", # Redefined loop variable - acceptable in specific cases
+    "SIM108",  # Ternary operator suggestion - sometimes if/else is clearer
+    "B904",    # Exception chaining - acceptable to not chain when wrapping
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -153,11 +155,15 @@ ignore = [
     "PLR2004", # Allow magic values in tests
     "S105",    # Possible hardcoded password (test fixtures)
     "S106",    # Possible hardcoded password (test fixtures)
+    "B017",    # Allow pytest.raises(Exception) in tests
+    "S108",    # Allow /tmp paths in tests
+    "PTH",     # Allow os.path in tests for compatibility
 ]
 "examples/**/*.py" = [
     "S105",   # Possible hardcoded password (examples)
     "S106",   # Possible hardcoded password (examples)
     "T201",   # Print statements allowed in examples
+    "PTH",    # Allow os.path in examples for clarity
 ]
 "benchmarks/**/*.py" = [
     "S101",    # Allow assert in benchmarks
@@ -165,6 +171,9 @@ ignore = [
 ]
 "agenkit/adapters/python/grpc_server.py" = [
     "N802",   # Function names must be CamelCase for protobuf compatibility
+]
+"agenkit/**/__init__.py" = [
+    "F401",    # Imported but unused - false positive for re-exports via __all__
 ]
 
 [tool.ruff.lint.isort]

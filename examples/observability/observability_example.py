@@ -10,12 +10,12 @@ import logging
 
 from agenkit.interfaces import Agent, Message
 from agenkit.observability import (
-    TracingMiddleware,
     MetricsMiddleware,
-    init_tracing,
-    init_metrics,
+    TracingMiddleware,
     configure_logging,
     get_logger_with_trace,
+    init_metrics,
+    init_tracing,
 )
 
 
@@ -120,7 +120,7 @@ async def main():
     print("   • Trace context propagated across agents")
     print("   • Structured logs include trace_id and span_id")
     print("   • Metrics collected for requests, errors, and latency")
-    print(f"   • Prometheus metrics available at http://localhost:8001/metrics\n")
+    print("   • Prometheus metrics available at http://localhost:8001/metrics\n")
 
     print("5. View Traces and Metrics:")
     print("   • Traces exported to console (see above)")

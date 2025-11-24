@@ -4,12 +4,12 @@ Quality metrics for agent evaluation.
 Measures task success, accuracy, and response quality.
 """
 
-from typing import Dict, Any, List, Optional, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from typing import Any
 
-from .core import Metric
 from ..interfaces import Agent, Message
+from .core import Metric
 
 
 class AccuracyMetric(Metric):
@@ -35,9 +35,7 @@ class AccuracyMetric(Metric):
     """
 
     def __init__(
-        self,
-        validator: Optional[Callable[[str, str], bool]] = None,
-        case_sensitive: bool = False
+        self, validator: Callable[[str, str], bool] | None = None, case_sensitive: bool = False
     ):
         """
         Initialize accuracy metric.
@@ -58,7 +56,7 @@ class AccuracyMetric(Metric):
         agent: Agent,
         input_message: Message,
         output_message: Message,
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None,
     ) -> float:
         """
         Measure accuracy for single interaction.
@@ -96,7 +94,7 @@ class AccuracyMetric(Metric):
 
         return 1.0 if expected_str in actual else 0.0
 
-    def aggregate(self, measurements: List[float]) -> Dict[str, float]:
+    def aggregate(self, measurements: list[float]) -> dict[str, float]:
         """
         Aggregate accuracy measurements.
 
@@ -107,12 +105,7 @@ class AccuracyMetric(Metric):
             Accuracy statistics: accuracy, total, correct, incorrect
         """
         if not measurements:
-            return {
-                "accuracy": 0.0,
-                "total": 0,
-                "correct": 0,
-                "incorrect": 0
-            }
+            return {"accuracy": 0.0, "total": 0, "correct": 0, "incorrect": 0}
 
         total = len(measurements)
         correct = sum(measurements)
@@ -121,7 +114,7 @@ class AccuracyMetric(Metric):
             "accuracy": correct / total,
             "total": float(total),
             "correct": correct,
-            "incorrect": float(total - correct)
+            "incorrect": float(total - correct),
         }
 
 
@@ -146,8 +139,8 @@ class QualityMetrics(Metric):
     def __init__(
         self,
         use_llm_judge: bool = False,
-        judge_model: Optional[str] = None,
-        weights: Optional[Dict[str, float]] = None
+        judge_model: str | None = None,
+        weights: dict[str, float] | None = None,
     ):
         """
         Initialize quality metrics.
@@ -163,7 +156,7 @@ class QualityMetrics(Metric):
             "relevance": 0.3,
             "completeness": 0.3,
             "coherence": 0.2,
-            "accuracy": 0.2
+            "accuracy": 0.2,
         }
 
     @property
@@ -175,7 +168,7 @@ class QualityMetrics(Metric):
         agent: Agent,
         input_message: Message,
         output_message: Message,
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None,
     ) -> float:
         """
         Measure response quality.
@@ -195,10 +188,7 @@ class QualityMetrics(Metric):
             return await self._rule_based_quality(input_message, output_message, context)
 
     async def _llm_judge(
-        self,
-        input_message: Message,
-        output_message: Message,
-        context: Optional[Dict[str, Any]]
+        self, input_message: Message, output_message: Message, context: dict[str, Any] | None
     ) -> float:
         """
         Use LLM to judge quality.
@@ -213,10 +203,7 @@ class QualityMetrics(Metric):
         return await self._rule_based_quality(input_message, output_message, context)
 
     async def _rule_based_quality(
-        self,
-        input_message: Message,
-        output_message: Message,
-        context: Optional[Dict[str, Any]]
+        self, input_message: Message, output_message: Message, context: dict[str, Any] | None
     ) -> float:
         """
         Rule-based quality scoring.
@@ -262,10 +249,7 @@ class QualityMetrics(Metric):
         scores["accuracy"] = accuracy
 
         # Weighted average
-        total_score = sum(
-            scores[dim] * self.weights[dim]
-            for dim in scores
-        )
+        total_score = sum(scores[dim] * self.weights[dim] for dim in scores)
 
         return total_score
 
@@ -278,14 +262,14 @@ class QualityMetrics(Metric):
         # Check for repeated phrases (3+ word sequences)
         seen_phrases = set()
         for i in range(len(words) - 2):
-            phrase = " ".join(words[i:i+3])
+            phrase = " ".join(words[i : i + 3])
             if phrase in seen_phrases:
                 return True
             seen_phrases.add(phrase)
 
         return False
 
-    def aggregate(self, measurements: List[float]) -> Dict[str, float]:
+    def aggregate(self, measurements: list[float]) -> dict[str, float]:
         """
         Aggregate quality measurements.
 
@@ -296,23 +280,13 @@ class QualityMetrics(Metric):
             Statistics: mean, min, max, std
         """
         if not measurements:
-            return {
-                "mean": 0.0,
-                "min": 0.0,
-                "max": 0.0,
-                "std": 0.0
-            }
+            return {"mean": 0.0, "min": 0.0, "max": 0.0, "std": 0.0}
 
         mean = sum(measurements) / len(measurements)
         variance = sum((x - mean) ** 2 for x in measurements) / len(measurements)
-        std = variance ** 0.5
+        std = variance**0.5
 
-        return {
-            "mean": mean,
-            "min": min(measurements),
-            "max": max(measurements),
-            "std": std
-        }
+        return {"mean": mean, "min": min(measurements), "max": max(measurements), "std": std}
 
 
 @dataclass
@@ -356,7 +330,7 @@ class PrecisionRecallStats:
             "true_negatives": self.true_negatives,
             "precision": self.precision,
             "recall": self.recall,
-            "f1_score": self.f1_score
+            "f1_score": self.f1_score,
         }
 
 
@@ -388,7 +362,7 @@ class PrecisionRecallMetric(Metric):
         agent: Agent,
         input_message: Message,
         output_message: Message,
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None,
     ) -> float:
         """
         Measure precision/recall for single classification.
@@ -422,7 +396,7 @@ class PrecisionRecallMetric(Metric):
             self.true_negatives += 1
             return 1.0
 
-    def aggregate(self, measurements: List[float]) -> Dict[str, float]:
+    def aggregate(self, measurements: list[float]) -> dict[str, float]:
         """
         Aggregate precision/recall metrics.
 
@@ -433,7 +407,7 @@ class PrecisionRecallMetric(Metric):
             true_positives=self.true_positives,
             false_positives=self.false_positives,
             false_negatives=self.false_negatives,
-            true_negatives=self.true_negatives
+            true_negatives=self.true_negatives,
         )
 
         return stats.to_dict()

@@ -49,7 +49,8 @@ class MockAgent:
         if self.fail_rate > 0:
             import random
 
-            if random.random() < self.fail_rate:
+            # S311: Pseudo-random for test simulation, not cryptographic use
+            if random.random() < self.fail_rate:  # noqa: S311
                 raise Exception(f"Simulated failure from {self._name}")
 
         return Message(role="assistant", content=f"Response from {self._name}: {message.content}")

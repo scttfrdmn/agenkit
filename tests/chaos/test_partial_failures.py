@@ -245,7 +245,7 @@ async def test_stream_slow_chunks():
     # Should have all 3 chunks
     assert len(chunks) == 3
 
-    # Should take ~150ms (3 chunks × 50ms each)
+    # Should take ~150ms (3 chunks × 50ms each)  # noqa: RUF003
     assert elapsed >= 0.15, f"Should take >=150ms, took {elapsed:.3f}s"
 
 

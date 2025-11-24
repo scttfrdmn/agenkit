@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 /*
 Timeout Middleware Example
 

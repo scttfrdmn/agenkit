@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 // Input Validation Example
 //
 // Demonstrates how to use InputValidationMiddleware to protect agents from

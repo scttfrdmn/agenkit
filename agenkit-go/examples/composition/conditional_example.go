@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 /*
 Conditional Composition Example
 
@@ -58,7 +61,10 @@ func (a *CodeAgent) Process(ctx context.Context, message *agenkit.Message) (*age
     return fibonacci(n-1) + fibonacci(n-2)
 }`
 
-	return agenkit.NewMessage("agent", fmt.Sprintf("Here's the implementation:\n```go\n%s\n```", code)).
+	return agenkit.NewMessage("agent", fmt.Sprintf("Here's the implementation:
+```go
+%s
+```", code)).
 		WithMetadata("type", "code").
 		WithMetadata("language", "go"), nil
 }
@@ -102,10 +108,12 @@ func (a *GeneralAgent) Process(ctx context.Context, message *agenkit.Message) (*
 
 // Example 1: Intent-based routing
 func example1IntentRouting() {
-	fmt.Println("\n" + strings.Repeat("=", 80))
+	fmt.Println("
+" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 1: Intent-Based Routing")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("\nUse case: Multi-domain assistant with specialized agents")
+	fmt.Println("
+Use case: Multi-domain assistant with specialized agents")
 
 	// Create router with specialized agents
 	router := composition.NewConditionalAgent("multi-domain-router", &GeneralAgent{})
@@ -150,15 +158,21 @@ func example1IntentRouting() {
 	ctx := context.Background()
 
 	for _, query := range requests {
-		fmt.Printf("\nQuery: %s\n", query)
+		fmt.Printf("
+Query: %s
+", query)
 		result, _ := router.Process(ctx, agenkit.NewMessage("user", query))
 
-		fmt.Printf("Routed to: %v\n", result.Metadata["conditional_agent_used"])
-		fmt.Printf("Response type: %v\n", result.Metadata["type"])
-		fmt.Printf("Preview: %s\n", result.Content[:min(80, len(result.Content))])
+		fmt.Printf("Routed to: %v
+", result.Metadata["conditional_agent_used"])
+		fmt.Printf("Response type: %v
+", result.Metadata["type"])
+		fmt.Printf("Preview: %s
+", result.Content[:min(80, len(result.Content))])
 	}
 
-	fmt.Println("\nWHY CONDITIONAL ROUTING?")
+	fmt.Println("
+WHY CONDITIONAL ROUTING?")
 	fmt.Println("  - Code agent: Optimized for syntax, patterns, best practices")
 	fmt.Println("  - Docs agent: Optimized for clear explanations, tutorials")
 	fmt.Println("  - General agent: Handles everything else")
@@ -208,10 +222,12 @@ func (a *ComplexQueryAgent) Process(ctx context.Context, message *agenkit.Messag
 
 // Example 2: Complexity-based routing
 func example2ComplexityRouting() {
-	fmt.Println("\n" + strings.Repeat("=", 80))
+	fmt.Println("
+" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 2: Complexity-Based Routing")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("\nUse case: Optimize cost and latency based on query complexity")
+	fmt.Println("
+Use case: Optimize cost and latency based on query complexity")
 
 	router := composition.NewConditionalAgent("complexity-router", &ComplexQueryAgent{})
 
@@ -238,14 +254,17 @@ func example2ComplexityRouting() {
 		"Compare machine learning architectures",
 	}
 
-	fmt.Println("\nProcessing queries with complexity-based routing...")
+	fmt.Println("
+Processing queries with complexity-based routing...")
 
 	ctx := context.Background()
 	var totalCost float64
 	var totalLatency float64
 
 	for _, query := range queries {
-		fmt.Printf("\nQuery: %s\n", query)
+		fmt.Printf("
+Query: %s
+", query)
 		result, _ := router.Process(ctx, agenkit.NewMessage("user", query))
 
 		complexity := result.Metadata["complexity"]
@@ -255,22 +274,33 @@ func example2ComplexityRouting() {
 		totalCost += cost
 		totalLatency += latency
 
-		fmt.Printf("  Complexity: %v\n", complexity)
-		fmt.Printf("  Latency: %.2fs\n", latency)
-		fmt.Printf("  Cost: $%.4f\n", cost)
+		fmt.Printf("  Complexity: %v
+", complexity)
+		fmt.Printf("  Latency: %.2fs
+", latency)
+		fmt.Printf("  Cost: $%.4f
+", cost)
 	}
 
-	fmt.Println("\nPerformance Summary:")
-	fmt.Printf("  Total Latency: %.2fs\n", totalLatency)
-	fmt.Printf("  Total Cost: $%.4f\n", totalCost)
+	fmt.Println("
+Performance Summary:")
+	fmt.Printf("  Total Latency: %.2fs
+", totalLatency)
+	fmt.Printf("  Total Cost: $%.4f
+", totalCost)
 
 	allComplex := 0.5 * 4
 	allComplexCost := 0.01 * 4
 
-	fmt.Println("\nWithout Routing (all complex):")
-	fmt.Printf("  Total Latency: %.2fs\n", allComplex)
-	fmt.Printf("  Total Cost: $%.4f\n", allComplexCost)
-	fmt.Printf("\n  Savings: %.0f%% cost, %.0f%% latency\n",
+	fmt.Println("
+Without Routing (all complex):")
+	fmt.Printf("  Total Latency: %.2fs
+", allComplex)
+	fmt.Printf("  Total Cost: $%.4f
+", allComplexCost)
+	fmt.Printf("
+  Savings: %.0f%% cost, %.0f%% latency
+",
 		(allComplexCost-totalCost)/allComplexCost*100,
 		(allComplex-totalLatency)/allComplex*100)
 }
@@ -305,10 +335,12 @@ func (a *FreeAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 
 // Example 3: User tier routing
 func example3TierRouting() {
-	fmt.Println("\n" + strings.Repeat("=", 80))
+	fmt.Println("
+" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 3: User Tier Routing")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("\nUse case: Different service levels for free vs premium users")
+	fmt.Println("
+Use case: Different service levels for free vs premium users")
 
 	router := composition.NewConditionalAgent("tier-router", &FreeAgent{})
 
@@ -319,22 +351,29 @@ func example3TierRouting() {
 	)
 
 	// Test free user
-	fmt.Println("\nTest 1: Free user")
+	fmt.Println("
+Test 1: Free user")
 	result, _ := router.Process(context.Background(),
 		agenkit.NewMessage("user", "Analyze this data").
 			WithMetadata("user_tier", "free"))
-	fmt.Printf("  Service: %v\n", result.Metadata["tier"])
-	fmt.Printf("  Features: %v\n", result.Metadata["features"])
+	fmt.Printf("  Service: %v
+", result.Metadata["tier"])
+	fmt.Printf("  Features: %v
+", result.Metadata["features"])
 
 	// Test premium user
-	fmt.Println("\nTest 2: Premium user")
+	fmt.Println("
+Test 2: Premium user")
 	result, _ = router.Process(context.Background(),
 		agenkit.NewMessage("user", "Analyze this data").
 			WithMetadata("user_tier", "premium"))
-	fmt.Printf("  Service: %v\n", result.Metadata["tier"])
-	fmt.Printf("  Features: %v\n", result.Metadata["features"])
+	fmt.Printf("  Service: %v
+", result.Metadata["tier"])
+	fmt.Printf("  Features: %v
+", result.Metadata["features"])
 
-	fmt.Println("\nTIER-BASED ROUTING:")
+	fmt.Println("
+TIER-BASED ROUTING:")
 	fmt.Println("  - Monetization: Premium users get better service")
 	fmt.Println("  - Cost control: Free users don't use expensive resources")
 	fmt.Println("  - Clear value proposition for upgrades")
@@ -348,10 +387,12 @@ func min(a, b int) int {
 }
 
 func main() {
-	fmt.Println("\n" + strings.Repeat("=", 80))
+	fmt.Println("
+" + strings.Repeat("=", 80))
 	fmt.Println("CONDITIONAL COMPOSITION EXAMPLES FOR AGENKIT-GO")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("\nConditional composition routes requests to specialized agents.")
+	fmt.Println("
+Conditional composition routes requests to specialized agents.")
 	fmt.Println("Use it for intent routing, optimization, and personalization.")
 
 	// Run examples
@@ -360,7 +401,8 @@ func main() {
 	example3TierRouting()
 
 	// Summary
-	fmt.Println("\n" + strings.Repeat("=", 80))
+	fmt.Println("
+" + strings.Repeat("=", 80))
 	fmt.Println("KEY TAKEAWAYS")
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println(`

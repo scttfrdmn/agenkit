@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 // Example demonstrating OpenTelemetry observability features in Agenkit Go.
 //
 // Shows distributed tracing, metrics collection, and structured logging

@@ -187,7 +187,7 @@ async def test_timeout_stops_slow_agent():
 
     msg = Message(role="user", content="test")
 
-    with pytest.raises(TimeoutError, match="timed out after 0.1s"):
+    with pytest.raises(TimeoutError, match=r"timed out after 0\.1s"):
         await timeout_agent.process(msg)
 
     # Check metrics
@@ -206,7 +206,7 @@ async def test_timeout_reports_agent_name():
 
     msg = Message(role="user", content="test")
 
-    with pytest.raises(TimeoutError, match="slow-agent.*timed out"):
+    with pytest.raises(TimeoutError, match=r"slow-agent.*timed out"):
         await timeout_agent.process(msg)
 
 
@@ -349,7 +349,7 @@ async def test_timeout_streaming_timeout():
 
     msg = Message(role="user", content="test")
 
-    with pytest.raises(TimeoutError, match="Streaming.*timed out"):
+    with pytest.raises(TimeoutError, match=r"Streaming.*timed out"):
         chunks = []
         async for chunk in timeout_agent.stream(msg):
             chunks.append(chunk.content)

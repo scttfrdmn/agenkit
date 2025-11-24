@@ -63,8 +63,8 @@ async def main():
     try:
         await server.start()
         # Keep running until interrupted
-        while True:
-            await asyncio.sleep(1)
+        stop_event = asyncio.Event()
+        await stop_event.wait()
     except KeyboardInterrupt:
         print("\nShutting down...")
     finally:

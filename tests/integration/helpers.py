@@ -80,7 +80,7 @@ async def go_http_server(port: int | None = None):
 
     # S603, S607, ASYNC220: Safe in test infrastructure - port is test parameter, not user input
     process = subprocess.Popen(  # noqa: S603, ASYNC220
-        ["go", "run", "test_server.go", str(port)],
+        ["go", "run", "test_server.go", str(port)],  # noqa: S607
         cwd=go_test_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -332,7 +332,7 @@ async def go_grpc_server(port: int | None = None):
 
     # S603, S607, ASYNC220: Safe in test infrastructure - port is test parameter, not user input
     process = subprocess.Popen(  # noqa: S603, ASYNC220
-        ["go", "run", "test_grpc_server.go", str(port)],
+        ["go", "run", "test_grpc_server.go", str(port)],  # noqa: S607
         cwd=go_test_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

@@ -288,8 +288,8 @@ async def test_failure_tracking():
         message = Message(role="user", content=f"Request {i}")
         try:
             await balancer.process(message)
-        except Exception:
-            pass  # Expected
+        except Exception:  # noqa: S110
+            pass  # Expected failures - testing load balancer behavior
 
     # Check metrics
     metrics = instances[0].metrics

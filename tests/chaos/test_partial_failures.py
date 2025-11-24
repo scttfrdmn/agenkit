@@ -130,8 +130,8 @@ async def test_partial_failure_with_retry():
         try:
             await chaos_agent.process(message)
             successes_no_retry += 1
-        except:
-            pass
+        except Exception:  # noqa: S110
+            pass  # Expected failures - testing retry behavior
 
     # With retry: most requests should eventually succeed
     successes_with_retry = 0
@@ -268,8 +268,8 @@ async def test_stream_cancellation_cleanup():
             chunks.append(chunk)
             if len(chunks) >= 5:
                 break  # Cancel stream
-    except:
-        pass
+    except Exception:  # noqa: S110
+        pass  # Stream cancellation - expected behavior
 
     elapsed = time.time() - start
 

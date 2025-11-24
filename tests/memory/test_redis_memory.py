@@ -13,7 +13,7 @@ from agenkit.interfaces import Message
 
 # Try to import RedisMemory
 try:
-    import redis.asyncio as redis
+    import redis.asyncio  # noqa: F401
 
     from agenkit.memory.redis_memory import RedisMemory
 
@@ -51,8 +51,8 @@ async def redis_memory():
         for session_id in sessions:
             await memory.clear(session_id)
         await memory.close()
-    except Exception:
-        pass
+    except Exception:  # noqa: S110
+        pass  # Cleanup code - silent failure acceptable for teardown
 
 
 @pytest.mark.asyncio

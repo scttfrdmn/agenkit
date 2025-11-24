@@ -67,9 +67,9 @@ jobs:
           cache-dependency-path: agenkit-go/go.sum
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v6
         with:
-          version: latest
+          version: v2
           working-directory: agenkit-go
           args: --timeout=5m
 

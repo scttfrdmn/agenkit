@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 // Basic example demonstrating the Go protocol adapter.
 //
 // This example shows:

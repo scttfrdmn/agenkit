@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 // gRPC Transport Example
 //
 // This example demonstrates the gRPC transport for Agenkit, showing:

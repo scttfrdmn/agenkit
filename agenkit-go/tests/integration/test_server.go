@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 // Package main provides a simple HTTP test server for cross-language integration tests.
 //
 // This server can be run standalone for testing Python clients against Go servers.

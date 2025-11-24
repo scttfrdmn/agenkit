@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 // Combined Safety Example
 //
 // Demonstrates how to combine multiple safety layers:

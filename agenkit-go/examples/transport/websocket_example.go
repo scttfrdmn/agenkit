@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 // WebSocket Transport Example.
 //
 // This example demonstrates the WebSocket transport for Agenkit, showing:

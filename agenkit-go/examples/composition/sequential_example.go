@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 /*
 Sequential Composition Example
 
@@ -146,10 +149,12 @@ func (a *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) 
 
 // Example 1: Content processing pipeline
 func example1ContentPipeline() {
-	fmt.Println("\n" + strings.Repeat("=", 80))
+	fmt.Println("
+" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 1: Content Processing Pipeline")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("\nUse case: Process multi-language customer feedback")
+	fmt.Println("
+Use case: Process multi-language customer feedback")
 	fmt.Println("Pipeline: Translation → Summarization → Sentiment Analysis")
 
 	// Build pipeline
@@ -159,28 +164,38 @@ func example1ContentPipeline() {
 		&SentimentAgent{},
 	)
 	if err != nil {
-		fmt.Printf("Error creating pipeline: %v\n", err)
+		fmt.Printf("Error creating pipeline: %v
+", err)
 		return
 	}
 
 	// Test with French input
 	input := agenkit.NewMessage("user", "Bonjour. This product is amazing! The quality is excellent.")
 
-	fmt.Printf("\nInput (French): %s\n", input.Content)
+	fmt.Printf("
+Input (French): %s
+", input.Content)
 
 	ctx := context.Background()
 	result, err := pipeline.Process(ctx, input)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		fmt.Printf("Error: %v
+", err)
 		return
 	}
 
-	fmt.Printf("\nOutput: %s\n", result.Content)
-	fmt.Println("\nMetadata:")
-	fmt.Printf("  Source Language: %v\n", result.Metadata["source_language"])
-	fmt.Printf("  Sentiment: %v\n", result.Metadata["sentiment"])
+	fmt.Printf("
+Output: %s
+", result.Content)
+	fmt.Println("
+Metadata:")
+	fmt.Printf("  Source Language: %v
+", result.Metadata["source_language"])
+	fmt.Printf("  Sentiment: %v
+", result.Metadata["sentiment"])
 
-	fmt.Println("\nWHY SEQUENTIAL?")
+	fmt.Println("
+WHY SEQUENTIAL?")
 	fmt.Println("  - Must translate BEFORE summarizing (order matters)")
 	fmt.Println("  - Each stage depends on previous stage's output")
 	fmt.Println("  - Clear data flow: raw → translated → summarized → analyzed")
@@ -246,10 +261,12 @@ func (a *NormalizationAgent) Process(ctx context.Context, message *agenkit.Messa
 
 // Example 2: Data validation pipeline
 func example2ValidationPipeline() {
-	fmt.Println("\n" + strings.Repeat("=", 80))
+	fmt.Println("
+" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 2: Validation Pipeline")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("\nUse case: ETL pipeline with validation and normalization")
+	fmt.Println("
+Use case: ETL pipeline with validation and normalization")
 	fmt.Println("Pipeline: Validate → Normalize")
 
 	pipeline, _ := composition.NewSequentialAgent("etl-pipeline",
@@ -258,22 +275,31 @@ func example2ValidationPipeline() {
 	)
 
 	// Test valid input
-	fmt.Println("\nTest 1: Valid input")
+	fmt.Println("
+Test 1: Valid input")
 	validInput := agenkit.NewMessage("user", "  This is   VALID input   with  extra   spaces.  ")
 	result, _ := pipeline.Process(context.Background(), validInput)
-	fmt.Printf("  Input:  '%s'\n", validInput.Content)
-	fmt.Printf("  Output: '%s'\n", result.Content)
-	fmt.Printf("  Valid:  %v\n", result.Metadata["valid"])
+	fmt.Printf("  Input:  '%s'
+", validInput.Content)
+	fmt.Printf("  Output: '%s'
+", result.Content)
+	fmt.Printf("  Valid:  %v
+", result.Metadata["valid"])
 
 	// Test invalid input
-	fmt.Println("\nTest 2: Invalid input (too short)")
+	fmt.Println("
+Test 2: Invalid input (too short)")
 	invalidInput := agenkit.NewMessage("user", "Hi")
 	result, _ = pipeline.Process(context.Background(), invalidInput)
-	fmt.Printf("  Input:  '%s'\n", invalidInput.Content)
-	fmt.Printf("  Output: '%s'\n", result.Content)
-	fmt.Printf("  Valid:  %v\n", result.Metadata["valid"])
+	fmt.Printf("  Input:  '%s'
+", invalidInput.Content)
+	fmt.Printf("  Output: '%s'
+", result.Content)
+	fmt.Printf("  Valid:  %v
+", result.Metadata["valid"])
 
-	fmt.Println("\nWHY SEQUENTIAL?")
+	fmt.Println("
+WHY SEQUENTIAL?")
 	fmt.Println("  - Validation must happen FIRST (fail fast)")
 	fmt.Println("  - Don't waste resources on invalid data")
 	fmt.Println("  - Each stage checks metadata to short-circuit")
@@ -281,10 +307,12 @@ func example2ValidationPipeline() {
 }
 
 func main() {
-	fmt.Println("\n" + strings.Repeat("=", 80))
+	fmt.Println("
+" + strings.Repeat("=", 80))
 	fmt.Println("SEQUENTIAL COMPOSITION EXAMPLES FOR AGENKIT-GO")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("\nSequential composition is the foundation of data pipelines.")
+	fmt.Println("
+Sequential composition is the foundation of data pipelines.")
 	fmt.Println("Use it when stages depend on each other's output.")
 
 	// Run examples
@@ -292,7 +320,8 @@ func main() {
 	example2ValidationPipeline()
 
 	// Summary
-	fmt.Println("\n" + strings.Repeat("=", 80))
+	fmt.Println("
+" + strings.Repeat("=", 80))
 	fmt.Println("KEY TAKEAWAYS")
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println(`

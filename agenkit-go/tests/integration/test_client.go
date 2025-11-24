@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 // Package main provides a simple test client for cross-language integration tests.
 //
 // This client can be used to test Go client → Python server communication.

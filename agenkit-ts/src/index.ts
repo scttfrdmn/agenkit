@@ -151,9 +151,17 @@ export {
   QualityWeights,
   LatencyMetric,
   Validator,
-  EvaluationResult,
-  evaluateAgent,
+  EvaluationResult as QualityEvaluationResult,
+  evaluateAgent as evaluateAgentQuality,
 } from './evaluation/quality-metrics';
+export {
+  Evaluator,
+  EvaluationResult,
+  TestCase as CoreTestCase,
+  getSuccessRate,
+  resultToDict,
+  evaluateAgent,
+} from './evaluation/core';
 export {
   MemoryEntry,
   MemoryStore,

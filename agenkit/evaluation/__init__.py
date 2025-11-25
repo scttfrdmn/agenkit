@@ -14,6 +14,8 @@ Classes:
     QualityMetrics: Measure response quality
     RegressionDetector: Detect performance degradation
     SessionRecorder: Record sessions for replay
+    BayesianOptimizer: Bayesian optimization for hyperparameters
+    PromptOptimizer: Automated prompt optimization
 
 Example:
     >>> from agenkit.evaluation import Evaluator, BenchmarkSuite
@@ -31,9 +33,12 @@ Example:
 """
 
 from .ab_testing import ABResult, ABTest, ABVariant, SignificanceLevel, StatisticalTestType, calculate_sample_size
+from .bayesian_optimizer import AcquisitionFunction, BayesianOptimizer
 from .benchmarks import Benchmark, BenchmarkSuite
 from .context_metrics import CompressionMetrics, ContextMetrics, LatencyMetric
 from .core import EvaluationResult, Evaluator, Metric
+from .optimizer import Optimizer, OptimizationResult, RandomSearchOptimizer, SearchSpace
+from .prompt_optimizer import OptimizationStrategy, PromptOptimizationResult, PromptOptimizer
 from .quality_metrics import AccuracyMetric, PrecisionRecallMetric, QualityMetrics
 from .recorder import SessionRecorder, SessionReplay
 from .regression import RegressionDetector
@@ -44,6 +49,9 @@ __all__ = [
     "ABTest",
     "ABVariant",
     "AccuracyMetric",
+    "AcquisitionFunction",
+    # Bayesian Optimization
+    "BayesianOptimizer",
     # Benchmarks
     "Benchmark",
     "BenchmarkSuite",
@@ -55,11 +63,20 @@ __all__ = [
     "LatencyMetric",
     # Core
     "Metric",
+    # Optimization
+    "OptimizationResult",
+    "OptimizationStrategy",
+    "Optimizer",
     "PrecisionRecallMetric",
+    # Prompt Optimization
+    "PromptOptimizationResult",
+    "PromptOptimizer",
     # Quality measurement
     "QualityMetrics",
+    "RandomSearchOptimizer",
     # Regression detection
     "RegressionDetector",
+    "SearchSpace",
     # Session replay
     "SessionRecorder",
     "SessionReplay",

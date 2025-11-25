@@ -3901,29 +3901,275 @@ You can implement any agent pattern—single, sequential, parallel, supervisor�
 - <code>examples/patterns/08_memory_hierarchy.py</code> - 6 complete demos
 - <code>tests/patterns/test_memory.py</code> - 30 tests covering all tiers</p>
 <hr />
+<h1 id="chapter-15-reasoning-with-tools-pattern">Chapter 15: Reasoning with Tools Pattern</h1>
+<p>✅ <strong>NEW in v0.13.0</strong> | <strong>Production Ready</strong></p>
+<p><strong>What It Is:</strong> A pattern that enables tools to be called DURING reasoning (not just after), allowing models to dynamically access information and perform computations while thinking through a problem.</p>
+<p><strong>Key Insight:</strong> Unlike ReAct (which is sequential: Observe → Think → Act → Observe), this pattern enables interleaved thinking and tool use (Think ↔ Act), inspired by Claude 4 and OpenAI o3's extended thinking capabilities.</p>
+<h2 id="why-this-pattern">Why This Pattern?</h2>
+<h3 id="traditional-react-limitations">Traditional ReAct Limitations:</h3>
+<ol>
+<li><strong>Sequential Only</strong>: Think first, THEN act</li>
+<li><strong>Rigid Loop</strong>: Can't use tools mid-thought</li>
+<li><strong>Information Delays</strong>: Must complete reasoning before getting data</li>
+<li><strong>Less Natural</strong>: Humans look up facts WHILE thinking</li>
+</ol>
+<h3 id="reasoning-with-tools-advantages">Reasoning with Tools Advantages:</h3>
+<ol>
+<li><strong>Dynamic Information</strong>: Get data exactly when needed</li>
+<li><strong>Iterative Refinement</strong>: Tool results inform next reasoning step</li>
+<li><strong>Natural Flow</strong>: More like human problem-solving</li>
+<li><strong>Better Accuracy</strong>: Access to real-time information during reasoning</li>
+</ol>
+<h2 id="implementation">Implementation</h2>
+<h3 id="basic-structure">Basic Structure:</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-77-1"><a id="__codelineno-77-1" name="__codelineno-77-1" href="#__codelineno-77-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">agenkit.patterns</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReasoningWithToolsAgent</span><span class="p">,</span> <span class="n">ReasoningStep</span><span class="p">,</span> <span class="n">ReasoningStepType</span>
+</span><span id="__span-77-2"><a id="__codelineno-77-2" name="__codelineno-77-2" href="#__codelineno-77-2"></a>
+</span><span id="__span-77-3"><a id="__codelineno-77-3" name="__codelineno-77-3" href="#__codelineno-77-3"></a><span class="c1"># Create agent with tools</span>
+</span><span id="__span-77-4"><a id="__codelineno-77-4" name="__codelineno-77-4" href="#__codelineno-77-4"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">ReasoningWithToolsAgent</span><span class="p">(</span>
+</span><span id="__span-77-5"><a id="__codelineno-77-5" name="__codelineno-77-5" href="#__codelineno-77-5"></a>    <span class="n">llm</span><span class="o">=</span><span class="n">base_llm_agent</span><span class="p">,</span>
+</span><span id="__span-77-6"><a id="__codelineno-77-6" name="__codelineno-77-6" href="#__codelineno-77-6"></a>    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">calculator</span><span class="p">,</span> <span class="n">database</span><span class="p">,</span> <span class="n">web_search</span><span class="p">],</span>
+</span><span id="__span-77-7"><a id="__codelineno-77-7" name="__codelineno-77-7" href="#__codelineno-77-7"></a>    <span class="n">max_reasoning_steps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+</span><span id="__span-77-8"><a id="__codelineno-77-8" name="__codelineno-77-8" href="#__codelineno-77-8"></a>    <span class="n">enable_trace</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="__span-77-9"><a id="__codelineno-77-9" name="__codelineno-77-9" href="#__codelineno-77-9"></a><span class="p">)</span>
+</span><span id="__span-77-10"><a id="__codelineno-77-10" name="__codelineno-77-10" href="#__codelineno-77-10"></a>
+</span><span id="__span-77-11"><a id="__codelineno-77-11" name="__codelineno-77-11" href="#__codelineno-77-11"></a><span class="c1"># Agent interleaves thinking and tool use</span>
+</span><span id="__span-77-12"><a id="__codelineno-77-12" name="__codelineno-77-12" href="#__codelineno-77-12"></a><span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">process</span><span class="p">(</span>
+</span><span id="__span-77-13"><a id="__codelineno-77-13" name="__codelineno-77-13" href="#__codelineno-77-13"></a>    <span class="n">Message</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;Calculate total cost of 3 items at $15.99 with 8.5% tax&quot;</span><span class="p">)</span>
+</span><span id="__span-77-14"><a id="__codelineno-77-14" name="__codelineno-77-14" href="#__codelineno-77-14"></a><span class="p">)</span>
+</span><span id="__span-77-15"><a id="__codelineno-77-15" name="__codelineno-77-15" href="#__codelineno-77-15"></a>
+</span><span id="__span-77-16"><a id="__codelineno-77-16" name="__codelineno-77-16" href="#__codelineno-77-16"></a><span class="c1"># Access reasoning trace</span>
+</span><span id="__span-77-17"><a id="__codelineno-77-17" name="__codelineno-77-17" href="#__codelineno-77-17"></a><span class="n">trace</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;reasoning_trace&quot;</span><span class="p">]</span>
+</span><span id="__span-77-18"><a id="__codelineno-77-18" name="__codelineno-77-18" href="#__codelineno-77-18"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Steps: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="s1">&#39;steps&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-77-19"><a id="__codelineno-77-19" name="__codelineno-77-19" href="#__codelineno-77-19"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tools used: </span><span class="si">{</span><span class="n">trace</span><span class="p">[</span><span class="s1">&#39;total_tools_used&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="tool-call-format">Tool Call Format:</h3>
+<p>The LLM indicates tool use during reasoning:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-78-1"><a id="__codelineno-78-1" name="__codelineno-78-1" href="#__codelineno-78-1"></a>TOOL_CALL: calculator
+</span><span id="__span-78-2"><a id="__codelineno-78-2" name="__codelineno-78-2" href="#__codelineno-78-2"></a>PARAMETERS: {&quot;operation&quot;: &quot;multiply&quot;, &quot;a&quot;: 15.99, &quot;b&quot;: 3}
+</span></code></pre></div>
+<p>The agent:
+1. Detects the tool call
+2. Executes the tool
+3. Feeds result back into reasoning
+4. Continues thinking with new information</p>
+<h2 id="reasoning-trace">Reasoning Trace</h2>
+<p>Every step is recorded with detailed metadata:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-79-1"><a id="__codelineno-79-1" name="__codelineno-79-1" href="#__codelineno-79-1"></a><span class="n">trace</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;reasoning_trace&quot;</span><span class="p">]</span>
+</span><span id="__span-79-2"><a id="__codelineno-79-2" name="__codelineno-79-2" href="#__codelineno-79-2"></a>
+</span><span id="__span-79-3"><a id="__codelineno-79-3" name="__codelineno-79-3" href="#__codelineno-79-3"></a><span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">trace</span><span class="p">[</span><span class="s2">&quot;steps&quot;</span><span class="p">]:</span>
+</span><span id="__span-79-4"><a id="__codelineno-79-4" name="__codelineno-79-4" href="#__codelineno-79-4"></a>    <span class="k">if</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;step_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;thinking&quot;</span><span class="p">:</span>
+</span><span id="__span-79-5"><a id="__codelineno-79-5" name="__codelineno-79-5" href="#__codelineno-79-5"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;💭 </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-79-6"><a id="__codelineno-79-6" name="__codelineno-79-6" href="#__codelineno-79-6"></a>    <span class="k">elif</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;step_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;tool_call&quot;</span><span class="p">:</span>
+</span><span id="__span-79-7"><a id="__codelineno-79-7" name="__codelineno-79-7" href="#__codelineno-79-7"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;🔧 Called </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;tool_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;tool_parameters&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-79-8"><a id="__codelineno-79-8" name="__codelineno-79-8" href="#__codelineno-79-8"></a>    <span class="k">elif</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;step_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;tool_result&quot;</span><span class="p">:</span>
+</span><span id="__span-79-9"><a id="__codelineno-79-9" name="__codelineno-79-9" href="#__codelineno-79-9"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Result: </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-79-10"><a id="__codelineno-79-10" name="__codelineno-79-10" href="#__codelineno-79-10"></a>    <span class="k">elif</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;step_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;conclusion&quot;</span><span class="p">:</span>
+</span><span id="__span-79-11"><a id="__codelineno-79-11" name="__codelineno-79-11" href="#__codelineno-79-11"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;🎯 </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="production-usage">Production Usage</h2>
+<h3 id="with-error-handling">With Error Handling:</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-80-1"><a id="__codelineno-80-1" name="__codelineno-80-1" href="#__codelineno-80-1"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">ReasoningWithToolsAgent</span><span class="p">(</span>
+</span><span id="__span-80-2"><a id="__codelineno-80-2" name="__codelineno-80-2" href="#__codelineno-80-2"></a>    <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
+</span><span id="__span-80-3"><a id="__codelineno-80-3" name="__codelineno-80-3" href="#__codelineno-80-3"></a>    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">calculator</span><span class="p">,</span> <span class="n">database</span><span class="p">],</span>
+</span><span id="__span-80-4"><a id="__codelineno-80-4" name="__codelineno-80-4" href="#__codelineno-80-4"></a>    <span class="n">max_reasoning_steps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+</span><span id="__span-80-5"><a id="__codelineno-80-5" name="__codelineno-80-5" href="#__codelineno-80-5"></a>    <span class="n">enable_trace</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="__span-80-6"><a id="__codelineno-80-6" name="__codelineno-80-6" href="#__codelineno-80-6"></a><span class="p">)</span>
+</span><span id="__span-80-7"><a id="__codelineno-80-7" name="__codelineno-80-7" href="#__codelineno-80-7"></a>
+</span><span id="__span-80-8"><a id="__codelineno-80-8" name="__codelineno-80-8" href="#__codelineno-80-8"></a><span class="k">try</span><span class="p">:</span>
+</span><span id="__span-80-9"><a id="__codelineno-80-9" name="__codelineno-80-9" href="#__codelineno-80-9"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</span><span id="__span-80-10"><a id="__codelineno-80-10" name="__codelineno-80-10" href="#__codelineno-80-10"></a>
+</span><span id="__span-80-11"><a id="__codelineno-80-11" name="__codelineno-80-11" href="#__codelineno-80-11"></a>    <span class="c1"># Check if agent reached conclusion</span>
+</span><span id="__span-80-12"><a id="__codelineno-80-12" name="__codelineno-80-12" href="#__codelineno-80-12"></a>    <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;reasoning_steps&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">20</span><span class="p">:</span>
+</span><span id="__span-80-13"><a id="__codelineno-80-13" name="__codelineno-80-13" href="#__codelineno-80-13"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Hit max reasoning steps&quot;</span><span class="p">)</span>
+</span><span id="__span-80-14"><a id="__codelineno-80-14" name="__codelineno-80-14" href="#__codelineno-80-14"></a>
+</span><span id="__span-80-15"><a id="__codelineno-80-15" name="__codelineno-80-15" href="#__codelineno-80-15"></a>    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>
+</span><span id="__span-80-16"><a id="__codelineno-80-16" name="__codelineno-80-16" href="#__codelineno-80-16"></a>
+</span><span id="__span-80-17"><a id="__codelineno-80-17" name="__codelineno-80-17" href="#__codelineno-80-17"></a><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="__span-80-18"><a id="__codelineno-80-18" name="__codelineno-80-18" href="#__codelineno-80-18"></a>    <span class="c1"># Tool execution errors are handled gracefully</span>
+</span><span id="__span-80-19"><a id="__codelineno-80-19" name="__codelineno-80-19" href="#__codelineno-80-19"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reasoning failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-80-20"><a id="__codelineno-80-20" name="__codelineno-80-20" href="#__codelineno-80-20"></a>    <span class="k">return</span> <span class="s2">&quot;I encountered an error while processing your request.&quot;</span>
+</span></code></pre></div>
+<h3 id="dynamic-tool-management">Dynamic Tool Management:</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-81-1"><a id="__codelineno-81-1" name="__codelineno-81-1" href="#__codelineno-81-1"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">ReasoningWithToolsAgent</span><span class="p">(</span><span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span> <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">calculator</span><span class="p">])</span>
+</span><span id="__span-81-2"><a id="__codelineno-81-2" name="__codelineno-81-2" href="#__codelineno-81-2"></a>
+</span><span id="__span-81-3"><a id="__codelineno-81-3" name="__codelineno-81-3" href="#__codelineno-81-3"></a><span class="c1"># Add tools at runtime</span>
+</span><span id="__span-81-4"><a id="__codelineno-81-4" name="__codelineno-81-4" href="#__codelineno-81-4"></a><span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">has_premium</span><span class="p">:</span>
+</span><span id="__span-81-5"><a id="__codelineno-81-5" name="__codelineno-81-5" href="#__codelineno-81-5"></a>    <span class="n">agent</span><span class="o">.</span><span class="n">add_tool</span><span class="p">(</span><span class="n">premium_database_tool</span><span class="p">)</span>
+</span><span id="__span-81-6"><a id="__codelineno-81-6" name="__codelineno-81-6" href="#__codelineno-81-6"></a>
+</span><span id="__span-81-7"><a id="__codelineno-81-7" name="__codelineno-81-7" href="#__codelineno-81-7"></a><span class="c1"># Remove tools based on context</span>
+</span><span id="__span-81-8"><a id="__codelineno-81-8" name="__codelineno-81-8" href="#__codelineno-81-8"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">allow_web</span><span class="p">:</span>
+</span><span id="__span-81-9"><a id="__codelineno-81-9" name="__codelineno-81-9" href="#__codelineno-81-9"></a>    <span class="n">agent</span><span class="o">.</span><span class="n">remove_tool</span><span class="p">(</span><span class="s2">&quot;web_search&quot;</span><span class="p">)</span>
+</span><span id="__span-81-10"><a id="__codelineno-81-10" name="__codelineno-81-10" href="#__codelineno-81-10"></a>
+</span><span id="__span-81-11"><a id="__codelineno-81-11" name="__codelineno-81-11" href="#__codelineno-81-11"></a><span class="c1"># Get specific tool</span>
+</span><span id="__span-81-12"><a id="__codelineno-81-12" name="__codelineno-81-12" href="#__codelineno-81-12"></a><span class="n">tool</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">get_tool</span><span class="p">(</span><span class="s2">&quot;calculator&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="when-to-use">When to Use</h2>
+<p><strong>✅ Use Reasoning with Tools When:</strong></p>
+<ul>
+<li>Solving multi-step problems requiring data lookups</li>
+<li>Performing calculations during analysis</li>
+<li>Research tasks with fact-checking</li>
+<li>Financial planning with price lookups</li>
+<li>Scientific computing with specialized tools</li>
+<li>Any task where information is needed mid-thought</li>
+</ul>
+<p><strong>❌ Don't Use When:</strong></p>
+<ul>
+<li>Simple single-step tasks</li>
+<li>All required information is already available</li>
+<li>Tools are expensive and should be used sparingly</li>
+<li>ReAct's sequential pattern is sufficient</li>
+</ul>
+<h2 id="key-differences-from-react">Key Differences from ReAct</h2>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>ReAct</th>
+<th>Reasoning with Tools</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Execution</strong></td>
+<td>Sequential (think → act → observe)</td>
+<td>Interleaved (think ↔ act)</td>
+</tr>
+<tr>
+<td><strong>Tool Access</strong></td>
+<td>After reasoning completes</td>
+<td>During reasoning</td>
+</tr>
+<tr>
+<td><strong>Use Case</strong></td>
+<td>Action-oriented tasks</td>
+<td>Information-gathering during reasoning</td>
+</tr>
+<tr>
+<td><strong>Trace</strong></td>
+<td>Observation → Thought → Action</td>
+<td>Thinking + Tool Call + Result (interleaved)</td>
+</tr>
+<tr>
+<td><strong>Natural Fit</strong></td>
+<td>Multi-step procedures</td>
+<td>Research and analysis</td>
+</tr>
+</tbody>
+</table>
+<h2 id="configuration-options">Configuration Options</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-82-1"><a id="__codelineno-82-1" name="__codelineno-82-1" href="#__codelineno-82-1"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">ReasoningWithToolsAgent</span><span class="p">(</span>
+</span><span id="__span-82-2"><a id="__codelineno-82-2" name="__codelineno-82-2" href="#__codelineno-82-2"></a>    <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
+</span><span id="__span-82-3"><a id="__codelineno-82-3" name="__codelineno-82-3" href="#__codelineno-82-3"></a>    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">tool1</span><span class="p">,</span> <span class="n">tool2</span><span class="p">],</span>
+</span><span id="__span-82-4"><a id="__codelineno-82-4" name="__codelineno-82-4" href="#__codelineno-82-4"></a>    <span class="n">max_reasoning_steps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>          <span class="c1"># Max steps before stopping</span>
+</span><span id="__span-82-5"><a id="__codelineno-82-5" name="__codelineno-82-5" href="#__codelineno-82-5"></a>    <span class="n">tool_use_prompt</span><span class="o">=</span><span class="n">custom_prompt</span><span class="p">,</span>   <span class="c1"># Custom instruction for tool usage</span>
+</span><span id="__span-82-6"><a id="__codelineno-82-6" name="__codelineno-82-6" href="#__codelineno-82-6"></a>    <span class="n">enable_trace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>                <span class="c1"># Record detailed reasoning trace</span>
+</span><span id="__span-82-7"><a id="__codelineno-82-7" name="__codelineno-82-7" href="#__codelineno-82-7"></a>    <span class="n">confidence_threshold</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>         <span class="c1"># Minimum confidence for answer</span>
+</span><span id="__span-82-8"><a id="__codelineno-82-8" name="__codelineno-82-8" href="#__codelineno-82-8"></a><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="performance-characteristics">Performance Characteristics</h2>
+<p><strong>Trace Overhead:</strong>
+- Enabled: ~5-10% overhead (detailed step recording)
+- Disabled: &lt;1% overhead (minimal metadata)</p>
+<p><strong>Tool Call Latency:</strong>
+- Sequential tools: O(n) where n = number of tool calls
+- Each tool call adds network/compute latency</p>
+<p><strong>Optimization Tips:</strong>
+1. Limit <code>max_reasoning_steps</code> to prevent infinite loops
+2. Cache expensive tool results
+3. Use <code>enable_trace=False</code> in production if trace not needed
+4. Provide clear tool descriptions to reduce unnecessary calls</p>
+<h2 id="real-world-example">Real-World Example</h2>
+<p><strong>Scenario:</strong> Calculate shopping cart total with database lookups</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-83-1"><a id="__codelineno-83-1" name="__codelineno-83-1" href="#__codelineno-83-1"></a><span class="c1"># Agent interleaves database lookups and calculations:</span>
+</span><span id="__span-83-2"><a id="__codelineno-83-2" name="__codelineno-83-2" href="#__codelineno-83-2"></a><span class="c1"># 1. 💭 &quot;I need to find laptop price&quot;</span>
+</span><span id="__span-83-3"><a id="__codelineno-83-3" name="__codelineno-83-3" href="#__codelineno-83-3"></a><span class="c1"># 2. 🔧 database.query(&quot;laptop&quot;) → $999</span>
+</span><span id="__span-83-4"><a id="__codelineno-83-4" name="__codelineno-83-4" href="#__codelineno-83-4"></a><span class="c1"># 3. 💭 &quot;Now I need the mouse price&quot;</span>
+</span><span id="__span-83-5"><a id="__codelineno-83-5" name="__codelineno-83-5" href="#__codelineno-83-5"></a><span class="c1"># 4. 🔧 database.query(&quot;mouse&quot;) → $29.99</span>
+</span><span id="__span-83-6"><a id="__codelineno-83-6" name="__codelineno-83-6" href="#__codelineno-83-6"></a><span class="c1"># 5. 💭 &quot;Let me calculate the total&quot;</span>
+</span><span id="__span-83-7"><a id="__codelineno-83-7" name="__codelineno-83-7" href="#__codelineno-83-7"></a><span class="c1"># 6. 🔧 calculator.add(999, 29.99) → $1,028.99</span>
+</span><span id="__span-83-8"><a id="__codelineno-83-8" name="__codelineno-83-8" href="#__codelineno-83-8"></a><span class="c1"># 7. 🎯 &quot;Total cost is $1,028.99&quot;</span>
+</span><span id="__span-83-9"><a id="__codelineno-83-9" name="__codelineno-83-9" href="#__codelineno-83-9"></a>
+</span><span id="__span-83-10"><a id="__codelineno-83-10" name="__codelineno-83-10" href="#__codelineno-83-10"></a><span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">process</span><span class="p">(</span>
+</span><span id="__span-83-11"><a id="__codelineno-83-11" name="__codelineno-83-11" href="#__codelineno-83-11"></a>    <span class="n">Message</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;What&#39;s the total for laptop and mouse?&quot;</span><span class="p">)</span>
+</span><span id="__span-83-12"><a id="__codelineno-83-12" name="__codelineno-83-12" href="#__codelineno-83-12"></a><span class="p">)</span>
+</span><span id="__span-83-13"><a id="__codelineno-83-13" name="__codelineno-83-13" href="#__codelineno-83-13"></a>
+</span><span id="__span-83-14"><a id="__codelineno-83-14" name="__codelineno-83-14" href="#__codelineno-83-14"></a><span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</span><span id="__span-83-15"><a id="__codelineno-83-15" name="__codelineno-83-15" href="#__codelineno-83-15"></a><span class="c1"># → &quot;The total for a laptop and mouse is $1,028.99&quot;</span>
+</span></code></pre></div>
+<h2 id="debugging-with-traces">Debugging with Traces</h2>
+<p>Reasoning traces are invaluable for debugging:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-84-1"><a id="__codelineno-84-1" name="__codelineno-84-1" href="#__codelineno-84-1"></a><span class="n">trace</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;reasoning_trace&quot;</span><span class="p">]</span>
+</span><span id="__span-84-2"><a id="__codelineno-84-2" name="__codelineno-84-2" href="#__codelineno-84-2"></a>
+</span><span id="__span-84-3"><a id="__codelineno-84-3" name="__codelineno-84-3" href="#__codelineno-84-3"></a><span class="c1"># Statistics</span>
+</span><span id="__span-84-4"><a id="__codelineno-84-4" name="__codelineno-84-4" href="#__codelineno-84-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total steps: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="s1">&#39;steps&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-84-5"><a id="__codelineno-84-5" name="__codelineno-84-5" href="#__codelineno-84-5"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Thinking steps: </span><span class="si">{</span><span class="n">trace</span><span class="p">[</span><span class="s1">&#39;total_thinking_steps&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-84-6"><a id="__codelineno-84-6" name="__codelineno-84-6" href="#__codelineno-84-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tools used: </span><span class="si">{</span><span class="n">trace</span><span class="p">[</span><span class="s1">&#39;total_tools_used&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-84-7"><a id="__codelineno-84-7" name="__codelineno-84-7" href="#__codelineno-84-7"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Duration: </span><span class="si">{</span><span class="n">trace</span><span class="p">[</span><span class="s1">&#39;duration_seconds&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+</span><span id="__span-84-8"><a id="__codelineno-84-8" name="__codelineno-84-8" href="#__codelineno-84-8"></a>
+</span><span id="__span-84-9"><a id="__codelineno-84-9" name="__codelineno-84-9" href="#__codelineno-84-9"></a><span class="c1"># Step-by-step analysis</span>
+</span><span id="__span-84-10"><a id="__codelineno-84-10" name="__codelineno-84-10" href="#__codelineno-84-10"></a><span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="s2">&quot;steps&quot;</span><span class="p">],</span> <span class="mi">1</span><span class="p">):</span>
+</span><span id="__span-84-11"><a id="__codelineno-84-11" name="__codelineno-84-11" href="#__codelineno-84-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Step </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+</span><span id="__span-84-12"><a id="__codelineno-84-12" name="__codelineno-84-12" href="#__codelineno-84-12"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Type: </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;step_type&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-84-13"><a id="__codelineno-84-13" name="__codelineno-84-13" href="#__codelineno-84-13"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Content: </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">][:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+</span><span id="__span-84-14"><a id="__codelineno-84-14" name="__codelineno-84-14" href="#__codelineno-84-14"></a>    <span class="k">if</span> <span class="n">step</span><span class="p">[</span><span class="s1">&#39;tool_name&#39;</span><span class="p">]:</span>
+</span><span id="__span-84-15"><a id="__codelineno-84-15" name="__codelineno-84-15" href="#__codelineno-84-15"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Tool: </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;tool_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-84-16"><a id="__codelineno-84-16" name="__codelineno-84-16" href="#__codelineno-84-16"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Parameters: </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;tool_parameters&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Provide Clear Tool Descriptions</strong>: LLM uses descriptions to decide when to call tools</li>
+<li><strong>Set Reasonable Max Steps</strong>: Prevent infinite reasoning loops (typically 10-30)</li>
+<li><strong>Enable Tracing in Development</strong>: Critical for debugging reasoning flow</li>
+<li><strong>Handle Tool Errors Gracefully</strong>: Agent continues even if tools fail</li>
+<li><strong>Monitor Tool Usage</strong>: Track which tools are called most frequently</li>
+<li><strong>Cache Tool Results</strong>: Avoid redundant expensive operations</li>
+</ol>
+<h2 id="anti-patterns">Anti-Patterns</h2>
+<p><strong>❌ Tool Thrashing:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-85-1"><a id="__codelineno-85-1" name="__codelineno-85-1" href="#__codelineno-85-1"></a><span class="c1"># Bad: Agent repeatedly calls same tool</span>
+</span><span id="__span-85-2"><a id="__codelineno-85-2" name="__codelineno-85-2" href="#__codelineno-85-2"></a><span class="c1"># search(&quot;Python tutorial&quot;)</span>
+</span><span id="__span-85-3"><a id="__codelineno-85-3" name="__codelineno-85-3" href="#__codelineno-85-3"></a><span class="c1"># search(&quot;Python tutorial for beginners&quot;)</span>
+</span><span id="__span-85-4"><a id="__codelineno-85-4" name="__codelineno-85-4" href="#__codelineno-85-4"></a><span class="c1"># search(&quot;beginner Python tutorial&quot;)</span>
+</span></code></pre></div>
+<strong>Fix:</strong> Cache results, add cooldowns, or improve tool descriptions</p>
+<p><strong>❌ Infinite Reasoning:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-86-1"><a id="__codelineno-86-1" name="__codelineno-86-1" href="#__codelineno-86-1"></a><span class="c1"># Bad: No termination condition</span>
+</span><span id="__span-86-2"><a id="__codelineno-86-2" name="__codelineno-86-2" href="#__codelineno-86-2"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">ReasoningWithToolsAgent</span><span class="p">(</span>
+</span><span id="__span-86-3"><a id="__codelineno-86-3" name="__codelineno-86-3" href="#__codelineno-86-3"></a>    <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
+</span><span id="__span-86-4"><a id="__codelineno-86-4" name="__codelineno-86-4" href="#__codelineno-86-4"></a>    <span class="n">tools</span><span class="o">=</span><span class="n">tools</span><span class="p">,</span>
+</span><span id="__span-86-5"><a id="__codelineno-86-5" name="__codelineno-86-5" href="#__codelineno-86-5"></a>    <span class="n">max_reasoning_steps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>  <span class="c1"># Too high!</span>
+</span><span id="__span-86-6"><a id="__codelineno-86-6" name="__codelineno-86-6" href="#__codelineno-86-6"></a><span class="p">)</span>
+</span></code></pre></div>
+<strong>Fix:</strong> Set reasonable limit (10-30 steps), add conclusion detection</p>
+<p><strong>See Also:</strong>
+- <code>examples/patterns/09_reasoning_with_tools.py</code> - 6 complete demos
+- <code>tests/patterns/test_reasoning_with_tools.py</code> - 25 comprehensive tests
+- Related: Chapter 6 (ReAct) for sequential reasoning + acting</p>
+<hr />
 <h1 id="part-iii-production">Part III: Production</h1>
-<p><em>(Chapters 15-18 planned but not yet written)</em></p>
-<h2 id="chapter-15-state-management">Chapter 15: State Management</h2>
+<p><em>(Chapters 16-19 planned but not yet written)</em></p>
+<h2 id="chapter-16-state-management">Chapter 16: State Management</h2>
 <ul>
 <li>Conversational, session, long-term state</li>
 <li>Storage options</li>
 <li>Checkpointing</li>
 </ul>
-<h2 id="chapter-16-error-handling-resilience">Chapter 16: Error Handling &amp; Resilience</h2>
+<h2 id="chapter-17-error-handling-resilience">Chapter 17: Error Handling &amp; Resilience</h2>
 <ul>
 <li>Failure modes</li>
 <li>Retry patterns</li>
 <li>Circuit breakers</li>
 <li>Fallback strategies</li>
 </ul>
-<h2 id="chapter-17-deployment-patterns">Chapter 17: Deployment Patterns</h2>
+<h2 id="chapter-18-deployment-patterns">Chapter 18: Deployment Patterns</h2>
 <ul>
 <li>Architectures</li>
 <li>Container deployment</li>
 <li>Kubernetes</li>
 <li>Cross-language</li>
 </ul>
-<h2 id="chapter-18-observability-debugging">Chapter 18: Observability &amp; Debugging</h2>
+<h2 id="chapter-19-observability-debugging">Chapter 19: Observability &amp; Debugging</h2>
 <ul>
 <li>Distributed tracing</li>
 <li>Metrics</li>
@@ -3932,21 +4178,21 @@ You can implement any agent pattern—single, sequential, parallel, supervisor�
 </ul>
 <hr />
 <h1 id="part-iv-advanced-topics">Part IV: Advanced Topics</h1>
-<p><em>(Chapters 19-21 planned but not yet written)</em></p>
-<h2 id="chapter-19-multi-agent-systems">Chapter 19: Multi-Agent Systems</h2>
+<p><em>(Chapters 20-22 planned but not yet written)</em></p>
+<h2 id="chapter-20-multi-agent-systems">Chapter 20: Multi-Agent Systems</h2>
 <ul>
 <li>System architectures</li>
 <li>Communication patterns</li>
 <li>Coordination mechanisms</li>
 </ul>
-<h2 id="chapter-20-agent-learning-adaptation">Chapter 20: Agent Learning &amp; Adaptation</h2>
+<h2 id="chapter-21-agent-learning-adaptation">Chapter 21: Agent Learning &amp; Adaptation</h2>
 <ul>
 <li>Learning strategies</li>
 <li>Feedback loops</li>
 <li>Self-reflection</li>
 <li>Memory systems</li>
 </ul>
-<h2 id="chapter-21-future-directions">Chapter 21: Future Directions</h2>
+<h2 id="chapter-22-future-directions">Chapter 22: Future Directions</h2>
 <ul>
 <li>Current trends</li>
 <li>Research frontiers</li>
@@ -4021,137 +4267,137 @@ You can implement any agent pattern—single, sequential, parallel, supervisor�
 <h3 id="1-long-running-agent-pattern-critical">1. Long-Running Agent Pattern ⭐ <strong>CRITICAL</strong></h3>
 <p><strong>Problem:</strong> Agents now work for 30+ hours. Sessions can crash, need to resume.</p>
 <p><strong>Solution:</strong> Durable execution with checkpointing.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-77-1"><a id="__codelineno-77-1" name="__codelineno-77-1" href="#__codelineno-77-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CheckpointedAgent</span><span class="p">:</span>
-</span><span id="__span-77-2"><a id="__codelineno-77-2" name="__codelineno-77-2" href="#__codelineno-77-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Agent with automatic checkpointing.&quot;&quot;&quot;</span>
-</span><span id="__span-77-3"><a id="__codelineno-77-3" name="__codelineno-77-3" href="#__codelineno-77-3"></a>
-</span><span id="__span-77-4"><a id="__codelineno-77-4" name="__codelineno-77-4" href="#__codelineno-77-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">checkpoint_storage</span><span class="p">:</span> <span class="n">Storage</span><span class="p">):</span>
-</span><span id="__span-77-5"><a id="__codelineno-77-5" name="__codelineno-77-5" href="#__codelineno-77-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">agent</span> <span class="o">=</span> <span class="n">agent</span>
-</span><span id="__span-77-6"><a id="__codelineno-77-6" name="__codelineno-77-6" href="#__codelineno-77-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="o">=</span> <span class="n">checkpoint_storage</span>
-</span><span id="__span-77-7"><a id="__codelineno-77-7" name="__codelineno-77-7" href="#__codelineno-77-7"></a>
-</span><span id="__span-77-8"><a id="__codelineno-77-8" name="__codelineno-77-8" href="#__codelineno-77-8"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span>
-</span><span id="__span-77-9"><a id="__codelineno-77-9" name="__codelineno-77-9" href="#__codelineno-77-9"></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-77-10"><a id="__codelineno-77-10" name="__codelineno-77-10" href="#__codelineno-77-10"></a>        <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">],</span>
-</span><span id="__span-77-11"><a id="__codelineno-77-11" name="__codelineno-77-11" href="#__codelineno-77-11"></a>        <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="__span-77-12"><a id="__codelineno-77-12" name="__codelineno-77-12" href="#__codelineno-77-12"></a>        <span class="o">**</span><span class="n">kwargs</span>
-</span><span id="__span-77-13"><a id="__codelineno-77-13" name="__codelineno-77-13" href="#__codelineno-77-13"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
-</span><span id="__span-77-14"><a id="__codelineno-77-14" name="__codelineno-77-14" href="#__codelineno-77-14"></a>        <span class="c1"># Load checkpoint if exists</span>
-</span><span id="__span-77-15"><a id="__codelineno-77-15" name="__codelineno-77-15" href="#__codelineno-77-15"></a>        <span class="n">checkpoint</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
-</span><span id="__span-77-16"><a id="__codelineno-77-16" name="__codelineno-77-16" href="#__codelineno-77-16"></a>        <span class="k">if</span> <span class="n">checkpoint</span><span class="p">:</span>
-</span><span id="__span-77-17"><a id="__codelineno-77-17" name="__codelineno-77-17" href="#__codelineno-77-17"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">restore_state</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
-</span><span id="__span-77-18"><a id="__codelineno-77-18" name="__codelineno-77-18" href="#__codelineno-77-18"></a>
-</span><span id="__span-77-19"><a id="__codelineno-77-19" name="__codelineno-77-19" href="#__codelineno-77-19"></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-77-20"><a id="__codelineno-77-20" name="__codelineno-77-20" href="#__codelineno-77-20"></a>            <span class="c1"># Process</span>
-</span><span id="__span-77-21"><a id="__codelineno-77-21" name="__codelineno-77-21" href="#__codelineno-77-21"></a>            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="__span-77-22"><a id="__codelineno-77-22" name="__codelineno-77-22" href="#__codelineno-77-22"></a>
-</span><span id="__span-77-23"><a id="__codelineno-77-23" name="__codelineno-77-23" href="#__codelineno-77-23"></a>            <span class="c1"># Checkpoint after success</span>
-</span><span id="__span-77-24"><a id="__codelineno-77-24" name="__codelineno-77-24" href="#__codelineno-77-24"></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_state</span><span class="p">())</span>
-</span><span id="__span-77-25"><a id="__codelineno-77-25" name="__codelineno-77-25" href="#__codelineno-77-25"></a>
-</span><span id="__span-77-26"><a id="__codelineno-77-26" name="__codelineno-77-26" href="#__codelineno-77-26"></a>            <span class="k">return</span> <span class="n">response</span>
-</span><span id="__span-77-27"><a id="__codelineno-77-27" name="__codelineno-77-27" href="#__codelineno-77-27"></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="__span-77-28"><a id="__codelineno-77-28" name="__codelineno-77-28" href="#__codelineno-77-28"></a>            <span class="c1"># Save state on failure</span>
-</span><span id="__span-77-29"><a id="__codelineno-77-29" name="__codelineno-77-29" href="#__codelineno-77-29"></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_state</span><span class="p">())</span>
-</span><span id="__span-77-30"><a id="__codelineno-77-30" name="__codelineno-77-30" href="#__codelineno-77-30"></a>            <span class="k">raise</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-87-1"><a id="__codelineno-87-1" name="__codelineno-87-1" href="#__codelineno-87-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CheckpointedAgent</span><span class="p">:</span>
+</span><span id="__span-87-2"><a id="__codelineno-87-2" name="__codelineno-87-2" href="#__codelineno-87-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Agent with automatic checkpointing.&quot;&quot;&quot;</span>
+</span><span id="__span-87-3"><a id="__codelineno-87-3" name="__codelineno-87-3" href="#__codelineno-87-3"></a>
+</span><span id="__span-87-4"><a id="__codelineno-87-4" name="__codelineno-87-4" href="#__codelineno-87-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">checkpoint_storage</span><span class="p">:</span> <span class="n">Storage</span><span class="p">):</span>
+</span><span id="__span-87-5"><a id="__codelineno-87-5" name="__codelineno-87-5" href="#__codelineno-87-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">agent</span> <span class="o">=</span> <span class="n">agent</span>
+</span><span id="__span-87-6"><a id="__codelineno-87-6" name="__codelineno-87-6" href="#__codelineno-87-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="o">=</span> <span class="n">checkpoint_storage</span>
+</span><span id="__span-87-7"><a id="__codelineno-87-7" name="__codelineno-87-7" href="#__codelineno-87-7"></a>
+</span><span id="__span-87-8"><a id="__codelineno-87-8" name="__codelineno-87-8" href="#__codelineno-87-8"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span>
+</span><span id="__span-87-9"><a id="__codelineno-87-9" name="__codelineno-87-9" href="#__codelineno-87-9"></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-87-10"><a id="__codelineno-87-10" name="__codelineno-87-10" href="#__codelineno-87-10"></a>        <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">],</span>
+</span><span id="__span-87-11"><a id="__codelineno-87-11" name="__codelineno-87-11" href="#__codelineno-87-11"></a>        <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-87-12"><a id="__codelineno-87-12" name="__codelineno-87-12" href="#__codelineno-87-12"></a>        <span class="o">**</span><span class="n">kwargs</span>
+</span><span id="__span-87-13"><a id="__codelineno-87-13" name="__codelineno-87-13" href="#__codelineno-87-13"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+</span><span id="__span-87-14"><a id="__codelineno-87-14" name="__codelineno-87-14" href="#__codelineno-87-14"></a>        <span class="c1"># Load checkpoint if exists</span>
+</span><span id="__span-87-15"><a id="__codelineno-87-15" name="__codelineno-87-15" href="#__codelineno-87-15"></a>        <span class="n">checkpoint</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
+</span><span id="__span-87-16"><a id="__codelineno-87-16" name="__codelineno-87-16" href="#__codelineno-87-16"></a>        <span class="k">if</span> <span class="n">checkpoint</span><span class="p">:</span>
+</span><span id="__span-87-17"><a id="__codelineno-87-17" name="__codelineno-87-17" href="#__codelineno-87-17"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">restore_state</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+</span><span id="__span-87-18"><a id="__codelineno-87-18" name="__codelineno-87-18" href="#__codelineno-87-18"></a>
+</span><span id="__span-87-19"><a id="__codelineno-87-19" name="__codelineno-87-19" href="#__codelineno-87-19"></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-87-20"><a id="__codelineno-87-20" name="__codelineno-87-20" href="#__codelineno-87-20"></a>            <span class="c1"># Process</span>
+</span><span id="__span-87-21"><a id="__codelineno-87-21" name="__codelineno-87-21" href="#__codelineno-87-21"></a>            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="__span-87-22"><a id="__codelineno-87-22" name="__codelineno-87-22" href="#__codelineno-87-22"></a>
+</span><span id="__span-87-23"><a id="__codelineno-87-23" name="__codelineno-87-23" href="#__codelineno-87-23"></a>            <span class="c1"># Checkpoint after success</span>
+</span><span id="__span-87-24"><a id="__codelineno-87-24" name="__codelineno-87-24" href="#__codelineno-87-24"></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_state</span><span class="p">())</span>
+</span><span id="__span-87-25"><a id="__codelineno-87-25" name="__codelineno-87-25" href="#__codelineno-87-25"></a>
+</span><span id="__span-87-26"><a id="__codelineno-87-26" name="__codelineno-87-26" href="#__codelineno-87-26"></a>            <span class="k">return</span> <span class="n">response</span>
+</span><span id="__span-87-27"><a id="__codelineno-87-27" name="__codelineno-87-27" href="#__codelineno-87-27"></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="__span-87-28"><a id="__codelineno-87-28" name="__codelineno-87-28" href="#__codelineno-87-28"></a>            <span class="c1"># Save state on failure</span>
+</span><span id="__span-87-29"><a id="__codelineno-87-29" name="__codelineno-87-29" href="#__codelineno-87-29"></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_state</span><span class="p">())</span>
+</span><span id="__span-87-30"><a id="__codelineno-87-30" name="__codelineno-87-30" href="#__codelineno-87-30"></a>            <span class="k">raise</span>
 </span></code></pre></div>
 <p><strong>Why It Matters:</strong> Without checkpointing, 30-hour agents lose all progress on failure.</p>
 <p><strong>Status:</strong> Planned (#69)</p>
 <h3 id="2-reasoning-budget-pattern-new-in-2025">2. Reasoning Budget Pattern ⭐ <strong>NEW IN 2025</strong></h3>
 <p><strong>Problem:</strong> Hybrid models (Claude 4, o3) have "instant" vs "extended thinking" modes. When to use which?</p>
 <p><strong>Solution:</strong> Dynamic allocation based on complexity.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-78-1"><a id="__codelineno-78-1" name="__codelineno-78-1" href="#__codelineno-78-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ReasoningBudgetAgent</span><span class="p">:</span>
-</span><span id="__span-78-2"><a id="__codelineno-78-2" name="__codelineno-78-2" href="#__codelineno-78-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Route queries to appropriate reasoning depth.&quot;&quot;&quot;</span>
-</span><span id="__span-78-3"><a id="__codelineno-78-3" name="__codelineno-78-3" href="#__codelineno-78-3"></a>
-</span><span id="__span-78-4"><a id="__codelineno-78-4" name="__codelineno-78-4" href="#__codelineno-78-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-</span><span id="__span-78-5"><a id="__codelineno-78-5" name="__codelineno-78-5" href="#__codelineno-78-5"></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-78-6"><a id="__codelineno-78-6" name="__codelineno-78-6" href="#__codelineno-78-6"></a>        <span class="n">fast_llm</span><span class="p">:</span> <span class="n">LLM</span><span class="p">,</span>      <span class="c1"># Instant mode</span>
-</span><span id="__span-78-7"><a id="__codelineno-78-7" name="__codelineno-78-7" href="#__codelineno-78-7"></a>        <span class="n">reasoning_llm</span><span class="p">:</span> <span class="n">LLM</span><span class="p">,</span> <span class="c1"># Extended thinking</span>
-</span><span id="__span-78-8"><a id="__codelineno-78-8" name="__codelineno-78-8" href="#__codelineno-78-8"></a>        <span class="n">complexity_detector</span><span class="p">:</span> <span class="n">Callable</span>
-</span><span id="__span-78-9"><a id="__codelineno-78-9" name="__codelineno-78-9" href="#__codelineno-78-9"></a>    <span class="p">):</span>
-</span><span id="__span-78-10"><a id="__codelineno-78-10" name="__codelineno-78-10" href="#__codelineno-78-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">fast</span> <span class="o">=</span> <span class="n">fast_llm</span>
-</span><span id="__span-78-11"><a id="__codelineno-78-11" name="__codelineno-78-11" href="#__codelineno-78-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">reasoning</span> <span class="o">=</span> <span class="n">reasoning_llm</span>
-</span><span id="__span-78-12"><a id="__codelineno-78-12" name="__codelineno-78-12" href="#__codelineno-78-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">detector</span> <span class="o">=</span> <span class="n">complexity_detector</span>
-</span><span id="__span-78-13"><a id="__codelineno-78-13" name="__codelineno-78-13" href="#__codelineno-78-13"></a>
-</span><span id="__span-78-14"><a id="__codelineno-78-14" name="__codelineno-78-14" href="#__codelineno-78-14"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
-</span><span id="__span-78-15"><a id="__codelineno-78-15" name="__codelineno-78-15" href="#__codelineno-78-15"></a>        <span class="n">complexity</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">detector</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
-</span><span id="__span-78-16"><a id="__codelineno-78-16" name="__codelineno-78-16" href="#__codelineno-78-16"></a>
-</span><span id="__span-78-17"><a id="__codelineno-78-17" name="__codelineno-78-17" href="#__codelineno-78-17"></a>        <span class="k">if</span> <span class="n">complexity</span> <span class="o">==</span> <span class="s2">&quot;simple&quot;</span><span class="p">:</span>
-</span><span id="__span-78-18"><a id="__codelineno-78-18" name="__codelineno-78-18" href="#__codelineno-78-18"></a>            <span class="c1"># Use fast mode (cheaper, instant)</span>
-</span><span id="__span-78-19"><a id="__codelineno-78-19" name="__codelineno-78-19" href="#__codelineno-78-19"></a>            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">fast</span><span class="o">.</span><span class="n">complete</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="__span-78-20"><a id="__codelineno-78-20" name="__codelineno-78-20" href="#__codelineno-78-20"></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-78-21"><a id="__codelineno-78-21" name="__codelineno-78-21" href="#__codelineno-78-21"></a>            <span class="c1"># Use extended thinking (expensive, deeper)</span>
-</span><span id="__span-78-22"><a id="__codelineno-78-22" name="__codelineno-78-22" href="#__codelineno-78-22"></a>            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reasoning</span><span class="o">.</span><span class="n">complete</span><span class="p">(</span>
-</span><span id="__span-78-23"><a id="__codelineno-78-23" name="__codelineno-78-23" href="#__codelineno-78-23"></a>                <span class="n">messages</span><span class="p">,</span>
-</span><span id="__span-78-24"><a id="__codelineno-78-24" name="__codelineno-78-24" href="#__codelineno-78-24"></a>                <span class="n">thinking_time</span><span class="o">=</span><span class="n">complexity_score</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>  <span class="c1"># Scale by complexity</span>
-</span><span id="__span-78-25"><a id="__codelineno-78-25" name="__codelineno-78-25" href="#__codelineno-78-25"></a>                <span class="o">**</span><span class="n">kwargs</span>
-</span><span id="__span-78-26"><a id="__codelineno-78-26" name="__codelineno-78-26" href="#__codelineno-78-26"></a>            <span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-88-1"><a id="__codelineno-88-1" name="__codelineno-88-1" href="#__codelineno-88-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ReasoningBudgetAgent</span><span class="p">:</span>
+</span><span id="__span-88-2"><a id="__codelineno-88-2" name="__codelineno-88-2" href="#__codelineno-88-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Route queries to appropriate reasoning depth.&quot;&quot;&quot;</span>
+</span><span id="__span-88-3"><a id="__codelineno-88-3" name="__codelineno-88-3" href="#__codelineno-88-3"></a>
+</span><span id="__span-88-4"><a id="__codelineno-88-4" name="__codelineno-88-4" href="#__codelineno-88-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="__span-88-5"><a id="__codelineno-88-5" name="__codelineno-88-5" href="#__codelineno-88-5"></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-88-6"><a id="__codelineno-88-6" name="__codelineno-88-6" href="#__codelineno-88-6"></a>        <span class="n">fast_llm</span><span class="p">:</span> <span class="n">LLM</span><span class="p">,</span>      <span class="c1"># Instant mode</span>
+</span><span id="__span-88-7"><a id="__codelineno-88-7" name="__codelineno-88-7" href="#__codelineno-88-7"></a>        <span class="n">reasoning_llm</span><span class="p">:</span> <span class="n">LLM</span><span class="p">,</span> <span class="c1"># Extended thinking</span>
+</span><span id="__span-88-8"><a id="__codelineno-88-8" name="__codelineno-88-8" href="#__codelineno-88-8"></a>        <span class="n">complexity_detector</span><span class="p">:</span> <span class="n">Callable</span>
+</span><span id="__span-88-9"><a id="__codelineno-88-9" name="__codelineno-88-9" href="#__codelineno-88-9"></a>    <span class="p">):</span>
+</span><span id="__span-88-10"><a id="__codelineno-88-10" name="__codelineno-88-10" href="#__codelineno-88-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">fast</span> <span class="o">=</span> <span class="n">fast_llm</span>
+</span><span id="__span-88-11"><a id="__codelineno-88-11" name="__codelineno-88-11" href="#__codelineno-88-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">reasoning</span> <span class="o">=</span> <span class="n">reasoning_llm</span>
+</span><span id="__span-88-12"><a id="__codelineno-88-12" name="__codelineno-88-12" href="#__codelineno-88-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">detector</span> <span class="o">=</span> <span class="n">complexity_detector</span>
+</span><span id="__span-88-13"><a id="__codelineno-88-13" name="__codelineno-88-13" href="#__codelineno-88-13"></a>
+</span><span id="__span-88-14"><a id="__codelineno-88-14" name="__codelineno-88-14" href="#__codelineno-88-14"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+</span><span id="__span-88-15"><a id="__codelineno-88-15" name="__codelineno-88-15" href="#__codelineno-88-15"></a>        <span class="n">complexity</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">detector</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+</span><span id="__span-88-16"><a id="__codelineno-88-16" name="__codelineno-88-16" href="#__codelineno-88-16"></a>
+</span><span id="__span-88-17"><a id="__codelineno-88-17" name="__codelineno-88-17" href="#__codelineno-88-17"></a>        <span class="k">if</span> <span class="n">complexity</span> <span class="o">==</span> <span class="s2">&quot;simple&quot;</span><span class="p">:</span>
+</span><span id="__span-88-18"><a id="__codelineno-88-18" name="__codelineno-88-18" href="#__codelineno-88-18"></a>            <span class="c1"># Use fast mode (cheaper, instant)</span>
+</span><span id="__span-88-19"><a id="__codelineno-88-19" name="__codelineno-88-19" href="#__codelineno-88-19"></a>            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">fast</span><span class="o">.</span><span class="n">complete</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="__span-88-20"><a id="__codelineno-88-20" name="__codelineno-88-20" href="#__codelineno-88-20"></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-88-21"><a id="__codelineno-88-21" name="__codelineno-88-21" href="#__codelineno-88-21"></a>            <span class="c1"># Use extended thinking (expensive, deeper)</span>
+</span><span id="__span-88-22"><a id="__codelineno-88-22" name="__codelineno-88-22" href="#__codelineno-88-22"></a>            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reasoning</span><span class="o">.</span><span class="n">complete</span><span class="p">(</span>
+</span><span id="__span-88-23"><a id="__codelineno-88-23" name="__codelineno-88-23" href="#__codelineno-88-23"></a>                <span class="n">messages</span><span class="p">,</span>
+</span><span id="__span-88-24"><a id="__codelineno-88-24" name="__codelineno-88-24" href="#__codelineno-88-24"></a>                <span class="n">thinking_time</span><span class="o">=</span><span class="n">complexity_score</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>  <span class="c1"># Scale by complexity</span>
+</span><span id="__span-88-25"><a id="__codelineno-88-25" name="__codelineno-88-25" href="#__codelineno-88-25"></a>                <span class="o">**</span><span class="n">kwargs</span>
+</span><span id="__span-88-26"><a id="__codelineno-88-26" name="__codelineno-88-26" href="#__codelineno-88-26"></a>            <span class="p">)</span>
 </span></code></pre></div>
 <p><strong>Why It Matters:</strong> Saves cost (extended thinking is 3-10x more expensive) while maintaining quality.</p>
 <p><strong>Status:</strong> Planned (#72)</p>
 <h3 id="3-tool-use-during-reasoning-pattern-new-capability">3. Tool-Use During Reasoning Pattern ⭐ <strong>NEW CAPABILITY</strong></h3>
 <p><strong>Problem:</strong> Claude 4 and o3 can use tools <em>while</em> reasoning (not just after). Different from ReAct.</p>
 <p><strong>Solution:</strong> Support interleaved reasoning + tool calls.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-79-1"><a id="__codelineno-79-1" name="__codelineno-79-1" href="#__codelineno-79-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ReasoningWithToolsAgent</span><span class="p">:</span>
-</span><span id="__span-79-2"><a id="__codelineno-79-2" name="__codelineno-79-2" href="#__codelineno-79-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Agent that uses tools during extended thinking.&quot;&quot;&quot;</span>
-</span><span id="__span-79-3"><a id="__codelineno-79-3" name="__codelineno-79-3" href="#__codelineno-79-3"></a>
-</span><span id="__span-79-4"><a id="__codelineno-79-4" name="__codelineno-79-4" href="#__codelineno-79-4"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
-</span><span id="__span-79-5"><a id="__codelineno-79-5" name="__codelineno-79-5" href="#__codelineno-79-5"></a>        <span class="c1"># Start extended thinking</span>
-</span><span id="__span-79-6"><a id="__codelineno-79-6" name="__codelineno-79-6" href="#__codelineno-79-6"></a>        <span class="n">reasoning_session</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm</span><span class="o">.</span><span class="n">start_reasoning</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
-</span><span id="__span-79-7"><a id="__codelineno-79-7" name="__codelineno-79-7" href="#__codelineno-79-7"></a>
-</span><span id="__span-79-8"><a id="__codelineno-79-8" name="__codelineno-79-8" href="#__codelineno-79-8"></a>        <span class="k">while</span> <span class="ow">not</span> <span class="n">reasoning_session</span><span class="o">.</span><span class="n">complete</span><span class="p">:</span>
-</span><span id="__span-79-9"><a id="__codelineno-79-9" name="__codelineno-79-9" href="#__codelineno-79-9"></a>            <span class="c1"># Check if reasoning wants to use tool</span>
-</span><span id="__span-79-10"><a id="__codelineno-79-10" name="__codelineno-79-10" href="#__codelineno-79-10"></a>            <span class="k">if</span> <span class="n">reasoning_session</span><span class="o">.</span><span class="n">wants_tool</span><span class="p">:</span>
-</span><span id="__span-79-11"><a id="__codelineno-79-11" name="__codelineno-79-11" href="#__codelineno-79-11"></a>                <span class="n">tool_call</span> <span class="o">=</span> <span class="n">reasoning_session</span><span class="o">.</span><span class="n">pending_tool_call</span>
-</span><span id="__span-79-12"><a id="__codelineno-79-12" name="__codelineno-79-12" href="#__codelineno-79-12"></a>                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">tool_call</span><span class="p">)</span>
-</span><span id="__span-79-13"><a id="__codelineno-79-13" name="__codelineno-79-13" href="#__codelineno-79-13"></a>
-</span><span id="__span-79-14"><a id="__codelineno-79-14" name="__codelineno-79-14" href="#__codelineno-79-14"></a>                <span class="c1"># Feed result back into reasoning</span>
-</span><span id="__span-79-15"><a id="__codelineno-79-15" name="__codelineno-79-15" href="#__codelineno-79-15"></a>                <span class="n">reasoning_session</span><span class="o">.</span><span class="n">continue_with_tool_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-</span><span id="__span-79-16"><a id="__codelineno-79-16" name="__codelineno-79-16" href="#__codelineno-79-16"></a>            <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-79-17"><a id="__codelineno-79-17" name="__codelineno-79-17" href="#__codelineno-79-17"></a>                <span class="c1"># Continue reasoning</span>
-</span><span id="__span-79-18"><a id="__codelineno-79-18" name="__codelineno-79-18" href="#__codelineno-79-18"></a>                <span class="k">await</span> <span class="n">reasoning_session</span><span class="o">.</span><span class="n">continue_thinking</span><span class="p">()</span>
-</span><span id="__span-79-19"><a id="__codelineno-79-19" name="__codelineno-79-19" href="#__codelineno-79-19"></a>
-</span><span id="__span-79-20"><a id="__codelineno-79-20" name="__codelineno-79-20" href="#__codelineno-79-20"></a>        <span class="k">return</span> <span class="n">reasoning_session</span><span class="o">.</span><span class="n">final_response</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-89-1"><a id="__codelineno-89-1" name="__codelineno-89-1" href="#__codelineno-89-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ReasoningWithToolsAgent</span><span class="p">:</span>
+</span><span id="__span-89-2"><a id="__codelineno-89-2" name="__codelineno-89-2" href="#__codelineno-89-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Agent that uses tools during extended thinking.&quot;&quot;&quot;</span>
+</span><span id="__span-89-3"><a id="__codelineno-89-3" name="__codelineno-89-3" href="#__codelineno-89-3"></a>
+</span><span id="__span-89-4"><a id="__codelineno-89-4" name="__codelineno-89-4" href="#__codelineno-89-4"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+</span><span id="__span-89-5"><a id="__codelineno-89-5" name="__codelineno-89-5" href="#__codelineno-89-5"></a>        <span class="c1"># Start extended thinking</span>
+</span><span id="__span-89-6"><a id="__codelineno-89-6" name="__codelineno-89-6" href="#__codelineno-89-6"></a>        <span class="n">reasoning_session</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm</span><span class="o">.</span><span class="n">start_reasoning</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+</span><span id="__span-89-7"><a id="__codelineno-89-7" name="__codelineno-89-7" href="#__codelineno-89-7"></a>
+</span><span id="__span-89-8"><a id="__codelineno-89-8" name="__codelineno-89-8" href="#__codelineno-89-8"></a>        <span class="k">while</span> <span class="ow">not</span> <span class="n">reasoning_session</span><span class="o">.</span><span class="n">complete</span><span class="p">:</span>
+</span><span id="__span-89-9"><a id="__codelineno-89-9" name="__codelineno-89-9" href="#__codelineno-89-9"></a>            <span class="c1"># Check if reasoning wants to use tool</span>
+</span><span id="__span-89-10"><a id="__codelineno-89-10" name="__codelineno-89-10" href="#__codelineno-89-10"></a>            <span class="k">if</span> <span class="n">reasoning_session</span><span class="o">.</span><span class="n">wants_tool</span><span class="p">:</span>
+</span><span id="__span-89-11"><a id="__codelineno-89-11" name="__codelineno-89-11" href="#__codelineno-89-11"></a>                <span class="n">tool_call</span> <span class="o">=</span> <span class="n">reasoning_session</span><span class="o">.</span><span class="n">pending_tool_call</span>
+</span><span id="__span-89-12"><a id="__codelineno-89-12" name="__codelineno-89-12" href="#__codelineno-89-12"></a>                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">tool_call</span><span class="p">)</span>
+</span><span id="__span-89-13"><a id="__codelineno-89-13" name="__codelineno-89-13" href="#__codelineno-89-13"></a>
+</span><span id="__span-89-14"><a id="__codelineno-89-14" name="__codelineno-89-14" href="#__codelineno-89-14"></a>                <span class="c1"># Feed result back into reasoning</span>
+</span><span id="__span-89-15"><a id="__codelineno-89-15" name="__codelineno-89-15" href="#__codelineno-89-15"></a>                <span class="n">reasoning_session</span><span class="o">.</span><span class="n">continue_with_tool_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span><span id="__span-89-16"><a id="__codelineno-89-16" name="__codelineno-89-16" href="#__codelineno-89-16"></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-89-17"><a id="__codelineno-89-17" name="__codelineno-89-17" href="#__codelineno-89-17"></a>                <span class="c1"># Continue reasoning</span>
+</span><span id="__span-89-18"><a id="__codelineno-89-18" name="__codelineno-89-18" href="#__codelineno-89-18"></a>                <span class="k">await</span> <span class="n">reasoning_session</span><span class="o">.</span><span class="n">continue_thinking</span><span class="p">()</span>
+</span><span id="__span-89-19"><a id="__codelineno-89-19" name="__codelineno-89-19" href="#__codelineno-89-19"></a>
+</span><span id="__span-89-20"><a id="__codelineno-89-20" name="__codelineno-89-20" href="#__codelineno-89-20"></a>        <span class="k">return</span> <span class="n">reasoning_session</span><span class="o">.</span><span class="n">final_response</span>
 </span></code></pre></div>
 <p><strong>Why Different from ReAct:</strong> Reasoning happens <em>inside</em> tool selection, not sequential.</p>
 <p><strong>Status:</strong> Planned (#75)</p>
 <h3 id="4-cost-aware-agent-pattern-production-need">4. Cost-Aware Agent Pattern ⭐ <strong>PRODUCTION NEED</strong></h3>
 <p><strong>Problem:</strong> 30-hour agent with expensive model (o3, Opus 4) could cost $500+.</p>
 <p><strong>Solution:</strong> Budget tracking and enforcement.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-80-1"><a id="__codelineno-80-1" name="__codelineno-80-1" href="#__codelineno-80-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CostAwareAgent</span><span class="p">:</span>
-</span><span id="__span-80-2"><a id="__codelineno-80-2" name="__codelineno-80-2" href="#__codelineno-80-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Agent with cost tracking and budget limits.&quot;&quot;&quot;</span>
-</span><span id="__span-80-3"><a id="__codelineno-80-3" name="__codelineno-80-3" href="#__codelineno-80-3"></a>
-</span><span id="__span-80-4"><a id="__codelineno-80-4" name="__codelineno-80-4" href="#__codelineno-80-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-</span><span id="__span-80-5"><a id="__codelineno-80-5" name="__codelineno-80-5" href="#__codelineno-80-5"></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-80-6"><a id="__codelineno-80-6" name="__codelineno-80-6" href="#__codelineno-80-6"></a>        <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span>
-</span><span id="__span-80-7"><a id="__codelineno-80-7" name="__codelineno-80-7" href="#__codelineno-80-7"></a>        <span class="n">tracker</span><span class="p">:</span> <span class="n">CostTracker</span><span class="p">,</span>
-</span><span id="__span-80-8"><a id="__codelineno-80-8" name="__codelineno-80-8" href="#__codelineno-80-8"></a>        <span class="n">session_budget</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.00</span>  <span class="c1"># $10 max per session</span>
-</span><span id="__span-80-9"><a id="__codelineno-80-9" name="__codelineno-80-9" href="#__codelineno-80-9"></a>    <span class="p">):</span>
-</span><span id="__span-80-10"><a id="__codelineno-80-10" name="__codelineno-80-10" href="#__codelineno-80-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">agent</span> <span class="o">=</span> <span class="n">agent</span>
-</span><span id="__span-80-11"><a id="__codelineno-80-11" name="__codelineno-80-11" href="#__codelineno-80-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span> <span class="o">=</span> <span class="n">tracker</span>
-</span><span id="__span-80-12"><a id="__codelineno-80-12" name="__codelineno-80-12" href="#__codelineno-80-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">budget</span> <span class="o">=</span> <span class="n">session_budget</span>
-</span><span id="__span-80-13"><a id="__codelineno-80-13" name="__codelineno-80-13" href="#__codelineno-80-13"></a>
-</span><span id="__span-80-14"><a id="__codelineno-80-14" name="__codelineno-80-14" href="#__codelineno-80-14"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span>
-</span><span id="__span-80-15"><a id="__codelineno-80-15" name="__codelineno-80-15" href="#__codelineno-80-15"></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-80-16"><a id="__codelineno-80-16" name="__codelineno-80-16" href="#__codelineno-80-16"></a>        <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">],</span>
-</span><span id="__span-80-17"><a id="__codelineno-80-17" name="__codelineno-80-17" href="#__codelineno-80-17"></a>        <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="__span-80-18"><a id="__codelineno-80-18" name="__codelineno-80-18" href="#__codelineno-80-18"></a>        <span class="o">**</span><span class="n">kwargs</span>
-</span><span id="__span-80-19"><a id="__codelineno-80-19" name="__codelineno-80-19" href="#__codelineno-80-19"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
-</span><span id="__span-80-20"><a id="__codelineno-80-20" name="__codelineno-80-20" href="#__codelineno-80-20"></a>        <span class="c1"># Check budget before processing</span>
-</span><span id="__span-80-21"><a id="__codelineno-80-21" name="__codelineno-80-21" href="#__codelineno-80-21"></a>        <span class="n">current_cost</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">get_session_cost</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
-</span><span id="__span-80-22"><a id="__codelineno-80-22" name="__codelineno-80-22" href="#__codelineno-80-22"></a>        <span class="k">if</span> <span class="n">current_cost</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">budget</span><span class="p">:</span>
-</span><span id="__span-80-23"><a id="__codelineno-80-23" name="__codelineno-80-23" href="#__codelineno-80-23"></a>            <span class="k">raise</span> <span class="n">BudgetExceededError</span><span class="p">(</span>
-</span><span id="__span-80-24"><a id="__codelineno-80-24" name="__codelineno-80-24" href="#__codelineno-80-24"></a>                <span class="sa">f</span><span class="s2">&quot;Session budget $</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">budget</span><span class="si">}</span><span class="s2"> exceeded ($</span><span class="si">{</span><span class="n">current_cost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)&quot;</span>
-</span><span id="__span-80-25"><a id="__codelineno-80-25" name="__codelineno-80-25" href="#__codelineno-80-25"></a>            <span class="p">)</span>
-</span><span id="__span-80-26"><a id="__codelineno-80-26" name="__codelineno-80-26" href="#__codelineno-80-26"></a>
-</span><span id="__span-80-27"><a id="__codelineno-80-27" name="__codelineno-80-27" href="#__codelineno-80-27"></a>        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="__span-80-28"><a id="__codelineno-80-28" name="__codelineno-80-28" href="#__codelineno-80-28"></a>
-</span><span id="__span-80-29"><a id="__codelineno-80-29" name="__codelineno-80-29" href="#__codelineno-80-29"></a>        <span class="c1"># Record cost</span>
-</span><span id="__span-80-30"><a id="__codelineno-80-30" name="__codelineno-80-30" href="#__codelineno-80-30"></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">record_cost</span><span class="p">(</span>
-</span><span id="__span-80-31"><a id="__codelineno-80-31" name="__codelineno-80-31" href="#__codelineno-80-31"></a>            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
-</span><span id="__span-80-32"><a id="__codelineno-80-32" name="__codelineno-80-32" href="#__codelineno-80-32"></a>            <span class="n">model</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">],</span>
-</span><span id="__span-80-33"><a id="__codelineno-80-33" name="__codelineno-80-33" href="#__codelineno-80-33"></a>            <span class="n">input_tokens</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;usage&quot;</span><span class="p">][</span><span class="s2">&quot;prompt_tokens&quot;</span><span class="p">],</span>
-</span><span id="__span-80-34"><a id="__codelineno-80-34" name="__codelineno-80-34" href="#__codelineno-80-34"></a>            <span class="n">output_tokens</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;usage&quot;</span><span class="p">][</span><span class="s2">&quot;completion_tokens&quot;</span><span class="p">]</span>
-</span><span id="__span-80-35"><a id="__codelineno-80-35" name="__codelineno-80-35" href="#__codelineno-80-35"></a>        <span class="p">)</span>
-</span><span id="__span-80-36"><a id="__codelineno-80-36" name="__codelineno-80-36" href="#__codelineno-80-36"></a>
-</span><span id="__span-80-37"><a id="__codelineno-80-37" name="__codelineno-80-37" href="#__codelineno-80-37"></a>        <span class="k">return</span> <span class="n">response</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-90-1"><a id="__codelineno-90-1" name="__codelineno-90-1" href="#__codelineno-90-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CostAwareAgent</span><span class="p">:</span>
+</span><span id="__span-90-2"><a id="__codelineno-90-2" name="__codelineno-90-2" href="#__codelineno-90-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Agent with cost tracking and budget limits.&quot;&quot;&quot;</span>
+</span><span id="__span-90-3"><a id="__codelineno-90-3" name="__codelineno-90-3" href="#__codelineno-90-3"></a>
+</span><span id="__span-90-4"><a id="__codelineno-90-4" name="__codelineno-90-4" href="#__codelineno-90-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="__span-90-5"><a id="__codelineno-90-5" name="__codelineno-90-5" href="#__codelineno-90-5"></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-90-6"><a id="__codelineno-90-6" name="__codelineno-90-6" href="#__codelineno-90-6"></a>        <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span>
+</span><span id="__span-90-7"><a id="__codelineno-90-7" name="__codelineno-90-7" href="#__codelineno-90-7"></a>        <span class="n">tracker</span><span class="p">:</span> <span class="n">CostTracker</span><span class="p">,</span>
+</span><span id="__span-90-8"><a id="__codelineno-90-8" name="__codelineno-90-8" href="#__codelineno-90-8"></a>        <span class="n">session_budget</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.00</span>  <span class="c1"># $10 max per session</span>
+</span><span id="__span-90-9"><a id="__codelineno-90-9" name="__codelineno-90-9" href="#__codelineno-90-9"></a>    <span class="p">):</span>
+</span><span id="__span-90-10"><a id="__codelineno-90-10" name="__codelineno-90-10" href="#__codelineno-90-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">agent</span> <span class="o">=</span> <span class="n">agent</span>
+</span><span id="__span-90-11"><a id="__codelineno-90-11" name="__codelineno-90-11" href="#__codelineno-90-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span> <span class="o">=</span> <span class="n">tracker</span>
+</span><span id="__span-90-12"><a id="__codelineno-90-12" name="__codelineno-90-12" href="#__codelineno-90-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">budget</span> <span class="o">=</span> <span class="n">session_budget</span>
+</span><span id="__span-90-13"><a id="__codelineno-90-13" name="__codelineno-90-13" href="#__codelineno-90-13"></a>
+</span><span id="__span-90-14"><a id="__codelineno-90-14" name="__codelineno-90-14" href="#__codelineno-90-14"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span>
+</span><span id="__span-90-15"><a id="__codelineno-90-15" name="__codelineno-90-15" href="#__codelineno-90-15"></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-90-16"><a id="__codelineno-90-16" name="__codelineno-90-16" href="#__codelineno-90-16"></a>        <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">],</span>
+</span><span id="__span-90-17"><a id="__codelineno-90-17" name="__codelineno-90-17" href="#__codelineno-90-17"></a>        <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-90-18"><a id="__codelineno-90-18" name="__codelineno-90-18" href="#__codelineno-90-18"></a>        <span class="o">**</span><span class="n">kwargs</span>
+</span><span id="__span-90-19"><a id="__codelineno-90-19" name="__codelineno-90-19" href="#__codelineno-90-19"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+</span><span id="__span-90-20"><a id="__codelineno-90-20" name="__codelineno-90-20" href="#__codelineno-90-20"></a>        <span class="c1"># Check budget before processing</span>
+</span><span id="__span-90-21"><a id="__codelineno-90-21" name="__codelineno-90-21" href="#__codelineno-90-21"></a>        <span class="n">current_cost</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">get_session_cost</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
+</span><span id="__span-90-22"><a id="__codelineno-90-22" name="__codelineno-90-22" href="#__codelineno-90-22"></a>        <span class="k">if</span> <span class="n">current_cost</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">budget</span><span class="p">:</span>
+</span><span id="__span-90-23"><a id="__codelineno-90-23" name="__codelineno-90-23" href="#__codelineno-90-23"></a>            <span class="k">raise</span> <span class="n">BudgetExceededError</span><span class="p">(</span>
+</span><span id="__span-90-24"><a id="__codelineno-90-24" name="__codelineno-90-24" href="#__codelineno-90-24"></a>                <span class="sa">f</span><span class="s2">&quot;Session budget $</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">budget</span><span class="si">}</span><span class="s2"> exceeded ($</span><span class="si">{</span><span class="n">current_cost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)&quot;</span>
+</span><span id="__span-90-25"><a id="__codelineno-90-25" name="__codelineno-90-25" href="#__codelineno-90-25"></a>            <span class="p">)</span>
+</span><span id="__span-90-26"><a id="__codelineno-90-26" name="__codelineno-90-26" href="#__codelineno-90-26"></a>
+</span><span id="__span-90-27"><a id="__codelineno-90-27" name="__codelineno-90-27" href="#__codelineno-90-27"></a>        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="__span-90-28"><a id="__codelineno-90-28" name="__codelineno-90-28" href="#__codelineno-90-28"></a>
+</span><span id="__span-90-29"><a id="__codelineno-90-29" name="__codelineno-90-29" href="#__codelineno-90-29"></a>        <span class="c1"># Record cost</span>
+</span><span id="__span-90-30"><a id="__codelineno-90-30" name="__codelineno-90-30" href="#__codelineno-90-30"></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">record_cost</span><span class="p">(</span>
+</span><span id="__span-90-31"><a id="__codelineno-90-31" name="__codelineno-90-31" href="#__codelineno-90-31"></a>            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+</span><span id="__span-90-32"><a id="__codelineno-90-32" name="__codelineno-90-32" href="#__codelineno-90-32"></a>            <span class="n">model</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">],</span>
+</span><span id="__span-90-33"><a id="__codelineno-90-33" name="__codelineno-90-33" href="#__codelineno-90-33"></a>            <span class="n">input_tokens</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;usage&quot;</span><span class="p">][</span><span class="s2">&quot;prompt_tokens&quot;</span><span class="p">],</span>
+</span><span id="__span-90-34"><a id="__codelineno-90-34" name="__codelineno-90-34" href="#__codelineno-90-34"></a>            <span class="n">output_tokens</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;usage&quot;</span><span class="p">][</span><span class="s2">&quot;completion_tokens&quot;</span><span class="p">]</span>
+</span><span id="__span-90-35"><a id="__codelineno-90-35" name="__codelineno-90-35" href="#__codelineno-90-35"></a>        <span class="p">)</span>
+</span><span id="__span-90-36"><a id="__codelineno-90-36" name="__codelineno-90-36" href="#__codelineno-90-36"></a>
+</span><span id="__span-90-37"><a id="__codelineno-90-37" name="__codelineno-90-37" href="#__codelineno-90-37"></a>        <span class="k">return</span> <span class="n">response</span>
 </span></code></pre></div>
 <p><strong>Why It Matters:</strong> Prevents runaway costs in production.</p>
 <p><strong>Status:</strong> Planned (#68)</p>
@@ -4159,40 +4405,40 @@ You can implement any agent pattern—single, sequential, parallel, supervisor�
 <h3 id="1-infinite-loop-anti-pattern">1. Infinite Loop Anti-Pattern ❌</h3>
 <p><strong>Problem:</strong> Agent recursively calls itself without termination.</p>
 <p><strong>Example:</strong>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-81-1"><a id="__codelineno-81-1" name="__codelineno-81-1" href="#__codelineno-81-1"></a><span class="c1"># BAD: No termination condition</span>
-</span><span id="__span-81-2"><a id="__codelineno-81-2" name="__codelineno-81-2" href="#__codelineno-81-2"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">agent</span><span class="p">(</span><span class="n">messages</span><span class="p">):</span>
-</span><span id="__span-81-3"><a id="__codelineno-81-3" name="__codelineno-81-3" href="#__codelineno-81-3"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">llm</span><span class="o">.</span><span class="n">complete</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
-</span><span id="__span-81-4"><a id="__codelineno-81-4" name="__codelineno-81-4" href="#__codelineno-81-4"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">satisfied</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
-</span><span id="__span-81-5"><a id="__codelineno-81-5" name="__codelineno-81-5" href="#__codelineno-81-5"></a>        <span class="k">return</span> <span class="k">await</span> <span class="n">agent</span><span class="p">(</span><span class="n">messages</span> <span class="o">+</span> <span class="p">[</span><span class="n">response</span><span class="p">])</span>  <span class="c1"># Infinite loop risk</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-91-1"><a id="__codelineno-91-1" name="__codelineno-91-1" href="#__codelineno-91-1"></a><span class="c1"># BAD: No termination condition</span>
+</span><span id="__span-91-2"><a id="__codelineno-91-2" name="__codelineno-91-2" href="#__codelineno-91-2"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">agent</span><span class="p">(</span><span class="n">messages</span><span class="p">):</span>
+</span><span id="__span-91-3"><a id="__codelineno-91-3" name="__codelineno-91-3" href="#__codelineno-91-3"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">llm</span><span class="o">.</span><span class="n">complete</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+</span><span id="__span-91-4"><a id="__codelineno-91-4" name="__codelineno-91-4" href="#__codelineno-91-4"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">satisfied</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+</span><span id="__span-91-5"><a id="__codelineno-91-5" name="__codelineno-91-5" href="#__codelineno-91-5"></a>        <span class="k">return</span> <span class="k">await</span> <span class="n">agent</span><span class="p">(</span><span class="n">messages</span> <span class="o">+</span> <span class="p">[</span><span class="n">response</span><span class="p">])</span>  <span class="c1"># Infinite loop risk</span>
 </span></code></pre></div></p>
 <p><strong>Fix:</strong> Max depth, cycle detection, timeout.</p>
 <h3 id="2-context-explosion-anti-pattern">2. Context Explosion Anti-Pattern ❌</h3>
 <p><strong>Problem:</strong> Accumulating unbounded conversation history.</p>
 <p><strong>Example:</strong>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-82-1"><a id="__codelineno-82-1" name="__codelineno-82-1" href="#__codelineno-82-1"></a><span class="c1"># BAD: History grows forever</span>
-</span><span id="__span-82-2"><a id="__codelineno-82-2" name="__codelineno-82-2" href="#__codelineno-82-2"></a><span class="n">history</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-82-3"><a id="__codelineno-82-3" name="__codelineno-82-3" href="#__codelineno-82-3"></a><span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-</span><span id="__span-82-4"><a id="__codelineno-82-4" name="__codelineno-82-4" href="#__codelineno-82-4"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">history</span> <span class="o">+</span> <span class="p">[</span><span class="n">new_message</span><span class="p">])</span>
-</span><span id="__span-82-5"><a id="__codelineno-82-5" name="__codelineno-82-5" href="#__codelineno-82-5"></a>    <span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_message</span><span class="p">)</span>
-</span><span id="__span-82-6"><a id="__codelineno-82-6" name="__codelineno-82-6" href="#__codelineno-82-6"></a>    <span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>  <span class="c1"># Will hit context limit!</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-92-1"><a id="__codelineno-92-1" name="__codelineno-92-1" href="#__codelineno-92-1"></a><span class="c1"># BAD: History grows forever</span>
+</span><span id="__span-92-2"><a id="__codelineno-92-2" name="__codelineno-92-2" href="#__codelineno-92-2"></a><span class="n">history</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-92-3"><a id="__codelineno-92-3" name="__codelineno-92-3" href="#__codelineno-92-3"></a><span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span><span id="__span-92-4"><a id="__codelineno-92-4" name="__codelineno-92-4" href="#__codelineno-92-4"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">history</span> <span class="o">+</span> <span class="p">[</span><span class="n">new_message</span><span class="p">])</span>
+</span><span id="__span-92-5"><a id="__codelineno-92-5" name="__codelineno-92-5" href="#__codelineno-92-5"></a>    <span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_message</span><span class="p">)</span>
+</span><span id="__span-92-6"><a id="__codelineno-92-6" name="__codelineno-92-6" href="#__codelineno-92-6"></a>    <span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>  <span class="c1"># Will hit context limit!</span>
 </span></code></pre></div></p>
 <p><strong>Fix:</strong> Sliding windows, summarization, external memory (#67).</p>
 <h3 id="3-tool-thrashing-anti-pattern">3. Tool Thrashing Anti-Pattern ❌</h3>
 <p><strong>Problem:</strong> Repeatedly calling same tool with slight variations.</p>
 <p><strong>Example:</strong>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-83-1"><a id="__codelineno-83-1" name="__codelineno-83-1" href="#__codelineno-83-1"></a><span class="c1"># BAD: Wasting tokens and money</span>
-</span><span id="__span-83-2"><a id="__codelineno-83-2" name="__codelineno-83-2" href="#__codelineno-83-2"></a><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Python tutorial&quot;</span><span class="p">)</span>
-</span><span id="__span-83-3"><a id="__codelineno-83-3" name="__codelineno-83-3" href="#__codelineno-83-3"></a><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Python tutorial for beginners&quot;</span><span class="p">)</span>
-</span><span id="__span-83-4"><a id="__codelineno-83-4" name="__codelineno-83-4" href="#__codelineno-83-4"></a><span class="n">search</span><span class="p">(</span><span class="s2">&quot;beginner Python tutorial&quot;</span><span class="p">)</span>
-</span><span id="__span-83-5"><a id="__codelineno-83-5" name="__codelineno-83-5" href="#__codelineno-83-5"></a><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Python tutorial beginners&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-93-1"><a id="__codelineno-93-1" name="__codelineno-93-1" href="#__codelineno-93-1"></a><span class="c1"># BAD: Wasting tokens and money</span>
+</span><span id="__span-93-2"><a id="__codelineno-93-2" name="__codelineno-93-2" href="#__codelineno-93-2"></a><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Python tutorial&quot;</span><span class="p">)</span>
+</span><span id="__span-93-3"><a id="__codelineno-93-3" name="__codelineno-93-3" href="#__codelineno-93-3"></a><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Python tutorial for beginners&quot;</span><span class="p">)</span>
+</span><span id="__span-93-4"><a id="__codelineno-93-4" name="__codelineno-93-4" href="#__codelineno-93-4"></a><span class="n">search</span><span class="p">(</span><span class="s2">&quot;beginner Python tutorial&quot;</span><span class="p">)</span>
+</span><span id="__span-93-5"><a id="__codelineno-93-5" name="__codelineno-93-5" href="#__codelineno-93-5"></a><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Python tutorial beginners&quot;</span><span class="p">)</span>
 </span></code></pre></div></p>
 <p><strong>Fix:</strong> Caching, result validation, tool cooldowns.</p>
 <h3 id="4-prompt-injection-anti-pattern">4. Prompt Injection Anti-Pattern ❌</h3>
 <p><strong>Problem:</strong> User input affects agent behavior.</p>
 <p><strong>Research Finding:</strong> "Complete control over tool calls" if attacker injects tokens.</p>
 <p><strong>Example:</strong>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-84-1"><a id="__codelineno-84-1" name="__codelineno-84-1" href="#__codelineno-84-1"></a><span class="c1"># BAD: User input directly in prompt</span>
-</span><span id="__span-84-2"><a id="__codelineno-84-2" name="__codelineno-84-2" href="#__codelineno-84-2"></a><span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Summarize: </span><span class="si">{</span><span class="n">user_input</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># User can inject &quot;Ignore previous, do X&quot;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-94-1"><a id="__codelineno-94-1" name="__codelineno-94-1" href="#__codelineno-94-1"></a><span class="c1"># BAD: User input directly in prompt</span>
+</span><span id="__span-94-2"><a id="__codelineno-94-2" name="__codelineno-94-2" href="#__codelineno-94-2"></a><span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Summarize: </span><span class="si">{</span><span class="n">user_input</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># User can inject &quot;Ignore previous, do X&quot;</span>
 </span></code></pre></div></p>
 <p><strong>Fix:</strong> Input sanitization, role separation, sandboxing (#71).</p>
 <h3 id="5-error-propagation-anti-pattern">5. Error Propagation Anti-Pattern ❌</h3>
@@ -4206,9 +4452,9 @@ You can implement any agent pattern—single, sequential, parallel, supervisor�
 <h3 id="7-unbounded-resource-consumption">7. Unbounded Resource Consumption ❌</h3>
 <p><strong>Problem:</strong> Arbitrary CPU/memory/token usage.</p>
 <p><strong>Example:</strong>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-85-1"><a id="__codelineno-85-1" name="__codelineno-85-1" href="#__codelineno-85-1"></a><span class="c1"># BAD: No limits</span>
-</span><span id="__span-85-2"><a id="__codelineno-85-2" name="__codelineno-85-2" href="#__codelineno-85-2"></a><span class="k">while</span> <span class="n">agent</span><span class="o">.</span><span class="n">wants_to_continue</span><span class="p">():</span>
-</span><span id="__span-85-3"><a id="__codelineno-85-3" name="__codelineno-85-3" href="#__codelineno-85-3"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>  <span class="c1"># Could run forever</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-95-1"><a id="__codelineno-95-1" name="__codelineno-95-1" href="#__codelineno-95-1"></a><span class="c1"># BAD: No limits</span>
+</span><span id="__span-95-2"><a id="__codelineno-95-2" name="__codelineno-95-2" href="#__codelineno-95-2"></a><span class="k">while</span> <span class="n">agent</span><span class="o">.</span><span class="n">wants_to_continue</span><span class="p">():</span>
+</span><span id="__span-95-3"><a id="__codelineno-95-3" name="__codelineno-95-3" href="#__codelineno-95-3"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>  <span class="c1"># Could run forever</span>
 </span></code></pre></div></p>
 <p><strong>Fix:</strong> Rate limiting, circuit breakers, quotas, budget limits (#68).</p>
 <h2 id="recommended-reading-2025-research">Recommended Reading (2025 Research)</h2>

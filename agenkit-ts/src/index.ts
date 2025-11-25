@@ -73,8 +73,10 @@ export {
 export {
   SequentialPattern,
   ParallelPattern,
+  RouterPattern,
   AgentHook,
   Aggregator,
+  Router,
 } from './patterns/orchestration';
 export {
   ReActAgent,
@@ -98,6 +100,23 @@ export {
   OrchestrationStrategy,
   VotingStrategy,
 } from './patterns/multiagent';
+export {
+  PlanningAgent,
+  Plan,
+  PlanStep,
+  StepStatus,
+  LLMClient as PlanningLLMClient,
+  StepExecutor,
+  DefaultStepExecutor,
+  PlanningAgentConfig,
+  createPlan,
+  createPlanStep,
+  getNextSteps,
+  isPlanComplete,
+  hasPlanFailures,
+  getPlanProgress,
+  canExecuteStep,
+} from './patterns/planning';
 
 // Evaluation
 export {

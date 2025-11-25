@@ -4,6 +4,7 @@
  * Patterns are reusable ways to compose agents:
  * - Sequential: Execute agents one after another (pipeline)
  * - Parallel: Execute agents concurrently (fan-out)
+ * - Router: Route to one agent based on condition (dispatch)
  *
  * Design principles:
  * - Simple, obvious implementations
@@ -20,6 +21,13 @@
  * // Parallel execution
  * const parallel = new ParallelPattern([agent1, agent2, agent3]);
  * const result = await parallel.process(message);
+ *
+ * // Router dispatch
+ * const router = new RouterPattern(
+ *   (msg) => msg.content.includes('code') ? 'code_agent' : 'general_agent',
+ *   { code_agent: codeAgent, general_agent: generalAgent }
+ * );
+ * const result = await router.process(message);
  * ```
  */
 
@@ -30,6 +38,9 @@ export type AgentHook = (agent: Agent, message: Message) => void;
 
 /** Aggregator function to combine parallel results */
 export type Aggregator = (messages: Message[]) => Message;
+
+/** Router function that returns handler key for a message */
+export type Router = (message: Message) => string;
 
 /**
  * Execute agents sequentially - output of one becomes input of next.
@@ -218,5 +229,108 @@ export class ParallelPattern implements Agent {
    */
   unwrap(): Agent[] {
     return [...this.agents];
+  }
+}
+
+/**
+ * Route message to one agent based on routing function.
+ *
+ * The routing function decides which agent should handle the message.
+ *
+ * Performance characteristics:
+ * - O(1) routing decision
+ * - Only one agent executes
+ * - No overhead vs direct agent call
+ *
+ * Example:
+ * ```typescript
+ * const router = new RouterPattern(
+ *   (msg) => {
+ *     if (msg.content.includes('code')) return 'code_agent';
+ *     if (msg.content.includes('math')) return 'math_agent';
+ *     return 'general_agent';
+ *   },
+ *   {
+ *     code_agent: codeAgent,
+ *     math_agent: mathAgent,
+ *     general_agent: generalAgent
+ *   }
+ * );
+ * const result = await router.process(message);
+ * ```
+ */
+export class RouterPattern implements Agent {
+  readonly name: string;
+  private router: Router;
+  private handlers: Map<string, Agent>;
+  private defaultHandler?: Agent;
+
+  constructor(
+    router: Router,
+    handlers: Record<string, Agent>,
+    options?: {
+      name?: string;
+      default?: Agent;
+    }
+  ) {
+    if (!handlers || Object.keys(handlers).length === 0) {
+      throw new Error('Router pattern requires at least one handler');
+    }
+
+    this.router = router;
+    this.handlers = new Map(Object.entries(handlers));
+    this.name = options?.name || 'router';
+    this.defaultHandler = options?.default;
+  }
+
+  get capabilities(): string[] {
+    const caps = new Set<string>();
+    for (const agent of this.handlers.values()) {
+      if (agent.capabilities) {
+        agent.capabilities.forEach(c => caps.add(c));
+      }
+    }
+    if (this.defaultHandler?.capabilities) {
+      this.defaultHandler.capabilities.forEach(c => caps.add(c));
+    }
+    return Array.from(caps);
+  }
+
+  /**
+   * Route message to appropriate handler and execute.
+   *
+   * @param message Input message to route
+   * @returns Message from selected handler
+   * @throws Error if router returns unknown key and no default handler
+   */
+  async process(message: Message): Promise<Message> {
+    // Get handler key from router function
+    const handlerKey = this.router(message);
+
+    // Try to get the handler
+    const handler = this.handlers.get(handlerKey);
+
+    if (handler) {
+      return await handler.process(message);
+    }
+
+    // Handler not found - try default
+    if (this.defaultHandler) {
+      return await this.defaultHandler.process(message);
+    }
+
+    // No handler and no default
+    throw new Error(
+      `Router returned unknown key '${handlerKey}' and no default handler is configured`
+    );
+  }
+
+  /**
+   * Get underlying handlers map.
+   *
+   * @returns Record mapping handler keys to agents
+   */
+  unwrap(): Record<string, Agent> {
+    return Object.fromEntries(this.handlers);
   }
 }

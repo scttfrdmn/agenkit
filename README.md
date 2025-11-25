@@ -6,9 +6,11 @@ Agenkit is a lightweight, cross-language framework for building distributed AI a
 
 [![Website](https://img.shields.io/badge/website-agenkit.dev-blue)](https://agenkit.dev)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![TypeScript 5.0+](https://img.shields.io/badge/typescript-5.0+-3178C6.svg)](https://www.typescriptlang.org/)
 [![Go 1.21+](https://img.shields.io/badge/go-1.21+-00ADD8.svg)](https://golang.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Tests: 867 tests](https://img.shields.io/badge/tests-867%20passing-brightgreen.svg)](tests/)
+[![Tests: 1090+ tests](https://img.shields.io/badge/tests-1090+%20passing-brightgreen.svg)](tests/)
+[![3 Languages](https://img.shields.io/badge/languages-3%20at%20100%25-success.svg)](README.md#status)
 
 ## Why Agenkit?
 
@@ -131,17 +133,26 @@ agent = TimeoutMiddleware(agent, timeout=30.0)
 
 ### 🌐 Cross-Language Support
 
-Write once in Python. Run anywhere:
+Write once. Deploy anywhere. **Three languages at 100% parity:**
 
 ```python
-# Python implementation
+# Python - Prototype quickly with ML ecosystem
 class MyAgent(Agent):
     async def process(self, message):
         return process_with_python_libs(message)
 ```
 
+```typescript
+// TypeScript - Full-stack with browser support
+class MyAgent implements Agent {
+    async process(message: Message): Promise<Message> {
+        return processWithTypeScriptLibs(message);
+    }
+}
+```
+
 ```go
-// Identical Go interface - 18x faster
+// Go - Production scale (18x faster than Python)
 type MyAgent struct{}
 
 func (a *MyAgent) Process(ctx context.Context, msg *Message) (*Message, error) {
@@ -149,7 +160,7 @@ func (a *MyAgent) Process(ctx context.Context, msg *Message) (*Message, error) {
 }
 ```
 
-**Same interface. Same behavior. Choose your performance/development trade-off.**
+**Same interface across all languages. Choose the right tool for each service.**
 
 ### 📊 Full Observability
 
@@ -389,15 +400,32 @@ Apache License 2.0 - See [LICENSE](LICENSE) for details.
 
 ## Status
 
-**v0.9.0 - Production Ready, API Stabilizing**
+**v0.15.0 - Three-Language Parity Achieved! 🎉**
+
+### Language Support
+
+| Language | Patterns | Tests | Status | Performance |
+|----------|----------|-------|--------|-------------|
+| **Python** | 11/11 (100%) | ~300 | ✅ Complete | Reference |
+| **TypeScript** | 11/11 (100%) | 514 | ✅ Complete | Node.js speed |
+| **Go** | 11/11 (100%) | 276 | ✅ Complete | 18x Python |
+| Rust | 0/11 (0%) | 0 | 🔄 Starting | WASM + Native |
+| C++ | 0/11 (0%) | 0 | 📋 Planned | Max performance |
+| Zig | 0/11 (0%) | 0 | 📋 Planned | C interop |
+
+**Milestone:** Three-language parity achieved 5 months ahead of schedule!
+
+### Project Status
 
 - ✅ Core framework complete
-- ✅ Full Python/Go parity
-- ✅ 867 tests passing (100%)
+- ✅ **Three languages at 100% pattern parity** (Python, TypeScript, Go)
+- ✅ 1,090+ tests passing (100% success rate)
 - ✅ Production middleware ready
+- ✅ Full observability (OpenTelemetry integration)
+- ✅ Multiple transports (HTTP, gRPC, WebSocket)
 - ✅ Deployment manifests included
 - ✅ Comprehensive documentation
-- 🔄 Seeking real-world feedback before 1.0.0
+- 🚀 **Next:** Rust implementation (v0.16.0-v0.17.0)
 
 ---
 

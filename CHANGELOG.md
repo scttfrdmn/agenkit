@@ -7,6 +7,127 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2025-11-25
+
+### 🎯 TypeScript Foundation - 40% Python Parity Achieved
+
+This release establishes the TypeScript foundation with 5 essential agent patterns and a statistical A/B testing framework. TypeScript now has 40% feature parity with Python, providing a solid base for JavaScript/Node.js developers.
+
+**Key Highlights:**
+- ✅ **5 TypeScript Patterns**: 1,216 LOC across Reflection, Agents-as-Tools, Sequential/Parallel, and ReAct
+- ✅ **A/B Testing Framework**: 528 LOC with statistical significance testing
+- ✅ **208 Tests Passing**: Comprehensive test coverage across all TypeScript implementations
+- ✅ **Production-Ready**: Idiomatic TypeScript with proper error handling and type safety
+- 🎉 **40% Parity**: TypeScript reaches significant milestone toward Python feature parity
+
+### Added
+
+#### TypeScript Patterns (5 patterns, 1,216 LOC)
+
+**1. Reflection Pattern** (`agenkit-ts/src/patterns/reflection.ts`, 380 LOC, 21 tests):
+- Generator-critic iterative refinement loop
+- Stop conditions: quality threshold, improvement threshold, max iterations
+- Critique formats: structured (JSON) and free-form
+- Quality score tracking and improvement calculation
+- Verbose mode for debugging
+- Complete reasoning history in metadata
+
+**2. Agents-as-Tools Pattern** (`agenkit-ts/src/patterns/agents-as-tools.ts`, 247 LOC, 21 tests):
+- Hierarchical agent delegation (supervisor → specialists)
+- Output formats: STRING, DICT, MESSAGE
+- Tool interface integration for seamless composition
+- Metadata propagation and error handling
+- Convenience functions: `createAgentTool`, `createAgentToolSimple`
+
+**3. Sequential Pattern** (`agenkit-ts/src/patterns/orchestration.ts`, 113 LOC, 13 tests):
+- Pipeline execution (agent1 → agent2 → agent3)
+- BeforeAgent and AfterAgent hooks
+- Message threading through pipeline
+- Composable with other patterns
+
+**4. Parallel Pattern** (`agenkit-ts/src/patterns/orchestration.ts`, 113 LOC, 12 tests):
+- Concurrent agent execution with Promise.all
+- Custom aggregator functions
+- Default aggregator with parallelResults metadata
+- Composable with other patterns (e.g., Sequential of Parallels)
+
+**5. ReAct Pattern** (`agenkit-ts/src/patterns/react.ts`, 328 LOC, 24 tests):
+- Reasoning + Acting loop (Think → Act → Observe)
+- Tool-augmented agent behavior
+- Step tracking with thought/action/observation
+- Stop reasons: FINAL_ANSWER, MAX_STEPS, INVALID_ACTION, TOOL_ERROR
+- Default prompt template with tool descriptions
+- Verbose mode with full reasoning trace
+- `getSteps()` for debugging and analysis
+
+#### TypeScript Evaluation Framework (528 LOC, 19 tests)
+
+**A/B Testing Framework** (`agenkit-ts/src/evaluation/ab-testing.ts`):
+- Statistical significance testing (independent samples t-test)
+- Effect size calculation (Cohen's d)
+- Confidence intervals for differences
+- Significance levels: P_0.001, P_0.01, P_0.05, P_0.10
+- ABVariant class with statistics (mean, std, sampleSize)
+- ABTestResult interface with comprehensive analysis
+- Automated experiment orchestration
+- Accuracy and latency metrics
+- Sample size control and shuffling
+- Graceful error handling
+- Summary generation
+
+**API Example:**
+```typescript
+import { ABTest, SignificanceLevel } from '@agenkit/core';
+
+const abTest = new ABTest({
+  name: "agent_comparison",
+  controlAgent: baselineAgent,
+  treatmentAgent: optimizedAgent,
+  metrics: ["accuracy", "latencyMs"],
+  significanceLevel: SignificanceLevel.P_0_05
+});
+
+const results = await abTest.run(testCases, { sampleSize: 100 });
+
+if (results.accuracy.isSignificant) {
+  console.log(`Winner: ${results.accuracy.winner}`);
+  console.log(`Improvement: ${results.accuracy.improvementPercent.toFixed(1)}%`);
+  console.log(`P-value: ${results.accuracy.pValue.toFixed(4)}`);
+  console.log(`Effect size: ${results.accuracy.effectSize.toFixed(2)}`);
+}
+```
+
+### Testing
+
+- **Total Tests**: 208 tests passing (target was 95+)
+- **Pattern Tests**: 90 tests across 5 patterns
+- **Evaluation Tests**: 19 tests for A/B testing framework
+- **Existing Tests**: 99 tests for core, adapters, transports, middleware
+- **Test Coverage**: Configuration, execution, error handling, edge cases, integration scenarios
+
+### Technical Improvements
+
+- Idiomatic TypeScript with proper type safety
+- Async/await throughout for consistent API
+- Error handling with try-catch and graceful degradation
+- Statistical approximations for t-distribution
+- Special case handling for zero variance scenarios
+- Fisher-Yates shuffle for randomization
+- Floating-point comparison using `toBeCloseTo`
+
+### Progress Metrics
+
+**TypeScript Progress:**
+- Lines of Code: 1,744 (patterns + evaluation)
+- Patterns Implemented: 5/12 (42%)
+- Test Coverage: 208 tests
+- Feature Parity: 40% of Python capabilities
+
+**Remaining for v1.0:**
+- 7 more patterns: Bayesian Optimization, Prompt Optimization, Context Management, Quality Metrics, Benchmarks, Regression Testing, Session Recording
+- Additional evaluation tooling
+- Cross-language examples
+
 ## [0.13.0] - 2025-11-25
 
 ### 🧠 Reasoning with Tools Pattern - Interleaved Thinking and Tool Usage

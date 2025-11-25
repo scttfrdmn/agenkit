@@ -54,3 +54,43 @@ export {
 // LLM Adapters
 export { OpenAIAgent, OpenAIConfig } from './llm/openai';
 export { AnthropicAgent, AnthropicConfig } from './llm/anthropic';
+
+// Patterns
+export {
+  ReflectionAgent,
+  ReflectionConfig,
+  ReflectionStep,
+  StopReason,
+  CritiqueFormat,
+} from './patterns/reflection';
+export {
+  AgentTool,
+  AgentToolConfig,
+  OutputFormat,
+  createAgentTool,
+  createAgentToolSimple,
+} from './patterns/agents-as-tools';
+export {
+  SequentialPattern,
+  ParallelPattern,
+  AgentHook,
+  Aggregator,
+} from './patterns/orchestration';
+export {
+  ReActAgent,
+  ReActConfig,
+  ReActStep,
+  ReActStopReason,
+  createReActAgent,
+} from './patterns/react';
+
+// Evaluation
+export {
+  ABTest,
+  ABVariant,
+  ABTestResult,
+  TestCase,
+  ABTestConfig,
+  RunOptions,
+  SignificanceLevel,
+} from './evaluation/ab-testing';

@@ -9,17 +9,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.14.0] - 2025-11-25
 
-### 🚀 Go Orchestration Pattern - Multi-Agent Composition
+### 🚀 Go Orchestration & ReAct Patterns - Multi-Agent Composition & Reasoning
 
-This release adds the Orchestration pattern to Go, enabling sequential, parallel, and conditional agent composition. Go reaches **27% pattern parity** (3/11 patterns).
+This release adds two critical patterns to Go: Orchestration (Sequential, Parallel, Router) and ReAct (Reasoning + Acting). Go reaches **36% pattern parity** (4/11 patterns).
 
 **Key Highlights:**
+- ✅ **ReAct Pattern**: 360 LOC for reasoning with tool use (NEW!)
 - ✅ **Orchestration Pattern**: 391 LOC for Sequential, Parallel, Router patterns
-- ✅ **64 Tests Passing**: +37 orchestration tests (137% increase over v0.13.0)
+- ✅ **100 Tests Passing**: 83 pattern tests total (156% increase over v0.13.0)
+- ✅ **Tool-Augmented Reasoning**: ReAct enables self-directed exploration
 - ✅ **Composable Agents**: Patterns can contain other patterns
-- 📊 **27% Parity**: Go now has Reflection, Agents-as-Tools, and Orchestration
+- 📊 **36% Parity**: Go now has 4/11 patterns (Reflection, Agents-as-Tools, Orchestration, ReAct)
 
 ### Added
+
+#### Go ReAct Pattern (360 LOC, 21 tests)
+
+**Implementation** (`agenkit-go/patterns/react.go`):
+- Reasoning + Acting loop (Thought → Action → Observation)
+- Tool-augmented agent behavior with dynamic tool selection
+- Self-directed exploration and problem solving
+- Comprehensive error handling for tool failures
+
+**Key Features:**
+
+1. **ReAct Loop**
+   - Thought: Agent reasons about what to do next
+   - Action: Execute tool to gather information
+   - Observation: Incorporate result into reasoning
+   - Repeat until final answer or max steps
+
+2. **Tool Integration**
+   - Multiple tool support with dynamic selection
+   - Tool parameter parsing from agent responses
+   - Graceful handling of unknown tools
+   - Error recovery when tools fail
+
+3. **Stop Conditions**
+   - FINAL_ANSWER: Agent provides final answer
+   - MAX_STEPS: Reached maximum iterations
+   - INVALID_ACTION: Agent response malformed
+   - TOOL_ERROR: Tool execution failed
+
+4. **Configurability**
+   - Custom max steps (default: 10)
+   - Verbose mode (full trace) or concise (final answer only)
+   - Custom prompt templates
+   - Reasoning history tracking with GetSteps()
+
+5. **Observable Execution**
+   - Step-by-step reasoning trace
+   - Metadata includes stop reason, step count, reasoning steps
+   - GetSteps() for debugging and analysis
+
+**Example:**
+```go
+// Create tools
+searchTool := &SearchTool{}
+calculatorTool := &CalculatorTool{}
+
+// Create ReAct agent
+reactAgent, _ := patterns.NewReActAgent(&patterns.ReActConfig{
+    Agent: llmAgent,
+    Tools: []agenkit.Tool{searchTool, calculatorTool},
+    MaxSteps: 10,
+    Verbose: true,
+})
+
+// Agent will:
+// 1. Think about the problem
+// 2. Decide which tool to use
+// 3. Execute the tool
+// 4. Observe the result
+// 5. Continue reasoning
+// 6. Provide final answer
+result, _ := reactAgent.Process(ctx, &agenkit.Message{
+    Role: "user",
+    Content: "What is the population of San Francisco times 2?",
+})
+```
+
+**Testing:**
+- 21 comprehensive tests covering all aspects
+- Configuration validation (nil agent, empty tools)
+- Single-step and multi-step reasoning
+- Multiple tool calls in sequence
+- Error handling (unknown tools, tool failures, invalid actions)
+- Max steps reached scenario
+- Verbose vs non-verbose output
+- Response parsing (full format, final answer)
+- All tests passing ✅
 
 #### Go Orchestration Pattern (391 LOC, 37 tests)
 
@@ -115,13 +194,13 @@ routerPattern, _ := patterns.NewRouterPattern(
 - ✅ Reflection (completed v0.11.0)
 - ✅ Agents as Tools (completed v0.13.0)
 - ✅ Orchestration (completed v0.14.0) ← **NEW**
-- ⬜ ReAct (pending)
+- ✅ ReAct (completed v0.14.0) ← **NEW**
 - ⬜ Conversational (pending)
 - ⬜ Task (pending)
 - ⬜ Multiagent (pending)
 - ⬜ Planning (pending)
 
-**Status:** 27% complete (3/11 patterns) - need 4-5 more patterns for 70% target
+**Status:** 36% complete (4/11 patterns) - need 4 more patterns for 70% target
 
 ## [0.22.0] - 2025-11-25
 

@@ -49,17 +49,20 @@ This is a living document that will grow into a comprehensive book. The foundati
 - [Chapter 9: Router Pattern](#chapter-9-router-pattern) *(outline)*
 - [Chapter 10: Peer Collaboration Pattern](#chapter-10-peer-collaboration-pattern) *(outline)*
 - [Chapter 11: Human-in-the-Loop Pattern](#chapter-11-human-in-the-loop-pattern) *(outline)*
+- [Chapter 12: Reflection Pattern](#chapter-12-reflection-pattern) **✅ NEW in v0.12.0**
+- [Chapter 13: Agents-as-Tools Pattern](#chapter-13-agents-as-tools-pattern) **✅ NEW in v0.12.0**
+- [Chapter 14: Memory Hierarchy Pattern](#chapter-14-memory-hierarchy-pattern) **✅ NEW in v0.12.0**
 
 ### Part III: Production *(planned)*
-- Chapter 12: State Management
-- Chapter 13: Error Handling & Resilience
-- Chapter 14: Deployment Patterns
-- Chapter 15: Observability & Debugging
+- Chapter 15: State Management
+- Chapter 16: Error Handling & Resilience
+- Chapter 17: Deployment Patterns
+- Chapter 18: Observability & Debugging
 
 ### Part IV: Advanced Topics *(planned)*
-- Chapter 16: Multi-Agent Systems
-- Chapter 17: Agent Learning & Adaptation
-- Chapter 18: Future Directions
+- Chapter 19: Multi-Agent Systems
+- Chapter 20: Agent Learning & Adaptation
+- Chapter 21: Future Directions
 
 ---
 
@@ -1740,28 +1743,565 @@ Agents with human oversight for high-stakes decisions.
 
 ---
 
+# Chapter 12: Reflection Pattern
+
+## Overview
+
+The Reflection pattern enables agents to improve their outputs through iterative self-critique and refinement. An agent generates an initial output, a critic evaluates it, and the generator refines based on feedback—repeating until quality thresholds are met.
+
+**✅ Implemented in Agenkit v0.12.0**
+
+### 12.1 When to Use
+
+Use reflection when you need:
+
+- **Quality improvement through iteration**: Code generation, content creation, analysis
+- **Self-critique and error detection**: Catching mistakes automatically
+- **Incremental refinement**: Multi-draft writing, optimization problems
+- **Quality threshold enforcement**: Ensuring output meets standards
+
+**Don't use when:**
+- Single-pass quality is sufficient
+- Iteration doesn't improve results
+- Cost/latency constraints are tight
+
+### 12.2 Architecture
+
+```
+User Query
+    ↓
+[Generator Agent] → Initial Output
+    ↓
+[Critic Agent] → Quality Score + Feedback
+    ↓
+[Generator Agent] → Refined Output
+    ↓
+(Repeat until quality threshold, minimal improvement, or max iterations)
+    ↓
+Final Output
+```
+
+### 12.3 Implementation
+
+```python
+from agenkit.patterns import ReflectionAgent
+
+# Create generator and critic agents
+generator = CodeGeneratorAgent()
+critic = CodeReviewAgent()
+
+# Create reflection agent
+agent = ReflectionAgent(
+    generator=generator,
+    critic=critic,
+    max_iterations=5,
+    quality_threshold=0.9,       # Stop when quality >= 0.9
+    improvement_threshold=0.05,  # Stop if improvement < 5%
+)
+
+# Execute with automatic refinement
+result = await agent.process(
+    Message(role="user", content="Write a function to calculate Fibonacci numbers")
+)
+
+# Access metadata
+print(f"Iterations: {result.metadata['reflection_iterations']}")
+print(f"Final quality: {result.metadata['final_quality_score']}")
+print(f"Stop reason: {result.metadata['stop_reason']}")
+```
+
+### 12.4 Stopping Conditions
+
+The reflection loop terminates when:
+
+1. **Quality threshold met**: Score >= `quality_threshold`
+2. **Minimal improvement**: Improvement < `improvement_threshold`
+3. **Max iterations reached**: Iteration count >= `max_iterations`
+4. **Perfect score**: Score == 1.0
+
+### 12.5 Critique Formats
+
+**Structured JSON** (default):
+```python
+{
+  "score": 0.85,
+  "feedback": "Good progress. Add error handling for negative inputs."
+}
+```
+
+**Free-form text**:
+```
+The code looks good overall (8.5/10). Consider adding:
+- Error handling for negative inputs
+- Documentation with examples
+```
+
+Set `critique_format=CritiqueFormat.FREEFORM` for text-based critiques.
+
+### 12.6 Production Considerations
+
+**Cost Management:**
+- Each iteration = 2 LLM calls (generate + critique)
+- Set reasonable `max_iterations` (3-5 typical)
+- Use cheaper models for critique when possible
+
+**Quality Calibration:**
+- Test your critic's scoring on known examples
+- Adjust thresholds based on your domain
+- Monitor improvement rates
+
+**History Tracking:**
+- Set `verbose=True` to include full iteration history
+- Use `agent.get_history()` for debugging
+- Track quality improvements over time
+
+### 12.7 Advanced Patterns
+
+**Multi-Critic Ensemble:**
+```python
+critics = [
+    CodeQualityagent(),
+    SecurityCriticAgent(),
+    PerformanceCriticAgent()
+]
+
+# Aggregate scores
+total_score = sum(c.score for c in critics) / len(critics)
+```
+
+**Domain-Specific Refinement:**
+```python
+class SpecializedReflectionAgent(ReflectionAgent):
+    async def _build_refinement_prompt(self, ...):
+        # Custom refinement instructions
+        return f"Refine for {self.domain}: {feedback}"
+```
+
+**See Also:**
+- `examples/patterns/06_reflection_agent.py` - Complete demos
+- `tests/patterns/test_reflection.py` - 22 tests covering all scenarios
+
+---
+
+# Chapter 13: Agents-as-Tools Pattern
+
+## Overview
+
+The Agents-as-Tools pattern (also called Hierarchical Agents) enables agents to call other agents as tools, creating multi-level agent hierarchies where specialized agents can be invoked by supervisor agents.
+
+**✅ Implemented in Agenkit v0.12.0**
+
+### 13.1 When to Use
+
+Use agents-as-tools when you need:
+
+- **Domain specialization**: Different agents for code, data, research, etc.
+- **Hierarchical organization**: Supervisor → specialists
+- **Agent reuse**: Same specialist across multiple supervisors
+- **Seamless integration**: Works with existing ReAct pattern
+- **Clear separation**: Each agent has focused responsibility
+
+**Don't use when:**
+- Simple tool calls suffice (use regular tools)
+- No need for agent-level reasoning in specialists
+- Flat architecture is simpler
+
+### 13.2 Architecture
+
+```
+User Query
+    ↓
+[Supervisor Agent] (decides which specialist)
+    ↓
+┌────────────┬────────────┬────────────┐
+│            │            │            │
+[Code       [Data       [Research    [Other
+ Specialist] Specialist] Specialist]  Specialists]
+    │            │            │
+    └────────────┴────────────┘
+               ↓
+          Final Response
+```
+
+### 13.3 Implementation
+
+```python
+from agenkit.patterns import agent_as_tool, ReActAgent, ToolRegistry
+
+# Create specialist agents
+code_agent = AnthropicAgent(
+    system_prompt="You are an expert programmer..."
+)
+data_agent = AnthropicAgent(
+    system_prompt="You are an expert data analyst..."
+)
+
+# Wrap specialists as tools
+code_tool = agent_as_tool(
+    agent=code_agent,
+    name="code_specialist",
+    description="Expert in programming. Use for code-related questions."
+)
+
+data_tool = agent_as_tool(
+    agent=data_agent,
+    name="data_specialist",
+    description="Expert in data analysis. Use for data questions."
+)
+
+# Register with supervisor
+registry = ToolRegistry()
+registry.register(code_tool)
+registry.register(data_tool)
+
+# Create supervisor that routes to specialists
+supervisor = ReActAgent(
+    llm_client=llm,
+    tool_registry=registry,
+    max_iterations=5
+)
+
+# Supervisor automatically delegates
+result = await supervisor.process(
+    Message(role="user", content="Write a function to analyze sales data")
+)
+# Supervisor calls data_specialist tool (which wraps data_agent)
+```
+
+### 13.4 Output Formats
+
+**String (default):**
+```python
+tool = agent_as_tool(agent, "name", "desc", output_format="str")
+result = await tool.execute(query="Task")
+# result is a string
+```
+
+**Dictionary:**
+```python
+tool = agent_as_tool(agent, "name", "desc",
+                    output_format="dict",
+                    include_metadata=True)
+result = await tool.execute(query="Task")
+# result = {"content": "...", "metadata": {...}}
+```
+
+**Message:**
+```python
+tool = agent_as_tool(agent, "name", "desc", output_format="message")
+result = await tool.execute(query="Task")
+# result is a Message object
+```
+
+### 13.5 Multi-Level Hierarchies
+
+```python
+# Level 3: Specialists
+python_agent = CodeSpecialistAgent(language="python")
+rust_agent = CodeSpecialistAgent(language="rust")
+
+# Level 2: Domain managers
+python_tool = agent_as_tool(python_agent, "python_expert", "Python specialist")
+rust_tool = agent_as_tool(rust_agent, "rust_expert", "Rust specialist")
+
+code_registry = ToolRegistry()
+code_registry.register(python_tool)
+code_registry.register(rust_tool)
+
+code_manager = ReActAgent(llm, code_registry)
+
+# Level 1: Top supervisor
+code_manager_tool = agent_as_tool(code_manager, "code_manager", "Manages all coding tasks")
+
+supervisor_registry = ToolRegistry()
+supervisor_registry.register(code_manager_tool)
+supervisor_registry.register(data_tool)  # Other specialists
+
+supervisor = ReActAgent(llm, supervisor_registry)
+```
+
+### 13.6 Direct Invocation
+
+Agents wrapped as tools can also be called directly:
+
+```python
+# Create specialist tool
+specialist_tool = agent_as_tool(
+    agent=specialist_agent,
+    name="specialist",
+    description="Domain expert",
+    input_key="task"  # Custom parameter name
+)
+
+# Call directly (bypass supervisor)
+result = await specialist_tool.execute(task="Analyze this data")
+```
+
+### 13.7 Production Considerations
+
+**Performance:**
+- Each delegation = extra LLM call for routing
+- Consider direct routing for simple cases
+- Use cheaper models for routing decisions
+
+**Error Handling:**
+- Specialist failures propagate to supervisor
+- Add retry/fallback at supervisor level
+- Log delegation decisions for debugging
+
+**Cost Optimization:**
+- Use smaller models for specialists when possible
+- Cache specialist results
+- Limit delegation depth
+
+**See Also:**
+- `examples/patterns/07_hierarchical_agents.py` - Complete demos
+- `tests/patterns/test_agents_as_tools.py` - 20 tests with ReAct integration
+
+---
+
+# Chapter 14: Memory Hierarchy Pattern
+
+## Overview
+
+The Memory Hierarchy pattern provides a multi-tier memory system for agents, automatically managing memory across working (in-context), short-term (session), and long-term (persistent) storage tiers.
+
+**✅ Implemented in Agenkit v0.12.0**
+
+### 14.1 When to Use
+
+Use memory hierarchy when you need:
+
+- **Conversational agents**: Remember context across turns
+- **Session continuity**: Persist important information
+- **Personalization**: Store user preferences long-term
+- **Long-running agents**: Manage memory automatically
+- **Multi-session context**: Resume conversations later
+
+**Don't use when:**
+- Stateless operations only
+- No need to remember past interactions
+- All context fits in single prompt
+
+### 14.2 Architecture
+
+```
+┌─────────────────────────────────────┐
+│  Working Memory (In-Context)        │
+│  • Last 5-10 messages                │
+│  • FIFO eviction                     │
+│  • Fastest access                    │
+└──────────────┬──────────────────────┘
+               ↓ (evicted messages)
+┌─────────────────────────────────────┐
+│  Short-Term Memory (Session)        │
+│  • Last 50-100 messages              │
+│  • TTL-based expiration              │
+│  • LRU eviction                      │
+└──────────────┬──────────────────────┘
+               ↓ (high-importance only)
+┌─────────────────────────────────────┐
+│  Long-Term Memory (Persistent)      │
+│  • Important facts only              │
+│  • Importance >=  threshold          │
+│  • Permanent storage                 │
+└─────────────────────────────────────┘
+```
+
+### 14.3 Implementation
+
+```python
+from agenkit.patterns import (
+    MemoryHierarchy,
+    WorkingMemory,
+    ShortTermMemory,
+    LongTermMemory
+)
+
+# Create 3-tier memory system
+memory = MemoryHierarchy(
+    working_memory=WorkingMemory(max_messages=10),
+    short_term_memory=ShortTermMemory(
+        max_messages=100,
+        ttl_seconds=3600  # 1 hour
+    ),
+    long_term_memory=LongTermMemory(
+        min_importance=0.7  # Only high-importance
+    )
+)
+
+# Store memories with importance-based routing
+await memory.store(
+    content="User's name is Alice",
+    importance=0.95,  # High importance → all tiers
+    metadata={"category": "identity"},
+    session_id="session-001"
+)
+
+await memory.store(
+    content="User asked about weather",
+    importance=0.2,  # Low importance → working + short-term only
+    session_id="session-001"
+)
+
+# Retrieve relevant memories
+memories = await memory.retrieve(
+    query="What do I know about the user?",
+    limit=5
+)
+
+# Get statistics
+stats = memory.get_stats()
+print(f"Working: {stats['working']['size']}/{stats['working']['capacity']}")
+print(f"Short-term: {stats['short_term']['size']}")
+print(f"Long-term: {stats['long_term']['size']}")
+```
+
+### 14.4 Tier Characteristics
+
+**Working Memory:**
+- **Purpose**: Current conversation context
+- **Capacity**: 5-20 messages (fits in LLM context)
+- **Eviction**: FIFO (first in, first out)
+- **Latency**: Instant (in-memory)
+- **Use case**: Active dialogue turns
+
+**Short-Term Memory:**
+- **Purpose**: Recent session history
+- **Capacity**: 50-200 messages
+- **Eviction**: LRU (least recently used) + TTL expiration
+- **Latency**: Fast (in-memory or cache)
+- **Use case**: Same-session context
+
+**Long-Term Memory:**
+- **Purpose**: Persistent facts and preferences
+- **Capacity**: Unlimited (database-backed)
+- **Eviction**: None (or manual cleanup)
+- **Latency**: Moderate (database query)
+- **Use case**: Cross-session knowledge
+
+### 14.5 Importance-Based Routing
+
+Memory entries are routed to tiers based on importance score (0.0-1.0):
+
+```python
+# Low importance (< 0.3): Working only
+await memory.store("User said hello", importance=0.1)
+# → Working memory only
+
+# Medium importance (0.3-0.7): Working + Short-term
+await memory.store("User prefers dark mode", importance=0.5)
+# → Working + Short-term
+
+# High importance (>= 0.7): All tiers
+await memory.store("User lives in San Francisco", importance=0.9)
+# → Working + Short-term + Long-term
+```
+
+### 14.6 Cross-Tier Search
+
+```python
+# Search across all tiers with deduplication
+results = await memory.retrieve(
+    query="user preferences",
+    limit=10,
+    search_tiers=["working", "short_term", "long_term"]  # Default: all
+)
+
+# Results are ranked by relevance and deduplicated
+for mem in results:
+    print(f"{mem.content} (importance: {mem.importance})")
+```
+
+### 14.7 Production Considerations
+
+**TTL Configuration:**
+- **Working**: No TTL (FIFO eviction only)
+- **Short-term**: 1-24 hours typical
+- **Long-term**: No TTL (permanent)
+
+**Capacity Planning:**
+- **Working**: Match LLM context window
+- **Short-term**: Based on session length
+- **Long-term**: Scale with user base
+
+**Performance:**
+- Working memory: O(1) access
+- Short-term: O(1) with hash index
+- Long-term: O(log n) with vector search
+
+**Cost:**
+- Working/short-term: RAM only (cheap)
+- Long-term: Database + vector embeddings
+
+### 14.8 Integration with Agents
+
+```python
+class ConversationalAgent:
+    def __init__(self, llm, memory: MemoryHierarchy):
+        self.llm = llm
+        self.memory = memory
+
+    async def process(self, message: Message, session_id: str) -> Message:
+        # Retrieve relevant context
+        context = await self.memory.retrieve(
+            query=message.content,
+            limit=10
+        )
+
+        # Build prompt with context
+        messages = [
+            Message(role="system", content="You are a helpful assistant."),
+            *[Message(role="assistant", content=m.content) for m in context],
+            message
+        ]
+
+        # Generate response
+        response = await self.llm.complete(messages)
+
+        # Store interaction
+        await self.memory.store(
+            content=f"User: {message.content}",
+            importance=0.5,
+            session_id=session_id
+        )
+        await self.memory.store(
+            content=f"Assistant: {response.content}",
+            importance=0.5,
+            session_id=session_id
+        )
+
+        return response
+```
+
+**See Also:**
+- `examples/patterns/08_memory_hierarchy.py` - 6 complete demos
+- `tests/patterns/test_memory.py` - 30 tests covering all tiers
+
+---
+
 # Part III: Production
 
-*(Chapters 12-15 planned but not yet written)*
+*(Chapters 15-18 planned but not yet written)*
 
-## Chapter 12: State Management
+## Chapter 15: State Management
 - Conversational, session, long-term state
 - Storage options
 - Checkpointing
 
-## Chapter 13: Error Handling & Resilience
+## Chapter 16: Error Handling & Resilience
 - Failure modes
 - Retry patterns
 - Circuit breakers
 - Fallback strategies
 
-## Chapter 14: Deployment Patterns
+## Chapter 17: Deployment Patterns
 - Architectures
 - Container deployment
 - Kubernetes
 - Cross-language
 
-## Chapter 15: Observability & Debugging
+## Chapter 18: Observability & Debugging
 - Distributed tracing
 - Metrics
 - Logging
@@ -1771,20 +2311,20 @@ Agents with human oversight for high-stakes decisions.
 
 # Part IV: Advanced Topics
 
-*(Chapters 16-18 planned but not yet written)*
+*(Chapters 19-21 planned but not yet written)*
 
-## Chapter 16: Multi-Agent Systems
+## Chapter 19: Multi-Agent Systems
 - System architectures
 - Communication patterns
 - Coordination mechanisms
 
-## Chapter 17: Agent Learning & Adaptation
+## Chapter 20: Agent Learning & Adaptation
 - Learning strategies
 - Feedback loops
 - Self-reflection
 - Memory systems
 
-## Chapter 18: Future Directions
+## Chapter 21: Future Directions
 - Current trends
 - Research frontiers
 - Scaling challenges
@@ -2186,6 +2726,21 @@ This guide builds on insights from the broader agent community:
 
 # Changelog
 
+**Version 0.3** (November 24, 2025)
+- Added Chapter 12: Reflection Pattern (✅ Implemented in v0.12.0)
+  - Iterative self-critique and refinement
+  - Quality thresholds and stopping conditions
+  - 22 tests, complete examples
+- Added Chapter 13: Agents-as-Tools Pattern (✅ Implemented in v0.12.0)
+  - Hierarchical agent delegation
+  - Multi-level agent hierarchies
+  - 20 tests, ReAct integration
+- Added Chapter 14: Memory Hierarchy Pattern (✅ Implemented in v0.12.0)
+  - Multi-tier memory management (working, short-term, long-term)
+  - Importance-based routing, TTL expiration, LRU eviction
+  - 30 tests, cross-tier search
+- Renumbered Part III and IV chapters to accommodate new content
+
 **Version 0.2** (November 13, 2025)
 - Added Appendix A: 2025 Patterns Update
 - Documented 4 new patterns for autonomous agents
@@ -2215,4 +2770,4 @@ Under the following terms:
 
 ---
 
-*Last updated: November 13, 2025*
+*Last updated: November 24, 2025*

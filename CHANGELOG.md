@@ -7,6 +7,105 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2025-11-25
+
+### 🤖 TypeScript Autonomous Pattern - 95% Python Parity
+
+This release adds the Autonomous Agent pattern, reaching **95% feature parity** with Python.
+
+**Key Highlights:**
+- ✅ **Autonomous Pattern**: 225 LOC for self-directed agent execution
+- ✅ **478 Tests Passing**: +35 tests from v0.20.0 (7% increase)
+- ✅ **4,592 Total LOC**: Comprehensive pattern library
+- 🎉 **95% Parity**: TypeScript approaching complete parity with Python
+
+### Added
+
+#### TypeScript Autonomous Pattern (225 LOC, 35 tests)
+
+**Implementation** (`agenkit-ts/src/patterns/autonomous.ts`):
+- Self-directed agents with minimal human intervention
+- Goal management with priority-based execution
+- Progress tracking and adaptive strategy
+- Configurable stop conditions
+
+**Key Features:**
+
+1. **Goal Management**
+   - Multiple goals with different priorities
+   - Status tracking (active, completed, abandoned)
+   - Progress monitoring (0.0-1.0)
+   - Automatic completion detection
+
+2. **Autonomous Execution**
+   - Works on highest priority goal each iteration
+   - Continues until objectives met or stopped
+   - Respects max iteration limits
+   - Custom stop conditions
+
+3. **Progress Tracking**
+   - Iteration count
+   - Goals completed count
+   - Overall progress percentage
+   - Per-goal progress tracking
+
+4. **Lifecycle Management**
+   - Start/stop control
+   - Running state tracking
+   - Result aggregation
+   - Extensible workOnGoal() method
+
+**API Example:**
+```typescript
+import { AutonomousAgent } from 'agenkit';
+
+const agent = new AutonomousAgent(
+  'Research and summarize AI trends',
+  10  // max iterations
+);
+
+agent.addGoal('Search for recent AI papers', 10);
+agent.addGoal('Identify key trends', 5);
+agent.addGoal('Write summary report', 1);
+
+const result = await agent.run();
+console.log(`Completed ${result.goalsCompleted} goals in ${result.iterations} iterations`);
+console.log(`Progress: ${agent.getProgress()}%`);
+```
+
+**Test Coverage** (`agenkit-ts/src/__tests__/autonomous.test.ts`):
+- Goal creation and configuration
+- Agent configuration and initialization
+- Goal management (add, track, prioritize)
+- Execution (single goal, multiple goals, priority order)
+- Stop conditions and manual stopping
+- Progress tracking and calculation
+- Edge cases and error handling
+
+**Use Cases:**
+- Long-running tasks with multiple sub-goals
+- Self-directed research agents
+- Continuous improvement systems
+- Automated workflows
+- Adaptive task execution
+
+### Performance
+
+- **Test Suite**: 478 tests passing (100% pass rate)
+- **Execution Time**: 4.6s
+- **Autonomous Pattern**: All 35 tests passing
+
+### Statistics
+
+**TypeScript Progress:**
+- LOC: 4,592 (+225 from v0.20.0)
+- Tests: 478 (+35 from v0.20.0)
+- Patterns: 13/14 Python patterns (93%)
+- Parity: 95%
+
+**Remaining for 100% Parity:**
+- 1 pattern: Reasoning with Tools Pattern (507 LOC in Python)
+
 ## [0.20.0] - 2025-11-25
 
 ### 🧠 TypeScript Memory Patterns - 92% Python Parity

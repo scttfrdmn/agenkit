@@ -1,8 +1,14 @@
 /**
- * Tests for orchestration patterns (Sequential and Parallel).
+ * Tests for orchestration patterns (Sequential, Parallel, and Router).
  */
 
-import { SequentialPattern, ParallelPattern, Aggregator } from '../patterns/orchestration';
+import {
+  SequentialPattern,
+  ParallelPattern,
+  RouterPattern,
+  Aggregator,
+  Router,
+} from '../patterns/orchestration';
 import { Agent, Message, createMessage } from '../core/interfaces';
 
 /**
@@ -357,5 +363,189 @@ describe('Pattern Composition', () => {
     const result = await parallel.process(createMessage('user', 'test'));
 
     expect(result.metadata?.parallelResults).toBeDefined();
+  });
+});
+
+describe('RouterPattern', () => {
+  describe('Configuration', () => {
+    it('should throw if handlers is empty', () => {
+      const router: Router = msg => 'default';
+      expect(() => {
+        new RouterPattern(router, {});
+      }).toThrow('Router pattern requires at least one handler');
+    });
+
+    it('should use default name', () => {
+      const router: Router = msg => 'agent1';
+      const agent1 = new MockAgent('agent1', 'response');
+      const pattern = new RouterPattern(router, { agent1 });
+
+      expect(pattern.name).toBe('router');
+    });
+
+    it('should use custom name', () => {
+      const router: Router = msg => 'agent1';
+      const agent1 = new MockAgent('agent1', 'response');
+      const pattern = new RouterPattern(router, { agent1 }, { name: 'my_router' });
+
+      expect(pattern.name).toBe('my_router');
+    });
+  });
+
+  describe('Routing', () => {
+    it('should route to correct handler', async () => {
+      const codeAgent = new MockAgent('code', 'Code response');
+      const mathAgent = new MockAgent('math', 'Math response');
+
+      const router: Router = msg => {
+        if (String(msg.content).includes('code')) return 'code';
+        return 'math';
+      };
+
+      const pattern = new RouterPattern(router, {
+        code: codeAgent,
+        math: mathAgent,
+      });
+
+      const result1 = await pattern.process(createMessage('user', 'Write code'));
+      expect(result1.content).toContain('Code response');
+
+      const result2 = await pattern.process(createMessage('user', 'Solve math'));
+      expect(result2.content).toContain('Math response');
+    });
+
+    it('should use default handler for unknown key', async () => {
+      const agent1 = new MockAgent('agent1', 'Agent1');
+      const defaultAgent = new MockAgent('default', 'Default');
+
+      const router: Router = () => 'unknown_key';
+
+      const pattern = new RouterPattern(router, { agent1 }, { default: defaultAgent });
+
+      const result = await pattern.process(createMessage('user', 'test'));
+      expect(result.content).toContain('Default');
+    });
+
+    it('should throw if unknown key and no default', async () => {
+      const agent1 = new MockAgent('agent1', 'Agent1');
+      const router: Router = () => 'unknown_key';
+
+      const pattern = new RouterPattern(router, { agent1 });
+
+      await expect(pattern.process(createMessage('user', 'test'))).rejects.toThrow(
+        "Router returned unknown key 'unknown_key' and no default handler is configured"
+      );
+    });
+
+    it('should handle multiple handlers', async () => {
+      const agent1 = new MockAgent('agent1', 'A');
+      const agent2 = new MockAgent('agent2', 'B');
+      const agent3 = new MockAgent('agent3', 'C');
+
+      const router: Router = msg => {
+        const content = String(msg.content);
+        if (content.includes('1')) return 'agent1';
+        if (content.includes('2')) return 'agent2';
+        return 'agent3';
+      };
+
+      const pattern = new RouterPattern(router, { agent1, agent2, agent3 });
+
+      const result1 = await pattern.process(createMessage('user', 'test 1'));
+      expect(result1.content).toContain('A');
+
+      const result2 = await pattern.process(createMessage('user', 'test 2'));
+      expect(result2.content).toContain('B');
+
+      const result3 = await pattern.process(createMessage('user', 'test 3'));
+      expect(result3.content).toContain('C');
+    });
+  });
+
+  describe('Capabilities', () => {
+    it('should combine capabilities from all handlers', () => {
+      const agent1 = new MockAgent('agent1', 'A', ['coding']);
+      const agent2 = new MockAgent('agent2', 'B', ['math']);
+
+      const router: Router = () => 'agent1';
+      const pattern = new RouterPattern(router, { agent1, agent2 });
+
+      const caps = pattern.capabilities;
+      expect(caps).toContain('coding');
+      expect(caps).toContain('math');
+    });
+
+    it('should include default handler capabilities', () => {
+      const agent1 = new MockAgent('agent1', 'A', ['coding']);
+      const defaultAgent = new MockAgent('default', 'D', ['general']);
+
+      const router: Router = () => 'agent1';
+      const pattern = new RouterPattern(router, { agent1 }, { default: defaultAgent });
+
+      const caps = pattern.capabilities;
+      expect(caps).toContain('coding');
+      expect(caps).toContain('general');
+    });
+  });
+
+  describe('Unwrap', () => {
+    it('should return handlers as record', () => {
+      const agent1 = new MockAgent('agent1', 'A');
+      const agent2 = new MockAgent('agent2', 'B');
+
+      const router: Router = () => 'agent1';
+      const pattern = new RouterPattern(router, { agent1, agent2 });
+
+      const handlers = pattern.unwrap();
+
+      expect(handlers.agent1).toBe(agent1);
+      expect(handlers.agent2).toBe(agent2);
+      expect(Object.keys(handlers).length).toBe(2);
+    });
+  });
+
+  describe('Router Composition', () => {
+    it('should allow router with sequential handlers', async () => {
+      const agent1 = new MockAgent('agent1', 'A');
+      const agent2 = new MockAgent('agent2', 'B');
+      const seq = new SequentialPattern([agent1, agent2]);
+
+      const agent3 = new MockAgent('agent3', 'C');
+
+      const router: Router = msg => (String(msg.content).includes('seq') ? 'seq' : 'agent3');
+
+      const pattern = new RouterPattern(router, { seq, agent3 });
+
+      const result1 = await pattern.process(createMessage('user', 'use seq'));
+      expect(result1.content).toContain('A');
+      expect(result1.content).toContain('B');
+
+      const result2 = await pattern.process(createMessage('user', 'use other'));
+      expect(result2.content).toContain('C');
+    });
+
+    it('should allow nested routers', async () => {
+      const agent1 = new MockAgent('agent1', 'A');
+      const agent2 = new MockAgent('agent2', 'B');
+      const agent3 = new MockAgent('agent3', 'C');
+
+      const innerRouter: Router = msg => (String(msg.content).includes('1') ? 'agent1' : 'agent2');
+
+      const innerPattern = new RouterPattern(innerRouter, { agent1, agent2 });
+
+      const outerRouter: Router = msg =>
+        String(msg.content).includes('inner') ? 'inner' : 'agent3';
+
+      const outerPattern = new RouterPattern(outerRouter, {
+        inner: innerPattern,
+        agent3,
+      });
+
+      const result1 = await outerPattern.process(createMessage('user', 'inner 1'));
+      expect(result1.content).toContain('A');
+
+      const result2 = await outerPattern.process(createMessage('user', 'outer'));
+      expect(result2.content).toContain('C');
+    });
   });
 });

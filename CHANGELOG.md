@@ -7,6 +7,171 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2025-11-25
+
+### 🎯 TypeScript Patterns - 83% Python Parity
+
+This release adds RouterPattern and PlanningAgent pattern, reaching **83% feature parity** with Python.
+
+**Key Highlights:**
+- ✅ **RouterPattern**: 115 LOC for intelligent message routing
+- ✅ **Planning Pattern**: 400 LOC for complex task decomposition
+- ✅ **394 Tests Passing**: +38 tests from v0.18.0 (11% increase)
+- ✅ **3,887 Total LOC**: Comprehensive pattern library
+- 🎉 **83% Parity**: TypeScript approaching full parity
+
+### Added
+
+#### TypeScript RouterPattern (115 LOC, 12 tests)
+
+**Implementation** (`agenkit-ts/src/patterns/orchestration.ts`):
+- Route messages to appropriate handlers based on conditions
+- Fast O(1) routing decision
+- Support for default handlers
+- Composable with other patterns
+
+**Key Features:**
+
+1. **Intelligent Routing**
+   - Custom router function determines handler
+   - Only one agent executes per request
+   - No overhead vs direct agent call
+
+2. **Fallback Support**
+   - Optional default handler for unknown routes
+   - Graceful error handling
+   - Clear error messages
+
+3. **Pattern Composition**
+   - Can route to any agent type
+   - Nested routers supported
+   - Combines with Sequential/Parallel
+
+**API Example:**
+```typescript
+const router = new RouterPattern(
+  (msg) => {
+    if (msg.content.includes('code')) return 'code_agent';
+    if (msg.content.includes('math')) return 'math_agent';
+    return 'general_agent';
+  },
+  {
+    code_agent: codeAgent,
+    math_agent: mathAgent,
+    general_agent: generalAgent
+  },
+  { default: fallbackAgent }
+);
+
+const result = await router.process(message);
+```
+
+#### TypeScript Planning Pattern (400 LOC, 26 tests)
+
+**Implementation** (`agenkit-ts/src/patterns/planning.ts`):
+- Multi-step task decomposition and execution
+- LLM-powered plan generation
+- Step-by-step execution with dependency management
+- Dynamic replanning on failures
+- Progress tracking
+
+**Key Components:**
+
+1. **PlanningAgent**
+   - Creates plans using LLM
+   - Executes steps sequentially or in parallel
+   - Tracks progress and status
+   - Optional replanning on failures
+
+2. **Plan Management**
+   - Step dependencies and ordering
+   - Status tracking (pending, in_progress, completed, failed, skipped)
+   - Progress calculation
+   - Context passing between steps
+
+3. **Step Execution**
+   - Pluggable StepExecutor interface
+   - Default mock executor included
+   - Error handling and retry support
+   - Result context propagation
+
+**API Example:**
+```typescript
+// Create planning agent
+const agent = new PlanningAgent(
+  llmClient,
+  stepExecutor,
+  {
+    maxSteps: 10,
+    allowReplanning: true
+  }
+);
+
+// Give complex task
+const result = await agent.process(
+  createMessage('user', 'Organize a team event')
+);
+
+// Agent creates plan like:
+// 1. Choose date and venue
+// 2. Create invitation list
+// 3. Send invitations
+// 4. Arrange catering
+// 5. Plan activities
+
+// Track progress
+console.log(`Progress: ${agent.getProgress()}%`);
+
+// Access plan
+const plan = agent.getPlan();
+console.log(`Steps: ${plan.steps.length}`);
+```
+
+**Helper Functions:**
+```typescript
+// Plan utilities
+const plan = createPlan('Goal', steps);
+const nextSteps = getNextSteps(plan);
+const progress = getPlanProgress(plan);
+const isComplete = isPlanComplete(plan);
+const hasFailures = hasPlanFailures(plan);
+
+// Step utilities
+const step = createPlanStep('Description', 0, [dependencies]);
+const canExecute = canExecuteStep(step, completedSteps);
+```
+
+### Testing
+
+- **Total Tests**: 394 passing (+38 from v0.18.0)
+- **RouterPattern Tests**: 12 tests
+- **Planning Pattern Tests**: 26 tests
+- **Test Growth**: 11% increase
+- **Coverage**: Routing, composition, plan creation, execution, dependencies, failures, replanning, progress tracking
+
+### Technical Improvements
+
+- Intelligent message routing with fallback support
+- Multi-step plan decomposition with LLM
+- Dependency-aware step execution
+- Dynamic replanning on failures
+- Progress tracking and status management
+- Context propagation between plan steps
+- Pattern composition (router with sequential/parallel)
+
+### Progress Stats
+
+**TypeScript Implementation Status:**
+- **LOC**: 3,887 (Router: +115, Planning: +400)
+- **Tests**: 394 passing (+38)
+- **Patterns**: 10.5/12 complete (88%)
+- **Evaluation**: 3/3 modules (100%)
+- **Overall Parity**: 83% of Python features
+
+**Remaining for 100% Parity:**
+- [ ] Memory patterns (~300 LOC)
+- [ ] Autonomous pattern (~200 LOC)
+
 ## [0.18.0] - 2025-11-25
 
 ### 🎯 TypeScript Patterns - 75% Python Parity

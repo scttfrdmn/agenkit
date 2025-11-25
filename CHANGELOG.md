@@ -7,6 +7,168 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2025-11-25
+
+### 🎯 TypeScript Patterns - 75% Python Parity
+
+This release adds two critical agent patterns, reaching **75% feature parity** with Python.
+
+**Key Highlights:**
+- ✅ **Task Pattern**: 260 LOC for one-shot agent execution
+- ✅ **Multiagent Pattern**: 260 LOC for agent collaboration
+- ✅ **356 Tests Passing**: +66 tests from v0.17.0 (23% increase)
+- ✅ **3,372 Total LOC**: Comprehensive pattern library
+- 🎉 **75% Parity**: TypeScript crosses three-quarters milestone
+
+### Added
+
+#### TypeScript Task Pattern (260 LOC, 31 tests)
+
+**Implementation** (`agenkit-ts/src/patterns/task.ts`):
+- One-shot agent execution with lifecycle management
+- Automatic resource cleanup
+- Timeout support with configurable limits
+- Retry logic with exponential backoff
+- Prevention of reuse after completion
+- Context manager pattern (async)
+
+**Key Features:**
+
+1. **One-Shot Execution**
+   - Task wraps an Agent for single-use execution
+   - Explicit completion semantics
+   - Cannot be reused after execution
+
+2. **Lifecycle Management**
+   - Automatic cleanup after completion/failure
+   - Override `cleanup()` for custom resource release
+   - Cleanup called on timeout, failure, or via `withTask()`
+
+3. **Retry Logic**
+   - Configurable retry attempts
+   - Exponential backoff between retries
+   - No retry on timeout errors
+
+4. **Context Manager**
+   - `Task.withTask()` for automatic cleanup
+   - Ensures cleanup even on errors
+   - Clean async/await patterns
+
+**API Example:**
+```typescript
+// Basic usage
+const task = new Task(agent, { timeout: 30000, retries: 2 });
+try {
+  const result = await task.execute(message);
+  console.log(result.content);
+} finally {
+  await task.cleanup();
+}
+
+// Context manager pattern
+await Task.withTask(agent, async (task) => {
+  const result = await task.execute(message);
+  return result;
+}, { timeout: 5000 });
+
+// Convenience function
+const result = await executeTask(
+  agent,
+  createMessage('user', 'Summarize this document'),
+  { timeout: 30000, retries: 2 }
+);
+```
+
+#### TypeScript Multiagent Pattern (260 LOC, 35 tests)
+
+**Implementation** (`agenkit-ts/src/patterns/multiagent.ts`):
+- Agent orchestration for complex tasks
+- Consensus building from multiple perspectives
+- Task tracking and status management
+- Error handling with graceful degradation
+
+**Key Components:**
+
+1. **MultiAgentOrchestrator**
+   - Coordinates multiple agents on tasks
+   - Supports sequential, parallel, delegate strategies
+   - Agent registration and management
+   - Task tracking with status (pending, in_progress, completed, failed)
+   - Continues execution even if some agents fail
+
+2. **ConsensusAgent**
+   - Reaches consensus among multiple agents
+   - Voting strategies: majority, unanimous, weighted
+   - Combines multiple perspectives
+   - Useful for validation and ensemble approaches
+
+**API Example:**
+```typescript
+// Orchestrator
+const orchestrator = new MultiAgentOrchestrator('sequential');
+orchestrator.registerAgent('researcher', researchAgent);
+orchestrator.registerAgent('writer', writingAgent);
+orchestrator.registerAgent('editor', editorAgent);
+
+const result = await orchestrator.process(
+  createMessage('user', 'Create a comprehensive report on AI')
+);
+
+// Get task execution history
+const tasks = orchestrator.getTasks();
+tasks.forEach(task => {
+  console.log(`${task.agentName}: ${task.status}`);
+});
+
+// Consensus
+const consensus = new ConsensusAgent('majority');
+consensus.addAgent(conservativeAgent);
+consensus.addAgent(creativeAgent);
+consensus.addAgent(analyticalAgent);
+
+const result = await consensus.process(
+  createMessage('user', "What's the best approach?")
+);
+// Result combines perspectives from all three agents
+
+// Nested orchestration
+const teamOrchestrator = new MultiAgentOrchestrator();
+teamOrchestrator.registerAgent('consensus', consensus);
+teamOrchestrator.registerAgent('executor', executorAgent);
+```
+
+### Testing
+
+- **Total Tests**: 356 passing (+66 from v0.17.0)
+- **Task Pattern Tests**: 31 tests
+- **Multiagent Pattern Tests**: 35 tests
+- **Test Growth**: 23% increase
+- **Coverage**: Configuration, execution, timeout, retry, cleanup, error handling, orchestration, consensus, nested patterns
+
+### Technical Improvements
+
+- Task lifecycle management for resource cleanup
+- Exponential backoff retry strategy
+- Context manager pattern for guaranteed cleanup
+- Agent composition and nesting support
+- Graceful error handling in multi-agent scenarios
+- Task status tracking for observability
+
+### Progress Stats
+
+**TypeScript Implementation Status:**
+- **LOC**: 3,372 (Task: +260, Multiagent: +260)
+- **Tests**: 356 passing (+66)
+- **Patterns**: 8.5/12 complete (71%)
+- **Evaluation**: 3/3 modules (100%)
+- **Overall Parity**: 75% of Python features
+
+**Remaining for 100% Parity:**
+- [ ] Monitoring pattern (~200 LOC)
+- [ ] Router pattern (~180 LOC)
+- [ ] Chain pattern (~150 LOC)
+- [ ] Prompt pattern (~170 LOC)
+
 ## [0.17.0] - 2025-11-25
 
 ### 📊 TypeScript Quality - 67% Python Parity

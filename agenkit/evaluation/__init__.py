@@ -30,6 +30,7 @@ Example:
     >>>     print("Quality degradation detected!")
 """
 
+from .ab_testing import ABResult, ABTest, ABVariant, SignificanceLevel, StatisticalTestType, calculate_sample_size
 from .benchmarks import Benchmark, BenchmarkSuite
 from .context_metrics import CompressionMetrics, ContextMetrics, LatencyMetric
 from .core import EvaluationResult, Evaluator, Metric
@@ -38,6 +39,10 @@ from .recorder import SessionRecorder, SessionReplay
 from .regression import RegressionDetector
 
 __all__ = [
+    # A/B Testing
+    "ABResult",
+    "ABTest",
+    "ABVariant",
     "AccuracyMetric",
     # Benchmarks
     "Benchmark",
@@ -58,4 +63,7 @@ __all__ = [
     # Session replay
     "SessionRecorder",
     "SessionReplay",
+    "SignificanceLevel",
+    "StatisticalTestType",
+    "calculate_sample_size",
 ]

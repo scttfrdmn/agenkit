@@ -59,19 +59,32 @@ async def cleanup_async_resources():
     yield
 
     # Give pending tasks time to complete
-    await asyncio.sleep(0.01)
-
-    # Cancel any remaining tasks
     try:
-        tasks = [t for t in asyncio.all_tasks() if not t.done()]
-        for task in tasks:
-            if not task.done():
-                task.cancel()
+        await asyncio.wait_for(asyncio.sleep(0.01), timeout=0.1)
+    except (asyncio.TimeoutError, RuntimeError):
+        pass
+
+    # Cancel any remaining tasks with timeout
+    try:
+        loop = asyncio.get_running_loop()
+        tasks = [t for t in asyncio.all_tasks(loop) if not t.done() and t != asyncio.current_task(loop)]
 
         if tasks:
-            await asyncio.gather(*tasks, return_exceptions=True)
-    except RuntimeError:
-        # Event loop might be closed
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+
+            # Wait for cancellations with timeout
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*tasks, return_exceptions=True),
+                    timeout=0.5
+                )
+            except asyncio.TimeoutError:
+                # Some tasks didn't cancel in time, ignore
+                pass
+    except (RuntimeError, ValueError):
+        # Event loop might be closed or no running loop
         pass
 
     # Force garbage collection

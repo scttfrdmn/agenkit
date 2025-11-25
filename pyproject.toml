@@ -35,6 +35,7 @@ dependencies = [
     "opentelemetry-exporter-otlp>=1.20.0",
     "opentelemetry-exporter-prometheus>=0.41b0",
     "opentelemetry-instrumentation-system-metrics>=0.41b0",
+    "scipy>=1.11.0",
 ]
 
 [project.optional-dependencies]

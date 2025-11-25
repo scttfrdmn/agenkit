@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agenkit"
-version = "0.11.0"
+version = "0.11.1"
 description = "The foundation layer for AI agents"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -36,6 +36,8 @@ dependencies = [
     "opentelemetry-exporter-prometheus>=0.41b0",
     "opentelemetry-instrumentation-system-metrics>=0.41b0",
     "scipy>=1.11.0",
+    "scikit-learn>=1.3.0",
+    "numpy>=1.24.0",
 ]
 
 [project.optional-dependencies]

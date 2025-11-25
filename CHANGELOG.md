@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - TBD
+
+### Added
+
+- **Automated Optimization Framework** - Complete implementation for v0.11.1
+  - `BayesianOptimizer` for intelligent hyperparameter tuning using Gaussian Process
+  - `PromptOptimizer` for systematic prompt improvement (grid, random, genetic strategies)
+  - `SearchSpace` for flexible parameter space definition (continuous, discrete, integer, categorical)
+  - `RandomSearchOptimizer` as baseline optimization method
+  - Acquisition functions: Expected Improvement (EI), Upper Confidence Bound (UCB), Probability of Improvement (PI)
+  - Genetic algorithm for prompt evolution
+  - Integration with existing evaluation infrastructure
+  - Comprehensive demo with 5 optimization scenarios
+
+### Changed
+
+- Updated evaluation module exports to include optimization classes
+- Enhanced optimizer base class with metric support
+
+### Fixed
+
+- Fixed numpy compatibility issue in Bayesian optimizer (`np.math.erf` → `math.erf`)
+- Fixed optimizer evaluation to properly instantiate metrics
+
+### Dependencies
+
+- `scikit-learn>=1.3.0` for Gaussian Process regression
+- `numpy>=1.24.0` for numerical operations
+
+### Documentation
+
+- Created comprehensive optimization design document (`docs/optimization_design.md`)
+- Added optimization demo (`examples/evaluation/optimization_demo.py`)
+- 12 tests for optimization framework
+
+## [0.11.0] - 2024-11-24
+
+### Added
+
+- **A/B Testing Framework** for statistical comparison of agent variants
+  - Complete implementation with t-test, Mann-Whitney U, chi-square, bootstrap
+  - Effect size calculations and confidence intervals
+  - Sample size calculation with power analysis
+  - 24 Python tests, 11 Go example tests
+  - Comprehensive documentation and examples
+
 ## [0.10.0] - 2025-11-23
 
 ### 🚀 Phase 7 & 8 Complete - Advanced Patterns, Security, and Performance

@@ -9,19 +9,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.14.0] - 2025-11-25
 
-### 🚀 Go Orchestration & ReAct Patterns - Multi-Agent Composition & Reasoning
+### 🚀 Go Core Patterns Complete - Orchestration, ReAct & Conversational
 
-This release adds two critical patterns to Go: Orchestration (Sequential, Parallel, Router) and ReAct (Reasoning + Acting). Go reaches **36% pattern parity** (4/11 patterns).
+This release adds three essential patterns to Go: Orchestration (Sequential, Parallel, Router), ReAct (Reasoning + Acting), and Conversational (multi-turn dialogue). Go reaches **45% pattern parity** (5/11 patterns).
 
 **Key Highlights:**
-- ✅ **ReAct Pattern**: 360 LOC for reasoning with tool use (NEW!)
+- ✅ **Conversational Pattern**: 254 LOC for multi-turn dialogue with history management (NEW!)
+- ✅ **ReAct Pattern**: 360 LOC for reasoning with tool use
 - ✅ **Orchestration Pattern**: 391 LOC for Sequential, Parallel, Router patterns
-- ✅ **100 Tests Passing**: 83 pattern tests total (156% increase over v0.13.0)
+- ✅ **120 Tests Passing**: 103 pattern tests total (300% increase over v0.13.0!)
+- ✅ **Context-Aware Conversations**: Maintains history across turns with automatic pruning
 - ✅ **Tool-Augmented Reasoning**: ReAct enables self-directed exploration
 - ✅ **Composable Agents**: Patterns can contain other patterns
-- 📊 **36% Parity**: Go now has 4/11 patterns (Reflection, Agents-as-Tools, Orchestration, ReAct)
+- 📊 **45% Parity**: Go now has 5/11 patterns - halfway to 100%!
 
 ### Added
+
+#### Go Conversational Pattern (254 LOC, 20 tests)
+
+**Implementation** (`agenkit-go/patterns/conversational.go`):
+- Multi-turn dialogue with context management
+- Automatic history pruning to stay within limits
+- System prompt support with preservation during pruning
+- LLMClient interface for flexible integration
+
+**Key Features:**
+
+1. **History Management**
+   - Maintains conversation context across multiple turns
+   - Automatic pruning when history exceeds maxHistory
+   - System messages always preserved during pruning
+   - Both user and assistant messages tracked
+
+2. **Context Window Control**
+   - Configurable maxHistory (default: 10 messages)
+   - Oldest non-system messages removed first
+   - O(1) message append, O(n) pruning (only when needed)
+   - Memory efficient: O(maxHistory) storage
+
+3. **System Prompt Support**
+   - Optional system prompt at conversation start
+   - Can be included/excluded from history count
+   - Preserved across history pruning
+   - Reset behavior preserves system prompt by default
+
+4. **API Methods**
+   - ClearHistory(keepSystem) - Reset conversation
+   - GetHistory() - Retrieve conversation (deep copy)
+   - HistoryLength() - Get current message count
+   - SetMaxHistory(max) - Adjust limit (triggers pruning if needed)
+
+5. **LLMClient Interface**
+   - Simple Chat(messages) interface
+   - Works with any LLM that accepts conversation history
+   - Flexible integration with OpenAI, Anthropic, etc.
+
+**Example:**
+```go
+// Create conversational agent
+agent, _ := patterns.NewConversationalAgent(&patterns.ConversationalAgentConfig{
+    LLMClient: myLLMClient,
+    MaxHistory: 10,
+    SystemPrompt: "You are a helpful assistant.",
+})
+
+// First turn
+response1, _ := agent.Process(ctx, &agenkit.Message{
+    Role: "user",
+    Content: "My name is Alice",
+})
+// Agent: "Hello Alice! Nice to meet you."
+
+// Second turn - agent remembers the name
+response2, _ := agent.Process(ctx, &agenkit.Message{
+    Role: "user",
+    Content: "What's my name?",
+})
+// Agent: "Your name is Alice."
+
+// Clear history while keeping system prompt
+agent.ClearHistory(true)
+```
+
+**Testing:**
+- 20 comprehensive tests covering all functionality
+- Configuration validation (nil checks, defaults)
+- Single and multi-turn conversations
+- History management (pruning, system prompt preservation)
+- ClearHistory, GetHistory, SetMaxHistory methods
+- Edge cases (empty history, LLM errors, deep copy verification)
+- All tests passing ✅
 
 #### Go ReAct Pattern (360 LOC, 21 tests)
 
@@ -195,12 +272,16 @@ routerPattern, _ := patterns.NewRouterPattern(
 - ✅ Agents as Tools (completed v0.13.0)
 - ✅ Orchestration (completed v0.14.0) ← **NEW**
 - ✅ ReAct (completed v0.14.0) ← **NEW**
-- ⬜ Conversational (pending)
+- ✅ Conversational (completed v0.14.0) ← **NEW**
 - ⬜ Task (pending)
 - ⬜ Multiagent (pending)
 - ⬜ Planning (pending)
+- ⬜ Memory Hierarchy (pending)
+- ⬜ Autonomous (pending)
+- ⬜ Reasoning with Tools (pending)
 
-**Status:** 36% complete (4/11 patterns) - need 4 more patterns for 70% target
+**Status:** 45% complete (5/11 patterns) - need 3 more patterns for 70% target
+**Milestone:** Halfway to 100% parity! 🎉
 
 ## [0.22.0] - 2025-11-25
 

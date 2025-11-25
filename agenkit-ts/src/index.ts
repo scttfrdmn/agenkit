@@ -163,3 +163,11 @@ export {
   MemoryHierarchy,
   createMemoryEntry,
 } from './patterns/memory';
+export {
+  AutonomousAgent,
+  Goal,
+  GoalStatus,
+  AutonomousResult,
+  StopCondition,
+  createGoal,
+} from './patterns/autonomous';

@@ -5,6 +5,66 @@ All notable changes to the agenkit project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2025-11-24
+
+### Added
+
+- **Go Critical Patterns** - 3 essential patterns for advanced agent orchestration:
+  - **Reflection Pattern** (`patterns/reflection.go`, 467 LOC)
+    - Generator-critic coordination for iterative refinement
+    - Multiple stop conditions (quality threshold, max iterations, improvement threshold)
+    - Support for structured (JSON) and free-form critique parsing
+    - Comprehensive metadata tracking with reflection history
+    - Context cancellation support
+    - 14 comprehensive tests, working example
+  - **Agents-as-Tools Pattern** (`patterns/agents_as_tools.go`, 297 LOC)
+    - Hierarchical agent delegation (supervisor → specialists)
+    - Multiple output formats (string, dict, message)
+    - Configurable input parameters and metadata
+    - `AgentAsTool` and `AgentAsToolSimple` convenience functions
+    - Full observability with metadata tracking
+    - 17 comprehensive tests, working example
+  - **Bayesian Optimization** (`evaluation/bayesian_optimizer.go`, 491 LOC)
+    - Search space with 4 parameter types (continuous, integer, discrete, categorical)
+    - 3 acquisition functions (Expected Improvement, UCB, Probability of Improvement)
+    - Simplified surrogate model using local statistics
+    - Comprehensive result tracking and analysis
+    - Support for both maximization and minimization
+    - 18 comprehensive tests, working example
+
+- **Examples**:
+  - `examples/patterns/reflection_example.go` - Iterative code refinement demo
+  - `examples/patterns/agents_as_tools_example.go` - Supervisor-specialist delegation demo
+  - `examples/evaluation/bayesian_optimization_example.go` - Hyperparameter tuning demo
+
+### Changed
+
+- Organized evaluation examples into `examples/evaluation/` directory
+- Enhanced patterns module with critical orchestration patterns
+
+### Fixed
+
+- Fixed `configSimilarity` in Bayesian Optimizer to use floating-point arithmetic for accurate similarity calculation
+- Fixed mock response count mismatch in Reflection pattern tests
+
+### Testing
+
+- Added 49 new tests for Go patterns and evaluation
+  - Reflection: 14 tests
+  - Agents-as-Tools: 17 tests
+  - Bayesian Optimization: 18 tests
+- All 113 tests passing in patterns and evaluation modules
+
+### Documentation
+
+- Comprehensive inline documentation for all new patterns
+- Example code demonstrating practical usage scenarios
+- References to academic papers (Reflexion, Self-Refine)
+
+### Milestone
+
+🎉 **Go reaches 70% parity with Python** - Critical patterns implemented
+
 ## [0.11.0] - TBD
 
 ### Added
@@ -117,6 +177,7 @@ See git history for changes in versions prior to 0.9.0.
 
 ---
 
+[0.14.0]: https://github.com/scttfrdmn/agenkit/compare/v0.10.1...v0.14.0
 [0.11.0]: https://github.com/scttfrdmn/agenkit/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/scttfrdmn/agenkit/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/scttfrdmn/agenkit/compare/v0.9.0...v0.10.0

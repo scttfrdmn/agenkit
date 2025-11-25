@@ -300,7 +300,7 @@ func (t *ABTest) evaluateVariant(ctx context.Context, variant *ABVariant, testCa
 			// Simple accuracy check (contains expected)
 			actual := response.Content
 			if expected != "" {
-				if containsIgnoreCase(actual, expected) {
+				if stringContainsIgnoreCase(actual, expected) {
 					accuracy = 1.0
 				} else {
 					accuracy = 0.0
@@ -423,14 +423,14 @@ func CalculateSampleSize(baselineMean, minimumDetectableEffect, alpha, power flo
 
 // Helper functions
 
-// containsIgnoreCase checks if s contains substr (case-insensitive).
-func containsIgnoreCase(s, substr string) bool {
-	s = toLower(s)
-	substr = toLower(substr)
-	return contains(s, substr)
+// stringContainsIgnoreCase checks if s contains substr (case-insensitive).
+func stringContainsIgnoreCase(s, substr string) bool {
+	s = stringToLower(s)
+	substr = stringToLower(substr)
+	return stringContains(s, substr)
 }
 
-func toLower(s string) string {
+func stringToLower(s string) string {
 	result := make([]rune, len(s))
 	for i, r := range s {
 		if r >= 'A' && r <= 'Z' {
@@ -442,7 +442,7 @@ func toLower(s string) string {
 	return string(result)
 }
 
-func contains(s, substr string) bool {
+func stringContains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || indexOfSubstring(s, substr) >= 0)
 }
 

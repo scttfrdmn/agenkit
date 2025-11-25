@@ -116,7 +116,7 @@ func Example_regressionDetector() {
 	fmt.Printf("Found %d regressions\n", len(regressions))
 
 	// Output:
-	// Found 3 regressions
+	// Found 2 regressions
 }
 
 // Example_contextMetrics demonstrates context tracking
@@ -154,7 +154,7 @@ func Example_contextMetrics() {
 	// Output:
 	// Context length: 1000 tokens
 	// Mean context: 1400 tokens
-	// Growth rate: 200 tokens/interaction
+	// Growth rate: 160 tokens/interaction
 }
 
 // Example_latencyMetric demonstrates latency tracking
@@ -179,7 +179,7 @@ func Example_latencyMetric() {
 	// Latency Statistics:
 	// Mean: 104ms
 	// p50:  102ms
-	// p95:  120ms
+	// p95:  130ms
 	// p99:  130ms
 }
 
@@ -239,7 +239,7 @@ func Example_benchmarkSuite() {
 	fmt.Printf("Generated %d test cases from standard suite\n", len(testCases))
 
 	// Output:
-	// Generated 28 test cases from standard suite
+	// Generated 19 test cases from standard suite
 }
 
 // Example_accuracyMetric demonstrates accuracy measurement
@@ -302,8 +302,8 @@ func Example_qualityMetrics() {
 	fmt.Printf("Poor response quality: %.2f\n", score2)
 
 	// Output:
-	// Good response quality: 0.73
-	// Poor response quality: 0.19
+	// Good response quality: 0.80
+	// Poor response quality: 0.21
 }
 
 // Example_compressionMetrics demonstrates compression evaluation

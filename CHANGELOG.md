@@ -7,6 +7,122 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2025-11-25
+
+### 🚀 Go Orchestration Pattern - Multi-Agent Composition
+
+This release adds the Orchestration pattern to Go, enabling sequential, parallel, and conditional agent composition. Go reaches **27% pattern parity** (3/11 patterns).
+
+**Key Highlights:**
+- ✅ **Orchestration Pattern**: 391 LOC for Sequential, Parallel, Router patterns
+- ✅ **64 Tests Passing**: +37 orchestration tests (137% increase over v0.13.0)
+- ✅ **Composable Agents**: Patterns can contain other patterns
+- 📊 **27% Parity**: Go now has Reflection, Agents-as-Tools, and Orchestration
+
+### Added
+
+#### Go Orchestration Pattern (391 LOC, 37 tests)
+
+**Implementation** (`agenkit-go/patterns/orchestration.go`):
+- Sequential: Execute agents one after another (pipeline)
+- Parallel: Execute agents concurrently with aggregation (fan-out)
+- Router: Route to one agent based on condition (dispatch)
+- Agent hooks for observability (before/after execution)
+
+**Key Features:**
+
+1. **Sequential Pattern**
+   - Pipeline: agent1 → agent2 → agent3
+   - Output of one becomes input of next
+   - Short-circuits on error
+   - Zero overhead vs direct calls
+
+2. **Parallel Pattern**
+   - True parallelism with goroutines
+   - All agents receive same input
+   - Custom aggregator combines results
+   - Bounded by slowest agent
+
+3. **Router Pattern**
+   - O(1) routing decision
+   - Content-based routing with routing function
+   - Optional default handler
+   - Only one agent executes per request
+
+4. **Composability**
+   - Patterns implement Agent interface
+   - Patterns can contain patterns
+   - Example: Sequential(Parallel(...), agent, Router(...))
+   - Unwrap() method for introspection
+
+5. **Observability**
+   - BeforeAgent and AfterAgent hooks
+   - Access to agent and message at each step
+   - Custom pattern names for debugging
+   - Combined capabilities from all agents
+
+**Example:**
+```go
+// Sequential pipeline
+pipeline, _ := patterns.NewSequentialPattern(
+    []agenkit.Agent{preprocessor, analyzer, formatter},
+    nil,
+)
+
+// Parallel fan-out with aggregation
+aggregator := func(results []*agenkit.Message) *agenkit.Message {
+    combined := combineResults(results)
+    return &agenkit.Message{Role: "assistant", Content: combined}
+}
+parallel, _ := patterns.NewParallelPattern(
+    []agenkit.Agent{researcher, validator, formatter},
+    aggregator,
+    nil,
+)
+
+// Router with content-based routing
+router := func(msg *agenkit.Message) string {
+    if strings.Contains(msg.Content, "code") {
+        return "code_specialist"
+    }
+    return "general_assistant"
+}
+routerPattern, _ := patterns.NewRouterPattern(
+    router,
+    map[string]agenkit.Agent{
+        "code_specialist": codeAgent,
+        "general_assistant": generalAgent,
+    },
+    nil,
+)
+```
+
+**Testing:**
+- 37 comprehensive tests covering all 3 patterns
+- Creation, configuration, execution tests
+- Error handling and edge cases
+- Hook functionality verification
+- Composition testing (patterns within patterns)
+- All tests passing with pointer-based Message semantics
+
+### Changed
+
+- **Go Message Semantics**: Orchestration uses `*agenkit.Message` pointers (consistent with Agent interface)
+
+### Documentation
+
+**Go Progress Toward v0.14.0 Roadmap Target (70% parity):**
+- ✅ Reflection (completed v0.11.0)
+- ✅ Agents as Tools (completed v0.13.0)
+- ✅ Orchestration (completed v0.14.0) ← **NEW**
+- ⬜ ReAct (pending)
+- ⬜ Conversational (pending)
+- ⬜ Task (pending)
+- ⬜ Multiagent (pending)
+- ⬜ Planning (pending)
+
+**Status:** 27% complete (3/11 patterns) - need 4-5 more patterns for 70% target
+
 ## [0.22.0] - 2025-11-25
 
 ### 🎯 TypeScript 100% Python Parity Achieved!

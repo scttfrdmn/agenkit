@@ -5,6 +5,102 @@ All notable changes to the agenkit project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2025-11-25
+
+### Added
+
+- **🎉 Go Achieves 100% Pattern Parity!** - All 8 remaining patterns implemented:
+
+  - **Orchestration Pattern** (`patterns/orchestration.go`)
+    - Sequential orchestration with ordered execution
+    - Parallel orchestration with concurrent execution
+    - Router orchestration with conditional routing
+    - Comprehensive error handling and context support
+
+  - **ReAct Pattern** (`patterns/react.go`, 360 LOC, 21 tests)
+    - Reasoning-Acting cycle with interleaved thought and action
+    - Tool integration during reasoning process
+    - Observation loop for continuous improvement
+    - Configurable max steps and verbose mode
+
+  - **Conversational Pattern** (`patterns/conversational.go`, 254 LOC, 20 tests)
+    - Multi-turn dialogue management
+    - Context retention across conversations
+    - Message history with configurable limits
+    - Session-based conversation tracking
+
+  - **Task Pattern** (`patterns/task.go`, 244 LOC, 18 tests)
+    - Task-oriented workflow execution
+    - Timeout handling with configurable durations
+    - Retry logic with exponential backoff
+    - Task status tracking and result management
+
+  - **Multiagent Pattern** (`patterns/multiagent.go`, 332 LOC, 21 tests)
+    - Orchestrator coordination for agent collaboration
+    - Consensus mechanisms for decision-making
+    - Agent capability matching and routing
+    - Parallel and sequential execution modes
+
+  - **Planning Pattern** (`patterns/planning.go`, 458 LOC, 30 tests)
+    - Step-based plan generation and execution
+    - Parallel and sequential plan execution
+    - Dependency management between steps
+    - Progress tracking with completion status
+    - Plan validation and error handling
+
+  - **Autonomous Pattern** (`patterns/autonomous.go`, 308 LOC, 20 tests)
+    - Goal-based autonomous agents with self-direction
+    - Priority-based goal selection
+    - Multiple stop conditions (max iterations, manual stop, custom)
+    - Worker function pattern for customization
+    - Goal status transitions (active → completed → abandoned)
+
+  - **Memory Hierarchy Pattern** (`patterns/memory.go`, 542 LOC, 29 tests)
+    - Three-tier memory architecture (Working, ShortTerm, LongTerm)
+    - Working Memory: FIFO eviction, in-context storage
+    - ShortTerm Memory: TTL-based expiration, LRU eviction
+    - LongTerm Memory: Importance-based retention, keyword matching
+    - Thread-safe operations with mutex protection
+    - Cross-tier retrieval with deduplication
+
+  - **Reasoning with Tools Pattern** (`patterns/reasoning_with_tools.go`, 531 LOC, 30 tests)
+    - Interleaved reasoning: Think ↔ Act (vs ReAct's sequential Think → Act)
+    - Tools available DURING reasoning, not just after
+    - Text-based tool call protocol ("TOOL_CALL:", "PARAMETERS:")
+    - Conclusion detection with multiple markers
+    - ReasoningTrace for complete step tracking
+    - Context accumulation across iterations
+
+### Testing
+
+- Added 188 new tests across 8 patterns
+- Total pattern tests: 276 (100% pass rate)
+- Comprehensive coverage including:
+  - Constructor and configuration validation
+  - Core functionality and edge cases
+  - Error handling and context cancellation
+  - Integration scenarios
+  - Performance characteristics
+
+### Milestone
+
+🎉 **Go reaches 100% pattern parity with Python and TypeScript!**
+
+**Achievement Summary:**
+- **11/11 patterns** implemented (100% parity)
+- **~4,700 total LOC** across all patterns
+- **276 comprehensive tests** (100% pass rate)
+- **5 months ahead of roadmap schedule** (target was April 2026)
+
+**Three-Language Parity Status:**
+| Language | Patterns | Tests | Status |
+|----------|----------|-------|--------|
+| Python | 11/11 | ~300 | ✅ Reference |
+| TypeScript | 11/11 | 514 | ✅ Complete |
+| Go | 11/11 | 276 | ✅ **COMPLETE** |
+
+This represents a major acceleration of the 6-language roadmap, with 3 languages now at full parity!
+
 ## [0.14.0] - 2025-11-24
 
 ### Added

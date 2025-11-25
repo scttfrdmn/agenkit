@@ -89,6 +89,15 @@ export {
   LLMClient,
   createConversationalAgent,
 } from './patterns/conversational';
+export { Task, TaskConfig, TimeoutError as TaskTimeoutError, executeTask } from './patterns/task';
+export {
+  MultiAgentOrchestrator,
+  ConsensusAgent,
+  AgentTask,
+  TaskStatus,
+  OrchestrationStrategy,
+  VotingStrategy,
+} from './patterns/multiagent';
 
 // Evaluation
 export {

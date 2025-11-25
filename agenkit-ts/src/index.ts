@@ -171,3 +171,16 @@ export {
   StopCondition,
   createGoal,
 } from './patterns/autonomous';
+export {
+  ReasoningWithToolsAgent,
+  ReasoningStepType,
+  ReasoningStep,
+  ReasoningTrace,
+  ReasoningWithToolsConfig,
+  createReasoningStep,
+  createReasoningTrace,
+  addStepToTrace,
+  finalizeTrace,
+  getTraceDuration,
+  traceToDict,
+} from './patterns/reasoning-with-tools';

@@ -7,6 +7,154 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2025-11-25
+
+### 🚀 TypeScript Acceleration - 58% Python Parity
+
+This release continues building out TypeScript capabilities with the Conversational pattern and comprehensive Benchmarks module, achieving **58% feature parity** with Python.
+
+**Key Highlights:**
+- ✅ **Conversational Pattern**: 226 LOC with multi-turn conversation management
+- ✅ **Benchmarks Module**: 418 LOC with 4 standard benchmarks
+- ✅ **260 Tests Passing**: +52 tests from v0.15.0 (25% increase)
+- ✅ **2,388 Total LOC**: Patterns + evaluation framework
+- 🎉 **58% Parity**: TypeScript reaches majority milestone toward Python
+
+### Added
+
+#### TypeScript Conversational Pattern (226 LOC, 24 tests)
+
+**Implementation** (`agenkit-ts/src/patterns/conversational.ts`):
+- Multi-turn conversation with context management
+- Message history with automatic pruning
+- System prompt support
+- Configurable history limits
+- History manipulation methods (clear, get, set max)
+
+**Key Features:**
+- Maintains conversation context across turns
+- Automatic pruning when exceeding maxHistory
+- System messages always preserved
+- Copy-on-read history access
+- Dynamic max history adjustment
+
+**API Example:**
+```typescript
+const agent = new ConversationalAgent({
+  llmClient: myLLMClient,
+  maxHistory: 10,
+  systemPrompt: "You are a helpful assistant."
+});
+
+// First turn
+await agent.process(createMessage('user', 'My name is Alice'));
+
+// Second turn - agent remembers
+const response = await agent.process(
+  createMessage('user', "What's my name?")
+);
+// Response: "Your name is Alice."
+```
+
+#### TypeScript Benchmarks Module (418 LOC, 28 tests)
+
+**Implementation** (`agenkit-ts/src/evaluation/benchmarks.ts`):
+- Base `Benchmark` interface
+- 4 standard benchmark implementations
+- Benchmark execution framework with `runBenchmark`
+- Comprehensive results tracking
+
+**Benchmarks Included:**
+
+1. **SimpleQABenchmark** - Basic question-answering
+   - 8 test cases (math, knowledge, reasoning)
+   - Tests fundamental capabilities
+
+2. **ReasoningBenchmark** - Multi-step reasoning
+   - 5 logic and reasoning problems
+   - Tests syllogisms, word problems, comparisons
+
+3. **NeedleInHaystackBenchmark** - Context retrieval
+   - Configurable context length and needle count
+   - Tests long-context capabilities
+   - Embeds specific facts in large haystack
+   - Default: 1000 tokens, 3 needles
+
+4. **CodeGenerationBenchmark** - Code generation
+   - Function generation tests
+   - Validation function support
+   - Tests code structure and logic
+
+**Utility Functions:**
+- `getAllBenchmarks()` - Get all available benchmarks
+- `getBenchmarkByName(name)` - Find benchmark by name
+- `runBenchmark(benchmark, evaluateFn)` - Execute and collect results
+
+**Results Tracking:**
+- Pass/fail counts
+- Accuracy percentage
+- Duration measurements (total, average)
+- Per-test-case results with tags
+- Error tracking
+
+**API Example:**
+```typescript
+const benchmark = new SimpleQABenchmark();
+const testCases = await benchmark.generateTestCases();
+
+const result = await runBenchmark(benchmark, async (testCase) => {
+  const response = await agent.process(createMessage('user', testCase.input));
+  return response.content.includes(testCase.expected);
+});
+
+console.log(`Accuracy: ${result.accuracy.toFixed(1)}%`);
+console.log(`Passed: ${result.passed}/${result.totalTests}`);
+console.log(`Avg Duration: ${result.averageDuration.toFixed(0)}ms`);
+```
+
+### Testing
+
+- **Total Tests**: 260 passing (+52 from v0.15.0)
+- **Conversational Tests**: 24 tests
+- **Benchmarks Tests**: 28 tests
+- **Test Growth**: 25% increase
+- **Coverage**: Configuration, execution, edge cases, integration scenarios
+
+### Technical Improvements
+
+- LLM client protocol for pluggable backends
+- History management with system message preservation
+- Validation function support for dynamic test cases
+- Needle-in-haystack context generation
+- Benchmark execution framework
+- Comprehensive result tracking with metadata
+
+### Progress Metrics
+
+**TypeScript Progress:**
+- **Lines of Code**: 2,388 (patterns + evaluation)
+- **Patterns Implemented**: 6/12 (50%)
+- **Evaluation Modules**: 2/7 (29%)
+- **Test Coverage**: 260 tests
+- **Feature Parity**: 58% of Python capabilities
+
+**What's Included (Patterns):**
+1. ✅ Reflection
+2. ✅ Agents-as-Tools
+3. ✅ Sequential
+4. ✅ Parallel
+5. ✅ ReAct
+6. ✅ Conversational
+
+**What's Included (Evaluation):**
+1. ✅ A/B Testing
+2. ✅ Benchmarks
+
+**Remaining for v1.0:**
+- 6 more patterns: Planning, Multiagent, Task, Reasoning with Tools, Autonomous, Memory
+- 5 more evaluation modules: Bayesian Optimizer, Prompt Optimizer, Quality Metrics, Recorder, Regression
+- Cross-language examples
+
 ## [0.15.0] - 2025-11-25
 
 ### 🎯 TypeScript Foundation - 40% Python Parity Achieved

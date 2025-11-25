@@ -7,6 +7,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2025-11-25
+
+### 🧠 TypeScript Memory Patterns - 92% Python Parity
+
+This release adds the Memory Hierarchy pattern, reaching **92% feature parity** with Python.
+
+**Key Highlights:**
+- ✅ **Memory Hierarchy Pattern**: 480 LOC for three-tier memory system
+- ✅ **443 Tests Passing**: +49 tests from v0.19.0 (12% increase)
+- ✅ **4,367 Total LOC**: Comprehensive pattern library
+- 🎉 **92% Parity**: TypeScript near complete parity with Python
+
+### Added
+
+#### TypeScript Memory Hierarchy Pattern (480 LOC, 49 tests)
+
+**Implementation** (`agenkit-ts/src/patterns/memory.ts`):
+- Three-tier memory system for long-running agents
+- Working memory (in-context), short-term (recent), long-term (persistent)
+- Automatic promotion between tiers
+- Intelligent retrieval with relevance ranking
+
+**Key Features:**
+
+1. **Working Memory**
+   - Fast FIFO eviction (10 message default)
+   - O(1) append, O(n) retrieval
+   - Current conversation context
+   - In-memory only
+
+2. **Short-Term Memory**
+   - Medium capacity (100 message default)
+   - TTL-based expiration
+   - LRU eviction policy
+   - Recency-based retrieval
+
+3. **Long-Term Memory**
+   - Unlimited capacity
+   - Importance-based retention (0.5 threshold default)
+   - Semantic retrieval with relevance scoring
+   - Persistent storage support
+
+4. **Unified Interface**
+   - Store once, retrieve from all tiers
+   - Automatic deduplication
+   - Importance-based promotion
+   - Session tracking
+
+**API Example:**
+```typescript
+import { MemoryHierarchy, WorkingMemory, ShortTermMemory, LongTermMemory } from 'agenkit';
+
+const memory = new MemoryHierarchy(
+  new WorkingMemory(10),
+  new ShortTermMemory(100, 3600),
+  new LongTermMemory({}, undefined, 0.7)
+);
+
+// Store memory with importance
+await memory.store(
+  'User prefers Python over JavaScript',
+  { category: 'preferences' },
+  0.8
+);
+
+// Retrieve relevant memories
+const results = await memory.retrieve(
+  'What programming languages does the user prefer?',
+  5
+);
+```
+
+**Test Coverage** (`agenkit-ts/src/__tests__/memory.test.ts`):
+- MemoryEntry creation and validation
+- WorkingMemory storage, retrieval, FIFO eviction
+- ShortTermMemory TTL expiration, LRU eviction
+- LongTermMemory importance filtering, relevance scoring
+- MemoryHierarchy multi-tier coordination, deduplication
+
+**Use Cases:**
+- Long-running conversational agents
+- Personalization and user preferences
+- Context-aware agents with limited context windows
+- Multi-session continuity
+- Learning and adaptation
+
+### Performance
+
+- **Test Suite**: 443 tests passing (100% pass rate)
+- **Execution Time**: 3.6s
+- **Memory Pattern**: All 49 tests passing
+
+### Statistics
+
+**TypeScript Progress:**
+- LOC: 4,367 (+480 from v0.19.0)
+- Tests: 443 (+49 from v0.19.0)
+- Patterns: 12/13 Python patterns
+- Parity: 92%
+
+**Remaining for 100% Parity:**
+- 1 pattern: Streaming Pattern
+
 ## [0.19.0] - 2025-11-25
 
 ### 🎯 TypeScript Patterns - 83% Python Parity

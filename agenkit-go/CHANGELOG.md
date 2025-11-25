@@ -5,6 +5,47 @@ All notable changes to the agenkit project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **🎉 Go Achieves 100% Evaluation Framework Parity!** - All 3 remaining evaluation frameworks implemented:
+
+  - **Prompt Optimizer** (`evaluation/prompt_optimizer.go`, 650 LOC, 14 tests)
+    - Grid search for exhaustive testing
+    - Random search for quick optimization
+    - Genetic algorithm with tournament selection
+    - Template-based prompt generation with {variable} placeholders
+    - AgentFactory pattern for creating agents from prompts
+    - Configurable objective metric with maximize/minimize support
+
+  - **Optimizer Base Framework** (`evaluation/optimizer.go`, 175 LOC, 11 tests)
+    - Optimizer interface for optimization algorithms
+    - RandomSearchOptimizer for baseline random search
+    - Shares SearchSpace and OptimizationResult with BayesianOptimizer
+    - Support for both maximization and minimization objectives
+    - Comprehensive history tracking and duration metrics
+
+  - **Enhanced Metrics Tracking** (`evaluation/metrics.go`, 357 LOC, 18 tests)
+    - SessionStatus enum (running, completed, failed, timeout, cancelled)
+    - MetricType enum (success_rate, quality_score, cost, duration, error_rate, etc.)
+    - MetricMeasurement struct with timestamps and metadata
+    - ErrorRecord for tracking errors during evaluation
+    - SessionResult with enhanced status tracking and error collection
+    - MetricsCollector for cross-session aggregation
+    - JSON serialization/deserialization support
+
+### Milestone
+
+🎯 **Go is the first language to achieve 100% evaluation framework parity with Python!**
+
+- **Total Evaluation Tests:** 134 tests (100% pass rate)
+- **Total Go Tests:** 410 tests (276 patterns + 134 evaluation)
+- **Total Evaluation LOC:** ~2,800 lines
+- **Total Go LOC:** ~7,500 lines (~4,700 patterns + ~2,800 evaluation)
+
+With both 100% pattern parity (v0.15.0) and 100% evaluation framework parity, Go now offers complete feature parity with Python while delivering 18x performance improvement.
+
 ## [0.15.0] - 2025-11-25
 
 ### Added

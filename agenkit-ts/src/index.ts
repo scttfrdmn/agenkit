@@ -83,14 +83,34 @@ export {
   ReActStopReason,
   createReActAgent,
 } from './patterns/react';
+export {
+  ConversationalAgent,
+  ConversationalAgentConfig,
+  LLMClient,
+  createConversationalAgent,
+} from './patterns/conversational';
 
 // Evaluation
 export {
   ABTest,
   ABVariant,
   ABTestResult,
-  TestCase,
+  TestCase as ABTestCase,
   ABTestConfig,
   RunOptions,
   SignificanceLevel,
 } from './evaluation/ab-testing';
+export {
+  Benchmark,
+  TestCase,
+  SimpleQABenchmark,
+  ReasoningBenchmark,
+  NeedleInHaystackBenchmark,
+  NeedleInHaystackConfig,
+  CodeGenerationBenchmark,
+  BenchmarkResult,
+  TestCaseResult,
+  getAllBenchmarks,
+  getBenchmarkByName,
+  runBenchmark,
+} from './evaluation/benchmarks';

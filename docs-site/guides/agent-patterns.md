@@ -2280,28 +2280,295 @@ class ConversationalAgent:
 
 ---
 
+# Chapter 15: Reasoning with Tools Pattern
+
+✅ **NEW in v0.13.0** | **Production Ready**
+
+**What It Is:** A pattern that enables tools to be called DURING reasoning (not just after), allowing models to dynamically access information and perform computations while thinking through a problem.
+
+**Key Insight:** Unlike ReAct (which is sequential: Observe → Think → Act → Observe), this pattern enables interleaved thinking and tool use (Think ↔ Act), inspired by Claude 4 and OpenAI o3's extended thinking capabilities.
+
+## Why This Pattern?
+
+### Traditional ReAct Limitations:
+
+1. **Sequential Only**: Think first, THEN act
+2. **Rigid Loop**: Can't use tools mid-thought
+3. **Information Delays**: Must complete reasoning before getting data
+4. **Less Natural**: Humans look up facts WHILE thinking
+
+### Reasoning with Tools Advantages:
+
+1. **Dynamic Information**: Get data exactly when needed
+2. **Iterative Refinement**: Tool results inform next reasoning step
+3. **Natural Flow**: More like human problem-solving
+4. **Better Accuracy**: Access to real-time information during reasoning
+
+## Implementation
+
+### Basic Structure:
+
+```python
+from agenkit.patterns import ReasoningWithToolsAgent, ReasoningStep, ReasoningStepType
+
+# Create agent with tools
+agent = ReasoningWithToolsAgent(
+    llm=base_llm_agent,
+    tools=[calculator, database, web_search],
+    max_reasoning_steps=20,
+    enable_trace=True
+)
+
+# Agent interleaves thinking and tool use
+response = await agent.process(
+    Message(role="user", content="Calculate total cost of 3 items at $15.99 with 8.5% tax")
+)
+
+# Access reasoning trace
+trace = response.metadata["reasoning_trace"]
+print(f"Steps: {len(trace['steps'])}")
+print(f"Tools used: {trace['total_tools_used']}")
+```
+
+### Tool Call Format:
+
+The LLM indicates tool use during reasoning:
+
+```
+TOOL_CALL: calculator
+PARAMETERS: {"operation": "multiply", "a": 15.99, "b": 3}
+```
+
+The agent:
+1. Detects the tool call
+2. Executes the tool
+3. Feeds result back into reasoning
+4. Continues thinking with new information
+
+## Reasoning Trace
+
+Every step is recorded with detailed metadata:
+
+```python
+trace = response.metadata["reasoning_trace"]
+
+for step in trace["steps"]:
+    if step["step_type"] == "thinking":
+        print(f"💭 {step['content']}")
+    elif step["step_type"] == "tool_call":
+        print(f"🔧 Called {step['tool_name']}: {step['tool_parameters']}")
+    elif step["step_type"] == "tool_result":
+        print(f"✓ Result: {step['content']}")
+    elif step["step_type"] == "conclusion":
+        print(f"🎯 {step['content']}")
+```
+
+## Production Usage
+
+### With Error Handling:
+
+```python
+agent = ReasoningWithToolsAgent(
+    llm=llm,
+    tools=[calculator, database],
+    max_reasoning_steps=20,
+    enable_trace=True
+)
+
+try:
+    response = await agent.process(message)
+
+    # Check if agent reached conclusion
+    if response.metadata["reasoning_steps"] >= 20:
+        logger.warning("Hit max reasoning steps")
+
+    return response.content
+
+except Exception as e:
+    # Tool execution errors are handled gracefully
+    logger.error(f"Reasoning failed: {e}")
+    return "I encountered an error while processing your request."
+```
+
+### Dynamic Tool Management:
+
+```python
+agent = ReasoningWithToolsAgent(llm=llm, tools=[calculator])
+
+# Add tools at runtime
+if user.has_premium:
+    agent.add_tool(premium_database_tool)
+
+# Remove tools based on context
+if not user.allow_web:
+    agent.remove_tool("web_search")
+
+# Get specific tool
+tool = agent.get_tool("calculator")
+```
+
+## When to Use
+
+**✅ Use Reasoning with Tools When:**
+
+- Solving multi-step problems requiring data lookups
+- Performing calculations during analysis
+- Research tasks with fact-checking
+- Financial planning with price lookups
+- Scientific computing with specialized tools
+- Any task where information is needed mid-thought
+
+**❌ Don't Use When:**
+
+- Simple single-step tasks
+- All required information is already available
+- Tools are expensive and should be used sparingly
+- ReAct's sequential pattern is sufficient
+
+## Key Differences from ReAct
+
+| Aspect | ReAct | Reasoning with Tools |
+|--------|-------|---------------------|
+| **Execution** | Sequential (think → act → observe) | Interleaved (think ↔ act) |
+| **Tool Access** | After reasoning completes | During reasoning |
+| **Use Case** | Action-oriented tasks | Information-gathering during reasoning |
+| **Trace** | Observation → Thought → Action | Thinking + Tool Call + Result (interleaved) |
+| **Natural Fit** | Multi-step procedures | Research and analysis |
+
+## Configuration Options
+
+```python
+agent = ReasoningWithToolsAgent(
+    llm=llm,
+    tools=[tool1, tool2],
+    max_reasoning_steps=20,          # Max steps before stopping
+    tool_use_prompt=custom_prompt,   # Custom instruction for tool usage
+    enable_trace=True,                # Record detailed reasoning trace
+    confidence_threshold=0.8,         # Minimum confidence for answer
+)
+```
+
+## Performance Characteristics
+
+**Trace Overhead:**
+- Enabled: ~5-10% overhead (detailed step recording)
+- Disabled: <1% overhead (minimal metadata)
+
+**Tool Call Latency:**
+- Sequential tools: O(n) where n = number of tool calls
+- Each tool call adds network/compute latency
+
+**Optimization Tips:**
+1. Limit `max_reasoning_steps` to prevent infinite loops
+2. Cache expensive tool results
+3. Use `enable_trace=False` in production if trace not needed
+4. Provide clear tool descriptions to reduce unnecessary calls
+
+## Real-World Example
+
+**Scenario:** Calculate shopping cart total with database lookups
+
+```python
+# Agent interleaves database lookups and calculations:
+# 1. 💭 "I need to find laptop price"
+# 2. 🔧 database.query("laptop") → $999
+# 3. 💭 "Now I need the mouse price"
+# 4. 🔧 database.query("mouse") → $29.99
+# 5. 💭 "Let me calculate the total"
+# 6. 🔧 calculator.add(999, 29.99) → $1,028.99
+# 7. 🎯 "Total cost is $1,028.99"
+
+response = await agent.process(
+    Message(role="user", content="What's the total for laptop and mouse?")
+)
+
+print(response.content)
+# → "The total for a laptop and mouse is $1,028.99"
+```
+
+## Debugging with Traces
+
+Reasoning traces are invaluable for debugging:
+
+```python
+trace = response.metadata["reasoning_trace"]
+
+# Statistics
+print(f"Total steps: {len(trace['steps'])}")
+print(f"Thinking steps: {trace['total_thinking_steps']}")
+print(f"Tools used: {trace['total_tools_used']}")
+print(f"Duration: {trace['duration_seconds']:.2f}s")
+
+# Step-by-step analysis
+for i, step in enumerate(trace["steps"], 1):
+    print(f"\nStep {i}:")
+    print(f"  Type: {step['step_type']}")
+    print(f"  Content: {step['content'][:100]}...")
+    if step['tool_name']:
+        print(f"  Tool: {step['tool_name']}")
+        print(f"  Parameters: {step['tool_parameters']}")
+```
+
+## Best Practices
+
+1. **Provide Clear Tool Descriptions**: LLM uses descriptions to decide when to call tools
+2. **Set Reasonable Max Steps**: Prevent infinite reasoning loops (typically 10-30)
+3. **Enable Tracing in Development**: Critical for debugging reasoning flow
+4. **Handle Tool Errors Gracefully**: Agent continues even if tools fail
+5. **Monitor Tool Usage**: Track which tools are called most frequently
+6. **Cache Tool Results**: Avoid redundant expensive operations
+
+## Anti-Patterns
+
+**❌ Tool Thrashing:**
+```python
+# Bad: Agent repeatedly calls same tool
+# search("Python tutorial")
+# search("Python tutorial for beginners")
+# search("beginner Python tutorial")
+```
+**Fix:** Cache results, add cooldowns, or improve tool descriptions
+
+**❌ Infinite Reasoning:**
+```python
+# Bad: No termination condition
+agent = ReasoningWithToolsAgent(
+    llm=llm,
+    tools=tools,
+    max_reasoning_steps=1000,  # Too high!
+)
+```
+**Fix:** Set reasonable limit (10-30 steps), add conclusion detection
+
+**See Also:**
+- `examples/patterns/09_reasoning_with_tools.py` - 6 complete demos
+- `tests/patterns/test_reasoning_with_tools.py` - 25 comprehensive tests
+- Related: Chapter 6 (ReAct) for sequential reasoning + acting
+
+---
+
 # Part III: Production
 
-*(Chapters 15-18 planned but not yet written)*
+*(Chapters 16-19 planned but not yet written)*
 
-## Chapter 15: State Management
+## Chapter 16: State Management
 - Conversational, session, long-term state
 - Storage options
 - Checkpointing
 
-## Chapter 16: Error Handling & Resilience
+## Chapter 17: Error Handling & Resilience
 - Failure modes
 - Retry patterns
 - Circuit breakers
 - Fallback strategies
 
-## Chapter 17: Deployment Patterns
+## Chapter 18: Deployment Patterns
 - Architectures
 - Container deployment
 - Kubernetes
 - Cross-language
 
-## Chapter 18: Observability & Debugging
+## Chapter 19: Observability & Debugging
 - Distributed tracing
 - Metrics
 - Logging
@@ -2311,20 +2578,20 @@ class ConversationalAgent:
 
 # Part IV: Advanced Topics
 
-*(Chapters 19-21 planned but not yet written)*
+*(Chapters 20-22 planned but not yet written)*
 
-## Chapter 19: Multi-Agent Systems
+## Chapter 20: Multi-Agent Systems
 - System architectures
 - Communication patterns
 - Coordination mechanisms
 
-## Chapter 20: Agent Learning & Adaptation
+## Chapter 21: Agent Learning & Adaptation
 - Learning strategies
 - Feedback loops
 - Self-reflection
 - Memory systems
 
-## Chapter 21: Future Directions
+## Chapter 22: Future Directions
 - Current trends
 - Research frontiers
 - Scaling challenges

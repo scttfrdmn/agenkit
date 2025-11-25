@@ -367,13 +367,17 @@ Continue reasoning or provide final answer."""
             final_answer = response_text
 
         # Create response with trace
-        response_message = Message(role="assistant", content=final_answer)
-
+        metadata = {}
         if trace:
-            response_message.metadata = response_message.metadata or {}
-            response_message.metadata["reasoning_trace"] = trace.to_dict()
-            response_message.metadata["reasoning_steps"] = len(trace.steps)
-            response_message.metadata["tools_used"] = trace.total_tools_used
+            metadata["reasoning_trace"] = trace.to_dict()
+            metadata["reasoning_steps"] = len(trace.steps)
+            metadata["tools_used"] = trace.total_tools_used
+
+        response_message = Message(
+            role="assistant",
+            content=final_answer,
+            metadata=metadata if metadata else None,
+        )
 
         return response_message
 

@@ -12,6 +12,7 @@ Core Patterns:
 - ReflectionAgent: Self-critique and iterative refinement (NEW in v0.12.0)
 - AgentTool: Agents-as-Tools for hierarchical delegation (NEW in v0.12.0)
 - MemoryHierarchy: Multi-tier memory system (NEW in v0.12.0)
+- ReasoningWithToolsAgent: Interleaved reasoning and tool usage (NEW in v0.13.0)
 """
 
 from agenkit.patterns.agents_as_tools import (
@@ -55,6 +56,12 @@ from agenkit.patterns.react import (
     ToolRegistry,
     ToolResult,
 )
+from agenkit.patterns.reasoning_with_tools import (
+    ReasoningStep,
+    ReasoningStepType,
+    ReasoningTrace,
+    ReasoningWithToolsAgent,
+)
 from agenkit.patterns.reflection import (
     CritiqueFormat,
     ReflectionAgent,
@@ -91,6 +98,11 @@ __all__ = [
     # ReAct
     "ReActAgent",
     "ReActStep",
+    # Reasoning with Tools (NEW in v0.13.0)
+    "ReasoningStep",
+    "ReasoningStepType",
+    "ReasoningTrace",
+    "ReasoningWithToolsAgent",
     # Reflection Pattern (NEW)
     "ReflectionAgent",
     "ReflectionStep",

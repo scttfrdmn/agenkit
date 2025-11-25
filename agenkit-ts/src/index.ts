@@ -114,3 +114,15 @@ export {
   getBenchmarkByName,
   runBenchmark,
 } from './evaluation/benchmarks';
+export {
+  Metric,
+  AccuracyMetric,
+  AccuracyMetricConfig,
+  QualityMetrics,
+  QualityMetricsConfig,
+  QualityWeights,
+  LatencyMetric,
+  Validator,
+  EvaluationResult,
+  evaluateAgent,
+} from './evaluation/quality-metrics';

@@ -154,3 +154,12 @@ export {
   EvaluationResult,
   evaluateAgent,
 } from './evaluation/quality-metrics';
+export {
+  MemoryEntry,
+  MemoryStore,
+  WorkingMemory,
+  ShortTermMemory,
+  LongTermMemory,
+  MemoryHierarchy,
+  createMemoryEntry,
+} from './patterns/memory';

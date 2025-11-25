@@ -9,21 +9,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.14.0] - 2025-11-25
 
-### 🚀 Go Core Patterns Complete - Orchestration, ReAct & Conversational
+### 🚀 Go Core Patterns Complete - Orchestration, ReAct, Conversational & Task
 
-This release adds three essential patterns to Go: Orchestration (Sequential, Parallel, Router), ReAct (Reasoning + Acting), and Conversational (multi-turn dialogue). Go reaches **45% pattern parity** (5/11 patterns).
+This release adds four essential patterns to Go: Orchestration (Sequential, Parallel, Router), ReAct (Reasoning + Acting), Conversational (multi-turn dialogue), and Task (one-shot execution). Go reaches **55% pattern parity** (6/11 patterns) - **over halfway to 100%!**
 
 **Key Highlights:**
-- ✅ **Conversational Pattern**: 254 LOC for multi-turn dialogue with history management (NEW!)
+- ✅ **Task Pattern**: 244 LOC for one-shot execution with lifecycle management (NEW!)
+- ✅ **Conversational Pattern**: 254 LOC for multi-turn dialogue with history management
 - ✅ **ReAct Pattern**: 360 LOC for reasoning with tool use
 - ✅ **Orchestration Pattern**: 391 LOC for Sequential, Parallel, Router patterns
-- ✅ **120 Tests Passing**: 103 pattern tests total (300% increase over v0.13.0!)
+- ✅ **138 Tests Passing**: 121 pattern tests total (400% increase over v0.13.0!)
+- ✅ **Resource Management**: Task ensures proper cleanup with timeout/retry support
 - ✅ **Context-Aware Conversations**: Maintains history across turns with automatic pruning
 - ✅ **Tool-Augmented Reasoning**: ReAct enables self-directed exploration
 - ✅ **Composable Agents**: Patterns can contain other patterns
-- 📊 **45% Parity**: Go now has 5/11 patterns - halfway to 100%!
+- 📊 **55% Parity**: Go now has 6/11 patterns - over halfway to 100%!
 
 ### Added
+
+#### Go Task Pattern (244 LOC, 18 tests)
+
+**Implementation** (`agenkit-go/patterns/task.go`):
+- One-shot agent execution with lifecycle management
+- Automatic resource cleanup
+- Timeout support with context cancellation
+- Retry logic with exponential backoff
+
+**Key Features:**
+
+1. **One-Shot Semantics**
+   - Single-use execution per Task instance
+   - Prevention of reuse after completion
+   - Explicit resource management
+   - Clear lifecycle: create → execute → cleanup
+
+2. **Timeout Support**
+   - Context-based timeout implementation
+   - Configurable timeout duration
+   - Automatic cleanup on timeout
+   - TimeoutError for clear error handling
+
+3. **Retry Logic**
+   - Configurable retry attempts (default: 0)
+   - Exponential backoff between retries
+   - Context cancellation during backoff
+   - Detailed error wrapping with TaskError
+
+4. **Resource Management**
+   - Cleanup() hook for custom cleanup logic
+   - Automatic cleanup on error
+   - ExecuteTask() helper with automatic cleanup
+   - Prevention of resource leaks
+
+5. **API Methods**
+   - Execute(ctx, message) - Run task once
+   - Cleanup() - Clean up resources
+   - Completed() - Check if task completed
+   - Result() - Get task result (if successful)
+
+**Example:**
+```go
+// Basic usage with manual cleanup
+task := patterns.NewTask(agent, &patterns.TaskConfig{
+    Timeout: 30 * time.Second,
+    Retries: 2,
+})
+result, err := task.Execute(ctx, message)
+if err != nil {
+    log.Fatal(err)
+}
+task.Cleanup()
+
+// Automatic cleanup with helper
+result, err := patterns.ExecuteTask(ctx, agent, message, &patterns.TaskConfig{
+    Timeout: 30 * time.Second,
+    Retries: 2,
+})
+```
+
+**Testing:**
+- 18 comprehensive tests covering all functionality
+- Basic execution and reuse prevention
+- Timeout scenarios (with and without timeout)
+- Retry logic (success on retry, exhaustion)
+- Context cancellation (during execution and retry)
+- Error types (TaskError, TimeoutError)
+- Edge cases (nil config, result access)
+- All tests passing ✅
 
 #### Go Conversational Pattern (254 LOC, 20 tests)
 
@@ -273,15 +345,15 @@ routerPattern, _ := patterns.NewRouterPattern(
 - ✅ Orchestration (completed v0.14.0) ← **NEW**
 - ✅ ReAct (completed v0.14.0) ← **NEW**
 - ✅ Conversational (completed v0.14.0) ← **NEW**
-- ⬜ Task (pending)
+- ✅ Task (completed v0.14.0) ← **NEW**
 - ⬜ Multiagent (pending)
 - ⬜ Planning (pending)
 - ⬜ Memory Hierarchy (pending)
 - ⬜ Autonomous (pending)
 - ⬜ Reasoning with Tools (pending)
 
-**Status:** 45% complete (5/11 patterns) - need 3 more patterns for 70% target
-**Milestone:** Halfway to 100% parity! 🎉
+**Status:** 55% complete (6/11 patterns) - need 2 more patterns for 70% target
+**Milestone:** Over halfway to 100% parity! 🎉
 
 ## [0.22.0] - 2025-11-25
 

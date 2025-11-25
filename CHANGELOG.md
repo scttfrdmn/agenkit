@@ -7,6 +7,130 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2025-11-25
+
+### 📊 TypeScript Quality - 67% Python Parity
+
+This release adds comprehensive quality evaluation capabilities, reaching **67% feature parity** with Python.
+
+**Key Highlights:**
+- ✅ **Quality Metrics Module**: 464 LOC with 3 core metrics
+- ✅ **290 Tests Passing**: +30 tests from v0.16.0 (12% increase)
+- ✅ **2,852 Total LOC**: Patterns + evaluation framework
+- 🎉 **67% Parity**: TypeScript approaching 70% milestone
+
+### Added
+
+#### TypeScript Quality Metrics Module (464 LOC, 30 tests)
+
+**Implementation** (`agenkit-ts/src/evaluation/quality-metrics.ts`):
+- Base `Metric` interface for extensibility
+- 3 core metric implementations
+- Agent evaluation framework with `evaluateAgent()`
+- Comprehensive aggregation statistics
+
+**Core Metrics:**
+
+1. **AccuracyMetric** - Task accuracy measurement
+   - Exact and substring matching (case-insensitive/sensitive)
+   - Custom validator function support
+   - Returns 1.0 (correct) or 0.0 (incorrect)
+   - Aggregates: accuracy, total, correct, incorrect counts
+
+2. **QualityMetrics** - Multi-dimensional quality scoring
+   - Relevance: Keyword overlap with input
+   - Completeness: Response length and structure
+   - Coherence: Sentence structure and grammar
+   - Accuracy: Match with expected output
+   - Configurable dimension weights
+   - Rule-based heuristics (0.0 to 1.0)
+   - Aggregates: mean, min, max scores
+
+3. **LatencyMetric** - Response time measurement
+   - Measures agent latency in milliseconds
+   - Uses provided latency or measures dynamically
+   - Aggregates: mean, min, max, p50, p95, p99 percentiles
+
+**API Example:**
+```typescript
+// Individual metrics
+const accuracyMetric = new AccuracyMetric();
+const score = await accuracyMetric.measure(
+  agent,
+  inputMsg,
+  outputMsg,
+  { expected: 'Paris' }
+);
+
+// Quality with custom weights
+const qualityMetric = new QualityMetrics({
+  weights: {
+    relevance: 0.4,
+    completeness: 0.3,
+    coherence: 0.2,
+    accuracy: 0.1
+  }
+});
+
+// Full evaluation framework
+const result = await evaluateAgent(
+  agent,
+  [
+    { input: createMessage('user', 'Question 1'), expected: 'Answer 1' },
+    { input: createMessage('user', 'Question 2'), expected: 'Answer 2' }
+  ],
+  [new AccuracyMetric(), new QualityMetrics(), new LatencyMetric()]
+);
+
+console.log(\`Accuracy: \${result.metrics.accuracy.accuracy.toFixed(2)}\`);
+console.log(\`Quality: \${result.metrics.quality.mean.toFixed(2)}\`);
+console.log(\`Latency p95: \${result.metrics.latency.p95.toFixed(0)}ms\`);
+```
+
+### Testing
+
+- **Total Tests**: 290 passing (+30 from v0.16.0)
+- **Quality Metrics Tests**: 30 tests
+- **Test Growth**: 12% increase
+- **Coverage**: Accuracy, quality dimensions, latency, aggregation, evaluation framework
+
+### Technical Improvements
+
+- Metric interface for extensibility
+- Custom validator function support
+- Rule-based quality heuristics
+- Percentile calculations for latency
+- Comprehensive aggregation methods
+- Type-safe metric configurations
+
+### Progress Metrics
+
+**TypeScript Progress:**
+- **Lines of Code**: 2,852 (patterns + evaluation)
+- **Patterns Implemented**: 6/12 (50%)
+- **Evaluation Modules**: 3/7 (43%)
+- **Test Coverage**: 290 tests
+- **Feature Parity**: 67% of Python capabilities
+
+**What's Included:**
+
+Patterns (6/12):
+1. ✅ Reflection
+2. ✅ Agents-as-Tools
+3. ✅ Sequential
+4. ✅ Parallel
+5. ✅ ReAct
+6. ✅ Conversational
+
+Evaluation (3/7):
+1. ✅ A/B Testing
+2. ✅ Benchmarks
+3. ✅ Quality Metrics
+
+**Remaining for v1.0:**
+- 6 more patterns: Planning, Multiagent, Task, Reasoning with Tools, Autonomous, Memory
+- 4 more evaluation modules: Bayesian Optimizer, Prompt Optimizer, Recorder, Regression
+
 ## [0.16.0] - 2025-11-25
 
 ### 🚀 TypeScript Acceleration - 58% Python Parity

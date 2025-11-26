@@ -163,6 +163,84 @@ export {
   evaluateAgent,
 } from './evaluation/core';
 export {
+  ContextMetrics,
+  CompressionMetrics,
+  AgentWithContextStats,
+  CompressionStats,
+  createCompressionStats,
+  compressionStatsToDict,
+} from './evaluation/context-metrics';
+export {
+  SessionRecorder,
+  SessionReplay,
+  RecordingStorage,
+  FileRecordingStorage,
+  InMemoryRecordingStorage,
+  SessionRecording,
+  InteractionRecord,
+  MessageDict,
+  ReplayResults,
+  ReplayInteraction,
+  ReplayComparison,
+  OutputDifference,
+  getSessionDuration,
+  getTotalLatency,
+  sessionRecordingToDict,
+  sessionRecordingFromDict,
+  interactionRecordToDict,
+  interactionRecordFromDict,
+} from './evaluation/recorder';
+export {
+  RegressionDetector,
+  RegressionDetectorConfig,
+  Regression,
+  Severity,
+  MetricComparison,
+  TrendStats,
+  isRegression,
+  regressionToDict,
+} from './evaluation/regression';
+export {
+  SearchSpace,
+  Optimizer,
+  RandomSearchOptimizer,
+  OptimizationResult,
+  ParameterType,
+  ParameterSpec,
+  AgentFactory,
+  ObjectiveFunction,
+  getOptimizationDuration,
+  getOptimizationImprovement,
+  optimizationResultToDict,
+} from './evaluation/optimizer';
+export {
+  BayesianOptimizer,
+  BayesianOptimizerConfig,
+  AcquisitionFunction,
+} from './evaluation/bayesian-optimizer';
+export {
+  PromptOptimizer,
+  PromptOptimizerConfig,
+  PromptOptimizationResult,
+  PromptEvaluation,
+  PromptAgentFactory,
+  OptimizationStrategy,
+  GeneticConfig,
+  getPromptOptimizationDuration,
+  promptOptimizationResultToDict,
+} from './evaluation/prompt-optimizer';
+export {
+  SessionResult,
+  MetricsCollector,
+  SessionStatus,
+  MetricType,
+  MetricMeasurement,
+  ErrorRecord,
+  AggregatedMetric,
+  createMetricMeasurement,
+  createErrorRecord,
+} from './evaluation/metrics';
+export {
   MemoryEntry,
   MemoryStore,
   WorkingMemory,

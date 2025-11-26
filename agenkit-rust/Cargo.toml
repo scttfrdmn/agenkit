@@ -72,3 +72,7 @@ path = "examples/react_pattern.rs"
 [[example]]
 name = "planning_pattern"
 path = "examples/planning_pattern.rs"
+
+[[example]]
+name = "conversational_pattern"
+path = "examples/conversational_pattern.rs"

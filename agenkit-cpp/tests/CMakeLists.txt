@@ -40,5 +40,10 @@ add_executable(test_result test_result.cpp)
 target_link_libraries(test_result agenkit gtest_main)
 add_test(NAME result_tests COMMAND test_result)
 
+# HTTP transport tests
+add_executable(test_http_transport test_http_transport.cpp)
+target_link_libraries(test_http_transport agenkit gtest_main)
+add_test(NAME http_transport_tests COMMAND test_http_transport)
+
 # Enable verbose test output
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")

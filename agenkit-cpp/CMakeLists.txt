@@ -15,16 +15,22 @@ option(AGENKIT_BUILD_SHARED "Build shared library" ON)
 find_package(nlohmann_json 3.11.0 REQUIRED)
 find_package(Threads REQUIRED)
 
-# cpp-httplib (header-only, vendored or system)
-# TODO: Add cpp-httplib as subdirectory or find_package
+# cpp-httplib (header-only HTTP library)
+include(FetchContent)
+FetchContent_Declare(
+    httplib
+    GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+    GIT_TAG v0.14.3
+)
+FetchContent_MakeAvailable(httplib)
 
 # Library target
 add_library(agenkit
     src/core/message.cpp
     src/core/errors.cpp
     src/adapters/echo_agent.cpp
-    # src/transports/http_agent.cpp     # Week 2
-    # src/transports/http_server.cpp    # Week 2
+    src/transports/http_agent.cpp
+    src/transports/http_server.cpp
 )
 
 target_include_directories(agenkit
@@ -40,6 +46,7 @@ target_link_libraries(agenkit
         nlohmann_json::nlohmann_json
     PRIVATE
         Threads::Threads
+        httplib::httplib
 )
 
 # Compiler warnings

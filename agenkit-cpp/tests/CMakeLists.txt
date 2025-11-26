@@ -60,5 +60,10 @@ add_executable(test_react patterns/test_react.cpp)
 target_link_libraries(test_react agenkit gtest_main)
 add_test(NAME react_tests COMMAND test_react)
 
+# Pattern tests - Agents-as-Tools
+add_executable(test_agents_as_tools patterns/test_agents_as_tools.cpp)
+target_link_libraries(test_agents_as_tools agenkit gtest_main)
+add_test(NAME agents_as_tools_tests COMMAND test_agents_as_tools)
+
 # Enable verbose test output
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")

@@ -9,6 +9,7 @@ Minimal, composable interfaces for AI agents in Rust.
 - **Type-safe**: Full Rust type safety with async/await
 - **Performance**: Built on Tokio for high-performance async I/O
 - **Production-ready**: HTTP transport with timeouts, error handling, and tracing
+- **WebAssembly**: Run agents directly in web browsers
 
 ## Quick Start
 
@@ -158,15 +159,38 @@ Run all tests:
 cargo test
 ```
 
+## WebAssembly Support
+
+Run agents in web browsers! See [WASM.md](WASM.md) for complete documentation.
+
+```bash
+# Build for browsers
+wasm-pack build --target web --features wasm --no-default-features
+```
+
+```javascript
+import init, { WasmEchoAgent, JsMessage } from './pkg/agenkit.js';
+
+await init();
+const agent = new WasmEchoAgent('browser-agent');
+const response = await agent.process(new JsMessage('user', 'Hello!'));
+```
+
+**Available in WASM**: Reflection, Agents-as-Tools, Orchestration, ReAct, Conversational
+**Native-only**: Task, Planning, Multiagent, Autonomous, Memory, Reasoning (require tokio)
+
+See `examples/wasm_browser_agent.html` for a complete browser example.
+
 ## Architecture
 
 Agenkit follows a layered architecture:
 
 1. **Core** (`core/`): Message types and Agent trait
 2. **Adapters** (`adapters/`): Local agent implementations
-3. **Transports** (`transports/`): HTTP, WebSocket, gRPC
-4. **Patterns** (`patterns/`): Reflection, Agents-as-Tools, Orchestration
-5. **Evaluation** (future): Benchmarking and testing frameworks
+3. **Transports** (`transports/`): HTTP, WebSocket, gRPC (native-only)
+4. **Patterns** (`patterns/`): Reflection, Agents-as-Tools, Orchestration, etc.
+5. **Evaluation** (`evaluation/`): Benchmarking and optimization frameworks
+6. **WASM** (`wasm/`): Browser-compatible bindings
 
 ## Current Status
 

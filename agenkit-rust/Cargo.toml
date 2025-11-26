@@ -80,3 +80,11 @@ path = "examples/conversational_pattern.rs"
 [[example]]
 name = "task_pattern"
 path = "examples/task_pattern.rs"
+
+[[example]]
+name = "multiagent_pattern"
+path = "examples/multiagent_pattern.rs"
+
+[[example]]
+name = "autonomous_pattern"
+path = "examples/autonomous_pattern.rs"

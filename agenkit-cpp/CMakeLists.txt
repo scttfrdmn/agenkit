@@ -35,6 +35,7 @@ add_library(agenkit
     src/patterns/reflection.cpp
     src/patterns/react.cpp
     src/patterns/agents_as_tools.cpp
+    src/patterns/orchestration.cpp
 )
 
 target_include_directories(agenkit

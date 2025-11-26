@@ -40,6 +40,7 @@ pub mod core;
 pub mod metrics;
 pub mod quality_metrics;
 pub mod context_metrics;
+pub mod recorder;
 
 pub use core::{Metric, EvaluationResult, Evaluator};
 pub use metrics::{
@@ -49,4 +50,8 @@ pub use metrics::{
 pub use quality_metrics::{AccuracyMetric, QualityMetrics, ValidatorFunc};
 pub use context_metrics::{
     ContextMetrics, CompressionMetrics, CompressionStats, LatencyMetric,
+};
+pub use recorder::{
+    InteractionRecord, SessionRecording, RecordingStorage,
+    FileRecordingStorage, InMemoryRecordingStorage, SessionRecorder,
 };

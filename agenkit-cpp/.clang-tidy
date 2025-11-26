@@ -1,0 +1,60 @@
+---
+# Clang-Tidy configuration for Agenkit C++
+# Modern C++17 best practices with performance and safety focus
+
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  google-*,
+  -google-readability-todo,
+  -google-runtime-references,
+  hicpp-*,
+  -hicpp-no-array-decay,
+  misc-*,
+  -misc-non-private-member-variables-in-classes,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  performance-*,
+  portability-*,
+  readability-*,
+  -readability-identifier-length,
+  -readability-magic-numbers,
+  -readability-named-parameter
+
+CheckOptions:
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.FunctionCase
+    value: lower_case
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+  - key: readability-identifier-naming.PrivateMemberSuffix
+    value: '_'
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+  - key: readability-function-cognitive-complexity.Threshold
+    value: 25
+  - key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value: 1
+  - key: modernize-loop-convert.MinConfidence
+    value: reasonable
+  - key: performance-move-const-arg.CheckTriviallyCopyableMove
+    value: 0
+
+WarningsAsErrors: ''
+HeaderFilterRegex: 'include/agenkit/.*'
+FormatStyle: file

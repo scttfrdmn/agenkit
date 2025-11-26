@@ -17,11 +17,11 @@ Agenkit has achieved 100% pattern parity across Python, TypeScript, and Go - **5
 | **Python** | 11/11 (100%) | ~300 | ~5,500 | ✅ Complete (Reference) | 1.0x |
 | **TypeScript** | 11/11 (100%) | 514 | ~5,134 | ✅ Complete | ~0.8x (Node.js) |
 | **Go** | 11/11 (100%) | 276 | ~4,700 | ✅ Complete | **18x** |
-| **Rust** | 0/11 (0%) | 25 | ~982 | 🔄 Infrastructure (v0.24) | Expected 20x + WASM |
-| **C++** | 0/11 (0%) | 0 | 0 | 📋 Planned (v0.18-v0.19) | Expected 25x + GPU |
-| **Zig** | 0/11 (0%) | 0 | 0 | 📋 Planned (v0.20-v0.21) | Expected 22x + C interop |
+| **Rust** | 4/11 (36%) | 44 | ~2,282 | 🔄 Critical Patterns (v0.25) | Expected 20x + WASM |
+| **C++** | 0/11 (0%) | 0 | 0 | 📋 Planned (v0.29-v0.30) | Expected 25x + GPU |
+| **Zig** | 0/11 (0%) | 0 | 0 | 📋 Planned (v0.31-v0.32) | Expected 22x + C interop |
 
-**Total Test Coverage:** 1,115+ tests across 4 languages (100% pass rate)
+**Total Test Coverage:** 1,134+ tests across 4 languages (100% pass rate)
 
 ## Pattern Implementation Details
 
@@ -31,16 +31,19 @@ Agenkit has achieved 100% pattern parity across Python, TypeScript, and Go - **5
    - Python: ✅ (v0.12.0)
    - TypeScript: ✅ (v0.16.0)
    - Go: ✅ (v0.13.0)
+   - Rust: ✅ (v0.25.0)
 
 2. **Agents as Tools** - Hierarchical agent delegation
    - Python: ✅ (v0.12.0)
    - TypeScript: ✅ (v0.16.0)
    - Go: ✅ (v0.13.0)
+   - Rust: ✅ (v0.25.0)
 
 3. **Orchestration** - Sequential, Parallel, and Router patterns
    - Python: ✅ (v0.12.0)
    - TypeScript: ✅ (v0.16.0, v0.19.0)
    - Go: ✅ (v0.15.0)
+   - Rust: ✅ Sequential, Parallel (v0.25.0)
 
 4. **ReAct** - Reasoning-Acting cycle with tool integration
    - Python: ✅ (v0.12.0)
@@ -219,27 +222,33 @@ Agenkit has achieved 100% pattern parity across Python, TypeScript, and Go - **5
 
 ### Rust
 - **Version:** 1.75+
-- **Patterns:** 0/11 (Infrastructure complete, patterns next)
+- **Patterns:** 4/11 (36% - Critical patterns complete!)
 - **Evaluation Frameworks:** 0/10
-- **Tests:** 25 tests (17 unit + 8 doc) - 100% passing
-- **LOC:** ~982 infrastructure
+- **Tests:** 44 tests (36 unit + 8 doc) - 100% passing
+- **LOC:** ~2,282 total (~982 infrastructure + ~1,300 patterns)
 - **Key Strengths:**
   - Expected 20x performance vs Python
   - Memory safety without GC
   - WASM support for browser deployment
   - Zero-copy optimizations possible
   - Low memory footprint (~8 MB per agent)
-- **Current Status:**
-  - ✅ Core Agent trait with async support
-  - ✅ HTTP transport (client and server)
-  - ✅ Message and ToolResult types
+  - True parallel execution with Tokio
+- **Current Status (v0.25.0):**
+  - ✅ Core Agent trait with async support (~350 LOC)
+  - ✅ HTTP transport (client and server) (~200 LOC)
+  - ✅ Message and ToolResult types (~432 LOC)
   - ✅ Comprehensive error handling
-  - ✅ 2 working examples
-  - 📋 Patterns implementation next (v0.25+)
-- **Use Cases (Future):**
-  - WASM browser agents
+  - ✅ **Reflection pattern** (~650 LOC, 5 tests)
+  - ✅ **Agents-as-Tools pattern** (~420 LOC, 6 tests)
+  - ✅ **Sequential Orchestration** (~190 LOC, 4 tests)
+  - ✅ **Parallel Orchestration** (~190 LOC, 4 tests)
+  - ✅ 5 working examples (echo, HTTP, reflection, agents-as-tools, orchestration)
+  - 📋 More patterns next (v0.26.0)
+- **Use Cases:**
+  - WASM browser agents (WASM support coming in v0.28.0)
   - Safety-critical systems
   - Maximum performance requirements
+  - High-concurrency agent systems
   - Embedded systems
 
 ## Next Steps

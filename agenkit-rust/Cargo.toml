@@ -32,6 +32,9 @@ anyhow = "1.0"
 # Regex for pattern parsing
 regex = "1.10"
 
+# UUID generation
+uuid = { version = "1.6", features = ["v4"] }
+
 # Tracing and logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

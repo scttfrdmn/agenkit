@@ -42,6 +42,7 @@ pub mod quality_metrics;
 pub mod context_metrics;
 pub mod recorder;
 pub mod regression;
+pub mod benchmarks;
 
 pub use core::{Metric, EvaluationResult, Evaluator};
 pub use metrics::{
@@ -57,3 +58,6 @@ pub use recorder::{
     FileRecordingStorage, InMemoryRecordingStorage, SessionRecorder,
 };
 pub use regression::{Severity, Regression, RegressionDetector};
+pub use benchmarks::{
+    TestCase, Benchmark, SimpleQABenchmark, NeedleInHaystackBenchmark, ExtremeScaleBenchmark,
+};

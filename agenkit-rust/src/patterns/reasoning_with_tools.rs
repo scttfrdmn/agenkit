@@ -45,7 +45,7 @@ use std::sync::Arc;
 use chrono::Utc;
 use serde::{Serialize, Deserialize};
 
-use crate::core::{Agent, AgentError, Message, Tool, ToolResult};
+use crate::core::{Agent, AgentError, Message, Tool};
 
 /// Type of reasoning step.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -173,6 +173,7 @@ pub struct ReasoningWithToolsAgent {
     max_reasoning_steps: usize,
     tool_use_prompt: String,
     enable_trace: bool,
+    #[allow(dead_code)]
     confidence_threshold: f64,
 }
 
@@ -504,6 +505,7 @@ impl Agent for ReasoningWithToolsAgent {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::ToolResult;
     use async_trait::async_trait;
 
     // Mock LLM agent

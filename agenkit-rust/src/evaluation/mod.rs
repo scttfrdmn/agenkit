@@ -39,6 +39,7 @@
 pub mod core;
 pub mod metrics;
 pub mod quality_metrics;
+pub mod context_metrics;
 
 pub use core::{Metric, EvaluationResult, Evaluator};
 pub use metrics::{
@@ -46,3 +47,6 @@ pub use metrics::{
     SessionResult, MetricsCollector,
 };
 pub use quality_metrics::{AccuracyMetric, QualityMetrics, ValidatorFunc};
+pub use context_metrics::{
+    ContextMetrics, CompressionMetrics, CompressionStats, LatencyMetric,
+};

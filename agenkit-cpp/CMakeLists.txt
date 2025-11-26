@@ -18,36 +18,36 @@ find_package(Threads REQUIRED)
 # cpp-httplib (header-only, vendored or system)
 # TODO: Add cpp-httplib as subdirectory or find_package
 
-# Library target (placeholder until we have source files)
-# add_library(agenkit
-#     src/core/message.cpp
-#     src/core/errors.cpp
-#     src/adapters/echo_agent.cpp
-#     src/transports/http_agent.cpp
-#     src/transports/http_server.cpp
-# )
+# Library target
+add_library(agenkit
+    src/core/message.cpp
+    src/core/errors.cpp
+    src/adapters/echo_agent.cpp
+    # src/transports/http_agent.cpp     # Week 2
+    # src/transports/http_server.cpp    # Week 2
+)
 
-# target_include_directories(agenkit
-#     PUBLIC
-#         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#         $<INSTALL_INTERFACE:include>
-#     PRIVATE
-#         ${CMAKE_CURRENT_SOURCE_DIR}/src
-# )
+target_include_directories(agenkit
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
-# target_link_libraries(agenkit
-#     PUBLIC
-#         nlohmann_json::nlohmann_json
-#     PRIVATE
-#         Threads::Threads
-# )
+target_link_libraries(agenkit
+    PUBLIC
+        nlohmann_json::nlohmann_json
+    PRIVATE
+        Threads::Threads
+)
 
-# # Compiler warnings
-# if(MSVC)
-#     target_compile_options(agenkit PRIVATE /W4)
-# else()
-#     target_compile_options(agenkit PRIVATE -Wall -Wextra -Wpedantic)
-# endif()
+# Compiler warnings
+if(MSVC)
+    target_compile_options(agenkit PRIVATE /W4 /WX)
+else()
+    target_compile_options(agenkit PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
 
 # Examples
 if(AGENKIT_BUILD_EXAMPLES)

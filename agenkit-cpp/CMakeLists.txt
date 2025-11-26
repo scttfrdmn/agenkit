@@ -51,15 +51,13 @@ endif()
 
 # Examples
 if(AGENKIT_BUILD_EXAMPLES)
-    # add_subdirectory(examples)
-    message(STATUS "Examples will be built when implementation is ready")
+    add_subdirectory(examples)
 endif()
 
 # Tests
 if(AGENKIT_BUILD_TESTS)
     enable_testing()
-    # add_subdirectory(tests)
-    message(STATUS "Tests will be built when implementation is ready")
+    add_subdirectory(tests)
 endif()
 
 # Install rules (placeholder)

@@ -65,4 +65,5 @@ pub use benchmarks::{
 pub use optimizer::{
     ObjectiveFunc, ParameterType, ParameterSpec, SearchSpace,
     OptimizationStep, OptimizationResult, RandomSearchOptimizer,
+    AcquisitionFunction, BayesianOptimizer,
 };

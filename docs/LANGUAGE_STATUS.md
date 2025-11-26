@@ -17,11 +17,11 @@ Agenkit has achieved 100% pattern parity across Python, TypeScript, and Go - **5
 | **Python** | 11/11 (100%) | ~300 | ~5,500 | ✅ Complete (Reference) | 1.0x |
 | **TypeScript** | 11/11 (100%) | 514 | ~5,134 | ✅ Complete | ~0.8x (Node.js) |
 | **Go** | 11/11 (100%) | 276 | ~4,700 | ✅ Complete | **18x** |
-| **Rust** | 4/11 (36%) | 44 | ~2,282 | 🔄 Critical Patterns (v0.25) | Expected 20x + WASM |
+| **Rust** | 5/11 (45%) | 57 | ~2,582 | 🔄 v0.26.0 in progress | Expected 20x + WASM |
 | **C++** | 0/11 (0%) | 0 | 0 | 📋 Planned (v0.29-v0.30) | Expected 25x + GPU |
 | **Zig** | 0/11 (0%) | 0 | 0 | 📋 Planned (v0.31-v0.32) | Expected 22x + C interop |
 
-**Total Test Coverage:** 1,134+ tests across 4 languages (100% pass rate)
+**Total Test Coverage:** 1,147+ tests across 4 languages (100% pass rate)
 
 ## Pattern Implementation Details
 
@@ -49,6 +49,7 @@ Agenkit has achieved 100% pattern parity across Python, TypeScript, and Go - **5
    - Python: ✅ (v0.12.0)
    - TypeScript: ✅ (v0.16.0)
    - Go: ✅ (v0.15.0)
+   - Rust: ✅ (v0.26.0)
 
 5. **Conversational** - Multi-turn dialogue management
    - Python: ✅ (v0.12.0)
@@ -222,10 +223,10 @@ Agenkit has achieved 100% pattern parity across Python, TypeScript, and Go - **5
 
 ### Rust
 - **Version:** 1.75+
-- **Patterns:** 4/11 (36% - Critical patterns complete!)
+- **Patterns:** 5/11 (45% - v0.26.0 in progress!)
 - **Evaluation Frameworks:** 0/10
-- **Tests:** 44 tests (36 unit + 8 doc) - 100% passing
-- **LOC:** ~2,282 total (~982 infrastructure + ~1,300 patterns)
+- **Tests:** 57 tests (41 unit + 16 doc) - 100% passing
+- **LOC:** ~2,582 total (~982 infrastructure + ~1,600 patterns)
 - **Key Strengths:**
   - Expected 20x performance vs Python
   - Memory safety without GC
@@ -233,7 +234,7 @@ Agenkit has achieved 100% pattern parity across Python, TypeScript, and Go - **5
   - Zero-copy optimizations possible
   - Low memory footprint (~8 MB per agent)
   - True parallel execution with Tokio
-- **Current Status (v0.25.0):**
+- **Current Status (v0.26.0 - in progress):**
   - ✅ Core Agent trait with async support (~350 LOC)
   - ✅ HTTP transport (client and server) (~200 LOC)
   - ✅ Message and ToolResult types (~432 LOC)
@@ -242,8 +243,9 @@ Agenkit has achieved 100% pattern parity across Python, TypeScript, and Go - **5
   - ✅ **Agents-as-Tools pattern** (~420 LOC, 6 tests)
   - ✅ **Sequential Orchestration** (~190 LOC, 4 tests)
   - ✅ **Parallel Orchestration** (~190 LOC, 4 tests)
-  - ✅ 5 working examples (echo, HTTP, reflection, agents-as-tools, orchestration)
-  - 📋 More patterns next (v0.26.0)
+  - ✅ **ReAct pattern** (~300 LOC, 5 tests)
+  - ✅ 6 working examples (echo, HTTP, reflection, agents-as-tools, orchestration, react)
+  - 📋 Planning, Conversational, Task patterns next
 - **Use Cases:**
   - WASM browser agents (WASM support coming in v0.28.0)
   - Safety-critical systems

@@ -12,6 +12,17 @@ categories = ["web-programming", "asynchronous"]
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-O4", "--enable-mutable-globals"]
 
+[profile.release]
+# Optimize for size
+opt-level = "z"     # Optimize for size
+lto = true          # Link-time optimization
+codegen-units = 1   # Better optimization at cost of compile time
+strip = true        # Strip debug symbols
+panic = "abort"     # Smaller binary, no unwinding
+
+[profile.release.package."*"]
+opt-level = "z"     # Optimize dependencies for size too
+
 [dependencies]
 # Async runtime
 tokio = { version = "1.35", features = ["full"], optional = true }

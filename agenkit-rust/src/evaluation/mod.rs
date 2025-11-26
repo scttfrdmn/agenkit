@@ -41,6 +41,7 @@ pub mod metrics;
 pub mod quality_metrics;
 pub mod context_metrics;
 pub mod recorder;
+pub mod regression;
 
 pub use core::{Metric, EvaluationResult, Evaluator};
 pub use metrics::{
@@ -55,3 +56,4 @@ pub use recorder::{
     InteractionRecord, SessionRecording, RecordingStorage,
     FileRecordingStorage, InMemoryRecordingStorage, SessionRecorder,
 };
+pub use regression::{Severity, Regression, RegressionDetector};

@@ -7,6 +7,111 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2025-11-25
+
+### 🦀 Rust Critical Patterns Complete!
+
+**Major Milestone:** Rust reaches 36% pattern parity (4/11 patterns) with comprehensive implementation of critical agent patterns!
+
+**Key Highlights:**
+- ✅ **4 Core Patterns**: Reflection, Agents-as-Tools, Sequential, Parallel (~1,300 LOC)
+- ✅ **44 Total Tests**: 19 pattern tests + 25 infrastructure tests (100% passing)
+- ✅ **5 Working Examples**: Complete pattern demonstrations
+- ✅ **~2,282 Total LOC**: Production-ready infrastructure + patterns
+- 🎯 **36% Pattern Parity**: On track for 100% by February 2026
+
+### Added
+
+#### Rust Patterns (~1,300 LOC, 19 tests)
+
+**Reflection Pattern** (~650 LOC, 5 tests)
+- Iterative self-critique and refinement loop
+- Configurable stopping conditions:
+  - Quality threshold (stop when score exceeds threshold)
+  - Improvement threshold (stop when improvements become minimal)
+  - Max iterations (limit total iterations)
+  - Perfect score (stop at 1.0)
+- Structured and free-form critique formats
+- Verbose history tracking with ReflectionStep
+- Generator-critic coordination
+- Automatic JSON and regex-based score extraction
+
+**Agents-as-Tools Pattern** (~420 LOC, 6 tests)
+- Wrap agents as Tool implementations for hierarchical delegation
+- AgentTool wrapper exposes agents through standard Tool interface
+- Configurable input parameter key
+- Optional metadata inclusion in results
+- agent_as_tool convenience function
+- Full parameter validation and error handling
+
+**Orchestration Patterns** (~380 LOC, 8 tests)
+- **Sequential**: Pipeline composition (agent1 → agent2 → agent3)
+  - Output of one agent becomes input of next
+  - Short-circuits on error
+  - No overhead vs direct calls
+- **Parallel**: Concurrent execution with aggregation
+  - All agents receive same input
+  - True parallelism with tokio::spawn
+  - Results aggregated (first returned, all in metadata)
+  - Bounded by slowest agent
+
+#### Rust Examples (3 new examples)
+- **reflection_pattern.rs**: Demonstrates iterative refinement with mock generator/critic
+- **agents_as_tools.rs**: Shows specialist agent delegation (code, data, writing)
+- **orchestration.rs**: Sequential, parallel, and composed pattern examples
+
+### Technical Implementation
+
+**Dependencies Added:**
+- regex (1.10) for free-form critique parsing
+
+**Design Patterns:**
+- Arc<dyn Agent> for shared agent ownership
+- async-trait for async Agent methods
+- tokio::spawn for true parallel execution
+- Interior mutability workaround for history tracking
+- Mock agents in tests for deterministic behavior
+
+**Error Handling:**
+- Added InvalidInput variant to AgentError
+- Comprehensive validation in pattern constructors
+- Proper error propagation throughout
+
+### Testing
+- 44 tests total (up from 25): 100% passing
+- Pattern-specific tests:
+  - Reflection: Quality threshold, max iterations, minimal improvement, perfect score, config validation
+  - Agents-as-Tools: Basic execution, custom input keys, metadata inclusion, validation, missing parameters
+  - Orchestration: Sequential/parallel basic, empty agents, capabilities, single agent
+
+### Documentation
+- Updated Rust README with pattern usage examples
+- Added pattern module documentation (reflection.rs, agents_as_tools.rs, orchestration.rs)
+- Comprehensive inline documentation and examples
+- Updated architecture section to show patterns as implemented
+
+### Statistics
+- **Total LOC:** ~2,282 (up from ~982)
+- **Pattern LOC:** ~1,300
+- **Tests:** 44 (up from 25)
+- **Examples:** 5 (up from 2)
+- **Pattern Parity:** 36% (4/11 patterns)
+
+### Language Status
+- ✅ Python: 11/11 patterns, 10/10 eval frameworks
+- ✅ Go: 11/11 patterns, 10/10 eval frameworks
+- ✅ TypeScript: 11/11 patterns, 8/8 core eval frameworks
+- 🔄 Rust: 4/11 patterns (36%), infrastructure complete
+  - ✅ Reflection, Agents-as-Tools, Sequential, Parallel
+  - 📋 Next: ReAct, Planning, Conversational, Task (v0.26.0)
+
+### Next Steps for Rust
+- v0.26.0 (Jan 2026): More patterns - ReAct, Planning, Conversational, Task → 73% parity
+- v0.27.0 (Feb 2026): Complete pattern parity - Multiagent, Autonomous, Memory, Reasoning → 100%
+- v0.28.0 (Mar 2026): WASM optimization + Evaluation frameworks
+
+**Closes:** #138
+
 ## [0.24.0] - 2025-11-25
 
 ### 🚀 Rust Implementation Begins!

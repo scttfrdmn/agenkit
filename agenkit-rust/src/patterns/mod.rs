@@ -12,6 +12,7 @@
 //! - **Task**: One-shot execution with lifecycle management
 //! - **Multiagent**: Multi-agent collaboration and consensus
 //! - **Autonomous**: Goal-directed self-organizing agents
+//! - **Memory Hierarchy**: Three-tier memory system
 
 pub mod reflection;
 pub mod agents_as_tools;
@@ -22,6 +23,7 @@ pub mod conversational;
 pub mod task;
 pub mod multiagent;
 pub mod autonomous;
+pub mod memory;
 
 pub use reflection::{ReflectionAgent, ReflectionConfig, ReflectionStep, StopReason, CritiqueFormat};
 pub use agents_as_tools::{AgentTool, agent_as_tool};
@@ -32,3 +34,4 @@ pub use conversational::{ConversationalAgent, ConversationalConfig};
 pub use task::{Task, TaskConfig, execute_task};
 pub use multiagent::{MultiAgentOrchestrator, ConsensusAgent, OrchestrationStrategy, VotingStrategy, AgentTask, TaskStatus};
 pub use autonomous::{AutonomousAgent, AutonomousResult, Goal, GoalStatus, StopCondition, GoalWorker, create_goal};
+pub use memory::{MemoryHierarchy, WorkingMemory, ShortTermMemory, LongTermMemory, MemoryEntry, create_memory_entry};

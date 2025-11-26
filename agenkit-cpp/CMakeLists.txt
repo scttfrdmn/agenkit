@@ -36,6 +36,7 @@ add_library(agenkit
     src/patterns/react.cpp
     src/patterns/agents_as_tools.cpp
     src/patterns/orchestration.cpp
+    src/patterns/reasoning_with_tools.cpp
 )
 
 target_include_directories(agenkit

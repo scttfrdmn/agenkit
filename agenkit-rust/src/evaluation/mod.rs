@@ -44,6 +44,7 @@ pub mod recorder;
 pub mod regression;
 pub mod benchmarks;
 pub mod optimizer;
+pub mod prompt_optimizer;
 
 pub use core::{Metric, EvaluationResult, Evaluator};
 pub use metrics::{
@@ -66,4 +67,8 @@ pub use optimizer::{
     ObjectiveFunc, ParameterType, ParameterSpec, SearchSpace,
     OptimizationStep, OptimizationResult, RandomSearchOptimizer,
     AcquisitionFunction, BayesianOptimizer,
+};
+pub use prompt_optimizer::{
+    OptimizationStrategy, PromptEvaluation, PromptOptimizationResult,
+    AgentFactory, PromptEvaluatorFunc, PromptOptimizer,
 };

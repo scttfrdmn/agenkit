@@ -38,9 +38,11 @@
 
 pub mod core;
 pub mod metrics;
+pub mod quality_metrics;
 
 pub use core::{Metric, EvaluationResult, Evaluator};
 pub use metrics::{
     SessionStatus, MetricType, MetricMeasurement, ErrorRecord,
     SessionResult, MetricsCollector,
 };
+pub use quality_metrics::{AccuracyMetric, QualityMetrics, ValidatorFunc};

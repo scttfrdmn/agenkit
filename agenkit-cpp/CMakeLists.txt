@@ -1,0 +1,82 @@
+cmake_minimum_required(VERSION 3.16)
+project(agenkit VERSION 0.29.0 LANGUAGES CXX)
+
+# C++17 standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Options
+option(AGENKIT_BUILD_EXAMPLES "Build examples" ON)
+option(AGENKIT_BUILD_TESTS "Build tests" ON)
+option(AGENKIT_BUILD_SHARED "Build shared library" ON)
+
+# Dependencies
+find_package(nlohmann_json 3.11.0 REQUIRED)
+find_package(Threads REQUIRED)
+
+# cpp-httplib (header-only, vendored or system)
+# TODO: Add cpp-httplib as subdirectory or find_package
+
+# Library target (placeholder until we have source files)
+# add_library(agenkit
+#     src/core/message.cpp
+#     src/core/errors.cpp
+#     src/adapters/echo_agent.cpp
+#     src/transports/http_agent.cpp
+#     src/transports/http_server.cpp
+# )
+
+# target_include_directories(agenkit
+#     PUBLIC
+#         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#         $<INSTALL_INTERFACE:include>
+#     PRIVATE
+#         ${CMAKE_CURRENT_SOURCE_DIR}/src
+# )
+
+# target_link_libraries(agenkit
+#     PUBLIC
+#         nlohmann_json::nlohmann_json
+#     PRIVATE
+#         Threads::Threads
+# )
+
+# # Compiler warnings
+# if(MSVC)
+#     target_compile_options(agenkit PRIVATE /W4)
+# else()
+#     target_compile_options(agenkit PRIVATE -Wall -Wextra -Wpedantic)
+# endif()
+
+# Examples
+if(AGENKIT_BUILD_EXAMPLES)
+    # add_subdirectory(examples)
+    message(STATUS "Examples will be built when implementation is ready")
+endif()
+
+# Tests
+if(AGENKIT_BUILD_TESTS)
+    enable_testing()
+    # add_subdirectory(tests)
+    message(STATUS "Tests will be built when implementation is ready")
+endif()
+
+# Install rules (placeholder)
+# install(TARGETS agenkit
+#     EXPORT agenkitTargets
+#     LIBRARY DESTINATION lib
+#     ARCHIVE DESTINATION lib
+#     RUNTIME DESTINATION bin
+#     INCLUDES DESTINATION include
+# )
+
+# install(DIRECTORY include/
+#     DESTINATION include
+# )
+
+message(STATUS "Agenkit C++ v${PROJECT_VERSION}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "Build Examples: ${AGENKIT_BUILD_EXAMPLES}")
+message(STATUS "Build Tests: ${AGENKIT_BUILD_TESTS}")

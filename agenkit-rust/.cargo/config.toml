@@ -1,0 +1,18 @@
+# Cargo configuration for WASM builds
+
+[target.wasm32-unknown-unknown]
+# Use LLD linker for faster builds
+rustflags = [
+    "-C", "link-arg=-zstack-size=65536",  # Reduce stack size
+    "-C", "target-feature=+multivalue",   # Enable multivalue
+    "-C", "target-feature=+reference-types", # Enable reference types
+]
+
+[build]
+# Use all available CPU cores
+jobs = 8
+
+[env]
+# Ensure build scripts can find the C compiler
+CC = "/usr/bin/cc"
+CXX = "/usr/bin/c++"

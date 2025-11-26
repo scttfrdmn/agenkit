@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.29.2] - 2024-11-26
+
+### Improved
+
+**Documentation**:
+- Updated README.md with v0.29.1 performance results
+- Updated status to "Production Ready"
+- Added benchmark execution instructions
+- Updated stats (47 tests, 12 benchmarks, 3 examples)
+- Added Windows platform to supported list
+- Updated performance metrics (50-100x faster than Python)
+
+**Status**:
+- Changed from "Infrastructure" to "Production Ready ✅"
+- Updated from 2 to 3 platforms
+- Updated from 4 to 6 CI configurations
+
+### Stats
+
+No code changes - documentation-only release
+- **README.md**: Updated with latest metrics
+- **Version**: Bumped to 0.29.2
+
+---
+
 ## [0.29.1] - 2024-11-26
 
 ### Added

@@ -2,7 +2,7 @@
 
 Minimal, composable interfaces for AI agents in C++.
 
-**Status**: 🚧 Infrastructure (v0.29.0 - In Progress)
+**Status**: 🚧 Infrastructure (v0.29.0 - Week 3/4)
 
 ---
 
@@ -171,16 +171,31 @@ Agenkit C++ follows a layered architecture:
 
 ## Current Status
 
-**v0.29.0 - Infrastructure (In Progress)**
+**v0.29.0 - Infrastructure (Week 3/4)**
 
-**Infrastructure (~600 LOC, 25 tests)**
-- [ ] Core Agent interface (virtual base class)
-- [ ] Message and ToolResult types
-- [ ] HTTP transport (client and server)
-- [ ] Error handling
-- [ ] Echo agent example
-- [ ] HTTP transport example
-- [ ] Unit tests with Google Test
+**Completed (Weeks 1-2)**:
+- [x] Core Agent interface (virtual base class)
+- [x] Message and ToolResult types
+- [x] Result<T,E> error handling
+- [x] HTTP transport (client and server)
+- [x] cpp-httplib integration
+- [x] Echo agent adapter
+- [x] echo_agent.cpp example
+- [x] http_transport.cpp example
+- [x] 42 comprehensive tests (Google Test)
+
+**In Progress (Week 3)**:
+- [x] GitHub Actions CI/CD
+- [x] Complete API documentation
+- [ ] clang-tidy configuration
+- [ ] Additional integration tests
+- [ ] Performance benchmarks
+
+**Stats**:
+- **Lines of Code**: ~1,300 LOC
+- **Tests**: 42 tests (100% pass rate)
+- **Examples**: 2 working examples
+- **Platforms**: Ubuntu, macOS
 
 **Target**: December 2025
 

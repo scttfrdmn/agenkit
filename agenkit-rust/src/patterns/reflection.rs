@@ -22,8 +22,8 @@
 //! # Example
 //!
 //! ```no_run
+//! use agenkit::core::{Agent, Message};
 //! use agenkit::patterns::{ReflectionAgent, ReflectionConfig, CritiqueFormat};
-//! use agenkit::core::Message;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let generator = todo!();

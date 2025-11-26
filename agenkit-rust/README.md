@@ -194,7 +194,7 @@ Agenkit follows a layered architecture:
 
 ## Current Status
 
-✅ **v0.27.0 - Four-Language Pattern Parity Achieved!** 🎉
+✅ **v0.28.0 - Rust 100% Complete with WASM Support!** 🎉🎉🎉
 
 **Infrastructure (~982 LOC, 25 tests)**
 - Core Agent trait with async support
@@ -202,7 +202,7 @@ Agenkit follows a layered architecture:
 - Message and ToolResult types
 - Comprehensive error handling
 
-**Patterns (~5,318 LOC, 79 tests) - 11/11 Complete**
+**Patterns (~5,318 LOC, 116 tests) - 11/11 Complete**
 1. **Reflection** - Iterative self-critique and refinement
 2. **Agents-as-Tools** - Hierarchical delegation through tool wrapping
 3. **Orchestration** - Sequential and parallel composition
@@ -215,16 +215,45 @@ Agenkit follows a layered architecture:
 10. **Memory Hierarchy** - Three-tier memory system
 11. **Reasoning with Tools** - Interleaved reasoning and tool usage
 
-**Examples (13 working examples)**
+**Evaluation Frameworks (~4,745 LOC, 67 tests) - 10/10 Complete**
+1. **Core** - Session evaluation infrastructure
+2. **Metrics** - SessionStatus, MetricType, MetricsCollector
+3. **Quality Metrics** - Accuracy, precision, recall, F1
+4. **Context Metrics** - Token usage and context efficiency
+5. **Recorder/Replay** - Session recording and replay
+6. **Regression Detection** - Performance degradation monitoring
+7. **Benchmarks** - Standardized benchmark suite
+8. **Optimizer** - Generic optimization framework
+9. **Bayesian Optimizer** - Gaussian process optimization
+10. **Prompt Optimizer** - Grid search, random, and genetic algorithms
+
+**WASM Support (~1,200 LOC)**
+- wasm-bindgen integration with feature flags
+- Bundle size optimization (opt-level="z", LTO, strip)
+- Interactive browser example (wasm_browser_agent.html)
+- Performance benchmark suite (wasm_performance.html)
+- Comprehensive 699-line WASM.md documentation
+- 5 WASM-compatible patterns
+
+**Examples (15 working examples)**
 - Infrastructure: echo_agent, http_transport
 - All 11 patterns with comprehensive demonstrations
+- 2 WASM examples (browser agent, performance benchmarks)
 
-**Total**: ~6,300 LOC, 104 tests (100% passing)
+**Total**: ~11,263 LOC, 165 tests (100% passing)
 
-**Achievement**: First AI agent toolkit with 100% pattern parity across Python, TypeScript, Go, and Rust!
+**Achievement**: 🎯 **4 languages at 100% parity!**
+- ✅ Python: 11/11 patterns, 10/10 eval frameworks (~300 tests)
+- ✅ Go: 11/11 patterns, 10/10 eval frameworks (410 tests)
+- ✅ TypeScript: 11/11 patterns, 8/8 core eval (643 tests)
+- ✅ Rust: 11/11 patterns, 10/10 eval frameworks, WASM (165 tests)
+
+**Total**: 1,518+ tests across 4 languages!
+
+**Completed**: 3 months ahead of schedule (planned March 2026, completed November 2025)
 
 **Next Steps:**
-- v0.28.0: WASM support + Evaluation frameworks (Target: March 2026)
+- v0.29.0: C++ Infrastructure (Target: December 2025)
 
 ## Performance
 

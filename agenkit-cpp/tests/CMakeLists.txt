@@ -50,5 +50,10 @@ add_executable(test_integration test_integration.cpp)
 target_link_libraries(test_integration agenkit gtest_main)
 add_test(NAME integration_tests COMMAND test_integration)
 
+# Pattern tests - Reflection
+add_executable(test_reflection patterns/test_reflection.cpp)
+target_link_libraries(test_reflection agenkit gtest_main)
+add_test(NAME reflection_tests COMMAND test_reflection)
+
 # Enable verbose test output
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")

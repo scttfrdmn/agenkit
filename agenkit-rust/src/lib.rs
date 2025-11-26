@@ -92,6 +92,7 @@ pub mod core;
 pub mod adapters;
 pub mod transports;
 pub mod patterns;
+pub mod evaluation;
 
 // Re-export commonly used types
 pub use core::{Agent, AgentError, Message, Tool, ToolResult};

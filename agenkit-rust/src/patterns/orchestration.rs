@@ -275,25 +275,38 @@ impl Agent for ParallelPattern {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        // Execute all agents concurrently
-        let tasks: Vec<_> = self
-            .agents
-            .iter()
-            .map(|agent| {
-                let msg = message.clone();
-                let agent = agent.clone();
-                tokio::spawn(async move { agent.process(msg).await })
-            })
-            .collect();
+        // Execute all agents concurrently (native) or sequentially (WASM)
+        #[cfg(feature = "native")]
+        let results = {
+            let tasks: Vec<_> = self
+                .agents
+                .iter()
+                .map(|agent| {
+                    let msg = message.clone();
+                    let agent = agent.clone();
+                    tokio::spawn(async move { agent.process(msg).await })
+                })
+                .collect();
 
-        // Await all tasks
-        let mut results = Vec::new();
-        for task in tasks {
-            let result = task
-                .await
-                .map_err(|e| AgentError::ProcessingError(format!("Task join error: {}", e)))??;
-            results.push(result);
-        }
+            let mut results = Vec::new();
+            for task in tasks {
+                let result = task
+                    .await
+                    .map_err(|e| AgentError::ProcessingError(format!("Task join error: {}", e)))??;
+                results.push(result);
+            }
+            results
+        };
+
+        #[cfg(not(feature = "native"))]
+        let results = {
+            let mut results = Vec::new();
+            for agent in self.agents.iter() {
+                let result = agent.process(message.clone()).await?;
+                results.push(result);
+            }
+            results
+        };
 
         // Aggregate results
         Self::default_aggregator(results)

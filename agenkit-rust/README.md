@@ -77,6 +77,56 @@ let config = HttpTransportConfig {
 let client = HttpAgent::new("remote", config);
 ```
 
+### Agent Patterns
+
+Reusable patterns for composing and orchestrating agents:
+
+**Reflection Pattern** - Iterative self-critique and refinement:
+
+```rust
+use agenkit::patterns::{ReflectionAgent, ReflectionConfig, CritiqueFormat};
+
+let config = ReflectionConfig {
+    generator,
+    critic,
+    max_iterations: 5,
+    quality_threshold: 0.9,
+    improvement_threshold: 0.05,
+    critique_format: CritiqueFormat::Structured,
+    verbose: false,
+};
+
+let agent = ReflectionAgent::new(config)?;
+let result = agent.process(message).await?;
+```
+
+**Agents-as-Tools Pattern** - Hierarchical agent delegation:
+
+```rust
+use agenkit::patterns::agent_as_tool;
+
+// Wrap specialist agents as tools
+let code_tool = agent_as_tool(
+    code_specialist,
+    "code_expert",
+    "Expert programmer for code-related tasks",
+)?;
+
+// Use with supervisor agents that support tools
+```
+
+**Orchestration Patterns** - Sequential and parallel composition:
+
+```rust
+use agenkit::patterns::{SequentialPattern, ParallelPattern};
+
+// Sequential: agent1 → agent2 → agent3
+let pipeline = SequentialPattern::new(vec![agent1, agent2, agent3])?;
+
+// Parallel: all agents receive same input, results aggregated
+let parallel = ParallelPattern::new(vec![agent_a, agent_b, agent_c])?;
+```
+
 ## Examples
 
 Run the included examples:
@@ -87,6 +137,15 @@ cargo run --example echo_agent
 
 # HTTP transport - client/server communication
 cargo run --example http_transport
+
+# Reflection pattern - iterative self-critique
+cargo run --example reflection_pattern
+
+# Agents as tools - hierarchical delegation
+cargo run --example agents_as_tools
+
+# Orchestration - sequential and parallel composition
+cargo run --example orchestration
 ```
 
 ## Testing
@@ -103,25 +162,37 @@ Agenkit follows a layered architecture:
 
 1. **Core** (`core/`): Message types and Agent trait
 2. **Adapters** (`adapters/`): Local agent implementations
-3. **Transports** (`transports/`): HTTP, WebSocket, gRPC (HTTP implemented)
-4. **Patterns** (future): ReAct, Reflection, Planning, etc.
+3. **Transports** (`transports/`): HTTP, WebSocket, gRPC
+4. **Patterns** (`patterns/`): Reflection, Agents-as-Tools, Orchestration
 5. **Evaluation** (future): Benchmarking and testing frameworks
 
 ## Current Status
 
-✅ **v0.1.0 - Infrastructure Complete**
+✅ **v0.25.0 - Critical Patterns Complete**
 
-- Core Agent trait and Message types (~350 LOC)
-- HTTP transport (client and server) (~200 LOC)
-- 17 unit tests + 8 doc tests (100% passing)
-- 2 working examples
+**Infrastructure (~982 LOC, 25 tests)**
+- Core Agent trait and Message types
+- HTTP transport (client and server)
 - Full documentation
 
+**Patterns (~1,300 LOC, 19 tests)**
+- Reflection: Iterative self-critique with configurable stopping conditions
+- Agents-as-Tools: Hierarchical delegation through tool wrapping
+- Sequential Orchestration: Pipeline composition
+- Parallel Orchestration: Concurrent execution with aggregation
+
+**Examples (5 working examples)**
+- Echo agent, HTTP transport
+- Reflection pattern
+- Agents-as-tools delegation
+- Orchestration (sequential and parallel)
+
+**Total**: ~2,282 LOC, 44 tests (100% passing)
+
 **Next Steps:**
-- v0.2.0: Critical patterns (Reflection, Agents-as-Tools)
-- v0.3.0: More patterns (ReAct, Planning, Orchestration)
-- v0.4.0: WASM support
-- v0.5.0: Evaluation frameworks
+- v0.26.0: More patterns (ReAct, Planning, Conversational, Task)
+- v0.27.0: Complete pattern parity (Multiagent, Autonomous, Memory, Reasoning)
+- v0.28.0: WASM support + Evaluation frameworks
 
 ## Performance
 

@@ -85,12 +85,13 @@
 ///! 1. **Core**: Message types and Agent trait
 ///! 2. **Adapters**: Local agent implementations
 ///! 3. **Transports**: HTTP, WebSocket, gRPC
-///! 4. **Patterns**: ReAct, Reflection, etc. (future)
+///! 4. **Patterns**: Reflection, Agents-as-Tools, Orchestration
 ///! 5. **Evaluation**: Benchmarking and testing (future)
 
 pub mod core;
 pub mod adapters;
 pub mod transports;
+pub mod patterns;
 
 // Re-export commonly used types
 pub use core::{Agent, AgentError, Message, Tool, ToolResult};

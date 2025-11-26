@@ -29,6 +29,9 @@ chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1.0"
 anyhow = "1.0"
 
+# Regex for pattern parsing
+regex = "1.10"
+
 # Tracing and logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -49,3 +52,15 @@ path = "examples/echo_agent.rs"
 [[example]]
 name = "http_transport"
 path = "examples/http_transport.rs"
+
+[[example]]
+name = "reflection_pattern"
+path = "examples/reflection_pattern.rs"
+
+[[example]]
+name = "agents_as_tools"
+path = "examples/agents_as_tools.rs"
+
+[[example]]
+name = "orchestration"
+path = "examples/orchestration.rs"

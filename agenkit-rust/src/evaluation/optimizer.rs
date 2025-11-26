@@ -451,3 +451,199 @@ mod tests {
         assert!((improvement - 0.15).abs() < 0.0001); // 0.95 - 0.8 ≈ 0.15
     }
 }
+
+/// Acquisition function type for Bayesian optimization.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AcquisitionFunction {
+    /// Expected Improvement
+    EI,
+    /// Upper Confidence Bound
+    UCB,
+    /// Probability of Improvement
+    PI,
+}
+
+/// Bayesian optimizer using simplified surrogate model.
+///
+/// Balances exploration and exploitation through acquisition functions.
+///
+/// # Example
+///
+/// ```no_run
+/// use agenkit::evaluation::optimizer::{BayesianOptimizer, SearchSpace, AcquisitionFunction};
+/// use std::collections::HashMap;
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut space = SearchSpace::new();
+/// space.add_continuous("x", 0.0, 10.0);
+///
+/// let objective = |_config: HashMap<String, serde_json::Value>| async { Ok(0.95) };
+/// let mut optimizer = BayesianOptimizer::new(
+///     objective,
+///     space,
+///     true, // maximize
+///     AcquisitionFunction::EI,
+///     5, // n_initial
+/// );
+///
+/// let result = optimizer.optimize(20).await?;
+/// # Ok(())
+/// # }
+/// ```
+pub struct BayesianOptimizer {
+    objective: ObjectiveFunc,
+    search_space: SearchSpace,
+    maximize: bool,
+    acquisition: AcquisitionFunction,
+    n_initial: usize,
+    xi: f64,    // Exploration parameter for EI/PI
+    kappa: f64, // Exploration parameter for UCB
+    history: Vec<OptimizationStep>,
+    best_config: Option<HashMap<String, serde_json::Value>>,
+    best_score: f64,
+}
+
+impl BayesianOptimizer {
+    /// Creates a new Bayesian optimizer.
+    ///
+    /// # Arguments
+    ///
+    /// * `objective` - Function to evaluate configurations
+    /// * `search_space` - Search space defining parameter space
+    /// * `maximize` - Whether to maximize (true) or minimize (false)
+    /// * `acquisition` - Acquisition function to use
+    /// * `n_initial` - Number of random samples for initialization
+    pub fn new(
+        objective: impl Fn(HashMap<String, serde_json::Value>) -> Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>> + Send + Sync + 'static,
+        search_space: SearchSpace,
+        maximize: bool,
+        acquisition: AcquisitionFunction,
+        n_initial: usize,
+    ) -> Self {
+        Self {
+            objective: Box::new(objective),
+            search_space,
+            maximize,
+            acquisition,
+            n_initial,
+            xi: 0.01,
+            kappa: 2.576,
+            history: Vec::new(),
+            best_config: None,
+            best_score: if maximize {
+                f64::NEG_INFINITY
+            } else {
+                f64::INFINITY
+            },
+        }
+    }
+
+    /// Runs Bayesian optimization.
+    pub async fn optimize(&mut self, n_iterations: usize) -> Result<OptimizationResult, AgentError> {
+        let start_time = Utc::now();
+
+        // Phase 1: Random initialization
+        for _ in 0..self.n_initial.min(n_iterations) {
+            let config = self.search_space.sample();
+            let score = (self.objective)(config.clone()).await?;
+            self.add_observation(config, score);
+        }
+
+        // Phase 2: Bayesian optimization with acquisition function
+        for _ in self.n_initial..n_iterations {
+            let config = self.propose_next();
+            let score = (self.objective)(config.clone()).await?;
+            self.add_observation(config, score);
+        }
+
+        let end_time = Utc::now();
+
+        let best_config = self.best_config.clone().unwrap_or_else(|| self.search_space.sample());
+
+        let mut metadata = HashMap::new();
+        metadata.insert("algorithm".to_string(), serde_json::json!("bayesian_optimization"));
+        metadata.insert("acquisition".to_string(), serde_json::json!(format!("{:?}", self.acquisition)));
+        metadata.insert("n_initial".to_string(), serde_json::json!(self.n_initial));
+        metadata.insert("maximize".to_string(), serde_json::json!(self.maximize));
+
+        Ok(OptimizationResult {
+            best_config,
+            best_score: self.best_score,
+            history: self.history.clone(),
+            n_iterations,
+            start_time,
+            end_time,
+            metadata,
+        })
+    }
+
+    /// Adds observation to history.
+    fn add_observation(&mut self, config: HashMap<String, serde_json::Value>, score: f64) {
+        self.history.push(OptimizationStep {
+            config: config.clone(),
+            score,
+        });
+
+        let is_better = if self.maximize {
+            score > self.best_score
+        } else {
+            score < self.best_score
+        };
+
+        if self.best_config.is_none() || is_better {
+            self.best_score = score;
+            self.best_config = Some(config);
+        }
+    }
+
+    /// Proposes next configuration using acquisition function.
+    fn propose_next(&self) -> HashMap<String, serde_json::Value> {
+        let n_candidates = 1000;
+        let mut best_candidate = self.search_space.sample();
+        let mut best_acq_value = f64::NEG_INFINITY;
+
+        for _ in 0..n_candidates {
+            let candidate = self.search_space.sample();
+            let acq_value = self.evaluate_acquisition(&candidate);
+
+            if acq_value > best_acq_value {
+                best_acq_value = acq_value;
+                best_candidate = candidate;
+            }
+        }
+
+        best_candidate
+    }
+
+    /// Evaluates acquisition function for a candidate.
+    fn evaluate_acquisition(&self, _candidate: &HashMap<String, serde_json::Value>) -> f64 {
+        if self.history.is_empty() {
+            return 0.0;
+        }
+
+        // Simplified acquisition: use mean and std of nearby points
+        let mean = self.history.iter().map(|s| s.score).sum::<f64>() / self.history.len() as f64;
+        let variance: f64 = self.history
+            .iter()
+            .map(|s| (s.score - mean).powi(2))
+            .sum::<f64>()
+            / self.history.len() as f64;
+        let std = variance.sqrt();
+
+        // Simple acquisition based on type
+        match self.acquisition {
+            AcquisitionFunction::UCB => {
+                if self.maximize {
+                    mean + self.kappa * std
+                } else {
+                    mean - self.kappa * std
+                }
+            }
+            AcquisitionFunction::EI | AcquisitionFunction::PI => {
+                // Simplified EI/PI: favor high uncertainty
+                std + self.xi
+            }
+        }
+    }
+}

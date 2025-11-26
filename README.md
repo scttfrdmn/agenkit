@@ -9,8 +9,8 @@ Agenkit is a lightweight, cross-language framework for building distributed AI a
 [![TypeScript 5.0+](https://img.shields.io/badge/typescript-5.0+-3178C6.svg)](https://www.typescriptlang.org/)
 [![Go 1.21+](https://img.shields.io/badge/go-1.21+-00ADD8.svg)](https://golang.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Tests: 1090+ tests](https://img.shields.io/badge/tests-1090+%20passing-brightgreen.svg)](tests/)
-[![3 Languages](https://img.shields.io/badge/languages-3%20at%20100%25-success.svg)](README.md#status)
+[![Tests: 1134+ tests](https://img.shields.io/badge/tests-1134+%20passing-brightgreen.svg)](tests/)
+[![3 Languages + Rust](https://img.shields.io/badge/languages-3%20at%20100%25%20%2B%20Rust%2036%25-success.svg)](README.md#status)
 
 ## Why Agenkit?
 
@@ -400,32 +400,33 @@ Apache License 2.0 - See [LICENSE](LICENSE) for details.
 
 ## Status
 
-**v0.15.0 - Three-Language Parity Achieved! 🎉**
+**v0.25.0 - Rust Critical Patterns Complete! 🎉**
 
 ### Language Support
 
 | Language | Patterns | Tests | Status | Performance |
 |----------|----------|-------|--------|-------------|
 | **Python** | 11/11 (100%) | ~300 | ✅ Complete | Reference |
-| **TypeScript** | 11/11 (100%) | 514 | ✅ Complete | Node.js speed |
-| **Go** | 11/11 (100%) | 276 | ✅ Complete | 18x Python |
-| Rust | 0/11 (0%) | 0 | 🔄 Starting | WASM + Native |
-| C++ | 0/11 (0%) | 0 | 📋 Planned | Max performance |
-| Zig | 0/11 (0%) | 0 | 📋 Planned | C interop |
+| **TypeScript** | 11/11 (100%) | 643 | ✅ Complete | Node.js speed |
+| **Go** | 11/11 (100%) | 410 | ✅ Complete | 18x Python |
+| **Rust** | 4/11 (36%) | 44 | 🔄 In Progress | Expected 20x |
+| C++ | 0/11 (0%) | 0 | 📋 Planned (v0.29+) | Max performance |
+| Zig | 0/11 (0%) | 0 | 📋 Planned (v0.31+) | C interop |
 
-**Milestone:** Three-language parity achieved 5 months ahead of schedule!
+**Milestone:** Three-language parity achieved 5 months ahead of schedule! Rust infrastructure and critical patterns complete.
 
 ### Project Status
 
 - ✅ Core framework complete
 - ✅ **Three languages at 100% pattern parity** (Python, TypeScript, Go)
-- ✅ 1,090+ tests passing (100% success rate)
+- ✅ **Rust at 36% parity** - Infrastructure + 4 critical patterns (Reflection, Agents-as-Tools, Sequential, Parallel)
+- ✅ 1,134+ tests passing (100% success rate)
 - ✅ Production middleware ready
 - ✅ Full observability (OpenTelemetry integration)
 - ✅ Multiple transports (HTTP, gRPC, WebSocket)
 - ✅ Deployment manifests included
 - ✅ Comprehensive documentation
-- 🚀 **Next:** Rust implementation (v0.16.0-v0.17.0)
+- 🚀 **Next:** Rust remaining patterns (v0.26.0-v0.27.0)
 
 ---
 

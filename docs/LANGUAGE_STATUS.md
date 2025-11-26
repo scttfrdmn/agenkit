@@ -17,11 +17,11 @@ Agenkit has achieved 100% pattern parity across Python, TypeScript, and Go - **5
 | **Python** | 11/11 (100%) | ~300 | ~5,500 | ✅ Complete (Reference) | 1.0x |
 | **TypeScript** | 11/11 (100%) | 514 | ~5,134 | ✅ Complete | ~0.8x (Node.js) |
 | **Go** | 11/11 (100%) | 276 | ~4,700 | ✅ Complete | **18x** |
-| **Rust** | 0/11 (0%) | 0 | 0 | 🔄 Next (v0.16-v0.17) | Expected 20x + WASM |
+| **Rust** | 0/11 (0%) | 25 | ~982 | 🔄 Infrastructure (v0.24) | Expected 20x + WASM |
 | **C++** | 0/11 (0%) | 0 | 0 | 📋 Planned (v0.18-v0.19) | Expected 25x + GPU |
 | **Zig** | 0/11 (0%) | 0 | 0 | 📋 Planned (v0.20-v0.21) | Expected 22x + C interop |
 
-**Total Test Coverage:** 1,090+ tests across 3 languages (100% pass rate)
+**Total Test Coverage:** 1,115+ tests across 4 languages (100% pass rate)
 
 ## Pattern Implementation Details
 
@@ -217,22 +217,67 @@ Agenkit has achieved 100% pattern parity across Python, TypeScript, and Go - **5
   - Microservices
   - High-throughput systems
 
+### Rust
+- **Version:** 1.75+
+- **Patterns:** 0/11 (Infrastructure complete, patterns next)
+- **Evaluation Frameworks:** 0/10
+- **Tests:** 25 tests (17 unit + 8 doc) - 100% passing
+- **LOC:** ~982 infrastructure
+- **Key Strengths:**
+  - Expected 20x performance vs Python
+  - Memory safety without GC
+  - WASM support for browser deployment
+  - Zero-copy optimizations possible
+  - Low memory footprint (~8 MB per agent)
+- **Current Status:**
+  - ✅ Core Agent trait with async support
+  - ✅ HTTP transport (client and server)
+  - ✅ Message and ToolResult types
+  - ✅ Comprehensive error handling
+  - ✅ 2 working examples
+  - 📋 Patterns implementation next (v0.25+)
+- **Use Cases (Future):**
+  - WASM browser agents
+  - Safety-critical systems
+  - Maximum performance requirements
+  - Embedded systems
+
 ## Next Steps
 
-### Immediate: Rust Implementation (v0.16.0-v0.17.0)
+### Immediate: Rust Pattern Implementation (v0.25.0+)
 
-**Target:** December 2025 - January 2026
+**Target:** December 2025 - February 2026
 
-**v0.16.0 - Rust Infrastructure:**
-- Core Agent trait
-- HTTP transport layer
-- Message protocol
-- Critical patterns (Reflection, Agents-as-Tools, Sequential, Parallel)
+**v0.24.0 - Rust Infrastructure:** ✅ **COMPLETE!**
+- ✅ Core Agent trait with async support
+- ✅ HTTP transport layer (client and server)
+- ✅ Message protocol with serde
+- ✅ 25 tests (100% passing)
+- ✅ 2 working examples
 
-**v0.17.0 - Rust Full Parity:**
-- All 11 patterns implemented
+**v0.25.0 - Critical Patterns** (Target: December 2025)
+- Reflection pattern
+- Agents-as-Tools pattern
+- Sequential orchestration
+- Parallel orchestration
+
+**v0.26.0 - More Patterns** (Target: January 2026)
+- ReAct pattern
+- Planning pattern
+- Conversational pattern
+- Task pattern
+
+**v0.27.0 - Complete Pattern Parity** (Target: February 2026)
+- Multiagent orchestration
+- Autonomous agents
+- Memory Hierarchy
+- Reasoning with Tools
+- **4-language pattern parity achieved!** 🎯
+
+**v0.28.0 - WASM & Evaluation** (Target: March 2026)
 - WASM optimization for browser deployment
-- **4-language parity achieved!** 🎯
+- Evaluation frameworks
+- Performance benchmarks
 
 ### Future: C++ and Zig
 

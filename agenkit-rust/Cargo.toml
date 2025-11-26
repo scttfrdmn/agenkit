@@ -68,3 +68,7 @@ path = "examples/orchestration.rs"
 [[example]]
 name = "react_pattern"
 path = "examples/react_pattern.rs"
+
+[[example]]
+name = "planning_pattern"
+path = "examples/planning_pattern.rs"

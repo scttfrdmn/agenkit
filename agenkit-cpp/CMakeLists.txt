@@ -33,6 +33,7 @@ add_library(agenkit
     src/transports/http_agent.cpp
     src/transports/http_server.cpp
     src/patterns/reflection.cpp
+    src/patterns/react.cpp
 )
 
 target_include_directories(agenkit

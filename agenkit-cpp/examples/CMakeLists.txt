@@ -16,8 +16,12 @@ target_link_libraries(agent_chain agenkit)
 add_executable(reflection_example patterns/reflection_example.cpp)
 target_link_libraries(reflection_example agenkit)
 
+# Pattern examples - ReAct
+add_executable(react_example patterns/react_example.cpp)
+target_link_libraries(react_example agenkit)
+
 # Set output directory
-set_target_properties(echo_agent http_transport agent_chain reflection_example
+set_target_properties(echo_agent http_transport agent_chain reflection_example react_example
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
 )

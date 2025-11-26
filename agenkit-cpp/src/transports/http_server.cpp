@@ -25,11 +25,11 @@ HttpServer::HttpServer(std::shared_ptr<core::Agent> agent, std::string address)
 
     // Set up routes
     server_->Post("/process", [this](const httplib::Request& req, httplib::Response& res) {
-        handle_process(req, res);
+        handle_process(const_cast<void*>(static_cast<const void*>(&req)), static_cast<void*>(&res));
     });
 
     server_->Get("/health", [this](const httplib::Request& req, httplib::Response& res) {
-        handle_health(req, res);
+        handle_health(const_cast<void*>(static_cast<const void*>(&req)), static_cast<void*>(&res));
     });
 }
 
@@ -83,7 +83,9 @@ bool HttpServer::is_running() const {
     return running_;
 }
 
-void HttpServer::handle_process(const httplib::Request& req, httplib::Response& res) {
+void HttpServer::handle_process(void* req_ptr, void* res_ptr) {
+    auto& req = *static_cast<const httplib::Request*>(req_ptr);
+    auto& res = *static_cast<httplib::Response*>(res_ptr);
     try {
         // Parse request body
         nlohmann::json request_json = nlohmann::json::parse(req.body);
@@ -137,7 +139,8 @@ void HttpServer::handle_process(const httplib::Request& req, httplib::Response& 
     }
 }
 
-void HttpServer::handle_health(const httplib::Request& /* req */, httplib::Response& res) {
+void HttpServer::handle_health(void* /* req_ptr */, void* res_ptr) {
+    auto& res = *static_cast<httplib::Response*>(res_ptr);
     nlohmann::json health_json = {
         {"status", "ok"},
         {"agent", agent_->name()}

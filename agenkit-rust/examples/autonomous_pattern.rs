@@ -1,0 +1,297 @@
+//! Autonomous Agent Pattern Example
+//!
+//! Demonstrates the Autonomous pattern for goal-directed self-organizing agents
+//! that operate independently with minimal human intervention.
+//!
+//! Run with: cargo run --example autonomous_pattern
+
+use agenkit::patterns::{AutonomousAgent, GoalStatus};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+/// Example 1: Basic autonomous agent
+async fn example_basic() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n=== Example 1: Basic Autonomous Agent ===\n");
+
+    let mut agent = AutonomousAgent::new("Complete research project", 10);
+
+    println!("Objective: {}", agent.objective());
+    println!("Max iterations: {}\n", agent.max_iterations());
+
+    agent.add_goal("Literature review", 10);
+    agent.add_goal("Data collection", 8);
+    agent.add_goal("Analysis", 5);
+    agent.add_goal("Write paper", 3);
+
+    println!("Goals added: {}", agent.goals().len());
+    for goal in agent.goals() {
+        println!("  - {} (priority: {})", goal.description, goal.priority);
+    }
+
+    println!("\nRunning agent...\n");
+    let result = agent.run().await?;
+
+    println!("Result:");
+    println!("  Objective: {}", result.objective);
+    println!("  Iterations: {}", result.iterations);
+    println!("  Goals completed: {}/{}", result.goals_completed, agent.goals().len());
+    println!("\nProgress: {:.1}%", agent.get_progress());
+
+    Ok(())
+}
+
+/// Example 2: Custom worker function
+async fn example_custom_worker() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n=== Example 2: Custom Worker Function ===\n");
+
+    let mut agent = AutonomousAgent::new("Build web application", 15);
+
+    agent.add_goal("Design database schema", 10);
+    agent.add_goal("Create API endpoints", 8);
+    agent.add_goal("Build frontend", 6);
+    agent.add_goal("Write tests", 4);
+    agent.add_goal("Deploy to production", 2);
+
+    // Custom worker that simulates detailed work
+    agent.set_worker(Arc::new(|goal| {
+        let work_done = match goal.description.as_str() {
+            desc if desc.contains("database") => "Defined tables, relationships, and indexes",
+            desc if desc.contains("API") => "Implemented REST endpoints with validation",
+            desc if desc.contains("frontend") => "Created React components and routing",
+            desc if desc.contains("tests") => "Wrote unit and integration tests",
+            desc if desc.contains("Deploy") => "Configured CI/CD and deployed to AWS",
+            _ => "Made progress on task",
+        };
+
+        Ok(format!("{}: {}", goal.description, work_done))
+    }));
+
+    println!("Running agent with custom worker...\n");
+    let result = agent.run().await?;
+
+    println!("Work completed:");
+    for (i, work) in result.results.iter().enumerate() {
+        println!("  {}. {}", i + 1, work);
+    }
+
+    println!("\nFinal progress: {:.1}%", agent.get_progress());
+
+    Ok(())
+}
+
+/// Example 3: Priority-based goal selection
+async fn example_priority() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n=== Example 3: Priority-Based Goal Selection ===\n");
+
+    let mut agent = AutonomousAgent::new("Incident response", 12);
+
+    agent.add_goal("Document findings", 2);
+    agent.add_goal("Notify stakeholders", 5);
+    agent.add_goal("Fix critical bug", 10);  // Highest priority
+    agent.add_goal("Write post-mortem", 1);
+
+    println!("Goals (with priorities):");
+    for goal in agent.goals() {
+        println!("  - {} [priority: {}]", goal.description, goal.priority);
+    }
+
+    println!("\nAgent will work on highest priority goals first...\n");
+
+    let result = agent.run().await?;
+
+    println!("Goals completed: {}", result.goals_completed);
+    println!("\nFirst 3 iterations (should prioritize 'Fix critical bug'):");
+    for (i, work) in result.results.iter().take(3).enumerate() {
+        println!("  {}. {}", i + 1, work);
+    }
+
+    Ok(())
+}
+
+/// Example 4: Stop condition
+async fn example_stop_condition() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n=== Example 4: Stop Condition ===\n");
+
+    let mut agent = AutonomousAgent::new("Long-running task", 100);
+    agent.add_goal("Process data", 10);
+
+    let processed_items = Arc::new(AtomicUsize::new(0));
+    let processed_clone = processed_items.clone();
+
+    // Stop after processing 50 items
+    let target = 50;
+    agent.set_stop_condition(Arc::new(move || {
+        processed_clone.load(Ordering::SeqCst) >= target
+    }));
+
+    agent.set_worker(Arc::new(move |goal| {
+        let count = processed_items.fetch_add(10, Ordering::SeqCst) + 10;
+        Ok(format!("{}: Processed {} items", goal.description, count))
+    }));
+
+    println!("Target: Process 50 items");
+    println!("Max iterations: 100");
+    println!("\nRunning with stop condition...\n");
+
+    let result = agent.run().await?;
+
+    println!("Stopped after {} iterations (target reached)", result.iterations);
+    println!("Well before max_iterations=100!\n");
+
+    Ok(())
+}
+
+/// Example 5: Manual stop
+async fn example_manual_stop() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n=== Example 5: Manual Stop ===\n");
+
+    let agent_arc = Arc::new(tokio::sync::Mutex::new(
+        AutonomousAgent::new("Continuous monitoring", 1000)
+    ));
+
+    let mut agent = agent_arc.lock().await;
+    agent.add_goal("Monitor system health", 10);
+    drop(agent);
+
+    let agent_clone = agent_arc.clone();
+
+    // Spawn task to stop agent after 200ms
+    tokio::spawn(async move {
+        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+        println!("  [External trigger] Stopping agent...");
+        agent_clone.lock().await.stop();
+    });
+
+    println!("Starting continuous monitoring...");
+    println!("(will be stopped externally after 200ms)\n");
+
+    let mut agent = agent_arc.lock().await;
+    let result = agent.run().await?;
+
+    println!("\nAgent stopped after {} iterations", result.iterations);
+    println!("(manually stopped before reaching max_iterations=1000)\n");
+
+    Ok(())
+}
+
+/// Example 6: Progress tracking
+async fn example_progress_tracking() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n=== Example 6: Progress Tracking ===\n");
+
+    let mut agent = AutonomousAgent::new("Software release", 20);
+
+    agent.add_goal("Code freeze", 10);
+    agent.add_goal("QA testing", 8);
+    agent.add_goal("Documentation", 5);
+    agent.add_goal("Release notes", 3);
+
+    println!("Tracking progress during execution:\n");
+
+    // Run for a few iterations and check progress
+    for phase in 1..=4 {
+        // Check if there are active goals
+        let goals = agent.goals();
+        let has_active = goals.iter().any(|g| g.status == GoalStatus::Active);
+
+        if !has_active {
+            break;
+        }
+
+        // Run agent to completion
+        let result = agent.run().await?;
+
+        // Agent runs to completion, so just report final state
+        println!("Phase {}: {:.1}% complete", phase, agent.get_progress());
+        println!("  Iterations: {}", result.iterations);
+        println!("  Goals completed: {}/{}", result.goals_completed, agent.goals().len());
+        break;
+    }
+
+    println!("\n✓ Release complete!\n");
+
+    Ok(())
+}
+
+/// Example 7: Goal lifecycle
+async fn example_goal_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n=== Example 7: Goal Lifecycle ===\n");
+
+    let mut agent = AutonomousAgent::new("Study project lifecycle", 6);
+
+    let goal = agent.add_goal("Learn Rust", 10);
+
+    println!("New goal created:");
+    println!("  Description: {}", goal.description);
+    println!("  Priority: {}", goal.priority);
+    println!("  Status: {}", goal.status);
+    println!("  Progress: {:.0}%", goal.progress * 100.0);
+    println!("  Created at: {}\n", goal.created_at);
+
+    println!("Running agent...\n");
+    let result = agent.run().await?;
+
+    println!("After {} iterations:", result.iterations);
+    let final_goal = &agent.goals()[0];
+    println!("  Status: {}", final_goal.status);
+    println!("  Progress: {:.0}%\n", final_goal.progress * 100.0);
+
+    Ok(())
+}
+
+/// Example 8: Multiple goals with different completion times
+async fn example_goal_completion_times() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n=== Example 8: Goal Completion Times ===\n");
+
+    let mut agent = AutonomousAgent::new("Varied task durations", 30);
+
+    agent.add_goal("Quick task (1 iteration)", 10);
+    agent.add_goal("Medium task (5 iterations)", 8);
+    agent.add_goal("Long task (15 iterations)", 5);
+
+    println!("Goals with different estimated durations:");
+    for goal in agent.goals() {
+        println!("  - {}", goal.description);
+    }
+
+    println!("\nRunning agent...\n");
+    let result = agent.run().await?;
+
+    println!("Results:");
+    println!("  Total iterations: {}", result.iterations);
+    println!("  Goals completed: {}", result.goals_completed);
+
+    println!("\nFinal goal states:");
+    for goal in agent.goals() {
+        let status_icon = match goal.status {
+            GoalStatus::Completed => "✓",
+            GoalStatus::Active => "○",
+            GoalStatus::Abandoned => "✗",
+        };
+        println!("  {} {} - {:.0}% complete",
+                 status_icon,
+                 goal.description,
+                 goal.progress * 100.0);
+    }
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Autonomous Agent Pattern Examples");
+    println!("=================================");
+
+    // Run all examples
+    example_basic().await?;
+    example_custom_worker().await?;
+    example_priority().await?;
+    example_stop_condition().await?;
+    example_manual_stop().await?;
+    example_progress_tracking().await?;
+    example_goal_lifecycle().await?;
+    example_goal_completion_times().await?;
+
+    println!("✓ All examples completed successfully!");
+
+    Ok(())
+}

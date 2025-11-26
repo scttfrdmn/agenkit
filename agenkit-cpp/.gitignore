@@ -1,0 +1,49 @@
+# Build directories
+build/
+build-*/
+cmake-build-*/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compiled files
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+compile_commands.json
+
+# Testing
+Testing/
+*.gcov
+*.gcda
+*.gcno
+
+# Dependencies
+third_party/
+vcpkg_installed/
+conan/
+
+# Documentation
+docs/html/
+docs/latex/
+*.dox
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db

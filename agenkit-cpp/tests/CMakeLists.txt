@@ -55,5 +55,10 @@ add_executable(test_reflection patterns/test_reflection.cpp)
 target_link_libraries(test_reflection agenkit gtest_main)
 add_test(NAME reflection_tests COMMAND test_reflection)
 
+# Pattern tests - ReAct
+add_executable(test_react patterns/test_react.cpp)
+target_link_libraries(test_react agenkit gtest_main)
+add_test(NAME react_tests COMMAND test_react)
+
 # Enable verbose test output
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")

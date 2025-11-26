@@ -85,9 +85,9 @@ private:
     // Parse address into host and port
     void parse_address(const std::string& address);
 
-    // Route handlers
-    void handle_process(const httplib::Request& req, httplib::Response& res);
-    void handle_health(const httplib::Request& req, httplib::Response& res);
+    // Route handlers (defined in .cpp to avoid httplib header dependency)
+    void handle_process(void* req, void* res);
+    void handle_health(void* req, void* res);
 };
 
 } // namespace transports

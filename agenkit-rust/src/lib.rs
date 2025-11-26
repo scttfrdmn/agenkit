@@ -90,10 +90,22 @@
 
 pub mod core;
 pub mod adapters;
+
+#[cfg(feature = "native")]
 pub mod transports;
+
 pub mod patterns;
 pub mod evaluation;
 
 // Re-export commonly used types
 pub use core::{Agent, AgentError, Message, Tool, ToolResult};
+
+#[cfg(feature = "native")]
 pub use transports::{HttpAgent, HttpServer, HttpTransportConfig};
+
+// WASM-specific initialization
+#[cfg(feature = "wasm")]
+pub mod wasm;
+
+#[cfg(feature = "wasm")]
+pub use wasm::*;

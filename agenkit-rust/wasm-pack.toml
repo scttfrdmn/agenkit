@@ -1,0 +1,12 @@
+# wasm-pack configuration for agenkit-rust
+# https://rustwasm.github.io/wasm-pack/book/
+
+[package]
+name = "agenkit"
+description = "Minimal, composable interfaces for AI agents in Rust (WASM)"
+license = "Apache-2.0"
+repository = "https://github.com/scttfrdmn/agenkit"
+
+[profile.release]
+# Optimize for size
+wasm-opt = true

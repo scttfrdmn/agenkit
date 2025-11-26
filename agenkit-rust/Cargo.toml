@@ -4,21 +4,27 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Agenkit Contributors"]
 description = "Minimal, composable interfaces for AI agents in Rust"
-license = "MIT"
+license = "Apache-2.0"
 repository = "https://github.com/scttfrdmn/agenkit"
 keywords = ["ai", "agents", "llm", "framework"]
 categories = ["web-programming", "asynchronous"]
 
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O4", "--enable-mutable-globals"]
+
 [dependencies]
 # Async runtime
-tokio = { version = "1.35", features = ["full"] }
+tokio = { version = "1.35", features = ["full"], optional = true }
 async-trait = "0.1"
 
+# WASM async runtime (alternative to tokio for WASM)
+wasm-bindgen-futures = { version = "0.4", optional = true }
+
 # HTTP client and server
-reqwest = { version = "0.11", features = ["json"] }
-axum = { version = "0.7", features = ["json"] }
-tower = "0.4"
-tower-http = { version = "0.5", features = ["trace", "cors"] }
+reqwest = { version = "0.11", features = ["json"], optional = true }
+axum = { version = "0.7", features = ["json"], optional = true }
+tower = { version = "0.4", optional = true }
+tower-http = { version = "0.5", features = ["trace", "cors"], optional = true }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -40,16 +46,49 @@ rand = "0.8"
 
 # Tracing and logging
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = true }
+
+# WASM bindings
+wasm-bindgen = { version = "0.2", optional = true }
+web-sys = { version = "0.3", features = ["console"], optional = true }
+js-sys = { version = "0.3", optional = true }
+
+# WASM-compatible logging
+console_error_panic_hook = { version = "0.1", optional = true }
+wasm-logger = { version = "0.2", optional = true }
 
 [dev-dependencies]
 # Testing
 tokio-test = "0.4"
 mockito = "1.2"
 
+[features]
+default = ["native"]
+
+# Native (non-WASM) build with full features
+native = [
+    "tokio",
+    "reqwest",
+    "axum",
+    "tower",
+    "tower-http",
+    "tracing-subscriber",
+]
+
+# WASM build with browser-compatible features
+wasm = [
+    "wasm-bindgen",
+    "wasm-bindgen-futures",
+    "web-sys",
+    "js-sys",
+    "console_error_panic_hook",
+    "wasm-logger",
+]
+
 [lib]
 name = "agenkit"
 path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [[example]]
 name = "echo_agent"

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(agenkit VERSION 0.29.0 LANGUAGES CXX)
+project(agenkit VERSION 0.29.1 LANGUAGES CXX)
 
 # C++17 standard
 set(CMAKE_CXX_STANDARD 17)
@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Options
 option(AGENKIT_BUILD_EXAMPLES "Build examples" ON)
 option(AGENKIT_BUILD_TESTS "Build tests" ON)
+option(AGENKIT_BUILD_BENCHMARKS "Build benchmarks" ON)
 option(AGENKIT_BUILD_SHARED "Build shared library" ON)
 
 # Dependencies
@@ -67,6 +68,11 @@ if(AGENKIT_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+# Benchmarks
+if(AGENKIT_BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
+endif()
+
 # Install rules (placeholder)
 # install(TARGETS agenkit
 #     EXPORT agenkitTargets
@@ -85,3 +91,4 @@ message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Build Examples: ${AGENKIT_BUILD_EXAMPLES}")
 message(STATUS "Build Tests: ${AGENKIT_BUILD_TESTS}")
+message(STATUS "Build Benchmarks: ${AGENKIT_BUILD_BENCHMARKS}")

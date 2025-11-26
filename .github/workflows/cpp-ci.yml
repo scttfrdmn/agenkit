@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         build_type: [Debug, Release]
 
     steps:
@@ -41,14 +41,34 @@ jobs:
         run: |
           brew install cmake ninja nlohmann-json googletest
 
-      - name: Configure CMake
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install cmake ninja
+          vcpkg install nlohmann-json gtest
+
+      - name: Configure CMake (Unix)
+        if: runner.os != 'Windows'
         run: |
           cd agenkit-cpp
           cmake -B build \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DAGENKIT_BUILD_TESTS=ON \
-            -DAGENKIT_BUILD_EXAMPLES=ON
+            -DAGENKIT_BUILD_EXAMPLES=ON \
+            -DAGENKIT_BUILD_BENCHMARKS=ON
+
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd agenkit-cpp
+          cmake -B build `
+            -G Ninja `
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+            -DAGENKIT_BUILD_TESTS=ON `
+            -DAGENKIT_BUILD_EXAMPLES=ON `
+            -DAGENKIT_BUILD_BENCHMARKS=ON `
+            -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
 
       - name: Build
         run: |
@@ -61,10 +81,18 @@ jobs:
           cd build
           ctest --output-on-failure --build-config ${{ matrix.build_type }}
 
-      - name: Build examples
+      - name: Build examples (Unix)
+        if: runner.os != 'Windows'
         run: |
           cd agenkit-cpp/build
           ./examples/echo_agent
+          # Note: http_transport example requires background server, skip in CI
+
+      - name: Build examples (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd agenkit-cpp/build
+          ./examples/echo_agent.exe
           # Note: http_transport example requires background server, skip in CI
 
   lint:

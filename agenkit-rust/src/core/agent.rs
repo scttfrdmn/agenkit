@@ -31,6 +31,9 @@ pub enum AgentError {
 
     #[error("internal error: {0}")]
     Internal(String),
+
+    #[error("invalid input: {0}")]
+    InvalidInput(String),
 }
 
 /// Agent trait - minimal contract for agent communication.

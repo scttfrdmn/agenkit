@@ -14,8 +14,8 @@
 //! # Examples
 //!
 //! ```no_run
-//! use agenkit::patterns::{SequentialPattern, ParallelPattern};
 //! use agenkit::core::{Agent, Message};
+//! use agenkit::patterns::{SequentialPattern, ParallelPattern};
 //! use std::sync::Arc;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -23,7 +23,7 @@
 //! # let agent2: Arc<dyn Agent> = todo!();
 //! # let agent3: Arc<dyn Agent> = todo!();
 //! // Sequential: agent1 → agent2 → agent3
-//! let pipeline = SequentialPattern::new(vec![agent1, agent2, agent3]);
+//! let pipeline = SequentialPattern::new(vec![agent1, agent2, agent3])?;
 //! let message = Message::with_text("user", "input");
 //! let result = pipeline.process(message).await?;
 //!
@@ -31,7 +31,7 @@
 //! # let agent_b: Arc<dyn Agent> = todo!();
 //! # let agent_c: Arc<dyn Agent> = todo!();
 //! // Parallel: all agents receive same input, results aggregated
-//! let parallel = ParallelPattern::new(vec![agent_a, agent_b, agent_c]);
+//! let parallel = ParallelPattern::new(vec![agent_a, agent_b, agent_c])?;
 //! let message = Message::with_text("user", "input");
 //! let result = parallel.process(message).await?;
 //! # Ok(())
@@ -56,15 +56,15 @@ use crate::core::{Agent, AgentError, Message};
 /// # Example
 ///
 /// ```no_run
-/// use agenkit::patterns::SequentialPattern;
 /// use agenkit::core::{Agent, Message};
+/// use agenkit::patterns::SequentialPattern;
 /// use std::sync::Arc;
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// # let agent1: Arc<dyn Agent> = todo!();
 /// # let agent2: Arc<dyn Agent> = todo!();
 /// # let agent3: Arc<dyn Agent> = todo!();
-/// let pipeline = SequentialPattern::new(vec![agent1, agent2, agent3]);
+/// let pipeline = SequentialPattern::new(vec![agent1, agent2, agent3])?;
 /// let result = pipeline.process(Message::with_text("user", "input")).await?;
 /// # Ok(())
 /// # }
@@ -158,15 +158,15 @@ impl Agent for SequentialPattern {
 /// # Example
 ///
 /// ```no_run
-/// use agenkit::patterns::ParallelPattern;
 /// use agenkit::core::{Agent, Message};
+/// use agenkit::patterns::ParallelPattern;
 /// use std::sync::Arc;
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// # let agent1: Arc<dyn Agent> = todo!();
 /// # let agent2: Arc<dyn Agent> = todo!();
 /// # let agent3: Arc<dyn Agent> = todo!();
-/// let parallel = ParallelPattern::new(vec![agent1, agent2, agent3]);
+/// let parallel = ParallelPattern::new(vec![agent1, agent2, agent3])?;
 /// let result = parallel.process(Message::with_text("user", "input")).await?;
 /// # Ok(())
 /// # }

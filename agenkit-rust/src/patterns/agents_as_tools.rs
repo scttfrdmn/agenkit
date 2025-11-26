@@ -74,8 +74,8 @@ use crate::core::{Agent, AgentError, Message, Tool, ToolResult};
 /// # Example
 ///
 /// ```no_run
-/// use agenkit::patterns::AgentTool;
 /// use agenkit::core::{Agent, Tool};
+/// use agenkit::patterns::AgentTool;
 /// use std::sync::Arc;
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -84,7 +84,7 @@ use crate::core::{Agent, AgentError, Message, Tool, ToolResult};
 ///     specialist,
 ///     "code_specialist",
 ///     "Expert in Python programming and code review",
-///);
+///)?;
 ///
 /// // Execute as a tool
 /// let mut params = std::collections::HashMap::new();

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenkit WASM Browser Agent</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            border-radius: 5px;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .stat {
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦀 Agenkit WASM Browser Agent</h1>
+        <p>This example demonstrates running Rust-based AI agents directly in the browser using WebAssembly.</p>
+
+        <div class="input-group">
+            <label for="agentName">Agent Name:</label>
+            <input type="text" id="agentName" value="browser-agent" placeholder="Enter agent name">
+        </div>
+
+        <div class="input-group">
+            <label for="userMessage">Message:</label>
+            <textarea id="userMessage" placeholder="Enter your message to the agent...">Hello from the browser!</textarea>
+        </div>
+
+        <div>
+            <button id="processBtn" onclick="processMessage()">Process Message</button>
+            <button onclick="clearResponse()">Clear</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Messages Sent</div>
+                <div class="stat-value" id="messageCount">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Avg Response Time</div>
+                <div class="stat-value" id="avgTime">0ms</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">WASM Status</div>
+                <div class="stat-value" id="wasmStatus">⏳</div>
+            </div>
+        </div>
+
+        <div id="response" style="display: none;"></div>
+
+        <div style="margin-top: 30px; padding: 15px; background: #fff3cd; border-radius: 5px;">
+            <h3 style="margin-top: 0;">ℹ️ Setup Instructions</h3>
+            <ol>
+                <li>Install the WASM target: <code>rustup target add wasm32-unknown-unknown</code></li>
+                <li>Build the WASM package: <code>wasm-pack build --target web --features wasm --no-default-features</code></li>
+                <li>Serve this directory with a local server (e.g., <code>python3 -m http.server</code>)</li>
+                <li>Open this page in your browser</li>
+            </ol>
+            <p><strong>Note:</strong> The WASM module will be loaded from <code>../pkg/agenkit.js</code></p>
+        </div>
+    </div>
+
+    <script type="module">
+        import init, { WasmEchoAgent, JsMessage, log } from '../pkg/agenkit.js';
+
+        let agent = null;
+        let messageCount = 0;
+        let totalTime = 0;
+
+        async function initWasm() {
+            try {
+                await init();
+                log('WASM module initialized successfully');
+                document.getElementById('wasmStatus').textContent = '✅';
+                agent = new WasmEchoAgent('browser-agent');
+                console.log('Agent created:', agent.name);
+            } catch (error) {
+                console.error('Failed to initialize WASM:', error);
+                document.getElementById('wasmStatus').textContent = '❌';
+                showResponse('Failed to initialize WASM module. See setup instructions below.', 'error');
+            }
+        }
+
+        window.processMessage = async function() {
+            if (!agent) {
+                showResponse('Agent not initialized. Please check setup instructions.', 'error');
+                return;
+            }
+
+            const messageText = document.getElementById('userMessage').value;
+            if (!messageText.trim()) {
+                showResponse('Please enter a message.', 'error');
+                return;
+            }
+
+            const button = document.getElementById('processBtn');
+            button.disabled = true;
+            button.textContent = 'Processing...';
+
+            try {
+                const startTime = performance.now();
+
+                const message = new JsMessage('user', messageText);
+                const response = await agent.process(message);
+
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+
+                messageCount++;
+                totalTime += duration;
+                const avgTime = Math.round(totalTime / messageCount);
+
+                document.getElementById('messageCount').textContent = messageCount;
+                document.getElementById('avgTime').textContent = `${avgTime}ms`;
+
+                const responseHtml = `
+                    <h3>Response from ${agent.name}:</h3>
+                    <p><strong>Role:</strong> ${response.role}</p>
+                    <p><strong>Content:</strong> ${response.content}</p>
+                    <p><strong>Response Time:</strong> ${duration}ms</p>
+                `;
+
+                showResponse(responseHtml, 'success');
+            } catch (error) {
+                showResponse(`Error: ${error}`, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Process Message';
+            }
+        };
+
+        window.clearResponse = function() {
+            document.getElementById('response').style.display = 'none';
+        };
+
+        function showResponse(content, type = 'response') {
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = content;
+            responseDiv.className = `response ${type}`;
+            responseDiv.style.display = 'block';
+        }
+
+        // Initialize on page load
+        initWasm();
+    </script>
+</body>
+</html>

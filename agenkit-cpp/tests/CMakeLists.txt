@@ -70,5 +70,10 @@ add_executable(test_orchestration patterns/test_orchestration.cpp)
 target_link_libraries(test_orchestration agenkit gtest_main)
 add_test(NAME orchestration_tests COMMAND test_orchestration)
 
+# Pattern tests - Reasoning with Tools
+add_executable(test_reasoning_with_tools patterns/test_reasoning_with_tools.cpp)
+target_link_libraries(test_reasoning_with_tools agenkit gtest_main)
+add_test(NAME reasoning_with_tools_tests COMMAND test_reasoning_with_tools)
+
 # Enable verbose test output
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")

@@ -28,8 +28,12 @@ target_link_libraries(agents_as_tools_example agenkit)
 add_executable(orchestration_example patterns/orchestration_example.cpp)
 target_link_libraries(orchestration_example agenkit)
 
+# Pattern examples - Reasoning with Tools
+add_executable(reasoning_with_tools_example patterns/reasoning_with_tools_example.cpp)
+target_link_libraries(reasoning_with_tools_example agenkit)
+
 # Set output directory
-set_target_properties(echo_agent http_transport agent_chain reflection_example react_example agents_as_tools_example orchestration_example
+set_target_properties(echo_agent http_transport agent_chain reflection_example react_example agents_as_tools_example orchestration_example reasoning_with_tools_example
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
 )

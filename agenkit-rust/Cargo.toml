@@ -76,3 +76,7 @@ path = "examples/planning_pattern.rs"
 [[example]]
 name = "conversational_pattern"
 path = "examples/conversational_pattern.rs"
+
+[[example]]
+name = "task_pattern"
+path = "examples/task_pattern.rs"

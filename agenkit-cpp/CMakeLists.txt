@@ -40,6 +40,7 @@ add_library(agenkit
     src/patterns/conversational.cpp
     src/patterns/task.cpp
     src/patterns/multiagent.cpp
+    src/patterns/planning.cpp
 )
 
 target_include_directories(agenkit

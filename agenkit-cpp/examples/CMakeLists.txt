@@ -44,8 +44,12 @@ target_link_libraries(task_example agenkit)
 add_executable(multiagent_example patterns/multiagent_example.cpp)
 target_link_libraries(multiagent_example agenkit)
 
+# Pattern examples - Planning
+add_executable(planning_example patterns/planning_example.cpp)
+target_link_libraries(planning_example agenkit)
+
 # Set output directory
-set_target_properties(echo_agent http_transport agent_chain reflection_example react_example agents_as_tools_example orchestration_example reasoning_with_tools_example conversational_example task_example multiagent_example
+set_target_properties(echo_agent http_transport agent_chain reflection_example react_example agents_as_tools_example orchestration_example reasoning_with_tools_example conversational_example task_example multiagent_example planning_example
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
 )

@@ -154,9 +154,8 @@ void bench_agents_as_tools() {
     auto tool = patterns::AgentToolBuilder(agent, "test", "Test tool").build();
 
     auto result = benchmark("Agents-as-Tools (call)", [&]() {
-        nlohmann::json args = {{"input", "test"}};
-        auto _ = tool->execute(args);
-    }, 1000);
+        auto _ = tool->execute("test input");
+    }, 100);
 
     print_result(result);
 }
@@ -201,7 +200,7 @@ void bench_conversational() {
         auto msg = core::Message::with_text("user", "Test");
         auto future = conv.process(std::move(msg));
         auto _ = future.get();
-    }, 1000);
+    }, 10);  // Reduced to 10 iterations to prevent memory buildup
 
     print_result(result);
 }
@@ -265,16 +264,16 @@ void bench_autonomous() {
 }
 
 void bench_memory_working() {
-    patterns::WorkingMemory memory(10);
-
     auto result = benchmark("Memory: Working store", [&]() {
+        patterns::WorkingMemory memory(10);
         patterns::MemoryEntry entry("Test content", 0.5);
         memory.store(entry);
-    }, 10000, 1);
+    }, 100, 1);
 
     print_result(result);
 
     // Benchmark retrieval
+    patterns::WorkingMemory memory(10);
     for (int i = 0; i < 5; ++i) {
         patterns::MemoryEntry entry("Test content " + std::to_string(i), 0.5);
         memory.store(entry);
@@ -282,28 +281,28 @@ void bench_memory_working() {
 
     auto result2 = benchmark("Memory: Working retrieve", [&]() {
         auto _ = memory.retrieve("Test", 5);
-    }, 10000, 1);
+    }, 100, 1);
 
     print_result(result2);
 }
 
 void bench_memory_hierarchy() {
-    patterns::MemoryHierarchy hierarchy(10, 100, 3600, 0.5);
-
     auto result = benchmark("Memory: Hierarchy store", [&]() {
+        patterns::MemoryHierarchy hierarchy(10, 100, 3600, 0.5);
         hierarchy.store("Test content", 0.7);
-    }, 1000, 1);
+    }, 100, 1);
 
     print_result(result);
 
-    // Populate with some entries
+    // Benchmark retrieval
+    patterns::MemoryHierarchy hierarchy(10, 100, 3600, 0.5);
     for (int i = 0; i < 10; ++i) {
         hierarchy.store("Content " + std::to_string(i), 0.6);
     }
 
     auto result2 = benchmark("Memory: Hierarchy retrieve", [&]() {
         auto _ = hierarchy.retrieve("Content", 5);
-    }, 1000, 1);
+    }, 100, 1);
 
     print_result(result2);
 }
@@ -314,9 +313,9 @@ void bench_memory_hierarchy() {
 
 int main() {
     std::cout << "\n";
-    std::cout << "╔══════════════════════════════════════════════════════════════════════════════╗\n";
-    std::cout << "║              AgentKit C++ Pattern Performance Benchmarks                    ║\n";
-    std::cout << "╚══════════════════════════════════════════════════════════════════════════════╝\n\n";
+    std::cout << "==============================================================================\n";
+    std::cout << "              AgentKit C++ Pattern Performance Benchmarks                    \n";
+    std::cout << "==============================================================================\n\n";
 
     std::cout << std::left << std::setw(35) << "Pattern" << " │ ";
     std::cout << std::right << std::setw(10) << "Mean (μs)" << " │ ";
@@ -327,25 +326,37 @@ int main() {
     std::cout << std::string(100, '-') << "\n";
 
     // Core patterns
+    std::cout << "Running reflection...\n" << std::flush;
     bench_reflection();
+    std::cout << "Running react...\n" << std::flush;
     bench_react();
+    std::cout << "Running agents_as_tools...\n" << std::flush;
     bench_agents_as_tools();
+    std::cout << "Running orchestration...\n" << std::flush;
     bench_orchestration();
+    std::cout << "Running reasoning_with_tools...\n" << std::flush;
     bench_reasoning_with_tools();
 
     std::cout << std::string(100, '-') << "\n";
 
     // Advanced patterns
+    std::cout << "Running conversational...\n" << std::flush;
     bench_conversational();
+    std::cout << "Running task...\n" << std::flush;
     bench_task();
+    std::cout << "Running multiagent...\n" << std::flush;
     bench_multiagent();
+    std::cout << "Running planning...\n" << std::flush;
     bench_planning();
+    std::cout << "Running autonomous...\n" << std::flush;
     bench_autonomous();
 
     std::cout << std::string(100, '-') << "\n";
 
     // Memory patterns
+    std::cout << "Running memory_working...\n" << std::flush;
     bench_memory_working();
+    std::cout << "Running memory_hierarchy...\n" << std::flush;
     bench_memory_hierarchy();
 
     std::cout << std::string(100, '=') << "\n\n";

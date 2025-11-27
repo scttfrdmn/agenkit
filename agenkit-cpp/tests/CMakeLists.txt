@@ -75,5 +75,10 @@ add_executable(test_reasoning_with_tools patterns/test_reasoning_with_tools.cpp)
 target_link_libraries(test_reasoning_with_tools agenkit gtest_main)
 add_test(NAME reasoning_with_tools_tests COMMAND test_reasoning_with_tools)
 
+# Pattern tests - Conversational
+add_executable(test_conversational patterns/test_conversational.cpp)
+target_link_libraries(test_conversational agenkit gtest_main)
+add_test(NAME conversational_tests COMMAND test_conversational)
+
 # Enable verbose test output
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")

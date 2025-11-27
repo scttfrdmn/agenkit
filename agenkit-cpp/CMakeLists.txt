@@ -37,6 +37,7 @@ add_library(agenkit
     src/patterns/agents_as_tools.cpp
     src/patterns/orchestration.cpp
     src/patterns/reasoning_with_tools.cpp
+    src/patterns/conversational.cpp
 )
 
 target_include_directories(agenkit

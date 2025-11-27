@@ -80,5 +80,10 @@ add_executable(test_conversational patterns/test_conversational.cpp)
 target_link_libraries(test_conversational agenkit gtest_main)
 add_test(NAME conversational_tests COMMAND test_conversational)
 
+# Pattern tests - Task
+add_executable(test_task patterns/test_task.cpp)
+target_link_libraries(test_task agenkit gtest_main)
+add_test(NAME task_tests COMMAND test_task)
+
 # Enable verbose test output
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")

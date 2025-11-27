@@ -85,5 +85,10 @@ add_executable(test_task patterns/test_task.cpp)
 target_link_libraries(test_task agenkit gtest_main)
 add_test(NAME task_tests COMMAND test_task)
 
+# Pattern tests - Multiagent
+add_executable(test_multiagent patterns/test_multiagent.cpp)
+target_link_libraries(test_multiagent agenkit gtest_main)
+add_test(NAME multiagent_tests COMMAND test_multiagent)
+
 # Enable verbose test output
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")

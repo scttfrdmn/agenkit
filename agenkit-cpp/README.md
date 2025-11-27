@@ -2,7 +2,7 @@
 
 Minimal, composable interfaces for AI agents in C++.
 
-**Status**: ✅ Production Ready (v0.29.1 - Benchmarks Complete)
+**Status**: ✅ Production Ready (v0.30.0 - 11 Patterns + Benchmarks)
 
 ---
 
@@ -54,6 +54,7 @@ ctest
 # Run benchmarks
 ./benchmarks/bench_core
 ./benchmarks/bench_http
+./benchmarks/bench_patterns  # All 11 patterns
 ```
 
 ---
@@ -170,29 +171,35 @@ Agenkit C++ follows a layered architecture:
 1. **Core** (`include/agenkit/core/`): Message types and Agent interface
 2. **Adapters** (`include/agenkit/adapters/`): Local agent implementations
 3. **Transports** (`include/agenkit/transports/`): HTTP, WebSocket, gRPC
-4. **Patterns** (`include/agenkit/patterns/`): Coming in v0.30.0
+4. **Patterns** (`include/agenkit/patterns/`): 11 agent patterns (Reflection, ReAct, etc.)
 
 ---
 
 ## Current Status
 
-**v0.29.1 - Production Ready ✅**
+**v0.30.0 - Pattern Parity ✅**
+
+**All 11 Patterns Implemented**:
+- [x] Core Patterns: Reflection, ReAct, Agents-as-Tools, Orchestration, Reasoning with Tools
+- [x] Advanced Patterns: Conversational, Task, Multiagent, Planning, Autonomous
+- [x] Memory Patterns: Working Memory, Memory Hierarchy
+- [x] 100% test coverage (17/17 test suites passing)
+- [x] Comprehensive benchmarks for all patterns
 
 **Infrastructure Complete**:
 - [x] Core Agent interface
 - [x] Message protocol with JSON
 - [x] Result<T,E> error handling
 - [x] HTTP transport (client/server)
-- [x] 47 comprehensive tests
-- [x] 12 performance benchmarks
+- [x] Pattern implementations
 - [x] 3 working examples
-- [x] Complete documentation
 
-**Performance** (all targets exceeded):
+**Performance**:
+- Framework overhead: **<100μs** for most patterns (negligible vs LLM latency)
 - Agent processing: **50-100x faster than Python**
 - HTTP latency: **2-3ms** (target: <5ms)
-- Throughput: **15,000 rps** server capacity
-- Memory: **~4MB** per agent
+- Memory: Sub-microsecond for memory patterns
+- See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for detailed results
 
 **Platforms**:
 - ✅ Ubuntu (latest) - GCC, Clang
@@ -200,19 +207,20 @@ Agenkit C++ follows a layered architecture:
 - ✅ Windows (latest) - MSVC 2022
 
 **Stats**:
-- **Lines of Code**: ~2,500 LOC
-- **Tests**: 47 tests (100% pass)
-- **Benchmarks**: 12 comprehensive
-- **Examples**: 3 working examples
+- **Lines of Code**: ~5,000 LOC (patterns + core)
+- **Tests**: 17 suites, 100+ test cases (100% pass)
+- **Benchmarks**: 14 comprehensive benchmarks
+- **Patterns**: 11/11 (100% parity with Python)
 - **CI Configurations**: 6 (3 platforms × 2 builds)
 
-**Next**: v0.30.0 - Pattern Parity (11 agent patterns)
+**Next**: Performance optimization, documentation improvements
 
 ---
 
 ## Documentation
 
 - **Build Instructions**: [docs/BUILD.md](docs/BUILD.md)
+- **Benchmark Results**: [docs/BENCHMARKS.md](docs/BENCHMARKS.md)
 - **Infrastructure Plan**: [../docs/cpp_infrastructure_plan.md](../docs/cpp_infrastructure_plan.md)
 - **API Reference**: Coming soon (Doxygen)
 

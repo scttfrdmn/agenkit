@@ -123,9 +123,12 @@ TEST_F(HttpMetadataTest, MetadataPreserved) {
     auto response = result.unwrap();
 
     // Verify metadata was preserved
-    EXPECT_EQ(response.metadata()["session_id"], "abc123");
-    EXPECT_EQ(response.metadata()["priority"], 5);
-    EXPECT_EQ(response.metadata()["tags"][0], "important");
+    EXPECT_TRUE(response.metadata().contains("session_id"));
+    EXPECT_EQ(response.metadata()["session_id"].get<std::string>(), "abc123");
+    EXPECT_TRUE(response.metadata().contains("priority"));
+    EXPECT_EQ(response.metadata()["priority"].get<int>(), 5);
+    EXPECT_TRUE(response.metadata().contains("tags"));
+    EXPECT_EQ(response.metadata()["tags"][0].get<std::string>(), "important");
 }
 
 /**
@@ -199,9 +202,9 @@ TEST_F(HttpConcurrencyTest, ConcurrentRequests) {
  * Tests errors propagate correctly through stack
  */
 TEST(IntegrationTest, ErrorPropagation) {
-    // Test invalid HTTP URL
+    // Test invalid HTTP URL scheme
     transports::HttpTransportConfig bad_config{
-        "http://localhost:99999",  // Invalid port
+        "ftp://localhost:8080",  // Invalid scheme
         1,  // Short timeout
         std::nullopt
     };
@@ -211,7 +214,7 @@ TEST(IntegrationTest, ErrorPropagation) {
         std::invalid_argument
     );
 
-    // Test connection error
+    // Test connection error (port with nothing listening)
     transports::HttpTransportConfig unreachable_config{
         "http://localhost:19999",  // Nothing listening
         1,

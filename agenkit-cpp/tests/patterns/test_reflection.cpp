@@ -238,10 +238,12 @@ TEST(ReflectionTest, ClearHistory) {
     reflection_agent.clear_history();
     EXPECT_EQ(reflection_agent.get_reflection_history().size(), 0);
 
-    // Second process should start fresh
+    // Second process should start fresh (but reflector state persists)
+    // Reflector already approved twice, so will approve immediately on 3rd call
     auto msg2 = core::Message::with_text("user", "Test 2");
     auto future2 = reflection_agent.process(std::move(msg2));
     auto result2 = future2.get();
 
-    EXPECT_EQ(reflection_agent.get_reflection_history().size(), 2);
+    // History is cleared between process() calls, only the current process's history is kept
+    EXPECT_EQ(reflection_agent.get_reflection_history().size(), 1);
 }

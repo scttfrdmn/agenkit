@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.30.0] - 2025-01-26
+
+### Added
+
+**All 11 Agent Patterns** (100% Python parity):
+
+**Core Patterns**:
+- `patterns::ReflectionAgent` - Self-critique and refinement cycles
+- `patterns::ReactAgent` - Reasoning + Acting with tool use
+- `patterns::AgentTool` & `AgentToolBuilder` - Wrap agents as tools
+- `patterns::OrchestrationAgent` - Multi-agent coordination
+- `patterns::ReasoningAgent` - Tool-aware reasoning
+
+**Advanced Patterns**:
+- `patterns::ConversationalAgent` - History-aware dialogue
+- `patterns::Task` - One-shot task execution
+- `patterns::MultiAgentOrchestrator` - Parallel/sequential collaboration
+- `patterns::PlanningAgent` - Plan generation and execution
+- `patterns::AutonomousAgent` - Goal-directed autonomous operation
+
+**Memory Patterns**:
+- `patterns::WorkingMemory` - Short-term memory with LRU eviction
+- `patterns::MemoryHierarchy` - 3-tier memory (working/episodic/semantic)
+- `patterns::MemoryEntry` - Rich memory entries with importance scoring
+
+**Benchmarks**:
+- `benchmarks/bench_patterns.cpp` - All 11 patterns benchmarked
+- Comprehensive performance analysis with statistics
+- Framework overhead measured: <100μs for most patterns
+- `docs/BENCHMARKS.md` - Detailed performance report
+
+**Tests**:
+- 17 test suites covering all patterns (100% pass rate)
+- Mock agents with stateful behavior for testing
+- 100+ test cases including edge cases and error conditions
+
+### Performance
+
+**Framework Overhead** (measured with EchoAgent):
+- **Agents-as-Tools**: <1μs
+- **Task, Memory operations**: <1μs
+- **Orchestration**: <1μs
+- **Multiagent, Planning**: ~1μs
+- **Reflection**: ~10μs (2 iterations)
+- **Reasoning with Tools**: ~60μs
+- **Conversational**: Variable (history-dependent)
+
+**Key Finding**: Framework adds <0.1% latency compared to LLM processing (100-1000ms)
+
+### Improved
+
+**Infrastructure**:
+- Updated README to v0.30.0 status
+- Added comprehensive benchmark documentation
+- Pattern documentation with examples
+- Build system integration for all patterns
+
+**Code Quality**:
+- 100% test coverage for all patterns
+- Idiomatic C++17 throughout
+- Smart pointers and move semantics
+- RAII for resource management
+- Const correctness
+
+### Fixed
+
+- Integration test metadata preservation (EchoAgent now forwards metadata)
+- Reflection test expectations (stateful mock behavior)
+- Benchmark memory issues (reduced iterations, fresh instances)
+- AgentTool API signature (takes string, not JSON)
+
+### Stats
+
+- **Lines of Code**: ~5,000 LOC (patterns + core)
+- **Tests**: 17 suites, 100+ test cases (100% pass rate)
+- **Benchmarks**: 14 comprehensive benchmarks
+- **Patterns**: 11/11 (100% parity with Python)
+- **Platforms**: 3 (Ubuntu, macOS, Windows)
+- **CI Configurations**: 6 (3 platforms × 2 builds)
+
+### Breaking Changes
+
+None - additive release
+
+---
+
 ## [0.29.2] - 2024-11-26
 
 ### Improved

@@ -95,5 +95,15 @@ add_executable(test_planning patterns/test_planning.cpp)
 target_link_libraries(test_planning agenkit gtest_main)
 add_test(NAME planning_tests COMMAND test_planning)
 
+# Pattern tests - Autonomous
+add_executable(test_autonomous patterns/test_autonomous.cpp)
+target_link_libraries(test_autonomous agenkit gtest_main)
+add_test(NAME autonomous_tests COMMAND test_autonomous)
+
+# Pattern tests - Memory
+add_executable(test_memory patterns/test_memory.cpp)
+target_link_libraries(test_memory agenkit gtest_main)
+add_test(NAME memory_tests COMMAND test_memory)
+
 # Enable verbose test output
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")

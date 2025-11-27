@@ -41,6 +41,8 @@ add_library(agenkit
     src/patterns/task.cpp
     src/patterns/multiagent.cpp
     src/patterns/planning.cpp
+    src/patterns/autonomous.cpp
+    src/patterns/memory.cpp
 )
 
 target_include_directories(agenkit

@@ -141,7 +141,35 @@ Run the included examples:
 
 # Client/server communication
 ./examples/http_transport
+
+# Claude with Reflection pattern (requires ANTHROPIC_API_KEY)
+export ANTHROPIC_API_KEY=your-key-here
+./build/examples/claude_reflection
 ```
+
+### Claude Reflection Example
+
+Real-world usage of the Reflection pattern with Anthropic's Claude API:
+
+```cpp
+// Configure Claude Sonnet 4
+adapters::ClaudeConfig config;
+config.api_key = std::getenv("ANTHROPIC_API_KEY");
+config.model = adapters::ClaudeModels::SONNET_4;
+
+// Create agents
+auto agent = std::make_shared<adapters::ClaudeAgent>(config);
+auto reflector = std::make_shared<adapters::ClaudeAgent>(config);
+
+// Reflection pattern (max 3 iterations)
+patterns::ReflectionAgent reflection(agent, reflector, 3);
+
+// Process with iterative refinement
+auto msg = core::Message::with_text("user", "Write a haiku about AI");
+auto result = reflection.process(std::move(msg)).get();
+```
+
+See `examples/claude_reflection.cpp` for the complete example.
 
 ---
 

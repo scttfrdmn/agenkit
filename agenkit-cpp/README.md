@@ -14,6 +14,8 @@ Minimal, composable interfaces for AI agents in C++.
 - **Fast**: 50-100x faster than Python (benchmarked)
 - **Production-ready**: HTTP transport, error handling, comprehensive tests
 - **Cross-platform**: Ubuntu, macOS, Windows with full CI/CD
+- **LLM Support**: Claude, Ollama (local/free) ⭐, OpenAI (coming soon)
+- **Real Examples**: ReAct with tools, Reflection, and more
 
 ---
 
@@ -133,7 +135,21 @@ auto result = client.process(message).get();
 
 ## Examples
 
-Run the included examples:
+### LLM Examples (Real-World)
+
+```bash
+# Ollama (Local LLM - Free!) ⭐ Recommended for getting started
+ollama serve                        # Start Ollama (separate terminal)
+ollama pull llama3.3               # Pull a model
+./build/examples/ollama_example    # Basic Q&A
+./build/examples/react_tools_example  # ReAct with tools
+
+# Claude (Requires API key)
+export ANTHROPIC_API_KEY=your-key
+./build/examples/claude_reflection
+```
+
+### Basic Examples
 
 ```bash
 # Simple echo agent
@@ -141,15 +157,43 @@ Run the included examples:
 
 # Client/server communication
 ./examples/http_transport
-
-# Claude with Reflection pattern (requires ANTHROPIC_API_KEY)
-export ANTHROPIC_API_KEY=your-key-here
-./build/examples/claude_reflection
 ```
+
+### Ollama + ReAct Example ⭐
+
+Real-world ReAct pattern with tool use (FREE - no API key needed!):
+
+```cpp
+// Configure Ollama (local, free, fast)
+adapters::OllamaConfig config;
+config.host = "http://localhost:11434";
+config.model = "llama3.3";
+
+auto agent = std::make_shared<adapters::OllamaAgent>(config);
+
+// Create ReAct agent with tools
+patterns::ReactAgent react(agent, 5);
+react.add_tool(std::make_shared<CalculatorTool>());
+react.add_tool(std::make_shared<WeatherTool>());
+react.add_tool(std::make_shared<SearchTool>());
+
+// Agent reasons, selects tools, and solves problems
+auto msg = Message::with_text("user",
+    "What's 15% tip on $47.50? Also, what's the weather in Paris?");
+auto result = react.process(std::move(msg)).get();
+```
+
+**Benefits**:
+- ✅ Free (no API costs)
+- ✅ Fast (local inference)
+- ✅ Private (data stays local)
+- ✅ 3 simulated tools: Calculator, Weather, Search
+
+See `examples/react_tools_example.cpp` for complete code.
 
 ### Claude Reflection Example
 
-Real-world usage of the Reflection pattern with Anthropic's Claude API:
+Real-world Reflection pattern with Anthropic's Claude:
 
 ```cpp
 // Configure Claude Sonnet 4

@@ -16,6 +16,10 @@ target_link_libraries(agent_chain agenkit)
 add_executable(claude_reflection claude_reflection.cpp)
 target_link_libraries(claude_reflection agenkit)
 
+# Ollama example
+add_executable(ollama_example ollama_example.cpp)
+target_link_libraries(ollama_example agenkit)
+
 # Pattern examples - Reflection
 add_executable(reflection_example patterns/reflection_example.cpp)
 target_link_libraries(reflection_example agenkit)
@@ -61,7 +65,7 @@ add_executable(memory_example patterns/memory_example.cpp)
 target_link_libraries(memory_example agenkit)
 
 # Set output directory
-set_target_properties(echo_agent http_transport agent_chain claude_reflection reflection_example react_example agents_as_tools_example orchestration_example reasoning_with_tools_example conversational_example task_example multiagent_example planning_example autonomous_example memory_example
+set_target_properties(echo_agent http_transport agent_chain claude_reflection ollama_example reflection_example react_example agents_as_tools_example orchestration_example reasoning_with_tools_example conversational_example task_example multiagent_example planning_example autonomous_example memory_example
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
 )

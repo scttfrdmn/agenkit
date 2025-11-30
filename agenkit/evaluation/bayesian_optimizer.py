@@ -18,15 +18,16 @@ Example:
     >>> result = await optimizer.optimize(test_cases, n_iterations=50)
 """
 
+from collections.abc import Callable
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import Matern, RBF
+from sklearn.gaussian_process.kernels import Matern
 
-from .optimizer import Optimizer, OptimizationResult, SearchSpace
+from .optimizer import OptimizationResult, Optimizer, SearchSpace
 
 
 class AcquisitionFunction(Enum):
@@ -64,15 +65,15 @@ class BayesianOptimizer(Optimizer):
 
     def __init__(
         self,
-        agent_factory: Callable[[Dict[str, Any]], Any],
-        search_space: Union[SearchSpace, Dict[str, Any]],
-        objective: Union[str, Callable],
+        agent_factory: Callable[[dict[str, Any]], Any],
+        search_space: SearchSpace | dict[str, Any],
+        objective: str | Callable,
         maximize: bool = True,
         acquisition: str = "ei",
         n_initial: int = 5,
         xi: float = 0.01,
         kappa: float = 2.576,
-        kernel: Optional[Any] = None,
+        kernel: Any | None = None,
     ):
         """
         Initialize Bayesian optimizer.
@@ -101,8 +102,8 @@ class BayesianOptimizer(Optimizer):
         self.gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=5, random_state=42)
 
         # Track parameter names and bounds for continuous parameters
-        self.param_names: List[str] = []
-        self.param_bounds: List[tuple] = []
+        self.param_names: list[str] = []
+        self.param_bounds: list[tuple] = []
         self._setup_continuous_space()
 
     def _setup_continuous_space(self) -> None:
@@ -112,11 +113,11 @@ class BayesianOptimizer(Optimizer):
                 self.param_names.append(name)
                 self.param_bounds.append((spec["low"], spec["high"]))
 
-    def _config_to_vector(self, config: Dict[str, Any]) -> np.ndarray:
+    def _config_to_vector(self, config: dict[str, Any]) -> np.ndarray:
         """Convert configuration dict to vector for GP."""
         return np.array([config[name] for name in self.param_names])
 
-    def _vector_to_config(self, vector: np.ndarray) -> Dict[str, Any]:
+    def _vector_to_config(self, vector: np.ndarray) -> dict[str, Any]:
         """Convert vector to configuration dict."""
         config = {}
         for i, name in enumerate(self.param_names):
@@ -129,9 +130,7 @@ class BayesianOptimizer(Optimizer):
         # Add categorical/discrete parameters (sample randomly for now)
         for name, spec in self.search_space.parameters.items():
             if name not in config:
-                if spec["type"] == "discrete":
-                    config[name] = np.random.choice(spec["values"])
-                elif spec["type"] == "categorical":
+                if spec["type"] == "discrete" or spec["type"] == "categorical":
                     config[name] = np.random.choice(spec["values"])
 
         return config
@@ -243,7 +242,7 @@ class BayesianOptimizer(Optimizer):
         return candidates[best_idx]
 
     async def optimize(
-        self, test_cases: List[Dict[str, Any]], n_iterations: int, **kwargs: Any
+        self, test_cases: list[dict[str, Any]], n_iterations: int, **kwargs: Any
     ) -> OptimizationResult:
         """
         Run Bayesian optimization.
@@ -260,10 +259,10 @@ class BayesianOptimizer(Optimizer):
         self.history = []
 
         # Phase 1: Random initialization
-        X_sample: List[np.ndarray] = []
-        Y_sample: List[float] = []
+        X_sample: list[np.ndarray] = []
+        Y_sample: list[float] = []
 
-        for i in range(min(self.n_initial, n_iterations)):
+        for _ in range(min(self.n_initial, n_iterations)):
             config = self.search_space.sample()
             score = await self.evaluate_config(config, test_cases)
 
@@ -272,7 +271,7 @@ class BayesianOptimizer(Optimizer):
             Y_sample.append(score)
 
         # Phase 2: Bayesian optimization
-        for i in range(self.n_initial, n_iterations):
+        for _ in range(self.n_initial, n_iterations):
             # Fit GP on observed data
             X_array = np.array(X_sample)
             Y_array = np.array(Y_sample)

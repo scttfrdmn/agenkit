@@ -28,10 +28,11 @@ Example:
 """
 
 import random
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 from .core import Evaluator
 
@@ -61,9 +62,9 @@ class PromptOptimizationResult:
     """
 
     best_prompt: str
-    best_config: Dict[str, str]
-    best_scores: Dict[str, float]
-    history: List[Tuple[str, Dict[str, str], Dict[str, float]]]
+    best_config: dict[str, str]
+    best_scores: dict[str, float]
+    history: list[tuple[str, dict[str, str], dict[str, float]]]
     n_evaluated: int
     strategy: str
     start_time: str
@@ -76,7 +77,7 @@ class PromptOptimizationResult:
         end = datetime.fromisoformat(self.end_time)
         return (end - start).total_seconds()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "best_prompt": self.best_prompt,
@@ -115,10 +116,10 @@ class PromptOptimizer:
     def __init__(
         self,
         template: str,
-        variations: Dict[str, List[str]],
+        variations: dict[str, list[str]],
         agent_factory: Callable[[str], Any],
-        metrics: List[str],
-        objective_metric: Optional[str] = None,
+        metrics: list[str],
+        objective_metric: str | None = None,
         maximize: bool = True,
     ):
         """
@@ -138,13 +139,13 @@ class PromptOptimizer:
         self.metrics = metrics
         self.objective_metric = objective_metric or metrics[0]
         self.maximize = maximize
-        self.history: List[Tuple[str, Dict[str, str], Dict[str, float]]] = []
+        self.history: list[tuple[str, dict[str, str], dict[str, float]]] = []
 
-    def _fill_template(self, config: Dict[str, str]) -> str:
+    def _fill_template(self, config: dict[str, str]) -> str:
         """Fill template with configuration values."""
         return self.template.format(**config)
 
-    def _generate_all_configs(self) -> List[Dict[str, str]]:
+    def _generate_all_configs(self) -> list[dict[str, str]]:
         """Generate all possible configurations (Cartesian product)."""
         import itertools
 
@@ -158,11 +159,11 @@ class PromptOptimizer:
 
         return configs
 
-    def _sample_config(self) -> Dict[str, str]:
+    def _sample_config(self) -> dict[str, str]:
         """Sample random configuration."""
         return {key: random.choice(values) for key, values in self.variations.items()}
 
-    async def _evaluate_prompt(self, prompt: str, test_cases: List[Dict[str, Any]]) -> Dict[str, float]:
+    async def _evaluate_prompt(self, prompt: str, test_cases: list[dict[str, Any]]) -> dict[str, float]:
         """
         Evaluate prompt on test cases.
 
@@ -200,7 +201,7 @@ class PromptOptimizer:
 
         return scores
 
-    def _get_objective_score(self, scores: Dict[str, float]) -> float:
+    def _get_objective_score(self, scores: dict[str, float]) -> float:
         """Get objective score from metric scores."""
         score = scores.get(self.objective_metric, 0.0)
 
@@ -211,7 +212,7 @@ class PromptOptimizer:
         return score
 
     async def optimize_grid(
-        self, test_cases: List[Dict[str, Any]]
+        self, test_cases: list[dict[str, Any]]
     ) -> PromptOptimizationResult:
         """
         Grid search: Evaluate all possible combinations.
@@ -229,8 +230,8 @@ class PromptOptimizer:
         configs = self._generate_all_configs()
 
         best_prompt = ""
-        best_config: Dict[str, str] = {}
-        best_scores: Dict[str, float] = {}
+        best_config: dict[str, str] = {}
+        best_scores: dict[str, float] = {}
         best_objective = float("-inf")
 
         # Evaluate each configuration
@@ -261,7 +262,7 @@ class PromptOptimizer:
         )
 
     async def optimize_random(
-        self, test_cases: List[Dict[str, Any]], n_samples: int = 20
+        self, test_cases: list[dict[str, Any]], n_samples: int = 20
     ) -> PromptOptimizationResult:
         """
         Random search: Sample random combinations.
@@ -277,8 +278,8 @@ class PromptOptimizer:
         self.history = []
 
         best_prompt = ""
-        best_config: Dict[str, str] = {}
-        best_scores: Dict[str, float] = {}
+        best_config: dict[str, str] = {}
+        best_scores: dict[str, float] = {}
         best_objective = float("-inf")
 
         # Sample and evaluate random configurations
@@ -311,7 +312,7 @@ class PromptOptimizer:
 
     async def optimize_genetic(
         self,
-        test_cases: List[Dict[str, Any]],
+        test_cases: list[dict[str, Any]],
         population_size: int = 10,
         n_generations: int = 5,
         mutation_rate: float = 0.2,
@@ -333,7 +334,7 @@ class PromptOptimizer:
 
         # Initialize population with random configurations
         population = [self._sample_config() for _ in range(population_size)]
-        fitness_scores: List[float] = []
+        fitness_scores: list[float] = []
 
         # Evaluate initial population
         for config in population:
@@ -344,7 +345,7 @@ class PromptOptimizer:
             self.history.append((prompt, config.copy(), scores.copy()))
 
         # Evolution loop
-        for generation in range(n_generations):
+        for _ in range(n_generations):
             # Selection: Tournament selection
             new_population = []
             for _ in range(population_size):
@@ -390,7 +391,7 @@ class PromptOptimizer:
 
     async def optimize(
         self,
-        test_cases: List[Dict[str, Any]],
+        test_cases: list[dict[str, Any]],
         strategy: str = "random",
         **kwargs: Any,
     ) -> PromptOptimizationResult:

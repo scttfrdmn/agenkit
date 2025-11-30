@@ -35,9 +35,9 @@ import statistics
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-import scipy.stats as stats
+from scipy import stats
 
 
 class SignificanceLevel(Enum):
@@ -64,8 +64,8 @@ class ABVariant:
 
     name: str
     agent: Any  # Agent instance
-    samples: List[float] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    samples: list[float] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_sample(self, value: float):
         """Add a measurement sample."""
@@ -99,7 +99,7 @@ class ABResult:
     test_type: StatisticalTestType
     significance_level: SignificanceLevel
     effect_size: float
-    confidence_interval: Tuple[float, float]
+    confidence_interval: tuple[float, float]
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     @property
@@ -108,7 +108,7 @@ class ABResult:
         return self.p_value < self.significance_level.value
 
     @property
-    def winner(self) -> Optional[str]:
+    def winner(self) -> str | None:
         """Return winner variant name if significant."""
         if not self.is_significant:
             return None
@@ -124,7 +124,7 @@ class ABResult:
             return 0.0
         return ((self.treatment_variant.mean - self.control_variant.mean) / abs(self.control_variant.mean)) * 100
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "experiment_name": self.experiment_name,
@@ -182,7 +182,7 @@ class ABTest:
         name: str,
         control_agent: Any,
         treatment_agent: Any,
-        metrics: Optional[List[str]] = None,
+        metrics: list[str] | None = None,
         significance_level: SignificanceLevel = SignificanceLevel.P_0_05,
         test_type: StatisticalTestType = StatisticalTestType.T_TEST,
     ):
@@ -203,14 +203,14 @@ class ABTest:
         self.metrics = metrics or ["accuracy"]
         self.significance_level = significance_level
         self.test_type = test_type
-        self.results: Dict[str, ABResult] = {}
+        self.results: dict[str, ABResult] = {}
 
     async def run(
         self,
-        test_cases: List[Dict[str, Any]],
-        sample_size: Optional[int] = None,
+        test_cases: list[dict[str, Any]],
+        sample_size: int | None = None,
         shuffle: bool = True,
-    ) -> Dict[str, ABResult]:
+    ) -> dict[str, ABResult]:
         """
         Run A/B test experiment.
 
@@ -247,7 +247,7 @@ class ABTest:
 
         return self.results
 
-    async def _evaluate_variant(self, variant: ABVariant, test_cases: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def _evaluate_variant(self, variant: ABVariant, test_cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Evaluate a variant on test cases."""
         results = []
 
@@ -334,8 +334,8 @@ class ABTest:
         )
 
     def _bootstrap_ci(
-        self, control_samples: List[float], treatment_samples: List[float], n_iterations: int = 1000
-    ) -> Tuple[float, float]:
+        self, control_samples: list[float], treatment_samples: list[float], n_iterations: int = 1000
+    ) -> tuple[float, float]:
         """Bootstrap confidence interval for non-parametric tests."""
         import random
 
@@ -354,7 +354,7 @@ class ABTest:
 
         return (differences[lower_idx], differences[upper_idx])
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get experiment summary."""
         return {
             "experiment_name": self.name,
@@ -372,7 +372,7 @@ def calculate_sample_size(
     minimum_detectable_effect: float,
     alpha: float = 0.05,
     power: float = 0.80,
-    std_dev: Optional[float] = None,
+    std_dev: float | None = None,
 ) -> int:
     """
     Calculate required sample size for A/B test.
@@ -401,7 +401,7 @@ def calculate_sample_size(
         std_dev = baseline_mean * 0.25
 
     # Effect size (standardized difference)
-    effect_size = minimum_detectable_effect / std_dev
+    _effect_size = minimum_detectable_effect / std_dev
 
     # Z-scores for alpha and beta
     z_alpha = stats.norm.ppf(1 - alpha / 2)  # Two-tailed

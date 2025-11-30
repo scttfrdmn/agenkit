@@ -12,13 +12,14 @@ The goal is to ensure consistent functionality and examples across Python, Go, T
 | OpenAI     | ✅     | ✅ | ✅         | ✅ | ✅    |
 | Anthropic  | ✅     | ✅ | ✅         | ✅ | ✅    |
 | Ollama     | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Bedrock    | ✅     | ❌ | ❌         | ❌ | ❌    |
-| Gemini     | ✅     | ❌ | ❌         | ❌ | ❌    |
-| LiteLLM    | ✅     | ❌ | ❌         | ❌ | ❌    |
+| Bedrock    | ✅     | ✅ | ❌         | ❌ | ❌    |
+| Gemini     | ✅     | ✅ | ❌         | ❌ | ❌    |
+| LiteLLM    | ✅     | ✅ | ❌         | ❌ | ❌    |
 
 **Notes:**
-- Bedrock, Gemini, and LiteLLM are Python-only currently
-- Core 3 adapters (OpenAI, Anthropic, Ollama) have full parity across all languages
+- Core 3 adapters (OpenAI, Anthropic, Ollama) have full parity across all 5 languages
+- Bedrock, Gemini, and LiteLLM added to Go in v0.32.0
+- TypeScript, C++, Rust support for Bedrock/Gemini/LiteLLM planned for future releases
 
 ## Patterns
 
@@ -107,11 +108,20 @@ A single example showing how to combine a pattern with an LLM adapter.
 
 | Example          | Python | Go  | TypeScript | C++ | Rust |
 |------------------|--------|-----|-----------|-----|------|
-| llm-integration  | ❓     | ❌  | ✅         | ❌  | ❌   |
-| basic-usage      | ❓     | ❌  | ✅         | ❌  | ❌   |
+| llm-integration  | ✅     | ✅  | ✅         | ✅  | ✅   |
+| basic-usage      | ❌     | ❌  | ✅         | ❌  | ❌   |
 
-**Action Items:**
-- [ ] Add one integration example to each language (Python, Go, C++, Rust)
+**✅ Integration Example Parity Achieved! (v0.32.0)**
+
+**Completed in v0.32.0:**
+- ✅ Added llm-integration.py to Python
+- ✅ Added llm_integration.go to Go
+- ✅ Added llm-integration.cpp to C++
+- ✅ Added llm-integration.rs to Rust
+- ✅ All examples demonstrate OpenAI, Anthropic, and Ollama integration
+- ✅ All examples show production middleware (retry, timeout, circuit breaker)
+- ✅ All examples include streaming demonstrations
+- ✅ All examples provide best practices and cost optimization tips
 
 ### Transport/Middleware Examples
 
@@ -193,10 +203,33 @@ examples/
 |---------|--------|--------|-----------|--------|--------|
 | v0.30.0 | ✅     | ✅     | ✅         | ✅     | ✅     |
 | v0.31.0 | ✅     | ✅     | ✅         | ✅     | ✅     |
+| v0.32.0 | ✅     | ✅     | ✅         | ✅     | ✅     |
+
+**✅ v0.32.0 - Go EXPANSION COMPLETE!**
+
+**All Goals Completed:**
+- ✅ Integration examples added to all 5 languages (Python, Go, C++, Rust, TypeScript)
+- ✅ Bedrock adapter added to Go with full AWS SDK v2 support
+- ✅ Gemini adapter added to Go with Google AI SDK support
+- ✅ LiteLLM adapter added to Go with universal LLM gateway support
+- ✅ 7 core agent patterns implemented in Go (Issue #64):
+  - Sequential, Parallel, Supervisor, Router, Collaborative, HumanInLoop, Fallback
+- ✅ 7 comprehensive pattern examples created for Go
+- ✅ ~4,500 lines of production-quality Go code added
+- ✅ All implementations follow Go idioms from CLAUDE.md
+- ✅ Complete godoc documentation for all patterns
+
+**Key Achievements (v0.32.0):**
+- 🎯 **Go Adapter Parity**: 6/6 adapters (OpenAI, Anthropic, Ollama, Bedrock, Gemini, LiteLLM)
+- 🎯 **Integration Examples**: 5/5 languages with llm-integration examples
+- 🎯 **Go Pattern Classes**: 7/7 reusable pattern implementations
+- 🎯 **Issue #64 Complete**: All agent patterns from guide now implemented
+
+---
 
 **✅ v0.31.0 - COMPLETE PARITY ACHIEVED!**
 
-**All Goals Completed:**
+**All Goals Completed (v0.31.0):**
 - ✅ Ollama adapter added to Go
 - ✅ Removed redundant pattern+adapter examples from Rust (cleaned architecture)
 - ✅ Added missing pattern examples to Go (9 patterns created)

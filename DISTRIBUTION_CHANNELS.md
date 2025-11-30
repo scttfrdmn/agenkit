@@ -217,24 +217,85 @@ npm install @agenkit/adapters
    cargo publish
    ```
 
-### WASM Compilation:
+### WASM Distribution ✅ COMPLETE (v0.28.0)
+
+**Status:** ✅ Rust WASM support fully implemented and production-ready
+
+**Build for WASM:**
 
 ```bash
-# Build for WASM
-cargo build --target wasm32-unknown-unknown --release
+cd agenkit-rust
 
-# Package with wasm-pack
-wasm-pack build --target web
+# Build for web browsers
+wasm-pack build --target web --features wasm --no-default-features
+
+# Build for Node.js
+wasm-pack build --target nodejs --features wasm --no-default-features
+
+# Build for bundlers (webpack, rollup, vite)
+wasm-pack build --target bundler --features wasm --no-default-features
+
 ```
+
+**Output:** Creates `pkg/` directory with:
+- `agenkit.js` - JavaScript bindings
+- `agenkit_bg.wasm` - Compiled WASM module (~200-500 KB release)
+- `agenkit.d.ts` - TypeScript definitions
+- `package.json` - NPM package metadata
+
+**NPM Publishing:**
+
+```bash
+cd pkg
+npm publish
+```
+
+**WASM Features:**
+- ✅ Browser deployment (Chrome, Firefox, Safari, Edge)
+- ✅ Node.js execution (wasm-pack --target nodejs)
+- ✅ Edge computing (Cloudflare Workers, Fastly Compute@Edge)
+- ✅ Framework integration (React, Vue, Angular)
+- ✅ 5/11 patterns available (Reflection, Agents-as-Tools, Orchestration, ReAct, Conversational)
+- ✅ Bundle optimization with wasm-opt
+- ✅ Performance: 2-3x overhead vs native Rust
+
+**Documentation:**
+- Comprehensive guide: `agenkit-rust/WASM.md` (433 lines)
+- Browser example: `examples/wasm_browser_agent.html`
+- React/Vue integration examples included
+- Performance benchmarks documented
+
+**Browser Usage:**
+
+```javascript
+import init, { WasmEchoAgent, JsMessage } from './pkg/agenkit.js';
+
+await init();
+const agent = new WasmEchoAgent('browser-agent');
+const response = await agent.process(new JsMessage('user', 'Hello!'));
+console.log(response.content);
+```
+
+**Deployment Targets:**
+- ✅ Static site hosting (GitHub Pages, Netlify, Vercel)
+- ✅ CDN distribution (jsDelivr, unpkg)
+- ✅ Edge computing platforms
+- ✅ Offline-capable PWAs
 
 ### Multi-Crate Workspace:
 
 ```
-agenkit-rs/
-├── agenkit/          # Core crate
-├── agenkit-wasm/     # WASM bindings
-├── agenkit-macro/    # Procedural macros
-└── Cargo.toml        # Workspace config
+agenkit-rust/
+├── src/              # Core implementation
+│   ├── wasm.rs      # WASM bindings
+│   ├── adapters/    # LLM adapters
+│   └── patterns/    # Agent patterns
+├── examples/
+│   └── wasm_browser_agent.html
+├── benches/
+│   └── wasm_performance.html
+├── WASM.md          # Complete WASM guide
+└── wasm-pack.toml   # WASM build config
 ```
 
 ---

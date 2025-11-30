@@ -59,19 +59,57 @@ All languages can now measure agent performance, conduct A/B testing, detect reg
 
 All 11 core patterns are implemented across all languages:
 
-| Pattern                  | Python | Go | TypeScript | C++ | Rust |
-|--------------------------|--------|----|-----------|----|------|
-| Reflection               | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Agents-as-Tools          | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Orchestration            | ✅     | ✅ | ✅         | ✅ | ✅    |
-| ReAct                    | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Conversational           | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Task                     | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Multiagent               | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Planning                 | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Autonomous               | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Memory Hierarchy         | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Reasoning with Tools     | ✅     | ✅ | ✅         | ✅ | ✅    |
+| Pattern                  | Python | Go | TypeScript | C++ | Rust | Rust WASM |
+|--------------------------|--------|----|-----------|----|------|-----------|
+| Reflection               | ✅     | ✅ | ✅         | ✅ | ✅    | ✅        |
+| Agents-as-Tools          | ✅     | ✅ | ✅         | ✅ | ✅    | ✅        |
+| Orchestration            | ✅     | ✅ | ✅         | ✅ | ✅    | ✅ (sequential only) |
+| ReAct                    | ✅     | ✅ | ✅         | ✅ | ✅    | ✅        |
+| Conversational           | ✅     | ✅ | ✅         | ✅ | ✅    | ✅        |
+| Task                     | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        |
+| Multiagent               | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        |
+| Planning                 | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        |
+| Autonomous               | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        |
+| Memory Hierarchy         | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        |
+| Reasoning with Tools     | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        |
+
+### WebAssembly (WASM) Pattern Compatibility
+
+**Status:** ✅ 5/11 patterns available in Rust WASM (v0.28.0)
+
+**WASM-Compatible Patterns:**
+- ✅ **Reflection** - Iterative self-critique and refinement
+- ✅ **Agents-as-Tools** - Hierarchical agent delegation
+- ✅ **Orchestration** - Sequential composition (parallel requires tokio)
+- ✅ **ReAct** - Reasoning and acting with tool use
+- ✅ **Conversational** - Multi-turn dialogue management
+
+**Native-Only Patterns (require tokio runtime):**
+- ❌ **Task** - One-shot execution with lifecycle management
+- ❌ **Planning** - Task decomposition and execution
+- ❌ **Multiagent** - Multi-agent collaboration and consensus
+- ❌ **Autonomous** - Goal-directed self-organizing agents
+- ❌ **Memory Hierarchy** - Three-tier memory system
+- ❌ **Reasoning with Tools** - Interleaved reasoning and tool usage
+
+**Why Limited in WASM:**
+- Browser WASM doesn't support tokio runtime (no native threading)
+- Async operations use wasm-bindgen-futures (simpler runtime)
+- Parallel execution not available (no `tokio::spawn`)
+- File system access restricted by browser security
+
+**WASM Deployment Targets:**
+- ✅ Browser (Chrome, Firefox, Safari, Edge)
+- ✅ Node.js (wasm-pack --target nodejs)
+- ✅ Edge computing (Cloudflare Workers, Fastly Compute@Edge)
+- ✅ Webpack/Rollup/Vite bundlers
+
+**Documentation:** See `agenkit-rust/WASM.md` for comprehensive guide (433 lines)
+
+**Future Enhancement (v0.40.0+):**
+- Remaining 6 patterns in WASM (if feasible without tokio)
+- C++ WASM support via Emscripten
+- TypeScript WASM via AssemblyScript
 
 ## Pattern Test Coverage
 

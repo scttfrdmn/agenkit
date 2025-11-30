@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Options
 option(AGENKIT_BUILD_EXAMPLES "Build examples" ON)
 option(AGENKIT_BUILD_TESTS "Build tests" ON)
+option(AGENKIT_BUILD_INTEGRATION_TESTS "Build integration tests" OFF)
 option(AGENKIT_BUILD_BENCHMARKS "Build benchmarks" ON)
 option(AGENKIT_BUILD_SHARED "Build shared library" ON)
 
@@ -53,6 +54,10 @@ add_library(agenkit
     src/patterns/collaborative.cpp
     src/patterns/human_in_loop.cpp
     src/patterns/fallback.cpp
+    src/evaluation/metrics.cpp
+    src/evaluation/recorder.cpp
+    src/evaluation/regression.cpp
+    src/evaluation/quality_metrics.cpp
 )
 
 target_include_directories(agenkit
@@ -112,4 +117,5 @@ message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Build Examples: ${AGENKIT_BUILD_EXAMPLES}")
 message(STATUS "Build Tests: ${AGENKIT_BUILD_TESTS}")
+message(STATUS "Build Integration Tests: ${AGENKIT_BUILD_INTEGRATION_TESTS}")
 message(STATUS "Build Benchmarks: ${AGENKIT_BUILD_BENCHMARKS}")

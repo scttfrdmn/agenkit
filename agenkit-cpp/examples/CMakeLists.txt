@@ -31,6 +31,16 @@ target_link_libraries(openai_basic agenkit)
 add_executable(multiagent_openai multiagent_openai.cpp)
 target_link_libraries(multiagent_openai agenkit)
 
+# Adapter examples
+add_executable(litellm_basic adapters/litellm-basic.cpp)
+target_link_libraries(litellm_basic agenkit)
+
+add_executable(gemini_basic adapters/gemini-basic.cpp)
+target_link_libraries(gemini_basic agenkit)
+
+add_executable(bedrock_basic adapters/bedrock-basic.cpp)
+target_link_libraries(bedrock_basic agenkit)
+
 add_executable(conversation_memory conversation_memory.cpp)
 target_link_libraries(conversation_memory agenkit)
 
@@ -85,7 +95,7 @@ add_executable(memory_example patterns/memory_example.cpp)
 target_link_libraries(memory_example agenkit)
 
 # Set output directory
-set_target_properties(echo_agent http_transport agent_chain claude_reflection ollama_example react_tools_example openai_basic multiagent_openai conversation_memory react_openai reflection_openai reflection_example react_example agents_as_tools_example orchestration_example reasoning_with_tools_example conversational_example task_example multiagent_example planning_example autonomous_example memory_example
+set_target_properties(echo_agent http_transport agent_chain claude_reflection ollama_example react_tools_example openai_basic multiagent_openai litellm_basic gemini_basic bedrock_basic conversation_memory react_openai reflection_openai reflection_example react_example agents_as_tools_example orchestration_example reasoning_with_tools_example conversational_example task_example multiagent_example planning_example autonomous_example memory_example
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
 )

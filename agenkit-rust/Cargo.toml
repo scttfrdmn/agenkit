@@ -69,6 +69,11 @@ js-sys = { version = "0.3", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 wasm-logger = { version = "0.2", optional = true }
 
+# AWS SDK for Bedrock adapter
+aws-config = { version = "1.5", optional = true }
+aws-sdk-bedrockruntime = { version = "1.56", optional = true }
+aws-credential-types = { version = "1.2", optional = true }
+
 [dev-dependencies]
 # Testing
 tokio-test = "0.4"
@@ -85,6 +90,9 @@ native = [
     "tower",
     "tower-http",
     "tracing-subscriber",
+    "aws-config",
+    "aws-sdk-bedrockruntime",
+    "aws-credential-types",
 ]
 
 # WASM build with browser-compatible features
@@ -154,3 +162,15 @@ path = "examples/memory_hierarchy_pattern.rs"
 [[example]]
 name = "reasoning_with_tools_pattern"
 path = "examples/reasoning_with_tools_pattern.rs"
+
+[[example]]
+name = "litellm_example"
+path = "examples/litellm_example.rs"
+
+[[example]]
+name = "gemini_example"
+path = "examples/gemini_example.rs"
+
+[[example]]
+name = "bedrock_example"
+path = "examples/bedrock_example.rs"

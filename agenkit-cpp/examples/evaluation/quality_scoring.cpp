@@ -14,7 +14,7 @@ int main() {
     std::cout << "Quality Scoring Example" << std::endl;
     std::cout << "=======================" << std::endl << std::endl;
 
-    auto agent = std::make_shared<adapters::EchoAgent>("Echo");
+    auto agent = std::make_shared<adapters::EchoAgent>();
 
     // Test case 1: Accuracy metric
     std::cout << "Test 1: Accuracy Metric" << std::endl;

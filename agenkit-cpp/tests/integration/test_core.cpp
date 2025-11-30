@@ -122,7 +122,7 @@ TEST(CoreIntegrationTest, ResultTypeHandling) {
     EXPECT_FALSE(response1.content_as_str().empty());
 
     // Test that unwrapping error on success throws
-    EXPECT_THROW(result1.unwrap_err(), std::runtime_error);
+    EXPECT_THROW(result1.unwrap_err(), std::logic_error);
 
     // Test Result with move semantics
     core::Result<core::Message, core::AgentError> moved_result = std::move(result1);

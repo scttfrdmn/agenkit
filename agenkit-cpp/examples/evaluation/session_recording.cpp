@@ -32,7 +32,7 @@ int main() {
 
     // Step 2: Wrap an agent for recording
     std::cout << "Step 2: Wrapping Agent for Recording" << std::endl;
-    auto echo_agent = std::make_shared<adapters::EchoAgent>("Echo");
+    auto echo_agent = std::make_shared<adapters::EchoAgent>();
     auto wrapped_agent = recorder.wrap(echo_agent);
     std::cout << "✓ Wrapped echo agent for automatic recording" << std::endl << std::endl;
 

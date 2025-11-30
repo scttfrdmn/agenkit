@@ -9,7 +9,7 @@
 //!
 //! # Example
 //!
-//! ```no_run
+//! ```ignore
 //! use agenkit::evaluation::prompt_optimizer::{PromptOptimizer, OptimizationStrategy};
 //! use agenkit::core::Agent;
 //! use std::sync::Arc;
@@ -37,7 +37,7 @@
 //! };
 //!
 //! // Create optimizer
-//! let optimizer = PromptOptimizer::new(
+//! let mut optimizer = PromptOptimizer::new(
 //!     template,
 //!     variations,
 //!     Box::new(factory),

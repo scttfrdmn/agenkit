@@ -155,16 +155,27 @@ export interface Agent {
 /**
  * Helper function to create a Message with defaults.
  *
- * @param role Message role
- * @param content Message content
- * @param metadata Optional metadata
+ * @param role Message role or message object
+ * @param content Message content (if role is string)
+ * @param metadata Optional metadata (if role is string)
  * @returns Complete message with timestamp
  */
 export function createMessage(
-  role: string,
-  content: unknown,
+  role: string | Partial<Message>,
+  content?: unknown,
   metadata?: Record<string, unknown>,
 ): Message {
+  // Object syntax: createMessage({ role, content })
+  if (typeof role === 'object') {
+    return {
+      role: role.role || 'user',
+      content: role.content,
+      metadata: role.metadata || {},
+      timestamp: role.timestamp || new Date().toISOString(),
+    };
+  }
+
+  // Positional syntax: createMessage('user', 'Hello')
   return {
     role,
     content,

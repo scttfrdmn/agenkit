@@ -24,6 +24,22 @@ target_link_libraries(ollama_example agenkit)
 add_executable(react_tools_example react_tools_example.cpp)
 target_link_libraries(react_tools_example agenkit)
 
+# OpenAI examples
+add_executable(openai_basic openai_basic.cpp)
+target_link_libraries(openai_basic agenkit)
+
+add_executable(multiagent_openai multiagent_openai.cpp)
+target_link_libraries(multiagent_openai agenkit)
+
+add_executable(conversation_memory conversation_memory.cpp)
+target_link_libraries(conversation_memory agenkit)
+
+add_executable(react_openai react_openai.cpp)
+target_link_libraries(react_openai agenkit)
+
+add_executable(reflection_openai reflection_openai.cpp)
+target_link_libraries(reflection_openai agenkit)
+
 # Pattern examples - Reflection
 add_executable(reflection_example patterns/reflection_example.cpp)
 target_link_libraries(reflection_example agenkit)
@@ -69,7 +85,7 @@ add_executable(memory_example patterns/memory_example.cpp)
 target_link_libraries(memory_example agenkit)
 
 # Set output directory
-set_target_properties(echo_agent http_transport agent_chain claude_reflection ollama_example react_tools_example reflection_example react_example agents_as_tools_example orchestration_example reasoning_with_tools_example conversational_example task_example multiagent_example planning_example autonomous_example memory_example
+set_target_properties(echo_agent http_transport agent_chain claude_reflection ollama_example react_tools_example openai_basic multiagent_openai conversation_memory react_openai reflection_openai reflection_example react_example agents_as_tools_example orchestration_example reasoning_with_tools_example conversational_example task_example multiagent_example planning_example autonomous_example memory_example
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
 )

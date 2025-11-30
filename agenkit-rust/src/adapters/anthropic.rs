@@ -1,0 +1,345 @@
+///! Anthropic Claude API adapter.
+///!
+///! This module provides an adapter for calling Anthropic's Claude API via HTTP.
+///! Supports Claude 3 Opus, Sonnet, and Haiku models.
+
+use crate::core::{Agent, AgentError, Message};
+use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+
+#[cfg(feature = "native")]
+use reqwest::Client;
+
+/// Configuration for Anthropic Claude API calls.
+#[derive(Debug, Clone)]
+pub struct AnthropicConfig {
+    /// API key (required) - get from https://console.anthropic.com/
+    pub api_key: String,
+
+    /// Model to use (default: claude-3-5-sonnet-20241022)
+    pub model: String,
+
+    /// Maximum tokens to generate (default: 1024)
+    pub max_tokens: i32,
+
+    /// Temperature 0-1 (default: 1.0)
+    pub temperature: f64,
+
+    /// Top P sampling (default: 1.0)
+    pub top_p: f64,
+
+    /// Top K sampling (default: 5)
+    pub top_k: i32,
+
+    /// API endpoint (default: Anthropic production)
+    pub api_base: String,
+
+    /// API version (default: 2023-06-01)
+    pub api_version: String,
+
+    /// Request timeout in seconds (default: 60)
+    pub timeout_seconds: u64,
+}
+
+impl Default for AnthropicConfig {
+    fn default() -> Self {
+        Self {
+            api_key: std::env::var("ANTHROPIC_API_KEY").unwrap_or_default(),
+            model: "claude-3-5-sonnet-20241022".to_string(),
+            max_tokens: 1024,
+            temperature: 1.0,
+            top_p: 1.0,
+            top_k: 5,
+            api_base: "https://api.anthropic.com".to_string(),
+            api_version: "2023-06-01".to_string(),
+            timeout_seconds: 60,
+        }
+    }
+}
+
+/// Anthropic message format.
+#[derive(Debug, Serialize)]
+struct ClaudeMessage {
+    role: String,
+    content: String,
+}
+
+/// Anthropic messages request.
+#[derive(Debug, Serialize)]
+struct MessagesRequest {
+    model: String,
+    max_tokens: i32,
+    messages: Vec<ClaudeMessage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    temperature: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    top_p: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    top_k: Option<i32>,
+}
+
+/// Anthropic messages response.
+#[derive(Debug, Deserialize)]
+struct MessagesResponse {
+    id: String,
+    #[serde(rename = "type")]
+    response_type: String,
+    role: String,
+    content: Vec<ContentBlock>,
+    model: String,
+    stop_reason: Option<String>,
+    usage: Usage,
+}
+
+#[derive(Debug, Deserialize)]
+struct ContentBlock {
+    #[serde(rename = "type")]
+    block_type: String,
+    text: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct Usage {
+    input_tokens: i32,
+    output_tokens: i32,
+}
+
+/// Agent adapter for Anthropic Claude API.
+///
+/// This adapter wraps the Anthropic Messages API, converting Agent messages
+/// to Claude API calls and responses back to Agent messages.
+///
+/// # Features
+/// - Supports all Claude 3 models (Opus, Sonnet, Haiku)
+/// - Async message processing
+/// - Configurable temperature and tokens
+/// - Error handling with typed errors
+///
+/// # Example
+/// ```no_run
+/// use agenkit::adapters::anthropic::{AnthropicAgent, AnthropicConfig};
+/// use agenkit::core::{Agent, Message};
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let config = AnthropicConfig {
+///         api_key: std::env::var("ANTHROPIC_API_KEY")?,
+///         model: "claude-3-5-sonnet-20241022".to_string(),
+///         ..Default::default()
+///     };
+///
+///     let agent = AnthropicAgent::new(config);
+///     let msg = Message::with_text("user", "What is the capital of France?");
+///     let response = agent.process(msg).await?;
+///
+///     println!("{}", response.content_as_str().unwrap_or(""));
+///     Ok(())
+/// }
+/// ```
+pub struct AnthropicAgent {
+    config: AnthropicConfig,
+    #[cfg(feature = "native")]
+    client: Client,
+}
+
+impl AnthropicAgent {
+    /// Create a new Anthropic agent with configuration.
+    ///
+    /// # Arguments
+    /// * `config` - Configuration including API key and model
+    ///
+    /// # Panics
+    /// Panics if API key is empty
+    pub fn new(config: AnthropicConfig) -> Self {
+        if config.api_key.is_empty() {
+            panic!("Anthropic API key cannot be empty");
+        }
+
+        #[cfg(feature = "native")]
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(config.timeout_seconds))
+            .build()
+            .expect("Failed to create HTTP client");
+
+        Self {
+            config,
+            #[cfg(feature = "native")]
+            client,
+        }
+    }
+
+    /// Call Anthropic API with messages.
+    #[cfg(feature = "native")]
+    async fn call_api(&self, messages: Vec<ClaudeMessage>, system: Option<String>) -> Result<MessagesResponse, AgentError> {
+        let mut request = MessagesRequest {
+            model: self.config.model.clone(),
+            max_tokens: self.config.max_tokens,
+            messages,
+            system,
+            temperature: None,
+            top_p: None,
+            top_k: None,
+        };
+
+        // Only include optional parameters if not default
+        if (self.config.temperature - 1.0).abs() > f64::EPSILON {
+            request.temperature = Some(self.config.temperature);
+        }
+        if (self.config.top_p - 1.0).abs() > f64::EPSILON {
+            request.top_p = Some(self.config.top_p);
+        }
+        if self.config.top_k != 5 {
+            request.top_k = Some(self.config.top_k);
+        }
+
+        let url = format!("{}/v1/messages", self.config.api_base);
+
+        let response = self
+            .client
+            .post(&url)
+            .header("x-api-key", &self.config.api_key)
+            .header("anthropic-version", &self.config.api_version)
+            .header("Content-Type", "application/json")
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| AgentError::Http(e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(AgentError::Transport(format!(
+                "Anthropic API error ({}): {}",
+                status, error_text
+            )));
+        }
+
+        response
+            .json::<MessagesResponse>()
+            .await
+            .map_err(|e| AgentError::Http(e))
+    }
+
+    /// Convert Agent message to Claude format, extracting system prompt if present.
+    fn message_to_claude_message(&self, message: &Message) -> (Option<String>, Vec<ClaudeMessage>) {
+        let mut system = None;
+        let mut messages = Vec::new();
+
+        if message.role == "system" {
+            system = message.content_as_str().map(|s| s.to_string());
+        } else {
+            messages.push(ClaudeMessage {
+                role: message.role.clone(),
+                content: message.content_as_str().unwrap_or("").to_string(),
+            });
+        }
+
+        (system, messages)
+    }
+
+    /// Convert Claude response to Agent message.
+    fn response_to_message(&self, response: MessagesResponse) -> Message {
+        let content = if !response.content.is_empty() {
+            response.content[0].text.clone()
+        } else {
+            String::new()
+        };
+
+        let mut msg = Message::with_text(&response.role, &content);
+
+        // Add metadata
+        msg.metadata.insert("claude_message_id".to_string(), json!(response.id));
+        msg.metadata.insert("model".to_string(), json!(response.model));
+        msg.metadata.insert("usage".to_string(), json!({
+            "input_tokens": response.usage.input_tokens,
+            "output_tokens": response.usage.output_tokens,
+            "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
+        }));
+
+        if let Some(stop_reason) = response.stop_reason {
+            msg.metadata.insert("stop_reason".to_string(), json!(stop_reason));
+        }
+
+        msg
+    }
+}
+
+#[async_trait]
+impl Agent for AnthropicAgent {
+    fn name(&self) -> &str {
+        "anthropic"
+    }
+
+    #[cfg(feature = "native")]
+    async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        let (system, messages) = self.message_to_claude_message(&message);
+        let response = self.call_api(messages, system).await?;
+        Ok(self.response_to_message(response))
+    }
+
+    #[cfg(not(feature = "native"))]
+    async fn process(&self, _message: Message) -> Result<Message, AgentError> {
+        Err(AgentError::Transport(
+            "Anthropic adapter requires 'native' feature".to_string(),
+        ))
+    }
+
+    fn capabilities(&self) -> Vec<String> {
+        vec![
+            "llm".to_string(),
+            "text-generation".to_string(),
+            "anthropic".to_string(),
+            "claude".to_string(),
+        ]
+    }
+}
+
+/// Available Claude models (November 2025).
+pub mod models {
+    /// Claude Sonnet 4 - Latest and most capable (November 2025)
+    pub const SONNET_4: &str = "claude-sonnet-4-20250514";
+
+    /// Claude 3.5 Sonnet v2 - Previous generation
+    pub const SONNET_3_5_V2: &str = "claude-3-5-sonnet-20241022";
+
+    /// Claude 3.5 Sonnet - Original 3.5
+    pub const SONNET_3_5: &str = "claude-3-5-sonnet-20240620";
+
+    /// Claude 3.5 Haiku - Fast and cost-effective
+    pub const HAIKU_3_5: &str = "claude-3-5-haiku-20241022";
+
+    /// Claude 3 Opus - Highest capability
+    pub const OPUS_3: &str = "claude-3-opus-20240229";
+}
+
+#[cfg(all(test, feature = "native"))]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_anthropic_agent_creation() {
+        let config = AnthropicConfig {
+            api_key: "test-key".to_string(),
+            ..Default::default()
+        };
+
+        let agent = AnthropicAgent::new(config);
+        assert_eq!(agent.name(), "anthropic");
+    }
+
+    #[tokio::test]
+    async fn test_anthropic_agent_capabilities() {
+        let config = AnthropicConfig {
+            api_key: "test-key".to_string(),
+            ..Default::default()
+        };
+
+        let agent = AnthropicAgent::new(config);
+        let caps = agent.capabilities();
+        assert!(caps.contains(&"llm".to_string()));
+        assert!(caps.contains(&"claude".to_string()));
+    }
+}

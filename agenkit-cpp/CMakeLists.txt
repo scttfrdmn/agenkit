@@ -12,6 +12,7 @@ option(AGENKIT_BUILD_TESTS "Build tests" ON)
 option(AGENKIT_BUILD_INTEGRATION_TESTS "Build integration tests" OFF)
 option(AGENKIT_BUILD_BENCHMARKS "Build benchmarks" ON)
 option(AGENKIT_BUILD_SHARED "Build shared library" ON)
+option(AGENKIT_HAS_AWS_SDK "Build with AWS SDK support for Bedrock adapter" OFF)
 
 # Dependencies
 find_package(nlohmann_json 3.11.0 REQUIRED)
@@ -26,6 +27,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(httplib)
 
+# Optional: AWS SDK for Bedrock adapter
+if(AGENKIT_HAS_AWS_SDK)
+    find_package(AWSSDK REQUIRED COMPONENTS bedrock-runtime)
+    add_definitions(-DAGENKIT_HAS_AWS_SDK)
+    message(STATUS "AWS SDK found - Bedrock adapter enabled")
+else()
+    message(STATUS "AWS SDK not found - Bedrock adapter will be stubbed")
+endif()
+
 # Library target
 add_library(agenkit
     src/core/message.cpp
@@ -34,6 +44,9 @@ add_library(agenkit
     src/adapters/claude_agent.cpp
     src/adapters/ollama_agent.cpp
     src/adapters/openai_agent.cpp
+    src/adapters/litellm_agent.cpp
+    src/adapters/gemini_agent.cpp
+    src/adapters/bedrock_agent.cpp
     src/transports/http_agent.cpp
     src/transports/http_server.cpp
     src/patterns/reflection.cpp
@@ -75,6 +88,14 @@ target_link_libraries(agenkit
         Threads::Threads
         httplib::httplib
 )
+
+# Link AWS SDK if available
+if(AGENKIT_HAS_AWS_SDK)
+    target_link_libraries(agenkit
+        PRIVATE
+            ${AWSSDK_LINK_LIBRARIES}
+    )
+endif()
 
 # Compiler warnings
 if(MSVC)
@@ -119,3 +140,4 @@ message(STATUS "Build Examples: ${AGENKIT_BUILD_EXAMPLES}")
 message(STATUS "Build Tests: ${AGENKIT_BUILD_TESTS}")
 message(STATUS "Build Integration Tests: ${AGENKIT_BUILD_INTEGRATION_TESTS}")
 message(STATUS "Build Benchmarks: ${AGENKIT_BUILD_BENCHMARKS}")
+message(STATUS "AWS SDK Support: ${AGENKIT_HAS_AWS_SDK}")

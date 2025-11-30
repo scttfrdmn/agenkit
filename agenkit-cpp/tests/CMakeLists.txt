@@ -105,6 +105,21 @@ add_executable(test_memory patterns/test_memory.cpp)
 target_link_libraries(test_memory agenkit gtest_main)
 add_test(NAME memory_tests COMMAND test_memory)
 
+# Adapter tests - LiteLLM
+add_executable(test_litellm_adapter test_litellm_adapter.cpp)
+target_link_libraries(test_litellm_adapter agenkit gtest_main)
+add_test(NAME litellm_adapter_tests COMMAND test_litellm_adapter)
+
+# Adapter tests - Gemini
+add_executable(test_gemini_adapter test_gemini_adapter.cpp)
+target_link_libraries(test_gemini_adapter agenkit gtest_main)
+add_test(NAME gemini_adapter_tests COMMAND test_gemini_adapter)
+
+# Adapter tests - Bedrock
+add_executable(test_bedrock_adapter test_bedrock_adapter.cpp)
+target_link_libraries(test_bedrock_adapter agenkit gtest_main)
+add_test(NAME bedrock_adapter_tests COMMAND test_bedrock_adapter)
+
 # Integration tests (optional, requires -DAGENKIT_BUILD_INTEGRATION_TESTS=ON)
 if(AGENKIT_BUILD_INTEGRATION_TESTS)
     add_subdirectory(integration)

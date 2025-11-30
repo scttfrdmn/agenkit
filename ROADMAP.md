@@ -862,7 +862,9 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 
 **Q4 2025 (Complete):** ✅ Memory, Cost Tracking, Long-Running Agents (#67-69)
 **Nov 2025 (Complete):** ✅ TypeScript, Safety, Reasoning, Patterns, Examples, Security (#70-75, #77-78, #81-83, #87, #89)
-**Q1 2026 (Next):** Evaluation Framework, npm Publication, Issue #64 Go Patterns (#73)
+**v0.35.0 (Complete):** ✅ 100% Adapter Parity - Go Tests, C++ Adapters, Rust Adapters (#64, #207, #208)
+**v0.36.0 (In Progress):** Test Coverage Parity - TypeScript Tests, C++ Tests (#209, #210, #211)
+**Q1 2026 (Next):** Evaluation Framework, npm Publication (#73)
 **Q2-Q3 2026:** Rust Port, Advanced Features, v1.0.0 Stabilization
 
 See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for detailed 2026 strategy.

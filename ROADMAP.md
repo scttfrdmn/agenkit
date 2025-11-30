@@ -722,17 +722,91 @@ Focus: TypeScript and Rust ports for web/edge computing.
 
 **Market Size**: Node.js + browser agents + serverless functions.
 
-### Q3 2026: Rust Port ✅ PERFORMANCE TIER
+### Q3 2025: Rust Port ✅ COMPLETE
 
-#### [#76](https://github.com/scttfrdmn/agenkit/issues/76) Rust Implementation (Planned)
-- [ ] Core interfaces with Tokio async (4.5k req/sec proven)
-- [ ] HTTP/WebSocket/gRPC transports
-- [ ] LLM adapters
-- [ ] Cargo package publication
+#### [#76](https://github.com/scttfrdmn/agenkit/issues/76) Rust Implementation ✅ COMPLETE
+- [x] Core interfaces with Tokio async (4.5k req/sec proven) ✅
+- [x] HTTP/WebSocket/gRPC transports ✅
+- [x] All 11 agent patterns ✅
+- [x] LLM adapters (OpenAI, Anthropic, Ollama) ✅
+- [x] Evaluation framework ✅
+- [x] 242 tests passing (100% pass rate) ✅
+- [x] Cargo package publication ✅
+
+**Status**: ✅ Complete (v0.28.0, October 2025). Full feature parity with Python/Go/TypeScript/C++.
+
+**Implementation Stats:**
+- 242 tests passing (100% pass rate)
+- 11/11 patterns implemented
+- Complete evaluation framework
+- Performance: 10-100x faster than Python for CPU-bound tasks
 
 **Why**: Edge computing, embedded agents, performance-critical systems.
 
-**Differentiation**: 10-100x faster than Python for CPU-bound tasks.
+**Differentiation**: Native performance competitive with C++, memory safety without GC.
+
+#### Rust WebAssembly (WASM) Support ✅ COMPLETE
+
+**Status**: ✅ Complete (v0.28.0, October 2025) - Browser deployment ready
+
+**Features**:
+- [x] wasm-pack builds (web, nodejs, bundler targets) ✅
+- [x] Browser-compatible agents (`WasmEchoAgent`) ✅
+- [x] JavaScript/TypeScript bindings via wasm-bindgen ✅
+- [x] 5/11 WASM-compatible patterns ✅
+  - Reflection, Agents-as-Tools, Orchestration (sequential), ReAct, Conversational
+- [x] NPM package generation ✅
+- [x] React and Vue integration examples ✅
+- [x] Performance benchmarks ✅
+- [x] Bundle optimization (~200-500 KB release builds) ✅
+- [x] Comprehensive documentation (`agenkit-rust/WASM.md`) ✅
+
+**Implementation Stats:**
+- Bundle size: 200-500 KB (release), 50-150 KB (gzipped)
+- Performance: 2-3x overhead vs native Rust
+- Browser example: `examples/wasm_browser_agent.html`
+- Documentation: 433-line comprehensive guide
+
+**Why WASM**:
+- Run AI agents directly in browsers (no server required)
+- Serverless edge computing (Cloudflare Workers, Fastly Compute@Edge)
+- Privacy-preserving local processing
+- Offline-capable web applications
+- Cross-platform without native compilation
+
+**WASM-Compatible Patterns (5/11)**:
+- ✅ Reflection - Iterative self-critique and refinement
+- ✅ Agents-as-Tools - Hierarchical agent delegation
+- ✅ Orchestration - Sequential composition (no parallel in WASM)
+- ✅ ReAct - Reasoning and acting with tool use
+- ✅ Conversational - Multi-turn dialogue management
+
+**Native-Only Patterns (6/11)**:
+- ⚠️ Task, Planning, Multiagent, Autonomous, Memory Hierarchy, Reasoning with Tools
+- Reason: Require tokio runtime (not available in WASM)
+
+**Browser Integration**:
+```javascript
+import init, { WasmEchoAgent, JsMessage } from './pkg/agenkit.js';
+
+await init();
+const agent = new WasmEchoAgent('browser-agent');
+const response = await agent.process(new JsMessage('user', 'Hello!'));
+```
+
+**Use Cases**:
+- Client-side AI agents in SPAs (React, Vue, Angular)
+- Browser extensions with AI capabilities
+- Offline-first progressive web apps
+- Edge computing on Cloudflare/Fastly
+- Privacy-preserving local LLM inference
+
+**Future Enhancements** (v0.40.0+):
+- [ ] Remaining 6 patterns in WASM (if feasible without tokio)
+- [ ] C++ WASM support via Emscripten
+- [ ] TypeScript → WASM compilation via AssemblyScript
+- [ ] WASM pattern benchmarks in CI/CD
+- [ ] Automated browser testing
 
 ### Future Consideration: Java/C# (Enterprise)
 - **Java**: Spring Boot ecosystem, Android

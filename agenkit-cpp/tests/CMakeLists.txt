@@ -105,5 +105,10 @@ add_executable(test_memory patterns/test_memory.cpp)
 target_link_libraries(test_memory agenkit gtest_main)
 add_test(NAME memory_tests COMMAND test_memory)
 
+# Integration tests (optional, requires -DAGENKIT_BUILD_INTEGRATION_TESTS=ON)
+if(AGENKIT_BUILD_INTEGRATION_TESTS)
+    add_subdirectory(integration)
+endif()
+
 # Enable verbose test output
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")

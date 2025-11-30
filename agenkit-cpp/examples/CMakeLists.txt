@@ -89,3 +89,22 @@ set_target_properties(echo_agent http_transport agent_chain claude_reflection ol
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
 )
+
+# Evaluation examples
+add_executable(basic_metrics evaluation/basic_metrics.cpp)
+target_link_libraries(basic_metrics agenkit)
+
+add_executable(session_recording evaluation/session_recording.cpp)
+target_link_libraries(session_recording agenkit)
+
+add_executable(quality_scoring evaluation/quality_scoring.cpp)
+target_link_libraries(quality_scoring agenkit)
+
+add_executable(regression_detection evaluation/regression_detection.cpp)
+target_link_libraries(regression_detection agenkit)
+
+add_executable(production_monitoring evaluation/production_monitoring.cpp)
+target_link_libraries(production_monitoring agenkit)
+
+add_executable(ab_testing evaluation/ab_testing.cpp)
+target_link_libraries(ab_testing agenkit)

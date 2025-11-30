@@ -46,6 +46,13 @@ add_library(agenkit
     src/patterns/planning.cpp
     src/patterns/autonomous.cpp
     src/patterns/memory.cpp
+    src/patterns/sequential.cpp
+    src/patterns/parallel.cpp
+    src/patterns/supervisor.cpp
+    src/patterns/router.cpp
+    src/patterns/collaborative.cpp
+    src/patterns/human_in_loop.cpp
+    src/patterns/fallback.cpp
 )
 
 target_include_directories(agenkit

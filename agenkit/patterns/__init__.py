@@ -13,6 +13,15 @@ Core Patterns:
 - AgentTool: Agents-as-Tools for hierarchical delegation (NEW in v0.12.0)
 - MemoryHierarchy: Multi-tier memory system (NEW in v0.12.0)
 - ReasoningWithToolsAgent: Interleaved reasoning and tool usage (NEW in v0.13.0)
+
+Pattern Library (NEW in v0.32.0):
+- SequentialAgent: Pipeline-style agent composition
+- ParallelAgent: Concurrent execution with result aggregation
+- SupervisorAgent: Hierarchical coordination with task decomposition
+- RouterAgent: Conditional agent selection based on classification
+- CollaborativeAgent: Peer-to-peer collaboration with iterative refinement
+- HumanInLoopAgent: Human approval gates for high-stakes decisions
+- FallbackAgent: Sequential retry across multiple agents
 """
 
 from agenkit.patterns.agents_as_tools import (
@@ -22,6 +31,49 @@ from agenkit.patterns.agents_as_tools import (
 from agenkit.patterns.autonomous import (
     AutonomousAgent,
     Goal,
+)
+from agenkit.patterns.collaborative import (
+    CollaborativeAgent,
+    CollaborativeConfig,
+    ConsensusFunc,
+    MergeFunc,
+    default_consensus_funcs,
+    default_merge_funcs,
+)
+from agenkit.patterns.fallback import (
+    FallbackAgent,
+    RecoveryAgent,
+    RecoveryFunc,
+    default_recovery,
+    with_recovery,
+)
+from agenkit.patterns.human_in_loop import (
+    ApprovalFunc,
+    ApprovalRequest,
+    ApprovalResponse,
+    HumanInLoopAgent,
+    HumanInLoopConfig,
+    confidence_based_approval_func,
+    simple_approval_func,
+)
+from agenkit.patterns.parallel import (
+    AggregatorFunc,
+    ParallelAgent,
+    default_aggregators,
+)
+from agenkit.patterns.router import (
+    ClassifierAgent,
+    LLMClassifier,
+    RouterAgent,
+    RouterConfig,
+    SimpleClassifier,
+)
+from agenkit.patterns.sequential import SequentialAgent
+from agenkit.patterns.supervisor import (
+    PlannerAgent,
+    SimplePlanner,
+    Subtask,
+    SupervisorAgent,
 )
 from agenkit.patterns.conversational import (
     ConversationalAgent,
@@ -76,23 +128,53 @@ __all__ = [
     "agent_as_tool",
     # Core Patterns
     "AgentTask",
+    # Pattern Library - Collaborative (NEW in v0.32.0)
+    "AggregatorFunc",
+    # Pattern Library - Human Approval (NEW in v0.32.0)
+    "ApprovalFunc",
+    "ApprovalRequest",
+    "ApprovalResponse",
     "AutonomousAgent",
+    # Pattern Library - Router (NEW in v0.32.0)
+    "ClassifierAgent",
+    # Pattern Library - Collaborative (NEW in v0.32.0)
+    "CollaborativeAgent",
+    "CollaborativeConfig",
+    "confidence_based_approval_func",
     "ConsensusAgent",
+    # Pattern Library - Collaborative (NEW in v0.32.0)
+    "ConsensusFunc",
     "ConversationalAgent",
     # Critique/Reflection (NEW)
     "CritiqueFormat",
+    "default_aggregators",
+    "default_consensus_funcs",
+    "default_merge_funcs",
+    "default_recovery",
+    # Pattern Library - Fallback (NEW in v0.32.0)
+    "FallbackAgent",
     "Goal",
+    # Pattern Library - Human Approval (NEW in v0.32.0)
+    "HumanInLoopAgent",
+    "HumanInLoopConfig",
+    "LLMClassifier",
     "LLMClient",
     # Memory Hierarchy Pattern (NEW)
     "LongTermMemory",
     "MemoryEntry",
     "MemoryHierarchy",
     "MemoryStore",
+    # Pattern Library - Collaborative (NEW in v0.32.0)
+    "MergeFunc",
     # Orchestration
     "MultiAgentOrchestrator",
+    # Pattern Library - Parallel (NEW in v0.32.0)
+    "ParallelAgent",
     "ParallelPattern",
     # Planning
     "Plan",
+    # Pattern Library - Supervisor (NEW in v0.32.0)
+    "PlannerAgent",
     "PlanStep",
     "PlanningAgent",
     # ReAct
@@ -103,14 +185,28 @@ __all__ = [
     "ReasoningStepType",
     "ReasoningTrace",
     "ReasoningWithToolsAgent",
+    # Pattern Library - Fallback (NEW in v0.32.0)
+    "RecoveryAgent",
+    "RecoveryFunc",
     # Reflection Pattern (NEW)
     "ReflectionAgent",
     "ReflectionStep",
+    # Pattern Library - Router (NEW in v0.32.0)
+    "RouterAgent",
+    "RouterConfig",
     # Orchestration (continued)
     "RouterPattern",
+    # Pattern Library - Sequential (NEW in v0.32.0)
+    "SequentialAgent",
     "SequentialPattern",
     # Memory (continued)
     "ShortTermMemory",
+    # Pattern Library - Router (NEW in v0.32.0)
+    "SimpleClassifier",
+    # Pattern Library - Human Approval (NEW in v0.32.0)
+    "simple_approval_func",
+    # Pattern Library - Supervisor (NEW in v0.32.0)
+    "SimplePlanner",
     # Planning (continued)
     "StepExecutor",
     "StepStatus",
@@ -118,6 +214,10 @@ __all__ = [
     "StopReason",
     # Conversational
     "StreamingConversationalAgent",
+    # Pattern Library - Supervisor (NEW in v0.32.0)
+    "Subtask",
+    # Pattern Library - Supervisor (NEW in v0.32.0)
+    "SupervisorAgent",
     # Task
     "Task",
     # Tools
@@ -126,4 +226,6 @@ __all__ = [
     "ToolResult",
     # Memory (continued)
     "WorkingMemory",
+    # Pattern Library - Fallback (NEW in v0.32.0)
+    "with_recovery",
 ]

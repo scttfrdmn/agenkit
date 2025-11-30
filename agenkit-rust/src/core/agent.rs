@@ -37,6 +37,22 @@ pub enum AgentError {
     InvalidInput(String),
 }
 
+impl Clone for AgentError {
+    fn clone(&self) -> Self {
+        match self {
+            AgentError::ProcessingError(s) => AgentError::ProcessingError(s.clone()),
+            AgentError::Timeout(s) => AgentError::Timeout(s.clone()),
+            AgentError::NotFound(s) => AgentError::NotFound(s.clone()),
+            AgentError::Transport(s) => AgentError::Transport(s.clone()),
+            AgentError::Serialization(e) => AgentError::ProcessingError(format!("serialization error: {}", e)),
+            #[cfg(feature = "native")]
+            AgentError::Http(e) => AgentError::Transport(e.to_string()),
+            AgentError::Internal(s) => AgentError::Internal(s.clone()),
+            AgentError::InvalidInput(s) => AgentError::InvalidInput(s.clone()),
+        }
+    }
+}
+
 /// Agent trait - minimal contract for agent communication.
 ///
 /// Design decisions:

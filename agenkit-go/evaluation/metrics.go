@@ -22,6 +22,7 @@ package evaluation
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -234,6 +235,7 @@ func FromJSON(jsonStr string) (*SessionResult, error) {
 // MetricsCollector aggregates metrics across multiple evaluation sessions.
 //
 // Useful for analyzing agent performance over time and across different scenarios.
+// Thread-safe for concurrent access.
 //
 // Example:
 //
@@ -243,6 +245,7 @@ func FromJSON(jsonStr string) (*SessionResult, error) {
 //	stats := collector.GetStatistics()
 //	fmt.Printf("Success rate: %.2f%%\n", stats["success_rate"]*100)
 type MetricsCollector struct {
+	mu      sync.RWMutex
 	results []SessionResult
 }
 
@@ -254,11 +257,15 @@ func NewMetricsCollector() *MetricsCollector {
 }
 
 // AddResult adds a session result to the collector.
+// Thread-safe for concurrent access.
 func (mc *MetricsCollector) AddResult(result *SessionResult) {
+	mc.mu.Lock()
+	defer mc.mu.Unlock()
 	mc.results = append(mc.results, *result)
 }
 
 // GetStatistics computes aggregated statistics across all collected results.
+// Thread-safe for concurrent access.
 //
 // Returns a map with statistics including:
 //   - session_count: Total number of sessions
@@ -269,6 +276,9 @@ func (mc *MetricsCollector) AddResult(result *SessionResult) {
 //   - total_errors: Total number of errors across all sessions
 //   - avg_errors_per_session: Average errors per session
 func (mc *MetricsCollector) GetStatistics() map[string]interface{} {
+	mc.mu.RLock()
+	defer mc.mu.RUnlock()
+
 	stats := make(map[string]interface{})
 
 	totalSessions := len(mc.results)
@@ -315,6 +325,7 @@ func (mc *MetricsCollector) GetStatistics() map[string]interface{} {
 }
 
 // GetMetricAggregates computes aggregated statistics for a specific metric across all sessions.
+// Thread-safe for concurrent access.
 //
 // Args:
 //
@@ -324,6 +335,9 @@ func (mc *MetricsCollector) GetStatistics() map[string]interface{} {
 //
 //	Map with statistics: count, sum, mean, min, max
 func (mc *MetricsCollector) GetMetricAggregates(metricName string) map[string]interface{} {
+	mc.mu.RLock()
+	defer mc.mu.RUnlock()
+
 	values := make([]float64, 0)
 
 	for _, result := range mc.results {
@@ -364,11 +378,114 @@ func (mc *MetricsCollector) GetMetricAggregates(metricName string) map[string]in
 }
 
 // GetResults returns all collected session results.
+// Thread-safe for concurrent access.
 func (mc *MetricsCollector) GetResults() []SessionResult {
-	return mc.results
+	mc.mu.RLock()
+	defer mc.mu.RUnlock()
+	// Return a copy to prevent external mutation
+	results := make([]SessionResult, len(mc.results))
+	copy(results, mc.results)
+	return results
 }
 
 // Clear removes all collected results.
+// Thread-safe for concurrent access.
 func (mc *MetricsCollector) Clear() {
+	mc.mu.Lock()
+	defer mc.mu.Unlock()
 	mc.results = make([]SessionResult, 0)
+}
+
+// CreateQualityMetric creates a quality score metric measurement.
+//
+// Helper to create a quality score metric with normalized score (0.0-1.0).
+//
+// Args:
+//
+//	name: Metric name
+//	score: Raw score
+//	maxScore: Maximum possible score (default: 10.0)
+//	metadata: Additional metadata
+//
+// Returns:
+//
+//	Metric measurement with normalized score
+//
+// Example:
+//
+//	metric := evaluation.CreateQualityMetric("response_quality", 8.5, 10.0, nil)
+func CreateQualityMetric(name string, score, maxScore float64, metadata map[string]interface{}) *MetricMeasurement {
+	normalizedScore := score / maxScore
+	if normalizedScore > 1.0 {
+		normalizedScore = 1.0
+	}
+
+	if metadata == nil {
+		metadata = make(map[string]interface{})
+	}
+	metadata["raw_score"] = score
+	metadata["max_score"] = maxScore
+
+	m := NewMetricMeasurement(name, normalizedScore, MetricTypeQualityScore)
+	m.Metadata = metadata
+	return m
+}
+
+// CreateCostMetric creates a cost metric measurement.
+//
+// Helper to create a cost metric with currency information.
+//
+// Args:
+//
+//	cost: Cost amount
+//	currency: Currency code (default: "USD")
+//	metadata: Additional metadata
+//
+// Returns:
+//
+//	Cost metric measurement
+//
+// Example:
+//
+//	metric := evaluation.CreateCostMetric(0.0042, "USD", nil)
+func CreateCostMetric(cost float64, currency string, metadata map[string]interface{}) *MetricMeasurement {
+	if currency == "" {
+		currency = "USD"
+	}
+
+	if metadata == nil {
+		metadata = make(map[string]interface{})
+	}
+	metadata["currency"] = currency
+
+	m := NewMetricMeasurement("total_cost", cost, MetricTypeCost)
+	m.Metadata = metadata
+	return m
+}
+
+// CreateDurationMetric creates a duration metric measurement.
+//
+// Helper to create a duration metric with hours conversion.
+//
+// Args:
+//
+//	durationSeconds: Duration in seconds
+//	metadata: Additional metadata
+//
+// Returns:
+//
+//	Duration metric measurement
+//
+// Example:
+//
+//	metric := evaluation.CreateDurationMetric(125.5, nil)
+func CreateDurationMetric(durationSeconds float64, metadata map[string]interface{}) *MetricMeasurement {
+	if metadata == nil {
+		metadata = make(map[string]interface{})
+	}
+	metadata["duration_hours"] = durationSeconds / 3600
+
+	m := NewMetricMeasurement("duration", durationSeconds, MetricTypeDuration)
+	m.Metadata = metadata
+	return m
 }

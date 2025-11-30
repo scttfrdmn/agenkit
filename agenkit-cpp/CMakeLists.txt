@@ -32,6 +32,7 @@ add_library(agenkit
     src/adapters/echo_agent.cpp
     src/adapters/claude_agent.cpp
     src/adapters/ollama_agent.cpp
+    src/adapters/openai_agent.cpp
     src/transports/http_agent.cpp
     src/transports/http_server.cpp
     src/patterns/reflection.cpp

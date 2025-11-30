@@ -1,8 +1,22 @@
-///! Local agent adapters.
+///! Agent adapters for LLM providers.
 ///!
-///! This module provides adapters for running agents locally without
-///! network transport.
+///! This module provides adapters for connecting to various LLM providers
+///! including OpenAI, Anthropic, and Ollama.
 
-// Placeholder for future local agent implementations
-#[allow(dead_code)]
-const PLACEHOLDER: () = ();
+#[cfg(feature = "native")]
+pub mod openai;
+
+#[cfg(feature = "native")]
+pub mod anthropic;
+
+#[cfg(feature = "native")]
+pub mod ollama;
+
+#[cfg(feature = "native")]
+pub use openai::{OpenAIAgent, OpenAIConfig};
+
+#[cfg(feature = "native")]
+pub use anthropic::{AnthropicAgent, AnthropicConfig};
+
+#[cfg(feature = "native")]
+pub use ollama::{OllamaAgent, OllamaConfig};

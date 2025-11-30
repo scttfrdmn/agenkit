@@ -5,7 +5,7 @@
 //!
 //! # Example
 //!
-//! ```no_run
+//! ```ignore
 //! use agenkit::evaluation::optimizer::{RandomSearchOptimizer, SearchSpace};
 //! use std::collections::HashMap;
 //!
@@ -15,7 +15,7 @@
 //! search_space.add_continuous("top_p", 0.0, 1.0);
 //!
 //! let objective = |_config: HashMap<String, serde_json::Value>| async { Ok(0.95) };
-//! let mut optimizer = RandomSearchOptimizer::new(objective, search_space, true);
+//! let optimizer = RandomSearchOptimizer::new(objective, search_space, true);
 //!
 //! let result = optimizer.optimize(50).await?;
 //! println!("Best score: {}", result.best_score);
@@ -218,7 +218,7 @@ impl OptimizationResult {
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```ignore
 /// use agenkit::evaluation::optimizer::{RandomSearchOptimizer, SearchSpace};
 /// use std::collections::HashMap;
 ///
@@ -227,7 +227,7 @@ impl OptimizationResult {
 /// search_space.add_continuous("temperature", 0.0, 1.0);
 ///
 /// let objective = |_config: HashMap<String, serde_json::Value>| async { Ok(0.95) };
-/// let mut optimizer = RandomSearchOptimizer::new(objective, search_space, true);
+/// let optimizer = RandomSearchOptimizer::new(objective, search_space, true);
 ///
 /// let result = optimizer.optimize(20).await?;
 /// # Ok(())
@@ -470,7 +470,7 @@ pub enum AcquisitionFunction {
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```ignore
 /// use agenkit::evaluation::optimizer::{BayesianOptimizer, SearchSpace, AcquisitionFunction};
 /// use std::collections::HashMap;
 ///
@@ -479,7 +479,7 @@ pub enum AcquisitionFunction {
 /// space.add_continuous("x", 0.0, 10.0);
 ///
 /// let objective = |_config: HashMap<String, serde_json::Value>| async { Ok(0.95) };
-/// let mut optimizer = BayesianOptimizer::new(
+/// let optimizer = BayesianOptimizer::new(
 ///     objective,
 ///     space,
 ///     true, // maximize

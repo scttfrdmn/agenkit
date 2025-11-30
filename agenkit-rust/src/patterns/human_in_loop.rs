@@ -179,6 +179,17 @@ pub struct HumanInLoopAgent {
     confidence_key: String,
 }
 
+impl std::fmt::Debug for HumanInLoopAgent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HumanInLoopAgent")
+            .field("agent", &"<dyn Agent>")
+            .field("approval_threshold", &self.approval_threshold)
+            .field("approval_func", &"<function>")
+            .field("confidence_key", &self.confidence_key)
+            .finish()
+    }
+}
+
 impl HumanInLoopAgent {
     /// Create a new human-in-loop agent.
     ///
@@ -608,7 +619,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_human_in_loop_missing_confidence() {
-        let agent = Arc::new(MockAgent {
+        let _agent = Arc::new(MockAgent {
             name: "agent".to_string(),
             response: "No confidence metadata".to_string(),
             confidence: 0.0, // Agent won't set confidence

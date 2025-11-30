@@ -381,7 +381,7 @@ mod tests {
             "mock"
         }
 
-        async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
             Ok(Message::with_text("assistant", "response"))
         }
     }

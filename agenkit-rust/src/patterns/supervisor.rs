@@ -160,6 +160,15 @@ pub struct SupervisorAgent {
     specialists: HashMap<String, Arc<dyn Agent>>,
 }
 
+impl std::fmt::Debug for SupervisorAgent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SupervisorAgent")
+            .field("planner", &"<dyn PlannerAgent>")
+            .field("specialists", &format!("{} specialists", self.specialists.len()))
+            .finish()
+    }
+}
+
 impl SupervisorAgent {
     /// Create a new supervisor agent.
     ///

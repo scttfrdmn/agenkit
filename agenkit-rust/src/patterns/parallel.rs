@@ -95,6 +95,15 @@ pub struct ParallelAgent {
     aggregator: AggregatorFunc,
 }
 
+impl std::fmt::Debug for ParallelAgent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ParallelAgent")
+            .field("agents", &format!("{} agents", self.agents.len()))
+            .field("aggregator", &"<function>")
+            .finish()
+    }
+}
+
 impl ParallelAgent {
     /// Create a new parallel execution agent.
     ///

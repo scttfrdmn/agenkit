@@ -80,6 +80,14 @@ pub struct SequentialAgent {
     agents: Vec<Arc<dyn Agent>>,
 }
 
+impl std::fmt::Debug for SequentialAgent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SequentialAgent")
+            .field("agents", &format!("{} agents", self.agents.len()))
+            .finish()
+    }
+}
+
 impl SequentialAgent {
     /// Create a new sequential pipeline agent.
     ///

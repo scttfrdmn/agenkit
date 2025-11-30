@@ -125,6 +125,17 @@ pub struct CollaborativeAgent {
     merge_func: MergeFunc,
 }
 
+impl std::fmt::Debug for CollaborativeAgent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CollaborativeAgent")
+            .field("agents", &format!("{} agents", self.agents.len()))
+            .field("max_rounds", &self.max_rounds)
+            .field("consensus_func", &if self.consensus_func.is_some() { "Some(<function>)" } else { "None" })
+            .field("merge_func", &"<function>")
+            .finish()
+    }
+}
+
 impl CollaborativeAgent {
     /// Create a new collaborative agent.
     ///

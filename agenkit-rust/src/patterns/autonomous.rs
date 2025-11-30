@@ -454,7 +454,7 @@ mod tests {
         let stop_flag = Arc::new(AtomicBool::new(false));
         let stop_flag_clone = stop_flag.clone();
         let counter = Arc::new(AtomicUsize::new(0));
-        let counter_clone = counter.clone();
+        let _counter_clone = counter.clone();
 
         let mut agent = AutonomousAgent::new("Test stop", 100);
         agent.add_goal("Goal 1", 10);

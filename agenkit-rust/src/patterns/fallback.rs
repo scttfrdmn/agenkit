@@ -83,6 +83,14 @@ pub struct FallbackAgent {
     agents: Vec<Arc<dyn Agent>>,
 }
 
+impl std::fmt::Debug for FallbackAgent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FallbackAgent")
+            .field("agents", &format!("{} agents", self.agents.len()))
+            .finish()
+    }
+}
+
 impl FallbackAgent {
     /// Create a new fallback agent.
     ///

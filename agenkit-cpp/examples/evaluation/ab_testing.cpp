@@ -20,7 +20,7 @@ int main() {
     auto storage = std::make_shared<InMemoryRecordingStorage>();
     SessionRecorder recorder(storage);
 
-    auto agent_v1 = std::make_shared<adapters::EchoAgent>("AgentV1");
+    auto agent_v1 = std::make_shared<adapters::EchoAgent>();
     auto wrapped_v1 = recorder.wrap(agent_v1);
 
     recorder.start_session("ab-test", "AgentV1", nlohmann::json::object());
@@ -45,13 +45,13 @@ int main() {
     // Step 2: Replay with Version A
     std::cout << "Step 2: Replaying with Version A" << std::endl;
     SessionReplay replay;
-    auto agent_a = std::make_shared<adapters::EchoAgent>("AgentA");
+    auto agent_a = std::make_shared<adapters::EchoAgent>();
     auto results_a = replay.replay(recording, agent_a);
     std::cout << "✓ Version A latency: " << results_a["total_latency_ms"] << "ms" << std::endl << std::endl;
 
     // Step 3: Replay with Version B
     std::cout << "Step 3: Replaying with Version B" << std::endl;
-    auto agent_b = std::make_shared<adapters::EchoAgent>("AgentB");
+    auto agent_b = std::make_shared<adapters::EchoAgent>();
     auto results_b = replay.replay(recording, agent_b);
     std::cout << "✓ Version B latency: " << results_b["total_latency_ms"] << "ms" << std::endl << std::endl;
 

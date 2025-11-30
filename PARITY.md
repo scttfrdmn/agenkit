@@ -38,14 +38,20 @@ The goal is to ensure consistent functionality and examples across Python, Go, T
 | Regression Detection | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Quality Metrics | ✅ | ✅ | ✅ | ✅ | ✅ |
 | A/B Testing | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Benchmarks | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Benchmarks | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 **Implementation Summary:**
-- **Python**: Complete (v0.24.0) - 6 examples
-- **Go**: Complete (v0.33.0) - 127 tests, 6 examples, thread-safe
-- **TypeScript**: Complete (v0.34.0) - 7,128 LOC, 6 examples
-- **C++**: Complete (v0.34.0) - 4,012 LOC, 6 examples, RAII
-- **Rust**: Complete (v0.34.0) - 5,180 LOC, 6 examples, Arc<RwLock>
+- **Python**: Complete (v0.24.0) - 6 examples, benchmarks
+- **Go**: Complete (v0.33.0) - 127 tests, 6 examples, thread-safe, benchmarks
+- **TypeScript**: Complete (v0.34.0) - 7,128 LOC, 6 examples, benchmarks
+- **C++**: Complete (v0.37.0) - 4,012 LOC, 6 examples, RAII, **benchmarks added** ✅
+- **Rust**: Complete (v0.34.0) - 5,180 LOC, 6 examples, Arc<RwLock>, benchmarks
+
+**v0.37.0 Achievement:**
+- ✅ C++ Evaluation Benchmarks: 15 benchmarks across 4 categories (Issue #212)
+  - Metrics collection, session recording, evaluation results, quality metrics
+  - Performance baseline documented
+  - All 5 languages now have complete evaluation infrastructure
 
 All languages can now measure agent performance, conduct A/B testing, detect regressions, and optimize production deployments.
 
@@ -259,6 +265,8 @@ examples/
 | v0.33.0 | ✅     | ✅     | ✅         | ✅     | ✅     |
 | v0.34.0 | ✅     | ✅     | ✅         | ✅     | ✅     |
 | v0.35.0 | ✅     | ✅     | ✅         | ✅     | ✅     |
+| v0.36.0 | ✅     | ✅     | ✅         | ✅     | ✅     |
+| v0.37.0 | ✅     | ✅     | ✅         | ✅     | ✅     |
 
 **✅ v0.33.0 - EVALUATION & PATTERN LIBRARY PARITY COMPLETE!**
 
@@ -438,6 +446,41 @@ examples/
 - Complete feature parity enables polyglot architectures
 - Foundation for v1.0 production release
 - Go has comprehensive test coverage for patterns (127 tests)
+
+---
+
+**✅ v0.37.0 - CI/CD INFRASTRUCTURE & QUALITY IMPROVEMENTS**
+
+**All Goals Completed:**
+- ✅ C++ Evaluation Benchmarks (Issue #212 - COMPLETED)
+  - 15 benchmarks across 4 categories (396 LOC)
+  - Metrics collection, session recording, evaluation results, quality metrics
+  - Baseline performance documented in BENCHMARKS.md
+  - Resolves last evaluation parity gap - all 5 languages now have benchmarks
+- ✅ CI/CD Cleanup - All Failing Workflows Fixed (4/4 fixed)
+  - C++ CI: Fixed CMakeLists.txt (removed 13 stale example references)
+  - Lint: Fixed 129 Python linting errors (auto-fixed + manual cleanup)
+  - Benchmarks + Tests: Downgraded Go protobuf v1.36.10 → v1.35.1 (fixed init panic)
+  - All 5 workflows now passing ✅
+- ✅ Rust Compilation Fixes (Issue #214 - COMPLETED)
+  - Implemented Debug trait for 6 pattern structs
+  - Fixed 3 unused variable warnings
+  - All 242 library tests passing
+
+**Key Achievements (v0.37.0):**
+- 🎯 **100% Evaluation Benchmark Parity**: All 5 languages (Python, Go, TypeScript, C++, Rust)
+- 🎯 **100% CI/CD Health**: All workflows passing (Lint, Tests, Benchmarks, C++ CI, Integration Tests)
+- 🎯 **Rust Quality**: 242/242 tests passing with zero warnings
+- 🎯 **Total Fixes**: 3 critical issues + 4 workflow failures resolved
+- 🎯 **Issue #212 Complete**: C++ benchmarks match Python/Go/TypeScript/Rust
+- 🎯 **Issue #214 Complete**: Rust compilation clean
+- 🎯 **Code Quality**: Python (from 162 → 25 acceptable warnings), C++ (CMake clean), Go (protobuf stable), Rust (zero warnings)
+
+**Impact:**
+- CI/CD pipeline now reliable and green across all languages
+- C++ can now benchmark evaluation performance alongside other languages
+- Rust codebase has zero compilation warnings (highest quality standard)
+- Foundation stable for continued development toward v1.0
 
 ---
 

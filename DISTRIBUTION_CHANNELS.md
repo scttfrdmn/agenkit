@@ -4,14 +4,15 @@
 
 Agenkit is a cross-language framework with implementations in multiple languages. Each language has its own distribution channel and package management system.
 
-## Current Status (v0.9.0)
+## Current Status (v0.37.0)
 
 | Language   | Registry       | Status | Package Name | Installation |
 |------------|----------------|--------|--------------|--------------|
 | Python     | PyPI           | 🔄 Ready to publish | `agenkit` | `pip install agenkit` |
-| Go         | Go Modules     | ✅ Live | `github.com/scttfrdmn/agenkit-go` | `go get github.com/scttfrdmn/agenkit-go@v0.9.0` |
-| TypeScript | npm            | 📅 Planned | `@agenkit/core` | `npm install @agenkit/core` |
-| Rust       | crates.io      | 📅 Planned | `agenkit` | `cargo add agenkit` |
+| Go         | Go Modules     | ✅ Live | `github.com/scttfrdmn/agenkit-go` | `go get github.com/scttfrdmn/agenkit-go@v0.37.0` |
+| TypeScript | npm            | 🔄 Ready to publish | `@agenkit/core` | `npm install @agenkit/core` |
+| C++        | Source/CMake   | ✅ Available | N/A | Build from source (CMake) |
+| Rust       | crates.io      | 🔄 Ready to publish | `agenkit` | `cargo add agenkit` |
 
 ---
 

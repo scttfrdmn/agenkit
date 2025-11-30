@@ -19,12 +19,12 @@ Welcome to Agenkit! This guide will help you get up and running with the framewo
 
 Agenkit is a production-ready framework for building distributed AI agent systems with:
 
-- **Cross-language support** - Python ↔ Go with 119% parity
-- **Multiple transports** - HTTP, gRPC, WebSocket
+- **Cross-language support** - Python, TypeScript, Go, C++, Rust with 100% feature parity
+- **Multiple transports** - HTTP (HTTP/1.1, HTTP/2, HTTP/3), gRPC, WebSocket
 - **Production middleware** - Circuit breaker, retry, timeout, rate limiting, caching, batching
 - **Autonomous agent framework** - Memory, budget tracking, checkpointing, safety, evaluation
-- **Full observability** - OpenTelemetry tracing, Prometheus metrics
-- **Container ready** - Docker and Kubernetes deployment
+- **Full observability** - OpenTelemetry tracing, Prometheus metrics, structured logging
+- **Container ready** - Docker and Kubernetes deployment with HPA
 
 **Website:** [https://agenkit.dev](https://agenkit.dev)
 
@@ -57,6 +57,45 @@ go mod download
 ```
 
 **Requirements:** Go 1.21+
+
+### TypeScript
+
+```bash
+# Install from npm
+npm install @agenkit/core
+
+# Or with yarn
+yarn add @agenkit/core
+```
+
+**Requirements:** Node.js 18+ or TypeScript 5.0+
+
+### C++
+
+```bash
+# Clone and build with CMake
+git clone https://github.com/agenkit/agenkit.git
+cd agenkit/agenkit-cpp
+mkdir build && cd build
+cmake ..
+make
+```
+
+**Requirements:** C++17 compiler, CMake 3.15+, libcurl, nlohmann/json
+
+### Rust
+
+```bash
+# Add to Cargo.toml
+cargo add agenkit
+
+# Or from source
+git clone https://github.com/agenkit/agenkit.git
+cd agenkit/agenkit-rust
+cargo build --release
+```
+
+**Requirements:** Rust 1.70+
 
 ## Your First Agent
 

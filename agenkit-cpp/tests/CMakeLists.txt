@@ -105,6 +105,41 @@ add_executable(test_memory patterns/test_memory.cpp)
 target_link_libraries(test_memory agenkit gtest_main)
 add_test(NAME memory_tests COMMAND test_memory)
 
+# Pattern tests - Sequential
+add_executable(test_sequential patterns/test_sequential.cpp)
+target_link_libraries(test_sequential agenkit gtest_main)
+add_test(NAME sequential_tests COMMAND test_sequential)
+
+# Pattern tests - Parallel
+add_executable(test_parallel patterns/test_parallel.cpp)
+target_link_libraries(test_parallel agenkit gtest_main)
+add_test(NAME parallel_tests COMMAND test_parallel)
+
+# Pattern tests - Supervisor
+add_executable(test_supervisor patterns/test_supervisor.cpp)
+target_link_libraries(test_supervisor agenkit gtest_main)
+add_test(NAME supervisor_tests COMMAND test_supervisor)
+
+# Pattern tests - Router
+add_executable(test_router patterns/test_router.cpp)
+target_link_libraries(test_router agenkit gtest_main)
+add_test(NAME router_tests COMMAND test_router)
+
+# Pattern tests - Collaborative
+add_executable(test_collaborative patterns/test_collaborative.cpp)
+target_link_libraries(test_collaborative agenkit gtest_main)
+add_test(NAME collaborative_tests COMMAND test_collaborative)
+
+# Pattern tests - Human-in-Loop
+add_executable(test_human_in_loop patterns/test_human_in_loop.cpp)
+target_link_libraries(test_human_in_loop agenkit gtest_main)
+add_test(NAME human_in_loop_tests COMMAND test_human_in_loop)
+
+# Pattern tests - Fallback
+add_executable(test_fallback patterns/test_fallback.cpp)
+target_link_libraries(test_fallback agenkit gtest_main)
+add_test(NAME fallback_tests COMMAND test_fallback)
+
 # Adapter tests - LiteLLM
 add_executable(test_litellm_adapter test_litellm_adapter.cpp)
 target_link_libraries(test_litellm_adapter agenkit gtest_main)

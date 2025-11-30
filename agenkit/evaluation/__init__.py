@@ -32,12 +32,19 @@ Example:
     >>>     print("Quality degradation detected!")
 """
 
-from .ab_testing import ABResult, ABTest, ABVariant, SignificanceLevel, StatisticalTestType, calculate_sample_size
+from .ab_testing import (
+    ABResult,
+    ABTest,
+    ABVariant,
+    SignificanceLevel,
+    StatisticalTestType,
+    calculate_sample_size,
+)
 from .bayesian_optimizer import AcquisitionFunction, BayesianOptimizer
 from .benchmarks import Benchmark, BenchmarkSuite
 from .context_metrics import CompressionMetrics, ContextMetrics, LatencyMetric
 from .core import EvaluationResult, Evaluator, Metric
-from .optimizer import Optimizer, OptimizationResult, RandomSearchOptimizer, SearchSpace
+from .optimizer import OptimizationResult, Optimizer, RandomSearchOptimizer, SearchSpace
 from .prompt_optimizer import OptimizationStrategy, PromptOptimizationResult, PromptOptimizer
 from .quality_metrics import AccuracyMetric, PrecisionRecallMetric, QualityMetrics
 from .recorder import SessionRecorder, SessionReplay

@@ -36,11 +36,10 @@ Example:
 
 import random
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-
-import numpy as np
+from typing import Any
 
 
 @dataclass
@@ -58,13 +57,13 @@ class SearchSpace:
         >>> space.add_categorical("model", ["gpt-4", "claude-3"])
     """
 
-    parameters: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    parameters: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def add_continuous(self, name: str, low: float, high: float) -> None:
         """Add continuous parameter with range [low, high]."""
         self.parameters[name] = {"type": "continuous", "low": low, "high": high}
 
-    def add_discrete(self, name: str, values: List[Union[int, float]]) -> None:
+    def add_discrete(self, name: str, values: list[int | float]) -> None:
         """Add discrete parameter with specific values."""
         self.parameters[name] = {"type": "discrete", "values": values}
 
@@ -72,11 +71,11 @@ class SearchSpace:
         """Add integer parameter with range [low, high]."""
         self.parameters[name] = {"type": "integer", "low": low, "high": high}
 
-    def add_categorical(self, name: str, values: List[str]) -> None:
+    def add_categorical(self, name: str, values: list[str]) -> None:
         """Add categorical parameter with specific values."""
         self.parameters[name] = {"type": "categorical", "values": values}
 
-    def sample(self) -> Dict[str, Any]:
+    def sample(self) -> dict[str, Any]:
         """Sample random configuration from search space."""
         config = {}
         for name, spec in self.parameters.items():
@@ -90,7 +89,7 @@ class SearchSpace:
                 config[name] = random.choice(spec["values"])
         return config
 
-    def validate(self, config: Dict[str, Any]) -> bool:
+    def validate(self, config: dict[str, Any]) -> bool:
         """Validate that configuration is within search space."""
         for name, value in config.items():
             if name not in self.parameters:
@@ -128,13 +127,13 @@ class OptimizationResult:
         metadata: Additional metadata
     """
 
-    best_config: Dict[str, Any]
+    best_config: dict[str, Any]
     best_score: float
-    history: List[Tuple[Dict[str, Any], float]]
+    history: list[tuple[dict[str, Any], float]]
     n_iterations: int
     start_time: str
     end_time: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def duration_seconds(self) -> float:
@@ -152,7 +151,7 @@ class OptimizationResult:
             return 0.0
         return ((self.best_score - initial_score) / abs(initial_score)) * 100
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "best_config": self.best_config,
@@ -176,9 +175,9 @@ class Optimizer(ABC):
 
     def __init__(
         self,
-        agent_factory: Callable[[Dict[str, Any]], Any],
-        search_space: Union[SearchSpace, Dict[str, Any]],
-        objective: Union[str, Callable],
+        agent_factory: Callable[[dict[str, Any]], Any],
+        search_space: SearchSpace | dict[str, Any],
+        objective: str | Callable,
         maximize: bool = True,
     ):
         """
@@ -211,11 +210,11 @@ class Optimizer(ABC):
 
         self.objective = objective
         self.maximize = maximize
-        self.history: List[Tuple[Dict[str, Any], float]] = []
+        self.history: list[tuple[dict[str, Any], float]] = []
 
     @abstractmethod
     async def optimize(
-        self, test_cases: List[Dict[str, Any]], n_iterations: int, **kwargs: Any
+        self, test_cases: list[dict[str, Any]], n_iterations: int, **kwargs: Any
     ) -> OptimizationResult:
         """
         Run optimization.
@@ -231,7 +230,7 @@ class Optimizer(ABC):
         pass
 
     async def evaluate_config(
-        self, config: Dict[str, Any], test_cases: List[Dict[str, Any]]
+        self, config: dict[str, Any], test_cases: list[dict[str, Any]]
     ) -> float:
         """
         Evaluate a configuration on test cases.
@@ -248,7 +247,6 @@ class Optimizer(ABC):
 
         # Evaluate on test cases
         from agenkit.evaluation.core import Evaluator
-        from agenkit.interfaces import Message
 
         # Use objective as metric
         if isinstance(self.objective, str):
@@ -302,16 +300,16 @@ class RandomSearchOptimizer(Optimizer):
     """
 
     async def optimize(
-        self, test_cases: List[Dict[str, Any]], n_iterations: int, **kwargs: Any
+        self, test_cases: list[dict[str, Any]], n_iterations: int, **kwargs: Any
     ) -> OptimizationResult:
         """Run random search optimization."""
         start_time = datetime.now(timezone.utc).isoformat()
         self.history = []
 
-        best_config: Optional[Dict[str, Any]] = None
+        best_config: dict[str, Any] | None = None
         best_score = float("-inf")
 
-        for i in range(n_iterations):
+        for _ in range(n_iterations):
             # Sample random configuration
             config = self.search_space.sample()
 

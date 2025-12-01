@@ -1034,12 +1034,27 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 - **162 Python linting errors** resolved (auto-fixed + manual)
 - **Zero warnings** across all languages
 
-### Deferred Work
+### v0.38.0 - C++ Integration Test Coverage ✅
+**Status**: ✅ Complete | **Completed**: November 2025
 
-#### [#213](https://github.com/scttfrdmn/agenkit/issues/213) C++ Integration Tests (Deferred to Q1 2026)
-**Scope**: Expand C++ integration tests beyond basic pattern validation
-**Estimated Effort**: 2-3 days
-**Rationale**: Existing pattern tests provide good coverage; comprehensive integration tests can wait until Q1 2026
+#### [#213](https://github.com/scttfrdmn/agenkit/issues/213) C++ Integration Tests
+- [x] Fix pattern integration tests (11 tests)
+- [x] Write evaluation integration tests (11 tests)
+- [x] Enable all test suites in CMake
+- [x] Achieve 5/5 integration test suites passing (100%)
+
+**Why**: Ensure C++ implementation has comprehensive integration test coverage for production use.
+
+**Status**: ✅ Complete (22 integration tests, 100% passing)
+
+**v0.38.0 Achievements:**
+- 🎯 **100% C++ Integration Test Coverage**: 5/5 test suites passing (up from 60%)
+- 🔧 **Pattern Tests Fixed**: Updated 7 patterns to use new config-based APIs
+- ✨ **Evaluation Tests Written**: 11 new tests for SessionRecorder, RegressionDetector, MetricsCollector
+- 📊 **22 Integration Tests**: 11 pattern + 11 evaluation tests
+- ⚡ **Fast Execution**: All tests complete in <2 seconds
+
+### Deferred Work
 
 #### [#216](https://github.com/scttfrdmn/agenkit/issues/216) Comprehensive User Documentation (Planned for Q1 2026)
 **Scope**: Update all user-facing documentation with latest features and best practices
@@ -1081,7 +1096,8 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 **v0.35.0 (Complete):** ✅ 100% Adapter Parity - Go Tests, C++ Adapters, Rust Adapters (#64, #207, #208)
 **v0.36.0 (Complete):** ✅ Test Coverage Parity - TypeScript Tests, C++ Tests (#209, #210, #211)
 **v0.37.0 (Complete):** ✅ CI/CD Infrastructure & Quality - C++ Evaluation Benchmarks, All Workflows Fixed, Rust Zero Warnings (#212, #214)
-**Q1 2026 (Next):** C++ Integration Tests, Comprehensive Documentation, Evaluation Framework (#213, #216, #73)
+**v0.38.0 (Complete):** ✅ C++ Integration Test Coverage - All 5 test suites passing, 22 integration tests (#213)
+**Q1 2026 (Next):** Comprehensive Documentation, Evaluation Framework, Advanced Patterns (#216, #73, #225)
 **Q2-Q3 2026:** Rust Port, Advanced Features, v1.0.0 Stabilization
 
 See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for detailed 2026 strategy.

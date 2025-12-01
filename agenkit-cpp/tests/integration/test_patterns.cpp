@@ -62,7 +62,7 @@ TEST(PatternIntegrationTest, ParallelPattern) {
     auto agent2 = std::make_shared<adapters::EchoAgent>();
     auto agent3 = std::make_shared<adapters::EchoAgent>();
 
-    // Create parallel pattern with default aggregator
+    // Create parallel pattern with metadata-preserving aggregator
     std::vector<std::shared_ptr<core::Agent>> agents = {agent1, agent2, agent3};
     auto aggregator = [](const std::vector<core::Message>& messages) -> core::Message {
         // Simple concatenation aggregator
@@ -71,7 +71,14 @@ TEST(PatternIntegrationTest, ParallelPattern) {
             if (!combined.empty()) combined += " | ";
             combined += msg.content_as_str();
         }
-        return core::Message::with_text("assistant", combined);
+        auto result = core::Message::with_text("assistant", combined);
+        // Preserve metadata from first message
+        if (!messages.empty() && !messages[0].metadata().is_null()) {
+            for (auto it = messages[0].metadata().begin(); it != messages[0].metadata().end(); ++it) {
+                result.with_metadata(it.key(), it.value());
+            }
+        }
+        return result;
     };
     patterns::ParallelAgent parallel(agents, aggregator);
 
@@ -97,13 +104,20 @@ TEST(PatternIntegrationTest, ParallelPattern) {
  * Tests that supervisor pattern coordinates multiple agents
  */
 TEST(PatternIntegrationTest, SupervisorPattern) {
-    // Create worker agents
-    auto worker1 = std::make_shared<adapters::EchoAgent>();
-    auto worker2 = std::make_shared<adapters::EchoAgent>();
+    // Create specialist agents
+    auto specialist1 = std::make_shared<adapters::EchoAgent>();
+    auto specialist2 = std::make_shared<adapters::EchoAgent>();
 
-    // Create supervisor with workers
-    std::vector<std::shared_ptr<core::Agent>> workers = {worker1, worker2};
-    patterns::SupervisorAgent supervisor(workers);
+    // Create planner agent (using SimplePlanner with EchoAgent)
+    auto base_agent = std::make_shared<adapters::EchoAgent>();
+    auto planner = std::make_shared<patterns::SimplePlanner>(base_agent);
+
+    // Create supervisor with planner and specialists
+    std::unordered_map<std::string, std::shared_ptr<core::Agent>> specialists = {
+        {"specialist1", specialist1},
+        {"specialist2", specialist2}
+    };
+    patterns::SupervisorAgent supervisor(planner, specialists);
 
     EXPECT_EQ(supervisor.name(), "supervisor");
 
@@ -127,27 +141,32 @@ TEST(PatternIntegrationTest, SupervisorPattern) {
  */
 TEST(PatternIntegrationTest, RouterPattern) {
     // Create specialized agents
-    auto echo_agent = std::make_shared<adapters::EchoAgent>();
+    auto primary_agent = std::make_shared<adapters::EchoAgent>();
     auto backup_agent = std::make_shared<adapters::EchoAgent>();
 
-    // Create router with routing function
-    std::vector<std::shared_ptr<core::Agent>> agents = {echo_agent, backup_agent};
-    auto routing_fn = [](const core::Message& msg) -> size_t {
-        // Route based on metadata
-        if (msg.metadata().contains("route") &&
-            msg.metadata()["route"].get<std::string>() == "backup") {
-            return 1;  // backup_agent
-        }
-        return 0;  // echo_agent
+    // Create simple keyword-based classifier
+    std::unordered_map<std::string, std::vector<std::string>> keywords = {
+        {"primary", {"primary", "main", "default"}},
+        {"backup", {"backup", "fallback", "secondary"}}
     };
+    auto classifier = std::make_shared<patterns::SimpleClassifier>(
+        primary_agent,  // Fallback agent if classification is unclear
+        keywords
+    );
 
-    patterns::RouterAgent router(agents, routing_fn);
+    // Create router with config
+    std::unordered_map<std::string, std::shared_ptr<core::Agent>> agents = {
+        {"primary", primary_agent},
+        {"backup", backup_agent}
+    };
+    patterns::RouterConfig config{classifier, agents, "primary"};  // Default to primary
+    patterns::RouterAgent router(config);
 
     EXPECT_EQ(router.name(), "router");
 
-    // Test routing to first agent
-    auto msg1 = core::Message::with_text("user", "Route to echo");
-    msg1.with_metadata("route", "primary");
+    // Test routing to primary agent
+    auto msg1 = core::Message::with_text("user", "Route to primary agent");
+    msg1.with_metadata("test_type", "router");
 
     auto future1 = router.process(std::move(msg1));
     auto result1 = future1.get();
@@ -157,8 +176,8 @@ TEST(PatternIntegrationTest, RouterPattern) {
     EXPECT_EQ(response1.role(), "assistant");
 
     // Test routing to backup agent
-    auto msg2 = core::Message::with_text("user", "Route to backup");
-    msg2.with_metadata("route", "backup");
+    auto msg2 = core::Message::with_text("user", "Route to backup agent");
+    msg2.with_metadata("test_type", "router");
 
     auto future2 = router.process(std::move(msg2));
     auto result2 = future2.get();
@@ -178,8 +197,26 @@ TEST(PatternIntegrationTest, CollaborativePattern) {
     auto agent2 = std::make_shared<adapters::EchoAgent>();
     auto agent3 = std::make_shared<adapters::EchoAgent>();
 
+    // Create collaborative config
     std::vector<std::shared_ptr<core::Agent>> agents = {agent1, agent2, agent3};
-    patterns::CollaborativeAgent collaborative(agents, 2);  // Max 2 rounds
+
+    // Define merge function (return last response - most refined)
+    // Note: CollaborativeAgent doesn't preserve original input metadata to agent responses,
+    // so we can't expect test_type metadata in the merged result
+    auto merge_func = [](const std::vector<core::Message>& messages) -> core::Message {
+        if (messages.empty()) {
+            return core::Message::with_text("assistant", "");
+        }
+        return messages.back();
+    };
+
+    patterns::CollaborativeConfig config;
+    config.agents = agents;
+    config.max_rounds = 2;  // Max 2 rounds
+    config.merge_func = merge_func;
+    // config.consensus_func is optional
+
+    patterns::CollaborativeAgent collaborative(config);
 
     EXPECT_EQ(collaborative.name(), "collaborative");
 
@@ -194,7 +231,9 @@ TEST(PatternIntegrationTest, CollaborativePattern) {
 
     EXPECT_EQ(response.role(), "assistant");
     EXPECT_FALSE(response.content_as_str().empty());
-    EXPECT_TRUE(response.metadata().contains("test_type"));
+    // CollaborativeAgent adds its own metadata but doesn't preserve input metadata
+    EXPECT_TRUE(response.metadata().contains("collaboration_rounds"));
+    EXPECT_TRUE(response.metadata().contains("collaboration_agents"));
 }
 
 /**
@@ -205,17 +244,28 @@ TEST(PatternIntegrationTest, HumanInLoopPattern) {
     auto base_agent = std::make_shared<adapters::EchoAgent>();
 
     // Create human-in-loop with callback that simulates human approval
-    auto human_callback = [](const core::Message& msg) -> std::optional<std::string> {
-        // Simulate human approving the message
-        if (msg.content_as_str().find("test") != std::string::npos) {
-            return std::nullopt;  // Approve
+    auto approval_func = [](const patterns::ApprovalRequest& request)
+        -> core::Result<patterns::ApprovalResponse, core::AgentError> {
+        // Simulate human approving messages with "test"
+        if (request.message.content_as_str().find("test") != std::string::npos) {
+            return core::Result<patterns::ApprovalResponse, core::AgentError>::ok(
+                patterns::ApprovalResponse{true, "Approved"}
+            );
         }
-        return std::string("Rejected by human");
+        return core::Result<patterns::ApprovalResponse, core::AgentError>::ok(
+            patterns::ApprovalResponse{false, "Rejected by human"}
+        );
     };
 
-    patterns::HumanInLoopAgent human_in_loop(base_agent, human_callback);
+    // Create config
+    patterns::HumanInLoopConfig config;
+    config.agent = base_agent;
+    config.approval_threshold = 0.8;  // Require approval if confidence < 80%
+    config.approval_func = approval_func;
 
-    EXPECT_EQ(human_in_loop.name(), "human-in-loop");
+    patterns::HumanInLoopAgent human_in_loop(config);
+
+    EXPECT_EQ(human_in_loop.name(), "human_in_loop");
 
     // Test message that should be approved
     auto msg = core::Message::with_text("user", "This is a test message");

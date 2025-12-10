@@ -89,10 +89,54 @@ pub const patterns = struct {
     pub const SupervisorAgent = @import("patterns/agents_as_tools.zig").SupervisorAgent;
     pub const agentAsTool = @import("patterns/agents_as_tools.zig").agentAsTool;
     pub const OutputFormat = @import("patterns/agents_as_tools.zig").OutputFormat;
+
+    // ReAct pattern
+    pub const ReActAgent = @import("patterns/react.zig").ReActAgent;
+    pub const ReActStep = @import("patterns/react.zig").ReActStep;
+    pub const Tool = @import("patterns/react.zig").Tool;
+    pub const ToolRegistry = @import("patterns/react.zig").ToolRegistry;
+    pub const ToolResult = @import("patterns/react.zig").ToolResult;
+
+    // Planning pattern
+    pub const PlanningAgent = @import("patterns/planning.zig").PlanningAgent;
+    pub const Plan = @import("patterns/planning.zig").Plan;
+    pub const PlanStep = @import("patterns/planning.zig").PlanStep;
+    pub const StepStatus = @import("patterns/planning.zig").StepStatus;
+    pub const StepExecutorFn = @import("patterns/planning.zig").StepExecutorFn;
+    pub const defaultStepExecutor = @import("patterns/planning.zig").defaultStepExecutor;
+
+    // Conversational pattern
+    pub const ConversationalAgent = @import("patterns/conversational.zig").ConversationalAgent;
+
+    // Task pattern
+    pub const Task = @import("patterns/task.zig").Task;
+    pub const TaskConfig = @import("patterns/task.zig").TaskConfig;
+    pub const TaskState = @import("patterns/task.zig").TaskState;
+
+    // Multiagent pattern
+    pub const MultiAgentOrchestrator = @import("patterns/multiagent.zig").MultiAgentOrchestrator;
+    pub const AgentTask = @import("patterns/multiagent.zig").AgentTask;
+    pub const OrchestrationStrategy = @import("patterns/multiagent.zig").OrchestrationStrategy;
+    pub const TaskStatus = @import("patterns/multiagent.zig").TaskStatus;
+
+    // Autonomous pattern
+    pub const AutonomousAgent = @import("patterns/autonomous.zig").AutonomousAgent;
+    pub const Goal = @import("patterns/autonomous.zig").Goal;
+    pub const GoalStatus = @import("patterns/autonomous.zig").GoalStatus;
+    pub const AutonomousResult = @import("patterns/autonomous.zig").AutonomousResult;
+    pub const GoalWorkerFn = @import("patterns/autonomous.zig").GoalWorkerFn;
+    pub const defaultWorker = @import("patterns/autonomous.zig").defaultWorker;
+
+    // Memory Hierarchy pattern
+    pub const MemoryEntry = @import("patterns/memory_hierarchy.zig").MemoryEntry;
+    pub const WorkingMemory = @import("patterns/memory_hierarchy.zig").WorkingMemory;
+    pub const ShortTermMemory = @import("patterns/memory_hierarchy.zig").ShortTermMemory;
+    pub const LongTermMemory = @import("patterns/memory_hierarchy.zig").LongTermMemory;
+    pub const MemoryHierarchy = @import("patterns/memory_hierarchy.zig").MemoryHierarchy;
 };
 
 // Version information
-pub const version = "0.39.0";
+pub const version = "0.40.0";
 pub const zig_version = @import("builtin").zig_version;
 
 test {
@@ -102,4 +146,11 @@ test {
     _ = @import("patterns/parallel.zig");
     _ = @import("patterns/reflection.zig");
     _ = @import("patterns/agents_as_tools.zig");
+    _ = @import("patterns/react.zig");
+    _ = @import("patterns/planning.zig");
+    _ = @import("patterns/conversational.zig");
+    _ = @import("patterns/task.zig");
+    _ = @import("patterns/multiagent.zig");
+    _ = @import("patterns/autonomous.zig");
+    _ = @import("patterns/memory_hierarchy.zig");
 }

@@ -263,4 +263,48 @@ pub fn build(b: *std.Build) void {
     const testing_run = b.addRunArtifact(testing_example);
     testing_step.dependOn(&testing_run.step);
     testing_run.step.dependOn(b.getInstallStep());
+
+    // Add Sequential pattern example executable
+    const sequential_example = b.addExecutable(.{
+        .name = "sequential_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/sequential.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
+        }),
+    });
+
+    // Install Sequential pattern example
+    b.installArtifact(sequential_example);
+
+    // Create Sequential pattern example run step
+    const sequential_step = b.step("run-sequential", "Run the Sequential pattern example");
+    const sequential_run = b.addRunArtifact(sequential_example);
+    sequential_step.dependOn(&sequential_run.step);
+    sequential_run.step.dependOn(b.getInstallStep());
+
+    // Add Parallel pattern example executable
+    const parallel_example = b.addExecutable(.{
+        .name = "parallel_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/parallel.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
+        }),
+    });
+
+    // Install Parallel pattern example
+    b.installArtifact(parallel_example);
+
+    // Create Parallel pattern example run step
+    const parallel_step = b.step("run-parallel", "Run the Parallel pattern example");
+    const parallel_run = b.addRunArtifact(parallel_example);
+    parallel_step.dependOn(&parallel_run.step);
+    parallel_run.step.dependOn(b.getInstallStep());
 }

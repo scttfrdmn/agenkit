@@ -415,4 +415,52 @@ pub fn build(b: *std.Build) void {
     const agents_as_tools_run = b.addRunArtifact(agents_as_tools_example);
     agents_as_tools_step.dependOn(&agents_as_tools_run.step);
     agents_as_tools_run.step.dependOn(b.getInstallStep());
+
+    // Add ReAct pattern example
+    const react_example = b.addExecutable(.{
+        .name = "react_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/react.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(react_example);
+    const react_step = b.step("run-react", "Run the ReAct pattern example");
+    const react_run = b.addRunArtifact(react_example);
+    react_step.dependOn(&react_run.step);
+    react_run.step.dependOn(b.getInstallStep());
+
+    // Add Planning pattern example
+    const planning_example = b.addExecutable(.{
+        .name = "planning_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/planning.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(planning_example);
+    const planning_step = b.step("run-planning", "Run the Planning pattern example");
+    const planning_run = b.addRunArtifact(planning_example);
+    planning_step.dependOn(&planning_run.step);
+    planning_run.step.dependOn(b.getInstallStep());
+
+    // Add Autonomous pattern example
+    const autonomous_example = b.addExecutable(.{
+        .name = "autonomous_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/autonomous.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(autonomous_example);
+    const autonomous_step = b.step("run-autonomous", "Run the Autonomous pattern example");
+    const autonomous_run = b.addRunArtifact(autonomous_example);
+    autonomous_step.dependOn(&autonomous_run.step);
+    autonomous_run.step.dependOn(b.getInstallStep());
 }

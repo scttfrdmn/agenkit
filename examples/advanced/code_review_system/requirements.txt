@@ -1,0 +1,24 @@
+# Code Review System Requirements
+# Install with: pip install -r requirements.txt
+
+# Core framework
+agenkit>=0.39.0
+
+# LLM providers
+openai>=1.0.0
+litellm>=1.50.0
+
+# Code analysis and syntax highlighting
+pygments>=2.15.0
+
+# Git integration (for diff/PR support)
+gitpython>=3.1.0
+
+# Data validation
+pydantic>=2.0.0
+
+# Configuration
+pyyaml>=6.0
+
+# Optional: GitHub API integration
+# pygithub>=2.1.0

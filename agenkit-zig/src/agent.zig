@@ -1,0 +1,190 @@
+/// Agent interface for agenkit
+///
+/// An Agent is the core abstraction in Agenkit. Agents process messages and
+/// return responses. They can wrap LLMs, implement patterns, or provide
+/// custom logic.
+///
+/// Key design principles:
+/// - Explicit error handling with error union types
+/// - Explicit memory management with allocators
+/// - Composable through interface-based design
+const std = @import("std");
+const Message = @import("message.zig").Message;
+const Allocator = std.mem.Allocator;
+
+/// Error types for agent operations
+pub const AgentError = error{
+    ProcessingFailed,
+    InvalidInput,
+    Timeout,
+    Cancelled,
+    NotImplemented,
+};
+
+/// Result type for agent processing
+pub const Result = union(enum) {
+    ok: Message,
+    err: AgentError,
+
+    pub fn isOk(self: Result) bool {
+        return self == .ok;
+    }
+
+    pub fn isErr(self: Result) bool {
+        return self == .err;
+    }
+
+    pub fn unwrap(self: Result) !Message {
+        return switch (self) {
+            .ok => |msg| msg,
+            .err => |e| e,
+        };
+    }
+
+    pub fn unwrapErr(self: Result) AgentError {
+        return switch (self) {
+            .ok => unreachable,
+            .err => |e| e,
+        };
+    }
+};
+
+/// Agent interface - all agents must implement these methods
+pub const Agent = struct {
+    ptr: *anyopaque,
+    vtable: *const VTable,
+
+    pub const VTable = struct {
+        name: *const fn (ptr: *anyopaque) []const u8,
+        capabilities: *const fn (ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const []const u8,
+        process: *const fn (ptr: *anyopaque, message: Message) AgentError!Result,
+        deinit: *const fn (ptr: *anyopaque) void,
+    };
+
+    /// Get the agent's name
+    pub fn name(self: Agent) []const u8 {
+        return self.vtable.name(self.ptr);
+    }
+
+    /// Get the agent's capabilities
+    pub fn capabilities(self: Agent, allocator: Allocator) ![]const []const u8 {
+        return self.vtable.capabilities(self.ptr, allocator);
+    }
+
+    /// Process a message and return a result
+    pub fn process(self: Agent, message: Message) !Result {
+        return self.vtable.process(self.ptr, message);
+    }
+
+    /// Clean up resources
+    pub fn deinit(self: Agent) void {
+        self.vtable.deinit(self.ptr);
+    }
+};
+
+/// Echo agent - simple agent that echoes back messages (useful for testing)
+pub const EchoAgent = struct {
+    allocator: Allocator,
+    agent_name: []const u8,
+
+    pub fn init(allocator: Allocator) !*EchoAgent {
+        const self = try allocator.create(EchoAgent);
+        self.* = EchoAgent{
+            .allocator = allocator,
+            .agent_name = "echo",
+        };
+        return self;
+    }
+
+    pub fn agent(self: *EchoAgent) Agent {
+        return Agent{
+            .ptr = self,
+            .vtable = &.{
+                .name = nameImpl,
+                .capabilities = capabilitiesImpl,
+                .process = processImpl,
+                .deinit = deinitImpl,
+            },
+        };
+    }
+
+    fn nameImpl(ptr: *anyopaque) []const u8 {
+        const self: *EchoAgent = @ptrCast(@alignCast(ptr));
+        return self.agent_name;
+    }
+
+    fn capabilitiesImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const []const u8 {
+        _ = ptr;
+        const caps = try allocator.alloc([]const u8, 1);
+        caps[0] = "echo";
+        return caps;
+    }
+
+    fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+        const self: *EchoAgent = @ptrCast(@alignCast(ptr));
+
+        // Echo the message back as assistant
+        const text = message.contentAsText() catch {
+            return Result{ .err = AgentError.InvalidInput };
+        };
+
+        var response = Message.withText(self.allocator, .assistant, text) catch {
+            return Result{ .err = AgentError.ProcessingFailed };
+        };
+
+        // Preserve metadata
+        var it = message.metadata.object.iterator();
+        while (it.next()) |entry| {
+            response.setMetadata(entry.key_ptr.*, entry.value_ptr.*) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+        }
+
+        return Result{ .ok = response };
+    }
+
+    fn deinitImpl(ptr: *anyopaque) void {
+        const self: *EchoAgent = @ptrCast(@alignCast(ptr));
+        self.allocator.destroy(self);
+    }
+};
+
+test "EchoAgent basic functionality" {
+    const allocator = std.testing.allocator;
+
+    var echo = try EchoAgent.init(allocator);
+    defer echo.agent().deinit();
+
+    const agent_iface = echo.agent();
+    try std.testing.expectEqualStrings("echo", agent_iface.name());
+
+    var msg = try Message.withText(allocator, .user, "Hello!");
+    defer msg.deinit();
+
+    const result = try agent_iface.process(msg);
+    try std.testing.expect(result.isOk());
+
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    const text = try response.contentAsText();
+    try std.testing.expectEqualStrings("Hello!", text);
+}
+
+test "EchoAgent preserves metadata" {
+    const allocator = std.testing.allocator;
+
+    var echo = try EchoAgent.init(allocator);
+    defer echo.agent().deinit();
+
+    var msg = try Message.withText(allocator, .user, "Test");
+    try msg.setMetadata("test_key", std.json.Value{ .string = "test_value" });
+    defer msg.deinit();
+
+    const result = try echo.agent().process(msg);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    const metadata = response.getMetadata("test_key");
+    try std.testing.expect(metadata != null);
+}

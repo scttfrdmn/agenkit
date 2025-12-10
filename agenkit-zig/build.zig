@@ -307,4 +307,96 @@ pub fn build(b: *std.Build) void {
     const parallel_run = b.addRunArtifact(parallel_example);
     parallel_step.dependOn(&parallel_run.step);
     parallel_run.step.dependOn(b.getInstallStep());
+
+    // Add Reflection pattern example executable
+    const reflection_example = b.addExecutable(.{
+        .name = "reflection_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/reflection.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
+        }),
+    });
+
+    // Install Reflection pattern example
+    b.installArtifact(reflection_example);
+
+    // Create Reflection pattern example run step
+    const reflection_step = b.step("run-reflection", "Run the Reflection pattern example");
+    const reflection_run = b.addRunArtifact(reflection_example);
+    reflection_step.dependOn(&reflection_run.step);
+    reflection_run.step.dependOn(b.getInstallStep());
+
+    // Add Conversational pattern example executable
+    const conversational_example = b.addExecutable(.{
+        .name = "conversational_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/conversational.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
+        }),
+    });
+
+    // Install Conversational pattern example
+    b.installArtifact(conversational_example);
+
+    // Create Conversational pattern example run step
+    const conversational_step = b.step("run-conversational", "Run the Conversational pattern example");
+    const conversational_run = b.addRunArtifact(conversational_example);
+    conversational_step.dependOn(&conversational_run.step);
+    conversational_run.step.dependOn(b.getInstallStep());
+
+    // Add Task pattern example
+    const task_example = b.addExecutable(.{
+        .name = "task_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/task.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(task_example);
+    const task_step = b.step("run-task", "Run the Task pattern example");
+    const task_run = b.addRunArtifact(task_example);
+    task_step.dependOn(&task_run.step);
+    task_run.step.dependOn(b.getInstallStep());
+
+    // Add Multiagent pattern example
+    const multiagent_example = b.addExecutable(.{
+        .name = "multiagent_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/multiagent.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(multiagent_example);
+    const multiagent_step = b.step("run-multiagent", "Run the Multiagent pattern example");
+    const multiagent_run = b.addRunArtifact(multiagent_example);
+    multiagent_step.dependOn(&multiagent_run.step);
+    multiagent_run.step.dependOn(b.getInstallStep());
+
+    // Add Memory Hierarchy pattern example
+    const memory_hierarchy_example = b.addExecutable(.{
+        .name = "memory_hierarchy_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/memory_hierarchy.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(memory_hierarchy_example);
+    const memory_hierarchy_step = b.step("run-memory-hierarchy", "Run the Memory Hierarchy pattern example");
+    const memory_hierarchy_run = b.addRunArtifact(memory_hierarchy_example);
+    memory_hierarchy_step.dependOn(&memory_hierarchy_run.step);
+    memory_hierarchy_run.step.dependOn(b.getInstallStep());
 }

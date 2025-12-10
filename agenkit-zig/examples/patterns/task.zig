@@ -27,7 +27,6 @@ pub fn main() !void {
         defer echo.agent().deinit();
 
         const config = agenkit.patterns.TaskConfig{
-            .timeout = 30 * std.time.ns_per_s,
             .retries = 0,
         };
 
@@ -37,13 +36,13 @@ pub fn main() !void {
         var input = try agenkit.Message.withText(allocator, .user, "Task input");
         defer input.deinit();
 
-        try task.execute(input);
+        const result = try task.execute(input);
+        var response = try result.unwrap();
+        defer response.deinit();
 
         std.debug.print("Task completed\n", .{});
-        if (task.result) |result| {
-            const text = try result.contentAsText();
-            std.debug.print("Result: {s}\n", .{text});
-        }
+        const text = try response.contentAsText();
+        std.debug.print("Result: {s}\n", .{text});
         std.debug.print("✓ Task executed successfully\n\n", .{});
     }
 
@@ -57,7 +56,6 @@ pub fn main() !void {
         defer agent2.agent().deinit();
 
         const config = agenkit.patterns.TaskConfig{
-            .timeout = 30 * std.time.ns_per_s,
             .retries = 0,
         };
 
@@ -73,8 +71,13 @@ pub fn main() !void {
         var input2 = try agenkit.Message.withText(allocator, .user, "Task 2");
         defer input2.deinit();
 
-        try task1.execute(input1);
-        try task2.execute(input2);
+        const result1 = try task1.execute(input1);
+        var response1 = try result1.unwrap();
+        defer response1.deinit();
+
+        const result2 = try task2.execute(input2);
+        var response2 = try result2.unwrap();
+        defer response2.deinit();
 
         std.debug.print("Task 1: completed\n", .{});
         std.debug.print("Task 2: completed\n", .{});

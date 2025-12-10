@@ -399,4 +399,20 @@ pub fn build(b: *std.Build) void {
     const memory_hierarchy_run = b.addRunArtifact(memory_hierarchy_example);
     memory_hierarchy_step.dependOn(&memory_hierarchy_run.step);
     memory_hierarchy_run.step.dependOn(b.getInstallStep());
+
+    // Add Agents-as-Tools pattern example
+    const agents_as_tools_example = b.addExecutable(.{
+        .name = "agents_as_tools_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/agents_as_tools.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(agents_as_tools_example);
+    const agents_as_tools_step = b.step("run-agents-as-tools", "Run the Agents-as-Tools pattern example");
+    const agents_as_tools_run = b.addRunArtifact(agents_as_tools_example);
+    agents_as_tools_step.dependOn(&agents_as_tools_run.step);
+    agents_as_tools_run.step.dependOn(b.getInstallStep());
 }

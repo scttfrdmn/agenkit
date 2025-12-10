@@ -1129,11 +1129,17 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 
 ---
 
-## Next Steps: v0.40.0+
+## Next Steps: v0.41.0+
 
-**Remaining Work from v0.39.0**:
-- [#150](https://github.com/scttfrdmn/agenkit/issues/150) Zig Remaining Patterns (7 patterns: ReAct, Planning, Conversational, Task, Multiagent, Autonomous, Memory Hierarchy, Reasoning with Tools)
+**v0.40.0 (Complete):** ✅ Zig Pattern Parity - All 11 core patterns implemented, 6,170 LOC, 97 tests passing, zero memory leaks (#150)
+
+**Planned for v0.41.0**:
+- Zig Examples & Documentation (basic usage, pattern examples, integration examples)
+- Zig API documentation and getting started guide
+
+**Future Work**:
 - [#151](https://github.com/scttfrdmn/agenkit/issues/151) Zig Evaluation Framework
+- Zig Integration Tests
 
 ---
 
@@ -1181,7 +1187,8 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 **v0.37.0 (Complete):** ✅ CI/CD Infrastructure & Quality - C++ Evaluation Benchmarks, All Workflows Fixed, Rust Zero Warnings (#212, #214)
 **v0.38.0 (Complete):** ✅ C++ Integration Test Coverage - All 5 test suites passing, 22 integration tests (#213)
 **v0.39.0 (Complete):** ✅ Zig Language Foundation - Infrastructure, 4 patterns, 2 advanced examples complete (#148, #149, #222)
-**Q1 2026:** Zig Pattern Completion, Advanced Multi-Agent Examples, Comprehensive Documentation (#149, #150, #151, #216, #222)
+**v0.40.0 (Complete):** ✅ Zig Pattern Parity - All 11 core patterns, 6,170 LOC, 97 tests, zero memory leaks (#150)
+**Q1 2026:** Zig Examples & Documentation, Advanced Multi-Agent Examples, Comprehensive Documentation (#151, #216, #222)
 **Q2-Q3 2026:** Rust Port, Advanced Features, v1.0.0 Stabilization
 
 See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for detailed 2026 strategy.
@@ -1198,4 +1205,4 @@ See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for d
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: December 9, 2025 (v0.39.0 complete - Zig Foundation & Advanced Examples)
+Last updated: December 9, 2025 (v0.40.0 complete - Zig Pattern Parity Achieved)

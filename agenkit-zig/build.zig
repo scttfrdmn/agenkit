@@ -154,11 +154,11 @@ pub fn build(b: *std.Build) void {
     // Lastly, the Zig build system is relatively simple and self-contained,
     // and reading its source code will allow you to master it.
 
-    // Add example executable
-    const example_exe = b.addExecutable(.{
+    // Add echo example executable
+    const echo_example = b.addExecutable(.{
         .name = "echo_example",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("examples/echo_example.zig"),
+            .root_source_file = b.path("examples/basic/echo.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -167,12 +167,100 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    // Install example
-    b.installArtifact(example_exe);
+    // Install echo example
+    b.installArtifact(echo_example);
 
-    // Create example run step
-    const example_step = b.step("example", "Run the echo example");
-    const example_run = b.addRunArtifact(example_exe);
-    example_step.dependOn(&example_run.step);
-    example_run.step.dependOn(b.getInstallStep());
+    // Create echo example run step
+    const echo_step = b.step("run-echo", "Run the echo agent example");
+    const echo_run = b.addRunArtifact(echo_example);
+    echo_step.dependOn(&echo_run.step);
+    echo_run.step.dependOn(b.getInstallStep());
+
+    // Add workflow example executable
+    const workflow_example = b.addExecutable(.{
+        .name = "workflow_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/basic/workflow.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
+        }),
+    });
+
+    // Install workflow example
+    b.installArtifact(workflow_example);
+
+    // Create workflow example run step
+    const workflow_step = b.step("run-workflow", "Run the simple workflow example");
+    const workflow_run = b.addRunArtifact(workflow_example);
+    workflow_step.dependOn(&workflow_run.step);
+    workflow_run.step.dependOn(b.getInstallStep());
+
+    // Add error handling example executable
+    const error_example = b.addExecutable(.{
+        .name = "error_handling_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/basic/error_handling.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
+        }),
+    });
+
+    // Install error handling example
+    b.installArtifact(error_example);
+
+    // Create error handling example run step
+    const error_step = b.step("run-error-handling", "Run the error handling example");
+    const error_run = b.addRunArtifact(error_example);
+    error_step.dependOn(&error_run.step);
+    error_run.step.dependOn(b.getInstallStep());
+
+    // Add memory management example executable
+    const memory_example = b.addExecutable(.{
+        .name = "memory_management_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/basic/memory_management.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
+        }),
+    });
+
+    // Install memory management example
+    b.installArtifact(memory_example);
+
+    // Create memory management example run step
+    const memory_step = b.step("run-memory", "Run the memory management example");
+    const memory_run = b.addRunArtifact(memory_example);
+    memory_step.dependOn(&memory_run.step);
+    memory_run.step.dependOn(b.getInstallStep());
+
+    // Add testing patterns example executable
+    const testing_example = b.addExecutable(.{
+        .name = "testing_patterns_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/basic/testing_patterns.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
+        }),
+    });
+
+    // Install testing patterns example
+    b.installArtifact(testing_example);
+
+    // Create testing patterns example run step
+    const testing_step = b.step("run-testing", "Run the testing patterns example");
+    const testing_run = b.addRunArtifact(testing_example);
+    testing_step.dependOn(&testing_run.step);
+    testing_run.step.dependOn(b.getInstallStep());
 }

@@ -1,0 +1,83 @@
+# Research Assistant Configuration
+
+# Research settings
+research:
+  # Number of parallel researchers
+  num_researchers: 3
+
+  # Consensus threshold (0.0-1.0)
+  # 0.67 = 67% agreement required (2/3 majority)
+  # 0.5 = 50% agreement (simple majority)
+  consensus_threshold: 0.67
+
+  # Maximum sources to fetch per topic
+  max_sources_per_topic: 10
+
+  # Research depth
+  # Options: shallow (1-2 sources), moderate (3-5 sources), comprehensive (7-10 sources)
+  default_depth: moderate
+
+# Reflection settings
+reflection:
+  # Maximum reflection rounds for report improvement
+  max_rounds: 3
+
+  # Quality score threshold (0.0-1.0)
+  # Stop reflecting if quality exceeds this threshold
+  quality_threshold: 0.9
+
+  # Enable reflection for report generation
+  enabled: true
+
+# Voting settings
+voting:
+  # Voting strategy for conflict resolution
+  # Options: majority, plurality, confidence_weighted
+  strategy: confidence_weighted
+
+  # Minimum confidence threshold for voting
+  min_confidence: 0.5
+
+# Output settings
+output:
+  # Output format
+  # Options: markdown, html, json
+  format: markdown
+
+  # Include metadata in output
+  include_metadata: true
+
+  # Verbosity level
+  # Options: quiet, normal, verbose
+  verbosity: normal
+
+  # Output directory for reports
+  output_dir: ./outputs
+
+# LLM settings (optional - override with environment variables)
+llm:
+  # Model to use for research agents
+  research_model: gpt-4o-mini
+
+  # Model to use for synthesis/report generation
+  synthesis_model: gpt-4o
+
+  # Temperature for generation
+  temperature: 0.7
+
+  # Max tokens per response
+  max_tokens: 2000
+
+# Search API settings (optional)
+search:
+  # Search provider (serper, brave, google, etc.)
+  provider: serper
+
+  # Number of results per query
+  results_per_query: 5
+
+  # Enable result caching
+  cache_enabled: true
+
+  # Cache TTL in seconds
+  cache_ttl: 3600

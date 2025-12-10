@@ -3,22 +3,24 @@
 ## Overview
 
 This document tracks feature parity across all AgentKit language implementations.
-The goal is to ensure consistent functionality and examples across Python, Go, TypeScript, C++, and Rust.
+The goal is to ensure consistent functionality and examples across Python, Go, TypeScript, C++, Rust, and Zig.
 
 ## Adapters
 
-| Adapter    | Python | Go | TypeScript | C++ | Rust |
-|------------|--------|----|-----------|----|------|
-| OpenAI     | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Anthropic  | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Ollama     | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Bedrock    | ✅     | ✅ | ✅         | ✅ | ✅    |
-| Gemini     | ✅     | ✅ | ✅         | ✅ | ✅    |
-| LiteLLM    | ✅     | ✅ | ✅         | ✅ | ✅    |
+| Adapter    | Python | Go | TypeScript | C++ | Rust | Zig |
+|------------|--------|----|-----------|----|------|-----|
+| OpenAI     | ✅     | ✅ | ✅         | ✅ | ✅    | ⏳  |
+| Anthropic  | ✅     | ✅ | ✅         | ✅ | ✅    | ⏳  |
+| Ollama     | ✅     | ✅ | ✅         | ✅ | ✅    | ⏳  |
+| Bedrock    | ✅     | ✅ | ✅         | ✅ | ✅    | ⏳  |
+| Gemini     | ✅     | ✅ | ✅         | ✅ | ✅    | ⏳  |
+| LiteLLM    | ✅     | ✅ | ✅         | ✅ | ✅    | ⏳  |
 
-**✅ 100% Adapter Parity Achieved (v0.35.0)!**
+**✅ 100% Adapter Parity Achieved (v0.35.0) for 5 languages!**
 
 **Historic Milestone:** All 5 languages now have complete adapter parity (6/6 adapters)!
+
+**Zig Status (v0.39.0):** Infrastructure complete, adapters planned for future releases
 
 **Notes:**
 - Core 3 adapters (OpenAI, Anthropic, Ollama) have full parity across all 5 languages
@@ -29,16 +31,16 @@ The goal is to ensure consistent functionality and examples across Python, Go, T
 
 ## Evaluation Framework
 
-**✅ 100% Evaluation Parity Achieved (v0.34.0)!**
+**✅ 100% Evaluation Parity Achieved (v0.34.0) for 5 languages!**
 
-| Component | Python | Go | TypeScript | C++ | Rust |
-|-----------|--------|-----|-----------|-----|------|
-| Metrics Collection | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Session Recording | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Regression Detection | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Quality Metrics | ✅ | ✅ | ✅ | ✅ | ✅ |
-| A/B Testing | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Benchmarks | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Component | Python | Go | TypeScript | C++ | Rust | Zig |
+|-----------|--------|-----|-----------|-----|------|-----|
+| Metrics Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ |
+| Session Recording | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ |
+| Regression Detection | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ |
+| Quality Metrics | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ |
+| A/B Testing | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ |
+| Benchmarks | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ |
 
 **Implementation Summary:**
 - **Python**: Complete (v0.24.0) - 6 examples, benchmarks
@@ -57,21 +59,23 @@ All languages can now measure agent performance, conduct A/B testing, detect reg
 
 ## Patterns
 
-All 11 core patterns are implemented across all languages:
+All 11 core patterns are implemented across 5 languages; Zig implementation in progress:
 
-| Pattern                  | Python | Go | TypeScript | C++ | Rust | Rust WASM |
-|--------------------------|--------|----|-----------|----|------|-----------|
-| Reflection               | ✅     | ✅ | ✅         | ✅ | ✅    | ✅        |
-| Agents-as-Tools          | ✅     | ✅ | ✅         | ✅ | ✅    | ✅        |
-| Orchestration            | ✅     | ✅ | ✅         | ✅ | ✅    | ✅ (sequential only) |
-| ReAct                    | ✅     | ✅ | ✅         | ✅ | ✅    | ✅        |
-| Conversational           | ✅     | ✅ | ✅         | ✅ | ✅    | ✅        |
-| Task                     | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        |
-| Multiagent               | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        |
-| Planning                 | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        |
-| Autonomous               | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        |
-| Memory Hierarchy         | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        |
-| Reasoning with Tools     | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        |
+| Pattern                  | Python | Go | TypeScript | C++ | Rust | Rust WASM | Zig |
+|--------------------------|--------|----|-----------|----|------|-----------|-----|
+| Reflection               | ✅     | ✅ | ✅         | ✅ | ✅    | ✅        | ✅  |
+| Agents-as-Tools          | ✅     | ✅ | ✅         | ✅ | ✅    | ✅        | ✅  |
+| Orchestration            | ✅     | ✅ | ✅         | ✅ | ✅    | ✅ (sequential only) | ✅ (sequential + parallel) |
+| ReAct                    | ✅     | ✅ | ✅         | ✅ | ✅    | ✅        | ⏳  |
+| Conversational           | ✅     | ✅ | ✅         | ✅ | ✅    | ✅        | ⏳  |
+| Task                     | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        | ⏳  |
+| Multiagent               | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        | ⏳  |
+| Planning                 | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        | ⏳  |
+| Autonomous               | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        | ⏳  |
+| Memory Hierarchy         | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        | ⏳  |
+| Reasoning with Tools     | ✅     | ✅ | ✅         | ✅ | ✅    | ❌        | ⏳  |
+
+**Zig Progress (v0.39.0):** ✅ **4/11 patterns complete** (Issue #149) - Reflection, Agents-as-Tools, Sequential, Parallel orchestration. 19 tests passing. Remaining 7 patterns planned for Issue #150.
 
 ### WebAssembly (WASM) Pattern Compatibility
 
@@ -600,6 +604,60 @@ All languages now use consistent subdirectory structure:
 
 The pattern demonstrates the abstraction. The adapter examples demonstrate how to use specific LLM providers. Users combine them as needed.
 
+---
+
+## Zig Implementation (v0.39.0)
+
+**Status:** 🚧 Infrastructure Complete (Issue #148)
+
+### Completed (v0.39.0)
+- ✅ **Core Infrastructure**
+  - Message type with Role, Content, metadata
+  - Agent interface (vtable pattern with anyopaque pointers)
+  - Result type (union enum for error handling)
+  - AgentError type hierarchy
+  - EchoAgent implementation
+- ✅ **Build System**
+  - build.zig configuration
+  - build.zig.zon package definition
+  - Test infrastructure with memory leak detection
+  - Example build targets
+- ✅ **Testing**
+  - 6 tests (100% pass rate, 0 memory leaks)
+  - Memory leak detection integrated
+- ✅ **Documentation**
+  - Comprehensive README.md
+  - Working echo example
+  - API reference
+
+**Implementation Details:**
+- **Lines of Code:** 350 LOC (message.zig: 191, agent.zig: 188, root.zig: 78)
+- **Zig Version:** 0.15.2 minimum
+- **Memory Management:** Explicit allocators, zero-cost abstractions
+- **Testing:** Built-in test framework with automatic leak detection
+
+### Planned (Issues #149, #150, #151)
+- ⏳ **4 Critical Patterns** (#149) - Reflection, Agents-as-Tools, Sequential, Parallel
+- ⏳ **7 Additional Patterns** (#150) - ReAct, Planning, Conversational, Task, Multiagent, Autonomous, Memory Hierarchy, Reasoning with Tools
+- ⏳ **Evaluation Framework** (#151) - Metrics, session recording, quality metrics
+- ⏳ **6 Adapters** - OpenAI, Anthropic, Ollama, Bedrock, Gemini, LiteLLM
+
+**Why Zig?**
+- C interoperability for legacy system integration
+- Cross-compilation for embedded/edge deployment
+- Memory safety without garbage collection
+- Performance competitive with C/C++ (~22x Python expected)
+- Zero-overhead abstractions
+- Explicit error handling and memory management
+
+**Design Principles:**
+- Explicit is better than implicit (no hidden allocations)
+- Error handling first (error union types)
+- Zero overhead abstractions (compile-time dispatch where possible)
+- Memory safety (explicit allocator management)
+
+---
+
 ## Contributing
 
 When adding a new feature:
@@ -617,6 +675,7 @@ When adding examples:
 ## Status Legend
 
 - ✅ Implemented and verified
+- ⏳ Planned/in progress
 - ❌ Not implemented
 - ❓ Unknown/needs verification
 - 🔄 In progress

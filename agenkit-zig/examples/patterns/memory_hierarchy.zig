@@ -27,10 +27,10 @@ pub fn main() !void {
         var working = try agenkit.patterns.WorkingMemory.init(allocator, 3);
         defer working.deinit();
 
-        const entry1 = try agenkit.patterns.MemoryEntry.init(allocator, "fact1", 1.0);
-        const entry2 = try agenkit.patterns.MemoryEntry.init(allocator, "fact2", 1.0);
-        const entry3 = try agenkit.patterns.MemoryEntry.init(allocator, "fact3", 1.0);
-        const entry4 = try agenkit.patterns.MemoryEntry.init(allocator, "fact4", 1.0);
+        const entry1 = try agenkit.patterns.MemoryEntry.init(allocator, "fact1", null, 1.0, "session1");
+        const entry2 = try agenkit.patterns.MemoryEntry.init(allocator, "fact2", null, 1.0, "session1");
+        const entry3 = try agenkit.patterns.MemoryEntry.init(allocator, "fact3", null, 1.0, "session1");
+        const entry4 = try agenkit.patterns.MemoryEntry.init(allocator, "fact4", null, 1.0, "session1");
 
         try working.store(entry1);
         try working.store(entry2);
@@ -52,21 +52,21 @@ pub fn main() !void {
         );
         defer short_term.deinit();
 
-        const entry1 = try agenkit.patterns.MemoryEntry.init(allocator, "recent1", 0.8);
-        const entry2 = try agenkit.patterns.MemoryEntry.init(allocator, "recent2", 0.7);
+        const entry1 = try agenkit.patterns.MemoryEntry.init(allocator, "recent1", null, 0.8, "session2");
+        const entry2 = try agenkit.patterns.MemoryEntry.init(allocator, "recent2", null, 0.7, "session2");
 
         try short_term.store(entry1);
         try short_term.store(entry2);
 
-        const results = try short_term.retrieve(allocator, "recent", 10);
+        var results = try short_term.retrieve(allocator, "recent", 10);
         defer {
-            for (results) |*r| {
+            for (results.items) |*r| {
                 r.deinit();
             }
-            allocator.free(results);
+            results.deinit(allocator);
         }
 
-        std.debug.print("Retrieved {d} entries\n", .{results.len});
+        std.debug.print("Retrieved {d} entries\n", .{results.items.len});
         std.debug.print("✓ Short-term memory with TTL and LRU\n\n", .{});
     }
 
@@ -76,48 +76,57 @@ pub fn main() !void {
         var long_term = try agenkit.patterns.LongTermMemory.init(allocator, 0.5); // min importance
         defer long_term.deinit();
 
-        const high_importance = try agenkit.patterns.MemoryEntry.init(allocator, "critical", 0.9);
-        const low_importance = try agenkit.patterns.MemoryEntry.init(allocator, "trivial", 0.3);
+        const high_importance = try agenkit.patterns.MemoryEntry.init(allocator, "critical", null, 0.9, "session3");
+        const low_importance = try agenkit.patterns.MemoryEntry.init(allocator, "trivial", null, 0.3, "session3");
 
         try long_term.store(high_importance);
         try long_term.store(low_importance); // Below threshold, not stored
 
-        const all = try long_term.retrieveAll(allocator);
+        var all = try long_term.retrieve(allocator, "", 100);
         defer {
-            for (all) |*entry| {
+            for (all.items) |*entry| {
                 entry.deinit();
             }
-            allocator.free(all);
+            all.deinit(allocator);
         }
 
-        std.debug.print("Stored entries: {d}\n", .{all.len});
+        std.debug.print("Stored entries: {d}\n", .{all.items.len});
         std.debug.print("✓ Only high-importance entries retained\n\n", .{});
     }
 
     // Example 4: Full Hierarchy
     std.debug.print("--- Example 4: Complete Memory Hierarchy ---\n", .{});
     {
+        // Create individual tiers
+        var working = try agenkit.patterns.WorkingMemory.init(allocator, 3);
+        defer working.deinit();
+
+        var short_term = try agenkit.patterns.ShortTermMemory.init(allocator, 10, 3600);
+        defer short_term.deinit();
+
+        var long_term = try agenkit.patterns.LongTermMemory.init(allocator, 0.7);
+        defer long_term.deinit();
+
+        // Combine into hierarchy
         var hierarchy = try agenkit.patterns.MemoryHierarchy.init(
             allocator,
-            3, // working_capacity
-            10, // short_term_capacity
-            3600, // short_term_ttl
-            0.7, // long_term_threshold
+            &working,
+            &short_term,
+            &long_term,
         );
         defer hierarchy.deinit();
 
-        const entry = try agenkit.patterns.MemoryEntry.init(allocator, "important data", 0.85);
-        try hierarchy.store(entry);
+        _ = try hierarchy.store("important data", null, 0.85, "session4");
 
-        const results = try hierarchy.retrieve(allocator, "data", 5);
+        var results = try hierarchy.retrieve(allocator, "data", 5, null);
         defer {
-            for (results) |*r| {
+            for (results.items) |*r| {
                 r.deinit();
             }
-            allocator.free(results);
+            results.deinit(allocator);
         }
 
-        std.debug.print("Retrieved from hierarchy: {d} entries\n", .{results.len});
+        std.debug.print("Retrieved from hierarchy: {d} entries\n", .{results.items.len});
         std.debug.print("✓ Three-tier memory coordination\n\n", .{});
     }
 

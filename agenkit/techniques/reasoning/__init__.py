@@ -9,6 +9,7 @@ Available Techniques:
     - TreeOfThought: Multi-path exploration with tree search and backtracking
     - SelfConsistency: Multiple sampling with consensus voting
     - LeastToMost: Problem decomposition and sequential solving
+    - PlanAndSolve: Strategic planning before execution
 
 References:
     See docs/techniques/REASONING_TECHNIQUES.md for detailed comparisons
@@ -19,6 +20,7 @@ from .chain_of_thought import ChainOfThought
 from .tree_of_thought import TreeOfThought
 from .self_consistency import SelfConsistency
 from .least_to_most import LeastToMost, Subproblem
+from .plan_and_solve import PlanAndSolve, Plan, PlanStep
 from .reasoning_tree import ReasoningTree, ReasoningNode, NodeState
 
 __all__ = [
@@ -27,6 +29,9 @@ __all__ = [
     "SelfConsistency",
     "LeastToMost",
     "Subproblem",
+    "PlanAndSolve",
+    "Plan",
+    "PlanStep",
     "ReasoningTree",
     "ReasoningNode",
     "NodeState"

@@ -171,22 +171,192 @@ class CachedCoT(ChainOfThought):
         return await super().process(message)
 ```
 
+### Tree-of-Thought (ToT)
+
+**Status:** ✅ Available
+**Module:** `agenkit.techniques.reasoning.TreeOfThought`
+**Paper:** [Yao et al., 2023](https://arxiv.org/abs/2305.10601)
+
+Tree-of-Thought explores multiple reasoning paths simultaneously using tree search with branching, evaluation, and backtracking. More sophisticated than CoT for problems requiring exploration of solution space.
+
+#### When to Use ToT
+
+✅ **Good for:**
+- Creative problem-solving requiring exploration
+- Planning and strategy tasks with multiple approaches
+- Problems where single path may lead to dead ends
+- Tasks benefiting from considering alternatives
+- Complex decision-making with trade-offs
+
+❌ **Not ideal for:**
+- Simple factual questions
+- Time-critical applications (ToT is slower than CoT)
+- Problems with a clear single solution path
+- Resource-constrained environments (uses more tokens)
+
+#### Basic Usage
+
+```python
+from agenkit import Message
+from agenkit.techniques.reasoning import TreeOfThought
+
+# Custom evaluator to score reasoning quality
+def score_reasoning(text: str) -> float:
+    # Return score 0.0-1.0 (higher = better)
+    return min(len(text) / 500, 1.0)
+
+tot = TreeOfThought(
+    llm=my_llm,
+    branching_factor=3,      # Explore 3 alternatives per step
+    max_depth=4,             # Up to 4 reasoning steps
+    evaluator=score_reasoning,
+    strategy="best-first"    # Search strategy
+)
+
+response = await tot.process(Message(
+    role="user",
+    content="Plan a 3-day trip to Tokyo"
+))
+
+# Access tree statistics
+stats = response.metadata['reasoning_tree_stats']
+print(f"Explored {stats['total_nodes']} reasoning paths")
+print(f"Best path score: {response.metadata['best_score']}")
+```
+
+#### Configuration Options
+
+```python
+TreeOfThought(
+    llm,                       # Required: Your LLM client
+    branching_factor=3,        # Number of branches per step (default: 3)
+    max_depth=5,               # Maximum tree depth (default: 5)
+    evaluator=None,            # Scoring function str -> float (default: length-based)
+    strategy="best-first",     # Search strategy (default: "best-first")
+    prune_threshold=0.3        # Prune paths below this score (default: 0.3)
+)
+```
+
+#### Search Strategies
+
+ToT supports three search strategies:
+
+**1. Best-First Search (default)**
+- Always expands the highest-scoring node
+- Most efficient for finding good solutions quickly
+- Good balance of exploration and exploitation
+
+```python
+tot = TreeOfThought(llm=llm, strategy="best-first")
+```
+
+**2. Breadth-First Search (BFS)**
+- Explores all nodes at same depth before going deeper
+- Guarantees finding shortest path
+- Good for systematic exploration
+
+```python
+tot = TreeOfThought(llm=llm, strategy="bfs")
+```
+
+**3. Depth-First Search (DFS)**
+- Explores deep paths before wide ones
+- Good for finding any valid solution quickly
+- May miss better shallow solutions
+
+```python
+tot = TreeOfThought(llm=llm, strategy="dfs")
+```
+
+#### Custom Evaluators
+
+Evaluators score reasoning quality (0.0-1.0, higher is better):
+
+```python
+def quality_evaluator(text: str) -> float:
+    score = 0.0
+
+    # Length component
+    score += min(len(text) / 500, 0.4)
+
+    # Structure bonus
+    if any(c in text for c in ["1.", "2.", "-"]):
+        score += 0.3
+
+    # Quality keywords
+    keywords = ["because", "therefore", "approach"]
+    keyword_count = sum(1 for kw in keywords if kw in text.lower())
+    score += min(keyword_count * 0.1, 0.3)
+
+    return min(score, 1.0)
+
+tot = TreeOfThought(llm=llm, evaluator=quality_evaluator)
+```
+
+#### Path Pruning
+
+Prune low-quality paths to save tokens:
+
+```python
+tot = TreeOfThought(
+    llm=llm,
+    prune_threshold=0.5  # Prune paths scoring below 0.5
+)
+```
+
+Higher thresholds = more aggressive pruning = fewer tokens but may miss solutions.
+
+#### Response Metadata
+
+ToT responses include rich metadata:
+
+```python
+{
+    "technique": "tree_of_thought",
+    "search_strategy": "best-first",
+    "reasoning_tree_stats": {
+        "total_nodes": 40,
+        "max_depth": 3,
+        "num_leaves": 27,
+        "num_evaluated": 13,
+        "num_pruned": 5,
+        "avg_score": 0.62,
+        "best_score": 0.89
+    },
+    "reasoning_path": [...],  # List of steps in best path
+    "num_steps": 4,
+    "best_score": 0.89
+}
+```
+
+#### Examples
+
+See `examples/techniques/reasoning/tot_example.py` for comprehensive examples including:
+- Basic usage with different search strategies
+- Custom evaluators
+- Path pruning demonstrations
+- Comparison with Chain-of-Thought
+
+#### Performance Characteristics
+
+- **Latency:** 5-10x slower than CoT (explores multiple paths)
+- **Token Cost:** 3-10x more tokens than CoT (depends on branching_factor × max_depth)
+- **Quality:** Higher quality solutions for creative/planning tasks
+- **Memory:** Moderate (stores tree structure in memory)
+
+#### CoT vs ToT Comparison
+
+| Aspect | Chain-of-Thought | Tree-of-Thought |
+|--------|-----------------|-----------------|
+| **Paths** | Single linear path | Multiple branching paths |
+| **Speed** | Fast | Slower (explores alternatives) |
+| **Tokens** | Low | High (branching_factor × depth) |
+| **Use Case** | Straightforward problems | Creative, planning, exploration |
+| **Quality** | Good for clear problems | Better for ambiguous problems |
+
 ## Planned Techniques
 
 The following reasoning techniques are planned for future releases:
-
-### Tree-of-Thought (ToT)
-
-**Status:** 📋 Planned for v0.42.0
-**Issue:** #232
-
-Explores multiple reasoning paths in a tree structure, evaluating and selecting the most promising branches.
-
-**Key features:**
-- Branch and evaluate multiple solution paths
-- Backtracking when reasoning hits dead ends
-- Breadth-first or depth-first exploration
-- Best-path selection based on evaluation criteria
 
 ### Graph-of-Thought (GoT)
 

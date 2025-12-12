@@ -463,4 +463,54 @@ pub fn build(b: *std.Build) void {
     const autonomous_run = b.addRunArtifact(autonomous_example);
     autonomous_step.dependOn(&autonomous_run.step);
     autonomous_run.step.dependOn(b.getInstallStep());
+
+    // Integration examples
+
+    // Add Multi-Pattern Workflow integration example
+    const multi_pattern_example = b.addExecutable(.{
+        .name = "multi_pattern_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/integration/multi_pattern_workflow.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(multi_pattern_example);
+    const multi_pattern_step = b.step("run-multi-pattern", "Run the Multi-Pattern Workflow integration example");
+    const multi_pattern_run = b.addRunArtifact(multi_pattern_example);
+    multi_pattern_step.dependOn(&multi_pattern_run.step);
+    multi_pattern_run.step.dependOn(b.getInstallStep());
+
+    // Add Long-Running Agent integration example
+    const long_running_example = b.addExecutable(.{
+        .name = "long_running_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/integration/long_running_agent.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(long_running_example);
+    const long_running_step = b.step("run-long-running", "Run the Long-Running Agent integration example");
+    const long_running_run = b.addRunArtifact(long_running_example);
+    long_running_step.dependOn(&long_running_run.step);
+    long_running_run.step.dependOn(b.getInstallStep());
+
+    // Add Evaluation Pipeline integration example
+    const evaluation_example = b.addExecutable(.{
+        .name = "evaluation_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/integration/evaluation_pipeline.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(evaluation_example);
+    const evaluation_step = b.step("run-evaluation", "Run the Evaluation Pipeline integration example");
+    const evaluation_run = b.addRunArtifact(evaluation_example);
+    evaluation_step.dependOn(&evaluation_run.step);
+    evaluation_run.step.dependOn(b.getInstallStep());
 }

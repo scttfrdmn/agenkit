@@ -27,7 +27,7 @@ Add to your `build.zig.zon`:
 ```zig
 .dependencies = .{
     .agenkit = .{
-        .url = "https://github.com/agenkit/agenkit/releases/download/v0.39.0/agenkit-zig.tar.gz",
+        .url = "https://github.com/agenkit/agenkit/releases/download/v0.41.0/agenkit-zig.tar.gz",
         .hash = "...",
     },
 },
@@ -139,7 +139,54 @@ pub const Result = union(enum) {
 
 ## Examples
 
-### Echo Agent
+Agenkit-Zig includes 11 comprehensive examples demonstrating various agent patterns and use cases.
+
+### Basic Examples
+
+Learn core concepts with 8 basic examples:
+
+```bash
+# Echo agent - simplest agent
+zig build run-echo
+
+# Error handling patterns
+zig build run-error-handling
+
+# Memory management best practices
+zig build run-memory
+
+# Testing patterns
+zig build run-testing
+
+# Sequential processing pipeline
+zig build run-sequential
+
+# Parallel concurrent processing
+zig build run-parallel
+
+# Reflection for self-improvement
+zig build run-reflection
+
+# Conversational multi-turn dialogue
+zig build run-conversational
+```
+
+### Integration Examples
+
+Real-world workflows combining multiple patterns:
+
+```bash
+# Multi-pattern workflow (Parallel + Sequential + Reflection + Planning)
+zig build run-multi-pattern
+
+# Long-running agent with memory (Conversational + Memory Hierarchy)
+zig build run-long-running
+
+# Performance evaluation pipeline (Metrics + Benchmarking)
+zig build run-evaluation
+```
+
+### Example: Echo Agent
 
 The simplest agent - echoes messages back:
 
@@ -153,12 +200,6 @@ if (result.isOk()) {
     defer response.deinit();
     // Use response...
 }
-```
-
-Run the full example:
-
-```bash
-zig build example
 ```
 
 ### Custom Agent
@@ -339,8 +380,49 @@ MIT License - See LICENSE file for details
 - [Zig Language](https://ziglang.org/)
 - [Issue Tracker](https://github.com/agenkit/agenkit/issues)
 
+## Agent Patterns
+
+Agenkit-Zig provides 11 production-ready agent patterns:
+
+### Composition Patterns
+- **Sequential** - Process messages through agents in order
+- **Parallel** - Concurrent processing with multiple agents
+
+### Enhancement Patterns
+- **Reflection** - Self-evaluation and improvement
+- **React** - Reasoning before acting
+- **Planning** - Multi-step task decomposition
+
+### Specialized Patterns
+- **Task** - Single-purpose job execution
+- **Conversational** - Multi-turn dialogue with context
+- **Agents as Tools** - Agents using other agents
+
+### Advanced Patterns
+- **Autonomous** - Self-directed goal pursuit
+- **Multiagent** - Multi-agent coordination
+- **Memory Hierarchy** - Efficient working/short/long-term memory
+
+See [docs/PATTERNS.md](docs/PATTERNS.md) for detailed guide.
+
+## Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+- **[Getting Started](docs/GETTING_STARTED.md)** - Installation, first agent, tutorials
+- **[API Reference](docs/API.md)** - Complete API documentation
+- **[Patterns Guide](docs/PATTERNS.md)** - Deep dive into 11 agent patterns
+- **[Migration Guide](docs/MIGRATION.md)** - Port from Python/Go/Rust/C++
+
 ## Version
 
-Current version: **0.39.0**
+Current version: **0.41.0**
 
 Requires Zig: **≥ 0.15.2**
+
+### What's New in v0.41.0
+
+- ✨ **11 Comprehensive Examples** - 8 basic + 3 integration examples
+- 📚 **Complete Documentation** - Getting Started, API, Patterns, Migration guides
+- 🎯 **Real-World Use Cases** - Multi-pattern workflows, long-running agents, evaluation pipelines
+- 🚀 **Production-Ready** - All 11 patterns fully implemented and tested

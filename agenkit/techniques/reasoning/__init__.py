@@ -10,6 +10,7 @@ Available Techniques:
     - SelfConsistency: Multiple sampling with consensus voting
     - LeastToMost: Problem decomposition and sequential solving
     - PlanAndSolve: Strategic planning before execution
+    - GraphOfThought: Graph-based reasoning with multiple interconnected paths
 
 References:
     See docs/techniques/REASONING_TECHNIQUES.md for detailed comparisons
@@ -21,7 +22,9 @@ from .tree_of_thought import TreeOfThought
 from .self_consistency import SelfConsistency
 from .least_to_most import LeastToMost, Subproblem
 from .plan_and_solve import PlanAndSolve, Plan, PlanStep
+from .graph_of_thought import GraphOfThought
 from .reasoning_tree import ReasoningTree, ReasoningNode, NodeState
+from .reasoning_graph import ReasoningGraph, ThoughtNode, LogicalEdge, NodeType, EdgeType
 
 __all__ = [
     "ChainOfThought",
@@ -32,7 +35,13 @@ __all__ = [
     "PlanAndSolve",
     "Plan",
     "PlanStep",
+    "GraphOfThought",
     "ReasoningTree",
     "ReasoningNode",
-    "NodeState"
+    "NodeState",
+    "ReasoningGraph",
+    "ThoughtNode",
+    "LogicalEdge",
+    "NodeType",
+    "EdgeType"
 ]

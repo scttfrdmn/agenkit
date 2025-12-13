@@ -400,6 +400,22 @@ pub fn build(b: *std.Build) void {
     memory_hierarchy_step.dependOn(&memory_hierarchy_run.step);
     memory_hierarchy_run.step.dependOn(b.getInstallStep());
 
+    // Add Router pattern example
+    const router_example = b.addExecutable(.{
+        .name = "router_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/router_example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(router_example);
+    const router_step = b.step("run-router", "Run the Router pattern example");
+    const router_run = b.addRunArtifact(router_example);
+    router_step.dependOn(&router_run.step);
+    router_run.step.dependOn(b.getInstallStep());
+
     // Add Agents-as-Tools pattern example
     const agents_as_tools_example = b.addExecutable(.{
         .name = "agents_as_tools_example",

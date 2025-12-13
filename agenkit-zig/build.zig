@@ -448,6 +448,22 @@ pub fn build(b: *std.Build) void {
     collaborative_step.dependOn(&collaborative_run.step);
     collaborative_run.step.dependOn(b.getInstallStep());
 
+    // Add Human-in-Loop pattern example
+    const human_in_loop_example = b.addExecutable(.{
+        .name = "human_in_loop_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/human_in_loop_example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(human_in_loop_example);
+    const human_in_loop_step = b.step("run-human-in-loop", "Run the Human-in-Loop pattern example");
+    const human_in_loop_run = b.addRunArtifact(human_in_loop_example);
+    human_in_loop_step.dependOn(&human_in_loop_run.step);
+    human_in_loop_run.step.dependOn(b.getInstallStep());
+
     // Add Agents-as-Tools pattern example
     const agents_as_tools_example = b.addExecutable(.{
         .name = "agents_as_tools_example",

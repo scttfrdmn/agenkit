@@ -1,6 +1,6 @@
 0
 15678 95843046 1760154801000000000 f0bdf7a0d76753ffab1319907ec69cf1 1 compiler/test_runner.zig
-9025 102978451 1765590374199518315 5d00b01f3c8f31149f35ff290dba8d01 0 src/root.zig
+9196 102984741 1765590759816636728 5c1506f6ac15591c763f0e34e694fbf4 0 src/root.zig
 22376 95862233 1760154801000000000 2d968f90418b6afe5ba91eaa2e18ba71 1 ubsan_rt.zig
 11083 95843348 1760154801000000000 3c8016eb348fede9a19b94ec4869d8a6 1 compiler_rt.zig
 7957 95862162 1760154801000000000 0ebbb46b337b65e85e7d177cfc93d2ca 1 std/std.zig
@@ -834,7 +834,7 @@
 419 95862061 1760154801000000000 ed7dfc04a5d0c4f0853edb5414ce981e 1 std/os/linux/bpf/btf_ext.zig
 24293 95862062 1760154801000000000 0c7d3ee9ea8e698a843ee6039fd161c4 1 std/os/linux/bpf/helpers.zig
 3221 95861809 1760154801000000000 fda67b74062c7f535bb0a6d0f1fe74fb 1 std/crypto/codecs/asn1/der/ArrayListReverse.zig
-9025 102978451 1765590374199518315 5d00b01f3c8f31149f35ff290dba8d01 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/root.zig
+9196 102984741 1765590759816636728 5c1506f6ac15591c763f0e34e694fbf4 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/root.zig
 6173 95883437 1764553324121726395 ff3c04b746859d9629fa8d637557e10f 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/message.zig
 5509 95883903 1764553477182283569 90ba089a68134c212b2a225e552fe376 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/agent.zig
 10058 101300754 1765327249931843919 7547a5dba0c6fdf397fe135c364eacc8 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/sequential.zig
@@ -852,4 +852,5 @@
 9555 102947463 1765588752890386737 d3d710ecbdafe13346e15fc9ae4cdb86 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/fallback.zig
 14021 102966948 1765589239316173172 a1ed0b007952e4feb7aa655109ea7cf0 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/collaborative.zig
 11319 102972772 1765589630030252944 2158d4ed529c860819f11d0aeb062e0a 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/human_in_loop.zig
-16786 102978486 1765590392997572086 5ba64b5122e1f0a2260be6907220f37e 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/supervisor.zig
+16845 102979400 1765590517645987934 5af2e189eb7d9039903ef85627c40575 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/supervisor.zig
+2180 102984449 1765590744663892708 53eeb9b8001579a75f8d7316786b2a80 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/orchestration.zig

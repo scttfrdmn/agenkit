@@ -152,6 +152,15 @@ pub const patterns = struct {
     pub const majorityAgreementConsensus = @import("patterns/collaborative.zig").majorityAgreementConsensus;
     pub const concatenateMerge = @import("patterns/collaborative.zig").concatenateMerge;
     pub const firstMerge = @import("patterns/collaborative.zig").firstMerge;
+
+    // Human-in-Loop pattern
+    pub const HumanInLoopAgent = @import("patterns/human_in_loop.zig").HumanInLoopAgent;
+    pub const HumanInLoopConfig = @import("patterns/human_in_loop.zig").HumanInLoopConfig;
+    pub const ApprovalRequest = @import("patterns/human_in_loop.zig").ApprovalRequest;
+    pub const ApprovalResponse = @import("patterns/human_in_loop.zig").ApprovalResponse;
+    pub const ApprovalFn = @import("patterns/human_in_loop.zig").ApprovalFn;
+    pub const alwaysApprove = @import("patterns/human_in_loop.zig").alwaysApprove;
+    pub const confidenceBasedApprove = @import("patterns/human_in_loop.zig").confidenceBasedApprove;
 };
 
 // Version information
@@ -175,4 +184,5 @@ test {
     _ = @import("patterns/router.zig");
     _ = @import("patterns/fallback.zig");
     _ = @import("patterns/collaborative.zig");
+    _ = @import("patterns/human_in_loop.zig");
 }

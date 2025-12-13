@@ -138,6 +138,10 @@ pub const patterns = struct {
     pub const RouterAgent = @import("patterns/router.zig").RouterAgent;
     pub const SimpleClassifier = @import("patterns/router.zig").SimpleClassifier;
     pub const Classifier = @import("patterns/router.zig").Classifier;
+
+    // Fallback pattern
+    pub const FallbackAgent = @import("patterns/fallback.zig").FallbackAgent;
+    pub const AttemptResult = @import("patterns/fallback.zig").AttemptResult;
 };
 
 // Version information
@@ -159,4 +163,5 @@ test {
     _ = @import("patterns/autonomous.zig");
     _ = @import("patterns/memory_hierarchy.zig");
     _ = @import("patterns/router.zig");
+    _ = @import("patterns/fallback.zig");
 }

@@ -133,6 +133,11 @@ pub const patterns = struct {
     pub const ShortTermMemory = @import("patterns/memory_hierarchy.zig").ShortTermMemory;
     pub const LongTermMemory = @import("patterns/memory_hierarchy.zig").LongTermMemory;
     pub const MemoryHierarchy = @import("patterns/memory_hierarchy.zig").MemoryHierarchy;
+
+    // Router pattern
+    pub const RouterAgent = @import("patterns/router.zig").RouterAgent;
+    pub const SimpleClassifier = @import("patterns/router.zig").SimpleClassifier;
+    pub const Classifier = @import("patterns/router.zig").Classifier;
 };
 
 // Version information
@@ -153,4 +158,5 @@ test {
     _ = @import("patterns/multiagent.zig");
     _ = @import("patterns/autonomous.zig");
     _ = @import("patterns/memory_hierarchy.zig");
+    _ = @import("patterns/router.zig");
 }

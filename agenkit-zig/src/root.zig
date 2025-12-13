@@ -167,6 +167,9 @@ pub const patterns = struct {
     pub const Subtask = @import("patterns/supervisor.zig").Subtask;
     pub const Planner = @import("patterns/supervisor.zig").Planner;
     pub const SimplePlanner = @import("patterns/supervisor.zig").SimplePlanner;
+
+    // Orchestration patterns (organizational module)
+    pub const orchestration = @import("patterns/orchestration.zig");
 };
 
 // Version information
@@ -192,4 +195,5 @@ test {
     _ = @import("patterns/collaborative.zig");
     _ = @import("patterns/human_in_loop.zig");
     _ = @import("patterns/supervisor.zig");
+    _ = @import("patterns/orchestration.zig");
 }

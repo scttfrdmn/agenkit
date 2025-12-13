@@ -416,6 +416,22 @@ pub fn build(b: *std.Build) void {
     router_step.dependOn(&router_run.step);
     router_run.step.dependOn(b.getInstallStep());
 
+    // Add Fallback pattern example
+    const fallback_example = b.addExecutable(.{
+        .name = "fallback_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/fallback_example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(fallback_example);
+    const fallback_step = b.step("run-fallback", "Run the Fallback pattern example");
+    const fallback_run = b.addRunArtifact(fallback_example);
+    fallback_step.dependOn(&fallback_run.step);
+    fallback_run.step.dependOn(b.getInstallStep());
+
     // Add Agents-as-Tools pattern example
     const agents_as_tools_example = b.addExecutable(.{
         .name = "agents_as_tools_example",

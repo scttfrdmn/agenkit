@@ -86,7 +86,7 @@ pub const patterns = struct {
 
     // Agents-as-Tools pattern
     pub const AgentTool = @import("patterns/agents_as_tools.zig").AgentTool;
-    pub const SupervisorAgent = @import("patterns/agents_as_tools.zig").SupervisorAgent;
+    pub const ToolCoordinator = @import("patterns/agents_as_tools.zig").ToolCoordinator;
     pub const agentAsTool = @import("patterns/agents_as_tools.zig").agentAsTool;
     pub const OutputFormat = @import("patterns/agents_as_tools.zig").OutputFormat;
 
@@ -161,6 +161,12 @@ pub const patterns = struct {
     pub const ApprovalFn = @import("patterns/human_in_loop.zig").ApprovalFn;
     pub const alwaysApprove = @import("patterns/human_in_loop.zig").alwaysApprove;
     pub const confidenceBasedApprove = @import("patterns/human_in_loop.zig").confidenceBasedApprove;
+
+    // Supervisor pattern
+    pub const SupervisorAgent = @import("patterns/supervisor.zig").SupervisorAgent;
+    pub const Subtask = @import("patterns/supervisor.zig").Subtask;
+    pub const Planner = @import("patterns/supervisor.zig").Planner;
+    pub const SimplePlanner = @import("patterns/supervisor.zig").SimplePlanner;
 };
 
 // Version information
@@ -185,4 +191,5 @@ test {
     _ = @import("patterns/fallback.zig");
     _ = @import("patterns/collaborative.zig");
     _ = @import("patterns/human_in_loop.zig");
+    _ = @import("patterns/supervisor.zig");
 }

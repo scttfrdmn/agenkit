@@ -464,6 +464,22 @@ pub fn build(b: *std.Build) void {
     human_in_loop_step.dependOn(&human_in_loop_run.step);
     human_in_loop_run.step.dependOn(b.getInstallStep());
 
+    // Add Supervisor pattern example
+    const supervisor_example = b.addExecutable(.{
+        .name = "supervisor_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/supervisor_example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(supervisor_example);
+    const supervisor_step = b.step("run-supervisor", "Run the Supervisor pattern example");
+    const supervisor_run = b.addRunArtifact(supervisor_example);
+    supervisor_step.dependOn(&supervisor_run.step);
+    supervisor_run.step.dependOn(b.getInstallStep());
+
     // Add Agents-as-Tools pattern example
     const agents_as_tools_example = b.addExecutable(.{
         .name = "agents_as_tools_example",

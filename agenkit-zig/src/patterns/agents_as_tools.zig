@@ -194,22 +194,22 @@ pub fn agentAsTool(
 }
 
 // ============================================================================
-// SupervisorAgent - Agent that delegates to specialist tools
+// ToolCoordinator - Agent that delegates to specialist tools
 // ============================================================================
 
 /// Supervisor Agent - Coordinates multiple specialist agents
 ///
 /// The supervisor pattern uses a lead agent to coordinate specialist agents
 /// by wrapping them as tools and delegating tasks appropriately.
-pub const SupervisorAgent = struct {
+pub const ToolCoordinator = struct {
     allocator: Allocator,
     agent_name: []const u8,
     tools: std.ArrayList(*AgentTool),
 
-    /// Initialize a supervisor agent
-    pub fn init(allocator: Allocator, name: []const u8) !*SupervisorAgent {
-        const self = try allocator.create(SupervisorAgent);
-        self.* = SupervisorAgent{
+    /// Initialize a tool coordinator
+    pub fn init(allocator: Allocator, name: []const u8) !*ToolCoordinator {
+        const self = try allocator.create(ToolCoordinator);
+        self.* = ToolCoordinator{
             .allocator = allocator,
             .agent_name = try allocator.dupe(u8, name),
             .tools = .{},
@@ -218,17 +218,17 @@ pub const SupervisorAgent = struct {
     }
 
     /// Register a specialist agent as a tool
-    pub fn registerTool(self: *SupervisorAgent, tool: *AgentTool) !void {
+    pub fn registerTool(self: *ToolCoordinator, tool: *AgentTool) !void {
         try self.tools.append(self.allocator, tool);
     }
 
     /// Get list of available tools
-    pub fn getTools(self: *SupervisorAgent) []*AgentTool {
+    pub fn getTools(self: *ToolCoordinator) []*AgentTool {
         return self.tools.items;
     }
 
     /// Execute a specific tool by name
-    pub fn executeTool(self: *SupervisorAgent, tool_name: []const u8, input: []const u8) !Message {
+    pub fn executeTool(self: *ToolCoordinator, tool_name: []const u8, input: []const u8) !Message {
         for (self.tools.items) |tool| {
             if (std.mem.eql(u8, tool.name(), tool_name)) {
                 return tool.execute(self.allocator, input);
@@ -238,7 +238,7 @@ pub const SupervisorAgent = struct {
     }
 
     /// Create agent interface for this supervisor
-    pub fn agent(self: *SupervisorAgent) Agent {
+    pub fn agent(self: *ToolCoordinator) Agent {
         return Agent{
             .ptr = self,
             .vtable = &.{
@@ -251,12 +251,12 @@ pub const SupervisorAgent = struct {
     }
 
     fn nameImpl(ptr: *anyopaque) []const u8 {
-        const self: *SupervisorAgent = @ptrCast(@alignCast(ptr));
+        const self: *ToolCoordinator = @ptrCast(@alignCast(ptr));
         return self.agent_name;
     }
 
     fn capabilitiesImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const []const u8 {
-        const self: *SupervisorAgent = @ptrCast(@alignCast(ptr));
+        const self: *ToolCoordinator = @ptrCast(@alignCast(ptr));
 
         // Collect capabilities from all tools
         var caps_set = std.StringHashMap(void).init(allocator);
@@ -280,7 +280,7 @@ pub const SupervisorAgent = struct {
     }
 
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
-        const self: *SupervisorAgent = @ptrCast(@alignCast(ptr));
+        const self: *ToolCoordinator = @ptrCast(@alignCast(ptr));
 
         // Simple supervisor logic: use first tool if available
         // In real implementation, this would use LLM to decide which tool
@@ -301,13 +301,13 @@ pub const SupervisorAgent = struct {
     }
 
     fn deinitImpl(ptr: *anyopaque) void {
-        const self: *SupervisorAgent = @ptrCast(@alignCast(ptr));
+        const self: *ToolCoordinator = @ptrCast(@alignCast(ptr));
         self.allocator.free(self.agent_name);
         self.tools.deinit(self.allocator); // Don't deinit tools themselves (owned externally)
         self.allocator.destroy(self);
     }
 
-    pub fn deinit(self: *SupervisorAgent) void {
+    pub fn deinit(self: *ToolCoordinator) void {
         self.allocator.free(self.agent_name);
         self.tools.deinit(self.allocator);
         self.allocator.destroy(self);
@@ -370,7 +370,7 @@ test "AgentTool custom configuration" {
     try std.testing.expectEqualStrings("hello", text);
 }
 
-test "SupervisorAgent delegation" {
+test "ToolCoordinator delegation" {
     const allocator = std.testing.allocator;
     const EchoAgent = @import("../agent.zig").EchoAgent;
 
@@ -398,7 +398,7 @@ test "SupervisorAgent delegation" {
     defer tool2.deinit();
 
     // Create supervisor
-    var supervisor = try SupervisorAgent.init(allocator, "supervisor");
+    var supervisor = try ToolCoordinator.init(allocator, "supervisor");
     defer supervisor.deinit();
 
     try supervisor.registerTool(tool1);
@@ -415,7 +415,7 @@ test "SupervisorAgent delegation" {
     try std.testing.expectEqualStrings("test task", text);
 }
 
-test "SupervisorAgent as agent interface" {
+test "ToolCoordinator as agent interface" {
     const allocator = std.testing.allocator;
     const EchoAgent = @import("../agent.zig").EchoAgent;
 
@@ -430,7 +430,7 @@ test "SupervisorAgent as agent interface" {
     );
     defer tool.deinit();
 
-    var supervisor = try SupervisorAgent.init(allocator, "my_supervisor");
+    var supervisor = try ToolCoordinator.init(allocator, "my_supervisor");
     defer supervisor.deinit();
 
     try supervisor.registerTool(tool);
@@ -450,7 +450,7 @@ test "SupervisorAgent as agent interface" {
     try std.testing.expectEqualStrings("task", text);
 }
 
-test "SupervisorAgent capabilities" {
+test "ToolCoordinator capabilities" {
     const allocator = std.testing.allocator;
     const EchoAgent = @import("../agent.zig").EchoAgent;
 
@@ -465,7 +465,7 @@ test "SupervisorAgent capabilities" {
     );
     defer tool.deinit();
 
-    var supervisor = try SupervisorAgent.init(allocator, "supervisor");
+    var supervisor = try ToolCoordinator.init(allocator, "supervisor");
     defer supervisor.deinit();
 
     try supervisor.registerTool(tool);

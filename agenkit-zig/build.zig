@@ -480,6 +480,22 @@ pub fn build(b: *std.Build) void {
     supervisor_step.dependOn(&supervisor_run.step);
     supervisor_run.step.dependOn(b.getInstallStep());
 
+    // Add Reasoning with Tools pattern example
+    const reasoning_with_tools_example = b.addExecutable(.{
+        .name = "reasoning_with_tools_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/reasoning_with_tools_example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(reasoning_with_tools_example);
+    const reasoning_with_tools_step = b.step("run-reasoning-with-tools", "Run the Reasoning with Tools pattern example");
+    const reasoning_with_tools_run = b.addRunArtifact(reasoning_with_tools_example);
+    reasoning_with_tools_step.dependOn(&reasoning_with_tools_run.step);
+    reasoning_with_tools_run.step.dependOn(b.getInstallStep());
+
     // Add Agents-as-Tools pattern example
     const agents_as_tools_example = b.addExecutable(.{
         .name = "agents_as_tools_example",

@@ -170,6 +170,12 @@ pub const patterns = struct {
 
     // Orchestration patterns (organizational module)
     pub const orchestration = @import("patterns/orchestration.zig");
+
+    // Reasoning with Tools pattern
+    pub const ReasoningWithToolsAgent = @import("patterns/reasoning_with_tools.zig").ReasoningWithToolsAgent;
+    pub const ReasoningStepType = @import("patterns/reasoning_with_tools.zig").ReasoningStepType;
+    pub const ReasoningStep = @import("patterns/reasoning_with_tools.zig").ReasoningStep;
+    pub const ReasoningConfig = @import("patterns/reasoning_with_tools.zig").ReasoningConfig;
 };
 
 // Version information
@@ -196,4 +202,5 @@ test {
     _ = @import("patterns/human_in_loop.zig");
     _ = @import("patterns/supervisor.zig");
     _ = @import("patterns/orchestration.zig");
+    _ = @import("patterns/reasoning_with_tools.zig");
 }

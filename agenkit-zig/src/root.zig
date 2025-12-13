@@ -142,6 +142,16 @@ pub const patterns = struct {
     // Fallback pattern
     pub const FallbackAgent = @import("patterns/fallback.zig").FallbackAgent;
     pub const AttemptResult = @import("patterns/fallback.zig").AttemptResult;
+
+    // Collaborative pattern
+    pub const CollaborativeAgent = @import("patterns/collaborative.zig").CollaborativeAgent;
+    pub const CollaborativeConfig = @import("patterns/collaborative.zig").CollaborativeConfig;
+    pub const ConsensusFn = @import("patterns/collaborative.zig").ConsensusFn;
+    pub const MergeFn = @import("patterns/collaborative.zig").MergeFn;
+    pub const exactMatchConsensus = @import("patterns/collaborative.zig").exactMatchConsensus;
+    pub const majorityAgreementConsensus = @import("patterns/collaborative.zig").majorityAgreementConsensus;
+    pub const concatenateMerge = @import("patterns/collaborative.zig").concatenateMerge;
+    pub const firstMerge = @import("patterns/collaborative.zig").firstMerge;
 };
 
 // Version information
@@ -164,4 +174,5 @@ test {
     _ = @import("patterns/memory_hierarchy.zig");
     _ = @import("patterns/router.zig");
     _ = @import("patterns/fallback.zig");
+    _ = @import("patterns/collaborative.zig");
 }

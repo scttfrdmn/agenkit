@@ -432,6 +432,22 @@ pub fn build(b: *std.Build) void {
     fallback_step.dependOn(&fallback_run.step);
     fallback_run.step.dependOn(b.getInstallStep());
 
+    // Add Collaborative pattern example
+    const collaborative_example = b.addExecutable(.{
+        .name = "collaborative_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/patterns/collaborative_example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(collaborative_example);
+    const collaborative_step = b.step("run-collaborative", "Run the Collaborative pattern example");
+    const collaborative_run = b.addRunArtifact(collaborative_example);
+    collaborative_step.dependOn(&collaborative_run.step);
+    collaborative_run.step.dependOn(b.getInstallStep());
+
     // Add Agents-as-Tools pattern example
     const agents_as_tools_example = b.addExecutable(.{
         .name = "agents_as_tools_example",

@@ -18,7 +18,7 @@ const ParallelPattern = agenkit.patterns.ParallelPattern;
 const defaultAggregator = agenkit.patterns.defaultAggregator;
 const ReflectionAgent = agenkit.patterns.ReflectionAgent;
 const AgentTool = agenkit.patterns.AgentTool;
-const SupervisorAgent = agenkit.patterns.SupervisorAgent;
+const ToolCoordinator = agenkit.patterns.ToolCoordinator;
 const agentAsTool = agenkit.patterns.agentAsTool;
 
 const Agent = agenkit.Agent;
@@ -192,7 +192,7 @@ fn agentsAsToolsExample(allocator: std.mem.Allocator) !void {
     defer tool2.deinit();
 
     // Create supervisor
-    var supervisor = try SupervisorAgent.init(allocator, "supervisor");
+    var supervisor = try ToolCoordinator.init(allocator, "supervisor");
     defer supervisor.deinit();
 
     try supervisor.registerTool(tool1);

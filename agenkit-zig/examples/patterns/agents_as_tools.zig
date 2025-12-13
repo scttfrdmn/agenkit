@@ -5,9 +5,9 @@
 //!
 //! This example demonstrates:
 //! - Wrapping agents as tools with agentAsTool()
-//! - SupervisorAgent coordinating multiple specialists
+//! - ToolCoordinator coordinating multiple specialists
 //! - Direct tool execution by name
-//! - Supervisor as an Agent interface
+//! - Tool coordination as an Agent interface
 //! - Capabilities aggregation from tools
 //!
 //! Run with: zig build run-agents-as-tools
@@ -163,7 +163,7 @@ pub fn main() !void {
         std.debug.print("✓ Multiple specialists ready for delegation\n\n", .{});
     }
 
-    // Example 3: SupervisorAgent coordination
+    // Example 3: ToolCoordinator coordination
     std.debug.print("--- Example 3: Supervisor Delegation ---\n", .{});
     {
         var math_agent = try SpecialistAgent.init(allocator, "MATH");
@@ -188,7 +188,7 @@ pub fn main() !void {
         );
         defer code_tool.deinit();
 
-        var supervisor = try agenkit.patterns.SupervisorAgent.init(allocator, "SupervisorBot");
+        var supervisor = try agenkit.patterns.ToolCoordinator.init(allocator, "SupervisorBot");
         defer supervisor.deinit();
 
         try supervisor.registerTool(math_tool);
@@ -222,7 +222,7 @@ pub fn main() !void {
         );
         defer tool.deinit();
 
-        var supervisor = try agenkit.patterns.SupervisorAgent.init(allocator, "Coordinator");
+        var supervisor = try agenkit.patterns.ToolCoordinator.init(allocator, "Coordinator");
         defer supervisor.deinit();
 
         try supervisor.registerTool(tool);
@@ -263,7 +263,7 @@ pub fn main() !void {
         var tool3 = try agenkit.patterns.agentAsTool(allocator, agent3.agent(), "audio", "Audio specialist");
         defer tool3.deinit();
 
-        var supervisor = try agenkit.patterns.SupervisorAgent.init(allocator, "MultiModalAgent");
+        var supervisor = try agenkit.patterns.ToolCoordinator.init(allocator, "MultiModalAgent");
         defer supervisor.deinit();
 
         try supervisor.registerTool(tool1);
@@ -308,7 +308,7 @@ pub fn main() !void {
         defer tool2.deinit();
 
         // Create supervisor
-        var dev_supervisor = try agenkit.patterns.SupervisorAgent.init(allocator, "DevSupervisor");
+        var dev_supervisor = try agenkit.patterns.ToolCoordinator.init(allocator, "DevSupervisor");
         defer dev_supervisor.deinit();
 
         try dev_supervisor.registerTool(tool1);
@@ -323,7 +323,7 @@ pub fn main() !void {
         );
         defer dev_tool.deinit();
 
-        var meta_supervisor = try agenkit.patterns.SupervisorAgent.init(allocator, "ProjectManager");
+        var meta_supervisor = try agenkit.patterns.ToolCoordinator.init(allocator, "ProjectManager");
         defer meta_supervisor.deinit();
 
         try meta_supervisor.registerTool(dev_tool);
@@ -347,7 +347,7 @@ pub fn main() !void {
 
     std.debug.print("=== Agents-as-Tools Pattern Summary ===\n", .{});
     std.debug.print("✓ agentAsTool() wraps any agent as a callable tool\n", .{});
-    std.debug.print("✓ SupervisorAgent coordinates multiple specialist tools\n", .{});
+    std.debug.print("✓ ToolCoordinator coordinates multiple specialist tools\n", .{});
     std.debug.print("✓ Direct tool execution by name\n", .{});
     std.debug.print("✓ Supervisor implements standard Agent interface\n", .{});
     std.debug.print("✓ Capabilities automatically aggregated from tools\n", .{});

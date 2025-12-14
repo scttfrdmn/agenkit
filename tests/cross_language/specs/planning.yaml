@@ -1,0 +1,113 @@
+pattern:
+  name: "Planning"
+  description: "Decomposes complex tasks into sub-tasks and executes them systematically"
+  category: "reasoning"
+
+test_scenarios:
+  - id: "planning_basic"
+    name: "Basic task decomposition"
+    description: "Should break down task into steps and execute"
+
+    input:
+      message:
+        role: "user"
+        content: "Plan a birthday party for 20 people"
+        metadata: {}
+      config:
+        max_steps: 10
+        execution_mode: "sequential"
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_contains:
+          - "venue"
+          - "invitations"
+          - "food"
+        metadata:
+          plan_created: true
+          steps_count: 3  # At least 3 steps
+          all_steps_executed: true
+
+  - id: "planning_complex"
+    name: "Complex multi-step planning"
+    description: "Should handle complex planning with dependencies"
+
+    input:
+      message:
+        role: "user"
+        content: "Build a web application with authentication"
+        metadata: {}
+      config:
+        max_steps: 15
+        execution_mode: "sequential"
+        dependency_aware: true
+
+    expected_output:
+      metadata:
+        plan_created: true
+        steps_count: 5  # Multiple steps
+        dependencies_resolved: true
+
+  - id: "planning_replanning"
+    name: "Replanning on failure"
+    description: "Should replan when step fails"
+
+    input:
+      message:
+        role: "user"
+        content: "Complete task with potential failures"
+        metadata: {}
+      config:
+        max_steps: 10
+        allow_replanning: true
+        max_replans: 2
+
+    expected_output:
+      metadata:
+        replanning_occurred: true
+        replan_count: 1  # At least one replan
+
+  - id: "planning_max_steps"
+    name: "Respects maximum steps limit"
+    description: "Should not exceed max_steps"
+
+    input:
+      message:
+        role: "user"
+        content: "Very complex task requiring many steps"
+        metadata: {}
+      config:
+        max_steps: 3
+        execution_mode: "sequential"
+
+    expected_output:
+      metadata:
+        steps_count: 3  # Should not exceed max
+        plan_completed: false  # May not finish
+
+edge_cases:
+  - condition: "max_steps = 1"
+    expected: "Single step plan"
+  - condition: "Circular dependencies in plan"
+    expected: "Detects and breaks cycle or raises error"
+  - condition: "Step execution fails with no replanning"
+    expected: "Stops execution, returns partial results"
+  - condition: "Empty or trivial task"
+    expected: "Creates minimal plan or single step"
+
+properties:
+  deterministic: false  # LLM-based planning
+  idempotent: false    # May create different plans
+  stateful: true       # Maintains plan and execution state
+  requires_llm: true   # Needs LLM for task decomposition
+  supports_streaming: true
+
+performance:
+  complexity: "O(n)"   # Linear in number of steps
+  expected_latency: "5-30s"  # Multiple LLM calls + execution
+
+dependencies:
+  patterns: []
+  middleware: ["retry", "timeout"]
+  external: ["llm_provider"]

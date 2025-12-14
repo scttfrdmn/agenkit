@@ -111,6 +111,10 @@ name = "agenkit"
 path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
+[[bin]]
+name = "cross_language_harness"
+path = "tests/cross_language_harness.rs"
+
 [[example]]
 name = "echo_agent"
 path = "examples/echo_agent.rs"

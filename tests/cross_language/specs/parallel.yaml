@@ -1,0 +1,116 @@
+pattern:
+  name: "Parallel"
+  description: "Executes multiple agents concurrently and aggregates their results"
+  category: "orchestration"
+
+test_scenarios:
+  - id: "parallel_basic"
+    name: "Basic parallel execution"
+    description: "Should execute all agents concurrently and aggregate results"
+
+    input:
+      message:
+        role: "user"
+        content: "Analyze this text"
+        metadata: {}
+      config:
+        agents:
+          - name: "sentiment_analyzer"
+          - name: "topic_classifier"
+          - name: "summarizer"
+        aggregation: "concat"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          agent_count: 3
+          agents_executed: ["sentiment_analyzer", "topic_classifier", "summarizer"]
+
+      behavior:
+        sub_agents: ["sentiment_analyzer", "topic_classifier", "summarizer"]
+
+  - id: "parallel_voting"
+    name: "Voting aggregation"
+    description: "Should aggregate results using voting mechanism"
+
+    input:
+      message:
+        role: "user"
+        content: "Is this positive or negative?"
+        metadata: {}
+      config:
+        agents:
+          - name: "model1"
+          - name: "model2"
+          - name: "model3"
+        aggregation: "vote"
+
+    expected_output:
+      metadata:
+        voting_result: true
+        consensus_reached: true
+
+  - id: "parallel_single_agent"
+    name: "Single agent parallel execution"
+    description: "Should handle single agent gracefully"
+
+    input:
+      message:
+        role: "user"
+        content: "test"
+        metadata: {}
+      config:
+        agents:
+          - name: "agent1"
+
+    expected_output:
+      metadata:
+        agent_count: 1
+
+  - id: "parallel_partial_failure"
+    name: "Partial failure handling"
+    description: "Should handle when some agents fail"
+
+    input:
+      message:
+        role: "user"
+        content: "test"
+        metadata: {}
+      config:
+        agents:
+          - name: "good_agent"
+          - name: "failing_agent"
+          - name: "good_agent2"
+        fail_strategy: "ignore"
+
+    expected_output:
+      metadata:
+        successful_count: 2
+        failed_count: 1
+
+edge_cases:
+  - condition: "Empty agents list"
+    expected: "Raises configuration error"
+  - condition: "All agents fail"
+    expected: "Propagates error or returns empty result based on strategy"
+  - condition: "Agents return conflicting results (voting)"
+    expected: "Returns majority or marks no consensus"
+  - condition: "Timeout on slow agent"
+    expected: "Returns partial results or waits based on configuration"
+
+properties:
+  deterministic: false  # Concurrent execution timing
+  idempotent: true     # Same agents, same input → same output
+  stateful: false      # No state between invocations
+  requires_llm: false  # Pattern itself doesn't require LLM
+  supports_streaming: true  # Can stream aggregated results
+
+performance:
+  complexity: "O(1)"   # Parallel execution (wall-clock time)
+  expected_latency: "max(agent_latencies)"  # Longest agent
+
+dependencies:
+  patterns: []
+  middleware: ["timeout"]
+  external: []

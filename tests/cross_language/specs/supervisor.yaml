@@ -1,0 +1,125 @@
+pattern:
+  name: "Supervisor"
+  description: "Monitors and manages worker agents, redistributing work on failures"
+  category: "orchestration"
+
+test_scenarios:
+  - id: "supervisor_basic"
+    name: "Basic task distribution"
+    description: "Supervisor should distribute tasks to workers"
+
+    input:
+      message:
+        role: "user"
+        content: "Process these items: A, B, C"
+        metadata: {}
+      config:
+        workers:
+          - name: "worker_1"
+          - name: "worker_2"
+          - name: "worker_3"
+        distribution: "round_robin"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          tasks_distributed: 3
+          workers_used: 3
+          distribution_strategy: "round_robin"
+
+  - id: "supervisor_load_balancing"
+    name: "Load-based distribution"
+    description: "Should distribute based on worker load"
+
+    input:
+      message:
+        role: "user"
+        content: "Process multiple tasks"
+        metadata: {}
+      config:
+        workers:
+          - name: "worker_1"
+            current_load: 5
+          - name: "worker_2"
+            current_load: 2
+          - name: "worker_3"
+            current_load: 8
+        distribution: "least_loaded"
+
+    expected_output:
+      metadata:
+        first_assignment: "worker_2"  # Least loaded
+
+  - id: "supervisor_failure_redistribution"
+    name: "Redistributes work on failure"
+    description: "Should reassign task when worker fails"
+
+    input:
+      message:
+        role: "user"
+        content: "Critical task"
+        metadata: {}
+      config:
+        workers:
+          - name: "failing_worker"
+            failure_rate: 1.0
+          - name: "healthy_worker"
+            failure_rate: 0.0
+        retry_failed_tasks: true
+
+    expected_output:
+      metadata:
+        reassignments: 1
+        final_worker: "healthy_worker"
+        failures_handled: 1
+
+  - id: "supervisor_worker_health"
+    name: "Monitors worker health"
+    description: "Should track worker health and avoid unhealthy workers"
+
+    input:
+      message:
+        role: "user"
+        content: "Task distribution"
+        metadata: {}
+      config:
+        workers:
+          - name: "healthy_worker"
+            health: "healthy"
+          - name: "unhealthy_worker"
+            health: "unhealthy"
+          - name: "degraded_worker"
+            health: "degraded"
+        health_check_enabled: true
+
+    expected_output:
+      metadata:
+        workers_available: 2  # Excludes unhealthy
+        unhealthy_workers: ["unhealthy_worker"]
+
+edge_cases:
+  - condition: "No workers available"
+    expected: "Raises no workers error or queues task"
+  - condition: "All workers fail"
+    expected: "Returns aggregate error"
+  - condition: "Single worker"
+    expected: "All tasks go to single worker"
+  - condition: "More tasks than workers"
+    expected: "Distributes according to strategy"
+
+properties:
+  deterministic: false  # Depends on worker states
+  idempotent: false    # Different worker states → different distribution
+  stateful: true       # Maintains worker health and load state
+  requires_llm: false  # Pattern itself doesn't require LLM
+  supports_streaming: true
+
+performance:
+  complexity: "O(n * log m)"  # n tasks, m workers (with priority queue)
+  expected_latency: "max(worker_latencies)"  # Parallel execution
+
+dependencies:
+  patterns: []
+  middleware: ["retry", "circuit_breaker", "timeout"]
+  external: []

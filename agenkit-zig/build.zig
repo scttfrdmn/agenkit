@@ -609,4 +609,17 @@ pub fn build(b: *std.Build) void {
     const evaluation_run = b.addRunArtifact(evaluation_example);
     evaluation_step.dependOn(&evaluation_run.step);
     evaluation_run.step.dependOn(b.getInstallStep());
+
+    // Add Cross-Language Test Harness (for equivalence testing)
+    const test_harness = b.addExecutable(.{
+        .name = "cross_language_harness",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/cross_language_harness.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    b.installArtifact(test_harness);
+    const harness_step = b.step("build-harness", "Build the cross-language test harness");
+    harness_step.dependOn(b.getInstallStep());
 }

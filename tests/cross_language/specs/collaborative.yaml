@@ -1,0 +1,126 @@
+pattern:
+  name: "Collaborative"
+  description: "Multiple agents work together on a shared task, exchanging information"
+  category: "orchestration"
+
+test_scenarios:
+  - id: "collaborative_basic"
+    name: "Basic collaboration between agents"
+    description: "Agents should share context and collaborate on task"
+
+    input:
+      message:
+        role: "user"
+        content: "Analyze this business proposal from multiple perspectives"
+        metadata: {}
+      config:
+        agents:
+          - name: "financial_analyst"
+            role: "financial analysis"
+          - name: "marketing_analyst"
+            role: "market analysis"
+          - name: "technical_analyst"
+            role: "technical feasibility"
+        collaboration_mode: "shared_context"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          agents_participated: 3
+          perspectives: ["financial", "marketing", "technical"]
+          collaboration_rounds: 1
+
+  - id: "collaborative_iterative"
+    name: "Iterative collaboration rounds"
+    description: "Agents iterate and refine based on each other's input"
+
+    input:
+      message:
+        role: "user"
+        content: "Design a new product feature"
+        metadata: {}
+      config:
+        agents:
+          - name: "product_manager"
+          - name: "engineer"
+          - name: "designer"
+        collaboration_mode: "iterative"
+        max_rounds: 3
+
+    expected_output:
+      metadata:
+        collaboration_rounds: 3  # Multiple iteration rounds
+        refinements_made: true
+        consensus_reached: true
+
+  - id: "collaborative_consensus"
+    name: "Reaching consensus"
+    description: "Agents should reach agreement on solution"
+
+    input:
+      message:
+        role: "user"
+        content: "Decide on architecture approach"
+        metadata: {}
+      config:
+        agents:
+          - name: "architect_1"
+          - name: "architect_2"
+          - name: "architect_3"
+        collaboration_mode: "consensus"
+        consensus_threshold: 0.66
+
+    expected_output:
+      metadata:
+        consensus_reached: true
+        agreement_percentage: 0.66  # At least threshold
+
+  - id: "collaborative_conflict_resolution"
+    name: "Handles conflicting opinions"
+    description: "Should resolve when agents disagree"
+
+    input:
+      message:
+        role: "user"
+        content: "Choose technology stack"
+        metadata: {}
+      config:
+        agents:
+          - name: "agent_1"
+          - name: "agent_2"
+          - name: "agent_3"
+        collaboration_mode: "consensus"
+        conflict_resolution: "voting"
+
+    expected_output:
+      metadata:
+        conflicts_detected: true
+        resolution_method: "voting"
+        final_decision: true
+
+edge_cases:
+  - condition: "Single agent collaboration"
+    expected: "No collaboration, direct execution"
+  - condition: "max_rounds = 1"
+    expected: "Single collaboration round"
+  - condition: "No consensus reached"
+    expected: "Returns all perspectives or uses tie-breaker"
+  - condition: "Agent drops out mid-collaboration"
+    expected: "Continues with remaining agents"
+
+properties:
+  deterministic: false  # LLM-based collaboration
+  idempotent: false    # May reach different consensus
+  stateful: true       # Maintains shared collaboration context
+  requires_llm: true   # Needs LLM for agent reasoning
+  supports_streaming: true
+
+performance:
+  complexity: "O(n * m)"  # n agents * m rounds
+  expected_latency: "5-20s"  # Multiple agents, multiple rounds
+
+dependencies:
+  patterns: []
+  middleware: ["timeout"]
+  external: ["llm_provider"]

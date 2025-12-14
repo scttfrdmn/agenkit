@@ -1,0 +1,93 @@
+pattern:
+  name: "Reflection"
+  description: "Agent that iteratively critiques and improves its own outputs through self-reflection"
+  category: "reasoning"
+
+test_scenarios:
+  - id: "reflection_basic"
+    name: "Basic reflection with improvement"
+    description: "Agent should iterate and show improvement over initial response"
+
+    input:
+      message:
+        role: "user"
+        content: "Write a short poem about technology"
+        metadata: {}
+      config:
+        max_iterations: 3
+        improvement_threshold: 0.1
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_contains:
+          - "technology"
+        content_pattern: ".*"
+        metadata:
+          iterations: 1  # At least one iteration
+          improved: true
+
+      behavior:
+        min_turns: 2  # Initial + at least one reflection
+        max_turns: 6  # Max iterations * 2 (response + critique)
+
+  - id: "reflection_convergence"
+    name: "Early convergence when satisfied"
+    description: "Should stop iterating when improvement threshold not met"
+
+    input:
+      message:
+        role: "user"
+        content: "Say hello"
+        metadata: {}
+      config:
+        max_iterations: 5
+        improvement_threshold: 0.5
+
+    expected_output:
+      behavior:
+        max_turns: 4  # Should converge early on simple task
+
+  - id: "reflection_max_iterations"
+    name: "Respects maximum iterations limit"
+    description: "Should not exceed max_iterations even if still improving"
+
+    input:
+      message:
+        role: "user"
+        content: "Explain quantum computing"
+        metadata: {}
+      config:
+        max_iterations: 2
+
+    expected_output:
+      metadata:
+        iterations: 2  # Should stop at max
+      behavior:
+        max_turns: 4  # Exactly 2 iterations
+
+edge_cases:
+  - condition: "max_iterations = 0"
+    expected: "Returns initial response without reflection"
+  - condition: "max_iterations = 1"
+    expected: "Single reflection iteration"
+  - condition: "improvement_threshold = 1.0"
+    expected: "Never converges, always reflects (up to max_iterations)"
+  - condition: "Empty input message"
+    expected: "Raises validation error"
+
+properties:
+  deterministic: false  # LLM-based, non-deterministic
+  idempotent: false     # Different reflection paths each time
+  stateful: true        # Maintains iteration history
+  requires_llm: true    # Needs LLM for critique and improvement
+  supports_streaming: true
+
+performance:
+  complexity: "O(n)"    # Linear in max_iterations
+  expected_latency: "2-10s"  # Multiple LLM calls
+
+dependencies:
+  patterns: []
+  middleware: ["retry", "timeout"]
+  external: ["llm_provider"]

@@ -498,9 +498,9 @@ Test invariants across many inputs.
 ---
 
 ## Phase 5: DevOps & Release (v1.0.0) 🔧
-**Status**: ✅ **100% Complete** | **Due**: June 2026
+**Status**: 🚧 **In Progress** | **Due**: Early April 2026 (Conference Target)
 
-Focus: Production deployment, Docker, Kubernetes, observability.
+Focus: Production deployment, Docker, Kubernetes, observability, complete browser story.
 
 **Summary**:
 - ✅ Observability - Complete (Python + Go + Tests + Documentation)
@@ -617,6 +617,133 @@ Production-ready Kubernetes manifests.
 - Memory target: 80% utilization
 - Scale-up: 2 pods or 100% every 30s
 - Scale-down: 50% every 60s (5min stabilization)
+
+### v1.0.0 Additional Requirements (Pre-Release)
+
+#### Cross-Language Equivalence Testing (Dec 16 - Jan 6, 2026)
+**Status**: 🚧 Planned
+
+**Goal**: Verify behavioral parity across all 6 languages (Python, Go, TypeScript, Rust, C++, Zig)
+
+**Scope**:
+- Pattern behavior specifications (YAML/JSON)
+- Reference test suite in Python
+- Port test suite to each language
+- Run equivalence verification
+- Document any edge cases
+
+**Why**: Ensure identical behavior across all implementations to give users confidence in cross-language portability.
+
+#### Performance Benchmarks (Jan 6 - Jan 20, 2026)
+**Status**: 🚧 Planned
+
+**Goal**: Benchmark all 18 patterns across all 6 languages
+
+**Scope**:
+- Create comprehensive benchmark suite
+- Run benchmarks on all languages
+- Create performance comparison matrix
+- Identify optimization opportunities
+- Document performance characteristics
+
+**Why**: Provide users with data-driven language selection guidance and establish performance baselines.
+
+#### [#216](https://github.com/scttfrdmn/agenkit/issues/216) Comprehensive User Documentation (Jan 20 - Feb 3, 2026)
+**Status**: 🚧 Planned | **Priority**: 🔴 Critical (Moved to Pre-v1.0)
+
+**Goal**: Update all user-facing documentation with latest features and best practices
+
+**Scope**:
+- Getting started guides for all 6 languages
+- Pattern documentation with examples
+- API reference documentation
+- Best practices and design patterns
+- Migration guides between languages
+- Troubleshooting guides
+- FAQ and common issues
+
+**Why**: Users need comprehensive, up-to-date documentation to adopt Agenkit successfully. Critical for v1.0 release.
+
+#### Core Reasoning Techniques (Feb 3 - Feb 24, 2026)
+**Status**: 🚧 Planned | **Priority**: 🔴 Critical (Moved to Pre-v1.0)
+
+**Goal**: Implement foundational reasoning techniques across all languages
+
+**Scope**:
+- Chain-of-Thought (CoT) prompting
+- Tree-of-Thought (ToT) reasoning
+- Self-Consistency decoding
+- Implementation in all 6 languages
+- Comprehensive tests and examples
+- Documentation
+
+**Why**: Reasoning techniques are fundamental building blocks for advanced agent capabilities. Critical for v1.0 completeness.
+
+**Note**: Additional techniques (Graph-of-Thought, Least-to-Most, Plan-and-Solve) deferred to post-v1.0.
+
+#### Complete Browser Story - WASM (Feb 24 - Mar 31, 2026)
+**Status**: 🚧 Planned | **Priority**: 🔴 Critical (Moved to Pre-v1.0)
+
+**Goal**: Run all 18 patterns in browser via WebAssembly across 3 languages (Rust, C++, Zig)
+
+**Scope** (Option 3 - Complete Browser Story):
+
+**Phase 1: Rust WASM Completion** (Weeks 1-2)
+- Fix tokio incompatibility using wasm-bindgen-futures
+- Complete 6 broken patterns (Task, Planning, Multiagent, Autonomous, Memory Hierarchy, Reasoning with Tools)
+- Implement 7 new patterns (Router, Fallback, Collaborative, HumanInLoop, Supervisor, OrchestrationPatterns, ReasoningWithTools)
+- All 18 patterns working in browser
+
+**Phase 2: Multi-Language WASM** (Weeks 3-4)
+- C++ WASM via Emscripten (all 18 patterns)
+- Zig native WASM (all 18 patterns)
+- Unified JavaScript API across languages
+
+**Phase 3: Browser Integration** (Weeks 5-6)
+- React integration example
+- Vue integration example
+- Svelte integration example
+- NPM package (@agenkit/wasm) published
+- TypeScript definitions
+
+**Phase 4: Testing & CI/CD** (Week 7)
+- Playwright automated browser tests
+- Performance benchmarks (WASM vs native)
+- CI/CD integration
+- Cross-browser testing (Chrome, Firefox, Safari)
+
+**Phase 5: Optimization & Polish** (Week 8)
+- Bundle size optimization (<500KB gzipped)
+- Performance profiling and optimization
+- Documentation and examples polish
+- Conference demo preparation
+
+**Why**: Browser-native AI agents unlock massive use cases: client-side privacy-preserving agents, offline-capable web apps, serverless edge computing, browser extensions with AI. Critical for early April conference demo and v1.0 differentiation.
+
+**Implementation Plan**: See [docs/WASM_V1_IMPLEMENTATION_PLAN.md](docs/WASM_V1_IMPLEMENTATION_PLAN.md) for detailed 8-week plan.
+
+**Expected Deliverables**:
+- ✅ All 18 patterns work in WASM (Rust + C++ + Zig)
+- ✅ Browser examples (React, Vue, Svelte)
+- ✅ NPM package (@agenkit/wasm)
+- ✅ Automated browser testing
+- ✅ Performance benchmarks
+- ✅ Complete documentation
+- ✅ Conference-ready demo
+
+#### Final Testing & Release Prep (Mar 31 - Apr 7, 2026)
+**Status**: 🚧 Planned
+
+**Goal**: Final validation and v1.0.0 release preparation
+
+**Scope**:
+- Final cross-language testing
+- Release notes preparation
+- Migration guides
+- Blog post and announcement
+- Conference presentation prep
+
+**Why**: Ensure v1.0 is production-ready with complete documentation and smooth release process.
 
 ---
 
@@ -1129,16 +1256,215 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 
 ---
 
-## Next Steps: v0.41.0+
+## Next Steps: Progressive Releases to v1.0.0
 
-**v0.40.0 (Complete):** ✅ Zig Pattern Parity - All 11 core patterns implemented, 6,170 LOC, 97 tests passing, zero memory leaks (#150)
+**v0.40.0 (Complete):** ✅ Zig Pattern Parity + 6-Language Achievement - December 13, 2025
+- ✅ All 7 missing Zig patterns implemented (1,445 LOC, 113 tests)
+- ✅ **HISTORIC MILESTONE**: 100% pattern parity across all 6 languages!
+- ✅ First multi-language AI agent framework to achieve 6-language parity
+- ✅ 2,101+ tests passing across all languages (100% pass rate)
+- ✅ Documentation updates complete
 
-**v0.41.0 (Complete):** ✅ Zig Examples & Documentation - 11 examples (8 basic + 3 integration), ~4,000 LOC of comprehensive documentation (API, Getting Started, Patterns, Migration), production-ready
+**v0.41.0 (Complete):** ✅ Zig Examples & Documentation - December 2025
+- ✅ 11 examples (8 basic + 3 integration), ~4,000 LOC documentation
+- ✅ Production-ready with comprehensive API, Getting Started, Patterns, Migration guides
 
-**Future Work - v0.42.0 (Techniques Library)**:
-- [#231-240](https://github.com/scttfrdmn/agenkit/issues) Reasoning Techniques (Chain-of-Thought, Tree-of-Thought, Self-Consistency, GoT, Least-to-Most, Plan-and-Solve)
-- [#231-240](https://github.com/scttfrdmn/agenkit/issues) Composition Patterns (RAG, Context Optimization, Actor-Critic, Multi-Turn Dialogue, etc.)
-- [#231-240](https://github.com/scttfrdmn/agenkit/issues) Communication Protocols (MCP - Model Context Protocol, A2A - Agent-to-Agent)
+---
+
+### v0.42.0 - Testing & Documentation (Due: February 3, 2026)
+
+**Goal**: Foundation for external testing with comprehensive validation and documentation
+
+**Scope**:
+- **Cross-Language Equivalence Testing** (#270-272)
+  - Pattern behavior specifications (YAML/JSON)
+  - Test harness for all 6 languages
+  - Behavioral equivalence verification
+- **Performance Benchmarks** (#273-275)
+  - Benchmark all 18 patterns × 6 languages
+  - Performance comparison matrix
+  - Language selection guidance
+- **Complete Documentation** (#216, #276-278)
+  - Comprehensive user guides for all 6 languages
+  - Language migration guides
+  - API reference documentation
+  - Interactive examples and tutorials
+
+**Milestone**: [#49 v0.42.0 - Testing & Documentation](https://github.com/scttfrdmn/agenkit/milestone/49) (10 issues)
+
+---
+
+### v0.43.0 - Core Reasoning (Due: February 24, 2026)
+
+**Goal**: Foundational reasoning techniques across all languages
+
+**Scope**:
+- **Chain-of-Thought (CoT)** (#279) - Step-by-step reasoning
+- **Tree-of-Thought (ToT)** (#280) - Multiple reasoning paths
+- **Self-Consistency** (#281) - Multiple sampling and voting
+- **Integration Tests** (#282) - Cross-pattern validation
+
+**Implementation**: All 3 techniques across all 6 languages (18 implementations)
+
+**Milestone**: [#50 v0.43.0 - Core Reasoning](https://github.com/scttfrdmn/agenkit/milestone/50) (4 issues)
+
+---
+
+### v0.44.0 - WASM Complete (Due: March 31, 2026)
+
+**Goal**: Complete browser story with all 18 patterns in WASM
+
+**Scope**:
+- **Rust WASM** (#283-284)
+  - Fix tokio compatibility (6 broken patterns)
+  - Implement 7 new patterns (WASM-first)
+  - All 18 patterns working in browser
+- **C++ WASM** (#285) - Emscripten compilation for all patterns
+- **Zig WASM** (#286) - Native WASM support (smallest bundle size)
+- **NPM Package** (#287) - @agenkit/wasm with unified API
+- **Browser Examples** (#288) - React, Vue, Svelte integration
+- **Testing & CI/CD** (#289) - Playwright, automated browser tests
+
+**Deliverables**:
+- All 18 patterns × 3 languages in WASM (54 implementations)
+- Browser examples deployable to Vercel/Netlify
+- Conference demo ready
+
+**Milestone**: [#51 v0.44.0 - WASM Complete](https://github.com/scttfrdmn/agenkit/milestone/51) (7 issues)
+
+---
+
+### v0.45.0 - Core Deployment (Due: April 14, 2026)
+
+**Goal**: Production-ready deployment templates for the most impactful platforms
+
+**Scope**:
+- **Cloudflare Workers** (#296) - Edge deployment with WASM, zero cold starts
+- **AWS Lambda** (#297) - Enterprise serverless (Python + Go + Terraform)
+- **Docker Compose** (#298) - Self-hosted production with observability
+- **Vercel Edge Functions** (#299) - Next.js integration for web developers
+- **Platform Selection Guide** (#300) - Decision matrix, comparison table, production checklist
+
+**Deliverables**:
+- Complete deployment templates with CI/CD pipelines
+- Platform-specific documentation
+- Deploy-in-5-minutes experience for each platform
+- Production best practices and security hardening
+- Cost analysis and scaling guidance
+
+**Demo Value**: "Deploy globally in 30 seconds" ⭐⭐⭐⭐⭐
+
+**Milestone**: [#54 v0.45.0 - Core Deployment](https://github.com/scttfrdmn/agenkit/milestone/54) (5 issues)
+
+---
+
+### v0.46.0 - Cloud Native Deployment (Due: April 21, 2026)
+
+**Goal**: Expand deployment coverage to cloud native platforms
+
+**Scope**:
+- **Google Cloud Run** - Container + serverless hybrid
+- **Kubernetes Production** - Production-grade Helm chart with autoscaling
+- **Azure Functions** - Python and C# implementations
+- **Railway** - Simple deployment with database integration
+
+**Deliverables**:
+- Cloud provider specific templates and documentation
+- Terraform/IaC for each platform
+- Helm chart for Kubernetes (HPA, VPA, cert-manager)
+- Enterprise deployment patterns
+- Multi-cloud strategy guidance
+
+**Demo Value**: "Enterprise-ready cloud deployment" ⭐⭐⭐⭐
+
+**Milestone**: [#55 v0.46.0 - Cloud Native Deployment](https://github.com/scttfrdmn/agenkit/milestone/55) (4 issues planned)
+
+---
+
+### v0.9.0 - Release Candidate (Due: May 5, 2026) 🎯
+
+**Goal**: Feature-complete beta for external testing
+
+**Status**: **Release Candidate** - Feature complete, ready for external validation
+
+**What's Included**:
+- ✅ 18 patterns × 6 languages = 108 implementations
+- ✅ All 18 patterns work in WASM (Rust + C++ + Zig)
+- ✅ Browser examples (React, Vue, Svelte)
+- ✅ Core Reasoning Techniques (CoT, ToT, Self-Consistency)
+- ✅ Complete documentation
+- ✅ Cross-language verified
+- ✅ Performance validated
+- ✅ 2,101+ tests passing
+
+**Release Prep** (#290-292):
+- Comprehensive release notes and changelog
+- Final end-to-end testing across all platforms
+- Conference demo and presentation
+
+**Conference Demo**: Early April 2026 with v0.9.0
+
+**Milestone**: [#52 v0.9.0 - Release Candidate](https://github.com/scttfrdmn/agenkit/milestone/52) (3 issues)
+
+---
+
+### External Beta Testing Period (May 6-26, 2026)
+
+**Duration**: 2-3 weeks
+**Focus**: External validation and feedback collection
+
+**Activities**:
+- Public announcement of v0.9.0 beta
+- Community testing across all languages and platforms
+- Bug reports and feature requests collection
+- Performance validation in production environments
+- API usability feedback
+- Documentation review
+
+**Channels**:
+- GitHub Issues and Discussions
+- Direct user feedback
+- Community testing reports
+- Production deployment feedback
+
+---
+
+### v1.0.0 - Stable Release (Due: May 27, 2026) 🚀
+
+**Goal**: Production-ready stable release with API stability guarantee
+
+**Status**: **Production Stable** - Battle-tested and production-ready
+
+**Final Polish** (#293-295):
+- Incorporate external feedback from v0.9.0 testing
+- Final API stability review and lock
+- Official v1.0.0 release and announcement across all channels
+
+**API Stability Guarantee**:
+- Semantic versioning commitment begins
+- No breaking changes in v1.x releases
+- Backward compatibility maintained
+- Long-term support (LTS)
+
+**Production Ready**:
+- External testing complete
+- Known issues resolved
+- Performance validated at scale
+- Documentation battle-tested
+- API locked and stable
+
+**Milestone**: [#53 v1.0.0 - Stable Release](https://github.com/scttfrdmn/agenkit/milestone/53) (3 issues)
+
+---
+
+### Post-v1.0 Work - v1.1.0+ (Techniques Library)
+
+**Planned for Q2-Q4 2026:**
+- [#231-240] Additional Reasoning Techniques (Graph-of-Thought, Least-to-Most, Plan-and-Solve)
+- [#231-240] Composition Patterns (RAG, Context Optimization, Actor-Critic, Multi-Turn Dialogue)
+- [#231-240] Communication Protocols (MCP - Model Context Protocol, A2A - Agent-to-Agent)
+- Java/C# language ports (based on demand)
+- Additional WASM optimizations and features
 
 ---
 
@@ -1186,10 +1512,67 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 **v0.37.0 (Complete):** ✅ CI/CD Infrastructure & Quality - C++ Evaluation Benchmarks, All Workflows Fixed, Rust Zero Warnings (#212, #214)
 **v0.38.0 (Complete):** ✅ C++ Integration Test Coverage - All 5 test suites passing, 22 integration tests (#213)
 **v0.39.0 (Complete):** ✅ Zig Language Foundation - Infrastructure, 4 patterns, 2 advanced examples complete (#148, #149, #222)
-**v0.40.0 (Complete):** ✅ Zig Pattern Parity - All 11 core patterns, 6,170 LOC, 97 tests, zero memory leaks (#150)
+**v0.40.0 (Complete):** ✅ Zig Pattern Parity + 6-Language Achievement - All 18 patterns, 2,101+ tests, historic milestone! (#252)
 **v0.41.0 (Complete):** ✅ Zig Examples & Documentation - 11 examples, ~4,000 LOC documentation, production-ready
-**Q1 2026:** Techniques Library (reasoning + composition patterns), Advanced Multi-Agent Examples (#231-240, #216, #222)
-**Q2-Q3 2026:** Rust Port, Advanced Features, v1.0.0 Stabilization
+
+**Q1 2026 (Dec-May):** 🚧 Progressive Releases to v1.0.0
+
+**v0.42.0 (Feb 3, 2026):** Testing & Documentation
+- Cross-Language Equivalence Testing
+- Performance Benchmarks (all patterns × all languages)
+- Comprehensive User Documentation (#216)
+- 10 issues tracked in milestone #49
+
+**v0.43.0 (Feb 24, 2026):** Core Reasoning
+- Chain-of-Thought (CoT) prompting
+- Tree-of-Thought (ToT) reasoning
+- Self-Consistency decoding
+- 4 issues tracked in milestone #50
+
+**v0.44.0 (Mar 31, 2026):** WASM Complete
+- All 18 patterns in WASM (Rust + C++ + Zig)
+- Browser examples (React, Vue, Svelte)
+- @agenkit/wasm NPM package
+- 7 issues tracked in milestone #51
+
+**v0.45.0 (Apr 14, 2026):** Core Deployment
+- Cloudflare Workers, AWS Lambda, Docker Compose, Vercel Edge Functions
+- Platform selection guide and production checklist
+- CI/CD templates for each platform
+- 5 issues tracked in milestone #54
+
+**v0.46.0 (Apr 21, 2026):** Cloud Native Deployment
+- Google Cloud Run, Kubernetes Helm, Azure Functions, Railway
+- Enterprise deployment patterns
+- Multi-cloud strategy guidance
+- 4 issues tracked in milestone #55
+
+**v0.9.0 (May 5, 2026):** 🎯 Release Candidate (Conference Demo)
+- Feature-complete beta
+- Conference presentation
+- External testing begins
+- 3 issues tracked in milestone #52
+
+**External Beta Testing (May 6-26, 2026):**
+- 2-3 week public testing period
+- Community feedback collection
+- Bug fixes and API refinement
+
+**Q2 2026 (Late May):** 🚀 v1.0.0 Stable Release (May 27, 2026)
+- **Status:** Production-ready stable release
+- **What's Included:**
+  - ✅ 18 patterns × 6 languages = 108 implementations
+  - ✅ All 18 patterns work in WASM (Rust + C++ + Zig)
+  - ✅ Browser examples (React, Vue, Svelte)
+  - ✅ Core Reasoning Techniques (CoT, ToT, Self-Consistency)
+  - ✅ Complete documentation
+  - ✅ Cross-language verified
+  - ✅ Performance validated
+  - ✅ External testing complete
+  - ✅ API stability guarantee
+- **Milestone:** 3 issues tracked in milestone #53
+
+**Post-v1.0 (Q2-Q4 2026):** Techniques Library expansion, Java/C# ports (based on demand)
 
 See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for detailed 2026 strategy.
 
@@ -1205,4 +1588,4 @@ See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for d
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: December 12, 2025 (v0.41.0 complete - Zig Examples & Documentation)
+Last updated: December 13, 2025 (v0.41.0 current - Progressive release strategy to v1.0.0 via v0.9.0 beta, deployment patterns added)

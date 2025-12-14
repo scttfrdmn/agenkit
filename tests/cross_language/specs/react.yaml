@@ -1,0 +1,120 @@
+pattern:
+  name: "ReAct"
+  description: "Reasoning and Acting agent that alternates between thinking and tool use in a loop"
+  category: "reasoning"
+
+test_scenarios:
+  - id: "react_basic"
+    name: "Basic ReAct with tool calls"
+    description: "Should reason about task and call appropriate tools"
+
+    input:
+      message:
+        role: "user"
+        content: "What is 15 * 24?"
+        metadata: {}
+      config:
+        tools:
+          - name: "calculator"
+            description: "Performs arithmetic operations"
+        max_iterations: 5
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_contains:
+          - "360"
+        metadata:
+          tool_calls_made: 1
+          iterations: 1
+
+      behavior:
+        tool_calls: ["calculator"]
+        min_turns: 2  # Thought + Action + Observation
+
+  - id: "react_multi_step"
+    name: "Multi-step reasoning with multiple tools"
+    description: "Should handle complex tasks requiring multiple tool calls"
+
+    input:
+      message:
+        role: "user"
+        content: "Search for weather in Paris and convert temperature to Fahrenheit"
+        metadata: {}
+      config:
+        tools:
+          - name: "search"
+          - name: "unit_converter"
+        max_iterations: 5
+
+    expected_output:
+      behavior:
+        tool_calls: ["search", "unit_converter"]
+        min_turns: 4  # Multiple Thought-Action-Observation cycles
+
+  - id: "react_no_tools_needed"
+    name: "Direct answer without tools"
+    description: "Should answer directly when no tools needed"
+
+    input:
+      message:
+        role: "user"
+        content: "What color is the sky?"
+        metadata: {}
+      config:
+        tools:
+          - name: "search"
+        max_iterations: 3
+
+    expected_output:
+      message:
+        content_contains:
+          - "blue"
+        metadata:
+          tool_calls_made: 0
+          iterations: 1
+
+  - id: "react_max_iterations"
+    name: "Respects maximum iterations"
+    description: "Should stop at max_iterations"
+
+    input:
+      message:
+        role: "user"
+        content: "Complex multi-step task"
+        metadata: {}
+      config:
+        tools:
+          - name: "tool1"
+          - name: "tool2"
+        max_iterations: 2
+
+    expected_output:
+      metadata:
+        iterations: 2  # Should not exceed max
+
+edge_cases:
+  - condition: "No tools configured"
+    expected: "Functions as regular chat agent"
+  - condition: "Tool call fails"
+    expected: "Observes error and may retry or return error message"
+  - condition: "Tool returns empty result"
+    expected: "Continues reasoning with empty observation"
+  - condition: "max_iterations = 1"
+    expected: "Single reasoning step"
+
+properties:
+  deterministic: false  # LLM-based reasoning
+  idempotent: false    # May explore different reasoning paths
+  stateful: true       # Maintains thought/action/observation history
+  requires_llm: true   # Requires LLM for reasoning
+  supports_streaming: true
+
+performance:
+  complexity: "O(n * m)"  # n iterations * m tool calls
+  expected_latency: "2-15s"  # Multiple LLM + tool calls
+
+dependencies:
+  patterns: []
+  middleware: ["retry", "timeout"]
+  external: ["llm_provider", "tools"]

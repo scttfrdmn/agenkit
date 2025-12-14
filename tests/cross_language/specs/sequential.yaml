@@ -1,0 +1,119 @@
+pattern:
+  name: "Sequential"
+  description: "Orchestrates multiple agents in sequential order, passing output from one to the next"
+  category: "orchestration"
+
+test_scenarios:
+  - id: "sequential_basic"
+    name: "Basic sequential execution"
+    description: "Should execute agents in order and pass messages through chain"
+
+    input:
+      message:
+        role: "user"
+        content: "Process this text"
+        metadata: {}
+      config:
+        agents:
+          - name: "agent1"
+            type: "echo"
+          - name: "agent2"
+            type: "echo"
+          - name: "agent3"
+            type: "echo"
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_contains:
+          - "Process this text"
+        metadata:
+          agent_count: 3
+          execution_order: ["agent1", "agent2", "agent3"]
+
+      behavior:
+        sub_agents: ["agent1", "agent2", "agent3"]
+
+  - id: "sequential_transformation"
+    name: "Sequential transformation pipeline"
+    description: "Each agent transforms input sequentially"
+
+    input:
+      message:
+        role: "user"
+        content: "hello world"
+        metadata: {}
+      config:
+        agents:
+          - name: "uppercase"
+          - name: "reverse"
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_pattern: ".*"  # Depends on agent implementations
+        metadata:
+          agent_count: 2
+
+  - id: "sequential_single_agent"
+    name: "Single agent execution"
+    description: "Should work with just one agent in sequence"
+
+    input:
+      message:
+        role: "user"
+        content: "test"
+        metadata: {}
+      config:
+        agents:
+          - name: "agent1"
+            type: "echo"
+
+    expected_output:
+      metadata:
+        agent_count: 1
+
+  - id: "sequential_metadata_propagation"
+    name: "Metadata propagation through chain"
+    description: "Metadata should propagate through sequential agents"
+
+    input:
+      message:
+        role: "user"
+        content: "test"
+        metadata:
+          session_id: "123"
+          user_id: "user_456"
+      config:
+        agents:
+          - name: "agent1"
+          - name: "agent2"
+
+    expected_output:
+      metadata:
+        session_id: "123"
+        user_id: "user_456"
+
+edge_cases:
+  - condition: "Empty agents list"
+    expected: "Raises configuration error"
+  - condition: "Agent fails mid-sequence"
+    expected: "Propagates error, subsequent agents not executed"
+  - condition: "First agent returns empty message"
+    expected: "Passes empty message to next agent"
+
+properties:
+  deterministic: true   # Order is deterministic (depends on sub-agents)
+  idempotent: true      # Same input → same output (if sub-agents idempotent)
+  stateful: false       # No state between invocations
+  requires_llm: false   # Pattern itself doesn't require LLM
+  supports_streaming: true
+
+performance:
+  complexity: "O(n)"    # Linear in number of agents
+  expected_latency: "n * agent_latency"  # Sum of agent latencies
+
+dependencies:
+  patterns: []
+  middleware: []
+  external: []

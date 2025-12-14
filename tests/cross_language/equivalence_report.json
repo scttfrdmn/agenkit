@@ -1,0 +1,695 @@
+{
+  "summary": {
+    "total_patterns": 1,
+    "passed_patterns": 1,
+    "total_scenarios": 3,
+    "languages_tested": [
+      "go",
+      "typescript",
+      "rust",
+      "cpp",
+      "zig"
+    ]
+  },
+  "patterns": {
+    "Reflection": {
+      "pattern": "Reflection",
+      "scenarios": {
+        "reflection_basic": {
+          "scenario_id": "reflection_basic",
+          "scenario_name": "Basic reflection with improvement",
+          "language_results": {
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Reflected response to: Write a short poem about technology",
+                  "metadata": {
+                    "improved": true,
+                    "iterations": 1,
+                    "max_iterations": 3
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": false,
+                "errors": [
+                  "Too few turns: expected >= 2, got 1"
+                ],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Reflected response to: Write a short poem about technology",
+                  "metadata": {
+                    "iterations": 1,
+                    "improved": true,
+                    "max_iterations": 3
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": false,
+                "errors": [
+                  "Too few turns: expected >= 2, got 1"
+                ],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Reflected response to: Write a short poem about technology",
+                  "metadata": {
+                    "improved": true,
+                    "iterations": 1,
+                    "max_iterations": 3
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": false,
+                "errors": [
+                  "Too few turns: expected >= 2, got 1"
+                ],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Reflected response to: Write a short poem about technology",
+                  "metadata": {
+                    "improved": true,
+                    "iterations": 1,
+                    "max_iterations": 3
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": false,
+                "errors": [
+                  "Too few turns: expected >= 2, got 1"
+                ],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Reflected response to: Write a short poem about technology",
+                  "metadata": {
+                    "iterations": 1,
+                    "improved": true,
+                    "max_iterations": 3
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": false,
+                "errors": [
+                  "Too few turns: expected >= 2, got 1"
+                ],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 10,
+            "equivalent_count": 10,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "reflection_convergence": {
+          "scenario_id": "reflection_convergence",
+          "scenario_name": "Early convergence when satisfied",
+          "language_results": {
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Reflected response to: Say hello",
+                  "metadata": {
+                    "improved": true,
+                    "iterations": 1,
+                    "max_iterations": 5
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Reflected response to: Say hello",
+                  "metadata": {
+                    "iterations": 1,
+                    "improved": true,
+                    "max_iterations": 5
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Reflected response to: Say hello",
+                  "metadata": {
+                    "improved": true,
+                    "iterations": 1,
+                    "max_iterations": 5
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Reflected response to: Say hello",
+                  "metadata": {
+                    "improved": true,
+                    "iterations": 1,
+                    "max_iterations": 5
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Reflected response to: Say hello",
+                  "metadata": {
+                    "iterations": 1,
+                    "improved": true,
+                    "max_iterations": 5
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 10,
+            "equivalent_count": 10,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "reflection_max_iterations": {
+          "scenario_id": "reflection_max_iterations",
+          "scenario_name": "Respects maximum iterations limit",
+          "language_results": {
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Reflected response to: Explain quantum computing",
+                  "metadata": {
+                    "improved": true,
+                    "iterations": 1,
+                    "max_iterations": 2
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": false,
+                "errors": [
+                  "Metadata mismatch for 'iterations': expected 2, got 1"
+                ],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Reflected response to: Explain quantum computing",
+                  "metadata": {
+                    "iterations": 1,
+                    "improved": true,
+                    "max_iterations": 2
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": false,
+                "errors": [
+                  "Metadata mismatch for 'iterations': expected 2, got 1"
+                ],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Reflected response to: Explain quantum computing",
+                  "metadata": {
+                    "improved": true,
+                    "iterations": 1,
+                    "max_iterations": 2
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": false,
+                "errors": [
+                  "Metadata mismatch for 'iterations': expected 2, got 1"
+                ],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Reflected response to: Explain quantum computing",
+                  "metadata": {
+                    "improved": true,
+                    "iterations": 1,
+                    "max_iterations": 2
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": false,
+                "errors": [
+                  "Metadata mismatch for 'iterations': expected 2, got 1"
+                ],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Reflected response to: Explain quantum computing",
+                  "metadata": {
+                    "iterations": 1,
+                    "improved": true,
+                    "max_iterations": 2
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": false,
+                "errors": [
+                  "Metadata mismatch for 'iterations': expected 2, got 1"
+                ],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 10,
+            "equivalent_count": 10,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        }
+      },
+      "summary": {
+        "total_scenarios": 3,
+        "passed_scenarios": 3,
+        "failed_scenarios": 0,
+        "pass_rate": 1.0
+      }
+    }
+  }
+}

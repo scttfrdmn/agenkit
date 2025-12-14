@@ -1,0 +1,151 @@
+pattern:
+  name: "ReasoningWithTools"
+  description: "Advanced reasoning agent that uses tools during the thinking process, not just for actions"
+  category: "reasoning"
+
+test_scenarios:
+  - id: "reasoning_with_tools_basic"
+    name: "Basic reasoning with tool integration"
+    description: "Should use tools during reasoning process"
+
+    input:
+      message:
+        role: "user"
+        content: "Analyze the trend in sales data and predict next quarter"
+        metadata: {}
+      config:
+        tools:
+          - name: "data_analyzer"
+            description: "Analyzes data patterns"
+          - name: "statistical_calculator"
+            description: "Performs statistical calculations"
+        reasoning_mode: "extended"
+        max_reasoning_steps: 10
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_contains:
+          - "trend"
+          - "prediction"
+        metadata:
+          reasoning_steps: 6  # Multiple reasoning steps
+          tools_used_during_reasoning: ["data_analyzer", "statistical_calculator"]
+          tool_calls_in_reasoning: 3
+
+  - id: "reasoning_with_tools_complex"
+    name: "Complex multi-step reasoning with tools"
+    description: "Should integrate tool results into reasoning chain"
+
+    input:
+      message:
+        role: "user"
+        content: "Should we launch product A or product B based on market data?"
+        metadata: {}
+      config:
+        tools:
+          - name: "market_research"
+          - name: "competitor_analysis"
+          - name: "financial_calculator"
+        reasoning_mode: "extended"
+        show_reasoning: true
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          reasoning_trace: true
+          tools_integrated: ["market_research", "competitor_analysis", "financial_calculator"]
+          decision_made: true
+          confidence: 0.85
+
+  - id: "reasoning_with_tools_iterative"
+    name: "Iterative reasoning refinement with tools"
+    description: "Should refine reasoning based on tool results"
+
+    input:
+      message:
+        role: "user"
+        content: "Optimize inventory levels"
+        metadata: {}
+      config:
+        tools:
+          - name: "inventory_checker"
+          - name: "demand_forecaster"
+        reasoning_mode: "iterative"
+        max_iterations: 5
+
+    expected_output:
+      metadata:
+        reasoning_iterations: 3
+        tool_calls_per_iteration: 2  # Uses tools each iteration
+        refinement_occurred: true
+
+  - id: "reasoning_with_tools_conditional"
+    name: "Conditional tool use in reasoning"
+    description: "Should conditionally call tools based on reasoning needs"
+
+    input:
+      message:
+        role: "user"
+        content: "Simple question not requiring tools"
+        metadata: {}
+      config:
+        tools:
+          - name: "complex_calculator"
+          - name: "data_fetcher"
+        reasoning_mode: "adaptive"
+
+    expected_output:
+      metadata:
+        tools_used: 0  # No tools needed for simple question
+        reasoning_steps: 1  # Simple direct reasoning
+
+  - id: "reasoning_with_tools_chain_of_thought"
+    name: "Chain-of-thought with tool augmentation"
+    description: "Should show thinking steps and tool integration"
+
+    input:
+      message:
+        role: "user"
+        content: "What's the ROI of Project X given these parameters?"
+        metadata: {}
+      config:
+        tools:
+          - name: "financial_calculator"
+        reasoning_mode: "chain_of_thought"
+        show_thinking: true
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          thinking_steps: ["Step 1: ...", "Step 2: ...", "Step 3: ..."]
+          tools_used: ["financial_calculator"]
+          tool_results_incorporated: true
+
+edge_cases:
+  - condition: "No tools configured"
+    expected: "Functions as regular reasoning agent"
+  - condition: "Tool call fails during reasoning"
+    expected: "Continues reasoning with available information or propagates error"
+  - condition: "max_reasoning_steps reached"
+    expected: "Returns best conclusion with available reasoning"
+  - condition: "Circular reasoning (tool results trigger same reasoning)"
+    expected: "Detects and breaks loop"
+
+properties:
+  deterministic: false  # LLM-based reasoning and tool selection
+  idempotent: false    # May explore different reasoning paths
+  stateful: true       # Maintains reasoning trace
+  requires_llm: true   # Requires LLM with extended reasoning capability
+  supports_streaming: true  # Can stream reasoning steps
+
+performance:
+  complexity: "O(n * m)"  # n reasoning steps * m tool calls
+  expected_latency: "5-30s"  # Extended reasoning + multiple tool calls
+
+dependencies:
+  patterns: ["react"]  # Similar to ReAct but integrates tools in reasoning
+  middleware: ["retry", "timeout"]
+  external: ["llm_provider", "tools"]

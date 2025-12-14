@@ -1,0 +1,117 @@
+pattern:
+  name: "Router"
+  description: "Routes messages to specialized agents based on content analysis or classification"
+  category: "orchestration"
+
+test_scenarios:
+  - id: "router_basic"
+    name: "Basic routing based on keywords"
+    description: "Should route to correct agent based on message content"
+
+    input:
+      message:
+        role: "user"
+        content: "Help me with Python code"
+        metadata: {}
+      config:
+        routes:
+          - keywords: ["python", "code"]
+            agent: "python_expert"
+          - keywords: ["javascript", "js"]
+            agent: "js_expert"
+        default_agent: "general_agent"
+
+    expected_output:
+      metadata:
+        routed_to: "python_expert"
+        routing_reason: "keyword_match"
+
+  - id: "router_default"
+    name: "Default routing when no match"
+    description: "Should use default agent when no route matches"
+
+    input:
+      message:
+        role: "user"
+        content: "Hello there"
+        metadata: {}
+      config:
+        routes:
+          - keywords: ["python"]
+            agent: "python_expert"
+        default_agent: "general_agent"
+
+    expected_output:
+      metadata:
+        routed_to: "general_agent"
+        routing_reason: "default"
+
+  - id: "router_classification"
+    name: "Classification-based routing"
+    description: "Should route based on LLM classification"
+
+    input:
+      message:
+        role: "user"
+        content: "What's the weather like?"
+        metadata: {}
+      config:
+        classification_based: true
+        routes:
+          - category: "weather"
+            agent: "weather_agent"
+          - category: "general"
+            agent: "general_agent"
+
+    expected_output:
+      metadata:
+        routed_to: "weather_agent"
+        routing_reason: "classification"
+        category: "weather"
+
+  - id: "router_metadata_routing"
+    name: "Routing based on metadata"
+    description: "Should support routing based on message metadata"
+
+    input:
+      message:
+        role: "user"
+        content: "Process this"
+        metadata:
+          priority: "high"
+      config:
+        routes:
+          - metadata_match: {priority: "high"}
+            agent: "priority_agent"
+          - metadata_match: {priority: "low"}
+            agent: "standard_agent"
+
+    expected_output:
+      metadata:
+        routed_to: "priority_agent"
+
+edge_cases:
+  - condition: "No routes configured"
+    expected: "Uses default_agent or raises error"
+  - condition: "Multiple matching routes"
+    expected: "Uses first matching route"
+  - condition: "No default agent and no match"
+    expected: "Raises routing error"
+  - condition: "Agent name not found"
+    expected: "Raises agent not found error"
+
+properties:
+  deterministic: true   # Same routing logic (unless LLM-based classification)
+  idempotent: true      # Same input → same routing
+  stateful: false       # No state between invocations
+  requires_llm: false   # Optional (only for classification-based routing)
+  supports_streaming: true
+
+performance:
+  complexity: "O(n)"    # Linear in number of routes (keyword matching)
+  expected_latency: "10-100ms"  # Fast routing decision + delegate latency
+
+dependencies:
+  patterns: []
+  middleware: []
+  external: ["llm_provider"]  # Optional, for classification

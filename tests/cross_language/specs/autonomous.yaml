@@ -1,0 +1,127 @@
+pattern:
+  name: "Autonomous"
+  description: "Long-running agent that operates independently with checkpointing and state persistence"
+  category: "specialized"
+
+test_scenarios:
+  - id: "autonomous_basic"
+    name: "Basic autonomous operation"
+    description: "Should run autonomously and maintain state"
+
+    input:
+      message:
+        role: "user"
+        content: "Monitor system health and alert on issues"
+        metadata: {}
+      config:
+        max_iterations: 10
+        checkpoint_interval: 5
+        autonomous_mode: true
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          autonomous_session_started: true
+          checkpoint_enabled: true
+          iterations_completed: 10
+
+  - id: "autonomous_checkpointing"
+    name: "Creates checkpoints"
+    description: "Should save state at regular intervals"
+
+    input:
+      message:
+        role: "user"
+        content: "Long-running data processing task"
+        metadata: {}
+      config:
+        max_iterations: 20
+        checkpoint_interval: 5  # Every 5 iterations
+
+    expected_output:
+      metadata:
+        checkpoints_created: 4  # 20 / 5 = 4 checkpoints
+        checkpoint_locations: ["checkpoint_0", "checkpoint_5", "checkpoint_10", "checkpoint_15"]
+
+  - id: "autonomous_resume"
+    name: "Resumes from checkpoint"
+    description: "Should resume from last checkpoint after interruption"
+
+    input:
+      message:
+        role: "system"
+        content: "Resume from checkpoint"
+        metadata:
+          checkpoint_id: "checkpoint_10"
+      config:
+        max_iterations: 20
+        resume_from_checkpoint: true
+
+    expected_output:
+      metadata:
+        resumed_from: "checkpoint_10"
+        iterations_remaining: 10
+        state_restored: true
+
+  - id: "autonomous_stop_condition"
+    name: "Stops on condition"
+    description: "Should stop when stop condition is met"
+
+    input:
+      message:
+        role: "user"
+        content: "Process until complete"
+        metadata: {}
+      config:
+        max_iterations: 100
+        stop_condition: "task_complete"
+
+    expected_output:
+      metadata:
+        stopped_early: true
+        stop_reason: "condition_met"
+        iterations_completed: 15  # Less than max
+
+  - id: "autonomous_max_iterations"
+    name: "Respects maximum iterations"
+    description: "Should stop at max_iterations"
+
+    input:
+      message:
+        role: "user"
+        content: "Never-ending task"
+        metadata: {}
+      config:
+        max_iterations: 50
+
+    expected_output:
+      metadata:
+        iterations_completed: 50
+        reached_max_iterations: true
+
+edge_cases:
+  - condition: "Checkpoint save fails"
+    expected: "Continues execution, logs error"
+  - condition: "Resume from corrupted checkpoint"
+    expected: "Falls back to earlier checkpoint or starts fresh"
+  - condition: "max_iterations = 0"
+    expected: "Runs indefinitely until stop condition"
+  - condition: "Checkpoint interval > max_iterations"
+    expected: "Single checkpoint at end"
+
+properties:
+  deterministic: false  # External events and LLM decisions
+  idempotent: false    # Different execution paths
+  stateful: true       # Maintains persistent state with checkpoints
+  requires_llm: true   # Needs LLM for decision-making
+  supports_streaming: true
+
+performance:
+  complexity: "O(n)"   # Linear in iterations
+  expected_latency: "minutes to hours"  # Long-running
+
+dependencies:
+  patterns: []
+  middleware: ["timeout", "retry"]
+  external: ["llm_provider", "storage"]  # Storage for checkpoints

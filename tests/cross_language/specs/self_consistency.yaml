@@ -1,0 +1,225 @@
+technique:
+  name: "SelfConsistency"
+  description: "Improves reliability by generating multiple independent reasoning paths and using voting to select the most consistent answer"
+  category: "reasoning"
+  reference: "Wang et al., 2022 - Self-Consistency Improves Chain of Thought Reasoning in Language Models"
+
+test_scenarios:
+  - id: "self_consistency_basic"
+    name: "Basic self-consistency with majority voting"
+    description: "Generate multiple samples and select most common answer via majority voting"
+
+    input:
+      message:
+        role: "user"
+        content: "What is 6 * 7?"
+        metadata: {}
+      config:
+        num_samples: 5
+        voting_strategy: "majority"
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_contains:
+          - "42"
+        metadata:
+          technique: "self_consistency"
+          num_samples: 5
+          voting_strategy: "majority"
+          consistency_score: ">= 0.0"  # Float between 0.0 and 1.0
+
+      behavior:
+        min_turns: 1  # Single response after voting
+        max_turns: 1
+
+  - id: "self_consistency_weighted"
+    name: "Weighted voting strategy"
+    description: "Weight answers by response length as proxy for detail/confidence"
+
+    input:
+      message:
+        role: "user"
+        content: "What is the capital of France?"
+        metadata: {}
+      config:
+        num_samples: 4
+        voting_strategy: "weighted"
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_pattern: ".*"
+        metadata:
+          voting_strategy: "weighted"
+          consistency_score: ">= 0.0"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "self_consistency_first"
+    name: "First strategy (no voting)"
+    description: "Use first answer without voting, for debugging"
+
+    input:
+      message:
+        role: "user"
+        content: "Test question"
+        metadata: {}
+      config:
+        num_samples: 3
+        voting_strategy: "first"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          voting_strategy: "first"
+          consistency_score: 1.0  # Always 1.0 for first strategy
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "self_consistency_high_consistency"
+    name: "High consistency scenario"
+    description: "All samples agree, should have perfect consistency score"
+
+    input:
+      message:
+        role: "user"
+        content: "What is 2 + 2?"
+        metadata: {}
+      config:
+        num_samples: 5
+        voting_strategy: "majority"
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_contains:
+          - "4"
+        metadata:
+          consistency_score: ">= 0.8"  # High agreement expected
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "self_consistency_single_sample"
+    name: "Single sample edge case"
+    description: "Should work with num_samples=1 (degenerate case)"
+
+    input:
+      message:
+        role: "user"
+        content: "Say hello"
+        metadata: {}
+      config:
+        num_samples: 1
+        voting_strategy: "majority"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          num_samples: 1
+          consistency_score: 1.0  # Perfect consistency with one sample
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "self_consistency_metadata"
+    name: "Metadata completeness"
+    description: "Response should include all required metadata fields"
+
+    input:
+      message:
+        role: "user"
+        content: "Test"
+        metadata: {}
+      config:
+        num_samples: 3
+        voting_strategy: "majority"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata_contains:
+          - "technique"
+          - "num_samples"
+          - "voting_strategy"
+          - "consistency_score"
+          - "samples"
+          - "extracted_answers"
+          - "answer_counts"
+          - "base_agent"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+edge_cases:
+  - condition: "num_samples = 0"
+    expected: "Returns error (invalid configuration)"
+  - condition: "num_samples = 1"
+    expected: "Works but consistency_score = 1.0 (degenerate)"
+  - condition: "All samples give different answers"
+    expected: "Low consistency_score (e.g., 0.2 for 5 samples)"
+  - condition: "Base agent fails"
+    expected: "Propagates error from base agent"
+  - condition: "Empty message content"
+    expected: "Processes but may have empty extracted answer"
+
+properties:
+  deterministic: false  # Depends on base agent sampling
+  idempotent: false     # Multiple runs may give different samples
+  stateful: false       # No state between calls
+  requires_llm: false   # Can work with any agent (mock, LLM, etc.)
+  supports_streaming: false  # Returns after all samples complete
+  parallel_sampling: true    # Samples generated in parallel
+
+performance:
+  complexity: "O(n)"    # Linear in num_samples
+  expected_latency: "num_samples * base_agent_latency"  # Parallel execution
+  memory_usage: "O(n)"  # Stores all samples in memory
+
+dependencies:
+  patterns: []
+  middleware: []
+  external: []
+
+voting_strategies:
+  - name: "majority"
+    description: "Most common answer wins (case-insensitive)"
+    best_for: "Multiple choice, factual questions"
+
+  - name: "weighted"
+    description: "Weight by response length (proxy for detail/confidence)"
+    best_for: "Open-ended questions where detail indicates quality"
+
+  - name: "first"
+    description: "Use first answer (no voting, for debugging)"
+    best_for: "Debugging, baseline comparison"
+
+validation_rules:
+  - field: "num_samples"
+    type: "integer"
+    constraints: ">= 1"
+
+  - field: "voting_strategy"
+    type: "string"
+    constraints: "one of: majority, weighted, first"
+
+  - field: "consistency_score"
+    type: "float"
+    constraints: "0.0 <= score <= 1.0"
+
+cross_language_notes:
+  - "All languages should produce equivalent results for same input/config"
+  - "Parallel sampling implementation may vary by language (goroutines, Promises, futures, etc.)"
+  - "Answer extraction regex patterns should be identical across languages"
+  - "Case-insensitive voting should work identically"
+  - "Floating point consistency scores should match within epsilon (0.001)"

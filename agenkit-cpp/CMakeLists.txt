@@ -15,7 +15,20 @@ option(AGENKIT_BUILD_SHARED "Build shared library" ON)
 option(AGENKIT_HAS_AWS_SDK "Build with AWS SDK support for Bedrock adapter" OFF)
 
 # Dependencies
-find_package(nlohmann_json 3.11.0 REQUIRED)
+find_package(nlohmann_json 3.11.0 QUIET)
+
+# If nlohmann_json not found, fetch it (useful for WASM builds)
+if(NOT nlohmann_json_FOUND)
+    message(STATUS "nlohmann_json not found, fetching from GitHub")
+    include(FetchContent)
+    FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.3
+    )
+    FetchContent_MakeAvailable(nlohmann_json)
+endif()
+
 find_package(Threads REQUIRED)
 
 # cpp-httplib (header-only HTTP library)
@@ -71,6 +84,7 @@ add_library(agenkit
     src/evaluation/recorder.cpp
     src/evaluation/regression.cpp
     src/evaluation/quality_metrics.cpp
+    src/techniques/reasoning/self_consistency.cpp
 )
 
 target_include_directories(agenkit

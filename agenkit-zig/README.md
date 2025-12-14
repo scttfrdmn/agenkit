@@ -19,6 +19,7 @@ Agenkit-Zig is a systems-level implementation of the Agenkit framework, bringing
 ### Requirements
 
 - Zig 0.15.2 or later
+- (Optional) wasmtime for running WASM builds: `brew install wasmtime`
 
 ### Using with Zig Package Manager
 
@@ -65,6 +66,28 @@ ls zig-out/bin/*.wasm
 ```
 
 All 18 agent patterns are available in WASM builds. The `wasm32-wasi` target includes WASI (WebAssembly System Interface) support for threading and system calls.
+
+#### Running WASM Files
+
+Install a WASI runtime like wasmtime:
+
+```bash
+# Install wasmtime (macOS)
+brew install wasmtime
+
+# Install wasmtime (Linux/other)
+curl https://wasmtime.dev/install.sh -sSf | bash
+
+# Run a WASM file
+wasmtime zig-out/bin/echo_example.wasm
+
+# Run pattern examples
+wasmtime zig-out/bin/reflection_example.wasm
+wasmtime zig-out/bin/sequential_example.wasm
+wasmtime zig-out/bin/parallel_example.wasm
+```
+
+All 27 WASM files (18 pattern examples + 9 other examples) are executable with any WASI-compatible runtime.
 
 ## Quick Start
 

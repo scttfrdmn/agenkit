@@ -52,6 +52,20 @@ cd agenkit/agenkit-zig
 zig build test
 ```
 
+### WebAssembly (WASM) Build
+
+Zig has native WASM support. Build for WASM using the `wasm32-wasi` target:
+
+```bash
+# Build for WASM
+zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
+
+# Output files in zig-out/bin/*.wasm
+ls zig-out/bin/*.wasm
+```
+
+All 18 agent patterns are available in WASM builds. The `wasm32-wasi` target includes WASI (WebAssembly System Interface) support for threading and system calls.
+
 ## Quick Start
 
 ```zig

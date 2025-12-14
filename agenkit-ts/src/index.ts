@@ -270,3 +270,12 @@ export {
   getTraceDuration,
   traceToDict,
 } from './patterns/reasoning-with-tools';
+
+// Reasoning Techniques
+export {
+  SelfConsistencyAgent,
+  SelfConsistencyConfig,
+  VotingStrategy as SelfConsistencyVotingStrategy,
+  AnswerExtractor,
+  createSelfConsistencyAgent,
+} from './techniques/reasoning/self-consistency';

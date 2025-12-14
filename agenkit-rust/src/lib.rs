@@ -90,12 +90,14 @@
 
 pub mod core;
 pub mod adapters;
+pub mod runtime;
 
 #[cfg(feature = "native")]
 pub mod transports;
 
 pub mod patterns;
 pub mod evaluation;
+pub mod techniques;
 
 // Re-export commonly used types
 pub use core::{Agent, AgentError, Message, Tool, ToolResult};

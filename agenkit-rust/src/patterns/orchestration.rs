@@ -39,6 +39,7 @@
 //! ```
 
 use async_trait::async_trait;
+use futures::future::join_all;
 use std::sync::Arc;
 
 use crate::core::{Agent, AgentError, Message};
@@ -275,41 +276,27 @@ impl Agent for ParallelPattern {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        // Execute all agents concurrently (native) or sequentially (WASM)
-        #[cfg(feature = "native")]
-        let results = {
-            let tasks: Vec<_> = self
-                .agents
-                .iter()
-                .map(|agent| {
-                    let msg = message.clone();
-                    let agent = agent.clone();
-                    tokio::spawn(async move { agent.process(msg).await })
-                })
-                .collect();
+        // Execute all agents concurrently using futures::join_all (works in both native and WASM)
+        let futures: Vec<_> = self
+            .agents
+            .iter()
+            .map(|agent| {
+                let msg = message.clone();
+                let agent = agent.clone();
+                async move { agent.process(msg).await }
+            })
+            .collect();
 
-            let mut results = Vec::new();
-            for task in tasks {
-                let result = task
-                    .await
-                    .map_err(|e| AgentError::ProcessingError(format!("Task join error: {}", e)))??;
-                results.push(result);
-            }
-            results
-        };
+        let results: Vec<Result<Message, AgentError>> = join_all(futures).await;
 
-        #[cfg(not(feature = "native"))]
-        let results = {
-            let mut results = Vec::new();
-            for agent in self.agents.iter() {
-                let result = agent.process(message.clone()).await?;
-                results.push(result);
-            }
-            results
-        };
+        // Convert to Vec<Message>, short-circuit on first error
+        let mut messages = Vec::new();
+        for result in results {
+            messages.push(result?);
+        }
 
         // Aggregate results
-        Self::default_aggregator(results)
+        Self::default_aggregator(messages)
     }
 }
 

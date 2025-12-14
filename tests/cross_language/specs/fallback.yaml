@@ -1,0 +1,128 @@
+pattern:
+  name: "Fallback"
+  description: "Tries agents in sequence until one succeeds, providing graceful degradation"
+  category: "orchestration"
+
+test_scenarios:
+  - id: "fallback_first_success"
+    name: "First agent succeeds"
+    description: "Should use first agent when it succeeds"
+
+    input:
+      message:
+        role: "user"
+        content: "Process this request"
+        metadata: {}
+      config:
+        agents:
+          - name: "primary_agent"
+            type: "working"
+          - name: "secondary_agent"
+            type: "working"
+          - name: "tertiary_agent"
+            type: "working"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          agent_used: "primary_agent"
+          fallback_level: 0
+          attempts: 1
+
+  - id: "fallback_second_success"
+    name: "Falls back to second agent"
+    description: "Should try second agent when first fails"
+
+    input:
+      message:
+        role: "user"
+        content: "Process this request"
+        metadata: {}
+      config:
+        agents:
+          - name: "failing_agent"
+            type: "always_fails"
+          - name: "working_agent"
+            type: "working"
+          - name: "backup_agent"
+            type: "working"
+
+    expected_output:
+      metadata:
+        agent_used: "working_agent"
+        fallback_level: 1
+        attempts: 2
+        failures: ["failing_agent"]
+
+  - id: "fallback_all_fail"
+    name: "All agents fail"
+    description: "Should propagate error when all agents fail"
+
+    input:
+      message:
+        role: "user"
+        content: "Process this request"
+        metadata: {}
+      config:
+        agents:
+          - name: "failing_agent_1"
+            type: "always_fails"
+          - name: "failing_agent_2"
+            type: "always_fails"
+          - name: "failing_agent_3"
+            type: "always_fails"
+
+    expected_output:
+      error: true
+      metadata:
+        attempts: 3
+        all_failed: true
+        failures: ["failing_agent_1", "failing_agent_2", "failing_agent_3"]
+
+  - id: "fallback_timeout_handling"
+    name: "Handles agent timeouts"
+    description: "Should fallback on timeout"
+
+    input:
+      message:
+        role: "user"
+        content: "Process this request"
+        metadata: {}
+      config:
+        agents:
+          - name: "slow_agent"
+            timeout: 1.0
+          - name: "fast_agent"
+            timeout: 5.0
+
+    expected_output:
+      metadata:
+        agent_used: "fast_agent"
+        fallback_reason: "timeout"
+
+edge_cases:
+  - condition: "Single agent in fallback list"
+    expected: "Behaves like regular agent delegation"
+  - condition: "Empty agents list"
+    expected: "Raises configuration error"
+  - condition: "Agent returns partial success"
+    expected: "Configurable: treat as success or failure"
+  - condition: "Circuit breaker open on primary"
+    expected: "Immediately tries fallback"
+
+properties:
+  deterministic: true   # Predictable fallback order
+  idempotent: true      # Same input → same output
+  stateful: false       # No state between invocations
+  requires_llm: false   # Pattern itself doesn't require LLM
+  supports_streaming: true
+
+performance:
+  complexity: "O(n)"    # Tries agents sequentially
+  expected_latency: "variable"  # Depends on failure detection speed
+
+dependencies:
+  patterns: []
+  middleware: ["timeout", "circuit_breaker"]
+  external: []

@@ -1,0 +1,146 @@
+pattern:
+  name: "Memory"
+  description: "Hierarchical memory system with different retention strategies and storage backends"
+  category: "memory"
+
+test_scenarios:
+  - id: "memory_basic_storage"
+    name: "Basic memory storage and retrieval"
+    description: "Should store and retrieve memories"
+
+    input:
+      operations:
+        - action: "store"
+          memory:
+            content: "User prefers dark mode"
+            importance: 0.8
+        - action: "retrieve"
+          query: "user preferences"
+      config:
+        backend: "in_memory"
+        max_memories: 100
+
+    expected_output:
+      retrieved_memories:
+        - content: "User prefers dark mode"
+          relevance: 0.9  # High relevance to query
+
+  - id: "memory_importance_weighting"
+    name: "Importance-based retention"
+    description: "Should prioritize important memories"
+
+    input:
+      operations:
+        - action: "store"
+          memories:
+            - content: "Low importance fact"
+              importance: 0.2
+            - content: "High importance fact"
+              importance: 0.9
+            - content: "Medium importance fact"
+              importance: 0.5
+      config:
+        backend: "in_memory"
+        max_memories: 2
+        retention_strategy: "importance"
+
+    expected_output:
+      stored_memories:
+        - "High importance fact"
+        - "Medium importance fact"
+      dropped_memories:
+        - "Low importance fact"
+
+  - id: "memory_recency_weighting"
+    name: "Recency-based retention"
+    description: "Should prioritize recent memories"
+
+    input:
+      operations:
+        - action: "store"
+          memories:
+            - content: "Old memory"
+              timestamp: "2024-01-01"
+            - content: "Recent memory"
+              timestamp: "2024-12-13"
+            - content: "Very old memory"
+              timestamp: "2023-01-01"
+      config:
+        backend: "in_memory"
+        max_memories: 2
+        retention_strategy: "recency"
+
+    expected_output:
+      stored_memories:
+        - "Recent memory"
+        - "Old memory"
+
+  - id: "memory_vector_search"
+    name: "Semantic similarity search"
+    description: "Should retrieve semantically similar memories"
+
+    input:
+      operations:
+        - action: "store"
+          memories:
+            - "The user likes Python programming"
+            - "The weather is sunny today"
+            - "The user enjoys coding"
+        - action: "retrieve"
+          query: "programming preferences"
+          top_k: 2
+      config:
+        backend: "vector"
+        embedding_model: "text-embedding-3-small"
+
+    expected_output:
+      retrieved_memories:
+        - content: "The user likes Python programming"
+          similarity: 0.85
+        - content: "The user enjoys coding"
+          similarity: 0.72
+
+  - id: "memory_summarization"
+    name: "Memory summarization strategy"
+    description: "Should summarize old memories to save space"
+
+    input:
+      operations:
+        - action: "store"
+          memories: ["mem1", "mem2", "mem3", "mem4", "mem5", "mem6"]
+      config:
+        backend: "in_memory"
+        max_memories: 5
+        retention_strategy: "summarization"
+        summarize_threshold: 5
+
+    expected_output:
+      stored_memories_count: 5
+      summaries_created: 1
+      summary_contains: ["mem1", "mem2"]
+
+edge_cases:
+  - condition: "max_memories = 0"
+    expected: "No memories retained, always empty"
+  - condition: "Duplicate memories"
+    expected: "Deduplicates or increments importance"
+  - condition: "Empty query"
+    expected: "Returns all memories or empty result"
+  - condition: "Vector backend with no embeddings"
+    expected: "Falls back to keyword search or raises error"
+
+properties:
+  deterministic: false  # Retrieval scoring may vary
+  idempotent: true      # Same operations → same state
+  stateful: true        # Maintains persistent memory store
+  requires_llm: false   # Pattern itself doesn't require LLM (optional for summarization)
+  supports_streaming: false  # Returns complete results
+
+performance:
+  complexity: "O(log n)"  # With indexed search
+  expected_latency: "10-100ms"  # Fast retrieval
+
+dependencies:
+  patterns: []
+  middleware: []
+  external: ["vector_database", "embedding_model"]  # Optional

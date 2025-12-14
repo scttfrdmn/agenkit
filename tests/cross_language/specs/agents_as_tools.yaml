@@ -1,0 +1,123 @@
+pattern:
+  name: "AgentsAsTools"
+  description: "Hierarchical pattern where parent agent delegates to specialized child agents as tools"
+  category: "orchestration"
+
+test_scenarios:
+  - id: "agents_as_tools_basic"
+    name: "Basic agent delegation"
+    description: "Parent agent should delegate to child agents as needed"
+
+    input:
+      message:
+        role: "user"
+        content: "Calculate 5 + 3 and then multiply the result by 2"
+        metadata: {}
+      config:
+        child_agents:
+          - name: "calculator"
+            description: "Performs arithmetic operations"
+          - name: "memory_agent"
+            description: "Stores and retrieves values"
+        coordinator: "llm"  # LLM-based coordination
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_contains:
+          - "16"
+        metadata:
+          agents_called: 2
+          delegation_chain: ["calculator", "calculator"]
+
+      behavior:
+        sub_agents: ["calculator"]
+
+  - id: "agents_as_tools_specialized"
+    name: "Specialized agent selection"
+    description: "Should select appropriate specialist for task"
+
+    input:
+      message:
+        role: "user"
+        content: "What's the weather in Tokyo?"
+        metadata: {}
+      config:
+        child_agents:
+          - name: "weather_agent"
+            description: "Provides weather information"
+          - name: "news_agent"
+            description: "Provides news updates"
+          - name: "calculator_agent"
+            description: "Performs calculations"
+
+    expected_output:
+      behavior:
+        sub_agents: ["weather_agent"]
+      metadata:
+        selection_reason: "weather query"
+
+  - id: "agents_as_tools_multi_delegate"
+    name: "Multiple delegations in sequence"
+    description: "Should delegate to multiple agents for complex tasks"
+
+    input:
+      message:
+        role: "user"
+        content: "Search for Python tutorials and summarize the top result"
+        metadata: {}
+      config:
+        child_agents:
+          - name: "search_agent"
+          - name: "summarizer_agent"
+
+    expected_output:
+      behavior:
+        sub_agents: ["search_agent", "summarizer_agent"]
+      metadata:
+        delegation_count: 2
+
+  - id: "agents_as_tools_no_delegation"
+    name: "Direct answer without delegation"
+    description: "Should answer directly when no delegation needed"
+
+    input:
+      message:
+        role: "user"
+        content: "Hello, how are you?"
+        metadata: {}
+      config:
+        child_agents:
+          - name: "search_agent"
+          - name: "calculator_agent"
+
+    expected_output:
+      metadata:
+        agents_called: 0
+        delegation_needed: false
+
+edge_cases:
+  - condition: "No child agents configured"
+    expected: "Functions as regular agent"
+  - condition: "Child agent fails"
+    expected: "Propagates error or tries alternative agent"
+  - condition: "Recursive delegation (agent calling itself)"
+    expected: "Prevents infinite recursion"
+  - condition: "Ambiguous task (multiple agents applicable)"
+    expected: "Coordinator chooses best match or asks for clarification"
+
+properties:
+  deterministic: false  # LLM-based delegation decisions
+  idempotent: false    # May choose different delegation paths
+  stateful: true       # Maintains delegation history
+  requires_llm: true   # Needs LLM for coordination
+  supports_streaming: true
+
+performance:
+  complexity: "O(n)"   # Linear in delegation depth
+  expected_latency: "1-10s"  # LLM + delegated agent calls
+
+dependencies:
+  patterns: []
+  middleware: ["timeout", "retry"]
+  external: ["llm_provider"]

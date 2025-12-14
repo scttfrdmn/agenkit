@@ -1,0 +1,119 @@
+pattern:
+  name: "Task"
+  description: "Executes a specific, well-defined task with clear success/failure criteria"
+  category: "specialized"
+
+test_scenarios:
+  - id: "task_basic"
+    name: "Basic task execution"
+    description: "Should execute task and return result"
+
+    input:
+      message:
+        role: "user"
+        content: "Extract all email addresses from this text: Contact us at info@example.com or support@test.org"
+        metadata: {}
+      config:
+        task_type: "extraction"
+        validation_enabled: true
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_contains:
+          - "info@example.com"
+          - "support@test.org"
+        metadata:
+          task_completed: true
+          validation_passed: true
+
+  - id: "task_validation"
+    name: "Output validation"
+    description: "Should validate output against criteria"
+
+    input:
+      message:
+        role: "user"
+        content: "Generate a valid JSON object with name and age fields"
+        metadata: {}
+      config:
+        task_type: "generation"
+        validation_schema:
+          type: "json"
+          required_fields: ["name", "age"]
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          task_completed: true
+          validation_passed: true
+          output_format: "json"
+
+  - id: "task_retry_on_failure"
+    name: "Retries on validation failure"
+    description: "Should retry when output doesn't meet criteria"
+
+    input:
+      message:
+        role: "user"
+        content: "Generate a number between 1 and 10"
+        metadata: {}
+      config:
+        task_type: "generation"
+        validation_enabled: true
+        max_retries: 3
+
+    expected_output:
+      metadata:
+        task_completed: true
+        retries: 0  # May need retries
+        validation_passed: true
+
+  - id: "task_max_retries"
+    name: "Respects maximum retries"
+    description: "Should fail after max retries"
+
+    input:
+      message:
+        role: "user"
+        content: "Impossible task"
+        metadata: {}
+      config:
+        task_type: "generation"
+        validation_enabled: true
+        max_retries: 2
+        strict_validation: true
+
+    expected_output:
+      error: true
+      metadata:
+        retries: 2
+        task_completed: false
+        validation_passed: false
+
+edge_cases:
+  - condition: "Validation disabled"
+    expected: "Returns output without validation"
+  - condition: "max_retries = 0"
+    expected: "No retries, immediate failure if validation fails"
+  - condition: "Validation schema invalid"
+    expected: "Raises configuration error"
+  - condition: "Empty task description"
+    expected: "Raises validation error"
+
+properties:
+  deterministic: false  # LLM-based task execution
+  idempotent: true      # Same task → same result (with validation)
+  stateful: false       # No state between task executions
+  requires_llm: true    # Needs LLM for task execution
+  supports_streaming: false  # Typically returns complete result
+
+performance:
+  complexity: "O(n)"   # Linear in retry attempts
+  expected_latency: "1-5s"  # Single LLM call (+ retries)
+
+dependencies:
+  patterns: []
+  middleware: ["retry", "timeout"]
+  external: ["llm_provider"]

@@ -1,0 +1,118 @@
+pattern:
+  name: "Conversational"
+  description: "Agent that maintains conversational context across multiple turns with memory"
+  category: "communication"
+
+test_scenarios:
+  - id: "conversational_context"
+    name: "Maintains conversation context"
+    description: "Should remember previous messages in conversation"
+
+    input:
+      messages:
+        - role: "user"
+          content: "My name is Alice"
+        - role: "assistant"
+          content: "Hello Alice, nice to meet you!"
+        - role: "user"
+          content: "What's my name?"
+      config:
+        memory_type: "buffer"
+        max_history: 10
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_contains:
+          - "Alice"
+        metadata:
+          history_length: 3
+
+  - id: "conversational_max_history"
+    name: "Respects maximum history limit"
+    description: "Should maintain only last N messages"
+
+    input:
+      messages:
+        - role: "user"
+          content: "Message 1"
+        - role: "assistant"
+          content: "Response 1"
+        - role: "user"
+          content: "Message 2"
+        - role: "assistant"
+          content: "Response 2"
+        - role: "user"
+          content: "Message 3"
+      config:
+        memory_type: "buffer"
+        max_history: 3
+
+    expected_output:
+      metadata:
+        history_length: 3
+        oldest_message: "Message 2"  # First message dropped
+
+  - id: "conversational_summarization"
+    name: "Memory summarization for long conversations"
+    description: "Should summarize old messages to save context"
+
+    input:
+      messages:
+        - role: "user"
+          content: "Long conversation message 1"
+        - role: "assistant"
+          content: "Response 1"
+        # ... more messages ...
+      config:
+        memory_type: "summarization"
+        summarize_after: 5
+        max_history: 10
+
+    expected_output:
+      metadata:
+        has_summary: true
+        summary_count: 1
+
+  - id: "conversational_no_history"
+    name: "Works without prior history"
+    description: "Should handle first message in conversation"
+
+    input:
+      messages:
+        - role: "user"
+          content: "Hello"
+      config:
+        memory_type: "buffer"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          history_length: 1
+
+edge_cases:
+  - condition: "max_history = 0"
+    expected: "No history maintained, stateless behavior"
+  - condition: "max_history = 1"
+    expected: "Only current message, no context"
+  - condition: "Empty message history"
+    expected: "Handles gracefully"
+  - condition: "Very long message (exceeds token limit)"
+    expected: "Truncates or summarizes"
+
+properties:
+  deterministic: false  # LLM-based responses
+  idempotent: false    # Responses depend on conversation state
+  stateful: true       # Maintains conversation history
+  requires_llm: true   # Needs LLM for responses
+  supports_streaming: true
+
+performance:
+  complexity: "O(n)"   # Linear in history length
+  expected_latency: "500ms-2s"  # Single LLM call with context
+
+dependencies:
+  patterns: ["memory"]  # Uses memory patterns
+  middleware: ["timeout"]
+  external: ["llm_provider"]

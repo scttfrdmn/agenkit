@@ -1,0 +1,2 @@
+# Dependencies for cross-language equivalence test runner
+# No external dependencies required - uses only Python standard library

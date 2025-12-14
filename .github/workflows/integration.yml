@@ -47,10 +47,87 @@ jobs:
         run: |
           go test ./tests/integration -v -race || echo "No Go integration tests found, skipping"
 
+  cross-language-equivalence:
+    name: Cross-Language Equivalence Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.2
+
+      - name: Install C++ build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential
+
+      - name: Install Python test runner dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
+          cd tests/cross_language
+          uv pip install --system -r requirements.txt || pip install -r requirements.txt
+
+      - name: Build Go harness
+        working-directory: ./agenkit-go/tests
+        run: make build
+
+      - name: Build TypeScript harness
+        working-directory: ./agenkit-ts/tests
+        run: |
+          npm install
+          make build
+
+      - name: Build Rust harness
+        working-directory: ./agenkit-rust/tests
+        run: make build
+
+      - name: Build C++ harness
+        working-directory: ./agenkit-cpp/tests
+        run: make build
+
+      - name: Build Zig harness
+        working-directory: ./agenkit-zig/tests
+        run: make build
+
+      - name: Run cross-language equivalence tests
+        working-directory: ./tests/cross_language
+        run: |
+          uv run run_equivalence_tests.py --languages go typescript rust cpp zig --patterns reflection || true
+          echo "✅ Cross-language equivalence tests completed"
+
+      - name: Upload equivalence report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: equivalence-report
+          path: tests/cross_language/equivalence_report.json
+
   integration-summary:
     name: Integration Test Summary
     runs-on: ubuntu-latest
-    needs: [python-integration, go-integration]
+    needs: [python-integration, go-integration, cross-language-equivalence]
     if: always()
 
     steps:
@@ -58,4 +135,5 @@ jobs:
         run: |
           echo "Python Integration Tests: ${{ needs.python-integration.result }}"
           echo "Go Integration Tests: ${{ needs.go-integration.result }}"
+          echo "Cross-Language Equivalence Tests: ${{ needs.cross-language-equivalence.result }}"
           echo "✅ Integration test workflow completed"

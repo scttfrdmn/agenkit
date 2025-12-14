@@ -1,0 +1,128 @@
+pattern:
+  name: "Multiagent"
+  description: "Multiple agents collaborate with complex interaction patterns and shared goals"
+  category: "orchestration"
+
+test_scenarios:
+  - id: "multiagent_basic"
+    name: "Basic multi-agent system"
+    description: "Multiple agents work together on shared goal"
+
+    input:
+      message:
+        role: "user"
+        content: "Build a complete web application"
+        metadata: {}
+      config:
+        agents:
+          - name: "frontend_developer"
+            role: "UI development"
+          - name: "backend_developer"
+            role: "API development"
+          - name: "database_admin"
+            role: "Database design"
+        coordination_mode: "collaborative"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          agents_involved: 3
+          tasks_distributed: true
+          coordination_rounds: 2  # Multiple rounds of coordination
+
+  - id: "multiagent_communication"
+    name: "Agent-to-agent communication"
+    description: "Agents should communicate and exchange information"
+
+    input:
+      message:
+        role: "user"
+        content: "Diagnose and fix system issue"
+        metadata: {}
+      config:
+        agents:
+          - name: "diagnostics_agent"
+          - name: "repair_agent"
+          - name: "verification_agent"
+        allow_agent_communication: true
+
+    expected_output:
+      metadata:
+        messages_exchanged: 5  # Agents communicated
+        communication_pattern: "sequential"
+
+  - id: "multiagent_hierarchical"
+    name: "Hierarchical multi-agent"
+    description: "Agents organized in hierarchy with managers and workers"
+
+    input:
+      message:
+        role: "user"
+        content: "Complex project with sub-tasks"
+        metadata: {}
+      config:
+        agents:
+          - name: "project_manager"
+            role: "manager"
+            manages: ["developer_1", "developer_2"]
+          - name: "developer_1"
+            role: "worker"
+          - name: "developer_2"
+            role: "worker"
+        hierarchy_enabled: true
+
+    expected_output:
+      metadata:
+        hierarchy_levels: 2
+        manager_agents: ["project_manager"]
+        worker_agents: ["developer_1", "developer_2"]
+
+  - id: "multiagent_emergent_behavior"
+    name: "Emergent collaborative behavior"
+    description: "System exhibits emergent behavior from agent interactions"
+
+    input:
+      message:
+        role: "user"
+        content: "Optimize resource allocation"
+        metadata: {}
+      config:
+        agents:
+          - name: "agent_1"
+          - name: "agent_2"
+          - name: "agent_3"
+        allow_emergent: true
+        max_interactions: 10
+
+    expected_output:
+      metadata:
+        interactions_count: 8
+        emergent_solution: true
+        convergence_reached: true
+
+edge_cases:
+  - condition: "Single agent in multiagent system"
+    expected: "Degrades to single-agent behavior"
+  - condition: "Agents deadlock (circular waiting)"
+    expected: "Detects deadlock and breaks it"
+  - condition: "Agent leaves system mid-execution"
+    expected: "Redistributes work to remaining agents"
+  - condition: "Too many agents (> 100)"
+    expected: "May need coordination scaling strategies"
+
+properties:
+  deterministic: false  # Complex agent interactions
+  idempotent: false    # Different emergent behaviors possible
+  stateful: true       # Maintains multi-agent system state
+  requires_llm: true   # Agents typically use LLMs
+  supports_streaming: true
+
+performance:
+  complexity: "O(n²)"  # Potentially quadratic in agent interactions
+  expected_latency: "10-60s"  # Multiple agents, multiple rounds
+
+dependencies:
+  patterns: ["collaborative", "supervisor"]
+  middleware: ["timeout", "retry"]
+  external: ["llm_provider"]

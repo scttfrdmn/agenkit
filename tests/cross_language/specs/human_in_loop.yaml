@@ -1,0 +1,133 @@
+pattern:
+  name: "HumanInLoop"
+  description: "Requests human approval or input at critical decision points"
+  category: "communication"
+
+test_scenarios:
+  - id: "human_in_loop_approval"
+    name: "Requests human approval"
+    description: "Should pause and wait for human approval before proceeding"
+
+    input:
+      message:
+        role: "user"
+        content: "Delete all user data older than 1 year"
+        metadata: {}
+      config:
+        approval_required_for: ["destructive_operations"]
+        approval_mode: "blocking"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          approval_requested: true
+          approval_reason: "destructive_operation"
+          paused_for_human: true
+
+  - id: "human_in_loop_input"
+    name: "Requests human input"
+    description: "Should ask human for clarification or additional information"
+
+    input:
+      message:
+        role: "user"
+        content: "Book a flight"
+        metadata: {}
+      config:
+        require_input_for: ["missing_information"]
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_contains:
+          - "destination"
+          - "date"
+        metadata:
+          input_requested: true
+          fields_needed: ["destination", "departure_date", "return_date"]
+
+  - id: "human_in_loop_decision"
+    name: "Human makes decision between options"
+    description: "Should present options and let human choose"
+
+    input:
+      message:
+        role: "user"
+        content: "Optimize database performance"
+        metadata: {}
+      config:
+        decision_mode: "options"
+        max_options: 3
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          options_presented: 3
+          decision_requested: true
+          awaiting_choice: true
+
+  - id: "human_in_loop_escalation"
+    name: "Escalates on uncertainty"
+    description: "Should escalate to human when confidence is low"
+
+    input:
+      message:
+        role: "user"
+        content: "Diagnose unusual system behavior"
+        metadata: {}
+      config:
+        escalation_threshold: 0.7  # Confidence < 70% → escalate
+        auto_escalate: true
+
+    expected_output:
+      metadata:
+        escalated: true
+        confidence: 0.6  # Below threshold
+        escalation_reason: "low_confidence"
+
+  - id: "human_in_loop_timeout"
+    name: "Handles human response timeout"
+    description: "Should have timeout for waiting for human"
+
+    input:
+      message:
+        role: "user"
+        content: "Request requiring approval"
+        metadata: {}
+      config:
+        approval_required: true
+        human_response_timeout: 300  # 5 minutes
+        timeout_action: "cancel"
+
+    expected_output:
+      metadata:
+        timeout_configured: true
+        max_wait_time: 300
+
+edge_cases:
+  - condition: "Human never responds"
+    expected: "Times out and takes default action"
+  - condition: "Human rejects approval"
+    expected: "Cancels operation, returns rejection message"
+  - condition: "Multiple approval requests"
+    expected: "Queues or handles sequentially"
+  - condition: "No human available"
+    expected: "Falls back to automated decision or raises error"
+
+properties:
+  deterministic: false  # Depends on human decisions
+  idempotent: false    # Different human decisions → different outcomes
+  stateful: true       # Maintains conversation state while waiting
+  requires_llm: true   # May need LLM for generating requests
+  supports_streaming: true
+
+performance:
+  complexity: "O(1)"   # Plus human response time
+  expected_latency: "seconds to minutes"  # Depends on human response
+
+dependencies:
+  patterns: []
+  middleware: ["timeout"]
+  external: ["llm_provider", "human_interface"]

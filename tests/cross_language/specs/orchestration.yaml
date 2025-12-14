@@ -1,0 +1,130 @@
+pattern:
+  name: "Orchestration"
+  description: "Combines sequential, parallel, and conditional patterns for complex workflows"
+  category: "orchestration"
+
+test_scenarios:
+  - id: "orchestration_mixed"
+    name: "Mixed sequential and parallel execution"
+    description: "Should orchestrate mix of sequential and parallel steps"
+
+    input:
+      message:
+        role: "user"
+        content: "Process workflow with multiple stages"
+        metadata: {}
+      config:
+        workflow:
+          - stage: "preprocessing"
+            mode: "sequential"
+            agents: ["validator", "normalizer"]
+          - stage: "processing"
+            mode: "parallel"
+            agents: ["processor_1", "processor_2", "processor_3"]
+          - stage: "postprocessing"
+            mode: "sequential"
+            agents: ["aggregator", "formatter"]
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          stages_completed: 3
+          execution_pattern: ["sequential", "parallel", "sequential"]
+          total_agents: 7
+
+  - id: "orchestration_conditional"
+    name: "Conditional branching"
+    description: "Should support conditional execution paths"
+
+    input:
+      message:
+        role: "user"
+        content: "Process data with conditional logic"
+        metadata:
+          data_type: "json"
+      config:
+        workflow:
+          - condition: "data_type == 'json'"
+            then_agent: "json_processor"
+            else_agent: "xml_processor"
+
+    expected_output:
+      metadata:
+        branch_taken: "then"
+        agent_executed: "json_processor"
+
+  - id: "orchestration_loop"
+    name: "Iterative loops in workflow"
+    description: "Should support loop constructs"
+
+    input:
+      message:
+        role: "user"
+        content: "Process until quality threshold met"
+        metadata: {}
+      config:
+        workflow:
+          - stage: "process"
+            mode: "loop"
+            max_iterations: 5
+            break_condition: "quality > 0.9"
+            agent: "quality_improver"
+
+    expected_output:
+      metadata:
+        loop_iterations: 3  # Converged before max
+        break_condition_met: true
+
+  - id: "orchestration_error_handling"
+    name: "Error handling in workflow"
+    description: "Should handle errors and continue or rollback"
+
+    input:
+      message:
+        role: "user"
+        content: "Workflow with potential failures"
+        metadata: {}
+      config:
+        workflow:
+          - stage: "step1"
+            agent: "agent1"
+            on_error: "retry"
+          - stage: "step2"
+            agent: "failing_agent"
+            on_error: "skip"
+          - stage: "step3"
+            agent: "agent3"
+        error_strategy: "continue"
+
+    expected_output:
+      metadata:
+        stages_attempted: 3
+        stages_succeeded: 2
+        errors_handled: 1
+
+edge_cases:
+  - condition: "Empty workflow"
+    expected: "Raises configuration error"
+  - condition: "Circular dependencies in workflow"
+    expected: "Detects cycle and raises error"
+  - condition: "Infinite loop"
+    expected: "Enforces max_iterations limit"
+  - condition: "All parallel agents fail"
+    expected: "Propagates error or continues based on strategy"
+
+properties:
+  deterministic: true   # Workflow structure is deterministic
+  idempotent: true      # Same workflow → same result (if agents idempotent)
+  stateful: false       # No state between workflow executions
+  requires_llm: false   # Pattern itself doesn't require LLM
+  supports_streaming: true
+
+performance:
+  complexity: "O(n + m)"  # n sequential steps + m parallel steps
+  expected_latency: "variable"  # Depends on workflow structure
+
+dependencies:
+  patterns: ["sequential", "parallel", "fallback"]
+  middleware: ["timeout", "retry"]
+  external: []

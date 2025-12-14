@@ -155,6 +155,14 @@ add_executable(test_bedrock_adapter test_bedrock_adapter.cpp)
 target_link_libraries(test_bedrock_adapter agenkit gtest_main)
 add_test(NAME bedrock_adapter_tests COMMAND test_bedrock_adapter)
 
+# Cross-language test harness (standalone executable, not a gtest)
+add_executable(cross_language_harness cross_language_harness.cpp)
+target_link_libraries(cross_language_harness nlohmann_json::nlohmann_json)
+# Copy to build directory for easy access
+add_custom_command(TARGET cross_language_harness POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:cross_language_harness> ${CMAKE_BINARY_DIR}/cross_language_harness
+)
+
 # Integration tests (optional, requires -DAGENKIT_BUILD_INTEGRATION_TESTS=ON)
 if(AGENKIT_BUILD_INTEGRATION_TESTS)
     add_subdirectory(integration)

@@ -53,9 +53,9 @@
 
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use tokio::time::timeout;
 
 use crate::core::{Agent, AgentError, Message};
+use crate::runtime;
 
 #[cfg(test)]
 use async_trait::async_trait;
@@ -186,7 +186,7 @@ impl Task {
         for attempt in 0..attempts {
             // Execute with optional timeout
             let result = if let Some(timeout_duration) = self.timeout_duration {
-                match timeout(timeout_duration, self.agent.process(message.clone())).await {
+                match runtime::timeout(timeout_duration, self.agent.process(message.clone())).await {
                     Ok(Ok(response)) => Ok(response),
                     Ok(Err(e)) => Err(e),
                     Err(_) => Err(AgentError::Timeout(format!(
@@ -220,7 +220,7 @@ impl Task {
 
                     // Otherwise, retry after exponential backoff
                     let backoff = Duration::from_millis(100 * (attempt as u64 + 1));
-                    tokio::time::sleep(backoff).await;
+                    runtime::sleep(backoff).await;
                 }
             }
         }
@@ -321,7 +321,7 @@ mod tests {
 
             // Add delay if specified
             if let Some(delay) = self.delay {
-                tokio::time::sleep(delay).await;
+                runtime::sleep(delay).await;
             }
 
             // Fail for first N attempts

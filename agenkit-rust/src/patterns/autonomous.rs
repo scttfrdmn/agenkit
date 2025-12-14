@@ -48,6 +48,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 
 use crate::core::{Agent, AgentError, Message};
+use crate::runtime;
 
 /// Goal status values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -310,7 +311,7 @@ impl AutonomousAgent {
             }
 
             // Yield to allow other tasks to run
-            tokio::task::yield_now().await;
+            runtime::yield_now().await;
         }
 
         self.is_running = false;
@@ -481,7 +482,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_autonomous_agent_manual_stop() {
-        let agent_arc = Arc::new(tokio::sync::Mutex::new(AutonomousAgent::new("Test", 100)));
+        let agent_arc = Arc::new(runtime::Mutex::new(AutonomousAgent::new("Test", 100)));
         let agent_clone = agent_arc.clone();
 
         let mut agent = agent_arc.lock().await;
@@ -489,8 +490,8 @@ mod tests {
         drop(agent);
 
         // Spawn task to stop agent after 100ms
-        tokio::spawn(async move {
-            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        let _ = runtime::spawn(async move {
+            runtime::sleep(std::time::Duration::from_millis(100)).await;
             agent_clone.lock().await.stop();
         });
 

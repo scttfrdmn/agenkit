@@ -27,6 +27,7 @@ opt-level = "z"     # Optimize dependencies for size too
 # Async runtime
 tokio = { version = "1.35", features = ["full"], optional = true }
 async-trait = "0.1"
+futures = "0.3"
 
 # WASM async runtime (alternative to tokio for WASM)
 wasm-bindgen-futures = { version = "0.4", optional = true }

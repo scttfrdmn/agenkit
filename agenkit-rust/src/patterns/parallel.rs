@@ -46,6 +46,7 @@
 //! ```
 
 use std::sync::Arc;
+use futures::future::join_all;
 
 use crate::core::{Agent, AgentError, Message};
 use serde_json::json;
@@ -183,32 +184,31 @@ impl Agent for ParallelAgent {
     ///
     /// Returns an error if all agents fail.
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        // Launch all agents concurrently using tokio::spawn
-        let mut tasks = Vec::with_capacity(self.agents.len());
+        // Launch all agents concurrently using futures::join_all
+        let futures: Vec<_> = self.agents
+            .iter()
+            .map(|agent| {
+                let agent_clone = Arc::clone(agent);
+                let message_clone = message.clone();
 
-        for agent in &self.agents {
-            let agent_clone = Arc::clone(agent);
-            let message_clone = message.clone();
+                async move {
+                    let agent_name = agent_clone.name().to_string();
+                    let result = agent_clone.process(message_clone).await;
+                    Ok((agent_name, result))
+                }
+            })
+            .collect();
 
-            tasks.push(tokio::spawn(async move {
-                let agent_name = agent_clone.name().to_string();
-                let result = agent_clone.process(message_clone).await;
-                (agent_name, result)
-            }));
-        }
-
-        // Collect all results
-        let mut results = Vec::with_capacity(tasks.len());
-        for task in tasks {
-            results.push(task.await);
-        }
+        // Collect all results concurrently
+        let results: Vec<Result<(String, Result<Message, AgentError>), std::convert::Infallible>> =
+            join_all(futures).await;
 
         let mut successes = Vec::new();
         let mut errors = Vec::new();
 
         for task_result in results {
             match task_result {
-                Ok((_agent_name, Ok(msg))) => {
+                Ok((agent_name, Ok(msg))) => {
                     successes.push(msg);
                 }
                 Ok((agent_name, Err(err))) => {
@@ -217,11 +217,9 @@ impl Agent for ParallelAgent {
                         "error": err.to_string(),
                     }));
                 }
-                Err(join_err) => {
-                    errors.push(json!({
-                        "agent": "unknown",
-                        "error": format!("task join error: {}", join_err),
-                    }));
+                Err(_) => {
+                    // Infallible type - this branch is unreachable
+                    unreachable!("join_all never returns Err with Infallible");
                 }
             }
         }

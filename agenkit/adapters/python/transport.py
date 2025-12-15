@@ -3,6 +3,7 @@
 import asyncio
 import struct
 from abc import ABC, abstractmethod
+from typing import Any
 
 from .errors import ConnectionClosedError, MalformedPayloadError
 from .errors import ConnectionError as ConnError
@@ -103,6 +104,46 @@ class Transport(ABC):
 
         # Read exact payload
         return await self.receive_exactly(length)
+
+    async def send_framed_envelope(self, envelope: dict[str, Any]) -> None:
+        """Send envelope dictionary directly (fast path for gRPC/protobuf).
+
+        This is an optional optimization that allows transports to skip JSON
+        encoding/decoding. Transports that work natively with structured data
+        (e.g. gRPC with protobuf) can override this method.
+
+        Default implementation encodes to JSON for backward compatibility.
+
+        Args:
+            envelope: Envelope dictionary to send
+
+        Raises:
+            ConnectionError: If send fails
+        """
+        from .codec import encode_bytes
+
+        await self.send_framed(encode_bytes(envelope))
+
+    async def receive_framed_envelope(self) -> dict[str, Any]:
+        """Receive envelope dictionary directly (fast path for gRPC/protobuf).
+
+        This is an optional optimization that allows transports to skip JSON
+        encoding/decoding. Transports that work natively with structured data
+        (e.g. gRPC with protobuf) can override this method.
+
+        Default implementation decodes from JSON for backward compatibility.
+
+        Returns:
+            Envelope dictionary
+
+        Raises:
+            ConnectionError: If receive fails
+            MalformedPayloadError: If data cannot be decoded
+        """
+        from .codec import decode_bytes
+
+        data = await self.receive_framed()
+        return decode_bytes(data)
 
     @abstractmethod
     async def receive_exactly(self, n: int) -> bytes:

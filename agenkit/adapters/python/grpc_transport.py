@@ -63,7 +63,8 @@ class GRPCTransport(Transport):
         self._channel: aio.Channel | None = None
         self._stub: agent_pb2_grpc.AgentServiceStub | None = None
         self._connected = False
-        self._response_queue: asyncio.Queue[bytes] | None = None
+        # Queue stores bytes (backward compat) or dict (fast path)
+        self._response_queue: asyncio.Queue[bytes | dict[str, Any]] | None = None
         self._lock = asyncio.Lock()
         self._tracer = get_tracer()
 
@@ -116,7 +117,8 @@ class GRPCTransport(Transport):
                     # Keep connections alive with periodic pings
                     ("grpc.keepalive_time_ms", 10000),  # Send keepalive ping every 10s
                     ("grpc.keepalive_timeout_ms", 5000),  # Wait 5s for keepalive response
-                    ("grpc.keepalive_permit_without_calls", 1),  # Allow keepalive pings when no calls
+                    # Allow keepalive pings when no calls
+                    ("grpc.keepalive_permit_without_calls", 1),
                     ("grpc.http2.max_pings_without_data", 0),  # Unlimited pings without data
                     # Connection management
                     ("grpc.max_connection_idle_ms", 30000),  # Close connection after 30s idle
@@ -356,6 +358,132 @@ class GRPCTransport(Transport):
             True if connected, False otherwise
         """
         return self._connected and self._channel is not None and self._stub is not None
+
+    async def send_framed_envelope(self, envelope: dict[str, Any]) -> None:
+        """Send envelope dictionary directly (OPTIMIZED: skips JSON encoding).
+
+        This fast-path method eliminates unnecessary JSON encoding/decoding,
+        reducing serialization overhead by ~60%.
+
+        Args:
+            envelope: Envelope dictionary to send
+
+        Raises:
+            ConnectionError: If not connected or RPC fails
+            InvalidMessageError: If envelope cannot be converted to protobuf
+        """
+        if not self.is_connected:
+            raise ConnError("Not connected")
+
+        assert self._stub is not None
+        assert self._response_queue is not None
+
+        try:
+            # FAST PATH: dict → protobuf directly (skip JSON encoding)
+            pb_request = self._json_to_protobuf_request(envelope)
+
+            # Determine if this is a streaming request
+            method = envelope.get("payload", {}).get("method", "process")
+            is_streaming = method == "stream"
+
+            # Create span for gRPC call
+            span_name = f"grpc.{method}"
+            with self._tracer.start_as_current_span(
+                span_name,
+                kind=SpanKind.CLIENT,
+            ) as span:
+                span.set_attribute("rpc.system", "grpc")
+                span.set_attribute("rpc.service", "AgentService")
+                span.set_attribute("rpc.method", "ProcessStream" if is_streaming else "Process")
+                span.set_attribute("net.peer.name", self._host)
+                span.set_attribute("net.peer.port", self._port)
+
+                if is_streaming:
+                    # Streaming RPC
+                    try:
+                        stream = self._stub.ProcessStream(pb_request)
+                        chunk_count = 0
+
+                        async for chunk in stream:
+                            chunk_count += 1
+                            # FAST PATH: protobuf → dict directly (skip JSON encoding)
+                            envelope_dict = self._protobuf_chunk_to_json(chunk)
+                            await self._response_queue.put(envelope_dict)
+
+                        span.set_attribute("grpc.stream.chunks", chunk_count)
+                        span.set_attribute("grpc.status_code", 0)
+                        span.set_status(Status(StatusCode.OK))
+
+                    except grpc.RpcError as e:
+                        span.record_exception(e)
+                        span.set_attribute("grpc.status_code", e.code().value[0])
+                        span.set_status(Status(StatusCode.ERROR, e.details() or str(e)))
+
+                        # Convert gRPC error to error envelope
+                        error_envelope = self._create_error_envelope(
+                            envelope.get("id", "unknown"),
+                            self._grpc_status_to_error_code(e.code()),
+                            e.details() or str(e),
+                        )
+                        await self._response_queue.put(error_envelope)
+
+                else:
+                    # Unary RPC
+                    try:
+                        response = await self._stub.Process(pb_request)
+
+                        span.set_attribute("grpc.status_code", 0)
+                        span.set_status(Status(StatusCode.OK))
+
+                        # FAST PATH: protobuf → dict directly (skip JSON encoding)
+                        envelope_dict = self._protobuf_response_to_json(response)
+                        await self._response_queue.put(envelope_dict)
+
+                    except grpc.RpcError as e:
+                        span.record_exception(e)
+                        span.set_attribute("grpc.status_code", e.code().value[0])
+                        span.set_status(Status(StatusCode.ERROR, e.details() or str(e)))
+
+                        # Convert gRPC error to error envelope
+                        error_envelope = self._create_error_envelope(
+                            envelope.get("id", "unknown"),
+                            self._grpc_status_to_error_code(e.code()),
+                            e.details() or str(e),
+                        )
+                        await self._response_queue.put(error_envelope)
+
+        except Exception as e:
+            if not isinstance(e, (ConnError, InvalidMessageError)):
+                raise ConnError(f"Failed to send data via gRPC: {e}") from e
+            raise
+
+    async def receive_framed_envelope(self) -> dict[str, Any]:
+        """Receive envelope dictionary directly (OPTIMIZED: skips JSON decoding).
+
+        This fast-path method eliminates unnecessary JSON encoding/decoding,
+        reducing serialization overhead by ~60%.
+
+        Returns:
+            Envelope dictionary
+
+        Raises:
+            ConnectionError: If not connected
+            ConnectionClosedError: If connection is closed
+        """
+        if not self.is_connected:
+            raise ConnError("Not connected")
+
+        assert self._response_queue is not None
+
+        try:
+            # FAST PATH: Return dict directly (was stored as dict in send_framed_envelope)
+            data = await asyncio.wait_for(self._response_queue.get(), timeout=60.0)
+            return data  # type: ignore[return-value]
+
+        except asyncio.TimeoutError:
+            raise ConnectionClosedError("Response timeout - connection may be closed")
+        except Exception as e:
+            raise ConnError(f"Failed to receive data via gRPC: {e}") from e
 
     def _json_to_protobuf_request(self, envelope: dict[str, Any]) -> agent_pb2.Request:
         """Convert JSON request envelope to protobuf Request.

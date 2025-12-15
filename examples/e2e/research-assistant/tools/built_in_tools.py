@@ -83,19 +83,62 @@ async def _calculator_function(expression: str) -> ToolResult:
         # Replace ^ with **
         expression = expression.replace("^", "**")
 
-        # Evaluate safely (in production, use a proper math parser)
-        # This is simplified - use sympy or similar for production
-        result = eval(
-            expression,
-            {"__builtins__": {}},
-            {
-                "abs": abs,
-                "min": min,
-                "max": max,
-                "sum": sum,
-                "round": round,
-            },
-        )
+        # Safe AST-based evaluation with whitelisted functions
+        import ast
+        import operator
+
+        # Whitelist of safe functions
+        safe_funcs = {
+            "abs": abs,
+            "min": min,
+            "max": max,
+            "sum": sum,
+            "round": round,
+        }
+
+        # Safe operations mapping
+        safe_ops = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Pow: operator.pow,
+            ast.Mod: operator.mod,
+            ast.USub: operator.neg,
+        }
+
+        def safe_eval(node):
+            """Safely evaluate a math expression AST node."""
+            if isinstance(node, ast.Constant):
+                return node.value
+            elif isinstance(node, ast.BinOp):
+                left = safe_eval(node.left)
+                right = safe_eval(node.right)
+                op = safe_ops.get(type(node.op))
+                if op is None:
+                    raise ValueError(f"Unsupported operation: {type(node.op).__name__}")
+                return op(left, right)
+            elif isinstance(node, ast.UnaryOp):
+                operand = safe_eval(node.operand)
+                op = safe_ops.get(type(node.op))
+                if op is None:
+                    raise ValueError(f"Unsupported operation: {type(node.op).__name__}")
+                return op(operand)
+            elif isinstance(node, ast.Call):
+                # Allow whitelisted function calls
+                if isinstance(node.func, ast.Name):
+                    func_name = node.func.id
+                    if func_name in safe_funcs:
+                        func = safe_funcs[func_name]
+                        args = [safe_eval(arg) for arg in node.args]
+                        return func(*args)
+                    raise ValueError(f"Function '{func_name}' is not allowed")
+                raise ValueError(f"Unsupported function call")
+            else:
+                raise ValueError(f"Unsupported expression: {type(node).__name__}")
+
+        tree = ast.parse(expression, mode="eval")
+        result = safe_eval(tree.body)
 
         return ToolResult(
             success=True,

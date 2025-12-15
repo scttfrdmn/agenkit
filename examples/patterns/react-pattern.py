@@ -39,13 +39,46 @@ class Calculator:
     )
 
     async def execute(self, input: str) -> str:
-        """Execute a calculation."""
+        """Execute a calculation using safe AST evaluation."""
+        import ast
+        import operator
+
+        # Safe operations mapping
+        safe_ops = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Pow: operator.pow,
+            ast.USub: operator.neg,
+        }
+
+        def safe_eval(node):
+            """Safely evaluate a math expression AST node."""
+            if isinstance(node, ast.Constant):
+                return node.value
+            elif isinstance(node, ast.BinOp):
+                left = safe_eval(node.left)
+                right = safe_eval(node.right)
+                op = safe_ops.get(type(node.op))
+                if op is None:
+                    raise ValueError(f"Unsupported operation: {type(node.op).__name__}")
+                return op(left, right)
+            elif isinstance(node, ast.UnaryOp):
+                operand = safe_eval(node.operand)
+                op = safe_ops.get(type(node.op))
+                if op is None:
+                    raise ValueError(f"Unsupported operation: {type(node.op).__name__}")
+                return op(operand)
+            else:
+                raise ValueError(f"Unsupported expression: {type(node).__name__}")
+
         try:
-            # Simple evaluation - in production, use a safer approach
-            # For demo purposes only!
-            result = eval(input, {"__builtins__": {}}, {})
+            expr = str(input).strip()
+            tree = ast.parse(expr, mode="eval")
+            result = safe_eval(tree.body)
             return str(result)
-        except Exception as e:
+        except (SyntaxError, ValueError, ZeroDivisionError, TypeError) as e:
             raise ValueError(f"Invalid expression: {e}")
 
 

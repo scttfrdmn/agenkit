@@ -53,7 +53,9 @@ console.log(result.message?.content);
 
 ## Available Modules
 
-The package includes 6 pre-compiled WASM modules:
+### Zig WASM Modules
+
+The package includes 6 pre-compiled Zig WASM modules (ultra-lightweight):
 
 | Module | Size | Description |
 |--------|------|-------------|
@@ -63,6 +65,22 @@ The package includes 6 pre-compiled WASM modules:
 | `sequential_example` | 23KB | Sequential processing |
 | `parallel_example` | 31KB | Parallel processing |
 | `react_example` | 33KB | Reasoning + acting pattern |
+
+### Rust WASM Module
+
+The package also includes Rust WASM with advanced reasoning capabilities:
+
+| Module | Size | Description |
+|--------|------|-------------|
+| `agenkit_rust` | 334KB | Full agenkit library with all 18 patterns, reasoning techniques (CoT, ToT, Self-Consistency), and wasm-bindgen interop |
+
+**Note:** Rust WASM is larger but provides the complete agenkit feature set including:
+- All 18 agent patterns
+- Chain-of-Thought (CoT) reasoning
+- Tree-of-Thought (ToT) reasoning
+- Self-Consistency decoding
+- Advanced middleware and evaluation
+- Better JavaScript interop via wasm-bindgen
 
 ## API Reference
 
@@ -97,6 +115,55 @@ class ZigAgent {
   capabilities: string[];
 
   async load(moduleName: string, debug?: boolean): Promise<void>;
+  async process(message: Message): Promise<AgentResult>;
+  isReady(): boolean;
+  getModuleInfo(): object | null;
+}
+```
+
+### createRustAgent()
+
+Create and load the Rust WASM agent in one step.
+
+```typescript
+async function createRustAgent(
+  agentName: string,
+  capabilities?: string[],
+  debug?: boolean
+): Promise<RustAgent>
+```
+
+**Parameters:**
+- `agentName` - Custom name for the agent instance
+- `capabilities` - Array of capability strings (optional)
+- `debug` - Enable debug logging (optional, default: false)
+
+**Returns:** Initialized `RustAgent` instance
+
+**Example:**
+```typescript
+import { createRustAgent } from '@agenkit/wasm';
+
+const agent = await createRustAgent('reasoning-agent', ['cot', 'tot', 'self-consistency']);
+
+const result = await agent.process({
+  role: 'user',
+  content: 'What is 2 + 2?'
+});
+
+console.log(result.message?.content);
+```
+
+### RustAgent
+
+Main agent class for Rust WASM module (full feature set).
+
+```typescript
+class RustAgent {
+  name: string;
+  capabilities: string[];
+
+  async load(debug?: boolean): Promise<void>;
   async process(message: Message): Promise<AgentResult>;
   isReady(): boolean;
   getModuleInfo(): object | null;

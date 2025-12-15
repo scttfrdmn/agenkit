@@ -39,12 +39,48 @@ class CalculatorAgent(Agent):
         return "calculator"
 
     async def process(self, message: Message) -> Message:
-        # Simple calculator (would be more sophisticated in practice)
+        # Safe calculator using ast module (no arbitrary code execution)
+        import ast
+        import operator
+
+        # Safe operations mapping
+        safe_ops = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Pow: operator.pow,
+            ast.USub: operator.neg,
+        }
+
+        def safe_eval(node):
+            """Safely evaluate a math expression AST node."""
+            if isinstance(node, ast.Constant):  # Python 3.8+
+                return node.value
+            elif isinstance(node, ast.BinOp):
+                left = safe_eval(node.left)
+                right = safe_eval(node.right)
+                op = safe_ops.get(type(node.op))
+                if op is None:
+                    raise ValueError(f"Unsupported operation: {type(node.op).__name__}")
+                return op(left, right)
+            elif isinstance(node, ast.UnaryOp):
+                operand = safe_eval(node.operand)
+                op = safe_ops.get(type(node.op))
+                if op is None:
+                    raise ValueError(f"Unsupported operation: {type(node.op).__name__}")
+                return op(operand)
+            else:
+                raise ValueError(f"Unsupported expression: {type(node).__name__}")
+
         try:
-            result = eval(str(message.content))  # Don't use eval in production!
+            # Parse and evaluate safely
+            expr = str(message.content).strip()
+            tree = ast.parse(expr, mode="eval")
+            result = safe_eval(tree.body)
             return Message(role="agent", content=f"🔢 Result: {result}")
-        except Exception:
-            return Message(role="agent", content="❌ Invalid calculation")
+        except (SyntaxError, ValueError, ZeroDivisionError, TypeError) as e:
+            return Message(role="agent", content=f"❌ Invalid calculation: {e}")
 
 
 class GeneralAgent(Agent):

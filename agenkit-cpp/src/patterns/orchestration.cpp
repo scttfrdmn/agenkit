@@ -168,16 +168,23 @@ OrchestrationAgent::execute_sequential(core::Message message) {
 
 core::Result<core::Message, core::AgentError>
 OrchestrationAgent::execute_parallel(core::Message message) {
-    // Launch all agents in parallel
+    // Launch all agents in parallel using std::async
     std::vector<std::future<core::Result<core::Message, core::AgentError>>> futures;
     std::vector<std::string> agent_names;
 
     for (const auto& [name, agent] : agents_) {
         agent_names.push_back(name);
-        futures.push_back(agent->process(core::Message(message)));
+
+        // Use std::async with launch::async policy to force parallel execution
+        // Capture agent pointer separately to avoid C++20 structured binding capture issue
+        auto agent_ptr = agent;
+        auto future = std::async(std::launch::async, [agent_ptr, msg = core::Message(message)]() mutable {
+            return agent_ptr->process(std::move(msg)).get();
+        });
+        futures.push_back(std::move(future));
     }
 
-    // Collect results
+    // Collect results (all agents running in parallel now)
     std::vector<core::Message> results;
     int step = 1;
 

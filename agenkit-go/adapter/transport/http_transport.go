@@ -14,10 +14,14 @@ import (
 	"sync"
 
 	"github.com/quic-go/quic-go/http3"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/net/http2"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/codec"
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/errors"
+	"github.com/scttfrdmn/agenkit/agenkit-go/observability"
 )
 
 // HTTPVersion represents the HTTP protocol version.
@@ -38,6 +42,7 @@ type HTTPTransport struct {
 	version HTTPVersion
 	client  *http.Client
 	mu      sync.Mutex
+	tracer  trace.Tracer
 
 	// For non-streaming responses
 	pendingResponse []byte
@@ -139,6 +144,7 @@ func newHTTPTransportWithVersion(baseURL string, version HTTPVersion) *HTTPTrans
 		baseURL: baseURL,
 		version: version,
 		client:  client,
+		tracer:  observability.GetTracer("agenkit.transport.http"),
 	}
 }
 
@@ -158,20 +164,47 @@ func (t *h2cTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 // Connect establishes connection to HTTP endpoint.
 // For HTTP, this is a no-op as connections are per-request.
 func (t *HTTPTransport) Connect(ctx context.Context) error {
+	ctx, span := t.tracer.Start(ctx, "http.connect", trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("http.url", t.baseURL),
+		attribute.String("http.version", t.getVersionString()),
+	)
+
 	// Test connectivity by making a HEAD request
 	req, err := http.NewRequestWithContext(ctx, "HEAD", t.baseURL+"/health", nil)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return errors.NewConnectionError(fmt.Sprintf("failed to create request to %s", t.baseURL), err)
 	}
 
 	resp, err := t.client.Do(req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return errors.NewConnectionError(fmt.Sprintf("failed to connect to %s", t.baseURL), err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	// Any response means server is reachable
+	span.SetStatus(codes.Ok, "connected")
 	return nil
+}
+
+// getVersionString returns a string representation of the HTTP version.
+func (t *HTTPTransport) getVersionString() string {
+	switch t.version {
+	case HTTP1:
+		return "http1"
+	case HTTP2:
+		return "http2"
+	case HTTP3:
+		return "http3"
+	default:
+		return "unknown"
+	}
 }
 
 // SendFramed sends a request over HTTP and receives the response.
@@ -201,9 +234,23 @@ func (t *HTTPTransport) SendFramed(ctx context.Context, data []byte) error {
 		return errors.NewInvalidMessageError(fmt.Sprintf("unsupported method: %s", method), nil)
 	}
 
+	// Create span for HTTP request
+	spanName := fmt.Sprintf("http.%s", method)
+	ctx, span := t.tracer.Start(ctx, spanName, trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("http.method", "POST"),
+		attribute.String("http.url", t.baseURL),
+		attribute.String("http.target", endpoint),
+		attribute.String("rpc.method", method),
+	)
+
 	// Create HTTP request
 	req, err := http.NewRequestWithContext(ctx, "POST", t.baseURL+endpoint, bytes.NewReader(data))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return errors.NewConnectionError("failed to create HTTP request", err)
 	}
 
@@ -215,39 +262,53 @@ func (t *HTTPTransport) SendFramed(ctx context.Context, data []byte) error {
 
 		resp, err := t.client.Do(req)
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return errors.NewConnectionError("failed to send HTTP request", err)
 		}
+
+		span.SetAttributes(attribute.Int("http.status_code", resp.StatusCode))
 
 		if resp.StatusCode != http.StatusOK {
 			defer func() { _ = resp.Body.Close() }()
 			body, _ := io.ReadAll(resp.Body)
+			span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", resp.StatusCode))
 			return errors.NewConnectionError(fmt.Sprintf("HTTP error %d: %s", resp.StatusCode, string(body)), nil)
 		}
 
 		// Keep connection open for streaming
 		t.streamConn = resp.Body
 		t.streamReader = bufio.NewReader(resp.Body)
+		span.SetStatus(codes.Ok, "streaming started")
 		return nil
 	}
 
 	// For non-streaming, send request and store response
 	resp, err := t.client.Do(req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return errors.NewConnectionError("failed to send HTTP request", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
+	span.SetAttributes(attribute.Int("http.status_code", resp.StatusCode))
+
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", resp.StatusCode))
 		return errors.NewConnectionError(fmt.Sprintf("HTTP error %d: %s", resp.StatusCode, string(body)), nil)
 	}
 
 	// Read and store the response for ReceiveFramed
 	t.pendingResponse, err = io.ReadAll(resp.Body)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return errors.NewConnectionError("failed to read HTTP response", err)
 	}
 
+	span.SetStatus(codes.Ok, "request completed")
 	return nil
 }
 

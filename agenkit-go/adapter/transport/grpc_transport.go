@@ -8,11 +8,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strconv"
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
+	grpccodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
@@ -20,6 +24,7 @@ import (
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/codec"
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/errors"
+	"github.com/scttfrdmn/agenkit/agenkit-go/observability"
 	"github.com/scttfrdmn/agenkit/agenkit-go/proto/agentpb"
 )
 
@@ -46,6 +51,7 @@ type GRPCTransport struct {
 	connected     bool
 	responseQueue chan []byte
 	config        *GRPCTransportConfig
+	tracer        trace.Tracer
 }
 
 // NewGRPCTransport creates a new gRPC transport with TLS enabled by default.
@@ -95,15 +101,29 @@ func NewGRPCTransportWithConfig(endpoint string, config *GRPCTransportConfig) (*
 		port:          port,
 		responseQueue: make(chan []byte, 100),
 		config:        config,
+		tracer:        observability.GetTracer("agenkit.transport.grpc"),
 	}, nil
 }
 
 // Connect establishes connection to gRPC endpoint with keepalive and connection pooling.
 func (t *GRPCTransport) Connect(ctx context.Context) error {
+	ctx, span := t.tracer.Start(ctx, "grpc.connect", trace.WithSpanKind(trace.SpanKindClient)) //nolint:ineffassign,staticcheck // ctx updated with span for OpenTelemetry context propagation
+	defer span.End()
+
+	// Add span attributes
+	portInt, _ := strconv.Atoi(t.port)
+	span.SetAttributes(
+		attribute.String("rpc.system", "grpc"),
+		attribute.String("net.peer.name", t.host),
+		attribute.Int("net.peer.port", portInt),
+		attribute.Bool("rpc.grpc.tls", t.config.UseTLS),
+	)
+
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	if t.connected {
+		span.SetStatus(codes.Ok, "already connected")
 		return nil
 	}
 
@@ -151,6 +171,8 @@ func (t *GRPCTransport) Connect(ctx context.Context) error {
 		} else {
 			tlsNote = " (INSECURE: no TLS)"
 		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return errors.NewConnectionError(fmt.Sprintf("failed to connect to %s%s", target, tlsNote), err)
 	}
 
@@ -158,6 +180,7 @@ func (t *GRPCTransport) Connect(ctx context.Context) error {
 	t.client = agentpb.NewAgentServiceClient(conn)
 	t.connected = true
 
+	span.SetStatus(codes.Ok, "connected")
 	return nil
 }
 
@@ -187,62 +210,125 @@ func (t *GRPCTransport) SendFramed(ctx context.Context, data []byte) error {
 
 	// Determine if this is a streaming request
 	method, _ := envelope.Payload["method"].(string)
+	if method == "" {
+		method = "process"
+	}
 	isStreaming := method == "stream"
 
+	// Create span for gRPC request
+	spanName := fmt.Sprintf("grpc.%s", method)
+	ctx, span := t.tracer.Start(ctx, spanName, trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	portInt, _ := strconv.Atoi(t.port)
+	span.SetAttributes(
+		attribute.String("rpc.system", "grpc"),
+		attribute.String("rpc.service", "AgentService"),
+		attribute.String("net.peer.name", t.host),
+		attribute.Int("net.peer.port", portInt),
+	)
+
 	if isStreaming {
+		span.SetAttributes(attribute.String("rpc.method", "ProcessStream"))
+
 		// Use ProcessStream RPC
 		stream, err := client.ProcessStream(ctx, pbRequest)
 		if err != nil {
+			// Record gRPC error in span
+			span.RecordError(err)
+			if st, ok := status.FromError(err); ok {
+				span.SetAttributes(attribute.Int("grpc.status_code", int(st.Code())))
+				span.SetStatus(codes.Error, st.Message())
+			} else {
+				span.SetStatus(codes.Error, err.Error())
+			}
 			// Convert gRPC error to JSON error envelope
 			t.handleGRPCError(envelope.ID, err)
 			return nil
 		}
 
 		// Process stream chunks
+		chunkCount := 0
 		for {
 			chunk, err := stream.Recv()
 			if err != nil {
 				if err.Error() == "EOF" {
 					// Stream ended normally
+					span.SetAttributes(
+						attribute.Int("grpc.stream.chunks", chunkCount),
+						attribute.Int("grpc.status_code", 0),
+					)
+					span.SetStatus(codes.Ok, "stream completed")
 					break
+				}
+				// Record gRPC error in span
+				span.RecordError(err)
+				if st, ok := status.FromError(err); ok {
+					span.SetAttributes(attribute.Int("grpc.status_code", int(st.Code())))
+					span.SetStatus(codes.Error, st.Message())
+				} else {
+					span.SetStatus(codes.Error, err.Error())
 				}
 				// Convert gRPC error to JSON error envelope
 				t.handleGRPCError(envelope.ID, err)
 				break
 			}
 
+			chunkCount++
+
 			// Convert protobuf StreamChunk to JSON envelope
 			jsonEnvelope := t.protobufChunkToJSON(chunk)
 			jsonBytes, err := json.Marshal(jsonEnvelope)
 			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
 				return errors.NewInvalidMessageError(fmt.Sprintf("failed to encode JSON: %v", err), nil)
 			}
 
 			select {
 			case t.responseQueue <- jsonBytes:
 			case <-ctx.Done():
+				span.RecordError(ctx.Err())
+				span.SetStatus(codes.Error, ctx.Err().Error())
 				return ctx.Err()
 			}
 		}
 	} else {
+		span.SetAttributes(attribute.String("rpc.method", "Process"))
+
 		// Use unary Process RPC
 		pbResponse, err := client.Process(ctx, pbRequest)
 		if err != nil {
+			// Record gRPC error in span
+			span.RecordError(err)
+			if st, ok := status.FromError(err); ok {
+				span.SetAttributes(attribute.Int("grpc.status_code", int(st.Code())))
+				span.SetStatus(codes.Error, st.Message())
+			} else {
+				span.SetStatus(codes.Error, err.Error())
+			}
 			// Convert gRPC error to JSON error envelope
 			t.handleGRPCError(envelope.ID, err)
 			return nil
 		}
 
+		span.SetAttributes(attribute.Int("grpc.status_code", 0))
+		span.SetStatus(codes.Ok, "request completed")
+
 		// Convert protobuf Response to JSON envelope
 		jsonEnvelope := t.protobufResponseToJSON(pbResponse)
 		jsonBytes, err := json.Marshal(jsonEnvelope)
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return errors.NewInvalidMessageError(fmt.Sprintf("failed to encode JSON: %v", err), nil)
 		}
 
 		select {
 		case t.responseQueue <- jsonBytes:
 		case <-ctx.Done():
+			span.RecordError(ctx.Err())
+			span.SetStatus(codes.Error, ctx.Err().Error())
 			return ctx.Err()
 		}
 	}
@@ -575,21 +661,21 @@ func (t *GRPCTransport) handleGRPCError(requestID string, err error) {
 }
 
 // grpcStatusToErrorCode converts gRPC status code to error code string.
-func grpcStatusToErrorCode(code codes.Code) string {
+func grpcStatusToErrorCode(code grpccodes.Code) string {
 	switch code {
-	case codes.Unavailable:
+	case grpccodes.Unavailable:
 		return "CONNECTION_FAILED"
-	case codes.DeadlineExceeded:
+	case grpccodes.DeadlineExceeded:
 		return "CONNECTION_TIMEOUT"
-	case codes.Canceled:
+	case grpccodes.Canceled:
 		return "CONNECTION_CLOSED"
-	case codes.NotFound:
+	case grpccodes.NotFound:
 		return "AGENT_NOT_FOUND"
-	case codes.InvalidArgument:
+	case grpccodes.InvalidArgument:
 		return "INVALID_MESSAGE"
-	case codes.FailedPrecondition:
+	case grpccodes.FailedPrecondition:
 		return "AGENT_UNAVAILABLE"
-	case codes.Unimplemented:
+	case grpccodes.Unimplemented:
 		return "UNSUPPORTED_VERSION"
 	default:
 		return "CONNECTION_FAILED"

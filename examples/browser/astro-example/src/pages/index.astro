@@ -1,0 +1,378 @@
+---
+// Server-side WASM with Astro
+// This code runs on the server during build or SSR
+import { createZigAgent } from '@agenkit/wasm';
+
+let serverResponse = '';
+let error = '';
+
+try {
+  // Load agent on the server
+  const agent = await createZigAgent('echo_example', 'astro-server', ['server', 'ssr']);
+
+  // Process a message server-side
+  const result = await agent.process({
+    role: 'user',
+    content: 'Hello from Astro SSR!',
+    metadata: {
+      timestamp: new Date().toISOString(),
+      source: 'astro-server',
+    },
+  });
+
+  if (result.ok && result.message) {
+    serverResponse = result.message.content;
+  } else if (result.error) {
+    error = `${result.error.type}: ${result.error.message}`;
+  }
+} catch (err) {
+  error = err instanceof Error ? err.message : 'Server-side processing failed';
+}
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agenkit WASM + Astro</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background: linear-gradient(135deg, #ff5d01 0%, #8b5cf6 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        padding: 2rem 1rem;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        color: #333;
+      }
+
+      .subtitle {
+        color: #666;
+        margin: 0 0 2rem;
+      }
+
+      .feature-box {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+      }
+
+      .feature-box h2 {
+        margin: 0 0 1rem;
+        font-size: 1.5rem;
+      }
+
+      .feature-box ul {
+        margin: 0;
+        padding-left: 1.5rem;
+      }
+
+      .feature-box li {
+        margin: 0.5rem 0;
+      }
+
+      .status {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+      }
+
+      .status.success {
+        background-color: #e8f5e9;
+        border: 2px solid #4caf50;
+        color: #2e7d32;
+      }
+
+      .status.error {
+        background-color: #ffebee;
+        border: 2px solid #f44336;
+        color: #c62828;
+      }
+
+      .status strong {
+        display: block;
+        margin-bottom: 0.5rem;
+      }
+
+      .status p {
+        margin: 0;
+        white-space: pre-wrap;
+      }
+
+      .client-demo {
+        padding: 1.5rem;
+        background: #f5f5f5;
+        border-radius: 12px;
+        margin: 2rem 0;
+      }
+
+      .client-demo h2 {
+        margin: 0 0 1rem;
+        color: #333;
+      }
+
+      .input-group {
+        margin-bottom: 1rem;
+      }
+
+      .input-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+      }
+
+      select, textarea {
+        width: 100%;
+        padding: 0.75rem;
+        font-size: 1rem;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-family: inherit;
+      }
+
+      textarea {
+        resize: vertical;
+      }
+
+      .send-button {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1rem;
+        font-weight: bold;
+        color: white;
+        background: linear-gradient(135deg, #ff5d01 0%, #8b5cf6 100%);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .send-button:disabled {
+        background: #999;
+        cursor: not-allowed;
+      }
+
+      #clientResponse {
+        display: none;
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: #e8f5e9;
+        border-radius: 8px;
+        border: 2px solid #4caf50;
+      }
+
+      #clientResponse.show {
+        display: block;
+      }
+
+      #clientResponse strong {
+        color: #2e7d32;
+      }
+
+      #clientResponse p {
+        margin: 0.75rem 0 0;
+        white-space: pre-wrap;
+      }
+
+      footer {
+        margin-top: 3rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #ddd;
+        color: #666;
+        font-size: 0.875rem;
+      }
+
+      footer p {
+        margin: 0.5rem 0;
+      }
+
+      footer a {
+        color: #ff5d01;
+        text-decoration: none;
+      }
+
+      footer a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🚀 Agenkit WASM + Astro</h1>
+      <p class="subtitle">
+        Server-Side and Client-Side AI agents using WebAssembly
+      </p>
+
+      <div class="feature-box">
+        <h2>✨ Astro Advantages</h2>
+        <ul>
+          <li><strong>Server-Side WASM:</strong> Run agents during build or SSR</li>
+          <li><strong>Zero JS by Default:</strong> Ship no JavaScript unless needed</li>
+          <li><strong>Island Architecture:</strong> Hydrate only interactive parts</li>
+          <li><strong>Framework Agnostic:</strong> Use React, Vue, Svelte components</li>
+        </ul>
+      </div>
+
+      <!-- Server-Side Result -->
+      <h2>Server-Side Processing</h2>
+      <p>This message was processed on the server using WASM:</p>
+
+      {error ? (
+        <div class="status error">
+          <strong>❌ Error:</strong>
+          <p>{error}</p>
+        </div>
+      ) : (
+        <div class="status success">
+          <strong>🤖 Agent Response (Server):</strong>
+          <p>{serverResponse}</p>
+          <p style="margin-top: 0.5rem; font-size: 0.875rem; opacity: 0.8;">
+            Generated at: {new Date().toISOString()}
+          </p>
+        </div>
+      )}
+
+      <!-- Client-Side Demo -->
+      <div class="client-demo">
+        <h2>Client-Side Processing</h2>
+        <p>Try processing a message in your browser:</p>
+
+        <div class="input-group">
+          <label for="module">Select Agent Pattern:</label>
+          <select id="module">
+            <option value="echo_example">Echo - Simple echo agent</option>
+            <option value="reflection_example">Reflection - Self-reflection pattern</option>
+            <option value="sequential_example">Sequential - Sequential processing</option>
+            <option value="parallel_example">Parallel - Parallel processing</option>
+            <option value="react_example">ReAct - Reasoning + acting</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="message">Your Message:</label>
+          <textarea
+            id="message"
+            placeholder="Type your message here..."
+            rows="4"
+          ></textarea>
+        </div>
+
+        <button id="sendButton" class="send-button">
+          🚀 Send to Agent
+        </button>
+
+        <div id="clientResponse">
+          <strong>🤖 Agent Response (Client):</strong>
+          <p id="responseText"></p>
+        </div>
+      </div>
+
+      <footer>
+        <p>
+          <strong>How it works:</strong> Astro runs WASM modules on the server during build/SSR,
+          and optionally on the client for interactive features. This provides the best of both worlds.
+        </p>
+        <p>
+          <strong>Server rendering:</strong> Zero JavaScript shipped | <strong>Client rendering:</strong> 4.5KB-66KB modules
+        </p>
+        <p>
+          Learn more: <a href="https://github.com/agenkit/agenkit" target="_blank" rel="noopener">
+            github.com/agenkit/agenkit
+          </a>
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      import { createZigAgent } from '@agenkit/wasm';
+
+      const moduleSelect = document.getElementById('module');
+      const messageInput = document.getElementById('message');
+      const sendButton = document.getElementById('sendButton');
+      const responseDiv = document.getElementById('clientResponse');
+      const responseText = document.getElementById('responseText');
+
+      let agent = null;
+      let processing = false;
+
+      async function loadAgent() {
+        const moduleName = moduleSelect.value;
+        agent = await createZigAgent(moduleName, `astro-${moduleName}`, ['client', 'browser']);
+      }
+
+      async function handleSend() {
+        if (!agent || !messageInput.value.trim() || processing) return;
+
+        try {
+          processing = true;
+          sendButton.disabled = true;
+          sendButton.textContent = '⏳ Processing...';
+          responseDiv.classList.remove('show');
+
+          const result = await agent.process({
+            role: 'user',
+            content: messageInput.value,
+            metadata: {
+              timestamp: new Date().toISOString(),
+              source: 'astro-client',
+            },
+          });
+
+          if (result.ok && result.message) {
+            responseText.textContent = result.message.content;
+            responseDiv.classList.add('show');
+          }
+        } catch (err) {
+          responseText.textContent = `Error: ${err.message}`;
+          responseDiv.classList.add('show');
+        } finally {
+          processing = false;
+          sendButton.disabled = false;
+          sendButton.textContent = '🚀 Send to Agent';
+        }
+      }
+
+      // Load initial agent
+      loadAgent();
+
+      // Reload agent when module changes
+      moduleSelect.addEventListener('change', loadAgent);
+
+      // Send message on button click
+      sendButton.addEventListener('click', handleSend);
+
+      // Send on Enter (without Shift)
+      messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+        }
+      });
+    </script>
+  </body>
+</html>

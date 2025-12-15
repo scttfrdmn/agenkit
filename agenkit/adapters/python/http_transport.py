@@ -5,7 +5,9 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 import httpx
+from opentelemetry.trace import SpanKind, Status, StatusCode
 
+from ...observability.tracing import get_tracer
 from .errors import ConnectionClosedError
 from .errors import ConnectionError as ConnError
 from .transport import Transport
@@ -44,6 +46,7 @@ class HTTPTransport(Transport):
         self.response_stream: httpx.Response | None = None
         self._stream_iterator: AsyncIterator[str] | None = None
         self._connected = False
+        self._tracer = get_tracer()
 
     def _detect_version(self, url: str) -> HTTPVersion:
         """Detect HTTP version from URL scheme."""
@@ -64,36 +67,47 @@ class HTTPTransport(Transport):
 
     async def connect(self) -> None:
         """Establish connection to HTTP endpoint with connection pooling."""
-        try:
-            # Configure connection pooling limits
-            # max_connections: total connections allowed across all hosts
-            # max_keepalive_connections: idle connections to keep alive
-            limits = httpx.Limits(max_connections=100, max_keepalive_connections=20)
+        with self._tracer.start_as_current_span(
+            "http.connect",
+            kind=SpanKind.CLIENT,
+        ) as span:
+            span.set_attribute("http.url", self.normalized_url)
+            span.set_attribute("http.version", self.version.value)
 
-            # Configure HTTP client based on version with connection pooling
-            if self.version == HTTPVersion.HTTP2:
-                # HTTP/2 cleartext (h2c) with connection pooling
-                self.client = httpx.AsyncClient(
-                    http2=True, timeout=httpx.Timeout(30.0), limits=limits
-                )
-            elif self.version == HTTPVersion.HTTP3:
-                # HTTP/3 over QUIC with connection pooling
-                # Note: httpx doesn't support HTTP/3 yet, so we fall back to HTTP/2
-                self.client = httpx.AsyncClient(
-                    http2=True, timeout=httpx.Timeout(30.0), limits=limits
-                )
-            else:
-                # HTTP/1.1 with automatic HTTP/2 upgrade for HTTPS and connection pooling
-                self.client = httpx.AsyncClient(
-                    http2=True, timeout=httpx.Timeout(30.0), limits=limits
-                )
+            try:
+                # Configure connection pooling limits
+                # max_connections: total connections allowed across all hosts
+                # max_keepalive_connections: idle connections to keep alive
+                limits = httpx.Limits(max_connections=100, max_keepalive_connections=20)
 
-            # Test connectivity with HEAD request
-            await self.client.head(f"{self.normalized_url}/health")
-            self._connected = True
+                # Configure HTTP client based on version with connection pooling
+                if self.version == HTTPVersion.HTTP2:
+                    # HTTP/2 cleartext (h2c) with connection pooling
+                    self.client = httpx.AsyncClient(
+                        http2=True, timeout=httpx.Timeout(30.0), limits=limits
+                    )
+                elif self.version == HTTPVersion.HTTP3:
+                    # HTTP/3 over QUIC with connection pooling
+                    # Note: httpx doesn't support HTTP/3 yet, so we fall back to HTTP/2
+                    self.client = httpx.AsyncClient(
+                        http2=True, timeout=httpx.Timeout(30.0), limits=limits
+                    )
+                else:
+                    # HTTP/1.1 with automatic HTTP/2 upgrade for HTTPS and connection pooling
+                    self.client = httpx.AsyncClient(
+                        http2=True, timeout=httpx.Timeout(30.0), limits=limits
+                    )
 
-        except Exception as e:
-            raise ConnError(f"Failed to connect to {self.normalized_url}: {e}")
+                # Test connectivity with HEAD request
+                await self.client.head(f"{self.normalized_url}/health")
+                self._connected = True
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise ConnError(f"Failed to connect to {self.normalized_url}: {e}")
 
     async def send(self, data: bytes) -> None:
         """Send data over HTTP (not used directly, use send_framed)."""
@@ -115,44 +129,70 @@ class HTTPTransport(Transport):
         if not self.client:
             raise ConnError("Not connected")
 
-        try:
-            # Decode envelope to determine method
-            envelope = json.loads(data.decode("utf-8"))
-            method = envelope.get("payload", {}).get("method", "process")
+        # Decode envelope to determine method
+        envelope = json.loads(data.decode("utf-8"))
+        method = envelope.get("payload", {}).get("method", "process")
 
-            if method == "stream":
-                # For streaming, send POST to /stream and keep response open
-                response = await self.client.post(
-                    f"{self.normalized_url}/stream",
-                    content=data,
-                    headers={"Content-Type": "application/json", "Accept": "text/event-stream"},
-                )
+        # Create span for HTTP request
+        span_name = f"http.{method}"
+        with self._tracer.start_as_current_span(
+            span_name,
+            kind=SpanKind.CLIENT,
+        ) as span:
+            span.set_attribute("http.method", "POST")
+            span.set_attribute("http.url", self.normalized_url)
+            span.set_attribute("rpc.method", method)
 
-                if response.status_code != 200:
-                    raise ConnError(f"HTTP error {response.status_code}: {response.text}")
+            try:
+                if method == "stream":
+                    # For streaming, send POST to /stream and keep response open
+                    endpoint = f"{self.normalized_url}/stream"
+                    span.set_attribute("http.target", "/stream")
 
-                # Store response for SSE reading
-                self.response_stream = response
-                self._stream_iterator = response.aiter_lines()
+                    response = await self.client.post(
+                        endpoint,
+                        content=data,
+                        headers={"Content-Type": "application/json", "Accept": "text/event-stream"},
+                    )
 
-            else:
-                # For non-streaming, send POST to /process
-                response = await self.client.post(
-                    f"{self.normalized_url}/process",
-                    content=data,
-                    headers={"Content-Type": "application/json"},
-                )
+                    span.set_attribute("http.status_code", response.status_code)
 
-                if response.status_code != 200:
-                    raise ConnError(f"HTTP error {response.status_code}: {response.text}")
+                    if response.status_code != 200:
+                        span.set_status(Status(StatusCode.ERROR, f"HTTP {response.status_code}"))
+                        raise ConnError(f"HTTP error {response.status_code}: {response.text}")
 
-                # Store response for receive_framed
-                self._pending_response = response.content
+                    # Store response for SSE reading
+                    self.response_stream = response
+                    self._stream_iterator = response.aiter_lines()
 
-        except Exception as e:
-            if isinstance(e, ConnError):
+                else:
+                    # For non-streaming, send POST to /process
+                    endpoint = f"{self.normalized_url}/process"
+                    span.set_attribute("http.target", "/process")
+
+                    response = await self.client.post(
+                        endpoint,
+                        content=data,
+                        headers={"Content-Type": "application/json"},
+                    )
+
+                    span.set_attribute("http.status_code", response.status_code)
+
+                    if response.status_code != 200:
+                        span.set_status(Status(StatusCode.ERROR, f"HTTP {response.status_code}"))
+                        raise ConnError(f"HTTP error {response.status_code}: {response.text}")
+
+                    # Store response for receive_framed
+                    self._pending_response = response.content
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as e:
+                if not isinstance(e, ConnError):
+                    span.record_exception(e)
+                    span.set_status(Status(StatusCode.ERROR, str(e)))
+                    raise ConnError(f"Failed to send HTTP request: {e}")
                 raise
-            raise ConnError(f"Failed to send HTTP request: {e}")
 
     async def receive_framed(self) -> bytes:
         """Receive HTTP response."""

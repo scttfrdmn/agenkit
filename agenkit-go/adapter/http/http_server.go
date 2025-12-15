@@ -24,6 +24,11 @@ import (
 	"github.com/scttfrdmn/agenkit/agenkit-go/middleware"
 )
 
+const (
+	// AgenkitVersion is the current version of the Agenkit library
+	AgenkitVersion = "0.46.0"
+)
+
 // sanitizeErrorMessage sanitizes error messages to prevent information disclosure.
 // Logs the full error server-side and returns a safe generic message.
 func sanitizeErrorMessage(errorCode string, err error) string {
@@ -69,13 +74,14 @@ type ServerOptions struct {
 
 // HTTPAgent is an HTTP server wrapper for exposing agents over HTTP.
 type HTTPAgent struct {
-	agent     agenkit.Agent
-	server    *http.Server
+	agent       agenkit.Agent
+	server      *http.Server
 	http3Server *http3.Server
-	mux       *http.ServeMux
-	mu        sync.Mutex
-	options   ServerOptions
-	upgrader  websocket.Upgrader
+	mux         *http.ServeMux
+	mu          sync.Mutex
+	options     ServerOptions
+	upgrader    websocket.Upgrader
+	startTime   time.Time // Track server start time for uptime
 }
 
 // NewHTTPAgent creates a new HTTP agent server with default options (HTTP/1.1 only).
@@ -129,9 +135,10 @@ func NewHTTPAgentWithOptions(agent agenkit.Agent, addr string, options ServerOpt
 
 	mux := http.NewServeMux()
 	h := &HTTPAgent{
-		agent:   agent,
-		mux:     mux,
-		options: options,
+		agent:     agent,
+		mux:       mux,
+		options:   options,
+		startTime: time.Now(), // Track server start time for uptime
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  4096,
 			WriteBufferSize: 4096,
@@ -143,6 +150,8 @@ func NewHTTPAgentWithOptions(agent agenkit.Agent, addr string, options ServerOpt
 
 	// Register handlers
 	mux.HandleFunc("/health", h.handleHealth)
+	mux.HandleFunc("/ready", h.handleReady)
+	mux.HandleFunc("/live", h.handleLive)
 	mux.HandleFunc("/process", h.handleProcess)
 	mux.HandleFunc("/stream", h.handleStream)
 	mux.HandleFunc("/ws", h.handleWebSocket)
@@ -261,12 +270,75 @@ func (h *HTTPAgent) Stop() error {
 }
 
 // handleHealth handles health check requests.
+// Returns overall health status with version and uptime information.
+// Suitable for monitoring and status dashboards.
 func (h *HTTPAgent) handleHealth(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodHead && r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
+	uptime := int(time.Since(h.startTime).Seconds())
+	healthData := map[string]interface{}{
+		"status":  "healthy",
+		"version": AgenkitVersion,
+		"uptime":  uptime,
+		"agent":   h.agent.Name(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(healthData); err != nil {
+		log.Printf("Failed to encode health response: %v", err)
+	}
+}
+
+// handleReady handles readiness probe requests.
+// Indicates whether the server is ready to accept traffic.
+// Used by Kubernetes and load balancers to determine if the pod
+// should receive requests.
+func (h *HTTPAgent) handleReady(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodHead && r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Basic readiness: server is running and agent is available
+	// In production, add additional checks (database, cache, etc.)
+	readyData := map[string]interface{}{
+		"ready": true,
+		"checks": map[string]string{
+			"server": "ok",
+			"agent":  "ok",
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(readyData); err != nil {
+		log.Printf("Failed to encode ready response: %v", err)
+	}
+}
+
+// handleLive handles liveness probe requests.
+// Indicates whether the server process is alive.
+// Used by Kubernetes to determine if the pod needs to be restarted.
+// Should return success unless the process is deadlocked or unrecoverable.
+func (h *HTTPAgent) handleLive(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodHead && r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	liveData := map[string]interface{}{
+		"alive": true,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(liveData); err != nil {
+		log.Printf("Failed to encode live response: %v", err)
+	}
 }
 
 // handleProcess handles process requests.

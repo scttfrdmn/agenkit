@@ -2,6 +2,7 @@
 
 import json
 import logging
+import time
 from typing import Any
 
 from aiohttp import web
@@ -14,6 +15,13 @@ from .codec import decode_message, encode_message
 from .errors import InvalidMessageError
 
 logger = logging.getLogger(__name__)
+
+# Get version from package
+try:
+    from importlib.metadata import version
+    AGENKIT_VERSION = version("agenkit")
+except Exception:
+    AGENKIT_VERSION = "unknown"
 
 
 def _sanitize_error_message(error_code: str, error: Exception) -> str:
@@ -97,6 +105,7 @@ class HTTPAgentServer:
         self.host = host
         self.port = port
         self.enable_http2 = enable_http2
+        self.start_time = time.time()  # Track server start time for uptime
         # Increase max request size to 10MB for large messages
         self.app = web.Application(client_max_size=10 * 1024 * 1024)
         self.runner: web.AppRunner | None = None
@@ -104,6 +113,8 @@ class HTTPAgentServer:
 
         # Register routes (add_get automatically adds HEAD)
         self.app.router.add_get("/health", self.handle_health)
+        self.app.router.add_get("/ready", self.handle_ready)
+        self.app.router.add_get("/live", self.handle_live)
         self.app.router.add_post("/process", self.handle_process)
         self.app.router.add_post("/stream", self.handle_stream)
 
@@ -134,8 +145,68 @@ class HTTPAgentServer:
         logger.info(f"Agent '{self.agent.name}' stopped")
 
     async def handle_health(self, request: Request) -> Response:
-        """Handle health check requests."""
-        return Response(status=200)
+        """Handle health check requests.
+
+        Returns overall health status with version and uptime information.
+        Suitable for monitoring and status dashboards.
+
+        Returns:
+            JSON response with status, version, uptime, and agent name
+        """
+        uptime = int(time.time() - self.start_time)
+        health_data = {
+            "status": "healthy",
+            "version": AGENKIT_VERSION,
+            "uptime": uptime,
+            "agent": self.agent.name,
+        }
+        return Response(
+            body=json.dumps(health_data).encode("utf-8"),
+            content_type="application/json",
+            status=200,
+        )
+
+    async def handle_ready(self, request: Request) -> Response:
+        """Handle readiness probe requests.
+
+        Indicates whether the server is ready to accept traffic.
+        Used by Kubernetes and load balancers to determine if the pod
+        should receive requests.
+
+        Returns:
+            JSON response with readiness status
+        """
+        # Basic readiness: server is running and agent is available
+        # In production, add additional checks (database, cache, etc.)
+        ready_data = {
+            "ready": True,
+            "checks": {
+                "server": "ok",
+                "agent": "ok",
+            },
+        }
+        return Response(
+            body=json.dumps(ready_data).encode("utf-8"),
+            content_type="application/json",
+            status=200,
+        )
+
+    async def handle_live(self, request: Request) -> Response:
+        """Handle liveness probe requests.
+
+        Indicates whether the server process is alive.
+        Used by Kubernetes to determine if the pod needs to be restarted.
+        Should return success unless the process is deadlocked or unrecoverable.
+
+        Returns:
+            JSON response with liveness status
+        """
+        live_data = {"alive": True}
+        return Response(
+            body=json.dumps(live_data).encode("utf-8"),
+            content_type="application/json",
+            status=200,
+        )
 
     async def handle_process(self, request: Request) -> Response:
         """Handle process requests."""

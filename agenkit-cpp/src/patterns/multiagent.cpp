@@ -131,9 +131,68 @@ MultiAgentOrchestrator::execute_sequential(const core::Message& message) {
 
 core::Result<core::Message, core::AgentError>
 MultiAgentOrchestrator::execute_parallel(const core::Message& message) {
-    // For simplicity, parallel execution is the same as sequential for now
-    // True parallel execution would require std::async or thread pools
-    return execute_sequential(message);
+    // Launch all agents in parallel using std::async
+    std::vector<std::future<core::Result<core::Message, core::AgentError>>> futures;
+    std::vector<std::string> agent_names;
+    std::vector<AgentTask> pending_tasks;
+
+    for (auto& [agent_name, agent] : agents_) {
+        agent_names.push_back(agent_name);
+
+        AgentTask task;
+        task.agent_name = agent_name;
+        task.description = message.content_as_str();
+        task.status = TaskStatus::InProgress;
+        pending_tasks.push_back(task);
+
+        // Use std::async with launch::async policy to force parallel execution
+        // Capture agent pointer separately to avoid C++20 structured binding capture issue
+        auto agent_ptr = agent;
+        auto future = std::async(std::launch::async, [agent_ptr, msg = core::Message(message)]() mutable {
+            return agent_ptr->process(std::move(msg)).get();
+        });
+        futures.push_back(std::move(future));
+    }
+
+    // Collect results from all parallel executions
+    std::vector<std::string> results;
+    results.reserve(agent_names.size());
+
+    for (size_t i = 0; i < futures.size(); i++) {
+        auto& task = pending_tasks[i];
+        auto result = futures[i].get();
+
+        if (result.is_ok()) {
+            auto response = result.unwrap();
+            task.result = response.content_as_str();
+            task.status = TaskStatus::Completed;
+
+            results.push_back(agent_names[i] + ": " + response.content_as_str());
+        } else {
+            auto error = result.unwrap_err();
+            task.error = error.message();
+            task.status = TaskStatus::Failed;
+
+            results.push_back(agent_names[i] + ": Failed - " + error.message());
+        }
+
+        tasks_.push_back(task);
+    }
+
+    // Combine results
+    std::ostringstream combined;
+    for (size_t i = 0; i < results.size(); i++) {
+        if (i > 0) combined << "\n\n";
+        combined << results[i];
+    }
+
+    auto response = core::Message::with_text("assistant", combined.str());
+    response.with_metadata("pattern", "multiagent");
+    response.with_metadata("strategy", "parallel");
+    response.with_metadata("agent_count", static_cast<int>(agents_.size()));
+    response.with_metadata("tasks_completed", static_cast<int>(results.size()));
+
+    return core::Result<core::Message, core::AgentError>::ok(response);
 }
 
 // ConsensusAgent implementation
@@ -150,11 +209,24 @@ std::vector<std::string> ConsensusAgent::capabilities() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 ConsensusAgent::process(core::Message message) {
+    // Launch all agents in parallel using std::async
+    std::vector<std::future<core::Result<core::Message, core::AgentError>>> futures;
+    futures.reserve(agents_.size());
+
+    for (auto& agent : agents_) {
+        // Capture agent pointer separately to avoid potential issues
+        auto agent_ptr = agent;
+        auto future = std::async(std::launch::async, [agent_ptr, msg = core::Message(message)]() mutable {
+            return agent_ptr->process(std::move(msg)).get();
+        });
+        futures.push_back(std::move(future));
+    }
+
+    // Collect responses from all parallel executions
     std::vector<std::string> responses;
     responses.reserve(agents_.size());
 
-    for (auto& agent : agents_) {
-        auto future = agent->process(core::Message(message));
+    for (auto& future : futures) {
         auto result = future.get();
 
         if (result.is_ok()) {

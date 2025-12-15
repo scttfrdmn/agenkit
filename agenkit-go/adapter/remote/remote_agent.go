@@ -104,28 +104,47 @@ func (r *RemoteAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 	timeoutCtx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
-	// Send request
-	requestBytes, err := codec.EncodeBytes(request)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode request: %w", err)
-	}
+	var response *codec.Envelope
+	var err error
 
-	if err := r.transport.SendFramed(timeoutCtx, requestBytes); err != nil {
-		return nil, err
-	}
-
-	// Receive response
-	responseBytes, err := r.transport.ReceiveFramed(timeoutCtx)
-	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			return nil, errors.NewAgentTimeoutError(r.name, r.timeout.Seconds())
+	// Use fast path if available (gRPC transport with protobuf optimization)
+	if envTransport, ok := r.transport.(transport.EnvelopeTransport); ok {
+		// FAST PATH: Send envelope directly (skip JSON encoding/decoding)
+		if err := envTransport.SendFramedEnvelope(timeoutCtx, request); err != nil {
+			return nil, err
 		}
-		return nil, err
-	}
 
-	response, err := codec.DecodeBytes(responseBytes)
-	if err != nil {
-		return nil, err
+		response, err = envTransport.ReceiveFramedEnvelope(timeoutCtx)
+		if err != nil {
+			if ctx.Err() == context.DeadlineExceeded {
+				return nil, errors.NewAgentTimeoutError(r.name, r.timeout.Seconds())
+			}
+			return nil, err
+		}
+	} else {
+		// SLOW PATH: Encode to JSON for backward compatibility
+		requestBytes, err := codec.EncodeBytes(request)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode request: %w", err)
+		}
+
+		if err := r.transport.SendFramed(timeoutCtx, requestBytes); err != nil {
+			return nil, err
+		}
+
+		// Receive response
+		responseBytes, err := r.transport.ReceiveFramed(timeoutCtx)
+		if err != nil {
+			if ctx.Err() == context.DeadlineExceeded {
+				return nil, errors.NewAgentTimeoutError(r.name, r.timeout.Seconds())
+			}
+			return nil, err
+		}
+
+		response, err = codec.DecodeBytes(responseBytes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Handle response
@@ -188,89 +207,136 @@ func (r *RemoteAgent) Stream(ctx context.Context, message *agenkit.Message) (<-c
 		timeoutCtx, cancel := context.WithTimeout(ctx, r.timeout)
 		defer cancel()
 
-		// Send request
-		requestBytes, err := codec.EncodeBytes(request)
-		if err != nil {
-			errorChan <- fmt.Errorf("failed to encode request: %w", err)
-			return
-		}
-
-		if err := r.transport.SendFramed(timeoutCtx, requestBytes); err != nil {
-			errorChan <- err
-			return
-		}
-
-		// Receive stream chunks
-		for {
-			responseBytes, err := r.transport.ReceiveFramed(timeoutCtx)
-			if err != nil {
-				if ctx.Err() == context.DeadlineExceeded {
-					errorChan <- errors.NewAgentTimeoutError(r.name, r.timeout.Seconds())
-				} else {
-					errorChan <- err
-				}
-				return
-			}
-
-			response, err := codec.DecodeBytes(responseBytes)
-			if err != nil {
+		// Use fast path if available (gRPC transport with protobuf optimization)
+		if envTransport, ok := r.transport.(transport.EnvelopeTransport); ok {
+			// FAST PATH: Send envelope directly (skip JSON encoding/decoding)
+			if err := envTransport.SendFramedEnvelope(timeoutCtx, request); err != nil {
 				errorChan <- err
 				return
 			}
 
-			// Handle response type
-			switch response.Type {
-			case codec.TypeError:
-				payload := response.Payload
-				errorMessage, _ := payload["error_message"].(string)
-				errorDetails, _ := payload["error_details"].(map[string]interface{})
-				errorChan <- errors.NewRemoteExecutionError(r.name, errorMessage, errorDetails)
-				return
-
-			case codec.TypeStreamChunk:
-				// Decode chunk message
-				messageData, ok := response.Payload["message"].(map[string]interface{})
-				if !ok {
-					errorChan <- errors.NewInvalidMessageError("invalid message format in stream chunk", nil)
+			// Receive stream chunks
+			for {
+				response, err := envTransport.ReceiveFramedEnvelope(timeoutCtx)
+				if err != nil {
+					if ctx.Err() == context.DeadlineExceeded {
+						errorChan <- errors.NewAgentTimeoutError(r.name, r.timeout.Seconds())
+					} else {
+						errorChan <- err
+					}
 					return
 				}
 
-				// Convert map to MessageData
-				msgData := codec.MessageData{
-					Role:      messageData["role"].(string),
-					Content:   messageData["content"].(string),
-					Metadata:  messageData["metadata"].(map[string]interface{}),
-					Timestamp: messageData["timestamp"].(string),
+				if err := r.handleStreamResponse(response, messageChan, errorChan, ctx); err != nil {
+					return
+				}
+				if response.Type == codec.TypeStreamEnd {
+					return
+				}
+			}
+		} else {
+			// SLOW PATH: Encode to JSON for backward compatibility
+			requestBytes, err := codec.EncodeBytes(request)
+			if err != nil {
+				errorChan <- fmt.Errorf("failed to encode request: %w", err)
+				return
+			}
+
+			if err := r.transport.SendFramed(timeoutCtx, requestBytes); err != nil {
+				errorChan <- err
+				return
+			}
+
+			// Receive stream chunks
+			for {
+				responseBytes, err := r.transport.ReceiveFramed(timeoutCtx)
+				if err != nil {
+					if ctx.Err() == context.DeadlineExceeded {
+						errorChan <- errors.NewAgentTimeoutError(r.name, r.timeout.Seconds())
+					} else {
+						errorChan <- err
+					}
+					return
 				}
 
-				chunk, err := codec.DecodeMessage(msgData)
+				response, err := codec.DecodeBytes(responseBytes)
 				if err != nil {
 					errorChan <- err
 					return
 				}
 
-				select {
-				case messageChan <- chunk:
-				case <-ctx.Done():
-					errorChan <- ctx.Err()
+				if err := r.handleStreamResponse(response, messageChan, errorChan, ctx); err != nil {
 					return
 				}
-
-			case codec.TypeStreamEnd:
-				// Stream complete
-				return
-
-			default:
-				errorChan <- errors.NewInvalidMessageError(
-					fmt.Sprintf("expected 'stream_chunk' or 'stream_end' but got '%s'", response.Type),
-					map[string]interface{}{"response": response},
-				)
-				return
+				if response.Type == codec.TypeStreamEnd {
+					return
+				}
 			}
 		}
 	}()
 
 	return messageChan, errorChan
+}
+
+// handleStreamResponse handles a single stream response.
+func (r *RemoteAgent) handleStreamResponse(
+	response *codec.Envelope,
+	messageChan chan *agenkit.Message,
+	errorChan chan error,
+	ctx context.Context,
+) error {
+	// Handle response type
+	switch response.Type {
+	case codec.TypeError:
+		payload := response.Payload
+		errorMessage, _ := payload["error_message"].(string)
+		errorDetails, _ := payload["error_details"].(map[string]interface{})
+		errorChan <- errors.NewRemoteExecutionError(r.name, errorMessage, errorDetails)
+		return fmt.Errorf("remote error")
+
+	case codec.TypeStreamChunk:
+		// Decode chunk message
+		messageData, ok := response.Payload["message"].(map[string]interface{})
+		if !ok {
+			errorChan <- errors.NewInvalidMessageError("invalid message format in stream chunk", nil)
+			return fmt.Errorf("invalid message format")
+		}
+
+		// Convert map to MessageData
+		msgData := codec.MessageData{
+			Role:      messageData["role"].(string),
+			Content:   messageData["content"].(string),
+			Metadata:  messageData["metadata"].(map[string]interface{}),
+			Timestamp: messageData["timestamp"].(string),
+		}
+
+		chunk, err := codec.DecodeMessage(msgData)
+		if err != nil {
+			errorChan <- err
+			return err
+		}
+
+		select {
+		case messageChan <- chunk:
+		case <-ctx.Done():
+			errorChan <- ctx.Err()
+			return ctx.Err()
+		}
+
+	case codec.TypeStreamEnd:
+		// Stream complete
+		return nil
+
+	default:
+		err := errors.NewInvalidMessageError(
+			fmt.Sprintf("expected 'stream_chunk' or 'stream_end' but got '%s'", response.Type),
+			map[string]interface{}{"response": response},
+		)
+		errorChan <- err
+		return err
+	}
+
+	return nil
 }
 
 // Capabilities returns the agent capabilities.

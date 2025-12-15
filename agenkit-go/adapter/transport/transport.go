@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/codec"
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/errors"
 )
 
@@ -29,6 +30,23 @@ type Transport interface {
 
 	// IsConnected returns whether the transport is currently connected.
 	IsConnected() bool
+}
+
+// EnvelopeTransport is an optional interface for transports that can work
+// with Envelope structs directly, bypassing JSON serialization for better performance.
+// gRPC transport implements this to skip JSON encoding/decoding and work directly with protobuf.
+type EnvelopeTransport interface {
+	Transport
+
+	// SendFramedEnvelope sends an envelope directly without JSON encoding (fast path).
+	// This eliminates unnecessary JSON encoding/decoding for transports that use
+	// structured formats like protobuf.
+	SendFramedEnvelope(ctx context.Context, envelope *codec.Envelope) error
+
+	// ReceiveFramedEnvelope receives an envelope directly without JSON decoding (fast path).
+	// This eliminates unnecessary JSON encoding/decoding for transports that use
+	// structured formats like protobuf.
+	ReceiveFramedEnvelope(ctx context.Context) (*codec.Envelope, error)
 }
 
 // UnixSocketTransport implements transport over Unix domain sockets.

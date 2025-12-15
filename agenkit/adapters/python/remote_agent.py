@@ -114,17 +114,26 @@ class RemoteAgent(Agent):
         # Serialize requests on same connection to prevent interleaving
         async with self._lock:
             try:
-                # Send request
-                request_bytes = encode_bytes(request)
-                await asyncio.wait_for(
-                    self._transport.send_framed(request_bytes), timeout=self._timeout
-                )
+                # Use fast path if available (gRPC transport with protobuf optimization)
+                if hasattr(self._transport, "send_framed_envelope"):
+                    # FAST PATH: Send dict directly (skip JSON encoding/decoding)
+                    await asyncio.wait_for(
+                        self._transport.send_framed_envelope(request), timeout=self._timeout
+                    )
+                    response = await asyncio.wait_for(
+                        self._transport.receive_framed_envelope(), timeout=self._timeout
+                    )
+                else:
+                    # SLOW PATH: Encode to JSON for backward compatibility
+                    request_bytes = encode_bytes(request)
+                    await asyncio.wait_for(
+                        self._transport.send_framed(request_bytes), timeout=self._timeout
+                    )
 
-                # Receive response
-                response_bytes = await asyncio.wait_for(
-                    self._transport.receive_framed(), timeout=self._timeout
-                )
-                response = decode_bytes(response_bytes)
+                    response_bytes = await asyncio.wait_for(
+                        self._transport.receive_framed(), timeout=self._timeout
+                    )
+                    response = decode_bytes(response_bytes)
 
                 # Handle response
                 if response["type"] == "error":
@@ -177,43 +186,84 @@ class RemoteAgent(Agent):
         # Serialize requests on same connection to prevent interleaving
         async with self._lock:
             try:
-                # Send request
-                request_bytes = encode_bytes(request)
-                await asyncio.wait_for(
-                    self._transport.send_framed(request_bytes), timeout=self._timeout
-                )
-
-                # Receive stream chunks
-                while True:
-                    # Receive next frame
-                    response_bytes = await asyncio.wait_for(
-                        self._transport.receive_framed(), timeout=self._timeout
+                # Use fast path if available (gRPC transport with protobuf optimization)
+                if hasattr(self._transport, "send_framed_envelope"):
+                    # FAST PATH: Send dict directly (skip JSON encoding/decoding)
+                    await asyncio.wait_for(
+                        self._transport.send_framed_envelope(request), timeout=self._timeout
                     )
-                    response = decode_bytes(response_bytes)
 
-                    # Handle response type
-                    if response["type"] == "error":
-                        error_payload = response["payload"]
-                        raise RemoteExecutionError(
-                            self._name,
-                            error_payload["error_message"],
-                            error_payload.get("error_details"),
+                    # Receive stream chunks
+                    while True:
+                        # Receive next frame (dict directly, no JSON decoding)
+                        response = await asyncio.wait_for(
+                            self._transport.receive_framed_envelope(), timeout=self._timeout
                         )
 
-                    elif response["type"] == "stream_chunk":
-                        # Yield chunk message
-                        chunk = decode_message(response["payload"]["message"])
-                        yield chunk
+                        # Handle response type
+                        if response["type"] == "error":
+                            error_payload = response["payload"]
+                            raise RemoteExecutionError(
+                                self._name,
+                                error_payload["error_message"],
+                                error_payload.get("error_details"),
+                            )
 
-                    elif response["type"] == "stream_end":
-                        # Stream complete
-                        break
+                        elif response["type"] == "stream_chunk":
+                            # Yield chunk message
+                            chunk = decode_message(response["payload"]["message"])
+                            yield chunk
 
-                    else:
-                        raise InvalidMessageError(
-                            f"Expected 'stream_chunk' or 'stream_end' but got '{response['type']}'",
-                            {"response": response},
+                        elif response["type"] == "stream_end":
+                            # Stream complete
+                            break
+
+                        else:
+                            msg = (
+                                f"Expected 'stream_chunk' or 'stream_end' "
+                                f"but got '{response['type']}'"
+                            )
+                            raise InvalidMessageError(msg, {"response": response})
+
+                else:
+                    # SLOW PATH: Encode to JSON for backward compatibility
+                    request_bytes = encode_bytes(request)
+                    await asyncio.wait_for(
+                        self._transport.send_framed(request_bytes), timeout=self._timeout
+                    )
+
+                    # Receive stream chunks
+                    while True:
+                        # Receive next frame
+                        response_bytes = await asyncio.wait_for(
+                            self._transport.receive_framed(), timeout=self._timeout
                         )
+                        response = decode_bytes(response_bytes)
+
+                        # Handle response type
+                        if response["type"] == "error":
+                            error_payload = response["payload"]
+                            raise RemoteExecutionError(
+                                self._name,
+                                error_payload["error_message"],
+                                error_payload.get("error_details"),
+                            )
+
+                        elif response["type"] == "stream_chunk":
+                            # Yield chunk message
+                            chunk = decode_message(response["payload"]["message"])
+                            yield chunk
+
+                        elif response["type"] == "stream_end":
+                            # Stream complete
+                            break
+
+                        else:
+                            msg = (
+                                f"Expected 'stream_chunk' or 'stream_end' "
+                                f"but got '{response['type']}'"
+                            )
+                            raise InvalidMessageError(msg, {"response": response})
 
             except asyncio.TimeoutError as e:
                 raise AgentTimeoutError(self._name, self._timeout) from e

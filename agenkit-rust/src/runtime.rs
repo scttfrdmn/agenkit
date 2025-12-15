@@ -66,17 +66,11 @@ pub async fn yield_now() {
 // ============================================================================
 
 #[cfg(feature = "wasm")]
-pub fn spawn<F>(future: F) -> JoinHandle<F::Output>
+pub fn spawn<F>(future: F)
 where
-    F: Future + 'static,
-    F::Output: 'static,
+    F: Future<Output = ()> + 'static,
 {
-    Box::pin(async move {
-        wasm_bindgen_futures::spawn_local(future);
-        // Note: spawn_local doesn't return a value, so we can't join
-        // This is a limitation of WASM compared to tokio
-        panic!("WASM spawn cannot be joined - use fire-and-forget pattern");
-    })
+    wasm_bindgen_futures::spawn_local(future);
 }
 
 #[cfg(feature = "wasm")]

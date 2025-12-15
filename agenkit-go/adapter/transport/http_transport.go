@@ -93,6 +93,8 @@ func newHTTPTransportWithVersion(baseURL string, version HTTPVersion) *HTTPTrans
 			MaxConnsPerHost:     100, // Maximum connections per host (0 = unlimited)
 			IdleConnTimeout:     90,  // How long idle connections are kept alive (seconds)
 			DisableKeepAlives:   false,
+			// Enable gzip compression for 40-60% bandwidth savings
+			DisableCompression: false,
 		}
 		if err := http2.ConfigureTransport(transport); err != nil {
 			log.Printf("Failed to configure HTTP/2: %v", err)
@@ -129,6 +131,8 @@ func newHTTPTransportWithVersion(baseURL string, version HTTPVersion) *HTTPTrans
 			MaxConnsPerHost:     100, // Maximum connections per host (0 = unlimited)
 			IdleConnTimeout:     90,  // How long idle connections are kept alive (seconds)
 			DisableKeepAlives:   false,
+			// Enable gzip compression for 40-60% bandwidth savings
+			DisableCompression: false,
 		}
 		// Enable HTTP/2 support for HTTPS connections
 		if err := http2.ConfigureTransport(transport); err != nil {

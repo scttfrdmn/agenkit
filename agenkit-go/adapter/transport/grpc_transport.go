@@ -163,6 +163,9 @@ func (t *GRPCTransport) Connect(ctx context.Context) error {
 	})
 	opts = append(opts, kaParams)
 
+	// Enable gzip compression for 40-60% bandwidth savings
+	opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor("gzip")))
+
 	conn, err := grpc.NewClient(target, opts...)
 	if err != nil {
 		tlsNote := ""

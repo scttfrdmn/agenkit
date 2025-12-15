@@ -76,6 +76,7 @@ func main() {
 		"agenkit-go-example",
 		"",   // No OTLP endpoint for demo
 		true, // Export traces to console
+		1.0,  // 100% sampling for demo
 	)
 	if err != nil {
 		panic(err)

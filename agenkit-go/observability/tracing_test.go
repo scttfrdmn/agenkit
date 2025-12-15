@@ -367,7 +367,7 @@ func TestTracingMiddlewarePreservesAgentInterface(t *testing.T) {
 }
 
 func TestInitTracingWithConsoleExport(t *testing.T) {
-	provider, err := InitTracing("test-service", "", true)
+	provider, err := InitTracing("test-service", "", true, 1.0)
 	if err != nil {
 		t.Fatalf("InitTracing failed: %v", err)
 	}

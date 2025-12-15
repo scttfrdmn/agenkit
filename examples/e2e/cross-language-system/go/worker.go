@@ -349,6 +349,7 @@ func main() {
 		fmt.Sprintf("image-processor-%s", workerID),
 		"",  // No exporter endpoint for demo
 		false, // No console exporter
+		1.0,   // 100% sampling
 	)
 	if err != nil {
 		log.Printf("Warning: Failed to initialize tracing: %v", err)

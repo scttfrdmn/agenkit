@@ -25,7 +25,21 @@ import (
 var globalTracerProvider *sdktrace.TracerProvider
 
 // InitTracing initializes OpenTelemetry tracing with the specified configuration.
-func InitTracing(serviceName string, otlpEndpoint string, consoleExport bool) (*sdktrace.TracerProvider, error) {
+//
+// Parameters:
+//   - serviceName: Name of the service for trace identification
+//   - otlpEndpoint: Optional OTLP collector endpoint (e.g., "localhost:4317"). Empty string disables OTLP export.
+//   - consoleExport: If true, export spans to console for debugging
+//   - sampleRate: Sampling rate (0.0 to 1.0). Default 1.0 (100%). For production, use lower rates (e.g., 0.01 = 1%)
+//
+// Example:
+//
+//	// Development: 100% sampling with console export
+//	tp, _ := InitTracing("my-service", "", true, 1.0)
+//
+//	// Production: 1% sampling with OTLP export
+//	tp, _ := InitTracing("my-service", "localhost:4317", false, 0.01)
+func InitTracing(serviceName string, otlpEndpoint string, consoleExport bool, sampleRate float64) (*sdktrace.TracerProvider, error) {
 	// Create resource with service name
 	res, err := resource.New(
 		context.Background(),
@@ -64,9 +78,15 @@ func InitTracing(serviceName string, otlpEndpoint string, consoleExport bool) (*
 		spanProcessors = append(spanProcessors, sdktrace.NewBatchSpanProcessor(exporter))
 	}
 
-	// Create tracer provider
+	// Configure sampling
+	// ParentBased: if parent span is sampled, always sample child spans
+	// Otherwise, use TraceIDRatioBased for root spans
+	sampler := sdktrace.ParentBased(sdktrace.TraceIDRatioBased(sampleRate))
+
+	// Create tracer provider with sampler
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithResource(res),
+		sdktrace.WithSampler(sampler),
 	)
 
 	// Add all span processors

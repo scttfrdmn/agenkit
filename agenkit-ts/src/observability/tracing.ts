@@ -14,6 +14,7 @@ import {
   SimpleSpanProcessor as BaseSimpleSpanProcessor,
   BatchSpanProcessor as BaseBatchSpanProcessor,
 } from '@opentelemetry/sdk-trace-base';
+import { TraceIdRatioBasedSampler, ParentBasedSampler } from '@opentelemetry/sdk-trace-base';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { Agent, Message } from '../core/interfaces';
 import { BaseMiddleware } from '../middleware/base';
@@ -28,6 +29,8 @@ export interface TracingConfig {
   otlpEndpoint?: string;
   /** Enable console export for development (default: false) */
   consoleExport?: boolean;
+  /** Sampling rate (0.0 to 1.0). Default 1.0 (100%). For production, use lower rates (e.g., 0.01 = 1%) */
+  sampleRate?: number;
 }
 
 /**
@@ -53,16 +56,17 @@ let tracer: Tracer | null = null;
  * ```typescript
  * import { initTracing } from '@agenkit/core/observability';
  *
- * // Development: console export
+ * // Development: console export, 100% sampling
  * initTracing({
  *   serviceName: 'my-agent-service',
  *   consoleExport: true
  * });
  *
- * // Production: OTLP export to Jaeger/Tempo
+ * // Production: OTLP export to Jaeger/Tempo, 1% sampling
  * initTracing({
  *   serviceName: 'my-agent-service',
- *   otlpEndpoint: 'http://localhost:4318/v1/traces'
+ *   otlpEndpoint: 'http://localhost:4318/v1/traces',
+ *   sampleRate: 0.01
  * });
  * ```
  */
@@ -74,9 +78,18 @@ export function initTracing(config: TracingConfig): NodeTracerProvider {
     })
   );
 
-  // Create tracer provider
+  // Configure sampling
+  // ParentBased: if parent span is sampled, always sample child spans
+  // Otherwise, use TraceIdRatioBasedSampler for root spans
+  const sampleRate = config.sampleRate ?? 1.0;
+  const sampler = new ParentBasedSampler({
+    root: new TraceIdRatioBasedSampler(sampleRate),
+  });
+
+  // Create tracer provider with sampler
   tracerProvider = new NodeTracerProvider({
     resource,
+    sampler,
   });
 
   // Add exporters

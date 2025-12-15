@@ -66,10 +66,44 @@ class MathAgent(Agent):
         content = message.content.strip()
 
         try:
-            # Simple evaluation (use a proper math parser in production)
+            # Safe AST-based evaluation (no arbitrary code execution)
             if any(op in content for op in ['+', '-', '*', '/', '**', '%']):
-                # Extract numbers and operators
-                result = eval(content, {"__builtins__": {}}, {})
+                import ast
+                import operator
+
+                # Safe operations mapping
+                safe_ops = {
+                    ast.Add: operator.add,
+                    ast.Sub: operator.sub,
+                    ast.Mult: operator.mul,
+                    ast.Div: operator.truediv,
+                    ast.Pow: operator.pow,
+                    ast.Mod: operator.mod,
+                    ast.USub: operator.neg,
+                }
+
+                def safe_eval(node):
+                    """Safely evaluate a math expression AST node."""
+                    if isinstance(node, ast.Constant):
+                        return node.value
+                    elif isinstance(node, ast.BinOp):
+                        left = safe_eval(node.left)
+                        right = safe_eval(node.right)
+                        op = safe_ops.get(type(node.op))
+                        if op is None:
+                            raise ValueError(f"Unsupported operation: {type(node.op).__name__}")
+                        return op(left, right)
+                    elif isinstance(node, ast.UnaryOp):
+                        operand = safe_eval(node.operand)
+                        op = safe_ops.get(type(node.op))
+                        if op is None:
+                            raise ValueError(f"Unsupported operation: {type(node.op).__name__}")
+                        return op(operand)
+                    else:
+                        raise ValueError(f"Unsupported expression: {type(node).__name__}")
+
+                tree = ast.parse(content, mode="eval")
+                result = safe_eval(tree.body)
 
                 response = f"Calculation: {content} = {result}"
 

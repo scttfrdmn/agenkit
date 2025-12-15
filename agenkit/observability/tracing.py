@@ -13,6 +13,7 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
 from opentelemetry.trace import SpanKind, Status, StatusCode
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
@@ -23,6 +24,7 @@ def init_tracing(
     service_name: str = "agenkit",
     otlp_endpoint: str | None = None,
     console_export: bool = False,
+    sample_rate: float = 1.0,
 ) -> TracerProvider:
     """
     Initialize OpenTelemetry tracing.
@@ -31,9 +33,22 @@ def init_tracing(
         service_name: Name of the service for trace identification
         otlp_endpoint: Optional OTLP collector endpoint (e.g., "http://localhost:4317")
         console_export: If True, export spans to console for debugging
+        sample_rate: Sampling rate (0.0 to 1.0). Default 1.0 (100%). For production,
+                     use lower rates (e.g., 0.01 = 1%) to reduce overhead.
 
     Returns:
         Configured TracerProvider
+
+    Example:
+        # Development: 100% sampling with console export
+        init_tracing(service_name="my-service", console_export=True)
+
+        # Production: 1% sampling with OTLP export
+        init_tracing(
+            service_name="my-service",
+            otlp_endpoint="http://localhost:4317",
+            sample_rate=0.01
+        )
     """
     global _tracer
 
@@ -44,8 +59,13 @@ def init_tracing(
         }
     )
 
-    # Create tracer provider
-    provider = TracerProvider(resource=resource)
+    # Configure sampling
+    # ParentBased: if parent span is sampled, always sample child spans
+    # Otherwise, use TraceIdRatioBased for root spans
+    sampler = ParentBased(root=TraceIdRatioBased(sample_rate))
+
+    # Create tracer provider with sampler
+    provider = TracerProvider(resource=resource, sampler=sampler)
 
     # Add exporters
     if otlp_endpoint:

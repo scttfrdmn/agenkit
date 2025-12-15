@@ -63,7 +63,7 @@ func main() {
 	}
 
 	// Initialize tracing (no exporters for test server, just W3C propagation)
-	_, err := observability.InitTracing("test-server", "", false)
+	_, err := observability.InitTracing("test-server", "", false, 1.0)
 	if err != nil {
 		log.Printf("Warning: Failed to initialize tracing: %v", err)
 	}

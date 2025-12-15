@@ -126,6 +126,9 @@ class GRPCTransport(Transport):
                     # Performance tuning
                     ("grpc.http2.min_time_between_pings_ms", 10000),  # Min 10s between pings
                     ("grpc.http2.max_ping_strikes", 2),  # Allow 2 bad pings before closing
+                    # Compression for 40-60% bandwidth savings
+                    ("grpc.default_compression_algorithm", "gzip"),
+                    ("grpc.default_compression_level", "medium"),
                 ]
 
                 if self._use_tls:

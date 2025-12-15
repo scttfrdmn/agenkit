@@ -80,22 +80,25 @@ class HTTPTransport(Transport):
                 # max_keepalive_connections: idle connections to keep alive
                 limits = httpx.Limits(max_connections=100, max_keepalive_connections=20)
 
-                # Configure HTTP client based on version with connection pooling
+                # Configure HTTP client based on version with connection pooling and compression
+                # Enable gzip compression for 40-60% bandwidth savings
+                headers = {"Accept-Encoding": "gzip, deflate"}
+
                 if self.version == HTTPVersion.HTTP2:
                     # HTTP/2 cleartext (h2c) with connection pooling
                     self.client = httpx.AsyncClient(
-                        http2=True, timeout=httpx.Timeout(30.0), limits=limits
+                        http2=True, timeout=httpx.Timeout(30.0), limits=limits, headers=headers
                     )
                 elif self.version == HTTPVersion.HTTP3:
                     # HTTP/3 over QUIC with connection pooling
                     # Note: httpx doesn't support HTTP/3 yet, so we fall back to HTTP/2
                     self.client = httpx.AsyncClient(
-                        http2=True, timeout=httpx.Timeout(30.0), limits=limits
+                        http2=True, timeout=httpx.Timeout(30.0), limits=limits, headers=headers
                     )
                 else:
                     # HTTP/1.1 with automatic HTTP/2 upgrade for HTTPS and connection pooling
                     self.client = httpx.AsyncClient(
-                        http2=True, timeout=httpx.Timeout(30.0), limits=limits
+                        http2=True, timeout=httpx.Timeout(30.0), limits=limits, headers=headers
                     )
 
                 # Test connectivity with HEAD request

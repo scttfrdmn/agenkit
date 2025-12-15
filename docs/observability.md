@@ -9,6 +9,7 @@ Agenkit provides comprehensive observability features built on [OpenTelemetry](h
 - [Quick Start](#quick-start)
   - [Python](#python-quick-start)
   - [Go](#go-quick-start)
+  - [TypeScript](#typescript-quick-start)
 - [Distributed Tracing](#distributed-tracing)
 - [Metrics Collection](#metrics-collection)
 - [Structured Logging](#structured-logging)
@@ -179,6 +180,71 @@ func main() {
 
 View metrics at: `http://localhost:8002/metrics`
 
+### TypeScript Quick Start
+
+```typescript
+import {
+  initTracing,
+  initMetrics,
+  configureLogging,
+  LogLevel,
+  TracingMiddleware,
+  MetricsMiddleware,
+  getLoggerWithTrace,
+} from '@agenkit/core/observability';
+import { Agent, Message } from '@agenkit/core';
+
+// 1. Initialize observability
+initTracing({
+  serviceName: 'my-agent-service',
+  consoleExport: true,  // For development
+  // otlpEndpoint: 'http://localhost:4318/v1/traces',  // For production
+});
+
+await initMetrics({
+  serviceName: 'my-agent-service',
+  port: 8003,  // Prometheus metrics endpoint
+});
+
+configureLogging({
+  level: LogLevel.INFO,
+  structured: true,
+  includeTraceContext: true,
+});
+
+// 2. Wrap your agent with observability middleware
+class MyAgent implements Agent {
+  readonly name = 'my-agent';
+  readonly capabilities = ['process'];
+
+  async process(message: Message): Promise<Message> {
+    return {
+      role: 'assistant',
+      content: `Processed: ${message.content}`,
+    };
+  }
+}
+
+// Create agent with observability
+const baseAgent = new MyAgent();
+const tracedAgent = new TracingMiddleware(baseAgent);
+const monitoredAgent = new MetricsMiddleware(tracedAgent);
+
+// 3. Process messages - observability happens automatically!
+async function main() {
+  const message: Message = {
+    role: 'user',
+    content: 'Hello!',
+  };
+  const response = await monitoredAgent.process(message);
+  console.log(response.content);
+}
+
+main();
+```
+
+View metrics at: `http://localhost:8003/metrics`
+
 ## Distributed Tracing
 
 ### How It Works
@@ -225,6 +291,11 @@ traced_agent = TracingMiddleware(agent, span_name="custom.operation")
 tracedAgent := observability.NewTracingMiddleware(agent, "custom.operation")
 ```
 
+```typescript
+// TypeScript
+const tracedAgent = new TracingMiddleware(agent, "custom.operation");
+```
+
 ### Exporting Traces
 
 #### Development: Console Export
@@ -235,6 +306,10 @@ init_tracing(service_name="my-service", console_export=True)
 
 ```go
 observability.InitTracing("my-service", "", true)
+```
+
+```typescript
+initTracing({ serviceName: "my-service", consoleExport: true });
 ```
 
 #### Production: OTLP Export
@@ -248,6 +323,13 @@ init_tracing(
 
 ```go
 observability.InitTracing("my-service", "localhost:4317", false)
+```
+
+```typescript
+initTracing({
+  serviceName: "my-service",
+  otlpEndpoint: "http://localhost:4318/v1/traces",  // Jaeger, Tempo, etc.
+});
 ```
 
 ## Metrics Collection
@@ -273,6 +355,9 @@ curl http://localhost:8001/metrics
 
 # Go (port 8002 by default)
 curl http://localhost:8002/metrics
+
+# TypeScript (port 8003 by default)
+curl http://localhost:8003/metrics
 ```
 
 ### Example Prometheus Queries
@@ -303,6 +388,10 @@ scrape_configs:
   - job_name: 'agenkit-go'
     static_configs:
       - targets: ['localhost:8002']
+
+  - job_name: 'agenkit-typescript'
+    static_configs:
+      - targets: ['localhost:8003']
 ```
 
 ## Structured Logging
@@ -331,6 +420,20 @@ logger := observability.GetLoggerWithTrace()
 logger.Info("Processing message", slog.String("user_id", "123"))
 ```
 
+```typescript
+// TypeScript
+import { configureLogging, LogLevel, getLoggerWithTrace } from '@agenkit/core/observability';
+
+configureLogging({
+  level: LogLevel.INFO,
+  structured: true,
+  includeTraceContext: true,
+});
+
+const logger = getLoggerWithTrace('MyAgent');
+logger.info("Processing message", { user_id: "123" });
+```
+
 ### Log Format
 
 Structured logs are output in JSON format:
@@ -356,7 +459,7 @@ The automatic inclusion of `trace_id` and `span_id` allows you to:
 
 ## Cross-Language Compatibility
 
-Agenkit's observability features are designed for polyglot systems:
+Agenkit's observability features are designed for polyglot systems with full support across Python, Go, and TypeScript:
 
 ### Trace Propagation
 
@@ -459,6 +562,31 @@ observability.ConfigureLogging(
 )
 ```
 
+### TypeScript Configuration
+
+```typescript
+// Detailed tracing configuration
+initTracing({
+  serviceName: "my-service",
+  otlpEndpoint: "http://localhost:4318/v1/traces",  // Optional: OTLP collector
+  consoleExport: false,  // Optional: Console output
+});
+
+// Detailed metrics configuration
+await initMetrics({
+  serviceName: "my-service",
+  port: 8003,  // Prometheus port
+  host: "0.0.0.0",  // Optional: hostname
+});
+
+// Detailed logging configuration
+configureLogging({
+  level: LogLevel.INFO,      // Log level
+  structured: true,          // JSON format
+  includeTraceContext: true, // Add trace IDs
+});
+```
+
 ## Best Practices
 
 ### 1. Initialize Early
@@ -535,6 +663,15 @@ atexit.register(shutdown)
 // Go
 defer observability.Shutdown(context.Background())
 defer observability.ShutdownMetrics(context.Background())
+```
+
+```typescript
+// TypeScript
+process.on('SIGTERM', async () => {
+  await shutdownTracing();
+  await shutdownMetrics();
+  process.exit(0);
+});
 ```
 
 ### 6. Don't Log Sensitive Data
@@ -618,7 +755,12 @@ logger.info("User authenticated", extra={"password": password})
 - [OpenTelemetry Documentation](https://opentelemetry.io/docs/)
 - [Prometheus Documentation](https://prometheus.io/docs/)
 - [W3C Trace Context Specification](https://www.w3.org/TR/trace-context/)
-- [Agenkit Examples](../examples/observability/)
+- [Python API Reference](./observability-python-api.md)
+- [Go API Reference](./observability-go-api.md)
+- [TypeScript API Reference](./observability-typescript-api.md)
+- [Python Examples](../examples/observability/)
+- [Go Examples](../agenkit-go/examples/observability/)
+- [TypeScript Example](../agenkit-ts/examples/observability-example.ts)
 
 ## Support
 

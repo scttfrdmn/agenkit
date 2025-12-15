@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agenkit WASM + React</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Load @agenkit/wasm from local package -->
+    <script type="module">
+      // In development, load from local package
+      // In production, this would be bundled by Vite
+      import { createZigAgent } from '../../packages/wasm/dist/index.mjs';
+      window.createZigAgent = createZigAgent;
+    </script>
+  </body>
+</html>

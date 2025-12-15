@@ -1,0 +1,62 @@
+{
+  "name": "@agenkit/wasm",
+  "version": "0.44.0",
+  "description": "WebAssembly bindings for Agenkit - Run AI agents in browsers and edge environments",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./zig": {
+      "types": "./dist/zig.d.ts",
+      "import": "./dist/zig.mjs",
+      "require": "./dist/zig.js"
+    }
+  },
+  "files": [
+    "dist",
+    "wasm",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "node --test",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "agenkit",
+    "wasm",
+    "webassembly",
+    "ai",
+    "agents",
+    "llm",
+    "zig",
+    "browser",
+    "edge"
+  ],
+  "author": "Agenkit Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agenkit/agenkit.git",
+    "directory": "packages/wasm"
+  },
+  "bugs": {
+    "url": "https://github.com/agenkit/agenkit/issues"
+  },
+  "homepage": "https://github.com/agenkit/agenkit#readme",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

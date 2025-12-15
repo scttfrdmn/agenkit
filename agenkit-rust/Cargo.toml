@@ -51,7 +51,7 @@ anyhow = "1.0"
 regex = "1.10"
 
 # UUID generation
-uuid = { version = "1.6", features = ["v4"] }
+uuid = { version = "1.6", features = ["v4", "js"] }
 
 # Random number generation
 rand = "0.8"

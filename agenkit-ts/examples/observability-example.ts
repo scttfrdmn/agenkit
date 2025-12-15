@@ -39,9 +39,10 @@ class EchoAgent implements Agent {
   }
 
   async process(message: Message): Promise<Message> {
+    const contentLength = typeof message.content === 'string' ? message.content.length : 0;
     this.logger.info('Processing message', {
       message_role: message.role,
-      message_length: message.content?.length || 0,
+      message_length: contentLength,
     });
 
     // Simulate some processing time
@@ -56,8 +57,9 @@ class EchoAgent implements Agent {
       },
     };
 
+    const responseLength = typeof response.content === 'string' ? response.content.length : 0;
     this.logger.info('Message processed successfully', {
-      response_length: response.content?.length || 0,
+      response_length: responseLength,
     });
 
     return response;

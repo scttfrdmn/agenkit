@@ -125,6 +125,7 @@ class BatchingDecorator(Agent):
         # Background task for processing batches
         self._batch_task: asyncio.Task | None = None
         self._shutdown = False
+        self._shutdown_event = asyncio.Event()  # Event-driven shutdown signaling
 
     @property
     def name(self) -> str:
@@ -172,30 +173,47 @@ class BatchingDecorator(Agent):
         batch: list[BatchRequest] = []
         deadline = None
 
+        # Wait for first request (blocking, no polling)
+        # Use asyncio.wait to handle shutdown without polling
+        queue_get_task = asyncio.create_task(self._queue.get())
+        shutdown_task = asyncio.create_task(self._shutdown_event.wait())
+
+        done, pending = await asyncio.wait(
+            {queue_get_task, shutdown_task}, return_when=asyncio.FIRST_COMPLETED
+        )
+
+        # Cancel pending tasks
+        for task in pending:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+
+        # Check if shutdown was signaled
+        if shutdown_task in done:
+            # Cancel queue get if it's still pending
+            if queue_get_task in pending:
+                queue_get_task.cancel()
+            return []
+
+        # Get the first request
         try:
-            # Wait for first request (blocking)
-            first_request = await asyncio.wait_for(
-                self._queue.get(),
-                timeout=0.1,  # Short timeout to check shutdown
-            )
+            first_request = await queue_get_task
             batch.append(first_request)
             deadline = time.time() + self._config.max_wait_time
+        except asyncio.CancelledError:
+            return []
 
-            # Collect more requests until batch full or timeout
-            while len(batch) < self._config.max_batch_size:
-                remaining_time = deadline - time.time()
-                if remaining_time <= 0:
-                    break
+        # Collect more requests until batch full or timeout
+        while len(batch) < self._config.max_batch_size:
+            remaining_time = deadline - time.time()
+            if remaining_time <= 0:
+                break
 
-                try:
-                    request = await asyncio.wait_for(self._queue.get(), timeout=remaining_time)
-                    batch.append(request)
-                except asyncio.TimeoutError:
-                    break
-
-        except asyncio.TimeoutError:
-            # No requests in queue, return empty batch
-            pass
+            try:
+                request = await asyncio.wait_for(self._queue.get(), timeout=remaining_time)
+                batch.append(request)
+            except asyncio.TimeoutError:
+                break
 
         return batch
 
@@ -319,6 +337,7 @@ class BatchingDecorator(Agent):
         3. Cancels the batch processor task
         """
         self._shutdown = True
+        self._shutdown_event.set()  # Signal shutdown to batch processor
 
         # Flush any pending requests
         await self.flush()

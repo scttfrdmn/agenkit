@@ -8,9 +8,11 @@ from urllib.parse import urlparse
 
 import grpc
 from grpc import aio
+from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from proto import agent_pb2, agent_pb2_grpc
 
+from ...observability.tracing import get_tracer
 from .errors import ConnectionClosedError, InvalidMessageError, MalformedPayloadError
 from .errors import ConnectionError as ConnError
 from .transport import Transport
@@ -63,6 +65,7 @@ class GRPCTransport(Transport):
         self._connected = False
         self._response_queue: asyncio.Queue[bytes] | None = None
         self._lock = asyncio.Lock()
+        self._tracer = get_tracer()
 
         # TLS configuration
         self._use_tls = use_tls
@@ -94,53 +97,66 @@ class GRPCTransport(Transport):
         if self._connected:
             return
 
-        try:
-            # Create async gRPC channel with keepalive options
+        with self._tracer.start_as_current_span(
+            "grpc.connect",
+            kind=SpanKind.CLIENT,
+        ) as span:
             target = f"{self._host}:{self._port}"
+            span.set_attribute("rpc.system", "grpc")
+            span.set_attribute("net.peer.name", self._host)
+            span.set_attribute("net.peer.port", self._port)
+            span.set_attribute("rpc.grpc.tls", self._use_tls)
 
-            # Configure gRPC channel options for connection pooling and keepalive
-            # These options improve performance by reusing connections
-            options = [
-                # Keep connections alive with periodic pings
-                ("grpc.keepalive_time_ms", 10000),  # Send keepalive ping every 10s
-                ("grpc.keepalive_timeout_ms", 5000),  # Wait 5s for keepalive response
-                ("grpc.keepalive_permit_without_calls", 1),  # Allow keepalive pings when no calls
-                ("grpc.http2.max_pings_without_data", 0),  # Unlimited pings without data
-                # Connection management
-                ("grpc.max_connection_idle_ms", 30000),  # Close connection after 30s idle
-                ("grpc.max_connection_age_ms", 300000),  # Max connection age 5 minutes
-                # Performance tuning
-                ("grpc.http2.min_time_between_pings_ms", 10000),  # Min 10s between pings
-                ("grpc.http2.max_ping_strikes", 2),  # Allow 2 bad pings before closing
-            ]
+            try:
+                # Create async gRPC channel with keepalive options
 
-            if self._use_tls:
-                # Create TLS credentials
-                credentials = grpc.ssl_channel_credentials(
-                    root_certificates=self._root_certificates,
-                    private_key=self._private_key,
-                    certificate_chain=self._certificate_chain,
-                )
-                self._channel = aio.secure_channel(target, credentials, options=options)
-            else:
-                # INSECURE: Only for local development/testing
-                # Production should ALWAYS use TLS (use_tls=True)
-                self._channel = aio.insecure_channel(target, options=options)
+                # Configure gRPC channel options for connection pooling and keepalive
+                # These options improve performance by reusing connections
+                options = [
+                    # Keep connections alive with periodic pings
+                    ("grpc.keepalive_time_ms", 10000),  # Send keepalive ping every 10s
+                    ("grpc.keepalive_timeout_ms", 5000),  # Wait 5s for keepalive response
+                    ("grpc.keepalive_permit_without_calls", 1),  # Allow keepalive pings when no calls
+                    ("grpc.http2.max_pings_without_data", 0),  # Unlimited pings without data
+                    # Connection management
+                    ("grpc.max_connection_idle_ms", 30000),  # Close connection after 30s idle
+                    ("grpc.max_connection_age_ms", 300000),  # Max connection age 5 minutes
+                    # Performance tuning
+                    ("grpc.http2.min_time_between_pings_ms", 10000),  # Min 10s between pings
+                    ("grpc.http2.max_ping_strikes", 2),  # Allow 2 bad pings before closing
+                ]
 
-            # Create stub
-            self._stub = agent_pb2_grpc.AgentServiceStub(self._channel)
+                if self._use_tls:
+                    # Create TLS credentials
+                    credentials = grpc.ssl_channel_credentials(
+                        root_certificates=self._root_certificates,
+                        private_key=self._private_key,
+                        certificate_chain=self._certificate_chain,
+                    )
+                    self._channel = aio.secure_channel(target, credentials, options=options)
+                else:
+                    # INSECURE: Only for local development/testing
+                    # Production should ALWAYS use TLS (use_tls=True)
+                    self._channel = aio.insecure_channel(target, options=options)
 
-            # Test connection by checking channel state
-            # Note: gRPC channels are lazy, so we'll mark as connected
-            # and let actual RPC calls fail if the server is unavailable
-            self._connected = True
-            self._response_queue = asyncio.Queue()
+                # Create stub
+                self._stub = agent_pb2_grpc.AgentServiceStub(self._channel)
 
-        except Exception as e:
-            tls_note = " (TLS enabled)" if self._use_tls else " (INSECURE: no TLS)"
-            raise ConnError(
-                f"Failed to connect to gRPC server at {self._host}:{self._port}{tls_note}: {e}"
-            ) from e
+                # Test connection by checking channel state
+                # Note: gRPC channels are lazy, so we'll mark as connected
+                # and let actual RPC calls fail if the server is unavailable
+                self._connected = True
+                self._response_queue = asyncio.Queue()
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                tls_note = " (TLS enabled)" if self._use_tls else " (INSECURE: no TLS)"
+                raise ConnError(
+                    f"Failed to connect to gRPC server at {self._host}:{self._port}{tls_note}: {e}"
+                ) from e
 
     async def send(self, data: bytes) -> None:
         """Send data over gRPC (not used - gRPC has native framing).
@@ -170,7 +186,7 @@ class GRPCTransport(Transport):
         """
         raise NotImplementedError("Use receive_framed() for gRPC transport")
 
-    async def send_framed(self, data: bytes) -> None:
+    async def send_framed(self, data: bytes) -> None:  # noqa: PLR0915
         """Send length-prefixed framed data via gRPC.
 
         This method converts the JSON envelope to a protobuf Request,
@@ -201,50 +217,79 @@ class GRPCTransport(Transport):
             method = envelope.get("payload", {}).get("method", "process")
             is_streaming = method == "stream"
 
-            async with self._lock:
-                if is_streaming:
-                    # Use ProcessStream RPC
-                    try:
-                        stream = self._stub.ProcessStream(pb_request, timeout=30.0)
+            # Create span for gRPC call
+            span_name = f"grpc.{method}"
+            with self._tracer.start_as_current_span(
+                span_name,
+                kind=SpanKind.CLIENT,
+            ) as span:
+                span.set_attribute("rpc.system", "grpc")
+                span.set_attribute("rpc.service", "AgentService")
+                span.set_attribute("rpc.method", "ProcessStream" if is_streaming else "Process")
+                span.set_attribute("net.peer.name", self._host)
+                span.set_attribute("net.peer.port", self._port)
 
-                        # Process stream chunks
-                        async for chunk in stream:
-                            # Convert protobuf StreamChunk to JSON envelope
-                            json_envelope = self._protobuf_chunk_to_json(chunk)
+                async with self._lock:
+                    if is_streaming:
+                        # Use ProcessStream RPC
+                        try:
+                            stream = self._stub.ProcessStream(pb_request, timeout=30.0)
+
+                            # Process stream chunks
+                            chunk_count = 0
+                            async for chunk in stream:
+                                # Convert protobuf StreamChunk to JSON envelope
+                                json_envelope = self._protobuf_chunk_to_json(chunk)
+                                json_bytes = json.dumps(json_envelope).encode("utf-8")
+                                await self._response_queue.put(json_bytes)
+                                chunk_count += 1
+
+                            span.set_attribute("grpc.stream.chunks", chunk_count)
+                            span.set_attribute("grpc.status_code", 0)  # OK
+                            span.set_status(Status(StatusCode.OK))
+
+                        except grpc.aio.AioRpcError as e:
+                            span.set_attribute("grpc.status_code", e.code().value[0])
+                            span.record_exception(e)
+                            span.set_status(Status(StatusCode.ERROR, e.details() or str(e)))
+
+                            # Convert gRPC error to JSON error envelope
+                            error_envelope = self._create_error_envelope(
+                                envelope.get("id", "unknown"),
+                                self._grpc_status_to_error_code(e.code()),
+                                e.details() or str(e),
+                            )
+                            error_bytes = json.dumps(error_envelope).encode("utf-8")
+                            await self._response_queue.put(error_bytes)
+
+                    else:
+                        # Use unary Process RPC
+                        try:
+                            pb_response: agent_pb2.Response = await self._stub.Process(
+                                pb_request, timeout=30.0
+                            )
+
+                            # Convert protobuf Response to JSON envelope
+                            json_envelope = self._protobuf_response_to_json(pb_response)
                             json_bytes = json.dumps(json_envelope).encode("utf-8")
                             await self._response_queue.put(json_bytes)
 
-                    except grpc.aio.AioRpcError as e:
-                        # Convert gRPC error to JSON error envelope
-                        error_envelope = self._create_error_envelope(
-                            envelope.get("id", "unknown"),
-                            self._grpc_status_to_error_code(e.code()),
-                            e.details() or str(e),
-                        )
-                        error_bytes = json.dumps(error_envelope).encode("utf-8")
-                        await self._response_queue.put(error_bytes)
+                            span.set_attribute("grpc.status_code", 0)  # OK
+                            span.set_status(Status(StatusCode.OK))
 
-                else:
-                    # Use unary Process RPC
-                    try:
-                        pb_response: agent_pb2.Response = await self._stub.Process(
-                            pb_request, timeout=30.0
-                        )
+                        except grpc.aio.AioRpcError as e:
+                            span.set_attribute("grpc.status_code", e.code().value[0])
+                            span.record_exception(e)
+                            span.set_status(Status(StatusCode.ERROR, e.details() or str(e)))
 
-                        # Convert protobuf Response to JSON envelope
-                        json_envelope = self._protobuf_response_to_json(pb_response)
-                        json_bytes = json.dumps(json_envelope).encode("utf-8")
-                        await self._response_queue.put(json_bytes)
-
-                    except grpc.aio.AioRpcError as e:
-                        # Convert gRPC error to JSON error envelope
-                        error_envelope = self._create_error_envelope(
-                            envelope.get("id", "unknown"),
-                            self._grpc_status_to_error_code(e.code()),
-                            e.details() or str(e),
-                        )
-                        error_bytes = json.dumps(error_envelope).encode("utf-8")
-                        await self._response_queue.put(error_bytes)
+                            # Convert gRPC error to JSON error envelope
+                            error_envelope = self._create_error_envelope(
+                                envelope.get("id", "unknown"),
+                                self._grpc_status_to_error_code(e.code()),
+                                e.details() or str(e),
+                            )
+                            error_bytes = json.dumps(error_envelope).encode("utf-8")
+                            await self._response_queue.put(error_bytes)
 
         except json.JSONDecodeError as e:
             raise MalformedPayloadError(f"Failed to decode JSON: {e}") from e

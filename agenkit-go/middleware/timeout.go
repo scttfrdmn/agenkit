@@ -12,9 +12,15 @@ import (
 
 // TimeoutConfig configures timeout behavior.
 type TimeoutConfig struct {
-	// Timeout is the request timeout duration.
+	// Timeout is the default request timeout duration.
 	// Default: 30 seconds
 	Timeout time.Duration
+
+	// MethodTimeouts allows configuring different timeouts for different methods/operations.
+	// The method is determined from message metadata "method" or "operation" field.
+	// If not specified, defaults to "process".
+	// Example: map[string]time.Duration{"process": 60*time.Second, "health_check": 5*time.Second}
+	MethodTimeouts map[string]time.Duration
 }
 
 // DefaultTimeoutConfig returns a timeout config with sensible defaults.
@@ -169,6 +175,32 @@ func (t *TimeoutDecorator) Metrics() *TimeoutMetrics {
 	return t.metrics
 }
 
+// getTimeoutForMessage returns the timeout for a specific message.
+// It checks message metadata for "method" or "operation" field to determine
+// the operation type, then returns the method-specific timeout if configured,
+// otherwise returns the default timeout.
+func (t *TimeoutDecorator) getTimeoutForMessage(message *agenkit.Message) time.Duration {
+	if len(t.config.MethodTimeouts) == 0 {
+		return t.config.Timeout
+	}
+
+	// Try to determine method from message metadata
+	method := "process" // Default method
+	if message.Metadata != nil {
+		if methodVal, ok := message.Metadata["method"].(string); ok {
+			method = methodVal
+		} else if opVal, ok := message.Metadata["operation"].(string); ok {
+			method = opVal
+		}
+	}
+
+	// Return method-specific timeout if configured, otherwise default
+	if methodTimeout, ok := t.config.MethodTimeouts[method]; ok {
+		return methodTimeout
+	}
+	return t.config.Timeout
+}
+
 // Process implements the Agent interface with timeout protection.
 //
 // This implementation uses a goroutine to ensure we can interrupt agents that
@@ -186,8 +218,11 @@ func (t *TimeoutDecorator) Metrics() *TimeoutMetrics {
 func (t *TimeoutDecorator) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	startTime := time.Now()
 
+	// Get timeout for this specific message/method
+	timeout := t.getTimeoutForMessage(message)
+
 	// Create a context with timeout
-	timeoutCtx, cancel := context.WithTimeout(ctx, t.config.Timeout)
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	// Pre-declare result struct to avoid allocation in hot path
@@ -216,7 +251,7 @@ func (t *TimeoutDecorator) Process(ctx context.Context, message *agenkit.Message
 				t.metrics.RecordTimeout(duration)
 				return nil, &TimeoutError{
 					AgentName: t.Name(),
-					Timeout:   t.config.Timeout,
+					Timeout:   timeout,
 				}
 			}
 
@@ -234,7 +269,7 @@ func (t *TimeoutDecorator) Process(ctx context.Context, message *agenkit.Message
 		t.metrics.RecordTimeout(duration)
 		return nil, &TimeoutError{
 			AgentName: t.Name(),
-			Timeout:   t.config.Timeout,
+			Timeout:   timeout,
 		}
 	}
 }

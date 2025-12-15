@@ -11,12 +11,17 @@ from agenkit.interfaces import Agent, Message
 class TimeoutConfig:
     """Configuration for timeout behavior."""
 
-    timeout: float = 30.0  # Request timeout in seconds
+    timeout: float = 30.0  # Default request timeout in seconds
+    method_timeouts: dict[str, float] | None = None  # Method-specific timeouts
 
     def __post_init__(self):
         """Validate configuration."""
         if self.timeout <= 0:
             raise ValueError("timeout must be positive")
+        if self.method_timeouts:
+            for method, method_timeout in self.method_timeouts.items():
+                if method_timeout <= 0:
+                    raise ValueError(f"timeout for method '{method}' must be positive")
 
 
 class TimeoutError(Exception):
@@ -125,8 +130,34 @@ class TimeoutDecorator(Agent):
         """Get current metrics."""
         return self._metrics
 
+    def _get_timeout_for_message(self, message: Message) -> float:
+        """Get the timeout for a specific message.
+
+        Checks message metadata for 'method' or 'operation' field to determine
+        the operation type, then returns the method-specific timeout if configured,
+        otherwise returns the default timeout.
+
+        Args:
+            message: The message to determine timeout for
+
+        Returns:
+            Timeout in seconds
+        """
+        if not self._config.method_timeouts:
+            return self._config.timeout
+
+        # Try to determine method from message metadata
+        method = message.metadata.get("method") or message.metadata.get("operation", "process")
+
+        # Return method-specific timeout if configured, otherwise default
+        return self._config.method_timeouts.get(method, self._config.timeout)
+
     async def process(self, message: Message) -> Message:
         """Process a message with timeout protection.
+
+        The timeout can be configured per-method by setting method_timeouts in the config.
+        The method is determined from the message metadata 'method' or 'operation' field,
+        defaulting to 'process' if not specified.
 
         Args:
             message: The input message
@@ -140,10 +171,13 @@ class TimeoutDecorator(Agent):
         """
         start_time = time.time()
 
+        # Get timeout for this specific message/method
+        timeout = self._get_timeout_for_message(message)
+
         try:
             # Use asyncio.wait_for to implement timeout
             result = await asyncio.wait_for(
-                self._agent.process(message), timeout=self._config.timeout
+                self._agent.process(message), timeout=timeout
             )
 
             duration = time.time() - start_time
@@ -158,7 +192,7 @@ class TimeoutDecorator(Agent):
                 self._metrics.record_timeout(duration)
 
             raise TimeoutError(
-                f"Request to agent '{self.name}' timed out after {self._config.timeout}s"
+                f"Request to agent '{self.name}' timed out after {timeout}s"
             )
 
         except Exception:
@@ -173,6 +207,9 @@ class TimeoutDecorator(Agent):
 
         Note: Streaming operations apply the timeout to the entire stream.
         If the complete stream doesn't finish within the timeout, it will be cancelled.
+
+        The timeout can be configured per-method by setting method_timeouts in the config,
+        using 'stream' as the method name.
 
         Args:
             message: The input message
@@ -189,6 +226,9 @@ class TimeoutDecorator(Agent):
 
         start_time = time.time()
 
+        # Get timeout for this specific message/method (stream operations)
+        timeout = self._get_timeout_for_message(message)
+
         async def stream_with_timeout():
             """Helper to wrap the streaming operation."""
             async for chunk in self._agent.stream(message):
@@ -201,7 +241,7 @@ class TimeoutDecorator(Agent):
                 async for chunk in stream_with_timeout():
                     # Check if we've exceeded timeout
                     elapsed = time.time() - start_time
-                    if elapsed > self._config.timeout:
+                    if elapsed > timeout:
                         raise asyncio.TimeoutError()
                     yield chunk
 
@@ -215,7 +255,7 @@ class TimeoutDecorator(Agent):
                     self._metrics.record_timeout(duration)
 
                 raise TimeoutError(
-                    f"Streaming request to agent '{self.name}' timed out after {self._config.timeout}s"
+                    f"Streaming request to agent '{self.name}' timed out after {timeout}s"
                 )
 
         except TimeoutError:

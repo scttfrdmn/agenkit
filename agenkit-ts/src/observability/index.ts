@@ -1,11 +1,24 @@
 /**
  * OpenTelemetry observability for Agenkit.
  *
- * Provides distributed tracing, Prometheus metrics, and structured logging
- * with trace correlation for production-grade agent monitoring.
+ * Provides distributed tracing, Prometheus metrics, structured logging,
+ * and audit logging with trace correlation for production-grade agent monitoring.
  *
  * @module observability
  */
+
+// Audit Logging
+export {
+  AuditEventType,
+  AuditSeverity,
+  AuditEvent,
+  AuditAdapter,
+  ConsoleAuditAdapter,
+  StructuredAuditAdapter,
+  FileAuditAdapter,
+  AuditLogger,
+  createAuditEvent,
+} from './audit';
 
 // Tracing
 export {

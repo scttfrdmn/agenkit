@@ -102,9 +102,11 @@ func newHTTPTransportWithVersion(baseURL string, version HTTPVersion) *HTTPTrans
 		client = &http.Client{
 			Transport: &http3.Transport{
 				TLSClientConfig: &tls.Config{
-					// For benchmarks and local testing with self-signed certificates
-					// Production deployments should use proper CA-signed certificates
-					InsecureSkipVerify: true,
+					// Verify certificates by default for security
+					// Use proper CA-signed certificates in production
+					// For local testing with self-signed certs, configure custom transport
+					InsecureSkipVerify: false,
+					MinVersion:         tls.VersionTLS13, // HTTP/3 requires TLS 1.3
 				},
 				// HTTP/3 connection pooling is handled internally by quic-go
 			},

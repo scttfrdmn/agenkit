@@ -213,13 +213,11 @@ func (d *BatchingDecorator) batchProcessor() {
 func (d *BatchingDecorator) collectBatch() []*batchRequest {
 	batch := make([]*batchRequest, 0, d.config.MaxBatchSize)
 
-	// Wait for first request with timeout
-	timeout := time.After(100 * time.Millisecond) // Short timeout to check shutdown
+	// Wait for first request (blocking, no polling timeout)
+	// select will block indefinitely until queue item or shutdown
 	select {
 	case req := <-d.queue:
 		batch = append(batch, req)
-	case <-timeout:
-		return batch
 	case <-d.shutdown:
 		return batch
 	}

@@ -10,6 +10,81 @@
 namespace agenkit {
 namespace transports {
 
+// ============================================================================
+// HttpConnectionPool Implementation
+// ============================================================================
+
+HttpConnectionPool& HttpConnectionPool::instance() {
+    static HttpConnectionPool pool;
+    return pool;
+}
+
+std::shared_ptr<httplib::Client> HttpConnectionPool::acquire(
+    const std::string& base_url,
+    const HttpTransportConfig& config
+) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    // Check if we have an available connection in the pool
+    auto& pool = pools_[base_url];
+    if (!pool.empty()) {
+        auto client = pool.back();
+        pool.pop_back();
+        return client;
+    }
+
+    // No available connection - create a new one
+    auto client = std::make_shared<httplib::Client>(base_url);
+
+    // Configure timeouts
+    client->set_read_timeout(config.timeout_secs, 0);
+    client->set_write_timeout(config.timeout_secs, 0);
+
+    // Enable keep-alive for connection reuse
+    if (config.keep_alive) {
+        client->set_keep_alive(true);
+    }
+
+    // Set API key header if provided
+    if (config.api_key) {
+        client->set_default_headers({
+            {"Authorization", "Bearer " + *config.api_key}
+        });
+    }
+
+    // Track pool size for this host
+    if (pool_sizes_.find(base_url) == pool_sizes_.end()) {
+        pool_sizes_[base_url] = config.pool_size;
+    }
+
+    return client;
+}
+
+void HttpConnectionPool::release(
+    const std::string& base_url,
+    std::shared_ptr<httplib::Client> client
+) {
+    if (!client) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    auto& pool = pools_[base_url];
+    int max_size = pool_sizes_[base_url];
+
+    // Only return to pool if we haven't exceeded max size
+    if (static_cast<int>(pool.size()) < max_size) {
+        pool.push_back(client);
+    }
+    // Otherwise let the shared_ptr delete the client
+}
+
+// ============================================================================
+// HttpAgent Implementation
+// ============================================================================
+
+
 HttpAgent::HttpAgent(std::string name, HttpTransportConfig config)
     : name_(std::move(name))
     , config_(std::move(config))
@@ -18,39 +93,35 @@ HttpAgent::HttpAgent(std::string name, HttpTransportConfig config)
     init_client();
 }
 
-HttpAgent::~HttpAgent() = default;
+HttpAgent::~HttpAgent() {
+    cleanup_client();
+}
 
 void HttpAgent::init_client() {
-    // Parse URL to extract scheme, host, port
+    // Validate URL format
     std::string url = config_.base_url;
-
-    // Simple URL parsing (assumes http:// or https://)
     bool is_https = (url.find("https://") == 0);
-    std::string prefix = is_https ? "https://" : "http://";
+    bool is_http = (url.find("http://") == 0);
 
-    if (url.find(prefix) != 0) {
+    if (!is_https && !is_http) {
         throw std::invalid_argument("URL must start with http:// or https://");
     }
 
-    std::string host_port = url.substr(prefix.length());
-
     // Remove trailing slash if present
-    if (!host_port.empty() && host_port.back() == '/') {
-        host_port.pop_back();
+    if (!url.empty() && url.back() == '/') {
+        url.pop_back();
+        config_.base_url = url;
     }
 
-    // Create client (httplib handles scheme internally)
-    client_ = std::make_unique<httplib::Client>(url);
+    // Acquire connection from pool
+    client_ = HttpConnectionPool::instance().acquire(config_.base_url, config_);
+}
 
-    // Set timeout
-    client_->set_read_timeout(config_.timeout_secs, 0);
-    client_->set_write_timeout(config_.timeout_secs, 0);
-
-    // Set API key header if provided
-    if (config_.api_key) {
-        client_->set_default_headers({
-            {"Authorization", "Bearer " + *config_.api_key}
-        });
+void HttpAgent::cleanup_client() {
+    if (client_) {
+        // Return connection to pool for reuse
+        HttpConnectionPool::instance().release(config_.base_url, client_);
+        client_ = nullptr;
     }
 }
 

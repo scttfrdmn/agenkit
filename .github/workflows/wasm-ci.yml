@@ -1,0 +1,317 @@
+name: WASM CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'agenkit-zig/**'
+      - 'agenkit-rust/**'
+      - 'agenkit-cpp/**'
+      - 'packages/wasm/**'
+      - 'examples/browser/**'
+      - 'tests/wasm/**'
+      - '.github/workflows/wasm-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'agenkit-zig/**'
+      - 'agenkit-rust/**'
+      - 'agenkit-cpp/**'
+      - 'packages/wasm/**'
+      - 'examples/browser/**'
+      - 'tests/wasm/**'
+      - '.github/workflows/wasm-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  # Build Zig WASM modules
+  build-zig-wasm:
+    name: Build Zig WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.2
+
+      - name: Cache Zig build
+        uses: actions/cache@v4
+        with:
+          path: |
+            agenkit-zig/.zig-cache
+            agenkit-zig/zig-out
+          key: ${{ runner.os }}-zig-wasm-${{ hashFiles('agenkit-zig/build.zig') }}
+
+      - name: Build Zig for WASM
+        run: |
+          cd agenkit-zig
+          zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
+
+      - name: Verify WASM files
+        run: |
+          cd agenkit-zig/zig-out/bin
+          file *.wasm | head -10
+          echo "Total WASM files: $(ls -1 *.wasm | wc -l)"
+          echo "Total size: $(du -sh . | cut -f1)"
+
+      - name: Upload Zig WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zig-wasm-modules
+          path: agenkit-zig/zig-out/bin/*.wasm
+          retention-days: 7
+
+  # Build @agenkit/wasm package
+  build-npm-package:
+    name: Build @agenkit/wasm NPM Package
+    runs-on: ubuntu-latest
+    needs: [build-zig-wasm]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: packages/wasm/package-lock.json
+
+      - name: Download Zig WASM artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: zig-wasm-modules
+          path: packages/wasm/wasm
+
+      - name: Install dependencies
+        run: |
+          cd packages/wasm
+          npm ci
+
+      - name: Build package
+        run: |
+          cd packages/wasm
+          npm run build
+
+      - name: Verify build output
+        run: |
+          cd packages/wasm
+          ls -lah dist/
+          echo "Package contents:"
+          cat package.json | jq '.exports'
+
+      - name: Upload NPM package
+        uses: actions/upload-artifact@v4
+        with:
+          name: agenkit-wasm-package
+          path: |
+            packages/wasm/dist
+            packages/wasm/wasm
+            packages/wasm/package.json
+          retention-days: 7
+
+  # Playwright tests - Chromium
+  test-chromium:
+    name: Test WASM (Chromium)
+    runs-on: ubuntu-latest
+    needs: [build-npm-package]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download NPM package
+        uses: actions/download-artifact@v4
+        with:
+          name: agenkit-wasm-package
+          path: packages/wasm
+
+      - name: Install React example dependencies
+        run: |
+          cd examples/browser/react-example
+          npm ci
+
+      - name: Install test dependencies
+        run: |
+          cd tests/wasm
+          npm ci
+
+      - name: Install Playwright browsers
+        run: |
+          cd tests/wasm
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests (Chromium)
+        run: |
+          cd tests/wasm
+          npm test -- --project=chromium
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-chromium
+          path: tests/wasm/playwright-report
+          retention-days: 7
+
+  # Playwright tests - Firefox
+  test-firefox:
+    name: Test WASM (Firefox)
+    runs-on: ubuntu-latest
+    needs: [build-npm-package]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download NPM package
+        uses: actions/download-artifact@v4
+        with:
+          name: agenkit-wasm-package
+          path: packages/wasm
+
+      - name: Install React example dependencies
+        run: |
+          cd examples/browser/react-example
+          npm ci
+
+      - name: Install test dependencies
+        run: |
+          cd tests/wasm
+          npm ci
+
+      - name: Install Playwright browsers
+        run: |
+          cd tests/wasm
+          npx playwright install --with-deps firefox
+
+      - name: Run Playwright tests (Firefox)
+        run: |
+          cd tests/wasm
+          npm test -- --project=firefox
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-firefox
+          path: tests/wasm/playwright-report
+          retention-days: 7
+
+  # Playwright tests - WebKit
+  test-webkit:
+    name: Test WASM (WebKit/Safari)
+    runs-on: ubuntu-latest
+    needs: [build-npm-package]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download NPM package
+        uses: actions/download-artifact@v4
+        with:
+          name: agenkit-wasm-package
+          path: packages/wasm
+
+      - name: Install React example dependencies
+        run: |
+          cd examples/browser/react-example
+          npm ci
+
+      - name: Install test dependencies
+        run: |
+          cd tests/wasm
+          npm ci
+
+      - name: Install Playwright browsers
+        run: |
+          cd tests/wasm
+          npx playwright install --with-deps webkit
+
+      - name: Run Playwright tests (WebKit)
+        run: |
+          cd tests/wasm
+          npm test -- --project=webkit
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-webkit
+          path: tests/wasm/playwright-report
+          retention-days: 7
+
+  # Integration test - All browsers
+  integration-test:
+    name: Integration Test (All Browsers)
+    runs-on: ubuntu-latest
+    needs: [test-chromium, test-firefox, test-webkit]
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          echo "All browser tests completed"
+          echo "Chromium: ${{ needs.test-chromium.result }}"
+          echo "Firefox: ${{ needs.test-firefox.result }}"
+          echo "WebKit: ${{ needs.test-webkit.result }}"
+
+      - name: Fail if any test failed
+        if: |
+          needs.test-chromium.result != 'success' ||
+          needs.test-firefox.result != 'success' ||
+          needs.test-webkit.result != 'success'
+        run: exit 1
+
+  # Performance benchmarks
+  benchmark:
+    name: WASM Performance Benchmarks
+    runs-on: ubuntu-latest
+    needs: [build-npm-package]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download NPM package
+        uses: actions/download-artifact@v4
+        with:
+          name: agenkit-wasm-package
+          path: packages/wasm
+
+      - name: Run performance benchmarks
+        run: |
+          echo "WASM Module Sizes:"
+          du -h packages/wasm/wasm/*.wasm
+          echo ""
+          echo "Total WASM size:"
+          du -sh packages/wasm/wasm/
+
+      - name: Create benchmark report
+        run: |
+          echo "# WASM Performance Report" > benchmark-report.md
+          echo "" >> benchmark-report.md
+          echo "## Module Sizes" >> benchmark-report.md
+          echo "\`\`\`" >> benchmark-report.md
+          ls -lh packages/wasm/wasm/*.wasm >> benchmark-report.md
+          echo "\`\`\`" >> benchmark-report.md
+
+      - name: Upload benchmark report
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-report
+          path: benchmark-report.md
+          retention-days: 30

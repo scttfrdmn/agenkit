@@ -18,6 +18,14 @@ from .circuit_breaker import (
     CircuitState,
 )
 from .metrics import Metrics, MetricsDecorator
+from .per_user_rate_limiter import (
+    GlobalRateLimitError,
+    PerUserRateLimiterConfig,
+    PerUserRateLimiterDecorator,
+    PerUserRateLimiterMetrics,
+    PerUserRateLimitError,
+    default_identifier,
+)
 from .rate_limiter import (
     RateLimiterConfig,
     RateLimiterDecorator,
@@ -44,8 +52,13 @@ __all__ = [
     "CircuitBreakerError",
     "CircuitBreakerMetrics",
     "CircuitState",
+    "GlobalRateLimitError",
     "Metrics",
     "MetricsDecorator",
+    "PerUserRateLimiterConfig",
+    "PerUserRateLimiterDecorator",
+    "PerUserRateLimiterMetrics",
+    "PerUserRateLimitError",
     "RateLimitError",
     "RateLimiterConfig",
     "RateLimiterDecorator",
@@ -56,4 +69,5 @@ __all__ = [
     "TimeoutDecorator",
     "TimeoutError",
     "TimeoutMetrics",
+    "default_identifier",
 ]

@@ -279,3 +279,29 @@ export {
   AnswerExtractor,
   createSelfConsistencyAgent,
 } from './techniques/reasoning/self-consistency';
+
+// Observability
+export {
+  TracingConfig,
+  TraceContext,
+  initTracing,
+  shutdownTracing,
+  getTracer,
+  injectTraceContext,
+  extractTraceContext,
+  TracingMiddleware,
+  createTracedAgent,
+  MetricsConfig,
+  initMetrics,
+  shutdownMetrics,
+  getMetricsUrl,
+  MetricsMiddleware,
+  createMonitoredAgent,
+  LogLevel,
+  LoggingConfig,
+  LogEntry,
+  Logger,
+  configureLogging,
+  getLoggingConfig,
+  getLoggerWithTrace,
+} from './observability';

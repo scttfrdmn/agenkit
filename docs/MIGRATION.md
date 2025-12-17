@@ -1242,6 +1242,1174 @@ Legend: ✅ Fast, ⚠️ Medium, ❌ Slow
 
 ---
 
+## Advanced Pattern Migrations
+
+This section shows how to migrate 7 advanced patterns across all languages.
+
+### Fallback Pattern
+
+**Python:**
+```python
+from agenkit.patterns import FallbackAgent
+
+# Try multiple providers in order
+fallback = FallbackAgent(
+    agents=[openai_agent, anthropic_agent, local_agent]
+)
+
+result = await fallback.process(message)
+print(f"Success after {result.metadata['fallback_attempts']} attempts")
+```
+
+**Go:**
+```go
+import "github.com/agenkit/agenkit-go/patterns"
+
+// Create fallback chain
+fallback := patterns.NewFallback()
+fallback.AddAgent(openaiAgent)
+fallback.AddAgent(anthropicAgent)
+fallback.AddAgent(localAgent)
+
+result, err := fallback.Process(ctx, message)
+if err != nil {
+    log.Fatalf("All agents failed: %v", err)
+}
+
+attempts := result.Metadata["fallback_attempts"].(int)
+fmt.Printf("Success after %d attempts\n", attempts)
+```
+
+**Rust:**
+```rust
+use agenkit::patterns::Fallback;
+
+// Build fallback chain
+let mut fallback = Fallback::new();
+fallback.add_agent(Box::new(openai_agent));
+fallback.add_agent(Box::new(anthropic_agent));
+fallback.add_agent(Box::new(local_agent));
+
+let result = fallback.process(message).await?;
+let attempts = result.metadata.get("fallback_attempts")
+    .and_then(|v| v.as_u64())
+    .unwrap_or(0);
+println!("Success after {} attempts", attempts);
+```
+
+**C++:**
+```cpp
+#include <agenkit/patterns/fallback.hpp>
+
+// Create fallback with agents
+agenkit::patterns::Fallback fallback;
+fallback.addAgent(std::make_unique<OpenAIAgent>());
+fallback.addAgent(std::make_unique<AnthropicAgent>());
+fallback.addAgent(std::make_unique<LocalAgent>());
+
+auto result = fallback.process(message);
+if (result.isOk()) {
+    auto attempts = result.message().metadata()["fallback_attempts"].asInt();
+    std::cout << "Success after " << attempts << " attempts" << std::endl;
+}
+```
+
+**TypeScript:**
+```typescript
+import { FallbackAgent } from '@agenkit/patterns';
+
+// Create fallback chain
+const fallback = new FallbackAgent({
+    agents: [openaiAgent, anthropicAgent, localAgent]
+});
+
+const result = await fallback.process(message);
+console.log(`Success after ${result.metadata.fallback_attempts} attempts`);
+```
+
+**Zig:**
+```zig
+const patterns = @import("agenkit").patterns;
+
+// Initialize fallback with allocator
+var fallback = try patterns.Fallback.init(allocator);
+defer fallback.deinit();
+
+try fallback.addAgent(openai_agent.agent());
+try fallback.addAgent(anthropic_agent.agent());
+try fallback.addAgent(local_agent.agent());
+
+var result = try fallback.agent().process(message);
+defer result.deinit();
+
+const attempts = result.metadata.get("fallback_attempts").?.integer;
+std.debug.print("Success after {} attempts\n", .{attempts});
+```
+
+---
+
+### Supervisor Pattern
+
+**Python:**
+```python
+from agenkit.patterns import SupervisorAgent
+
+supervisor = SupervisorAgent(
+    supervisor=qa_agent,
+    workers=[analyst_agent, writer_agent],
+    require_approval=True,
+    max_revisions=3
+)
+
+result = await supervisor.process(task)
+print(f"Approved: {result.metadata['supervisor_approved']}")
+print(f"Revisions: {result.metadata['supervisor_revisions']}")
+```
+
+**Go:**
+```go
+import "github.com/agenkit/agenkit-go/patterns"
+
+supervisor := patterns.NewSupervisor(
+    qaAgent,
+    []agenkit.Agent{analystAgent, writerAgent},
+)
+supervisor.SetRequireApproval(true)
+supervisor.SetMaxRevisions(3)
+
+result, err := supervisor.Process(ctx, task)
+if err != nil {
+    log.Fatal(err)
+}
+
+approved := result.Metadata["supervisor_approved"].(bool)
+revisions := result.Metadata["supervisor_revisions"].(int)
+fmt.Printf("Approved: %v, Revisions: %d\n", approved, revisions)
+```
+
+**Rust:**
+```rust
+use agenkit::patterns::Supervisor;
+
+let supervisor = Supervisor::builder()
+    .supervisor(Box::new(qa_agent))
+    .workers(vec![
+        Box::new(analyst_agent),
+        Box::new(writer_agent),
+    ])
+    .require_approval(true)
+    .max_revisions(3)
+    .build()?;
+
+let result = supervisor.process(task).await?;
+let approved = result.metadata.get("supervisor_approved")
+    .and_then(|v| v.as_bool())
+    .unwrap_or(false);
+println!("Approved: {}", approved);
+```
+
+**C++:**
+```cpp
+#include <agenkit/patterns/supervisor.hpp>
+
+agenkit::patterns::Supervisor supervisor(
+    std::make_unique<QAAgent>(),
+    {
+        std::make_unique<AnalystAgent>(),
+        std::make_unique<WriterAgent>()
+    }
+);
+supervisor.setRequireApproval(true);
+supervisor.setMaxRevisions(3);
+
+auto result = supervisor.process(task);
+bool approved = result.message().metadata()["supervisor_approved"].asBool();
+std::cout << "Approved: " << std::boolalpha << approved << std::endl;
+```
+
+**TypeScript:**
+```typescript
+import { SupervisorAgent } from '@agenkit/patterns';
+
+const supervisor = new SupervisorAgent({
+    supervisor: qaAgent,
+    workers: [analystAgent, writerAgent],
+    requireApproval: true,
+    maxRevisions: 3
+});
+
+const result = await supervisor.process(task);
+console.log(`Approved: ${result.metadata.supervisor_approved}`);
+console.log(`Revisions: ${result.metadata.supervisor_revisions}`);
+```
+
+**Zig:**
+```zig
+const patterns = @import("agenkit").patterns;
+
+var supervisor = try patterns.Supervisor.init(
+    allocator,
+    qa_agent.agent(),
+    &[_]agenkit.Agent{analyst_agent.agent(), writer_agent.agent()},
+);
+defer supervisor.deinit();
+
+supervisor.setRequireApproval(true);
+supervisor.setMaxRevisions(3);
+
+var result = try supervisor.agent().process(task);
+defer result.deinit();
+
+const approved = result.metadata.get("supervisor_approved").?.boolean;
+std.debug.print("Approved: {}\n", .{approved});
+```
+
+---
+
+### Human in Loop Pattern
+
+**Python:**
+```python
+from agenkit.patterns import HumanInLoopAgent
+
+def approval_callback(action: str, context: dict) -> tuple[bool, str]:
+    print(f"Agent wants to: {action}")
+    response = input("Approve? (y/n): ")
+    return (response.lower() == 'y', "User decision")
+
+hitl = HumanInLoopAgent(
+    agent=base_agent,
+    approval_callback=approval_callback,
+    require_approval_for=["tool_calls", "final_answer"],
+    timeout=60.0
+)
+
+result = await hitl.process(message)
+```
+
+**Go:**
+```go
+import "github.com/agenkit/agenkit-go/patterns"
+
+func approvalCallback(action string, context map[string]interface{}) (bool, string, error) {
+    fmt.Printf("Agent wants to: %s\n", action)
+    fmt.Print("Approve? (y/n): ")
+
+    var response string
+    fmt.Scanln(&response)
+
+    approved := strings.ToLower(response) == "y"
+    return approved, "User decision", nil
+}
+
+hitl := patterns.NewHumanInLoop(
+    baseAgent,
+    approvalCallback,
+)
+hitl.SetRequireApprovalFor([]string{"tool_calls", "final_answer"})
+hitl.SetTimeout(60 * time.Second)
+
+result, err := hitl.Process(ctx, message)
+```
+
+**Rust:**
+```rust
+use agenkit::patterns::HumanInLoop;
+use std::io::{self, Write};
+
+fn approval_callback(action: &str, _context: &serde_json::Value) -> Result<(bool, String), Box<dyn std::error::Error>> {
+    println!("Agent wants to: {}", action);
+    print!("Approve? (y/n): ");
+    io::stdout().flush()?;
+
+    let mut response = String::new();
+    io::stdin().read_line(&mut response)?;
+
+    let approved = response.trim().to_lowercase() == "y";
+    Ok((approved, "User decision".to_string()))
+}
+
+let hitl = HumanInLoop::builder()
+    .agent(Box::new(base_agent))
+    .approval_callback(Box::new(approval_callback))
+    .require_approval_for(vec!["tool_calls".to_string(), "final_answer".to_string()])
+    .timeout(std::time::Duration::from_secs(60))
+    .build()?;
+
+let result = hitl.process(message).await?;
+```
+
+**C++:**
+```cpp
+#include <agenkit/patterns/human_in_loop.hpp>
+#include <iostream>
+#include <string>
+
+auto approvalCallback = [](const std::string& action,
+                           const nlohmann::json& context) -> std::pair<bool, std::string> {
+    std::cout << "Agent wants to: " << action << std::endl;
+    std::cout << "Approve? (y/n): ";
+
+    std::string response;
+    std::cin >> response;
+
+    bool approved = (response == "y" || response == "Y");
+    return {approved, "User decision"};
+};
+
+agenkit::patterns::HumanInLoop hitl(
+    std::make_unique<BaseAgent>(),
+    approvalCallback
+);
+hitl.setRequireApprovalFor({"tool_calls", "final_answer"});
+hitl.setTimeout(std::chrono::seconds(60));
+
+auto result = hitl.process(message);
+```
+
+**TypeScript:**
+```typescript
+import { HumanInLoopAgent } from '@agenkit/patterns';
+import * as readline from 'readline';
+
+async function approvalCallback(
+    action: string,
+    context: Record<string, any>
+): Promise<[boolean, string]> {
+    console.log(`Agent wants to: ${action}`);
+
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    return new Promise((resolve) => {
+        rl.question('Approve? (y/n): ', (answer) => {
+            rl.close();
+            const approved = answer.toLowerCase() === 'y';
+            resolve([approved, "User decision"]);
+        });
+    });
+}
+
+const hitl = new HumanInLoopAgent({
+    agent: baseAgent,
+    approvalCallback,
+    requireApprovalFor: ["tool_calls", "final_answer"],
+    timeout: 60000  // milliseconds
+});
+
+const result = await hitl.process(message);
+```
+
+**Zig:**
+```zig
+const patterns = @import("agenkit").patterns;
+
+fn approvalCallback(action: []const u8, context: std.json.Value) !struct { bool, []const u8 } {
+    std.debug.print("Agent wants to: {s}\n", .{action});
+    std.debug.print("Approve? (y/n): ", .{});
+
+    var buf: [10]u8 = undefined;
+    const response = try std.io.getStdIn().reader().readUntilDelimiterOrEof(&buf, '\n');
+
+    const approved = if (response) |r| std.mem.eql(u8, r, "y") else false;
+    return .{ approved, "User decision" };
+}
+
+var hitl = try patterns.HumanInLoop.init(
+    allocator,
+    base_agent.agent(),
+    approvalCallback,
+);
+defer hitl.deinit();
+
+try hitl.setRequireApprovalFor(&[_][]const u8{ "tool_calls", "final_answer" });
+hitl.setTimeout(60); // seconds
+
+var result = try hitl.agent().process(message);
+defer result.deinit();
+```
+
+---
+
+### Router Pattern
+
+**Python:**
+```python
+from agenkit.patterns import RouterAgent
+
+router = RouterAgent(
+    agents={
+        "technical": tech_agent,
+        "creative": creative_agent,
+        "general": general_agent
+    },
+    routing_strategy="llm",  # or "keyword", "embedding"
+    default_agent="general"
+)
+
+result = await router.process(message)
+print(f"Routed to: {result.metadata['router_selected_agent']}")
+```
+
+**Go:**
+```go
+import "github.com/agenkit/agenkit-go/patterns"
+
+router := patterns.NewRouter()
+router.AddRoute("technical", techAgent)
+router.AddRoute("creative", creativeAgent)
+router.AddRoute("general", generalAgent)
+router.SetRoutingStrategy("llm")  // or "keyword", "embedding"
+router.SetDefaultAgent("general")
+
+result, err := router.Process(ctx, message)
+if err != nil {
+    log.Fatal(err)
+}
+
+selected := result.Metadata["router_selected_agent"].(string)
+fmt.Printf("Routed to: %s\n", selected)
+```
+
+**Rust:**
+```rust
+use agenkit::patterns::{Router, RoutingStrategy};
+use std::collections::HashMap;
+
+let mut agents = HashMap::new();
+agents.insert("technical".to_string(), Box::new(tech_agent) as Box<dyn Agent>);
+agents.insert("creative".to_string(), Box::new(creative_agent) as Box<dyn Agent>);
+agents.insert("general".to_string(), Box::new(general_agent) as Box<dyn Agent>);
+
+let router = Router::builder()
+    .agents(agents)
+    .routing_strategy(RoutingStrategy::LLM)
+    .default_agent("general".to_string())
+    .build()?;
+
+let result = router.process(message).await?;
+let selected = result.metadata.get("router_selected_agent")
+    .and_then(|v| v.as_str())
+    .unwrap_or("unknown");
+println!("Routed to: {}", selected);
+```
+
+**C++:**
+```cpp
+#include <agenkit/patterns/router.hpp>
+
+agenkit::patterns::Router router;
+router.addRoute("technical", std::make_unique<TechAgent>());
+router.addRoute("creative", std::make_unique<CreativeAgent>());
+router.addRoute("general", std::make_unique<GeneralAgent>());
+router.setRoutingStrategy(agenkit::patterns::RoutingStrategy::LLM);
+router.setDefaultAgent("general");
+
+auto result = router.process(message);
+auto selected = result.message().metadata()["router_selected_agent"].asString();
+std::cout << "Routed to: " << selected << std::endl;
+```
+
+**TypeScript:**
+```typescript
+import { RouterAgent, RoutingStrategy } from '@agenkit/patterns';
+
+const router = new RouterAgent({
+    agents: {
+        technical: techAgent,
+        creative: creativeAgent,
+        general: generalAgent
+    },
+    routingStrategy: RoutingStrategy.LLM,
+    defaultAgent: "general"
+});
+
+const result = await router.process(message);
+console.log(`Routed to: ${result.metadata.router_selected_agent}`);
+```
+
+**Zig:**
+```zig
+const patterns = @import("agenkit").patterns;
+
+var router = try patterns.Router.init(allocator);
+defer router.deinit();
+
+try router.addRoute("technical", tech_agent.agent());
+try router.addRoute("creative", creative_agent.agent());
+try router.addRoute("general", general_agent.agent());
+router.setRoutingStrategy(.llm);
+router.setDefaultAgent("general");
+
+var result = try router.agent().process(message);
+defer result.deinit();
+
+const selected = result.metadata.get("router_selected_agent").?.string;
+std.debug.print("Routed to: {s}\n", .{selected});
+```
+
+---
+
+### Orchestration Pattern
+
+**Python:**
+```python
+from agenkit.patterns import OrchestrationAgent
+
+workflow = {
+    "stages": [
+        {
+            "name": "screening",
+            "agents": ["spam_detector", "toxicity_detector"],
+            "execution": "parallel",
+            "aggregation": "any_flag"
+        },
+        {
+            "name": "analysis",
+            "agents": ["context_analyzer"],
+            "condition": "screening.flagged == true",
+            "execution": "sequential"
+        },
+        {
+            "name": "decision",
+            "agents": ["decision_maker"],
+            "inputs": ["screening", "analysis"],
+            "aggregation": "consensus"
+        }
+    ]
+}
+
+orchestrator = OrchestrationAgent(
+    agents={
+        "spam_detector": spam_agent,
+        "toxicity_detector": toxicity_agent,
+        "context_analyzer": context_agent,
+        "decision_maker": decision_agent
+    },
+    workflow=workflow
+)
+
+result = await orchestrator.process(message)
+```
+
+**Go:**
+```go
+import "github.com/agenkit/agenkit-go/patterns"
+
+workflow := patterns.WorkflowDefinition{
+    Stages: []patterns.WorkflowStage{
+        {
+            Name:        "screening",
+            Agents:      []string{"spam_detector", "toxicity_detector"},
+            Execution:   "parallel",
+            Aggregation: "any_flag",
+        },
+        {
+            Name:      "analysis",
+            Agents:    []string{"context_analyzer"},
+            Condition: "screening.flagged == true",
+            Execution: "sequential",
+        },
+        {
+            Name:        "decision",
+            Agents:      []string{"decision_maker"},
+            Inputs:      []string{"screening", "analysis"},
+            Aggregation: "consensus",
+        },
+    },
+}
+
+orchestrator := patterns.NewOrchestration(workflow)
+orchestrator.AddAgent("spam_detector", spamAgent)
+orchestrator.AddAgent("toxicity_detector", toxicityAgent)
+orchestrator.AddAgent("context_analyzer", contextAgent)
+orchestrator.AddAgent("decision_maker", decisionAgent)
+
+result, err := orchestrator.Process(ctx, message)
+```
+
+**Rust:**
+```rust
+use agenkit::patterns::{Orchestration, WorkflowDefinition, WorkflowStage};
+
+let workflow = WorkflowDefinition {
+    stages: vec![
+        WorkflowStage {
+            name: "screening".to_string(),
+            agents: vec!["spam_detector".to_string(), "toxicity_detector".to_string()],
+            execution: "parallel".to_string(),
+            aggregation: Some("any_flag".to_string()),
+            condition: None,
+            inputs: None,
+        },
+        WorkflowStage {
+            name: "analysis".to_string(),
+            agents: vec!["context_analyzer".to_string()],
+            execution: "sequential".to_string(),
+            condition: Some("screening.flagged == true".to_string()),
+            ..Default::default()
+        },
+        WorkflowStage {
+            name: "decision".to_string(),
+            agents: vec!["decision_maker".to_string()],
+            inputs: Some(vec!["screening".to_string(), "analysis".to_string()]),
+            aggregation: Some("consensus".to_string()),
+            ..Default::default()
+        },
+    ],
+};
+
+let mut agents = HashMap::new();
+agents.insert("spam_detector".to_string(), Box::new(spam_agent) as Box<dyn Agent>);
+agents.insert("toxicity_detector".to_string(), Box::new(toxicity_agent) as Box<dyn Agent>);
+agents.insert("context_analyzer".to_string(), Box::new(context_agent) as Box<dyn Agent>);
+agents.insert("decision_maker".to_string(), Box::new(decision_agent) as Box<dyn Agent>);
+
+let orchestrator = Orchestration::new(agents, workflow);
+let result = orchestrator.process(message).await?;
+```
+
+**C++:**
+```cpp
+#include <agenkit/patterns/orchestration.hpp>
+
+agenkit::patterns::WorkflowDefinition workflow;
+workflow.addStage({
+    .name = "screening",
+    .agents = {"spam_detector", "toxicity_detector"},
+    .execution = "parallel",
+    .aggregation = "any_flag"
+});
+workflow.addStage({
+    .name = "analysis",
+    .agents = {"context_analyzer"},
+    .condition = "screening.flagged == true",
+    .execution = "sequential"
+});
+workflow.addStage({
+    .name = "decision",
+    .agents = {"decision_maker"},
+    .inputs = {"screening", "analysis"},
+    .aggregation = "consensus"
+});
+
+agenkit::patterns::Orchestration orchestrator(workflow);
+orchestrator.addAgent("spam_detector", std::make_unique<SpamAgent>());
+orchestrator.addAgent("toxicity_detector", std::make_unique<ToxicityAgent>());
+orchestrator.addAgent("context_analyzer", std::make_unique<ContextAgent>());
+orchestrator.addAgent("decision_maker", std::make_unique<DecisionAgent>());
+
+auto result = orchestrator.process(message);
+```
+
+**TypeScript:**
+```typescript
+import { OrchestrationAgent, WorkflowDefinition } from '@agenkit/patterns';
+
+const workflow: WorkflowDefinition = {
+    stages: [
+        {
+            name: "screening",
+            agents: ["spam_detector", "toxicity_detector"],
+            execution: "parallel",
+            aggregation: "any_flag"
+        },
+        {
+            name: "analysis",
+            agents: ["context_analyzer"],
+            condition: "screening.flagged == true",
+            execution: "sequential"
+        },
+        {
+            name: "decision",
+            agents: ["decision_maker"],
+            inputs: ["screening", "analysis"],
+            aggregation: "consensus"
+        }
+    ]
+};
+
+const orchestrator = new OrchestrationAgent({
+    agents: {
+        spam_detector: spamAgent,
+        toxicity_detector: toxicityAgent,
+        context_analyzer: contextAgent,
+        decision_maker: decisionAgent
+    },
+    workflow
+});
+
+const result = await orchestrator.process(message);
+```
+
+**Zig:**
+```zig
+const patterns = @import("agenkit").patterns;
+
+var workflow = patterns.WorkflowDefinition.init(allocator);
+defer workflow.deinit();
+
+try workflow.addStage(.{
+    .name = "screening",
+    .agents = &[_][]const u8{ "spam_detector", "toxicity_detector" },
+    .execution = .parallel,
+    .aggregation = .any_flag,
+});
+try workflow.addStage(.{
+    .name = "analysis",
+    .agents = &[_][]const u8{"context_analyzer"},
+    .condition = "screening.flagged == true",
+    .execution = .sequential,
+});
+try workflow.addStage(.{
+    .name = "decision",
+    .agents = &[_][]const u8{"decision_maker"},
+    .inputs = &[_][]const u8{ "screening", "analysis" },
+    .aggregation = .consensus,
+});
+
+var orchestrator = try patterns.Orchestration.init(allocator, workflow);
+defer orchestrator.deinit();
+
+try orchestrator.addAgent("spam_detector", spam_agent.agent());
+try orchestrator.addAgent("toxicity_detector", toxicity_agent.agent());
+try orchestrator.addAgent("context_analyzer", context_agent.agent());
+try orchestrator.addAgent("decision_maker", decision_agent.agent());
+
+var result = try orchestrator.agent().process(message);
+defer result.deinit();
+```
+
+---
+
+### Reasoning with Tools Pattern
+
+**Python:**
+```python
+from agenkit.patterns import ReasoningWithToolsAgent
+
+# Chain of Thought
+cot_agent = ReasoningWithToolsAgent(
+    llm=my_llm,
+    tools=[search_tool, calculator_tool],
+    reasoning_strategy="chain-of-thought",
+    max_iterations=10
+)
+
+# Tree of Thought - explore multiple reasoning paths
+tot_agent = ReasoningWithToolsAgent(
+    llm=my_llm,
+    tools=[search_tool, calculator_tool],
+    reasoning_strategy="tree-of-thought",
+    branches=3,
+    max_depth=5
+)
+
+# Self-Consistency - multiple solutions + voting
+consistency_agent = ReasoningWithToolsAgent(
+    llm=my_llm,
+    tools=[calculator_tool],
+    reasoning_strategy="self-consistency",
+    num_samples=5
+)
+
+result = await cot_agent.process(message)
+print(f"Reasoning steps: {len(result.metadata['reasoning_steps'])}")
+```
+
+**Go:**
+```go
+import "github.com/agenkit/agenkit-go/patterns"
+
+// Chain of Thought
+cotAgent := patterns.NewReasoningWithTools(
+    myLLM,
+    []agenkit.Tool{searchTool, calculatorTool},
+)
+cotAgent.SetReasoningStrategy(patterns.ChainOfThought)
+cotAgent.SetMaxIterations(10)
+
+// Tree of Thought
+totAgent := patterns.NewReasoningWithTools(myLLM, tools)
+totAgent.SetReasoningStrategy(patterns.TreeOfThought)
+totAgent.SetBranches(3)
+totAgent.SetMaxDepth(5)
+
+// Self-Consistency
+consistencyAgent := patterns.NewReasoningWithTools(myLLM, tools)
+consistencyAgent.SetReasoningStrategy(patterns.SelfConsistency)
+consistencyAgent.SetNumSamples(5)
+
+result, err := cotAgent.Process(ctx, message)
+if err != nil {
+    log.Fatal(err)
+}
+
+steps := result.Metadata["reasoning_steps"].([]interface{})
+fmt.Printf("Reasoning steps: %d\n", len(steps))
+```
+
+**Rust:**
+```rust
+use agenkit::patterns::{ReasoningWithTools, ReasoningStrategy};
+
+// Chain of Thought
+let cot_agent = ReasoningWithTools::builder()
+    .llm(Box::new(my_llm))
+    .tools(vec![Box::new(search_tool), Box::new(calculator_tool)])
+    .reasoning_strategy(ReasoningStrategy::ChainOfThought)
+    .max_iterations(10)
+    .build()?;
+
+// Tree of Thought
+let tot_agent = ReasoningWithTools::builder()
+    .llm(Box::new(my_llm))
+    .tools(tools)
+    .reasoning_strategy(ReasoningStrategy::TreeOfThought)
+    .branches(3)
+    .max_depth(5)
+    .build()?;
+
+// Self-Consistency
+let consistency_agent = ReasoningWithTools::builder()
+    .llm(Box::new(my_llm))
+    .tools(vec![Box::new(calculator_tool)])
+    .reasoning_strategy(ReasoningStrategy::SelfConsistency)
+    .num_samples(5)
+    .build()?;
+
+let result = cot_agent.process(message).await?;
+let steps = result.metadata.get("reasoning_steps")
+    .and_then(|v| v.as_array())
+    .map(|a| a.len())
+    .unwrap_or(0);
+println!("Reasoning steps: {}", steps);
+```
+
+**C++:**
+```cpp
+#include <agenkit/patterns/reasoning_with_tools.hpp>
+
+// Chain of Thought
+agenkit::patterns::ReasoningWithTools cotAgent(
+    std::make_unique<MyLLM>(),
+    {std::make_unique<SearchTool>(), std::make_unique<CalculatorTool>()}
+);
+cotAgent.setReasoningStrategy(agenkit::patterns::ReasoningStrategy::ChainOfThought);
+cotAgent.setMaxIterations(10);
+
+// Tree of Thought
+agenkit::patterns::ReasoningWithTools totAgent(
+    std::make_unique<MyLLM>(),
+    tools
+);
+totAgent.setReasoningStrategy(agenkit::patterns::ReasoningStrategy::TreeOfThought);
+totAgent.setBranches(3);
+totAgent.setMaxDepth(5);
+
+// Self-Consistency
+agenkit::patterns::ReasoningWithTools consistencyAgent(
+    std::make_unique<MyLLM>(),
+    {std::make_unique<CalculatorTool>()}
+);
+consistencyAgent.setReasoningStrategy(agenkit::patterns::ReasoningStrategy::SelfConsistency);
+consistencyAgent.setNumSamples(5);
+
+auto result = cotAgent.process(message);
+auto steps = result.message().metadata()["reasoning_steps"].asArray().size();
+std::cout << "Reasoning steps: " << steps << std::endl;
+```
+
+**TypeScript:**
+```typescript
+import { ReasoningWithToolsAgent, ReasoningStrategy } from '@agenkit/patterns';
+
+// Chain of Thought
+const cotAgent = new ReasoningWithToolsAgent({
+    llm: myLLM,
+    tools: [searchTool, calculatorTool],
+    reasoningStrategy: ReasoningStrategy.ChainOfThought,
+    maxIterations: 10
+});
+
+// Tree of Thought
+const totAgent = new ReasoningWithToolsAgent({
+    llm: myLLM,
+    tools: [searchTool, calculatorTool],
+    reasoningStrategy: ReasoningStrategy.TreeOfThought,
+    branches: 3,
+    maxDepth: 5
+});
+
+// Self-Consistency
+const consistencyAgent = new ReasoningWithToolsAgent({
+    llm: myLLM,
+    tools: [calculatorTool],
+    reasoningStrategy: ReasoningStrategy.SelfConsistency,
+    numSamples: 5
+});
+
+const result = await cotAgent.process(message);
+console.log(`Reasoning steps: ${result.metadata.reasoning_steps.length}`);
+```
+
+**Zig:**
+```zig
+const patterns = @import("agenkit").patterns;
+
+// Chain of Thought
+var cot_agent = try patterns.ReasoningWithTools.init(
+    allocator,
+    my_llm.llm(),
+    &[_]agenkit.Tool{ search_tool.tool(), calculator_tool.tool() },
+);
+defer cot_agent.deinit();
+cot_agent.setReasoningStrategy(.chain_of_thought);
+cot_agent.setMaxIterations(10);
+
+// Tree of Thought
+var tot_agent = try patterns.ReasoningWithTools.init(allocator, my_llm.llm(), tools);
+defer tot_agent.deinit();
+tot_agent.setReasoningStrategy(.tree_of_thought);
+tot_agent.setBranches(3);
+tot_agent.setMaxDepth(5);
+
+// Self-Consistency
+var consistency_agent = try patterns.ReasoningWithTools.init(
+    allocator,
+    my_llm.llm(),
+    &[_]agenkit.Tool{calculator_tool.tool()},
+);
+defer consistency_agent.deinit();
+consistency_agent.setReasoningStrategy(.self_consistency);
+consistency_agent.setNumSamples(5);
+
+var result = try cot_agent.agent().process(message);
+defer result.deinit();
+
+const steps = result.metadata.get("reasoning_steps").?.array.items.len;
+std.debug.print("Reasoning steps: {}\n", .{steps});
+```
+
+---
+
+### Collaborative Pattern
+
+**Python:**
+```python
+from agenkit.patterns import CollaborativeAgent
+
+# Sequential refinement - agents build on each other's work
+team = CollaborativeAgent(
+    agents=[outliner_agent, researcher_agent, writer_agent, editor_agent],
+    collaboration_strategy="sequential-refinement",
+    max_rounds=3,
+    shared_context=True
+)
+
+# Parallel contribution - agents work independently then merge
+team = CollaborativeAgent(
+    agents=[expert1, expert2, expert3],
+    collaboration_strategy="parallel-contribution",
+    max_rounds=1,
+    merge_strategy="concat"
+)
+
+result = await team.process(task)
+print(f"Collaboration rounds: {result.metadata['collaboration_rounds']}")
+for contrib in result.metadata['agent_contributions']:
+    print(f"  {contrib['agent']}: {contrib['summary']}")
+```
+
+**Go:**
+```go
+import "github.com/agenkit/agenkit-go/patterns"
+
+// Sequential refinement
+team := patterns.NewCollaborative()
+team.AddAgent(outlinerAgent)
+team.AddAgent(researcherAgent)
+team.AddAgent(writerAgent)
+team.AddAgent(editorAgent)
+team.SetCollaborationStrategy(patterns.SequentialRefinement)
+team.SetMaxRounds(3)
+team.SetSharedContext(true)
+
+// Parallel contribution
+parallelTeam := patterns.NewCollaborative()
+parallelTeam.AddAgent(expert1)
+parallelTeam.AddAgent(expert2)
+parallelTeam.AddAgent(expert3)
+parallelTeam.SetCollaborationStrategy(patterns.ParallelContribution)
+parallelTeam.SetMaxRounds(1)
+parallelTeam.SetMergeStrategy(patterns.Concat)
+
+result, err := team.Process(ctx, task)
+if err != nil {
+    log.Fatal(err)
+}
+
+rounds := result.Metadata["collaboration_rounds"].(int)
+fmt.Printf("Collaboration rounds: %d\n", rounds)
+
+contributions := result.Metadata["agent_contributions"].([]interface{})
+for _, c := range contributions {
+    contrib := c.(map[string]interface{})
+    fmt.Printf("  %s: %s\n", contrib["agent"], contrib["summary"])
+}
+```
+
+**Rust:**
+```rust
+use agenkit::patterns::{Collaborative, CollaborationStrategy, MergeStrategy};
+
+// Sequential refinement
+let team = Collaborative::builder()
+    .agents(vec![
+        Box::new(outliner_agent),
+        Box::new(researcher_agent),
+        Box::new(writer_agent),
+        Box::new(editor_agent),
+    ])
+    .collaboration_strategy(CollaborationStrategy::SequentialRefinement)
+    .max_rounds(3)
+    .shared_context(true)
+    .build()?;
+
+// Parallel contribution
+let parallel_team = Collaborative::builder()
+    .agents(vec![
+        Box::new(expert1),
+        Box::new(expert2),
+        Box::new(expert3),
+    ])
+    .collaboration_strategy(CollaborationStrategy::ParallelContribution)
+    .max_rounds(1)
+    .merge_strategy(MergeStrategy::Concat)
+    .build()?;
+
+let result = team.process(task).await?;
+let rounds = result.metadata.get("collaboration_rounds")
+    .and_then(|v| v.as_u64())
+    .unwrap_or(0);
+println!("Collaboration rounds: {}", rounds);
+
+if let Some(contributions) = result.metadata.get("agent_contributions").and_then(|v| v.as_array()) {
+    for contrib in contributions {
+        let agent = contrib.get("agent").and_then(|v| v.as_str()).unwrap_or("unknown");
+        let summary = contrib.get("summary").and_then(|v| v.as_str()).unwrap_or("");
+        println!("  {}: {}", agent, summary);
+    }
+}
+```
+
+**C++:**
+```cpp
+#include <agenkit/patterns/collaborative.hpp>
+
+// Sequential refinement
+agenkit::patterns::Collaborative team;
+team.addAgent(std::make_unique<OutlinerAgent>());
+team.addAgent(std::make_unique<ResearcherAgent>());
+team.addAgent(std::make_unique<WriterAgent>());
+team.addAgent(std::make_unique<EditorAgent>());
+team.setCollaborationStrategy(agenkit::patterns::CollaborationStrategy::SequentialRefinement);
+team.setMaxRounds(3);
+team.setSharedContext(true);
+
+// Parallel contribution
+agenkit::patterns::Collaborative parallelTeam;
+parallelTeam.addAgent(std::make_unique<Expert1>());
+parallelTeam.addAgent(std::make_unique<Expert2>());
+parallelTeam.addAgent(std::make_unique<Expert3>());
+parallelTeam.setCollaborationStrategy(agenkit::patterns::CollaborationStrategy::ParallelContribution);
+parallelTeam.setMaxRounds(1);
+parallelTeam.setMergeStrategy(agenkit::patterns::MergeStrategy::Concat);
+
+auto result = team.process(task);
+auto rounds = result.message().metadata()["collaboration_rounds"].asInt();
+std::cout << "Collaboration rounds: " << rounds << std::endl;
+
+auto contributions = result.message().metadata()["agent_contributions"].asArray();
+for (const auto& contrib : contributions) {
+    std::cout << "  " << contrib["agent"].asString()
+              << ": " << contrib["summary"].asString() << std::endl;
+}
+```
+
+**TypeScript:**
+```typescript
+import { CollaborativeAgent, CollaborationStrategy, MergeStrategy } from '@agenkit/patterns';
+
+// Sequential refinement
+const team = new CollaborativeAgent({
+    agents: [outlinerAgent, researcherAgent, writerAgent, editorAgent],
+    collaborationStrategy: CollaborationStrategy.SequentialRefinement,
+    maxRounds: 3,
+    sharedContext: true
+});
+
+// Parallel contribution
+const parallelTeam = new CollaborativeAgent({
+    agents: [expert1, expert2, expert3],
+    collaborationStrategy: CollaborationStrategy.ParallelContribution,
+    maxRounds: 1,
+    mergeStrategy: MergeStrategy.Concat
+});
+
+const result = await team.process(task);
+console.log(`Collaboration rounds: ${result.metadata.collaboration_rounds}`);
+
+for (const contrib of result.metadata.agent_contributions) {
+    console.log(`  ${contrib.agent}: ${contrib.summary}`);
+}
+```
+
+**Zig:**
+```zig
+const patterns = @import("agenkit").patterns;
+
+// Sequential refinement
+var team = try patterns.Collaborative.init(allocator);
+defer team.deinit();
+
+try team.addAgent(outliner_agent.agent());
+try team.addAgent(researcher_agent.agent());
+try team.addAgent(writer_agent.agent());
+try team.addAgent(editor_agent.agent());
+team.setCollaborationStrategy(.sequential_refinement);
+team.setMaxRounds(3);
+team.setSharedContext(true);
+
+// Parallel contribution
+var parallel_team = try patterns.Collaborative.init(allocator);
+defer parallel_team.deinit();
+
+try parallel_team.addAgent(expert1.agent());
+try parallel_team.addAgent(expert2.agent());
+try parallel_team.addAgent(expert3.agent());
+parallel_team.setCollaborationStrategy(.parallel_contribution);
+parallel_team.setMaxRounds(1);
+parallel_team.setMergeStrategy(.concat);
+
+var result = try team.agent().process(task);
+defer result.deinit();
+
+const rounds = result.metadata.get("collaboration_rounds").?.integer;
+std.debug.print("Collaboration rounds: {}\n", .{rounds});
+
+const contributions = result.metadata.get("agent_contributions").?.array;
+for (contributions.items) |contrib| {
+    const agent = contrib.get("agent").?.string;
+    const summary = contrib.get("summary").?.string;
+    std.debug.print("  {s}: {s}\n", .{ agent, summary });
+}
+```
+
+---
+
 ## Summary
 
 ### Migration Difficulty

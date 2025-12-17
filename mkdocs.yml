@@ -77,6 +77,25 @@ plugins:
   - search:
       separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
   - tags
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - minify:
+      minify_html: true
+      minify_js: true
+      minify_css: true
+      htmlmin_opts:
+        remove_comments: true
+  - glightbox
 
 extra:
   social:
@@ -131,6 +150,8 @@ nav:
   - Performance:
       - performance/index.md
       - Benchmarks: performance/benchmarks.md
+      - Pattern Benchmarks: performance/pattern-benchmarks.md
+      - Comparison Matrix: performance/comparison-matrix.md
   - Contributing: contributing.md
 
 copyright: Copyright &copy; 2024-2025 Agenkit Team

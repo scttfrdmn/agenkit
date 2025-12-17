@@ -1467,6 +1467,533 @@ memory_agent = MemoryHierarchyPattern(
 
 ---
 
+#### FallbackPattern
+
+**Sequential retry with automatic failover.**
+
+```python
+class FallbackPattern(Agent):
+    def __init__(
+        self,
+        agents: list[Agent],
+        name: str = "fallback",
+    ) -> None:
+```
+
+**Parameters:**
+- `agents`: List of agents to try in order (primary, fallback1, fallback2, ...)
+- `name`: Pattern identifier (default: "fallback")
+
+**Behavior:**
+- Tries agents sequentially until one succeeds
+- Returns first successful response immediately
+- If all agents fail, raises error with all failure details
+- Adds metadata about which agent succeeded and attempts made
+
+**Methods:**
+- `process(message)`: Try agents until success
+- `capabilities`: Combined capabilities of all agents
+- `unwrap()`: Returns list of agents
+
+**Example:**
+
+```python
+from agenkit.patterns import FallbackPattern
+
+# Multi-provider LLM fallback
+fallback = FallbackPattern([
+    openai_agent,      # Try first (fastest/best)
+    anthropic_agent,   # Fallback if OpenAI fails
+    ollama_agent       # Last resort (local/free)
+])
+
+result = await fallback.process(message)
+
+# Check which agent was used
+print(result.metadata["fallback_success_agent"])  # "anthropic_agent"
+print(result.metadata["fallback_attempts"])  # 2
+```
+
+**With Recovery Function:**
+
+```python
+from agenkit.patterns import WithRecovery
+
+# Add graceful error handling
+agent_with_recovery = WithRecovery(
+    agent=primary_agent,
+    recovery=lambda ctx, msg, err: Message.with_text(
+        "assistant",
+        "Service temporarily unavailable. Please try again."
+    )
+)
+
+result = await agent_with_recovery.process(message)
+# Always returns a response, even if agent fails
+```
+
+**Performance:**
+- Best case: O(first agent) - immediate success
+- Worst case: O(sum of all agents) - all fail
+- Early termination on first success
+
+---
+
+#### SupervisorPattern
+
+**Oversee worker execution with quality control.**
+
+```python
+class SupervisorPattern(Agent):
+    def __init__(
+        self,
+        supervisor: Agent,
+        workers: list[Agent],
+        require_approval: bool = False,
+        max_revisions: int = 3,
+        name: str = "supervisor",
+    ) -> None:
+```
+
+**Parameters:**
+- `supervisor`: Agent that delegates and reviews work
+- `workers`: List of worker agents
+- `require_approval`: Whether supervisor must approve all outputs (default: False)
+- `max_revisions`: Maximum revision cycles (default: 3)
+- `name`: Pattern identifier (default: "supervisor")
+
+**Behavior:**
+- Supervisor analyzes task and delegates to workers
+- Workers execute assigned subtasks
+- Supervisor reviews worker outputs
+- Can request revisions if quality insufficient
+- Returns final approved result
+
+**Methods:**
+- `process(message)`: Supervised execution
+- `get_workers()`: Get worker agents
+- `get_supervisor()`: Get supervisor agent
+- `capabilities`: Combined worker capabilities
+
+**Example:**
+
+```python
+from agenkit.patterns import SupervisorPattern
+
+# Quality-controlled workflow
+supervisor = SupervisorPattern(
+    supervisor=qa_agent,
+    workers=[analyst_agent, writer_agent],
+    require_approval=True,
+    max_revisions=2
+)
+
+result = await supervisor.process(task)
+
+# Metadata shows supervision details
+print(result.metadata["supervisor_delegations"])  # Which workers used
+print(result.metadata["supervisor_revisions"])  # Revision count
+print(result.metadata["supervisor_approved"])  # True/False
+```
+
+**Performance:**
+- Latency: supervisor_time + worker_times + review_time
+- Overhead: ~20-40% due to review process
+- Quality improvement: Significant
+
+---
+
+#### HumanInLoopPattern
+
+**Human approval for safety-critical decisions.**
+
+```python
+class HumanInLoopPattern(Agent):
+    def __init__(
+        self,
+        agent: Agent,
+        approval_callback: Callable[[str, dict], tuple[bool, str]],
+        require_approval_for: list[str] = ["all"],
+        timeout: Optional[float] = None,
+        name: str = "human_in_loop",
+    ) -> None:
+```
+
+**Parameters:**
+- `agent`: Underlying agent
+- `approval_callback`: Function to request human approval
+- `require_approval_for`: Actions requiring approval (["all"], ["tool_calls"], ["final_answer"])
+- `timeout`: Approval timeout in seconds (default: None)
+- `name`: Pattern identifier (default: "human_in_loop")
+
+**Approval Callback Signature:**
+```python
+def approval_callback(action: str, context: dict) -> tuple[bool, str]:
+    """
+    Args:
+        action: Proposed action description
+        context: Action context and details
+
+    Returns:
+        (approved: bool, feedback: str)
+    """
+```
+
+**Behavior:**
+- Agent proposes action
+- System requests human approval via callback
+- Execution blocks until approval received
+- If approved, action executes
+- If rejected, agent revises or cancels
+
+**Methods:**
+- `process(message)`: Process with human gates
+- `capabilities`: Underlying agent capabilities plus "human-approval"
+- `unwrap()`: Returns underlying agent
+
+**Example:**
+
+```python
+from agenkit.patterns import HumanInLoopPattern
+
+def financial_approval(action: str, context: dict) -> tuple[bool, str]:
+    """Human reviews financial transactions."""
+    print(f"Approval required: {action}")
+    print(f"Details: {context}")
+
+    response = input("Approve? (y/n): ")
+    if response.lower() == 'y':
+        return True, "Approved"
+    else:
+        reason = input("Rejection reason: ")
+        return False, f"Rejected: {reason}"
+
+# Wrap financial agent with human approval
+safe_agent = HumanInLoopPattern(
+    agent=financial_agent,
+    approval_callback=financial_approval,
+    require_approval_for=["all"],
+    timeout=300.0  # 5-minute timeout
+)
+
+# Every action requires human approval
+result = await safe_agent.process(task)
+```
+
+**Performance:**
+- Latency: agent_time + human_response_time
+- Throughput: Limited by human availability
+- Use cases: Compliance, safety-critical, high-stakes decisions
+
+---
+
+#### OrchestrationPattern
+
+**Complex workflow coordination with conditional routing.**
+
+```python
+class OrchestrationPattern(Agent):
+    def __init__(
+        self,
+        agents: dict[str, Agent],
+        workflow: WorkflowDefinition,
+        name: str = "orchestration",
+    ) -> None:
+```
+
+**Parameters:**
+- `agents`: Dictionary mapping agent names to agent instances
+- `workflow`: Workflow definition (stages, conditions, routing)
+- `name`: Pattern identifier (default: "orchestration")
+
+**Workflow Definition:**
+```python
+workflow = WorkflowDefinition({
+    "stages": [
+        {
+            "name": "stage_name",
+            "agents": ["agent1", "agent2"],  # From agents dict
+            "execution": "parallel",  # or "sequential"
+            "aggregation": "merge",  # How to combine results
+            "condition": "prev_stage.result == 'success'",  # Optional
+            "inputs": ["prev_stage1", "prev_stage2"]  # Optional
+        }
+    ]
+})
+```
+
+**Behavior:**
+- Executes workflow stages in order
+- Supports parallel and sequential execution per stage
+- Conditional routing based on previous results
+- Sophisticated result aggregation
+- State machine-like coordination
+
+**Methods:**
+- `process(message)`: Execute workflow
+- `get_workflow()`: Get workflow definition
+- `get_agents()`: Get agent dictionary
+- `capabilities`: Combined agent capabilities
+
+**Example:**
+
+```python
+from agenkit.patterns import OrchestrationPattern, WorkflowDefinition
+
+# Define content moderation workflow
+workflow = WorkflowDefinition({
+    "stages": [
+        # Stage 1: Parallel screening
+        {
+            "name": "screening",
+            "agents": ["spam_detector", "toxicity_detector"],
+            "execution": "parallel",
+            "aggregation": "any_flag"
+        },
+        # Stage 2: Conditional deep analysis
+        {
+            "name": "analysis",
+            "agents": ["context_analyzer"],
+            "condition": "screening.flagged == true",
+            "execution": "sequential"
+        },
+        # Stage 3: Final decision
+        {
+            "name": "decision",
+            "agents": ["decision_maker"],
+            "inputs": ["screening", "analysis"],
+            "aggregation": "consensus"
+        }
+    ]
+})
+
+# Create orchestrator
+orchestrator = OrchestrationPattern(
+    agents={
+        "spam_detector": SpamDetector(),
+        "toxicity_detector": ToxicityDetector(),
+        "context_analyzer": ContextAnalyzer(),
+        "decision_maker": DecisionMaker()
+    },
+    workflow=workflow
+)
+
+result = await orchestrator.process(content)
+
+# Metadata shows workflow execution
+print(result.metadata["workflow_stages_executed"])
+print(result.metadata["workflow_decisions"])
+```
+
+**Performance:**
+- Latency: Depends on workflow structure
+- Complex workflows: Higher overhead
+- Optimization: Parallel stages reduce latency
+
+---
+
+#### ReasoningWithToolsPattern
+
+**Enhanced reasoning (CoT/ToT/Self-Consistency) with tools.**
+
+```python
+class ReasoningWithToolsPattern(Agent):
+    def __init__(
+        self,
+        llm: Agent,
+        tools: list[Tool],
+        reasoning_strategy: str = "chain-of-thought",
+        max_iterations: int = 10,
+        **strategy_params,
+    ) -> None:
+```
+
+**Parameters:**
+- `llm`: Language model for reasoning
+- `tools`: Available tools for execution
+- `reasoning_strategy`: Strategy to use
+  - `"chain-of-thought"`: Sequential reasoning steps
+  - `"tree-of-thought"`: Explore multiple reasoning branches
+  - `"self-consistency"`: Generate multiple solutions and vote
+- `max_iterations`: Maximum reasoning steps (default: 10)
+- `**strategy_params`: Strategy-specific parameters
+  - Chain of Thought: None
+  - Tree of Thought: `branches=3`, `max_depth=5`
+  - Self-Consistency: `num_samples=5`
+
+**Behavior:**
+- Applies reasoning strategy to problem
+- Generates explicit reasoning trace
+- Identifies and executes tools with justification
+- Synthesizes results with reasoning
+- Returns answer with full reasoning explanation
+
+**Methods:**
+- `process(message)`: Reason and solve problem
+- `get_reasoning_trace()`: Get reasoning steps
+- `capabilities`: Tool capabilities plus reasoning types
+
+**Example:**
+
+```python
+from agenkit.patterns import ReasoningWithToolsPattern
+
+# Chain of Thought reasoning
+cot_agent = ReasoningWithToolsPattern(
+    llm=my_llm,
+    tools=[search_tool, calculator_tool],
+    reasoning_strategy="chain-of-thought",
+    max_iterations=10
+)
+
+problem = Message.with_text("user", "Complex multi-step problem")
+result = await cot_agent.process(problem)
+
+# Reasoning trace available
+for step in result.metadata["reasoning_trace"]:
+    print(f"Thought: {step['thought']}")
+    if step.get("tool_call"):
+        print(f"  Tool: {step['tool_call']}")
+        print(f"  Result: {step['tool_result']}")
+```
+
+**Tree of Thought:**
+
+```python
+# Explore multiple reasoning paths
+tot_agent = ReasoningWithToolsPattern(
+    llm=my_llm,
+    tools=[search_tool, calculator_tool],
+    reasoning_strategy="tree-of-thought",
+    branches=3,  # Explore 3 paths
+    max_depth=5  # 5 reasoning steps per path
+)
+
+result = await tot_agent.process(problem)
+
+# Multiple reasoning branches explored
+for branch in result.metadata["reasoning_branches"]:
+    print(f"Path: {branch['approach']}")
+    print(f"Score: {branch['score']}")
+print(f"Best path: {result.metadata['best_branch']}")
+```
+
+**Self-Consistency:**
+
+```python
+# Generate multiple solutions and vote
+consistency_agent = ReasoningWithToolsPattern(
+    llm=my_llm,
+    tools=[calculator_tool],
+    reasoning_strategy="self-consistency",
+    num_samples=5  # Generate 5 independent solutions
+)
+
+result = await consistency_agent.process(problem)
+
+# Consensus answer
+print(f"Consensus: {result.text}")
+print(f"Samples: {result.metadata['reasoning_samples']}")
+```
+
+**Performance:**
+- Chain of Thought: Medium latency, single path
+- Tree of Thought: High latency, explores branches
+- Self-Consistency: Very high latency, multiple samples
+- Cost: Multiple LLM calls (expensive)
+
+---
+
+#### CollaborativePattern
+
+**Multi-agent team collaboration with shared workspace.**
+
+```python
+class CollaborativePattern(Agent):
+    def __init__(
+        self,
+        agents: list[Agent],
+        collaboration_strategy: str = "shared-workspace",
+        max_rounds: int = 5,
+        shared_context: bool = True,
+        name: str = "collaborative",
+    ) -> None:
+```
+
+**Parameters:**
+- `agents`: List of collaborating agents
+- `collaboration_strategy`: How agents collaborate
+  - `"shared-workspace"`: Common workspace for all agents
+  - `"sequential-refinement"`: Each agent refines previous work
+  - `"debate"`: Agents debate to reach consensus
+  - `"voting"`: Agents vote on solutions
+- `max_rounds`: Maximum collaboration rounds (default: 5)
+- `shared_context`: Whether agents see all previous work (default: True)
+- `name`: Pattern identifier (default: "collaborative")
+
+**Behavior:**
+- Initializes shared workspace
+- Agents contribute sequentially or concurrently
+- Bidirectional communication enabled
+- Shared context accessible to all agents
+- Synthesizes collaborative result
+
+**Methods:**
+- `process(message)`: Collaborative execution
+- `get_agents()`: Get collaborating agents
+- `get_workspace()`: Get shared workspace state
+- `capabilities`: Combined agent capabilities
+
+**Example:**
+
+```python
+from agenkit.patterns import CollaborativePattern
+
+# Collaborative writing team
+team = CollaborativePattern(
+    agents=[
+        outliner_agent,    # Creates structure
+        researcher_agent,  # Gathers information
+        writer_agent,      # Writes content
+        editor_agent       # Refines output
+    ],
+    collaboration_strategy="sequential-refinement",
+    max_rounds=3,
+    shared_context=True
+)
+
+task = Message.with_text("user", "Write comprehensive market analysis")
+result = await team.process(task)
+
+# Collaboration details in metadata
+print(result.metadata["collaboration_rounds"])
+for contribution in result.metadata["agent_contributions"]:
+    print(f"{contribution['agent']}: {contribution['summary']}")
+```
+
+**Debate Strategy:**
+
+```python
+# Agents debate to reach consensus
+debate_team = CollaborativePattern(
+    agents=[optimist_agent, pessimist_agent, realist_agent],
+    collaboration_strategy="debate",
+    max_rounds=5
+)
+
+# Agents debate pros/cons
+decision = await debate_team.process(strategic_question)
+print(decision.metadata["debate_rounds"])
+print(decision.metadata["consensus_reached"])
+```
+
+**Performance:**
+- Latency: Multiple agent interactions (slower)
+- Quality: Higher due to multiple perspectives
+- Best for: Complex, multifaceted problems
+
+---
+
 ## Examples
 
 ### Example 1: Simple Agent

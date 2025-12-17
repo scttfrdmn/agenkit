@@ -84,6 +84,12 @@ add_library(agenkit
     src/evaluation/recorder.cpp
     src/evaluation/regression.cpp
     src/evaluation/quality_metrics.cpp
+    src/evaluation/context_metrics.cpp
+    src/evaluation/optimizer.cpp
+    src/evaluation/ab_testing.cpp
+    src/evaluation/benchmarks.cpp
+    src/evaluation/bayesian_optimizer.cpp
+    src/evaluation/prompt_optimizer.cpp
     src/techniques/reasoning/self_consistency.cpp
 )
 

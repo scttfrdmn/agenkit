@@ -29,6 +29,11 @@ add_executable(test_integration_evaluation test_evaluation.cpp)
 target_link_libraries(test_integration_evaluation agenkit gtest_main)
 add_test(NAME integration_evaluation COMMAND test_integration_evaluation)
 
+# Context metrics tests
+add_executable(test_context_metrics test_context_metrics.cpp)
+target_link_libraries(test_context_metrics agenkit gtest_main)
+add_test(NAME context_metrics COMMAND test_context_metrics)
+
 # Core functionality integration tests
 add_executable(test_integration_core test_core.cpp)
 target_link_libraries(test_integration_core agenkit gtest_main)

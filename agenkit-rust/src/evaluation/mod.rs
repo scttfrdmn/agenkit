@@ -45,6 +45,7 @@ pub mod regression;
 pub mod benchmarks;
 pub mod optimizer;
 pub mod prompt_optimizer;
+pub mod ab_testing;
 
 pub use core::{Metric, EvaluationResult, Evaluator};
 pub use metrics::{
@@ -71,4 +72,8 @@ pub use optimizer::{
 pub use prompt_optimizer::{
     OptimizationStrategy, PromptEvaluation, PromptOptimizationResult,
     AgentFactory, PromptEvaluatorFunc, PromptOptimizer,
+};
+pub use ab_testing::{
+    ABTest, ABResult, ABVariant, StatisticalTestType, SignificanceLevel,
+    TestCase as ABTestCase,
 };

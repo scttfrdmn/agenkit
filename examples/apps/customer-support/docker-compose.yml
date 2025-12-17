@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # Python API Service (FastAPI)
+  python-api:
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    container_name: customer-support-api
+    ports:
+      - "${PYTHON_API_PORT:-8000}:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GO_WORKER_ENDPOINT=grpc://${GO_WORKER_GRPC_HOST:-go-worker}:${GO_WORKER_GRPC_PORT:-50051}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4318}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-customer-support-api}
+      - RATE_LIMIT_USER_RATE=${RATE_LIMIT_USER_RATE:-10.0}
+      - RATE_LIMIT_GLOBAL_RATE=${RATE_LIMIT_GLOBAL_RATE:-100.0}
+      - CACHE_TTL_FAQ=${CACHE_TTL_FAQ:-300}
+      - TIMEOUT_DEFAULT=${TIMEOUT_DEFAULT:-5.0}
+      - TIMEOUT_RAG=${TIMEOUT_RAG:-30.0}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    depends_on:
+      - go-worker
+      - redis
+      - jaeger
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - customer-support-network
+
+  # Go Worker Service (gRPC)
+  go-worker:
+    build:
+      context: ./go
+      dockerfile: Dockerfile
+    container_name: customer-support-worker
+    ports:
+      - "${GO_WORKER_GRPC_PORT:-50051}:50051"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4318}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-customer-support-worker}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    depends_on:
+      - jaeger
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=:50051"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - customer-support-network
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: customer-support-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - customer-support-network
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: customer-support-prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=7d'
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - customer-support-network
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: customer-support-jaeger
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686"  # UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+      - "14268:14268"  # Jaeger collector
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    networks:
+      - customer-support-network
+
+volumes:
+  redis-data:
+  prometheus-data:
+
+networks:
+  customer-support-network:
+    driver: bridge

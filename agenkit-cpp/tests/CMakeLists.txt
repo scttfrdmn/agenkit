@@ -155,6 +155,31 @@ add_executable(test_bedrock_adapter test_bedrock_adapter.cpp)
 target_link_libraries(test_bedrock_adapter agenkit gtest_main)
 add_test(NAME bedrock_adapter_tests COMMAND test_bedrock_adapter)
 
+# Evaluation tests - Optimizer
+add_executable(test_optimizer unit/test_optimizer.cpp)
+target_link_libraries(test_optimizer agenkit gtest_main)
+add_test(NAME optimizer_tests COMMAND test_optimizer)
+
+# Evaluation tests - A/B Testing
+add_executable(test_ab_testing unit/test_ab_testing.cpp)
+target_link_libraries(test_ab_testing agenkit gtest_main)
+add_test(NAME ab_testing_tests COMMAND test_ab_testing)
+
+# Evaluation tests - Benchmarks
+add_executable(test_benchmarks unit/test_benchmarks.cpp)
+target_link_libraries(test_benchmarks agenkit gtest_main)
+add_test(NAME benchmarks_tests COMMAND test_benchmarks)
+
+# Evaluation tests - Bayesian Optimizer
+add_executable(test_bayesian_optimizer unit/test_bayesian_optimizer.cpp)
+target_link_libraries(test_bayesian_optimizer agenkit gtest_main)
+add_test(NAME bayesian_optimizer_tests COMMAND test_bayesian_optimizer)
+
+# Evaluation tests - Prompt Optimizer
+add_executable(test_prompt_optimizer unit/test_prompt_optimizer.cpp)
+target_link_libraries(test_prompt_optimizer agenkit gtest_main)
+add_test(NAME prompt_optimizer_tests COMMAND test_prompt_optimizer)
+
 # Cross-language test harness (standalone executable, not a gtest)
 add_executable(cross_language_harness cross_language_harness.cpp)
 target_link_libraries(cross_language_harness nlohmann_json::nlohmann_json)

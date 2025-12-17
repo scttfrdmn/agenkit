@@ -71,10 +71,12 @@ pub const EchoAgent = @import("agent.zig").EchoAgent;
 // Patterns
 pub const patterns = struct {
     // Sequential pattern
-    pub const SequentialPattern = @import("patterns/sequential.zig").SequentialPattern;
+    pub const SequentialAgent = @import("patterns/sequential.zig").SequentialAgent;
+    pub const SequentialPattern = SequentialAgent; // DEPRECATED: Use SequentialAgent
 
     // Parallel pattern
-    pub const ParallelPattern = @import("patterns/parallel.zig").ParallelPattern;
+    pub const ParallelAgent = @import("patterns/parallel.zig").ParallelAgent;
+    pub const ParallelPattern = ParallelAgent; // DEPRECATED: Use ParallelAgent
     pub const defaultAggregator = @import("patterns/parallel.zig").defaultAggregator;
     pub const Aggregator = @import("patterns/parallel.zig").Aggregator;
 
@@ -128,11 +130,11 @@ pub const patterns = struct {
     pub const defaultWorker = @import("patterns/autonomous.zig").defaultWorker;
 
     // Memory Hierarchy pattern
-    pub const MemoryEntry = @import("patterns/memory_hierarchy.zig").MemoryEntry;
-    pub const WorkingMemory = @import("patterns/memory_hierarchy.zig").WorkingMemory;
-    pub const ShortTermMemory = @import("patterns/memory_hierarchy.zig").ShortTermMemory;
-    pub const LongTermMemory = @import("patterns/memory_hierarchy.zig").LongTermMemory;
-    pub const MemoryHierarchy = @import("patterns/memory_hierarchy.zig").MemoryHierarchy;
+    pub const MemoryEntry = @import("patterns/memory.zig").MemoryEntry;
+    pub const WorkingMemory = @import("patterns/memory.zig").WorkingMemory;
+    pub const ShortTermMemory = @import("patterns/memory.zig").ShortTermMemory;
+    pub const LongTermMemory = @import("patterns/memory.zig").LongTermMemory;
+    pub const MemoryHierarchy = @import("patterns/memory.zig").MemoryHierarchy;
 
     // Router pattern
     pub const RouterAgent = @import("patterns/router.zig").RouterAgent;
@@ -178,6 +180,39 @@ pub const patterns = struct {
     pub const ReasoningConfig = @import("patterns/reasoning_with_tools.zig").ReasoningConfig;
 };
 
+// LLM Adapters
+pub const adapter = struct {
+    // Base LLM interface
+    pub const LLM = @import("adapter/llm.zig").LLM;
+    pub const CallOptions = @import("adapter/llm.zig").CallOptions;
+    pub const StreamIterator = @import("adapter/llm.zig").StreamIterator;
+    pub const LLMError = @import("adapter/llm.zig").LLMError;
+
+    // OpenAI adapter
+    pub const OpenAILLM = @import("adapter/openai.zig").OpenAILLM;
+
+    // Ollama adapter
+    pub const OllamaLLM = @import("adapter/ollama.zig").OllamaLLM;
+
+    // Gemini adapter
+    pub const GeminiLLM = @import("adapter/gemini.zig").GeminiLLM;
+
+    // Anthropic adapter
+    pub const AnthropicLLM = @import("adapter/anthropic.zig").AnthropicLLM;
+
+    // LiteLLM adapter
+    pub const LiteLLMLLM = @import("adapter/litellm.zig").LiteLLMLLM;
+
+    // AWS Bedrock adapter
+    pub const BedrockLLM = @import("adapter/bedrock.zig").BedrockLLM;
+};
+
+// Evaluation framework
+pub const evaluation = @import("evaluation/mod.zig");
+
+// Observability framework
+pub const observability = @import("observability/mod.zig");
+
 // Version information
 pub const version = "0.40.0";
 pub const zig_version = @import("builtin").zig_version;
@@ -195,7 +230,7 @@ test {
     _ = @import("patterns/task.zig");
     _ = @import("patterns/multiagent.zig");
     _ = @import("patterns/autonomous.zig");
-    _ = @import("patterns/memory_hierarchy.zig");
+    _ = @import("patterns/memory.zig");
     _ = @import("patterns/router.zig");
     _ = @import("patterns/fallback.zig");
     _ = @import("patterns/collaborative.zig");
@@ -203,4 +238,14 @@ test {
     _ = @import("patterns/supervisor.zig");
     _ = @import("patterns/orchestration.zig");
     _ = @import("patterns/reasoning_with_tools.zig");
+    // Also test adapters
+    _ = @import("adapter/llm.zig");
+    _ = @import("adapter/openai.zig");
+    _ = @import("adapter/ollama.zig");
+    _ = @import("adapter/gemini.zig");
+    _ = @import("adapter/anthropic.zig");
+    _ = @import("adapter/litellm.zig");
+    _ = @import("adapter/bedrock.zig");
+    // Also test observability
+    _ = @import("observability/mod.zig");
 }

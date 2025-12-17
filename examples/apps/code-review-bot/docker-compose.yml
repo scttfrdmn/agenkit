@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  python-api:
+    build: ./python
+    container_name: code-review-api
+    ports:
+      - "${PYTHON_API_PORT:-8000}:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GO_ANALYZER_ENDPOINT=grpc://go-analyzer:${GO_ANALYZER_GRPC_PORT:-50051}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - TIMEOUT_REVIEW=${TIMEOUT_REVIEW:-120.0}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
+    depends_on:
+      - go-analyzer
+      - redis
+      - jaeger
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+    networks:
+      - review-network
+
+  go-analyzer:
+    build: ./go
+    container_name: code-review-analyzer
+    ports:
+      - "${GO_ANALYZER_GRPC_PORT:-50051}:50051"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
+    depends_on:
+      - jaeger
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=:50051"]
+      interval: 10s
+    networks:
+      - review-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: code-review-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+    networks:
+      - review-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - review-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - review-network
+
+volumes:
+  redis-data:
+
+networks:
+  review-network:
+    driver: bridge

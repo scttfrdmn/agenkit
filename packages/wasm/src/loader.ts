@@ -48,31 +48,90 @@ export async function loadWasmModule(options: LoaderOptions): Promise<WasmModule
     }
   }
 
-  // Minimal WASI implementation
+  // Comprehensive WASI snapshot_preview1 stub implementation
+  // Returns success (0) or EBADF (8) for unsupported operations
   const wasi = {
+    // Args & Environment
     args_sizes_get: () => 0,
     args_get: () => 0,
     environ_sizes_get: () => 0,
     environ_get: () => 0,
+
+    // Clock
     clock_time_get: () => 0,
+    clock_res_get: () => 0,
+
+    // File descriptors - Write operations
     fd_write: (fd: number, iovs: number, iovsLen: number, nwritten: number) => {
       if (debug && fd === 1) {
         console.log('[@agenkit/wasm] stdout write');
       }
       return 0;
     },
+    fd_pwrite: () => 0,
+
+    // File descriptors - Read operations
+    fd_read: () => 0,
+    fd_pread: () => 0,
+
+    // File descriptors - Control
     fd_close: () => 0,
     fd_seek: () => 0,
-    fd_read: () => 0,
+    fd_sync: () => 0,
+    fd_datasync: () => 0,
+    fd_allocate: () => 0,
+    fd_advise: () => 0,
+    fd_fdstat_get: () => 0,
+    fd_fdstat_set_flags: () => 0,
+    fd_fdstat_set_rights: () => 0,
+    fd_filestat_get: () => 0,
+    fd_filestat_set_size: () => 0,
+    fd_filestat_set_times: () => 0,
+    fd_readdir: () => 0,
+    fd_renumber: () => 0,
+    fd_tell: () => 0,
+
+    // File descriptors - Preopen
+    fd_prestat_get: () => 8, // EBADF
+    fd_prestat_dir_name: () => 8,
+
+    // Path operations
+    path_create_directory: () => 8,
+    path_filestat_get: () => 8,
+    path_filestat_set_times: () => 8,
+    path_link: () => 8,
+    path_open: () => 8,
+    path_readlink: () => 8,
+    path_remove_directory: () => 8,
+    path_rename: () => 8,
+    path_symlink: () => 8,
+    path_unlink_file: () => 8,
+
+    // Process
     proc_exit: (code: number) => {
       if (debug) {
         console.log(`[@agenkit/wasm] Process exited with code: ${code}`);
       }
     },
+    proc_raise: () => 0,
+
+    // Random
     random_get: (buf: number, bufLen: number) => {
       // Fill buffer with random data (simplified)
       return 0;
     },
+
+    // Scheduling
+    poll_oneoff: () => 0,
+    sched_yield: () => 0,
+
+    // Sockets (stubbed)
+    sock_accept: () => 8,
+    sock_recv: () => 8,
+    sock_send: () => 8,
+    sock_shutdown: () => 8,
+
+    // Allow custom overrides
     ...wasiImports,
   };
 

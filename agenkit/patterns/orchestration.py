@@ -1,6 +1,12 @@
 """
 Core orchestration patterns for agenkit.
 
+DEPRECATED: This module is deprecated and will be removed in v0.43.0.
+Import from individual pattern modules instead:
+    from agenkit.patterns import SequentialAgent, ParallelAgent, RouterAgent
+
+The *Pattern suffix has been replaced with *Agent for consistency.
+
 Patterns are reusable ways to compose agents:
 - Sequential: Execute agents one after another (pipeline)
 - Parallel: Execute agents concurrently (fan-out)
@@ -13,10 +19,20 @@ Design principles:
 - Observable (hooks for monitoring)
 """
 
+import warnings
 import asyncio
 from collections.abc import Callable
 
 from agenkit.interfaces import Agent, Message
+
+# Issue deprecation warning when this module is imported
+warnings.warn(
+    "orchestration.py is deprecated and will be removed in v0.43.0. "
+    "Import from individual pattern modules instead: "
+    "from agenkit.patterns import SequentialAgent, ParallelAgent, RouterAgent",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 __all__ = ["ParallelPattern", "RouterPattern", "SequentialPattern"]
 

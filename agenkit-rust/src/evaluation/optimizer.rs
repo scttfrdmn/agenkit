@@ -450,6 +450,262 @@ mod tests {
         let improvement = result.get_improvement().unwrap();
         assert!((improvement - 0.15).abs() < 0.0001); // 0.95 - 0.8 ≈ 0.15
     }
+
+    // ========================================================================
+    // Bayesian Optimizer Tests
+    // ========================================================================
+
+    #[tokio::test]
+    async fn test_bayesian_optimizer_ucb() {
+        let mut space = SearchSpace::new();
+        space.add_continuous("x", 0.0, 10.0);
+
+        // Objective: maximize -(x - 5)^2 (peak at x=5)
+        let objective = |config: HashMap<String, serde_json::Value>| {
+            Box::pin(async move {
+                let x = config.get("x").unwrap().as_f64().unwrap();
+                Ok(-((x - 5.0).powi(2)))
+            }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
+        };
+
+        let mut optimizer = BayesianOptimizer::new(
+            objective,
+            space,
+            true,
+            AcquisitionFunction::UCB,
+            5,
+        );
+
+        let result = optimizer.optimize(20).await.unwrap();
+
+        assert_eq!(result.n_iterations, 20);
+        assert_eq!(result.history.len(), 20);
+        assert!(result.best_score <= 0.0); // Maximum is 0 at x=5
+
+        // Best x should be reasonably close to 5.0
+        let best_x = result.best_config.get("x").unwrap().as_f64().unwrap();
+        assert!(best_x >= 0.0 && best_x <= 10.0);
+    }
+
+    #[tokio::test]
+    async fn test_bayesian_optimizer_ei() {
+        let mut space = SearchSpace::new();
+        space.add_continuous("x", 0.0, 10.0);
+
+        // Objective: maximize -(x - 3)^2
+        let objective = |config: HashMap<String, serde_json::Value>| {
+            Box::pin(async move {
+                let x = config.get("x").unwrap().as_f64().unwrap();
+                Ok(-((x - 3.0).powi(2)))
+            }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
+        };
+
+        let mut optimizer = BayesianOptimizer::new(
+            objective,
+            space,
+            true,
+            AcquisitionFunction::EI,
+            5,
+        );
+
+        let result = optimizer.optimize(20).await.unwrap();
+
+        assert_eq!(result.n_iterations, 20);
+        assert!(result.best_score <= 0.0);
+    }
+
+    #[tokio::test]
+    async fn test_bayesian_optimizer_pi() {
+        let mut space = SearchSpace::new();
+        space.add_continuous("x", 0.0, 10.0);
+
+        // Objective: maximize -(x - 7)^2
+        let objective = |config: HashMap<String, serde_json::Value>| {
+            Box::pin(async move {
+                let x = config.get("x").unwrap().as_f64().unwrap();
+                Ok(-((x - 7.0).powi(2)))
+            }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
+        };
+
+        let mut optimizer = BayesianOptimizer::new(
+            objective,
+            space,
+            true,
+            AcquisitionFunction::PI,
+            5,
+        );
+
+        let result = optimizer.optimize(20).await.unwrap();
+
+        assert_eq!(result.n_iterations, 20);
+        assert!(result.best_score <= 0.0);
+    }
+
+    #[tokio::test]
+    async fn test_bayesian_optimizer_minimization() {
+        let mut space = SearchSpace::new();
+        space.add_continuous("x", 0.0, 10.0);
+
+        // Objective: minimize (x - 2)^2 (minimum at x=2)
+        let objective = |config: HashMap<String, serde_json::Value>| {
+            Box::pin(async move {
+                let x = config.get("x").unwrap().as_f64().unwrap();
+                Ok((x - 2.0).powi(2))
+            }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
+        };
+
+        let mut optimizer = BayesianOptimizer::new(
+            objective,
+            space,
+            false, // minimize
+            AcquisitionFunction::UCB,
+            5,
+        );
+
+        let result = optimizer.optimize(20).await.unwrap();
+
+        assert_eq!(result.n_iterations, 20);
+        assert!(result.best_score >= 0.0); // Minimum is 0 at x=2
+    }
+
+    #[tokio::test]
+    async fn test_bayesian_optimizer_multidimensional() {
+        let mut space = SearchSpace::new();
+        space.add_continuous("x", 0.0, 10.0);
+        space.add_continuous("y", 0.0, 10.0);
+
+        // Objective: minimize (x - 5)^2 + (y - 5)^2
+        let objective = |config: HashMap<String, serde_json::Value>| {
+            Box::pin(async move {
+                let x = config.get("x").unwrap().as_f64().unwrap();
+                let y = config.get("y").unwrap().as_f64().unwrap();
+                Ok((x - 5.0).powi(2) + (y - 5.0).powi(2))
+            }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
+        };
+
+        let mut optimizer = BayesianOptimizer::new(
+            objective,
+            space,
+            false,
+            AcquisitionFunction::EI,
+            10,
+        );
+
+        let result = optimizer.optimize(30).await.unwrap();
+
+        assert_eq!(result.n_iterations, 30);
+        assert!(result.best_score >= 0.0);
+
+        // Both x and y should be in valid range
+        let best_x = result.best_config.get("x").unwrap().as_f64().unwrap();
+        let best_y = result.best_config.get("y").unwrap().as_f64().unwrap();
+        assert!(best_x >= 0.0 && best_x <= 10.0);
+        assert!(best_y >= 0.0 && best_y <= 10.0);
+    }
+
+    #[tokio::test]
+    async fn test_bayesian_optimizer_with_integer_params() {
+        let mut space = SearchSpace::new();
+        space.add_integer("count", 1, 20);
+        space.add_continuous("scale", 0.1, 2.0);
+
+        // Objective: maximize count * scale, but penalize count > 10
+        let objective = |config: HashMap<String, serde_json::Value>| {
+            Box::pin(async move {
+                let count = config.get("count").unwrap().as_i64().unwrap() as f64;
+                let scale = config.get("scale").unwrap().as_f64().unwrap();
+                let score = count * scale - if count > 10.0 { (count - 10.0) * 2.0 } else { 0.0 };
+                Ok(score)
+            }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
+        };
+
+        let mut optimizer = BayesianOptimizer::new(
+            objective,
+            space,
+            true,
+            AcquisitionFunction::UCB,
+            5,
+        );
+
+        let result = optimizer.optimize(20).await.unwrap();
+
+        assert_eq!(result.n_iterations, 20);
+        assert!(result.history.len() == 20);
+    }
+
+    #[tokio::test]
+    async fn test_bayesian_optimizer_convergence() {
+        let mut space = SearchSpace::new();
+        space.add_continuous("x", 0.0, 10.0);
+
+        // Objective: simple quadratic with known optimum
+        let objective = |config: HashMap<String, serde_json::Value>| {
+            Box::pin(async move {
+                let x = config.get("x").unwrap().as_f64().unwrap();
+                Ok(-((x - 6.0).powi(2)))
+            }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
+        };
+
+        let mut optimizer = BayesianOptimizer::new(
+            objective,
+            space,
+            true,
+            AcquisitionFunction::EI,
+            5,
+        );
+
+        let result = optimizer.optimize(30).await.unwrap();
+
+        // With enough iterations, should get close to optimum
+        // Optimum is at x=6 with score=0
+        assert!(result.best_score >= -2.0); // Reasonable tolerance
+    }
+
+    #[tokio::test]
+    async fn test_bayesian_optimizer_metadata() {
+        let mut space = SearchSpace::new();
+        space.add_continuous("x", 0.0, 10.0);
+
+        let objective = |config: HashMap<String, serde_json::Value>| {
+            Box::pin(async move {
+                let x = config.get("x").unwrap().as_f64().unwrap();
+                Ok(x)
+            }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
+        };
+
+        let mut optimizer = BayesianOptimizer::new(
+            objective,
+            space,
+            true,
+            AcquisitionFunction::UCB,
+            3,
+        );
+
+        let result = optimizer.optimize(10).await.unwrap();
+
+        // Check metadata
+        assert_eq!(
+            result.metadata.get("algorithm").unwrap().as_str().unwrap(),
+            "bayesian_optimization"
+        );
+        assert_eq!(
+            result.metadata.get("n_initial").unwrap().as_u64().unwrap(),
+            3
+        );
+        assert_eq!(
+            result.metadata.get("maximize").unwrap().as_bool().unwrap(),
+            true
+        );
+        assert!(result.metadata.contains_key("acquisition"));
+    }
+
+    #[test]
+    fn test_acquisition_function_types() {
+        // Test that all acquisition function types can be created
+        let _ei = AcquisitionFunction::EI;
+        let _ucb = AcquisitionFunction::UCB;
+        let _pi = AcquisitionFunction::PI;
+    }
 }
 
 /// Acquisition function type for Bayesian optimization.

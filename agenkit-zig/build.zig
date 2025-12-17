@@ -622,4 +622,168 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(test_harness);
     const harness_step = b.step("build-harness", "Build the cross-language test harness");
     harness_step.dependOn(b.getInstallStep());
+
+    // Evaluation examples
+
+    // Add Basic Evaluation example
+    const basic_eval_example = b.addExecutable(.{
+        .name = "basic_evaluation_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/evaluation/basic_evaluation_example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(basic_eval_example);
+    const basic_eval_step = b.step("run-evaluation-basic", "Run the basic evaluation example");
+    const basic_eval_run = b.addRunArtifact(basic_eval_example);
+    basic_eval_step.dependOn(&basic_eval_run.step);
+    basic_eval_run.step.dependOn(b.getInstallStep());
+
+    // Add Session Recording example
+    const recording_example = b.addExecutable(.{
+        .name = "session_recording_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/evaluation/session_recording_example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(recording_example);
+    const recording_step = b.step("run-evaluation-recording", "Run the session recording example");
+    const recording_run = b.addRunArtifact(recording_example);
+    recording_step.dependOn(&recording_run.step);
+    recording_run.step.dependOn(b.getInstallStep());
+
+    // Add Regression Detection example
+    const regression_example = b.addExecutable(.{
+        .name = "regression_detection_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/evaluation/regression_detection_example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(regression_example);
+    const regression_step = b.step("run-evaluation-regression", "Run the regression detection example");
+    const regression_run = b.addRunArtifact(regression_example);
+    regression_step.dependOn(&regression_run.step);
+    regression_run.step.dependOn(b.getInstallStep());
+
+    // Adapter examples
+
+    // Add OpenAI Basic example
+    const openai_example = b.addExecutable(.{
+        .name = "openai_basic",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/adapters/openai_basic.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(openai_example);
+    const openai_step = b.step("run-openai-basic", "Run the OpenAI adapter example");
+    const openai_run = b.addRunArtifact(openai_example);
+    openai_step.dependOn(&openai_run.step);
+    openai_run.step.dependOn(b.getInstallStep());
+
+    // Add Ollama Basic example
+    const ollama_example = b.addExecutable(.{
+        .name = "ollama_basic",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/adapters/ollama_basic.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(ollama_example);
+    const ollama_step = b.step("run-ollama-basic", "Run the Ollama adapter example");
+    const ollama_run = b.addRunArtifact(ollama_example);
+    ollama_step.dependOn(&ollama_run.step);
+    ollama_run.step.dependOn(b.getInstallStep());
+
+    // Add Gemini Basic example
+    const gemini_example = b.addExecutable(.{
+        .name = "gemini_basic",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/adapters/gemini_basic.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(gemini_example);
+    const gemini_step = b.step("run-gemini-basic", "Run the Google Gemini adapter example");
+    const gemini_run = b.addRunArtifact(gemini_example);
+    gemini_step.dependOn(&gemini_run.step);
+    gemini_run.step.dependOn(b.getInstallStep());
+
+    // Add Anthropic Basic example
+    const anthropic_example = b.addExecutable(.{
+        .name = "anthropic_basic",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/adapters/anthropic_basic.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(anthropic_example);
+    const anthropic_step = b.step("run-anthropic-basic", "Run the Anthropic (Claude) adapter example");
+    const anthropic_run = b.addRunArtifact(anthropic_example);
+    anthropic_step.dependOn(&anthropic_run.step);
+    anthropic_run.step.dependOn(b.getInstallStep());
+
+    // Add LiteLLM Basic example
+    const litellm_example = b.addExecutable(.{
+        .name = "litellm_basic",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/adapters/litellm_basic.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(litellm_example);
+    const litellm_step = b.step("run-litellm-basic", "Run the LiteLLM (Universal Proxy) adapter example");
+    const litellm_run = b.addRunArtifact(litellm_example);
+    litellm_step.dependOn(&litellm_run.step);
+    litellm_run.step.dependOn(b.getInstallStep());
+
+    // Add Bedrock Basic example
+    const bedrock_example = b.addExecutable(.{
+        .name = "bedrock_basic",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/adapters/bedrock_basic.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(bedrock_example);
+    const bedrock_step = b.step("run-bedrock-basic", "Run the AWS Bedrock adapter example");
+    const bedrock_run = b.addRunArtifact(bedrock_example);
+    bedrock_step.dependOn(&bedrock_run.step);
+    bedrock_run.step.dependOn(b.getInstallStep());
+
+    // Add Observability Tracing example
+    const tracing_example = b.addExecutable(.{
+        .name = "tracing_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/observability/tracing_example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(tracing_example);
+    const tracing_step = b.step("run-tracing-example", "Run the OpenTelemetry tracing example");
+    const tracing_run = b.addRunArtifact(tracing_example);
+    tracing_step.dependOn(&tracing_run.step);
+    tracing_run.step.dependOn(b.getInstallStep());
 }

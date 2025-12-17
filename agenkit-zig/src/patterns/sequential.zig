@@ -16,7 +16,7 @@
 ///
 /// Example:
 ///     const agents = [_]Agent{ agent1, agent2, agent3 };
-///     var sequential = try SequentialPattern.init(allocator, &agents, "pipeline");
+///     var sequential = try SequentialAgent.init(allocator, &agents, "pipeline");
 ///     defer sequential.deinit();
 ///
 ///     const result = try sequential.agent().process(input_message);
@@ -28,8 +28,8 @@ const Result = @import("../agent.zig").Result;
 const Message = @import("../message.zig").Message;
 const Allocator = std.mem.Allocator;
 
-/// Sequential Pattern - Executes agents in order
-pub const SequentialPattern = struct {
+/// Sequential Agent - Executes agents in order
+pub const SequentialAgent = struct {
     allocator: Allocator,
     agents: []Agent,
     pattern_name: []const u8,
@@ -43,16 +43,16 @@ pub const SequentialPattern = struct {
     ///     name: Pattern name for identification
     ///
     /// Returns:
-    ///     Initialized SequentialPattern
+    ///     Initialized SequentialAgent
     ///
     /// Errors:
     ///     - Allocator.Error: If memory allocation fails
-    pub fn init(allocator: Allocator, agents: []const Agent, name: []const u8) !*SequentialPattern {
+    pub fn init(allocator: Allocator, agents: []const Agent, name: []const u8) !*SequentialAgent {
         if (agents.len == 0) {
             return error.OutOfMemory; // Reuse existing error type
         }
 
-        const self = try allocator.create(SequentialPattern);
+        const self = try allocator.create(SequentialAgent);
 
         // Copy agents slice
         const agents_copy = try allocator.alloc(Agent, agents.len);
@@ -61,7 +61,7 @@ pub const SequentialPattern = struct {
         // Duplicate name
         const name_copy = try allocator.dupe(u8, name);
 
-        self.* = SequentialPattern{
+        self.* = SequentialAgent{
             .allocator = allocator,
             .agents = agents_copy,
             .pattern_name = name_copy,
@@ -72,7 +72,7 @@ pub const SequentialPattern = struct {
     }
 
     /// Create agent interface for this pattern
-    pub fn agent(self: *SequentialPattern) Agent {
+    pub fn agent(self: *SequentialAgent) Agent {
         return Agent{
             .ptr = self,
             .vtable = &.{
@@ -85,12 +85,12 @@ pub const SequentialPattern = struct {
     }
 
     fn nameImpl(ptr: *anyopaque) []const u8 {
-        const self: *SequentialPattern = @ptrCast(@alignCast(ptr));
+        const self: *SequentialAgent = @ptrCast(@alignCast(ptr));
         return self.pattern_name;
     }
 
     fn capabilitiesImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const []const u8 {
-        const self: *SequentialPattern = @ptrCast(@alignCast(ptr));
+        const self: *SequentialAgent = @ptrCast(@alignCast(ptr));
 
         // Collect unique capabilities from all agents
         var caps_set = std.StringHashMap(void).init(allocator);
@@ -117,7 +117,7 @@ pub const SequentialPattern = struct {
     }
 
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
-        const self: *SequentialPattern = @ptrCast(@alignCast(ptr));
+        const self: *SequentialAgent = @ptrCast(@alignCast(ptr));
 
         var current = message;
         var first = true;
@@ -152,7 +152,7 @@ pub const SequentialPattern = struct {
     }
 
     fn deinitImpl(ptr: *anyopaque) void {
-        const self: *SequentialPattern = @ptrCast(@alignCast(ptr));
+        const self: *SequentialAgent = @ptrCast(@alignCast(ptr));
 
         if (self.owned_agents) {
             self.allocator.free(self.agents);
@@ -161,7 +161,7 @@ pub const SequentialPattern = struct {
         self.allocator.destroy(self);
     }
 
-    pub fn deinit(self: *SequentialPattern) void {
+    pub fn deinit(self: *SequentialAgent) void {
         if (self.owned_agents) {
             self.allocator.free(self.agents);
         }
@@ -171,10 +171,18 @@ pub const SequentialPattern = struct {
 };
 
 // ============================================================================
+// Deprecated Aliases (v0.42.0 - will be removed in v0.43.0)
+// ============================================================================
+
+/// DEPRECATED: Use SequentialAgent instead
+/// This alias exists for backward compatibility and will be removed in v0.43.0
+pub const SequentialPattern = SequentialAgent;
+
+// ============================================================================
 // Tests
 // ============================================================================
 
-test "SequentialPattern basic execution" {
+test "SequentialAgent basic execution" {
     const allocator = std.testing.allocator;
     const EchoAgent = @import("../agent.zig").EchoAgent;
 
@@ -186,7 +194,7 @@ test "SequentialPattern basic execution" {
 
     const agents = [_]Agent{ echo1.agent(), echo2.agent() };
 
-    var sequential = try SequentialPattern.init(allocator, &agents, "test_pipeline");
+    var sequential = try SequentialAgent.init(allocator, &agents, "test_pipeline");
     defer sequential.deinit();
 
     // Test execution
@@ -201,7 +209,7 @@ test "SequentialPattern basic execution" {
     try std.testing.expectEqualStrings("Hello!", text);
 }
 
-test "SequentialPattern preserves transformations" {
+test "SequentialAgent preserves transformations" {
     const allocator = std.testing.allocator;
 
     // Create a simple transform agent for testing
@@ -280,7 +288,7 @@ test "SequentialPattern preserves transformations" {
     defer agent2.agent().deinit();
 
     const agents = [_]Agent{ agent1.agent(), agent2.agent() };
-    var sequential = try SequentialPattern.init(allocator, &agents, "transform_pipeline");
+    var sequential = try SequentialAgent.init(allocator, &agents, "transform_pipeline");
     defer sequential.deinit();
 
     var msg = try Message.withText(allocator, .user, "test");
@@ -294,7 +302,7 @@ test "SequentialPattern preserves transformations" {
     try std.testing.expectEqualStrings("B:A:test", text);
 }
 
-test "SequentialPattern name and capabilities" {
+test "SequentialAgent name and capabilities" {
     const allocator = std.testing.allocator;
     const EchoAgent = @import("../agent.zig").EchoAgent;
 
@@ -302,7 +310,7 @@ test "SequentialPattern name and capabilities" {
     defer echo1.agent().deinit();
 
     const agents = [_]Agent{ echo1.agent() };
-    var sequential = try SequentialPattern.init(allocator, &agents, "my_pipeline");
+    var sequential = try SequentialAgent.init(allocator, &agents, "my_pipeline");
     defer sequential.deinit();
 
     const agent_iface = sequential.agent();

@@ -16,7 +16,7 @@
 ///
 /// Example:
 ///     const agents = [_]Agent{ agent1, agent2, agent3 };
-///     var parallel = try ParallelPattern.init(
+///     var parallel = try ParallelAgent.init(
 ///         allocator,
 ///         &agents,
 ///         "ensemble",
@@ -74,7 +74,7 @@ pub fn defaultAggregator(allocator: Allocator, messages: []Message) AgentError!M
 }
 
 /// Parallel Pattern - Executes agents concurrently and aggregates results
-pub const ParallelPattern = struct {
+pub const ParallelAgent = struct {
     allocator: Allocator,
     agents: []Agent,
     pattern_name: []const u8,
@@ -90,7 +90,7 @@ pub const ParallelPattern = struct {
     ///     aggregator_fn: Function to combine results (default: defaultAggregator)
     ///
     /// Returns:
-    ///     Initialized ParallelPattern
+    ///     Initialized ParallelAgent
     ///
     /// Errors:
     ///     - Allocator.Error: If memory allocation fails
@@ -99,12 +99,12 @@ pub const ParallelPattern = struct {
         agents: []const Agent,
         name: []const u8,
         aggregator_fn: Aggregator,
-    ) !*ParallelPattern {
+    ) !*ParallelAgent {
         if (agents.len == 0) {
             return error.OutOfMemory; // Reuse existing error type
         }
 
-        const self = try allocator.create(ParallelPattern);
+        const self = try allocator.create(ParallelAgent);
 
         // Copy agents slice
         const agents_copy = try allocator.alloc(Agent, agents.len);
@@ -113,7 +113,7 @@ pub const ParallelPattern = struct {
         // Duplicate name
         const name_copy = try allocator.dupe(u8, name);
 
-        self.* = ParallelPattern{
+        self.* = ParallelAgent{
             .allocator = allocator,
             .agents = agents_copy,
             .pattern_name = name_copy,
@@ -125,7 +125,7 @@ pub const ParallelPattern = struct {
     }
 
     /// Create agent interface for this pattern
-    pub fn agent(self: *ParallelPattern) Agent {
+    pub fn agent(self: *ParallelAgent) Agent {
         return Agent{
             .ptr = self,
             .vtable = &.{
@@ -138,12 +138,12 @@ pub const ParallelPattern = struct {
     }
 
     fn nameImpl(ptr: *anyopaque) []const u8 {
-        const self: *ParallelPattern = @ptrCast(@alignCast(ptr));
+        const self: *ParallelAgent = @ptrCast(@alignCast(ptr));
         return self.pattern_name;
     }
 
     fn capabilitiesImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const []const u8 {
-        const self: *ParallelPattern = @ptrCast(@alignCast(ptr));
+        const self: *ParallelAgent = @ptrCast(@alignCast(ptr));
 
         // Collect unique capabilities from all agents
         var caps_set = std.StringHashMap(void).init(allocator);
@@ -170,7 +170,7 @@ pub const ParallelPattern = struct {
     }
 
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
-        const self: *ParallelPattern = @ptrCast(@alignCast(ptr));
+        const self: *ParallelAgent = @ptrCast(@alignCast(ptr));
 
         // Allocate results array
         const results = self.allocator.alloc(Message, self.agents.len) catch {
@@ -212,7 +212,7 @@ pub const ParallelPattern = struct {
     }
 
     fn deinitImpl(ptr: *anyopaque) void {
-        const self: *ParallelPattern = @ptrCast(@alignCast(ptr));
+        const self: *ParallelAgent = @ptrCast(@alignCast(ptr));
 
         if (self.owned_agents) {
             self.allocator.free(self.agents);
@@ -221,7 +221,7 @@ pub const ParallelPattern = struct {
         self.allocator.destroy(self);
     }
 
-    pub fn deinit(self: *ParallelPattern) void {
+    pub fn deinit(self: *ParallelAgent) void {
         if (self.owned_agents) {
             self.allocator.free(self.agents);
         }
@@ -231,10 +231,18 @@ pub const ParallelPattern = struct {
 };
 
 // ============================================================================
+// Deprecated Aliases (v0.42.0 - will be removed in v0.43.0)
+// ============================================================================
+
+/// DEPRECATED: Use ParallelAgent instead
+/// This alias exists for backward compatibility and will be removed in v0.43.0
+pub const ParallelPattern = ParallelAgent;
+
+// ============================================================================
 // Tests
 // ============================================================================
 
-test "ParallelPattern basic execution" {
+test "ParallelAgent basic execution" {
     const allocator = std.testing.allocator;
     const EchoAgent = @import("../agent.zig").EchoAgent;
 
@@ -248,7 +256,7 @@ test "ParallelPattern basic execution" {
 
     const agents = [_]Agent{ echo1.agent(), echo2.agent(), echo3.agent() };
 
-    var parallel = try ParallelPattern.init(allocator, &agents, "test_parallel", defaultAggregator);
+    var parallel = try ParallelAgent.init(allocator, &agents, "test_parallel", defaultAggregator);
     defer parallel.deinit();
 
     // Test execution
@@ -268,7 +276,7 @@ test "ParallelPattern basic execution" {
     try std.testing.expectEqual(@as(i64, 3), count.?.integer);
 }
 
-test "ParallelPattern custom aggregator" {
+test "ParallelAgent custom aggregator" {
     const allocator = std.testing.allocator;
     const EchoAgent = @import("../agent.zig").EchoAgent;
 
@@ -311,7 +319,7 @@ test "ParallelPattern custom aggregator" {
     defer echo2.agent().deinit();
 
     const agents = [_]Agent{ echo1.agent(), echo2.agent() };
-    var parallel = try ParallelPattern.init(allocator, &agents, "concat_parallel", concatenateAggregator);
+    var parallel = try ParallelAgent.init(allocator, &agents, "concat_parallel", concatenateAggregator);
     defer parallel.deinit();
 
     var msg = try Message.withText(allocator, .user, "test");
@@ -325,7 +333,7 @@ test "ParallelPattern custom aggregator" {
     try std.testing.expectEqualStrings("test, test", text);
 }
 
-test "ParallelPattern name and capabilities" {
+test "ParallelAgent name and capabilities" {
     const allocator = std.testing.allocator;
     const EchoAgent = @import("../agent.zig").EchoAgent;
 
@@ -333,7 +341,7 @@ test "ParallelPattern name and capabilities" {
     defer echo1.agent().deinit();
 
     const agents = [_]Agent{ echo1.agent() };
-    var parallel = try ParallelPattern.init(allocator, &agents, "my_parallel", defaultAggregator);
+    var parallel = try ParallelAgent.init(allocator, &agents, "my_parallel", defaultAggregator);
     defer parallel.deinit();
 
     const agent_iface = parallel.agent();

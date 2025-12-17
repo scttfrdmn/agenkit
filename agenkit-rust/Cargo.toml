@@ -57,6 +57,9 @@ uuid = { version = "1.6", features = ["v4", "js"] }
 rand = "0.8"
 getrandom = { version = "0.2", features = ["js"], optional = true }
 
+# Statistical functions for evaluation
+statrs = "0.17"
+
 # Tracing and logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = true }

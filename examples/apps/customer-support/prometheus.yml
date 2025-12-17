@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'python-api'
+    static_configs:
+      - targets: ['python-api:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'go-worker'
+    static_configs:
+      - targets: ['go-worker:9090']
+    metrics_path: '/metrics'
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

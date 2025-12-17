@@ -73,6 +73,24 @@ target_link_libraries(production_monitoring agenkit)
 add_executable(ab_testing evaluation/ab_testing.cpp)
 target_link_libraries(ab_testing agenkit)
 
+add_executable(context_metrics evaluation/context_metrics.cpp)
+target_link_libraries(context_metrics agenkit)
+
+add_executable(optimizer_example evaluation/optimizer_example.cpp)
+target_link_libraries(optimizer_example agenkit)
+
+add_executable(ab_testing_example evaluation/ab_testing_example.cpp)
+target_link_libraries(ab_testing_example agenkit)
+
+add_executable(benchmarks_example evaluation/benchmarks_example.cpp)
+target_link_libraries(benchmarks_example agenkit)
+
+add_executable(bayesian_optimizer_example evaluation/bayesian_optimizer_example.cpp)
+target_link_libraries(bayesian_optimizer_example agenkit)
+
+add_executable(prompt_optimizer_example evaluation/prompt_optimizer_example.cpp)
+target_link_libraries(prompt_optimizer_example agenkit)
+
 # Set output directory for all example executables
 set_target_properties(
     litellm_basic gemini_basic bedrock_basic
@@ -82,6 +100,9 @@ set_target_properties(
     planning_pattern autonomous_pattern memory_hierarchy_pattern
     basic_metrics session_recording quality_scoring
     regression_detection production_monitoring ab_testing
+    context_metrics optimizer_example ab_testing_example
+    benchmarks_example bayesian_optimizer_example
+    prompt_optimizer_example
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
 )

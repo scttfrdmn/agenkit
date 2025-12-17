@@ -1,0 +1,62 @@
+pattern:
+  name: "HumanInLoop"
+  category: "advanced"
+  description: "Include human approval or feedback at critical decision points"
+  version: "1.0.0"
+  aliases: ["human-approval", "interactive-agent"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "agent"
+        type: "Agent"
+        required: true
+
+      - name: "approval_callback"
+        type: "function"
+        required: true
+        description: "Function to request human approval"
+
+      - name: "require_approval_for"
+        type: "string[]"
+        required: false
+        default: ["all"]
+        options:
+          - "all"
+          - "tool_calls"
+          - "final_answer"
+
+behavior:
+  execution:
+    - step: 1
+      action: "Agent generates action"
+    - step: 2
+      action: "Request human approval if required"
+    - step: 3
+      action: "Wait for human response"
+    - step: 4
+      action: "If approved, execute; if rejected, revise"
+
+  invariants:
+    - "Human approval required for configured actions"
+    - "Execution blocks until approval received"
+
+test_cases:
+  - name: "Approval granted"
+    description: "Human approves action"
+    assertions:
+      - "Approval requested"
+      - "Action executed after approval"
+
+  - name: "Approval denied"
+    description: "Human rejects action"
+    assertions:
+      - "Action not executed"
+      - "Agent revises plan"
+
+performance:
+  latency: "Agent time + human response time"
+
+cross_language_equivalence:
+  verified: false
+  test_required: true

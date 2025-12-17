@@ -1,0 +1,58 @@
+pattern:
+  name: "Multiagent"
+  category: "advanced"
+  description: "Multiple agents collaborate, debate, or vote to solve problems together"
+  version: "1.0.0"
+  aliases: ["multi-agent-system", "collaborative-agents"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "agents"
+        type: "Agent[]"
+        required: true
+
+      - name: "coordination"
+        type: "string"
+        required: false
+        default: "consensus"
+        options:
+          - "consensus"
+          - "debate"
+          - "vote"
+          - "sequential"
+
+      - name: "rounds"
+        type: "number"
+        required: false
+        default: 3
+
+behavior:
+  execution:
+    - step: 1
+      action: "Distribute problem to all agents"
+    - step: 2
+      action: "Each agent processes independently"
+    - step: 3
+      action: "Apply coordination strategy"
+    - step: 4
+      action: "Synthesize final answer"
+
+  invariants:
+    - "All agents participate"
+    - "Coordination protocol followed"
+    - "Final result aggregated"
+
+test_cases:
+  - name: "Consensus building"
+    description: "Agents reach consensus"
+    assertions:
+      - "All agents contributed"
+      - "Consensus achieved"
+
+performance:
+  latency: "rounds * max(agent_times)"
+
+cross_language_equivalence:
+  verified: false
+  test_required: true

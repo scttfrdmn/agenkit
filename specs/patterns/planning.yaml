@@ -1,0 +1,223 @@
+pattern:
+  name: "Planning"
+  category: "enhancement"
+  description: "Agent creates a plan before execution, then executes steps sequentially"
+  version: "1.0.0"
+  aliases: ["plan-execute", "hierarchical-planning"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "llm"
+        type: "Agent"
+        required: true
+        description: "Language model for planning"
+
+      - name: "tools"
+        type: "Tool[]"
+        required: false
+        default: []
+        description: "Tools available during execution"
+
+      - name: "max_steps"
+        type: "number"
+        required: false
+        default: 10
+        description: "Maximum steps in plan"
+
+      - name: "name"
+        type: "string"
+        required: false
+        default: "planning"
+
+  methods:
+    process:
+      input: "Message"
+      output: "Message"
+      async: true
+      description: "Create plan and execute it"
+
+    get_plan:
+      output: "Plan"
+      description: "Get the generated plan"
+
+    get_execution_status:
+      output: "ExecutionStatus"
+      description: "Get current execution progress"
+
+behavior:
+  state:
+    - name: "plan"
+      type: "Plan"
+      description: "Generated plan with steps"
+
+    - name: "execution_status"
+      type: "ExecutionStatus"
+      description: "Current step, completed steps, failures"
+
+  execution:
+    - step: 1
+      action: "Receive task description"
+      preconditions: []
+      postconditions: ["Task stored"]
+
+    - step: 2
+      action: "LLM generates step-by-step plan"
+      preconditions: ["Task exists"]
+      postconditions: ["Plan created with N steps"]
+
+    - step: 3
+      action: "Validate plan"
+      preconditions: ["Plan generated"]
+      postconditions: ["Plan validated (steps <= max_steps)"]
+
+    - step: 4
+      action: "Execute step 1"
+      preconditions: ["Plan valid"]
+      postconditions: ["Step 1 completed or failed"]
+
+    - step: 5
+      action: "Execute subsequent steps in order"
+      preconditions: ["Previous step succeeded"]
+      postconditions: ["Each step executed once"]
+
+    - step: 6
+      action: "Aggregate results"
+      preconditions: ["All steps attempted"]
+      postconditions: ["Final result produced"]
+
+    - step: 7
+      action: "Return result with execution metadata"
+      preconditions: ["Execution complete"]
+      postconditions: ["Result includes plan and status"]
+
+  invariants:
+    - "Plan is created before any execution"
+    - "Steps execute in the order specified by plan"
+    - "Each step executes at most once"
+    - "Execution stops on first failure (unless configured otherwise)"
+    - "Plan cannot be modified during execution"
+    - "Progress is monotonically increasing"
+
+error_handling:
+  - condition: "LLM fails to generate plan"
+    error_type: "PlanningError"
+    behavior: "Propagate error immediately"
+
+  - condition: "Plan exceeds max_steps"
+    error_type: "PlanTooLongError"
+    behavior: "Truncate plan or raise error (configurable)"
+
+  - condition: "Step execution fails"
+    error_type: "StepExecutionError"
+    behavior: "Stop execution, return partial results with error details"
+
+  - condition: "Tool not available"
+    error_type: "ToolNotFoundError"
+    behavior: "Mark step as failed, include in error metadata"
+
+test_cases:
+  - name: "Simple three-step plan"
+    description: "Plan and execute straightforward task"
+    input:
+      message:
+        role: "user"
+        content: "Research topic, analyze data, write summary"
+      config:
+        max_steps: 5
+    expected_output:
+      metadata:
+        plan:
+          steps: 3
+          step_descriptions: ["Research topic", "Analyze data", "Write summary"]
+        execution:
+          completed: 3
+          failed: 0
+    assertions:
+      - "Plan has 3 steps"
+      - "All steps executed successfully"
+      - "Final output includes summary"
+
+  - name: "Plan generation with complex task"
+    description: "LLM breaks down complex task into steps"
+    input:
+      message:
+        role: "user"
+        content: "Build a web scraper for e-commerce prices"
+      config:
+        max_steps: 10
+    expected_behavior:
+      plan_includes:
+        - "Identify target websites"
+        - "Design scraping logic"
+        - "Implement parser"
+        - "Test on sample data"
+        - "Deploy scraper"
+    assertions:
+      - "Plan has multiple logical steps"
+      - "Steps are in reasonable order"
+      - "Each step is actionable"
+
+  - name: "Step failure handling"
+    description: "Execution stops when step fails"
+    input:
+      message:
+        role: "user"
+        content: "Multi-step task"
+      config:
+        plan_steps: ["Step 1", "Failing Step", "Step 3"]
+    expected_output:
+      metadata:
+        execution:
+          completed: 1
+          failed: 1
+          failed_step: "Failing Step"
+    assertions:
+      - "Step 1 executed"
+      - "Failing step recorded"
+      - "Step 3 never executed"
+
+  - name: "Plan too long"
+    description: "Generated plan exceeds max_steps"
+    input:
+      message:
+        role: "user"
+        content: "Very complex task requiring 20 steps"
+      config:
+        max_steps: 5
+    expected_error:
+      type: "PlanTooLongError"
+      message_contains: "exceeds maximum"
+    assertions:
+      - "Error raised during planning phase"
+      - "No execution attempted"
+
+performance:
+  latency: "planning_time + sum(step_times)"
+  throughput: "Low (sequential execution)"
+  memory: "O(steps) - plan and results stored"
+  cost: "Medium - planning LLM call + step costs"
+
+composition:
+  can_be_agent: true
+  can_contain:
+    - "LLM: any Agent"
+    - "Tools: regular functions"
+
+examples:
+  - language: "Python"
+    code: |
+      from agenkit.patterns import PlanningAgent
+
+      planner = PlanningAgent(
+          llm=my_llm,
+          tools=[search_tool, file_tool],
+          max_steps=10
+      )
+
+      result = await planner.process(task)
+
+cross_language_equivalence:
+  verified: false
+  test_required: true
+  notes: "Plan generation may vary due to LLM non-determinism. Test should verify plan structure and successful execution, not exact plan content."

@@ -1,0 +1,48 @@
+pattern:
+  name: "Collaborative"
+  category: "advanced"
+  description: "Agents work together on shared tasks with bidirectional communication"
+  version: "1.0.0"
+  aliases: ["cooperative-agents", "team-agents"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "agents"
+        type: "Agent[]"
+        required: true
+
+      - name: "collaboration_strategy"
+        type: "string"
+        required: false
+        default: "shared-workspace"
+
+behavior:
+  execution:
+    - step: 1
+      action: "Initialize shared workspace"
+    - step: 2
+      action: "Agents contribute to shared task"
+    - step: 3
+      action: "Agents communicate and coordinate"
+    - step: 4
+      action: "Synthesize collaborative result"
+
+  invariants:
+    - "Shared state accessible to all agents"
+    - "Bidirectional communication"
+    - "Collaborative goal"
+
+test_cases:
+  - name: "Team collaboration"
+    description: "Agents work together"
+    assertions:
+      - "All agents contributed"
+      - "Communication occurred"
+
+performance:
+  latency: "Depends on communication overhead"
+
+cross_language_equivalence:
+  verified: false
+  test_required: true

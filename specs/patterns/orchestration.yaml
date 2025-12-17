@@ -1,0 +1,48 @@
+pattern:
+  name: "Orchestration"
+  category: "specialized"
+  description: "Coordinate multiple agents with complex routing, sequencing, and aggregation logic"
+  version: "1.0.0"
+  aliases: ["workflow-orchestration", "agent-coordinator"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "agents"
+        type: "Map<string, Agent>"
+        required: true
+        description: "Named agents to orchestrate"
+
+      - name: "workflow"
+        type: "WorkflowDefinition"
+        required: true
+        description: "Defines execution flow, routing, and aggregation"
+
+behavior:
+  execution:
+    - step: 1
+      action: "Parse workflow definition"
+    - step: 2
+      action: "Execute agents according to workflow"
+    - step: 3
+      action: "Handle conditional routing"
+    - step: 4
+      action: "Aggregate results per workflow spec"
+
+  invariants:
+    - "Workflow defines execution order"
+    - "Supports sequential, parallel, and conditional flows"
+
+test_cases:
+  - name: "Complex workflow execution"
+    description: "Multi-stage workflow with conditionals"
+    assertions:
+      - "Workflow executed correctly"
+      - "Conditional branches handled"
+
+performance:
+  latency: "Depends on workflow structure"
+
+cross_language_equivalence:
+  verified: false
+  test_required: true

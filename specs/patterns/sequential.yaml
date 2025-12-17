@@ -1,0 +1,222 @@
+pattern:
+  name: "Sequential"
+  category: "composition"
+  description: "Process messages through multiple agents in order, where output of agent N becomes input to agent N+1"
+  version: "1.0.0"
+  aliases: []
+
+interface:
+  constructor:
+    parameters:
+      - name: "agents"
+        type: "Agent[]"
+        required: true
+        default: null
+        description: "List of agents to execute in sequence"
+        constraints:
+          - "Must have at least 1 agent"
+          - "Agents execute in array order"
+
+      - name: "name"
+        type: "string"
+        required: false
+        default: "sequential"
+        description: "Name identifier for this agent"
+
+  methods:
+    process:
+      input: "Message"
+      output: "Message"
+      async: true
+      description: "Process message through all agents sequentially"
+
+    get_agents:
+      output: "Agent[]"
+      description: "Get list of agents in pipeline"
+
+behavior:
+  state:
+    - name: "agents"
+      type: "Agent[]"
+      description: "Ordered list of agents in pipeline"
+
+    - name: "current_agent_index"
+      type: "number"
+      description: "Index of currently executing agent (transient, only during process())"
+
+  execution:
+    - step: 1
+      action: "Receive input message"
+      preconditions: []
+      postconditions: ["Message stored as current"]
+
+    - step: 2
+      action: "Pass current message to first agent (index 0)"
+      preconditions: ["At least one agent exists"]
+      postconditions: ["Agent 0 processes message"]
+
+    - step: 3
+      action: "Receive output from agent N"
+      preconditions: ["Agent N completed successfully"]
+      postconditions: ["Output becomes input for next agent"]
+
+    - step: 4
+      action: "Pass output to agent N+1"
+      preconditions: ["Agent N+1 exists (not at end)"]
+      postconditions: ["Agent N+1 receives previous output"]
+
+    - step: 5
+      action: "Repeat steps 3-4 until all agents processed"
+      preconditions: []
+      postconditions: ["All agents executed exactly once"]
+
+    - step: 6
+      action: "Return final output from last agent"
+      preconditions: ["All agents completed"]
+      postconditions: ["Final message returned"]
+
+  invariants:
+    - "Agents always execute in the order specified in constructor"
+    - "Output of agent N is always input to agent N+1"
+    - "Each agent processes exactly one message per process() call"
+    - "If any agent fails, remaining agents do not execute"
+    - "Total process() calls to child agents = length of agents array"
+
+error_handling:
+  - condition: "agents array is empty"
+    error_type: "ValueError"
+    behavior: "Raise error at construction time"
+
+  - condition: "Any agent in pipeline raises error"
+    error_type: "AgentError"
+    behavior: "Propagate error immediately, skip remaining agents"
+
+  - condition: "Agent returns invalid Message"
+    error_type: "TypeError"
+    behavior: "Raise error with context of which agent failed"
+
+test_cases:
+  - name: "Basic two-agent pipeline"
+    description: "Process message through two simple agents"
+    input:
+      message:
+        role: "user"
+        content: "hello"
+      config:
+        agents: ["uppercase_agent", "add_exclamation_agent"]
+    expected_output:
+      message:
+        role: "assistant"
+        content: "HELLO!"
+      metadata: {}
+    assertions:
+      - "Output content is uppercase with exclamation"
+      - "Both agents executed exactly once"
+
+  - name: "Three-agent data pipeline"
+    description: "Extract, transform, load pattern"
+    input:
+      message:
+        role: "user"
+        content: "data: 42"
+      config:
+        agents: ["extractor", "transformer", "validator"]
+    expected_output:
+      message:
+        role: "assistant"
+        content: "validated: transformed: extracted: 42"
+    assertions:
+      - "All three agents contributed to output"
+      - "Output shows sequential composition"
+
+  - name: "Single agent pipeline"
+    description: "Pipeline with only one agent"
+    input:
+      message:
+        role: "user"
+        content: "test"
+      config:
+        agents: ["echo_agent"]
+    expected_output:
+      message:
+        role: "assistant"
+        content: "echo: test"
+    assertions:
+      - "Single agent executed successfully"
+      - "Output matches single agent behavior"
+
+  - name: "Agent failure propagation"
+    description: "Error in middle agent stops pipeline"
+    input:
+      message:
+        role: "user"
+        content: "trigger_error"
+      config:
+        agents: ["agent1", "failing_agent", "agent3"]
+    expected_error:
+      type: "AgentError"
+      message_contains: "failing_agent"
+    assertions:
+      - "Agent1 executed"
+      - "Failing agent raised error"
+      - "Agent3 never executed"
+
+  - name: "Empty pipeline"
+    description: "Pipeline with no agents"
+    input:
+      config:
+        agents: []
+    expected_error:
+      type: "ValueError"
+      message_contains: "at least one agent"
+    assertions:
+      - "Error raised at construction"
+
+performance:
+  latency: "Sum of all agent latencies (N * avg_agent_time)"
+  throughput: "Limited by slowest agent"
+  memory: "O(1) - only current message in memory"
+  cost: "Sum of all agent costs"
+
+composition:
+  can_be_agent: true
+  can_contain:
+    - "Any Agent implementation"
+    - "Other Sequential agents (nested pipelines)"
+    - "Parallel agents"
+    - "All pattern types"
+
+examples:
+  - language: "Python"
+    code: |
+      from agenkit.patterns import SequentialAgent
+
+      pipeline = SequentialAgent(
+          agents=[validator, processor, formatter],
+          name="data-pipeline"
+      )
+
+      result = await pipeline.process(message)
+
+  - language: "Go"
+    code: |
+      pipeline := patterns.NewSequentialAgent(
+          []core.Agent{validator, processor, formatter},
+          "data-pipeline",
+      )
+
+      result, err := pipeline.Process(ctx, message)
+
+  - language: "TypeScript"
+    code: |
+      const pipeline = new SequentialAgent({
+          agents: [validator, processor, formatter],
+          name: 'data-pipeline'
+      });
+
+      const result = await pipeline.process(message);
+
+cross_language_equivalence:
+  verified: false
+  test_required: true
+  notes: "All 6 languages must produce identical output given same input and agent sequence"

@@ -1,0 +1,68 @@
+pattern:
+  name: "MemoryHierarchy"
+  category: "advanced"
+  description: "Multi-tier memory management with short-term, long-term, and external storage"
+  version: "1.0.0"
+  aliases: ["hierarchical-memory", "tiered-memory"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "llm"
+        type: "Agent"
+        required: true
+
+      - name: "short_term_size"
+        type: "number"
+        required: false
+        default: 10
+
+      - name: "long_term_size"
+        type: "number"
+        required: false
+        default: 100
+
+      - name: "summarization_interval"
+        type: "number"
+        required: false
+        default: 20
+
+behavior:
+  state:
+    - name: "short_term_memory"
+      type: "Message[]"
+      description: "Recent messages"
+
+    - name: "long_term_memory"
+      type: "Summary[]"
+      description: "Summarized historical context"
+
+  execution:
+    - step: 1
+      action: "Store new message in short-term"
+    - step: 2
+      action: "If short-term full, summarize and move to long-term"
+    - step: 3
+      action: "Retrieve relevant context from both tiers"
+    - step: 4
+      action: "Process with combined context"
+
+  invariants:
+    - "Short-term always most recent"
+    - "Long-term contains summaries"
+    - "Efficient retrieval from both tiers"
+
+test_cases:
+  - name: "Memory tier promotion"
+    description: "Old messages summarized and moved"
+    assertions:
+      - "Short-term size maintained"
+      - "Long-term contains summaries"
+
+performance:
+  latency: "Single LLM call + retrieval"
+  memory: "O(short_term + long_term)"
+
+cross_language_equivalence:
+  verified: false
+  test_required: true

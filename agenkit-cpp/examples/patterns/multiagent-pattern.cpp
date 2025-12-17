@@ -1,119 +1,189 @@
 /**
- * @file multiagent_example.cpp
- * @brief Example demonstrating Multiagent pattern
+ * @file multiagent-pattern.cpp
+ * @brief Multiagent pattern with real LLMs (Ollama)
+ *
+ * Demonstrates:
+ * - Multiple specialized LLM agents collaborating
+ * - Sequential orchestration with real LLMs
+ * - Consensus building across agents
+ * - System prompts for agent specialization
+ *
+ * Setup:
+ *   brew install ollama
+ *   ollama serve
+ *   ollama pull llama3.3
+ *   ./build/examples/patterns/multiagent-pattern
  */
 
 #include <iostream>
+#include <memory>
 #include "agenkit/patterns/multiagent.hpp"
+#include "agenkit/adapters/ollama_agent.hpp"
+#include "agenkit/core/message.hpp"
 
 using namespace agenkit;
 
-// Specialist agents
-class ResearcherAgent : public core::Agent {
-public:
-    std::string name() const override { return "researcher"; }
+/**
+ * Create a specialized Ollama agent with custom system prompt
+ */
+std::shared_ptr<adapters::OllamaAgent> create_specialist(
+    const std::string& role,
+    const std::string& system_prompt
+) {
+    adapters::OllamaConfig config;
+    config.host = "http://localhost:11434";
+    config.model = "llama3.3";
+    config.temperature = 0.7;
+    config.system = system_prompt;
 
-    std::future<core::Result<core::Message, core::AgentError>>
-    process(core::Message message) override {
-        std::string content = message.content_as_str();
-        std::string research = "Research findings: AI patterns improve code quality by 40%.";
+    return std::make_shared<adapters::OllamaAgent>(config);
+}
 
-        auto msg = core::Message::with_text("assistant", research);
-        return core::make_ready_future(
-            core::Result<core::Message, core::AgentError>::ok(msg)
-        );
+void print_separator(const std::string& title = "") {
+    std::cout << "\n";
+    std::cout << std::string(60, '=') << "\n";
+    if (!title.empty()) {
+        std::cout << title << "\n";
+        std::cout << std::string(60, '=') << "\n";
     }
-};
-
-class WriterAgent : public core::Agent {
-public:
-    std::string name() const override { return "writer"; }
-
-    std::future<core::Result<core::Message, core::AgentError>>
-    process(core::Message message) override {
-        std::string content = "Article: AI patterns provide structured approaches "
-                            "to building intelligent systems.";
-
-        auto msg = core::Message::with_text("assistant", content);
-        return core::make_ready_future(
-            core::Result<core::Message, core::AgentError>::ok(msg)
-        );
-    }
-};
-
-class EditorAgent : public core::Agent {
-public:
-    std::string name() const override { return "editor"; }
-
-    std::future<core::Result<core::Message, core::AgentError>>
-    process(core::Message message) override {
-        std::string feedback = "Editorial review: Clear structure, "
-                              "well-supported claims, ready to publish.";
-
-        auto msg = core::Message::with_text("assistant", feedback);
-        return core::make_ready_future(
-            core::Result<core::Message, core::AgentError>::ok(msg)
-        );
-    }
-};
+    std::cout << "\n";
+}
 
 int main() {
-    std::cout << "=== Agenkit C++ Multiagent Example ===\n\n";
+    print_separator("AgentKit C++ - Multiagent Pattern with Real LLMs");
 
-    // Example 1: MultiAgent Orchestration
-    std::cout << "=== Example 1: Multi-Agent Orchestration ===\n";
+    // Check Ollama availability
+    std::cout << "Checking Ollama server...\n";
+    adapters::OllamaConfig check_config;
+    check_config.host = "http://localhost:11434";
+    check_config.model = "llama3.3";
+
+    adapters::OllamaAgent checker(check_config);
+    if (!checker.is_available()) {
+        std::cerr << "❌ Ollama server not available\n\n";
+        std::cerr << "Please start Ollama:\n";
+        std::cerr << "  1. Install: brew install ollama\n";
+        std::cerr << "  2. Start:   ollama serve\n";
+        std::cerr << "  3. Pull:    ollama pull llama3.3\n\n";
+        return 1;
+    }
+    std::cout << "✓ Ollama server running\n";
+
+    // Example 1: Collaborative Research Team
+    print_separator("Example 1: Collaborative Research Team");
     {
+        std::cout << "Creating specialist agents with custom system prompts...\n\n";
+
+        // Create specialized agents
+        auto researcher = create_specialist(
+            "researcher",
+            "You are a research specialist. When given a topic, provide "
+            "3-4 key research findings with data and statistics. Be concise "
+            "and factual. Focus on recent developments."
+        );
+
+        auto writer = create_specialist(
+            "writer",
+            "You are a technical writer. Take research findings and write "
+            "a clear, engaging article summary. Use professional tone. "
+            "Keep it under 100 words."
+        );
+
+        auto editor = create_specialist(
+            "editor",
+            "You are an editor. Review the content and provide brief "
+            "feedback on clarity, structure, and impact. Give 2-3 specific "
+            "suggestions for improvement."
+        );
+
+        // Create orchestrator
         patterns::MultiAgentOrchestrator orchestrator;
-
-        auto researcher = std::make_shared<ResearcherAgent>();
-        auto writer = std::make_shared<WriterAgent>();
-        auto editor = std::make_shared<EditorAgent>();
-
         orchestrator.register_agent("researcher", researcher);
         orchestrator.register_agent("writer", writer);
         orchestrator.register_agent("editor", editor);
 
-        std::cout << "Registered agents: " << orchestrator.list_agents().size() << "\n";
-        std::cout << "Strategy: Sequential\n\n";
+        std::cout << "Registered " << orchestrator.list_agents().size()
+                  << " specialist agents\n";
+        std::cout << "Strategy: Sequential execution\n\n";
 
-        auto msg = core::Message::with_text("user", "Create research article");
+        // Execute collaborative task
+        std::string topic = "AI agent patterns in software engineering";
+        std::cout << "Topic: " << topic << "\n\n";
+        std::cout << "Processing through pipeline: Researcher → Writer → Editor\n\n";
+
+        auto msg = core::Message::with_text("user",
+            "Research and write about: " + topic);
+
+        std::cout << "[Running orchestration...]\n\n";
         auto result = orchestrator.process(std::move(msg)).get();
 
         if (result.is_ok()) {
-            std::cout << "=== Results ===\n";
+            std::cout << "=== Final Output ===\n\n";
             std::cout << result.unwrap().content_as_str() << "\n\n";
 
             auto tasks = orchestrator.get_tasks();
-            std::cout << "Tasks completed: " << tasks.size() << "\n";
+            std::cout << "✓ Tasks completed: " << tasks.size() << "\n";
+        } else {
+            std::cerr << "❌ Error: " << result.unwrap_err().message() << "\n";
         }
     }
 
-    // Example 2: Consensus Agent
-    std::cout << "\n=== Example 2: Consensus Among Agents ===\n";
+    // Example 2: Consensus Decision Making
+    print_separator("Example 2: Consensus Decision Making");
     {
-        patterns::ConsensusAgent consensus;
+        std::cout << "Creating agents with different perspectives...\n\n";
 
-        consensus.add_agent(std::make_shared<ResearcherAgent>());
-        consensus.add_agent(std::make_shared<WriterAgent>());
-        consensus.add_agent(std::make_shared<EditorAgent>());
+        auto pragmatist = create_specialist(
+            "pragmatist",
+            "You are a pragmatic engineer. When asked for opinions, focus "
+            "on practical concerns: implementation complexity, maintenance, "
+            "and real-world feasibility. Be skeptical but constructive."
+        );
+
+        auto innovator = create_specialist(
+            "innovator",
+            "You are an innovation advocate. When asked for opinions, focus "
+            "on new technologies, cutting-edge approaches, and future "
+            "potential. Be optimistic and forward-thinking."
+        );
+
+        auto realist = create_specialist(
+            "realist",
+            "You are a balanced realist. When asked for opinions, weigh "
+            "both pros and cons. Consider team skills, timeline, and "
+            "business value. Aim for the middle ground."
+        );
+
+        patterns::ConsensusAgent consensus;
+        consensus.add_agent(pragmatist);
+        consensus.add_agent(innovator);
+        consensus.add_agent(realist);
 
         std::cout << "Agents in consensus group: " << consensus.agent_count() << "\n\n";
 
-        auto msg = core::Message::with_text("user", "What's the best approach?");
+        std::string question = "Should we use microservices or monolith for a new startup project?";
+        std::cout << "Question: " << question << "\n\n";
+        std::cout << "[Gathering perspectives from all agents...]\n\n";
+
+        auto msg = core::Message::with_text("user", question + " Answer in 2-3 sentences.");
         auto result = consensus.process(std::move(msg)).get();
 
         if (result.is_ok()) {
-            std::cout << "=== Consensus ===\n";
+            std::cout << "=== Consensus View ===\n\n";
             std::cout << result.unwrap().content_as_str() << "\n";
+        } else {
+            std::cerr << "❌ Error: " << result.unwrap_err().message() << "\n";
         }
     }
 
-    std::cout << "\n=== Key Insights ===\n";
-    std::cout << "1. Orchestration: Multiple agents working sequentially\n";
-    std::cout << "2. Consensus: Combining multiple perspectives\n";
-    std::cout << "3. Task tracking: Monitor agent execution status\n";
-    std::cout << "4. Specialist agents: Each with specific expertise\n";
+    // Summary
+    print_separator("Key Insights");
+    std::cout << "✓ Orchestration: Agents work sequentially in a pipeline\n";
+    std::cout << "✓ Specialization: Each agent has unique expertise via system prompts\n";
+    std::cout << "✓ Consensus: Multiple perspectives combined into unified view\n";
+    std::cout << "✓ Real LLMs: Using Ollama for actual intelligence (not mocks)\n";
+    std::cout << "✓ Collaboration: Complex tasks decomposed across specialists\n";
 
-    std::cout << "\n=== Example Complete ===\n";
+    print_separator("Example Complete");
     return 0;
 }

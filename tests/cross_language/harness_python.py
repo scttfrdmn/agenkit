@@ -12,25 +12,25 @@ from typing import Any, Dict
 
 # Import agenkit patterns
 from agenkit.patterns import (
-    AgentsAsToolsAgent,
+    AgentTool,
     AutonomousAgent,
     CollaborativeAgent,
     ConversationalAgent,
     FallbackAgent,
     HumanInLoopAgent,
-    MultiagentSystem,
-    OrchestrationPattern,
+    MemoryHierarchy,
+    MultiAgentOrchestrator,
     ParallelAgent,
     PlanningAgent,
-    ReactAgent,
+    ReActAgent,
     ReasoningWithToolsAgent,
     ReflectionAgent,
     RouterAgent,
     SequentialAgent,
     SupervisorAgent,
-    TaskAgent,
+    Task,
 )
-from agenkit.core import Message
+from agenkit.interfaces import Message
 
 PROTOCOL_VERSION = "1.0"
 VERSION = "0.41.0"
@@ -41,20 +41,21 @@ PATTERNS = {
     "sequential": SequentialAgent,
     "parallel": ParallelAgent,
     "router": RouterAgent,
-    "react": ReactAgent,
+    "react": ReActAgent,
     "conversational": ConversationalAgent,
-    "agents_as_tools": AgentsAsToolsAgent,
+    "agents_as_tools": AgentTool,
     "fallback": FallbackAgent,
     "supervisor": SupervisorAgent,
     "planning": PlanningAgent,
-    "task": TaskAgent,
+    "task": Task,
     "collaborative": CollaborativeAgent,
     "human_in_loop": HumanInLoopAgent,
     "autonomous": AutonomousAgent,
-    "multiagent": MultiagentSystem,
-    "orchestration": OrchestrationPattern,
-    "memory": None,  # Memory pattern handled separately
+    "multiagent": MultiAgentOrchestrator,
+    "orchestration": None,  # Deprecated - use sequential/parallel/router
+    "memory": MemoryHierarchy,
     "reasoning_with_tools": ReasoningWithToolsAgent,
+    "self_consistency": None,  # TODO: Implement self-consistency pattern
 }
 
 

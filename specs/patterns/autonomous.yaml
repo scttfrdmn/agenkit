@@ -1,0 +1,67 @@
+pattern:
+  name: "Autonomous"
+  category: "advanced"
+  description: "Self-directed agent that independently pursues goals through iterative assessment and action"
+  version: "1.0.0"
+  aliases: ["self-directed", "goal-oriented"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "llm"
+        type: "Agent"
+        required: true
+
+      - name: "tools"
+        type: "Tool[]"
+        required: true
+
+      - name: "max_iterations"
+        type: "number"
+        required: false
+        default: 20
+
+      - name: "goal_check_interval"
+        type: "number"
+        required: false
+        default: 5
+
+behavior:
+  execution:
+    - step: 1
+      action: "Receive high-level goal"
+    - step: 2
+      action: "Assess current state"
+    - step: 3
+      action: "Plan actions to progress toward goal"
+    - step: 4
+      action: "Execute actions using available tools"
+    - step: 5
+      action: "Evaluate progress"
+    - step: 6
+      action: "Repeat until goal achieved or max iterations"
+
+  invariants:
+    - "Agent decides own actions"
+    - "Goal-directed behavior"
+    - "Self-evaluation of progress"
+
+error_handling:
+  - condition: "Goal unachievable"
+    behavior: "Return best effort with explanation"
+
+test_cases:
+  - name: "Goal achievement"
+    description: "Agent autonomously achieves goal"
+    assertions:
+      - "Goal reached"
+      - "Multiple iteration cycles"
+
+performance:
+  latency: "iterations * (assessment_time + action_time)"
+  cost: "High - many LLM calls"
+
+cross_language_equivalence:
+  verified: false
+  test_required: true
+  notes: "High variability due to autonomous decision-making"

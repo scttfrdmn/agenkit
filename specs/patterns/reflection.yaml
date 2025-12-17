@@ -1,0 +1,259 @@
+pattern:
+  name: "Reflection"
+  category: "enhancement"
+  description: "Agent iteratively improves its output through self-critique cycles"
+  version: "1.0.0"
+  aliases: ["self-reflection", "iterative-improvement"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "agent"
+        type: "Agent"
+        required: true
+        description: "The generator agent that produces content"
+
+      - name: "critic"
+        type: "Agent"
+        required: true
+        description: "The critic agent that reviews and scores content"
+
+      - name: "max_iterations"
+        type: "number"
+        required: false
+        default: 3
+        description: "Maximum number of refinement cycles"
+        constraints:
+          - "Must be >= 1"
+
+      - name: "improvement_threshold"
+        type: "number"
+        required: false
+        default: 0.9
+        description: "Stop if critic score exceeds this (0.0-1.0)"
+        constraints:
+          - "Must be between 0.0 and 1.0"
+
+      - name: "name"
+        type: "string"
+        required: false
+        default: "reflection"
+
+  methods:
+    process:
+      input: "Message"
+      output: "Message"
+      async: true
+      description: "Generate and iteratively improve response"
+
+    get_reflection_history:
+      output: "ReflectionCycle[]"
+      description: "Get history of all reflection cycles"
+
+behavior:
+  state:
+    - name: "iteration_count"
+      type: "number"
+      description: "Current iteration number (transient)"
+
+    - name: "best_score"
+      type: "number"
+      description: "Highest critic score achieved (transient)"
+
+    - name: "reflection_history"
+      type: "ReflectionCycle[]"
+      description: "History of all generation-critique cycles"
+
+  execution:
+    - step: 1
+      action: "Receive input message"
+      preconditions: []
+      postconditions: ["Message stored as prompt"]
+
+    - step: 2
+      action: "Generator agent creates initial response"
+      preconditions: []
+      postconditions: ["Response generated", "Iteration = 1"]
+
+    - step: 3
+      action: "Critic agent reviews response"
+      preconditions: ["Response exists"]
+      postconditions: ["Score assigned", "Feedback provided"]
+
+    - step: 4
+      action: "Check termination conditions"
+      preconditions: ["Critic feedback received"]
+      postconditions: ["Decision made: continue or stop"]
+      termination_conditions:
+        - "Score >= improvement_threshold"
+        - "Iteration >= max_iterations"
+        - "Score not improving"
+
+    - step: 5
+      action: "If not terminated, generator improves based on feedback"
+      preconditions: ["Not terminated", "Feedback available"]
+      postconditions: ["New improved response", "Iteration += 1"]
+
+    - step: 6
+      action: "Repeat steps 3-5 until termination"
+      preconditions: []
+      postconditions: ["Multiple cycles recorded"]
+
+    - step: 7
+      action: "Return best response"
+      preconditions: ["Termination condition met"]
+      postconditions: ["Response with highest score returned"]
+
+  invariants:
+    - "Iterations always increase monotonically"
+    - "Each cycle has exactly one generation and one critique"
+    - "Best score is non-decreasing across iterations"
+    - "Final iteration count <= max_iterations"
+    - "Reflection history preserves all cycles"
+
+error_handling:
+  - condition: "Generator agent fails"
+    error_type: "AgentError"
+    behavior: "Propagate error immediately"
+
+  - condition: "Critic agent fails"
+    error_type: "AgentError"
+    behavior: "Propagate error immediately"
+
+  - condition: "Critic returns invalid score (not 0.0-1.0)"
+    error_type: "ValueError"
+    behavior: "Raise error with critic response details"
+
+  - condition: "Max iterations exceeded without convergence"
+    error_type: null
+    behavior: "Return best response with metadata warning"
+
+  - condition: "Infinite loop detected (no improvement)"
+    error_type: null
+    behavior: "Early stop, return current best"
+
+test_cases:
+  - name: "Converges on first iteration"
+    description: "Critic approves immediately, no refinement needed"
+    input:
+      message:
+        role: "user"
+        content: "Write 'hello'"
+      config:
+        max_iterations: 5
+        improvement_threshold: 0.8
+    expected_output:
+      message:
+        role: "assistant"
+        content: "hello"
+      metadata:
+        iterations: 1
+        final_score: 1.0
+    assertions:
+      - "Only one generation cycle"
+      - "Score >= threshold on first try"
+
+  - name: "Iterative improvement to convergence"
+    description: "Multiple refinement cycles until threshold met"
+    input:
+      message:
+        role: "user"
+        content: "Explain databases"
+      config:
+        max_iterations: 5
+        improvement_threshold: 0.9
+    expected_output:
+      message:
+        role: "assistant"
+        content_quality: "high"
+      metadata:
+        iterations: 3
+        final_score: 0.92
+        improvement: true
+    assertions:
+      - "Multiple iterations executed"
+      - "Final score >= threshold"
+      - "Score improved from iteration 1 to iteration N"
+
+  - name: "Max iterations without convergence"
+    description: "Reaches iteration limit before threshold"
+    input:
+      message:
+        role: "user"
+        content: "Complex task"
+      config:
+        max_iterations: 2
+        improvement_threshold: 0.99
+    expected_output:
+      message:
+        role: "assistant"
+        content_exists: true
+      metadata:
+        iterations: 2
+        converged: false
+        final_score: 0.75
+    assertions:
+      - "Exactly max_iterations executed"
+      - "Best response returned even without convergence"
+      - "Metadata indicates non-convergence"
+
+  - name: "Reflection history tracking"
+    description: "All cycles recorded in history"
+    input:
+      message:
+        role: "user"
+        content: "Test"
+      config:
+        max_iterations: 3
+    expected_behavior:
+      reflection_history_length: 3
+      each_cycle_has:
+        - "generation"
+        - "critique"
+        - "score"
+    assertions:
+      - "History contains all cycles"
+      - "Each cycle has generation and critique"
+      - "Scores available for each cycle"
+
+performance:
+  latency: "iterations * (generator_time + critic_time)"
+  throughput: "Low (iterative, not parallelizable)"
+  memory: "O(iterations) - history stored"
+  cost: "High - multiple LLM calls per input"
+
+composition:
+  can_be_agent: true
+  can_contain:
+    - "Generator: any Agent implementation"
+    - "Critic: any Agent implementation"
+
+examples:
+  - language: "Python"
+    code: |
+      from agenkit.patterns import ReflectionAgent
+
+      reflector = ReflectionAgent(
+          agent=writer,
+          critic=reviewer,
+          max_iterations=5,
+          improvement_threshold=0.9
+      )
+
+      result = await reflector.process(prompt)
+
+  - language: "Go"
+    code: |
+      reflector := patterns.NewReflectionAgent(
+          writer,
+          critic,
+          5,    // max_iterations
+          0.9,  // improvement_threshold
+      )
+
+      result, err := reflector.Process(ctx, message)
+
+cross_language_equivalence:
+  verified: false
+  test_required: true
+  notes: "Critic scoring must be consistent across languages for equivalent behavior"

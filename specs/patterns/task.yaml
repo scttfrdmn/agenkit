@@ -1,0 +1,146 @@
+pattern:
+  name: "Task"
+  category: "specialized"
+  description: "Single-purpose agent optimized for specific, well-defined tasks"
+  version: "1.0.0"
+  aliases: ["single-task", "focused-agent"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "llm"
+        type: "Agent"
+        required: true
+        description: "Language model to use"
+
+      - name: "system_prompt"
+        type: "string"
+        required: true
+        description: "System prompt defining agent's task and behavior"
+
+      - name: "name"
+        type: "string"
+        required: false
+        default: "task"
+
+  methods:
+    process:
+      input: "Message"
+      output: "Message"
+      async: true
+      description: "Execute the task on input message"
+
+behavior:
+  state:
+    - name: "system_prompt"
+      type: "string"
+      description: "Task definition and instructions"
+
+  execution:
+    - step: 1
+      action: "Receive input message"
+      preconditions: []
+      postconditions: ["Input stored"]
+
+    - step: 2
+      action: "Apply system prompt to LLM"
+      preconditions: ["Input exists"]
+      postconditions: ["LLM configured with task instructions"]
+
+    - step: 3
+      action: "Process input with LLM"
+      preconditions: ["LLM configured"]
+      postconditions: ["Result generated"]
+
+    - step: 4
+      action: "Return result"
+      preconditions: ["Result exists"]
+      postconditions: ["Result returned"]
+
+  invariants:
+    - "Stateless - no conversation history"
+    - "Each process() call is independent"
+    - "System prompt never changes"
+    - "No memory between calls"
+    - "Single LLM call per process()"
+
+error_handling:
+  - condition: "LLM fails"
+    error_type: "AgentError"
+    behavior: "Propagate error immediately"
+
+  - condition: "Empty or invalid system prompt"
+    error_type: "ValueError"
+    behavior: "Raise error at construction"
+
+test_cases:
+  - name: "Summarization task"
+    description: "Agent summarizes text"
+    input:
+      message:
+        role: "user"
+        content: "Long article text..."
+      config:
+        system_prompt: "You are a summarizer. Create concise summaries."
+    expected_output:
+      message:
+        role: "assistant"
+        content: "Brief summary..."
+    assertions:
+      - "Output is shorter than input"
+      - "Output captures main points"
+
+  - name: "Stateless execution"
+    description: "No memory between calls"
+    test_sequence:
+      - input: "My name is Alice"
+        output: "Hello!"
+      - input: "What's my name?"
+        output: "I don't have that information."
+    assertions:
+      - "Second call has no memory of first"
+      - "Each call is independent"
+
+  - name: "Classification task"
+    description: "Agent classifies input"
+    input:
+      message:
+        role: "user"
+        content: "This product is amazing!"
+      config:
+        system_prompt: "Classify sentiment as positive/negative/neutral."
+    expected_output:
+      message:
+        role: "assistant"
+        content: "positive"
+    assertions:
+      - "Output is classification label"
+
+performance:
+  latency: "Single LLM call"
+  throughput: "High - stateless, parallelizable"
+  memory: "O(1) - no state"
+  cost: "Single LLM cost per call"
+
+composition:
+  can_be_agent: true
+  can_contain:
+    - "LLM: any Agent"
+
+examples:
+  - language: "Python"
+    code: |
+      from agenkit.patterns import TaskAgent
+
+      summarizer = TaskAgent(
+          system_prompt="You are a summarizer.",
+          llm=my_llm,
+          name="summarizer"
+      )
+
+      result = await summarizer.process(document)
+
+cross_language_equivalence:
+  verified: false
+  test_required: true
+  notes: "Simplest pattern - should have exact equivalence"

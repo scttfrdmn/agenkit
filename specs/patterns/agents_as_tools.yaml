@@ -1,0 +1,141 @@
+pattern:
+  name: "AgentsAsTools"
+  category: "specialized"
+  description: "Wrap specialist agents as tools that an orchestrator agent can dynamically invoke"
+  version: "1.0.0"
+  aliases: ["agent-tools", "delegated-agents"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "orchestrator"
+        type: "Agent"
+        required: true
+        description: "Main agent that decides which specialist to use"
+
+      - name: "specialist_agents"
+        type: "Map<string, Agent>"
+        required: true
+        description: "Dictionary of specialist agents wrapped as tools"
+
+      - name: "name"
+        type: "string"
+        required: false
+        default: "agents-as-tools"
+
+  methods:
+    process:
+      input: "Message"
+      output: "Message"
+      async: true
+      description: "Orchestrator processes message, delegates to specialists as needed"
+
+    get_available_agents:
+      output: "string[]"
+      description: "Get list of available specialist agent names"
+
+behavior:
+  state:
+    - name: "specialist_agents"
+      type: "Map<string, Agent>"
+      description: "Registered specialist agents"
+
+  execution:
+    - step: 1
+      action: "Receive task"
+      preconditions: []
+      postconditions: ["Task stored"]
+
+    - step: 2
+      action: "Orchestrator analyzes task"
+      preconditions: ["Task exists"]
+      postconditions: ["Orchestrator decides which specialist(s) to invoke"]
+
+    - step: 3
+      action: "Invoke specialist agent(s) as tool calls"
+      preconditions: ["Specialist selected"]
+      postconditions: ["Specialist processes subtask"]
+
+    - step: 4
+      action: "Orchestrator receives specialist result"
+      preconditions: ["Specialist completed"]
+      postconditions: ["Result available to orchestrator"]
+
+    - step: 5
+      action: "Orchestrator may invoke additional specialists"
+      preconditions: ["More work needed"]
+      postconditions: ["Multiple specialists coordinated"]
+
+    - step: 6
+      action: "Orchestrator returns final result"
+      preconditions: ["All specialists complete"]
+      postconditions: ["Aggregated result returned"]
+
+  invariants:
+    - "Orchestrator is always the decision maker"
+    - "Specialists are invoked by orchestrator, never directly by user"
+    - "Each specialist is independent"
+    - "Orchestrator can invoke multiple specialists per task"
+    - "Specialists only see their specific subtask, not full context"
+
+error_handling:
+  - condition: "Specialist agent fails"
+    error_type: "AgentError"
+    behavior: "Return error to orchestrator, orchestrator decides next action"
+
+  - condition: "Orchestrator fails"
+    error_type: "AgentError"
+    behavior: "Propagate error immediately"
+
+  - condition: "Unknown specialist requested"
+    error_type: "ToolNotFoundError"
+    behavior: "Return error to orchestrator"
+
+test_cases:
+  - name: "Single specialist delegation"
+    description: "Orchestrator delegates to one specialist"
+    input:
+      message:
+        role: "user"
+        content: "Summarize this document"
+      config:
+        specialists: {"summarizer": "SummarizerAgent"}
+    expected_behavior:
+      orchestrator_invokes: ["summarizer"]
+      result_from: "summarizer"
+    assertions:
+      - "Orchestrator identified summarizer as correct specialist"
+      - "Summarizer processed task"
+
+  - name: "Multi-specialist coordination"
+    description: "Orchestrator uses multiple specialists"
+    input:
+      message:
+        role: "user"
+        content: "Translate this French document to English and summarize it"
+      config:
+        specialists: {"translator": "TranslatorAgent", "summarizer": "SummarizerAgent"}
+    expected_behavior:
+      orchestrator_invokes: ["translator", "summarizer"]
+      invocation_order: ["translator", "summarizer"]
+    assertions:
+      - "Translator invoked first"
+      - "Summarizer receives translated text"
+      - "Final output is English summary"
+
+performance:
+  latency: "orchestrator_time + sum(specialist_times)"
+  throughput: "Medium - sequential delegation"
+  memory: "O(N) where N = specialists"
+  cost: "Orchestrator cost + specialist costs"
+
+composition:
+  can_be_agent: true
+  can_contain:
+    - "Orchestrator: any Agent (usually ReAct)"
+    - "Specialists: any Agent implementations"
+
+cross_language_equivalence:
+  verified: false
+  test_required: true
+  notes: "Orchestrator decision-making may vary. Test should verify correct specialist selection and final output quality."

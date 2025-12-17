@@ -1,0 +1,56 @@
+pattern:
+  name: "Supervisor"
+  category: "advanced"
+  description: "Oversee and coordinate execution of subordinate agents with approval and error handling"
+  version: "1.0.0"
+  aliases: ["oversight-agent", "coordinator"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "supervisor"
+        type: "Agent"
+        required: true
+        description: "Supervisor agent"
+
+      - name: "workers"
+        type: "Agent[]"
+        required: true
+        description: "Worker agents"
+
+      - name: "require_approval"
+        type: "boolean"
+        required: false
+        default: false
+
+behavior:
+  execution:
+    - step: 1
+      action: "Supervisor analyzes task"
+    - step: 2
+      action: "Delegate subtasks to workers"
+    - step: 3
+      action: "Monitor worker execution"
+    - step: 4
+      action: "Review worker outputs"
+    - step: 5
+      action: "Approve or request revisions"
+
+  invariants:
+    - "Supervisor makes final decisions"
+    - "Workers report to supervisor"
+    - "Supervisor can override or revise"
+
+test_cases:
+  - name: "Supervised execution"
+    description: "Supervisor coordinates workers"
+    assertions:
+      - "Workers delegated tasks"
+      - "Supervisor reviews results"
+
+performance:
+  latency: "supervisor_time + worker_times + review_time"
+
+cross_language_equivalence:
+  verified: false
+  test_required: true

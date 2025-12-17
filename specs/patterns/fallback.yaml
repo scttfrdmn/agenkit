@@ -1,0 +1,60 @@
+pattern:
+  name: "Fallback"
+  category: "advanced"
+  description: "Try primary agent, fall back to alternative agents on failure"
+  version: "1.0.0"
+  aliases: ["failover", "backup-agent"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "primary"
+        type: "Agent"
+        required: true
+
+      - name: "fallbacks"
+        type: "Agent[]"
+        required: true
+
+      - name: "retry_primary"
+        type: "number"
+        required: false
+        default: 1
+
+behavior:
+  execution:
+    - step: 1
+      action: "Try primary agent"
+    - step: 2
+      action: "If failure, try first fallback"
+    - step: 3
+      action: "Continue through fallback chain until success"
+
+  invariants:
+    - "Primary attempted first"
+    - "Fallbacks tried in order"
+    - "First success returned"
+
+error_handling:
+  - condition: "All agents fail"
+    behavior: "Raise error with all failure details"
+
+test_cases:
+  - name: "Primary success"
+    description: "Primary agent succeeds"
+    assertions:
+      - "Primary used"
+      - "Fallbacks not invoked"
+
+  - name: "Fallback activation"
+    description: "Primary fails, fallback succeeds"
+    assertions:
+      - "Primary failed"
+      - "Fallback succeeded"
+
+performance:
+  latency: "Primary time (on success) or primary + fallback times (on failure)"
+
+cross_language_equivalence:
+  verified: false
+  test_required: true

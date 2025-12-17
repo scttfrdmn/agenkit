@@ -1,0 +1,60 @@
+pattern:
+  name: "ReasoningWithTools"
+  category: "specialized"
+  description: "Enhanced reasoning pattern combining structured thinking with tool usage"
+  version: "1.0.0"
+  aliases: ["enhanced-react", "reasoning-tools"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "llm"
+        type: "Agent"
+        required: true
+
+      - name: "tools"
+        type: "Tool[]"
+        required: true
+
+      - name: "reasoning_strategy"
+        type: "string"
+        required: false
+        default: "chain-of-thought"
+        options:
+          - "chain-of-thought"
+          - "tree-of-thought"
+          - "self-consistency"
+
+      - name: "max_iterations"
+        type: "number"
+        required: false
+        default: 10
+
+behavior:
+  execution:
+    - step: 1
+      action: "Apply reasoning strategy to problem"
+    - step: 2
+      action: "Identify tools needed"
+    - step: 3
+      action: "Execute tools with reasoning context"
+    - step: 4
+      action: "Synthesize results with reasoning"
+
+  invariants:
+    - "Reasoning explicit and logged"
+    - "Tool usage justified by reasoning"
+
+test_cases:
+  - name: "Chain of thought with tools"
+    description: "Multi-step reasoning with tool execution"
+    assertions:
+      - "Reasoning steps visible"
+      - "Tools used appropriately"
+
+performance:
+  latency: "reasoning_time + iterations * (tool_time + llm_time)"
+
+cross_language_equivalence:
+  verified: false
+  test_required: true

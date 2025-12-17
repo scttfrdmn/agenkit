@@ -1,0 +1,202 @@
+pattern:
+  name: "Conversational"
+  category: "specialized"
+  description: "Multi-turn dialogue agent with conversation history management"
+  version: "1.0.0"
+  aliases: ["chatbot", "dialogue-agent"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "llm"
+        type: "Agent"
+        required: true
+        description: "Language model for responses"
+
+      - name: "system_prompt"
+        type: "string"
+        required: false
+        default: "You are a helpful assistant."
+        description: "System prompt defining agent personality"
+
+      - name: "max_history"
+        type: "number"
+        required: false
+        default: 10
+        description: "Maximum messages to keep in history"
+
+      - name: "name"
+        type: "string"
+        required: false
+        default: "conversational"
+
+  methods:
+    process:
+      input: "Message"
+      output: "Message"
+      async: true
+      description: "Process message with conversation context"
+
+    get_history:
+      output: "Message[]"
+      description: "Get conversation history"
+
+    clear_history:
+      output: "void"
+      description: "Clear conversation history"
+
+    get_context_length:
+      output: "number"
+      description: "Get number of messages in history"
+
+behavior:
+  state:
+    - name: "history"
+      type: "Message[]"
+      description: "Conversation history (messages)"
+
+    - name: "max_history"
+      type: "number"
+      description: "Maximum history size"
+
+  execution:
+    - step: 1
+      action: "Receive user message"
+      preconditions: []
+      postconditions: ["Message added to history"]
+
+    - step: 2
+      action: "Build context from history"
+      preconditions: ["History exists (may be empty)"]
+      postconditions: ["Context prepared with relevant messages"]
+
+    - step: 3
+      action: "Apply pruning if history exceeds max_history"
+      preconditions: ["History length checked"]
+      postconditions: ["Oldest messages removed if necessary"]
+
+    - step: 4
+      action: "Process with LLM using full context"
+      preconditions: ["Context prepared"]
+      postconditions: ["Response generated"]
+
+    - step: 5
+      action: "Add response to history"
+      preconditions: ["Response exists"]
+      postconditions: ["History updated with assistant message"]
+
+    - step: 6
+      action: "Return response"
+      preconditions: ["History updated"]
+      postconditions: ["Response returned to user"]
+
+  invariants:
+    - "History contains alternating user/assistant messages"
+    - "History length <= max_history"
+    - "Oldest messages pruned first (FIFO)"
+    - "Current message always included in context"
+    - "History persists across process() calls"
+    - "System prompt not counted in history limit"
+
+error_handling:
+  - condition: "LLM fails"
+    error_type: "AgentError"
+    behavior: "Propagate error, preserve history"
+
+  - condition: "Invalid max_history (< 1)"
+    error_type: "ValueError"
+    behavior: "Raise error at construction"
+
+  - condition: "History corruption"
+    error_type: "StateError"
+    behavior: "Clear history, log error, continue"
+
+test_cases:
+  - name: "Context preservation"
+    description: "Agent remembers previous messages"
+    test_sequence:
+      - input:
+          role: "user"
+          content: "My name is Alice"
+        expected_output:
+          contains: "Alice"
+      - input:
+          role: "user"
+          content: "What's my name?"
+        expected_output:
+          contains: "Alice"
+    assertions:
+      - "Second response uses context from first"
+      - "History contains both exchanges"
+
+  - name: "History pruning"
+    description: "Oldest messages removed when limit exceeded"
+    input:
+      config:
+        max_history: 4  # 2 exchanges
+    test_sequence:
+      - exchange_1: "First message"
+      - exchange_2: "Second message"
+      - exchange_3: "Third message"
+    expected_behavior:
+      history_length: 4
+      history_contains: ["exchange_2", "exchange_3"]
+      history_not_contains: ["exchange_1"]
+    assertions:
+      - "Oldest exchange removed"
+      - "Recent exchanges preserved"
+
+  - name: "Clear history"
+    description: "History can be manually cleared"
+    test_sequence:
+      - input: "Remember this"
+        output: "Ok"
+      - action: "clear_history()"
+      - input: "What did I say?"
+        output: "I don't have that information"
+    assertions:
+      - "History empty after clear"
+      - "Agent has no memory of previous messages"
+
+  - name: "Multi-turn complex conversation"
+    description: "Agent maintains context across many turns"
+    test_sequence:
+      - "I'm working on a Python project"
+      - "It's a web scraper"
+      - "I'm getting a timeout error"
+      - "How do I fix the timeout in my Python web scraper?"
+    expected_final_response:
+      references: ["Python", "web scraper", "timeout"]
+    assertions:
+      - "Final response uses all previous context"
+      - "Agent understands cumulative conversation"
+
+performance:
+  latency: "Single LLM call with context"
+  throughput: "Medium - context grows with history"
+  memory: "O(max_history) - bounded history"
+  cost: "Increases with history size (more tokens)"
+
+composition:
+  can_be_agent: true
+  can_contain:
+    - "LLM: any Agent"
+
+examples:
+  - language: "Python"
+    code: |
+      from agenkit.patterns import ConversationalAgent
+
+      assistant = ConversationalAgent(
+          llm=my_llm,
+          system_prompt="You are a helpful assistant.",
+          max_history=10
+      )
+
+      resp1 = await assistant.process(msg1)
+      resp2 = await assistant.process(msg2)  # Has context from msg1
+
+cross_language_equivalence:
+  verified: false
+  test_required: true
+  notes: "History management must be identical. LLM responses may vary slightly due to context formatting."

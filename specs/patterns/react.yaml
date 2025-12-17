@@ -1,0 +1,235 @@
+pattern:
+  name: "ReAct"
+  category: "enhancement"
+  description: "Reasoning and Acting - agent alternates between thinking and tool usage to solve problems"
+  version: "1.0.0"
+  aliases: ["reasoning-acting", "thought-action"]
+
+interface:
+  constructor:
+    parameters:
+      - name: "llm"
+        type: "Agent"
+        required: true
+        description: "Language model for reasoning"
+
+      - name: "tools"
+        type: "Tool[]"
+        required: true
+        description: "Tools available for the agent to use"
+        constraints:
+          - "Each tool must have name, description, and callable function"
+
+      - name: "max_iterations"
+        type: "number"
+        required: false
+        default: 10
+        description: "Maximum thought-action-observation cycles"
+
+      - name: "verbose"
+        type: "boolean"
+        required: false
+        default: false
+        description: "Whether to log reasoning steps"
+
+      - name: "name"
+        type: "string"
+        required: false
+        default: "react"
+
+  methods:
+    process:
+      input: "Message"
+      output: "Message"
+      async: true
+      description: "Solve problem through reasoning and tool usage"
+
+    get_trace:
+      output: "ReasoningTrace[]"
+      description: "Get complete reasoning trace (thoughts, actions, observations)"
+
+behavior:
+  state:
+    - name: "tools"
+      type: "Tool[]"
+      description: "Available tools"
+
+    - name: "reasoning_trace"
+      type: "ReasoningTrace[]"
+      description: "History of thoughts, actions, and observations"
+
+    - name: "iteration"
+      type: "number"
+      description: "Current iteration count (transient)"
+
+  execution:
+    - step: 1
+      action: "Receive user question/task"
+      preconditions: []
+      postconditions: ["Task stored"]
+
+    - step: 2
+      action: "LLM generates thought about next step"
+      preconditions: ["Task exists", "iteration < max_iterations"]
+      postconditions: ["Thought recorded in trace"]
+
+    - step: 3
+      action: "LLM decides action (tool call or final answer)"
+      preconditions: ["Thought generated"]
+      postconditions: ["Action decided"]
+      decision_types:
+        - "Tool call: execute specific tool with arguments"
+        - "Final answer: return response to user"
+
+    - step: 4a
+      action: "If tool call: execute tool and observe result"
+      preconditions: ["Action is tool call", "Tool exists"]
+      postconditions: ["Observation recorded", "iteration += 1"]
+
+    - step: 4b
+      action: "If final answer: return response"
+      preconditions: ["Action is final answer"]
+      postconditions: ["Response returned", "Reasoning complete"]
+
+    - step: 5
+      action: "Repeat steps 2-4 until final answer or max iterations"
+      preconditions: []
+      postconditions: ["Complete trace recorded"]
+
+  invariants:
+    - "Each iteration has: Thought → Action → Observation"
+    - "Tool calls must reference existing tools"
+    - "Observations follow actions immediately"
+    - "Final answer terminates reasoning loop"
+    - "Reasoning trace preserves order"
+    - "iteration <= max_iterations"
+
+error_handling:
+  - condition: "Tool execution fails"
+    error_type: "ToolError"
+    behavior: "Record error as observation, continue reasoning"
+
+  - condition: "Tool not found"
+    error_type: "ToolNotFoundError"
+    behavior: "Record error, LLM can retry with correct tool"
+
+  - condition: "Max iterations exceeded"
+    error_type: "MaxIterationsError"
+    behavior: "Return partial result with trace, log warning"
+
+  - condition: "LLM fails to generate thought"
+    error_type: "AgentError"
+    behavior: "Propagate error immediately"
+
+  - condition: "Infinite loop detected (same action repeated)"
+    error_type: null
+    behavior: "Early stop, return best effort result"
+
+test_cases:
+  - name: "Simple calculation with tool"
+    description: "Use calculator tool to solve math"
+    input:
+      message:
+        role: "user"
+        content: "What is 25 * 4?"
+      config:
+        tools: ["calculator"]
+        max_iterations: 5
+    expected_trace:
+      - thought: "I need to calculate 25 * 4"
+        action: "calculator(25 * 4)"
+        observation: "100"
+      - thought: "I have the answer"
+        action: "Final Answer: 100"
+    assertions:
+      - "Calculator tool called exactly once"
+      - "Final answer is 100"
+      - "Completed in 2 iterations"
+
+  - name: "Multi-step reasoning with multiple tools"
+    description: "Search then calculate"
+    input:
+      message:
+        role: "user"
+        content: "What is 15% of France's GDP?"
+      config:
+        tools: ["search", "calculator"]
+        max_iterations: 10
+    expected_trace_pattern:
+      - thought_contains: "find France GDP"
+        action: "search"
+      - thought_contains: "calculate 15%"
+        action: "calculator"
+      - action: "Final Answer"
+    assertions:
+      - "Search tool called first"
+      - "Calculator tool called second"
+      - "Final answer includes calculation result"
+
+  - name: "Tool error recovery"
+    description: "Tool fails, agent retries with different approach"
+    input:
+      message:
+        role: "user"
+        content: "Get weather for InvalidCity"
+      config:
+        tools: ["weather_api"]
+    expected_behavior:
+      - tool_call: "weather_api(InvalidCity)"
+        observation_contains: "error"
+      - thought_contains: "error occurred"
+      - action: "Final Answer: Unable to fetch weather"
+    assertions:
+      - "Error observation recorded"
+      - "Agent continues after error"
+      - "Final answer acknowledges limitation"
+
+  - name: "Direct answer without tools"
+    description: "Question doesn't require tools"
+    input:
+      message:
+        role: "user"
+        content: "What is the capital of France?"
+      config:
+        tools: ["search", "calculator"]
+    expected_trace:
+      - thought: "I know this answer"
+        action: "Final Answer: Paris"
+    assertions:
+      - "No tools called"
+      - "Completed in 1 iteration"
+
+performance:
+  latency: "iterations * (llm_time + tool_time)"
+  throughput: "Low (iterative)"
+  memory: "O(iterations) - full trace stored"
+  cost: "Medium-High - multiple LLM calls + tool costs"
+
+composition:
+  can_be_agent: true
+  can_contain:
+    - "LLM: any Agent"
+    - "Tools: regular functions or agent-wrapped tools"
+
+examples:
+  - language: "Python"
+    code: |
+      from agenkit.patterns import ReActAgent
+      from agenkit import Tool
+
+      react = ReActAgent(
+          llm=my_llm,
+          tools=[
+              Tool(name="search", func=search_web),
+              Tool(name="calculator", func=calculate)
+          ],
+          max_iterations=10,
+          verbose=True
+      )
+
+      result = await react.process(question)
+
+cross_language_equivalence:
+  verified: false
+  test_required: true
+  notes: "LLM non-determinism may cause different reasoning paths. Test should verify final answer correctness, not exact trace matching."

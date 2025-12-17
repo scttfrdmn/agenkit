@@ -71,6 +71,13 @@ All patterns share common building blocks:
 | Autonomous | Very High | Goal pursuit | Slow (iterative) | Self-directed agents |
 | Multiagent | Very High | Collaboration | Medium | Multi-agent systems |
 | Memory Hierarchy | High | Context management | Medium | Long-running agents |
+| **Fallback** | **Low** | **Error recovery** | **Fast (on success)** | **High availability** |
+| **Supervisor** | **Medium** | **Quality control** | **Medium** | **Oversight workflows** |
+| **Human in Loop** | **Medium** | **Safety-critical** | **Slow (human wait)** | **Compliance, safety** |
+| **Router** | **Low** | **Message routing** | **Fast** | **Specialist selection** |
+| **Orchestration** | **Very High** | **Complex workflows** | **Variable** | **Business automation** |
+| **Reasoning with Tools** | **High** | **Enhanced reasoning** | **Slow (multiple paths)** | **Explainable AI** |
+| **Collaborative** | **High** | **Team coordination** | **Medium** | **Shared problem-solving** |
 
 ### Pros and Cons
 
@@ -87,6 +94,13 @@ All patterns share common building blocks:
 | Autonomous | Goal-oriented, adaptive | Unpredictable, expensive |
 | Multiagent | Distributed, scalable | Complex coordination |
 | Memory Hierarchy | Efficient retrieval | Setup complexity |
+| **Fallback** | **High availability, automatic failover** | **Higher latency on failures** |
+| **Supervisor** | **Quality assurance, error correction** | **Extra overhead, potential bottleneck** |
+| **Human in Loop** | **Safety, compliance, user control** | **Slow, doesn't scale** |
+| **Router** | **Intelligent selection, specialist optimization** | **Routing overhead, potential misrouting** |
+| **Orchestration** | **Handles complex workflows, flexible** | **High complexity, difficult to debug** |
+| **Reasoning with Tools** | **Explicit reasoning, better accuracy** | **Slow, expensive, many LLM calls** |
+| **Collaborative** | **Multiple perspectives, team synergy** | **Coordination complexity, slower** |
 
 ---
 
@@ -1491,6 +1505,917 @@ orchestrator = ReActAgent(llm=llm, tools=tools)
 
 ---
 
+## Reliability Patterns
+
+### Fallback
+
+**Purpose:** Sequential retry across multiple agents with automatic failover.
+
+**When to Use:**
+- High availability systems
+- Multi-provider LLM setups (try different providers)
+- Graceful degradation (advanced → simple models)
+- Error recovery with fallback strategies
+- Retry with alternative approaches
+
+**Pattern:**
+```
+Primary Agent (try first)
+     ↓ (if fails)
+Fallback 1
+     ↓ (if fails)
+Fallback 2
+     ↓ (if fails)
+...
+```
+
+**Implementation:**
+
+```python
+from agenkit.patterns import FallbackAgent
+from agenkit import Message
+
+# Create fallback chain
+fallback = FallbackAgent(
+    agents=[
+        primary_agent,      # Try this first
+        backup_agent,       # Fallback if primary fails
+        simple_agent        # Last resort
+    ]
+)
+
+# Automatically tries agents until one succeeds
+result = await fallback.process(message)
+
+# Metadata shows which agent succeeded
+print(result.metadata["fallback_success_agent"])  # "backup_agent"
+print(result.metadata["fallback_attempts"])  # 2
+```
+
+**Detailed Example - Multi-Provider LLM:**
+
+```python
+from agenkit.patterns import FallbackAgent
+from agenkit.adapters import OpenAIAgent, AnthropicAgent, OllamaAgent
+from agenkit import Message
+
+# Create agents for different providers
+openai_agent = OpenAIAgent(model="gpt-4")
+anthropic_agent = AnthropicAgent(model="claude-3-5-sonnet-20241022")
+ollama_agent = OllamaAgent(model="llama3.3")  # Local fallback
+
+# Fallback chain: expensive → mid-tier → free local
+multi_provider = FallbackAgent(
+    agents=[openai_agent, anthropic_agent, ollama_agent]
+)
+
+# Try all providers until one succeeds
+question = Message.with_text("user", "Explain quantum computing")
+result = await multi_provider.process(question)
+
+# Check which provider succeeded
+if result.metadata["fallback_attempts"] == 1:
+    print("✓ OpenAI succeeded immediately")
+elif result.metadata["fallback_attempts"] == 2:
+    print("⚠ OpenAI failed, Anthropic succeeded")
+else:
+    print("⚠⚠ Cloud providers failed, using local Ollama")
+```
+
+**With Custom Recovery:**
+
+```python
+from agenkit.patterns import WithRecovery
+
+# Add recovery logic to any agent
+agent_with_recovery = WithRecovery(
+    agent=primary_agent,
+    recovery=lambda ctx, msg, err: Message.with_text(
+        "assistant",
+        "Service temporarily unavailable. Please try again."
+    )
+)
+
+# Always returns a response, even if agent fails
+result = await agent_with_recovery.process(message)
+```
+
+**Pros:**
+- ✅ High availability and fault tolerance
+- ✅ Automatic failover (no manual intervention)
+- ✅ Early termination on first success (fast path)
+- ✅ Error collection for debugging
+- ✅ Simple to reason about (sequential)
+
+**Cons:**
+- ❌ Higher latency on failures (tries each agent sequentially)
+- ❌ Increased cost if all agents fail
+- ❌ No parallelism (could be added with timeout-based fallback)
+- ❌ Requires multiple agents/providers
+
+**Best Practices:**
+1. Order agents by preference (fastest/cheapest first)
+2. Include error details in metadata for monitoring
+3. Set appropriate timeouts per agent
+4. Use recovery functions for graceful degradation
+5. Monitor fallback rates to detect systemic issues
+
+---
+
+### Supervisor
+
+**Purpose:** Oversee and coordinate execution of worker agents with monitoring, approval, and error handling.
+
+**When to Use:**
+- Quality control needed
+- Workers need oversight
+- Task delegation and coordination
+- Error detection and correction
+- Approval workflows
+
+**Pattern:**
+```
+Supervisor (coordinator)
+     ├→ Worker 1 → Report back
+     ├→ Worker 2 → Report back
+     └→ Worker 3 → Report back
+Supervisor reviews, approves, or requests revisions
+```
+
+**Implementation:**
+
+```python
+from agenkit.patterns import SupervisorAgent
+from agenkit import Message
+
+# Create supervisor with workers
+supervisor = SupervisorAgent(
+    supervisor=coordinator_agent,
+    workers=[worker1, worker2, worker3],
+    require_approval=True  # Supervisor approves all outputs
+)
+
+# Supervisor delegates, monitors, and coordinates
+task = Message.with_text("user", "Complete project analysis")
+result = await supervisor.process(task)
+
+# Metadata shows delegation details
+print(result.metadata["supervisor_delegations"])  # Which workers were used
+print(result.metadata["supervisor_revisions"])  # How many revisions requested
+```
+
+**Detailed Example - Quality Control:**
+
+```python
+from agenkit.patterns import SupervisorAgent
+from agenkit import Agent, Message
+
+class QualityController(Agent):
+    """Supervisor that reviews worker output for quality."""
+
+    async def process(self, message: Message) -> Message:
+        # Analyze worker output
+        content = message.text
+
+        issues = []
+        if len(content) < 100:
+            issues.append("Response too short")
+        if not any(word in content.lower() for word in ["because", "therefore", "due to"]):
+            issues.append("Lacks reasoning")
+
+        if issues:
+            # Request revision
+            feedback = "Revise with improvements:\n" + "\n".join(f"- {i}" for i in issues)
+            response = Message.with_text("supervisor", feedback)
+            response.metadata["approval"] = False
+            response.metadata["revision_requested"] = True
+            return response
+
+        # Approve
+        response = Message.with_text("supervisor", "Approved")
+        response.metadata["approval"] = True
+        return response
+
+# Create supervised workflow
+supervisor = SupervisorAgent(
+    supervisor=QualityController(name="qa"),
+    workers=[analyst_agent, writer_agent],
+    require_approval=True
+)
+
+# Workers produce output, supervisor reviews and requests revisions if needed
+result = await supervisor.process(task)
+```
+
+**Pros:**
+- ✅ Quality assurance built in
+- ✅ Centralized coordination
+- ✅ Error detection and correction
+- ✅ Can request revisions
+- ✅ Clear hierarchy
+
+**Cons:**
+- ❌ Extra overhead (supervisor reviews)
+- ❌ Potential bottleneck
+- ❌ More complex coordination
+- ❌ Supervisor must be reliable
+
+**Best Practices:**
+1. Supervisor should have higher capability than workers
+2. Define clear approval criteria
+3. Limit revision cycles to prevent loops
+4. Log all delegation and approval decisions
+5. Use for critical/high-stakes tasks
+
+---
+
+### Human in Loop
+
+**Purpose:** Include human approval or feedback at critical decision points during agent execution.
+
+**When to Use:**
+- Safety-critical applications
+- High-stakes decisions
+- Regulatory compliance
+- User preferences matter
+- Verification needed before actions
+
+**Pattern:**
+```
+Agent proposes action
+     ↓
+Request human approval
+     ↓
+Human reviews and decides
+     ↓ (approved)          ↓ (rejected)
+Execute action       Revise and retry
+```
+
+**Implementation:**
+
+```python
+from agenkit.patterns import HumanInLoopAgent
+from agenkit import Message
+
+def approval_callback(action: str, context: dict) -> bool:
+    """Human reviews and approves/rejects proposed action."""
+    print(f"Agent proposes: {action}")
+    print(f"Context: {context}")
+    response = input("Approve? (y/n): ")
+    return response.lower() == 'y'
+
+# Create agent with human approval gates
+agent = HumanInLoopAgent(
+    agent=autonomous_agent,
+    approval_callback=approval_callback,
+    require_approval_for=["tool_calls", "final_answer"]
+)
+
+# Agent will pause for human approval before critical actions
+result = await agent.process(task)
+```
+
+**Detailed Example - Financial Transactions:**
+
+```python
+from agenkit.patterns import HumanInLoopAgent
+from agenkit import Agent, Message, Tool
+
+class FinancialAgent(Agent):
+    """Agent that can execute financial transactions."""
+
+    def __init__(self):
+        self.tools = [
+            Tool(name="transfer_money", func=self.transfer,
+                 description="Transfer money between accounts"),
+            Tool(name="pay_bill", func=self.pay_bill,
+                 description="Pay a bill")
+        ]
+
+    async def transfer(self, from_account: str, to_account: str, amount: float):
+        return f"Transferred ${amount} from {from_account} to {to_account}"
+
+    async def pay_bill(self, biller: str, amount: float):
+        return f"Paid ${amount} to {biller}"
+
+def financial_approval(action: str, context: dict) -> tuple[bool, str]:
+    """
+    Human reviews financial actions.
+    Returns: (approved: bool, feedback: str)
+    """
+    print(f"\n{'='*60}")
+    print(f"APPROVAL REQUIRED: {action}")
+    print(f"Details: {context}")
+    print(f"{'='*60}")
+
+    response = input("Approve this transaction? (y/n/edit): ").lower()
+
+    if response == 'y':
+        return True, "Approved"
+    elif response == 'edit':
+        new_amount = input("Enter new amount: ")
+        return True, f"Approved with modification: amount={new_amount}"
+    else:
+        reason = input("Reason for rejection: ")
+        return False, f"Rejected: {reason}"
+
+# Wrap financial agent with human approval
+safe_financial_agent = HumanInLoopAgent(
+    agent=FinancialAgent(),
+    approval_callback=financial_approval,
+    require_approval_for=["all"]  # Require approval for everything
+)
+
+# Every financial action requires human approval
+task = Message.with_text("user", "Pay my electricity bill of $150")
+result = await safe_financial_agent.process(task)
+```
+
+**Pros:**
+- ✅ Human oversight for safety
+- ✅ Catch errors before execution
+- ✅ Regulatory compliance
+- ✅ User control and transparency
+- ✅ Can modify agent proposals
+
+**Cons:**
+- ❌ Slow (human in the loop)
+- ❌ Doesn't scale to high volume
+- ❌ Human availability required
+- ❌ Approval fatigue possible
+
+**Best Practices:**
+1. Only require approval for critical actions
+2. Provide clear context for approval decisions
+3. Allow modifications, not just approve/reject
+4. Log all approval decisions for audit trail
+5. Set timeouts for approval requests
+6. Consider async approval workflows
+
+---
+
+### Router
+
+**Purpose:** Route messages to appropriate specialist agents based on content, metadata, or classification.
+
+**When to Use:**
+- Multiple specialists available
+- Need intelligent routing
+- Domain-specific agents
+- Load balancing across agents
+- Conditional execution paths
+
+**Pattern:**
+```
+Router (classifier)
+     ├→ [weather query] → Weather Agent
+     ├→ [stock query] → Stock Agent
+     ├→ [news query] → News Agent
+     └→ [other] → General Agent (default)
+```
+
+**Implementation:**
+
+```python
+from agenkit.patterns import RouterAgent
+from agenkit import Message
+
+# Create router with specialists
+router = RouterAgent(
+    routes={
+        "weather": weather_agent,
+        "stocks": stock_agent,
+        "news": news_agent
+    },
+    default_agent=general_agent,
+    routing_strategy="keyword"  # or "llm", "metadata", "custom"
+)
+
+# Router automatically selects appropriate specialist
+question = Message.with_text("user", "What's the weather in Seattle?")
+result = await router.process(question)  # Routed to weather_agent
+```
+
+**Detailed Example - Customer Support Router:**
+
+```python
+from agenkit.patterns import RouterAgent
+from agenkit import Agent, Message
+
+# Define specialist agents
+class BillingAgent(Agent):
+    async def process(self, message: Message) -> Message:
+        return Message.with_text("assistant", "Billing: Let me help with your account...")
+
+class TechnicalAgent(Agent):
+    async def process(self, message: Message) -> Message:
+        return Message.with_text("assistant", "Technical: Let me troubleshoot...")
+
+class SalesAgent(Agent):
+    async def process(self, message: Message) -> Message:
+        return Message.with_text("assistant", "Sales: I can help you find the right product...")
+
+# LLM-based routing for complex classification
+def llm_routing_strategy(message: Message, routes: dict) -> str:
+    """Use LLM to classify message and select route."""
+    # In practice, this would call an LLM
+    content = message.text.lower()
+
+    if any(word in content for word in ["bill", "payment", "charge", "invoice"]):
+        return "billing"
+    elif any(word in content for word in ["broken", "error", "not working", "problem"]):
+        return "technical"
+    elif any(word in content for word in ["buy", "purchase", "price", "upgrade"]):
+        return "sales"
+    else:
+        return None  # Use default
+
+# Create customer support router
+support_router = RouterAgent(
+    routes={
+        "billing": BillingAgent(name="billing"),
+        "technical": TechnicalAgent(name="technical"),
+        "sales": SalesAgent(name="sales")
+    },
+    default_agent=GeneralAgent(name="general"),
+    routing_strategy=llm_routing_strategy
+)
+
+# Route customer inquiries
+inquiries = [
+    "My credit card was charged twice",
+    "The app keeps crashing",
+    "I want to upgrade to pro plan",
+    "What are your business hours?"
+]
+
+for inquiry in inquiries:
+    msg = Message.with_text("user", inquiry)
+    result = await support_router.process(msg)
+    routed_to = result.metadata.get("routed_to", "unknown")
+    print(f"'{inquiry}' → {routed_to}")
+```
+
+**Metadata-based Routing:**
+
+```python
+# Route based on message metadata
+router = RouterAgent(
+    routes={
+        "urgent": priority_agent,
+        "normal": standard_agent,
+        "low": batch_agent
+    },
+    routing_strategy="metadata",
+    metadata_key="priority"
+)
+
+# Message metadata determines routing
+msg = Message.with_text("user", "Important question")
+msg.metadata["priority"] = "urgent"
+result = await router.process(msg)  # Routed to priority_agent
+```
+
+**Pros:**
+- ✅ Intelligent agent selection
+- ✅ Specialist optimization
+- ✅ Load balancing possible
+- ✅ Flexible routing strategies
+- ✅ Easy to add new specialists
+
+**Cons:**
+- ❌ Routing overhead (classification)
+- ❌ Potential misrouting
+- ❌ Requires good routing logic
+- ❌ Single point of routing failure
+
+**Best Practices:**
+1. Use clear, non-overlapping route criteria
+2. Always provide a default agent
+3. Log routing decisions for debugging
+4. Monitor routing accuracy
+5. Use LLM-based routing for complex cases
+6. Combine with fallback for reliability
+
+---
+
+### Orchestration
+
+**Purpose:** Coordinate multiple agents with complex workflows, conditional routing, and sophisticated aggregation.
+
+**When to Use:**
+- Complex multi-agent workflows
+- Conditional execution paths
+- Sequential + parallel combinations
+- State machines
+- Business process automation
+
+**Pattern:**
+```
+Orchestrator (workflow engine)
+     ├→ Stage 1: [Agent A || Agent B] → Aggregate
+     ├→ Decision: Route based on Stage 1 output
+     ├→ Stage 2a: Agent C → Agent D (if condition X)
+     ├→ Stage 2b: Agent E (if condition Y)
+     └→ Final: Combine all results
+```
+
+**Implementation:**
+
+```python
+from agenkit.patterns import OrchestrationAgent
+from agenkit import Message, WorkflowDefinition
+
+# Define complex workflow
+workflow = WorkflowDefinition(
+    stages=[
+        {
+            "name": "analysis",
+            "agents": [sentiment_agent, entity_agent],
+            "execution": "parallel",
+            "aggregation": "merge"
+        },
+        {
+            "name": "processing",
+            "agents": [processor_agent],
+            "condition": "analysis.sentiment == 'positive'",
+            "execution": "sequential"
+        },
+        {
+            "name": "output",
+            "agents": [formatter_agent],
+            "inputs": ["analysis", "processing"]
+        }
+    ]
+)
+
+# Create orchestrator
+orchestrator = OrchestrationAgent(
+    agents={
+        "sentiment": sentiment_agent,
+        "entity": entity_agent,
+        "processor": processor_agent,
+        "formatter": formatter_agent
+    },
+    workflow=workflow
+)
+
+# Execute complex workflow
+result = await orchestrator.process(message)
+```
+
+**Detailed Example - Content Moderation Pipeline:**
+
+```python
+from agenkit.patterns import OrchestrationAgent, WorkflowDefinition
+from agenkit import Agent, Message
+
+# Define moderation workflow
+moderation_workflow = WorkflowDefinition({
+    "stages": [
+        # Stage 1: Parallel initial screening
+        {
+            "name": "screening",
+            "agents": ["spam_detector", "toxicity_detector", "pii_detector"],
+            "execution": "parallel",
+            "aggregation": "any_flag"  # Flag if any detector triggers
+        },
+        # Stage 2: Conditional deep analysis
+        {
+            "name": "deep_analysis",
+            "agents": ["context_analyzer"],
+            "condition": "screening.flagged == true",
+            "execution": "sequential"
+        },
+        # Stage 3: Human review if high risk
+        {
+            "name": "human_review",
+            "agents": ["human_review_queue"],
+            "condition": "deep_analysis.risk_score > 0.8",
+            "execution": "sequential"
+        },
+        # Stage 4: Final decision
+        {
+            "name": "decision",
+            "agents": ["decision_maker"],
+            "inputs": ["screening", "deep_analysis", "human_review"],
+            "aggregation": "consensus"
+        }
+    ]
+})
+
+# Create orchestration system
+content_moderator = OrchestrationAgent(
+    agents={
+        "spam_detector": SpamDetectorAgent(),
+        "toxicity_detector": ToxicityDetectorAgent(),
+        "pii_detector": PIIDetectorAgent(),
+        "context_analyzer": ContextAnalyzer(),
+        "human_review_queue": HumanReviewQueue(),
+        "decision_maker": DecisionMaker()
+    },
+    workflow=moderation_workflow
+)
+
+# Process content through workflow
+content = Message.with_text("user", "User-generated content here...")
+decision = await content_moderator.process(content)
+
+# Result includes full workflow execution details
+print(decision.metadata["workflow_stages_executed"])
+print(decision.metadata["workflow_decisions"])
+```
+
+**Pros:**
+- ✅ Handles complex workflows
+- ✅ Flexible execution (sequential, parallel, conditional)
+- ✅ State machine support
+- ✅ Reusable workflow definitions
+- ✅ Sophisticated coordination
+
+**Cons:**
+- ❌ High complexity
+- ❌ Difficult to debug
+- ❌ Workflow definition overhead
+- ❌ Potential performance bottlenecks
+
+**Best Practices:**
+1. Define workflows declaratively (YAML/JSON)
+2. Keep stages focused and independent
+3. Use meaningful stage names
+4. Log all workflow decisions
+5. Test workflows thoroughly
+6. Monitor workflow execution metrics
+
+---
+
+### Reasoning with Tools
+
+**Purpose:** Enhanced reasoning pattern combining structured thinking (Chain of Thought, Tree of Thought) with tool usage.
+
+**When to Use:**
+- Complex reasoning required
+- Multiple reasoning paths
+- Tool usage with justification
+- Explainable AI needed
+- Self-consistency checking
+
+**Pattern:**
+```
+Problem → Reasoning Strategy (CoT/ToT/Self-Consistency)
+              ↓
+         Thought branches + tool identification
+              ↓
+         Execute tools with reasoning context
+              ↓
+         Synthesize results with reasoning
+              ↓
+         Final answer with explanation
+```
+
+**Implementation:**
+
+```python
+from agenkit.patterns import ReasoningWithTools
+from agenkit import Message, Tool
+
+# Create enhanced reasoning agent
+reasoning_agent = ReasoningWithTools(
+    llm=my_llm,
+    tools=[search_tool, calculator_tool, code_tool],
+    reasoning_strategy="chain-of-thought",  # or "tree-of-thought", "self-consistency"
+    max_iterations=10
+)
+
+# Agent provides explicit reasoning with tool usage
+problem = Message.with_text(
+    "user",
+    "A train travels from A to B at 60mph. It's 180 miles. " +
+    "But there's a 30-minute stop halfway. What time does it arrive if it leaves at 2pm?"
+)
+
+result = await reasoning_agent.process(problem)
+
+# Result includes reasoning trace
+print("Reasoning steps:")
+for step in result.metadata["reasoning_trace"]:
+    print(f"  {step['thought']}")
+    if step.get("tool_call"):
+        print(f"    → Tool: {step['tool_call']}")
+        print(f"    → Result: {step['tool_result']}")
+```
+
+**Detailed Example - Tree of Thought with Tools:**
+
+```python
+from agenkit.patterns import ReasoningWithTools
+from agenkit import Tool
+
+# Tree of Thought explores multiple reasoning branches
+tot_agent = ReasoningWithTools(
+    llm=my_llm,
+    tools=[
+        Tool(name="search", func=web_search),
+        Tool(name="calculate", func=calculator)
+    ],
+    reasoning_strategy="tree-of-thought",
+    branches=3,  # Explore 3 reasoning paths
+    max_depth=5
+)
+
+# Complex problem with multiple solution paths
+problem = Message.with_text(
+    "user",
+    "What's the most cost-effective way to travel from Paris to Tokyo, " +
+    "considering time, comfort, and budget?"
+)
+
+result = await tot_agent.process(problem)
+
+# Result shows explored reasoning branches
+print("Explored reasoning paths:")
+for i, branch in enumerate(result.metadata["reasoning_branches"]):
+    print(f"\nPath {i+1}: {branch['approach']}")
+    print(f"  Tools used: {branch['tools_used']}")
+    print(f"  Conclusion: {branch['conclusion']}")
+    print(f"  Score: {branch['score']}")
+
+print(f"\nBest path: {result.metadata['best_branch']}")
+print(f"Final answer: {result.text}")
+```
+
+**Self-Consistency Reasoning:**
+
+```python
+# Self-consistency: generate multiple reasoning paths and vote
+consistency_agent = ReasoningWithTools(
+    llm=my_llm,
+    tools=[calculator_tool],
+    reasoning_strategy="self-consistency",
+    num_samples=5  # Generate 5 independent reasoning paths
+)
+
+# Agent generates multiple solutions and picks most consistent
+math_problem = Message.with_text(
+    "user",
+    "If x + 2y = 10 and 2x + y = 8, what is x + y?"
+)
+
+result = await consistency_agent.process(math_problem)
+
+# Shows all reasoning paths and consensus
+print(f"Generated {len(result.metadata['reasoning_samples'])} solutions:")
+for sample in result.metadata['reasoning_samples']:
+    print(f"  Answer: {sample['answer']}, Reasoning: {sample['steps']}")
+print(f"\nConsensus answer: {result.text}")
+```
+
+**Pros:**
+- ✅ Explicit reasoning (explainable AI)
+- ✅ Better accuracy (multiple paths)
+- ✅ Tool usage justified
+- ✅ Self-verification
+- ✅ Handles complex problems
+
+**Cons:**
+- ❌ Slow (multiple reasoning paths)
+- ❌ Expensive (many LLM calls)
+- ❌ Can generate contradictions
+- ❌ Requires strong reasoning LLM
+
+**Best Practices:**
+1. Use Chain of Thought for straightforward problems
+2. Use Tree of Thought for multi-path exploration
+3. Use Self-Consistency for verification
+4. Log all reasoning traces for debugging
+5. Limit branches/samples to control cost
+6. Combine with reflection for refinement
+
+---
+
+### Collaborative
+
+**Purpose:** Multiple agents work together on shared tasks with bidirectional communication and shared workspace.
+
+**When to Use:**
+- Team-based problem solving
+- Shared knowledge building
+- Iterative refinement by multiple agents
+- Consensus building
+- Distributed expertise
+
+**Pattern:**
+```
+Shared Workspace
+     ↕
+Agent 1 ⟷ Agent 2 ⟷ Agent 3
+     ↕         ↕         ↕
+[Bidirectional communication]
+     ↓
+Collaborative Result
+```
+
+**Implementation:**
+
+```python
+from agenkit.patterns import CollaborativeAgent
+from agenkit import Message
+
+# Create collaborative team
+team = CollaborativeAgent(
+    agents=[researcher, analyst, writer],
+    collaboration_strategy="shared-workspace",
+    max_rounds=5
+)
+
+# Agents collaborate on shared task
+task = Message.with_text("user", "Research and write comprehensive market analysis")
+result = await team.process(task)
+
+# Result shows collaboration dynamics
+print(result.metadata["collaboration_rounds"])
+print(result.metadata["agent_contributions"])
+```
+
+**Detailed Example - Collaborative Writing:**
+
+```python
+from agenkit.patterns import CollaborativeAgent
+from agenkit import Agent, Message
+
+class OutlineAgent(Agent):
+    """Creates document outline."""
+    async def process(self, message: Message) -> Message:
+        topic = message.text
+        outline = f"Outline for {topic}:\n1. Introduction\n2. Body\n3. Conclusion"
+        return Message.with_text("assistant", outline)
+
+class ResearchAgent(Agent):
+    """Researches content for each section."""
+    async def process(self, message: Message) -> Message:
+        outline = message.text
+        research = f"Research findings:\n- Key fact 1\n- Key fact 2\n- Key fact 3"
+        return Message.with_text("assistant", research)
+
+class WriterAgent(Agent):
+    """Writes full content based on outline and research."""
+    async def process(self, message: Message) -> Message:
+        content = message.text
+        article = f"Full article:\n{content}\n[Expanded with details]"
+        return Message.with_text("assistant", article)
+
+class EditorAgent(Agent):
+    """Reviews and refines the writing."""
+    async def process(self, message: Message) -> Message:
+        draft = message.text
+        edited = f"Edited version:\n{draft}\n[Improved clarity and flow]"
+        return Message.with_text("assistant", edited)
+
+# Create collaborative writing team
+writing_team = CollaborativeAgent(
+    agents=[
+        OutlineAgent(name="outliner"),
+        ResearchAgent(name="researcher"),
+        WriterAgent(name="writer"),
+        EditorAgent(name="editor")
+    ],
+    collaboration_strategy="sequential-refinement",
+    shared_context=True  # All agents see previous contributions
+)
+
+# Team collaborates on article
+topic = Message.with_text("user", "The Impact of AI on Healthcare")
+article = await writing_team.process(topic)
+
+# Each agent contributes in sequence, building on previous work
+print("Collaboration trace:")
+for contribution in article.metadata["agent_contributions"]:
+    print(f"{contribution['agent']}: {contribution['summary']}")
+```
+
+**Pros:**
+- ✅ Leverages multiple perspectives
+- ✅ Iterative improvement
+- ✅ Shared knowledge
+- ✅ Consensus building
+- ✅ Team synergy
+
+**Cons:**
+- ❌ Coordination complexity
+- ❌ Communication overhead
+- ❌ Potential conflicts
+- ❌ Slower than single-agent
+
+**Best Practices:**
+1. Define clear collaboration protocols
+2. Use shared workspace for context
+3. Limit collaboration rounds
+4. Ensure agents have complementary skills
+5. Monitor communication patterns
+6. Use for complex, multifaceted tasks
+
+---
+
 ## Summary
 
 Choose patterns based on your needs:
@@ -1506,5 +2431,12 @@ Choose patterns based on your needs:
 9. **Open-ended goals** → Autonomous
 10. **Collaboration** → Multiagent
 11. **Long conversations** → Memory Hierarchy
+12. **High availability** → Fallback
+13. **Quality control** → Supervisor
+14. **Safety-critical** → Human in Loop
+15. **Message routing** → Router
+16. **Complex workflows** → Orchestration
+17. **Enhanced reasoning** → Reasoning with Tools
+18. **Team coordination** → Collaborative
 
 Combine patterns for sophisticated agent systems! 🚀

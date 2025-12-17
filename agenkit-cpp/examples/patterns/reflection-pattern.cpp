@@ -1,164 +1,210 @@
 /**
- * @file reflection_example.cpp
- * @brief Example demonstrating the Reflection pattern
+ * @file reflection-pattern.cpp
+ * @brief Reflection pattern with real LLMs (Ollama)
  *
- * This example shows how to use the Reflection pattern to improve
- * agent responses through iterative self-critique.
+ * Demonstrates:
+ * - Iterative self-critique with real LLMs
+ * - Writer and critic roles using system prompts
+ * - Quality improvement through reflection loops
+ * - Convergence detection
+ *
+ * Setup:
+ *   brew install ollama
+ *   ollama serve
+ *   ollama pull llama3.3
+ *   ./build/examples/patterns/reflection-pattern
  */
 
 #include <iostream>
+#include <memory>
 #include "agenkit/patterns/reflection.hpp"
-#include "agenkit/adapters/echo_agent.hpp"
+#include "agenkit/adapters/ollama_agent.hpp"
+#include "agenkit/core/message.hpp"
 
 using namespace agenkit;
 
-/**
- * @brief Mock agent that generates responses (simulates an LLM)
- */
-class WriterAgent : public core::Agent {
-public:
-    std::string name() const override {
-        return "writer";
+void print_separator(const std::string& title = "") {
+    std::cout << "\n";
+    std::cout << std::string(60, '=') << "\n";
+    if (!title.empty()) {
+        std::cout << title << "\n";
+        std::cout << std::string(60, '=') << "\n";
     }
-
-    std::future<core::Result<core::Message, core::AgentError>>
-    process(core::Message message) override {
-        std::string content_str = message.content_as_str();
-
-        std::string response;
-        if (content_str.find("improvement") != std::string::npos) {
-            // If asked to improve, generate a better response
-            response = "Quantum computing uses quantum mechanical phenomena like "
-                      "superposition and entanglement to perform computations. "
-                      "Unlike classical bits (0 or 1), quantum bits (qubits) can exist "
-                      "in superposition states, enabling parallel processing of information. "
-                      "This provides exponential speedup for certain algorithms like "
-                      "Shor's algorithm for factoring and Grover's search algorithm.";
-        } else {
-            // Initial response (intentionally simple)
-            response = "Quantum computing is computing using quantum mechanics.";
-        }
-
-        auto msg = core::Message::with_text("assistant", response);
-        return core::make_ready_future(
-            core::Result<core::Message, core::AgentError>::ok(msg)
-        );
-    }
-};
-
-/**
- * @brief Mock critic agent that provides feedback
- */
-class CriticAgent : public core::Agent {
-private:
-    int call_count_ = 0;
-
-public:
-    std::string name() const override {
-        return "critic";
-    }
-
-    std::future<core::Result<core::Message, core::AgentError>>
-    process(core::Message message) override {
-        call_count_++;
-
-        // Parse the response being critiqued
-        std::string content_str = message.content_as_str();
-
-        std::string feedback;
-        if (call_count_ == 1) {
-            // First critique: provide constructive feedback
-            feedback = "The response is too brief and lacks specific details. "
-                      "Please elaborate on:\n"
-                      "1. What quantum mechanics principles are used\n"
-                      "2. How quantum computing differs from classical computing\n"
-                      "3. Practical applications or algorithms\n"
-                      "Please provide a more comprehensive answer.";
-        } else {
-            // Second critique: approve the improved response
-            feedback = "APPROVED - This response is much better! It includes:\n"
-                      "- Clear explanation of superposition and entanglement\n"
-                      "- Comparison with classical computing\n"
-                      "- Specific algorithm examples\n"
-                      "- Technical accuracy\n"
-                      "The response is comprehensive and informative.";
-        }
-
-        auto msg = core::Message::with_text("assistant", feedback);
-        return core::make_ready_future(
-            core::Result<core::Message, core::AgentError>::ok(msg)
-        );
-    }
-};
+    std::cout << "\n";
+}
 
 int main() {
-    std::cout << "=== Agenkit C++ Reflection Pattern Example ===\n\n";
+    print_separator("AgentKit C++ - Reflection Pattern with Real LLMs");
 
-    // Create agents
-    auto writer = std::make_shared<WriterAgent>();
-    auto critic = std::make_shared<CriticAgent>();
+    // Check Ollama availability
+    std::cout << "Checking Ollama server...\n";
+    adapters::OllamaConfig check_config;
+    check_config.host = "http://localhost:11434";
+    check_config.model = "llama3.3";
 
-    // Create reflection agent with max 3 reflections
-    patterns::ReflectionAgent reflection_agent(writer, critic, 3);
-
-    std::cout << "Agent: " << reflection_agent.name() << "\n";
-    std::cout << "Capabilities: ";
-    for (const auto& cap : reflection_agent.capabilities()) {
-        std::cout << cap << " ";
-    }
-    std::cout << "\n\n";
-
-    // User query
-    std::string query = "Explain quantum computing in simple terms";
-    std::cout << "User Query: \"" << query << "\"\n\n";
-
-    // Process with reflection
-    auto msg = core::Message::with_text("user", query);
-    msg.with_metadata("example", "reflection");
-
-    std::cout << "Processing with reflection loop...\n\n";
-
-    auto future = reflection_agent.process(std::move(msg));
-    auto result = future.get();
-
-    if (result.is_err()) {
-        std::cerr << "Error: " << result.unwrap_err().message() << "\n";
+    adapters::OllamaAgent checker(check_config);
+    if (!checker.is_available()) {
+        std::cerr << "❌ Ollama server not available\n\n";
+        std::cerr << "Please start Ollama:\n";
+        std::cerr << "  1. Install: brew install ollama\n";
+        std::cerr << "  2. Start:   ollama serve\n";
+        std::cerr << "  3. Pull:    ollama pull llama3.3\n\n";
         return 1;
     }
+    std::cout << "✓ Ollama server running\n";
 
-    auto response = result.unwrap();
+    // Example 1: Technical Writing Improvement
+    print_separator("Example 1: Technical Writing Improvement");
+    {
+        std::cout << "Creating writer and critic agents...\n\n";
 
-    // Display results
-    std::cout << "=== Final Response ===\n";
-    std::cout << response.content_as_str() << "\n\n";
+        // Writer agent: generates content
+        adapters::OllamaConfig writer_config;
+        writer_config.host = "http://localhost:11434";
+        writer_config.model = "llama3.3";
+        writer_config.temperature = 0.7;
+        writer_config.system = "You are a technical writer. When given a topic, write "
+                                "a clear explanation. If you receive critique, improve "
+                                "your response by addressing the specific feedback points. "
+                                "Be concise but thorough.";
 
-    // Display reflection metadata
-    std::cout << "=== Reflection Metadata ===\n";
-    std::cout << "Total iterations: "
-              << response.metadata()["reflection_iterations"] << "\n";
-    std::cout << "Final iteration: "
-              << response.metadata()["final_iteration"] << "\n\n";
+        auto writer = std::make_shared<adapters::OllamaAgent>(writer_config);
 
-    // Display reflection history
-    std::cout << "=== Reflection History ===\n";
-    const auto& history = reflection_agent.get_reflection_history();
-    for (const auto& step : history) {
-        std::cout << "\nIteration " << step.iteration << ":\n";
-        std::cout << "  Response preview: "
-                  << step.response.content_as_str().substr(0, 60) << "...\n";
-        std::cout << "  Feedback preview: "
-                  << step.feedback.content_as_str().substr(0, 60) << "...\n";
-        std::cout << "  Should continue: "
-                  << (step.should_continue ? "Yes" : "No") << "\n";
+        // Critic agent: provides feedback
+        adapters::OllamaConfig critic_config;
+        critic_config.host = "http://localhost:11434";
+        critic_config.model = "llama3.3";
+        critic_config.temperature = 0.5;
+        critic_config.system = "You are a technical editor. Review responses and provide "
+                                "constructive criticism. If the response is comprehensive, "
+                                "accurate, and well-structured, start with 'APPROVED'. "
+                                "Otherwise, give specific suggestions for improvement in "
+                                "2-3 bullet points.";
+
+        auto critic = std::make_shared<adapters::OllamaAgent>(critic_config);
+
+        // Create reflection agent
+        patterns::ReflectionAgent agent(writer, critic, 3);
+
+        std::string topic = "Explain how database indexing improves query performance";
+        std::cout << "Topic: " << topic << "\n\n";
+        std::cout << "[Starting reflection loop...]\n\n";
+
+        auto msg = core::Message::with_text("user", topic);
+        auto result = agent.process(std::move(msg)).get();
+
+        if (result.is_ok()) {
+            std::cout << "=== Final Response (After Reflection) ===\n\n";
+            std::cout << result.unwrap().content_as_str() << "\n\n";
+
+            auto history = agent.get_reflection_history();
+            std::cout << "Reflection cycles: " << history.size() << "\n";
+            std::cout << "✓ Quality improved through iterative critique\n";
+        } else {
+            std::cerr << "❌ Error: " << result.unwrap_err().message() << "\n";
+        }
     }
 
-    std::cout << "\n=== Key Insights ===\n";
-    std::cout << "1. The reflection pattern improved the response quality\n";
-    std::cout << "2. The critic provided specific, actionable feedback\n";
-    std::cout << "3. The pattern stopped when the response was approved\n";
-    std::cout << "4. Full reflection history is preserved for analysis\n";
+    // Example 2: Code Review
+    print_separator("Example 2: Code Review and Improvement");
+    {
+        // Writer: generates code
+        adapters::OllamaConfig writer_config;
+        writer_config.host = "http://localhost:11434";
+        writer_config.model = "llama3.3";
+        writer_config.temperature = 0.6;
+        writer_config.system = "You are a C++ programmer. Write clean, efficient code. "
+                                "If you receive code review feedback, rewrite the code "
+                                "addressing all points. Keep code concise.";
 
-    std::cout << "\n=== Example Complete ===\n";
+        auto writer = std::make_shared<adapters::OllamaAgent>(writer_config);
 
+        // Critic: reviews code
+        adapters::OllamaConfig critic_config;
+        critic_config.host = "http://localhost:11434";
+        critic_config.model = "llama3.3";
+        critic_config.temperature = 0.3;
+        critic_config.system = "You are a senior C++ code reviewer. Review code for:\n"
+                                "1. Correctness and edge cases\n"
+                                "2. Modern C++ best practices\n"
+                                "3. Error handling\n"
+                                "4. Memory safety\n"
+                                "Start with 'APPROVED' if code meets all standards, "
+                                "otherwise list specific issues to fix.";
+
+        auto critic = std::make_shared<adapters::OllamaAgent>(critic_config);
+
+        patterns::ReflectionAgent agent(writer, critic, 2);
+
+        std::string task = "Write a C++ function to reverse a string in-place";
+        std::cout << "Task: " << task << "\n\n";
+        std::cout << "[Code generation with review...]\n\n";
+
+        auto msg = core::Message::with_text("user", task);
+        auto result = agent.process(std::move(msg)).get();
+
+        if (result.is_ok()) {
+            std::cout << "=== Final Code (After Review) ===\n\n";
+            std::cout << result.unwrap().content_as_str() << "\n";
+        }
+    }
+
+    // Example 3: Essay Refinement
+    print_separator("Example 3: Essay Refinement");
+    {
+        // Writer: drafts essay
+        adapters::OllamaConfig writer_config;
+        writer_config.host = "http://localhost:11434";
+        writer_config.model = "llama3.3";
+        writer_config.temperature = 0.8;
+        writer_config.system = "You are an essay writer. Write clear, persuasive essays. "
+                                "If critiqued, revise to address feedback while maintaining "
+                                "your argument. Keep essays under 100 words.";
+
+        auto writer = std::make_shared<adapters::OllamaAgent>(writer_config);
+
+        // Critic: reviews essay
+        adapters::OllamaConfig critic_config;
+        critic_config.host = "http://localhost:11434";
+        critic_config.model = "llama3.3";
+        critic_config.temperature = 0.4;
+        critic_config.system = "You are an English teacher. Evaluate essays for:\n"
+                                "- Clear thesis statement\n"
+                                "- Supporting evidence\n"
+                                "- Logical structure\n"
+                                "- Grammar and style\n"
+                                "Start with 'APPROVED' if excellent, otherwise give "
+                                "2-3 specific improvements needed.";
+
+        auto critic = std::make_shared<adapters::OllamaAgent>(critic_config);
+
+        patterns::ReflectionAgent agent(writer, critic, 3);
+
+        std::string prompt = "Write an essay: Why software testing is crucial for quality";
+        std::cout << "Prompt: " << prompt << "\n\n";
+        std::cout << "[Writing and revising...]\n\n";
+
+        auto msg = core::Message::with_text("user", prompt);
+        auto result = agent.process(std::move(msg)).get();
+
+        if (result.is_ok()) {
+            std::cout << "=== Polished Essay ===\n\n";
+            std::cout << result.unwrap().content_as_str() << "\n\n";
+
+            auto history = agent.get_reflection_history();
+            std::cout << "✓ Refined through " << history.size() << " revision cycles\n";
+        }
+    }
+
+    // Summary
+    print_separator("Key Insights");
+    std::cout << "✓ Dual LLMs: Separate writer and critic roles\n";
+    std::cout << "✓ System Prompts: Define role-specific behavior\n";
+    std::cout << "✓ Iterative Improvement: Multiple critique-revision cycles\n";
+    std::cout << "✓ Convergence Detection: 'APPROVED' keyword stops iteration\n";
+    std::cout << "✓ Temperature Tuning: Higher for creativity, lower for critique\n";
+    std::cout << "✓ Domain Flexibility: Works for code, writing, technical docs\n";
+
+    print_separator("Example Complete");
     return 0;
 }

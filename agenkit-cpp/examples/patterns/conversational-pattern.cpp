@@ -1,203 +1,246 @@
 /**
- * @file conversational_example.cpp
- * @brief Example demonstrating Conversational pattern
+ * @file conversational-pattern.cpp
+ * @brief Conversational pattern with real LLM (Ollama)
  *
- * This example shows how to maintain conversation history across multiple turns.
+ * Demonstrates:
+ * - Multi-turn conversation with context preservation
+ * - Conversation history management and pruning
+ * - Real LLM understanding of context
+ * - History export/import for persistence
+ *
+ * Setup:
+ *   brew install ollama
+ *   ollama serve
+ *   ollama pull llama3.3
+ *   ./build/examples/patterns/conversational-pattern
  */
 
 #include <iostream>
+#include <memory>
 #include "agenkit/patterns/conversational.hpp"
+#include "agenkit/adapters/ollama_agent.hpp"
+#include "agenkit/core/message.hpp"
 
 using namespace agenkit;
 
-// Mock LLM that demonstrates context awareness
-class ContextAwareLLM : public core::Agent {
-private:
-    std::map<std::string, std::string> memory_;
-
-public:
-    std::string name() const override { return "context_aware_llm"; }
-
-    std::future<core::Result<core::Message, core::AgentError>>
-    process(core::Message message) override {
-        std::string content = message.content_as_str();
-        std::string response;
-
-        // Check if we have conversation history
-        if (message.metadata().contains("conversation_history")) {
-            auto history = message.metadata()["conversation_history"];
-
-            // Analyze history for context
-            for (const auto& msg : history) {
-                std::string role = msg["role"];
-                std::string msg_content = msg["content"];
-
-                // Extract name from previous conversation
-                if (msg_content.find("My name is ") != std::string::npos) {
-                    size_t pos = msg_content.find("My name is ") + 11;
-                    size_t end = msg_content.find_first_of(".,!", pos);
-                    if (end == std::string::npos) end = msg_content.length();
-                    memory_["user_name"] = msg_content.substr(pos, end - pos);
-                }
-
-                // Extract favorite color
-                if (msg_content.find("favorite color is ") != std::string::npos) {
-                    size_t pos = msg_content.find("favorite color is ") + 18;
-                    size_t end = msg_content.find_first_of(".,!", pos);
-                    if (end == std::string::npos) end = msg_content.length();
-                    memory_["favorite_color"] = msg_content.substr(pos, end - pos);
-                }
-            }
-        }
-
-        // Generate context-aware response
-        if (content.find("name") != std::string::npos && content.find("?") != std::string::npos) {
-            if (memory_.count("user_name")) {
-                response = "Your name is " + memory_["user_name"] + "!";
-            } else {
-                response = "I don't know your name yet. Could you tell me?";
-            }
-        } else if (content.find("favorite color") != std::string::npos && content.find("?") != std::string::npos) {
-            if (memory_.count("favorite_color")) {
-                response = "Your favorite color is " + memory_["favorite_color"] + "!";
-            } else {
-                response = "I don't know your favorite color yet.";
-            }
-        } else if (content.find("My name is ") != std::string::npos) {
-            size_t pos = content.find("My name is ") + 11;
-            size_t end = content.find_first_of(".,!", pos);
-            if (end == std::string::npos) end = content.length();
-            std::string name = content.substr(pos, end - pos);
-            response = "Nice to meet you, " + name + "! I'll remember that.";
-        } else if (content.find("favorite color is ") != std::string::npos) {
-            size_t pos = content.find("favorite color is ") + 18;
-            size_t end = content.find_first_of(".,!", pos);
-            if (end == std::string::npos) end = content.length();
-            std::string color = content.substr(pos, end - pos);
-            response = color + " is a great color! I'll remember that.";
-        } else if (content.find("tell me about me") != std::string::npos) {
-            if (memory_.count("user_name") && memory_.count("favorite_color")) {
-                response = "You're " + memory_["user_name"] + " and your favorite color is "
-                          + memory_["favorite_color"] + "!";
-            } else if (memory_.count("user_name")) {
-                response = "I know your name is " + memory_["user_name"] + ".";
-            } else {
-                response = "I don't know much about you yet. Tell me more!";
-            }
-        } else {
-            response = "I'm listening! Tell me more about yourself.";
-        }
-
-        auto msg = core::Message::with_text("assistant", response);
-        return core::make_ready_future(
-            core::Result<core::Message, core::AgentError>::ok(msg)
-        );
-    }
-};
-
-int main() {
-    std::cout << "=== Agenkit C++ Conversational Example ===\n\n";
-
-    // Create conversational agent with system prompt
-    auto llm = std::make_shared<ContextAwareLLM>();
-
-    patterns::ConversationalConfig config;
-    config.max_history = 10;
-    config.system_prompt = "You are a friendly assistant that remembers user information.";
-
-    patterns::ConversationalAgent agent(llm, config);
-
-    std::cout << "Agent: " << agent.name() << "\n";
-    std::cout << "Capabilities: ";
-    for (const auto& cap : agent.capabilities()) {
-        std::cout << cap << " ";
+void print_separator(const std::string& title = "") {
+    std::cout << "\n";
+    std::cout << std::string(60, '=') << "\n";
+    if (!title.empty()) {
+        std::cout << title << "\n";
+        std::cout << std::string(60, '=') << "\n";
     }
     std::cout << "\n";
-    std::cout << "Max history: " << config.max_history << "\n";
-    std::cout << "System prompt: " << config.system_prompt.value() << "\n\n";
+}
 
-    // Conversation turns
-    std::vector<std::string> conversation = {
-        "My name is Alice.",
-        "What's my name?",
-        "My favorite color is blue.",
-        "What's my favorite color?",
-        "Can you tell me about me?"
-    };
+int main() {
+    print_separator("AgentKit C++ - Conversational Pattern with Real LLM");
 
-    std::cout << "=== Multi-turn Conversation ===\n\n";
+    // Check Ollama availability
+    std::cout << "Checking Ollama server...\n";
+    adapters::OllamaConfig check_config;
+    check_config.host = "http://localhost:11434";
+    check_config.model = "llama3.3";
 
-    for (size_t i = 0; i < conversation.size(); i++) {
-        std::cout << "Turn " << (i + 1) << ":\n";
-        std::cout << "User: " << conversation[i] << "\n";
+    adapters::OllamaAgent checker(check_config);
+    if (!checker.is_available()) {
+        std::cerr << "❌ Ollama server not available\n\n";
+        std::cerr << "Please start Ollama:\n";
+        std::cerr << "  1. Install: brew install ollama\n";
+        std::cerr << "  2. Start:   ollama serve\n";
+        std::cerr << "  3. Pull:    ollama pull llama3.3\n\n";
+        return 1;
+    }
+    std::cout << "✓ Ollama server running\n";
 
-        auto msg = core::Message::with_text("user", conversation[i]);
-        auto result = agent.process(std::move(msg)).get();
+    // Example 1: Personal Assistant Conversation
+    print_separator("Example 1: Personal Assistant Conversation");
+    {
+        // Create Ollama agent with friendly system prompt
+        adapters::OllamaConfig config;
+        config.host = "http://localhost:11434";
+        config.model = "llama3.3";
+        config.temperature = 0.7;
+        config.system = "You are a friendly personal assistant. Remember details "
+                        "the user shares and use them in future responses. Be concise "
+                        "and conversational.";
+
+        auto llm = std::make_shared<adapters::OllamaAgent>(config);
+
+        // Create conversational agent
+        patterns::ConversationalConfig conv_config;
+        conv_config.max_history = 10;
+        conv_config.system_prompt = config.system;
+
+        patterns::ConversationalAgent agent(llm, conv_config);
+
+        std::cout << "Agent: " << agent.name() << "\n";
+        std::cout << "Max history: " << conv_config.max_history << " messages\n\n";
+
+        // Multi-turn conversation demonstrating context awareness
+        std::vector<std::string> conversation = {
+            "Hi! My name is Alex and I'm a software engineer.",
+            "What's my name?",
+            "I love working with C++ and building AI systems.",
+            "What programming languages do I like?",
+            "Can you summarize what you know about me?"
+        };
+
+        std::cout << "=== Multi-Turn Conversation ===\n\n";
+
+        for (size_t i = 0; i < conversation.size(); i++) {
+            std::cout << "Turn " << (i + 1) << ":\n";
+            std::cout << "User: " << conversation[i] << "\n\n";
+
+            auto msg = core::Message::with_text("user", conversation[i]);
+            auto result = agent.process(std::move(msg)).get();
+
+            if (result.is_ok()) {
+                auto response = result.unwrap();
+                std::cout << "Assistant: " << response.content_as_str() << "\n";
+                std::cout << "History: " << agent.get_context_length() << " messages\n\n";
+            } else {
+                std::cerr << "❌ Error: " << result.unwrap_err().message() << "\n\n";
+            }
+        }
+    }
+
+    // Example 2: Technical Support Conversation
+    print_separator("Example 2: Technical Support Conversation");
+    {
+        // Create specialized technical support agent
+        adapters::OllamaConfig config;
+        config.host = "http://localhost:11434";
+        config.model = "llama3.3";
+        config.temperature = 0.5;  // Lower temperature for more consistent technical responses
+        config.system = "You are a technical support specialist. Help users debug "
+                        "issues by asking clarifying questions and providing step-by-step "
+                        "solutions. Keep responses under 50 words.";
+
+        auto llm = std::make_shared<adapters::OllamaAgent>(config);
+
+        patterns::ConversationalConfig conv_config;
+        conv_config.max_history = 8;
+        conv_config.system_prompt = config.system;
+
+        patterns::ConversationalAgent agent(llm, conv_config);
+
+        std::cout << "Starting technical support session...\n\n";
+
+        std::vector<std::string> support_conversation = {
+            "My application is crashing when I try to start it",
+            "It's a C++ application",
+            "The error says 'segmentation fault'",
+            "How can I debug this?"
+        };
+
+        for (size_t i = 0; i < support_conversation.size(); i++) {
+            std::cout << "User: " << support_conversation[i] << "\n\n";
+
+            auto msg = core::Message::with_text("user", support_conversation[i]);
+            auto result = agent.process(std::move(msg)).get();
+
+            if (result.is_ok()) {
+                auto response = result.unwrap();
+                std::cout << "Support: " << response.content_as_str() << "\n";
+                std::cout << "(History: " << agent.get_context_length() << " messages)\n\n";
+            }
+        }
+    }
+
+    // Example 3: History Management
+    print_separator("Example 3: History Export/Import");
+    {
+        adapters::OllamaConfig config;
+        config.host = "http://localhost:11434";
+        config.model = "llama3.3";
+        config.temperature = 0.7;
+        config.system = "You are a helpful assistant.";
+
+        auto llm1 = std::make_shared<adapters::OllamaAgent>(config);
+
+        patterns::ConversationalConfig conv_config;
+        conv_config.max_history = 10;
+        patterns::ConversationalAgent agent1(llm1, conv_config);
+
+        std::cout << "Building conversation history in Agent 1...\n";
+
+        // Build up some history
+        auto msg1 = core::Message::with_text("user", "I'm working on a distributed system");
+        agent1.process(std::move(msg1)).get();
+
+        auto msg2 = core::Message::with_text("user", "It uses microservices architecture");
+        agent1.process(std::move(msg2)).get();
+
+        std::cout << "Agent 1 history: " << agent1.get_context_length() << " messages\n\n";
+
+        // Export history
+        auto exported = agent1.export_history();
+        std::cout << "✓ Exported " << exported.size() << " messages\n\n";
+
+        // Create new agent and import
+        std::cout << "Creating Agent 2 and importing history...\n";
+        auto llm2 = std::make_shared<adapters::OllamaAgent>(config);
+        patterns::ConversationalAgent agent2(llm2, conv_config);
+        agent2.import_history(exported);
+
+        std::cout << "Agent 2 history after import: " << agent2.get_context_length() << " messages\n\n";
+
+        // Test that Agent 2 has the context
+        std::cout << "Testing context awareness in Agent 2:\n";
+        std::cout << "User: What architecture am I using?\n\n";
+
+        auto msg3 = core::Message::with_text("user", "What architecture am I using?");
+        auto result = agent2.process(std::move(msg3)).get();
 
         if (result.is_ok()) {
-            auto response = result.unwrap();
-            std::cout << "Assistant: " << response.content_as_str() << "\n";
-            std::cout << "History length: " << agent.get_context_length() << "\n";
+            std::cout << "Agent 2: " << result.unwrap().content_as_str() << "\n";
+            std::cout << "✓ Context successfully preserved across agents\n";
+        }
+    }
+
+    // Example 4: History Pruning
+    print_separator("Example 4: Automatic History Pruning");
+    {
+        adapters::OllamaConfig config;
+        config.host = "http://localhost:11434";
+        config.model = "llama3.3";
+
+        auto llm = std::make_shared<adapters::OllamaAgent>(config);
+
+        patterns::ConversationalConfig conv_config;
+        conv_config.max_history = 4;  // Small limit to demonstrate pruning
+
+        patterns::ConversationalAgent agent(llm, conv_config);
+
+        std::cout << "Agent with max_history = 4 messages\n";
+        std::cout << "Sending 6 messages to demonstrate pruning...\n\n";
+
+        for (int i = 1; i <= 6; i++) {
+            auto msg = core::Message::with_text("user", "Message " + std::to_string(i));
+            agent.process(std::move(msg)).get();
+
+            std::cout << "After message " << i << ": "
+                     << agent.get_context_length() << " messages in history";
+
+            if (agent.get_context_length() == conv_config.max_history) {
+                std::cout << " (limit reached, oldest pruned)";
+            }
+            std::cout << "\n";
         }
 
-        std::cout << "\n";
+        std::cout << "\n✓ History automatically pruned to maintain limit\n";
     }
 
-    // Export history
-    std::cout << "=== Conversation History ===\n";
-    auto history = agent.get_history();
+    // Summary
+    print_separator("Key Insights");
+    std::cout << "✓ Real LLM: Using Ollama for actual conversation understanding\n";
+    std::cout << "✓ Context Preservation: Agent remembers previous turns\n";
+    std::cout << "✓ System Prompts: Customize agent personality and behavior\n";
+    std::cout << "✓ Automatic Pruning: Oldest messages removed when limit reached\n";
+    std::cout << "✓ History Persistence: Export/import enables conversation saving\n";
+    std::cout << "✓ Specialization: Different agents for different conversation types\n";
 
-    for (size_t i = 0; i < history.size(); i++) {
-        std::cout << "\n[" << i << "] " << history[i].role() << ": ";
-        std::cout << history[i].content_as_str() << "\n";
-    }
-
-    // Export and import demo
-    std::cout << "\n=== Export/Import Demo ===\n";
-    auto exported = agent.export_history();
-    std::cout << "Exported " << exported.size() << " messages\n";
-
-    // Create new agent and import
-    auto llm2 = std::make_shared<ContextAwareLLM>();
-    patterns::ConversationalAgent agent2(llm2, config);
-    agent2.import_history(exported);
-
-    std::cout << "Imported into new agent\n";
-    std::cout << "New agent history length: " << agent2.get_context_length() << "\n";
-
-    // Continue conversation with new agent
-    auto msg = core::Message::with_text("user", "What's my name again?");
-    auto result = agent2.process(std::move(msg)).get();
-
-    if (result.is_ok()) {
-        std::cout << "New agent response: " << result.unwrap().content_as_str() << "\n";
-    }
-
-    // History pruning demo
-    std::cout << "\n=== History Pruning Demo ===\n";
-    auto llm3 = std::make_shared<ContextAwareLLM>();
-    patterns::ConversationalConfig small_config;
-    small_config.max_history = 4;
-
-    patterns::ConversationalAgent agent3(llm3, small_config);
-
-    std::cout << "Creating agent with max_history = 4\n";
-
-    for (int i = 0; i < 6; i++) {
-        auto msg = core::Message::with_text("user", "Message " + std::to_string(i));
-        agent3.process(std::move(msg)).get();
-        std::cout << "After message " << i << ": " << agent3.get_context_length()
-                  << " messages in history\n";
-    }
-
-    std::cout << "\n=== Key Insights ===\n";
-    std::cout << "1. Context preservation: Agent remembers previous turns\n";
-    std::cout << "2. Automatic pruning: Oldest messages removed when limit reached\n";
-    std::cout << "3. System prompt: Preserved during pruning\n";
-    std::cout << "4. History export/import: Enable conversation persistence\n";
-    std::cout << "5. Turn tracking: Metadata tracks conversation progress\n";
-
-    std::cout << "\n=== Example Complete ===\n";
-
+    print_separator("Example Complete");
     return 0;
 }

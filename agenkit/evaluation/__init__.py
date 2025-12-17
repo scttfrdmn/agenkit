@@ -10,6 +10,9 @@ Classes:
     Evaluator: Core evaluation orchestrator
     Benchmark: Standard test interface
     BenchmarkSuite: Collection of benchmarks
+    PatternBenchmark: Pattern-specific benchmarks from YAML specs
+    PatternBenchmarkSuite: Suite of all 18 pattern benchmarks
+    YAMLBenchmarkLoader: Load benchmarks from YAML specifications
     ContextMetrics: Track context length and compression
     QualityMetrics: Measure response quality
     RegressionDetector: Detect performance degradation
@@ -18,18 +21,19 @@ Classes:
     PromptOptimizer: Automated prompt optimization
 
 Example:
-    >>> from agenkit.evaluation import Evaluator, BenchmarkSuite
+    >>> from agenkit.evaluation import Evaluator, PatternBenchmarkSuite
     >>>
     >>> # Create evaluator
     >>> evaluator = Evaluator(agent)
     >>>
-    >>> # Run benchmarks
-    >>> suite = BenchmarkSuite.extreme_scale()
-    >>> results = await evaluator.evaluate(suite)
+    >>> # Run pattern benchmarks
+    >>> suite = PatternBenchmarkSuite.from_yaml_specs("tests/cross_language/specs")
+    >>> reflection = suite.get_benchmark("reflection")
+    >>> results = await suite.run_benchmark(reflection, agent_factory)
     >>>
     >>> # Check for regressions
-    >>> if results.quality_score < 0.85:
-    >>>     print("Quality degradation detected!")
+    >>> if results['summary']['passed'] < results['summary']['total']:
+    >>>     print("Pattern implementation issues detected!")
 """
 
 from .ab_testing import (
@@ -40,11 +44,20 @@ from .ab_testing import (
     StatisticalTestType,
     calculate_sample_size,
 )
-from .bayesian_optimizer import AcquisitionFunction, BayesianOptimizer
+
+# Bayesian optimizer requires sklearn - make it optional
+try:
+    from .bayesian_optimizer import AcquisitionFunction, BayesianOptimizer
+except ImportError:
+    # sklearn not installed - Bayesian optimization unavailable
+    AcquisitionFunction = None  # type: ignore
+    BayesianOptimizer = None  # type: ignore
+
 from .benchmarks import Benchmark, BenchmarkSuite
 from .context_metrics import CompressionMetrics, ContextMetrics, LatencyMetric
 from .core import EvaluationResult, Evaluator, Metric
 from .optimizer import OptimizationResult, Optimizer, RandomSearchOptimizer, SearchSpace
+from .pattern_benchmarks import PatternBenchmark, PatternBenchmarkSuite, YAMLBenchmarkLoader
 from .prompt_optimizer import OptimizationStrategy, PromptOptimizationResult, PromptOptimizer
 from .quality_metrics import AccuracyMetric, PrecisionRecallMetric, QualityMetrics
 from .recorder import SessionRecorder, SessionReplay
@@ -74,6 +87,9 @@ __all__ = [
     "OptimizationResult",
     "OptimizationStrategy",
     "Optimizer",
+    # Pattern Benchmarks
+    "PatternBenchmark",
+    "PatternBenchmarkSuite",
     "PrecisionRecallMetric",
     # Prompt Optimization
     "PromptOptimizationResult",
@@ -89,5 +105,6 @@ __all__ = [
     "SessionReplay",
     "SignificanceLevel",
     "StatisticalTestType",
+    "YAMLBenchmarkLoader",
     "calculate_sample_size",
 ]

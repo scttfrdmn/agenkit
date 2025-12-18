@@ -115,14 +115,6 @@ class Plan:
         return (completed / len(self.steps)) * 100
 
 
-class LLMClient(Protocol):
-    """Protocol for LLM clients that can be used with PlanningAgent."""
-
-    async def chat(self, messages: list[Message]) -> Message:
-        """Generate a response given conversation history."""
-        ...
-
-
 class StepExecutor(Protocol):
     """Protocol for executing individual plan steps."""
 
@@ -144,17 +136,16 @@ class PlanningAgent(Agent):
     """
     Agent that creates and executes plans for complex tasks.
 
-    The agent uses an LLM to create a plan, then executes each step
+    The agent uses a planner agent to create plans, then executes each step
     sequentially or in parallel (if dependencies allow).
 
     Example:
         ```python
         from agenkit.patterns import PlanningAgent
 
-        # Create agent with custom executor
+        # Create agent with planner
         agent = PlanningAgent(
-            llm_client=llm,
-            step_executor=my_executor,
+            planner=my_llm_agent,
             allow_replanning=True
         )
 
@@ -171,27 +162,25 @@ class PlanningAgent(Agent):
         ```
 
     Args:
-        llm_client: LLM client for plan creation
-        step_executor: Executor for individual steps
+        planner: Agent that creates plans (typically an LLM-based agent)
         max_steps: Maximum steps in a plan (default: 10)
         allow_replanning: Whether to replan on failures (default: False)
-        system_prompt: Optional system prompt
+        system_prompt: Optional system prompt for planning
     """
 
     def __init__(
         self,
-        llm_client: LLMClient,
-        step_executor: StepExecutor | None = None,
+        planner: Agent,
         max_steps: int = 10,
         allow_replanning: bool = False,
         system_prompt: str | None = None,
     ):
-        self.llm = llm_client
-        self.executor = step_executor or DefaultStepExecutor()
+        self.planner = planner
         self.max_steps = max_steps
         self.allow_replanning = allow_replanning
         self.system_prompt = system_prompt or self._default_system_prompt()
         self.current_plan: Plan | None = None
+        self.executor = DefaultStepExecutor()
 
     @property
     def name(self) -> str:
@@ -252,13 +241,13 @@ Guidelines:
         Returns:
             A Plan object with steps
         """
-        # Ask LLM to create a plan
-        messages = [
-            Message(role="system", content=self.system_prompt),
-            Message(role="user", content=f"Create a plan for: {task}"),
-        ]
+        # Ask planner agent to create a plan
+        planning_message = Message(
+            role="user",
+            content=f"{self.system_prompt}\n\nCreate a plan for: {task}",
+        )
 
-        response = await self.llm.chat(messages)
+        response = await self.planner.process(planning_message)
 
         # Parse the plan
         plan = self._parse_plan(response.content, task)
@@ -267,7 +256,7 @@ Guidelines:
 
     def _parse_plan(self, plan_text: str, goal: str) -> Plan:
         """
-        Parse LLM response into a Plan object.
+        Parse planner response into a Plan object.
 
         Expected format:
         Goal: [goal]
@@ -389,20 +378,17 @@ Guidelines:
         if not failed_steps:
             return
 
-        # Ask LLM to create alternative steps
+        # Ask planner to create alternative steps
         failed_descriptions = "\n".join(
             [f"- {step.description} (Error: {step.error})" for step in failed_steps]
         )
 
-        messages = [
-            Message(role="system", content=self.system_prompt),
-            Message(
-                role="user",
-                content=f"The following steps failed:\n{failed_descriptions}\n\nCreate alternative steps to accomplish the goal: {failed_plan.goal}",
-            ),
-        ]
+        replanning_message = Message(
+            role="user",
+            content=f"{self.system_prompt}\n\nThe following steps failed:\n{failed_descriptions}\n\nCreate alternative steps to accomplish the goal: {failed_plan.goal}",
+        )
 
-        await self.llm.chat(messages)
+        await self.planner.process(replanning_message)
 
         # Parse new steps and replace failed ones
         # For simplicity, mark failed steps as skipped

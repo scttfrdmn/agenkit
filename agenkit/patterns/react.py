@@ -78,106 +78,6 @@ class ReActStep:
     timestamp: datetime = field(default_factory=lambda: datetime.now())
 
 
-class ToolRegistry:
-    """
-    Registry for managing available tools.
-
-    Example:
-        ```python
-        registry = ToolRegistry()
-        registry.register(calculator_tool)
-        registry.register(search_tool)
-
-        # Get tool description for LLM prompt
-        tools_desc = registry.get_tools_description()
-
-        # Execute a tool
-        result = await registry.execute("calculator", expression="2+2")
-        ```
-    """
-
-    def __init__(self):
-        self._tools: dict[str, Tool] = {}
-
-    def register(self, tool: Tool) -> None:
-        """
-        Register a tool.
-
-        Args:
-            tool: The tool to register
-
-        Raises:
-            ValueError: If a tool with the same name already exists
-        """
-        if tool.name in self._tools:
-            raise ValueError(f"Tool '{tool.name}' already registered")
-        self._tools[tool.name] = tool
-
-    def unregister(self, tool_name: str) -> None:
-        """
-        Unregister a tool.
-
-        Args:
-            tool_name: Name of the tool to remove
-        """
-        self._tools.pop(tool_name, None)
-
-    def get_tool(self, name: str) -> Tool | None:
-        """Get a tool by name."""
-        return self._tools.get(name)
-
-    def list_tools(self) -> list[str]:
-        """Get list of all registered tool names."""
-        return list(self._tools.keys())
-
-    def get_tools_description(self) -> str:
-        """
-        Get formatted description of all tools for LLM prompt.
-
-        Returns:
-            Formatted string describing all available tools
-        """
-        if not self._tools:
-            return "No tools available."
-
-        lines = ["Available tools:"]
-        for name, tool in self._tools.items():
-            lines.append(f"- {name}: {tool.description}")
-        return "\n".join(lines)
-
-    async def execute(self, tool_name: str, **kwargs) -> ToolResult:
-        """
-        Execute a tool by name.
-
-        Args:
-            tool_name: Name of the tool to execute
-            **kwargs: Parameters to pass to the tool
-
-        Returns:
-            ToolResult containing the execution result or error
-        """
-        tool = self.get_tool(tool_name)
-        if tool is None:
-            return ToolResult(tool_name=tool_name, error=f"Tool '{tool_name}' not found")
-
-        start_time = asyncio.get_event_loop().time()
-        try:
-            result = await tool.execute(**kwargs)
-            execution_time = asyncio.get_event_loop().time() - start_time
-            return ToolResult(tool_name=tool_name, result=result, execution_time=execution_time)
-        except Exception as e:
-            execution_time = asyncio.get_event_loop().time() - start_time
-            return ToolResult(tool_name=tool_name, error=str(e), execution_time=execution_time)
-
-
-class LLMClient(Protocol):
-    """Protocol for LLM clients that can be used with ReActAgent."""
-
-    async def chat(self, messages: list[Message]) -> Message:
-        """Generate a response given conversation history."""
-        ...
-
-
 class ReActAgent(Agent):
     """
     Agent that uses the ReAct pattern to reason and act.
@@ -187,18 +87,16 @@ class ReActAgent(Agent):
 
     Example:
         ```python
-        from agenkit.patterns import ReActAgent, ToolRegistry
+        from agenkit.patterns import ReActAgent
 
         # Setup tools
-        registry = ToolRegistry()
-        registry.register(calculator_tool)
-        registry.register(search_tool)
+        tools = [calculator_tool, search_tool]
 
         # Create agent
         agent = ReActAgent(
-            llm_client=llm,
-            tool_registry=registry,
-            max_iterations=10
+            agent=base_agent,
+            tools=tools,
+            max_steps=10
         )
 
         # Process a task
@@ -209,24 +107,24 @@ class ReActAgent(Agent):
         ```
 
     Args:
-        llm_client: LLM client for reasoning
-        tool_registry: Registry of available tools
-        max_iterations: Maximum reasoning steps before stopping (default: 10)
+        agent: Agent for reasoning (e.g., LLM-based agent)
+        tools: List of available tools
+        max_steps: Maximum reasoning steps before stopping (default: 10)
         system_prompt: Optional system prompt to guide behavior
         verbose: Whether to include thought process in response (default: False)
     """
 
     def __init__(
         self,
-        llm_client: LLMClient,
-        tool_registry: ToolRegistry,
-        max_iterations: int = 10,
+        agent: Agent,
+        tools: list[Tool],
+        max_steps: int = 10,
         system_prompt: str | None = None,
         verbose: bool = False,
     ):
-        self.llm = llm_client
-        self.tools = tool_registry
-        self.max_iterations = max_iterations
+        self.agent = agent
+        self.tools = tools
+        self.max_steps = max_steps
         self.system_prompt = system_prompt or self._default_system_prompt()
         self.verbose = verbose
         self.steps: list[ReActStep] = []
@@ -238,7 +136,7 @@ class ReActAgent(Agent):
 
     def _default_system_prompt(self) -> str:
         """Generate default system prompt with tool descriptions."""
-        tools_desc = self.tools.get_tools_description()
+        tools_desc = self._get_tools_description()
         return f"""You are a helpful assistant that uses tools to answer questions.
 
 {tools_desc}
@@ -258,6 +156,51 @@ Action Input: [your final answer here]
 
 Begin!"""
 
+    def _get_tools_description(self) -> str:
+        """
+        Get formatted description of all tools for LLM prompt.
+
+        Returns:
+            Formatted string describing all available tools
+        """
+        if not self.tools:
+            return "No tools available."
+
+        lines = ["Available tools:"]
+        for tool in self.tools:
+            lines.append(f"- {tool.name}: {tool.description}")
+        return "\n".join(lines)
+
+    async def _execute_tool(self, tool_name: str, **kwargs) -> ToolResult:
+        """
+        Execute a tool by name.
+
+        Args:
+            tool_name: Name of the tool to execute
+            **kwargs: Parameters to pass to the tool
+
+        Returns:
+            ToolResult containing the execution result or error
+        """
+        # Find tool in list
+        tool = None
+        for t in self.tools:
+            if t.name == tool_name:
+                tool = t
+                break
+
+        if tool is None:
+            return ToolResult(tool_name=tool_name, error=f"Tool '{tool_name}' not found")
+
+        start_time = asyncio.get_event_loop().time()
+        try:
+            result = await tool.execute(**kwargs)
+            execution_time = asyncio.get_event_loop().time() - start_time
+            return ToolResult(tool_name=tool_name, result=result, execution_time=execution_time)
+        except Exception as e:
+            execution_time = asyncio.get_event_loop().time() - start_time
+            return ToolResult(tool_name=tool_name, error=str(e), execution_time=execution_time)
+
     async def process(self, message: Message) -> Message:
         """
         Process a message using the ReAct loop.
@@ -270,15 +213,18 @@ Begin!"""
         """
         self.steps = []  # Reset steps for new task
 
-        # Build initial prompt
-        messages = [
-            Message(role="system", content=self.system_prompt),
-            message,
-        ]
+        # Build initial prompt with system message
+        system_message = Message(role="system", content=self.system_prompt)
 
-        for iteration in range(self.max_iterations):
-            # Get LLM reasoning
-            response = await self.llm.chat(messages)
+        # Combine system prompt with user message for initial call
+        combined_content = f"{self.system_prompt}\n\nUser: {message.content}"
+        current_message = Message(role="user", content=combined_content)
+
+        conversation_history = []
+
+        for iteration in range(self.max_steps):
+            # Get agent reasoning
+            response = await self.agent.process(current_message)
 
             # Parse response into thought, action, and action_input
             step = self._parse_response(response.content, iteration)
@@ -288,7 +234,7 @@ Begin!"""
                 return self._format_final_response(step.action_input)
 
             # Execute the action (tool)
-            tool_result = await self.tools.execute(step.action, **step.action_input)
+            tool_result = await self._execute_tool(step.action, **step.action_input)
 
             if tool_result.success:
                 step.observation = str(tool_result.result)
@@ -297,12 +243,11 @@ Begin!"""
 
             self.steps.append(step)
 
-            # Add observation to conversation
-            observation_msg = f"Observation: {step.observation}"
-            messages.append(Message(role="assistant", content=response.content))
-            messages.append(Message(role="user", content=observation_msg))
+            # Build next message with observation
+            observation_msg = f"Observation: {step.observation}\n\nWhat's your next thought/action?"
+            current_message = Message(role="user", content=observation_msg)
 
-        # Max iterations reached
+        # Max steps reached
         return Message(
             role="assistant",
             content="I couldn't complete the task within the maximum number of steps. Please try rephrasing your question or breaking it into smaller parts.",
@@ -340,7 +285,7 @@ Begin!"""
                         action_input = json.loads(action_input_str)
                     else:
                         action_input = {"input": action_input_str}
-                except:
+                except Exception:  # noqa: S110
                     action_input = {"input": action_input_str}
 
         return ReActStep(

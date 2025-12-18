@@ -166,7 +166,7 @@ async def demo_basic_reflection():
     agent = ReflectionAgent(
         generator=generator,
         critic=critic,
-        max_iterations=5,
+        max_reflections=5,
         quality_threshold=0.9,  # Stop when quality >= 0.9
         improvement_threshold=0.05,  # Stop if improvement < 5%
     )
@@ -200,7 +200,7 @@ async def demo_reflection_with_history():
     agent = ReflectionAgent(
         generator=generator,
         critic=critic,
-        max_iterations=5,
+        max_reflections=5,
         quality_threshold=0.9,
         verbose=True,  # Include full history in response
     )
@@ -239,7 +239,7 @@ async def demo_reflection_thresholds():
     high_threshold_agent = ReflectionAgent(
         generator=generator,
         critic=critic,
-        max_iterations=10,
+        max_reflections=10,
         quality_threshold=0.95,  # Very high threshold
     )
 
@@ -260,7 +260,7 @@ async def demo_reflection_thresholds():
     low_iter_agent = ReflectionAgent(
         generator=generator2,
         critic=critic2,
-        max_iterations=2,  # Very few iterations
+        max_reflections=2,  # Very few iterations
         quality_threshold=0.9,
     )
 
@@ -285,7 +285,7 @@ async def demo_get_history():
     agent = ReflectionAgent(
         generator=generator,
         critic=critic,
-        max_iterations=5,
+        max_reflections=5,
         quality_threshold=0.9,
     )
 
@@ -338,7 +338,7 @@ async def main():
     print("  agent = ReflectionAgent(")
     print("      generator=generator,")
     print("      critic=critic,")
-    print("      max_iterations=5,")
+    print("      max_reflections=5,")
     print("      quality_threshold=0.9")
     print("  )")
     print()

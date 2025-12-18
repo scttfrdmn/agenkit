@@ -25,18 +25,32 @@ from agenkit.patterns import (
 )
 
 # ============================================================================
-# Mock LLM for Planning
+# Mock Agent for Planning
 # ============================================================================
 
 
-class MockPlanningLLM:
-    """Mock LLM that generates plans."""
+class MockPlanningAgent:
+    """
+    Mock Agent that generates plans based on tasks.
 
-    async def chat(self, messages: list[Message]) -> Message:
+    In production, replace with real LLM-based agent:
+    - OpenAI: from openai import AsyncOpenAI
+    - Anthropic: from anthropic import AsyncAnthropic
+    - LiteLLM: from litellm import acompletion
+    """
+
+    def __init__(self):
+        self.call_count = 0
+        self.name = "MockPlanningAgent"
+
+    async def process(self, message: Message) -> Message:
         """Generate mock plans based on the task."""
-        user_message = [msg for msg in messages if msg.role == "user"][-1].content
+        self.call_count += 1
 
-        if "organize" in user_message.lower() and "event" in user_message.lower():
+        # Extract the task from the message content
+        content = message.content.lower()
+
+        if "organize" in content and "event" in content:
             return Message(
                 role="assistant",
                 content="""Goal: Organize a successful team event
@@ -49,7 +63,7 @@ Steps:
 5. Confirm attendees""",
             )
 
-        elif "deploy" in user_message.lower() or "website" in user_message.lower():
+        elif "deploy" in content or "website" in content:
             return Message(
                 role="assistant",
                 content="""Goal: Deploy website to production
@@ -63,7 +77,7 @@ Steps:
 6. Deploy to production""",
             )
 
-        elif "research" in user_message.lower():
+        elif "research" in content:
             return Message(
                 role="assistant",
                 content="""Goal: Complete research project
@@ -89,32 +103,6 @@ Steps:
 
 
 # ============================================================================
-# Custom Step Executors
-# ============================================================================
-
-
-class MockStepExecutor:
-    """Mock executor with custom logic."""
-
-    def __init__(self, fail_steps: list[int] | None = None):
-        self.fail_steps = fail_steps or []
-        self.execution_log = []
-
-    async def execute(self, step: PlanStep, context: dict[str, Any]) -> str:
-        """Execute a step with optional failures."""
-        self.execution_log.append(f"Executing step {step.step_number}: {step.description}")
-
-        # Simulate failures for testing
-        if step.step_number in self.fail_steps:
-            raise RuntimeError(f"Step {step.step_number} failed (simulated)")
-
-        # Simulate execution delay
-        await asyncio.sleep(0.1)
-
-        return f"Completed: {step.description}"
-
-
-# ============================================================================
 # Example Functions
 # ============================================================================
 
@@ -125,8 +113,8 @@ async def basic_planning_example():
     print("Example 1: Basic Planning")
     print("=" * 60)
 
-    llm = MockPlanningLLM()
-    agent = PlanningAgent(llm_client=llm, max_steps=10)
+    planner = MockPlanningAgent()
+    agent = PlanningAgent(planner=planner, max_steps=10)
 
     print("\nTask: Organize a team event")
     result = await agent.process(Message(role="user", content="Organize a team event"))
@@ -183,49 +171,24 @@ async def plan_structure_example():
     print(f"\nFinal progress: {plan.get_progress():.0f}%")
 
 
-async def custom_executor_example():
-    """Demonstrate using a custom step executor."""
+async def deployment_plan_example():
+    """Demonstrate a deployment planning workflow."""
     print("\n" + "=" * 60)
-    print("Example 3: Custom Step Executor")
+    print("Example 3: Deployment Planning")
     print("=" * 60)
 
-    llm = MockPlanningLLM()
-    executor = MockStepExecutor()
+    planner = MockPlanningAgent()
+    agent = PlanningAgent(planner=planner, max_steps=10)
 
-    agent = PlanningAgent(llm_client=llm, step_executor=executor, max_steps=10)
-
-    print("\nTask: Complete research project")
-    result = await agent.process(Message(role="user", content="Complete research project"))
-
-    print(f"\n{result.content}")
-
-    # Show execution log
-    print("\nExecution log:")
-    for log_entry in executor.execution_log:
-        print(f"  - {log_entry}")
-
-
-async def failure_handling_example():
-    """Demonstrate handling step failures."""
-    print("\n" + "=" * 60)
-    print("Example 4: Failure Handling")
-    print("=" * 60)
-
-    llm = MockPlanningLLM()
-    # Make step 2 fail
-    executor = MockStepExecutor(fail_steps=[2])
-
-    agent = PlanningAgent(llm_client=llm, step_executor=executor, max_steps=10)
-
-    print("\nTask: Deploy website (with simulated failure)")
+    print("\nTask: Deploy website to production")
     result = await agent.process(Message(role="user", content="Deploy website"))
 
     print(f"\n{result.content}")
 
-    # Show which steps failed
+    # Show the plan structure
     plan = agent.get_plan()
     if plan:
-        print("\nStep status:")
+        print("\nPlan steps:")
         for step in plan.steps:
             status_icon = {
                 StepStatus.COMPLETED: "✓",
@@ -233,10 +196,29 @@ async def failure_handling_example():
                 StepStatus.PENDING: "○",
                 StepStatus.SKIPPED: "⊘",
             }.get(step.status, "?")
+            print(f"  {status_icon} Step {step.step_number + 1}: {step.description}")
 
-            print(f"  {status_icon} Step {step.step_number}: {step.description}")
-            if step.error:
-                print(f"    Error: {step.error}")
+
+async def research_plan_example():
+    """Demonstrate a research planning workflow."""
+    print("\n" + "=" * 60)
+    print("Example 4: Research Planning")
+    print("=" * 60)
+
+    planner = MockPlanningAgent()
+    agent = PlanningAgent(planner=planner, max_steps=10)
+
+    print("\nTask: Complete research project")
+    result = await agent.process(Message(role="user", content="Complete research project"))
+
+    print(f"\n{result.content}")
+
+    # Show plan details
+    plan = agent.get_plan()
+    if plan:
+        print(f"\nResearch plan has {len(plan.steps)} phases")
+        print(f"All steps completed: {plan.is_complete()}")
+        print(f"Progress: {plan.get_progress():.0f}%")
 
 
 async def progress_tracking_example():
@@ -245,10 +227,8 @@ async def progress_tracking_example():
     print("Example 5: Progress Tracking")
     print("=" * 60)
 
-    llm = MockPlanningLLM()
-    executor = MockStepExecutor()
-
-    agent = PlanningAgent(llm_client=llm, step_executor=executor, max_steps=10)
+    planner = MockPlanningAgent()
+    agent = PlanningAgent(planner=planner, max_steps=10)
 
     print("\nTask: Organize team event")
     print("Tracking progress...\n")
@@ -273,8 +253,8 @@ async def main():
     """Run all examples."""
     await basic_planning_example()
     await plan_structure_example()
-    await custom_executor_example()
-    await failure_handling_example()
+    await deployment_plan_example()
+    await research_plan_example()
     await progress_tracking_example()
 
     print("\n" + "=" * 60)
@@ -283,13 +263,13 @@ async def main():
     print("\nKey Takeaways:")
     print("1. PlanningAgent breaks complex tasks into steps")
     print("2. Plans support dependencies between steps")
-    print("3. Custom executors handle actual step execution")
-    print("4. Failures can be tracked and handled")
-    print("5. Progress can be monitored in real-time")
+    print("3. Step execution is handled automatically")
+    print("4. Progress can be monitored in real-time")
+    print("5. Plans track completion status for each step")
     print("\nNext Steps:")
-    print("- Replace MockPlanningLLM with real LLM")
-    print("- Implement custom executors for your domain")
-    print("- Add replanning logic for adaptive plans")
+    print("- Replace MockPlanningAgent with real LLM-based agent")
+    print("- Add custom step executors for domain-specific tasks")
+    print("- Implement replanning logic for adaptive plans")
     print("- Integrate with ReActAgent for tool-using steps")
     print("- Add parallel execution for independent steps")
 

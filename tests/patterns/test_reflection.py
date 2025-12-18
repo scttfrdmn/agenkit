@@ -5,7 +5,7 @@ Coverage:
 - ReflectionAgent basic operation
 - Quality threshold stopping
 - Improvement threshold stopping
-- Max iterations stopping
+- Max reflections stopping
 - Perfect score stopping
 - Critique parsing (structured and free-form)
 - Reflection history
@@ -95,7 +95,7 @@ async def test_reflection_basic():
     critic = MockCriticAgent()
 
     agent = ReflectionAgent(
-        generator=generator, critic=critic, max_iterations=3, quality_threshold=0.9
+        generator=generator, critic=critic, max_reflections=3, quality_threshold=0.9
     )
 
     result = await agent.process(Message(role="user", content="Write a function"))
@@ -114,7 +114,7 @@ async def test_reflection_quality_threshold_met():
     critic = MockCriticAgent(scores=[0.7, 0.85, 0.95])  # Reaches 0.95 on iteration 3
 
     agent = ReflectionAgent(
-        generator=generator, critic=critic, max_iterations=10, quality_threshold=0.9
+        generator=generator, critic=critic, max_reflections=10, quality_threshold=0.9
     )
 
     result = await agent.process(Message(role="user", content="Test"))
@@ -134,7 +134,7 @@ async def test_reflection_minimal_improvement():
     agent = ReflectionAgent(
         generator=generator,
         critic=critic,
-        max_iterations=10,
+        max_reflections=10,
         quality_threshold=0.9,
         improvement_threshold=0.05,  # Requires 5% improvement
     )
@@ -147,8 +147,8 @@ async def test_reflection_minimal_improvement():
 
 
 @pytest.mark.asyncio
-async def test_reflection_max_iterations():
-    """Test stopping at max iterations."""
+async def test_reflection_max_reflections():
+    """Test stopping at max reflections."""
     # Provide enough outputs for all iterations (initial + 4 refinements)
     generator = MockGeneratorAgent(
         outputs=[
@@ -174,7 +174,7 @@ async def test_reflection_max_iterations():
     agent = ReflectionAgent(
         generator=generator,
         critic=critic,
-        max_iterations=5,
+        max_reflections=5,
         quality_threshold=0.9,
         improvement_threshold=0.04,  # Lower threshold so improvements don't stop early
     )
@@ -182,7 +182,7 @@ async def test_reflection_max_iterations():
     result = await agent.process(Message(role="user", content="Test"))
 
     assert result.metadata["reflection_iterations"] == 5
-    assert result.metadata["stop_reason"] == "max_iterations"
+    assert result.metadata["stop_reason"] == "max_reflections"
 
 
 @pytest.mark.asyncio
@@ -191,7 +191,7 @@ async def test_reflection_perfect_score():
     generator = MockGeneratorAgent()
     critic = MockCriticAgent(scores=[0.8, 1.0])  # Perfect score on iteration 2
 
-    agent = ReflectionAgent(generator=generator, critic=critic, max_iterations=10)
+    agent = ReflectionAgent(generator=generator, critic=critic, max_reflections=10)
 
     result = await agent.process(Message(role="user", content="Test"))
 
@@ -207,7 +207,7 @@ async def test_reflection_history():
     critic = MockCriticAgent(scores=[0.6, 0.8, 0.95])
 
     agent = ReflectionAgent(
-        generator=generator, critic=critic, max_iterations=3, verbose=True  # Enable history
+        generator=generator, critic=critic, max_reflections=3, verbose=True  # Enable history
     )
 
     result = await agent.process(Message(role="user", content="Test"))
@@ -232,7 +232,7 @@ async def test_reflection_metadata_structure():
     generator = MockGeneratorAgent()
     critic = MockCriticAgent(scores=[0.7, 0.9])
 
-    agent = ReflectionAgent(generator=generator, critic=critic, max_iterations=3)
+    agent = ReflectionAgent(generator=generator, critic=critic, max_reflections=3)
 
     result = await agent.process(Message(role="user", content="Test"))
 
@@ -255,7 +255,7 @@ async def test_reflection_improvement_calculation():
     generator = MockGeneratorAgent()
     critic = MockCriticAgent(scores=[0.5, 0.7, 0.9])
 
-    agent = ReflectionAgent(generator=generator, critic=critic, max_iterations=3)
+    agent = ReflectionAgent(generator=generator, critic=critic, max_reflections=3)
 
     result = await agent.process(Message(role="user", content="Test"))
 
@@ -306,7 +306,7 @@ async def test_reflection_get_history():
     generator = MockGeneratorAgent()
     critic = MockCriticAgent(scores=[0.6, 0.8, 0.95])
 
-    agent = ReflectionAgent(generator=generator, critic=critic, max_iterations=3)
+    agent = ReflectionAgent(generator=generator, critic=critic, max_reflections=3)
 
     await agent.process(Message(role="user", content="Test"))
 
@@ -322,7 +322,7 @@ async def test_reflection_clear_history():
     generator = MockGeneratorAgent()
     critic = MockCriticAgent()
 
-    agent = ReflectionAgent(generator=generator, critic=critic, max_iterations=3)
+    agent = ReflectionAgent(generator=generator, critic=critic, max_reflections=3)
 
     await agent.process(Message(role="user", content="Test"))
     assert len(agent.get_history()) > 0
@@ -358,13 +358,13 @@ async def test_reflection_capabilities():
     assert "self-critique" in capabilities
 
 
-def test_reflection_validation_max_iterations():
-    """Test validation of max_iterations parameter."""
+def test_reflection_validation_max_reflections():
+    """Test validation of max_reflections parameter."""
     generator = MockGeneratorAgent()
     critic = MockCriticAgent()
 
-    with pytest.raises(ValueError, match="max_iterations must be at least 1"):
-        ReflectionAgent(generator=generator, critic=critic, max_iterations=0)
+    with pytest.raises(ValueError, match="max_reflections must be at least 1"):
+        ReflectionAgent(generator=generator, critic=critic, max_reflections=0)
 
 
 def test_reflection_validation_quality_threshold():
@@ -410,7 +410,7 @@ async def test_reflection_json_with_code_block():
     critic = CodeBlockCritic()
 
     agent = ReflectionAgent(
-        generator=generator, critic=critic, max_iterations=2, quality_threshold=0.8
+        generator=generator, critic=critic, max_reflections=2, quality_threshold=0.8
     )
 
     result = await agent.process(Message(role="user", content="Test"))
@@ -471,7 +471,7 @@ async def test_reflection_stop_reason_enum():
     """Test StopReason enum values."""
     assert StopReason.QUALITY_THRESHOLD_MET.value == "quality_threshold_met"
     assert StopReason.MINIMAL_IMPROVEMENT.value == "minimal_improvement"
-    assert StopReason.MAX_ITERATIONS.value == "max_iterations"
+    assert StopReason.MAX_REFLECTIONS.value == "max_reflections"
     assert StopReason.PERFECT_SCORE.value == "perfect_score"
 
 
@@ -481,7 +481,7 @@ async def test_reflection_first_iteration_quality():
     generator = MockGeneratorAgent()
     critic = MockCriticAgent(scores=[0.45, 0.95])  # Start low, then high
 
-    agent = ReflectionAgent(generator=generator, critic=critic, max_iterations=5)
+    agent = ReflectionAgent(generator=generator, critic=critic, max_reflections=5)
 
     result = await agent.process(Message(role="user", content="Test"))
 

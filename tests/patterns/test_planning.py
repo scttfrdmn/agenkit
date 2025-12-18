@@ -8,8 +8,8 @@ from agenkit import Message
 from agenkit.patterns import Plan, PlanningAgent, PlanStep, StepStatus
 
 
-# Mock LLM
-class MockPlanningLLM:
+# Mock Planning Agent
+class MockPlanningAgent:
     def __init__(self, plan_text=None):
         self.plan_text = (
             plan_text
@@ -20,25 +20,13 @@ Steps:
 3. Third step"""
         )
         self.call_count = 0
-        self.last_messages = None
+        self.last_message = None
+        self.name = "MockPlanningAgent"
 
-    async def chat(self, messages):
+    async def process(self, message):
         self.call_count += 1
-        self.last_messages = messages.copy()
+        self.last_message = message
         return Message(role="assistant", content=self.plan_text)
-
-
-# Mock Executor
-class MockExecutor:
-    def __init__(self, fail_steps=None):
-        self.fail_steps = fail_steps or []
-        self.executed = []
-
-    async def execute(self, step, context):
-        self.executed.append(step.step_number)
-        if step.step_number in self.fail_steps:
-            raise RuntimeError("Simulated failure")
-        return f"Done: {step.description}"
 
 
 # ============================================================================
@@ -181,23 +169,21 @@ def test_plan_get_progress_empty():
 @pytest.mark.asyncio
 async def test_planning_agent_basic():
     """Test basic planning agent functionality."""
-    llm = MockPlanningLLM()
-    executor = MockExecutor()
+    mock_planner = MockPlanningAgent()
 
-    agent = PlanningAgent(llm_client=llm, step_executor=executor, max_steps=10)
+    agent = PlanningAgent(planner=mock_planner, max_steps=10)
 
     response = await agent.process(Message(role="user", content="Test task"))
 
     assert "completed" in response.content.lower()
-    assert llm.call_count == 1
-    assert len(executor.executed) == 3
+    assert mock_planner.call_count == 1
 
 
 @pytest.mark.asyncio
 async def test_planning_agent_creates_plan():
-    """Test that agent creates a plan from LLM response."""
-    llm = MockPlanningLLM()
-    agent = PlanningAgent(llm_client=llm, max_steps=10)
+    """Test that agent creates a plan from planner response."""
+    mock_planner = MockPlanningAgent()
+    agent = PlanningAgent(planner=mock_planner, max_steps=10)
 
     await agent.process(Message(role="user", content="Test"))
 
@@ -210,10 +196,9 @@ async def test_planning_agent_creates_plan():
 @pytest.mark.asyncio
 async def test_planning_agent_executes_steps():
     """Test that agent executes all steps."""
-    llm = MockPlanningLLM()
-    executor = MockExecutor()
+    mock_planner = MockPlanningAgent()
 
-    agent = PlanningAgent(llm_client=llm, step_executor=executor)
+    agent = PlanningAgent(planner=mock_planner)
 
     await agent.process(Message(role="user", content="Test"))
 
@@ -223,25 +208,9 @@ async def test_planning_agent_executes_steps():
 
 
 @pytest.mark.asyncio
-async def test_planning_agent_handles_failures():
-    """Test that agent handles step failures."""
-    llm = MockPlanningLLM()
-    executor = MockExecutor(fail_steps=[1])
-
-    agent = PlanningAgent(llm_client=llm, step_executor=executor)
-
-    await agent.process(Message(role="user", content="Test"))
-
-    plan = agent.get_plan()
-    failed = [s for s in plan.steps if s.status == StepStatus.FAILED]
-    assert len(failed) == 1
-    assert failed[0].step_number == 1
-
-
-@pytest.mark.asyncio
 async def test_planning_agent_max_steps():
     """Test max_steps limit."""
-    llm = MockPlanningLLM(
+    mock_planner = MockPlanningAgent(
         plan_text="""Goal: Test
 Steps:
 1. Step 1
@@ -251,7 +220,7 @@ Steps:
 5. Step 5"""
     )
 
-    agent = PlanningAgent(llm_client=llm, max_steps=3)
+    agent = PlanningAgent(planner=mock_planner, max_steps=3)
 
     await agent.process(Message(role="user", content="Test"))
 
@@ -262,10 +231,9 @@ Steps:
 @pytest.mark.asyncio
 async def test_planning_agent_get_progress():
     """Test getting progress during execution."""
-    llm = MockPlanningLLM()
-    executor = MockExecutor()
+    mock_planner = MockPlanningAgent()
 
-    agent = PlanningAgent(llm_client=llm, step_executor=executor)
+    agent = PlanningAgent(planner=mock_planner)
 
     await agent.process(Message(role="user", content="Test"))
 
@@ -276,8 +244,8 @@ async def test_planning_agent_get_progress():
 @pytest.mark.asyncio
 async def test_planning_agent_name_property():
     """Test agent name property."""
-    llm = MockPlanningLLM()
-    agent = PlanningAgent(llm_client=llm)
+    mock_planner = MockPlanningAgent()
+    agent = PlanningAgent(planner=mock_planner)
 
     assert agent.name == "PlanningAgent"
 
@@ -285,15 +253,16 @@ async def test_planning_agent_name_property():
 @pytest.mark.asyncio
 async def test_planning_agent_custom_system_prompt():
     """Test using custom system prompt."""
-    llm = MockPlanningLLM()
+    mock_planner = MockPlanningAgent()
     custom_prompt = "Custom planning instructions"
 
-    agent = PlanningAgent(llm_client=llm, system_prompt=custom_prompt)
+    agent = PlanningAgent(planner=mock_planner, system_prompt=custom_prompt)
 
     await agent.process(Message(role="user", content="Test"))
 
-    assert llm.last_messages[0].role == "system"
-    assert llm.last_messages[0].content == custom_prompt
+    # Check that custom prompt was included in the message
+    assert mock_planner.last_message is not None
+    assert custom_prompt in mock_planner.last_message.content
 
 
 def test_plan_step_dataclass():

@@ -91,6 +91,9 @@ add_library(agenkit
     src/evaluation/bayesian_optimizer.cpp
     src/evaluation/prompt_optimizer.cpp
     src/techniques/reasoning/self_consistency.cpp
+    src/techniques/reasoning/chain_of_thought.cpp
+    src/techniques/reasoning/reasoning_tree.cpp
+    src/techniques/reasoning/tree_of_thought.cpp
 )
 
 target_include_directories(agenkit

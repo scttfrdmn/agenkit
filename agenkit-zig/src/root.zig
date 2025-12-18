@@ -213,6 +213,31 @@ pub const evaluation = @import("evaluation/mod.zig");
 // Observability framework
 pub const observability = @import("observability/mod.zig");
 
+// Techniques
+pub const techniques = struct {
+    // Reasoning techniques
+    pub const reasoning = struct {
+        pub const SelfConsistencyAgent = @import("techniques/reasoning/self_consistency.zig").SelfConsistencyAgent;
+        pub const VotingStrategy = @import("techniques/reasoning/self_consistency.zig").VotingStrategy;
+        pub const AnswerExtractor = @import("techniques/reasoning/self_consistency.zig").AnswerExtractor;
+        pub const defaultAnswerExtractor = @import("techniques/reasoning/self_consistency.zig").defaultAnswerExtractor;
+
+        pub const ChainOfThoughtAgent = @import("techniques/reasoning/chain_of_thought.zig").ChainOfThoughtAgent;
+        pub const ChainOfThoughtConfig = @import("techniques/reasoning/chain_of_thought.zig").ChainOfThoughtConfig;
+
+        pub const TreeOfThoughtAgent = @import("techniques/reasoning/tree_of_thought.zig").TreeOfThoughtAgent;
+        pub const TreeOfThoughtConfig = @import("techniques/reasoning/tree_of_thought.zig").TreeOfThoughtConfig;
+        pub const SearchStrategy = @import("techniques/reasoning/tree_of_thought.zig").SearchStrategy;
+        pub const EvaluatorFunc = @import("techniques/reasoning/tree_of_thought.zig").EvaluatorFunc;
+        pub const defaultEvaluator = @import("techniques/reasoning/tree_of_thought.zig").defaultEvaluator;
+
+        pub const ReasoningTree = @import("techniques/reasoning/reasoning_tree.zig").ReasoningTree;
+        pub const ReasoningNode = @import("techniques/reasoning/reasoning_tree.zig").ReasoningNode;
+        pub const NodeState = @import("techniques/reasoning/reasoning_tree.zig").NodeState;
+        pub const TreeStatistics = @import("techniques/reasoning/reasoning_tree.zig").TreeStatistics;
+    };
+};
+
 // Version information
 pub const version = "0.40.0";
 pub const zig_version = @import("builtin").zig_version;
@@ -248,4 +273,9 @@ test {
     _ = @import("adapter/bedrock.zig");
     // Also test observability
     _ = @import("observability/mod.zig");
+    // Also test techniques
+    _ = @import("techniques/reasoning/self_consistency.zig");
+    _ = @import("techniques/reasoning/chain_of_thought.zig");
+    _ = @import("techniques/reasoning/reasoning_tree.zig");
+    _ = @import("techniques/reasoning/tree_of_thought.zig");
 }

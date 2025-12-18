@@ -786,4 +786,20 @@ pub fn build(b: *std.Build) void {
     const tracing_run = b.addRunArtifact(tracing_example);
     tracing_step.dependOn(&tracing_run.step);
     tracing_run.step.dependOn(b.getInstallStep());
+
+    // Add Pattern Benchmarks
+    const pattern_benchmarks = b.addExecutable(.{
+        .name = "pattern_benchmarks",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("benchmarks/patterns.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(pattern_benchmarks);
+    const bench_step = b.step("bench-patterns", "Run pattern performance benchmarks");
+    const bench_run = b.addRunArtifact(pattern_benchmarks);
+    bench_step.dependOn(&bench_run.step);
+    bench_run.step.dependOn(b.getInstallStep());
 }

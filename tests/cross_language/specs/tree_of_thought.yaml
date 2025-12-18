@@ -1,0 +1,406 @@
+pattern:
+  name: "TreeOfThought"
+  description: "Explores multiple reasoning paths simultaneously through tree search with branching, evaluation, pruning, and backtracking"
+  category: "reasoning"
+  reference: "Yao et al., 2023 - Tree of Thoughts: Deliberate Problem Solving with Large Language Models"
+
+test_scenarios:
+  - id: "tree_of_thought_basic"
+    name: "Basic tree-of-thought search"
+    description: "Build reasoning tree with default config and find best path"
+
+    input:
+      message:
+        role: "user"
+        content: "Solve this problem"
+        metadata: {}
+      config:
+        branching_factor: 2
+        max_depth: 2
+        strategy: "best_first"
+        prune_threshold: 0.3
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_pattern: ".*"
+        metadata:
+          technique: "tree_of_thought"
+          search_strategy: "best-first"
+          reasoning_path: "array"  # Array of steps from root to best leaf
+          num_steps: ">= 1"  # At least root node
+          best_score: ">= 0.0 and <= 1.0"  # Score between 0 and 1
+          reasoning_tree_stats: "object"  # Tree statistics
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "tree_of_thought_bfs"
+    name: "Breadth-first search strategy"
+    description: "Should explore tree level-by-level"
+
+    input:
+      message:
+        role: "user"
+        content: "Test query"
+        metadata: {}
+      config:
+        branching_factor: 2
+        max_depth: 2
+        strategy: "bfs"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          search_strategy: "bfs"
+          reasoning_tree_stats:
+            total_nodes: ">= 1"
+            max_depth: "<= 2"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "tree_of_thought_dfs"
+    name: "Depth-first search strategy"
+    description: "Should explore tree depth-first"
+
+    input:
+      message:
+        role: "user"
+        content: "Test query"
+        metadata: {}
+      config:
+        branching_factor: 2
+        max_depth: 2
+        strategy: "dfs"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          search_strategy: "dfs"
+          reasoning_tree_stats:
+            total_nodes: ">= 1"
+            max_depth: "<= 2"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "tree_of_thought_best_first"
+    name: "Best-first search strategy"
+    description: "Should prioritize highest-scoring nodes"
+
+    input:
+      message:
+        role: "user"
+        content: "Test query"
+        metadata: {}
+      config:
+        branching_factor: 2
+        max_depth: 2
+        strategy: "best_first"
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          search_strategy: "best-first"
+          best_score: ">= 0.0"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "tree_of_thought_custom_evaluator"
+    name: "Custom evaluator function"
+    description: "Should use custom evaluator for scoring nodes"
+
+    input:
+      message:
+        role: "user"
+        content: "Test"
+        metadata: {}
+      config:
+        branching_factor: 2
+        max_depth: 2
+        evaluator: "custom"  # Implementation-specific
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          best_score: ">= 0.0 and <= 1.0"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "tree_of_thought_pruning"
+    name: "Node pruning behavior"
+    description: "Should prune nodes below threshold"
+
+    input:
+      message:
+        role: "user"
+        content: "Test"
+        metadata: {}
+      config:
+        branching_factor: 3
+        max_depth: 2
+        prune_threshold: 0.5  # Higher threshold = more pruning
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          reasoning_tree_stats:
+            num_pruned: ">= 0"  # May have pruned nodes
+            total_nodes: ">= 1"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "tree_of_thought_max_depth"
+    name: "Maximum depth limiting"
+    description: "Should not exceed max_depth"
+
+    input:
+      message:
+        role: "user"
+        content: "Test"
+        metadata: {}
+      config:
+        branching_factor: 2
+        max_depth: 1
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          num_steps: "<= 2"  # Root + 1 level = 2 nodes max
+          reasoning_tree_stats:
+            max_depth: "<= 1"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "tree_of_thought_branching_factor"
+    name: "Branching factor control"
+    description: "Should generate N branches per node"
+
+    input:
+      message:
+        role: "user"
+        content: "Test"
+        metadata: {}
+      config:
+        branching_factor: 3
+        max_depth: 1
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          reasoning_tree_stats:
+            total_nodes: ">= 1"  # At least root
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "tree_of_thought_tree_statistics"
+    name: "Tree statistics completeness"
+    description: "Should include complete tree statistics"
+
+    input:
+      message:
+        role: "user"
+        content: "Test"
+        metadata: {}
+      config:
+        branching_factor: 2
+        max_depth: 2
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          reasoning_tree_stats:
+            total_nodes: ">= 1"
+            max_depth: ">= 0"
+            num_leaves: ">= 1"
+            num_pruned: ">= 0"
+            best_score: ">= 0.0 and <= 1.0"
+            avg_score: ">= 0.0 and <= 1.0"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "tree_of_thought_reasoning_path"
+    name: "Reasoning path structure"
+    description: "Path should start with query (root) and contain all steps"
+
+    input:
+      message:
+        role: "user"
+        content: "Test query"
+        metadata: {}
+      config:
+        branching_factor: 2
+        max_depth: 2
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          reasoning_path: "array"
+        metadata_constraints:
+          reasoning_path[0]: "Test query"  # First element is root/query
+          reasoning_path: "length >= 1"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "tree_of_thought_metadata"
+    name: "Metadata completeness"
+    description: "Response should include all required metadata fields"
+
+    input:
+      message:
+        role: "user"
+        content: "Test"
+        metadata: {}
+      config:
+        branching_factor: 2
+        max_depth: 2
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata_contains:
+          - "technique"
+          - "search_strategy"
+          - "reasoning_path"
+          - "num_steps"
+          - "best_score"
+          - "reasoning_tree_stats"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+edge_cases:
+  - condition: "branching_factor = 0"
+    expected: "Returns error or no children (implementation-specific)"
+  - condition: "max_depth = 0"
+    expected: "Returns root only (single node tree)"
+  - condition: "All branches pruned"
+    expected: "Returns root as best leaf (fallback)"
+  - condition: "Base agent fails"
+    expected: "Propagates error or returns partial tree"
+  - condition: "Empty message content"
+    expected: "Creates tree with empty root"
+  - condition: "prune_threshold = 1.0"
+    expected: "All nodes pruned (except root)"
+  - condition: "prune_threshold = 0.0"
+    expected: "No pruning occurs"
+
+properties:
+  deterministic: false  # Depends on base agent sampling
+  idempotent: false     # Multiple runs explore different paths
+  stateful: false       # No state between calls
+  requires_llm: false   # Can work with any agent
+  supports_streaming: false  # Returns after tree complete
+  parallel_execution: true   # Branches generated in parallel (language-dependent)
+
+performance:
+  complexity: "O(b^d)"  # Exponential in branching factor and depth
+  expected_latency: "d * (branching_factor * base_agent_latency)"
+  memory_usage: "O(b^d)"  # Stores entire tree in memory
+
+dependencies:
+  patterns: []
+  middleware: []
+  external: []
+
+search_strategies:
+  - name: "bfs"
+    description: "Breadth-first search - explores level by level"
+    best_for: "Finding solutions at shallower depths"
+    complexity: "O(b^d)"
+
+  - name: "dfs"
+    description: "Depth-first search - explores deeply first"
+    best_for: "Memory-constrained scenarios, deep solutions"
+    complexity: "O(bd)"
+
+  - name: "best_first"
+    description: "Best-first search - prioritizes highest-scoring nodes"
+    best_for: "Finding highest-quality solutions quickly"
+    complexity: "O(b^d)"
+
+evaluator_function:
+  signature: "(text: string) => float"
+  return_range: "[0.0, 1.0]"
+  default_behavior: "Length-based scoring with structure bonuses"
+  structure_bonuses:
+    - "Numbered steps (1. 2. 3.): +0.2"
+    - "Bullet points (- * •): +0.15"
+
+tree_data_structure:
+  node_properties:
+    - "id: unique identifier"
+    - "content: reasoning step text"
+    - "parent_id: reference to parent node"
+    - "children_ids: list of child node IDs"
+    - "depth: distance from root (root = 0)"
+    - "score: evaluator score (0.0-1.0)"
+    - "state: open/active/evaluated/pruned/terminal"
+
+  tree_operations:
+    - "create_root(content): Initialize tree with root node"
+    - "add_child(parent_id, content, score): Add child to parent"
+    - "get_node(node_id): Retrieve node by ID"
+    - "get_path(node_id): Get path from root to node"
+    - "get_best_leaf(): Find highest-scoring leaf node"
+    - "prune_node(node_id): Mark node and descendants as pruned"
+
+validation_rules:
+  - field: "branching_factor"
+    type: "integer"
+    constraints: ">= 1"
+
+  - field: "max_depth"
+    type: "integer"
+    constraints: ">= 0"
+
+  - field: "strategy"
+    type: "string"
+    constraints: "one of: bfs, dfs, best_first"
+
+  - field: "prune_threshold"
+    type: "float"
+    constraints: "0.0 <= threshold <= 1.0"
+
+  - field: "best_score"
+    type: "float"
+    constraints: "0.0 <= score <= 1.0"
+
+cross_language_notes:
+  - "All languages should produce trees with same structure for same base agent responses"
+  - "Default evaluator should score identically across languages"
+  - "Search strategies should explore nodes in same order (modulo parallel execution)"
+  - "Pruning should occur at same threshold across languages"
+  - "Tree statistics should match exactly"
+  - "Parallel branch generation implementation may vary (goroutines, Promises, tokio, etc.)"
+  - "Sequential execution acceptable for languages without async (Zig)"
+  - "Floating point scores should match within epsilon (0.001)"
+  - "Root node (query) should always be first element in reasoning_path"

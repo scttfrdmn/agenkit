@@ -24,7 +24,7 @@ Run: python examples/patterns/06_reflection_agent.py
 import asyncio
 
 from agenkit.interfaces import Message
-from agenkit.patterns import ReflectionAgent
+from agenkit.patterns import ReflectionAgent, ReflectionConfig
 
 
 # Mock agents for demonstration (replace with real LLM agents in production)
@@ -163,13 +163,24 @@ async def demo_basic_reflection():
     generator = CodeGeneratorAgent()
     critic = CodeCriticAgent()
 
-    agent = ReflectionAgent(
+    # Recommended: Use config-based API for better type safety and extensibility
+    config = ReflectionConfig(
         generator=generator,
         critic=critic,
-        max_reflections=5,
+        max_iterations=5,
         quality_threshold=0.9,  # Stop when quality >= 0.9
         improvement_threshold=0.05,  # Stop if improvement < 5%
     )
+    agent = ReflectionAgent(config)
+
+    # Deprecated (still works but will be removed in v2.0):
+    # agent = ReflectionAgent(
+    #     generator=generator,
+    #     critic=critic,
+    #     max_reflections=5,
+    #     quality_threshold=0.9,
+    #     improvement_threshold=0.05,
+    # )
 
     print("\n📝 Task: Write a function to calculate Fibonacci numbers\n")
 
@@ -197,13 +208,15 @@ async def demo_reflection_with_history():
     generator = CodeGeneratorAgent()
     critic = CodeCriticAgent()
 
-    agent = ReflectionAgent(
+    # Recommended: Use config-based API
+    config = ReflectionConfig(
         generator=generator,
         critic=critic,
-        max_reflections=5,
+        max_iterations=5,
         quality_threshold=0.9,
         verbose=True,  # Include full history in response
     )
+    agent = ReflectionAgent(config)
 
     print("\n📝 Task: Generate code with detailed iteration tracking\n")
 
@@ -236,12 +249,14 @@ async def demo_reflection_thresholds():
     generator = CodeGeneratorAgent()
     critic = CodeCriticAgent()
 
-    high_threshold_agent = ReflectionAgent(
+    # Recommended: Use config-based API
+    config1 = ReflectionConfig(
         generator=generator,
         critic=critic,
-        max_reflections=10,
+        max_iterations=10,
         quality_threshold=0.95,  # Very high threshold
     )
+    high_threshold_agent = ReflectionAgent(config1)
 
     result1 = await high_threshold_agent.process(
         Message(role="user", content="Write a fibonacci function")
@@ -257,12 +272,14 @@ async def demo_reflection_thresholds():
     generator2 = CodeGeneratorAgent()
     critic2 = CodeCriticAgent()
 
-    low_iter_agent = ReflectionAgent(
+    # Recommended: Use config-based API
+    config2 = ReflectionConfig(
         generator=generator2,
         critic=critic2,
-        max_reflections=2,  # Very few iterations
+        max_iterations=2,  # Very few iterations
         quality_threshold=0.9,
     )
+    low_iter_agent = ReflectionAgent(config2)
 
     result2 = await low_iter_agent.process(
         Message(role="user", content="Write a fibonacci function")
@@ -282,12 +299,14 @@ async def demo_get_history():
     generator = CodeGeneratorAgent()
     critic = CodeCriticAgent()
 
-    agent = ReflectionAgent(
+    # Recommended: Use config-based API
+    config = ReflectionConfig(
         generator=generator,
         critic=critic,
-        max_reflections=5,
+        max_iterations=5,
         quality_threshold=0.9,
     )
+    agent = ReflectionAgent(config)
 
     print("\n📝 Running reflection...\n")
 
@@ -329,18 +348,20 @@ async def main():
     print("  • Suitable for code, content, analysis, and more")
 
     print("\n💡 Production Usage:")
-    print("  from agenkit.patterns import ReflectionAgent")
+    print("  from agenkit.patterns import ReflectionAgent, ReflectionConfig")
     print("  from anthropic import Anthropic")
     print()
     print("  generator = YourLLMAgent(model='claude-3-sonnet')")
     print("  critic = YourLLMAgent(model='claude-3-sonnet', system='You are a code reviewer...')")
     print()
-    print("  agent = ReflectionAgent(")
+    print("  # Recommended: Use config-based API")
+    print("  config = ReflectionConfig(")
     print("      generator=generator,")
     print("      critic=critic,")
-    print("      max_reflections=5,")
+    print("      max_iterations=5,")
     print("      quality_threshold=0.9")
     print("  )")
+    print("  agent = ReflectionAgent(config)")
     print()
     print("  result = await agent.process(user_message)")
     print()

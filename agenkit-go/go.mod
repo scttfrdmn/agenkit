@@ -25,7 +25,7 @@ require (
 	gonum.org/v1/gonum v0.16.0
 	google.golang.org/api v0.206.0
 	google.golang.org/grpc v1.70.0-dev
-	google.golang.org/protobuf v1.35.1
+	google.golang.org/protobuf v1.36.2
 )
 
 require (

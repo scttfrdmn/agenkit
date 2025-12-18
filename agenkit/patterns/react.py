@@ -78,6 +78,49 @@ class ReActStep:
     timestamp: datetime = field(default_factory=lambda: datetime.now())
 
 
+@dataclass
+class ReActConfig:
+    """
+    Configuration for ReActAgent.
+
+    This config-based approach provides:
+    - Cross-language API consistency (matches Go/C++/Rust/TypeScript/Zig)
+    - Better documentation (all parameters in one place)
+    - Type safety and IDE autocomplete
+    - Extensibility without breaking changes
+
+    Attributes:
+        agent: Agent for reasoning (e.g., LLM-based agent)
+        tools: List of available tools the agent can use
+        max_steps: Maximum reasoning steps before stopping (default: 10)
+        system_prompt: Optional custom system prompt to guide behavior
+        verbose: Whether to include thought process in response (default: False)
+
+    Example:
+        >>> from agenkit.patterns import ReActAgent, ReActConfig
+        >>> config = ReActConfig(
+        ...     agent=my_llm_agent,
+        ...     tools=[calculator_tool, search_tool],
+        ...     max_steps=15,
+        ...     verbose=True
+        ... )
+        >>> agent = ReActAgent(config)
+    """
+
+    agent: Agent
+    tools: list[Tool]
+    max_steps: int = 10
+    system_prompt: str | None = None
+    verbose: bool = False
+
+    def __post_init__(self):
+        """Validate configuration."""
+        if self.max_steps < 1:
+            raise ValueError("max_steps must be at least 1")
+        if not self.tools:
+            raise ValueError("tools list cannot be empty")
+
+
 class ReActAgent(Agent):
     """
     Agent that uses the ReAct pattern to reason and act.
@@ -85,19 +128,22 @@ class ReActAgent(Agent):
     The agent maintains a thought process, deciding which tools to use
     and when to provide a final answer.
 
-    Example:
+    Example (recommended config-based API):
         ```python
-        from agenkit.patterns import ReActAgent
+        from agenkit.patterns import ReActAgent, ReActConfig
 
         # Setup tools
         tools = [calculator_tool, search_tool]
 
-        # Create agent
-        agent = ReActAgent(
+        # Create configuration
+        config = ReActConfig(
             agent=base_agent,
             tools=tools,
             max_steps=10
         )
+
+        # Create agent with config
+        agent = ReActAgent(config)
 
         # Process a task
         result = await agent.process(
@@ -106,27 +152,103 @@ class ReActAgent(Agent):
         # Agent will reason about using calculator tool and provide answer
         ```
 
+    Example (deprecated direct parameters):
+        ```python
+        # This API is deprecated and will be removed in v2.0
+        agent = ReActAgent(
+            agent=base_agent,
+            tools=tools,
+            max_steps=10
+        )
+        ```
+
     Args:
-        agent: Agent for reasoning (e.g., LLM-based agent)
-        tools: List of available tools
-        max_steps: Maximum reasoning steps before stopping (default: 10)
-        system_prompt: Optional system prompt to guide behavior
-        verbose: Whether to include thought process in response (default: False)
+        config: Configuration object (recommended, matches other languages)
+        agent: (Deprecated) Agent for reasoning (e.g., LLM-based agent)
+        tools: (Deprecated) List of available tools
+        max_steps: (Deprecated) Maximum reasoning steps before stopping
+        system_prompt: (Deprecated) Optional system prompt to guide behavior
+        verbose: (Deprecated) Whether to include thought process in response
     """
 
     def __init__(
         self,
-        agent: Agent,
-        tools: list[Tool],
+        config: ReActConfig | None = None,
+        *,
+        # Deprecated parameters (kept for backward compatibility)
+        agent: Agent | None = None,
+        tools: list[Tool] | None = None,
         max_steps: int = 10,
         system_prompt: str | None = None,
         verbose: bool = False,
     ):
-        self.agent = agent
-        self.tools = tools
-        self.max_steps = max_steps
-        self.system_prompt = system_prompt or self._default_system_prompt()
-        self.verbose = verbose
+        """
+        Initialize ReActAgent.
+
+        Args:
+            config: Configuration object (recommended, matches other languages)
+            agent: (Deprecated) Agent for reasoning
+            tools: (Deprecated) List of available tools
+            max_steps: (Deprecated) Maximum reasoning steps
+            system_prompt: (Deprecated) Optional system prompt
+            verbose: (Deprecated) Whether to include thought process
+
+        Examples:
+            >>> # Recommended: config-based (matches all other languages)
+            >>> config = ReActConfig(agent=my_agent, tools=my_tools)
+            >>> agent = ReActAgent(config)
+            >>>
+            >>> # Deprecated: direct parameters (will be removed in v2.0)
+            >>> agent = ReActAgent(agent=my_agent, tools=my_tools)
+
+        Migration:
+            Old code:
+                agent = ReActAgent(
+                    agent=my_agent,
+                    tools=my_tools,
+                    max_steps=15,
+                    verbose=True
+                )
+
+            New code:
+                config = ReActConfig(
+                    agent=my_agent,
+                    tools=my_tools,
+                    max_steps=15,
+                    verbose=True
+                )
+                agent = ReActAgent(config)
+        """
+        import warnings
+
+        if config is not None:
+            # New config-based API (recommended)
+            self.agent = config.agent
+            self.tools = config.tools
+            self.max_steps = config.max_steps
+            self.system_prompt = config.system_prompt or self._default_system_prompt()
+            self.verbose = config.verbose
+        elif agent is not None and tools is not None:
+            # Old direct-parameter API (deprecated)
+            warnings.warn(
+                "Direct parameters for ReActAgent are deprecated and will be removed in v2.0. "
+                "Use ReActConfig instead: "
+                "ReActAgent(ReActConfig(agent=..., tools=...)). "
+                "See migration guide for details.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self.agent = agent
+            self.tools = tools
+            self.max_steps = max_steps
+            self.system_prompt = system_prompt or self._default_system_prompt()
+            self.verbose = verbose
+        else:
+            raise ValueError(
+                "Either 'config' or both 'agent' and 'tools' must be provided. "
+                "Recommended: Use ReActConfig for cross-language API consistency."
+            )
+
         self.steps: list[ReActStep] = []
 
     @property

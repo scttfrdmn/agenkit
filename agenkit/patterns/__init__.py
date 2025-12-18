@@ -30,6 +30,7 @@ from agenkit.patterns.agents_as_tools import (
 )
 from agenkit.patterns.autonomous import (
     AutonomousAgent,
+    AutonomousConfig,
     Goal,
 )
 from agenkit.patterns.collaborative import (
@@ -74,6 +75,7 @@ from agenkit.patterns.supervisor import (
     SimplePlanner,
     Subtask,
     SupervisorAgent,
+    SupervisorConfig,
 )
 from agenkit.patterns.conversational import (
     ConversationalAgent,
@@ -91,18 +93,22 @@ from agenkit.patterns.memory import (
 from agenkit.patterns.multiagent import (
     AgentTask,
     ConsensusAgent,
+    ConsensusConfig,
+    MultiAgentConfig,
     MultiAgentOrchestrator,
 )
 from agenkit.patterns.orchestration import ParallelPattern, RouterPattern, SequentialPattern
 from agenkit.patterns.planning import (
     Plan,
     PlanningAgent,
+    PlanningConfig,
     PlanStep,
     StepExecutor,
     StepStatus,
 )
 from agenkit.patterns.react import (
     ReActAgent,
+    ReActConfig,
     ReActStep,
     Tool,
     ToolResult,
@@ -116,6 +122,7 @@ from agenkit.patterns.reasoning_with_tools import (
 from agenkit.patterns.reflection import (
     CritiqueFormat,
     ReflectionAgent,
+    ReflectionConfig,
     ReflectionStep,
     StopReason,
 )
@@ -134,6 +141,7 @@ __all__ = [
     "ApprovalRequest",
     "ApprovalResponse",
     "AutonomousAgent",
+    "AutonomousConfig",
     # Pattern Library - Router (NEW in v0.32.0)
     "ClassifierAgent",
     # Pattern Library - Collaborative (NEW in v0.32.0)
@@ -141,6 +149,7 @@ __all__ = [
     "CollaborativeConfig",
     "confidence_based_approval_func",
     "ConsensusAgent",
+    "ConsensusConfig",
     # Pattern Library - Collaborative (NEW in v0.32.0)
     "ConsensusFunc",
     "ConversationalAgent",
@@ -166,6 +175,7 @@ __all__ = [
     # Pattern Library - Collaborative (NEW in v0.32.0)
     "MergeFunc",
     # Orchestration
+    "MultiAgentConfig",
     "MultiAgentOrchestrator",
     # Pattern Library - Parallel (NEW in v0.32.0)
     "ParallelAgent",
@@ -176,8 +186,10 @@ __all__ = [
     "PlannerAgent",
     "PlanStep",
     "PlanningAgent",
+    "PlanningConfig",
     # ReAct
     "ReActAgent",
+    "ReActConfig",
     "ReActStep",
     # Reasoning with Tools (NEW in v0.13.0)
     "ReasoningStep",
@@ -189,6 +201,7 @@ __all__ = [
     "RecoveryFunc",
     # Reflection Pattern (NEW)
     "ReflectionAgent",
+    "ReflectionConfig",
     "ReflectionStep",
     # Pattern Library - Router (NEW in v0.32.0)
     "RouterAgent",
@@ -217,6 +230,7 @@ __all__ = [
     "Subtask",
     # Pattern Library - Supervisor (NEW in v0.32.0)
     "SupervisorAgent",
+    "SupervisorConfig",
     # Task
     "Task",
     # Tools

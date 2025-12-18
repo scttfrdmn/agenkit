@@ -132,6 +132,44 @@ class StepExecutor(Protocol):
         ...
 
 
+@dataclass
+class PlanningConfig:
+    """
+    Configuration for PlanningAgent.
+
+    This config-based approach provides:
+    - Cross-language API consistency (matches Go/C++/Rust/TypeScript/Zig)
+    - Better documentation (all parameters in one place)
+    - Type safety and IDE autocomplete
+    - Extensibility without breaking changes
+
+    Attributes:
+        planner: Agent that creates plans (typically an LLM-based agent)
+        max_steps: Maximum steps in a plan (default: 10)
+        allow_replanning: Whether to replan on failures (default: False)
+        system_prompt: Optional system prompt for planning
+
+    Example:
+        >>> from agenkit.patterns import PlanningAgent, PlanningConfig
+        >>> config = PlanningConfig(
+        ...     planner=my_llm_agent,
+        ...     max_steps=15,
+        ...     allow_replanning=True
+        ... )
+        >>> agent = PlanningAgent(config)
+    """
+
+    planner: Agent
+    max_steps: int = 10
+    allow_replanning: bool = False
+    system_prompt: str | None = None
+
+    def __post_init__(self):
+        """Validate configuration."""
+        if self.max_steps < 1:
+            raise ValueError("max_steps must be at least 1")
+
+
 class PlanningAgent(Agent):
     """
     Agent that creates and executes plans for complex tasks.
@@ -139,15 +177,19 @@ class PlanningAgent(Agent):
     The agent uses a planner agent to create plans, then executes each step
     sequentially or in parallel (if dependencies allow).
 
-    Example:
+    Example (recommended config-based API):
         ```python
-        from agenkit.patterns import PlanningAgent
+        from agenkit.patterns import PlanningAgent, PlanningConfig
 
-        # Create agent with planner
-        agent = PlanningAgent(
+        # Create configuration
+        config = PlanningConfig(
             planner=my_llm_agent,
-            allow_replanning=True
+            allow_replanning=True,
+            max_steps=15
         )
+
+        # Create agent with config
+        agent = PlanningAgent(config)
 
         # Give it a complex task
         result = await agent.process(
@@ -161,24 +203,95 @@ class PlanningAgent(Agent):
         # etc.
         ```
 
+    Example (deprecated direct parameters):
+        ```python
+        # This API is deprecated and will be removed in v2.0
+        agent = PlanningAgent(
+            planner=my_llm_agent,
+            allow_replanning=True
+        )
+        ```
+
     Args:
-        planner: Agent that creates plans (typically an LLM-based agent)
-        max_steps: Maximum steps in a plan (default: 10)
-        allow_replanning: Whether to replan on failures (default: False)
-        system_prompt: Optional system prompt for planning
+        config: Configuration object (recommended, matches other languages)
+        planner: (Deprecated) Agent that creates plans
+        max_steps: (Deprecated) Maximum steps in a plan
+        allow_replanning: (Deprecated) Whether to replan on failures
+        system_prompt: (Deprecated) Optional system prompt for planning
     """
 
     def __init__(
         self,
-        planner: Agent,
+        config: PlanningConfig | None = None,
+        *,
+        # Deprecated parameters (kept for backward compatibility)
+        planner: Agent | None = None,
         max_steps: int = 10,
         allow_replanning: bool = False,
         system_prompt: str | None = None,
     ):
-        self.planner = planner
-        self.max_steps = max_steps
-        self.allow_replanning = allow_replanning
-        self.system_prompt = system_prompt or self._default_system_prompt()
+        """
+        Initialize PlanningAgent.
+
+        Args:
+            config: Configuration object (recommended, matches other languages)
+            planner: (Deprecated) Agent that creates plans
+            max_steps: (Deprecated) Maximum steps in a plan
+            allow_replanning: (Deprecated) Whether to replan on failures
+            system_prompt: (Deprecated) Optional system prompt
+
+        Examples:
+            >>> # Recommended: config-based (matches all other languages)
+            >>> config = PlanningConfig(planner=my_agent, max_steps=15)
+            >>> agent = PlanningAgent(config)
+            >>>
+            >>> # Deprecated: direct parameters (will be removed in v2.0)
+            >>> agent = PlanningAgent(planner=my_agent, max_steps=15)
+
+        Migration:
+            Old code:
+                agent = PlanningAgent(
+                    planner=my_agent,
+                    max_steps=15,
+                    allow_replanning=True
+                )
+
+            New code:
+                config = PlanningConfig(
+                    planner=my_agent,
+                    max_steps=15,
+                    allow_replanning=True
+                )
+                agent = PlanningAgent(config)
+        """
+        import warnings
+
+        if config is not None:
+            # New config-based API (recommended)
+            self.planner = config.planner
+            self.max_steps = config.max_steps
+            self.allow_replanning = config.allow_replanning
+            self.system_prompt = config.system_prompt or self._default_system_prompt()
+        elif planner is not None:
+            # Old direct-parameter API (deprecated)
+            warnings.warn(
+                "Direct parameters for PlanningAgent are deprecated and will be removed in v2.0. "
+                "Use PlanningConfig instead: "
+                "PlanningAgent(PlanningConfig(planner=...)). "
+                "See migration guide for details.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self.planner = planner
+            self.max_steps = max_steps
+            self.allow_replanning = allow_replanning
+            self.system_prompt = system_prompt or self._default_system_prompt()
+        else:
+            raise ValueError(
+                "Either 'config' or 'planner' must be provided. "
+                "Recommended: Use PlanningConfig for cross-language API consistency."
+            )
+
         self.current_plan: Plan | None = None
         self.executor = DefaultStepExecutor()
 

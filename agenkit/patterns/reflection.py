@@ -24,7 +24,7 @@ Example:
     >>> agent = ReflectionAgent(
     ...     generator=MyGeneratorAgent(),
     ...     critic=MyCriticAgent(),
-    ...     max_iterations=5,
+    ...     max_reflections=3,
     ...     quality_threshold=0.9
     ... )
     >>>
@@ -62,7 +62,7 @@ class StopReason(Enum):
 
     QUALITY_THRESHOLD_MET = "quality_threshold_met"
     MINIMAL_IMPROVEMENT = "minimal_improvement"
-    MAX_ITERATIONS = "max_iterations"
+    MAX_REFLECTIONS = "max_reflections"
     PERFECT_SCORE = "perfect_score"
 
 
@@ -125,7 +125,7 @@ class ReflectionAgent(Agent):
     Args:
         generator: Agent that produces/refines output
         critic: Agent that evaluates output (returns score + feedback)
-        max_iterations: Maximum refinement iterations (default: 5)
+        max_reflections: Maximum refinement iterations (default: 3)
         quality_threshold: Stop when score exceeds this (default: 0.9)
         improvement_threshold: Min improvement to continue (default: 0.05)
         critique_format: Expected format from critic (default: structured)
@@ -138,7 +138,7 @@ class ReflectionAgent(Agent):
         >>> agent = ReflectionAgent(
         ...     generator=generator,
         ...     critic=critic,
-        ...     max_iterations=5,
+        ...     max_reflections=3,
         ...     quality_threshold=0.9
         ... )
         >>>
@@ -155,14 +155,14 @@ class ReflectionAgent(Agent):
         self,
         generator: Agent,
         critic: Agent,
-        max_iterations: int = 5,
+        max_reflections: int = 3,
         quality_threshold: float = 0.9,
         improvement_threshold: float = 0.05,
         critique_format: CritiqueFormat = CritiqueFormat.STRUCTURED,
         verbose: bool = False,
     ):
-        if max_iterations < 1:
-            raise ValueError("max_iterations must be at least 1")
+        if max_reflections < 1:
+            raise ValueError("max_reflections must be at least 1")
         if not 0.0 <= quality_threshold <= 1.0:
             raise ValueError("quality_threshold must be between 0.0 and 1.0")
         if not 0.0 <= improvement_threshold <= 1.0:
@@ -170,7 +170,7 @@ class ReflectionAgent(Agent):
 
         self.generator = generator
         self.critic = critic
-        self.max_iterations = max_iterations
+        self.max_reflections = max_reflections
         self.quality_threshold = quality_threshold
         self.improvement_threshold = improvement_threshold
         self.critique_format = critique_format
@@ -215,7 +215,7 @@ class ReflectionAgent(Agent):
         output = await self.generator.process(message)
         previous_score = 0.0
 
-        for iteration in range(1, self.max_iterations + 1):
+        for iteration in range(1, self.max_reflections + 1):
             # Critique current output
             critique_message = self._build_critique_prompt(
                 original_query=message.content,
@@ -253,8 +253,8 @@ class ReflectionAgent(Agent):
             output = await self.generator.process(refine_message)
             previous_score = score
 
-        # Max iterations reached
-        return self._format_result(output, StopReason.MAX_ITERATIONS)
+        # Max reflections reached
+        return self._format_result(output, StopReason.MAX_REFLECTIONS)
 
     def _build_critique_prompt(self, original_query: str, current_output: str) -> Message:
         """
@@ -446,7 +446,7 @@ Refined Output:
             return StopReason.MINIMAL_IMPROVEMENT, True
 
         # Continue iterating
-        return StopReason.MAX_ITERATIONS, False  # Placeholder, will be overridden if needed
+        return StopReason.MAX_REFLECTIONS, False  # Placeholder, will be overridden if needed
 
     def _format_result(self, output: Message, stop_reason: StopReason) -> Message:
         """

@@ -11,14 +11,14 @@ The ReAct pattern enables agents to:
 - Provide final answers based on tool outputs
 
 This example uses mock implementations for demonstration. In production,
-replace with real LLM clients and tools.
+replace with real LLM agents and tools.
 """
 
 import asyncio
 from datetime import datetime
 
 from agenkit import Message
-from agenkit.patterns import ReActAgent, ToolRegistry
+from agenkit.patterns import ReActAgent
 
 # ============================================================================
 # Mock Tools for Demonstration
@@ -128,15 +128,15 @@ class DateTimeTool:
 
 
 # ============================================================================
-# Mock LLM Client
+# Mock Agent
 # ============================================================================
 
 
-class MockReActLLM:
+class MockReActAgent:
     """
-    Mock LLM that simulates ReAct-style reasoning.
+    Mock Agent that simulates ReAct-style reasoning.
 
-    In production, replace with real LLM:
+    In production, replace with real LLM-based agent:
     - OpenAI: from openai import AsyncOpenAI
     - Anthropic: from anthropic import AsyncAnthropic
     - LiteLLM: from litellm import acompletion
@@ -144,32 +144,25 @@ class MockReActLLM:
 
     def __init__(self):
         self.call_count = 0
+        self.name = "MockReActAgent"
 
-    async def chat(self, messages: list[Message]) -> Message:
+    async def process(self, message: Message) -> Message:
         """Generate mock ReAct-style responses."""
         self.call_count += 1
 
-        # Get the last user message
-        user_messages = [msg for msg in messages if msg.role == "user"]
-        if not user_messages:
-            return Message(
-                role="assistant",
-                content="Thought: I need more information\nAction: Final Answer\nAction Input: Hello! How can I help you?",
-            )
-
-        last_message = user_messages[-1].content.lower()
+        content = message.content.lower()
 
         # Check if this is an observation (tool result)
-        if last_message.startswith("observation:"):
+        if content.startswith("observation:"):
             # We have a tool result, decide on next action
-            if "error" in last_message:
+            if "error" in content:
                 return Message(
                     role="assistant",
                     content="Thought: The tool encountered an error\nAction: Final Answer\nAction Input: I encountered an error while processing your request.",
                 )
             else:
                 # Tool succeeded, provide final answer
-                observation = last_message.replace("observation:", "").strip()
+                observation = content.replace("observation:", "").strip()
                 return Message(
                     role="assistant",
                     content=f"Thought: I have the information I need\nAction: Final Answer\nAction Input: Based on the information, {observation}",
@@ -177,20 +170,20 @@ class MockReActLLM:
 
         # Initial reasoning based on user query
         if (
-            "calculate" in last_message
-            or "%" in last_message
-            or "+" in last_message
-            or "*" in last_message
+            "calculate" in content
+            or "%" in content
+            or "+" in content
+            or "*" in content
         ):
             # Extract math expression
-            if "15% of 240" in last_message:
+            if "15% of 240" in content:
                 return Message(
                     role="assistant",
                     content="Thought: I need to calculate 15% of 240\nAction: calculator\nAction Input: 240 * 0.15",
                 )
-            elif "what is" in last_message and ("+" in last_message or "*" in last_message):
+            elif "what is" in content and ("+" in content or "*" in content):
                 # Try to extract expression
-                parts = last_message.split("what is")
+                parts = content.split("what is")
                 if len(parts) > 1:
                     expr = parts[1].strip().rstrip("?")
                     return Message(
@@ -198,20 +191,20 @@ class MockReActLLM:
                         content=f"Thought: I need to calculate this expression\nAction: calculator\nAction Input: {expr}",
                     )
 
-        elif "search" in last_message or "find" in last_message or "what is python" in last_message:
+        elif "search" in content or "find" in content or "what is python" in content:
             # Extract search query
-            if "python" in last_message:
+            if "python" in content:
                 return Message(
                     role="assistant",
                     content="Thought: I should search for information about Python\nAction: search\nAction Input: python",
                 )
-            elif "eiffel tower" in last_message:
+            elif "eiffel tower" in content:
                 return Message(
                     role="assistant",
                     content="Thought: I should search for information about the Eiffel Tower\nAction: search\nAction Input: eiffel tower",
                 )
 
-        elif "time" in last_message or "date" in last_message:
+        elif "time" in content or "date" in content:
             return Message(
                 role="assistant",
                 content="Thought: I need to get the current date and time\nAction: datetime\nAction Input: {}",
@@ -236,14 +229,11 @@ async def basic_tool_usage_example():
     print("=" * 60)
 
     # Setup tools
-    registry = ToolRegistry()
-    registry.register(Calculator())
-    registry.register(WebSearch())
-    registry.register(DateTimeTool())
+    tools = [Calculator(), WebSearch(), DateTimeTool()]
 
     # Create agent
-    llm = MockReActLLM()
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5)
+    mock_agent = MockReActAgent()
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5)
 
     # Test calculation
     print("\nUser: What is 15% of 240?")
@@ -262,13 +252,10 @@ async def multiple_tools_example():
     print("Example 2: Multiple Tools")
     print("=" * 60)
 
-    registry = ToolRegistry()
-    registry.register(Calculator())
-    registry.register(WebSearch())
-    registry.register(DateTimeTool())
+    tools = [Calculator(), WebSearch(), DateTimeTool()]
 
-    llm = MockReActLLM()
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5)
+    mock_agent = MockReActAgent()
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5)
 
     queries = [
         "What is Python?",
@@ -288,58 +275,26 @@ async def verbose_mode_example():
     print("Example 3: Verbose Mode (Show Reasoning)")
     print("=" * 60)
 
-    registry = ToolRegistry()
-    registry.register(Calculator())
+    tools = [Calculator()]
 
-    llm = MockReActLLM()
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5, verbose=True)
+    mock_agent = MockReActAgent()
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5, verbose=True)
 
     print("\nUser: Calculate 123 + 456")
     response = await agent.process(Message(role="user", content="Calculate 123 + 456"))
     print(f"Agent:\n{response.content}")
 
 
-async def tool_registry_example():
-    """Demonstrate ToolRegistry operations."""
-    print("\n" + "=" * 60)
-    print("Example 4: Tool Registry Management")
-    print("=" * 60)
-
-    registry = ToolRegistry()
-
-    # Register tools
-    registry.register(Calculator())
-    registry.register(WebSearch())
-
-    print("\nRegistered tools:")
-    for tool_name in registry.list_tools():
-        print(f"  - {tool_name}")
-
-    print("\nTools description:")
-    print(registry.get_tools_description())
-
-    # Execute a tool directly
-    print("\nDirect tool execution:")
-    result = await registry.execute("calculator", input="10 + 20")
-    print(f"  calculator(10 + 20) = {result.result}")
-    print(f"  Execution time: {result.execution_time:.4f}s")
-
-    # Try executing non-existent tool
-    result = await registry.execute("nonexistent", input="test")
-    print(f"\n  nonexistent tool: {result.error}")
-
-
 async def error_handling_example():
     """Demonstrate error handling when tools fail."""
     print("\n" + "=" * 60)
-    print("Example 5: Error Handling")
+    print("Example 4: Error Handling")
     print("=" * 60)
 
-    registry = ToolRegistry()
-    registry.register(Calculator())
+    tools = [Calculator()]
 
-    llm = MockReActLLM()
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=3)
+    mock_agent = MockReActAgent()
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=3)
 
     # This will cause the calculator to error
     print("\nUser: Calculate invalid expression")
@@ -357,11 +312,10 @@ async def error_handling_example():
 async def custom_system_prompt_example():
     """Demonstrate using a custom system prompt."""
     print("\n" + "=" * 60)
-    print("Example 6: Custom System Prompt")
+    print("Example 5: Custom System Prompt")
     print("=" * 60)
 
-    registry = ToolRegistry()
-    registry.register(Calculator())
+    tools = [Calculator()]
 
     custom_prompt = """You are a friendly math tutor that helps students learn.
 
@@ -379,11 +333,11 @@ Action: [tool name or "Final Answer"]
 Action Input: [tool input or final answer]
 """
 
-    llm = MockReActLLM()
+    mock_agent = MockReActAgent()
     agent = ReActAgent(
-        llm_client=llm,
-        tool_registry=registry,
-        max_iterations=5,
+        agent=mock_agent,
+        tools=tools,
+        max_steps=5,
         system_prompt=custom_prompt,
     )
 
@@ -397,7 +351,6 @@ async def main():
     await basic_tool_usage_example()
     await multiple_tools_example()
     await verbose_mode_example()
-    await tool_registry_example()
     await error_handling_example()
     await custom_system_prompt_example()
 
@@ -406,13 +359,13 @@ async def main():
     print("=" * 60)
     print("\nKey Takeaways:")
     print("1. ReActAgent uses a Thought->Action->Observation loop")
-    print("2. Tools are registered in a ToolRegistry")
+    print("2. Tools are provided as a list to the agent")
     print("3. Agent automatically decides which tools to use")
     print("4. Reasoning steps can be inspected with get_steps()")
     print("5. Verbose mode shows the thought process")
     print("6. Tool errors are handled gracefully")
     print("\nNext Steps:")
-    print("- Replace MockReActLLM with real LLM (OpenAI, Anthropic, etc.)")
+    print("- Replace MockReActAgent with real LLM-based agent (OpenAI, Anthropic, etc.)")
     print("- Add real tools (APIs, databases, file systems)")
     print("- Implement custom tools for your use case")
     print("- Add retry logic for failed tool executions")

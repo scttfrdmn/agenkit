@@ -105,7 +105,6 @@ from agenkit.patterns.react import (
     ReActAgent,
     ReActStep,
     Tool,
-    ToolRegistry,
     ToolResult,
 )
 from agenkit.patterns.reasoning_with_tools import (
@@ -222,7 +221,6 @@ __all__ = [
     "Task",
     # Tools
     "Tool",
-    "ToolRegistry",
     "ToolResult",
     # Memory (continued)
     "WorkingMemory",

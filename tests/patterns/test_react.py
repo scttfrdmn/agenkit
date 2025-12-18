@@ -5,7 +5,7 @@ Tests for ReAct (Reasoning + Acting) Agent pattern.
 import pytest
 
 from agenkit import Message
-from agenkit.patterns import ReActAgent, ReActStep, ToolRegistry, ToolResult
+from agenkit.patterns import ReActAgent, ReActStep, ToolResult
 
 # ============================================================================
 # Mock Tools
@@ -49,22 +49,23 @@ class FailingTool:
 
 
 # ============================================================================
-# Mock LLM
+# Mock Agent
 # ============================================================================
 
 
-class MockReActLLM:
-    """Mock LLM for testing ReAct pattern."""
+class MockReActAgent:
+    """Mock agent for testing ReAct pattern."""
 
     def __init__(self, responses=None):
         self.responses = responses or []
         self.call_count = 0
-        self.last_messages = None
+        self.last_message = None
+        self.name = "MockReActAgent"
 
-    async def chat(self, messages):
+    async def process(self, message):
         """Return pre-programmed responses."""
         self.call_count += 1
-        self.last_messages = messages.copy()
+        self.last_message = message
 
         if self.call_count <= len(self.responses):
             return Message(role="assistant", content=self.responses[self.call_count - 1])
@@ -98,123 +99,6 @@ def test_tool_result_error():
 
 
 # ============================================================================
-# ToolRegistry Tests
-# ============================================================================
-
-
-def test_tool_registry_register():
-    """Test registering tools."""
-    registry = ToolRegistry()
-    tool = MockCalculator()
-
-    registry.register(tool)
-    assert "calculator" in registry.list_tools()
-    assert registry.get_tool("calculator") == tool
-
-
-def test_tool_registry_duplicate_registration():
-    """Test that registering duplicate tool names raises error."""
-    registry = ToolRegistry()
-    tool1 = MockCalculator()
-    tool2 = MockCalculator()
-
-    registry.register(tool1)
-
-    with pytest.raises(ValueError, match="already registered"):
-        registry.register(tool2)
-
-
-def test_tool_registry_unregister():
-    """Test unregistering tools."""
-    registry = ToolRegistry()
-    tool = MockCalculator()
-
-    registry.register(tool)
-    assert "calculator" in registry.list_tools()
-
-    registry.unregister("calculator")
-    assert "calculator" not in registry.list_tools()
-
-
-def test_tool_registry_get_tool():
-    """Test getting tools by name."""
-    registry = ToolRegistry()
-    tool = MockCalculator()
-
-    registry.register(tool)
-
-    assert registry.get_tool("calculator") == tool
-    assert registry.get_tool("nonexistent") is None
-
-
-def test_tool_registry_list_tools():
-    """Test listing all tools."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
-    registry.register(MockSearch())
-
-    tools = registry.list_tools()
-    assert "calculator" in tools
-    assert "search" in tools
-    assert len(tools) == 2
-
-
-def test_tool_registry_get_tools_description():
-    """Test getting formatted tool descriptions."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
-
-    desc = registry.get_tools_description()
-    assert "calculator" in desc
-    assert "Performs calculations" in desc
-
-
-def test_tool_registry_empty_description():
-    """Test description when no tools registered."""
-    registry = ToolRegistry()
-    desc = registry.get_tools_description()
-    assert "No tools available" in desc
-
-
-@pytest.mark.asyncio
-async def test_tool_registry_execute_success():
-    """Test successful tool execution."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
-
-    result = await registry.execute("calculator", input="2+2")
-
-    assert result.success
-    assert result.tool_name == "calculator"
-    assert "2+2" in result.result
-    assert result.execution_time >= 0
-
-
-@pytest.mark.asyncio
-async def test_tool_registry_execute_not_found():
-    """Test executing non-existent tool."""
-    registry = ToolRegistry()
-
-    result = await registry.execute("nonexistent", input="test")
-
-    assert not result.success
-    assert "not found" in result.error
-
-
-@pytest.mark.asyncio
-async def test_tool_registry_execute_tool_error():
-    """Test tool execution that raises error."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
-
-    result = await registry.execute("calculator", input="error")
-
-    assert not result.success
-    assert "Calculation error" in result.error
-    assert result.execution_time >= 0
-
-
-# ============================================================================
 # ReActAgent Tests
 # ============================================================================
 
@@ -222,18 +106,17 @@ async def test_tool_registry_execute_tool_error():
 @pytest.mark.asyncio
 async def test_react_agent_basic():
     """Test basic ReActAgent functionality."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
+    tools = [MockCalculator()]
 
-    # Program LLM to: use calculator, then give final answer
-    llm = MockReActLLM(
+    # Program agent to: use calculator, then give final answer
+    mock_agent = MockReActAgent(
         responses=[
             "Thought: Need calculator\nAction: calculator\nAction Input: 2+2",
             "Thought: Got result\nAction: Final Answer\nAction Input: The answer is 4",
         ]
     )
 
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5)
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5)
 
     response = await agent.process(Message(role="user", content="Calculate 2+2"))
 
@@ -245,13 +128,13 @@ async def test_react_agent_basic():
 @pytest.mark.asyncio
 async def test_react_agent_immediate_answer():
     """Test agent giving immediate answer without tools."""
-    registry = ToolRegistry()
+    tools = []
 
-    llm = MockReActLLM(
+    mock_agent = MockReActAgent(
         responses=["Thought: Can answer directly\nAction: Final Answer\nAction Input: Hello!"]
     )
 
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5)
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5)
 
     response = await agent.process(Message(role="user", content="Say hello"))
 
@@ -262,11 +145,9 @@ async def test_react_agent_immediate_answer():
 @pytest.mark.asyncio
 async def test_react_agent_multiple_steps():
     """Test agent using multiple tools."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
-    registry.register(MockSearch())
+    tools = [MockCalculator(), MockSearch()]
 
-    llm = MockReActLLM(
+    mock_agent = MockReActAgent(
         responses=[
             "Thought: Need calculator\nAction: calculator\nAction Input: 2+2",
             "Thought: Need search\nAction: search\nAction Input: test query",
@@ -274,7 +155,7 @@ async def test_react_agent_multiple_steps():
         ]
     )
 
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5)
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5)
 
     await agent.process(Message(role="user", content="Test"))
 
@@ -284,24 +165,23 @@ async def test_react_agent_multiple_steps():
 
 
 @pytest.mark.asyncio
-async def test_react_agent_max_iterations():
-    """Test that agent stops at max iterations."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
+async def test_react_agent_max_steps():
+    """Test that agent stops at max steps."""
+    tools = [MockCalculator()]
 
-    # LLM never gives final answer
-    llm = MockReActLLM(
+    # Agent never gives final answer
+    mock_agent = MockReActAgent(
         responses=[
             "Thought: Use calculator\nAction: calculator\nAction Input: test",
         ]
-        * 10  # More than max_iterations
+        * 10  # More than max_steps
     )
 
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=3)
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=3)
 
     response = await agent.process(Message(role="user", content="Test"))
 
-    # Should stop at max iterations
+    # Should stop at max steps
     assert "couldn't complete" in response.content.lower()
     assert len(agent.get_steps()) <= 3
 
@@ -309,17 +189,16 @@ async def test_react_agent_max_iterations():
 @pytest.mark.asyncio
 async def test_react_agent_tool_error():
     """Test agent handling tool errors."""
-    registry = ToolRegistry()
-    registry.register(FailingTool())
+    tools = [FailingTool()]
 
-    llm = MockReActLLM(
+    mock_agent = MockReActAgent(
         responses=[
             "Thought: Use tool\nAction: failing\nAction Input: test",
             "Thought: Tool failed\nAction: Final Answer\nAction Input: Error occurred",
         ]
     )
 
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5)
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5)
 
     await agent.process(Message(role="user", content="Test"))
 
@@ -331,17 +210,16 @@ async def test_react_agent_tool_error():
 @pytest.mark.asyncio
 async def test_react_agent_verbose_mode():
     """Test verbose mode includes reasoning steps."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
+    tools = [MockCalculator()]
 
-    llm = MockReActLLM(
+    mock_agent = MockReActAgent(
         responses=[
             "Thought: Calculate\nAction: calculator\nAction Input: 2+2",
             "Thought: Done\nAction: Final Answer\nAction Input: Result is 4",
         ]
     )
 
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5, verbose=True)
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5, verbose=True)
 
     response = await agent.process(Message(role="user", content="Calculate 2+2"))
 
@@ -354,17 +232,16 @@ async def test_react_agent_verbose_mode():
 @pytest.mark.asyncio
 async def test_react_agent_non_verbose_mode():
     """Test non-verbose mode only shows final answer."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
+    tools = [MockCalculator()]
 
-    llm = MockReActLLM(
+    mock_agent = MockReActAgent(
         responses=[
             "Thought: Calculate\nAction: calculator\nAction Input: 2+2",
             "Thought: Done\nAction: Final Answer\nAction Input: Result is 4",
         ]
     )
 
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5, verbose=False)
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5, verbose=False)
 
     response = await agent.process(Message(role="user", content="Calculate 2+2"))
 
@@ -376,17 +253,16 @@ async def test_react_agent_non_verbose_mode():
 @pytest.mark.asyncio
 async def test_react_agent_get_steps():
     """Test retrieving reasoning steps."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
+    tools = [MockCalculator()]
 
-    llm = MockReActLLM(
+    mock_agent = MockReActAgent(
         responses=[
             "Thought: Calculate\nAction: calculator\nAction Input: 2+2",
             "Thought: Done\nAction: Final Answer\nAction Input: 4",
         ]
     )
 
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5)
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5)
 
     await agent.process(Message(role="user", content="Calculate 2+2"))
 
@@ -400,17 +276,16 @@ async def test_react_agent_get_steps():
 @pytest.mark.asyncio
 async def test_react_agent_clear_steps():
     """Test clearing reasoning steps."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
+    tools = [MockCalculator()]
 
-    llm = MockReActLLM(
+    mock_agent = MockReActAgent(
         responses=[
             "Thought: Calculate\nAction: calculator\nAction Input: 2+2",
             "Thought: Done\nAction: Final Answer\nAction Input: 4",
         ]
     )
 
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5)
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5)
 
     await agent.process(Message(role="user", content="Calculate 2+2"))
     assert len(agent.get_steps()) > 0
@@ -422,33 +297,33 @@ async def test_react_agent_clear_steps():
 @pytest.mark.asyncio
 async def test_react_agent_custom_system_prompt():
     """Test using custom system prompt."""
-    registry = ToolRegistry()
+    tools = []
 
     custom_prompt = "You are a test assistant."
 
-    llm = MockReActLLM(responses=["Thought: Answer\nAction: Final Answer\nAction Input: OK"])
+    mock_agent = MockReActAgent(responses=["Thought: Answer\nAction: Final Answer\nAction Input: OK"])
 
     agent = ReActAgent(
-        llm_client=llm,
-        tool_registry=registry,
-        max_iterations=5,
+        agent=mock_agent,
+        tools=tools,
+        max_steps=5,
         system_prompt=custom_prompt,
     )
 
     await agent.process(Message(role="user", content="Test"))
 
-    # Check that custom prompt was used
-    assert llm.last_messages[0].role == "system"
-    assert llm.last_messages[0].content == custom_prompt
+    # Check that custom prompt was included in message
+    assert mock_agent.last_message is not None
+    assert custom_prompt in mock_agent.last_message.content
 
 
 @pytest.mark.asyncio
 async def test_react_agent_name_property():
     """Test agent name property."""
-    registry = ToolRegistry()
-    llm = MockReActLLM()
+    tools = []
+    mock_agent = MockReActAgent()
 
-    agent = ReActAgent(llm_client=llm, tool_registry=registry)
+    agent = ReActAgent(agent=mock_agent, tools=tools)
 
     assert agent.name == "ReActAgent"
 
@@ -456,17 +331,16 @@ async def test_react_agent_name_property():
 @pytest.mark.asyncio
 async def test_react_agent_action_input_dict_parsing():
     """Test parsing action input as dict."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
+    tools = [MockCalculator()]
 
-    llm = MockReActLLM(
+    mock_agent = MockReActAgent(
         responses=[
             'Thought: Test\nAction: calculator\nAction Input: {"input": "test"}',
             "Thought: Done\nAction: Final Answer\nAction Input: OK",
         ]
     )
 
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5)
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5)
 
     await agent.process(Message(role="user", content="Test"))
 
@@ -478,25 +352,24 @@ async def test_react_agent_action_input_dict_parsing():
 @pytest.mark.asyncio
 async def test_react_agent_steps_reset_on_new_task():
     """Test that steps are reset for each new task."""
-    registry = ToolRegistry()
-    registry.register(MockCalculator())
+    tools = [MockCalculator()]
 
-    llm = MockReActLLM(
+    mock_agent = MockReActAgent(
         responses=[
             "Thought: First\nAction: calculator\nAction Input: 1",
             "Thought: Done\nAction: Final Answer\nAction Input: OK",
         ]
     )
 
-    agent = ReActAgent(llm_client=llm, tool_registry=registry, max_iterations=5)
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5)
 
     # First task
     await agent.process(Message(role="user", content="Task 1"))
     assert len(agent.get_steps()) == 1
 
-    # Reset LLM for second task
-    llm.call_count = 0
-    llm.responses = [
+    # Reset agent for second task
+    mock_agent.call_count = 0
+    mock_agent.responses = [
         "Thought: Second\nAction: calculator\nAction Input: 2",
         "Thought: Done\nAction: Final Answer\nAction Input: OK",
     ]
@@ -506,6 +379,28 @@ async def test_react_agent_steps_reset_on_new_task():
     steps = agent.get_steps()
     assert len(steps) == 1
     assert "2" in steps[0].action_input["input"]
+
+
+@pytest.mark.asyncio
+async def test_react_agent_tool_not_found():
+    """Test handling of non-existent tool."""
+    tools = [MockCalculator()]
+
+    mock_agent = MockReActAgent(
+        responses=[
+            "Thought: Try non-existent\nAction: nonexistent\nAction Input: test",
+            "Thought: Tool not found\nAction: Final Answer\nAction Input: Error",
+        ]
+    )
+
+    agent = ReActAgent(agent=mock_agent, tools=tools, max_steps=5)
+
+    await agent.process(Message(role="user", content="Test"))
+
+    # Check that tool not found error was recorded
+    steps = agent.get_steps()
+    assert len(steps) == 1
+    assert "not found" in steps[0].observation.lower()
 
 
 def test_react_step_dataclass():

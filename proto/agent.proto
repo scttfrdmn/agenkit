@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package agenkit;
 
-option go_package = "github.com/agenkit/agenkit-go/proto/agentpb";
+option go_package = "github.com/scttfrdmn/agenkit/agenkit-go/proto/agentpb";
 
 // AgentService defines the gRPC service for agent communication
 service AgentService {

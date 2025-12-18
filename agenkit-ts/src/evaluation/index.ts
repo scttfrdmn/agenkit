@@ -171,6 +171,17 @@ export {
   runBenchmark,
 } from './benchmarks';
 
+// Pattern Benchmarks
+export {
+  PatternBenchmark,
+  YAMLBenchmarkLoader,
+  PatternBenchmarkSuite,
+  type PatternTestCase,
+  type TestCaseResult,
+  type BenchmarkResult,
+  type SuiteResult,
+} from './pattern-benchmarks';
+
 // Context metrics
 export {
   type AgentWithContextStats,

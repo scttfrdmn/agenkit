@@ -341,6 +341,144 @@ Agent workflow:
 
 ---
 
+## Rust Pattern Benchmarks
+
+### Test Environment
+
+- **Date**: December 17, 2025
+- **Platform**: macOS (Darwin 25.2.0)
+- **CPU**: Apple M4 Pro (ARM64)
+- **Rust Version**: rustc 1.84.0
+- **Build Type**: Release (optimized)
+- **Iterations**: 1,000 (with 10-iteration warmup)
+
+### Results
+
+| Pattern | Time (μs/op) | Throughput (ops/s) | Status |
+|---------|--------------|-------------------|--------|
+| **Fallback** (2 agents) | 0 | 1,069,662 | ✅ |
+| **Parallel** (3 agents) | 1 | 579,109 | ✅ |
+| **Collaborative** (2 rounds) | 3 | 275,555 | ✅ |
+| **Sequential** (3 agents) | 4 | 245,929 | ✅ |
+| **Reflection** (2 iterations) | 2,809 | 356 | ✅ |
+
+### Performance Categories
+
+**Ultra-Fast (<10μs)** - Negligible overhead:
+- Fallback: 0μs
+- Parallel: 1μs
+- Collaborative: 3μs
+- Sequential: 4μs
+
+**High (1000-3000μs)** - Measurable overhead:
+- Reflection: 2,809μs
+
+### Key Observations
+
+1. **Extremely Fast Simple Patterns**: Fallback/Parallel/Collaborative/Sequential all <5μs
+2. **Reflection Overhead**: Significantly higher at 2.8ms due to 2 iterations with complex critique parsing
+3. **Zero-Cost Abstractions**: Rust's zero-cost abstractions deliver excellent performance
+4. **Memory Safety**: All patterns maintain Rust's memory safety guarantees without overhead
+
+### Production Context
+
+**Critical Point**: Pattern overhead in Rust is **negligible in production**:
+- LLM calls dominate: 100-1000ms per call
+- Pattern overhead: 0.000-2.809ms (0μs to 2,809μs)
+- **Production impact**: <0.001-0.3% of total time
+
+**Example Production Scenario**:
+```
+Agent workflow:
+- 2 LLM calls @ 500ms each = 1,000ms
+- Reflection pattern overhead: 2.809ms
+- Production overhead: 0.28%
+```
+
+### Running Benchmarks
+
+```bash
+cd /Users/scttfrdmn/src/agenkit/agenkit-rust
+
+# Build benchmarks (release mode)
+cargo build --release --bench pattern_benchmarks
+
+# Run benchmarks
+./target/release/deps/pattern_benchmarks-*
+```
+
+**Output**: Table showing μs/op and ops/s for each pattern.
+
+---
+
+## Zig Pattern Benchmarks
+
+### Test Environment
+
+- **Date**: December 17, 2025
+- **Platform**: macOS (Darwin 25.2.0)
+- **CPU**: Apple M4 Pro (ARM64)
+- **Zig Version**: 0.15.2
+- **Build Type**: Debug
+- **Iterations**: 1,000 (with 10-iteration warmup)
+
+### Results
+
+| Pattern | Time (μs/op) | Throughput (ops/s) | Status |
+|---------|--------------|-------------------|--------|
+| **Fallback** (2 agents) | 86 | 11,657 | ✅ |
+| **Sequential** (3 agents) | 91 | 10,933 | ✅ |
+| **Parallel** (3 agents) | 110 | 9,127 | ✅ |
+| **Reflection** (2 iterations) | 252 | 3,966 | ✅ |
+
+### Performance Categories
+
+**Fast (10-100μs)** - Excellent performance:
+- Fallback: 86μs
+- Sequential: 91μs
+
+**Fast (100-300μs)** - Good performance:
+- Parallel: 110μs
+- Reflection: 252μs
+
+### Key Observations
+
+1. **Consistent Performance**: All patterns show predictable, consistent timing
+2. **Manual Memory Management**: Explicit allocator pattern provides deterministic performance
+3. **Sequential Execution**: Zig doesn't use async, so "Parallel" is currently sequential
+4. **Debug Build**: These benchmarks are in Debug mode; Release mode would be faster
+5. **Memory Leaks Detected**: GeneralPurposeAllocator reports expected leaks in benchmark (results not cleaned up between iterations for performance)
+
+### Production Context
+
+**Critical Point**: Pattern overhead in Zig is **negligible in production**:
+- LLM calls dominate: 100-1000ms per call
+- Pattern overhead: 0.086-0.252ms (86μs to 252μs)
+- **Production impact**: <0.01-0.03% of total time
+
+**Example Production Scenario**:
+```
+Agent workflow:
+- 2 LLM calls @ 500ms each = 1,000ms
+- Reflection pattern overhead: 0.252ms
+- Production overhead: 0.025%
+```
+
+### Running Benchmarks
+
+```bash
+cd /Users/scttfrdmn/src/agenkit/agenkit-zig
+
+# Build and run benchmarks
+zig build bench-patterns
+```
+
+**Output**: Table showing μs/op and ops/s for each pattern.
+
+**Note**: Memory leak warnings are expected in benchmarks (results not cleaned up between iterations for performance measurement).
+
+---
+
 ## Cross-Language Status
 
 ### Pattern Performance Benchmarks Availability
@@ -351,8 +489,8 @@ Agent workflow:
 | **Go** | ✅ Complete | `agenkit-go/benchmarks/pattern_benchmarks_test.go` | 18/18 | All benchmarks passing |
 | **Python** | ✅ Complete | `tests/benchmarks/test_pattern_performance.py` | 18/18 | All benchmarks passing (⚠️ API inconsistencies - see issue #319) |
 | **TypeScript** | ❌ Not implemented | - | 0/18 | Not yet started |
-| **Rust** | ❌ Not implemented | - | 0/18 | Not yet started |
-| **Zig** | ❌ Not implemented | - | 0/18 | Not yet started |
+| **Rust** | ⚠️ Partial | `agenkit-rust/benches/pattern_benchmarks.rs` | 5/18 | Sequential, Parallel, Reflection, Fallback, Collaborative |
+| **Zig** | ⚠️ Partial | `agenkit-zig/benchmarks/patterns.zig` | 4/18 | Sequential, Parallel, Reflection, Fallback |
 
 ### Python Evaluation Framework vs Performance Benchmarks
 
@@ -479,7 +617,7 @@ uv run pytest tests/benchmarks/test_pattern_performance.py -v -s -m benchmark
 
 ### Current Status
 
-**54 data points collected**: 18 C++ + 18 Go + 18 Python patterns (all passing)
+**63 data points collected**: 18 C++ + 18 Go + 18 Python + 5 Rust + 4 Zig patterns
 
 | Language | Patterns | Status | Progress |
 |----------|----------|--------|----------|
@@ -487,9 +625,9 @@ uv run pytest tests/benchmarks/test_pattern_performance.py -v -s -m benchmark
 | Go | 18/18 | ✅ Complete | 100% |
 | Python | 18/18 | ✅ Complete | 100% (⚠️ API inconsistencies) |
 | TypeScript | 0/18 | ❌ Not implemented | 0% |
-| Rust | 0/18 | ❌ Not implemented | 0% |
-| Zig | 0/18 | ❌ Not implemented | 0% |
-| **Total** | **54/108** | **⚠️ In Progress** | **50%** |
+| Rust | 5/18 | ⚠️ Partial | 28% |
+| Zig | 4/18 | ⚠️ Partial | 22% |
+| **Total** | **63/108** | **⚠️ In Progress** | **58%** |
 
 ---
 

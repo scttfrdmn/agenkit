@@ -279,6 +279,24 @@ export {
   AnswerExtractor,
   createSelfConsistencyAgent,
 } from './techniques/reasoning/self-consistency';
+export {
+  ChainOfThought,
+  ChainOfThoughtConfig,
+  createChainOfThought,
+} from './techniques/reasoning/chain-of-thought';
+export {
+  TreeOfThought,
+  TreeOfThoughtConfig,
+  SearchStrategy as TreeOfThoughtSearchStrategy,
+  EvaluatorFunction,
+  createTreeOfThought,
+} from './techniques/reasoning/tree-of-thought';
+export {
+  ReasoningTree,
+  ReasoningNode,
+  NodeState,
+  TreeStatistics,
+} from './techniques/reasoning/reasoning-tree';
 
 // Observability
 export {

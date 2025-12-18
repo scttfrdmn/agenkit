@@ -182,3 +182,8 @@ path = "examples/gemini_example.rs"
 [[example]]
 name = "bedrock_example"
 path = "examples/bedrock_example.rs"
+
+[[bench]]
+name = "pattern_benchmarks"
+path = "benches/pattern_benchmarks.rs"
+harness = false

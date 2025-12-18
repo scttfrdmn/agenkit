@@ -30,10 +30,42 @@ from agenkit.patterns import (
     SupervisorAgent,
     Task,
 )
-from agenkit.interfaces import Message
+from agenkit.techniques.reasoning import (
+    ChainOfThought,
+    SelfConsistency,
+    TreeOfThought,
+)
+from agenkit.interfaces import Agent, Message
 
 PROTOCOL_VERSION = "1.0"
-VERSION = "0.41.0"
+VERSION = "0.43.0"
+
+
+# Simple mock agent for testing reasoning techniques
+class MockAgent(Agent):
+    """Mock agent that returns predictable responses for testing."""
+
+    def __init__(self, responses: list[str] | None = None):
+        """Initialize with optional list of responses."""
+        self._responses = responses or [
+            "1. First, let's analyze the problem.\n2. Then, we'll solve it step by step.\n3. Finally, we arrive at the answer: 42."
+        ]
+        self._call_count = 0
+
+    @property
+    def name(self) -> str:
+        return "mock_agent"
+
+    @property
+    def capabilities(self) -> list[str]:
+        return ["mock", "test"]
+
+    async def process(self, message: Message) -> Message:
+        """Return a mock response."""
+        response_text = self._responses[self._call_count % len(self._responses)]
+        self._call_count += 1
+        return Message(role="assistant", content=response_text)
+
 
 # Pattern registry
 PATTERNS = {
@@ -55,7 +87,9 @@ PATTERNS = {
     "orchestration": None,  # Deprecated - use sequential/parallel/router
     "memory": MemoryHierarchy,
     "reasoning_with_tools": ReasoningWithToolsAgent,
-    "self_consistency": None,  # TODO: Implement self-consistency pattern
+    "self_consistency": SelfConsistency,
+    "ChainOfThought": ChainOfThought,
+    "TreeOfThought": TreeOfThought,
 }
 
 
@@ -107,18 +141,60 @@ def execute_test(payload: Dict[str, Any]) -> Dict[str, Any]:
         # Get configuration
         config = input_data.get("config", {})
 
-        # Create pattern instance
-        # Note: This is a simplified example. Real implementation would need
-        # to instantiate patterns with proper configuration based on config dict.
+        # Create pattern instance and execute
         start_time = time.time()
 
-        # For now, return a mock response
-        # TODO: Implement actual pattern execution
-        output_message = Message(
-            role="assistant",
-            content=f"Mock response for {pattern_name}",
-            metadata={"pattern": pattern_name, "scenario": scenario_id},
-        )
+        # Handle reasoning techniques that need a base agent
+        if pattern_name in ("ChainOfThought", "TreeOfThought", "self_consistency"):
+            # Create mock agent with varied responses for tree branching
+            mock_agent = MockAgent(
+                responses=[
+                    "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                    "- Alternative method: work backwards.\n- Apply the formula.\n- Answer: 42",
+                    "Step 1: Identify key variables.\nStep 2: Solve systematically.\nStep 3: Verify result is 42",
+                ]
+            )
+
+            if pattern_name == "ChainOfThought":
+                agent = pattern_class(
+                    llm=mock_agent,
+                    prompt_template=config.get(
+                        "prompt_template", "Let's think step by step:\n{query}"
+                    ),
+                    parse_steps=config.get("parse_steps", True),
+                    step_delimiter=config.get("step_delimiter", "\n"),
+                    max_steps=config.get("max_steps"),
+                )
+            elif pattern_name == "TreeOfThought":
+                agent = pattern_class(
+                    llm=mock_agent,
+                    branching_factor=config.get("branching_factor", 2),
+                    max_depth=config.get("max_depth", 2),
+                    strategy=config.get("strategy", "best-first"),
+                    prune_threshold=config.get("prune_threshold", 0.3),
+                )
+            else:  # self_consistency
+                agent = pattern_class(
+                    llm=mock_agent,
+                    num_samples=config.get("num_samples", 3),
+                    voting_strategy=config.get("voting_strategy", "majority"),
+                )
+        else:
+            # For other patterns, instantiation would need more complex setup
+            # For now, return not implemented
+            return {
+                "status": "not_implemented",
+                "result": None,
+                "error": {
+                    "type": "NotImplemented",
+                    "message": f"Pattern '{pattern_name}' execution not yet fully implemented in harness",
+                },
+            }
+
+        # Execute the agent
+        import asyncio
+
+        output_message = asyncio.run(agent.process(message))
 
         duration_ms = (time.time() - start_time) * 1000
 

@@ -1,0 +1,297 @@
+pattern:
+  name: "ChainOfThought"
+  description: "Applies structured prompting to encourage step-by-step reasoning, optionally parsing and tracking individual reasoning steps"
+  category: "reasoning"
+  reference: "Wei et al., 2022 - Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
+
+test_scenarios:
+  - id: "chain_of_thought_basic"
+    name: "Basic chain-of-thought reasoning"
+    description: "Apply CoT prompt and parse reasoning steps"
+
+    input:
+      message:
+        role: "user"
+        content: "What is 15 * 24?"
+        metadata: {}
+      config:
+        prompt_template: "Let's think step by step:\n{query}"
+        parse_steps: true
+        step_delimiter: "\n"
+        max_steps: null
+
+    expected_output:
+      message:
+        role: "assistant"
+        content_pattern: ".*"
+        metadata:
+          technique: "chain_of_thought"
+          reasoning_steps: "array"  # Array of parsed steps
+          num_steps: ">= 1"  # At least one step
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "chain_of_thought_custom_template"
+    name: "Custom prompt template"
+    description: "Should use custom template with {query} placeholder"
+
+    input:
+      message:
+        role: "user"
+        content: "Solve 2x + 5 = 13"
+        metadata: {}
+      config:
+        prompt_template: "Solve step by step:\n{query}"
+        parse_steps: true
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          technique: "chain_of_thought"
+          num_steps: ">= 1"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "chain_of_thought_numbered_steps"
+    name: "Parse numbered steps"
+    description: "Should parse steps in format '1. Step' or '1) Step'"
+
+    input:
+      message:
+        role: "user"
+        content: "Test"
+        metadata: {}
+      config:
+        parse_steps: true
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          reasoning_steps: "array"
+          num_steps: ">= 0"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "chain_of_thought_bullet_points"
+    name: "Parse bullet point steps"
+    description: "Should parse steps in format '- Step' or '* Step'"
+
+    input:
+      message:
+        role: "user"
+        content: "Test"
+        metadata: {}
+      config:
+        parse_steps: true
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          reasoning_steps: "array"
+          num_steps: ">= 0"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "chain_of_thought_max_steps"
+    name: "Limit maximum steps"
+    description: "Should limit number of parsed steps to max_steps"
+
+    input:
+      message:
+        role: "user"
+        content: "List 10 things"
+        metadata: {}
+      config:
+        parse_steps: true
+        max_steps: 3
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          num_steps: "<= 3"  # Should not exceed max_steps
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "chain_of_thought_parse_disabled"
+    name: "Disable step parsing"
+    description: "When parse_steps=false, should not include reasoning_steps metadata"
+
+    input:
+      message:
+        role: "user"
+        content: "Test"
+        metadata: {}
+      config:
+        parse_steps: false
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          technique: "chain_of_thought"
+        metadata_not_contains:
+          - "reasoning_steps"
+          - "num_steps"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "chain_of_thought_custom_delimiter"
+    name: "Custom step delimiter"
+    description: "Should use custom delimiter for step splitting"
+
+    input:
+      message:
+        role: "user"
+        content: "Test"
+        metadata: {}
+      config:
+        parse_steps: true
+        step_delimiter: " | "
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          technique: "chain_of_thought"
+          num_steps: ">= 0"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "chain_of_thought_metadata"
+    name: "Metadata completeness"
+    description: "Response should include all required metadata fields"
+
+    input:
+      message:
+        role: "user"
+        content: "Test"
+        metadata: {}
+      config:
+        parse_steps: true
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata_contains:
+          - "technique"
+          - "reasoning_steps"
+          - "num_steps"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+  - id: "chain_of_thought_empty_response"
+    name: "Empty response handling"
+    description: "Should handle empty responses gracefully"
+
+    input:
+      message:
+        role: "user"
+        content: ""
+        metadata: {}
+      config:
+        parse_steps: true
+
+    expected_output:
+      message:
+        role: "assistant"
+        metadata:
+          num_steps: ">= 0"
+
+      behavior:
+        min_turns: 1
+        max_turns: 1
+
+edge_cases:
+  - condition: "Template missing {query} placeholder"
+    expected: "Returns error (invalid configuration)"
+  - condition: "Empty message content"
+    expected: "Processes with empty query"
+  - condition: "max_steps = 0"
+    expected: "Returns empty reasoning_steps array"
+  - condition: "No parseable steps in response"
+    expected: "Returns empty or single-step array (depends on delimiter)"
+  - condition: "Base agent fails"
+    expected: "Propagates error from base agent"
+
+properties:
+  deterministic: false  # Depends on base agent
+  idempotent: false     # Multiple runs may vary
+  stateful: false       # No state between calls
+  requires_llm: false   # Can work with any agent
+  supports_streaming: false  # Returns after completion
+  parallel_execution: false  # Sequential processing
+
+performance:
+  complexity: "O(1)"    # Single agent call
+  expected_latency: "base_agent_latency + parse_overhead"
+  memory_usage: "O(n)"  # Stores parsed steps
+
+dependencies:
+  patterns: []
+  middleware: []
+  external: []
+
+step_formats:
+  - format: "numbered_dot"
+    example: "1. First step\n2. Second step"
+    description: "Numbered with period"
+
+  - format: "numbered_paren"
+    example: "1) First step\n2) Second step"
+    description: "Numbered with parenthesis"
+
+  - format: "bullet_dash"
+    example: "- First step\n- Second step"
+    description: "Bullet with dash"
+
+  - format: "bullet_asterisk"
+    example: "* First step\n* Second step"
+    description: "Bullet with asterisk"
+
+  - format: "delimiter_based"
+    example: "First step\nSecond step"
+    description: "Fallback delimiter-based splitting"
+
+validation_rules:
+  - field: "prompt_template"
+    type: "string"
+    constraints: "must contain '{query}' placeholder"
+
+  - field: "parse_steps"
+    type: "boolean"
+    constraints: "true or false"
+
+  - field: "max_steps"
+    type: "integer or null"
+    constraints: ">= 0 if specified"
+
+  - field: "step_delimiter"
+    type: "string"
+    constraints: "non-empty string"
+
+cross_language_notes:
+  - "All languages should parse steps identically using same regex patterns"
+  - "Step extraction should try numbered -> bullets -> delimiter fallback in order"
+  - "Empty responses should return empty array, not null"
+  - "max_steps limiting should truncate after parsing, not during"
+  - "Template substitution should be simple string replacement"

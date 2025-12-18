@@ -51,6 +51,7 @@ from agenkit.interfaces import Agent, Message
 
 __all__ = [
     "ReflectionAgent",
+    "ReflectionConfig",
     "ReflectionStep",
     "StopReason",
     "CritiqueFormat",
@@ -71,6 +72,56 @@ class CritiqueFormat(Enum):
 
     STRUCTURED = "structured"  # JSON: {"score": 0.8, "feedback": "..."}
     FREE_FORM = "free_form"  # Free text with score extracted
+
+
+@dataclass
+class ReflectionConfig:
+    """
+    Configuration for ReflectionAgent.
+
+    This config-based approach provides:
+    - Cross-language API consistency (matches Go/C++/Rust/TypeScript/Zig)
+    - Better documentation (all parameters in one place)
+    - Type safety and IDE autocomplete
+    - Extensibility without breaking changes
+
+    Attributes:
+        generator: Agent that produces/refines output
+        critic: Agent that evaluates output (returns score + feedback)
+        max_iterations: Maximum refinement iterations (default: 3)
+        quality_threshold: Stop when score exceeds this (default: 0.9)
+        improvement_threshold: Min improvement to continue (default: 0.05)
+        critique_format: Expected format from critic (default: structured)
+        verbose: Include full reflection history in output (default: False)
+
+    Example:
+        >>> from agenkit.patterns import ReflectionAgent, ReflectionConfig
+        >>>
+        >>> config = ReflectionConfig(
+        ...     generator=my_generator,
+        ...     critic=my_critic,
+        ...     max_iterations=5,
+        ...     quality_threshold=0.95
+        ... )
+        >>> agent = ReflectionAgent(config)
+    """
+
+    generator: Agent
+    critic: Agent
+    max_iterations: int = 3
+    quality_threshold: float = 0.9
+    improvement_threshold: float = 0.05
+    critique_format: CritiqueFormat = CritiqueFormat.STRUCTURED
+    verbose: bool = False
+
+    def __post_init__(self):
+        """Validate configuration."""
+        if self.max_iterations < 1:
+            raise ValueError("max_iterations must be at least 1")
+        if not 0.0 <= self.quality_threshold <= 1.0:
+            raise ValueError("quality_threshold must be between 0.0 and 1.0")
+        if not 0.0 <= self.improvement_threshold <= 1.0:
+            raise ValueError("improvement_threshold must be between 0.0 and 1.0")
 
 
 @dataclass
@@ -153,28 +204,85 @@ class ReflectionAgent(Agent):
 
     def __init__(
         self,
-        generator: Agent,
-        critic: Agent,
+        config: ReflectionConfig | None = None,
+        *,
+        # Deprecated parameters (kept for backward compatibility)
+        generator: Agent | None = None,
+        critic: Agent | None = None,
         max_reflections: int = 3,
         quality_threshold: float = 0.9,
         improvement_threshold: float = 0.05,
         critique_format: CritiqueFormat = CritiqueFormat.STRUCTURED,
         verbose: bool = False,
     ):
-        if max_reflections < 1:
-            raise ValueError("max_reflections must be at least 1")
-        if not 0.0 <= quality_threshold <= 1.0:
-            raise ValueError("quality_threshold must be between 0.0 and 1.0")
-        if not 0.0 <= improvement_threshold <= 1.0:
-            raise ValueError("improvement_threshold must be between 0.0 and 1.0")
+        """
+        Initialize ReflectionAgent.
 
-        self.generator = generator
-        self.critic = critic
-        self.max_reflections = max_reflections
-        self.quality_threshold = quality_threshold
-        self.improvement_threshold = improvement_threshold
-        self.critique_format = critique_format
-        self.verbose = verbose
+        Args:
+            config: Configuration object (recommended, matches other languages)
+            generator: (Deprecated) Agent that produces/refines output
+            critic: (Deprecated) Agent that evaluates output
+            max_reflections: (Deprecated) Use config.max_iterations instead
+            quality_threshold: (Deprecated) Use config.quality_threshold instead
+            improvement_threshold: (Deprecated) Use config.improvement_threshold instead
+            critique_format: (Deprecated) Use config.critique_format instead
+            verbose: (Deprecated) Use config.verbose instead
+
+        Examples:
+            >>> # Recommended: config-based (matches all other languages)
+            >>> config = ReflectionConfig(generator=gen, critic=critic)
+            >>> agent = ReflectionAgent(config)
+            >>>
+            >>> # Deprecated: direct parameters (will be removed in v2.0)
+            >>> agent = ReflectionAgent(generator=gen, critic=critic)
+
+        Raises:
+            ValueError: If neither config nor generator/critic are provided
+            ValueError: If validation fails
+        """
+        import warnings
+
+        if config is not None:
+            # New config-based API (recommended)
+            self.generator = config.generator
+            self.critic = config.critic
+            self.max_reflections = config.max_iterations
+            self.quality_threshold = config.quality_threshold
+            self.improvement_threshold = config.improvement_threshold
+            self.critique_format = config.critique_format
+            self.verbose = config.verbose
+        elif generator is not None and critic is not None:
+            # Old direct-parameter API (deprecated)
+            warnings.warn(
+                "Direct parameters for ReflectionAgent are deprecated and will be removed in v2.0. "
+                "Use ReflectionConfig instead: "
+                "ReflectionAgent(ReflectionConfig(generator=..., critic=...)). "
+                "See migration guide for details.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+            # Validate old-style parameters
+            if max_reflections < 1:
+                raise ValueError("max_reflections must be at least 1")
+            if not 0.0 <= quality_threshold <= 1.0:
+                raise ValueError("quality_threshold must be between 0.0 and 1.0")
+            if not 0.0 <= improvement_threshold <= 1.0:
+                raise ValueError("improvement_threshold must be between 0.0 and 1.0")
+
+            self.generator = generator
+            self.critic = critic
+            self.max_reflections = max_reflections
+            self.quality_threshold = quality_threshold
+            self.improvement_threshold = improvement_threshold
+            self.critique_format = critique_format
+            self.verbose = verbose
+        else:
+            raise ValueError(
+                "Either 'config' or both 'generator' and 'critic' must be provided. "
+                "Recommended: Use ReflectionConfig for cross-language API consistency."
+            )
+
         self.history: list[ReflectionStep] = []
 
     @property

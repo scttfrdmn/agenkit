@@ -39,6 +39,41 @@ class Subtask:
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass
+class SupervisorConfig:
+    """
+    Configuration for SupervisorAgent.
+
+    This config-based approach provides:
+    - Cross-language API consistency (matches Go/C++/Rust/TypeScript/Zig)
+    - Better documentation (all parameters in one place)
+    - Type safety and IDE autocomplete
+    - Extensibility without breaking changes
+
+    Attributes:
+        planner: Agent responsible for planning and synthesis
+        specialists: Map of specialist agents keyed by their domain/type
+
+    Example:
+        >>> from agenkit.patterns import SupervisorAgent, SupervisorConfig
+        >>> config = SupervisorConfig(
+        ...     planner=my_planner,
+        ...     specialists={"coder": coder_agent, "tester": tester_agent}
+        ... )
+        >>> agent = SupervisorAgent(config)
+    """
+
+    planner: Any  # PlannerAgent (using Any to avoid circular import)
+    specialists: dict[str, Agent]
+
+    def __post_init__(self):
+        """Validate configuration."""
+        if self.planner is None:
+            raise ValueError("planner is required")
+        if not self.specialists:
+            raise ValueError("at least one specialist is required")
+
+
 class PlannerAgent(Protocol):
     """
     Protocol for agents responsible for task decomposition and result synthesis.
@@ -106,9 +141,9 @@ class SupervisorAgent(Agent):
     The supervisor pattern is ideal when tasks have clear domain boundaries
     and benefit from specialized expertise.
 
-    Example:
+    Example (recommended config-based API):
         ```python
-        from agenkit.patterns import SupervisorAgent, SimplePlanner
+        from agenkit.patterns import SupervisorAgent, SupervisorConfig, SimplePlanner
 
         # Create specialists
         specialists = {
@@ -117,27 +152,67 @@ class SupervisorAgent(Agent):
             "reviewer": review_agent
         }
 
-        # Create supervisor
+        # Create configuration
         planner = SimplePlanner(llm_agent)
-        supervisor = SupervisorAgent(planner=planner, specialists=specialists)
+        config = SupervisorConfig(planner=planner, specialists=specialists)
+
+        # Create supervisor
+        supervisor = SupervisorAgent(config)
 
         result = await supervisor.process(
             Message(role="user", content="Build a REST API")
         )
         ```
+
+    Example (deprecated direct parameters):
+        ```python
+        # This API is deprecated and will be removed in v2.0
+        supervisor = SupervisorAgent(planner=planner, specialists=specialists)
+        ```
+
+    Args:
+        config: Configuration object (recommended, matches other languages)
+        planner: (Deprecated) Agent responsible for planning and synthesis
+        specialists: (Deprecated) Map of specialist agents keyed by their domain/type
     """
 
     def __init__(
         self,
-        planner: PlannerAgent,
-        specialists: dict[str, Agent],
+        config: SupervisorConfig | None = None,
+        *,
+        # Deprecated parameters (kept for backward compatibility)
+        planner: Any = None,  # PlannerAgent
+        specialists: dict[str, Agent] | None = None,
     ) -> None:
         """
         Create a new supervisor agent.
 
         Args:
-            planner: Agent responsible for planning and synthesis
-            specialists: Map of specialist agents keyed by their domain/type
+            config: Configuration object (recommended, matches other languages)
+            planner: (Deprecated) Agent responsible for planning and synthesis
+            specialists: (Deprecated) Map of specialist agents keyed by their domain/type
+
+        Examples:
+            >>> # Recommended: config-based (matches all other languages)
+            >>> config = SupervisorConfig(planner=my_planner, specialists=my_specialists)
+            >>> agent = SupervisorAgent(config)
+            >>>
+            >>> # Deprecated: direct parameters (will be removed in v2.0)
+            >>> agent = SupervisorAgent(planner=my_planner, specialists=my_specialists)
+
+        Migration:
+            Old code:
+                supervisor = SupervisorAgent(
+                    planner=my_planner,
+                    specialists={"coder": coder, "tester": tester}
+                )
+
+            New code:
+                config = SupervisorConfig(
+                    planner=my_planner,
+                    specialists={"coder": coder, "tester": tester}
+                )
+                supervisor = SupervisorAgent(config)
 
         Raises:
             ValueError: If planner is None or specialists is empty
@@ -145,13 +220,39 @@ class SupervisorAgent(Agent):
         The planner's plan method should return subtasks with type values that
         match keys in the specialists map.
         """
-        if planner is None:
-            raise ValueError("planner is required")
-        if not specialists:
-            raise ValueError("at least one specialist is required")
+        import warnings
 
-        self._planner = planner
-        self._specialists = specialists
+        if config is not None:
+            # New config-based API (recommended)
+            if config.planner is None:
+                raise ValueError("planner is required")
+            if not config.specialists:
+                raise ValueError("at least one specialist is required")
+
+            self._planner = config.planner
+            self._specialists = config.specialists
+        elif planner is not None and specialists is not None:
+            # Old direct-parameter API (deprecated)
+            warnings.warn(
+                "Direct parameters for SupervisorAgent are deprecated and will be removed in v2.0. "
+                "Use SupervisorConfig instead: "
+                "SupervisorAgent(SupervisorConfig(planner=..., specialists=...)). "
+                "See migration guide for details.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            if planner is None:
+                raise ValueError("planner is required")
+            if not specialists:
+                raise ValueError("at least one specialist is required")
+
+            self._planner = planner
+            self._specialists = specialists
+        else:
+            raise ValueError(
+                "Either 'config' or both 'planner' and 'specialists' must be provided. "
+                "Recommended: Use SupervisorConfig for cross-language API consistency."
+            )
 
     @property
     def name(self) -> str:

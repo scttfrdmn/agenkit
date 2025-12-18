@@ -37,6 +37,13 @@
 #include "agenkit/patterns/planning.hpp"
 #include "agenkit/patterns/autonomous.hpp"
 #include "agenkit/patterns/memory.hpp"
+#include "agenkit/patterns/sequential.hpp"
+#include "agenkit/patterns/parallel.hpp"
+#include "agenkit/patterns/router.hpp"
+#include "agenkit/patterns/fallback.hpp"
+#include "agenkit/patterns/collaborative.hpp"
+#include "agenkit/patterns/human_in_loop.hpp"
+#include "agenkit/patterns/supervisor.hpp"
 
 using namespace agenkit;
 using namespace std::chrono;
@@ -117,6 +124,32 @@ void print_result(const BenchmarkResult& result) {
         std::cout << std::right << std::setw(12) << "-" << "\n";
     }
 }
+
+// ============================================================================
+// Helper Classes for Benchmarks
+// ============================================================================
+
+// Simple echo classifier for Router benchmarks
+class EchoClassifier : public patterns::ClassifierAgent {
+public:
+    std::string name() const override { return "echo-classifier"; }
+    std::vector<std::string> capabilities() const override { return {"classify"}; }
+
+    std::future<core::Result<core::Message, core::AgentError>>
+    process(core::Message message) override {
+        std::promise<core::Result<core::Message, core::AgentError>> promise;
+        promise.set_value(core::Result<core::Message, core::AgentError>::ok(
+            core::Message::with_text("assistant", "route1")));
+        return promise.get_future();
+    }
+
+    core::Result<std::string, core::AgentError>
+    classify(const core::Message& message) override {
+        return core::Result<std::string, core::AgentError>::ok("route1");
+    }
+};
+
+// Note: EchoPlanner removed - Supervisor benchmark skipped due to complex PlannerAgent interface
 
 // ============================================================================
 // Pattern Benchmarks
@@ -200,7 +233,9 @@ void bench_conversational() {
         auto msg = core::Message::with_text("user", "Test");
         auto future = conv.process(std::move(msg));
         auto _ = future.get();
-    }, 10);  // Reduced to 10 iterations to prevent memory buildup
+        // Clear history after each iteration to prevent accumulation
+        conv.clear_history();
+    }, 1000);  // Increased to 1000 iterations now that history is cleared
 
     print_result(result);
 }
@@ -251,14 +286,14 @@ void bench_planning() {
 void bench_autonomous() {
     patterns::AutonomousConfig config;
     config.max_iterations = 5;
-    patterns::AutonomousAgent autonomous("Complete objective", config);
-
-    autonomous.add_goal("Goal 1", 1);
-    autonomous.add_goal("Goal 2", 1);
 
     auto result = benchmark("Autonomous (5 iterations)", [&]() {
+        // Create fresh agent for each iteration to reset goal state
+        patterns::AutonomousAgent autonomous("Complete objective", config);
+        autonomous.add_goal("Goal 1", 1);
+        autonomous.add_goal("Goal 2", 1);
         auto _ = autonomous.run();
-    }, 10);  // Fewer iterations as this is more expensive
+    }, 100);  // Increased iterations now that we measure correctly
 
     print_result(result);
 }
@@ -305,6 +340,149 @@ void bench_memory_hierarchy() {
     }, 100, 1);
 
     print_result(result2);
+}
+
+void bench_sequential() {
+    auto agent1 = std::make_shared<adapters::EchoAgent>();
+    auto agent2 = std::make_shared<adapters::EchoAgent>();
+    auto agent3 = std::make_shared<adapters::EchoAgent>();
+
+    std::vector<std::shared_ptr<core::Agent>> agents = {agent1, agent2, agent3};
+    patterns::SequentialAgent sequential(agents);
+
+    auto result = benchmark("Sequential (3 agents)", [&]() {
+        auto msg = core::Message::with_text("user", "Test");
+        auto future = sequential.process(std::move(msg));
+        auto _ = future.get();
+    }, 100);
+
+    print_result(result);
+}
+
+void bench_parallel() {
+    auto agent1 = std::make_shared<adapters::EchoAgent>();
+    auto agent2 = std::make_shared<adapters::EchoAgent>();
+    auto agent3 = std::make_shared<adapters::EchoAgent>();
+
+    // Simple aggregator: concatenate responses
+    auto aggregator = [](const std::vector<core::Message>& messages) {
+        return messages.empty() ? core::Message::with_text("assistant", "")
+                                : messages[0];
+    };
+
+    std::vector<std::shared_ptr<core::Agent>> agents = {agent1, agent2, agent3};
+    patterns::ParallelAgent parallel(agents, aggregator);
+
+    auto result = benchmark("Parallel (3 agents)", [&]() {
+        auto msg = core::Message::with_text("user", "Test");
+        auto future = parallel.process(std::move(msg));
+        auto _ = future.get();
+    }, 100);
+
+    print_result(result);
+}
+
+void bench_router() {
+    auto classifier = std::make_shared<EchoClassifier>();
+    auto agent1 = std::make_shared<adapters::EchoAgent>();
+    auto agent2 = std::make_shared<adapters::EchoAgent>();
+
+    std::unordered_map<std::string, std::shared_ptr<core::Agent>> agents = {
+        {"route1", agent1},
+        {"route2", agent2}
+    };
+
+    patterns::RouterConfig config{classifier, agents, "route1"};
+    patterns::RouterAgent router(config);
+
+    auto result = benchmark("Router (2 routes)", [&]() {
+        auto msg = core::Message::with_text("user", "Test");
+        auto future = router.process(std::move(msg));
+        auto _ = future.get();
+    }, 100);
+
+    print_result(result);
+}
+
+void bench_fallback() {
+    auto agent1 = std::make_shared<adapters::EchoAgent>();
+    auto agent2 = std::make_shared<adapters::EchoAgent>();
+
+    std::vector<std::shared_ptr<core::Agent>> agents = {agent1, agent2};
+    patterns::FallbackAgent fallback(agents);
+
+    auto result = benchmark("Fallback (2 agents)", [&]() {
+        auto msg = core::Message::with_text("user", "Test");
+        auto future = fallback.process(std::move(msg));
+        auto _ = future.get();
+    }, 100);
+
+    print_result(result);
+}
+
+void bench_collaborative() {
+    auto agent1 = std::make_shared<adapters::EchoAgent>();
+    auto agent2 = std::make_shared<adapters::EchoAgent>();
+
+    std::vector<std::shared_ptr<core::Agent>> agents = {agent1, agent2};
+
+    // Merge function: return first response
+    auto merge_func = [](const std::vector<core::Message>& messages) {
+        return messages.empty() ? core::Message::with_text("assistant", "")
+                                : messages[0];
+    };
+
+    patterns::CollaborativeConfig config{agents, 2, nullptr, merge_func};
+    patterns::CollaborativeAgent collaborative(config);
+
+    auto result = benchmark("Collaborative (2 rounds)", [&]() {
+        auto msg = core::Message::with_text("user", "Test");
+        auto future = collaborative.process(std::move(msg));
+        auto _ = future.get();
+    }, 100);
+
+    print_result(result);
+}
+
+void bench_human_in_loop() {
+    auto agent = std::make_shared<adapters::EchoAgent>();
+
+    // Auto-approve callback for benchmarking
+    auto approval_func = [](const patterns::ApprovalRequest& req) {
+        patterns::ApprovalResponse response(true, "approved");
+        return core::Result<patterns::ApprovalResponse, core::AgentError>::ok(response);
+    };
+
+    patterns::HumanInLoopConfig config{agent, 0.8, approval_func, "confidence"};
+    patterns::HumanInLoopAgent hil(config);
+
+    auto result = benchmark("Human-in-Loop (auto-approve)", [&]() {
+        auto msg = core::Message::with_text("user", "Test");
+        auto future = hil.process(std::move(msg));
+        auto _ = future.get();
+    }, 100);
+
+    print_result(result);
+}
+
+void bench_supervisor() {
+    auto echo_agent = std::make_shared<adapters::EchoAgent>();
+    auto planner = std::make_shared<patterns::SimplePlanner>(echo_agent);
+
+    std::unordered_map<std::string, std::shared_ptr<core::Agent>> specialists = {
+        {"specialist1", std::make_shared<adapters::EchoAgent>()},
+        {"specialist2", std::make_shared<adapters::EchoAgent>()}
+    };
+
+    patterns::SupervisorAgent supervisor(planner, specialists);
+
+    auto result = benchmark("Supervisor (2 specialists)", [&]() {
+        auto msg = core::Message::with_text("user", "Test");
+        auto future = supervisor.process(std::move(msg));
+        auto _ = future.get();
+    }, 100);
+
+    print_result(result);
 }
 
 // ============================================================================
@@ -358,6 +536,24 @@ int main() {
     bench_memory_working();
     std::cout << "Running memory_hierarchy...\n" << std::flush;
     bench_memory_hierarchy();
+
+    std::cout << std::string(100, '-') << "\n";
+
+    // Composition patterns
+    std::cout << "Running sequential...\n" << std::flush;
+    bench_sequential();
+    std::cout << "Running parallel...\n" << std::flush;
+    bench_parallel();
+    std::cout << "Running router...\n" << std::flush;
+    bench_router();
+    std::cout << "Running fallback...\n" << std::flush;
+    bench_fallback();
+    std::cout << "Running collaborative...\n" << std::flush;
+    bench_collaborative();
+    std::cout << "Running human_in_loop...\n" << std::flush;
+    bench_human_in_loop();
+    std::cout << "Running supervisor...\n" << std::flush;
+    bench_supervisor();
 
     std::cout << std::string(100, '=') << "\n\n";
 

@@ -270,3 +270,66 @@ Examples in this codebase are documentation. They teach users how to use the fra
 **CI/CD exists to catch issues before they reach production.** Lint errors are not suggestions - they're problems that will cause bugs, confusion, or maintenance burden. Fix them properly, don't work around them.
 
 **Write code as if you're teaching** - because you are. Every line of code in this repository is an example for users and future contributors.
+
+---
+
+## Source of Truth for Planning & Roadmap
+
+**Established**: December 18, 2025 (Rationalization)
+
+### Canonical Sources
+
+There is ONE canonical source for each type of project information:
+
+1. **Scope & Timeline**: `ROADMAP.md` (this repository)
+   - What features are committed to which releases
+   - Release dates and milestones
+   - v1.0.0 scope definition
+
+2. **Issue Tracking**: GitHub Issues + Milestones
+   - GitHub Issues are the authoritative task list
+   - Milestones prefixed with "Ideas:" are NOT commitments
+   - Only numbered milestones (v0.x.x, v1.x.x) are commitments
+
+3. **Strategic Planning**: `/Users/scttfrdmn/src/agenkit-planning/`
+   - `EXECUTIVE_SUMMARY.md` - High-level strategy and positioning
+   - `CURRENT_STATE_AUDIT_DEC_2025.md` - Most recent state analysis
+   - Other docs are advisory or archived
+
+### Policy
+
+**When in conflict, ROADMAP.md wins.**
+
+If there is any discrepancy between planning documents, GitHub milestones, or verbal discussions:
+- ROADMAP.md is the source of truth
+- Update other documents to match ROADMAP.md
+- Do not create parallel planning systems
+
+### Milestone Naming Convention
+
+- **`v0.42.0 - Testing & Documentation`** = Committed work
+- **`Ideas: Advanced Patterns`** = Future ideas, NOT commitments
+- **`Future/Backlog`** = Parking lot for ideas
+
+If a milestone is not a numbered release (v0.x.x or v1.x.x), it is NOT a commitment.
+
+### Making Changes
+
+To change v1.0.0 scope or timeline:
+1. Update ROADMAP.md first
+2. Update GitHub milestones to match
+3. Update planning docs if needed
+4. Document the change in commit message
+
+Do not make changes in planning docs and expect ROADMAP.md to sync - it won't.
+
+### For Claude Code Users
+
+When working on Agenkit:
+1. Always read ROADMAP.md before planning work
+2. Check GitHub milestones for current assignments
+3. Treat "Ideas:" milestones as brainstorming, not commitments
+4. If planning docs conflict with ROADMAP.md, trust ROADMAP.md
+5. When in doubt, ask: "Is this in ROADMAP.md?"
+
+This prevents scope creep and ensures everyone works from the same plan.

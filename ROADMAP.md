@@ -22,6 +22,20 @@ This document outlines the development roadmap for agenkit, organized by phases 
 - **Safety**: Autonomous agents need guardrails (prompt injection, resource limits)
 - **Evaluation**: How to measure 30-hour agent success?
 
+**✅ Evaluation Framework: Already Implemented**
+
+**Agenkit includes comprehensive evaluation capabilities** across all 6 languages:
+- **Core Metrics**: Accuracy, latency, cost tracking
+- **Quality Metrics**: Context-aware evaluation
+- **Benchmarking**: Pattern performance measurement
+- **Recording/Replay**: SessionRecorder for debugging
+- **Regression Testing**: RegressionDetector for continuous quality
+- **AB Testing**: Workflow comparison and optimization
+
+**Advanced evaluation features** (ErrorTracker, FailurePredictor, CLI tools, dashboards) were planned for v0.43-v0.47 but have been **deferred to v1.1+** (19 issues moved to "Ideas: Evaluation Framework" milestone). The existing evaluation framework is sufficient for v1.0.0.
+
+**Note**: Recent research (Patronus AI, December 2025) shows 63% of multi-step AI agents fail due to error compounding. Agenkit's existing evaluation framework addresses this through comprehensive metrics and testing. Future enhancements (real-time error tracking, failure prediction) can be built on this foundation post-v1.0.0.
+
 See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for comprehensive 2026 strategy.
 
 ### ✅ Completed (Phases 1-5)
@@ -1296,7 +1310,7 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 
 ### v0.43.0 - Core Reasoning (Due: February 24, 2026)
 
-**Goal**: Foundational reasoning techniques across all languages
+**Goal**: Foundational reasoning techniques across all languages + Error tracking foundation
 
 **Scope**:
 - **Chain-of-Thought (CoT)** (#279) - Step-by-step reasoning
@@ -1304,7 +1318,9 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 - **Self-Consistency** (#281) - Multiple sampling and voting
 - **Integration Tests** (#282) - Cross-pattern validation
 
-**Implementation**: All 3 techniques across all 6 languages (18 implementations)
+**Implementation**: All 3 reasoning techniques across all 6 languages (18 implementations)
+
+**Note**: Evaluation features (#321-323) originally planned for this milestone have been deferred to v1.1+ ("Ideas: Evaluation Framework" milestone).
 
 **Milestone**: [#50 v0.43.0 - Core Reasoning](https://github.com/scttfrdmn/agenkit/milestone/50) (4 issues)
 
@@ -1312,7 +1328,7 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 
 ### v0.44.0 - WASM Complete (Due: March 31, 2026)
 
-**Goal**: Complete browser story with all 18 patterns in WASM
+**Goal**: Complete browser story with all 18 patterns in WASM + Error categorization
 
 **Scope**:
 - **Rust WASM** (#283-284)
@@ -1330,13 +1346,15 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 - Browser examples deployable to Vercel/Netlify
 - Conference demo ready
 
+**Note**: Evaluation features (#324-326) originally planned for this milestone have been deferred to v1.1+ ("Ideas: Evaluation Framework" milestone).
+
 **Milestone**: [#51 v0.44.0 - WASM Complete](https://github.com/scttfrdmn/agenkit/milestone/51) (7 issues)
 
 ---
 
 ### v0.45.0 - Core Deployment (Due: April 14, 2026)
 
-**Goal**: Production-ready deployment templates for the most impactful platforms
+**Goal**: Production-ready deployment templates + Failure prediction before deployment
 
 **Scope**:
 - **Cloudflare Workers** (#296) - Edge deployment with WASM, zero cold starts
@@ -1354,30 +1372,35 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 
 **Demo Value**: "Deploy globally in 30 seconds" ⭐⭐⭐⭐⭐
 
+**Note**: Evaluation features (#327-330) originally planned for this milestone have been deferred to v1.1+ ("Ideas: Evaluation Framework" milestone).
+
 **Milestone**: [#54 v0.45.0 - Core Deployment](https://github.com/scttfrdmn/agenkit/milestone/54) (5 issues)
 
 ---
 
-### v0.46.0 - Cloud Native Deployment (Due: April 21, 2026)
+### v0.46.0 - Production Hardening (Due: April 21, 2026)
 
-**Goal**: Expand deployment coverage to cloud native platforms
+**Goal**: Production hardening and quality assurance
 
 **Scope**:
-- **Google Cloud Run** - Container + serverless hybrid
-- **Kubernetes Production** - Production-grade Helm chart with autoscaling
-- **Azure Functions** - Python and C# implementations
-- **Railway** - Simple deployment with database integration
+- **Production Hardening** - Comprehensive testing under varied conditions
+- **Quality Assurance** - Stress testing, load testing, chaos engineering
+- **Security Hardening** - Penetration testing, security audits
+- **Performance Optimization** - Profiling, bottleneck identification
 
 **Deliverables**:
-- Cloud provider specific templates and documentation
-- Terraform/IaC for each platform
-- Helm chart for Kubernetes (HPA, VPA, cert-manager)
-- Enterprise deployment patterns
-- Multi-cloud strategy guidance
+- Production-ready stability and performance
+- Comprehensive QA documentation
+- Security audit results
+- Performance benchmarks
 
-**Demo Value**: "Enterprise-ready cloud deployment" ⭐⭐⭐⭐
+**Note**: Evaluation features (#331-335) originally planned for this milestone have been deferred to v1.1+ ("Ideas: Evaluation Framework" milestone).
 
-**Milestone**: [#55 v0.46.0 - Cloud Native Deployment](https://github.com/scttfrdmn/agenkit/milestone/55) (4 issues planned)
+**Milestone**: [#56 v0.46.0 - Production Hardening](https://github.com/scttfrdmn/agenkit/milestone/56) (TBD issues)
+
+---
+
+**Note**: v0.47.0 - Evaluation & Monitoring milestone removed. Features (#336-339) deferred to v1.1+ ("Ideas: Evaluation Framework" milestone). Existing evaluation framework sufficient for v1.0.0.
 
 ---
 
@@ -1392,6 +1415,11 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 - ✅ All 18 patterns work in WASM (Rust + C++ + Zig)
 - ✅ Browser examples (React, Vue, Svelte)
 - ✅ Core Reasoning Techniques (CoT, ToT, Self-Consistency)
+- ✅ **Evaluation Framework** - Existing comprehensive evaluation capabilities
+  - Core metrics (accuracy, latency, cost)
+  - Quality metrics and benchmarking
+  - SessionRecorder and RegressionDetector
+  - AB testing and optimization
 - ✅ Complete documentation
 - ✅ Cross-language verified
 - ✅ Performance validated
@@ -1523,29 +1551,38 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 - Comprehensive User Documentation (#216)
 - 10 issues tracked in milestone #49
 
-**v0.43.0 (Feb 24, 2026):** Core Reasoning
+**v0.43.0 (Feb 24, 2026):** Core Reasoning + Error Tracking Foundation 🆕
 - Chain-of-Thought (CoT) prompting
 - Tree-of-Thought (ToT) reasoning
 - Self-Consistency decoding
-- 4 issues tracked in milestone #50
+- **Evaluation Phase 1:** ErrorTracker API, OpenTelemetry metrics, documentation
+- 7 issues tracked in milestone #50 (4 reasoning + 3 evaluation)
 
-**v0.44.0 (Mar 31, 2026):** WASM Complete
+**v0.44.0 (Mar 31, 2026):** WASM Complete + Error Categorization 🆕
 - All 18 patterns in WASM (Rust + C++ + Zig)
 - Browser examples (React, Vue, Svelte)
 - @agenkit/wasm NPM package
-- 7 issues tracked in milestone #51
+- **Evaluation Phase 2:** Error categorization, breakdown analysis, documentation
+- 10 issues tracked in milestone #51 (7 WASM + 3 evaluation)
 
-**v0.45.0 (Apr 14, 2026):** Core Deployment
+**v0.45.0 (Apr 14, 2026):** Core Deployment + Failure Prediction 🆕
 - Cloudflare Workers, AWS Lambda, Docker Compose, Vercel Edge Functions
 - Platform selection guide and production checklist
 - CI/CD templates for each platform
-- 5 issues tracked in milestone #54
+- **Evaluation Phase 3:** FailurePredictor API, historical data, agenkit predict CLI, documentation
+- 9 issues tracked in milestone #54 (5 deployment + 4 evaluation)
 
-**v0.46.0 (Apr 21, 2026):** Cloud Native Deployment
-- Google Cloud Run, Kubernetes Helm, Azure Functions, Railway
-- Enterprise deployment patterns
-- Multi-cloud strategy guidance
-- 4 issues tracked in milestone #55
+**v0.46.0 (Apr 21, 2026):** Production Hardening + Scenario Testing 🆕
+- Comprehensive testing under varied conditions
+- Automated evaluation with CI/CD integration
+- **Evaluation Phase 4:** ScenarioGenerator, failure injection, agenkit evaluate CLI, CI/CD guide, documentation
+- 5 issues tracked in milestone #56 (5 evaluation)
+
+**v0.47.0 (May 18, 2026):** Evaluation & Monitoring 🆕
+- Production monitoring with real-time visibility
+- Alerting for proactive reliability response
+- **Evaluation Phase 5:** Grafana dashboards, Prometheus alerts, Docker Compose monitoring, documentation
+- 4 issues tracked in milestone #57 (4 evaluation)
 
 **v0.9.0 (May 5, 2026):** 🎯 Release Candidate (Conference Demo)
 - Feature-complete beta
@@ -1565,6 +1602,12 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
   - ✅ All 18 patterns work in WASM (Rust + C++ + Zig)
   - ✅ Browser examples (React, Vue, Svelte)
   - ✅ Core Reasoning Techniques (CoT, ToT, Self-Consistency)
+  - ✅ **Evaluation Framework** - Comprehensive evaluation capabilities
+    - Core metrics (accuracy, latency, cost)
+    - Quality metrics and benchmarking
+    - SessionRecorder and RegressionDetector
+    - AB testing and optimization
+    - **Note**: Advanced features (ErrorTracker, FailurePredictor, CLI, dashboards) deferred to v1.1+
   - ✅ Complete documentation
   - ✅ Cross-language verified
   - ✅ Performance validated
@@ -1588,4 +1631,4 @@ See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for d
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: December 13, 2025 (v0.41.0 current - Progressive release strategy to v1.0.0 via v0.9.0 beta, deployment patterns added)
+Last updated: December 18, 2025 (v0.41.0 current - Rationalization complete: v1.0.0 scope locked to Option B (Essential), evaluation enhancements deferred to v1.1+)

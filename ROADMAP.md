@@ -1361,6 +1361,7 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 - **AWS Lambda** (#297) - Enterprise serverless (Python + Go + Terraform)
 - **Docker Compose** (#298) - Self-hosted production with observability
 - **Vercel Edge Functions** (#299) - Next.js integration for web developers
+- **E2B Sandboxes** (#340) - Secure isolated execution with Fortune 100 infrastructure
 - **Platform Selection Guide** (#300) - Decision matrix, comparison table, production checklist
 
 **Deliverables**:
@@ -1370,11 +1371,13 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 - Production best practices and security hardening
 - Cost analysis and scaling guidance
 
+**Strategic Partnership**: E2B integration positions Agenkit + E2B as enterprise stack for production agents (E2B: infrastructure layer, Agenkit: orchestration layer). E2B recently raised $21M Series A with 88% Fortune 100 adoption.
+
 **Demo Value**: "Deploy globally in 30 seconds" ⭐⭐⭐⭐⭐
 
 **Note**: Evaluation features (#327-330) originally planned for this milestone have been deferred to v1.1+ ("Ideas: Evaluation Framework" milestone).
 
-**Milestone**: [#54 v0.45.0 - Core Deployment](https://github.com/scttfrdmn/agenkit/milestone/54) (5 issues)
+**Milestone**: [#54 v0.45.0 - Core Deployment](https://github.com/scttfrdmn/agenkit/milestone/54) (6 issues)
 
 ---
 

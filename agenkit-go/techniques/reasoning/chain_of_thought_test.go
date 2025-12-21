@@ -319,3 +319,7 @@ func (a *CustomCaptureAgent) Process(ctx context.Context, message *agenkit.Messa
 	*a.promptCaptured = message.Content
 	return agenkit.NewMessage("assistant", a.response), nil
 }
+
+func (a *CustomCaptureAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}

@@ -51,6 +51,10 @@ func (m *MockAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 	return agenkit.NewMessage("assistant", response), nil
 }
 
+func (m *MockAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(m)
+}
+
 // Test basic Self-Consistency functionality
 func TestSelfConsistencyBasic(t *testing.T) {
 	// Mock agent returns different answers

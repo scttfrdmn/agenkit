@@ -46,6 +46,10 @@ func (m *VariedMockAgent) Process(ctx context.Context, message *agenkit.Message)
 	return agenkit.NewMessage("assistant", response), nil
 }
 
+func (m *VariedMockAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(m)
+}
+
 // Test basic Tree-of-Thought functionality
 func TestTreeOfThoughtBasic(t *testing.T) {
 	mockAgent := NewVariedMockAgent()

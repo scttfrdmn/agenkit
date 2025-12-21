@@ -10,6 +10,8 @@
 /// - Composable through interface-based design
 const std = @import("std");
 const Message = @import("message.zig").Message;
+const IntrospectionResult = @import("introspection.zig").IntrospectionResult;
+const createDefaultIntrospectionResult = @import("introspection.zig").createDefaultIntrospectionResult;
 const Allocator = std.mem.Allocator;
 
 /// Error types for agent operations
@@ -58,6 +60,7 @@ pub const Agent = struct {
         name: *const fn (ptr: *anyopaque) []const u8,
         capabilities: *const fn (ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const []const u8,
         process: *const fn (ptr: *anyopaque, message: Message) AgentError!Result,
+        introspect: *const fn (ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult,
         deinit: *const fn (ptr: *anyopaque) void,
     };
 
@@ -74,6 +77,29 @@ pub const Agent = struct {
     /// Process a message and return a result
     pub fn process(self: Agent, message: Message) !Result {
         return self.vtable.process(self.ptr, message);
+    }
+
+    /// Examine agent's internal state, memory, and capabilities.
+    ///
+    /// This is introspection (examining "what I know"), not reflection
+    /// (analyzing "how I did"). Returns a snapshot of current internal state.
+    ///
+    /// Introspection is useful for:
+    /// - Debugging: Examine agent state during development
+    /// - Monitoring: Track agent state in production
+    /// - Coordination: Agents can inspect each other's capabilities
+    /// - Testing: Verify agent state in tests
+    /// - Explainability: Understand what an agent "knows"
+    ///
+    /// Default implementation returns basic information using
+    /// createDefaultIntrospectionResult with the agent's name and capabilities.
+    ///
+    /// Override this in your agent implementation to provide custom memory
+    /// and internal state information.
+    ///
+    /// Caller must call deinit() on the returned IntrospectionResult when done.
+    pub fn introspect(self: Agent, allocator: Allocator) !IntrospectionResult {
+        return self.vtable.introspect(self.ptr, allocator);
     }
 
     /// Clean up resources
@@ -103,6 +129,7 @@ pub const EchoAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -141,6 +168,16 @@ pub const EchoAgent = struct {
         }
 
         return Result{ .ok = response };
+    }
+
+    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult {
+        const self: *EchoAgent = @ptrCast(@alignCast(ptr));
+        const caps = try capabilitiesImpl(ptr, allocator);
+        defer {
+            for (caps) |cap| allocator.free(cap);
+            allocator.free(caps);
+        }
+        return createDefaultIntrospectionResult(allocator, self.agent_name, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

@@ -56,6 +56,8 @@ const Allocator = std.mem.Allocator;
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const Message = @import("../message.zig").Message;
+const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
+const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
 const Role = @import("../message.zig").Role;
 const Result = @import("../agent.zig").Result;
 
@@ -222,6 +224,7 @@ pub const ConversationalAgent = struct {
             .ptr = self,
             .vtable = &.{
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
@@ -275,6 +278,17 @@ pub const ConversationalAgent = struct {
         };
 
         return Result{ .ok = response };
+    }
+
+
+    fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
+        const caps = try capabilitiesImpl(ptr, alloc);
+        defer {
+            for (caps) |cap| alloc.free(cap);
+            alloc.free(caps);
+        }
+        const name_str = nameImpl(ptr);
+        return createDefaultIntrospectionResult(alloc, name_str, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

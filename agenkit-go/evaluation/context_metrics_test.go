@@ -383,6 +383,10 @@ func (a *MockAgentWithContext) Capabilities() []string {
 	return []string{"test"}
 }
 
+func (a *MockAgentWithContext) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *MockAgentWithContext) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
 	a.processedInputs = append(a.processedInputs, msg)
 	return &agenkit.Message{

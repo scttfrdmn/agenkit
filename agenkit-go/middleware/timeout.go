@@ -170,6 +170,11 @@ func (t *TimeoutDecorator) Capabilities() []string {
 	return t.agent.Capabilities()
 }
 
+// Introspect returns the introspection result of the underlying agent.
+func (t *TimeoutDecorator) Introspect() *agenkit.IntrospectionResult {
+	return t.agent.Introspect()
+}
+
 // Metrics returns the timeout metrics.
 func (t *TimeoutDecorator) Metrics() *TimeoutMetrics {
 	return t.metrics

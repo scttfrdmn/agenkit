@@ -33,6 +33,10 @@ func (a *testAgent) Capabilities() []string {
 	return []string{}
 }
 
+func (a *testAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *testAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	a.mu.Lock()
 	a.callCount++
@@ -671,6 +675,10 @@ func (a *partialFailAgent) Name() string {
 
 func (a *partialFailAgent) Capabilities() []string {
 	return []string{}
+}
+
+func (a *partialFailAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
 }
 
 func (a *partialFailAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

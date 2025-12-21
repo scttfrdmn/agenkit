@@ -74,6 +74,27 @@ func (c *ConditionalAgent) Capabilities() []string {
 	return caps
 }
 
+// Introspect returns introspection result for the conditional agent.
+func (c *ConditionalAgent) Introspect() *agenkit.IntrospectionResult {
+	routeNames := make([]string, len(c.routes))
+	for i, route := range c.routes {
+		routeNames[i] = route.Agent.Name()
+	}
+
+	result, _ := agenkit.NewIntrospectionResult(
+		c.Name(),
+		c.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"route_count":    len(c.routes),
+			"route_names":    routeNames,
+			"default_agent":  c.defaultAgent.Name(),
+		},
+		nil,
+	)
+	return result
+}
+
 // Process routes the message to the first agent whose condition is met.
 func (c *ConditionalAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Check context cancellation

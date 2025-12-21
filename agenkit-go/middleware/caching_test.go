@@ -36,6 +36,10 @@ func (a *TestAgent) Capabilities() []string {
 	return []string{}
 }
 
+func (a *TestAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *TestAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	a.mu.Lock()
 	a.callCount++

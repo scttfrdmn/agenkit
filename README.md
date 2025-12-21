@@ -208,6 +208,34 @@ traced_agent = TracingMiddleware(agent)
 
 **View traces:** `http://localhost:16686`
 
+### 🔍 Agent Introspection
+
+```python
+# Inspect agent state during debugging or production
+result = agent.introspect()
+
+print(f"Agent: {result.agent_name}")
+print(f"Capabilities: {result.capabilities}")
+print(f"Internal state: {result.internal_state}")
+print(f"Memory: {result.memory_state}")
+
+# Use for monitoring
+def check_agent_health(agent):
+    result = agent.introspect()
+    return result.internal_state.get("error_count", 0) < 10
+
+# Use for testing
+def test_agent_state():
+    result1 = agent.introspect()
+    await agent.process(message)
+    result2 = agent.introspect()
+    assert result2.internal_state["msg_count"] > result1.internal_state["msg_count"]
+```
+
+**Introspection ≠ Reflection:**
+- **Introspection** (this feature): Examines *current* state ("What do I know?")
+- **Reflection** (pattern): Analyzes *past* performance ("How did I do?")
+
 ### 🚀 Multiple Transports
 
 ```python

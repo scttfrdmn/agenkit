@@ -100,7 +100,10 @@ pub mod evaluation;
 pub mod techniques;
 
 // Re-export commonly used types
-pub use core::{Agent, AgentError, Message, Tool, ToolResult};
+pub use core::{
+    create_default_introspection_result, Agent, AgentError, IntrospectionResult, Message, Tool,
+    ToolResult,
+};
 
 #[cfg(feature = "native")]
 pub use transports::{HttpAgent, HttpServer, HttpTransportConfig};

@@ -125,6 +125,10 @@ func (a *budgetLimitedAgent) Capabilities() []string {
 	return a.agent.Capabilities()
 }
 
+func (a *budgetLimitedAgent) Introspect() *agenkit.IntrospectionResult {
+	return a.agent.Introspect()
+}
+
 func (a *budgetLimitedAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Get agent name
 	agentName := a.limiter.agentNameOverride
@@ -396,6 +400,10 @@ func (a *budgetWarnedAgent) Name() string {
 
 func (a *budgetWarnedAgent) Capabilities() []string {
 	return a.agent.Capabilities()
+}
+
+func (a *budgetWarnedAgent) Introspect() *agenkit.IntrospectionResult {
+	return a.agent.Introspect()
 }
 
 func (a *budgetWarnedAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

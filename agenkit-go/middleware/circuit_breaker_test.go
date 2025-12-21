@@ -24,6 +24,10 @@ func (u *UnreliableAgent) Capabilities() []string {
 	return []string{}
 }
 
+func (u *UnreliableAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(u)
+}
+
 func (u *UnreliableAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	if u.delay > 0 {
 		// Respect context cancellation

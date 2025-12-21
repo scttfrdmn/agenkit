@@ -14,6 +14,13 @@ export {
   validateMessage,
 } from './core/interfaces';
 
+// Introspection
+export {
+  IntrospectionResult,
+  createDefaultIntrospectionResult,
+  validateIntrospectionResult,
+} from './core/introspection';
+
 // Adapters
 export {
   LocalAgent,

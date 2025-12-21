@@ -26,6 +26,8 @@ const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const Result = @import("../agent.zig").Result;
 const Message = @import("../message.zig").Message;
+const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
+const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
 const Allocator = std.mem.Allocator;
 
 /// Reason why reflection loop stopped
@@ -139,6 +141,7 @@ pub const ReflectionAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -560,6 +563,17 @@ pub const ReflectionAgent = struct {
         var output_mut = output;
         output_mut.deinit();
         return Result{ .ok = result };
+    }
+
+
+    fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
+        const caps = try capabilitiesImpl(ptr, alloc);
+        defer {
+            for (caps) |cap| alloc.free(cap);
+            alloc.free(caps);
+        }
+        const name_str = nameImpl(ptr);
+        return createDefaultIntrospectionResult(alloc, name_str, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

@@ -25,6 +25,10 @@ func (f *FailingAgent) Capabilities() []string {
 	return []string{}
 }
 
+func (f *FailingAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(f)
+}
+
 func (f *FailingAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	f.attempts++
 	if f.attempts <= f.failCount {
@@ -271,6 +275,10 @@ func (s *SelectiveFailingAgent) Name() string {
 
 func (s *SelectiveFailingAgent) Capabilities() []string {
 	return []string{}
+}
+
+func (s *SelectiveFailingAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(s)
 }
 
 func (s *SelectiveFailingAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

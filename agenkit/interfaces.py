@@ -20,7 +20,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-__all__ = ["Agent", "Message", "Tool", "ToolResult"]
+from agenkit.introspection import IntrospectionResult
+
+__all__ = ["Agent", "Message", "Tool", "ToolResult", "IntrospectionResult"]
 
 
 # ============================================
@@ -328,3 +330,79 @@ class Agent(ABC):
             Native object (default: self)
         """
         return self
+
+    def introspect(self) -> IntrospectionResult:
+        """
+        Examine agent's internal state, memory, and capabilities.
+
+        This is introspection (examining "what I know"), not reflection
+        (analyzing "how I did"). Returns a snapshot of current internal state.
+
+        Introspection is useful for:
+        - Debugging: Examine agent state during development
+        - Monitoring: Track agent state in production
+        - Coordination: Agents can inspect each other's capabilities
+        - Testing: Verify agent state in tests
+        - Explainability: Understand what an agent "knows"
+
+        Returns:
+            IntrospectionResult with current state information
+
+        Example:
+            >>> result = agent.introspect()
+            >>> print(f"Agent: {result.agent_name}")
+            >>> print(f"Capabilities: {result.capabilities}")
+            >>> if result.memory_state:
+            ...     print(f"Memory entries: {len(result.memory_state)}")
+        """
+        return IntrospectionResult(
+            timestamp=datetime.now(timezone.utc),
+            agent_name=self.name,
+            capabilities=self.capabilities,
+            memory_state=self._get_memory_state(),
+            internal_state=self._get_internal_state(),
+            metadata={},
+        )
+
+    def _get_memory_state(self) -> dict[str, Any] | None:
+        """
+        Get memory state for introspection. Override to provide memory contents.
+
+        This method should return the current contents of the agent's memory,
+        if applicable. For agents without memory, this returns None.
+
+        Returns:
+            Dictionary of memory contents, or None if no memory
+
+        Example:
+            >>> def _get_memory_state(self) -> dict[str, Any] | None:
+            ...     if hasattr(self, 'memory'):
+            ...         return {
+            ...             'short_term': len(self.memory.short_term),
+            ...             'long_term': len(self.memory.long_term),
+            ...             'working': len(self.memory.working),
+            ...         }
+            ...     return None
+        """
+        return None
+
+    def _get_internal_state(self) -> dict[str, Any]:
+        """
+        Get agent-specific internal state for introspection. Override to provide details.
+
+        This method should return any agent-specific state that is relevant
+        for introspection. Examples: configuration, counters, status flags, etc.
+
+        Returns:
+            Dictionary of internal state (empty dict if no state)
+
+        Example:
+            >>> def _get_internal_state(self) -> dict[str, Any]:
+            ...     return {
+            ...         'model': self.model_name,
+            ...         'temperature': self.temperature,
+            ...         'max_tokens': self.max_tokens,
+            ...         'messages_processed': self.message_count,
+            ...     }
+        """
+        return {}

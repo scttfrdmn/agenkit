@@ -3,6 +3,7 @@
 ///! This module defines the core Agent trait that all agents must implement,
 ///! following the same design as TypeScript and Go implementations.
 
+use super::introspection::IntrospectionResult;
 use super::message::{Message, ToolResult};
 use async_trait::async_trait;
 use std::fmt;
@@ -104,6 +105,61 @@ pub trait Agent: Send + Sync {
     /// Returns a list of capabilities this agent supports.
     fn capabilities(&self) -> Vec<String> {
         Vec::new()
+    }
+
+    /// Examine agent's internal state, memory, and capabilities (optional).
+    ///
+    /// This is introspection (examining "what I know"), not reflection
+    /// (analyzing "how I did"). Returns a snapshot of current internal state.
+    ///
+    /// Introspection is useful for:
+    /// - Debugging: Examine agent state during development
+    /// - Monitoring: Track agent state in production
+    /// - Coordination: Agents can inspect each other's capabilities
+    /// - Testing: Verify agent state in tests
+    /// - Explainability: Understand what an agent "knows"
+    ///
+    /// # Default Implementation
+    /// The default implementation returns basic information using
+    /// `create_default_introspection_result`:
+    ///
+    /// ```ignore
+    /// fn introspect(&self) -> IntrospectionResult {
+    ///     create_default_introspection_result(
+    ///         self.name().to_string(),
+    ///         self.capabilities(),
+    ///     )
+    /// }
+    /// ```
+    ///
+    /// # Custom Implementation
+    /// Override this method to provide memory and internal state:
+    ///
+    /// ```ignore
+    /// fn introspect(&self) -> IntrospectionResult {
+    ///     let mut memory = HashMap::new();
+    ///     memory.insert("short_term_count".to_string(), json!(self.memory.len()));
+    ///
+    ///     let mut state = HashMap::new();
+    ///     state.insert("message_count".to_string(), json!(self.message_count));
+    ///
+    ///     IntrospectionResult::new(
+    ///         self.name().to_string(),
+    ///         self.capabilities(),
+    ///         Some(memory),
+    ///         state,
+    ///         HashMap::new(),
+    ///     )
+    /// }
+    /// ```
+    ///
+    /// # Returns
+    /// IntrospectionResult with current state information
+    fn introspect(&self) -> IntrospectionResult {
+        super::introspection::create_default_introspection_result(
+            self.name().to_string(),
+            self.capabilities(),
+        )
     }
 }
 

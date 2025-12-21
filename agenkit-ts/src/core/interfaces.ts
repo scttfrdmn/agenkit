@@ -8,6 +8,8 @@
  * - Performance: Minimal overhead
  */
 
+import { IntrospectionResult } from './introspection.js';
+
 /**
  * Universal message format for agent communication.
  *
@@ -150,6 +152,46 @@ export interface Agent {
    * @returns List of capabilities
    */
   readonly capabilities?: string[];
+
+  /**
+   * Examine agent's internal state, memory, and capabilities (optional).
+   *
+   * This is introspection (examining "what I know"), not reflection
+   * (analyzing "how I did"). Returns a snapshot of current internal state.
+   *
+   * Introspection is useful for:
+   * - Debugging: Examine agent state during development
+   * - Monitoring: Track agent state in production
+   * - Coordination: Agents can inspect each other's capabilities
+   * - Testing: Verify agent state in tests
+   * - Explainability: Understand what an agent "knows"
+   *
+   * Default implementation using createDefaultIntrospectionResult:
+   *   introspect(): IntrospectionResult {
+   *     return createDefaultIntrospectionResult(this);
+   *   }
+   *
+   * Custom implementation with memory and state:
+   *   introspect(): IntrospectionResult {
+   *     return {
+   *       timestamp: new Date().toISOString(),
+   *       agentName: this.name,
+   *       capabilities: this.capabilities || [],
+   *       memoryState: {
+   *         shortTermCount: this.memory.shortTerm.length,
+   *         longTermCount: this.memory.longTerm.length,
+   *       },
+   *       internalState: {
+   *         messageCount: this.messageCount,
+   *         hasMemory: true,
+   *       },
+   *       metadata: {},
+   *     };
+   *   }
+   *
+   * @returns IntrospectionResult with current state information
+   */
+  introspect?(): IntrospectionResult;
 }
 
 /**

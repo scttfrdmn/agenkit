@@ -15,6 +15,8 @@
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const Message = @import("../message.zig").Message;
+const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
+const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
 const AgentError = @import("../agent.zig").AgentError;
 const Result = @import("../agent.zig").Result;
 
@@ -294,6 +296,7 @@ pub const ReActAgent = struct {
             .ptr = self,
             .vtable = &.{
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .deinit = deinitImpl,
@@ -388,6 +391,17 @@ pub const ReActAgent = struct {
     fn nameImpl(ptr: *anyopaque) []const u8 {
         const self: *ReActAgent = @ptrCast(@alignCast(ptr));
         return self.agent_name;
+    }
+
+
+    fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
+        const caps = try capabilitiesImpl(ptr, alloc);
+        defer {
+            for (caps) |cap| alloc.free(cap);
+            alloc.free(caps);
+        }
+        const name_str = nameImpl(ptr);
+        return createDefaultIntrospectionResult(alloc, name_str, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

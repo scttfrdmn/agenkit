@@ -157,6 +157,44 @@ type Agent interface {
 	// Capabilities returns a list of capability identifiers this agent supports.
 	// This is optional and can return an empty slice.
 	Capabilities() []string
+
+	// Introspect examines the agent's internal state, memory, and capabilities.
+	//
+	// This is introspection (examining "what I know"), not reflection
+	// (analyzing "how I did"). Returns a snapshot of current internal state.
+	//
+	// Introspection is useful for:
+	// - Debugging: Examine agent state during development
+	// - Monitoring: Track agent state in production
+	// - Coordination: Agents can inspect each other's capabilities
+	// - Testing: Verify agent state in tests
+	// - Explainability: Understand what an agent "knows"
+	//
+	// Default implementation can use DefaultIntrospectionResult helper:
+	//
+	//     func (a *MyAgent) Introspect() *IntrospectionResult {
+	//         return DefaultIntrospectionResult(a)
+	//     }
+	//
+	// Agents with memory or internal state should create custom results:
+	//
+	//     func (a *MyAgent) Introspect() *IntrospectionResult {
+	//         result, _ := NewIntrospectionResult(
+	//             a.Name(),
+	//             a.Capabilities(),
+	//             map[string]interface{}{
+	//                 "short_term_count": len(a.memory.shortTerm),
+	//                 "long_term_count": len(a.memory.longTerm),
+	//             },
+	//             map[string]interface{}{
+	//                 "message_count": a.messageCount,
+	//                 "has_memory": true,
+	//             },
+	//             nil,
+	//         )
+	//         return result
+	//     }
+	Introspect() *IntrospectionResult
 }
 
 // StreamingAgent extends Agent to support streaming responses.

@@ -27,6 +27,10 @@ func (t *TestAgent) Capabilities() []string {
 	return []string{"test"}
 }
 
+func (t *TestAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(t)
+}
+
 func (t *TestAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	t.calls++
 	if t.delay > 0 {

@@ -105,6 +105,11 @@ func (m *MetricsDecorator) Capabilities() []string {
 	return m.agent.Capabilities()
 }
 
+// Introspect returns the introspection result of the underlying agent.
+func (m *MetricsDecorator) Introspect() *agenkit.IntrospectionResult {
+	return m.agent.Introspect()
+}
+
 // GetMetrics returns the current metrics.
 func (m *MetricsDecorator) GetMetrics() *Metrics {
 	return m.metrics

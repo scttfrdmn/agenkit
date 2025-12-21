@@ -46,6 +46,8 @@ const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const Result = @import("../agent.zig").Result;
 const Message = @import("../message.zig").Message;
+const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
+const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
 const Allocator = std.mem.Allocator;
 
 /// Record of a single attempt to process a message
@@ -120,6 +122,7 @@ pub const FallbackAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -188,6 +191,17 @@ pub const FallbackAgent = struct {
         return AgentError.ProcessingFailed;
     }
 
+
+    fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
+        const caps = try capabilitiesImpl(ptr, alloc);
+        defer {
+            for (caps) |cap| alloc.free(cap);
+            alloc.free(caps);
+        }
+        const name_str = nameImpl(ptr);
+        return createDefaultIntrospectionResult(alloc, name_str, caps);
+    }
+
     fn deinitImpl(ptr: *anyopaque) void {
         const self: *FallbackAgent = @ptrCast(@alignCast(ptr));
         self.deinit();
@@ -224,6 +238,7 @@ test "FallbackAgent: first agent success" {
                     .name = nameImpl,
                     .capabilities = capabilitiesImpl,
                     .process = processImpl,
+                .introspect = introspectImpl,
                     .deinit = deinitImpl,
                 },
             };
@@ -248,6 +263,16 @@ test "FallbackAgent: first agent success" {
             }
             const response_msg = Message.withText(msg.allocator, .assistant, "success") catch return AgentError.ProcessingFailed;
             return Result{ .ok = response_msg };
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
+            const caps = try capabilitiesImpl(ptr, alloc);
+            defer {
+                for (caps) |cap| alloc.free(cap);
+                alloc.free(caps);
+            }
+            const name_str = nameImpl(ptr);
+            return createDefaultIntrospectionResult(alloc, name_str, caps);
         }
 
         fn deinitImpl(ptr: *anyopaque) void {

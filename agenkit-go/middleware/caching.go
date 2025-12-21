@@ -236,6 +236,11 @@ func (c *CachingDecorator) Capabilities() []string {
 	return c.agent.Capabilities()
 }
 
+// Introspect returns the introspection result of the underlying agent.
+func (c *CachingDecorator) Introspect() *agenkit.IntrospectionResult {
+	return c.agent.Introspect()
+}
+
 // Metrics returns the caching metrics.
 func (c *CachingDecorator) Metrics() *CachingMetrics {
 	return c.metrics

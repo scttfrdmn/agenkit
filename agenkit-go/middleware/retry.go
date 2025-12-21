@@ -84,6 +84,11 @@ func (r *RetryDecorator) Capabilities() []string {
 	return r.agent.Capabilities()
 }
 
+// Introspect returns the introspection result of the underlying agent.
+func (r *RetryDecorator) Introspect() *agenkit.IntrospectionResult {
+	return r.agent.Introspect()
+}
+
 // Process implements the Agent interface with retry logic.
 func (r *RetryDecorator) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	var lastErr error

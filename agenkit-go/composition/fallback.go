@@ -51,6 +51,27 @@ func (f *FallbackAgent) Capabilities() []string {
 	return caps
 }
 
+// Introspect returns introspection result for the fallback agent.
+func (f *FallbackAgent) Introspect() *agenkit.IntrospectionResult {
+	result, _ := agenkit.NewIntrospectionResult(
+		f.Name(),
+		f.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"agent_count": len(f.agents),
+			"agent_names": func() []string {
+				names := make([]string, len(f.agents))
+				for i, agent := range f.agents {
+					names[i] = agent.Name()
+				}
+				return names
+			}(),
+		},
+		nil,
+	)
+	return result
+}
+
 // Process tries each agent in order until one succeeds.
 func (f *FallbackAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	var errors []string

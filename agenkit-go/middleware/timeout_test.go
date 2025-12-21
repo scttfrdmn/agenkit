@@ -30,6 +30,10 @@ func (a *FastAgent) Capabilities() []string {
 	return []string{}
 }
 
+func (a *FastAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *FastAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(a.delay)
 	return &agenkit.Message{
@@ -55,6 +59,10 @@ func (a *SlowAgent) Capabilities() []string {
 	return []string{}
 }
 
+func (a *SlowAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *SlowAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(a.delay)
 	return &agenkit.Message{
@@ -74,6 +82,10 @@ func (a *AlwaysFailingAgent) Capabilities() []string {
 	return []string{}
 }
 
+func (a *AlwaysFailingAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *AlwaysFailingAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return nil, fmt.Errorf("Intentional failure for testing")
 }
@@ -89,6 +101,10 @@ func (a *VariableAgent) Name() string {
 
 func (a *VariableAgent) Capabilities() []string {
 	return []string{}
+}
+
+func (a *VariableAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
 }
 
 func (a *VariableAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

@@ -568,8 +568,10 @@ Refined Output:
             Message with reflection metadata
         """
         # Gather metadata
+        iterations_count = len(self.history)
         metadata = {
-            "reflection_iterations": len(self.history),
+            "reflection_iterations": iterations_count,
+            "iterations": iterations_count,  # Alias for cross-language spec compliance
             "final_quality_score": self.history[-1].quality_score if self.history else 0.0,
             "stop_reason": stop_reason.value,
         }

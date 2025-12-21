@@ -49,6 +49,8 @@ const Allocator = std.mem.Allocator;
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const Message = @import("../message.zig").Message;
+const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
+const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
 const Result = @import("../agent.zig").Result;
 
 /// Status of a plan step
@@ -532,6 +534,7 @@ pub const PlanningAgent = struct {
             .ptr = self,
             .vtable = &.{
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
@@ -581,6 +584,17 @@ pub const PlanningAgent = struct {
         };
 
         return Result{ .ok = response };
+    }
+
+
+    fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
+        const caps = try capabilitiesImpl(ptr, alloc);
+        defer {
+            for (caps) |cap| alloc.free(cap);
+            alloc.free(caps);
+        }
+        const name_str = nameImpl(ptr);
+        return createDefaultIntrospectionResult(alloc, name_str, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

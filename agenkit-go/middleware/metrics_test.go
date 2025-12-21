@@ -24,6 +24,10 @@ func (d *DelayAgent) Capabilities() []string {
 	return []string{}
 }
 
+func (d *DelayAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(d)
+}
+
 func (d *DelayAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(d.delay)
 	if d.fail {

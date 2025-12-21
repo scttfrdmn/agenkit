@@ -51,6 +51,27 @@ func (s *SequentialAgent) Capabilities() []string {
 	return caps
 }
 
+// Introspect returns introspection result for the sequential agent.
+func (s *SequentialAgent) Introspect() *agenkit.IntrospectionResult {
+	result, _ := agenkit.NewIntrospectionResult(
+		s.Name(),
+		s.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"agent_count": len(s.agents),
+			"agent_names": func() []string {
+				names := make([]string, len(s.agents))
+				for i, agent := range s.agents {
+					names[i] = agent.Name()
+				}
+				return names
+			}(),
+		},
+		nil,
+	)
+	return result
+}
+
 // Process executes all agents in sequence.
 func (s *SequentialAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	current := message

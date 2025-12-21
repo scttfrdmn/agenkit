@@ -97,7 +97,13 @@ from agenkit.patterns.multiagent import (
     MultiAgentConfig,
     MultiAgentOrchestrator,
 )
-from agenkit.patterns.orchestration import ParallelPattern, RouterPattern, SequentialPattern
+from agenkit.patterns.orchestration import (
+    OrchestrationAgent,
+    OrchestrationConfig,
+    ParallelPattern,
+    RouterPattern,
+    SequentialPattern,
+)
 from agenkit.patterns.planning import (
     Plan,
     PlanningAgent,
@@ -177,6 +183,8 @@ __all__ = [
     # Orchestration
     "MultiAgentConfig",
     "MultiAgentOrchestrator",
+    "OrchestrationAgent",
+    "OrchestrationConfig",
     # Pattern Library - Parallel (NEW in v0.32.0)
     "ParallelAgent",
     "ParallelPattern",

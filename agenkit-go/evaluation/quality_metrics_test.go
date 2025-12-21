@@ -21,6 +21,10 @@ func (a *MockAgent) Capabilities() []string {
 	return a.capabilities
 }
 
+func (a *MockAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *MockAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "agent",

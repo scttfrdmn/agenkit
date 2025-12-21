@@ -51,6 +51,27 @@ func (p *ParallelAgent) Capabilities() []string {
 	return caps
 }
 
+// Introspect returns introspection result for the parallel agent.
+func (p *ParallelAgent) Introspect() *agenkit.IntrospectionResult {
+	result, _ := agenkit.NewIntrospectionResult(
+		p.Name(),
+		p.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"agent_count": len(p.agents),
+			"agent_names": func() []string {
+				names := make([]string, len(p.agents))
+				for i, agent := range p.agents {
+					names[i] = agent.Name()
+				}
+				return names
+			}(),
+		},
+		nil,
+	)
+	return result
+}
+
 // AgentResult holds the result from a single agent execution.
 type AgentResult struct {
 	AgentName string

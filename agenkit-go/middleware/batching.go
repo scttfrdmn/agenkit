@@ -157,6 +157,11 @@ func (d *BatchingDecorator) Capabilities() []string {
 	return d.agent.Capabilities()
 }
 
+// Introspect returns the introspection result of the underlying agent.
+func (d *BatchingDecorator) Introspect() *agenkit.IntrospectionResult {
+	return d.agent.Introspect()
+}
+
 // Metrics returns the batching metrics.
 func (d *BatchingDecorator) Metrics() *BatchingMetrics {
 	return d.metrics

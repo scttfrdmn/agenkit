@@ -126,6 +126,11 @@ func (r *RateLimiterDecorator) Capabilities() []string {
 	return r.agent.Capabilities()
 }
 
+// Introspect returns the introspection result of the underlying agent.
+func (r *RateLimiterDecorator) Introspect() *agenkit.IntrospectionResult {
+	return r.agent.Introspect()
+}
+
 // Metrics returns the rate limiter metrics.
 func (r *RateLimiterDecorator) Metrics() *RateLimiterMetrics {
 	return r.metrics

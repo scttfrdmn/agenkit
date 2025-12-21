@@ -434,7 +434,18 @@ Begin!"""
         else:
             content = str(answer)
 
-        return Message(role="assistant", content=content)
+        # Add metadata about tool usage and iterations
+        tool_calls_made = len(self.steps)  # Each step involves a tool call
+        unique_tools = list(set(s.action for s in self.steps if s.action.lower() != "final answer"))
+
+        metadata = {
+            "tool_calls_made": tool_calls_made,
+            "iterations": len(self.steps) + 1,  # +1 for final answer step
+            "react_steps": [{"thought": s.thought, "action": s.action, "observation": s.observation} for s in self.steps],
+            "tools_used": unique_tools
+        }
+
+        return Message(role="assistant", content=content, metadata=metadata)
 
     def get_steps(self) -> list[ReActStep]:
         """

@@ -21,6 +21,10 @@ func (s *SimpleAgent) Capabilities() []string {
 	return []string{}
 }
 
+func (s *SimpleAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(s)
+}
+
 func (s *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	s.callCount++
 	return agenkit.NewMessage("agent", "success"), nil

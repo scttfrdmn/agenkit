@@ -158,6 +158,11 @@ func (c *CircuitBreakerDecorator) Capabilities() []string {
 	return c.agent.Capabilities()
 }
 
+// Introspect returns the introspection result of the underlying agent.
+func (c *CircuitBreakerDecorator) Introspect() *agenkit.IntrospectionResult {
+	return c.agent.Introspect()
+}
+
 // State returns the current circuit breaker state.
 func (c *CircuitBreakerDecorator) State() CircuitState {
 	c.mu.Lock()

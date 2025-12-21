@@ -460,6 +460,11 @@ func (w *recordingWrapper) Capabilities() []string {
 	return w.agent.Capabilities()
 }
 
+// Introspect returns introspection result from the wrapped agent.
+func (w *recordingWrapper) Introspect() *agenkit.IntrospectionResult {
+	return w.agent.Introspect()
+}
+
 // Process processes message with recording.
 func (w *recordingWrapper) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Extract session ID from metadata

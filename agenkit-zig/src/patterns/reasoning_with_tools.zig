@@ -49,6 +49,8 @@ const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const Result = @import("../agent.zig").Result;
 const Message = @import("../message.zig").Message;
+const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
+const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
 const Tool = @import("react.zig").Tool;
 const Allocator = std.mem.Allocator;
 
@@ -137,6 +139,7 @@ pub const ReasoningWithToolsAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -238,6 +241,17 @@ pub const ReasoningWithToolsAgent = struct {
 
         // Resize to actual used size
         return self.allocator.realloc(prompt, offset);
+    }
+
+
+    fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
+        const caps = try capabilitiesImpl(ptr, alloc);
+        defer {
+            for (caps) |cap| alloc.free(cap);
+            alloc.free(caps);
+        }
+        const name_str = nameImpl(ptr);
+        return createDefaultIntrospectionResult(alloc, name_str, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

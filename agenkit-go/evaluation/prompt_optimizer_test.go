@@ -24,6 +24,10 @@ func (m *mockPromptAgent) Capabilities() []string {
 	return []string{}
 }
 
+func (m *mockPromptAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(m)
+}
+
 func (m *mockPromptAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
 	// Simple scoring based on prompt characteristics
 	score := m.score
@@ -451,6 +455,10 @@ func (s *slowAgent) Name() string {
 
 func (s *slowAgent) Capabilities() []string {
 	return []string{}
+}
+
+func (s *slowAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(s)
 }
 
 func (s *slowAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {

@@ -22,6 +22,10 @@ func (a *ExampleAgent) Capabilities() []string {
 	return []string{"question-answering"}
 }
 
+func (a *ExampleAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *ExampleAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
 	// Simple Q&A logic
 	content := msg.Content

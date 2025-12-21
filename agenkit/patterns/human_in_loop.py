@@ -216,6 +216,11 @@ class HumanInLoopAgent(Agent):
         response.metadata["confidence"] = confidence
         response.metadata["approval_threshold"] = self._approval_threshold
 
+        # Add escalation metadata (alias for approval_needed)
+        if needs_approval:
+            response.metadata["escalated"] = True
+            response.metadata["escalation_reason"] = "low_confidence"
+
         # If high confidence, return without approval
         if not needs_approval:
             response.metadata["approval_status"] = "bypassed"

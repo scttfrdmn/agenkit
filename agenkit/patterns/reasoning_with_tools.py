@@ -370,7 +370,7 @@ Continue reasoning or provide final answer."""
         metadata = {}
         if trace:
             metadata["reasoning_trace"] = trace.to_dict()
-            metadata["reasoning_steps"] = len(trace.steps)
+            metadata["reasoning_steps"] = trace.total_thinking_steps
             metadata["tools_used"] = trace.total_tools_used
 
         response_message = Message(

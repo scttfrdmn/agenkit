@@ -26,6 +26,8 @@ const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const Result = @import("../agent.zig").Result;
 const Message = @import("../message.zig").Message;
+const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
+const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
 const Allocator = std.mem.Allocator;
 
 /// Sequential Agent - Executes agents in order
@@ -79,6 +81,7 @@ pub const SequentialAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -149,6 +152,16 @@ pub const SequentialAgent = struct {
         }
 
         return Result{ .ok = current };
+    }
+
+    fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
+        const self: *SequentialAgent = @ptrCast(@alignCast(ptr));
+        const caps = try capabilitiesImpl(ptr, alloc);
+        defer {
+            for (caps) |cap| alloc.free(cap);
+            alloc.free(caps);
+        }
+        return createDefaultIntrospectionResult(alloc, self.pattern_name, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {
@@ -235,6 +248,7 @@ test "SequentialAgent preserves transformations" {
                     .name = nameImplTransform,
                     .capabilities = capabilitiesImplTransform,
                     .process = processImplTransform,
+                    .introspect = introspectImplTransform,
                     .deinit = deinitImplTransform,
                 },
             };
@@ -273,6 +287,15 @@ test "SequentialAgent preserves transformations" {
             };
 
             return Result{ .ok = response };
+        }
+
+        fn introspectImplTransform(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
+            const caps = try capabilitiesImplTransform(ptr, alloc);
+            defer {
+                for (caps) |cap| alloc.free(cap);
+                alloc.free(caps);
+            }
+            return createDefaultIntrospectionResult(alloc, "transform", caps);
         }
 
         fn deinitImplTransform(ptr: *anyopaque) void {

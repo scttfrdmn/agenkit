@@ -10,7 +10,7 @@ from agenkit.composition import (
     ParallelAgent,
     SequentialAgent,
 )
-from agenkit.interfaces import Agent, Message, Tool, ToolResult
+from agenkit.interfaces import Agent, IntrospectionResult, Message, Tool, ToolResult
 from agenkit.patterns import Task
 
 __version__ = "0.10.0"
@@ -21,6 +21,8 @@ __all__ = [
     # Composition patterns
     "ConditionalAgent",
     "FallbackAgent",
+    # Introspection
+    "IntrospectionResult",
     "Message",
     "ParallelAgent",
     "SequentialAgent",

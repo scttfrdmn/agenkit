@@ -48,6 +48,10 @@ func (m *MockAgent) Capabilities() []string {
 	return []string{"test"}
 }
 
+func (m *MockAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(m)
+}
+
 func (m *MockAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	if m.processFunc != nil {
 		return m.processFunc(ctx, message)

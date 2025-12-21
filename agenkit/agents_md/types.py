@@ -5,7 +5,6 @@ Data structures for AGENTS.md documents.
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 
 class SectionType(str, Enum):
@@ -106,7 +105,7 @@ class AgentsMdDocument:
     raw_content: str = ""
     metadata: dict[str, str] = field(default_factory=dict)
 
-    def get_section(self, section_type: SectionType) -> Optional[AgentsMdSection]:
+    def get_section(self, section_type: SectionType) -> AgentsMdSection | None:
         """
         Get first section of given type.
 

@@ -6,12 +6,12 @@ Enables integration with cloud AI platforms:
 - AWS Bedrock Agents
 """
 
-from .vertex_ai import VertexAIAdapter, create_vertex_agent
 from .bedrock import BedrockAdapter, create_bedrock_agent
+from .vertex_ai import VertexAIAdapter, create_vertex_agent
 
 __all__ = [
-    "VertexAIAdapter",
-    "create_vertex_agent",
     "BedrockAdapter",
+    "VertexAIAdapter",
     "create_bedrock_agent",
+    "create_vertex_agent",
 ]

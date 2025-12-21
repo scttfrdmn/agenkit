@@ -10,8 +10,8 @@ This module defines:
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Any
 from enum import Enum
+from typing import Any
 
 
 class NodeState(Enum):
@@ -45,8 +45,8 @@ class ReasoningNode:
 
     id: int
     content: str
-    parent_id: Optional[int] = None
-    children_ids: List[int] = field(default_factory=list)
+    parent_id: int | None = None
+    children_ids: list[int] = field(default_factory=list)
     depth: int = 0
     score: float = 0.0
     state: NodeState = NodeState.OPEN
@@ -82,11 +82,11 @@ class ReasoningTree:
     """
 
     nodes: dict[int, ReasoningNode] = field(default_factory=dict)
-    root_id: Optional[int] = None
+    root_id: int | None = None
     next_id: int = 0
     max_depth: int = 0
 
-    def create_root(self, content: str, metadata: Optional[dict] = None) -> int:
+    def create_root(self, content: str, metadata: dict | None = None) -> int:
         """
         Create root node and return its ID.
 
@@ -116,7 +116,7 @@ class ReasoningTree:
         parent_id: int,
         content: str,
         score: float = 0.0,
-        metadata: Optional[dict] = None
+        metadata: dict | None = None
     ) -> int:
         """
         Add child node to parent and return child ID.
@@ -153,23 +153,22 @@ class ReasoningTree:
         parent.add_child(child_id)
 
         # Update max depth
-        if child.depth > self.max_depth:
-            self.max_depth = child.depth
+        self.max_depth = max(self.max_depth, child.depth)
 
         return child_id
 
-    def get_node(self, node_id: int) -> Optional[ReasoningNode]:
+    def get_node(self, node_id: int) -> ReasoningNode | None:
         """Get node by ID."""
         return self.nodes.get(node_id)
 
-    def get_children(self, node_id: int) -> List[ReasoningNode]:
+    def get_children(self, node_id: int) -> list[ReasoningNode]:
         """Get all children of a node."""
         node = self.nodes.get(node_id)
         if not node:
             return []
         return [self.nodes[cid] for cid in node.children_ids if cid in self.nodes]
 
-    def get_path(self, node_id: int) -> List[ReasoningNode]:
+    def get_path(self, node_id: int) -> list[ReasoningNode]:
         """
         Get path from root to node.
 
@@ -205,11 +204,11 @@ class ReasoningTree:
         path = self.get_path(node_id)
         return delimiter.join(node.content for node in path)
 
-    def get_leaves(self) -> List[ReasoningNode]:
+    def get_leaves(self) -> list[ReasoningNode]:
         """Get all leaf nodes (nodes with no children)."""
         return [node for node in self.nodes.values() if node.is_leaf()]
 
-    def get_best_leaf(self) -> Optional[ReasoningNode]:
+    def get_best_leaf(self) -> ReasoningNode | None:
         """Get leaf node with highest score."""
         leaves = self.get_leaves()
         if not leaves:

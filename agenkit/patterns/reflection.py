@@ -50,11 +50,11 @@ from typing import Any
 from agenkit.interfaces import Agent, Message
 
 __all__ = [
+    "CritiqueFormat",
     "ReflectionAgent",
     "ReflectionConfig",
     "ReflectionStep",
     "StopReason",
-    "CritiqueFormat",
 ]
 
 

@@ -5,9 +5,10 @@ Implements transport mechanisms for Agent-to-Agent communication.
 Supports HTTP, gRPC, and WebSocket transports.
 """
 
-from typing import Optional, Callable, Awaitable, TYPE_CHECKING
-from abc import ABC, abstractmethod
 import asyncio
+from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .message import A2AMessage
@@ -313,15 +314,14 @@ class GRPCTransport(Transport):
                 "Install with: pip install grpcio"
             )
 
-        from .message import A2AMessage
 
         # Create channel
-        async with grpc.aio.insecure_channel(endpoint) as channel:
+        async with grpc.aio.insecure_channel(endpoint):
             # Note: In production, you'd generate proper gRPC stubs
             # For now, we'll use a simplified approach
 
             # Serialize message
-            message_bytes = message.to_json().encode('utf-8')
+            message.to_json().encode('utf-8')
 
             # Make unary call (simplified - would use proper RPC in production)
             # This is a placeholder - actual gRPC requires proto definitions

@@ -4,10 +4,16 @@ A2A Server Implementation.
 Exposes Agenkit agents via A2A protocol.
 """
 
-from typing import Optional, List, TYPE_CHECKING
 import asyncio
-from .message import A2AMessage, AgentInfo, MessageType
-from .protocol import A2AAction, create_capabilities_response, create_ping_response, create_status_response
+from typing import TYPE_CHECKING
+
+from .message import A2AMessage, AgentInfo
+from .protocol import (
+    A2AAction,
+    create_capabilities_response,
+    create_ping_response,
+    create_status_response,
+)
 from .transport import Transport, create_transport
 
 if TYPE_CHECKING:
@@ -42,8 +48,8 @@ class A2AServer:
         self,
         agent_id: str,
         agent: "Agent",
-        capabilities: List[str],
-        name: Optional[str] = None,
+        capabilities: list[str],
+        name: str | None = None,
         transport: str = "http"
     ):
         """
@@ -62,7 +68,7 @@ class A2AServer:
         self.name = name or agent_id
         self.transport_type = transport
 
-        self.transport: Optional[Transport] = None
+        self.transport: Transport | None = None
         self.running = False
 
     def info(self) -> AgentInfo:
@@ -110,7 +116,7 @@ class A2AServer:
         except Exception as e:
             return message.create_error(
                 error_code="500",
-                error_message=f"Server error: {str(e)}"
+                error_message=f"Server error: {e!s}"
             )
 
     async def _handle_ping(self, message: A2AMessage) -> A2AMessage:
@@ -158,7 +164,7 @@ class A2AServer:
 
     async def start(
         self,
-        transport: Optional[str] = None,
+        transport: str | None = None,
         host: str = "0.0.0.0",
         port: int = 8080,
         **kwargs
@@ -220,9 +226,9 @@ class AgentA2AServer:
     def __init__(
         self,
         agent: "Agent",
-        agent_id: Optional[str] = None,
-        capabilities: Optional[List[str]] = None,
-        server_name: Optional[str] = None
+        agent_id: str | None = None,
+        capabilities: list[str] | None = None,
+        server_name: str | None = None
     ):
         """
         Initialize agent A2A server wrapper.

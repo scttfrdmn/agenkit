@@ -21,4 +21,4 @@ Example:
 # from .protocols import *
 # from .compositions import *
 
-__all__ = ["reasoning", "protocols", "compositions"]
+__all__ = ["compositions", "protocols", "reasoning"]

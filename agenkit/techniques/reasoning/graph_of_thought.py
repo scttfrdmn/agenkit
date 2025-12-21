@@ -37,15 +37,9 @@ Example:
         paths = response.metadata['reasoning_paths']
 """
 
-from typing import Callable, Optional, List, Tuple
 from agenkit import Agent, Message
-from .reasoning_graph import (
-    ReasoningGraph,
-    ThoughtNode,
-    LogicalEdge,
-    NodeType,
-    EdgeType
-)
+
+from .reasoning_graph import EdgeType, NodeType, ReasoningGraph
 
 
 class GraphOfThought(Agent):
@@ -128,7 +122,7 @@ class GraphOfThought(Agent):
         else:
             raise AttributeError("LLM must have either complete() or process() method")
 
-    async def generate_premises(self, problem: str) -> List[str]:
+    async def generate_premises(self, problem: str) -> list[str]:
         """
         Generate initial premises/facts for the problem.
 
@@ -163,9 +157,9 @@ Premises:"""
     async def generate_thoughts(
         self,
         problem: str,
-        existing_thoughts: List[str],
+        existing_thoughts: list[str],
         max_new: int = 3
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Generate new intermediate thoughts based on existing ones.
 
@@ -212,7 +206,7 @@ Thoughts (one per line):"""
         self,
         thought1: str,
         thought2: str
-    ) -> Optional[EdgeType]:
+    ) -> EdgeType | None:
         """
         Identify logical connection between two thoughts.
 
@@ -355,7 +349,7 @@ Final conclusion:"""
 
         return graph
 
-    def find_reasoning_paths(self, graph: ReasoningGraph) -> List[List[int]]:
+    def find_reasoning_paths(self, graph: ReasoningGraph) -> list[list[int]]:
         """
         Find reasoning paths from premises to conclusions.
 
@@ -379,7 +373,7 @@ Final conclusion:"""
     async def aggregate_paths(
         self,
         graph: ReasoningGraph,
-        paths: List[List[int]]
+        paths: list[list[int]]
     ) -> str:
         """
         Aggregate multiple reasoning paths into final answer.

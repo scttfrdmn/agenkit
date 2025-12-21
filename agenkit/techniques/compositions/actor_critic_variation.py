@@ -50,7 +50,6 @@ Example:
         # )
 """
 
-from typing import Optional, Callable
 from agenkit import Agent, Message
 
 

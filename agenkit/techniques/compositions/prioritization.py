@@ -36,8 +36,9 @@ Example:
 """
 
 import heapq
-from typing import Any, Callable, Optional, List, Dict
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass(order=True)
@@ -77,7 +78,7 @@ class TaskQueue:
 
     def __init__(
         self,
-        priority_fn: Optional[Callable[[Any], float]] = None
+        priority_fn: Callable[[Any], float] | None = None
     ):
         """
         Initialize task queue.
@@ -94,7 +95,7 @@ class TaskQueue:
             >>> queue = TaskQueue(priority_fn=urgency_priority)
         """
         self.priority_fn = priority_fn or (lambda x: 0)
-        self.queue: List[PrioritizedTask] = []
+        self.queue: list[PrioritizedTask] = []
         self.task_counter = 0
 
     def add_task(self, task: Any) -> int:
@@ -124,7 +125,7 @@ class TaskQueue:
         heapq.heappush(self.queue, prioritized)
         return task_id
 
-    def get_next_task(self) -> Optional[Any]:
+    def get_next_task(self) -> Any | None:
         """
         Get highest priority task from queue.
 
@@ -142,7 +143,7 @@ class TaskQueue:
         prioritized = heapq.heappop(self.queue)
         return prioritized.task
 
-    def peek_next_task(self) -> Optional[Any]:
+    def peek_next_task(self) -> Any | None:
         """
         View highest priority task without removing it.
 
@@ -176,7 +177,7 @@ class TaskQueue:
         """Remove all tasks from queue."""
         self.queue.clear()
 
-    def get_all_tasks(self) -> List[Any]:
+    def get_all_tasks(self) -> list[Any]:
         """
         Get all tasks in priority order without removing them.
 
@@ -214,8 +215,8 @@ class PriorityTaskExecutor:
 
     def __init__(
         self,
-        priority_fn: Optional[Callable[[Any], float]] = None,
-        process_fn: Optional[Callable[[Any], Any]] = None
+        priority_fn: Callable[[Any], float] | None = None,
+        process_fn: Callable[[Any], Any] | None = None
     ):
         """
         Initialize priority task executor.
@@ -231,7 +232,7 @@ class PriorityTaskExecutor:
         """Add task to queue."""
         return self.queue.add_task(task)
 
-    async def execute_all(self) -> List[Any]:
+    async def execute_all(self) -> list[Any]:
         """
         Execute all tasks in priority order.
 
@@ -249,7 +250,7 @@ class PriorityTaskExecutor:
 
         return results
 
-    async def execute_n(self, n: int) -> List[Any]:
+    async def execute_n(self, n: int) -> list[Any]:
         """
         Execute up to n highest priority tasks.
 

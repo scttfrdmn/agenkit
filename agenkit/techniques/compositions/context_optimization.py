@@ -39,7 +39,8 @@ Example:
         print(f"Compressed {response.metadata['compression_ratio']:.1f}x")
 """
 
-from typing import Callable, Optional
+from collections.abc import Callable
+
 from agenkit import Agent, Message
 
 
@@ -70,7 +71,7 @@ class ContextOptimizer(Agent):
         agent: Agent,
         summarizer: Agent,
         max_tokens: int = 4000,
-        token_counter: Optional[Callable[[str], int]] = None
+        token_counter: Callable[[str], int] | None = None
     ):
         """
         Initialize context optimizer.
@@ -211,8 +212,4 @@ Summary:"""
     def capabilities(self) -> list[str]:
         """Return agent capabilities."""
         base_caps = self.agent.capabilities if hasattr(self.agent, 'capabilities') else []
-        return base_caps + [
-            "context_optimization",
-            "summarization",
-            "token_management"
-        ]
+        return [*base_caps, "context_optimization", "summarization", "token_management"]

@@ -4,8 +4,8 @@ A2A Protocol Core.
 Core protocol definitions and utilities for Agent-to-Agent communication.
 """
 
-from typing import Dict, Any, Optional
 from enum import Enum
+from typing import Any
 
 
 class A2AVersion(Enum):
@@ -174,8 +174,8 @@ class A2AException(Exception):
     def __init__(
         self,
         error_code: ErrorCode,
-        message: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None
+        message: str | None = None,
+        details: dict[str, Any] | None = None
     ):
         """
         Initialize exception.
@@ -190,7 +190,7 @@ class A2AException(Exception):
         self.details = details or {}
         super().__init__(self.message)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "error_code": self.error_code.value,
@@ -202,7 +202,7 @@ class A2AException(Exception):
 class TimeoutError(A2AException):
     """Request timeout error."""
 
-    def __init__(self, message: Optional[str] = None, details: Optional[Dict[str, Any]] = None):
+    def __init__(self, message: str | None = None, details: dict[str, Any] | None = None):
         super().__init__(ErrorCode.TIMEOUT, message, details)
 
 
@@ -231,21 +231,21 @@ class CapabilityNotSupportedError(A2AException):
 class ProtocolError(A2AException):
     """Protocol error."""
 
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(ErrorCode.PROTOCOL_ERROR, message, details)
 
 
 class RateLimitError(A2AException):
     """Rate limit exceeded error."""
 
-    def __init__(self, retry_after_ms: Optional[int] = None):
+    def __init__(self, retry_after_ms: int | None = None):
         details = {}
         if retry_after_ms:
             details["retry_after_ms"] = retry_after_ms
         super().__init__(ErrorCode.TOO_MANY_REQUESTS, None, details)
 
 
-def create_capabilities_response(capabilities: list) -> Dict[str, Any]:
+def create_capabilities_response(capabilities: list) -> dict[str, Any]:
     """
     Create standard capabilities response.
 
@@ -265,9 +265,9 @@ def create_capabilities_response(capabilities: list) -> Dict[str, Any]:
 def create_status_response(
     status: str,
     agent_id: str,
-    load: Optional[float] = None,
-    uptime_sec: Optional[int] = None
-) -> Dict[str, Any]:
+    load: float | None = None,
+    uptime_sec: int | None = None
+) -> dict[str, Any]:
     """
     Create standard status response.
 
@@ -294,7 +294,7 @@ def create_status_response(
     return response
 
 
-def create_ping_response(agent_id: str, latency_ms: Optional[float] = None) -> Dict[str, Any]:
+def create_ping_response(agent_id: str, latency_ms: float | None = None) -> dict[str, Any]:
     """
     Create standard ping response.
 

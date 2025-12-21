@@ -7,10 +7,11 @@ References:
     - MCP Specification: https://modelcontextprotocol.io/
 """
 
-from typing import Dict, Any, Optional, Union
-from dataclasses import dataclass, field, asdict
 import json
-from .schema import MCPMessageType, MCPMethod
+from dataclasses import asdict, dataclass, field
+from typing import Any
+
+from .schema import MCPMethod
 
 
 @dataclass
@@ -21,11 +22,11 @@ class MCPMessage:
     All MCP messages follow JSON-RPC 2.0 format with method and params.
     """
     jsonrpc: str = "2.0"
-    id: Optional[Union[str, int]] = None
-    method: Optional[str] = None
-    params: Optional[Dict[str, Any]] = None
-    result: Optional[Any] = None
-    error: Optional[Dict[str, Any]] = None
+    id: str | int | None = None
+    method: str | None = None
+    params: dict[str, Any] | None = None
+    result: Any | None = None
+    error: dict[str, Any] | None = None
 
     def to_json(self) -> str:
         """Serialize to JSON string."""
@@ -38,12 +39,12 @@ class MCPMessage:
         data = json.loads(json_str)
         return cls(**data)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {k: v for k, v in asdict(self).items() if v is not None}
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "MCPMessage":
+    def from_dict(cls, data: dict[str, Any]) -> "MCPMessage":
         """Create from dictionary."""
         return cls(**data)
 
@@ -56,7 +57,7 @@ class MCPRequest(MCPMessage):
     Represents a request to a server with method and parameters.
     """
     method: str = ""
-    params: Dict[str, Any] = field(default_factory=dict)
+    params: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         """Validate request has method."""
@@ -71,7 +72,7 @@ class MCPResponse(MCPMessage):
 
     Represents a response from server with result or error.
     """
-    id: Union[str, int] = ""
+    id: str | int = ""
 
     def __post_init__(self):
         """Validate response has id."""
@@ -97,7 +98,7 @@ class MCPNotification(MCPMessage):
     One-way message that doesn't expect a response.
     """
     method: str = ""
-    params: Dict[str, Any] = field(default_factory=dict)
+    params: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         """Validate notification has method and no id."""
@@ -108,9 +109,9 @@ class MCPNotification(MCPMessage):
 
 
 def create_request(
-    method: Union[str, MCPMethod],
-    params: Optional[Dict[str, Any]] = None,
-    request_id: Optional[Union[str, int]] = None
+    method: str | MCPMethod,
+    params: dict[str, Any] | None = None,
+    request_id: str | int | None = None
 ) -> MCPRequest:
     """
     Create an MCP request.
@@ -140,9 +141,9 @@ def create_request(
 
 
 def create_response(
-    request_id: Union[str, int],
+    request_id: str | int,
     result: Any = None,
-    error: Optional[Dict[str, Any]] = None
+    error: dict[str, Any] | None = None
 ) -> MCPResponse:
     """
     Create an MCP response.
@@ -169,10 +170,10 @@ def create_response(
 
 
 def create_error_response(
-    request_id: Union[str, int],
+    request_id: str | int,
     code: int,
     message: str,
-    data: Optional[Any] = None
+    data: Any | None = None
 ) -> MCPResponse:
     """
     Create an error response.
@@ -207,8 +208,8 @@ def create_error_response(
 
 
 def create_notification(
-    method: Union[str, MCPMethod],
-    params: Optional[Dict[str, Any]] = None
+    method: str | MCPMethod,
+    params: dict[str, Any] | None = None
 ) -> MCPNotification:
     """
     Create an MCP notification.

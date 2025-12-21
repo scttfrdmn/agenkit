@@ -4,10 +4,11 @@ A2A Agent Implementation.
 Provides agent capabilities for sending/receiving A2A messages.
 """
 
-from typing import Optional, List, Callable, Awaitable, Dict, Any
-import asyncio
-from .message import A2AMessage, AgentInfo, MessageType, create_request
-from .protocol import A2AAction, validate_agent_id, AgentNotFoundError
+from collections.abc import Awaitable, Callable
+from typing import Any
+
+from .message import A2AMessage, AgentInfo, create_request
+from .protocol import A2AAction, AgentNotFoundError, validate_agent_id
 from .transport import Transport, create_transport
 
 
@@ -37,10 +38,10 @@ class A2AAgent:
     def __init__(
         self,
         agent_id: str,
-        capabilities: List[str],
+        capabilities: list[str],
         transport: str = "http",
-        name: Optional[str] = None,
-        discovery_url: Optional[str] = None,
+        name: str | None = None,
+        discovery_url: str | None = None,
         timeout: float = 30.0
     ):
         """
@@ -71,10 +72,10 @@ class A2AAgent:
         self.transport: Transport = create_transport(transport, timeout=timeout)
 
         # Known agents cache
-        self._known_agents: Dict[str, AgentInfo] = {}
+        self._known_agents: dict[str, AgentInfo] = {}
 
         # Message handlers
-        self._handlers: Dict[str, Callable[[A2AMessage], Awaitable[A2AMessage]]] = {}
+        self._handlers: dict[str, Callable[[A2AMessage], Awaitable[A2AMessage]]] = {}
 
     def info(self) -> AgentInfo:
         """
@@ -124,7 +125,7 @@ class A2AAgent:
         self,
         to_agent: str,
         action: str,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         **kwargs
     ) -> A2AMessage:
         """
@@ -240,12 +241,12 @@ class A2AAgent:
         )
 
         start = time.time()
-        response = await self.send(message, endpoint)
+        await self.send(message, endpoint)
         latency_ms = (time.time() - start) * 1000
 
         return latency_ms
 
-    async def get_capabilities(self, endpoint: str) -> List[str]:
+    async def get_capabilities(self, endpoint: str) -> list[str]:
         """
         Get capabilities from another agent.
 
@@ -265,7 +266,7 @@ class A2AAgent:
         response = await self.send(message, endpoint)
         return response.content.get("capabilities", [])
 
-    async def discover(self, capability: str) -> List[AgentInfo]:
+    async def discover(self, capability: str) -> list[AgentInfo]:
         """
         Discover agents by capability.
 

@@ -7,16 +7,21 @@ References:
     - MCP Specification: https://modelcontextprotocol.io/
 """
 
-from typing import Dict, Any, Optional, Callable, Awaitable, List
-import asyncio
-import uuid
-from .schema import MCPMethod
+from collections.abc import Awaitable, Callable
+from typing import Any
+
 from .message import (
-    MCPRequest, MCPResponse, create_response, create_error_response,
-    ERROR_METHOD_NOT_FOUND, ERROR_INVALID_PARAMS, ERROR_INTERNAL_ERROR
+    ERROR_INTERNAL_ERROR,
+    ERROR_INVALID_PARAMS,
+    ERROR_METHOD_NOT_FOUND,
+    MCPRequest,
+    MCPResponse,
+    create_error_response,
+    create_response,
 )
-from .resources import ResourceRegistry, resource_decorator
-from .tools import ToolRegistry, tool_decorator
+from .resources import ResourceRegistry
+from .schema import MCPMethod
+from .tools import ToolRegistry
 
 
 class MCPServer:
@@ -43,7 +48,7 @@ class MCPServer:
         self,
         name: str,
         version: str = "1.0",
-        capabilities: Optional[Dict[str, Any]] = None
+        capabilities: dict[str, Any] | None = None
     ):
         """
         Initialize MCP server.
@@ -68,10 +73,10 @@ class MCPServer:
     def resource(
         self,
         uri: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
         mime_type: str = "text/plain",
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ):
         """
         Decorator to register a resource handler.
@@ -88,7 +93,7 @@ class MCPServer:
             >>> async def get_document(params):
             ...     return "Document content"
         """
-        def decorator(func: Callable[[Dict[str, Any]], Awaitable[Any]]):
+        def decorator(func: Callable[[dict[str, Any]], Awaitable[Any]]):
             resource_name = name or uri
             self.resources.register(
                 uri=uri,
@@ -105,8 +110,8 @@ class MCPServer:
         self,
         name: str,
         description: str,
-        input_schema: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None
+        input_schema: dict[str, Any],
+        metadata: dict[str, Any] | None = None
     ):
         """
         Decorator to register a tool handler.
@@ -131,7 +136,7 @@ class MCPServer:
             >>> async def search_tool(params):
             ...     return {"results": [...]}
         """
-        def decorator(func: Callable[[Dict[str, Any]], Awaitable[Any]]):
+        def decorator(func: Callable[[dict[str, Any]], Awaitable[Any]]):
             self.tools.register(
                 name=name,
                 description=description,
@@ -161,7 +166,6 @@ class MCPServer:
         """
         try:
             method = request.method
-            params = request.params or {}
 
             # Handle initialize
             if method == MCPMethod.INITIALIZE.value:
@@ -355,7 +359,7 @@ class MCPServer:
         if self.transport:
             await self.transport.stop()
 
-    def info(self) -> Dict[str, Any]:
+    def info(self) -> dict[str, Any]:
         """
         Get server information.
 

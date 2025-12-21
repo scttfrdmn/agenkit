@@ -30,7 +30,7 @@ Example:
 """
 
 import re
-from typing import List, Optional
+
 from agenkit import Agent, Message
 
 
@@ -62,7 +62,7 @@ class ChainOfThought(Agent):
         prompt_template: str = "Let's think step by step:\n{query}",
         parse_steps: bool = True,
         step_delimiter: str = "\n",
-        max_steps: Optional[int] = None,
+        max_steps: int | None = None,
     ):
         """
         Initialize Chain-of-Thought agent.
@@ -157,7 +157,7 @@ class ChainOfThought(Agent):
             metadata={"technique": "chain_of_thought"}
         )
 
-    def _parse_steps(self, text: str) -> List[str]:
+    def _parse_steps(self, text: str) -> list[str]:
         """
         Parse reasoning steps from response text.
 

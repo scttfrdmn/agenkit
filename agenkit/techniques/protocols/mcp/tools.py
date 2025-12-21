@@ -6,9 +6,10 @@ Handles registration and execution of MCP tools (actions).
 Tools are callable functions with JSON schemas for parameters.
 """
 
-from typing import Dict, Any, Callable, Awaitable, Optional, List
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-import asyncio
+from typing import Any
+
 from .schema import MCPToolInfo, validate_json_schema
 
 
@@ -21,15 +22,15 @@ class Tool:
     """
     name: str
     description: str
-    handler: Callable[[Dict[str, Any]], Awaitable[Any]]
-    input_schema: Dict[str, Any]
-    metadata: Dict[str, Any] = None
+    handler: Callable[[dict[str, Any]], Awaitable[Any]]
+    input_schema: dict[str, Any]
+    metadata: dict[str, Any] = None
 
     def __post_init__(self):
         if self.metadata is None:
             self.metadata = {}
 
-    async def execute(self, params: Dict[str, Any]) -> Any:
+    async def execute(self, params: dict[str, Any]) -> Any:
         """
         Execute tool with parameters.
 
@@ -67,15 +68,15 @@ class ToolRegistry:
 
     def __init__(self):
         """Initialize empty registry."""
-        self.tools: Dict[str, Tool] = {}
+        self.tools: dict[str, Tool] = {}
 
     def register(
         self,
         name: str,
         description: str,
-        handler: Callable[[Dict[str, Any]], Awaitable[Any]],
-        input_schema: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None
+        handler: Callable[[dict[str, Any]], Awaitable[Any]],
+        input_schema: dict[str, Any],
+        metadata: dict[str, Any] | None = None
     ) -> Tool:
         """
         Register a tool.
@@ -134,7 +135,7 @@ class ToolRegistry:
             return True
         return False
 
-    def get(self, name: str) -> Optional[Tool]:
+    def get(self, name: str) -> Tool | None:
         """
         Get tool by name.
 
@@ -146,7 +147,7 @@ class ToolRegistry:
         """
         return self.tools.get(name)
 
-    def list(self) -> List[MCPToolInfo]:
+    def list(self) -> list[MCPToolInfo]:
         """
         List all registered tools.
 
@@ -158,7 +159,7 @@ class ToolRegistry:
     async def execute(
         self,
         name: str,
-        params: Optional[Dict[str, Any]] = None
+        params: dict[str, Any] | None = None
     ) -> Any:
         """
         Execute a tool.
@@ -203,8 +204,8 @@ class ToolRegistry:
 def tool_decorator(
     name: str,
     description: str,
-    input_schema: Dict[str, Any],
-    metadata: Optional[Dict[str, Any]] = None
+    input_schema: dict[str, Any],
+    metadata: dict[str, Any] | None = None
 ):
     """
     Decorator for registering tools.
@@ -231,7 +232,7 @@ def tool_decorator(
         ... async def calculate(params):
         ...     return {"result": eval(params["expression"])}
     """
-    def decorator(func: Callable[[Dict[str, Any]], Awaitable[Any]]):
+    def decorator(func: Callable[[dict[str, Any]], Awaitable[Any]]):
         # Store registration info on function
         func._mcp_tool = {
             "name": name,

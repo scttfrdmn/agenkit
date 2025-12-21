@@ -82,14 +82,14 @@ See Also:
     - examples/evaluation/pattern_benchmarks_demo.py: Complete usage example
 """
 
-import asyncio
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import yaml
 
-from agenkit.evaluation.benchmarks import Benchmark, BenchmarkSuite, TestCase
+from agenkit.evaluation.benchmarks import Benchmark, TestCase
 from agenkit.interfaces import Agent, Message
 
 
@@ -538,7 +538,8 @@ class PatternBenchmarkSuite:
 
         for benchmark in self.benchmarks:
             # Create pattern-specific agent factory
-            pattern_agent_factory = lambda config: agent_factory(benchmark._pattern_name, config)
+            def pattern_agent_factory(config):
+                return agent_factory(benchmark._pattern_name, config)
 
             # Run benchmark
             results = await self.run_benchmark(benchmark, pattern_agent_factory)

@@ -29,9 +29,9 @@ __all__ = [
     "AuditSeverity",
     "ConsoleAuditAdapter",
     "FileAuditAdapter",
-    "StructuredAuditAdapter",
     # Metrics
     "MetricsMiddleware",
+    "StructuredAuditAdapter",
     # Tracing
     "TracingMiddleware",
     # Logging

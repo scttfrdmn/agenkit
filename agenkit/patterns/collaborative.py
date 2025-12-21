@@ -18,11 +18,9 @@ Performance characteristics:
 """
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 from agenkit import Agent, Message
-
 
 # Type aliases for callback functions
 ConsensusFunc = Callable[[list[Message]], bool]
@@ -308,7 +306,7 @@ class DefaultConsensusFuncs:
 
             for msg in messages[1:]:
                 current = msg.content.lower()
-                if not first[:prefix_len] in current:
+                if first[:prefix_len] not in current:
                     return False
 
             return True

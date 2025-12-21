@@ -7,16 +7,16 @@ References:
     - MCP Specification: https://modelcontextprotocol.io/
 """
 
-from typing import Optional, TYPE_CHECKING
 import asyncio
-import sys
 import json
+import sys
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .server import MCPServer
 
-from .message import MCPRequest, MCPResponse
+from .message import MCPRequest
 
 
 class Transport(ABC):

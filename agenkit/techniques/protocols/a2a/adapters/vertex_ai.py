@@ -4,10 +4,9 @@ Vertex AI Adapter for A2A.
 Integrates Agenkit agents with Google Cloud Vertex AI Agent Builder.
 """
 
-from typing import Optional, List, Dict, Any, TYPE_CHECKING
-from ..agent import A2AAgent
+from typing import TYPE_CHECKING, Any
+
 from ..server import A2AServer
-from ..message import AgentInfo
 
 if TYPE_CHECKING:
     from agenkit import Agent
@@ -42,7 +41,7 @@ class VertexAIAdapter:
         self,
         agent_id: str,
         agent: "Agent",
-        capabilities: List[str],
+        capabilities: list[str],
         project_id: str,
         location: str = "us-central1"
     ):
@@ -75,8 +74,8 @@ class VertexAIAdapter:
         agent: "Agent",
         project_id: str,
         location: str = "us-central1",
-        agent_id: Optional[str] = None,
-        capabilities: Optional[List[str]] = None
+        agent_id: str | None = None,
+        capabilities: list[str] | None = None
     ) -> "VertexAIAdapter":
         """
         Create adapter from Agenkit agent.
@@ -135,7 +134,7 @@ class VertexAIAdapter:
 
         endpoint = f"http://{host}:{port}/a2a"
 
-        print(f"Agent deployed for Vertex AI integration")
+        print("Agent deployed for Vertex AI integration")
         print(f"Project: {self.project_id}")
         print(f"Location: {self.location}")
         print(f"Endpoint: {endpoint}")
@@ -158,7 +157,7 @@ class VertexAIAdapter:
             "Visit: https://console.cloud.google.com/vertex-ai/agents"
         )
 
-    def get_vertex_config(self) -> Dict[str, Any]:
+    def get_vertex_config(self) -> dict[str, Any]:
         """
         Get configuration for Vertex AI Agent Builder.
 

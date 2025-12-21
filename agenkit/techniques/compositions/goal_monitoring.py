@@ -36,7 +36,9 @@ Example:
         print(f"Goal reached: {result.metadata['goal_reached']}")
 """
 
-from typing import Callable, Optional, Dict, Any
+from collections.abc import Callable
+from typing import Any
+
 from agenkit import Agent, Message
 
 
@@ -67,9 +69,9 @@ class GoalMonitor(Agent):
     def __init__(
         self,
         agent: Agent,
-        goal_fn: Callable[[Dict[str, Any]], bool],
+        goal_fn: Callable[[dict[str, Any]], bool],
         max_iterations: int = 10,
-        extract_state_fn: Optional[Callable[[Message], Dict[str, Any]]] = None
+        extract_state_fn: Callable[[Message], dict[str, Any]] | None = None
     ):
         """
         Initialize goal monitor.
@@ -103,7 +105,7 @@ class GoalMonitor(Agent):
         """Return agent name."""
         return "goal_monitor"
 
-    def _default_extract_state(self, message: Message) -> Dict[str, Any]:
+    def _default_extract_state(self, message: Message) -> dict[str, Any]:
         """
         Default state extraction from message metadata.
 
@@ -118,7 +120,7 @@ class GoalMonitor(Agent):
     async def achieve_goal(
         self,
         initial_message: Message,
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None
     ) -> Message:
         """
         Run agent until goal is achieved or max iterations reached.
@@ -207,7 +209,7 @@ class GoalMonitor(Agent):
         self,
         iteration: int,
         max_iterations: int,
-        state: Dict[str, Any]
+        state: dict[str, Any]
     ) -> str:
         """
         Generate feedback about progress toward goal.
@@ -251,8 +253,4 @@ class GoalMonitor(Agent):
     def capabilities(self) -> list[str]:
         """Return agent capabilities."""
         base_caps = self.agent.capabilities if hasattr(self.agent, 'capabilities') else []
-        return base_caps + [
-            "goal_monitoring",
-            "progress_tracking",
-            "iterative_execution"
-        ]
+        return [*base_caps, "goal_monitoring", "progress_tracking", "iterative_execution"]

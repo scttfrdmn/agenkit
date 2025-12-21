@@ -336,13 +336,12 @@ Begin!"""
         self.steps = []  # Reset steps for new task
 
         # Build initial prompt with system message
-        system_message = Message(role="system", content=self.system_prompt)
+        Message(role="system", content=self.system_prompt)
 
         # Combine system prompt with user message for initial call
         combined_content = f"{self.system_prompt}\n\nUser: {message.content}"
         current_message = Message(role="user", content=combined_content)
 
-        conversation_history = []
 
         for iteration in range(self.max_steps):
             # Get agent reasoning
@@ -407,7 +406,7 @@ Begin!"""
                         action_input = json.loads(action_input_str)
                     else:
                         action_input = {"input": action_input_str}
-                except Exception:  # noqa: S110
+                except Exception:
                     action_input = {"input": action_input_str}
 
         return ReActStep(
@@ -436,7 +435,7 @@ Begin!"""
 
         # Add metadata about tool usage and iterations
         tool_calls_made = len(self.steps)  # Each step involves a tool call
-        unique_tools = list(set(s.action for s in self.steps if s.action.lower() != "final answer"))
+        unique_tools = list({s.action for s in self.steps if s.action.lower() != "final answer"})
 
         metadata = {
             "tool_calls_made": tool_calls_made,

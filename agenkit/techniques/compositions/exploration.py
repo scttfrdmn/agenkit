@@ -43,8 +43,8 @@ Example:
 """
 
 import math
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+
 from agenkit import Agent, Message
 
 
@@ -100,9 +100,9 @@ class ExplorationStrategy(Agent):
     def __init__(
         self,
         agent: Agent,
-        actions: List[str],
+        actions: list[str],
         exploration_constant: float = 1.0,
-        reward_fn: Optional[callable] = None
+        reward_fn: callable | None = None
     ):
         """
         Initialize exploration strategy.
@@ -129,7 +129,7 @@ class ExplorationStrategy(Agent):
         self.reward_fn = reward_fn or self._default_reward
 
         # Initialize statistics
-        self.stats: Dict[str, ActionStats] = {
+        self.stats: dict[str, ActionStats] = {
             action: ActionStats(action=action)
             for action in actions
         }
@@ -306,12 +306,7 @@ class ExplorationStrategy(Agent):
         self.total_trials = 0
 
     @property
-    def capabilities(self) -> List[str]:
+    def capabilities(self) -> list[str]:
         """Return agent capabilities."""
         base_caps = self.agent.capabilities if hasattr(self.agent, 'capabilities') else []
-        return base_caps + [
-            "exploration",
-            "exploitation",
-            "action_selection",
-            "ucb"
-        ]
+        return [*base_caps, "exploration", "exploitation", "action_selection", "ucb"]

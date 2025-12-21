@@ -38,7 +38,7 @@ Example:
             pass
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
 
 
 class SimpleApprovalTool:
@@ -68,8 +68,8 @@ class SimpleApprovalTool:
     async def execute(
         self,
         action: str,
-        details: Optional[str] = None
-    ) -> Dict[str, Any]:
+        details: str | None = None
+    ) -> dict[str, Any]:
         """
         Request approval for an action.
 
@@ -106,7 +106,7 @@ class SimpleApprovalTool:
         }
 
 
-def simple_approval(action: str, details: Optional[str] = None) -> bool:
+def simple_approval(action: str, details: str | None = None) -> bool:
     """
     Convenience function for simple synchronous approval.
 

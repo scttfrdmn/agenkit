@@ -41,6 +41,11 @@ from agenkit.patterns.collaborative import (
     default_consensus_funcs,
     default_merge_funcs,
 )
+from agenkit.patterns.conversational import (
+    ConversationalAgent,
+    LLMClient,
+    StreamingConversationalAgent,
+)
 from agenkit.patterns.fallback import (
     FallbackAgent,
     RecoveryAgent,
@@ -56,31 +61,6 @@ from agenkit.patterns.human_in_loop import (
     HumanInLoopConfig,
     confidence_based_approval_func,
     simple_approval_func,
-)
-from agenkit.patterns.parallel import (
-    AggregatorFunc,
-    ParallelAgent,
-    default_aggregators,
-)
-from agenkit.patterns.router import (
-    ClassifierAgent,
-    LLMClassifier,
-    RouterAgent,
-    RouterConfig,
-    SimpleClassifier,
-)
-from agenkit.patterns.sequential import SequentialAgent
-from agenkit.patterns.supervisor import (
-    PlannerAgent,
-    SimplePlanner,
-    Subtask,
-    SupervisorAgent,
-    SupervisorConfig,
-)
-from agenkit.patterns.conversational import (
-    ConversationalAgent,
-    LLMClient,
-    StreamingConversationalAgent,
 )
 from agenkit.patterns.memory import (
     LongTermMemory,
@@ -103,6 +83,11 @@ from agenkit.patterns.orchestration import (
     ParallelPattern,
     RouterPattern,
     SequentialPattern,
+)
+from agenkit.patterns.parallel import (
+    AggregatorFunc,
+    ParallelAgent,
+    default_aggregators,
 )
 from agenkit.patterns.planning import (
     Plan,
@@ -132,14 +117,28 @@ from agenkit.patterns.reflection import (
     ReflectionStep,
     StopReason,
 )
+from agenkit.patterns.router import (
+    ClassifierAgent,
+    LLMClassifier,
+    RouterAgent,
+    RouterConfig,
+    SimpleClassifier,
+)
+from agenkit.patterns.sequential import SequentialAgent
+from agenkit.patterns.supervisor import (
+    PlannerAgent,
+    SimplePlanner,
+    Subtask,
+    SupervisorAgent,
+    SupervisorConfig,
+)
 from agenkit.patterns.task import Task
 
 __all__ = [
-    # Agents-as-Tools Pattern (NEW)
-    "AgentTool",
-    "agent_as_tool",
     # Core Patterns
     "AgentTask",
+    # Agents-as-Tools Pattern (NEW)
+    "AgentTool",
     # Pattern Library - Collaborative (NEW in v0.32.0)
     "AggregatorFunc",
     # Pattern Library - Human Approval (NEW in v0.32.0)
@@ -153,7 +152,6 @@ __all__ = [
     # Pattern Library - Collaborative (NEW in v0.32.0)
     "CollaborativeAgent",
     "CollaborativeConfig",
-    "confidence_based_approval_func",
     "ConsensusAgent",
     "ConsensusConfig",
     # Pattern Library - Collaborative (NEW in v0.32.0)
@@ -161,10 +159,6 @@ __all__ = [
     "ConversationalAgent",
     # Critique/Reflection (NEW)
     "CritiqueFormat",
-    "default_aggregators",
-    "default_consensus_funcs",
-    "default_merge_funcs",
-    "default_recovery",
     # Pattern Library - Fallback (NEW in v0.32.0)
     "FallbackAgent",
     "Goal",
@@ -190,9 +184,9 @@ __all__ = [
     "ParallelPattern",
     # Planning
     "Plan",
+    "PlanStep",
     # Pattern Library - Supervisor (NEW in v0.32.0)
     "PlannerAgent",
-    "PlanStep",
     "PlanningAgent",
     "PlanningConfig",
     # ReAct
@@ -223,8 +217,6 @@ __all__ = [
     "ShortTermMemory",
     # Pattern Library - Router (NEW in v0.32.0)
     "SimpleClassifier",
-    # Pattern Library - Human Approval (NEW in v0.32.0)
-    "simple_approval_func",
     # Pattern Library - Supervisor (NEW in v0.32.0)
     "SimplePlanner",
     # Planning (continued)
@@ -246,6 +238,14 @@ __all__ = [
     "ToolResult",
     # Memory (continued)
     "WorkingMemory",
+    "agent_as_tool",
+    "confidence_based_approval_func",
+    "default_aggregators",
+    "default_consensus_funcs",
+    "default_merge_funcs",
+    "default_recovery",
+    # Pattern Library - Human Approval (NEW in v0.32.0)
+    "simple_approval_func",
     # Pattern Library - Fallback (NEW in v0.32.0)
     "with_recovery",
 ]

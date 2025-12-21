@@ -195,7 +195,7 @@ func exampleRetries() error {
 }
 
 // Example 4: Cannot reuse task
-func exampleReuseP revention() error {
+func exampleReusePrevention() error {
 	fmt.Println("\n=== Example 4: Reuse Prevention ===\n")
 
 	agent := &SummarizationAgent{model: "GPT-4"}

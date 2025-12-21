@@ -101,6 +101,11 @@ func (t *ToolAgent) Capabilities() []string {
 	return append(caps, "tool_calling")
 }
 
+// Introspect returns introspection data for the tool agent.
+func (t *ToolAgent) Introspect() *agenkit.IntrospectionResult {
+	return t.agent.Introspect()
+}
+
 // Process handles a message with tool calling support.
 // If the message contains tool calls in metadata, it executes them and returns results.
 // Otherwise, it passes the message to the underlying agent.

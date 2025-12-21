@@ -7,7 +7,6 @@ structured sections for use by AI agents.
 
 import re
 from pathlib import Path
-from typing import Optional
 
 from .types import AgentsMdDocument, AgentsMdSection, SectionType
 
@@ -145,7 +144,7 @@ def _parse_sections(content: str) -> list[AgentsMdSection]:
     sections = []
     lines = content.split("\n")
 
-    current_section: Optional[dict] = None
+    current_section: dict | None = None
     current_lines: list[str] = []
 
     for line_num, line in enumerate(lines, start=1):
@@ -175,10 +174,9 @@ def _parse_sections(content: str) -> list[AgentsMdSection]:
                 "line_number": line_num,
             }
             current_lines = []
-        else:
-            # Accumulate content for current section
-            if current_section is not None:
-                current_lines.append(line)
+        # Accumulate content for current section
+        elif current_section is not None:
+            current_lines.append(line)
 
     # Save final section
     if current_section is not None:
@@ -212,7 +210,6 @@ def _extract_metadata(content: str) -> dict[str, str]:
 
     # Check for YAML front matter
     if lines and lines[0].strip() == "---":
-        in_front_matter = True
         for line in lines[1:]:
             if line.strip() == "---":
                 break

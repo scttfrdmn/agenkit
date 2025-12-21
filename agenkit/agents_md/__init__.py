@@ -31,36 +31,36 @@ Components:
     - types: Data structures for AGENTS.md documents
 """
 
+from .integration import AgentsMdMiddleware
 from .parser import (
-    parse_agents_md,
     find_agents_md,
     find_agents_md_hierarchy,
+    parse_agents_md,
 )
-from .validator import (
-    validate_agents_md,
-    ValidationResult,
-    ValidationIssue,
-)
-from .integration import AgentsMdMiddleware
 from .types import (
     AgentsMdDocument,
     AgentsMdSection,
     SectionType,
 )
+from .validator import (
+    ValidationIssue,
+    ValidationResult,
+    validate_agents_md,
+)
 
 __all__ = [
-    # Parser
-    "parse_agents_md",
-    "find_agents_md",
-    "find_agents_md_hierarchy",
-    # Validator
-    "validate_agents_md",
-    "ValidationResult",
-    "ValidationIssue",
-    # Integration
-    "AgentsMdMiddleware",
     # Types
     "AgentsMdDocument",
+    # Integration
+    "AgentsMdMiddleware",
     "AgentsMdSection",
     "SectionType",
+    "ValidationIssue",
+    "ValidationResult",
+    "find_agents_md",
+    "find_agents_md_hierarchy",
+    # Parser
+    "parse_agents_md",
+    # Validator
+    "validate_agents_md",
 ]

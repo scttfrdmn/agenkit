@@ -1,4 +1,4 @@
-technique:
+pattern:
   name: "SelfConsistency"
   description: "Improves reliability by generating multiple independent reasoning paths and using voting to select the most consistent answer"
   category: "reasoning"

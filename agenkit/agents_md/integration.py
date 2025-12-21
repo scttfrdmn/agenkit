@@ -6,11 +6,10 @@ into agent prompts.
 """
 
 from pathlib import Path
-from typing import Optional
 
 from agenkit.interfaces import Agent, Message
 
-from .parser import find_agents_md_hierarchy, parse_agents_md
+from .parser import find_agents_md_hierarchy
 from .types import AgentsMdDocument
 
 
@@ -64,7 +63,7 @@ class AgentsMdMiddleware(Agent):
         self.agent = agent
         self.project_root = Path(project_root).resolve()
         self.cache_enabled = cache_enabled
-        self._instructions: Optional[dict[Path, AgentsMdDocument]] = None
+        self._instructions: dict[Path, AgentsMdDocument] | None = None
 
     @property
     def name(self) -> str:
@@ -129,7 +128,7 @@ class AgentsMdMiddleware(Agent):
         # Build context string from all AGENTS.md files
         context_parts = []
 
-        for dir_path, doc in sorted(self._instructions.items()):
+        for _dir_path, doc in sorted(self._instructions.items()):
             # Format context from each AGENTS.md
             context = doc.to_prompt_context()
             if context:
@@ -156,7 +155,7 @@ class AgentsMdMiddleware(Agent):
             metadata={
                 **(message.metadata or {}),
                 "agents_md_context": True,
-                "agents_md_files": [str(p) for p in self._instructions.keys()],
+                "agents_md_files": [str(p) for p in self._instructions],
             },
         )
 
@@ -193,7 +192,7 @@ def load_agents_md_context(project_root: str | Path = ".") -> str:
         return ""
 
     context_parts = []
-    for dir_path, doc in sorted(hierarchy.items()):
+    for _dir_path, doc in sorted(hierarchy.items()):
         context = doc.to_prompt_context()
         if context:
             context_parts.append(context)

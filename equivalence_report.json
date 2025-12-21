@@ -1,0 +1,3933 @@
+{
+  "summary": {
+    "total_patterns": 1,
+    "passed_patterns": 1,
+    "total_scenarios": 11,
+    "languages_tested": [
+      "python",
+      "go",
+      "typescript",
+      "rust",
+      "cpp",
+      "zig"
+    ]
+  },
+  "patterns": {
+    "TreeOfThought": {
+      "pattern": "TreeOfThought",
+      "scenarios": {
+        "tree_of_thought_basic": {
+          "scenario_id": "tree_of_thought_basic",
+          "scenario_name": "Basic tree-of-thought search",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Solve this problem\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.28600000000000003,
+                      "best_score": 0.29200000000000004
+                    },
+                    "reasoning_path": [
+                      "Solve this problem",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.29200000000000004
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.324249267578125,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Solve this problem\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.29200000000000004,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Solve this problem",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.28600000000000003,
+                      "best_score": 0.29200000000000004,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Solve this problem\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.28600000000000003,
+                      "best_score": 0.29200000000000004
+                    },
+                    "reasoning_path": [
+                      "Solve this problem",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.29200000000000004
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Solve this problem\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.29200000000000004,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Solve this problem",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.28600000000000003,
+                      "best_score": 0.29200000000000004,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Solve this problem\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.29200000000000004,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Solve this problem",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.28600000000000003,
+                      "best_score": 0.29200000000000004,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Solve this problem\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.28600000000000003,
+                      "best_score": 0.29200000000000004
+                    },
+                    "reasoning_path": [
+                      "Solve this problem",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.29200000000000004
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 15,
+            "equivalent_count": 15,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "tree_of_thought_bfs": {
+          "scenario_id": "tree_of_thought_bfs",
+          "scenario_name": "Breadth-first search strategy",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "bfs",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.27,
+                      "best_score": 0.276
+                    },
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.276
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.3459453582763672,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.276,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.27,
+                      "best_score": 0.276,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "bfs",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "bfs",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.27,
+                      "best_score": 0.276
+                    },
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.276
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 1,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.276,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.27,
+                      "best_score": 0.276,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "bfs",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.276,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.27,
+                      "best_score": 0.276,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "bfs",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "bfs",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.27,
+                      "best_score": 0.276
+                    },
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.276
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 15,
+            "equivalent_count": 15,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "tree_of_thought_dfs": {
+          "scenario_id": "tree_of_thought_dfs",
+          "scenario_name": "Depth-first search strategy",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "dfs",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.27,
+                      "best_score": 0.276
+                    },
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.276
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.2818107604980469,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.276,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.27,
+                      "best_score": 0.276,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "dfs",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "dfs",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.27,
+                      "best_score": 0.276
+                    },
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.276
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.276,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.27,
+                      "best_score": 0.276,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "dfs",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.276,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.27,
+                      "best_score": 0.276,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "dfs",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "dfs",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.27,
+                      "best_score": 0.276
+                    },
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.276
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 15,
+            "equivalent_count": 15,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "tree_of_thought_best_first": {
+          "scenario_id": "tree_of_thought_best_first",
+          "scenario_name": "Best-first search strategy",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.27,
+                      "best_score": 0.276
+                    },
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.276
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.41294097900390625,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.276,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.27,
+                      "best_score": 0.276,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.27,
+                      "best_score": 0.276
+                    },
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.276
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.276,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.27,
+                      "best_score": 0.276,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.276,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.27,
+                      "best_score": 0.276,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.27,
+                      "best_score": 0.276
+                    },
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.276
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 15,
+            "equivalent_count": 15,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "tree_of_thought_custom_evaluator": {
+          "scenario_id": "tree_of_thought_custom_evaluator",
+          "scenario_name": "Custom evaluator function",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.258,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.29015541076660156,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.258,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.258,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.258,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.258,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.258,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 15,
+            "equivalent_count": 15,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "tree_of_thought_pruning": {
+          "scenario_id": "tree_of_thought_pruning",
+          "scenario_name": "Node pruning behavior",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 4,
+                      "max_depth": 1,
+                      "num_leaves": 3,
+                      "num_evaluated": 1,
+                      "num_pruned": 3,
+                      "avg_score": 0.23466666666666666,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.31375885009765625,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.23466666666666666,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 3,
+                      "num_pruned": 3,
+                      "total_nodes": 4
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 4,
+                      "max_depth": 1,
+                      "num_leaves": 3,
+                      "num_evaluated": 1,
+                      "num_pruned": 3,
+                      "avg_score": 0.23466666666666666,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.23466666666666666,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 3,
+                      "num_pruned": 3,
+                      "total_nodes": 4
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.23466666666666666,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 3,
+                      "num_pruned": 3,
+                      "total_nodes": 4
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 4,
+                      "max_depth": 1,
+                      "num_leaves": 3,
+                      "num_evaluated": 1,
+                      "num_pruned": 3,
+                      "avg_score": 0.23466666666666666,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 15,
+            "equivalent_count": 15,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "tree_of_thought_max_depth": {
+          "scenario_id": "tree_of_thought_max_depth",
+          "scenario_name": "Maximum depth limiting",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.258,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.3452301025390625,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.258,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.258,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.258,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.258,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.258,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 15,
+            "equivalent_count": 15,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "tree_of_thought_branching_factor": {
+          "scenario_id": "tree_of_thought_branching_factor",
+          "scenario_name": "Branching factor control",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 4,
+                      "max_depth": 1,
+                      "num_leaves": 3,
+                      "num_evaluated": 1,
+                      "num_pruned": 3,
+                      "avg_score": 0.23466666666666666,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.28514862060546875,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.23466666666666666,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 3,
+                      "num_pruned": 3,
+                      "total_nodes": 4
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 4,
+                      "max_depth": 1,
+                      "num_leaves": 3,
+                      "num_evaluated": 1,
+                      "num_pruned": 3,
+                      "avg_score": 0.23466666666666666,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.23466666666666666,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 3,
+                      "num_pruned": 3,
+                      "total_nodes": 4
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.23466666666666666,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 3,
+                      "num_pruned": 3,
+                      "total_nodes": 4
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 4,
+                      "max_depth": 1,
+                      "num_leaves": 3,
+                      "num_evaluated": 1,
+                      "num_pruned": 3,
+                      "avg_score": 0.23466666666666666,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 15,
+            "equivalent_count": 15,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "tree_of_thought_tree_statistics": {
+          "scenario_id": "tree_of_thought_tree_statistics",
+          "scenario_name": "Tree statistics completeness",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.258,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.2713203430175781,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.258,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.258,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.258,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.258,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.258,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 15,
+            "equivalent_count": 15,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "tree_of_thought_reasoning_path": {
+          "scenario_id": "tree_of_thought_reasoning_path",
+          "scenario_name": "Reasoning path structure",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.27,
+                      "best_score": 0.276
+                    },
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.276
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.2727508544921875,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.276,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.27,
+                      "best_score": 0.276,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.27,
+                      "best_score": 0.276
+                    },
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.276
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.276,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.27,
+                      "best_score": 0.276,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.276,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.27,
+                      "best_score": 0.276,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test query\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.27,
+                      "best_score": 0.276
+                    },
+                    "reasoning_path": [
+                      "Test query",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.276
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 15,
+            "equivalent_count": 15,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "tree_of_thought_metadata": {
+          "scenario_id": "tree_of_thought_metadata",
+          "scenario_name": "Metadata completeness",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.258,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.3249645233154297,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "go": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.258,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "typescript": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.258,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "rust": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.258,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "cpp": {
+              "status": "success",
+              "output": {
+                "behavior": {
+                  "sub_agents": [],
+                  "tool_calls": [],
+                  "turns": 1
+                },
+                "message": {
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "best_score": 0.264,
+                    "num_steps": 2,
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "reasoning_tree_stats": {
+                      "avg_score": 0.258,
+                      "best_score": 0.264,
+                      "max_depth": 1,
+                      "num_evaluated": 1,
+                      "num_leaves": 2,
+                      "num_pruned": 2,
+                      "total_nodes": 3
+                    },
+                    "search_strategy": "best-first",
+                    "technique": "tree_of_thought"
+                  },
+                  "role": "assistant"
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            },
+            "zig": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Test\n1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+                  "metadata": {
+                    "technique": "tree_of_thought",
+                    "search_strategy": "best-first",
+                    "reasoning_tree_stats": {
+                      "total_nodes": 3,
+                      "max_depth": 1,
+                      "num_leaves": 2,
+                      "num_evaluated": 1,
+                      "num_pruned": 2,
+                      "avg_score": 0.258,
+                      "best_score": 0.264
+                    },
+                    "reasoning_path": [
+                      "Test",
+                      "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    ],
+                    "num_steps": 2,
+                    "best_score": 0.264
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {
+            "cpp_vs_go": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "cpp_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_python": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "go_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_rust": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "python_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_typescript": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "rust_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            },
+            "typescript_vs_zig": {
+              "equivalent": true,
+              "differences": [],
+              "warnings": []
+            }
+          },
+          "equivalence": {
+            "total_comparisons": 15,
+            "equivalent_count": 15,
+            "different_count": 0,
+            "equivalence_rate": 1.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        }
+      },
+      "summary": {
+        "total_scenarios": 11,
+        "passed_scenarios": 11,
+        "failed_scenarios": 0,
+        "pass_rate": 1.0
+      }
+    }
+  }
+}

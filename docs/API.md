@@ -220,6 +220,25 @@ class Agent(ABC):
         """What this agent can do (optional)."""
         return []
 
+    def introspect(self) -> IntrospectionResult:
+        """Examine agent's internal state, memory, and capabilities (optional)."""
+        return IntrospectionResult(
+            timestamp=datetime.now(timezone.utc),
+            agent_name=self.name,
+            capabilities=self.capabilities,
+            memory_state=self._get_memory_state(),
+            internal_state=self._get_internal_state(),
+            metadata={},
+        )
+
+    def _get_memory_state(self) -> dict[str, Any] | None:
+        """Get memory state for introspection (optional override)."""
+        return None
+
+    def _get_internal_state(self) -> dict[str, Any]:
+        """Get agent-specific internal state (optional override)."""
+        return {}
+
     def unwrap(self) -> Any:
         """Return native object for interop (optional)."""
         return self
@@ -247,6 +266,23 @@ class Agent(ABC):
 - Returns list of capability strings
 - Used for introspection and routing
 - Default: empty list
+
+**`introspect() -> IntrospectionResult`**
+- Examine agent's internal state, memory, and capabilities
+- Returns snapshot of current state at call time
+- Useful for debugging, monitoring, testing, and coordination
+- Default implementation uses `_get_memory_state()` and `_get_internal_state()`
+- Override for custom introspection behavior
+
+**`_get_memory_state() -> dict[str, Any] | None`** (protected helper)
+- Return agent's memory contents for introspection
+- Default: `None` (no memory)
+- Override if agent has memory state
+
+**`_get_internal_state() -> dict[str, Any]`** (protected helper)
+- Return agent-specific internal state for introspection
+- Default: empty dict
+- Override to expose counters, flags, configuration, etc.
 
 **`unwrap() -> Any`**
 - Return native object for framework interop
@@ -310,6 +346,189 @@ class LLMAgent(Agent):
         async for chunk in self.generate_stream(message.content):
             yield Message(role="agent", content=chunk)
 ```
+
+**Agent with Introspection:**
+
+```python
+class StatefulAgent(Agent):
+    def __init__(self):
+        self.message_count = 0
+        self.memory = []
+
+    @property
+    def name(self) -> str:
+        return "stateful"
+
+    @property
+    def capabilities(self) -> list[str]:
+        return ["stateful", "memory"]
+
+    async def process(self, message: Message) -> Message:
+        self.message_count += 1
+        self.memory.append(message.content)
+        return Message(
+            role="agent",
+            content=f"Processed message #{self.message_count}"
+        )
+
+    def _get_memory_state(self) -> dict[str, Any]:
+        return {
+            "recent_messages": self.memory[-5:],  # Last 5 messages
+            "total_stored": len(self.memory)
+        }
+
+    def _get_internal_state(self) -> dict[str, Any]:
+        return {
+            "message_count": self.message_count,
+            "has_memory": len(self.memory) > 0
+        }
+
+# Using introspection
+agent = StatefulAgent()
+await agent.process(Message(role="user", content="Hello"))
+
+result = agent.introspect()
+print(f"Agent: {result.agent_name}")
+print(f"Capabilities: {result.capabilities}")
+print(f"Messages processed: {result.internal_state['message_count']}")
+print(f"Memory entries: {result.memory_state['total_stored']}")
+```
+
+**Introspection for Debugging:**
+
+```python
+def debug_agent_state(agent: Agent) -> None:
+    """Debug helper to inspect agent state."""
+    result = agent.introspect()
+
+    print(f"\n=== Agent: {result.agent_name} ===")
+    print(f"Timestamp: {result.timestamp}")
+    print(f"Capabilities: {', '.join(result.capabilities)}")
+
+    if result.memory_state:
+        print(f"\nMemory State:")
+        for key, value in result.memory_state.items():
+            print(f"  {key}: {value}")
+
+    if result.internal_state:
+        print(f"\nInternal State:")
+        for key, value in result.internal_state.items():
+            print(f"  {key}: {value}")
+
+    print("=" * 40)
+
+# Use with any agent
+debug_agent_state(my_agent)
+```
+
+---
+
+### IntrospectionResult
+
+**Data container for agent introspection results.**
+
+```python
+@dataclass(frozen=True)
+class IntrospectionResult:
+    timestamp: datetime
+    agent_name: str
+    capabilities: list[str]
+    memory_state: dict[str, Any] | None
+    internal_state: dict[str, Any]
+    metadata: dict[str, Any] = field(default_factory=dict)
+```
+
+#### Attributes
+
+- **timestamp** (`datetime`): When the introspection snapshot was taken (UTC)
+- **agent_name** (`str`): Name of the agent that was introspected
+- **capabilities** (`list[str]`): List of capabilities this agent supports
+- **memory_state** (`dict[str, Any] | None`): Agent's memory contents (None if no memory)
+- **internal_state** (`dict[str, Any]`): Agent-specific internal state (counters, flags, config)
+- **metadata** (`dict[str, Any]`): Extension point for additional information
+
+#### Validation
+
+- `agent_name` cannot be empty (raises `ValueError`)
+- `capabilities` must be a list (raises `TypeError`)
+- `internal_state` must be a dict (raises `TypeError`)
+- `memory_state` must be dict or None (raises `TypeError`)
+
+#### Use Cases
+
+**Debugging:**
+```python
+# Inspect agent during development
+result = agent.introspect()
+print(f"Agent state at {result.timestamp}:")
+print(f"  Name: {result.agent_name}")
+print(f"  State: {result.internal_state}")
+```
+
+**Monitoring:**
+```python
+# Track agent health in production
+def check_agent_health(agent: Agent) -> bool:
+    result = agent.introspect()
+
+    # Check if agent has processed recent messages
+    if "last_activity" in result.internal_state:
+        last_activity = result.internal_state["last_activity"]
+        if (datetime.now() - last_activity).seconds > 300:
+            return False  # No activity in 5 minutes
+
+    return True
+```
+
+**Testing:**
+```python
+# Verify agent state in tests
+async def test_agent_processes_messages():
+    agent = MyAgent()
+
+    # Check initial state
+    result1 = agent.introspect()
+    assert result1.internal_state["message_count"] == 0
+
+    # Process message
+    await agent.process(Message(role="user", content="test"))
+
+    # Verify state changed
+    result2 = agent.introspect()
+    assert result2.internal_state["message_count"] == 1
+```
+
+**Coordination:**
+```python
+# Multi-agent coordination based on capabilities
+def route_to_capable_agent(
+    message: Message,
+    agents: list[Agent]
+) -> Agent:
+    """Route message to agent with required capability."""
+    required_capability = message.metadata.get("requires")
+
+    for agent in agents:
+        result = agent.introspect()
+        if required_capability in result.capabilities:
+            return agent
+
+    raise ValueError(f"No agent has capability: {required_capability}")
+```
+
+#### Distinction from Reflection Pattern
+
+**Introspection** (this feature):
+- **What it does**: Examines current state ("What do I know?")
+- **When to use**: Debugging, monitoring, testing, coordination
+- **Returns**: Snapshot of current internal state
+- **Example**: `agent.introspect()` → current memory, counters, config
+
+**Reflection** (pattern):
+- **What it does**: Analyzes past performance ("How did I do?")
+- **When to use**: Self-improvement, quality assessment
+- **Returns**: Critique of previous outputs
+- **Example**: Reflection agent analyzes response quality and suggests improvements
 
 ---
 

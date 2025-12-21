@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agenkit-agent-config
+data:
+  # Application configuration
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  WORKERS: "2"
+
+  # Redis configuration
+  REDIS_URL: "redis://redis-service:6379"
+  CACHE_TTL: "3600"
+
+  # Agent configuration
+  AGENT_TIMEOUT: "30"
+  MAX_RETRIES: "3"
+  BACKOFF_FACTOR: "2.0"
+
+  # Monitoring
+  METRICS_ENABLED: "true"
+  TRACING_ENABLED: "true"

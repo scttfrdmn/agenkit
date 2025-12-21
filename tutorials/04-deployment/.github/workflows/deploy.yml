@@ -1,0 +1,203 @@
+name: Deploy Agenkit Agent
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: myregistry/agenkit-agent
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Run tests
+        run: pytest tests/ --cov=. --cov-report=xml --cov-report=term
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install linting tools
+        run: pip install ruff black mypy
+
+      - name: Run ruff
+        run: ruff check .
+
+      - name: Run black
+        run: black --check .
+
+      - name: Run mypy
+        run: mypy . --ignore-missing-imports
+
+  build:
+    name: Build and Push Docker Image
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:latest
+          cache-to: type=inline
+          platforms: linux/amd64,linux/arm64
+
+      - name: Image digest
+        run: echo ${{ steps.build.outputs.digest }}
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl set image deployment/agenkit-agent \
+            agent=${{ env.IMAGE_NAME }}:main-${{ github.sha }} \
+            -n agenkit-staging
+
+          kubectl rollout status deployment/agenkit-agent -n agenkit-staging --timeout=5m
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n agenkit-staging
+          kubectl get services -n agenkit-staging
+
+      - name: Run smoke tests
+        run: |
+          ENDPOINT=$(kubectl get service agenkit-agent-service -n agenkit-staging -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          curl -f http://$ENDPOINT/health || exit 1
+
+  deploy-production:
+    name: Deploy to Production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://api.example.com
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PROD }}
+
+      - name: Deploy to Kubernetes (Canary)
+        run: |
+          # Deploy canary (20% traffic)
+          kubectl set image deployment/agenkit-agent-canary \
+            agent=${{ env.IMAGE_NAME }}:main-${{ github.sha }} \
+            -n agenkit-prod
+
+          kubectl rollout status deployment/agenkit-agent-canary -n agenkit-prod --timeout=5m
+
+      - name: Monitor canary metrics
+        run: |
+          # Wait and check error rate
+          sleep 120
+          # Query Prometheus for error rate
+          # If error rate > threshold, rollback
+
+      - name: Promote canary to production
+        run: |
+          kubectl set image deployment/agenkit-agent \
+            agent=${{ env.IMAGE_NAME }}:main-${{ github.sha }} \
+            -n agenkit-prod
+
+          kubectl rollout status deployment/agenkit-agent -n agenkit-prod --timeout=10m
+
+      - name: Verify production deployment
+        run: |
+          kubectl get pods -n agenkit-prod
+          ENDPOINT=$(kubectl get service agenkit-agent-service -n agenkit-prod -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          curl -f http://$ENDPOINT/health || exit 1
+
+      - name: Create GitHub release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: deploy-${{ github.sha }}
+          release_name: Production Deploy ${{ github.sha }}
+          body: |
+            Deployed to production
+            Image: ${{ env.IMAGE_NAME }}:main-${{ github.sha }}
+            Commit: ${{ github.sha }}

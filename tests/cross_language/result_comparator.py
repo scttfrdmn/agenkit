@@ -83,18 +83,27 @@ class ResultComparator:
             )
             errors.extend(behavior_errors)
 
-        # Validate metadata
-        if expected.metadata:
-            metadata_errors = self._validate_metadata(
-                output.get("output", {}).get("message", {}).get("metadata", {}),
-                expected.metadata,
-            )
-            errors.extend(metadata_errors)
-
         # Check for error expectation
         if expected.error:
             if output.get("status") != "error":
                 errors.append("Expected error but got success")
+            else:
+                # For error scenarios, validate metadata from error details
+                if expected.metadata:
+                    error_metadata = output.get("error", {}).get("details", {})
+                    metadata_errors = self._validate_metadata(
+                        error_metadata,
+                        expected.metadata,
+                    )
+                    errors.extend(metadata_errors)
+        else:
+            # For success scenarios, validate metadata from message
+            if expected.metadata:
+                metadata_errors = self._validate_metadata(
+                    output.get("output", {}).get("message", {}).get("metadata", {}),
+                    expected.metadata,
+                )
+                errors.extend(metadata_errors)
 
         return ValidationResult(
             valid=len(errors) == 0,
@@ -360,10 +369,18 @@ class ResultComparator:
         for key in ["tool_calls", "sub_agents"]:
             list1 = behavior1.get(key, [])
             list2 = behavior2.get(key, [])
-            if set(list1) != set(list2):
-                differences.append(
-                    f"Behavior '{key}' mismatch: {lang1}={list1}, {lang2}={list2}"
-                )
+            # Use sorted comparison for lists that might contain dicts
+            try:
+                if set(list1) != set(list2):
+                    differences.append(
+                        f"Behavior '{key}' mismatch: {lang1}={list1}, {lang2}={list2}"
+                    )
+            except TypeError:
+                # Lists contain unhashable items (like dicts), use direct comparison
+                if sorted(list1, key=str) != sorted(list2, key=str):
+                    differences.append(
+                        f"Behavior '{key}' mismatch: {lang1}={list1}, {lang2}={list2}"
+                    )
 
         return differences
 

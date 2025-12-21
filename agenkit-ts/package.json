@@ -27,6 +27,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write \"src/**/*.ts\"",
+    "docs": "typedoc",
+    "docs:watch": "typedoc --watch",
     "prepublishOnly": "npm run build"
   },
   "repository": {
@@ -69,6 +71,7 @@
     "@vitest/ui": "^4.0.9",
     "eslint": "^8.56.0",
     "prettier": "^3.1.1",
+    "typedoc": "^0.26.0",
     "typescript": "^5.3.3",
     "vitest": "^4.0.9"
   }

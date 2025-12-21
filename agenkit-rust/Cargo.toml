@@ -8,6 +8,14 @@ license = "Apache-2.0"
 repository = "https://github.com/scttfrdmn/agenkit"
 keywords = ["ai", "agents", "llm", "framework"]
 categories = ["web-programming", "asynchronous"]
+documentation = "https://docs.rs/agenkit"
+readme = "README.md"
+homepage = "https://agenkit.dev"
+
+[package.metadata.docs.rs]
+all-features = false
+features = ["native"]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-O4", "--enable-mutable-globals"]

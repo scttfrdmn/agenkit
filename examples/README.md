@@ -1,564 +1,772 @@
 # Agenkit Examples
 
-Comprehensive examples demonstrating all Agenkit features across Python and Go.
+Comprehensive collection of **280 examples** across **6 languages** (including WASM!) demonstrating all Agenkit features, patterns, and integrations.
 
-## Running Examples
+## 🎯 Start Here
 
-### Python Examples
+**New to Agenkit?** Follow this path:
+1. [01_basic_agent.py](01_basic_agent.py) - Your first agent
+2. [02_sequential_pattern.py](02_sequential_pattern.py) - Composing agents
+3. [03_parallel_pattern.py](03_parallel_pattern.py) - Parallel execution
+4. [05_tool_usage.py](05_tool_usage.py) - Adding tools
+5. [06_pattern_composition.py](06_pattern_composition.py) - Complex patterns
 
-```bash
-# Make sure you're in the project directory
-cd /path/to/agenkit
-
-# Run any example
-python examples/01_basic_agent.py
-python examples/middleware/circuit_breaker_example.py
-python examples/transport/websocket_example.py
-```
-
-### Go Examples
-
-```bash
-# Navigate to Go examples
-cd agenkit-go/examples
-
-# Run any example
-go run basic/main.go
-go run middleware/circuit_breaker_example.go
-go run transport/grpc_example.go
-```
-
-## Examples by Category
-
-### Core Patterns (6 examples)
-
-### [01_basic_agent.py](01_basic_agent.py)
-**Basic Agent Creation**
-
-Learn how to create a simple agent that processes messages.
-
-Key concepts:
-- Agent interface
-- Message creation
-- Async processing
-
-```bash
-python examples/01_basic_agent.py
-```
+**Want structured learning?** Check out our [Tutorials](../tutorials/) with Jupyter and Marimo notebooks!
 
 ---
 
-### [02_sequential_pattern.py](02_sequential_pattern.py)
-**Sequential Pattern (Pipeline)**
+## 📊 Quick Stats
 
-Chain agents in a pipeline where output of one becomes input of next.
-
-Key concepts:
-- SequentialPattern
-- Validation → Processing → Formatting pipeline
-- Error propagation
-
-```bash
-python examples/02_sequential_pattern.py
-```
+| Language | Examples | Status |
+|----------|----------|--------|
+| **Python** | 151 | ✅ Complete |
+| **Rust** | 35 | ✅ Complete (+ WASM!) |
+| **C++** | 42 | ✅ Complete |
+| **Zig** | 37 | ✅ Complete |
+| **Go** | 7 | ⚠️ Growing |
+| **TypeScript** | 8 | ⚠️ Growing |
+| **Total** | **280** | |
 
 ---
 
-### [03_parallel_pattern.py](03_parallel_pattern.py)
-**Parallel Pattern (Fan-out)**
+## 📂 Examples by Category
 
-Run multiple agents concurrently on the same input.
+### 🧠 Core Patterns (11 examples)
 
-Key concepts:
-- ParallelPattern
-- Concurrent execution
-- Result aggregation
-- Multiple analysis (sentiment, length, keywords)
+The 11 foundational agent patterns from the Agenkit library.
 
-```bash
-python examples/03_parallel_pattern.py
-```
+**Location**: [`patterns/`](patterns/)
 
----
+| Pattern | Description | Python | Go | TS |
+|---------|-------------|--------|----|----|
+| **ReAct** | Reasoning + Acting loop | ✅ | ✅ | ✅ |
+| **Reflection** | Self-critique and improvement | ✅ | ✅ | ✅ |
+| **Agents-as-Tools** | Agents calling other agents | ✅ | ✅ | ✅ |
+| **Orchestration** | Coordinate multiple agents | ✅ | ✅ | ✅ |
+| **Conversational** | Stateful conversations | ✅ | ✅ | ✅ |
+| **Task** | Goal-oriented execution | ✅ | ✅ | ✅ |
+| **Multiagent** | Parallel agent collaboration | ✅ | ✅ | ✅ |
+| **Planning** | Multi-step planning | ✅ | - | - |
+| **Autonomous** | Self-directed agents | ✅ | - | - |
+| **Memory Hierarchy** | Tiered memory system | ✅ | - | - |
+| **Reasoning with Tools** | Tool-augmented reasoning | ✅ | - | - |
 
-### [04_router_pattern.py](04_router_pattern.py)
-**Router Pattern (Conditional Dispatch)**
-
-Route messages to different agents based on content.
-
-Key concepts:
-- RouterPattern
-- Intent-based routing
-- Specialized agents (weather, news, calculator, general)
-
-```bash
-python examples/04_router_pattern.py
-```
+**Key Files**:
+- `patterns/react-pattern.py` - Reason, Act, Observe loop
+- `patterns/reflection-pattern.py` - Self-improvement cycle
+- `patterns/orchestration-pattern.py` - Multi-agent coordination
+- `patterns/multiagent-pattern.py` - Parallel collaboration
 
 ---
 
-### [05_tool_usage.py](05_tool_usage.py)
-**Tool Usage**
+### 🎨 Advanced Reasoning Techniques (6 examples)
 
-Create and use tools within agents.
+Cutting-edge reasoning methods for complex problem-solving.
 
-Key concepts:
-- Tool interface
-- ToolResult
-- Search and calculator tools
-- Error handling
+**Location**: [`techniques/reasoning/`](techniques/reasoning/)
 
-```bash
-python examples/05_tool_usage.py
-```
+| Technique | Description | File |
+|-----------|-------------|------|
+| **Chain-of-Thought (CoT)** | Step-by-step reasoning | `cot_example.py` |
+| **Tree-of-Thought (ToT)** | Multi-path exploration | `tot_example.py` |
+| **Self-Consistency (SC)** | Voting for reliability | `sc_example.py` |
+| **Graph-of-Thought (GoT)** | Graph-based reasoning | `got_example.py` |
+| **Least-to-Most (LTM)** | Decomposition strategy | `ltm_example.py` |
+| **Plan-and-Solve** | Planning before execution | `plan_and_solve_example.py` |
 
----
+**Use Cases**:
+- Complex problem decomposition
+- Multi-step reasoning
+- Uncertainty handling
+- Strategic planning
 
-### [06_pattern_composition.py](06_pattern_composition.py)
-**Pattern Composition**
-
-Compose patterns to create complex workflows.
-
-Key concepts:
-- Patterns of patterns
-- Sequential [ Parallel [ ... ], Router { ... } ]
-- Metadata propagation
-- Multi-stage processing
-
-```bash
-python examples/06_pattern_composition.py
-```
+**Learn More**: [Tutorial 03: Advanced Reasoning](../tutorials/03-advanced-reasoning.ipynb)
 
 ---
 
-### Transport Layer (3 examples)
+### 🛡️ Production Middleware (8 examples)
 
-#### [transport/websocket_example.py](transport/websocket_example.py)
-**WebSocket Transport**
+Production-ready middleware for reliability, performance, and observability.
 
-Bidirectional streaming communication between agents.
+**Location**: [`middleware/`](middleware/)
 
-Key concepts:
-- WebSocket transport protocol
-- Real-time bidirectional messaging
-- Connection lifecycle management
+| Middleware | Purpose | File |
+|------------|---------|------|
+| **Retry** | Exponential backoff | `retry_example.py` |
+| **Circuit Breaker** | Fail-fast pattern | `circuit_breaker_example.py` |
+| **Timeout** | Request deadlines | `timeout_example.py` |
+| **Caching** | LRU cache with TTL | `caching_example.py` |
+| **Metrics** | Prometheus metrics | `metrics_example.py` |
+| **Rate Limiter** | Token bucket | `rate_limiter_example.py` |
+| **Batching** | Request batching | `batching_example.py` |
+| **Per-User Rate Limiter** | User-specific limits | `per_user_rate_limiter_example.py` |
 
-```bash
-python examples/transport/websocket_example.py
-```
+**Key Features**:
+- Stack multiple middleware
+- Zero-configuration defaults
+- Production-tested patterns
+- Full observability
 
----
-
-#### [transport/grpc_example.py](transport/grpc_example.py)
-**gRPC Transport**
-
-High-performance binary protocol for microservices.
-
-Key concepts:
-- gRPC transport protocol
-- Protocol Buffers serialization
-- Cross-language agent communication
-
-```bash
-python examples/transport/grpc_example.py
-```
+**Learn More**: [Tutorial 02: Production Patterns](../tutorials/02-production-patterns.ipynb)
 
 ---
 
-### Middleware (6 examples)
+### 🔧 Composition Patterns (4 examples)
 
-#### [middleware/circuit_breaker_example.py](middleware/circuit_breaker_example.py)
-**Circuit Breaker Middleware**
+Compose agents into complex workflows.
 
-Fail-fast pattern with automatic recovery.
+**Location**: [`composition/`](composition/)
 
-Key concepts:
-- Circuit breaker states (closed, open, half-open)
-- Failure threshold detection
-- Automatic recovery
+- **Sequential**: Pipeline processing (`sequential_example.py`)
+- **Parallel**: Concurrent execution (`parallel_example.py`)
+- **Fallback**: Graceful degradation (`fallback_example.py`)
+- **Conditional**: Dynamic routing (`conditional_example.py`)
 
-```bash
-python examples/middleware/circuit_breaker_example.py
-```
-
----
-
-#### [middleware/retry_example.py](middleware/retry_example.py)
-**Retry Middleware**
-
-Exponential backoff with jitter for transient failures.
-
-Key concepts:
-- Automatic retry on failure
-- Exponential backoff algorithm
-- Jitter for distributed systems
-
-```bash
-python examples/middleware/retry_example.py
-```
+**Advanced Compositions**: [`patterns/composition/`](patterns/composition/)
+- `sequential-parallel.py` - Hybrid workflows
+- `router-supervisor.py` - Routing + supervision
 
 ---
 
-#### [middleware/timeout_example.py](middleware/timeout_example.py)
-**Timeout Middleware**
+### 🌐 Transport Layer (2 examples)
 
-Request deadline enforcement.
+Network protocols for distributed agents.
 
-Key concepts:
-- Timeout configuration
-- Graceful timeout handling
-- Deadline propagation
+**Location**: [`transport/`](transport/)
 
-```bash
-python examples/middleware/timeout_example.py
-```
+- **gRPC**: High-performance RPC (`grpc_example.py`)
+- **WebSocket**: Real-time bidirectional (`websocket_example.py`)
+
+**Cross-Language**:
+- [`e2e/cross-language-system/`](e2e/cross-language-system/) - Python ↔ Go ↔ TypeScript
 
 ---
 
-#### [middleware/rate_limiter_example.py](middleware/rate_limiter_example.py)
-**Rate Limiter Middleware**
+### 🔌 LLM Adapters (9 examples)
 
-Token bucket algorithm for request rate control.
+Connect to any LLM provider.
 
-Key concepts:
-- Token bucket algorithm
-- Rate limiting per time window
-- Backpressure handling
+**Locations**:
+- Basic: [`adapters/`](adapters/)
+- Integration: [`llm/`](llm/)
 
-```bash
-python examples/middleware/rate_limiter_example.py
-```
+| Adapter | Provider | Files |
+|---------|----------|-------|
+| **OpenAI** | GPT-4, GPT-3.5 | `openai-basic.py`, `openai_example.py` |
+| **Anthropic** | Claude 3.5 | `anthropic-basic.py`, `anthropic_example.py` |
+| **Ollama** | Local models | `ollama-basic.py` |
+| **LiteLLM** | 100+ providers | `litellm_providers.py` |
+| **Remote** | HTTP API | `01_basic_remote_agent.py` |
 
----
+**Advanced Features**:
+- **Streaming**: `streaming_example.py`, `03_streaming.py`
+- **Provider Swapping**: `swapping_providers.py`
+- **Agent + LLM**: `agent_with_llm.py`
 
-#### [middleware/caching_example.py](middleware/caching_example.py)
-**Caching Middleware**
-
-LRU cache with TTL support.
-
-Key concepts:
-- LRU eviction policy
-- TTL (time-to-live) expiration
-- Cache key generation
-
-```bash
-python examples/middleware/caching_example.py
-```
+**Pattern Integration**:
+- [`patterns/llm-integration/patterns-with-openai.py`](patterns/llm-integration/patterns-with-openai.py)
+- [`patterns/llm-integration/patterns-with-anthropic.py`](patterns/llm-integration/patterns-with-anthropic.py)
 
 ---
 
-#### [middleware/batching_example.py](middleware/batching_example.py)
-**Batching Middleware**
+### 🧰 Tools (3 examples)
 
-Request aggregation for improved efficiency.
+Extend agents with external capabilities.
 
-Key concepts:
-- Request batching
-- Batch size and timeout configuration
-- Response distribution
+**Location**: [`tools/`](tools/)
 
-```bash
-python examples/middleware/batching_example.py
-```
+- **Database**: SQL operations (`database_example.py`)
+- **Search**: Web search integration (`search_example.py`)
+- **OS Tools**: File system, shell commands (`os_tools_example.py`)
+
+**Example**: [05_tool_usage.py](05_tool_usage.py)
 
 ---
 
-### Composition Patterns (4 examples)
+### 🔐 Safety & Permissions (4 examples)
 
-#### [composition/sequential_example.py](composition/sequential_example.py)
-**Sequential Composition**
+Secure agents with validation and permissions.
 
-Advanced sequential pattern with error handling.
+**Location**: [`safety/`](safety/)
 
-Key concepts:
-- Sequential agent chaining
-- Error propagation
-- Pipeline composition
+1. **Input Validation**: Sanitize user input (`01_input_validation.py`)
+2. **Output Validation**: Filter agent responses (`02_output_validation.py`)
+3. **Permissions**: Fine-grained access control (`03_permissions.py`)
+4. **Complete Stack**: Production security setup (`04_complete_safety_stack.py`)
 
-```bash
-python examples/composition/sequential_example.py
-```
-
----
-
-#### [composition/parallel_example.py](composition/parallel_example.py)
-**Parallel Composition**
-
-Advanced parallel execution with result aggregation.
-
-Key concepts:
-- Concurrent agent execution
-- Result aggregation strategies
-- Fan-out patterns
-
-```bash
-python examples/composition/parallel_example.py
-```
+**Features**:
+- Content filtering
+- PII detection
+- Prompt injection defense
+- Rate limiting
+- Audit logging
 
 ---
 
-#### [composition/fallback_example.py](composition/fallback_example.py)
-**Fallback Pattern**
+### 🔒 Authentication (1 example)
 
-Automatic fallback to alternative agents on failure.
+Secure agent communications.
 
-Key concepts:
-- Primary and fallback agents
-- Automatic failover
-- Resilience patterns
+**Location**: [`auth/`](auth/)
 
-```bash
-python examples/composition/fallback_example.py
-```
+- **Bearer Token**: HTTP authentication (`bearer_token_example.py`)
 
 ---
 
-#### [composition/conditional_example.py](composition/conditional_example.py)
-**Conditional Pattern**
+### 🧭 Routing (2 examples)
 
-Dynamic agent selection based on conditions.
+Intelligent request routing.
 
-Key concepts:
-- Conditional routing
-- Dynamic agent selection
-- Context-aware execution
+**Location**: [`routing/`](routing/)
 
-```bash
-python examples/composition/conditional_example.py
-```
+- **Semantic Tool Selection**: Embedding-based routing (`semantic_tool_selection_example.py`)
+- **Load Balancer**: Distribute requests (`load_balancer_example.py`)
 
 ---
 
-### Tools (4 examples)
+### 💾 Memory (1 example)
 
-#### [tools/calculator_example.py](tools/calculator_example.py)
-**Calculator Tool**
+Stateful agents with memory.
 
-Mathematical operations tool integration.
+**Location**: [`memory/`](memory/)
 
-Key concepts:
-- Tool interface implementation
-- Synchronous tool execution
-- Error handling
+- **Conversational Agent**: Context-aware conversations (`conversational_agent.py`)
 
-```bash
-python examples/tools/calculator_example.py
-```
+**See also**: [`patterns/memory-hierarchy-pattern.py`](patterns/memory-hierarchy-pattern.py)
 
 ---
 
-#### [tools/search_example.py](tools/search_example.py)
-**Search Tool**
+### 💰 Budget & Cost Tracking (2 examples)
 
-Search functionality integration.
+Monitor and control LLM costs.
 
-Key concepts:
-- Async tool execution
-- External API integration
-- Result formatting
+**Location**: [`budget/`](budget/)
 
-```bash
-python examples/tools/search_example.py
-```
+- **Cost Tracking**: Monitor spending (`cost_tracking_demo.py`)
+- **Extended Thinking**: Token budget management (`extended_thinking_demo.py`)
 
 ---
 
-#### [tools/database_example.py](tools/database_example.py)
-**Database Tool**
+### 💾 Checkpointing (1 example)
 
-Database operations tool integration.
+Durable agents with state persistence.
 
-Key concepts:
-- Database connections
-- Query execution
-- Transaction handling
+**Location**: [`checkpointing/`](checkpointing/)
 
-```bash
-python examples/tools/database_example.py
-```
+- **Durable Agent**: Save/restore agent state (`durable_agent_demo.py`)
 
 ---
 
-#### [tools/os_tools_example.py](tools/os_tools_example.py)
-**OS Tools**
+### 📊 Observability (1 example)
 
-Operating system operations integration.
+Monitor agents with OpenTelemetry.
 
-Key concepts:
-- File system operations
-- Process management
-- System information
+**Location**: [`observability/`](observability/)
 
-```bash
-python examples/tools/os_tools_example.py
-```
+- **Full Stack**: Tracing + Metrics + Logging (`observability_example.py`)
 
----
+**Features**:
+- Distributed tracing
+- Prometheus metrics
+- Structured logging
+- Grafana dashboards
 
-### Adapters (3 examples)
-
-#### [adapters/01_basic_remote_agent.py](adapters/01_basic_remote_agent.py)
-**Basic Remote Agent**
-
-Remote agent communication basics.
-
-Key concepts:
-- RemoteAgent wrapper
-- Cross-process communication
-- Transport abstraction
-
-```bash
-python examples/adapters/01_basic_remote_agent.py
-```
+**Learn More**: [Tutorial 04: Deployment](../tutorials/04-deployment/)
 
 ---
 
-#### [adapters/02_agent_registry.py](adapters/02_agent_registry.py)
-**Agent Registry**
+### 🧪 Evaluation & Testing (3 examples)
 
-Centralized agent discovery and management.
+Test, optimize, and compare agents.
 
-Key concepts:
-- Agent registration
-- Service discovery
-- Registry patterns
+**Location**: [`evaluation/`](evaluation/)
 
-```bash
-python examples/adapters/02_agent_registry.py
-```
+- **Evaluation Demo**: Quality metrics (`evaluation_demo.py`)
+- **A/B Testing**: Compare agent versions (`ab_testing_demo.py`)
+- **Optimization**: Hyperparameter tuning (`optimization_demo.py`)
+
+**Learn More**: [Tutorial 05: Testing Patterns](../tutorials/05-testing-patterns.md)
 
 ---
 
-#### [adapters/03_streaming.py](adapters/03_streaming.py)
-**Streaming Agents**
+### 🎭 Pattern Usage Examples (7 examples)
 
-Stream processing with agents.
+Real-world pattern usage.
 
-Key concepts:
-- Async streaming
-- Backpressure handling
-- Stream composition
+**Location**: [`patterns/usage/`](patterns/usage/)
 
-```bash
-python examples/adapters/03_streaming.py
-```
-
----
-
-### Observability (2 examples)
-
-#### [observability/observability_example.py](observability/observability_example.py)
-**Full Observability Stack**
-
-OpenTelemetry tracing and Prometheus metrics.
-
-Key concepts:
-- Distributed tracing with OpenTelemetry
-- W3C Trace Context propagation
-- Prometheus metrics collection
-- Trace correlation
-
-```bash
-python examples/observability/observability_example.py
-```
+- `sequential-usage.py` - Sequential pipelines
+- `parallel-usage.py` - Parallel execution
+- `fallback-usage.py` - Error handling
+- `router-usage.py` - Dynamic routing
+- `supervisor-usage.py` - Supervised agents
+- `collaborative-usage.py` - Agent collaboration
+- `human-in-loop-usage.py` - Human feedback
 
 ---
 
-#### [middleware/metrics_example.py](middleware/metrics_example.py)
-**Metrics Middleware**
+### 🚀 Complete Applications (5 E2E examples)
 
-Prometheus metrics integration.
+Production-ready applications demonstrating full system architecture.
 
-Key concepts:
-- Metrics middleware
-- Custom metric collection
-- Metrics export
+**Location**: [`e2e/`](e2e/)
 
-```bash
-python examples/middleware/metrics_example.py
-```
+#### 1. Code Review System
+**Directory**: [`e2e/code-review/`](e2e/code-review/)
+
+Multi-agent code review with specialized reviewers.
+
+**Agents**:
+- `correctness_agent.py` - Logic validation
+- `performance_agent.py` - Performance analysis
+- `security_agent.py` - Security scanning
+- `style_agent.py` - Style checking
+- `synthesis_agent.py` - Report generation
+
+**Orchestration**: `review_orchestrator.py`
+
+**Total**: 7 files
 
 ---
 
-## Learning Path
+#### 2. Customer Support System
+**Directory**: [`e2e/customer-support/`](e2e/customer-support/)
 
-We recommend following the examples in this order:
+RAG-based support with escalation.
 
-### 1. Fundamentals
-Start with these core examples to understand the basics:
-1. **01_basic_agent.py** - Basic agent creation and message processing
-2. **02_sequential_pattern.py** - Chain agents in a pipeline
-3. **03_parallel_pattern.py** - Run agents concurrently
-4. **04_router_pattern.py** - Conditional agent routing
-5. **05_tool_usage.py** - Tool integration
-6. **06_pattern_composition.py** - Compose patterns together
+**Agents**:
+- `classifier.py` - Intent classification
+- `qa_agent.py` - Q&A with knowledge base
+- `escalation_agent.py` - Human handoff
+- `synthesis_agent.py` - Response generation
 
-### 2. Transport & Remote Agents
-Learn cross-process and cross-language communication:
-1. **adapters/01_basic_remote_agent.py** - Remote agent basics
-2. **transport/grpc_example.py** - gRPC transport
-3. **transport/websocket_example.py** - WebSocket transport
-4. **adapters/03_streaming.py** - Stream processing
+**Knowledge Base**: `vector_store.py`
 
-### 3. Production Middleware
-Add resilience and production features:
-1. **middleware/retry_example.py** - Retry with exponential backoff
-2. **middleware/timeout_example.py** - Timeout enforcement
-3. **middleware/circuit_breaker_example.py** - Circuit breaker pattern
-4. **middleware/rate_limiter_example.py** - Rate limiting
-5. **middleware/caching_example.py** - Response caching
-6. **middleware/batching_example.py** - Request batching
+**Total**: 7 files
 
-### 4. Observability
-Add monitoring and tracing:
-1. **middleware/metrics_example.py** - Prometheus metrics
-2. **observability/observability_example.py** - Full observability stack
+---
 
-### 5. Advanced Patterns
-Explore advanced composition and tools:
-1. **composition/fallback_example.py** - Fallback pattern
-2. **composition/conditional_example.py** - Conditional routing
-3. **tools/** - Various tool integrations
+#### 3. Research Assistant
+**Directory**: [`e2e/research-assistant/`](e2e/research-assistant/)
 
-## Go Examples
+Multi-source research with memory.
 
-All Python examples have Go equivalents in `agenkit-go/examples/`. The Go examples demonstrate:
-- Full Python ↔ Go cross-language compatibility
-- Same API patterns and idioms
-- Performance-optimized implementations
+**Agents**: `research_agent.py`
+**Memory**: `memory_store.py` (hierarchical memory)
+**Tools**: `tool_registry.py` (search, summarize, analyze)
+
+**Total**: 6 files
+
+---
+
+#### 4. LLM Optimizer
+**Directory**: [`e2e/llm-optimizer/`](e2e/llm-optimizer/)
+
+Automatic prompt and model optimization.
+
+**Features**:
+- Classification task optimization
+- Model selection (GPT-4, Claude, etc.)
+- Prompt tuning
+- A/B testing
+
+**Total**: 3 files
+
+---
+
+#### 5. Cross-Language System
+**Directory**: [`e2e/cross-language-system/`](e2e/cross-language-system/)
+
+Python orchestrator coordinating Go and TypeScript agents.
+
+**Architecture**:
+- Python: `orchestrator.py` (coordination)
+- Go: gRPC services
+- TypeScript: WebSocket services
+
+**Total**: 3 files (Python)
+
+---
+
+### 🌍 Multi-Language Examples
+
+#### Rust Examples (35 files) ✨
+**Location**: [agenkit-rust/examples/](../agenkit-rust/examples/)
+
+**Full pattern coverage** with evaluation framework:
+- All 11 core patterns (ReAct, Reflection, Orchestration, etc.)
+- 7 pattern usage examples
+- 8 evaluation examples (A/B testing, Bayesian optimization, etc.)
+- LLM adapters (OpenAI, Anthropic, Ollama, LiteLLM, Gemini, Bedrock)
+- HTTP transport
+- **WASM support!** `wasm_browser_agent.html` - Run agents in the browser
+
+**Why Rust?**
+- Memory safety without garbage collection
+- Zero-cost abstractions
+- Excellent performance
+- Native WASM compilation for browser deployment
+
+---
+
+#### C++ Examples (42 files)
+**Location**: [agenkit-cpp/examples/](../agenkit-cpp/examples/)
+
+**Full pattern coverage** organized by category:
+- All 11 core patterns
+- Multiple adapters (OpenAI, Anthropic, etc.)
+- Evaluation framework
+- Integration examples
 - Production-ready error handling
 
-Example Go usage:
+**Why C++?**
+- Maximum performance for latency-sensitive applications
+- Systems programming capabilities
+- Existing C++ codebase integration
+- Fine-grained memory control
+
+---
+
+#### Zig Examples (37 files)
+**Location**: [agenkit-zig/examples/](../agenkit-zig/examples/)
+
+**Modern systems programming** with full pattern coverage:
+- All 11 core patterns
+- Evaluation framework
+- Observability integration
+- LLM adapters
+- Integration examples
+
+**Why Zig?**
+- Modern, simple syntax
+- C interoperability
+- Compile-time execution
+- Memory safety with manual control
+
+---
+
+#### Go Examples (7 files)
+**Location**: [`go/`](go/)
+
+**Reasoning techniques**:
+- Chain-of-Thought (CoT)
+- Tree-of-Thought (ToT)
+- Self-Consistency (SC)
+- Graph-of-Thought (GoT)
+
+**Full implementation**: [agenkit-go/examples/](../agenkit-go/examples/)
+
+**Why Go?**
+- Simple concurrency with goroutines
+- Fast compilation
+- Excellent for microservices
+- Native gRPC support
+
+---
+
+#### TypeScript Examples (8 files)
+**Location**: [`typescript/`](typescript/)
+
+**Reasoning techniques + browser integrations**:
+
+**Browser Examples**: [`browser/`](browser/)
+- React: [`browser/react-example/`](browser/react-example/)
+- Vue: [`browser/vue-example/`](browser/vue-example/)
+- Svelte: [`browser/svelte-example/`](browser/svelte-example/)
+- Astro: [`browser/astro-example/`](browser/astro-example/)
+
+**Full implementation**: [agenkit-ts/examples/](../agenkit-ts/examples/)
+
+**Why TypeScript?**
+- Full-stack (Node.js + browser)
+- Type safety for JavaScript
+- Rich ecosystem
+- Web framework integration
+
+---
+
+## 🗺️ Learning Paths
+
+### Path 1: Beginner (1-2 hours)
+Perfect for first-time users.
+
+1. **Basic Agent** → `01_basic_agent.py`
+2. **Sequential Pattern** → `02_sequential_pattern.py`
+3. **Parallel Pattern** → `03_parallel_pattern.py`
+4. **Tool Usage** → `05_tool_usage.py`
+5. **LLM Integration** → `llm/openai_example.py`
+
+**Next**: [Tutorial 01: Getting Started](../tutorials/01-getting-started.ipynb)
+
+---
+
+### Path 2: Production Engineer (2-3 hours)
+For building production systems.
+
+1. **Middleware Stack**:
+   - `middleware/retry_example.py`
+   - `middleware/circuit_breaker_example.py`
+   - `middleware/caching_example.py`
+   - `middleware/metrics_example.py`
+
+2. **Safety**:
+   - `safety/04_complete_safety_stack.py`
+
+3. **Observability**:
+   - `observability/observability_example.py`
+
+4. **E2E Application**:
+   - `e2e/customer-support/` (complete system)
+
+**Next**: [Tutorial 02: Production Patterns](../tutorials/02-production-patterns.ipynb)
+
+---
+
+### Path 3: AI Researcher (2-3 hours)
+For advanced reasoning and experimentation.
+
+1. **Core Patterns**:
+   - `patterns/react-pattern.py`
+   - `patterns/reflection-pattern.py`
+   - `patterns/orchestration-pattern.py`
+
+2. **Reasoning Techniques**:
+   - `techniques/reasoning/cot_example.py`
+   - `techniques/reasoning/tot_example.py`
+   - `techniques/reasoning/sc_example.py`
+
+3. **Evaluation**:
+   - `evaluation/ab_testing_demo.py`
+   - `evaluation/optimization_demo.py`
+
+**Next**: [Tutorial 03: Advanced Reasoning](../tutorials/03-advanced-reasoning.ipynb)
+
+---
+
+### Path 4: Full-Stack Developer (3-4 hours)
+For multi-language and distributed systems.
+
+1. **Transport Layer**:
+   - `transport/grpc_example.py`
+   - `transport/websocket_example.py`
+
+2. **Adapters**:
+   - `adapters/01_basic_remote_agent.py`
+   - `adapters/03_streaming.py`
+
+3. **Cross-Language**:
+   - `e2e/cross-language-system/`
+
+4. **Browser Integration**:
+   - `browser/react-example/`
+
+**Next**: [Tutorial 04: Deployment](../tutorials/04-deployment/)
+
+---
+
+## 🎯 Examples by Use Case
+
+### Building a Chatbot?
+1. `patterns/conversational-pattern.py` - Stateful conversations
+2. `memory/conversational_agent.py` - Memory management
+3. `llm/streaming_example.py` - Streaming responses
+4. `e2e/customer-support/` - Complete support bot
+
+---
+
+### Code Analysis?
+1. `patterns/react-pattern.py` - Reasoning about code
+2. `patterns/reflection-pattern.py` - Self-improvement
+3. `e2e/code-review/` - Multi-agent code review
+
+---
+
+### Research & Analysis?
+1. `techniques/reasoning/cot_example.py` - Chain-of-Thought
+2. `techniques/reasoning/tot_example.py` - Tree-of-Thought
+3. `e2e/research-assistant/` - Full research system
+
+---
+
+### Production Deployment?
+1. `middleware/retry_example.py` - Reliability
+2. `middleware/circuit_breaker_example.py` - Fail-fast
+3. `observability/observability_example.py` - Monitoring
+4. `safety/04_complete_safety_stack.py` - Security
+5. [Tutorial 04: Deployment](../tutorials/04-deployment/) - Docker + K8s
+
+---
+
+### Browser/WASM Deployment?
+1. [Rust WASM Example](../agenkit-rust/examples/wasm_browser_agent.html) - Run agents in browser
+2. [`browser/react-example/`](browser/react-example/) - React integration
+3. [`browser/vue-example/`](browser/vue-example/) - Vue integration
+4. [`browser/svelte-example/`](browser/svelte-example/) - Svelte integration
+
+**Why WASM?**
+- Run AI agents directly in the browser (no server required)
+- Near-native performance
+- Privacy-preserving (data never leaves device)
+- Offline-capable applications
+- Cross-platform (desktop, mobile, web)
+
+---
+
+## 🚀 Quick Start
+
+### Run an Example
+
 ```bash
-cd agenkit-go/examples
-go run basic/main.go
-go run middleware/circuit_breaker_example.go
-go run transport/grpc_example.go
+# Clone repository
+git clone https://github.com/scttfrdmn/agenkit.git
+cd agenkit/examples
+
+# Install dependencies
+pip install agenkit
+
+# Set API keys (for LLM examples)
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Run basic example
+python 01_basic_agent.py
+
+# Run pattern example
+python patterns/react-pattern.py
+
+# Run E2E application
+cd e2e/customer-support
+python main.py
 ```
 
-## Example Statistics
+### Explore by Category
 
-- **Total Examples**: 26 Python + 16 Go = 42 examples
-- **Core Patterns**: 6 examples
-- **Transport Layer**: 3 examples
-- **Middleware**: 6 examples
-- **Composition**: 4 examples
-- **Tools**: 4 examples
-- **Adapters**: 3 examples
-- **Observability**: 2 examples
+```bash
+# Patterns
+cd patterns && ls *.py
 
-## Next Steps
+# Reasoning techniques
+cd techniques/reasoning && ls
 
-- Read the [API Documentation](../docs/API.md) for detailed reference
-- Check out [Architecture](../ARCHITECTURE.md) for design principles
-- See [Deployment Guide](../deploy/README.md) for Docker/Kubernetes
-- Review [Observability](../docs/observability.md) for monitoring
-- Check [Performance Benchmarks](../benchmarks/BASELINES.md) for metrics
-- Explore [Cross-Language Integration](../tests/integration/) for Python ↔ Go
+# Middleware
+cd middleware && ls
 
-## Need Help?
+# E2E applications
+cd e2e && ls -d */
+```
 
-- Review the main [README](../README.md) for project overview
-- Check [ROADMAP](../ROADMAP.md) for project status
-- Browse [tests/](../tests/) for more usage examples (137 tests)
-- Open an issue on [GitHub](https://github.com/agenkit/agenkit/issues)
+---
+
+## 🔗 Related Resources
+
+### Documentation
+- [Main Documentation](https://agenkit.dev)
+- [API Reference](https://agenkit.dev/api/)
+- [Pattern Library](../docs/patterns/)
+
+### Tutorials
+- [Getting Started](../tutorials/01-getting-started.ipynb) - First agent
+- [Production Patterns](../tutorials/02-production-patterns.ipynb) - Middleware
+- [Advanced Reasoning](../tutorials/03-advanced-reasoning.ipynb) - CoT, ToT, SC
+- [Deployment](../tutorials/04-deployment/) - Docker, K8s, CI/CD
+- [Testing Patterns](../tutorials/05-testing-patterns.md) - Testing guide
+
+### Migration & Integration
+- [LangChain ↔ Agenkit](../docs/integrations/langchain-integration.md)
+- [CrewAI ↔ Agenkit](../docs/integrations/crewai-integration.md)
+- [AutoGen ↔ Agenkit](../docs/integrations/autogen-integration.md)
+- [Framework Integrations](../docs/integrations/)
+
+### More Examples
+- **Python**: [agenkit/examples/](../agenkit/examples/)
+- **Go**: [agenkit-go/examples/](../agenkit-go/examples/)
+- **TypeScript**: [agenkit-ts/examples/](../agenkit-ts/examples/)
+- **Rust**: [agenkit-rust/examples/](../agenkit-rust/examples/)
+- **C++**: [agenkit-cpp/examples/](../agenkit-cpp/examples/)
+- **Zig**: [agenkit-zig/examples/](../agenkit-zig/examples/)
+
+---
+
+## 📊 Example Complexity Matrix
+
+| Category | Beginner | Intermediate | Advanced | Production |
+|----------|----------|--------------|----------|------------|
+| **Patterns** | ✅ ReAct, Conversational | ✅ Orchestration, Multiagent | ✅ Planning, Autonomous | - |
+| **Techniques** | - | ✅ CoT, SC | ✅ ToT, GoT, LTM | - |
+| **Middleware** | ✅ Retry, Timeout | ✅ Circuit Breaker, Caching | ✅ Metrics, Rate Limiter | ✅ Complete Stack |
+| **Transport** | - | ✅ gRPC, WebSocket | - | ✅ Cross-language |
+| **E2E Apps** | - | - | ✅ Code Review, Support | ✅ Research, Optimizer |
+
+---
+
+## 🤝 Contributing
+
+Found a bug or want to add an example?
+
+1. **Report issues**: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
+2. **Discuss ideas**: [GitHub Discussions](https://github.com/scttfrdmn/agenkit/discussions)
+3. **Contribute**: [CONTRIBUTING.md](../CONTRIBUTING.md)
+
+---
+
+## 📝 Example Template
+
+Creating your own example? Use this structure:
+
+```python
+"""
+Brief description of what this example demonstrates.
+
+Features:
+- Feature 1
+- Feature 2
+
+Usage:
+    python example_name.py
+"""
+from agenkit import Agent, Message
+
+class YourAgent(Agent):
+    @property
+    def name(self) -> str:
+        return "your-agent"
+
+    async def process(self, message: Message) -> Message:
+        # Your implementation
+        return Message(role="assistant", content="response")
+
+# Example usage
+async def main():
+    agent = YourAgent()
+    response = await agent.process(Message(role="user", content="test"))
+    print(response.content)
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
+```
+
+---
+
+## 🎉 Example Highlights
+
+### Most Popular
+1. `patterns/react-pattern.py` - ReAct loop
+2. `llm/openai_example.py` - OpenAI integration
+3. `middleware/retry_example.py` - Retry middleware
+
+### Most Complex
+1. `e2e/code-review/` - 7-file multi-agent system
+2. `e2e/customer-support/` - RAG + vectorstore + escalation
+3. `e2e/research-assistant/` - Memory hierarchy + tools
+
+### Hidden Gems
+1. `evaluation/optimization_demo.py` - Hyperparameter tuning
+2. `routing/semantic_tool_selection_example.py` - Embedding routing
+3. `budget/extended_thinking_demo.py` - Token budget management
+
+---
+
+**Ready to build?** Start with [01_basic_agent.py](01_basic_agent.py) or dive into [E2E applications](e2e/)!
+
+Made with ❤️ by the Agenkit community

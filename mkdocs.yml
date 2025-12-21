@@ -115,11 +115,44 @@ nav:
       - Installation: getting-started/installation.md
       - Quick Start: getting-started/quick-start.md
       - First Agent: getting-started/first-agent.md
+
+  - Tutorials:
+      - tutorials/index.md
+      - "01. Getting Started": tutorials/01-getting-started.md
+      - "02. Production Patterns": tutorials/02-production-patterns.md
+      - "03. Advanced Reasoning": tutorials/03-advanced-reasoning.md
+      - "04. Production Deployment": tutorials/04-deployment.md
+      - "05. Testing Patterns": tutorials/05-testing-patterns.md
+
   - Core Concepts:
       - core-concepts/index.md
       - Architecture: core-concepts/architecture.md
       - Interfaces: core-concepts/interfaces.md
       - Design Principles: core-concepts/design-principles.md
+
+  - Patterns:
+      - patterns/index.md
+      - "ReAct": patterns/react.md
+      - "Reflection": patterns/reflection.md
+      - "Agents-as-Tools": patterns/agents-as-tools.md
+      - "Orchestration": patterns/orchestration.md
+      - "Conversational": patterns/conversational.md
+      - "Task": patterns/task.md
+      - "Multiagent": patterns/multiagent.md
+      - "Planning": patterns/planning.md
+      - "Autonomous": patterns/autonomous.md
+      - "Memory Hierarchy": patterns/memory-hierarchy.md
+      - "Reasoning with Tools": patterns/reasoning-with-tools.md
+
+  - Advanced Reasoning:
+      - reasoning/index.md
+      - "Chain-of-Thought (CoT)": reasoning/cot.md
+      - "Tree-of-Thought (ToT)": reasoning/tot.md
+      - "Self-Consistency (SC)": reasoning/sc.md
+      - "Graph-of-Thought (GoT)": reasoning/got.md
+      - "Least-to-Most (LTM)": reasoning/ltm.md
+      - "Plan-and-Solve": reasoning/plan-and-solve.md
+
   - Features:
       - features/index.md
       - Transport Layer: features/transport.md
@@ -128,30 +161,74 @@ nav:
       - Observability: features/observability.md
       - LLM Adapters: features/llm-adapters.md
       - Tools: features/tools.md
+      - Safety & Security: features/safety.md
+      - Evaluation: features/evaluation.md
+
+  - Integrations:
+      - integrations/index.md
+      - "LangChain ↔ Agenkit": integrations/langchain.md
+      - "CrewAI ↔ Agenkit": integrations/crewai.md
+      - "AutoGen ↔ Agenkit": integrations/autogen.md
+      - Framework Comparison: integrations/comparison.md
+
+  - Migration Guides:
+      - migrations/index.md
+      - "LangChain → Agenkit": migrations/langchain-to-agenkit.md
+      - "CrewAI → Agenkit": migrations/crewai-to-agenkit.md
+      - "AutoGen → Agenkit": migrations/autogen-to-agenkit.md
+      - "Strands → Agenkit": migrations/strands-to-agenkit.md
+      - "smolagents → Agenkit": migrations/smolagents-to-agenkit.md
+      - Cross-Language Migration: migrations/cross-language.md
+
+  - AGENTS.md:
+      - agents-md/index.md
+      - Quick Start: agents-md/quick-start.md
+      - Format Specification: agents-md/format.md
+      - Best Practices: agents-md/best-practices.md
+      - Examples: agents-md/examples.md
+
   - Guides:
       - guides/index.md
       - Python Guide: guides/python.md
       - Go Guide: guides/go.md
+      - TypeScript Guide: guides/typescript.md
+      - Rust Guide: guides/rust.md
+      - C++ Guide: guides/cpp.md
+      - Zig Guide: guides/zig.md
       - Cross-Language: guides/cross-language.md
       - Production Deployment: guides/deployment.md
       - Best Practices: guides/best-practices.md
+
   - Deployment:
       - deployment/index.md
       - Docker: deployment/docker.md
       - Kubernetes: deployment/kubernetes.md
+      - CI/CD: deployment/cicd.md
       - Configuration: deployment/configuration.md
+      - Monitoring: deployment/monitoring.md
+
   - API Reference:
       - api/index.md
-      - Python API: api/python.md
-      - Go API: api/go.md
+      - Python: api/python.md
+      - Go: api/go.md
+      - TypeScript: api/typescript.md
+      - Rust: api/rust.md
+      - "C++": api/cpp.md
+      - Zig: api/zig.md
       - LLM Adapters: api/llm.md
+
   - Examples:
       - examples/index.md
+      - By Category: examples/by-category.md
+      - By Use Case: examples/by-use-case.md
+      - Learning Paths: examples/learning-paths.md
+
   - Performance:
       - performance/index.md
       - Benchmarks: performance/benchmarks.md
       - Pattern Benchmarks: performance/pattern-benchmarks.md
       - Comparison Matrix: performance/comparison-matrix.md
+
   - Contributing: contributing.md
 
 copyright: Copyright &copy; 2024-2025 Agenkit Team

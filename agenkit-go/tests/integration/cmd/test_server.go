@@ -25,6 +25,10 @@ func (a *EchoAgent) Capabilities() []string {
 	return []string{"echo"}
 }
 
+func (a *EchoAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *EchoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "agent",

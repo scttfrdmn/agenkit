@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -92,6 +93,7 @@ func (a *AlwaysFailingAgent) Process(ctx context.Context, message *agenkit.Messa
 
 // VariableAgent alternates between fast and slow responses.
 type VariableAgent struct {
+	mu      sync.Mutex
 	counter int
 }
 
@@ -108,10 +110,14 @@ func (a *VariableAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (a *VariableAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	a.mu.Lock()
 	a.counter++
+	count := a.counter
+	a.mu.Unlock()
+
 	// Odd requests are fast, even requests are slow
 	var delay time.Duration
-	if a.counter%2 == 1 {
+	if count%2 == 1 {
 		delay = 10 * time.Millisecond
 	} else {
 		delay = 5 * time.Second

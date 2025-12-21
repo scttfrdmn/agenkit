@@ -184,23 +184,28 @@ func (r *RateLimiterDecorator) acquireTokens(ctx context.Context, tokensNeeded i
 	r.mu.Unlock()
 
 	// Wait outside the lock to allow other operations
+	waitStart := time.Now()
 	select {
 	case <-time.After(waitDuration):
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+	actualWaitDuration := time.Since(waitStart)
 
 	// Re-acquire lock and try again
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.refillTokens()
+	// Manually add tokens for the time we waited
+	tokensToAdd := actualWaitDuration.Seconds() * r.config.Rate
+	r.tokens = min(r.tokens+tokensToAdd, float64(r.config.Capacity))
+	r.lastUpdate = time.Now()
 
 	if r.tokens >= float64(tokensNeeded) {
 		r.tokens -= float64(tokensNeeded)
 		r.metrics.mu.Lock()
 		r.metrics.CurrentTokens = r.tokens
-		r.metrics.TotalWaitTime += waitDuration
+		r.metrics.TotalWaitTime += actualWaitDuration
 		r.metrics.mu.Unlock()
 		return nil
 	}

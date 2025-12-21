@@ -123,7 +123,7 @@ class BayesianOptimizer(Optimizer):
         for i, name in enumerate(self.param_names):
             spec = self.search_space.parameters[name]
             if spec["type"] == "integer":
-                config[name] = int(round(vector[i]))
+                config[name] = round(vector[i])
             else:
                 config[name] = float(vector[i])
 

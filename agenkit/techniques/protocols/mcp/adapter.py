@@ -7,10 +7,12 @@ Adapters for integrating Agenkit agents with MCP protocol.
 - Use MCP tools in Agenkit agents
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
+
 from agenkit import Agent, Message
-from .server import MCPServer
+
 from .client import MCPClient
+from .server import MCPServer
 
 
 class MCPAdapter:
@@ -25,8 +27,8 @@ class MCPAdapter:
     @staticmethod
     def from_agent(
         agent: Agent,
-        server_name: Optional[str] = None,
-        capabilities: Optional[Dict[str, Any]] = None
+        server_name: str | None = None,
+        capabilities: dict[str, Any] | None = None
     ) -> MCPServer:
         """
         Convert Agenkit agent to MCP server.
@@ -76,7 +78,7 @@ class MCPAdapter:
                 "required": ["content"]
             }
         )
-        async def process_with_agent(params: Dict[str, Any]) -> Dict[str, Any]:
+        async def process_with_agent(params: dict[str, Any]) -> dict[str, Any]:
             """Process message with Agenkit agent."""
             content = params["content"]
             metadata = params.get("metadata", {})
@@ -105,7 +107,7 @@ class MCPAdapter:
                 description="List agent capabilities",
                 mime_type="application/json"
             )
-            async def get_capabilities(params: Dict[str, Any]) -> Dict[str, Any]:
+            async def get_capabilities(params: dict[str, Any]) -> dict[str, Any]:
                 return {
                     "capabilities": agent.capabilities
                 }
@@ -116,7 +118,7 @@ class MCPAdapter:
     def to_tool(
         client: MCPClient,
         tool_name: str,
-        description: Optional[str] = None
+        description: str | None = None
     ):
         """
         Convert MCP tool to Agenkit Tool.
@@ -148,7 +150,7 @@ class MCPAdapter:
         """
         from agenkit.tools import Tool
 
-        async def execute(params: Dict[str, Any]) -> Dict[str, Any]:
+        async def execute(params: dict[str, Any]) -> dict[str, Any]:
             """Execute MCP tool."""
             result = await client.call_tool(tool_name, **params)
             return {"result": result}
@@ -183,7 +185,7 @@ class AgentMCPServer:
     def __init__(
         self,
         agent: Agent,
-        server_name: Optional[str] = None
+        server_name: str | None = None
     ):
         """
         Initialize agent MCP server.
@@ -216,6 +218,6 @@ class AgentMCPServer:
         """
         await self.server.start(transport=transport, **kwargs)
 
-    def info(self) -> Dict[str, Any]:
+    def info(self) -> dict[str, Any]:
         """Get server info."""
         return self.server.info()

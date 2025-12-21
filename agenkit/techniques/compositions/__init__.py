@@ -36,40 +36,40 @@ References:
         - Albada (2025): "Building Applications with AI Agents"
 """
 
-from .simple_human_approval import SimpleApprovalTool, simple_approval
+from .actor_critic_variation import ActorCriticVariation, why_use_reflection_instead
+from .context_optimization import ContextOptimizer
+from .exploration import ActionStats, ExplorationStrategy
+from .goal_monitoring import GoalMonitor
+from .learning_feedback import Interaction, LearningFromFeedback
+from .prioritization import PrioritizedTask, PriorityTaskExecutor, TaskQueue
 from .rag import SimpleRAG
 from .rag_with_citations import CitedRAG, Document
-from .context_optimization import ContextOptimizer
-from .prioritization import TaskQueue, PriorityTaskExecutor, PrioritizedTask
-from .goal_monitoring import GoalMonitor
-from .exploration import ExplorationStrategy, ActionStats
-from .learning_feedback import LearningFromFeedback, Interaction
-from .actor_critic_variation import ActorCriticVariation, why_use_reflection_instead
+from .simple_human_approval import SimpleApprovalTool, simple_approval
 
 __all__ = [
-    # Simple Human Approval
-    "SimpleApprovalTool",
-    "simple_approval",
-    # RAG
-    "SimpleRAG",
-    # RAG with Citations
-    "CitedRAG",
-    "Document",
-    # Context Optimization
-    "ContextOptimizer",
-    # Prioritization
-    "TaskQueue",
-    "PriorityTaskExecutor",
-    "PrioritizedTask",
-    # Goal Monitoring
-    "GoalMonitor",
-    # Exploration
-    "ExplorationStrategy",
     "ActionStats",
-    # Learning from Feedback
-    "LearningFromFeedback",
-    "Interaction",
     # Actor-Critic Variation
     "ActorCriticVariation",
+    # RAG with Citations
+    "CitedRAG",
+    # Context Optimization
+    "ContextOptimizer",
+    "Document",
+    # Exploration
+    "ExplorationStrategy",
+    # Goal Monitoring
+    "GoalMonitor",
+    "Interaction",
+    # Learning from Feedback
+    "LearningFromFeedback",
+    "PrioritizedTask",
+    "PriorityTaskExecutor",
+    # Simple Human Approval
+    "SimpleApprovalTool",
+    # RAG
+    "SimpleRAG",
+    # Prioritization
+    "TaskQueue",
+    "simple_approval",
     "why_use_reflection_instead",
 ]

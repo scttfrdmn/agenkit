@@ -7,12 +7,10 @@ References:
     - MCP Specification: https://modelcontextprotocol.io/
 """
 
-from typing import Dict, Any, Optional, List
-import asyncio
-import uuid
-import json
+from typing import Any
+
+from .message import MCPResponse, create_request
 from .schema import MCPMethod, MCPResourceInfo, MCPToolInfo
-from .message import MCPRequest, MCPResponse, create_request
 
 
 class MCPClient:
@@ -41,7 +39,7 @@ class MCPClient:
     def __init__(
         self,
         server_url: str,
-        auth: Optional[Dict[str, str]] = None,
+        auth: dict[str, str] | None = None,
         timeout: float = 30.0
     ):
         """
@@ -66,7 +64,7 @@ class MCPClient:
     async def _send_request(
         self,
         method: str,
-        params: Optional[Dict[str, Any]] = None
+        params: dict[str, Any] | None = None
     ) -> MCPResponse:
         """
         Send request to server.
@@ -112,7 +110,7 @@ class MCPClient:
         except httpx.HTTPError as e:
             raise ConnectionError(f"Failed to send request: {e}")
 
-    async def initialize(self) -> Dict[str, Any]:
+    async def initialize(self) -> dict[str, Any]:
         """
         Initialize connection to server.
 
@@ -134,7 +132,7 @@ class MCPClient:
         self.server_info = response.result
         return response.result
 
-    async def list_resources(self) -> List[MCPResourceInfo]:
+    async def list_resources(self) -> list[MCPResourceInfo]:
         """
         List available resources.
 
@@ -196,7 +194,7 @@ class MCPClient:
 
         return None
 
-    async def list_tools(self) -> List[MCPToolInfo]:
+    async def list_tools(self) -> list[MCPToolInfo]:
         """
         List available tools.
 

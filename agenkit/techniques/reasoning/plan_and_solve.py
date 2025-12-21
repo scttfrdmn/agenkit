@@ -31,8 +31,9 @@ Example:
         print(response.metadata['execution_steps'])
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Optional, List, Any
+
 from agenkit import Agent, Message
 
 
@@ -42,9 +43,9 @@ class PlanStep:
 
     description: str
     order: int
-    dependencies: List[int] = field(default_factory=list)
+    dependencies: list[int] = field(default_factory=list)
     estimated_complexity: int = 1  # 1-5 scale
-    result: Optional[str] = None
+    result: str | None = None
     executed: bool = False
 
 
@@ -52,11 +53,11 @@ class PlanStep:
 class Plan:
     """Represents a complete solution plan."""
 
-    steps: List[PlanStep]
+    steps: list[PlanStep]
     problem: str
-    strategy: Optional[str] = None
+    strategy: str | None = None
     validated: bool = False
-    validation_notes: Optional[str] = None
+    validation_notes: str | None = None
 
     def __post_init__(self):
         if not self.steps:
@@ -89,8 +90,8 @@ class PlanAndSolve(Agent):
     def __init__(
         self,
         llm,  # LLMClient - type hint omitted for flexibility
-        planner: Optional[Callable[[str], Plan]] = None,
-        solver: Optional[Callable[[PlanStep, List[str]], str]] = None,
+        planner: Callable[[str], Plan] | None = None,
+        solver: Callable[[PlanStep, list[str]], str] | None = None,
         validate_plan: bool = True,
         allow_replanning: bool = False,
     ):
@@ -235,7 +236,7 @@ Validation (answer "VALID" or describe issues):"""
     async def execute_step(
         self,
         step: PlanStep,
-        previous_results: List[str]
+        previous_results: list[str]
     ) -> str:
         """
         Execute a single plan step.
@@ -276,7 +277,7 @@ Execution Result:"""
         result = await self._llm_call(prompt)
         return result.strip()
 
-    async def execute_plan(self, plan: Plan) -> List[str]:
+    async def execute_plan(self, plan: Plan) -> list[str]:
         """
         Execute all steps in the plan sequentially.
 
@@ -344,7 +345,7 @@ Previous Plan Issues:
 
 Improved Plan:"""
 
-                response = await self._llm_call(improved_prompt)
+                await self._llm_call(improved_prompt)
                 plan = await self.create_plan(problem)
                 plan = await self.validate(plan)
 

@@ -41,11 +41,12 @@ Example:
         print(f"Explored {tree_stats['total_nodes']} reasoning paths")
 """
 
-import asyncio
-from typing import Callable, List, Optional
 from collections import deque
+from collections.abc import Callable
+
 from agenkit import Agent, Message
-from .reasoning_tree import ReasoningTree, ReasoningNode, NodeState
+
+from .reasoning_tree import NodeState, ReasoningTree
 
 
 class TreeOfThought(Agent):
@@ -76,7 +77,7 @@ class TreeOfThought(Agent):
         llm,  # LLMClient - type hint omitted for flexibility
         branching_factor: int = 3,
         max_depth: int = 5,
-        evaluator: Optional[Callable[[str], float]] = None,
+        evaluator: Callable[[str], float] | None = None,
         strategy: str = "best-first",
         prune_threshold: float = 0.3,
     ):
@@ -151,7 +152,7 @@ class TreeOfThought(Agent):
         self,
         prompt: str,
         n: int
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Generate N alternative reasoning branches.
 
@@ -191,7 +192,7 @@ class TreeOfThought(Agent):
         tree: ReasoningTree,
         node_id: int,
         query: str
-    ) -> List[int]:
+    ) -> list[int]:
         """
         Expand a node by generating child branches.
 

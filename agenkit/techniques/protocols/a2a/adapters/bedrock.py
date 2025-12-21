@@ -4,10 +4,9 @@ AWS Bedrock Adapter for A2A.
 Integrates Agenkit agents with AWS Bedrock Agents.
 """
 
-from typing import Optional, List, Dict, Any, TYPE_CHECKING
-from ..agent import A2AAgent
+from typing import TYPE_CHECKING, Any
+
 from ..server import A2AServer
-from ..message import AgentInfo
 
 if TYPE_CHECKING:
     from agenkit import Agent
@@ -42,9 +41,9 @@ class BedrockAdapter:
         self,
         agent_id: str,
         agent: "Agent",
-        capabilities: List[str],
+        capabilities: list[str],
         region: str = "us-east-1",
-        account_id: Optional[str] = None
+        account_id: str | None = None
     ):
         """
         Initialize Bedrock adapter.
@@ -73,10 +72,10 @@ class BedrockAdapter:
     @staticmethod
     def from_agent(
         agent: "Agent",
-        agent_id: Optional[str] = None,
+        agent_id: str | None = None,
         region: str = "us-east-1",
-        capabilities: Optional[List[str]] = None,
-        account_id: Optional[str] = None
+        capabilities: list[str] | None = None,
+        account_id: str | None = None
     ) -> "BedrockAdapter":
         """
         Create adapter from Agenkit agent.
@@ -135,7 +134,7 @@ class BedrockAdapter:
 
         endpoint = f"http://{host}:{port}/a2a"
 
-        print(f"Agent deployed for AWS Bedrock integration")
+        print("Agent deployed for AWS Bedrock integration")
         print(f"Region: {self.region}")
         if self.account_id:
             print(f"Account: {self.account_id}")
@@ -159,7 +158,7 @@ class BedrockAdapter:
             "Visit: https://console.aws.amazon.com/bedrock/home#/agents"
         )
 
-    def get_bedrock_config(self) -> Dict[str, Any]:
+    def get_bedrock_config(self) -> dict[str, Any]:
         """
         Get configuration for AWS Bedrock.
 

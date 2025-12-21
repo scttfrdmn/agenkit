@@ -34,7 +34,8 @@ Example:
         ))
 """
 
-from typing import Optional, Callable, List, Dict, Any
+from collections.abc import Callable
+
 from agenkit import Agent, Message
 
 
@@ -61,7 +62,7 @@ class SimpleRAG(Agent):
 
     def __init__(
         self,
-        retriever: Callable[[str], List[str]],
+        retriever: Callable[[str], list[str]],
         answerer: Agent,
         max_docs: int = 5,
         include_sources: bool = True
@@ -153,7 +154,7 @@ class SimpleRAG(Agent):
             metadata=metadata
         )
 
-    def _build_context(self, query: str, documents: List[str]) -> str:
+    def _build_context(self, query: str, documents: list[str]) -> str:
         """
         Build context string from query and retrieved documents.
 
@@ -186,7 +187,7 @@ Answer:"""
         return context
 
     @property
-    def capabilities(self) -> List[str]:
+    def capabilities(self) -> list[str]:
         """Return agent capabilities."""
         return [
             "retrieval",

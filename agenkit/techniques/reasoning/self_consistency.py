@@ -39,7 +39,8 @@ Example:
 import asyncio
 import re
 from collections import Counter
-from typing import Callable, Optional, List, Tuple
+from collections.abc import Callable
+
 from agenkit import Agent, Message
 
 
@@ -71,8 +72,8 @@ class SelfConsistency(Agent):
         agent: Agent,
         num_samples: int = 5,
         voting_strategy: str = "majority",
-        temperature: Optional[float] = None,
-        answer_extractor: Optional[Callable[[str], str]] = None,
+        temperature: float | None = None,
+        answer_extractor: Callable[[str], str] | None = None,
     ):
         """
         Initialize Self-Consistency agent.
@@ -147,7 +148,7 @@ class SelfConsistency(Agent):
 
         return text.strip()
 
-    async def _sample_once(self, message: Message) -> Tuple[str, str]:
+    async def _sample_once(self, message: Message) -> tuple[str, str]:
         """
         Generate one sample from base agent.
 
@@ -163,7 +164,7 @@ class SelfConsistency(Agent):
         answer = self.answer_extractor(full_response)
         return (full_response, answer)
 
-    async def _generate_samples(self, message: Message) -> List[Tuple[str, str]]:
+    async def _generate_samples(self, message: Message) -> list[tuple[str, str]]:
         """
         Generate multiple samples in parallel.
 
@@ -178,7 +179,7 @@ class SelfConsistency(Agent):
         samples = await asyncio.gather(*tasks)
         return samples
 
-    def _vote_majority(self, answers: List[str]) -> Tuple[str, float]:
+    def _vote_majority(self, answers: list[str]) -> tuple[str, float]:
         """
         Majority voting: select most common answer.
 
@@ -210,7 +211,7 @@ class SelfConsistency(Agent):
 
         return (winning_answer, consistency_score)
 
-    def _vote_weighted(self, answers: List[str], responses: List[str]) -> Tuple[str, float]:
+    def _vote_weighted(self, answers: list[str], responses: list[str]) -> tuple[str, float]:
         """
         Weighted voting: weight by response length (proxy for detail/confidence).
 
@@ -226,7 +227,7 @@ class SelfConsistency(Agent):
 
         # Group answers by normalized form
         answer_groups = {}
-        for answer, response in zip(answers, responses):
+        for answer, response in zip(answers, responses, strict=False):
             answer_key = answer.lower().strip()
             if answer_key not in answer_groups:
                 answer_groups[answer_key] = {
@@ -249,7 +250,7 @@ class SelfConsistency(Agent):
 
         return (winning_answer, consistency_score)
 
-    def _vote_first(self, answers: List[str]) -> Tuple[str, float]:
+    def _vote_first(self, answers: list[str]) -> tuple[str, float]:
         """
         First answer (no voting): use first sample.
 

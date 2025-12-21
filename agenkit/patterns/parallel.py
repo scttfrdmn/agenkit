@@ -23,7 +23,6 @@ from typing import Any
 
 from agenkit import Agent, Message
 
-
 # Type alias for aggregator functions
 AggregatorFunc = Callable[[list[Message]], Message]
 

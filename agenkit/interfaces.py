@@ -22,7 +22,7 @@ from typing import Any
 
 from agenkit.introspection import IntrospectionResult
 
-__all__ = ["Agent", "Message", "Tool", "ToolResult", "IntrospectionResult"]
+__all__ = ["Agent", "IntrospectionResult", "Message", "Tool", "ToolResult"]
 
 
 # ============================================

@@ -154,7 +154,7 @@ class PromptOptimizer:
 
         configs = []
         for combo in itertools.product(*values):
-            config = dict(zip(keys, combo))
+            config = dict(zip(keys, combo, strict=False))
             configs.append(config)
 
         return configs

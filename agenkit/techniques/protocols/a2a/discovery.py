@@ -4,7 +4,6 @@ A2A Discovery Service Client.
 Provides agent discovery and registration capabilities.
 """
 
-from typing import List, Optional, Dict, Any
 from .message import AgentInfo
 from .protocol import validate_capability
 
@@ -94,7 +93,7 @@ class A2ADiscoveryClient:
             )
             response.raise_for_status()
 
-    async def discover(self, capability: str) -> List[AgentInfo]:
+    async def discover(self, capability: str) -> list[AgentInfo]:
         """
         Discover agents by capability.
 
@@ -131,7 +130,7 @@ class A2ADiscoveryClient:
 
             return [AgentInfo.from_dict(agent) for agent in agents]
 
-    async def find_by_id(self, agent_id: str) -> List[AgentInfo]:
+    async def find_by_id(self, agent_id: str) -> list[AgentInfo]:
         """
         Find agent by ID.
 
@@ -165,7 +164,7 @@ class A2ADiscoveryClient:
                     return []
                 raise
 
-    async def list_all(self) -> List[AgentInfo]:
+    async def list_all(self) -> list[AgentInfo]:
         """
         List all registered agents.
 
@@ -259,8 +258,8 @@ class InMemoryDiscoveryService:
 
     def __init__(self):
         """Initialize in-memory discovery service."""
-        self._agents: Dict[str, AgentInfo] = {}
-        self._capability_index: Dict[str, List[str]] = {}  # capability -> [agent_ids]
+        self._agents: dict[str, AgentInfo] = {}
+        self._capability_index: dict[str, list[str]] = {}  # capability -> [agent_ids]
 
     async def register(self, agent_info: AgentInfo):
         """Register agent."""
@@ -290,7 +289,7 @@ class InMemoryDiscoveryService:
             # Remove agent
             del self._agents[agent_id]
 
-    async def discover(self, capability: str) -> List[AgentInfo]:
+    async def discover(self, capability: str) -> list[AgentInfo]:
         """Discover agents by capability."""
         if capability not in self._capability_index:
             return []
@@ -298,13 +297,13 @@ class InMemoryDiscoveryService:
         agent_ids = self._capability_index[capability]
         return [self._agents[agent_id] for agent_id in agent_ids if agent_id in self._agents]
 
-    async def find_by_id(self, agent_id: str) -> List[AgentInfo]:
+    async def find_by_id(self, agent_id: str) -> list[AgentInfo]:
         """Find agent by ID."""
         if agent_id in self._agents:
             return [self._agents[agent_id]]
         return []
 
-    async def list_all(self) -> List[AgentInfo]:
+    async def list_all(self) -> list[AgentInfo]:
         """List all agents."""
         return list(self._agents.values())
 

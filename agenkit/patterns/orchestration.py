@@ -19,8 +19,8 @@ Design principles:
 - Observable (hooks for monitoring)
 """
 
-import warnings
 import asyncio
+import warnings
 from collections.abc import Callable
 
 from agenkit.interfaces import Agent, Message
@@ -34,10 +34,10 @@ warnings.warn(
     stacklevel=2
 )
 
-__all__ = ["ParallelPattern", "RouterPattern", "SequentialPattern", "OrchestrationAgent", "OrchestrationConfig"]
+__all__ = ["OrchestrationAgent", "OrchestrationConfig", "ParallelPattern", "RouterPattern", "SequentialPattern"]
 
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -516,7 +516,7 @@ class OrchestrationAgent(Agent):
                                 stages_succeeded += 1
                                 stages_completed += 1
                                 total_agents += 1
-                            except Exception as e:
+                            except Exception:
                                 if on_error == "skip":
                                     errors_handled += 1
                                     # Continue to next stage
@@ -534,7 +534,7 @@ class OrchestrationAgent(Agent):
                                 else:
                                     raise
 
-            except Exception as e:
+            except Exception:
                 errors_handled += 1
                 if self.error_strategy == "fail":
                     raise
@@ -612,7 +612,7 @@ class OrchestrationAgent(Agent):
         current = message
         iterations = 0
 
-        for i in range(max_iterations):
+        for _i in range(max_iterations):
             iterations += 1
             current = await agent.process(current)
 

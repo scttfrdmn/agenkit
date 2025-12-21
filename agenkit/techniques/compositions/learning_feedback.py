@@ -50,9 +50,11 @@ Example:
         )
 """
 
-from typing import Callable, Optional, List, Dict, Any, Tuple
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
+
 from agenkit import Agent, Message
 
 
@@ -70,9 +72,9 @@ class Interaction:
     """
     query: str
     response: str
-    feedback_score: Optional[float] = None
+    feedback_score: float | None = None
     timestamp: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class LearningFromFeedback(Agent):
@@ -101,7 +103,7 @@ class LearningFromFeedback(Agent):
     def __init__(
         self,
         agent: Agent,
-        similarity_fn: Optional[Callable[[str, str], float]] = None,
+        similarity_fn: Callable[[str, str], float] | None = None,
         max_context_examples: int = 3,
         min_similarity: float = 0.3
     ):
@@ -135,7 +137,7 @@ class LearningFromFeedback(Agent):
         self.min_similarity = min_similarity
 
         # Memory storage
-        self.memory: List[Interaction] = []
+        self.memory: list[Interaction] = []
 
     @property
     def name(self) -> str:
@@ -168,8 +170,8 @@ class LearningFromFeedback(Agent):
     def retrieve_similar_interactions(
         self,
         query: str,
-        k: Optional[int] = None
-    ) -> List[Tuple[Interaction, float]]:
+        k: int | None = None
+    ) -> list[tuple[Interaction, float]]:
         """
         Retrieve similar past interactions.
 
@@ -203,7 +205,7 @@ class LearningFromFeedback(Agent):
         self,
         response: Message,
         score: float,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ):
         """
         Add feedback for a past interaction.
@@ -232,7 +234,7 @@ class LearningFromFeedback(Agent):
 
     def _build_context_from_examples(
         self,
-        examples: List[Tuple[Interaction, float]]
+        examples: list[tuple[Interaction, float]]
     ) -> str:
         """
         Build context string from retrieved examples.
@@ -335,7 +337,7 @@ class LearningFromFeedback(Agent):
         """Clear all stored interactions."""
         self.memory.clear()
 
-    def get_memory_stats(self) -> Dict[str, Any]:
+    def get_memory_stats(self) -> dict[str, Any]:
         """
         Get statistics about stored memory.
 
@@ -355,12 +357,7 @@ class LearningFromFeedback(Agent):
         }
 
     @property
-    def capabilities(self) -> List[str]:
+    def capabilities(self) -> list[str]:
         """Return agent capabilities."""
         base_caps = self.agent.capabilities if hasattr(self.agent, 'capabilities') else []
-        return base_caps + [
-            "learning",
-            "feedback",
-            "memory",
-            "experience_based"
-        ]
+        return [*base_caps, "learning", "feedback", "memory", "experience_based"]

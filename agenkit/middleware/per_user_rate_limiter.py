@@ -9,7 +9,6 @@ import asyncio
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
 
 from agenkit.interfaces import Agent, Message
 

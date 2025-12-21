@@ -4,11 +4,11 @@ A2A Message Types.
 Defines message format for Agent-to-Agent (A2A) protocol communication.
 """
 
-from typing import Dict, Any, Optional, List
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-import uuid
+from typing import Any
 
 
 class MessageType(Enum):
@@ -52,20 +52,20 @@ class A2AMessage:
     action: str = ""
 
     # Content
-    content: Dict[str, Any] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    content: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # Priority and tracking
     priority: MessagePriority = MessagePriority.NORMAL
-    correlation_id: Optional[str] = None  # For request/response correlation
+    correlation_id: str | None = None  # For request/response correlation
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     # Timeout and retry
-    timeout_ms: Optional[int] = None
+    timeout_ms: int | None = None
     retry_count: int = 0
     max_retries: int = 3
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert message to dictionary."""
         return {
             "message_id": self.message_id,
@@ -84,7 +84,7 @@ class A2AMessage:
         }
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "A2AMessage":
+    def from_dict(data: dict[str, Any]) -> "A2AMessage":
         """Create message from dictionary."""
         return A2AMessage(
             message_id=data.get("message_id", str(uuid.uuid4())),
@@ -170,8 +170,8 @@ class A2AMessage:
 
     def create_response(
         self,
-        content: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None
+        content: dict[str, Any],
+        metadata: dict[str, Any] | None = None
     ) -> "A2AMessage":
         """
         Create response message for this request.
@@ -198,7 +198,7 @@ class A2AMessage:
         self,
         error_code: str,
         error_message: str,
-        details: Optional[Dict[str, Any]] = None
+        details: dict[str, Any] | None = None
     ) -> "A2AMessage":
         """
         Create error response for this request.
@@ -235,13 +235,13 @@ class AgentInfo:
     """
     agent_id: str
     name: str
-    capabilities: List[str]
+    capabilities: list[str]
     endpoint: str  # URL or address
     transport: str = "http"  # "http", "grpc", "websocket"
     status: str = "online"  # "online", "offline", "busy"
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "agent_id": self.agent_id,
@@ -254,7 +254,7 @@ class AgentInfo:
         }
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "AgentInfo":
+    def from_dict(data: dict[str, Any]) -> "AgentInfo":
         """Create from dictionary."""
         return AgentInfo(
             agent_id=data["agent_id"],
@@ -271,9 +271,9 @@ def create_request(
     from_agent: str,
     to_agent: str,
     action: str,
-    content: Dict[str, Any],
+    content: dict[str, Any],
     priority: MessagePriority = MessagePriority.NORMAL,
-    timeout_ms: Optional[int] = None
+    timeout_ms: int | None = None
 ) -> A2AMessage:
     """
     Create request message.
@@ -304,7 +304,7 @@ def create_notification(
     from_agent: str,
     to_agent: str,
     action: str,
-    content: Dict[str, Any]
+    content: dict[str, Any]
 ) -> A2AMessage:
     """
     Create notification message (fire-and-forget).

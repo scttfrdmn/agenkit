@@ -6,9 +6,10 @@ Handles registration and access to MCP resources (data sources).
 Resources are identified by URIs and can return text, JSON, or binary data.
 """
 
-from typing import Dict, Any, Callable, Awaitable, Optional, List
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-import asyncio
+from typing import Any
+
 from .schema import MCPResourceInfo
 
 
@@ -21,16 +22,16 @@ class Resource:
     """
     uri: str
     name: str
-    description: Optional[str]
-    handler: Callable[[Dict[str, Any]], Awaitable[Any]]
+    description: str | None
+    handler: Callable[[dict[str, Any]], Awaitable[Any]]
     mime_type: str = "text/plain"
-    metadata: Dict[str, Any] = None
+    metadata: dict[str, Any] = None
 
     def __post_init__(self):
         if self.metadata is None:
             self.metadata = {}
 
-    async def fetch(self, params: Dict[str, Any]) -> Any:
+    async def fetch(self, params: dict[str, Any]) -> Any:
         """
         Fetch resource data.
 
@@ -62,16 +63,16 @@ class ResourceRegistry:
 
     def __init__(self):
         """Initialize empty registry."""
-        self.resources: Dict[str, Resource] = {}
+        self.resources: dict[str, Resource] = {}
 
     def register(
         self,
         uri: str,
         name: str,
-        handler: Callable[[Dict[str, Any]], Awaitable[Any]],
-        description: Optional[str] = None,
+        handler: Callable[[dict[str, Any]], Awaitable[Any]],
+        description: str | None = None,
         mime_type: str = "text/plain",
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ) -> Resource:
         """
         Register a resource.
@@ -125,7 +126,7 @@ class ResourceRegistry:
             return True
         return False
 
-    def get(self, uri: str) -> Optional[Resource]:
+    def get(self, uri: str) -> Resource | None:
         """
         Get resource by URI.
 
@@ -137,7 +138,7 @@ class ResourceRegistry:
         """
         return self.resources.get(uri)
 
-    def list(self) -> List[MCPResourceInfo]:
+    def list(self) -> list[MCPResourceInfo]:
         """
         List all registered resources.
 
@@ -146,7 +147,7 @@ class ResourceRegistry:
         """
         return [resource.to_info() for resource in self.resources.values()]
 
-    async def fetch(self, uri: str, params: Optional[Dict[str, Any]] = None) -> Any:
+    async def fetch(self, uri: str, params: dict[str, Any] | None = None) -> Any:
         """
         Fetch resource data.
 
@@ -190,9 +191,9 @@ class ResourceRegistry:
 def resource_decorator(
     uri: str,
     name: str,
-    description: Optional[str] = None,
+    description: str | None = None,
     mime_type: str = "text/plain",
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 ):
     """
     Decorator for registering resources.
@@ -215,7 +216,7 @@ def resource_decorator(
         ... async def get_user_profile(params):
         ...     return {"name": "John"}
     """
-    def decorator(func: Callable[[Dict[str, Any]], Awaitable[Any]]):
+    def decorator(func: Callable[[dict[str, Any]], Awaitable[Any]]):
         # Store registration info on function
         func._mcp_resource = {
             "uri": uri,

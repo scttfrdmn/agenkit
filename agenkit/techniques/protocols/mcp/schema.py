@@ -7,9 +7,9 @@ References:
     - MCP Specification: https://modelcontextprotocol.io/
 """
 
-from typing import Dict, Any, Optional, List
-from enum import Enum
 from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 
 class MCPMessageType(Enum):
@@ -44,9 +44,9 @@ class MCPResourceInfo:
     """Information about an MCP resource."""
     uri: str
     name: str
-    description: Optional[str] = None
-    mime_type: Optional[str] = "text/plain"
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    description: str | None = None
+    mime_type: str | None = "text/plain"
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -54,8 +54,8 @@ class MCPToolInfo:
     """Information about an MCP tool."""
     name: str
     description: str
-    input_schema: Dict[str, Any]
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    input_schema: dict[str, Any]
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -63,11 +63,11 @@ class MCPPromptInfo:
     """Information about an MCP prompt."""
     name: str
     description: str
-    arguments: List[Dict[str, Any]] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    arguments: list[dict[str, Any]] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
-def validate_json_schema(data: Dict[str, Any], schema: Dict[str, Any]) -> bool:
+def validate_json_schema(data: dict[str, Any], schema: dict[str, Any]) -> bool:
     """
     Validate data against JSON schema.
 
@@ -85,15 +85,7 @@ def validate_json_schema(data: Dict[str, Any], schema: Dict[str, Any]) -> bool:
     if "type" in schema:
         expected_type = schema["type"]
 
-        if expected_type == "object" and not isinstance(data, dict):
-            return False
-        elif expected_type == "array" and not isinstance(data, list):
-            return False
-        elif expected_type == "string" and not isinstance(data, str):
-            return False
-        elif expected_type == "number" and not isinstance(data, (int, float)):
-            return False
-        elif expected_type == "boolean" and not isinstance(data, bool):
+        if (expected_type == "object" and not isinstance(data, dict)) or (expected_type == "array" and not isinstance(data, list)) or (expected_type == "string" and not isinstance(data, str)) or (expected_type == "number" and not isinstance(data, (int, float))) or (expected_type == "boolean" and not isinstance(data, bool)):
             return False
 
     # Validate required properties
@@ -108,8 +100,8 @@ def validate_json_schema(data: Dict[str, Any], schema: Dict[str, Any]) -> bool:
 def create_tool_schema(
     name: str,
     description: str,
-    parameters: Dict[str, Any]
-) -> Dict[str, Any]:
+    parameters: dict[str, Any]
+) -> dict[str, Any]:
     """
     Create JSON schema for a tool.
 
@@ -151,7 +143,7 @@ def create_resource_schema(
     name: str,
     description: str,
     mime_type: str = "text/plain"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create schema for a resource.
 

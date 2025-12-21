@@ -30,8 +30,9 @@ Example:
         print(response.metadata['subproblem_solutions'])
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional, List
+
 from agenkit import Agent, Message
 
 
@@ -41,7 +42,7 @@ class Subproblem:
 
     content: str
     difficulty: int = 0  # 0 = easiest
-    dependencies: List[int] = None  # Indices of subproblems this depends on
+    dependencies: list[int] = None  # Indices of subproblems this depends on
 
     def __post_init__(self):
         if self.dependencies is None:
@@ -73,7 +74,7 @@ class LeastToMost(Agent):
     def __init__(
         self,
         llm,  # LLMClient - type hint omitted for flexibility
-        decomposer: Optional[Callable[[str], List[str]]] = None,
+        decomposer: Callable[[str], list[str]] | None = None,
         max_subproblems: int = 5,
         compose_solutions: bool = True,
     ):
@@ -125,7 +126,7 @@ class LeastToMost(Agent):
         else:
             raise AttributeError("LLM must have either complete() or process() method")
 
-    async def decompose(self, problem: str) -> List[Subproblem]:
+    async def decompose(self, problem: str) -> list[Subproblem]:
         """
         Decompose problem into subproblems.
 
@@ -181,7 +182,7 @@ Subproblems (from simplest to most complex):"""
     async def solve_subproblem(
         self,
         subproblem: Subproblem,
-        previous_solutions: List[str]
+        previous_solutions: list[str]
     ) -> str:
         """
         Solve one subproblem, optionally using previous solutions as context.

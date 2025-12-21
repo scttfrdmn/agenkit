@@ -15,7 +15,6 @@ References:
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Set, Dict, Tuple
 from enum import Enum
 
 
@@ -44,7 +43,7 @@ class ThoughtNode:
     content: str
     node_type: NodeType
     confidence: float = 1.0  # 0.0 to 1.0
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
     def __hash__(self):
         return hash(self.id)
@@ -63,7 +62,7 @@ class LogicalEdge:
     to_node: int  # Target node ID
     edge_type: EdgeType
     strength: float = 1.0  # Connection strength 0.0 to 1.0
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
 
 class ReasoningGraph:
@@ -83,20 +82,20 @@ class ReasoningGraph:
 
     def __init__(self):
         """Initialize empty reasoning graph."""
-        self.nodes: Dict[int, ThoughtNode] = {}
-        self.edges: List[LogicalEdge] = []
+        self.nodes: dict[int, ThoughtNode] = {}
+        self.edges: list[LogicalEdge] = []
         self._next_id = 0
 
         # Adjacency lists for efficient traversal
-        self._outgoing: Dict[int, List[int]] = {}  # node_id -> [target_ids]
-        self._incoming: Dict[int, List[int]] = {}  # node_id -> [source_ids]
+        self._outgoing: dict[int, list[int]] = {}  # node_id -> [target_ids]
+        self._incoming: dict[int, list[int]] = {}  # node_id -> [source_ids]
 
     def add_node(
         self,
         content: str,
         node_type: NodeType,
         confidence: float = 1.0,
-        metadata: Optional[Dict] = None
+        metadata: dict | None = None
     ) -> int:
         """
         Add a thought node to the graph.
@@ -133,7 +132,7 @@ class ReasoningGraph:
         to_node: int,
         edge_type: EdgeType,
         strength: float = 1.0,
-        metadata: Optional[Dict] = None
+        metadata: dict | None = None
     ) -> None:
         """
         Add a logical edge between two nodes.
@@ -146,7 +145,7 @@ class ReasoningGraph:
             metadata: Optional metadata dict
         """
         if from_node not in self.nodes or to_node not in self.nodes:
-            raise ValueError(f"Both nodes must exist in graph")
+            raise ValueError("Both nodes must exist in graph")
 
         edge = LogicalEdge(
             from_node=from_node,
@@ -160,15 +159,15 @@ class ReasoningGraph:
         self._outgoing[from_node].append(to_node)
         self._incoming[to_node].append(from_node)
 
-    def get_node(self, node_id: int) -> Optional[ThoughtNode]:
+    def get_node(self, node_id: int) -> ThoughtNode | None:
         """Get node by ID."""
         return self.nodes.get(node_id)
 
-    def get_outgoing_edges(self, node_id: int) -> List[LogicalEdge]:
+    def get_outgoing_edges(self, node_id: int) -> list[LogicalEdge]:
         """Get all edges originating from node."""
         return [e for e in self.edges if e.from_node == node_id]
 
-    def get_incoming_edges(self, node_id: int) -> List[LogicalEdge]:
+    def get_incoming_edges(self, node_id: int) -> list[LogicalEdge]:
         """Get all edges pointing to node."""
         return [e for e in self.edges if e.to_node == node_id]
 
@@ -176,8 +175,8 @@ class ReasoningGraph:
         self,
         start: int,
         end: int,
-        max_length: Optional[int] = None
-    ) -> List[List[int]]:
+        max_length: int | None = None
+    ) -> list[list[int]]:
         """
         Find all paths from start node to end node.
 
@@ -194,7 +193,7 @@ class ReasoningGraph:
 
         paths = []
 
-        def dfs(current: int, path: List[int], visited: Set[int]):
+        def dfs(current: int, path: list[int], visited: set[int]):
             if current == end:
                 paths.append(path.copy())
                 return
@@ -225,7 +224,7 @@ class ReasoningGraph:
         GRAY = 1   # Being processed
         BLACK = 2  # Fully processed
 
-        color = {node_id: WHITE for node_id in self.nodes}
+        color = dict.fromkeys(self.nodes, WHITE)
 
         def visit(node_id: int) -> bool:
             color[node_id] = GRAY
@@ -234,21 +233,15 @@ class ReasoningGraph:
                 if color[next_node] == GRAY:
                     # Back edge found - cycle detected
                     return True
-                if color[next_node] == WHITE:
-                    if visit(next_node):
-                        return True
+                if color[next_node] == WHITE and visit(next_node):
+                    return True
 
             color[node_id] = BLACK
             return False
 
-        for node_id in self.nodes:
-            if color[node_id] == WHITE:
-                if visit(node_id):
-                    return True
+        return any(color[node_id] == WHITE and visit(node_id) for node_id in self.nodes)
 
-        return False
-
-    def find_cycles(self) -> List[List[int]]:
+    def find_cycles(self) -> list[list[int]]:
         """
         Find all cycles in the graph.
 
@@ -269,7 +262,7 @@ class ReasoningGraph:
                 elif next_node in rec_stack:
                     # Found cycle
                     cycle_start = rec_stack.index(next_node)
-                    cycle = rec_stack[cycle_start:] + [next_node]
+                    cycle = [*rec_stack[cycle_start:], next_node]
                     cycles.append(cycle)
 
             rec_stack.pop()
@@ -280,7 +273,7 @@ class ReasoningGraph:
 
         return cycles
 
-    def topological_sort(self) -> Optional[List[int]]:
+    def topological_sort(self) -> list[int] | None:
         """
         Return nodes in topological order (if graph is acyclic).
 
@@ -305,15 +298,15 @@ class ReasoningGraph:
 
         return result if len(result) == len(self.nodes) else None
 
-    def get_premises(self) -> List[ThoughtNode]:
+    def get_premises(self) -> list[ThoughtNode]:
         """Get all premise nodes."""
         return [n for n in self.nodes.values() if n.node_type == NodeType.PREMISE]
 
-    def get_conclusions(self) -> List[ThoughtNode]:
+    def get_conclusions(self) -> list[ThoughtNode]:
         """Get all conclusion nodes."""
         return [n for n in self.nodes.values() if n.node_type == NodeType.CONCLUSION]
 
-    def get_path_score(self, path: List[int]) -> float:
+    def get_path_score(self, path: list[int]) -> float:
         """
         Calculate score for a reasoning path.
 
@@ -348,7 +341,7 @@ class ReasoningGraph:
         # Combine scores
         return (avg_node_score + avg_edge_score) / 2
 
-    def statistics(self) -> Dict:
+    def statistics(self) -> dict:
         """
         Get graph statistics.
 

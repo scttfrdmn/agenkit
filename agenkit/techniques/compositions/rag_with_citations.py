@@ -44,8 +44,10 @@ Example:
         print(response.metadata['sources'])
 """
 
-from typing import Callable, List, Dict, Any, Tuple
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
+
 from agenkit import Agent, Message
 
 
@@ -61,7 +63,7 @@ class Document:
     """
     content: str
     source: str
-    metadata: Dict[str, Any] = None
+    metadata: dict[str, Any] = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -90,7 +92,7 @@ class CitedRAG(Agent):
 
     def __init__(
         self,
-        retriever: Callable[[str], List[Document]],
+        retriever: Callable[[str], list[Document]],
         answerer: Agent,
         max_docs: int = 5,
         citation_format: str = "numeric"
@@ -204,7 +206,7 @@ class CitedRAG(Agent):
             metadata=metadata
         )
 
-    def _build_citations(self, documents: List[Document]) -> Dict[int, str]:
+    def _build_citations(self, documents: list[Document]) -> dict[int, str]:
         """
         Build citation mapping from document index to citation string.
 
@@ -229,8 +231,8 @@ class CitedRAG(Agent):
     def _build_context_with_citations(
         self,
         query: str,
-        documents: List[Document],
-        citations: Dict[int, str]
+        documents: list[Document],
+        citations: dict[int, str]
     ) -> str:
         """
         Build context with citation instructions.
@@ -272,7 +274,7 @@ Answer:"""
         return context
 
     @property
-    def capabilities(self) -> List[str]:
+    def capabilities(self) -> list[str]:
         """Return agent capabilities."""
         return [
             "retrieval",

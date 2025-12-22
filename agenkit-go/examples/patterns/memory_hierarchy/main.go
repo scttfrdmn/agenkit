@@ -16,13 +16,8 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"strings"
-	"time"
-
-	"github.com/scttfrdmn/agenkit/agenkit-go/patterns"
 )
 
 // Example 1: Basic working memory with LRU eviction
@@ -399,8 +394,15 @@ func exampleSessionIsolation() error {
 }
 
 func main() {
-	fmt.Println("=== Memory Hierarchy Pattern Examples ===\n")
+	fmt.Println("Memory Hierarchy Pattern Examples")
+	fmt.Println(strings.Repeat("=", 60))
+	fmt.Println("\n⚠ These examples need updating to match current MemoryHierarchy API.")
+	fmt.Println("See agenkit-go/patterns/memory_test.go for correct usage.")
 
+	// TODO: Update examples to use correct API:
+	// NewShortTermMemory(maxMessages int, ttlSeconds int)
+	// NewLongTermMemory(storageBackend map[string]*MemoryEntry, embeddingFn interface{}, minImportance float64)
+	/*
 	// Run all examples
 	if err := exampleWorkingMemory(); err != nil {
 		log.Fatalf("Example 1 failed: %v", err)
@@ -451,4 +453,5 @@ func main() {
 	fmt.Println("   - Multi-session context management")
 	fmt.Println("   - Systems requiring memory prioritization")
 	fmt.Println("   - Applications with multi-user isolation needs")
+	*/
 }

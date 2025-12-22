@@ -221,7 +221,6 @@ class SSETransport(Transport):
         """Start SSE transport."""
         try:
             from aiohttp import web
-            from aiohttp.web import StreamResponse
         except ImportError:
             raise ImportError(
                 "aiohttp is required for SSE transport. "

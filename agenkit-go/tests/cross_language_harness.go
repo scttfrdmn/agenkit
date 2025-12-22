@@ -652,7 +652,6 @@ func executeFallback(ctx context.Context, message Message, config map[string]int
 	attempts := 0
 	var failures []string
 	var successAgent string
-	successIndex := -1
 
 	// Try each agent in order until one succeeds
 	for i, agent := range agents {
@@ -674,11 +673,10 @@ func executeFallback(ctx context.Context, message Message, config map[string]int
 
 		// Agent succeeded
 		successAgent = agentName
-		successIndex = i
 
 		metadata := map[string]interface{}{
 			"fallback_attempts":      attempts,
-			"fallback_success_index": successIndex,
+			"fallback_success_index": i,
 			"fallback_success_agent": successAgent,
 			"fallback_total_agents":  len(agents),
 		}

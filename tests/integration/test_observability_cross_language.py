@@ -8,14 +8,13 @@ import pytest
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import \
+    InMemorySpanExporter
 
 from agenkit.adapters.python.remote_agent import RemoteAgent
 from agenkit.interfaces import Agent, Message
-from agenkit.observability.tracing import (
-    TracingMiddleware,
-    inject_trace_context,
-)
+from agenkit.observability.tracing import (TracingMiddleware,
+                                           inject_trace_context)
 
 from .helpers import go_grpc_server, go_http_server
 
@@ -372,7 +371,8 @@ async def test_w3c_trace_context_format():
 @pytest.mark.cross_language
 async def test_trace_context_extraction():
     """Test trace context can be extracted from metadata."""
-    from agenkit.observability.tracing import extract_trace_context, inject_trace_context
+    from agenkit.observability.tracing import (extract_trace_context,
+                                               inject_trace_context)
 
     # Create trace context
     tracer = trace.get_tracer("test")

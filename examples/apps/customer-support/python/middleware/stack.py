@@ -4,14 +4,10 @@ import logging
 from pathlib import Path
 
 from agenkit.interfaces import Agent
-from agenkit.middleware import (
-    CachingConfig,
-    CachingDecorator,
-    PerUserRateLimiterConfig,
-    PerUserRateLimiterDecorator,
-    TimeoutConfig,
-    TimeoutDecorator,
-)
+from agenkit.middleware import (CachingConfig, CachingDecorator,
+                                PerUserRateLimiterConfig,
+                                PerUserRateLimiterDecorator, TimeoutConfig,
+                                TimeoutDecorator)
 from agenkit.observability import AuditLogger, FileAuditAdapter
 
 from ..config import Settings

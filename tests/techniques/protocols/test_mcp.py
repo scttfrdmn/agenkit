@@ -5,21 +5,14 @@ import json
 import pytest
 
 from agenkit import Agent, Message
-from agenkit.techniques.protocols.mcp import (
-    AgentMCPServer,
-    MCPAdapter,
-    MCPMethod,
-    MCPRequest,
-    MCPResourceInfo,
-    MCPServer,
-    MCPToolInfo,
-    ResourceRegistry,
-    ToolRegistry,
-    create_error_response,
-    create_notification,
-    create_request,
-    create_response,
-)
+from agenkit.techniques.protocols.mcp import (AgentMCPServer, MCPAdapter,
+                                              MCPMethod, MCPRequest,
+                                              MCPResourceInfo, MCPServer,
+                                              MCPToolInfo, ResourceRegistry,
+                                              ToolRegistry,
+                                              create_error_response,
+                                              create_notification,
+                                              create_request, create_response)
 
 # ============================================================================
 # Mock Classes

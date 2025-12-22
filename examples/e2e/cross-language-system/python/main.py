@@ -13,7 +13,8 @@ import asyncio
 import sys
 import uuid
 
-from orchestrator import ImageJob, ImageProcessingOrchestrator, ProcessingTask, TaskPriority
+from orchestrator import (ImageJob, ImageProcessingOrchestrator,
+                          ProcessingTask, TaskPriority)
 
 
 async def demo():

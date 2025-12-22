@@ -4,23 +4,16 @@ from datetime import datetime
 
 import pytest
 
-from agenkit.adapters.python import (
-    InvalidMessageError,
-    MalformedPayloadError,
-    UnsupportedVersionError,
-)
-from agenkit.adapters.python.codec import (
-    create_error_envelope,
-    create_request_envelope,
-    create_response_envelope,
-    decode_bytes,
-    decode_message,
-    decode_tool_result,
-    encode_bytes,
-    encode_message,
-    encode_tool_result,
-    validate_envelope,
-)
+from agenkit.adapters.python import (InvalidMessageError,
+                                     MalformedPayloadError,
+                                     UnsupportedVersionError)
+from agenkit.adapters.python.codec import (create_error_envelope,
+                                           create_request_envelope,
+                                           create_response_envelope,
+                                           decode_bytes, decode_message,
+                                           decode_tool_result, encode_bytes,
+                                           encode_message, encode_tool_result,
+                                           validate_envelope)
 from agenkit.interfaces import Message, ToolResult
 
 
@@ -335,9 +328,7 @@ class TestStreamEnvelopes:
     def test_create_stream_envelopes(self):
         """Test creating stream chunk and stream end envelopes."""
         from agenkit.adapters.python.codec import (
-            create_stream_chunk_envelope,
-            create_stream_end_envelope,
-        )
+            create_stream_chunk_envelope, create_stream_end_envelope)
 
         request_id = "test-stream-123"
         msg = Message(role="agent", content="chunk content")

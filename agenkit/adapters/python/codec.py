@@ -7,7 +7,8 @@ from uuid import uuid4
 
 from agenkit.interfaces import Message, ToolResult
 
-from .errors import InvalidMessageError, MalformedPayloadError, UnsupportedVersionError
+from .errors import (InvalidMessageError, MalformedPayloadError,
+                     UnsupportedVersionError)
 
 PROTOCOL_VERSION = "1.0"
 

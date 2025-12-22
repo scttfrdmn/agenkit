@@ -18,10 +18,7 @@ This example uses mock implementations for demonstration.
 import asyncio
 
 from agenkit import Agent, Message
-from agenkit.patterns import (
-    ConsensusAgent,
-    MultiAgentOrchestrator,
-)
+from agenkit.patterns import ConsensusAgent, MultiAgentOrchestrator
 
 # ============================================================================
 # Mock Specialized Agents

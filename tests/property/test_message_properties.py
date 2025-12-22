@@ -16,12 +16,8 @@ from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from agenkit.interfaces import Message
-from tests.property.strategies import (
-    content_strategy,
-    message_strategy,
-    metadata_strategy,
-    role_strategy,
-)
+from tests.property.strategies import (content_strategy, message_strategy,
+                                       metadata_strategy, role_strategy)
 
 
 def serialize_message(msg: Message) -> str:

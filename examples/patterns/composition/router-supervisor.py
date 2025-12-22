@@ -16,13 +16,8 @@ This example shows:
 import asyncio
 
 from agenkit.core import Agent, Message
-from agenkit.patterns import (
-    RouterAgent,
-    SimpleClassifier,
-    SimplePlanner,
-    Subtask,
-    SupervisorAgent,
-)
+from agenkit.patterns import (RouterAgent, SimpleClassifier, SimplePlanner,
+                              Subtask, SupervisorAgent)
 
 
 # Technical Support Workers

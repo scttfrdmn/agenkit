@@ -21,7 +21,8 @@ from .chain_of_thought import ChainOfThought
 from .graph_of_thought import GraphOfThought
 from .least_to_most import LeastToMost, Subproblem
 from .plan_and_solve import Plan, PlanAndSolve, PlanStep
-from .reasoning_graph import EdgeType, LogicalEdge, NodeType, ReasoningGraph, ThoughtNode
+from .reasoning_graph import (EdgeType, LogicalEdge, NodeType, ReasoningGraph,
+                              ThoughtNode)
 from .reasoning_tree import NodeState, ReasoningNode, ReasoningTree
 from .self_consistency import SelfConsistency
 from .tree_of_thought import TreeOfThought

@@ -16,41 +16,15 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from agenkit import Message
-from agenkit.techniques.protocols.a2a import (
-    A2AAction,
-    # Agent
-    A2AAgent,
-    A2ADiscoveryClient,
-    A2AException,
-    # Message types
-    A2AMessage,
-    # Server
-    A2AServer,
-    # Protocol
-    AgentA2AServer,
-    AgentInfo,
-    AgentNotFoundError,
-    BedrockAdapter,
-    CapabilityNotSupportedError,
-    ErrorCode,
-    HTTPTransport,
-    InMemoryDiscoveryService,
-    MessagePriority,
-    MessageType,
-    TimeoutError,
-    # Transport
-    VertexAIAdapter,
-    create_bedrock_agent,
-    create_capabilities_response,
-    create_notification,
-    create_ping_response,
-    create_request,
-    create_status_response,
-    create_transport,
-    create_vertex_agent,
-    validate_agent_id,
-    validate_capability,
-)
+from agenkit.techniques.protocols.a2a import (  # Agent; Message types; Server; Protocol; Transport
+    A2AAction, A2AAgent, A2ADiscoveryClient, A2AException, A2AMessage,
+    A2AServer, AgentA2AServer, AgentInfo, AgentNotFoundError, BedrockAdapter,
+    CapabilityNotSupportedError, ErrorCode, HTTPTransport,
+    InMemoryDiscoveryService, MessagePriority, MessageType, TimeoutError,
+    VertexAIAdapter, create_bedrock_agent, create_capabilities_response,
+    create_notification, create_ping_response, create_request,
+    create_status_response, create_transport, create_vertex_agent,
+    validate_agent_id, validate_capability)
 
 # ============================================================================
 # Message Tests

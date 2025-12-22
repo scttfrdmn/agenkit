@@ -7,13 +7,10 @@ Tests CollaborativeAgent, consensus functions, and merge functions.
 import pytest
 
 from agenkit import Message
-from agenkit.patterns.collaborative import (
-    CollaborativeAgent,
-    CollaborativeConfig,
-    RoundResult,
-    default_consensus_funcs,
-    default_merge_funcs,
-)
+from agenkit.patterns.collaborative import (CollaborativeAgent,
+                                            CollaborativeConfig, RoundResult,
+                                            default_consensus_funcs,
+                                            default_merge_funcs)
 
 # ============================================================================
 # Mock Agents

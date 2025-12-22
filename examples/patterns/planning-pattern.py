@@ -16,12 +16,7 @@ This example uses mock implementations for demonstration.
 import asyncio
 
 from agenkit import Message
-from agenkit.patterns import (
-    Plan,
-    PlanningAgent,
-    PlanStep,
-    StepStatus,
-)
+from agenkit.patterns import Plan, PlanningAgent, PlanStep, StepStatus
 
 # ============================================================================
 # Mock Agent for Planning

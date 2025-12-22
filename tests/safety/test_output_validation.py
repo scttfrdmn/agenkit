@@ -3,12 +3,10 @@
 import pytest
 
 from agenkit.interfaces import Agent, Message
-from agenkit.safety.output_validation import (
-    OutputValidationError,
-    OutputValidationMiddleware,
-    SchemaValidator,
-    SensitiveDataRedactor,
-)
+from agenkit.safety.output_validation import (OutputValidationError,
+                                              OutputValidationMiddleware,
+                                              SchemaValidator,
+                                              SensitiveDataRedactor)
 
 
 class ResponseAgent(Agent):

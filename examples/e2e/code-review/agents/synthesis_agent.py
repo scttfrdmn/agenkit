@@ -2,8 +2,9 @@
 
 from datetime import datetime
 
-from agenkit import Agent, Message
 from agents.review_types import CodeIssue, IssueSeverity, ReviewResult
+
+from agenkit import Agent, Message
 
 
 class SynthesisAgent(Agent):

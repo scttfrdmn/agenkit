@@ -6,10 +6,7 @@ import time
 import pytest
 
 from agenkit.interfaces import Agent, Message
-from agenkit.middleware import (
-    RateLimiterConfig,
-    RateLimiterDecorator,
-)
+from agenkit.middleware import RateLimiterConfig, RateLimiterDecorator
 
 
 class SimpleAgent(Agent):

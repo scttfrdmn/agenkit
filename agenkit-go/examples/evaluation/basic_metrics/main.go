@@ -82,13 +82,13 @@ func simulateAgentSession(sessionID string, agentName string) *evaluation.Sessio
 
 func main() {
 	fmt.Println("Basic Metrics Collection Example")
-	fmt.Println("=================================\n")
+	fmt.Println("=================================")
 
 	// Step 1: Create metrics collector
 	fmt.Println("Step 1: Creating Metrics Collector")
 	fmt.Println("-----------------------------------")
 	collector := evaluation.NewMetricsCollector()
-	fmt.Println("✓ Metrics collector created\n")
+	fmt.Println("✓ Metrics collector created")
 
 	// Step 2: Simulate multiple agent sessions
 	fmt.Println("Step 2: Simulating Agent Sessions")

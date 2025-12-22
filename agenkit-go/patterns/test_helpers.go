@@ -26,6 +26,13 @@ func (m *extendedMockAgent) Capabilities() []string {
 	return []string{"mock"}
 }
 
+func (m *extendedMockAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
+}
+
 func (m *extendedMockAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
 	if m.processFunc != nil {
 		return m.processFunc(ctx, msg)

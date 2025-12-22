@@ -12,8 +12,12 @@ import pytest
 
 # Define EchoAgent for testing
 from agenkit import Agent, Message
-from agenkit.safety import (ContentFilter, InputValidationMiddleware,
-                            PromptInjectionDetector, ValidationError)
+from agenkit.safety import (
+    ContentFilter,
+    InputValidationMiddleware,
+    PromptInjectionDetector,
+    ValidationError,
+)
 from agenkit.safety.input_validation import input_validation
 
 

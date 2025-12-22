@@ -20,8 +20,14 @@ import os
 
 from agenkit.adapters.llm import AnthropicLLM
 from agenkit.core import Agent, Message
-from agenkit.patterns import (ParallelAgent, SequentialAgent, SimplePlanner,
-                              Subtask, SupervisorAgent, default_aggregators)
+from agenkit.patterns import (
+    ParallelAgent,
+    SequentialAgent,
+    SimplePlanner,
+    Subtask,
+    SupervisorAgent,
+    default_aggregators,
+)
 
 
 class ClaudeAgent(Agent):

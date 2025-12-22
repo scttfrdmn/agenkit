@@ -14,8 +14,12 @@ This example shows:
 import asyncio
 
 from agenkit.interfaces import Message
-from agenkit.memory import (ImportanceWeightingStrategy, InMemoryMemory,
-                            SlidingWindowStrategy, SummarizationStrategy)
+from agenkit.memory import (
+    ImportanceWeightingStrategy,
+    InMemoryMemory,
+    SlidingWindowStrategy,
+    SummarizationStrategy,
+)
 
 
 class ConversationalAgent:

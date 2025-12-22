@@ -8,8 +8,7 @@ import pytest
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import \
-    InMemorySpanExporter
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from agenkit.observability import configure_logging, get_logger_with_trace
 
@@ -87,8 +86,7 @@ def test_trace_context_filter(tracer_provider, log_stream):
 
 def test_structured_formatter(tracer_provider, log_stream):
     """Test that StructuredFormatter produces JSON output."""
-    from agenkit.observability.logging import (StructuredFormatter,
-                                               TraceContextFilter)
+    from agenkit.observability.logging import StructuredFormatter, TraceContextFilter
 
     # Configure logger with structured formatter
     handler = logging.StreamHandler(log_stream)
@@ -125,8 +123,7 @@ def test_structured_formatter(tracer_provider, log_stream):
 
 def test_structured_formatter_without_span(log_stream):
     """Test StructuredFormatter works without active span."""
-    from agenkit.observability.logging import (StructuredFormatter,
-                                               TraceContextFilter)
+    from agenkit.observability.logging import StructuredFormatter, TraceContextFilter
 
     # Configure logger
     handler = logging.StreamHandler(log_stream)

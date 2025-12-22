@@ -7,8 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from agenkit.adapters.python import (AgentTimeoutError, ConnectionError,
-                                     LocalAgent, RemoteAgent)
+from agenkit.adapters.python import AgentTimeoutError, ConnectionError, LocalAgent, RemoteAgent
 from agenkit.interfaces import Agent, Message
 
 

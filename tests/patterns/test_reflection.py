@@ -18,8 +18,7 @@ import json
 import pytest
 
 from agenkit.interfaces import Message
-from agenkit.patterns import (CritiqueFormat, ReflectionAgent, ReflectionStep,
-                              StopReason)
+from agenkit.patterns import CritiqueFormat, ReflectionAgent, ReflectionStep, StopReason
 
 
 # Mock agents for testing

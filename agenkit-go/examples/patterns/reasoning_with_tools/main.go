@@ -47,6 +47,13 @@ func (m *MockReasoningLLM) Capabilities() []string {
 	return []string{"reasoning", "tool-calling"}
 }
 
+func (m *MockReasoningLLM) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
+}
+
 func (m *MockReasoningLLM) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

@@ -7,8 +7,7 @@ import tempfile
 
 import pytest
 
-from agenkit.safety.audit import (AuditEvent, AuditEventType, AuditSeverity,
-                                  SecurityAuditLogger)
+from agenkit.safety.audit import AuditEvent, AuditEventType, AuditSeverity, SecurityAuditLogger
 
 
 @pytest.fixture

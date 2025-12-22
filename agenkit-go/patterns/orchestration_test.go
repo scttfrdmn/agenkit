@@ -24,6 +24,13 @@ func (m *mockAgent) Capabilities() []string {
 	return []string{m.name + "_cap"}
 }
 
+func (m *mockAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
+}
+
 func (m *mockAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	if m.failErr != nil {
 		return nil, m.failErr

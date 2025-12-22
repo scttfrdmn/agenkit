@@ -632,17 +632,16 @@ class OrchestrationAgent(Agent):
         branch_taken = "else"
         agent_executed = else_agent_name
 
-        if condition:
+        if condition and "==" in condition:
             # Parse condition like "data_type == 'json'"
-            if "==" in condition:
-                parts = condition.split("==")
-                key = parts[0].strip()
-                value = parts[1].strip().strip("'\"")
+            parts = condition.split("==")
+            key = parts[0].strip()
+            value = parts[1].strip().strip("'\"")
 
-                # Check in message metadata
-                if message.metadata and message.metadata.get(key) == value:
-                    branch_taken = "then"
-                    agent_executed = then_agent_name
+            # Check in message metadata
+            if message.metadata and message.metadata.get(key) == value:
+                branch_taken = "then"
+                agent_executed = then_agent_name
 
         # Execute selected agent
         agent_name = then_agent_name if branch_taken == "then" else else_agent_name

@@ -131,6 +131,14 @@ func (r *RouterAgent) Capabilities() []string {
 	return capabilities
 }
 
+// Introspect returns introspection information for the router agent.
+func (r *RouterAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    r.Name(),
+		Capabilities: r.Capabilities(),
+	}
+}
+
 // Process classifies the message and routes to appropriate agent.
 //
 // The process follows these steps:
@@ -225,6 +233,14 @@ func (c *SimpleClassifier) Process(ctx context.Context, message *agenkit.Message
 	return c.agent.Process(ctx, message)
 }
 
+// Introspect returns introspection information for the classifier.
+func (c *SimpleClassifier) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    c.Name(),
+		Capabilities: c.Capabilities(),
+	}
+}
+
 // Classify determines category using keyword matching.
 func (c *SimpleClassifier) Classify(ctx context.Context, message *agenkit.Message) (string, error) {
 	if message == nil {
@@ -305,6 +321,14 @@ func (c *LLMClassifier) Capabilities() []string {
 // Process handles direct message processing (delegates to underlying agent).
 func (c *LLMClassifier) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return c.agent.Process(ctx, message)
+}
+
+// Introspect returns introspection information for the classifier.
+func (c *LLMClassifier) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    c.Name(),
+		Capabilities: c.Capabilities(),
+	}
 }
 
 // Classify uses LLM to determine category.

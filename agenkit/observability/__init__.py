@@ -7,14 +7,14 @@ and Go implementations.
 """
 
 from .audit import (
-                    AuditAdapter,
-                    AuditEvent,
-                    AuditEventType,
-                    AuditLogger,
-                    AuditSeverity,
-                    ConsoleAuditAdapter,
-                    FileAuditAdapter,
-                    StructuredAuditAdapter,
+    AuditAdapter,
+    AuditEvent,
+    AuditEventType,
+    AuditLogger,
+    AuditSeverity,
+    ConsoleAuditAdapter,
+    FileAuditAdapter,
+    StructuredAuditAdapter,
 )
 from .logging import configure_logging, get_logger_with_trace
 from .metrics import MetricsMiddleware, get_meter, init_metrics, init_resource_metrics

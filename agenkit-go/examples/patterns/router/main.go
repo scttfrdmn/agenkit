@@ -385,7 +385,7 @@ func main() {
 	fmt.Println("   Level 1: Main router → technical")
 	fmt.Println("   Level 2: Tech sub-router → hardware specialist")
 
-	result, err = multiRouter.Process(ctx, techRequest)
+	_, err = multiRouter.Process(ctx, techRequest)
 	if err != nil {
 		log.Fatalf("Multi-level routing failed: %v", err)
 	}

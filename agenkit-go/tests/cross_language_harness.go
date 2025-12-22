@@ -527,6 +527,7 @@ func executeParallel(ctx context.Context, message Message, config map[string]int
 			"parallel_agents":    agentCount,
 			"successful_agents":  agentCount,
 			"aggregated":         true,
+			"agents_executed":    agentNames,
 		},
 	}, nil
 }
@@ -679,6 +680,7 @@ func executeFallback(ctx context.Context, message Message, config map[string]int
 			"fallback_success_index": i,
 			"fallback_success_agent": successAgent,
 			"fallback_total_agents":  len(agents),
+			"fallback_failures":      failures,
 		}
 
 		return &Message{

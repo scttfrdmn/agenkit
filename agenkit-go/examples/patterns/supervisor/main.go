@@ -411,7 +411,7 @@ func main() {
 
 	fmt.Printf("\n📥 Task: %s\n", simpleTask.Content)
 
-	result, err = simpleSupervisor.Process(ctx, simpleTask)
+	_, err = simpleSupervisor.Process(ctx, simpleTask)
 	if err != nil {
 		log.Fatalf("Simple supervisor failed: %v", err)
 	}

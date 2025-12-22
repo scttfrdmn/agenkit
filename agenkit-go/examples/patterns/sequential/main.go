@@ -34,6 +34,13 @@ func (e *ExtractorAgent) Capabilities() []string {
 	return []string{"extraction", "parsing"}
 }
 
+func (e *ExtractorAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    e.Name(),
+		Capabilities: e.Capabilities(),
+	}
+}
+
 func (e *ExtractorAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Println("\n📄 Stage 1: Extracting key information...")
 
@@ -72,6 +79,13 @@ func (t *TranslatorAgent) Capabilities() []string {
 	return []string{"translation", "transformation"}
 }
 
+func (t *TranslatorAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    t.Name(),
+		Capabilities: t.Capabilities(),
+	}
+}
+
 func (t *TranslatorAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Println("\n🌐 Stage 2: Translating to structured format...")
 
@@ -108,6 +122,13 @@ func (s *SummarizerAgent) Name() string {
 
 func (s *SummarizerAgent) Capabilities() []string {
 	return []string{"summarization", "synthesis"}
+}
+
+func (s *SummarizerAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    s.Name(),
+		Capabilities: s.Capabilities(),
+	}
 }
 
 func (s *SummarizerAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -225,6 +246,13 @@ func (f *FailingAgent) Name() string {
 
 func (f *FailingAgent) Capabilities() []string {
 	return []string{"failure"}
+}
+
+func (f *FailingAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    f.Name(),
+		Capabilities: f.Capabilities(),
+	}
 }
 
 func (f *FailingAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

@@ -137,7 +137,7 @@ func exampleBasicTask() error {
 		Retries: 0,
 	}
 
-	task := patterns.NewTask(agent, config)
+	task := patterns.NewTask(agent, &config)
 
 	fmt.Println("Executing summarization task...")
 	message := agenkit.NewMessage("user", "Please summarize this document about AI agents.")
@@ -151,9 +151,7 @@ func exampleBasicTask() error {
 	fmt.Printf("Task has result: %t\n", task.Result() != nil)
 
 	// Cleanup
-	if err := task.Cleanup(); err != nil {
-		return err
-	}
+	task.Cleanup()
 
 	return nil
 }
@@ -169,11 +167,11 @@ func exampleTimeout() error {
 		Retries: 0,
 	}
 
-	task := patterns.NewTask(agent, config)
+	task := patterns.NewTask(agent, &config)
 
 	fmt.Println("Executing task with 200ms timeout (agent takes 500ms)...")
 	message := agenkit.NewMessage("user", "Process this")
-	err := task.Execute(context.Background(), message)
+	_, err := task.Execute(context.Background(), message)
 
 	if err != nil {
 		fmt.Printf("Task failed as expected: %v\n", err)
@@ -200,7 +198,7 @@ func exampleRetries() error {
 		Retries: 2,
 	}
 
-	task := patterns.NewTask(agent, config)
+	task := patterns.NewTask(agent, &config)
 
 	fmt.Println("Executing unreliable task with 2 retries...")
 	message := agenkit.NewMessage("user", "Test input")
@@ -226,7 +224,7 @@ func exampleReusePrevention() error {
 		Retries: 0,
 	}
 
-	task := patterns.NewTask(agent, config)
+	task := patterns.NewTask(agent, &config)
 
 	// First execution
 	fmt.Println("First execution...")
@@ -239,7 +237,7 @@ func exampleReusePrevention() error {
 
 	// Try to execute again
 	fmt.Println("Attempting second execution on same task...")
-	err = task.Execute(context.Background(), message)
+	_, err = task.Execute(context.Background(), message)
 
 	if err != nil {
 		fmt.Println("Second execution failed as expected:")
@@ -269,7 +267,7 @@ func exampleConvenienceFunction() error {
 		context.Background(),
 		agent,
 		agenkit.NewMessage("user", "Summarize this document."),
-		config,
+		&config,
 	)
 	if err != nil {
 		return err
@@ -317,7 +315,7 @@ func exampleBatchProcessing() error {
 				context.Background(),
 				agent,
 				agenkit.NewMessage("user", docContent),
-				config,
+				&config,
 			)
 
 			results <- result{docNum: docNum + 1, message: msg, err: err}
@@ -355,7 +353,7 @@ func exampleLifecycle() error {
 		Retries: 0,
 	}
 
-	task := patterns.NewTask(agent, config)
+	task := patterns.NewTask(agent, &config)
 
 	fmt.Println("Initial state:")
 	fmt.Printf("  Completed: %t\n", task.Completed())
@@ -377,9 +375,7 @@ func exampleLifecycle() error {
 	}
 
 	fmt.Println("\nPerforming cleanup...")
-	if err := task.Cleanup(); err != nil {
-		return err
-	}
+	task.Cleanup()
 	fmt.Println("✓ Lifecycle complete\n")
 
 	return nil

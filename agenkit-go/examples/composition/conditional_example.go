@@ -1,3 +1,5 @@
+//go:build ignore
+
 /*
 Conditional Composition Example
 

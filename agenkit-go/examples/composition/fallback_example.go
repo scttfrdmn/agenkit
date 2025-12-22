@@ -1,3 +1,5 @@
+//go:build ignore
+
 /*
 Fallback Composition Example
 

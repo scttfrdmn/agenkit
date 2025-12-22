@@ -29,6 +29,13 @@ func (e *EchoAgent) Capabilities() []string {
 	return []string{"echo"}
 }
 
+func (e *EchoAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    e.Name(),
+		Capabilities: e.Capabilities(),
+	}
+}
+
 // StreamingEchoAgent streams responses
 type StreamingEchoAgent struct {
 	EchoAgent

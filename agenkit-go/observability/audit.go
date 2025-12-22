@@ -67,7 +67,7 @@ func NewAuditEvent(eventType AuditEventType, severity AuditSeverity, message str
 	}
 
 	// Add trace context if available
-	span := trace.SpanFromContext(nil)
+	span := trace.SpanFromContext(context.TODO())
 	if span.SpanContext().IsValid() {
 		event.TraceID = span.SpanContext().TraceID().String()
 		event.SpanID = span.SpanContext().SpanID().String()

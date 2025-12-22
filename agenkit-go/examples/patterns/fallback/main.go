@@ -148,7 +148,6 @@ func main() {
 	fmt.Println("=== Fallback Pattern Demo ===")
 	fmt.Println("Demonstrating high-availability agent patterns\n")
 
-	rand.Seed(time.Now().UnixNano())
 	ctx := context.Background()
 
 	// Example 1: Basic fallback with primary/backup

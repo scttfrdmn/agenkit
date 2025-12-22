@@ -164,7 +164,6 @@ func main() {
 	fmt.Println("=== Human-in-Loop Pattern Demo ===")
 	fmt.Println("Demonstrating human oversight for critical decisions\n")
 
-	rand.Seed(time.Now().UnixNano())
 	ctx := context.Background()
 
 	// Example 1: High-confidence auto-approval

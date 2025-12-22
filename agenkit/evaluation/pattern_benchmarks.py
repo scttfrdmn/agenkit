@@ -313,9 +313,8 @@ class YAMLBenchmarkLoader:
                         if actual_value is None or actual_value < expected_value:
                             return False
                     # For boolean values, check exact match
-                    elif isinstance(expected_value, bool):
-                        if actual_value != expected_value:
-                            return False
+                    elif isinstance(expected_value, bool) and actual_value != expected_value:
+                        return False
 
             # Check behavioral properties (stored in metadata by harnesses)
             if expected_behavior:

@@ -129,13 +129,12 @@ class BayesianOptimizer(Optimizer):
 
         # Add categorical/discrete parameters (sample randomly for now)
         for name, spec in self.search_space.parameters.items():
-            if name not in config:
-                if spec["type"] == "discrete" or spec["type"] == "categorical":
-                    config[name] = np.random.choice(spec["values"])
+            if name not in config and (spec["type"] == "discrete" or spec["type"] == "categorical"):
+                config[name] = np.random.choice(spec["values"])
 
         return config
 
-    def _expected_improvement(self, X: np.ndarray, X_sample: np.ndarray, Y_sample: np.ndarray) -> np.ndarray:
+    def _expected_improvement(self, X: np.ndarray, X_sample: np.ndarray, Y_sample: np.ndarray) -> np.ndarray:  # noqa: N803
         """
         Expected Improvement acquisition function.
 
@@ -152,13 +151,13 @@ class BayesianOptimizer(Optimizer):
 
         with np.errstate(divide="warn"):
             imp = mu - mu_sample_opt - self.xi
-            Z = imp / sigma
+            Z = imp / sigma  # noqa: N806
             ei = imp * self._norm_cdf(Z) + sigma * self._norm_pdf(Z)
             ei[sigma == 0.0] = 0.0
 
         return ei
 
-    def _upper_confidence_bound(self, X: np.ndarray) -> np.ndarray:
+    def _upper_confidence_bound(self, X: np.ndarray) -> np.ndarray:  # noqa: N803
         """
         Upper Confidence Bound acquisition function.
 
@@ -172,7 +171,7 @@ class BayesianOptimizer(Optimizer):
         return mu + self.kappa * sigma
 
     def _probability_of_improvement(
-        self, X: np.ndarray, X_sample: np.ndarray, Y_sample: np.ndarray
+        self, X: np.ndarray, X_sample: np.ndarray, Y_sample: np.ndarray  # noqa: N803
     ) -> np.ndarray:
         """
         Probability of Improvement acquisition function.
@@ -189,7 +188,7 @@ class BayesianOptimizer(Optimizer):
         mu_sample_opt = np.max(Y_sample)
 
         with np.errstate(divide="warn"):
-            Z = (mu - mu_sample_opt - self.xi) / sigma
+            Z = (mu - mu_sample_opt - self.xi) / sigma  # noqa: N806
             pi = self._norm_cdf(Z)
             pi[sigma == 0.0] = 0.0
 
@@ -207,7 +206,7 @@ class BayesianOptimizer(Optimizer):
         """Standard normal probability density function."""
         return np.exp(-0.5 * x**2) / np.sqrt(2.0 * np.pi)
 
-    def _propose_location(self, X_sample: np.ndarray, Y_sample: np.ndarray, n_candidates: int = 1000) -> np.ndarray:
+    def _propose_location(self, X_sample: np.ndarray, Y_sample: np.ndarray, n_candidates: int = 1000) -> np.ndarray:  # noqa: N803
         """
         Propose next location to sample using acquisition function.
 
@@ -259,8 +258,8 @@ class BayesianOptimizer(Optimizer):
         self.history = []
 
         # Phase 1: Random initialization
-        X_sample: list[np.ndarray] = []
-        Y_sample: list[float] = []
+        X_sample: list[np.ndarray] = []  # noqa: N806
+        Y_sample: list[float] = []  # noqa: N806
 
         for _ in range(min(self.n_initial, n_iterations)):
             config = self.search_space.sample()
@@ -273,8 +272,8 @@ class BayesianOptimizer(Optimizer):
         # Phase 2: Bayesian optimization
         for _ in range(self.n_initial, n_iterations):
             # Fit GP on observed data
-            X_array = np.array(X_sample)
-            Y_array = np.array(Y_sample)
+            X_array = np.array(X_sample)  # noqa: N806
+            Y_array = np.array(Y_sample)  # noqa: N806
             self.gp.fit(X_array, Y_array)
 
             # Propose next location

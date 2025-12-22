@@ -161,7 +161,7 @@ class PromptOptimizer:
 
     def _sample_config(self) -> dict[str, str]:
         """Sample random configuration."""
-        return {key: random.choice(values) for key, values in self.variations.items()}
+        return {key: random.choice(values) for key, values in self.variations.items()}  # noqa: S311
 
     async def _evaluate_prompt(self, prompt: str, test_cases: list[dict[str, Any]]) -> dict[str, float]:
         """
@@ -358,8 +358,8 @@ class PromptOptimizer:
             # Mutation
             for config in new_population:
                 for key in config:
-                    if random.random() < mutation_rate:
-                        config[key] = random.choice(self.variations[key])
+                    if random.random() < mutation_rate:  # noqa: S311
+                        config[key] = random.choice(self.variations[key])  # noqa: S311
 
             # Evaluate new population
             population = new_population

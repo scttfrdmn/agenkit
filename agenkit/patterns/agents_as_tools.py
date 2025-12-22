@@ -269,7 +269,7 @@ def agent_as_tool(
 
     Performance:
         - Latency: Supervisor + Specialist(s)
-        - Cost: N× calls (supervisor + each specialist invocation)
+        - Cost: Nx calls (supervisor + each specialist invocation)
         - Benefit: Specialization often improves quality despite higher cost
     """
     return AgentTool(

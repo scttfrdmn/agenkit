@@ -36,6 +36,13 @@ func (c *CodeSpecialistAgent) Capabilities() []string {
 	return []string{"programming", "code-review", "debugging", "python", "go"}
 }
 
+func (c *CodeSpecialistAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    c.Name(),
+		Capabilities: c.Capabilities(),
+	}
+}
+
 func (c *CodeSpecialistAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	query := strings.ToLower(message.Content)
 
@@ -97,6 +104,13 @@ func (d *DataSpecialistAgent) Name() string {
 
 func (d *DataSpecialistAgent) Capabilities() []string {
 	return []string{"data-analysis", "sql", "statistics", "visualization"}
+}
+
+func (d *DataSpecialistAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    d.Name(),
+		Capabilities: d.Capabilities(),
+	}
 }
 
 func (d *DataSpecialistAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

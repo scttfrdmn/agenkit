@@ -89,7 +89,7 @@ func (a *AgentV2) Process(ctx context.Context, message *agenkit.Message) (*agenk
 
 func main() {
 	fmt.Println("A/B Testing Example")
-	fmt.Println("===================\n")
+	fmt.Println("===================")
 
 	// Step 1: Setup agents and test suite
 	fmt.Println("Step 1: Setting Up A/B Test")

@@ -82,6 +82,13 @@ func (e *ErrorAgent) Capabilities() []string {
 	return []string{}
 }
 
+func (e *ErrorAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    e.Name(),
+		Capabilities: e.Capabilities(),
+	}
+}
+
 // SlowAgent simulates a slow agent for timeout testing
 type SlowAgent struct {
 	delay time.Duration
@@ -102,6 +109,13 @@ func (s *SlowAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 
 func (s *SlowAgent) Capabilities() []string {
 	return []string{}
+}
+
+func (s *SlowAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    s.Name(),
+		Capabilities: s.Capabilities(),
+	}
 }
 
 func TestBasicCommunicationUnixSocket(t *testing.T) {

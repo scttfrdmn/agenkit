@@ -38,6 +38,13 @@ func (s *SummarizationAgent) Capabilities() []string {
 	return []string{"summarization", "text-processing"}
 }
 
+func (s *SummarizationAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    s.Name(),
+		Capabilities: s.Capabilities(),
+	}
+}
+
 func (s *SummarizationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	content := message.Content
 
@@ -71,6 +78,13 @@ func (u *UnreliableAgent) Capabilities() []string {
 	return []string{"unstable"}
 }
 
+func (u *UnreliableAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    u.Name(),
+		Capabilities: u.Capabilities(),
+	}
+}
+
 func (u *UnreliableAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	u.mu.Lock()
 	u.attempt++
@@ -98,6 +112,13 @@ func (s *SlowAgent) Name() string {
 
 func (s *SlowAgent) Capabilities() []string {
 	return []string{"slow"}
+}
+
+func (s *SlowAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    s.Name(),
+		Capabilities: s.Capabilities(),
+	}
 }
 
 func (s *SlowAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

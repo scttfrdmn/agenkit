@@ -37,6 +37,13 @@ func (m *MockAgent) Capabilities() []string {
 	return m.capabilities
 }
 
+func (m *MockAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
+}
+
 func (m *MockAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	if m.processFunc != nil {
 		return m.processFunc(ctx, message)

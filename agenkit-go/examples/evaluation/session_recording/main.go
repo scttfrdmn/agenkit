@@ -34,6 +34,13 @@ func (a *MockAgent) Capabilities() []string {
 	return []string{"chat"}
 }
 
+func (a *MockAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 func (a *MockAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simple echo agent with version-specific behavior
 	response := fmt.Sprintf("[%s] You said: %s", a.version, message.Content)

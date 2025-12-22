@@ -33,6 +33,13 @@ func (m *MockVariableAgent) Capabilities() []string {
 	return []string{"mock", "variable_response"}
 }
 
+func (m *MockVariableAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
+}
+
 func (m *MockVariableAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -62,6 +69,13 @@ func (m *MockDeterministicAgent) Name() string {
 
 func (m *MockDeterministicAgent) Capabilities() []string {
 	return []string{"mock", "deterministic"}
+}
+
+func (m *MockDeterministicAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
 }
 
 func (m *MockDeterministicAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

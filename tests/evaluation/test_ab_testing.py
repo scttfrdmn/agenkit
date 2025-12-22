@@ -41,8 +41,8 @@ class MockAgent:
 
         # Simulate success/failure based on accuracy
         success = (
-            random.random() < self.accuracy
-        )  # noqa: S311 - Pseudo-random acceptable for test mocking
+            random.random() < self.accuracy  # noqa: S311 - Pseudo-random acceptable for test mocking
+        )
         content = "correct" if success else "incorrect"
 
         return Message(role="assistant", content=content)

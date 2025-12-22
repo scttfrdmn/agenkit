@@ -35,6 +35,13 @@ func (s *SentimentAgent) Capabilities() []string {
 	return []string{"sentiment", "analysis"}
 }
 
+func (s *SentimentAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    s.Name(),
+		Capabilities: s.Capabilities(),
+	}
+}
+
 func (s *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Println("   💭 Sentiment analysis running...")
 	time.Sleep(100 * time.Millisecond) // Simulate processing
@@ -62,6 +69,13 @@ func (e *EntityAgent) Name() string {
 
 func (e *EntityAgent) Capabilities() []string {
 	return []string{"entities", "extraction"}
+}
+
+func (e *EntityAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    e.Name(),
+		Capabilities: e.Capabilities(),
+	}
 }
 
 func (e *EntityAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -98,6 +112,13 @@ func (t *TopicAgent) Capabilities() []string {
 	return []string{"topics", "classification"}
 }
 
+func (t *TopicAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    t.Name(),
+		Capabilities: t.Capabilities(),
+	}
+}
+
 func (t *TopicAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Println("   📚 Topic classification running...")
 	time.Sleep(120 * time.Millisecond) // Simulate processing
@@ -128,6 +149,13 @@ func (c *ClassifierAgent) Name() string {
 
 func (c *ClassifierAgent) Capabilities() []string {
 	return []string{"classification"}
+}
+
+func (c *ClassifierAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    c.Name(),
+		Capabilities: c.Capabilities(),
+	}
 }
 
 func (c *ClassifierAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -303,6 +331,13 @@ func (f *FailingAgent) Name() string {
 
 func (f *FailingAgent) Capabilities() []string {
 	return []string{"failure"}
+}
+
+func (f *FailingAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    f.Name(),
+		Capabilities: f.Capabilities(),
+	}
 }
 
 func (f *FailingAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

@@ -28,6 +28,13 @@ func (a *ProductionAgent) Capabilities() []string {
 	return []string{"chat"}
 }
 
+func (a *ProductionAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 func (a *ProductionAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate processing
 	time.Sleep(time.Duration(50+rand.Intn(200)) * time.Millisecond)

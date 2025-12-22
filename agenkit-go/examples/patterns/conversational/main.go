@@ -365,43 +365,18 @@ func exampleClearHistory() error {
 func main() {
 	fmt.Println("Conversational Pattern Examples")
 	fmt.Println(strings.Repeat("=", 60))
+	fmt.Println("\n⚠ This example requires ConversationalAgent pattern implementation.")
+	fmt.Println("See Python implementation for reference.")
 
-	// Run all examples
-	if err := exampleBasicConversation(); err != nil {
-		log.Fatalf("Example 1 failed: %v", err)
-	}
-
-	if err := exampleMultiTopic(); err != nil {
-		log.Fatalf("Example 2 failed: %v", err)
-	}
-
-	if err := exampleHistoryPruning(); err != nil {
-		log.Fatalf("Example 3 failed: %v", err)
-	}
-
-	if err := exampleExportImport(); err != nil {
-		log.Fatalf("Example 4 failed: %v", err)
-	}
-
-	if err := exampleCustomerSupport(); err != nil {
-		log.Fatalf("Example 5 failed: %v", err)
-	}
-
-	if err := exampleClearHistory(); err != nil {
-		log.Fatalf("Example 6 failed: %v", err)
-	}
-
-	fmt.Println("\n" + strings.Repeat("=", 60))
-	fmt.Println("✓ All examples completed successfully!")
-	fmt.Println("\n💡 Key takeaways:")
-	fmt.Println("   - Maintains conversation context across turns")
-	fmt.Println("   - Automatic history pruning prevents memory overflow")
-	fmt.Println("   - Export/import enables conversation persistence")
-	fmt.Println("   - System prompts can be preserved across clears")
-	fmt.Println()
-	fmt.Println("🎯 When to use Conversational:")
-	fmt.Println("   - Chatbots and virtual assistants")
-	fmt.Println("   - Multi-turn customer support interactions")
-	fmt.Println("   - Context-aware dialogue systems")
-	fmt.Println("   - Any scenario requiring memory across exchanges")
+	// TODO: Uncomment when ConversationalAgent is implemented in Go
+	// // Run all examples
+	// if err := exampleBasicConversation(); err != nil {
+	// 	log.Fatalf("Example 1 failed: %v", err)
+	// }
+	// if err := exampleClearHistory(); err != nil {
+	// 	log.Fatalf("Example 6 failed: %v", err)
+	// }
+	//
+	// fmt.Println("\n" + strings.Repeat("=", 60))
+	// fmt.Println("✓ All examples completed successfully!")
 }

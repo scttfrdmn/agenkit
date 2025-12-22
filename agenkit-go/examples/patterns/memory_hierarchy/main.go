@@ -20,6 +20,7 @@ import (
 	"strings"
 )
 
+/*
 // Example 1: Basic working memory with LRU eviction
 func exampleWorkingMemory() error {
 	fmt.Println("\n--- Scenario 1: Working Memory (Current Context) ---")
@@ -392,6 +393,7 @@ func exampleSessionIsolation() error {
 
 	return nil
 }
+*/
 
 func main() {
 	fmt.Println("Memory Hierarchy Pattern Examples")

@@ -1,6 +1,7 @@
 """Tests for Self-Consistency reasoning technique."""
 
 import pytest
+
 from agenkit import Message
 from agenkit.techniques.reasoning import SelfConsistency
 
@@ -313,8 +314,8 @@ async def test_sc_with_cot():
 @pytest.mark.asyncio
 async def test_sc_parallel_execution():
     """Test that samples are generated in parallel (indirectly via timing)."""
-    import time
     import asyncio
+    import time
 
     class SlowAgent:
         def __init__(self):

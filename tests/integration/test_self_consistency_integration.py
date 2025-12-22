@@ -9,7 +9,6 @@ These tests validate Self-Consistency works correctly with:
 """
 
 import os
-from typing import Optional
 
 import pytest
 

@@ -10,13 +10,10 @@ from agenkit import Message
 from agenkit.patterns.collaborative import (
     CollaborativeAgent,
     CollaborativeConfig,
-    DefaultConsensusFuncs,
-    DefaultMergeFuncs,
     RoundResult,
     default_consensus_funcs,
     default_merge_funcs,
 )
-
 
 # ============================================================================
 # Mock Agents

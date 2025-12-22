@@ -1,8 +1,9 @@
 """Tests for Plan-and-Solve reasoning technique."""
 
 import pytest
+
 from agenkit import Message
-from agenkit.techniques.reasoning import PlanAndSolve, Plan, PlanStep
+from agenkit.techniques.reasoning import Plan, PlanAndSolve, PlanStep
 
 
 class MockLLM:
@@ -340,7 +341,7 @@ async def test_pas_step_dependencies():
     step2 = PlanStep(description="Step 2", order=1, dependencies=[0])
     step3 = PlanStep(description="Step 3", order=2, dependencies=[0, 1])
 
-    plan = Plan(steps=[step1, step2, step3], problem="Test")
+    Plan(steps=[step1, step2, step3], problem="Test")
 
     assert len(step2.dependencies) == 1
     assert len(step3.dependencies) == 2

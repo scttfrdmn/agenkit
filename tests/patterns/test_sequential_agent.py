@@ -7,7 +7,6 @@ import pytest
 from agenkit import Message
 from agenkit.patterns import SequentialAgent
 
-
 # ============================================================================
 # Mock Agents
 # ============================================================================

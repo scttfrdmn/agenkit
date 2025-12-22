@@ -11,7 +11,6 @@ import pytest
 from agenkit import Message
 from agenkit.patterns.orchestration import ParallelPattern, RouterPattern, SequentialPattern
 
-
 # ============================================================================
 # Mock Agents
 # ============================================================================
@@ -716,7 +715,7 @@ async def test_nested_patterns():
     outer = ParallelPattern([inner, agent3])
 
     message = Message(role="user", content="input")
-    result = await outer.process(message)
+    await outer.process(message)
 
     # Both branches should execute
     assert agent1.call_count == 1
@@ -747,7 +746,7 @@ async def test_router_with_patterns():
 
     # Test sequential routing
     message1 = Message(role="user", content="sequential task")
-    result1 = await router.process(message1)
+    await router.process(message1)
 
     assert agent1.call_count == 1
     assert agent2.call_count == 1
@@ -756,7 +755,7 @@ async def test_router_with_patterns():
 
     # Test parallel routing
     message2 = Message(role="user", content="parallel task")
-    result2 = await router.process(message2)
+    await router.process(message2)
 
     assert agent1.call_count == 1  # No change
     assert agent2.call_count == 1  # No change

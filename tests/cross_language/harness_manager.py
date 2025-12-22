@@ -9,7 +9,7 @@ import subprocess
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 PROTOCOL_VERSION = "1.0"
 DEFAULT_TIMEOUT = 60  # seconds
@@ -22,7 +22,7 @@ class HarnessConfig:
     language: str
     executable_path: Path
     timeout: int = DEFAULT_TIMEOUT
-    env: Optional[Dict[str, str]] = None
+    env: dict[str, str] | None = None
 
 
 @dataclass
@@ -31,8 +31,8 @@ class TestRequest:
 
     pattern: str
     scenario_id: str
-    input_data: Dict[str, Any]
-    timeout: Optional[int] = None
+    input_data: dict[str, Any]
+    timeout: int | None = None
 
 
 @dataclass
@@ -40,15 +40,15 @@ class TestResult:
     """Test execution result."""
 
     status: str  # success, error, timeout, not_implemented
-    output: Optional[Dict[str, Any]] = None
-    error: Optional[Dict[str, Any]] = None
-    execution_info: Optional[Dict[str, Any]] = None
+    output: dict[str, Any] | None = None
+    error: dict[str, Any] | None = None
+    execution_info: dict[str, Any] | None = None
 
 
 class HarnessManager:
     """Manages language-specific test harnesses."""
 
-    def __init__(self, harness_configs: List[HarnessConfig]):
+    def __init__(self, harness_configs: list[HarnessConfig]):
         """
         Initialize harness manager.
 
@@ -131,7 +131,7 @@ class HarnessManager:
                 },
             )
 
-    def get_harness_info(self, language: str) -> Dict[str, Any]:
+    def get_harness_info(self, language: str) -> dict[str, Any]:
         """
         Get information about a language harness.
 
@@ -198,7 +198,7 @@ class HarnessManager:
         except Exception:
             return False
 
-    def health_check_all(self) -> Dict[str, bool]:
+    def health_check_all(self) -> dict[str, bool]:
         """
         Check health of all harnesses.
 
@@ -206,15 +206,15 @@ class HarnessManager:
             Dictionary mapping language names to health status
         """
         return {
-            language: self.health_check(language) for language in self.harnesses.keys()
+            language: self.health_check(language) for language in self.harnesses
         }
 
     def _execute_harness(
         self,
         executable: Path,
-        request: Dict[str, Any],
+        request: dict[str, Any],
         timeout: int,
-        env: Optional[Dict[str, str]] = None,
+        env: dict[str, str] | None = None,
     ) -> str:
         """
         Execute harness subprocess.
@@ -247,7 +247,7 @@ class HarnessManager:
         )
 
         # Check for errors
-        if result.returncode != 0 and result.returncode != 1:
+        if result.returncode not in {0, 1}:
             # Exit codes 0 (success) and 1 (error with JSON) are acceptable
             raise RuntimeError(
                 f"Harness failed with exit code {result.returncode}: "
@@ -303,7 +303,7 @@ class HarnessManager:
             execution_info=execution_info,
         )
 
-    def get_available_languages(self) -> List[str]:
+    def get_available_languages(self) -> list[str]:
         """
         Get list of configured languages.
 
@@ -313,8 +313,8 @@ class HarnessManager:
         return list(self.harnesses.keys())
 
     def execute_test_parallel(
-        self, languages: List[str], request: TestRequest
-    ) -> Dict[str, TestResult]:
+        self, languages: list[str], request: TestRequest
+    ) -> dict[str, TestResult]:
         """
         Execute test on multiple languages in parallel.
 
@@ -343,7 +343,7 @@ class HarnessManager:
         return results
 
 
-def discover_harnesses(root_dir: Path) -> List[HarnessConfig]:
+def discover_harnesses(root_dir: Path) -> list[HarnessConfig]:
     """
     Auto-discover language harnesses in the repository.
 

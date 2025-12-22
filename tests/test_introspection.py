@@ -1,9 +1,10 @@
 """Tests for introspection capability."""
 
-import pytest
 from datetime import datetime, timezone
 
-from agenkit import Agent, Message, IntrospectionResult
+import pytest
+
+from agenkit import Agent, IntrospectionResult, Message
 
 
 class SimpleAgent(Agent):

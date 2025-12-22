@@ -7,7 +7,6 @@ import pytest
 from agenkit import Message
 from agenkit.patterns import FallbackAgent
 
-
 # ============================================================================
 # Mock Agents
 # ============================================================================

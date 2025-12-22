@@ -8,7 +8,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
 	"time"
 

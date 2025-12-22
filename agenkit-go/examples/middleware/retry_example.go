@@ -82,7 +82,6 @@ func (a *UnreliableAgent) Process(ctx context.Context, message *agenkit.Message)
 	return agenkit.NewMessage("assistant", fmt.Sprintf("Translated: %s", message.Content)), nil
 }
 
-
 // Example 1: Basic Retry
 func example1BasicRetry() {
 	fmt.Println("\n" + strings.Repeat("=", 80))

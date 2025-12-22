@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"github.com/google/uuid"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 const ProtocolVersion = "1.0"

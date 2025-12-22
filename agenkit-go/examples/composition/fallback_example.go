@@ -1,6 +1,3 @@
-//go:build ignore
-// +build ignore
-
 /*
 Fallback Composition Example
 
@@ -43,8 +40,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-	"github.com/scttfrdmn/agenkit/agenkit-go/composition"
+	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/agenkit/agenkit-go/composition"
 )
 
 // PremiumLLM is expensive, high quality, rate limited
@@ -57,7 +54,7 @@ func NewPremiumLLM(quota int) *PremiumLLM {
 	return &PremiumLLM{quota: quota}
 }
 
-func (a *PremiumLLM) Name() string { return "gpt-4" }
+func (a *PremiumLLM) Name() string           { return "gpt-4" }
 func (a *PremiumLLM) Capabilities() []string { return []string{"text_generation", "premium"} }
 
 func (a *PremiumLLM) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -85,7 +82,7 @@ func NewStandardLLM(failureRate float64) *StandardLLM {
 	return &StandardLLM{failureRate: failureRate}
 }
 
-func (a *StandardLLM) Name() string { return "gpt-3.5-turbo" }
+func (a *StandardLLM) Name() string           { return "gpt-3.5-turbo" }
 func (a *StandardLLM) Capabilities() []string { return []string{"text_generation", "standard"} }
 
 func (a *StandardLLM) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -105,7 +102,7 @@ func (a *StandardLLM) Process(ctx context.Context, message *agenkit.Message) (*a
 // BasicLLM is cheap, always available, lower quality
 type BasicLLM struct{}
 
-func (a *BasicLLM) Name() string { return "llama-3-8b" }
+func (a *BasicLLM) Name() string           { return "llama-3-8b" }
 func (a *BasicLLM) Capabilities() []string { return []string{"text_generation", "basic"} }
 
 func (a *BasicLLM) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -120,22 +117,19 @@ func (a *BasicLLM) Process(ctx context.Context, message *agenkit.Message) (*agen
 
 // Example 1: Cost optimization fallback chain
 func example1CostOptimization() {
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 1: Cost Optimization")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("
-Use case: Try cheap options before expensive ones")
+	fmt.Println("\nUse case: Try cheap options before expensive ones")
 
 	// Create fallback chain: Premium → Standard → Basic
 	costOptimizer, _ := composition.NewFallbackAgent("cost-optimized-llm",
-		NewPremiumLLM(5), // Limited quota
+		NewPremiumLLM(5),    // Limited quota
 		NewStandardLLM(0.2), // 20% failure rate
 		&BasicLLM{},
 	)
 
-	fmt.Println("
-Processing 10 requests with cost optimization...")
+	fmt.Println("\nProcessing 10 requests with cost optimization...")
 	fmt.Println("Strategy: Try GPT-4 → GPT-3.5 → Llama-3")
 
 	ctx := context.Background()
@@ -145,8 +139,7 @@ Processing 10 requests with cost optimization...")
 	for i := 0; i < 10; i++ {
 		result, err := costOptimizer.Process(ctx, agenkit.NewMessage("user", fmt.Sprintf("Request %d: Analyze this", i+1)))
 		if err != nil {
-			fmt.Printf("Request %d: All fallbacks failed: %v
-", i+1, err)
+			fmt.Printf("Request %d: All fallbacks failed: %v\n", i+1, err)
 			continue
 		}
 
@@ -157,27 +150,20 @@ Processing 10 requests with cost optimization...")
 		totalCost += cost
 		modelUsage[model]++
 
-		fmt.Printf("Request %d: %s (cost: $%.4f, quality: %.2f)
-", i+1, model, cost, quality)
+		fmt.Printf("Request %d: %s (cost: $%.4f, quality: %.2f)\n", i+1, model, cost, quality)
 	}
 
 	// Analysis
-	fmt.Println("
-Cost Analysis:")
-	fmt.Printf("  Total Cost: $%.4f
-", totalCost)
-	fmt.Printf("  Average Cost per Request: $%.4f
-", totalCost/10)
+	fmt.Println("\nCost Analysis:")
+	fmt.Printf("  Total Cost: $%.4f\n", totalCost)
+	fmt.Printf("  Average Cost per Request: $%.4f\n", totalCost/10)
 
-	fmt.Println("
-  Model Distribution:")
+	fmt.Println("\n  Model Distribution:")
 	for model, count := range modelUsage {
-		fmt.Printf("    %s: %d/10 requests
-", model, count)
+		fmt.Printf("    %s: %d/10 requests\n", model, count)
 	}
 
-	fmt.Println("
-COST OPTIMIZATION STRATEGY:")
+	fmt.Println("\nCOST OPTIMIZATION STRATEGY:")
 	fmt.Println("  - First 5 requests: Use GPT-4 (within quota)")
 	fmt.Println("  - After quota: Fallback to GPT-3.5 (15× cheaper)")
 	fmt.Println("  - If GPT-3.5 fails: Fallback to local Llama (free)")
@@ -194,7 +180,7 @@ func NewRegionalService(region string, failureRate float64) *RegionalService {
 	return &RegionalService{region: region, failureRate: failureRate}
 }
 
-func (a *RegionalService) Name() string { return fmt.Sprintf("service-%s", a.region) }
+func (a *RegionalService) Name() string           { return fmt.Sprintf("service-%s", a.region) }
 func (a *RegionalService) Capabilities() []string { return []string{"processing"} }
 
 func (a *RegionalService) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -211,12 +197,10 @@ func (a *RegionalService) Process(ctx context.Context, message *agenkit.Message)
 
 // Example 2: Geographic failover
 func example2GeographicFailover() {
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 2: Geographic Failover")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("
-Use case: Multi-region deployment for reliability")
+	fmt.Println("\nUse case: Multi-region deployment for reliability")
 
 	// Create geographic fallback: Primary → Secondary → Tertiary
 	haService, _ := composition.NewFallbackAgent("ha-service",
@@ -225,8 +209,7 @@ Use case: Multi-region deployment for reliability")
 		NewRegionalService("eu-west-1", 0.3),
 	)
 
-	fmt.Println("
-Simulating 20 requests with 30% regional failure rate...")
+	fmt.Println("\nSimulating 20 requests with 30% regional failure rate...")
 	fmt.Println("Regions: us-east-1 → us-west-2 → eu-west-1")
 
 	ctx := context.Background()
@@ -236,8 +219,7 @@ Simulating 20 requests with 30% regional failure rate...")
 	for i := 0; i < 20; i++ {
 		result, err := haService.Process(ctx, agenkit.NewMessage("user", fmt.Sprintf("Request %d", i+1)))
 		if err != nil {
-			fmt.Printf("Request %d: All regions failed
-", i+1)
+			fmt.Printf("Request %d: All regions failed\n", i+1)
 			continue
 		}
 
@@ -246,35 +228,28 @@ Simulating 20 requests with 30% regional failure rate...")
 		successes++
 	}
 
-	fmt.Println("
-Availability Analysis:")
-	fmt.Printf("  Successful Requests: %d/20 (%.0f%%)
-", successes, float64(successes)/20*100)
+	fmt.Println("\nAvailability Analysis:")
+	fmt.Printf("  Successful Requests: %d/20 (%.0f%%)\n", successes, float64(successes)/20*100)
 
-	fmt.Println("
-  Region Distribution:")
+	fmt.Println("\n  Region Distribution:")
 	for region, count := range regionUsage {
-		fmt.Printf("    %s: %d requests
-", region, count)
+		fmt.Printf("    %s: %d requests\n", region, count)
 	}
 
 	// Calculate theoretical availability
-	singleRegion := 0.7 // 1 - 0.3 failure rate
+	singleRegion := 0.7                  // 1 - 0.3 failure rate
 	multiRegion := 1 - (0.3 * 0.3 * 0.3) // Probability at least one works
 
-	fmt.Println("
-HIGH AVAILABILITY BENEFITS:")
-	fmt.Printf("  Single Region: ~%.0f%% availability
-", singleRegion*100)
-	fmt.Printf("  3 Regions:     ~%.1f%% availability
-", multiRegion*100)
+	fmt.Println("\nHIGH AVAILABILITY BENEFITS:")
+	fmt.Printf("  Single Region: ~%.0f%% availability\n", singleRegion*100)
+	fmt.Printf("  3 Regions:     ~%.1f%% availability\n", multiRegion*100)
 	fmt.Println("  Improvement:   27% → 99.9% uptime SLA achievable")
 }
 
 // QualityTier agents for graceful degradation
 type HighQualityAgent struct{}
 
-func (a *HighQualityAgent) Name() string { return "high-quality" }
+func (a *HighQualityAgent) Name() string           { return "high-quality" }
 func (a *HighQualityAgent) Capabilities() []string { return []string{"analysis"} }
 
 func (a *HighQualityAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -292,7 +267,7 @@ func (a *HighQualityAgent) Process(ctx context.Context, message *agenkit.Message
 
 type MediumQualityAgent struct{}
 
-func (a *MediumQualityAgent) Name() string { return "medium-quality" }
+func (a *MediumQualityAgent) Name() string           { return "medium-quality" }
 func (a *MediumQualityAgent) Capabilities() []string { return []string{"analysis"} }
 
 func (a *MediumQualityAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -310,7 +285,7 @@ func (a *MediumQualityAgent) Process(ctx context.Context, message *agenkit.Messa
 
 type LowQualityAgent struct{}
 
-func (a *LowQualityAgent) Name() string { return "low-quality" }
+func (a *LowQualityAgent) Name() string           { return "low-quality" }
 func (a *LowQualityAgent) Capabilities() []string { return []string{"analysis"} }
 
 func (a *LowQualityAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -324,12 +299,10 @@ func (a *LowQualityAgent) Process(ctx context.Context, message *agenkit.Message)
 
 // Example 3: Graceful degradation
 func example3GracefulDegradation() {
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 3: Graceful Degradation")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("
-Use case: Maintain service quality during high load")
+	fmt.Println("\nUse case: Maintain service quality during high load")
 
 	qualityFallback, _ := composition.NewFallbackAgent("adaptive-quality",
 		&HighQualityAgent{},
@@ -337,8 +310,7 @@ Use case: Maintain service quality during high load")
 		&LowQualityAgent{},
 	)
 
-	fmt.Println("
-Processing 15 requests under variable load...")
+	fmt.Println("\nProcessing 15 requests under variable load...")
 	fmt.Println("Quality tiers: High → Medium → Low")
 
 	ctx := context.Background()
@@ -351,21 +323,15 @@ Processing 15 requests under variable load...")
 		detail := result.Metadata["detail_level"].(int)
 		qualityCounts[quality]++
 
-		fmt.Printf("Request %d: %s quality (detail level: %d)
-", i+1, quality, detail)
+		fmt.Printf("Request %d: %s quality (detail level: %d)\n", i+1, quality, detail)
 	}
 
-	fmt.Println("
-Quality Distribution:")
-	fmt.Printf("  High:   %d/15 (%.0f%%)
-", qualityCounts["high"], float64(qualityCounts["high"])/15*100)
-	fmt.Printf("  Medium: %d/15 (%.0f%%)
-", qualityCounts["medium"], float64(qualityCounts["medium"])/15*100)
-	fmt.Printf("  Low:    %d/15 (%.0f%%)
-", qualityCounts["low"], float64(qualityCounts["low"])/15*100)
+	fmt.Println("\nQuality Distribution:")
+	fmt.Printf("  High:   %d/15 (%.0f%%)\n", qualityCounts["high"], float64(qualityCounts["high"])/15*100)
+	fmt.Printf("  Medium: %d/15 (%.0f%%)\n", qualityCounts["medium"], float64(qualityCounts["medium"])/15*100)
+	fmt.Printf("  Low:    %d/15 (%.0f%%)\n", qualityCounts["low"], float64(qualityCounts["low"])/15*100)
 
-	fmt.Println("
-GRACEFUL DEGRADATION:")
+	fmt.Println("\nGRACEFUL DEGRADATION:")
 	fmt.Println("  - System overload → Reduce quality, not availability")
 	fmt.Println("  - Users get *some* response (better than error)")
 	fmt.Println("  - Can show quality indicator to user")
@@ -376,12 +342,10 @@ func main() {
 	// Seed random for demonstration
 	rand.Seed(time.Now().UnixNano())
 
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("FALLBACK COMPOSITION EXAMPLES FOR AGENKIT-GO")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("
-Fallback composition builds reliable systems through redundancy.")
+	fmt.Println("\nFallback composition builds reliable systems through redundancy.")
 	fmt.Println("Try agents in order until one succeeds.")
 
 	// Run examples
@@ -390,8 +354,7 @@ Fallback composition builds reliable systems through redundancy.")
 	example3GracefulDegradation()
 
 	// Summary
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("KEY TAKEAWAYS")
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println(`

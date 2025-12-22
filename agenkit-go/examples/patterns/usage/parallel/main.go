@@ -1,6 +1,6 @@
 // Package main demonstrates the ParallelAgent pattern.
 //
-// Concurrent execution of multiple agents with result aggregation
+// # Concurrent execution of multiple agents with result aggregation
 //
 // Use cases:
 //   - Ensemble methods

@@ -1,6 +1,3 @@
-//go:build ignore
-// +build ignore
-
 /*
 Sequential Composition Example
 
@@ -39,14 +36,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-	"github.com/scttfrdmn/agenkit/agenkit-go/composition"
+	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/agenkit/agenkit-go/composition"
 )
 
 // TranslationAgent translates text to English
 type TranslationAgent struct{}
 
-func (a *TranslationAgent) Name() string { return "translator" }
+func (a *TranslationAgent) Name() string           { return "translator" }
 func (a *TranslationAgent) Capabilities() []string { return []string{"translation"} }
 
 func (a *TranslationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -74,7 +71,7 @@ func (a *TranslationAgent) Process(ctx context.Context, message *agenkit.Message
 // SummarizationAgent summarizes text
 type SummarizationAgent struct{}
 
-func (a *SummarizationAgent) Name() string { return "summarizer" }
+func (a *SummarizationAgent) Name() string           { return "summarizer" }
 func (a *SummarizationAgent) Capabilities() []string { return []string{"summarization"} }
 
 func (a *SummarizationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -101,7 +98,7 @@ func (a *SummarizationAgent) Process(ctx context.Context, message *agenkit.Messa
 // SentimentAgent analyzes sentiment
 type SentimentAgent struct{}
 
-func (a *SentimentAgent) Name() string { return "sentiment" }
+func (a *SentimentAgent) Name() string           { return "sentiment" }
 func (a *SentimentAgent) Capabilities() []string { return []string{"sentiment_analysis"} }
 
 func (a *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -149,12 +146,10 @@ func (a *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) 
 
 // Example 1: Content processing pipeline
 func example1ContentPipeline() {
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 1: Content Processing Pipeline")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("
-Use case: Process multi-language customer feedback")
+	fmt.Println("\nUse case: Process multi-language customer feedback")
 	fmt.Println("Pipeline: Translation → Summarization → Sentiment Analysis")
 
 	// Build pipeline
@@ -164,38 +159,28 @@ Use case: Process multi-language customer feedback")
 		&SentimentAgent{},
 	)
 	if err != nil {
-		fmt.Printf("Error creating pipeline: %v
-", err)
+		fmt.Printf("Error creating pipeline: %v\n", err)
 		return
 	}
 
 	// Test with French input
 	input := agenkit.NewMessage("user", "Bonjour. This product is amazing! The quality is excellent.")
 
-	fmt.Printf("
-Input (French): %s
-", input.Content)
+	fmt.Printf("\nInput (French): %s\n", input.Content)
 
 	ctx := context.Background()
 	result, err := pipeline.Process(ctx, input)
 	if err != nil {
-		fmt.Printf("Error: %v
-", err)
+		fmt.Printf("Error: %v\n", err)
 		return
 	}
 
-	fmt.Printf("
-Output: %s
-", result.Content)
-	fmt.Println("
-Metadata:")
-	fmt.Printf("  Source Language: %v
-", result.Metadata["source_language"])
-	fmt.Printf("  Sentiment: %v
-", result.Metadata["sentiment"])
+	fmt.Printf("\nOutput: %s\n", result.Content)
+	fmt.Println("\nMetadata:")
+	fmt.Printf("  Source Language: %v\n", result.Metadata["source_language"])
+	fmt.Printf("  Sentiment: %v\n", result.Metadata["sentiment"])
 
-	fmt.Println("
-WHY SEQUENTIAL?")
+	fmt.Println("\nWHY SEQUENTIAL?")
 	fmt.Println("  - Must translate BEFORE summarizing (order matters)")
 	fmt.Println("  - Each stage depends on previous stage's output")
 	fmt.Println("  - Clear data flow: raw → translated → summarized → analyzed")
@@ -204,7 +189,7 @@ WHY SEQUENTIAL?")
 // ValidationAgent validates input data
 type ValidationAgent struct{}
 
-func (a *ValidationAgent) Name() string { return "validator" }
+func (a *ValidationAgent) Name() string           { return "validator" }
 func (a *ValidationAgent) Capabilities() []string { return []string{"validation"} }
 
 func (a *ValidationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -233,7 +218,7 @@ func (a *ValidationAgent) Process(ctx context.Context, message *agenkit.Message)
 // NormalizationAgent normalizes text format
 type NormalizationAgent struct{}
 
-func (a *NormalizationAgent) Name() string { return "normalizer" }
+func (a *NormalizationAgent) Name() string           { return "normalizer" }
 func (a *NormalizationAgent) Capabilities() []string { return []string{"normalization"} }
 
 func (a *NormalizationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -261,12 +246,10 @@ func (a *NormalizationAgent) Process(ctx context.Context, message *agenkit.Messa
 
 // Example 2: Data validation pipeline
 func example2ValidationPipeline() {
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 2: Validation Pipeline")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("
-Use case: ETL pipeline with validation and normalization")
+	fmt.Println("\nUse case: ETL pipeline with validation and normalization")
 	fmt.Println("Pipeline: Validate → Normalize")
 
 	pipeline, _ := composition.NewSequentialAgent("etl-pipeline",
@@ -275,31 +258,22 @@ Use case: ETL pipeline with validation and normalization")
 	)
 
 	// Test valid input
-	fmt.Println("
-Test 1: Valid input")
+	fmt.Println("\nTest 1: Valid input")
 	validInput := agenkit.NewMessage("user", "  This is   VALID input   with  extra   spaces.  ")
 	result, _ := pipeline.Process(context.Background(), validInput)
-	fmt.Printf("  Input:  '%s'
-", validInput.Content)
-	fmt.Printf("  Output: '%s'
-", result.Content)
-	fmt.Printf("  Valid:  %v
-", result.Metadata["valid"])
+	fmt.Printf("  Input:  '%s'\n", validInput.Content)
+	fmt.Printf("  Output: '%s'\n", result.Content)
+	fmt.Printf("  Valid:  %v\n", result.Metadata["valid"])
 
 	// Test invalid input
-	fmt.Println("
-Test 2: Invalid input (too short)")
+	fmt.Println("\nTest 2: Invalid input (too short)")
 	invalidInput := agenkit.NewMessage("user", "Hi")
 	result, _ = pipeline.Process(context.Background(), invalidInput)
-	fmt.Printf("  Input:  '%s'
-", invalidInput.Content)
-	fmt.Printf("  Output: '%s'
-", result.Content)
-	fmt.Printf("  Valid:  %v
-", result.Metadata["valid"])
+	fmt.Printf("  Input:  '%s'\n", invalidInput.Content)
+	fmt.Printf("  Output: '%s'\n", result.Content)
+	fmt.Printf("  Valid:  %v\n", result.Metadata["valid"])
 
-	fmt.Println("
-WHY SEQUENTIAL?")
+	fmt.Println("\nWHY SEQUENTIAL?")
 	fmt.Println("  - Validation must happen FIRST (fail fast)")
 	fmt.Println("  - Don't waste resources on invalid data")
 	fmt.Println("  - Each stage checks metadata to short-circuit")
@@ -307,12 +281,10 @@ WHY SEQUENTIAL?")
 }
 
 func main() {
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("SEQUENTIAL COMPOSITION EXAMPLES FOR AGENKIT-GO")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("
-Sequential composition is the foundation of data pipelines.")
+	fmt.Println("\nSequential composition is the foundation of data pipelines.")
 	fmt.Println("Use it when stages depend on each other's output.")
 
 	// Run examples
@@ -320,8 +292,7 @@ Sequential composition is the foundation of data pipelines.")
 	example2ValidationPipeline()
 
 	// Summary
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("KEY TAKEAWAYS")
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println(`

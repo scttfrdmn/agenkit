@@ -405,55 +405,55 @@ func main() {
 	// NewShortTermMemory(maxMessages int, ttlSeconds int)
 	// NewLongTermMemory(storageBackend map[string]*MemoryEntry, embeddingFn interface{}, minImportance float64)
 	/*
-	// Run all examples
-	if err := exampleWorkingMemory(); err != nil {
-		log.Fatalf("Example 1 failed: %v", err)
-	}
+		// Run all examples
+		if err := exampleWorkingMemory(); err != nil {
+			log.Fatalf("Example 1 failed: %v", err)
+		}
 
-	if err := exampleShortTermMemory(); err != nil {
-		log.Fatalf("Example 2 failed: %v", err)
-	}
+		if err := exampleShortTermMemory(); err != nil {
+			log.Fatalf("Example 2 failed: %v", err)
+		}
 
-	if err := exampleLongTermMemory(); err != nil {
-		log.Fatalf("Example 3 failed: %v", err)
-	}
+		if err := exampleLongTermMemory(); err != nil {
+			log.Fatalf("Example 3 failed: %v", err)
+		}
 
-	if err := exampleFullHierarchy(); err != nil {
-		log.Fatalf("Example 4 failed: %v", err)
-	}
+		if err := exampleFullHierarchy(); err != nil {
+			log.Fatalf("Example 4 failed: %v", err)
+		}
 
-	if err := exampleCrossTierRetrieval(); err != nil {
-		log.Fatalf("Example 5 failed: %v", err)
-	}
+		if err := exampleCrossTierRetrieval(); err != nil {
+			log.Fatalf("Example 5 failed: %v", err)
+		}
 
-	if err := exampleTierSpecificRetrieval(); err != nil {
-		log.Fatalf("Example 6 failed: %v", err)
-	}
+		if err := exampleTierSpecificRetrieval(); err != nil {
+			log.Fatalf("Example 6 failed: %v", err)
+		}
 
-	if err := exampleMemoryWithMetadata(); err != nil {
-		log.Fatalf("Example 7 failed: %v", err)
-	}
+		if err := exampleMemoryWithMetadata(); err != nil {
+			log.Fatalf("Example 7 failed: %v", err)
+		}
 
-	if err := exampleSessionIsolation(); err != nil {
-		log.Fatalf("Example 8 failed: %v", err)
-	}
+		if err := exampleSessionIsolation(); err != nil {
+			log.Fatalf("Example 8 failed: %v", err)
+		}
 
-	fmt.Println(strings.Repeat("=", 60))
-	fmt.Println("=== All Memory Hierarchy Examples Complete! ===")
-	fmt.Println("\nKey Takeaways:")
-	fmt.Println("1. Working Memory: Fast, in-context, LRU eviction")
-	fmt.Println("2. Short-Term Memory: Recent sessions, TTL-based expiration")
-	fmt.Println("3. Long-Term Memory: Persistent facts, importance filtering")
-	fmt.Println("4. Cross-Tier Retrieval: Unified search with ranking")
-	fmt.Println("5. Session Isolation: Multi-user privacy")
-	fmt.Println("6. Rich Metadata: Structured information for filtering")
-	fmt.Println("7. Automatic Management: No manual tier promotion needed")
-	fmt.Println("8. Scalable: From single-user to multi-tenant systems")
-	fmt.Println()
-	fmt.Println("🎯 When to use Memory Hierarchy:")
-	fmt.Println("   - Long-running conversational agents")
-	fmt.Println("   - Multi-session context management")
-	fmt.Println("   - Systems requiring memory prioritization")
-	fmt.Println("   - Applications with multi-user isolation needs")
+		fmt.Println(strings.Repeat("=", 60))
+		fmt.Println("=== All Memory Hierarchy Examples Complete! ===")
+		fmt.Println("\nKey Takeaways:")
+		fmt.Println("1. Working Memory: Fast, in-context, LRU eviction")
+		fmt.Println("2. Short-Term Memory: Recent sessions, TTL-based expiration")
+		fmt.Println("3. Long-Term Memory: Persistent facts, importance filtering")
+		fmt.Println("4. Cross-Tier Retrieval: Unified search with ranking")
+		fmt.Println("5. Session Isolation: Multi-user privacy")
+		fmt.Println("6. Rich Metadata: Structured information for filtering")
+		fmt.Println("7. Automatic Management: No manual tier promotion needed")
+		fmt.Println("8. Scalable: From single-user to multi-tenant systems")
+		fmt.Println()
+		fmt.Println("🎯 When to use Memory Hierarchy:")
+		fmt.Println("   - Long-running conversational agents")
+		fmt.Println("   - Multi-session context management")
+		fmt.Println("   - Systems requiring memory prioritization")
+		fmt.Println("   - Applications with multi-user isolation needs")
 	*/
 }

@@ -421,10 +421,10 @@ func (tot *TreeOfThought) Process(ctx context.Context, message *agenkit.Message)
 			Role:    "assistant",
 			Content: "Unable to find valid reasoning path.",
 			Metadata: map[string]interface{}{
-				"technique":             "tree_of_thought",
-				"search_strategy":       string(tot.strategy),
-				"reasoning_tree_stats":  stats,
-				"error":                 "no_valid_path",
+				"technique":            "tree_of_thought",
+				"search_strategy":      string(tot.strategy),
+				"reasoning_tree_stats": stats,
+				"error":                "no_valid_path",
 			},
 		}, nil
 	}
@@ -445,12 +445,12 @@ func (tot *TreeOfThought) Process(ctx context.Context, message *agenkit.Message)
 		Role:    "assistant",
 		Content: pathText,
 		Metadata: map[string]interface{}{
-			"technique":             "tree_of_thought",
-			"search_strategy":       string(tot.strategy),
-			"reasoning_tree_stats":  stats,
-			"reasoning_path":        reasoningPath,
-			"num_steps":             len(bestPath),
-			"best_score":            bestLeaf.Score,
+			"technique":            "tree_of_thought",
+			"search_strategy":      string(tot.strategy),
+			"reasoning_tree_stats": stats,
+			"reasoning_path":       reasoningPath,
+			"num_steps":            len(bestPath),
+			"best_score":           bestLeaf.Score,
 		},
 	}, nil
 }

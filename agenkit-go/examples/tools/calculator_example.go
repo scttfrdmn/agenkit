@@ -50,7 +50,7 @@ import (
 // AddTool adds numbers accurately
 type AddTool struct{}
 
-func (t *AddTool) Name() string { return "add" }
+func (t *AddTool) Name() string        { return "add" }
 func (t *AddTool) Description() string { return "Add two or more numbers together" }
 
 func (t *AddTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
@@ -94,7 +94,7 @@ func (t *AddTool) Execute(ctx context.Context, params map[string]interface{}) (*
 // MultiplyTool multiplies numbers accurately
 type MultiplyTool struct{}
 
-func (t *MultiplyTool) Name() string { return "multiply" }
+func (t *MultiplyTool) Name() string        { return "multiply" }
 func (t *MultiplyTool) Description() string { return "Multiply two or more numbers together" }
 
 func (t *MultiplyTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
@@ -133,7 +133,7 @@ func (t *MultiplyTool) Execute(ctx context.Context, params map[string]interface{
 // PowerTool computes exponentiation
 type PowerTool struct{}
 
-func (t *PowerTool) Name() string { return "power" }
+func (t *PowerTool) Name() string        { return "power" }
 func (t *PowerTool) Description() string { return "Compute base^exponent" }
 
 func (t *PowerTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
@@ -168,7 +168,7 @@ func (t *PowerTool) Execute(ctx context.Context, params map[string]interface{}) 
 // SqrtTool computes square root
 type SqrtTool struct{}
 
-func (t *SqrtTool) Name() string { return "sqrt" }
+func (t *SqrtTool) Name() string        { return "sqrt" }
 func (t *SqrtTool) Description() string { return "Compute square root of a number" }
 
 func (t *SqrtTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
@@ -204,7 +204,7 @@ func NewSimpleAgent(name string, registry *tools.ToolRegistry) *SimpleAgent {
 	return &SimpleAgent{name: name, registry: registry}
 }
 
-func (a *SimpleAgent) Name() string { return a.name }
+func (a *SimpleAgent) Name() string           { return a.name }
 func (a *SimpleAgent) Capabilities() []string { return []string{"math", "calculator"} }
 
 func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -333,8 +333,8 @@ func example2MathFunctions() {
 	agent := NewSimpleAgent("math-agent", registry)
 
 	tests := []string{
-		"power 2 8",         // 2^8
-		"sqrt 144",          // √144
+		"power 2 8", // 2^8
+		"sqrt 144",  // √144
 	}
 
 	ctx := context.Background()

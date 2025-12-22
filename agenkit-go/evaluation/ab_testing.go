@@ -169,7 +169,7 @@ func (r *ABResult) ToMap() map[string]interface{} {
 			"confidence_interval": r.ConfidenceInterval,
 		},
 		"outcome": map[string]interface{}{
-			"winner":             r.Winner(),
+			"winner":              r.Winner(),
 			"improvement_percent": r.ImprovementPercent(),
 		},
 		"timestamp": r.Timestamp,
@@ -401,8 +401,8 @@ func CalculateSampleSize(baselineMean, minimumDetectableEffect, alpha, power flo
 	}
 
 	// Z-scores for alpha and beta (using normal approximation)
-	zAlpha := 1.96  // For alpha = 0.05 (two-tailed)
-	zBeta := 0.84   // For power = 0.80
+	zAlpha := 1.96 // For alpha = 0.05 (two-tailed)
+	zBeta := 0.84  // For power = 0.80
 
 	if alpha <= 0.001 {
 		zAlpha = 3.29
@@ -417,7 +417,7 @@ func CalculateSampleSize(baselineMean, minimumDetectableEffect, alpha, power flo
 	}
 
 	// Sample size calculation
-	n := (zAlpha+zBeta)*(zAlpha+zBeta) * 2 * sd*sd / (minimumDetectableEffect * minimumDetectableEffect)
+	n := (zAlpha + zBeta) * (zAlpha + zBeta) * 2 * sd * sd / (minimumDetectableEffect * minimumDetectableEffect)
 
 	return int(n) + 1
 }
@@ -484,7 +484,7 @@ func tTest(sample1, sample2 []float64) float64 {
 	// Degrees of freedom (Welch's approximation)
 	varRatio1 := var1 / n1
 	varRatio2 := var2 / n2
-	df := (varRatio1+varRatio2)*(varRatio1+varRatio2) / (varRatio1*varRatio1/(n1-1) + varRatio2*varRatio2/(n2-1))
+	df := (varRatio1 + varRatio2) * (varRatio1 + varRatio2) / (varRatio1*varRatio1/(n1-1) + varRatio2*varRatio2/(n2-1))
 
 	// Approximate p-value using t-distribution (simplified)
 	pValue := 2 * (1 - tCDF(math.Abs(t), df))

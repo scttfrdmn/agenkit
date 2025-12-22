@@ -298,8 +298,8 @@ func main() {
 	fmt.Println(strings.Repeat("-", 50))
 
 	quickWin, err := patterns.NewFallbackAgent([]agenkit.Agent{
-		cache,  // Fast cache
-		backup, // Slower backup
+		cache,   // Fast cache
+		backup,  // Slower backup
 		primary, // Slowest primary
 	})
 	if err != nil {

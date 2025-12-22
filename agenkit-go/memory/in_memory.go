@@ -299,8 +299,8 @@ func (m *InMemoryMemory) GetMemoryUsage() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"total_sessions":        len(m.storage),
-		"total_messages":        totalMessages,
+		"total_sessions":       len(m.storage),
+		"total_messages":       totalMessages,
 		"max_size_per_session": m.maxSize,
 	}
 }

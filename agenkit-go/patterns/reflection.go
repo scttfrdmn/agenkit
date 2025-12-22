@@ -172,11 +172,13 @@ func (r *ReflectionAgent) Capabilities() []string {
 // Process executes the reflection loop.
 //
 // Args:
-//   ctx: Context for cancellation and timeouts
-//   message: User's request/task
+//
+//	ctx: Context for cancellation and timeouts
+//	message: User's request/task
 //
 // Returns:
-//   Message containing refined output with reflection metadata
+//
+//	Message containing refined output with reflection metadata
 //
 // Metadata Structure:
 //   - reflection_iterations: Number of iterations performed
@@ -368,10 +370,10 @@ func (r *ReflectionAgent) parseFreeFormCritique(content string) (float64, string
 
 	// Try to find score patterns
 	patterns := []string{
-		`score[:\s]+([0-9]*\.?[0-9]+)`,      // "Score: 0.8"
-		`rating[:\s]+([0-9]*\.?[0-9]+)`,     // "Rating: 8"
-		`([0-9]+)/10`,                        // "8/10"
-		`([0-9]*\.?[0-9]+)/1\.?0`,           // "0.8/1.0"
+		`score[:\s]+([0-9]*\.?[0-9]+)`,  // "Score: 0.8"
+		`rating[:\s]+([0-9]*\.?[0-9]+)`, // "Rating: 8"
+		`([0-9]+)/10`,                   // "8/10"
+		`([0-9]*\.?[0-9]+)/1\.?0`,       // "0.8/1.0"
 	}
 
 	for _, pattern := range patterns {

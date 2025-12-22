@@ -366,22 +366,22 @@ func main() {
 	// TODO: Update examples to use correct API:
 	// NewPlanningAgent(llmClient LLMClient, stepExecutor StepExecutor, config *PlanningAgentConfig)
 	/*
-	// Run all examples
-	if err := exampleSimplePlanning(); err != nil {
-		log.Fatalf("Example 1 failed: %v", err)
-	}
+		// Run all examples
+		if err := exampleSimplePlanning(); err != nil {
+			log.Fatalf("Example 1 failed: %v", err)
+		}
 
-	if err := exampleCustomExecutor(); err != nil {
-		log.Fatalf("Example 2 failed: %v", err)
-	}
+		if err := exampleCustomExecutor(); err != nil {
+			log.Fatalf("Example 2 failed: %v", err)
+		}
 
-	if err := exampleProgressTracking(); err != nil {
-		log.Fatalf("Example 3 failed: %v", err)
-	}
+		if err := exampleProgressTracking(); err != nil {
+			log.Fatalf("Example 3 failed: %v", err)
+		}
 
-	if err := exampleDependencies(); err != nil {
-		log.Fatalf("Example 4 failed: %v", err)
-	}
+		if err := exampleDependencies(); err != nil {
+			log.Fatalf("Example 4 failed: %v", err)
+		}
 	*/
 
 	fmt.Println("\n" + strings.Repeat("=", 60))

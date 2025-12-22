@@ -192,9 +192,9 @@ func (h *HumanInLoopAgent) Process(ctx context.Context, message *agenkit.Message
 		Message:    response,
 		Confidence: confidence,
 		Context: map[string]interface{}{
-			"agent":               h.agent.Name(),
-			"approval_threshold":  h.approvalThreshold,
-			"original_message":    message.Content,
+			"agent":                h.agent.Name(),
+			"approval_threshold":   h.approvalThreshold,
+			"original_message":     message.Content,
 			"confidence_shortfall": h.approvalThreshold - confidence,
 		},
 		Timestamp: time.Now().UTC(),

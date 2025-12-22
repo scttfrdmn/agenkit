@@ -41,7 +41,7 @@ func (a *AgentV1) Process(ctx context.Context, message *agenkit.Message) (*agenk
 	// Simple responses
 	query := strings.ToLower(message.Content)
 	var response string
-	
+
 	if strings.Contains(query, "weather") {
 		response = "I don't have access to weather information."
 	} else if strings.Contains(query, "help") {
@@ -49,7 +49,7 @@ func (a *AgentV1) Process(ctx context.Context, message *agenkit.Message) (*agenk
 	} else {
 		response = "I'll help you with that."
 	}
-	
+
 	return &agenkit.Message{Role: "assistant", Content: response}, nil
 }
 
@@ -75,7 +75,7 @@ func (a *AgentV2) Process(ctx context.Context, message *agenkit.Message) (*agenk
 	// Improved responses with more detail
 	query := strings.ToLower(message.Content)
 	var response string
-	
+
 	if strings.Contains(query, "weather") {
 		response = "I don't currently have access to real-time weather information. However, I recommend checking weather.com or your local weather service for the most accurate forecast."
 	} else if strings.Contains(query, "help") {
@@ -83,7 +83,7 @@ func (a *AgentV2) Process(ctx context.Context, message *agenkit.Message) (*agenk
 	} else {
 		response = "I'll be glad to assist you with that. Could you provide more details so I can give you the most helpful response?"
 	}
-	
+
 	return &agenkit.Message{Role: "assistant", Content: response}, nil
 }
 
@@ -94,10 +94,10 @@ func main() {
 	// Step 1: Setup agents and test suite
 	fmt.Println("Step 1: Setting Up A/B Test")
 	fmt.Println("---------------------------")
-	
+
 	agentV1 := &AgentV1{}
 	agentV2 := &AgentV2{}
-	
+
 	testCases := []map[string]interface{}{
 		{"input": "What's the weather like today?"},
 		{"input": "Can you help me?"},
@@ -105,7 +105,7 @@ func main() {
 		{"input": "Tell me about your capabilities"},
 		{"input": "How do I reset my password?"},
 	}
-	
+
 	fmt.Printf("Agent A (Control): %s\n", agentV1.Name())
 	fmt.Printf("Agent B (Variant): %s\n", agentV2.Name())
 	fmt.Printf("Test Cases: %d\n\n", len(testCases))
@@ -113,10 +113,10 @@ func main() {
 	// Step 2: Record baseline session (V1)
 	fmt.Println("Step 2: Recording Baseline Session (Agent V1)")
 	fmt.Println("----------------------------------------------")
-	
+
 	recorderV1 := evaluation.NewSessionRecorder(nil)
 	wrappedV1 := recorderV1.Wrap(agentV1)
-	
+
 	sessionID := "ab-test-session"
 	for i, testCase := range testCases {
 		input := testCase["input"].(string)
@@ -127,37 +127,37 @@ func main() {
 				"session_id": sessionID,
 			},
 		}
-		
+
 		response, _ := wrappedV1.Process(context.Background(), message)
 		fmt.Printf("  %d. Input: %s\n", i+1, input)
 		fmt.Printf("     V1: %s\n", response.Content)
 	}
-	
+
 	recordingV1, _ := recorderV1.FinalizeSession(sessionID)
 	fmt.Printf("\n✓ Baseline recorded: %d interactions\n\n", len(recordingV1.Interactions))
 
 	// Step 3: Replay with V2
 	fmt.Println("Step 3: Replaying with Agent V2")
 	fmt.Println("--------------------------------")
-	
+
 	replay := evaluation.NewSessionReplay()
 	resultsV1, _ := replay.Replay(recordingV1, agentV1, "")
 	resultsV2, _ := replay.Replay(recordingV1, agentV2, "")
-	
+
 	fmt.Println("Comparing outputs:")
 	interactionsV1 := resultsV1["interactions"].([]map[string]interface{})
 	interactionsV2 := resultsV2["interactions"].([]map[string]interface{})
-	
+
 	for i := 0; i < len(interactionsV1); i++ {
 		outputV1 := interactionsV1[i]["replay_output"].(map[string]interface{})["content"].(string)
 		outputV2 := interactionsV2[i]["replay_output"].(map[string]interface{})["content"].(string)
-		
+
 		input := interactionsV1[i]["input"].(map[string]interface{})["content"].(string)
-		
+
 		fmt.Printf("\n  %d. Input: %s\n", i+1, input)
 		fmt.Printf("     V1: %s\n", outputV1)
 		fmt.Printf("     V2: %s\n", outputV2)
-		
+
 		if len(outputV2) > len(outputV1) {
 			improvement := float64(len(outputV2)-len(outputV1)) / float64(len(outputV1)) * 100
 			fmt.Printf("     📈 V2 is %.0f%% longer (more detailed)\n", improvement)
@@ -168,12 +168,12 @@ func main() {
 	fmt.Println("\n\nStep 4: Comparing Performance Metrics")
 	fmt.Println("--------------------------------------")
 	comparison := replay.Compare(resultsV1, resultsV2)
-	
+
 	fmt.Printf("Interaction Count: %d\n", comparison["interaction_count"])
 	fmt.Printf("Latency Difference: %.0fms (%.1f%%)\n",
 		comparison["latency_diff_ms"],
 		comparison["latency_diff_percent"])
-	
+
 	outputDiffs := comparison["output_differences"].([]map[string]interface{})
 	fmt.Printf("Output Differences: %d/%d (%.0f%%)\n",
 		len(outputDiffs),
@@ -183,16 +183,16 @@ func main() {
 	// Step 5: Quality evaluation
 	fmt.Println("\n\nStep 5: Quality Evaluation")
 	fmt.Println("--------------------------")
-	
+
 	qualityMetric := evaluation.NewQualityMetrics(false, "", nil)
-	
+
 	var totalQualityV1, totalQualityV2 float64
 	for i := 0; i < len(testCases); i++ {
 		inputMsg := &agenkit.Message{
 			Role:    "user",
 			Content: testCases[i]["input"].(string),
 		}
-		
+
 		// V1 quality
 		outputV1 := &agenkit.Message{
 			Role:    "assistant",
@@ -200,7 +200,7 @@ func main() {
 		}
 		qualityV1, _ := qualityMetric.Measure(agentV1, inputMsg, outputV1, nil)
 		totalQualityV1 += qualityV1
-		
+
 		// V2 quality
 		outputV2 := &agenkit.Message{
 			Role:    "assistant",
@@ -209,14 +209,14 @@ func main() {
 		qualityV2, _ := qualityMetric.Measure(agentV2, inputMsg, outputV2, nil)
 		totalQualityV2 += qualityV2
 	}
-	
+
 	avgQualityV1 := totalQualityV1 / float64(len(testCases))
 	avgQualityV2 := totalQualityV2 / float64(len(testCases))
-	
+
 	fmt.Printf("Average Quality Scores:\n")
 	fmt.Printf("  V1 (Control): %.3f\n", avgQualityV1)
 	fmt.Printf("  V2 (Variant): %.3f\n", avgQualityV2)
-	
+
 	qualityImprovement := (avgQualityV2 - avgQualityV1) / avgQualityV1 * 100
 	if qualityImprovement > 0 {
 		fmt.Printf("  📈 V2 is %.1f%% better\n", qualityImprovement)
@@ -227,23 +227,23 @@ func main() {
 	// Step 6: Recommendation
 	fmt.Println("\n\nStep 6: Deployment Recommendation")
 	fmt.Println("----------------------------------")
-	
+
 	shouldDeploy := avgQualityV2 > avgQualityV1
 	latencyIncrease := comparison["latency_diff_percent"].(float64)
-	
+
 	fmt.Println("Analysis:")
 	if shouldDeploy {
 		fmt.Println("  ✓ V2 shows quality improvement")
 	} else {
 		fmt.Println("  ✗ V2 does not show quality improvement")
 	}
-	
+
 	if latencyIncrease < 10 {
 		fmt.Println("  ✓ Latency increase is acceptable (<10%)")
 	} else {
 		fmt.Printf("  ⚠ Latency increased by %.1f%% (review required)\n", latencyIncrease)
 	}
-	
+
 	fmt.Println("\nRecommendation:")
 	if shouldDeploy && latencyIncrease < 10 {
 		fmt.Println("  🚀 DEPLOY V2 - Shows improvement without significant latency cost")

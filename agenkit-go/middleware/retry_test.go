@@ -11,10 +11,10 @@ import (
 
 // FailingAgent fails a specified number of times before succeeding.
 type FailingAgent struct {
-	failCount   int
-	attempts    int
-	successMsg  string
-	failureMsg  string
+	failCount  int
+	attempts   int
+	successMsg string
+	failureMsg string
 }
 
 func (f *FailingAgent) Name() string {
@@ -42,9 +42,9 @@ func TestRetrySuccess(t *testing.T) {
 
 	// Agent that fails twice then succeeds
 	agent := &FailingAgent{
-		failCount:   2,
-		successMsg:  "success after retries",
-		failureMsg:  "temporary failure",
+		failCount:  2,
+		successMsg: "success after retries",
+		failureMsg: "temporary failure",
 	}
 
 	retry := NewRetryDecorator(agent, RetryConfig{
@@ -74,9 +74,9 @@ func TestRetryMaxAttemptsExceeded(t *testing.T) {
 
 	// Agent that always fails
 	agent := &FailingAgent{
-		failCount:   10,
-		successMsg:  "should not succeed",
-		failureMsg:  "persistent failure",
+		failCount:  10,
+		successMsg: "should not succeed",
+		failureMsg: "persistent failure",
 	}
 
 	retry := NewRetryDecorator(agent, RetryConfig{
@@ -108,9 +108,9 @@ func TestRetryFirstAttemptSuccess(t *testing.T) {
 
 	// Agent that succeeds immediately
 	agent := &FailingAgent{
-		failCount:   0,
-		successMsg:  "immediate success",
-		failureMsg:  "",
+		failCount:  0,
+		successMsg: "immediate success",
+		failureMsg: "",
 	}
 
 	retry := NewRetryDecorator(agent, DefaultRetryConfig())
@@ -136,9 +136,9 @@ func TestRetryContextCancellation(t *testing.T) {
 
 	// Agent that always fails
 	agent := &FailingAgent{
-		failCount:   10,
-		successMsg:  "should not succeed",
-		failureMsg:  "persistent failure",
+		failCount:  10,
+		successMsg: "should not succeed",
+		failureMsg: "persistent failure",
 	}
 
 	retry := NewRetryDecorator(agent, RetryConfig{
@@ -176,9 +176,9 @@ func TestRetryExponentialBackoff(t *testing.T) {
 
 	// Agent that fails twice
 	agent := &FailingAgent{
-		failCount:   2,
-		successMsg:  "success",
-		failureMsg:  "failure",
+		failCount:  2,
+		successMsg: "success",
+		failureMsg: "failure",
 	}
 
 	start := time.Now()
@@ -213,9 +213,9 @@ func TestRetryMaxBackoff(t *testing.T) {
 
 	// Agent that fails 3 times
 	agent := &FailingAgent{
-		failCount:   3,
-		successMsg:  "success",
-		failureMsg:  "failure",
+		failCount:  3,
+		successMsg: "success",
+		failureMsg: "failure",
 	}
 
 	retry := NewRetryDecorator(agent, RetryConfig{
@@ -368,9 +368,9 @@ func TestRetryZeroValues(t *testing.T) {
 	ctx := context.Background()
 
 	agent := &FailingAgent{
-		failCount:   2,
-		successMsg:  "success",
-		failureMsg:  "failure",
+		failCount:  2,
+		successMsg: "success",
+		failureMsg: "failure",
 	}
 
 	// Pass zero values - should use defaults

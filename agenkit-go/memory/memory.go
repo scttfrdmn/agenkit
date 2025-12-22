@@ -150,6 +150,6 @@ type SummarizeOptions struct {
 // MessageWithMetadata wraps a message with its timestamp and metadata.
 type MessageWithMetadata struct {
 	Timestamp float64                // Unix timestamp with microsecond precision
-	Message   agenkit.Message     // The message
+	Message   agenkit.Message        // The message
 	Metadata  map[string]interface{} // Associated metadata
 }

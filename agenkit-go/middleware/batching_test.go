@@ -12,10 +12,10 @@ import (
 
 // testAgent is a simple test agent
 type testAgent struct {
-	delay       time.Duration
-	shouldFail  bool
-	callCount   int
-	mu          sync.Mutex
+	delay      time.Duration
+	shouldFail bool
+	callCount  int
+	mu         sync.Mutex
 }
 
 func newTestAgent(delay time.Duration, shouldFail bool) *testAgent {

@@ -37,7 +37,7 @@ func main() {
 	fmt.Println("Step 1: Establishing Baseline Performance")
 	fmt.Println("------------------------------------------")
 	baseline := createEvaluationResult("baseline-001", 0.95, 0.92, 150.0)
-	
+
 	fmt.Printf("Baseline Metrics:\n")
 	fmt.Printf("  Accuracy: %.1f%%\n", *baseline.Accuracy*100)
 	fmt.Printf("  Quality: %.3f\n", *baseline.QualityScore)
@@ -47,7 +47,7 @@ func main() {
 	fmt.Println("Step 2: Creating Regression Detector")
 	fmt.Println("-------------------------------------")
 	detector := evaluation.NewRegressionDetector(nil, baseline)
-	
+
 	fmt.Println("✓ Detector created with default thresholds:")
 	fmt.Println("  Accuracy: 10% degradation")
 	fmt.Println("  Quality: 10% degradation")
@@ -58,7 +58,7 @@ func main() {
 	fmt.Println("------------------------------------------------")
 	goodResult := createEvaluationResult("eval-002", 0.94, 0.91, 155.0)
 	regressions := detector.Detect(goodResult, true)
-	
+
 	fmt.Printf("Current Performance:\n")
 	fmt.Printf("  Accuracy: %.1f%%\n", *goodResult.Accuracy*100)
 	fmt.Printf("  Quality: %.3f\n", *goodResult.QualityScore)
@@ -73,13 +73,13 @@ func main() {
 	fmt.Println("-------------------------------------")
 	moderateResult := createEvaluationResult("eval-003", 0.83, 0.81, 190.0)
 	regressions = detector.Detect(moderateResult, true)
-	
+
 	fmt.Printf("Current Performance:\n")
 	fmt.Printf("  Accuracy: %.1f%%\n", *moderateResult.Accuracy*100)
 	fmt.Printf("  Quality: %.3f\n", *moderateResult.QualityScore)
 	fmt.Printf("  Latency: %.0fms\n", *moderateResult.AvgLatencyMs)
 	fmt.Printf("\n⚠ Regressions Detected: %d\n\n", len(regressions))
-	
+
 	for _, reg := range regressions {
 		fmt.Printf("Regression: %s\n", reg.MetricName)
 		fmt.Printf("  Baseline: %.3f\n", reg.BaselineValue)
@@ -93,13 +93,13 @@ func main() {
 	fmt.Println("-------------------------------------")
 	criticalResult := createEvaluationResult("eval-004", 0.45, 0.42, 350.0)
 	regressions = detector.Detect(criticalResult, true)
-	
+
 	fmt.Printf("Current Performance:\n")
 	fmt.Printf("  Accuracy: %.1f%%\n", *criticalResult.Accuracy*100)
 	fmt.Printf("  Quality: %.3f\n", *criticalResult.QualityScore)
 	fmt.Printf("  Latency: %.0fms\n", *criticalResult.AvgLatencyMs)
 	fmt.Printf("\n✗ CRITICAL Regressions Detected: %d\n\n", len(regressions))
-	
+
 	for _, reg := range regressions {
 		fmt.Printf("Regression: %s\n", reg.MetricName)
 		fmt.Printf("  Baseline: %.3f\n", reg.BaselineValue)
@@ -111,17 +111,17 @@ func main() {
 	// Step 6: Trend analysis
 	fmt.Println("Step 6: Analyzing Performance Trends")
 	fmt.Println("-------------------------------------")
-	
+
 	// Add more historical data
 	for i := 0; i < 10; i++ {
 		accuracy := 0.95 - float64(i)*0.03 // Declining trend
 		quality := 0.92 - float64(i)*0.025
 		latency := 150.0 + float64(i)*15.0
-		
+
 		result := createEvaluationResult(fmt.Sprintf("eval-%03d", i+5), accuracy, quality, latency)
 		detector.Detect(result, true)
 	}
-	
+
 	trend := detector.GetTrend("accuracy", 10)
 	if trend != nil {
 		fmt.Printf("Accuracy Trend (last 10 evaluations):\n")
@@ -130,7 +130,7 @@ func main() {
 		fmt.Printf("  Current: %.3f\n", trend["current"])
 		fmt.Printf("  Mean: %.3f\n", trend["mean"])
 		fmt.Printf("  Variance: %.6f\n\n", trend["variance"])
-		
+
 		if trend["direction"] == "degrading" {
 			fmt.Println("⚠ Warning: Accuracy is trending downward")
 		}

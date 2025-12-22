@@ -1,6 +1,6 @@
 // Package main demonstrates the SequentialAgent pattern.
 //
-// Pipeline-style agent composition where each agent's output feeds the next
+// # Pipeline-style agent composition where each agent's output feeds the next
 //
 // Use cases:
 //   - Multi-stage data transformation
@@ -34,7 +34,7 @@ func (a *SimpleAgent) Capabilities() []string {
 func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Printf("   🤖 %s processing...\n", a.name)
 	time.Sleep(100 * time.Millisecond)
-	
+
 	result := agenkit.NewMessage("agent", fmt.Sprintf("%s processed: %s", a.name, message.Content))
 	return result, nil
 }

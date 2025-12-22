@@ -51,15 +51,15 @@ func main() {
 	// Step 1: Initialize monitoring infrastructure
 	fmt.Println("Step 1: Initializing Monitoring Infrastructure")
 	fmt.Println("-----------------------------------------------")
-	
+
 	// Create metrics collector (thread-safe for concurrent access)
 	collector := evaluation.NewMetricsCollector()
-	
+
 	// Create session recorder with file storage
 	recorder := evaluation.NewSessionRecorder(
 		evaluation.NewFileRecordingStorage("./production_recordings"),
 	)
-	
+
 	// Create regression detector with baseline
 	baseline := &evaluation.EvaluationResult{
 		EvaluationID: "baseline",
@@ -72,9 +72,9 @@ func main() {
 	baseline.Accuracy = &accuracy
 	baseline.QualityScore = &quality
 	baseline.AvgLatencyMs = &latency
-	
+
 	detector := evaluation.NewRegressionDetector(nil, baseline)
-	
+
 	fmt.Println("✓ MetricsCollector initialized (thread-safe)")
 	fmt.Println("✓ SessionRecorder configured with file storage")
 	fmt.Println("✓ RegressionDetector configured with baseline")
@@ -84,20 +84,20 @@ func main() {
 	fmt.Println("--------------------------------------")
 	agent := &ProductionAgent{}
 	monitoredAgent := recorder.Wrap(agent)
-	
+
 	fmt.Println("✓ Agent wrapped - all interactions will be recorded")
 
 	// Step 3: Simulate production traffic
 	fmt.Println("Step 3: Simulating Production Traffic")
 	fmt.Println("--------------------------------------")
 	fmt.Println("Processing 50 user requests...")
-	
+
 	for i := 0; i < 50; i++ {
 		sessionID := fmt.Sprintf("prod-session-%03d", i+1)
-		
+
 		// Create session result
 		result := evaluation.NewSessionResult(sessionID, agent.Name())
-		
+
 		// Process message
 		message := &agenkit.Message{
 			Role:    "user",
@@ -106,18 +106,18 @@ func main() {
 				"session_id": sessionID,
 			},
 		}
-		
+
 		start := time.Now()
 		_, err := monitoredAgent.Process(context.Background(), message)
 		duration := time.Since(start).Seconds()
-		
+
 		// Record metrics
 		if err != nil {
 			result.SetStatus(evaluation.SessionStatusFailed)
 			result.AddError("processing_error", err.Error(), nil)
 		} else {
 			result.SetStatus(evaluation.SessionStatusCompleted)
-			
+
 			// Add quality metric
 			qualityScore := 0.85 + rand.Float64()*0.15
 			result.AddMetricMeasurement(evaluation.CreateQualityMetric(
@@ -126,10 +126,10 @@ func main() {
 				10.0,
 				nil,
 			))
-			
+
 			// Add duration metric
 			result.AddMetricMeasurement(evaluation.CreateDurationMetric(duration, nil))
-			
+
 			// Add cost metric (simulate token usage)
 			tokens := 100 + rand.Intn(300)
 			cost := float64(tokens) * 0.00001
@@ -137,28 +137,28 @@ func main() {
 				"tokens": tokens,
 			}))
 		}
-		
+
 		collector.AddResult(result)
-		
+
 		// Print progress every 10 requests
 		if (i+1)%10 == 0 {
 			fmt.Printf("  Processed %d requests\n", i+1)
 		}
 	}
-	
+
 	fmt.Println("\n✓ Processing complete")
 
 	// Step 4: Real-time statistics
 	fmt.Println("Step 4: Real-time Performance Statistics")
 	fmt.Println("-----------------------------------------")
 	stats := collector.GetStatistics()
-	
+
 	fmt.Printf("Session Statistics:\n")
 	fmt.Printf("  Total Sessions: %d\n", stats["session_count"])
 	fmt.Printf("  Success Rate: %.1f%%\n", stats["success_rate"].(float64)*100)
 	fmt.Printf("  Avg Duration: %.3fs\n", stats["avg_duration"])
 	fmt.Printf("  Total Errors: %d\n\n", stats["total_errors"])
-	
+
 	qualityStats := collector.GetMetricAggregates("response_quality")
 	if qualityStats["count"].(int) > 0 {
 		fmt.Printf("Quality Metrics:\n")
@@ -166,7 +166,7 @@ func main() {
 		fmt.Printf("  Min Quality: %.3f\n", qualityStats["min"])
 		fmt.Printf("  Max Quality: %.3f\n\n", qualityStats["max"])
 	}
-	
+
 	costStats := collector.GetMetricAggregates("total_cost")
 	if costStats["count"].(int) > 0 {
 		fmt.Printf("Cost Metrics:\n")
@@ -177,24 +177,24 @@ func main() {
 	// Step 5: Check for regressions
 	fmt.Println("Step 5: Regression Detection")
 	fmt.Println("-----------------------------")
-	
+
 	currentEvaluation := &evaluation.EvaluationResult{
 		EvaluationID: "current",
 		AgentName:    "production-agent",
 		Timestamp:    time.Now(),
 	}
-	
+
 	// Calculate current metrics from collector stats
 	currentAccuracy := stats["success_rate"].(float64)
 	currentQuality := qualityStats["mean"].(float64)
 	currentLatency := stats["avg_duration"].(float64) * 1000 // convert to ms
-	
+
 	currentEvaluation.Accuracy = &currentAccuracy
 	currentEvaluation.QualityScore = &currentQuality
 	currentEvaluation.AvgLatencyMs = &currentLatency
-	
+
 	regressions := detector.Detect(currentEvaluation, true)
-	
+
 	if len(regressions) == 0 {
 		fmt.Println("✓ No regressions detected - performance is stable")
 	} else {

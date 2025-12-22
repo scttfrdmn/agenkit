@@ -372,7 +372,8 @@ func (g *GeminiLLM) Close() error {
 // Unwrap returns the underlying Gemini client.
 //
 // Returns:
-//   The *genai.Client for direct API access
+//
+//	The *genai.Client for direct API access
 //
 // Example:
 //

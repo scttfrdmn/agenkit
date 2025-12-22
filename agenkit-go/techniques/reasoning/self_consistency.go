@@ -33,11 +33,11 @@ type AnswerExtractor func(text string) string
 // Reference: "Self-Consistency Improves Chain of Thought Reasoning in Language Models"
 // Wang et al., 2022 - https://arxiv.org/abs/2203.11171
 type SelfConsistency struct {
-	agent            agenkit.Agent
-	numSamples       int
-	votingStrategy   VotingStrategy
-	temperature      *float64
-	answerExtractor  AnswerExtractor
+	agent           agenkit.Agent
+	numSamples      int
+	votingStrategy  VotingStrategy
+	temperature     *float64
+	answerExtractor AnswerExtractor
 }
 
 // SelfConsistencyOption is a functional option for configuring SelfConsistency.

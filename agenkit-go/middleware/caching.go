@@ -50,13 +50,13 @@ func (c *CachingConfig) Validate() error {
 
 // CachingMetrics tracks caching middleware metrics.
 type CachingMetrics struct {
-	mu              sync.RWMutex
-	TotalRequests   int64
-	CacheHits       int64
-	CacheMisses     int64
-	Evictions       int64
-	Invalidations   int64
-	CurrentSize     int64
+	mu            sync.RWMutex
+	TotalRequests int64
+	CacheHits     int64
+	CacheMisses   int64
+	Evictions     int64
+	Invalidations int64
+	CurrentSize   int64
 }
 
 // NewCachingMetrics creates a new metrics instance.
@@ -193,9 +193,9 @@ type CachingDecorator struct {
 	config  CachingConfig
 	metrics *CachingMetrics
 
-	mu       sync.RWMutex // Read-write lock for concurrent cache reads
-	cache    map[string]*list.Element // key -> list element
-	lruList  *list.List                // doubly linked list for LRU
+	mu             sync.RWMutex             // Read-write lock for concurrent cache reads
+	cache          map[string]*list.Element // key -> list element
+	lruList        *list.List               // doubly linked list for LRU
 	cleanupCounter int64
 }
 

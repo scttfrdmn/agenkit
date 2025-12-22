@@ -39,12 +39,12 @@ func sanitizeErrorMessage(errorCode string, err error) string {
 
 	// Return generic messages based on error code
 	sanitizedMessages := map[string]string{
-		"INVALID_MESSAGE":   "Invalid message format",
-		"INVALID_REQUEST":   "Invalid request",
-		"EXECUTION_ERROR":   "An error occurred while processing your request",
-		"INTERNAL_ERROR":    "An internal server error occurred",
-		"NOT_IMPLEMENTED":   "This operation is not supported",
-		"AGENT_NOT_FOUND":   "Agent not found",
+		"INVALID_MESSAGE": "Invalid message format",
+		"INVALID_REQUEST": "Invalid request",
+		"EXECUTION_ERROR": "An error occurred while processing your request",
+		"INTERNAL_ERROR":  "An internal server error occurred",
+		"NOT_IMPLEMENTED": "This operation is not supported",
+		"AGENT_NOT_FOUND": "Agent not found",
 	}
 
 	if msg, ok := sanitizedMessages[errorCode]; ok {
@@ -120,9 +120,9 @@ func NewHTTPAgentWithOptions(agent agenkit.Agent, addr string, options ServerOpt
 		rateLimitConf := options.RateLimitConfig
 		if rateLimitConf == nil {
 			rateLimitConf = &middleware.RateLimiterConfig{
-				Rate:              100.0, // 100 requests/second
-				Capacity:          200,   // Allow bursts up to 200 requests
-				TokensPerRequest:  1,
+				Rate:             100.0, // 100 requests/second
+				Capacity:         200,   // Allow bursts up to 200 requests
+				TokensPerRequest: 1,
 			}
 		}
 		agent = middleware.NewRateLimiterDecorator(agent, *rateLimitConf)

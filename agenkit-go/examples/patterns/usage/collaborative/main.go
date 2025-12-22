@@ -1,6 +1,6 @@
 // Package main demonstrates the CollaborativeAgent pattern.
 //
-// Peer-to-peer collaboration with iterative refinement
+// # Peer-to-peer collaboration with iterative refinement
 //
 // Use cases:
 //   - Peer review
@@ -34,7 +34,7 @@ func (a *SimpleAgent) Capabilities() []string {
 func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Printf("   🤖 %s processing...\n", a.name)
 	time.Sleep(100 * time.Millisecond)
-	
+
 	result := agenkit.NewMessage("agent", fmt.Sprintf("%s processed: %s", a.name, message.Content))
 	return result, nil
 }

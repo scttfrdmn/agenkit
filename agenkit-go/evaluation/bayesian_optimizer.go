@@ -40,8 +40,8 @@ const (
 // ParameterSpec defines a parameter in the search space.
 type ParameterSpec struct {
 	Type   ParameterType
-	Low    float64     // For continuous/integer
-	High   float64     // For continuous/integer
+	Low    float64       // For continuous/integer
+	High   float64       // For continuous/integer
 	Values []interface{} // For discrete/categorical
 }
 
@@ -113,13 +113,13 @@ func (s *SearchSpace) Sample() map[string]interface{} {
 
 // OptimizationResult contains the results of an optimization run.
 type OptimizationResult struct {
-	BestConfig   map[string]interface{}
-	BestScore    float64
-	History      []OptimizationStep
-	NIterations  int
-	StartTime    time.Time
-	EndTime      time.Time
-	Metadata     map[string]interface{}
+	BestConfig  map[string]interface{}
+	BestScore   float64
+	History     []OptimizationStep
+	NIterations int
+	StartTime   time.Time
+	EndTime     time.Time
+	Metadata    map[string]interface{}
 }
 
 // OptimizationStep represents a single evaluation in the optimization.
@@ -157,16 +157,16 @@ type ObjectiveFunc func(ctx context.Context, config map[string]interface{}) (flo
 //  4. Evaluate new config
 //  5. Update statistics and repeat
 type BayesianOptimizer struct {
-	searchSpace    *SearchSpace
-	objective      ObjectiveFunc
-	maximize       bool
-	acquisition    AcquisitionFunction
-	nInitial       int
-	xi             float64 // Exploration parameter for EI/PI
-	kappa          float64 // Exploration parameter for UCB
-	history        []OptimizationStep
-	bestConfig     map[string]interface{}
-	bestScore      float64
+	searchSpace *SearchSpace
+	objective   ObjectiveFunc
+	maximize    bool
+	acquisition AcquisitionFunction
+	nInitial    int
+	xi          float64 // Exploration parameter for EI/PI
+	kappa       float64 // Exploration parameter for UCB
+	history     []OptimizationStep
+	bestConfig  map[string]interface{}
+	bestScore   float64
 }
 
 // BayesianOptimizerConfig contains configuration for BayesianOptimizer.

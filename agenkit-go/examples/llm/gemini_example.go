@@ -138,10 +138,10 @@ func customParameters(llmAdapter llm.LLM) {
 	response, err := llmAdapter.Complete(
 		ctx,
 		messages,
-		llm.WithTemperature(0.3),     // Lower temperature for precision
-		llm.WithMaxTokens(100),        // Limit response length
-		llm.WithTopP(0.9),             // Focused sampling
-		llm.WithExtra("top_k", 40),    // Gemini-specific: top-k sampling
+		llm.WithTemperature(0.3),   // Lower temperature for precision
+		llm.WithMaxTokens(100),     // Limit response length
+		llm.WithTopP(0.9),          // Focused sampling
+		llm.WithExtra("top_k", 40), // Gemini-specific: top-k sampling
 	)
 	if err != nil {
 		log.Fatalf("Error: %v", err)

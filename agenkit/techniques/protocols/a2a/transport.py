@@ -107,7 +107,7 @@ class HTTPTransport(Transport):
     async def start_server(
         self,
         handler: Callable[["A2AMessage"], Awaitable["A2AMessage"]],
-        host: str = "0.0.0.0",
+        host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
         port: int = 8080
     ):
         """
@@ -220,7 +220,7 @@ class WebSocketTransport(Transport):
     async def start_server(
         self,
         handler: Callable[["A2AMessage"], Awaitable["A2AMessage"]],
-        host: str = "0.0.0.0",
+        host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
         port: int = 8765
     ):
         """
@@ -335,7 +335,7 @@ class GRPCTransport(Transport):
     async def start_server(
         self,
         handler: Callable[["A2AMessage"], Awaitable["A2AMessage"]],
-        host: str = "0.0.0.0",
+        host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
         port: int = 50051
     ):
         """

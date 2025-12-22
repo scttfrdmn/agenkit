@@ -107,7 +107,7 @@ class BedrockAdapter:
 
     async def deploy(
         self,
-        host: str = "0.0.0.0",
+        host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
         port: int = 8080,
         **kwargs
     ):

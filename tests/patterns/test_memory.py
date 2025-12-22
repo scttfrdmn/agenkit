@@ -15,13 +15,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from agenkit.patterns import (
-    LongTermMemory,
-    MemoryEntry,
-    MemoryHierarchy,
-    ShortTermMemory,
-    WorkingMemory,
-)
+from agenkit.patterns import (LongTermMemory, MemoryEntry, MemoryHierarchy,
+                              ShortTermMemory, WorkingMemory)
 
 # Tests for MemoryEntry
 

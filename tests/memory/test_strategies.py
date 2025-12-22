@@ -6,11 +6,9 @@ import pytest
 
 from agenkit.interfaces import Message
 from agenkit.memory import InMemoryMemory
-from agenkit.memory.strategies import (
-    ImportanceWeightingStrategy,
-    SlidingWindowStrategy,
-    SummarizationStrategy,
-)
+from agenkit.memory.strategies import (ImportanceWeightingStrategy,
+                                       SlidingWindowStrategy,
+                                       SummarizationStrategy)
 
 
 @pytest.fixture

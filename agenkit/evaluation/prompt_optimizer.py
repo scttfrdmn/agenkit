@@ -180,7 +180,8 @@ class PromptOptimizer:
         agent = self.agent_factory(prompt)
 
         # Evaluate
-        from agenkit.evaluation.quality_metrics import AccuracyMetric, QualityMetrics
+        from agenkit.evaluation.quality_metrics import (AccuracyMetric,
+                                                        QualityMetrics)
 
         # Create metrics
         metric_objs = []

@@ -36,7 +36,8 @@ References:
         - Albada (2025): "Building Applications with AI Agents"
 """
 
-from .actor_critic_variation import ActorCriticVariation, why_use_reflection_instead
+from .actor_critic_variation import (ActorCriticVariation,
+                                     why_use_reflection_instead)
 from .context_optimization import ContextOptimizer
 from .exploration import ActionStats, ExplorationStrategy
 from .goal_monitoring import GoalMonitor

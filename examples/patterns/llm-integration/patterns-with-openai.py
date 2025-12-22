@@ -21,13 +21,8 @@ import os
 
 from agenkit.adapters.llm import OpenAILLM
 from agenkit.core import Agent, Message
-from agenkit.patterns import (
-    ParallelAgent,
-    RouterAgent,
-    SequentialAgent,
-    SimpleClassifier,
-    default_aggregators,
-)
+from agenkit.patterns import (ParallelAgent, RouterAgent, SequentialAgent,
+                              SimpleClassifier, default_aggregators)
 
 
 class LLMAgent(Agent):

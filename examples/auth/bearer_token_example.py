@@ -12,7 +12,8 @@ This example shows:
 
 import asyncio
 
-from agenkit.auth import AuthenticationError, BearerTokenAuth, SimpleTokenProvider
+from agenkit.auth import (AuthenticationError, BearerTokenAuth,
+                          SimpleTokenProvider)
 from agenkit.interfaces import Message
 
 

@@ -5,7 +5,8 @@ import contextlib
 
 import pytest
 
-from agenkit.adapters.python import AgentRegistration, AgentRegistry, heartbeat_loop
+from agenkit.adapters.python import (AgentRegistration, AgentRegistry,
+                                     heartbeat_loop)
 
 
 @pytest.mark.asyncio

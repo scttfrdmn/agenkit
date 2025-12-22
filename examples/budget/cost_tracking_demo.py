@@ -14,7 +14,8 @@ This example shows:
 
 import asyncio
 
-from agenkit.budget import BudgetExceededError, BudgetLimiter, CostTracker, ModelPricing
+from agenkit.budget import (BudgetExceededError, BudgetLimiter, CostTracker,
+                            ModelPricing)
 
 # ===== Example 1: Basic Cost Tracking =====
 

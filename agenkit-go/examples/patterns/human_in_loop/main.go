@@ -38,6 +38,13 @@ func (t *TradingAgent) Capabilities() []string {
 	return []string{"trading", "analysis"}
 }
 
+func (t *TradingAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    t.Name(),
+		Capabilities: t.Capabilities(),
+	}
+}
+
 func (t *TradingAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Println("   📊 Trading agent analyzing...")
 	time.Sleep(100 * time.Millisecond)
@@ -71,6 +78,13 @@ func (m *ModerationAgent) Name() string {
 
 func (m *ModerationAgent) Capabilities() []string {
 	return []string{"moderation", "safety"}
+}
+
+func (m *ModerationAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
 }
 
 func (m *ModerationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -112,6 +126,13 @@ func (m *MedicalAgent) Name() string {
 
 func (m *MedicalAgent) Capabilities() []string {
 	return []string{"medical", "diagnosis"}
+}
+
+func (m *MedicalAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
 }
 
 func (m *MedicalAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

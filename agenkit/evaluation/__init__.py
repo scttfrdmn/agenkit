@@ -36,14 +36,8 @@ Example:
     >>>     print("Pattern implementation issues detected!")
 """
 
-from .ab_testing import (
-    ABResult,
-    ABTest,
-    ABVariant,
-    SignificanceLevel,
-    StatisticalTestType,
-    calculate_sample_size,
-)
+from .ab_testing import (ABResult, ABTest, ABVariant, SignificanceLevel,
+                         StatisticalTestType, calculate_sample_size)
 
 # Bayesian optimizer requires sklearn - make it optional
 try:
@@ -56,10 +50,14 @@ except ImportError:
 from .benchmarks import Benchmark, BenchmarkSuite
 from .context_metrics import CompressionMetrics, ContextMetrics, LatencyMetric
 from .core import EvaluationResult, Evaluator, Metric
-from .optimizer import OptimizationResult, Optimizer, RandomSearchOptimizer, SearchSpace
-from .pattern_benchmarks import PatternBenchmark, PatternBenchmarkSuite, YAMLBenchmarkLoader
-from .prompt_optimizer import OptimizationStrategy, PromptOptimizationResult, PromptOptimizer
-from .quality_metrics import AccuracyMetric, PrecisionRecallMetric, QualityMetrics
+from .optimizer import (OptimizationResult, Optimizer, RandomSearchOptimizer,
+                        SearchSpace)
+from .pattern_benchmarks import (PatternBenchmark, PatternBenchmarkSuite,
+                                 YAMLBenchmarkLoader)
+from .prompt_optimizer import (OptimizationStrategy, PromptOptimizationResult,
+                               PromptOptimizer)
+from .quality_metrics import (AccuracyMetric, PrecisionRecallMetric,
+                              QualityMetrics)
 from .recorder import SessionRecorder, SessionReplay
 from .regression import RegressionDetector
 

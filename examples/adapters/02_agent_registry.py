@@ -10,13 +10,8 @@ import tempfile
 from pathlib import Path
 
 from agenkit import Agent, Message
-from agenkit.adapters.python import (
-    AgentRegistration,
-    AgentRegistry,
-    LocalAgent,
-    RemoteAgent,
-    heartbeat_loop,
-)
+from agenkit.adapters.python import (AgentRegistration, AgentRegistry,
+                                     LocalAgent, RemoteAgent, heartbeat_loop)
 
 
 class MathAgent(Agent):

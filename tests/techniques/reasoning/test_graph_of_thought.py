@@ -3,13 +3,8 @@
 import pytest
 
 from agenkit import Message
-from agenkit.techniques.reasoning import (
-    EdgeType,
-    GraphOfThought,
-    NodeType,
-    ReasoningGraph,
-    ThoughtNode,
-)
+from agenkit.techniques.reasoning import (EdgeType, GraphOfThought, NodeType,
+                                          ReasoningGraph, ThoughtNode)
 
 # Test ReasoningGraph Data Structure
 

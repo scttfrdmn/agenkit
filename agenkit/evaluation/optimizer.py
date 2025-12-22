@@ -250,7 +250,8 @@ class Optimizer(ABC):
         # Use objective as metric
         if isinstance(self.objective, str):
             # Create appropriate metrics
-            from agenkit.evaluation.quality_metrics import AccuracyMetric, QualityMetrics
+            from agenkit.evaluation.quality_metrics import (AccuracyMetric,
+                                                            QualityMetrics)
 
             metrics = []
             if self.objective == "accuracy":

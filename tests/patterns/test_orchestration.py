@@ -9,7 +9,8 @@ import asyncio
 import pytest
 
 from agenkit import Message
-from agenkit.patterns.orchestration import ParallelPattern, RouterPattern, SequentialPattern
+from agenkit.patterns.orchestration import (ParallelPattern, RouterPattern,
+                                            SequentialPattern)
 
 # ============================================================================
 # Mock Agents

@@ -8,11 +8,9 @@ consuming the entire system quota while maintaining fair access for all users.
 import asyncio
 
 from agenkit.interfaces import Message
-from agenkit.middleware import (
-    PerUserRateLimiterConfig,
-    PerUserRateLimiterDecorator,
-    PerUserRateLimitError,
-)
+from agenkit.middleware import (PerUserRateLimiterConfig,
+                                PerUserRateLimiterDecorator,
+                                PerUserRateLimitError)
 
 
 # Simple echo agent for demonstration

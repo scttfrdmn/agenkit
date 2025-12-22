@@ -19,7 +19,8 @@ Usage:
 import asyncio
 from pathlib import Path
 
-from agenkit.evaluation.pattern_benchmarks import PatternBenchmarkSuite, YAMLBenchmarkLoader
+from agenkit.evaluation.pattern_benchmarks import (PatternBenchmarkSuite,
+                                                   YAMLBenchmarkLoader)
 from agenkit.interfaces import Agent, Message
 
 

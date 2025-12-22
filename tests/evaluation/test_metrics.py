@@ -6,8 +6,10 @@ Tests AccuracyMetric, QualityMetrics, ContextMetrics, etc.
 
 import pytest
 
-from agenkit.evaluation import AccuracyMetric, PrecisionRecallMetric, QualityMetrics
-from agenkit.evaluation.context_metrics import CompressionMetrics, ContextMetrics, LatencyMetric
+from agenkit.evaluation import (AccuracyMetric, PrecisionRecallMetric,
+                                QualityMetrics)
+from agenkit.evaluation.context_metrics import (CompressionMetrics,
+                                                ContextMetrics, LatencyMetric)
 from agenkit.interfaces import Message
 
 

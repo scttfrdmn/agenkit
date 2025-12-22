@@ -15,7 +15,8 @@ Note: This example shows the setup. Actual deployment requires:
 import asyncio
 
 from agenkit import Message
-from agenkit.techniques.protocols.a2a import A2AAction, BedrockAdapter, create_request
+from agenkit.techniques.protocols.a2a import (A2AAction, BedrockAdapter,
+                                              create_request)
 
 # ==============================================================================
 # Custom Agent for Bedrock

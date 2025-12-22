@@ -18,7 +18,8 @@ import time
 import pytest
 
 from agenkit.interfaces import Agent, Message
-from tests.chaos.chaos_agents import ChaosAgent, ChaosMode, FlakeyAgent, OverloadedAgent
+from tests.chaos.chaos_agents import (ChaosAgent, ChaosMode, FlakeyAgent,
+                                      OverloadedAgent)
 
 
 class SimpleAgent(Agent):

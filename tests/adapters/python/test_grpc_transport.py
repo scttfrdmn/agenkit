@@ -8,8 +8,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import grpc
 import pytest
 
-from agenkit.adapters.python.errors import ConnectionClosedError, MalformedPayloadError
+from agenkit.adapters.python.errors import ConnectionClosedError
 from agenkit.adapters.python.errors import ConnectionError as ConnError
+from agenkit.adapters.python.errors import MalformedPayloadError
 from agenkit.adapters.python.grpc_transport import GRPCTransport
 from proto import agent_pb2
 

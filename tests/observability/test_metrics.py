@@ -6,7 +6,8 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
 from agenkit.interfaces import Agent, Message
-from agenkit.observability import MetricsMiddleware, init_metrics, init_resource_metrics
+from agenkit.observability import (MetricsMiddleware, init_metrics,
+                                   init_resource_metrics)
 
 
 class SimpleAgent(Agent):

@@ -11,30 +11,18 @@ import time
 from typing import Any
 
 from agenkit.interfaces import Agent, Message
-
 # Import agenkit patterns
-from agenkit.patterns import (
-    AgentTool,
-    AutonomousAgent,
-    CollaborativeAgent,
-    ConversationalAgent,
-    FallbackAgent,
-    HumanInLoopAgent,
-    MemoryHierarchy,
-    MultiAgentOrchestrator,
-    OrchestrationAgent,
-    OrchestrationConfig,
-    ParallelAgent,
-    PlanningAgent,
-    ReActAgent,
-    ReasoningWithToolsAgent,
-    ReflectionAgent,
-    RouterAgent,
-    SequentialAgent,
-    SupervisorAgent,
-    Task,
-)
-from agenkit.techniques.reasoning import ChainOfThought, SelfConsistency, TreeOfThought
+from agenkit.patterns import (AgentTool, AutonomousAgent, CollaborativeAgent,
+                              ConversationalAgent, FallbackAgent,
+                              HumanInLoopAgent, MemoryHierarchy,
+                              MultiAgentOrchestrator, OrchestrationAgent,
+                              OrchestrationConfig, ParallelAgent,
+                              PlanningAgent, ReActAgent,
+                              ReasoningWithToolsAgent, ReflectionAgent,
+                              RouterAgent, SequentialAgent, SupervisorAgent,
+                              Task)
+from agenkit.techniques.reasoning import (ChainOfThought, SelfConsistency,
+                                          TreeOfThought)
 
 PROTOCOL_VERSION = "1.0"
 VERSION = "0.43.0"
@@ -681,7 +669,8 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
             )
             agent = pattern_class(collab_config)
         elif pattern_name == "HumanInLoop":
-            from agenkit.patterns.human_in_loop import ApprovalResponse, HumanInLoopConfig
+            from agenkit.patterns.human_in_loop import (ApprovalResponse,
+                                                        HumanInLoopConfig)
 
             def auto_approve(request):
                 return ApprovalResponse(approved=True)
@@ -821,7 +810,8 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
             agent = pattern_class(multiagent_config)
         elif pattern_name == "Memory":
             # MemoryHierarchy manages memory tiers
-            from agenkit.memory import EpisodicMemory, SemanticMemory, WorkingMemory
+            from agenkit.memory import (EpisodicMemory, SemanticMemory,
+                                        WorkingMemory)
 
             working = WorkingMemory(capacity=100)
             episodic = EpisodicMemory()

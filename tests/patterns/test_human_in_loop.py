@@ -7,14 +7,11 @@ Tests HumanInLoopAgent, approval functions, and confidence-based gating.
 import pytest
 
 from agenkit import Message
-from agenkit.patterns.human_in_loop import (
-    ApprovalRequest,
-    ApprovalResponse,
-    HumanInLoopAgent,
-    HumanInLoopConfig,
-    confidence_based_approval_func,
-    simple_approval_func,
-)
+from agenkit.patterns.human_in_loop import (ApprovalRequest, ApprovalResponse,
+                                            HumanInLoopAgent,
+                                            HumanInLoopConfig,
+                                            confidence_based_approval_func,
+                                            simple_approval_func)
 
 # ============================================================================
 # Mock Agents

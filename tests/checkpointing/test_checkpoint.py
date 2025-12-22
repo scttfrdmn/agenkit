@@ -8,12 +8,9 @@ from datetime import datetime, timezone
 
 import pytest
 
-from agenkit.checkpointing import (
-    Checkpoint,
-    CheckpointManager,
-    FileCheckpointStorage,
-    InMemoryCheckpointStorage,
-)
+from agenkit.checkpointing import (Checkpoint, CheckpointManager,
+                                   FileCheckpointStorage,
+                                   InMemoryCheckpointStorage)
 from agenkit.interfaces import Message
 
 # ===== Checkpoint Tests =====

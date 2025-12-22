@@ -37,6 +37,13 @@ func (e *EditorAgent) Capabilities() []string {
 	return []string{"editing", "review", e.focus}
 }
 
+func (e *EditorAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    e.Name(),
+		Capabilities: e.Capabilities(),
+	}
+}
+
 func (e *EditorAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Printf("   📝 %s reviewing...\n", e.name)
 
@@ -86,6 +93,13 @@ func (c *CodeReviewerAgent) Capabilities() []string {
 	return []string{"code-review", c.expertise}
 }
 
+func (c *CodeReviewerAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    c.Name(),
+		Capabilities: c.Capabilities(),
+	}
+}
+
 func (c *CodeReviewerAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Printf("   👨‍💻 %s reviewing...\n", c.name)
 
@@ -133,6 +147,13 @@ func (a *AnalystAgent) Name() string {
 
 func (a *AnalystAgent) Capabilities() []string {
 	return []string{"analysis", a.perspective}
+}
+
+func (a *AnalystAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
 }
 
 func (a *AnalystAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -404,6 +425,13 @@ func (o *OpinionAgent) Name() string {
 
 func (o *OpinionAgent) Capabilities() []string {
 	return []string{"opinion"}
+}
+
+func (o *OpinionAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    o.Name(),
+		Capabilities: o.Capabilities(),
+	}
 }
 
 func (o *OpinionAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

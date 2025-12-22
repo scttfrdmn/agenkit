@@ -1,24 +1,25 @@
 """Tests for composition techniques."""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+
 from agenkit import Message
 from agenkit.techniques.compositions import (
-    SimpleApprovalTool,
-    simple_approval,
-    SimpleRAG,
-    CitedRAG,
-    Document,
-    ContextOptimizer,
-    TaskQueue,
-    PriorityTaskExecutor,
-    GoalMonitor,
-    ExplorationStrategy,
-    LearningFromFeedback,
-    ActorCriticVariation,
-    PrioritizedTask,
     ActionStats,
-    Interaction
+    ActorCriticVariation,
+    CitedRAG,
+    ContextOptimizer,
+    Document,
+    ExplorationStrategy,
+    GoalMonitor,
+    Interaction,
+    LearningFromFeedback,
+    PrioritizedTask,
+    PriorityTaskExecutor,
+    SimpleApprovalTool,
+    SimpleRAG,
+    TaskQueue,
 )
 
 
@@ -429,7 +430,7 @@ async def test_exploration_selects_untried_first():
     selected2 = response2.metadata["selected_action"]
 
     # Both actions should be tried
-    assert set([selected1, selected2]) == set(actions)
+    assert {selected1, selected2} == set(actions)
 
 
 def test_exploration_get_best_action():
@@ -537,7 +538,7 @@ async def test_actor_critic_score_extraction():
     """Test score extraction from critique."""
     actor = MockAgent()
     critic_low = MockAgent("Score: 3/10\nNeeds improvement")
-    critic_high = MockAgent("Score: 9/10\nExcellent")
+    MockAgent("Score: 9/10\nExcellent")
 
     ac = ActorCriticVariation(actor=actor, critic=critic_low, max_iterations=5)
 

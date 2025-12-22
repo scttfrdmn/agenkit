@@ -1,6 +1,7 @@
 """Tests for Least-to-Most prompting technique."""
 
 import pytest
+
 from agenkit import Message
 from agenkit.techniques.reasoning import LeastToMost, Subproblem
 

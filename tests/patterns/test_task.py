@@ -9,7 +9,6 @@ import pytest
 from agenkit import Message
 from agenkit.patterns import Task
 
-
 # ============================================================================
 # Mock Agents
 # ============================================================================

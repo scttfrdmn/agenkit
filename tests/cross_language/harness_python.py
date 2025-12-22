@@ -8,7 +8,9 @@ Implements the JSON protocol for executing pattern tests.
 import json
 import sys
 import time
-from typing import Any, Dict
+from typing import Any
+
+from agenkit.interfaces import Agent, Message
 
 # Import agenkit patterns
 from agenkit.patterns import (
@@ -37,7 +39,6 @@ from agenkit.techniques.reasoning import (
     SelfConsistency,
     TreeOfThought,
 )
-from agenkit.interfaces import Agent, Message
 
 PROTOCOL_VERSION = "1.0"
 VERSION = "0.43.0"
@@ -347,7 +348,7 @@ PATTERNS = {
 }
 
 
-def execute_test(payload: Dict[str, Any]) -> Dict[str, Any]:
+def execute_test(payload: dict[str, Any]) -> dict[str, Any]:
     """
     Execute a test scenario.
 
@@ -358,7 +359,7 @@ def execute_test(payload: Dict[str, Any]) -> Dict[str, Any]:
         Test result
     """
     pattern_name = payload.get("pattern")
-    scenario_id = payload.get("scenario_id")
+    payload.get("scenario_id")
     input_data = payload.get("input", {})
 
     # Check if pattern is supported
@@ -621,7 +622,7 @@ def execute_test(payload: Dict[str, Any]) -> Dict[str, Any]:
             # Task pattern doesn't implement Agent interface
             # It wraps an agent for one-shot execution
             # For testing, just use the wrapped agent directly
-            task_instance = pattern_class(
+            pattern_class(
                 agent=mock_agent,
                 retries=config.get("retries", 0),
                 timeout=config.get("timeout"),
@@ -642,7 +643,7 @@ def execute_test(payload: Dict[str, Any]) -> Dict[str, Any]:
             )
             agent = pattern_class(collab_config)
         elif pattern_name == "HumanInLoop":
-            from agenkit.patterns.human_in_loop import HumanInLoopConfig, ApprovalResponse
+            from agenkit.patterns.human_in_loop import ApprovalResponse, HumanInLoopConfig
 
             def auto_approve(request):
                 return ApprovalResponse(approved=True)
@@ -690,7 +691,7 @@ def execute_test(payload: Dict[str, Any]) -> Dict[str, Any]:
                 "error": None,
             }
         elif pattern_name == "ReAct":
-            from agenkit.patterns.react import ReActConfig, Tool
+            from agenkit.patterns.react import ReActConfig
 
             # Create mock tools for different scenarios
             class MockCalculator:
@@ -743,7 +744,7 @@ def execute_test(payload: Dict[str, Any]) -> Dict[str, Any]:
             agent = pattern_class(react_config)
         elif pattern_name == "AgentsAsTools":
             # AgentTool wraps an agent as a tool
-            agent_tool = pattern_class(
+            pattern_class(
                 agent=mock_agent,
                 name="mock_tool",
                 description="A mock tool for testing",
@@ -773,11 +774,11 @@ def execute_test(payload: Dict[str, Any]) -> Dict[str, Any]:
             agent = pattern_class(multiagent_config)
         elif pattern_name == "Memory":
             # MemoryHierarchy manages memory tiers
-            from agenkit.memory import WorkingMemory, EpisodicMemory, SemanticMemory
+            from agenkit.memory import EpisodicMemory, SemanticMemory, WorkingMemory
             working = WorkingMemory(capacity=100)
             episodic = EpisodicMemory()
             semantic = SemanticMemory()
-            memory_hierarchy = pattern_class(
+            pattern_class(
                 working=working,
                 episodic=episodic,
                 semantic=semantic,
@@ -880,7 +881,7 @@ def execute_test(payload: Dict[str, Any]) -> Dict[str, Any]:
             if "react_steps" in output_message.metadata:
                 react_steps = output_message.metadata["react_steps"]
                 # Extract unique tool names from steps
-                tool_calls = list(set(step["action"] for step in react_steps if step["action"].lower() != "final answer"))
+                tool_calls = list({step["action"] for step in react_steps if step["action"].lower() != "final answer"})
                 # Turns = number of Thought-Action-Observation cycles + final answer
                 turns = len(react_steps) * 2 + 1  # Each step is Thought+Action, plus final Observation
             # AgentsAsTools pattern - uses sub_agents metadata directly
@@ -944,7 +945,7 @@ def execute_test(payload: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     """Get harness information."""
     return {
         "status": "success",
@@ -962,7 +963,7 @@ def get_info() -> Dict[str, Any]:
     }
 
 
-def health_check() -> Dict[str, Any]:
+def health_check() -> dict[str, Any]:
     """Check harness health."""
     return {
         "status": "success",
@@ -974,7 +975,7 @@ def health_check() -> Dict[str, Any]:
     }
 
 
-def handle_request(request: Dict[str, Any]) -> Dict[str, Any]:
+def handle_request(request: dict[str, Any]) -> dict[str, Any]:
     """
     Handle a request and generate response.
 

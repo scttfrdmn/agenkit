@@ -6,9 +6,9 @@ Compares test results across languages and validates behavioral equivalence.
 
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from spec_loader import ExpectedOutput, TestScenario
+from spec_loader import ExpectedOutput
 
 
 @dataclass
@@ -16,8 +16,8 @@ class ComparisonResult:
     """Result of comparing outputs from two languages."""
 
     equivalent: bool
-    differences: List[str]
-    warnings: List[str]
+    differences: list[str]
+    warnings: list[str]
 
 
 @dataclass
@@ -25,14 +25,14 @@ class ValidationResult:
     """Result of validating output against expected behavior."""
 
     valid: bool
-    errors: List[str]
-    warnings: List[str]
+    errors: list[str]
+    warnings: list[str]
 
 
 class ResultComparator:
     """Compares and validates test results."""
 
-    def __init__(self, tolerance_config: Optional[Dict[str, Any]] = None):
+    def __init__(self, tolerance_config: dict[str, Any] | None = None):
         """
         Initialize result comparator.
 
@@ -42,7 +42,7 @@ class ResultComparator:
         self.tolerance = tolerance_config or self._default_tolerance()
 
     @staticmethod
-    def _default_tolerance() -> Dict[str, Any]:
+    def _default_tolerance() -> dict[str, Any]:
         """Get default tolerance configuration."""
         return {
             "float_epsilon": 1e-6,  # Floating point comparison tolerance
@@ -52,7 +52,7 @@ class ResultComparator:
         }
 
     def validate_output(
-        self, output: Dict[str, Any], expected: ExpectedOutput
+        self, output: dict[str, Any], expected: ExpectedOutput
     ) -> ValidationResult:
         """
         Validate output against expected behavior.
@@ -87,23 +87,21 @@ class ResultComparator:
         if expected.error:
             if output.get("status") != "error":
                 errors.append("Expected error but got success")
-            else:
-                # For error scenarios, validate metadata from error details
-                if expected.metadata:
-                    error_metadata = output.get("error", {}).get("details", {})
-                    metadata_errors = self._validate_metadata(
-                        error_metadata,
-                        expected.metadata,
-                    )
-                    errors.extend(metadata_errors)
-        else:
-            # For success scenarios, validate metadata from message
-            if expected.metadata:
+            # For error scenarios, validate metadata from error details
+            elif expected.metadata:
+                error_metadata = output.get("error", {}).get("details", {})
                 metadata_errors = self._validate_metadata(
-                    output.get("output", {}).get("message", {}).get("metadata", {}),
+                    error_metadata,
                     expected.metadata,
                 )
                 errors.extend(metadata_errors)
+        # For success scenarios, validate metadata from message
+        elif expected.metadata:
+            metadata_errors = self._validate_metadata(
+                output.get("output", {}).get("message", {}).get("metadata", {}),
+                expected.metadata,
+            )
+            errors.extend(metadata_errors)
 
         return ValidationResult(
             valid=len(errors) == 0,
@@ -112,8 +110,8 @@ class ResultComparator:
         )
 
     def _validate_message(
-        self, actual: Dict[str, Any], expected: Dict[str, Any]
-    ) -> List[str]:
+        self, actual: dict[str, Any], expected: dict[str, Any]
+    ) -> list[str]:
         """Validate message content."""
         errors = []
 
@@ -151,8 +149,8 @@ class ResultComparator:
         return errors
 
     def _validate_behavior(
-        self, actual: Dict[str, Any], expected
-    ) -> List[str]:
+        self, actual: dict[str, Any], expected
+    ) -> list[str]:
         """Validate behavioral characteristics."""
         errors = []
 
@@ -189,8 +187,8 @@ class ResultComparator:
         return errors
 
     def _validate_metadata(
-        self, actual: Dict[str, Any], expected: Dict[str, Any]
-    ) -> List[str]:
+        self, actual: dict[str, Any], expected: dict[str, Any]
+    ) -> list[str]:
         """Validate metadata fields."""
         errors = []
 
@@ -225,7 +223,7 @@ class ResultComparator:
         return errors
 
     def compare_outputs(
-        self, output1: Dict[str, Any], output2: Dict[str, Any], language1: str, language2: str
+        self, output1: dict[str, Any], output2: dict[str, Any], language1: str, language2: str
     ) -> ComparisonResult:
         """
         Compare outputs from two different language implementations.
@@ -320,8 +318,8 @@ class ResultComparator:
         )
 
     def _compare_metadata(
-        self, meta1: Dict[str, Any], meta2: Dict[str, Any], lang1: str, lang2: str
-    ) -> List[str]:
+        self, meta1: dict[str, Any], meta2: dict[str, Any], lang1: str, lang2: str
+    ) -> list[str]:
         """Compare metadata dictionaries."""
         differences = []
 
@@ -351,8 +349,8 @@ class ResultComparator:
         return differences
 
     def _compare_behavior(
-        self, behavior1: Dict[str, Any], behavior2: Dict[str, Any], lang1: str, lang2: str
-    ) -> List[str]:
+        self, behavior1: dict[str, Any], behavior2: dict[str, Any], lang1: str, lang2: str
+    ) -> list[str]:
         """Compare behavioral characteristics."""
         differences = []
 
@@ -385,8 +383,8 @@ class ResultComparator:
         return differences
 
     def compare_all_languages(
-        self, results: Dict[str, Dict[str, Any]]
-    ) -> Dict[str, List[ComparisonResult]]:
+        self, results: dict[str, dict[str, Any]]
+    ) -> dict[str, list[ComparisonResult]]:
         """
         Compare results across all language pairs.
 
@@ -410,8 +408,8 @@ class ResultComparator:
         return comparisons
 
     def summarize_equivalence(
-        self, comparisons: Dict[str, ComparisonResult]
-    ) -> Dict[str, Any]:
+        self, comparisons: dict[str, ComparisonResult]
+    ) -> dict[str, Any]:
         """
         Summarize equivalence across all comparisons.
 

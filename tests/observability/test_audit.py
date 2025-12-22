@@ -5,8 +5,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from agenkit.observability import (
     AuditEvent,
     AuditEventType,

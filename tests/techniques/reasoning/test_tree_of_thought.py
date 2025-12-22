@@ -1,8 +1,9 @@
 """Tests for Tree-of-Thought reasoning technique."""
 
 import pytest
+
 from agenkit import Message
-from agenkit.techniques.reasoning import TreeOfThought, ReasoningTree, ReasoningNode
+from agenkit.techniques.reasoning import ReasoningTree, TreeOfThought
 
 
 class MockLLM:
@@ -342,7 +343,7 @@ def test_reasoning_tree_get_leaves():
 
     root_id = tree.create_root("Root")
     child1_id = tree.add_child(root_id, "Child 1")
-    child2_id = tree.add_child(root_id, "Child 2")
+    tree.add_child(root_id, "Child 2")
     _ = tree.add_child(child1_id, "Grandchild")  # Child 1 is no longer a leaf
 
     leaves = tree.get_leaves()

@@ -9,7 +9,6 @@ import pytest
 from agenkit import Message
 from agenkit.patterns.supervisor import SimplePlanner, Subtask, SupervisorAgent
 
-
 # ============================================================================
 # Mock Agents
 # ============================================================================
@@ -404,7 +403,7 @@ async def test_supervisor_multiple_same_specialist():
     supervisor = SupervisorAgent(planner=planner, specialists={"coder": coder})
 
     message = Message(role="user", content="input")
-    result = await supervisor.process(message)
+    await supervisor.process(message)
 
     # Coder should be called twice
     assert coder.call_count == 2

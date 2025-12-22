@@ -23,7 +23,6 @@ from agenkit.patterns import (
     WorkingMemory,
 )
 
-
 # Tests for MemoryEntry
 
 
@@ -512,7 +511,7 @@ async def test_memory_hierarchy_deduplication():
     results = await hierarchy.retrieve("duplicate", limit=10)
 
     # Should only get one result despite being in multiple tiers
-    unique_ids = set(r.id for r in results)
+    unique_ids = {r.id for r in results}
     assert len(unique_ids) == len(results)
 
 

@@ -1,6 +1,7 @@
 """Tests for Chain-of-Thought reasoning technique."""
 
 import pytest
+
 from agenkit import Message
 from agenkit.techniques.reasoning import ChainOfThought
 

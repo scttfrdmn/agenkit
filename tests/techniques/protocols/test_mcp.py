@@ -1,30 +1,25 @@
 """Tests for Model Context Protocol (MCP) implementation."""
 
-import pytest
-import asyncio
 import json
-from agenkit import Message, Agent
+
+import pytest
+
+from agenkit import Agent, Message
 from agenkit.techniques.protocols.mcp import (
-    MCPServer,
-    MCPClient,
-    MCPAdapter,
     AgentMCPServer,
-    MCPMessageType,
+    MCPAdapter,
     MCPMethod,
-    MCPResourceInfo,
-    MCPToolInfo,
     MCPRequest,
-    MCPResponse,
-    create_request,
-    create_response,
-    create_error_response,
-    create_notification,
+    MCPResourceInfo,
+    MCPServer,
+    MCPToolInfo,
     ResourceRegistry,
     ToolRegistry,
-    Resource,
-    Tool,
+    create_error_response,
+    create_notification,
+    create_request,
+    create_response,
 )
-
 
 # ============================================================================
 # Mock Classes
@@ -744,7 +739,7 @@ async def test_end_to_end_tool_flow():
     )
     async def search(params):
         query = params["query"]
-        limit = params.get("limit", 10)
+        params.get("limit", 10)
         return f"Search results for '{query}': Result 0, Result 1, Result 2"
 
     # Test list request

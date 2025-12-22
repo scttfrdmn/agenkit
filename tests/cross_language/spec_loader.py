@@ -7,7 +7,7 @@ Loads and validates YAML pattern specifications.
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import yaml
 
@@ -18,27 +18,27 @@ class Message:
 
     role: str
     content: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 @dataclass
 class ExpectedBehavior:
     """Expected behavioral characteristics."""
 
-    min_turns: Optional[int] = None
-    max_turns: Optional[int] = None
-    tool_calls: Optional[List[str]] = None
-    sub_agents: Optional[List[str]] = None
-    custom: Optional[Dict[str, Any]] = None
+    min_turns: int | None = None
+    max_turns: int | None = None
+    tool_calls: list[str] | None = None
+    sub_agents: list[str] | None = None
+    custom: dict[str, Any] | None = None
 
 
 @dataclass
 class ExpectedOutput:
     """Expected test output."""
 
-    message: Optional[Dict[str, Any]] = None
-    behavior: Optional[ExpectedBehavior] = None
-    metadata: Optional[Dict[str, Any]] = None
+    message: dict[str, Any] | None = None
+    behavior: ExpectedBehavior | None = None
+    metadata: dict[str, Any] | None = None
     error: bool = False
 
 
@@ -49,7 +49,7 @@ class TestScenario:
     id: str
     name: str
     description: str
-    input: Dict[str, Any]
+    input: dict[str, Any]
     expected_output: ExpectedOutput
 
 
@@ -71,11 +71,11 @@ class PatternSpec:
     name: str
     description: str
     category: str
-    test_scenarios: List[TestScenario]
-    edge_cases: List[Dict[str, str]]
+    test_scenarios: list[TestScenario]
+    edge_cases: list[dict[str, str]]
     properties: PatternProperties
-    performance: Dict[str, str]
-    dependencies: Dict[str, List[str]]
+    performance: dict[str, str]
+    dependencies: dict[str, list[str]]
 
 
 class SpecificationLoader:
@@ -115,7 +115,7 @@ class SpecificationLoader:
 
         return self._parse_spec(data)
 
-    def load_all_specs(self) -> Dict[str, PatternSpec]:
+    def load_all_specs(self) -> dict[str, PatternSpec]:
         """
         Load all pattern specifications.
 
@@ -133,7 +133,7 @@ class SpecificationLoader:
                 print(f"Warning: Failed to load {spec_file}: {e}")
         return specs
 
-    def _parse_spec(self, data: Dict[str, Any]) -> PatternSpec:
+    def _parse_spec(self, data: dict[str, Any]) -> PatternSpec:
         """Parse specification data into PatternSpec object."""
         pattern_data = data.get("pattern", {})
         scenarios_data = data.get("test_scenarios", [])
@@ -168,7 +168,7 @@ class SpecificationLoader:
             dependencies=dependencies_data,
         )
 
-    def _parse_scenario(self, data: Dict[str, Any]) -> TestScenario:
+    def _parse_scenario(self, data: dict[str, Any]) -> TestScenario:
         """Parse scenario data into TestScenario object."""
         expected_data = data.get("expected_output", {})
 
@@ -203,7 +203,7 @@ class SpecificationLoader:
             expected_output=expected_output,
         )
 
-    def validate_spec(self, spec: PatternSpec) -> List[str]:
+    def validate_spec(self, spec: PatternSpec) -> list[str]:
         """
         Validate a pattern specification.
 
@@ -256,8 +256,8 @@ class SpecificationLoader:
         return errors
 
     def get_patterns_by_category(
-        self, specs: Dict[str, PatternSpec]
-    ) -> Dict[str, List[str]]:
+        self, specs: dict[str, PatternSpec]
+    ) -> dict[str, list[str]]:
         """
         Group patterns by category.
 
@@ -267,7 +267,7 @@ class SpecificationLoader:
         Returns:
             Dictionary mapping categories to pattern names
         """
-        categories: Dict[str, List[str]] = {}
+        categories: dict[str, list[str]] = {}
         for name, spec in specs.items():
             category = spec.category
             if category not in categories:
@@ -275,7 +275,7 @@ class SpecificationLoader:
             categories[category].append(name)
         return categories
 
-    def get_patterns_requiring_llm(self, specs: Dict[str, PatternSpec]) -> List[str]:
+    def get_patterns_requiring_llm(self, specs: dict[str, PatternSpec]) -> list[str]:
         """
         Get patterns that require LLM access.
 

@@ -10,7 +10,6 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from harness_manager import HarnessConfig, HarnessManager, TestRequest, discover_harnesses
 from result_comparator import ResultComparator
@@ -23,8 +22,8 @@ class EquivalenceTestRunner:
     def __init__(
         self,
         specs_dir: Path,
-        harness_configs: List[HarnessConfig],
-        languages: Optional[List[str]] = None,
+        harness_configs: list[HarnessConfig],
+        languages: list[str] | None = None,
     ):
         """
         Initialize test runner.
@@ -40,8 +39,8 @@ class EquivalenceTestRunner:
         self.languages = languages or self.harness_manager.get_available_languages()
 
     def run_all_tests(
-        self, patterns: Optional[List[str]] = None
-    ) -> Dict[str, Dict[str, any]]:
+        self, patterns: list[str] | None = None
+    ) -> dict[str, dict[str, any]]:
         """
         Run all equivalence tests.
 
@@ -76,7 +75,7 @@ class EquivalenceTestRunner:
 
         return results
 
-    def _test_pattern(self, spec: PatternSpec) -> Dict[str, any]:
+    def _test_pattern(self, spec: PatternSpec) -> dict[str, any]:
         """Test a single pattern across all languages."""
         pattern_results = {
             "pattern": spec.name,
@@ -122,7 +121,7 @@ class EquivalenceTestRunner:
 
         return pattern_results
 
-    def _test_scenario(self, spec: PatternSpec, scenario) -> Dict[str, any]:
+    def _test_scenario(self, spec: PatternSpec, scenario) -> dict[str, any]:
         """Test a single scenario across all languages."""
         # Build test request
         request = TestRequest(
@@ -196,7 +195,7 @@ class EquivalenceTestRunner:
             "equivalence": equivalence_summary,
         }
 
-    def generate_report(self, results: Dict[str, Dict[str, any]], output_path: Path):
+    def generate_report(self, results: dict[str, dict[str, any]], output_path: Path):
         """
         Generate test report.
 

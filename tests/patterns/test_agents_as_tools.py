@@ -226,7 +226,7 @@ async def test_agent_tool_with_tool_registry():
 @pytest.mark.asyncio
 async def test_agent_tool_integration_react_pattern():
     """Test integration with ReAct pattern."""
-    from agenkit.patterns import ReActAgent, ToolRegistry
+    from agenkit.patterns import ToolRegistry
 
     # Create specialist agents
     code_agent = MockSpecialistAgent(specialty="code", response="print('Hello, World!')")
@@ -288,7 +288,7 @@ async def test_agent_tool_preserves_agent_capabilities():
     """Test that tool preserves underlying agent capabilities."""
     agent = MockSpecialistAgent(specialty="code")
 
-    tool = AgentTool(agent=agent, name="code_tool", description="Code tool")
+    AgentTool(agent=agent, name="code_tool", description="Code tool")
 
     # Agent capabilities should still be accessible
     assert agent.capabilities == ["code"]

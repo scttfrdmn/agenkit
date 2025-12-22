@@ -1,16 +1,15 @@
 """Tests for Graph-of-Thought reasoning technique."""
 
 import pytest
+
 from agenkit import Message
 from agenkit.techniques.reasoning import (
+    EdgeType,
     GraphOfThought,
+    NodeType,
     ReasoningGraph,
     ThoughtNode,
-    LogicalEdge,
-    NodeType,
-    EdgeType
 )
-
 
 # Test ReasoningGraph Data Structure
 
@@ -250,7 +249,7 @@ def test_graph_statistics():
     graph.add_node("Thought", NodeType.INTERMEDIATE, confidence=0.7)
     graph.add_node("Conclusion", NodeType.CONCLUSION, confidence=0.8)
 
-    node_a = list(graph.nodes.keys())[0]
+    node_a = next(iter(graph.nodes.keys()))
     node_b = list(graph.nodes.keys())[1]
     graph.add_edge(node_a, node_b, EdgeType.SUPPORTS)
 

@@ -8,10 +8,12 @@ agent outputs and automatically redact sensitive information.
 import asyncio
 
 from agenkit.interfaces import Agent, Message
-from agenkit.safety.output_validation import (OutputValidationError,
-                                              OutputValidationMiddleware,
-                                              SchemaValidator,
-                                              SensitiveDataRedactor)
+from agenkit.safety.output_validation import (
+    OutputValidationError,
+    OutputValidationMiddleware,
+    SchemaValidator,
+    SensitiveDataRedactor,
+)
 
 
 # Agent that returns structured data

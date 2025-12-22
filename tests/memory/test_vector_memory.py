@@ -7,8 +7,7 @@ from datetime import datetime, timezone
 import pytest
 
 from agenkit.interfaces import Message
-from agenkit.memory.vector_memory import (EmbeddingProvider,
-                                          InMemoryVectorStore, VectorMemory)
+from agenkit.memory.vector_memory import EmbeddingProvider, InMemoryVectorStore, VectorMemory
 
 
 class MockEmbeddingProvider(EmbeddingProvider):

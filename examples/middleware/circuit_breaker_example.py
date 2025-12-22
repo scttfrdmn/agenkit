@@ -34,9 +34,13 @@ import asyncio
 import time
 
 from agenkit.interfaces import Agent, Message
-from agenkit.middleware import (CircuitBreakerConfig, CircuitBreakerDecorator,
-                                CircuitBreakerError, RetryConfig,
-                                RetryDecorator)
+from agenkit.middleware import (
+    CircuitBreakerConfig,
+    CircuitBreakerDecorator,
+    CircuitBreakerError,
+    RetryConfig,
+    RetryDecorator,
+)
 
 
 # Simulate an external API that experiences outages

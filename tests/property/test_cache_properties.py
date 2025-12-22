@@ -18,8 +18,7 @@ from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from agenkit.interfaces import Agent, Message
-from tests.property.strategies import (short_content_strategy,
-                                       small_positive_int_strategy)
+from tests.property.strategies import short_content_strategy, small_positive_int_strategy
 
 
 class SimpleAgent(Agent):

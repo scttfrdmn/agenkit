@@ -5,8 +5,11 @@ import asyncio
 import pytest
 
 from agenkit.interfaces import Agent, Message
-from agenkit.safety.anomaly_detection import (AnomalyDetectionMiddleware,
-                                              AnomalyDetector, SecurityEvent)
+from agenkit.safety.anomaly_detection import (
+    AnomalyDetectionMiddleware,
+    AnomalyDetector,
+    SecurityEvent,
+)
 
 
 class EchoAgent(Agent):

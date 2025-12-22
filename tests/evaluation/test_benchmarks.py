@@ -6,11 +6,13 @@ Tests SimpleQA, NeedleInHaystack, ExtremeScale, and BenchmarkSuite.
 
 import pytest
 
-from agenkit.evaluation.benchmarks import (BenchmarkSuite,
-                                           ExtremeScaleBenchmark,
-                                           InformationRetentionBenchmark,
-                                           NeedleInHaystackBenchmark,
-                                           SimpleQABenchmark)
+from agenkit.evaluation.benchmarks import (
+    BenchmarkSuite,
+    ExtremeScaleBenchmark,
+    InformationRetentionBenchmark,
+    NeedleInHaystackBenchmark,
+    SimpleQABenchmark,
+)
 
 
 @pytest.mark.asyncio

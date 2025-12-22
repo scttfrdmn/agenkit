@@ -1,6 +1,7 @@
 """Tests for pattern benchmark suite."""
 
 import asyncio
+
 # Import directly to avoid sklearn dependency
 import sys
 from pathlib import Path
@@ -9,9 +10,11 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from agenkit.evaluation.pattern_benchmarks import (PatternBenchmark,
-                                                   PatternBenchmarkSuite,
-                                                   YAMLBenchmarkLoader)
+from agenkit.evaluation.pattern_benchmarks import (
+    PatternBenchmark,
+    PatternBenchmarkSuite,
+    YAMLBenchmarkLoader,
+)
 from agenkit.interfaces import Message
 
 

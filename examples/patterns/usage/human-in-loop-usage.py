@@ -20,8 +20,7 @@ This example shows:
 import asyncio
 
 from agenkit.core import Agent, Message
-from agenkit.patterns import (ApprovalRequest, ApprovalResponse,
-                              HumanInLoopAgent, HumanInLoopConfig)
+from agenkit.patterns import ApprovalRequest, ApprovalResponse, HumanInLoopAgent, HumanInLoopConfig
 
 
 class TransactionAgent(Agent):

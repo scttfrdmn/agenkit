@@ -6,8 +6,7 @@ This example shows how to compose patterns to create complex workflows.
 
 import asyncio
 
-from agenkit import (Agent, Message, ParallelPattern, RouterPattern,
-                     SequentialPattern)
+from agenkit import Agent, Message, ParallelPattern, RouterPattern, SequentialPattern
 
 # ============================================
 # Analysis Agents (for parallel step)

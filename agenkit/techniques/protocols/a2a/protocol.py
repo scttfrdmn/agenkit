@@ -168,7 +168,7 @@ def get_error_message(error_code: ErrorCode) -> str:
     return messages.get(error_code, "Unknown error")
 
 
-class A2AException(Exception):
+class A2AError(Exception):
     """Base exception for A2A protocol errors."""
 
     def __init__(
@@ -199,14 +199,14 @@ class A2AException(Exception):
         }
 
 
-class TimeoutError(A2AException):
+class TimeoutError(A2AError):
     """Request timeout error."""
 
     def __init__(self, message: str | None = None, details: dict[str, Any] | None = None):
         super().__init__(ErrorCode.TIMEOUT, message, details)
 
 
-class AgentNotFoundError(A2AException):
+class AgentNotFoundError(A2AError):
     """Agent not found error."""
 
     def __init__(self, agent_id: str):
@@ -217,7 +217,7 @@ class AgentNotFoundError(A2AException):
         )
 
 
-class CapabilityNotSupportedError(A2AException):
+class CapabilityNotSupportedError(A2AError):
     """Capability not supported error."""
 
     def __init__(self, capability: str):
@@ -228,14 +228,14 @@ class CapabilityNotSupportedError(A2AException):
         )
 
 
-class ProtocolError(A2AException):
+class ProtocolError(A2AError):
     """Protocol error."""
 
     def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(ErrorCode.PROTOCOL_ERROR, message, details)
 
 
-class RateLimitError(A2AException):
+class RateLimitError(A2AError):
     """Rate limit exceeded error."""
 
     def __init__(self, retry_after_ms: int | None = None):

@@ -16,12 +16,8 @@ Run: python examples/budget/extended_thinking_demo.py
 import asyncio
 
 from agenkit import Message
-from agenkit.budget import (
-    CostTracker,
-    ThinkingBudgetAllocator,
-    ThinkingMode,
-    ThinkingModeDetector,
-)
+from agenkit.budget import (CostTracker, ThinkingBudgetAllocator, ThinkingMode,
+                            ThinkingModeDetector)
 
 
 async def demo_basic_allocation():

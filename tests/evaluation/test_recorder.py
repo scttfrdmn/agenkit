@@ -10,14 +10,10 @@ from datetime import datetime, timezone
 
 import pytest
 
-from agenkit.evaluation.recorder import (
-    FileRecordingStorage,
-    InMemoryRecordingStorage,
-    InteractionRecord,
-    SessionRecorder,
-    SessionRecording,
-    SessionReplay,
-)
+from agenkit.evaluation.recorder import (FileRecordingStorage,
+                                         InMemoryRecordingStorage,
+                                         InteractionRecord, SessionRecorder,
+                                         SessionRecording, SessionReplay)
 from agenkit.interfaces import Message
 
 

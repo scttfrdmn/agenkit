@@ -8,14 +8,13 @@ to create a fully secured agent with comprehensive protection.
 import asyncio
 
 from agenkit.interfaces import Agent, Message
-from agenkit.safety.anomaly_detection import (
-    AnomalyDetectionMiddleware,
-    AnomalyDetector,
-    SecurityEvent,
-)
+from agenkit.safety.anomaly_detection import (AnomalyDetectionMiddleware,
+                                              AnomalyDetector, SecurityEvent)
 from agenkit.safety.audit import SecurityAuditLogger
-from agenkit.safety.input_validation import InputValidationMiddleware, PromptInjectionDetector
-from agenkit.safety.output_validation import OutputValidationMiddleware, SchemaValidator
+from agenkit.safety.input_validation import (InputValidationMiddleware,
+                                             PromptInjectionDetector)
+from agenkit.safety.output_validation import (OutputValidationMiddleware,
+                                              SchemaValidator)
 from agenkit.safety.permissions import PermissionMiddleware, Role, Sandbox
 
 

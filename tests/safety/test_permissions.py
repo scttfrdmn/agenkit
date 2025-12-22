@@ -3,14 +3,9 @@
 import pytest
 
 from agenkit.interfaces import Agent, Message
-from agenkit.safety.permissions import (
-    ROLE_PERMISSIONS,
-    Permission,
-    PermissionDeniedError,
-    PermissionMiddleware,
-    Role,
-    Sandbox,
-)
+from agenkit.safety.permissions import (ROLE_PERMISSIONS, Permission,
+                                        PermissionDeniedError,
+                                        PermissionMiddleware, Role, Sandbox)
 
 
 class EchoAgent(Agent):

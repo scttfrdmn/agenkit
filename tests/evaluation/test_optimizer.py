@@ -4,11 +4,8 @@ Tests for optimization framework base classes.
 
 import pytest
 
-from agenkit.evaluation import (
-    OptimizationResult,
-    RandomSearchOptimizer,
-    SearchSpace,
-)
+from agenkit.evaluation import (OptimizationResult, RandomSearchOptimizer,
+                                SearchSpace)
 from agenkit.interfaces import Message
 
 

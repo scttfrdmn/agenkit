@@ -13,12 +13,8 @@ Run: python examples/evaluation/optimization_demo.py
 import asyncio
 import random
 
-from agenkit.evaluation import (
-    BayesianOptimizer,
-    PromptOptimizer,
-    RandomSearchOptimizer,
-    SearchSpace,
-)
+from agenkit.evaluation import (BayesianOptimizer, PromptOptimizer,
+                                RandomSearchOptimizer, SearchSpace)
 from agenkit.interfaces import Message
 
 

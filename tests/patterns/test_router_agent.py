@@ -5,7 +5,8 @@ Tests for RouterAgent pattern - conditional agent selection via classification.
 import pytest
 
 from agenkit import Message
-from agenkit.patterns import LLMClassifier, RouterAgent, RouterConfig, SimpleClassifier
+from agenkit.patterns import (LLMClassifier, RouterAgent, RouterConfig,
+                              SimpleClassifier)
 
 # ============================================================================
 # Mock Agents

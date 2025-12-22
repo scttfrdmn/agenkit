@@ -6,14 +6,10 @@ Tests ABTest, ABVariant, ABResult, and statistical methods.
 
 import pytest
 
-from agenkit.evaluation.ab_testing import (
-    ABResult,
-    ABTest,
-    ABVariant,
-    SignificanceLevel,
-    StatisticalTestType,
-    calculate_sample_size,
-)
+from agenkit.evaluation.ab_testing import (ABResult, ABTest, ABVariant,
+                                           SignificanceLevel,
+                                           StatisticalTestType,
+                                           calculate_sample_size)
 from agenkit.interfaces import Message
 
 

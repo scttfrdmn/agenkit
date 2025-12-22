@@ -20,12 +20,8 @@ This example shows:
 import asyncio
 
 from agenkit.core import Agent, Message
-from agenkit.patterns import (
-    CollaborativeAgent,
-    CollaborativeConfig,
-    default_consensus_funcs,
-    default_merge_funcs,
-)
+from agenkit.patterns import (CollaborativeAgent, CollaborativeConfig,
+                              default_consensus_funcs, default_merge_funcs)
 
 
 class DraftAgent(Agent):

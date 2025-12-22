@@ -8,12 +8,10 @@ your agents from prompt injection attacks.
 import asyncio
 
 from agenkit.interfaces import Agent, Message
-from agenkit.safety.input_validation import (
-    ContentFilter,
-    InputValidationMiddleware,
-    PromptInjectionDetector,
-    ValidationError,
-)
+from agenkit.safety.input_validation import (ContentFilter,
+                                             InputValidationMiddleware,
+                                             PromptInjectionDetector,
+                                             ValidationError)
 
 
 # Create a simple echo agent

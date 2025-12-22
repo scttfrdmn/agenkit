@@ -10,19 +10,11 @@ Tests verify:
 
 import pytest
 
-from agenkit.composition import (
-    ConditionalAgent,
-    FallbackAgent,
-    ParallelAgent,
-    SequentialAgent,
-    and_conditions,
-    content_contains,
-    metadata_equals,
-    metadata_has_key,
-    not_condition,
-    or_conditions,
-    role_equals,
-)
+from agenkit.composition import (ConditionalAgent, FallbackAgent,
+                                 ParallelAgent, SequentialAgent,
+                                 and_conditions, content_contains,
+                                 metadata_equals, metadata_has_key,
+                                 not_condition, or_conditions, role_equals)
 from agenkit.interfaces import Agent, Message
 
 # ============================================

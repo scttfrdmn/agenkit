@@ -6,11 +6,7 @@ import contextlib
 import pytest
 
 from agenkit.interfaces import Agent, Message
-from agenkit.middleware import (
-    TimeoutConfig,
-    TimeoutDecorator,
-    TimeoutError,
-)
+from agenkit.middleware import TimeoutConfig, TimeoutDecorator, TimeoutError
 
 
 class FastAgent(Agent):

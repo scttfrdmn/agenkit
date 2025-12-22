@@ -8,13 +8,8 @@ role-based access control (RBAC) and sandboxing for your agents.
 import asyncio
 
 from agenkit.interfaces import Agent, Message
-from agenkit.safety.permissions import (
-    Permission,
-    PermissionDeniedError,
-    PermissionMiddleware,
-    Role,
-    Sandbox,
-)
+from agenkit.safety.permissions import (Permission, PermissionDeniedError,
+                                        PermissionMiddleware, Role, Sandbox)
 
 
 # Simple echo agent for testing

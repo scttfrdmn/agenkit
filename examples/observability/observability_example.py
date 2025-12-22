@@ -9,14 +9,9 @@ import asyncio
 import logging
 
 from agenkit.interfaces import Agent, Message
-from agenkit.observability import (
-    MetricsMiddleware,
-    TracingMiddleware,
-    configure_logging,
-    get_logger_with_trace,
-    init_metrics,
-    init_tracing,
-)
+from agenkit.observability import (MetricsMiddleware, TracingMiddleware,
+                                   configure_logging, get_logger_with_trace,
+                                   init_metrics, init_tracing)
 
 
 class SimpleAgent(Agent):

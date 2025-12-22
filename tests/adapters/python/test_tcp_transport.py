@@ -5,11 +5,7 @@ import asyncio
 import pytest
 
 from agenkit import Agent, Message
-from agenkit.adapters.python import (
-    ConnectionError,
-    LocalAgent,
-    RemoteAgent,
-)
+from agenkit.adapters.python import ConnectionError, LocalAgent, RemoteAgent
 
 
 class EchoAgent(Agent):

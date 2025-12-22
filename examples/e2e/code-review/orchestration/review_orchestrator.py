@@ -3,15 +3,8 @@
 import asyncio
 from datetime import datetime
 
-from agents import (
-    CodeSubmission,
-    CorrectnessAgent,
-    PerformanceAgent,
-    ReviewResult,
-    SecurityAgent,
-    StyleAgent,
-    SynthesisAgent,
-)
+from agents import (CodeSubmission, CorrectnessAgent, PerformanceAgent,
+                    ReviewResult, SecurityAgent, StyleAgent, SynthesisAgent)
 
 from agenkit import Message
 

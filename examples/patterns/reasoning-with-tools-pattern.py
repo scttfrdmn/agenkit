@@ -15,9 +15,7 @@ Run: python examples/patterns/09_reasoning_with_tools.py
 import asyncio
 
 from agenkit.interfaces import Agent, Message, Tool, ToolResult
-from agenkit.patterns.reasoning_with_tools import (
-    ReasoningWithToolsAgent,
-)
+from agenkit.patterns.reasoning_with_tools import ReasoningWithToolsAgent
 
 # ============================================================================
 # Mock Tools for Examples

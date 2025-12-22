@@ -28,15 +28,11 @@ Example:
 from .base import Memory
 from .endless_memory import EndlessClient, EndlessMemory
 from .in_memory import InMemoryMemory
-
 # Import strategies
-from .strategies import (
-    ImportanceWeightingStrategy,
-    MemoryStrategy,
-    SlidingWindowStrategy,
-    SummarizationStrategy,
-)
-from .vector_memory import EmbeddingProvider, InMemoryVectorStore, VectorMemory, VectorStore
+from .strategies import (ImportanceWeightingStrategy, MemoryStrategy,
+                         SlidingWindowStrategy, SummarizationStrategy)
+from .vector_memory import (EmbeddingProvider, InMemoryVectorStore,
+                            VectorMemory, VectorStore)
 
 # Optional imports (require extra dependencies)
 try:

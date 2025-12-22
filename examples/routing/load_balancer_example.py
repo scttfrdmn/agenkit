@@ -18,11 +18,8 @@ import asyncio
 import time
 
 from agenkit.interfaces import Message
-from agenkit.routing.load_balancer import (
-    AgentInstance,
-    LoadBalancerRouter,
-    LoadBalancingStrategy,
-)
+from agenkit.routing.load_balancer import (AgentInstance, LoadBalancerRouter,
+                                           LoadBalancingStrategy)
 
 
 # Simple echo agent for demonstration

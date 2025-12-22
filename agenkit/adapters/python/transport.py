@@ -5,8 +5,9 @@ import struct
 from abc import ABC, abstractmethod
 from typing import Any
 
-from .errors import ConnectionClosedError, MalformedPayloadError
+from .errors import ConnectionClosedError
 from .errors import ConnectionError as ConnError
+from .errors import MalformedPayloadError
 
 MAX_MESSAGE_SIZE = 10 * 1024 * 1024  # 10 MB
 

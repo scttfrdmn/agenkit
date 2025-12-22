@@ -352,9 +352,9 @@ class ABTest:
 
         for _ in range(n_iterations):
             control_resample = [random.choice(control_samples) for _ in range(len(control_samples))]  # noqa: S311
-            treatment_resample = [
+            treatment_resample = [  # noqa: S311
                 random.choice(treatment_samples) for _ in range(len(treatment_samples))
-            ]  # noqa: S311
+            ]
 
             diff = statistics.mean(treatment_resample) - statistics.mean(control_resample)
             differences.append(diff)

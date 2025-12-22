@@ -13,11 +13,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-	"github.com/scttfrdmn/agenkit/agenkit-go/patterns"
 )
 
 // SimpleAgent is a basic agent for demonstration
@@ -43,15 +41,15 @@ func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 
 func main() {
 	fmt.Println("=== CollaborativeAgent Demo ===")
-	
-	// Create agents
-	agent1 := &SimpleAgent{name: "Agent1"}
-	agent2 := &SimpleAgent{name: "Agent2"}
-	agent3 := &SimpleAgent{name: "Agent3"}
-	
+
+	// Example agents would be created here
+	// agent1 := &SimpleAgent{name: "Agent1"}
+	// agent2 := &SimpleAgent{name: "Agent2"}
+	// agent3 := &SimpleAgent{name: "Agent3"}
+
 	// Create pattern (example - adjust based on pattern type)
 	// pattern := patterns.NewCollaborativeAgent(...)
-	
+
 	fmt.Println("\n✅ CollaborativeAgent pattern example")
 	fmt.Println("\nNote: This is a minimal template.")
 	fmt.Println("See Python examples for complete implementations.")

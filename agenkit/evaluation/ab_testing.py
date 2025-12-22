@@ -352,8 +352,7 @@ class ABTest:
 
         for _ in range(n_iterations):
             control_resample = [
-                random.choice(control_samples)  # noqa: S311
-                for _ in range(len(control_samples))
+                random.choice(control_samples) for _ in range(len(control_samples))  # noqa: S311
             ]
             treatment_resample = [
                 random.choice(treatment_samples)  # noqa: S311

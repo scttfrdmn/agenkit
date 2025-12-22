@@ -34,6 +34,13 @@ func (v *ValidatorAgent) Capabilities() []string {
 	return []string{"validation"}
 }
 
+func (v *ValidatorAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    v.Name(),
+		Capabilities: v.Capabilities(),
+	}
+}
+
 func (v *ValidatorAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	content := message.Content
 	fmt.Println("   🔍 Validator: Checking input...")
@@ -53,6 +60,13 @@ func (p *ProcessorAgent) Capabilities() []string {
 	return []string{"processing"}
 }
 
+func (p *ProcessorAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    p.Name(),
+		Capabilities: p.Capabilities(),
+	}
+}
+
 func (p *ProcessorAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	content := message.Content
 	fmt.Println("   ⚙️  Processor: Processing data...")
@@ -70,6 +84,13 @@ func (f *FormatterAgent) Name() string {
 
 func (f *FormatterAgent) Capabilities() []string {
 	return []string{"formatting"}
+}
+
+func (f *FormatterAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    f.Name(),
+		Capabilities: f.Capabilities(),
+	}
 }
 
 func (f *FormatterAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -92,6 +113,13 @@ func (r *ReviewerAgent) Name() string {
 
 func (r *ReviewerAgent) Capabilities() []string {
 	return []string{"review", r.perspective}
+}
+
+func (r *ReviewerAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    r.Name(),
+		Capabilities: r.Capabilities(),
+	}
 }
 
 func (r *ReviewerAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

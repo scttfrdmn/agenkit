@@ -166,7 +166,7 @@ func main() {
 	// Compare with random search
 	fmt.Println("Step 5: Comparing with Random Search")
 	fmt.Println("-------------------------------------")
-	fmt.Println("Running 20 random evaluations for comparison...\n")
+	fmt.Println("Running 20 random evaluations for comparison...")
 
 	randomBestScore := 0.0
 	for i := 0; i < 20; i++ {
@@ -185,7 +185,7 @@ func main() {
 
 	// Compare different acquisition functions
 	fmt.Println("Step 6: Comparing Acquisition Functions")
-	fmt.Println("----------------------------------------\n")
+	fmt.Println("----------------------------------------")
 
 	acquisitions := []struct {
 		name string

@@ -359,9 +359,9 @@ func TestConversationalAgent_SetMaxHistory(t *testing.T) {
 	}
 
 	// Add 3 turns (6 messages)
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "A"})
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "B"})
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "C"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "A"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "B"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "C"})
 
 	if agent.HistoryLength() != 6 {
 		t.Errorf("expected 6 messages, got %d", agent.HistoryLength())

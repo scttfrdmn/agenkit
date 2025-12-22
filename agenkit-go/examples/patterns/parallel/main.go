@@ -165,7 +165,7 @@ func (c *ClassifierAgent) Process(ctx context.Context, message *agenkit.Message)
 
 func main() {
 	fmt.Println("=== Parallel Pattern Demo ===")
-	fmt.Println("Demonstrating concurrent agent execution\n")
+	fmt.Println("Demonstrating concurrent agent execution")
 
 	// Example 1: Multi-perspective analysis with concatenation
 	fmt.Println("📊 Example 1: Multi-Perspective Analysis")

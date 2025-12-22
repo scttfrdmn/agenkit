@@ -194,7 +194,7 @@ func (m *MockLLMAgent) Process(ctx context.Context, message *agenkit.Message) (*
 
 func main() {
 	fmt.Println("=== Router Pattern Demo ===")
-	fmt.Println("Demonstrating intelligent request routing\n")
+	fmt.Println("Demonstrating intelligent request routing")
 
 	ctx := context.Background()
 

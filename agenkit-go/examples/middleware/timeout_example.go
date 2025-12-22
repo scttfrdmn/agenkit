@@ -135,7 +135,7 @@ func (a *UnpredictableAgent) Process(ctx context.Context, message *agenkit.Messa
 // Example 1: Basic timeout protection
 func example1BasicTimeout() {
 	fmt.Println("\n=== Example 1: Basic Timeout ===")
-	fmt.Println("Use case: Protect against slow LLM responses\n")
+	fmt.Println("Use case: Protect against slow LLM responses")
 
 	// Create a slow agent (takes 2 seconds)
 	agent := NewSlowLLMAgent(2 * time.Second)
@@ -163,7 +163,7 @@ func example1BasicTimeout() {
 // Example 2: Fast requests complete successfully
 func example2SuccessfulWithTimeout() {
 	fmt.Println("\n=== Example 2: Fast Request Success ===")
-	fmt.Println("Use case: Normal operations complete within timeout\n")
+	fmt.Println("Use case: Normal operations complete within timeout")
 
 	// Create a fast agent (takes 0.5 seconds)
 	agent := NewSlowLLMAgent(500 * time.Millisecond)
@@ -193,7 +193,7 @@ func example2SuccessfulWithTimeout() {
 // Example 3: Handling multiple requests and tracking metrics
 func example3MultipleRequestsWithMetrics() {
 	fmt.Println("\n=== Example 3: Multiple Requests with Metrics ===")
-	fmt.Println("Use case: Track success/timeout rates across many requests\n")
+	fmt.Println("Use case: Track success/timeout rates across many requests")
 
 	agent := NewUnpredictableAgent()
 
@@ -266,7 +266,7 @@ func (a *CachedResponseAgent) Process(ctx context.Context, message *agenkit.Mess
 // Example 4: Implement fallback when timeout occurs
 func example4FallbackOnTimeout() {
 	fmt.Println("\n=== Example 4: Fallback on Timeout ===")
-	fmt.Println("Use case: Provide cached/default response when primary agent times out\n")
+	fmt.Println("Use case: Provide cached/default response when primary agent times out")
 
 	// Primary agent (slow)
 	primary := NewSlowLLMAgent(5 * time.Second)
@@ -350,7 +350,7 @@ func (a *StreamingAgent) Stream(ctx context.Context, message *agenkit.Message) (
 // Example 5: Timeout with streaming responses
 func example5StreamingTimeout() {
 	fmt.Println("\n=== Example 5: Streaming with Timeout ===")
-	fmt.Println("Use case: Apply timeout to entire stream duration\n")
+	fmt.Println("Use case: Apply timeout to entire stream duration")
 
 	// Create streaming agent (5 chunks × 0.5s = 2.5s total)
 	agent := NewStreamingAgent(500*time.Millisecond, 5)
@@ -398,7 +398,7 @@ func example5StreamingTimeout() {
 // Example 6: Different timeout strategies for different use cases
 func example6DifferentTimeoutStrategies() {
 	fmt.Println("\n=== Example 6: Timeout Strategies ===")
-	fmt.Println("Use case: Choose appropriate timeout based on operation type\n")
+	fmt.Println("Use case: Choose appropriate timeout based on operation type")
 
 	agent := NewSlowLLMAgent(1500 * time.Millisecond)
 

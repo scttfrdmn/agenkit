@@ -153,7 +153,7 @@ func (c *CriticAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 
 // Example 1: Sequential orchestration (pipeline)
 func exampleSequentialOrchestration() error {
-	fmt.Println("\n=== Example 1: Sequential Orchestration ===\n")
+	fmt.Println("\n=== Example 1: Sequential Orchestration ===")
 
 	orchestrator := patterns.NewMultiAgentOrchestrator(patterns.StrategySequential)
 
@@ -162,7 +162,7 @@ func exampleSequentialOrchestration() error {
 	orchestrator.RegisterAgent("editor", &EditorAgent{})
 
 	fmt.Printf("Registered agents: %v\n", orchestrator.ListAgents())
-	fmt.Println("\nProcessing: Write a report on AI agents\n")
+	fmt.Println("\nProcessing: Write a report on AI agents")
 
 	message := agenkit.NewMessage("user", "AI agent capabilities")
 	result, err := orchestrator.Process(context.Background(), message)
@@ -184,7 +184,7 @@ func exampleSequentialOrchestration() error {
 
 // Example 2: Consensus building
 func exampleConsensus() error {
-	fmt.Println("\n=== Example 2: Consensus Building ===\n")
+	fmt.Println("\n=== Example 2: Consensus Building ===")
 
 	consensus := patterns.NewConsensusAgent(patterns.VotingMajority)
 
@@ -208,7 +208,7 @@ func exampleConsensus() error {
 
 // Example 3: Research team collaboration
 func exampleResearchTeam() error {
-	fmt.Println("\n=== Example 3: Research Team Collaboration ===\n")
+	fmt.Println("\n=== Example 3: Research Team Collaboration ===")
 
 	orchestrator := patterns.NewMultiAgentOrchestrator(patterns.StrategySequential)
 
@@ -229,7 +229,7 @@ func exampleResearchTeam() error {
 
 // Example 4: Content creation pipeline
 func exampleContentPipeline() error {
-	fmt.Println("\n=== Example 4: Content Creation Pipeline ===\n")
+	fmt.Println("\n=== Example 4: Content Creation Pipeline ===")
 
 	orchestrator := patterns.NewMultiAgentOrchestrator(patterns.StrategySequential)
 
@@ -242,7 +242,7 @@ func exampleContentPipeline() error {
 	fmt.Println("Stage 3: Editing")
 	orchestrator.RegisterAgent("editor", &EditorAgent{})
 
-	fmt.Println("\nProcessing content pipeline...\n")
+	fmt.Println("\nProcessing content pipeline...")
 
 	message := agenkit.NewMessage("user", "agent design patterns")
 	result, err := orchestrator.Process(context.Background(), message)
@@ -264,7 +264,7 @@ func exampleContentPipeline() error {
 
 // Example 5: Dynamic agent registration
 func exampleDynamicRegistration() error {
-	fmt.Println("\n=== Example 5: Dynamic Agent Registration ===\n")
+	fmt.Println("\n=== Example 5: Dynamic Agent Registration ===")
 
 	orchestrator := patterns.NewMultiAgentOrchestrator(patterns.StrategySequential)
 

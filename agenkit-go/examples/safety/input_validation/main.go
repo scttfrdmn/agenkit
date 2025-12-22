@@ -38,7 +38,7 @@ func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 }
 
 func main() {
-	fmt.Println("=== Input Validation Example ===\n")
+	fmt.Println("=== Input Validation Example ===")
 
 	// Create base agent
 	baseAgent := &SimpleAgent{}

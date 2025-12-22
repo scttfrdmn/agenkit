@@ -162,7 +162,7 @@ func (m *MedicalAgent) Process(ctx context.Context, message *agenkit.Message) (*
 
 func main() {
 	fmt.Println("=== Human-in-Loop Pattern Demo ===")
-	fmt.Println("Demonstrating human oversight for critical decisions\n")
+	fmt.Println("Demonstrating human oversight for critical decisions")
 
 	ctx := context.Background()
 
@@ -271,7 +271,7 @@ func main() {
 	fmt.Println("\nTesting tiered approval strategy:")
 	fmt.Println("  < 0.50: Auto-reject")
 	fmt.Println("  0.50-0.90: Manual review")
-	fmt.Println("  >= 0.90: Auto-approve\n")
+	fmt.Println("  >= 0.90: Auto-approve")
 
 	for i, testCase := range cases {
 		fmt.Printf("Case %d: %s\n", i+1, testCase)

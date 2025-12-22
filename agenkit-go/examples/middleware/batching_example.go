@@ -182,7 +182,7 @@ func example1LLMBatchProcessing() {
 
 	fmt.Println("\nScenario: Processing 20 LLM requests")
 	fmt.Println("Real-world: OpenAI Batch API offers 50% cost savings")
-	fmt.Println("Trade-off: Adds latency but reduces costs significantly\n")
+	fmt.Println("Trade-off: Adds latency but reduces costs significantly")
 
 	agent := NewMockLLMBatchAgent()
 
@@ -246,7 +246,7 @@ func example2DatabaseBulkOperations() {
 
 	fmt.Println("\nScenario: Inserting 50 database records")
 	fmt.Println("Real-world: Bulk INSERT 10-100x faster than individual INSERTs")
-	fmt.Println("Trade-off: Small latency increase, huge throughput gain\n")
+	fmt.Println("Trade-off: Small latency increase, huge throughput gain")
 
 	agent := NewMockDatabaseAgent()
 
@@ -311,7 +311,7 @@ func example3HighThroughputAnalytics() {
 
 	fmt.Println("\nScenario: Processing 100 analytics events")
 	fmt.Println("Real-world: Data pipelines batch events for warehouse writes")
-	fmt.Println("Trade-off: Slight delay acceptable for massive throughput\n")
+	fmt.Println("Trade-off: Slight delay acceptable for massive throughput")
 
 	agent := NewMockAnalyticsAgent()
 
@@ -403,7 +403,7 @@ func example4PartialFailures() {
 
 	fmt.Println("\nScenario: Batch with some failing requests")
 	fmt.Println("Real-world: Individual requests can fail independently")
-	fmt.Println("Batching isolates failures - only failed requests error out\n")
+	fmt.Println("Batching isolates failures - only failed requests error out")
 
 	agent := NewPartialFailAgent()
 	config := middleware.BatchingConfig{
@@ -472,7 +472,7 @@ func example5ConfigurationTuning() {
 	fmt.Println("Example 5: Configuration Tuning (Latency vs Throughput)")
 	fmt.Println(strings.Repeat("=", 70))
 
-	fmt.Println("\nComparing different batching configurations:\n")
+	fmt.Println("\nComparing different batching configurations:")
 
 	// Test configurations
 	type configTest struct {

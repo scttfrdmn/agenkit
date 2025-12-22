@@ -68,7 +68,7 @@ func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 }
 
 func main() {
-	fmt.Println("=== Agenkit Go Observability Example ===\n")
+	fmt.Println("=== Agenkit Go Observability Example ===")
 
 	// Initialize OpenTelemetry
 	fmt.Println("1. Initializing OpenTelemetry...")
@@ -107,7 +107,7 @@ func main() {
 		true, // Include trace context
 	)
 
-	fmt.Println("✓ Tracing, metrics, and logging initialized\n")
+	fmt.Println("✓ Tracing, metrics, and logging initialized")
 	fmt.Printf("  TracerProvider: %T\n", tp)
 	fmt.Printf("  MeterProvider: %T\n\n", mp)
 
@@ -130,7 +130,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("✓ Agents wrapped with observability middleware\n")
+	fmt.Println("✓ Agents wrapped with observability middleware")
 
 	// Process messages through agent chain
 	fmt.Println("3. Processing messages through agents...")
@@ -162,12 +162,12 @@ func main() {
 	fmt.Println("   • Trace context propagated across agents")
 	fmt.Println("   • Structured logs include trace_id and span_id")
 	fmt.Println("   • Metrics collected for requests, errors, and latency")
-	fmt.Println("   • Prometheus metrics available at http://localhost:8002/metrics\n")
+	fmt.Println("   • Prometheus metrics available at http://localhost:8002/metrics")
 
 	fmt.Println("5. View Traces and Metrics:")
 	fmt.Println("   • Traces exported to console (see above)")
 	fmt.Println("   • Metrics: curl http://localhost:8002/metrics")
-	fmt.Println("   • Logs: Check structured JSON logs above\n")
+	fmt.Println("   • Logs: Check structured JSON logs above")
 
 	fmt.Println("=== Example Complete ===")
 

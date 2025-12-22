@@ -146,7 +146,7 @@ func (u *UnreliableAgent) Process(ctx context.Context, message *agenkit.Message)
 
 func main() {
 	fmt.Println("=== Fallback Pattern Demo ===")
-	fmt.Println("Demonstrating high-availability agent patterns\n")
+	fmt.Println("Demonstrating high-availability agent patterns")
 
 	ctx := context.Background()
 
@@ -170,7 +170,7 @@ func main() {
 	message := agenkit.NewMessage("user", "Request data")
 
 	fmt.Println("\nAttempting request with fallback chain:")
-	fmt.Println("Primary -> Backup -> Cache\n")
+	fmt.Println("Primary -> Backup -> Cache")
 
 	result, err := fallback.Process(ctx, message)
 	if err != nil {
@@ -194,7 +194,7 @@ func main() {
 	fmt.Println("\n📊 Example 2: Multiple Requests")
 	fmt.Println(strings.Repeat("-", 50))
 
-	fmt.Println("\nMaking 5 requests to see fallback behavior:\n")
+	fmt.Println("\nMaking 5 requests to see fallback behavior:")
 
 	for i := 0; i < 5; i++ {
 		fmt.Printf("Request %d:\n", i+1)
@@ -228,7 +228,7 @@ func main() {
 		log.Fatalf("Failed to create failing agent: %v", err)
 	}
 
-	fmt.Println("\nAttempting with all unreliable agents...\n")
+	fmt.Println("\nAttempting with all unreliable agents...")
 
 	_, err = failing.Process(ctx, message)
 	if err != nil {
@@ -248,7 +248,7 @@ func main() {
 
 	recovered := patterns.WithRecovery(unreliable, recoveryFunc)
 
-	fmt.Println("\nAttempting request with recovery...\n")
+	fmt.Println("\nAttempting request with recovery...")
 
 	result, err = recovered.Process(ctx, message)
 	if err != nil {
@@ -283,7 +283,7 @@ func main() {
 
 	customRecovered := patterns.WithRecovery(unreliable, customRecovery)
 
-	fmt.Println("\nAttempting request with custom recovery...\n")
+	fmt.Println("\nAttempting request with custom recovery...")
 
 	result, err = customRecovered.Process(ctx, message)
 	if err != nil {
@@ -306,7 +306,7 @@ func main() {
 		log.Fatalf("Failed to create quick-win agent: %v", err)
 	}
 
-	fmt.Println("\nOptimized for speed (Cache -> Backup -> Primary):\n")
+	fmt.Println("\nOptimized for speed (Cache -> Backup -> Primary):")
 
 	start := time.Now()
 	result, err = quickWin.Process(ctx, message)

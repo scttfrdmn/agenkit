@@ -40,11 +40,11 @@ func printSeparator(title string) {
 // Example 1: OpenAI Integration
 func exampleOpenAI() {
 	printSeparator("Example 1: OpenAI Integration")
-	fmt.Println("  GPT-4 and GPT-3.5 Turbo support\n")
+	fmt.Println("  GPT-4 and GPT-3.5 Turbo support")
 
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
-		fmt.Println("  ⚠️  OPENAI_API_KEY not set, skipping...\n")
+		fmt.Println("  ⚠️  OPENAI_API_KEY not set, skipping...")
 		return
 	}
 
@@ -69,11 +69,11 @@ func exampleOpenAI() {
 // Example 2: Anthropic Integration (Claude)
 func exampleAnthropic() {
 	printSeparator("Example 2: Anthropic Integration")
-	fmt.Println("  Claude 3 (Opus, Sonnet, Haiku) support\n")
+	fmt.Println("  Claude 3 (Opus, Sonnet, Haiku) support")
 
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
 	if apiKey == "" {
-		fmt.Println("  ⚠️  ANTHROPIC_API_KEY not set, skipping...\n")
+		fmt.Println("  ⚠️  ANTHROPIC_API_KEY not set, skipping...")
 		return
 	}
 
@@ -98,7 +98,7 @@ func exampleAnthropic() {
 // Example 3: Ollama Integration (Local models)
 func exampleOllama() {
 	printSeparator("Example 3: Ollama Integration")
-	fmt.Println("  Local LLM inference (Llama 2, Mistral, etc.)\n")
+	fmt.Println("  Local LLM inference (Llama 2, Mistral, etc.)")
 
 	llmAdapter := llm.NewOllamaLLM("llama2", "http://localhost:11434")
 
@@ -113,7 +113,7 @@ func exampleOllama() {
 	if err != nil {
 		fmt.Printf("  ❌ Error: %v\n", err)
 		fmt.Println("  💡 Make sure Ollama is running: ollama serve")
-		fmt.Println("  💡 And model is downloaded: ollama pull llama2\n")
+		fmt.Println("  💡 And model is downloaded: ollama pull llama2")
 		return
 	}
 
@@ -123,11 +123,11 @@ func exampleOllama() {
 // Example 4: Production-Ready LLM with Middleware
 func exampleProductionMiddleware() {
 	printSeparator("Example 4: Production-Ready LLM with Middleware")
-	fmt.Println("  Add resilience: Retry + Timeout + Circuit Breaker\n")
+	fmt.Println("  Add resilience: Retry + Timeout + Circuit Breaker")
 
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
-		fmt.Println("  ⚠️  OPENAI_API_KEY not set, skipping...\n")
+		fmt.Println("  ⚠️  OPENAI_API_KEY not set, skipping...")
 		return
 	}
 
@@ -175,11 +175,11 @@ func exampleProductionMiddleware() {
 // Example 5: Streaming LLM Responses
 func exampleStreaming() {
 	printSeparator("Example 5: Streaming LLM Responses")
-	fmt.Println("  Real-time token-by-token output\n")
+	fmt.Println("  Real-time token-by-token output")
 
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
-		fmt.Println("  ⚠️  OPENAI_API_KEY not set, skipping...\n")
+		fmt.Println("  ⚠️  OPENAI_API_KEY not set, skipping...")
 		return
 	}
 
@@ -206,7 +206,7 @@ func exampleStreaming() {
 		}
 		fmt.Print(chunk.Message.Content)
 	}
-	fmt.Println("\n")
+	fmt.Println("")
 }
 
 // Print LLM configuration best practices
@@ -219,12 +219,12 @@ func printBestPractices() {
 	fmt.Println("    • Claude Opus: Highest capability")
 	fmt.Println("    • Claude Sonnet: Balanced performance/cost")
 	fmt.Println("    • Claude Haiku: Fastest, cheapest")
-	fmt.Println("    • Ollama (local): Free, private, offline\n")
+	fmt.Println("    • Ollama (local): Free, private, offline")
 
 	fmt.Println("  Temperature Settings:")
 	fmt.Println("    • 0.0-0.3: Deterministic, factual (code, facts)")
 	fmt.Println("    • 0.4-0.7: Balanced (most applications)")
-	fmt.Println("    • 0.8-1.0: Creative (writing, brainstorming)\n")
+	fmt.Println("    • 0.8-1.0: Creative (writing, brainstorming)")
 
 	fmt.Println("  Production Checklist:")
 	fmt.Println("    ✓ Add retry middleware (handle rate limits)")
@@ -232,7 +232,7 @@ func printBestPractices() {
 	fmt.Println("    ✓ Add circuit breaker (handle outages)")
 	fmt.Println("    ✓ Monitor token usage (cost control)")
 	fmt.Println("    ✓ Cache responses (reduce API calls)")
-	fmt.Println("    ✓ Use streaming for UX (show progress)\n")
+	fmt.Println("    ✓ Use streaming for UX (show progress)")
 }
 
 // Print cost optimization tips
@@ -241,31 +241,31 @@ func printCostOptimization() {
 
 	fmt.Println("  1. Use appropriate models:")
 	fmt.Println("     • Don't use GPT-4 for simple tasks")
-	fmt.Println("     • Start with GPT-3.5, upgrade if needed\n")
+	fmt.Println("     • Start with GPT-3.5, upgrade if needed")
 
 	fmt.Println("  2. Limit max_tokens:")
 	fmt.Println("     • Set reasonable limits (e.g., 150 for short answers)")
-	fmt.Println("     • Prevents runaway costs\n")
+	fmt.Println("     • Prevents runaway costs")
 
 	fmt.Println("  3. Cache responses:")
 	fmt.Println("     • Use caching middleware for repeated queries")
-	fmt.Println("     • Especially effective for FAQ-style apps\n")
+	fmt.Println("     • Especially effective for FAQ-style apps")
 
 	fmt.Println("  4. Batch requests:")
 	fmt.Println("     • Use batching middleware when possible")
-	fmt.Println("     • OpenAI Batch API: 50% cheaper!\n")
+	fmt.Println("     • OpenAI Batch API: 50% cheaper!")
 
 	fmt.Println("  5. Use local models (Ollama):")
 	fmt.Println("     • Free for development and testing")
 	fmt.Println("     • No API costs or rate limits")
-	fmt.Println("     • Privacy-preserving (data stays local)\n")
+	fmt.Println("     • Privacy-preserving (data stays local)")
 
 	fmt.Println("✨ Pro Tip: Monitor your API usage in production!")
-	fmt.Println("   Set up alerts for unexpected cost spikes.\n")
+	fmt.Println("   Set up alerts for unexpected cost spikes.")
 }
 
 func main() {
-	fmt.Println("\n🤖 Agenkit LLM Integration Examples\n")
+	fmt.Println("\n🤖 Agenkit LLM Integration Examples")
 
 	exampleOpenAI()
 	exampleAnthropic()

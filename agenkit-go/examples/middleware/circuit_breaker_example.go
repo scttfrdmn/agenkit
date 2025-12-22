@@ -97,7 +97,7 @@ func example1BasicCircuitBreaker() {
 	fmt.Println("EXAMPLE 1: Basic Circuit Breaker")
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println("\nWHY: External API that experiences an outage")
-	fmt.Println("     Circuit breaker prevents repeated calls to failing service\n")
+	fmt.Println("     Circuit breaker prevents repeated calls to failing service")
 
 	api := NewUnstableExternalAPI("external-api")
 
@@ -126,7 +126,7 @@ func example1BasicCircuitBreaker() {
 
 	// Now the service goes down
 	fmt.Println("\n💥 Service goes down!")
-	fmt.Println("Making calls that will fail...\n")
+	fmt.Println("Making calls that will fail...")
 
 	for i := 0; i < 5; i++ {
 		response, err := protectedAPI.Process(ctx, message)
@@ -160,7 +160,7 @@ func example2RecoveryScenario() {
 	fmt.Println("EXAMPLE 2: Recovery Scenario")
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println("\nWHY: Service recovers and circuit breaker detects it")
-	fmt.Println("     Demonstrates HALF_OPEN -> CLOSED transition\n")
+	fmt.Println("     Demonstrates HALF_OPEN -> CLOSED transition")
 
 	api := NewUnstableExternalAPI("external-api")
 	config := middleware.CircuitBreakerConfig{
@@ -196,7 +196,7 @@ func example2RecoveryScenario() {
 	time.Sleep(config.RecoveryTimeout + 100*time.Millisecond)
 
 	// Service recovers
-	fmt.Println("🔧 Service recovers!\n")
+	fmt.Println("🔧 Service recovers!")
 	api.Recover()
 
 	// Next call will transition to HALF_OPEN
@@ -271,7 +271,7 @@ func example3CircuitBreakerWithRetry() {
 	fmt.Println("EXAMPLE 3: Circuit Breaker + Retry")
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println("\nWHY: Retry transient failures, but fail fast if service is down")
-	fmt.Println("     Layered protection: retry handles transient, circuit handles persistent\n")
+	fmt.Println("     Layered protection: retry handles transient, circuit handles persistent")
 
 	db := NewFlakeyDatabase("database")
 
@@ -295,7 +295,7 @@ func example3CircuitBreakerWithRetry() {
 	ctx := context.Background()
 	message := agenkit.NewMessage("user", "SELECT * FROM users")
 
-	fmt.Println("Making calls with layered protection (retry + circuit breaker)...\n")
+	fmt.Println("Making calls with layered protection (retry + circuit breaker)...")
 
 	for i := 0; i < 8; i++ {
 		response, err := protectedDB.Process(ctx, message)
@@ -358,7 +358,7 @@ func example4MetricsTracking() {
 	fmt.Println("EXAMPLE 4: Metrics Tracking")
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println("\nWHY: Monitor circuit breaker behavior for alerting and debugging")
-	fmt.Println("     Track success/failure rates and state transitions\n")
+	fmt.Println("     Track success/failure rates and state transitions")
 
 	service := NewOverloadedService("overloaded-service")
 	config := middleware.CircuitBreakerConfig{
@@ -372,7 +372,7 @@ func example4MetricsTracking() {
 	ctx := context.Background()
 	message := agenkit.NewMessage("user", "Process job")
 
-	fmt.Println("Simulating load on overloaded service...\n")
+	fmt.Println("Simulating load on overloaded service...")
 
 	for i := 0; i < 10; i++ {
 		_, err := protectedService.Process(ctx, message)
@@ -429,7 +429,7 @@ func main() {
 	fmt.Println("CIRCUIT BREAKER MIDDLEWARE EXAMPLES FOR AGENKIT-GO")
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println("\nThese examples show how circuit breakers prevent cascading")
-	fmt.Println("failures and protect your system from unhealthy dependencies.\n")
+	fmt.Println("failures and protect your system from unhealthy dependencies.")
 
 	// Run examples
 	example1BasicCircuitBreaker()

@@ -267,7 +267,7 @@ func main() {
 	}
 
 	fmt.Println("\n" + strings.Repeat("=", 50))
-	fmt.Println("\n📤 Code Review Result:\n")
+	fmt.Println("\n📤 Code Review Result:")
 	fmt.Println(result.Content)
 
 	if reason, ok := result.Metadata["stop_reason"].(string); ok {
@@ -348,7 +348,7 @@ func main() {
 		log.Fatalf("Collaboration failed: %v", err)
 	}
 
-	fmt.Println("\n📤 Result (max rounds reached):\n")
+	fmt.Println("\n📤 Result (max rounds reached):")
 	fmt.Println(result.Content)
 
 	if rounds, ok := result.Metadata["collaboration_rounds"].(int); ok {
@@ -407,7 +407,7 @@ func main() {
 		log.Fatalf("Custom collaboration failed: %v", err)
 	}
 
-	fmt.Println("\n📤 Custom Merge Result:\n")
+	fmt.Println("\n📤 Custom Merge Result:")
 	fmt.Println(result.Content)
 
 	fmt.Println("\n✅ Collaborative pattern demo complete!")

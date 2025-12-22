@@ -91,7 +91,7 @@ func (m *MockLLMAgent) Process(ctx context.Context, message *agenkit.Message) (*
 // TODO: Uncomment when ConversationalAgent is implemented
 /*
 func exampleBasicConversation() error {
-	fmt.Println("\n=== Example 1: Basic Conversation with Memory ===\n")
+	fmt.Println("\n=== Example 1: Basic Conversation with Memory ===")
 
 	llm := &MockLLMAgent{scenario: "general"}
 
@@ -128,7 +128,7 @@ func exampleBasicConversation() error {
 
 // Example 2: Multi-topic conversation tracking
 func exampleMultiTopic() error {
-	fmt.Println("\n=== Example 2: Multi-Topic Conversation ===\n")
+	fmt.Println("\n=== Example 2: Multi-Topic Conversation ===")
 
 	llm := &MockLLMAgent{scenario: "general"}
 
@@ -167,7 +167,7 @@ func exampleMultiTopic() error {
 
 // Example 3: History pruning demonstration
 func exampleHistoryPruning() error {
-	fmt.Println("\n=== Example 3: History Pruning ===\n")
+	fmt.Println("\n=== Example 3: History Pruning ===")
 
 	llm := &MockLLMAgent{scenario: "general"}
 
@@ -211,7 +211,7 @@ func exampleHistoryPruning() error {
 
 // Example 4: Export and import history
 func exampleExportImport() error {
-	fmt.Println("\n=== Example 4: Export and Import History ===\n")
+	fmt.Println("\n=== Example 4: Export and Import History ===")
 
 	llm := &MockLLMAgent{scenario: "general"}
 
@@ -275,7 +275,7 @@ func exampleExportImport() error {
 
 // Example 5: Customer support conversation
 func exampleCustomerSupport() error {
-	fmt.Println("\n=== Example 5: Customer Support Scenario ===\n")
+	fmt.Println("\n=== Example 5: Customer Support Scenario ===")
 
 	llm := &MockLLMAgent{scenario: "customer_support"}
 
@@ -307,7 +307,7 @@ func exampleCustomerSupport() error {
 		fmt.Printf("Support: %s\n\n", response.Content)
 
 		if i == 1 {
-			fmt.Println("[Agent remembered order number from context]\n")
+			fmt.Println("[Agent remembered order number from context]")
 		}
 	}
 
@@ -316,7 +316,7 @@ func exampleCustomerSupport() error {
 
 // Example 6: Clear history demonstration
 func exampleClearHistory() error {
-	fmt.Println("\n=== Example 6: Clear History ===\n")
+	fmt.Println("\n=== Example 6: Clear History ===")
 
 	llm := &MockLLMAgent{scenario: "general"}
 

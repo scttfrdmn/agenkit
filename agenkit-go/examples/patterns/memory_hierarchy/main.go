@@ -56,7 +56,7 @@ func exampleWorkingMemory() error {
 		contents = append(contents, m.Content)
 	}
 	fmt.Printf("Messages: %v\n", contents)
-	fmt.Println("✓ LRU eviction kept only the last 5 messages\n")
+	fmt.Println("✓ LRU eviction kept only the last 5 messages")
 
 	return nil
 }
@@ -98,7 +98,7 @@ func exampleShortTermMemory() error {
 		return err
 	}
 	fmt.Printf("Retrieved after TTL: %d results\n", len(results))
-	fmt.Println("✓ TTL-based expiration removed expired memories\n")
+	fmt.Println("✓ TTL-based expiration removed expired memories")
 
 	return nil
 }
@@ -145,7 +145,7 @@ func exampleLongTermMemory() error {
 	if len(allMemories) > 0 {
 		fmt.Printf("Memory: %s\n", allMemories[0].Content)
 	}
-	fmt.Println("✓ Importance-based filtering kept only high-value memories\n")
+	fmt.Println("✓ Importance-based filtering kept only high-value memories")
 
 	return nil
 }
@@ -205,7 +205,7 @@ func exampleFullHierarchy() error {
 	fmt.Println("Stored memories across all three tiers")
 	fmt.Println("Working: current conversation")
 	fmt.Println("Short-term: recent sessions")
-	fmt.Println("Long-term: persistent preferences\n")
+	fmt.Println("Long-term: persistent preferences")
 
 	return nil
 }
@@ -250,7 +250,7 @@ func exampleCrossTierRetrieval() error {
 	for i, result := range results {
 		fmt.Printf("  %d. %s (importance: %.2f)\n", i+1, result.Content, result.Importance)
 	}
-	fmt.Println("✓ Retrieved and ranked results from all tiers\n")
+	fmt.Println("✓ Retrieved and ranked results from all tiers")
 
 	return nil
 }
@@ -302,7 +302,7 @@ func exampleTierSpecificRetrieval() error {
 		return err
 	}
 	fmt.Printf("Short-term + Long-term: %d results\n", len(shortAndLong))
-	fmt.Println("✓ Selective tier querying for optimized retrieval\n")
+	fmt.Println("✓ Selective tier querying for optimized retrieval")
 
 	return nil
 }
@@ -338,7 +338,7 @@ func exampleMemoryWithMetadata() error {
 	fmt.Println("  Category: preference")
 	fmt.Println("  Confidence: 0.95")
 	fmt.Println("  Source: explicit")
-	fmt.Println("✓ Rich metadata enables advanced filtering and analysis\n")
+	fmt.Println("✓ Rich metadata enables advanced filtering and analysis")
 
 	return nil
 }
@@ -389,7 +389,7 @@ func exampleSessionIsolation() error {
 	if len(user2Prefs) > 0 {
 		fmt.Printf("User 2 memory: %s\n", user2Prefs[0].Content)
 	}
-	fmt.Println("✓ Session isolation maintains user privacy\n")
+	fmt.Println("✓ Session isolation maintains user privacy")
 
 	return nil
 }

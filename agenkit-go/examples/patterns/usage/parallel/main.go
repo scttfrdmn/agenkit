@@ -13,7 +13,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
@@ -75,7 +74,7 @@ func main() {
 
 	// Example 1: Parallel execution with default aggregator
 	fmt.Println("📝 Example 1: Default aggregation (concatenate all results)")
-	parallel1, err := patterns.NewParallelAgent([]agenkit.Agent{agent1, agent2, agent3}, patterns.ParallelAgentConfig{})
+	parallel1, err := patterns.NewParallelAgent([]agenkit.Agent{agent1, agent2, agent3}, nil)
 	if err != nil {
 		fmt.Printf("   Error: %v\n", err)
 		return
@@ -123,7 +122,7 @@ func main() {
 
 	parallel2, err := patterns.NewParallelAgent(
 		[]agenkit.Agent{agent1, agent2, agent3},
-		patterns.ParallelAgentConfig{Aggregator: combineAggregator},
+		combineAggregator,
 	)
 	if err != nil {
 		fmt.Printf("   Error: %v\n", err)

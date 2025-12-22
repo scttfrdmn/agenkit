@@ -220,26 +220,26 @@ class ReasoningGraph:
         Returns:
             True if cycle exists, False otherwise
         """
-        WHITE = 0  # Not visited
-        GRAY = 1   # Being processed
-        BLACK = 2  # Fully processed
+        white = 0  # Not visited
+        gray = 1   # Being processed
+        black = 2  # Fully processed
 
-        color = dict.fromkeys(self.nodes, WHITE)
+        color = dict.fromkeys(self.nodes, white)
 
         def visit(node_id: int) -> bool:
-            color[node_id] = GRAY
+            color[node_id] = gray
 
             for next_node in self._outgoing[node_id]:
-                if color[next_node] == GRAY:
+                if color[next_node] == gray:
                     # Back edge found - cycle detected
                     return True
-                if color[next_node] == WHITE and visit(next_node):
+                if color[next_node] == white and visit(next_node):
                     return True
 
-            color[node_id] = BLACK
+            color[node_id] = black
             return False
 
-        return any(color[node_id] == WHITE and visit(node_id) for node_id in self.nodes)
+        return any(color[node_id] == white and visit(node_id) for node_id in self.nodes)
 
     def find_cycles(self) -> list[list[int]]:
         """

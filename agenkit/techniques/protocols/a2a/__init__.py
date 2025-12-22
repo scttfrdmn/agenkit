@@ -74,7 +74,7 @@ from .protocol import (
     PROTOCOL_VERSION,
     A2AAction,
     A2ACapability,
-    A2AException,
+    A2AError,
     A2AVersion,
     AgentNotFoundError,
     CapabilityNotSupportedError,
@@ -103,7 +103,7 @@ __all__ = [
     "A2ACapability",
     # Discovery
     "A2ADiscoveryClient",
-    "A2AException",
+    "A2AError",
     # Message
     "A2AMessage",
     # Server
@@ -142,3 +142,6 @@ __all__ = [
 ]
 
 __version__ = "1.0.0"  # Complete implementation
+
+# Backwards compatibility alias
+A2AException = A2AError

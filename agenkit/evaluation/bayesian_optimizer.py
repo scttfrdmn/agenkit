@@ -136,8 +136,8 @@ class BayesianOptimizer(Optimizer):
 
     def _expected_improvement(
         self,
-        X: np.ndarray,
-        X_sample: np.ndarray,
+        X: np.ndarray,  # noqa: N803
+        X_sample: np.ndarray,  # noqa: N803
         Y_sample: np.ndarray,  # noqa: N803
     ) -> np.ndarray:
         """
@@ -216,9 +216,9 @@ class BayesianOptimizer(Optimizer):
 
     def _propose_location(
         self,
-        X_sample: np.ndarray,
-        Y_sample: np.ndarray,
-        n_candidates: int = 1000,  # noqa: N803
+        X_sample: np.ndarray,  # noqa: N803
+        Y_sample: np.ndarray,  # noqa: N803
+        n_candidates: int = 1000,
     ) -> np.ndarray:
         """
         Propose next location to sample using acquisition function.

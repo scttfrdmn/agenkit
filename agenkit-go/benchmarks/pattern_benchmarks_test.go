@@ -259,7 +259,7 @@ func BenchmarkMemoryWorking(b *testing.B) {
 		// Pre-populate
 		for i := 0; i < 5; i++ {
 			entry := patterns.CreateMemoryEntry("test content", map[string]interface{}{"priority": 0.5}, 0.5, "")
-			memory.Store(ctx, entry)
+			_ = memory.Store(ctx, entry)
 		}
 
 		b.ResetTimer()
@@ -297,7 +297,7 @@ func BenchmarkMemoryShortTerm(b *testing.B) {
 		// Pre-populate
 		for i := 0; i < 10; i++ {
 			entry := patterns.CreateMemoryEntry("test content", map[string]interface{}{"priority": 0.5}, 0.5, "")
-			memory.Store(ctx, entry)
+			_ = memory.Store(ctx, entry)
 		}
 
 		b.ResetTimer()
@@ -335,7 +335,7 @@ func BenchmarkMemoryHierarchy(b *testing.B) {
 
 		// Pre-populate
 		for i := 0; i < 10; i++ {
-			memory.Store(ctx, "test content", map[string]interface{}{"priority": 0.7}, 0.7, "")
+			_ = memory.Store(ctx, "test content", map[string]interface{}{"priority": 0.7}, 0.7, "")
 		}
 
 		b.ResetTimer()

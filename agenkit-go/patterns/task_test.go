@@ -505,7 +505,7 @@ func TestTask_ResultAccessBeforeCompletion(t *testing.T) {
 		t.Error("expected nil result before execution")
 	}
 
-	task.Execute(context.Background(), &agenkit.Message{
+	_, _ = task.Execute(context.Background(), &agenkit.Message{
 		Role:    "user",
 		Content: "Test",
 	})
@@ -523,7 +523,7 @@ func TestTask_CompletedProperty(t *testing.T) {
 		t.Error("expected task not completed initially")
 	}
 
-	task.Execute(context.Background(), &agenkit.Message{
+	_, _ = task.Execute(context.Background(), &agenkit.Message{
 		Role:    "user",
 		Content: "Test",
 	})

@@ -159,7 +159,7 @@ func TestSequentialPattern_BeforeHook(t *testing.T) {
 	}
 
 	pattern, _ := NewSequentialPattern([]agenkit.Agent{agent}, config)
-	pattern.Process(context.Background(), &agenkit.Message{Role: "user", Content: "test"})
+	_, _ = pattern.Process(context.Background(), &agenkit.Message{Role: "user", Content: "test"})
 
 	assertEqual(t, called, 1)
 }
@@ -175,7 +175,7 @@ func TestSequentialPattern_AfterHook(t *testing.T) {
 	}
 
 	pattern, _ := NewSequentialPattern([]agenkit.Agent{agent}, config)
-	pattern.Process(context.Background(), &agenkit.Message{Role: "user", Content: "test"})
+	_, _ = pattern.Process(context.Background(), &agenkit.Message{Role: "user", Content: "test"})
 
 	assertEqual(t, called, 1)
 }

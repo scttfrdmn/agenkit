@@ -242,11 +242,11 @@ func TestConversationalAgent_HistoryPruning(t *testing.T) {
 	}
 
 	// Turn 1
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "A"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "A"})
 	// Turn 2
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "B"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "B"})
 	// Turn 3 - should trigger pruning
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "C"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "C"})
 
 	// Should have 4 messages (2 most recent turns)
 	if agent.HistoryLength() != 4 {

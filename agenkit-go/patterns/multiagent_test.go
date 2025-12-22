@@ -28,6 +28,13 @@ func (m *mockMultiAgent) Capabilities() []string {
 	return []string{"test"}
 }
 
+func (m *mockMultiAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
+}
+
 func (m *mockMultiAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	if m.err != nil {
 		return nil, m.err

@@ -134,8 +134,8 @@ class BayesianOptimizer(Optimizer):
 
         return config
 
-    def _expected_improvement(  # noqa: N803
-        self, X: np.ndarray, X_sample: np.ndarray, Y_sample: np.ndarray
+    def _expected_improvement(
+        self, X: np.ndarray, X_sample: np.ndarray, Y_sample: np.ndarray  # noqa: N803
     ) -> np.ndarray:
         """
         Expected Improvement acquisition function.
@@ -172,11 +172,11 @@ class BayesianOptimizer(Optimizer):
         mu, sigma = self.gp.predict(X, return_std=True)
         return mu + self.kappa * sigma
 
-    def _probability_of_improvement(  # noqa: N803
+    def _probability_of_improvement(
         self,
-        X: np.ndarray,
-        X_sample: np.ndarray,
-        Y_sample: np.ndarray,
+        X: np.ndarray,  # noqa: N803
+        X_sample: np.ndarray,  # noqa: N803
+        Y_sample: np.ndarray,  # noqa: N803
     ) -> np.ndarray:
         """
         Probability of Improvement acquisition function.
@@ -211,8 +211,8 @@ class BayesianOptimizer(Optimizer):
         """Standard normal probability density function."""
         return np.exp(-0.5 * x**2) / np.sqrt(2.0 * np.pi)
 
-    def _propose_location(  # noqa: N803
-        self, X_sample: np.ndarray, Y_sample: np.ndarray, n_candidates: int = 1000
+    def _propose_location(
+        self, X_sample: np.ndarray, Y_sample: np.ndarray, n_candidates: int = 1000  # noqa: N803
     ) -> np.ndarray:
         """
         Propose next location to sample using acquisition function.

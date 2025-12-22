@@ -38,6 +38,13 @@ func (r *ResearchAgent) Capabilities() []string {
 	return []string{"research", "analysis"}
 }
 
+func (r *ResearchAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    r.Name(),
+		Capabilities: r.Capabilities(),
+	}
+}
+
 func (r *ResearchAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	content := message.Content
 
@@ -64,6 +71,13 @@ func (w *WritingAgent) Capabilities() []string {
 	return []string{"writing", "editing"}
 }
 
+func (w *WritingAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    w.Name(),
+		Capabilities: w.Capabilities(),
+	}
+}
+
 func (w *WritingAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	content := message.Content
 
@@ -88,6 +102,13 @@ func (e *EditorAgent) Capabilities() []string {
 	return []string{"editing", "proofreading"}
 }
 
+func (e *EditorAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    e.Name(),
+		Capabilities: e.Capabilities(),
+	}
+}
+
 func (e *EditorAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate editing work
 	time.Sleep(50 * time.Millisecond)
@@ -110,6 +131,13 @@ func (c *CriticAgent) Name() string {
 
 func (c *CriticAgent) Capabilities() []string {
 	return []string{"critique", "analysis"}
+}
+
+func (c *CriticAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    c.Name(),
+		Capabilities: c.Capabilities(),
+	}
 }
 
 func (c *CriticAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

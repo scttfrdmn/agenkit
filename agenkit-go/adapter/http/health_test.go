@@ -22,6 +22,13 @@ func (a *testHealthAgent) Capabilities() []string {
 	return []string{}
 }
 
+func (a *testHealthAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 func (a *testHealthAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "assistant",

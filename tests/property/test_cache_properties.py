@@ -136,9 +136,9 @@ def test_cache_size_never_exceeds_max(max_size, num_requests):
         cache.put(key, value)
 
         # Property: size never exceeds max
-        assert (
-            cache.get_cache_size() <= max_size
-        ), f"Cache size {cache.get_cache_size()} exceeds max {max_size}"
+        assert cache.get_cache_size() <= max_size, (
+            f"Cache size {cache.get_cache_size()} exceeds max {max_size}"
+        )
 
 
 # ============================================
@@ -308,9 +308,9 @@ def test_cache_statistics_consistency(max_size, operations):
 
     # Property: hits + misses = total get requests
     stats = cache.get_stats()
-    assert (
-        stats["hits"] + stats["misses"] == total_gets
-    ), f"hits ({stats['hits']}) + misses ({stats['misses']}) != total gets ({total_gets})"
+    assert stats["hits"] + stats["misses"] == total_gets, (
+        f"hits ({stats['hits']}) + misses ({stats['misses']}) != total gets ({total_gets})"
+    )
 
 
 # ============================================
@@ -335,9 +335,9 @@ def test_cache_size_bounds_after_eviction(max_size, num_entries):
         cache.put(f"key_{i}", Message(role="user", content=f"Value {i}"))
 
     # Property: Cache should be exactly at max_size
-    assert (
-        cache.get_cache_size() == max_size
-    ), f"Cache size {cache.get_cache_size()} should equal max_size {max_size} after eviction"
+    assert cache.get_cache_size() == max_size, (
+        f"Cache size {cache.get_cache_size()} should equal max_size {max_size} after eviction"
+    )
 
 
 # ============================================

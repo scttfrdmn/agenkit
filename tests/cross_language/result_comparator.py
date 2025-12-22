@@ -51,9 +51,7 @@ class ResultComparator:
             "metadata_strict": False,  # Allow extra metadata fields
         }
 
-    def validate_output(
-        self, output: dict[str, Any], expected: ExpectedOutput
-    ) -> ValidationResult:
+    def validate_output(self, output: dict[str, Any], expected: ExpectedOutput) -> ValidationResult:
         """
         Validate output against expected behavior.
 
@@ -109,9 +107,7 @@ class ResultComparator:
             warnings=warnings,
         )
 
-    def _validate_message(
-        self, actual: dict[str, Any], expected: dict[str, Any]
-    ) -> list[str]:
+    def _validate_message(self, actual: dict[str, Any], expected: dict[str, Any]) -> list[str]:
         """Validate message content."""
         errors = []
 
@@ -120,9 +116,7 @@ class ResultComparator:
         if expected_role:
             actual_role = actual.get("role")
             if actual_role != expected_role:
-                errors.append(
-                    f"Role mismatch: expected '{expected_role}', got '{actual_role}'"
-                )
+                errors.append(f"Role mismatch: expected '{expected_role}', got '{actual_role}'")
 
         # Check content_contains
         content_contains = expected.get("content_contains", [])
@@ -148,9 +142,7 @@ class ResultComparator:
 
         return errors
 
-    def _validate_behavior(
-        self, actual: dict[str, Any], expected
-    ) -> list[str]:
+    def _validate_behavior(self, actual: dict[str, Any], expected) -> list[str]:
         """Validate behavioral characteristics."""
         errors = []
 
@@ -186,9 +178,7 @@ class ResultComparator:
 
         return errors
 
-    def _validate_metadata(
-        self, actual: dict[str, Any], expected: dict[str, Any]
-    ) -> list[str]:
+    def _validate_metadata(self, actual: dict[str, Any], expected: dict[str, Any]) -> list[str]:
         """Validate metadata fields."""
         errors = []
 
@@ -244,9 +234,7 @@ class ResultComparator:
         status1 = output1.get("status")
         status2 = output2.get("status")
         if status1 != status2:
-            differences.append(
-                f"Status mismatch: {language1}={status1}, {language2}={status2}"
-            )
+            differences.append(f"Status mismatch: {language1}={status1}, {language2}={status2}")
 
         # If both errored, compare error types
         if status1 == "error" and status2 == "error":
@@ -260,9 +248,7 @@ class ResultComparator:
             error1_msg = output1.get("error", {}).get("message", "")
             error2_msg = output2.get("error", {}).get("message", "")
             if error1_msg != error2_msg:
-                warnings.append(
-                    f"Error message differs (acceptable): {language1} vs {language2}"
-                )
+                warnings.append(f"Error message differs (acceptable): {language1} vs {language2}")
 
         # Compare successful outputs
         if status1 == "success" and status2 == "success":
@@ -273,9 +259,7 @@ class ResultComparator:
             role1 = result1.get("message", {}).get("role")
             role2 = result2.get("message", {}).get("role")
             if role1 != role2:
-                differences.append(
-                    f"Role mismatch: {language1}={role1}, {language2}={role2}"
-                )
+                differences.append(f"Role mismatch: {language1}={role1}, {language2}={role2}")
 
             # Compare message content (fuzzy for LLM outputs)
             if not self.tolerance.get("llm_content_exact"):
@@ -342,9 +326,7 @@ class ResultComparator:
                             f"Metadata '{key}' mismatch: {lang1}={val1}, {lang2}={val2}"
                         )
                 else:
-                    differences.append(
-                        f"Metadata '{key}' mismatch: {lang1}={val1}, {lang2}={val2}"
-                    )
+                    differences.append(f"Metadata '{key}' mismatch: {lang1}={val1}, {lang2}={val2}")
 
         return differences
 
@@ -359,9 +341,7 @@ class ResultComparator:
             val1 = behavior1.get(key)
             val2 = behavior2.get(key)
             if val1 is not None and val2 is not None and val1 != val2:
-                differences.append(
-                    f"Behavior '{key}' mismatch: {lang1}={val1}, {lang2}={val2}"
-                )
+                differences.append(f"Behavior '{key}' mismatch: {lang1}={val1}, {lang2}={val2}")
 
         # Compare list fields
         for key in ["tool_calls", "sub_agents"]:
@@ -400,16 +380,12 @@ class ResultComparator:
         for i, lang1 in enumerate(languages):
             for lang2 in languages[i + 1 :]:
                 pair_key = f"{lang1}_vs_{lang2}"
-                comparison = self.compare_outputs(
-                    results[lang1], results[lang2], lang1, lang2
-                )
+                comparison = self.compare_outputs(results[lang1], results[lang2], lang1, lang2)
                 comparisons[pair_key] = comparison
 
         return comparisons
 
-    def summarize_equivalence(
-        self, comparisons: dict[str, ComparisonResult]
-    ) -> dict[str, Any]:
+    def summarize_equivalence(self, comparisons: dict[str, ComparisonResult]) -> dict[str, Any]:
         """
         Summarize equivalence across all comparisons.
 

@@ -148,11 +148,7 @@ class TreeOfThought(Agent):
 
         return min(length_score + structure_bonus, 1.0)
 
-    async def _generate_branches(
-        self,
-        prompt: str,
-        n: int
-    ) -> list[str]:
+    async def _generate_branches(self, prompt: str, n: int) -> list[str]:
         """
         Generate N alternative reasoning branches.
 
@@ -168,31 +164,22 @@ class TreeOfThought(Agent):
         # Generate N branches (could be parallelized for speed)
         for i in range(n):
             # Add variation to prompt to encourage diversity
-            varied_prompt = f"{prompt}\n\nAlternative approach #{i+1}:"
+            varied_prompt = f"{prompt}\n\nAlternative approach #{i + 1}:"
 
             # Get response from LLM
             if hasattr(self.llm, "complete"):
                 response = await self.llm.complete(varied_prompt)
             elif hasattr(self.llm, "process"):
-                llm_response = await self.llm.process(
-                    Message(role="user", content=varied_prompt)
-                )
+                llm_response = await self.llm.process(Message(role="user", content=varied_prompt))
                 response = llm_response.content
             else:
-                raise AttributeError(
-                    "LLM must have either complete() or process() method"
-                )
+                raise AttributeError("LLM must have either complete() or process() method")
 
             branches.append(response)
 
         return branches
 
-    async def _expand_node(
-        self,
-        tree: ReasoningTree,
-        node_id: int,
-        query: str
-    ) -> list[int]:
+    async def _expand_node(self, tree: ReasoningTree, node_id: int, query: str) -> list[int]:
         """
         Expand a node by generating child branches.
 
@@ -210,7 +197,9 @@ class TreeOfThought(Agent):
 
         # Build prompt with path so far
         path_text = tree.get_path_text(node_id)
-        prompt = f"Original question: {query}\n\nReasoning so far:\n{path_text}\n\nContinue reasoning:"
+        prompt = (
+            f"Original question: {query}\n\nReasoning so far:\n{path_text}\n\nContinue reasoning:"
+        )
 
         # Generate branches
         branches = await self._generate_branches(prompt, self.branching_factor)
@@ -223,11 +212,7 @@ class TreeOfThought(Agent):
             score = self.evaluator(full_path)
 
             # Add child node
-            child_id = tree.add_child(
-                parent_id=node_id,
-                content=branch_text,
-                score=score
-            )
+            child_id = tree.add_child(parent_id=node_id, content=branch_text, score=score)
 
             # Prune if score too low
             if score < self.prune_threshold:
@@ -240,12 +225,7 @@ class TreeOfThought(Agent):
 
         return child_ids
 
-    async def _search_bfs(
-        self,
-        tree: ReasoningTree,
-        root_id: int,
-        query: str
-    ) -> None:
+    async def _search_bfs(self, tree: ReasoningTree, root_id: int, query: str) -> None:
         """
         Breadth-first search through reasoning tree.
 
@@ -272,12 +252,7 @@ class TreeOfThought(Agent):
             child_ids = await self._expand_node(tree, node_id, query)
             queue.extend(child_ids)
 
-    async def _search_dfs(
-        self,
-        tree: ReasoningTree,
-        root_id: int,
-        query: str
-    ) -> None:
+    async def _search_dfs(self, tree: ReasoningTree, root_id: int, query: str) -> None:
         """
         Depth-first search through reasoning tree.
 
@@ -304,12 +279,7 @@ class TreeOfThought(Agent):
             child_ids = await self._expand_node(tree, node_id, query)
             stack.extend(reversed(child_ids))  # Reverse to maintain left-to-right order
 
-    async def _search_best_first(
-        self,
-        tree: ReasoningTree,
-        root_id: int,
-        query: str
-    ) -> None:
+    async def _search_best_first(self, tree: ReasoningTree, root_id: int, query: str) -> None:
         """
         Best-first search - always expand highest scoring node.
 
@@ -324,8 +294,7 @@ class TreeOfThought(Agent):
         while open_nodes:
             # Sort by score (highest first)
             open_nodes.sort(
-                key=lambda nid: tree.get_node(nid).score if tree.get_node(nid) else 0,
-                reverse=True
+                key=lambda nid: tree.get_node(nid).score if tree.get_node(nid) else 0, reverse=True
             )
 
             # Pop highest scoring node
@@ -400,8 +369,8 @@ class TreeOfThought(Agent):
                     "technique": "tree_of_thought",
                     "search_strategy": self.strategy,
                     "reasoning_tree_stats": tree.get_statistics(),
-                    "error": "no_valid_path"
-                }
+                    "error": "no_valid_path",
+                },
             )
 
         # Get best path
@@ -417,8 +386,8 @@ class TreeOfThought(Agent):
                 "reasoning_tree_stats": tree.get_statistics(),
                 "reasoning_path": [node.content for node in best_path],
                 "num_steps": len(best_path),
-                "best_score": best_leaf.score
-            }
+                "best_score": best_leaf.score,
+            },
         )
 
     @property
@@ -435,5 +404,5 @@ class TreeOfThought(Agent):
             "multi_path_exploration",
             "backtracking",
             "tree_of_thought",
-            "planning"
+            "planning",
         ]

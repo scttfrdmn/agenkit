@@ -65,11 +65,7 @@ class SimpleApprovalTool:
         """
         self.prompt_template = prompt_template
 
-    async def execute(
-        self,
-        action: str,
-        details: str | None = None
-    ) -> dict[str, Any]:
+    async def execute(self, action: str, details: str | None = None) -> dict[str, Any]:
         """
         Request approval for an action.
 
@@ -100,10 +96,7 @@ class SimpleApprovalTool:
         # Get user input
         response = input(prompt).strip().lower()
 
-        return {
-            "approved": response in ("y", "yes"),
-            "response": response
-        }
+        return {"approved": response in ("y", "yes"), "response": response}
 
 
 def simple_approval(action: str, details: str | None = None) -> bool:
@@ -130,6 +123,7 @@ def simple_approval(action: str, details: str | None = None) -> bool:
 
     # Create simple event loop for async call
     import asyncio
+
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:

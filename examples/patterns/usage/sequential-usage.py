@@ -49,10 +49,12 @@ class ContentExtractor(Agent):
             content=f"Extracted content: {content['word_count']} words, "
             f"{content['line_count']} lines",
         )
-        result.metadata.update({
-            "stage": "extraction",
-            "content_info": content,
-        })
+        result.metadata.update(
+            {
+                "stage": "extraction",
+                "content_info": content,
+            }
+        )
 
         print("   ✓ Content extracted")
         return result
@@ -87,12 +89,14 @@ class ContentModerator(Agent):
             role="agent",
             content=f"Moderation: {status}",
         )
-        result.metadata.update({
-            "stage": "moderation",
-            "safe": is_safe,
-            "flags": flags,
-            "previous_metadata": message.metadata,
-        })
+        result.metadata.update(
+            {
+                "stage": "moderation",
+                "safe": is_safe,
+                "flags": flags,
+                "previous_metadata": message.metadata,
+            }
+        )
 
         print(f"   ✓ Content {status}")
         return result
@@ -131,12 +135,14 @@ class ContentEnricher(Agent):
             role="agent",
             content=f"Processing complete: {', '.join(tags)}",
         )
-        result.metadata.update({
-            "stage": "enrichment",
-            "tags": tags,
-            "safe": is_safe,
-            "content_info": content_info,
-        })
+        result.metadata.update(
+            {
+                "stage": "enrichment",
+                "tags": tags,
+                "safe": is_safe,
+                "content_info": content_info,
+            }
+        )
 
         print(f"   ✓ Content enriched with tags: {', '.join(tags)}")
         return result
@@ -149,11 +155,13 @@ async def basic_pipeline():
     print("=" * 60)
 
     # Create pipeline
-    pipeline = SequentialAgent([
-        ContentExtractor(),
-        ContentModerator(),
-        ContentEnricher(),
-    ])
+    pipeline = SequentialAgent(
+        [
+            ContentExtractor(),
+            ContentModerator(),
+            ContentEnricher(),
+        ]
+    )
 
     # Process message
     message = Message(
@@ -192,11 +200,13 @@ async def error_handling():
             raise ValueError("Simulated processing error")
 
     # Create pipeline with failing agent
-    pipeline = SequentialAgent([
-        ContentExtractor(),
-        FailingAgent(),
-        ContentEnricher(),
-    ])
+    pipeline = SequentialAgent(
+        [
+            ContentExtractor(),
+            FailingAgent(),
+            ContentEnricher(),
+        ]
+    )
 
     message = Message(role="user", content="Test message")
 
@@ -215,11 +225,13 @@ async def conditional_pipeline():
     print("=" * 60)
 
     # Create pipeline
-    pipeline = SequentialAgent([
-        ContentExtractor(),
-        ContentModerator(),
-        ContentEnricher(),
-    ])
+    pipeline = SequentialAgent(
+        [
+            ContentExtractor(),
+            ContentModerator(),
+            ContentEnricher(),
+        ]
+    )
 
     # Test with flagged content
     message = Message(

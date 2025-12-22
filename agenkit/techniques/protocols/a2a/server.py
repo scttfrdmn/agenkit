@@ -50,7 +50,7 @@ class A2AServer:
         agent: "Agent",
         capabilities: list[str],
         name: str | None = None,
-        transport: str = "http"
+        transport: str = "http",
     ):
         """
         Initialize A2A server.
@@ -85,7 +85,7 @@ class A2AServer:
             capabilities=self.capabilities,
             endpoint="",  # Set when starting
             transport=self.transport_type,
-            status="online" if self.running else "offline"
+            status="online" if self.running else "offline",
         )
 
     async def handle_message(self, message: A2AMessage) -> A2AMessage:
@@ -115,10 +115,7 @@ class A2AServer:
                 return await self._handle_process(message)
 
         except Exception as e:
-            return message.create_error(
-                error_code="500",
-                error_message=f"Server error: {e!s}"
-            )
+            return message.create_error(error_code="500", error_message=f"Server error: {e!s}")
 
     async def _handle_ping(self, message: A2AMessage) -> A2AMessage:
         """Handle ping request."""
@@ -133,8 +130,7 @@ class A2AServer:
     async def _handle_status(self, message: A2AMessage) -> A2AMessage:
         """Handle status request."""
         response_data = create_status_response(
-            status="online" if self.running else "offline",
-            agent_id=self.agent_id
+            status="online" if self.running else "offline", agent_id=self.agent_id
         )
         return message.create_response(response_data)
 
@@ -158,7 +154,7 @@ class A2AServer:
         response_content = {
             "role": agent_response.role,
             "content": agent_response.content,
-            "metadata": agent_response.metadata or {}
+            "metadata": agent_response.metadata or {},
         }
 
         return message.create_response(response_content)
@@ -168,7 +164,7 @@ class A2AServer:
         transport: str | None = None,
         host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
         port: int = 8080,
-        **kwargs
+        **kwargs,
     ):
         """
         Start A2A server.
@@ -184,11 +180,7 @@ class A2AServer:
         self.transport = create_transport(transport_type)
 
         # Start transport server with message handler
-        await self.transport.start_server(
-            handler=self.handle_message,
-            host=host,
-            port=port
-        )
+        await self.transport.start_server(handler=self.handle_message, host=host, port=port)
 
         self.running = True
 
@@ -230,7 +222,7 @@ class AgentA2AServer:
         agent: "Agent",
         agent_id: str | None = None,
         capabilities: list[str] | None = None,
-        server_name: str | None = None
+        server_name: str | None = None,
     ):
         """
         Initialize agent A2A server wrapper.
@@ -245,20 +237,17 @@ class AgentA2AServer:
 
         # Generate agent_id from agent name
         if agent_id is None:
-            agent_id = getattr(agent, 'name', 'agenkit-agent')
+            agent_id = getattr(agent, "name", "agenkit-agent")
             # Make it A2A compliant (alphanumeric + hyphens)
-            agent_id = agent_id.replace('_', '-').replace(' ', '-').lower()
+            agent_id = agent_id.replace("_", "-").replace(" ", "-").lower()
 
         # Get capabilities from agent if available
         if capabilities is None:
-            capabilities = getattr(agent, 'capabilities', ['general'])
+            capabilities = getattr(agent, "capabilities", ["general"])
 
         # Create server
         self.server = A2AServer(
-            agent_id=agent_id,
-            agent=agent,
-            capabilities=capabilities,
-            name=server_name or agent_id
+            agent_id=agent_id, agent=agent, capabilities=capabilities, name=server_name or agent_id
         )
 
     async def run(
@@ -266,7 +255,7 @@ class AgentA2AServer:
         transport: str = "http",
         host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
         port: int = 8080,
-        **kwargs
+        **kwargs,
     ):
         """
         Run server.
@@ -277,12 +266,7 @@ class AgentA2AServer:
             port: Port to bind to
             **kwargs: Additional options
         """
-        await self.server.start(
-            transport=transport,
-            host=host,
-            port=port,
-            **kwargs
-        )
+        await self.server.start(transport=transport, host=host, port=port, **kwargs)
 
         # Keep running until stop event is set
         try:
@@ -298,5 +282,5 @@ class AgentA2AServer:
             "name": info.name,
             "capabilities": info.capabilities,
             "transport": info.transport,
-            "status": info.status
+            "status": info.status,
         }

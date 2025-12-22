@@ -59,6 +59,7 @@ class ActionStats:
         total_reward: Cumulative reward
         mean_reward: Average reward
     """
+
     action: str
     trials: int = 0
     total_reward: float = 0.0
@@ -102,7 +103,7 @@ class ExplorationStrategy(Agent):
         agent: Agent,
         actions: list[str],
         exploration_constant: float = 1.0,
-        reward_fn: callable | None = None
+        reward_fn: callable | None = None,
     ):
         """
         Initialize exploration strategy.
@@ -130,8 +131,7 @@ class ExplorationStrategy(Agent):
 
         # Initialize statistics
         self.stats: dict[str, ActionStats] = {
-            action: ActionStats(action=action)
-            for action in actions
+            action: ActionStats(action=action) for action in actions
         }
         self.total_trials = 0
 
@@ -169,7 +169,7 @@ class ExplorationStrategy(Agent):
 
         # If never tried, return infinity (always try untried actions first)
         if stats.trials == 0:
-            return float('inf')
+            return float("inf")
 
         # UCB1 formula: mean_reward + c * sqrt(ln(total_trials) / trials)
         exploration_bonus = self.exploration_constant * math.sqrt(
@@ -190,10 +190,7 @@ class ExplorationStrategy(Agent):
             >>> print(f"Selected: {action}")
         """
         # Compute UCB scores for all actions
-        scores = {
-            action: self._compute_ucb_score(action)
-            for action in self.actions
-        }
+        scores = {action: self._compute_ucb_score(action) for action in self.actions}
 
         # Select action with highest UCB score
         best_action = max(scores, key=scores.get)
@@ -241,16 +238,13 @@ class ExplorationStrategy(Agent):
         selected_action = self.select_action()
 
         # Compute current UCB scores for metadata
-        ucb_scores = {
-            action: self._compute_ucb_score(action)
-            for action in self.actions
-        }
+        ucb_scores = {action: self._compute_ucb_score(action) for action in self.actions}
 
         # Add action hint to message
         enhanced_message = Message(
             role=message.role,
             content=f"[Action Hint: {selected_action}]\n\n{message.content}",
-            metadata=message.metadata
+            metadata=message.metadata,
         )
 
         # Process with agent
@@ -268,24 +262,17 @@ class ExplorationStrategy(Agent):
             "selected_action": selected_action,
             "ucb_scores": ucb_scores,
             "action_stats": {
-                action: {
-                    "trials": stats.trials,
-                    "mean_reward": stats.mean_reward
-                }
+                action: {"trials": stats.trials, "mean_reward": stats.mean_reward}
                 for action, stats in self.stats.items()
             },
             "reward": reward,
-            "total_trials": self.total_trials
+            "total_trials": self.total_trials,
         }
 
         if response.metadata:
             metadata.update(response.metadata)
 
-        return Message(
-            role=response.role,
-            content=response.content,
-            metadata=metadata
-        )
+        return Message(role=response.role, content=response.content, metadata=metadata)
 
     def get_best_action(self) -> str:
         """
@@ -294,10 +281,7 @@ class ExplorationStrategy(Agent):
         Returns:
             Action with highest mean reward
         """
-        return max(
-            self.stats,
-            key=lambda a: self.stats[a].mean_reward
-        )
+        return max(self.stats, key=lambda a: self.stats[a].mean_reward)
 
     def reset_stats(self):
         """Reset all statistics."""
@@ -308,5 +292,5 @@ class ExplorationStrategy(Agent):
     @property
     def capabilities(self) -> list[str]:
         """Return agent capabilities."""
-        base_caps = self.agent.capabilities if hasattr(self.agent, 'capabilities') else []
+        base_caps = self.agent.capabilities if hasattr(self.agent, "capabilities") else []
         return [*base_caps, "exploration", "exploitation", "action_selection", "ucb"]

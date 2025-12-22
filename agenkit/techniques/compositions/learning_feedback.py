@@ -70,6 +70,7 @@ class Interaction:
         timestamp: When interaction occurred
         metadata: Additional metadata
     """
+
     query: str
     response: str
     feedback_score: float | None = None
@@ -105,7 +106,7 @@ class LearningFromFeedback(Agent):
         agent: Agent,
         similarity_fn: Callable[[str, str], float] | None = None,
         max_context_examples: int = 3,
-        min_similarity: float = 0.3
+        min_similarity: float = 0.3,
     ):
         """
         Initialize learning from feedback composition.
@@ -168,9 +169,7 @@ class LearningFromFeedback(Agent):
         return intersection / union if union > 0 else 0.0
 
     def retrieve_similar_interactions(
-        self,
-        query: str,
-        k: int | None = None
+        self, query: str, k: int | None = None
     ) -> list[tuple[Interaction, float]]:
         """
         Retrieve similar past interactions.
@@ -194,19 +193,11 @@ class LearningFromFeedback(Agent):
                 similarities.append((interaction, similarity))
 
         # Sort by similarity (descending) and feedback score (if available)
-        similarities.sort(
-            key=lambda x: (x[1], x[0].feedback_score or 0.0),
-            reverse=True
-        )
+        similarities.sort(key=lambda x: (x[1], x[0].feedback_score or 0.0), reverse=True)
 
         return similarities[:k]
 
-    def add_feedback(
-        self,
-        response: Message,
-        score: float,
-        metadata: dict[str, Any] | None = None
-    ):
+    def add_feedback(self, response: Message, score: float, metadata: dict[str, Any] | None = None):
         """
         Add feedback for a past interaction.
 
@@ -224,18 +215,12 @@ class LearningFromFeedback(Agent):
 
         # Create interaction
         interaction = Interaction(
-            query=query,
-            response=response.content,
-            feedback_score=score,
-            metadata=metadata or {}
+            query=query, response=response.content, feedback_score=score, metadata=metadata or {}
         )
 
         self.memory.append(interaction)
 
-    def _build_context_from_examples(
-        self,
-        examples: list[tuple[Interaction, float]]
-    ) -> str:
+    def _build_context_from_examples(self, examples: list[tuple[Interaction, float]]) -> str:
         """
         Build context string from retrieved examples.
 
@@ -300,9 +285,7 @@ class LearningFromFeedback(Agent):
             enhanced_content = query
 
         enhanced_message = Message(
-            role=message.role,
-            content=enhanced_content,
-            metadata=message.metadata
+            role=message.role, content=enhanced_content, metadata=message.metadata
         )
 
         # Process with agent
@@ -316,22 +299,18 @@ class LearningFromFeedback(Agent):
                 {
                     "query": interaction.query,
                     "similarity": similarity,
-                    "feedback_score": interaction.feedback_score
+                    "feedback_score": interaction.feedback_score,
                 }
                 for interaction, similarity in similar
             ],
             "original_query": query,  # Store for feedback tracking
-            "total_memory_size": len(self.memory)
+            "total_memory_size": len(self.memory),
         }
 
         if response.metadata:
             metadata.update(response.metadata)
 
-        return Message(
-            role=response.role,
-            content=response.content,
-            metadata=metadata
-        )
+        return Message(role=response.role, content=response.content, metadata=metadata)
 
     def clear_memory(self):
         """Clear all stored interactions."""
@@ -346,18 +325,20 @@ class LearningFromFeedback(Agent):
         """
         with_feedback = sum(1 for i in self.memory if i.feedback_score is not None)
         avg_feedback = (
-            sum(i.feedback_score for i in self.memory if i.feedback_score is not None) / with_feedback
-            if with_feedback > 0 else 0.0
+            sum(i.feedback_score for i in self.memory if i.feedback_score is not None)
+            / with_feedback
+            if with_feedback > 0
+            else 0.0
         )
 
         return {
             "total_interactions": len(self.memory),
             "with_feedback": with_feedback,
-            "average_feedback": avg_feedback
+            "average_feedback": avg_feedback,
         }
 
     @property
     def capabilities(self) -> list[str]:
         """Return agent capabilities."""
-        base_caps = self.agent.capabilities if hasattr(self.agent, 'capabilities') else []
+        base_caps = self.agent.capabilities if hasattr(self.agent, "capabilities") else []
         return [*base_caps, "learning", "feedback", "memory", "experience_based"]

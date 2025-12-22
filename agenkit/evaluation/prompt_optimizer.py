@@ -163,7 +163,9 @@ class PromptOptimizer:
         """Sample random configuration."""
         return {key: random.choice(values) for key, values in self.variations.items()}  # noqa: S311
 
-    async def _evaluate_prompt(self, prompt: str, test_cases: list[dict[str, Any]]) -> dict[str, float]:
+    async def _evaluate_prompt(
+        self, prompt: str, test_cases: list[dict[str, Any]]
+    ) -> dict[str, float]:
         """
         Evaluate prompt on test cases.
 
@@ -211,9 +213,7 @@ class PromptOptimizer:
 
         return score
 
-    async def optimize_grid(
-        self, test_cases: list[dict[str, Any]]
-    ) -> PromptOptimizationResult:
+    async def optimize_grid(self, test_cases: list[dict[str, Any]]) -> PromptOptimizationResult:
         """
         Grid search: Evaluate all possible combinations.
 
@@ -373,7 +373,9 @@ class PromptOptimizer:
                 self.history.append((prompt, config.copy(), scores.copy()))
 
         # Find best from all history
-        best_idx = max(range(len(self.history)), key=lambda i: self._get_objective_score(self.history[i][2]))
+        best_idx = max(
+            range(len(self.history)), key=lambda i: self._get_objective_score(self.history[i][2])
+        )
         best_prompt, best_config, best_scores = self.history[best_idx]
 
         end_time = datetime.now(timezone.utc).isoformat()

@@ -43,7 +43,7 @@ class MockAgent:
         return Message(
             role="assistant",
             content=new_content,
-            metadata={"agent": self._name, "call_count": self.call_count}
+            metadata={"agent": self._name, "call_count": self.call_count},
         )
 
 
@@ -365,6 +365,7 @@ async def test_sequential_with_complex_content():
 @pytest.mark.asyncio
 async def test_sequential_metadata_initialization():
     """Test that metadata is properly initialized if None."""
+
     class MinimalAgent:
         """Agent that returns message with no metadata."""
 

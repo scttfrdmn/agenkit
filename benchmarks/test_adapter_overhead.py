@@ -83,6 +83,7 @@ def test_remote_agent_call(benchmark, remote_agent_setup):
 
 # Additional benchmarks for different message sizes
 
+
 @pytest.mark.benchmark(group="message-size")
 def test_baseline_small_message(benchmark):
     """Baseline: Small message (100 bytes)."""
@@ -144,6 +145,7 @@ def test_remote_large_message(benchmark, remote_agent_setup):
 
 
 # Throughput benchmark
+
 
 @pytest.mark.benchmark(group="throughput")
 def test_baseline_throughput(benchmark):

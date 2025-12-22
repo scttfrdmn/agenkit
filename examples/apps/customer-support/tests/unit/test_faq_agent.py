@@ -27,10 +27,9 @@ async def test_faq_uses_llm_for_unknown_question():
     """Test FAQ agent uses Claude for questions not in database."""
     faq = FAQAgent(anthropic_api_key="test-key")
 
-    with patch.object(faq._llm, 'complete', new_callable=AsyncMock) as mock_complete:
+    with patch.object(faq._llm, "complete", new_callable=AsyncMock) as mock_complete:
         mock_complete.return_value = Message(
-            role="assistant",
-            content="Here's the answer to your question..."
+            role="assistant", content="Here's the answer to your question..."
         )
 
         message = Message(role="user", content="What is quantum computing?")
@@ -46,7 +45,7 @@ async def test_faq_handles_llm_error():
     """Test FAQ agent handles LLM errors gracefully."""
     faq = FAQAgent(anthropic_api_key="test-key")
 
-    with patch.object(faq._llm, 'complete', side_effect=Exception("API error")):
+    with patch.object(faq._llm, "complete", side_effect=Exception("API error")):
         message = Message(role="user", content="Unknown question")
         result = await faq.process(message)
 

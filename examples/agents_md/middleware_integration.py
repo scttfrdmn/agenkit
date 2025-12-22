@@ -54,9 +54,7 @@ async def main():
 
     # Process message - context will be automatically injected
     print("Processing message...\n")
-    message = Message(
-        role="user", content="Write a function to calculate the total of a list"
-    )
+    message = Message(role="user", content="Write a function to calculate the total of a list")
 
     response = await agent.process(message)
     print(f"Response: {response.content}\n")

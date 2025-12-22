@@ -113,9 +113,7 @@ class ValidationResult:
         """String representation of result."""
         status = "PASS" if self.is_valid else "FAIL"
         error_count = sum(1 for i in self.issues if i.severity == IssueSeverity.ERROR)
-        warning_count = sum(
-            1 for i in self.issues if i.severity == IssueSeverity.WARNING
-        )
+        warning_count = sum(1 for i in self.issues if i.severity == IssueSeverity.WARNING)
         return f"Validation {status}: {error_count} errors, {warning_count} warnings"
 
 
@@ -165,16 +163,12 @@ def validate_agents_md(doc: AgentsMdDocument, strict: bool = False) -> Validatio
             if strict:
                 result.add_error(f"Missing recommended section: {section_type.value}")
             else:
-                result.add_warning(
-                    f"Missing recommended section: {section_type.value}. {reason}"
-                )
+                result.add_warning(f"Missing recommended section: {section_type.value}. {reason}")
 
     # Check for empty sections
     for section in doc.sections:
         if section.is_empty():
-            result.add_warning(
-                f"Empty section: {section.heading}", section=section.heading
-            )
+            result.add_warning(f"Empty section: {section.heading}", section=section.heading)
 
     # Check for very short sections (likely incomplete)
     for section in doc.sections:

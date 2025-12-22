@@ -25,6 +25,7 @@ from agenkit.techniques.protocols.a2a import (
 # Custom Agent for Bedrock
 # ==============================================================================
 
+
 class TravelAssistantAgent:
     """
     Travel assistant agent that can be deployed to AWS Bedrock.
@@ -32,11 +33,7 @@ class TravelAssistantAgent:
 
     def __init__(self):
         self.name = "travel_assistant_agent"
-        self.capabilities = [
-            "travel-planning",
-            "booking-assistance",
-            "destination-info"
-        ]
+        self.capabilities = ["travel-planning", "booking-assistance", "destination-info"]
 
     async def process(self, message: Message) -> Message:
         """Process travel-related queries."""
@@ -74,16 +71,13 @@ class TravelAssistantAgent:
                 "I can assist with flights, hotels, destination info, and recommendations."
             )
 
-        return Message(
-            role="assistant",
-            content=response,
-            metadata={"assistance_type": "travel"}
-        )
+        return Message(role="assistant", content=response, metadata={"assistance_type": "travel"})
 
 
 # ==============================================================================
 # Example: Bedrock Integration
 # ==============================================================================
+
 
 async def bedrock_integration_example():
     """Demonstrate AWS Bedrock integration."""
@@ -100,10 +94,10 @@ async def bedrock_integration_example():
     # Create Bedrock adapter
     adapter = BedrockAdapter.from_agent(
         agent=agent,
-        region="us-east-1",              # AWS region
+        region="us-east-1",  # AWS region
         agent_id="travel-assistant-001",
         capabilities=agent.capabilities,
-        account_id="123456789012"        # Your AWS account ID (optional)
+        account_id="123456789012",  # Your AWS account ID (optional)
     )
 
     print(f"   Agent ID: {adapter.agent_id}")
@@ -126,7 +120,7 @@ async def bedrock_integration_example():
         "I need to book a flight",
         "Can you recommend a beach destination?",
         "What's the weather like in Paris?",
-        "Help me find a hotel in Tokyo"
+        "Help me find a hotel in Tokyo",
     ]
 
     for query in test_queries:
@@ -137,7 +131,7 @@ async def bedrock_integration_example():
             from_agent="test-client",
             to_agent=adapter.agent_id,
             action=A2AAction.PROCESS.value,
-            content={"text": query}
+            content={"text": query},
         )
 
         # Process through adapter's server

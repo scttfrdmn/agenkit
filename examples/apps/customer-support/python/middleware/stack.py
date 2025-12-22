@@ -56,7 +56,8 @@ def create_middleware_stack(agent: Agent, settings: Settings, agent_type: str = 
     }
 
     timeout_config = TimeoutConfig(
-        timeout=settings.timeout_default, method_timeouts={"process": timeout_map.get(agent_type, settings.timeout_default)}
+        timeout=settings.timeout_default,
+        method_timeouts={"process": timeout_map.get(agent_type, settings.timeout_default)},
     )
 
     wrapped_agent = TimeoutDecorator(wrapped_agent, timeout_config)
@@ -85,7 +86,9 @@ def create_middleware_stack(agent: Agent, settings: Settings, agent_type: str = 
         )
         logger.info(f"Initialized audit logging to {settings.audit_log_file}")
 
-    wrapped_agent = PerUserRateLimiterDecorator(wrapped_agent, rate_limit_config, audit_logger=audit_logger)
+    wrapped_agent = PerUserRateLimiterDecorator(
+        wrapped_agent, rate_limit_config, audit_logger=audit_logger
+    )
     logger.info("Added per-user rate limiting middleware")
 
     return wrapped_agent

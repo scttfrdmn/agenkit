@@ -21,7 +21,7 @@ class MockAgent:
             "Therefore, 42",
             "The answer is 42",
             "Thus, 42",
-            "So, 42"
+            "So, 42",
         ]
         self.call_count = 0
         self.name = "mock_agent"
@@ -51,13 +51,15 @@ async def test_sc_basic():
 @pytest.mark.asyncio
 async def test_sc_majority_voting():
     """Test majority voting strategy."""
-    agent = MockAgent(responses=[
-        "The answer is A",
-        "The answer is B",
-        "The answer is A",
-        "The answer is A",
-        "The answer is B"
-    ])
+    agent = MockAgent(
+        responses=[
+            "The answer is A",
+            "The answer is B",
+            "The answer is A",
+            "The answer is A",
+            "The answer is B",
+        ]
+    )
     sc = SelfConsistency(agent=agent, num_samples=5, voting_strategy="majority")
 
     response = await sc.process(Message(role="user", content="Test query"))
@@ -71,11 +73,13 @@ async def test_sc_majority_voting():
 @pytest.mark.asyncio
 async def test_sc_weighted_voting():
     """Test weighted voting strategy."""
-    agent = MockAgent(responses=[
-        "Short answer: A",  # ~15 chars
-        "Very detailed and comprehensive explanation leading to answer: B",  # ~65 chars
-        "Answer: A",  # ~9 chars
-    ])
+    agent = MockAgent(
+        responses=[
+            "Short answer: A",  # ~15 chars
+            "Very detailed and comprehensive explanation leading to answer: B",  # ~65 chars
+            "Answer: A",  # ~9 chars
+        ]
+    )
     sc = SelfConsistency(agent=agent, num_samples=3, voting_strategy="weighted")
 
     response = await sc.process(Message(role="user", content="Test query"))
@@ -88,11 +92,9 @@ async def test_sc_weighted_voting():
 @pytest.mark.asyncio
 async def test_sc_first_strategy():
     """Test first answer strategy (no voting)."""
-    agent = MockAgent(responses=[
-        "The answer is First",
-        "The answer is Second",
-        "The answer is Third"
-    ])
+    agent = MockAgent(
+        responses=["The answer is First", "The answer is Second", "The answer is Third"]
+    )
     sc = SelfConsistency(agent=agent, num_samples=3, voting_strategy="first")
 
     response = await sc.process(Message(role="user", content="Test query"))
@@ -109,19 +111,18 @@ async def test_sc_custom_extractor():
     def custom_extractor(text: str) -> str:
         # Extract number from text
         import re
-        match = re.search(r'\d+', text)
+
+        match = re.search(r"\d+", text)
         return match.group(0) if match else text
 
-    agent = MockAgent(responses=[
-        "The result is 100 units",
-        "We get 100 as the answer",
-        "Answer: 100",
-    ])
-    sc = SelfConsistency(
-        agent=agent,
-        num_samples=3,
-        answer_extractor=custom_extractor
+    agent = MockAgent(
+        responses=[
+            "The result is 100 units",
+            "We get 100 as the answer",
+            "Answer: 100",
+        ]
     )
+    sc = SelfConsistency(agent=agent, num_samples=3, answer_extractor=custom_extractor)
 
     response = await sc.process(Message(role="user", content="Test query"))
 
@@ -133,12 +134,14 @@ async def test_sc_custom_extractor():
 @pytest.mark.asyncio
 async def test_sc_answer_extraction():
     """Test default answer extraction patterns."""
-    agent = MockAgent(responses=[
-        "Therefore, the capital is Paris",
-        "The answer is Paris",
-        "Calculation: 2 + 2 = 4",
-        "Conclusion: Paris",
-    ])
+    agent = MockAgent(
+        responses=[
+            "Therefore, the capital is Paris",
+            "The answer is Paris",
+            "Calculation: 2 + 2 = 4",
+            "Conclusion: Paris",
+        ]
+    )
     sc = SelfConsistency(agent=agent, num_samples=4)
 
     response = await sc.process(Message(role="user", content="Test query"))
@@ -150,11 +153,13 @@ async def test_sc_answer_extraction():
 @pytest.mark.asyncio
 async def test_sc_metadata():
     """Test metadata completeness."""
-    agent = MockAgent(responses=[
-        "Answer: X",
-        "Answer: Y",
-        "Answer: X",
-    ])
+    agent = MockAgent(
+        responses=[
+            "Answer: X",
+            "Answer: Y",
+            "Answer: X",
+        ]
+    )
     sc = SelfConsistency(agent=agent, num_samples=3)
 
     response = await sc.process(Message(role="user", content="Test query"))
@@ -244,13 +249,15 @@ async def test_sc_invalid_strategy():
 @pytest.mark.asyncio
 async def test_sc_answer_counts():
     """Test answer frequency counting."""
-    agent = MockAgent(responses=[
-        "Answer: A",
-        "Answer: B",
-        "Answer: A",
-        "Answer: C",
-        "Answer: A",
-    ])
+    agent = MockAgent(
+        responses=[
+            "Answer: A",
+            "Answer: B",
+            "Answer: A",
+            "Answer: C",
+            "Answer: A",
+        ]
+    )
     sc = SelfConsistency(agent=agent, num_samples=5)
 
     response = await sc.process(Message(role="user", content="Test"))
@@ -265,12 +272,14 @@ async def test_sc_answer_counts():
 @pytest.mark.asyncio
 async def test_sc_case_insensitive_voting():
     """Test that voting is case-insensitive."""
-    agent = MockAgent(responses=[
-        "Answer: Paris",
-        "Answer: PARIS",
-        "Answer: paris",
-        "Answer: PaRiS",
-    ])
+    agent = MockAgent(
+        responses=[
+            "Answer: Paris",
+            "Answer: PARIS",
+            "Answer: paris",
+            "Answer: PaRiS",
+        ]
+    )
     sc = SelfConsistency(agent=agent, num_samples=4)
 
     response = await sc.process(Message(role="user", content="Test"))

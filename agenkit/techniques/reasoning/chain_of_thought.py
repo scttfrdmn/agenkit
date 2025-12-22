@@ -134,9 +134,7 @@ class ChainOfThought(Agent):
             llm_response = await self.llm.process(Message(role="user", content=cot_prompt))
             response_text = llm_response.content
         else:
-            raise AttributeError(
-                "LLM must have either complete() or process() method"
-            )
+            raise AttributeError("LLM must have either complete() or process() method")
 
         # Parse steps if requested
         if self.parse_steps:
@@ -152,9 +150,7 @@ class ChainOfThought(Agent):
             )
 
         return Message(
-            role="assistant",
-            content=response_text,
-            metadata={"technique": "chain_of_thought"}
+            role="assistant", content=response_text, metadata={"technique": "chain_of_thought"}
         )
 
     def _parse_steps(self, text: str) -> list[str]:
@@ -190,11 +186,7 @@ class ChainOfThought(Agent):
                 steps = bullets
             else:
                 # Fall back to delimiter-based splitting
-                steps = [
-                    s.strip()
-                    for s in text.split(self.step_delimiter)
-                    if s.strip()
-                ]
+                steps = [s.strip() for s in text.split(self.step_delimiter) if s.strip()]
 
         # Apply max_steps limit if specified
         if self.max_steps:

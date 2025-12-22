@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 # Get version from package
 try:
     from importlib.metadata import version
+
     AGENKIT_VERSION = version("agenkit")
 except Exception:
     AGENKIT_VERSION = "unknown"

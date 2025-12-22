@@ -181,9 +181,7 @@ class ConsensusBuilder:
         """
         self.threshold = threshold
 
-    def build_consensus(
-        self, findings_list: list[list[Finding]]
-    ) -> list[ConsensusFact]:
+    def build_consensus(self, findings_list: list[list[Finding]]) -> list[ConsensusFact]:
         """
         Build consensus from multiple agents' findings.
 
@@ -244,9 +242,7 @@ class VotingResolver:
         vote_counts = {option: votes.count(option) for option in options}
         return max(vote_counts, key=vote_counts.get)  # type: ignore
 
-    def confidence_weighted_vote(
-        self, votes: list[tuple[bool, float]]
-    ) -> tuple[bool, float]:
+    def confidence_weighted_vote(self, votes: list[tuple[bool, float]]) -> tuple[bool, float]:
         """
         Weighted voting based on agent confidence.
 
@@ -308,13 +304,11 @@ class ResearchCoordinator:
             print("📚 Phase 1: Parallel Research...")
 
         researchers = [
-            MockResearchAgent(agent_id=f"agent_{i+1}")
-            for i in range(self.num_researchers)
+            MockResearchAgent(agent_id=f"agent_{i + 1}") for i in range(self.num_researchers)
         ]
 
         research_tasks = [
-            researcher.process(Message(role="user", content=topic))
-            for researcher in researchers
+            researcher.process(Message(role="user", content=topic)) for researcher in researchers
         ]
 
         results = await asyncio.gather(*research_tasks)
@@ -328,14 +322,14 @@ class ResearchCoordinator:
                     claim=f["claim"],
                     source=f["source"],
                     confidence=f["confidence"],
-                    agent_id=f"agent_{i+1}",
+                    agent_id=f"agent_{i + 1}",
                 )
                 for f in raw_findings
             ]
             findings_list.append(findings)
 
             if self.verbose:
-                print(f"  ✓ Agent {i+1}: Found {len(findings)} facts")
+                print(f"  ✓ Agent {i + 1}: Found {len(findings)} facts")
 
         # Step 2: Build consensus
         if self.verbose:
@@ -346,7 +340,9 @@ class ResearchCoordinator:
         if self.verbose:
             print(f"  ✓ Consensus reached on {len(consensus_facts)} facts")
             for i, fact in enumerate(consensus_facts, 1):
-                print(f"    {i}. {fact.claim[:60]}... ({fact.agreement_score*100:.0f}% agreement)")
+                print(
+                    f"    {i}. {fact.claim[:60]}... ({fact.agreement_score * 100:.0f}% agreement)"
+                )
 
         # Step 3: Generate report
         if self.verbose:
@@ -360,9 +356,7 @@ class ResearchCoordinator:
 
         return report
 
-    def _generate_report(
-        self, topic: str, consensus_facts: list[ConsensusFact]
-    ) -> ResearchReport:
+    def _generate_report(self, topic: str, consensus_facts: list[ConsensusFact]) -> ResearchReport:
         """Generate final research report."""
         # Collect all unique citations
         all_citations = set()
@@ -371,9 +365,7 @@ class ResearchCoordinator:
 
         # Calculate overall confidence
         if consensus_facts:
-            avg_confidence = sum(f.confidence for f in consensus_facts) / len(
-                consensus_facts
-            )
+            avg_confidence = sum(f.confidence for f in consensus_facts) / len(consensus_facts)
         else:
             avg_confidence = 0.0
 
@@ -394,9 +386,7 @@ class ResearchCoordinator:
             },
         )
 
-    def _generate_summary(
-        self, topic: str, facts: list[ConsensusFact]
-    ) -> str:
+    def _generate_summary(self, topic: str, facts: list[ConsensusFact]) -> str:
         """Generate report summary."""
         if not facts:
             return f"Insufficient consensus on {topic}. Try lowering consensus threshold."
@@ -417,9 +407,7 @@ async def main():
     verbose = "--verbose" in sys.argv
 
     # Initialize coordinator
-    coordinator = ResearchCoordinator(
-        num_researchers=3, consensus_threshold=0.67, verbose=verbose
-    )
+    coordinator = ResearchCoordinator(num_researchers=3, consensus_threshold=0.67, verbose=verbose)
 
     # Conduct research
     report = await coordinator.research(topic, depth=ResearchDepth.MODERATE)
@@ -432,7 +420,9 @@ async def main():
     print(f"✅ Consensus Facts ({len(report.facts)}):")
     for i, fact in enumerate(report.facts, 1):
         print(f"\n{i}. {fact.claim}")
-        print(f"   Agreement: {fact.agreement_score*100:.0f}% | Confidence: {fact.confidence:.2f}")
+        print(
+            f"   Agreement: {fact.agreement_score * 100:.0f}% | Confidence: {fact.confidence:.2f}"
+        )
         print(f"   Sources ({len(fact.sources)}): {', '.join(fact.sources[:2])}")
 
     print(f"\n📚 Citations ({len(report.citations)}):")
@@ -441,7 +431,7 @@ async def main():
 
     print("\n📊 Metadata:")
     print(f"  Researchers: {report.metadata['num_researchers']}")
-    print(f"  Consensus Threshold: {report.metadata['consensus_threshold']*100}%")
+    print(f"  Consensus Threshold: {report.metadata['consensus_threshold'] * 100}%")
     print(f"  Overall Confidence: {report.confidence_score:.2f}")
     print(f"  Timestamp: {report.timestamp.isoformat()}")
     print("\n" + "=" * 70 + "\n")

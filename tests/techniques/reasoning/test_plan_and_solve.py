@@ -26,13 +26,15 @@ class MockLLM:
 @pytest.mark.asyncio
 async def test_pas_basic():
     """Test basic Plan-and-Solve functionality."""
-    llm = MockLLM(responses=[
-        "1. Step 1\n2. Step 2\n3. Step 3",  # Planning
-        "VALID",  # Validation
-        "Result 1",  # Execute step 1
-        "Result 2",  # Execute step 2
-        "Result 3"   # Execute step 3
-    ])
+    llm = MockLLM(
+        responses=[
+            "1. Step 1\n2. Step 2\n3. Step 3",  # Planning
+            "VALID",  # Validation
+            "Result 1",  # Execute step 1
+            "Result 2",  # Execute step 2
+            "Result 3",  # Execute step 3
+        ]
+    )
 
     agent = PlanAndSolve(llm=llm, validate_plan=True)
     response = await agent.process(Message(role="user", content="Test problem"))
@@ -46,12 +48,7 @@ async def test_pas_basic():
 @pytest.mark.asyncio
 async def test_pas_planning_phase():
     """Test plan creation."""
-    llm = MockLLM(responses=[
-        "1. First step\n2. Second step",
-        "VALID",
-        "Result 1",
-        "Result 2"
-    ])
+    llm = MockLLM(responses=["1. First step\n2. Second step", "VALID", "Result 1", "Result 2"])
 
     agent = PlanAndSolve(llm=llm)
     response = await agent.process(Message(role="user", content="Problem"))
@@ -65,12 +62,9 @@ async def test_pas_planning_phase():
 @pytest.mark.asyncio
 async def test_pas_validation():
     """Test plan validation."""
-    llm = MockLLM(responses=[
-        "1. Step A\n2. Step B",
-        "VALID - plan is complete",
-        "Result A",
-        "Result B"
-    ])
+    llm = MockLLM(
+        responses=["1. Step A\n2. Step B", "VALID - plan is complete", "Result A", "Result B"]
+    )
 
     agent = PlanAndSolve(llm=llm, validate_plan=True)
     response = await agent.process(Message(role="user", content="Problem"))
@@ -82,11 +76,7 @@ async def test_pas_validation():
 @pytest.mark.asyncio
 async def test_pas_no_validation():
     """Test without plan validation."""
-    llm = MockLLM(responses=[
-        "1. Step 1\n2. Step 2",
-        "Result 1",
-        "Result 2"
-    ])
+    llm = MockLLM(responses=["1. Step 1\n2. Step 2", "Result 1", "Result 2"])
 
     agent = PlanAndSolve(llm=llm, validate_plan=False)
     response = await agent.process(Message(role="user", content="Problem"))
@@ -99,12 +89,7 @@ async def test_pas_no_validation():
 @pytest.mark.asyncio
 async def test_pas_execution_phase():
     """Test step-by-step execution."""
-    llm = MockLLM(responses=[
-        "1. Add 2+2\n2. Multiply by 3",
-        "VALID",
-        "4",
-        "12"
-    ])
+    llm = MockLLM(responses=["1. Add 2+2\n2. Multiply by 3", "VALID", "4", "12"])
 
     agent = PlanAndSolve(llm=llm)
     response = await agent.process(Message(role="user", content="Calculate"))
@@ -122,7 +107,7 @@ async def test_pas_custom_planner():
     def custom_planner(problem: str) -> Plan:
         steps = [
             PlanStep(description="Custom step 1", order=0),
-            PlanStep(description="Custom step 2", order=1)
+            PlanStep(description="Custom step 2", order=1),
         ]
         return Plan(steps=steps, problem=problem, validated=True)
 
@@ -143,10 +128,7 @@ async def test_pas_custom_solver():
     def custom_solver(step: PlanStep, previous: list) -> str:
         return f"Custom result for: {step.description}"
 
-    llm = MockLLM(responses=[
-        "1. Step A\n2. Step B",
-        "VALID"
-    ])
+    llm = MockLLM(responses=["1. Step A\n2. Step B", "VALID"])
 
     agent = PlanAndSolve(llm=llm, solver=custom_solver)
     response = await agent.process(Message(role="user", content="Problem"))
@@ -159,14 +141,16 @@ async def test_pas_custom_solver():
 @pytest.mark.asyncio
 async def test_pas_replanning():
     """Test replanning when validation fails."""
-    llm = MockLLM(responses=[
-        "1. Bad step",  # Initial plan
-        "INVALID - missing details",  # Validation fails
-        "1. Better step 1\n2. Better step 2",  # Replan
-        "VALID",  # Validation passes
-        "Result 1",
-        "Result 2"
-    ])
+    llm = MockLLM(
+        responses=[
+            "1. Bad step",  # Initial plan
+            "INVALID - missing details",  # Validation fails
+            "1. Better step 1\n2. Better step 2",  # Replan
+            "VALID",  # Validation passes
+            "Result 1",
+            "Result 2",
+        ]
+    )
 
     agent = PlanAndSolve(llm=llm, validate_plan=True, allow_replanning=True)
     response = await agent.process(Message(role="user", content="Problem"))
@@ -179,10 +163,7 @@ async def test_pas_replanning():
 @pytest.mark.asyncio
 async def test_pas_plan_dataclass():
     """Test Plan dataclass."""
-    steps = [
-        PlanStep(description="Step 1", order=0),
-        PlanStep(description="Step 2", order=1)
-    ]
+    steps = [PlanStep(description="Step 1", order=0), PlanStep(description="Step 2", order=1)]
     plan = Plan(steps=steps, problem="Test problem", validated=True)
 
     assert len(plan.steps) == 2
@@ -193,12 +174,7 @@ async def test_pas_plan_dataclass():
 @pytest.mark.asyncio
 async def test_pas_planstep_dataclass():
     """Test PlanStep dataclass."""
-    step = PlanStep(
-        description="Test step",
-        order=0,
-        dependencies=[],
-        estimated_complexity=3
-    )
+    step = PlanStep(description="Test step", order=0, dependencies=[], estimated_complexity=3)
 
     assert step.description == "Test step"
     assert step.order == 0
@@ -210,12 +186,7 @@ async def test_pas_planstep_dataclass():
 @pytest.mark.asyncio
 async def test_pas_metadata():
     """Test metadata completeness."""
-    llm = MockLLM(responses=[
-        "1. Step X\n2. Step Y",
-        "VALID",
-        "Result X",
-        "Result Y"
-    ])
+    llm = MockLLM(responses=["1. Step X\n2. Step Y", "VALID", "Result X", "Result Y"])
 
     agent = PlanAndSolve(llm=llm)
     response = await agent.process(Message(role="user", content="Problem"))
@@ -286,11 +257,13 @@ async def test_pas_with_agent_interface():
 @pytest.mark.asyncio
 async def test_pas_empty_plan():
     """Test handling of empty plan."""
-    llm = MockLLM(responses=[
-        "",  # Empty plan
-        "VALID",
-        "Direct solution"
-    ])
+    llm = MockLLM(
+        responses=[
+            "",  # Empty plan
+            "VALID",
+            "Direct solution",
+        ]
+    )
 
     agent = PlanAndSolve(llm=llm)
     response = await agent.process(Message(role="user", content="Simple problem"))
@@ -302,11 +275,7 @@ async def test_pas_empty_plan():
 @pytest.mark.asyncio
 async def test_pas_single_step():
     """Test with single-step plan."""
-    llm = MockLLM(responses=[
-        "1. Only step",
-        "VALID",
-        "Result"
-    ])
+    llm = MockLLM(responses=["1. Only step", "VALID", "Result"])
 
     agent = PlanAndSolve(llm=llm)
     response = await agent.process(Message(role="user", content="Simple problem"))
@@ -318,11 +287,15 @@ async def test_pas_single_step():
 @pytest.mark.asyncio
 async def test_pas_numbering_formats():
     """Test parsing various numbering formats."""
-    llm = MockLLM(responses=[
-        "1) First\n2) Second\n3) Third",  # Parentheses
-        "VALID",
-        "1", "2", "3"
-    ])
+    llm = MockLLM(
+        responses=[
+            "1) First\n2) Second\n3) Third",  # Parentheses
+            "VALID",
+            "1",
+            "2",
+            "3",
+        ]
+    )
 
     agent = PlanAndSolve(llm=llm)
     response = await agent.process(Message(role="user", content="Problem"))
@@ -351,12 +324,7 @@ async def test_pas_step_dependencies():
 @pytest.mark.asyncio
 async def test_pas_step_execution_tracking():
     """Test that step execution is tracked."""
-    llm = MockLLM(responses=[
-        "1. Step A\n2. Step B",
-        "VALID",
-        "Result A",
-        "Result B"
-    ])
+    llm = MockLLM(responses=["1. Step A\n2. Step B", "VALID", "Result A", "Result B"])
 
     agent = PlanAndSolve(llm=llm)
     response = await agent.process(Message(role="user", content="Problem"))

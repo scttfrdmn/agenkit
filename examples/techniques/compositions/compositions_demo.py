@@ -57,13 +57,22 @@ class MockLLM:
             return Message(role="assistant", content="This is a concise summary of the content.")
 
         if "critique" in content or "evaluate" in content:
-            return Message(role="assistant", content="Score: 8/10\nThis is good but could be improved with more detail.")
+            return Message(
+                role="assistant",
+                content="Score: 8/10\nThis is good but could be improved with more detail.",
+            )
 
         if "quantum" in content:
-            return Message(role="assistant", content="Quantum computing uses quantum mechanics for computation.")
+            return Message(
+                role="assistant",
+                content="Quantum computing uses quantum mechanics for computation.",
+            )
 
         if "similar" in content:
-            return Message(role="assistant", content="These concepts are related through their mathematical foundations.")
+            return Message(
+                role="assistant",
+                content="These concepts are related through their mathematical foundations.",
+            )
 
         # Default response
         return Message(role="assistant", content=f"Response to query (call {self.call_count})")
@@ -86,10 +95,10 @@ async def demo_simple_approval():
 
     # Mock the input
     import unittest.mock
-    with unittest.mock.patch('builtins.input', return_value='n'):
+
+    with unittest.mock.patch("builtins.input", return_value="n"):
         result = await tool.execute(
-            action="delete database",
-            details="Will delete 'users' table with 1000 records"
+            action="delete database", details="Will delete 'users' table with 1000 records"
         )
 
     print(f"\nResult: approved={result['approved']}")
@@ -110,20 +119,13 @@ async def demo_simple_rag():
         return [
             "Quantum computing uses qubits which can be in superposition.",
             "Quantum algorithms like Shor's algorithm can factor large numbers.",
-            "Quantum computers require extreme cooling to operate."
+            "Quantum computers require extreme cooling to operate.",
         ]
 
     llm = MockLLM()
-    rag = SimpleRAG(
-        retriever=mock_retriever,
-        answerer=llm,
-        max_docs=3
-    )
+    rag = SimpleRAG(retriever=mock_retriever, answerer=llm, max_docs=3)
 
-    response = await rag.process(Message(
-        role="user",
-        content="What is quantum computing?"
-    ))
+    response = await rag.process(Message(role="user", content="What is quantum computing?"))
 
     print("Query: What is quantum computing?")
     print(f"\nRetrieved {response.metadata['num_sources']} documents")
@@ -144,25 +146,18 @@ async def demo_cited_rag():
     def mock_retriever(query: str):
         return [
             Document("Aspirin reduces fever", "Smith et al. 2020", {"page": 42}),
-            Document("Aspirin has anti-inflammatory effects", "Jones 2021", {"page": 15})
+            Document("Aspirin has anti-inflammatory effects", "Jones 2021", {"page": 15}),
         ]
 
     llm = MockLLM()
-    rag = CitedRAG(
-        retriever=mock_retriever,
-        answerer=llm,
-        citation_format="numeric"
-    )
+    rag = CitedRAG(retriever=mock_retriever, answerer=llm, citation_format="numeric")
 
-    response = await rag.process(Message(
-        role="user",
-        content="What are the effects of aspirin?"
-    ))
+    response = await rag.process(Message(role="user", content="What are the effects of aspirin?"))
 
     print("Query: What are the effects of aspirin?")
     print(f"\nAnswer: {response.content}")
     print("\nCitations:")
-    for citation in response.metadata['citations']:
+    for citation in response.metadata["citations"]:
         print(f"  {citation}")
     print("\nNote: This is ~50 LOC. Books call this 'high-fidelity context engineering'.\n")
 
@@ -181,19 +176,16 @@ async def demo_context_optimization():
     optimizer = ContextOptimizer(
         agent=base_llm,
         summarizer=summarizer_llm,
-        max_tokens=50  # Very low for demo
+        max_tokens=50,  # Very low for demo
     )
 
     long_text = " ".join(["This is a long document with many words"] * 20)
-    response = await optimizer.process(Message(
-        role="user",
-        content=long_text
-    ))
+    response = await optimizer.process(Message(role="user", content=long_text))
 
     print(f"Original tokens: {response.metadata['original_tokens']}")
     print(f"Optimized: {response.metadata['optimized']}")
 
-    if response.metadata['optimized']:
+    if response.metadata["optimized"]:
         print(f"Compressed tokens: {response.metadata['compressed_tokens']}")
         print(f"Compression ratio: {response.metadata['compression_ratio']:.1f}x")
 
@@ -218,7 +210,7 @@ async def demo_prioritization():
     tasks = [
         {"name": "Low priority task", "urgency": 1},
         {"name": "Critical bug fix", "urgency": 10},
-        {"name": "Medium priority feature", "urgency": 5}
+        {"name": "Medium priority feature", "urgency": 5},
     ]
 
     for task in tasks:
@@ -252,11 +244,7 @@ async def demo_goal_monitoring():
         print(f"  Iteration {iterations_completed['count']}: Checking progress...")
         return iterations_completed["count"] >= 3
 
-    monitor = GoalMonitor(
-        agent=llm,
-        goal_fn=goal_fn,
-        max_iterations=10
-    )
+    monitor = GoalMonitor(agent=llm, goal_fn=goal_fn, max_iterations=10)
 
     print("Starting goal-directed task...\n")
     result = await monitor.achieve_goal(
@@ -279,22 +267,15 @@ async def demo_exploration():
     llm = MockLLM()
     actions = ["search", "calculate", "reason"]
 
-    explorer = ExplorationStrategy(
-        agent=llm,
-        actions=actions,
-        exploration_constant=1.0
-    )
+    explorer = ExplorationStrategy(agent=llm, actions=actions, exploration_constant=1.0)
 
     print("Running 5 iterations with UCB action selection...\n")
     for i in range(5):
-        response = await explorer.process(Message(
-            role="user",
-            content=f"Task iteration {i+1}"
-        ))
+        response = await explorer.process(Message(role="user", content=f"Task iteration {i + 1}"))
 
         selected = response.metadata["selected_action"]
         reward = response.metadata["reward"]
-        print(f"Iteration {i+1}: Selected '{selected}' (reward: {reward:.2f})")
+        print(f"Iteration {i + 1}: Selected '{selected}' (reward: {reward:.2f})")
 
     # Show statistics
     print("\nFinal action statistics:")
@@ -314,17 +295,13 @@ async def demo_learning_feedback():
 
     llm = MockLLM()
 
-    learner = LearningFromFeedback(
-        agent=llm,
-        max_context_examples=2
-    )
+    learner = LearningFromFeedback(agent=llm, max_context_examples=2)
 
     # First interaction
     print("Interaction 1: How do I sort a list in Python?")
-    response1 = await learner.process(Message(
-        role="user",
-        content="How do I sort a list in Python?"
-    ))
+    response1 = await learner.process(
+        Message(role="user", content="How do I sort a list in Python?")
+    )
     print(f"  Similar examples used: {response1.metadata['similar_examples']}")
 
     # Add feedback
@@ -333,16 +310,17 @@ async def demo_learning_feedback():
 
     # Second interaction (similar query)
     print("Interaction 2: How do I sort a dictionary in Python?")
-    response2 = await learner.process(Message(
-        role="user",
-        content="How do I sort a dictionary in Python?"
-    ))
+    response2 = await learner.process(
+        Message(role="user", content="How do I sort a dictionary in Python?")
+    )
     print(f"  Similar examples used: {response2.metadata['similar_examples']}")
     print("  Previous interaction was retrieved as context!\n")
 
     # Memory stats
     stats = learner.get_memory_stats()
-    print(f"Memory: {stats['total_interactions']} interactions, {stats['average_feedback']:.1f} avg feedback")
+    print(
+        f"Memory: {stats['total_interactions']} interactions, {stats['average_feedback']:.1f} avg feedback"
+    )
     print("\nNote: This is ~80 LOC. For production, use MemoryHierarchyAgent.\n")
 
 
@@ -357,16 +335,11 @@ async def demo_actor_critic():
     actor = MockLLM()  # "Actor" = Generator
     critic = MockLLM()  # "Critic" = Evaluator
 
-    ac = ActorCriticVariation(
-        actor=actor,
-        critic=critic,
-        max_iterations=3
-    )
+    ac = ActorCriticVariation(actor=actor, critic=critic, max_iterations=3)
 
-    response = await ac.process(Message(
-        role="user",
-        content="Write a function to calculate fibonacci"
-    ))
+    response = await ac.process(
+        Message(role="user", content="Write a function to calculate fibonacci")
+    )
 
     print(f"Actor-Critic completed in {response.metadata['iterations']} iterations")
     print(f"Final quality score: {response.metadata['final_score']:.1f}/1.0")

@@ -169,12 +169,7 @@ class MockReActAgent:
                 )
 
         # Initial reasoning based on user query
-        if (
-            "calculate" in content
-            or "%" in content
-            or "+" in content
-            or "*" in content
-        ):
+        if "calculate" in content or "%" in content or "+" in content or "*" in content:
             # Extract math expression
             if "15% of 240" in content:
                 return Message(

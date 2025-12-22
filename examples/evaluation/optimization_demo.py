@@ -91,7 +91,9 @@ async def demo_random_search():
     result = await optimizer.optimize(test_cases, n_iterations=20)
 
     print("\n📊 Results:")
-    print(f"  Best config: temperature={result.best_config['temperature']:.3f}, top_p={result.best_config['top_p']:.3f}")
+    print(
+        f"  Best config: temperature={result.best_config['temperature']:.3f}, top_p={result.best_config['top_p']:.3f}"
+    )
     print(f"  Best score: {result.best_score:.3f}")
     print(f"  Improvement: {result.get_improvement():.1f}%")
     print(f"  Duration: {result.duration_seconds:.2f}s")
@@ -134,7 +136,9 @@ async def demo_bayesian_optimization():
     result = await optimizer.optimize(test_cases, n_iterations=20)
 
     print("\n📊 Results:")
-    print(f"  Best config: temperature={result.best_config['temperature']:.3f}, top_p={result.best_config['top_p']:.3f}")
+    print(
+        f"  Best config: temperature={result.best_config['temperature']:.3f}, top_p={result.best_config['top_p']:.3f}"
+    )
     print(f"  Best score: {result.best_score:.3f}")
     print(f"  Improvement: {result.get_improvement():.1f}%")
     print(f"  Duration: {result.duration_seconds:.2f}s")
@@ -291,7 +295,7 @@ async def demo_complex_search_space():
     print("\n🎲 Sampling 5 random configurations:")
     for i in range(5):
         config = space.sample()
-        print(f"\n  Config {i+1}:")
+        print(f"\n  Config {i + 1}:")
         for key, value in config.items():
             if isinstance(value, float):
                 print(f"    {key}: {value:.3f}")

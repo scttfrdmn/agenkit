@@ -39,7 +39,7 @@ class A2ADiscoveryClient:
             service_url: Discovery service URL
             timeout: Request timeout in seconds
         """
-        self.service_url = service_url.rstrip('/')
+        self.service_url = service_url.rstrip("/")
         self.timeout = timeout
 
     async def register(self, agent_info: AgentInfo):
@@ -56,15 +56,12 @@ class A2ADiscoveryClient:
             import httpx
         except ImportError:
             raise ImportError(
-                "httpx is required for discovery client. "
-                "Install with: pip install httpx"
+                "httpx is required for discovery client. Install with: pip install httpx"
             )
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{self.service_url}/register",
-                json=agent_info.to_dict(),
-                timeout=self.timeout
+                f"{self.service_url}/register", json=agent_info.to_dict(), timeout=self.timeout
             )
             response.raise_for_status()
 
@@ -82,14 +79,12 @@ class A2ADiscoveryClient:
             import httpx
         except ImportError:
             raise ImportError(
-                "httpx is required for discovery client. "
-                "Install with: pip install httpx"
+                "httpx is required for discovery client. Install with: pip install httpx"
             )
 
         async with httpx.AsyncClient() as client:
             response = await client.delete(
-                f"{self.service_url}/agents/{agent_id}",
-                timeout=self.timeout
+                f"{self.service_url}/agents/{agent_id}", timeout=self.timeout
             )
             response.raise_for_status()
 
@@ -113,15 +108,14 @@ class A2ADiscoveryClient:
             import httpx
         except ImportError:
             raise ImportError(
-                "httpx is required for discovery client. "
-                "Install with: pip install httpx"
+                "httpx is required for discovery client. Install with: pip install httpx"
             )
 
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{self.service_url}/discover",
                 params={"capability": capability},
-                timeout=self.timeout
+                timeout=self.timeout,
             )
             response.raise_for_status()
 
@@ -144,15 +138,13 @@ class A2ADiscoveryClient:
             import httpx
         except ImportError:
             raise ImportError(
-                "httpx is required for discovery client. "
-                "Install with: pip install httpx"
+                "httpx is required for discovery client. Install with: pip install httpx"
             )
 
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(
-                    f"{self.service_url}/agents/{agent_id}",
-                    timeout=self.timeout
+                    f"{self.service_url}/agents/{agent_id}", timeout=self.timeout
                 )
                 response.raise_for_status()
 
@@ -175,15 +167,11 @@ class A2ADiscoveryClient:
             import httpx
         except ImportError:
             raise ImportError(
-                "httpx is required for discovery client. "
-                "Install with: pip install httpx"
+                "httpx is required for discovery client. Install with: pip install httpx"
             )
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.service_url}/agents",
-                timeout=self.timeout
-            )
+            response = await client.get(f"{self.service_url}/agents", timeout=self.timeout)
             response.raise_for_status()
 
             data = response.json()
@@ -203,15 +191,14 @@ class A2ADiscoveryClient:
             import httpx
         except ImportError:
             raise ImportError(
-                "httpx is required for discovery client. "
-                "Install with: pip install httpx"
+                "httpx is required for discovery client. Install with: pip install httpx"
             )
 
         async with httpx.AsyncClient() as client:
             response = await client.patch(
                 f"{self.service_url}/agents/{agent_id}/status",
                 json={"status": status},
-                timeout=self.timeout
+                timeout=self.timeout,
             )
             response.raise_for_status()
 
@@ -226,14 +213,12 @@ class A2ADiscoveryClient:
             import httpx
         except ImportError:
             raise ImportError(
-                "httpx is required for discovery client. "
-                "Install with: pip install httpx"
+                "httpx is required for discovery client. Install with: pip install httpx"
             )
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{self.service_url}/agents/{agent_id}/heartbeat",
-                timeout=self.timeout
+                f"{self.service_url}/agents/{agent_id}/heartbeat", timeout=self.timeout
             )
             response.raise_for_status()
 
@@ -282,7 +267,10 @@ class InMemoryDiscoveryService:
 
             # Remove from capability index
             for capability in agent_info.capabilities:
-                if capability in self._capability_index and agent_id in self._capability_index[capability]:
+                if (
+                    capability in self._capability_index
+                    and agent_id in self._capability_index[capability]
+                ):
                     self._capability_index[capability].remove(agent_id)
 
             # Remove agent

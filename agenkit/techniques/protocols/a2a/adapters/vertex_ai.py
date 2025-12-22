@@ -43,7 +43,7 @@ class VertexAIAdapter:
         agent: "Agent",
         capabilities: list[str],
         project_id: str,
-        location: str = "us-central1"
+        location: str = "us-central1",
     ):
         """
         Initialize Vertex AI adapter.
@@ -63,10 +63,7 @@ class VertexAIAdapter:
 
         # Create A2A server
         self.server = A2AServer(
-            agent_id=agent_id,
-            agent=agent,
-            capabilities=capabilities,
-            name=f"vertex-{agent_id}"
+            agent_id=agent_id, agent=agent, capabilities=capabilities, name=f"vertex-{agent_id}"
         )
 
     @staticmethod
@@ -75,7 +72,7 @@ class VertexAIAdapter:
         project_id: str,
         location: str = "us-central1",
         agent_id: str | None = None,
-        capabilities: list[str] | None = None
+        capabilities: list[str] | None = None,
     ) -> "VertexAIAdapter":
         """
         Create adapter from Agenkit agent.
@@ -91,25 +88,25 @@ class VertexAIAdapter:
             VertexAIAdapter instance
         """
         if agent_id is None:
-            agent_id = getattr(agent, 'name', 'agenkit-agent')
-            agent_id = agent_id.replace('_', '-').replace(' ', '-').lower()
+            agent_id = getattr(agent, "name", "agenkit-agent")
+            agent_id = agent_id.replace("_", "-").replace(" ", "-").lower()
 
         if capabilities is None:
-            capabilities = getattr(agent, 'capabilities', ['general'])
+            capabilities = getattr(agent, "capabilities", ["general"])
 
         return VertexAIAdapter(
             agent_id=agent_id,
             agent=agent,
             capabilities=capabilities,
             project_id=project_id,
-            location=location
+            location=location,
         )
 
     async def deploy(
         self,
         host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
         port: int = 8080,
-        **kwargs
+        **kwargs,
     ):
         """
         Deploy agent to Vertex AI.
@@ -125,12 +122,7 @@ class VertexAIAdapter:
             **kwargs: Additional options
         """
         # Start A2A server
-        await self.server.start(
-            transport="http",
-            host=host,
-            port=port,
-            **kwargs
-        )
+        await self.server.start(transport="http", host=host, port=port, **kwargs)
 
         endpoint = f"http://{host}:{port}/a2a"
 
@@ -170,7 +162,7 @@ class VertexAIAdapter:
             "location": self.location,
             "capabilities": self.capabilities,
             "protocol": "a2a",
-            "transport": "http"
+            "transport": "http",
         }
 
     async def stop(self):
@@ -179,10 +171,7 @@ class VertexAIAdapter:
 
 
 def create_vertex_agent(
-    agent: "Agent",
-    project_id: str,
-    location: str = "us-central1",
-    **kwargs
+    agent: "Agent", project_id: str, location: str = "us-central1", **kwargs
 ) -> VertexAIAdapter:
     """
     Convenience function to create Vertex AI adapter.
@@ -197,8 +186,5 @@ def create_vertex_agent(
         VertexAIAdapter instance
     """
     return VertexAIAdapter.from_agent(
-        agent=agent,
-        project_id=project_id,
-        location=location,
-        **kwargs
+        agent=agent, project_id=project_id, location=location, **kwargs
     )

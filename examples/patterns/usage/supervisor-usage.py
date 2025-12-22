@@ -280,8 +280,7 @@ async def metadata_flow():
     print("\nExecution Details:")
     if "worker_results" in result.metadata:
         for i, worker_result in enumerate(result.metadata["worker_results"], 1):
-            print(f"   Step {i}: {worker_result.get('agent')} - "
-                  f"{worker_result.get('subtask')}")
+            print(f"   Step {i}: {worker_result.get('agent')} - {worker_result.get('subtask')}")
 
 
 async def main():

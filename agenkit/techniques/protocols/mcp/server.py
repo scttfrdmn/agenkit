@@ -44,12 +44,7 @@ class MCPServer:
         >>> await server.start(transport="http", port=3000)
     """
 
-    def __init__(
-        self,
-        name: str,
-        version: str = "1.0",
-        capabilities: dict[str, Any] | None = None
-    ):
+    def __init__(self, name: str, version: str = "1.0", capabilities: dict[str, Any] | None = None):
         """
         Initialize MCP server.
 
@@ -60,10 +55,7 @@ class MCPServer:
         """
         self.name = name
         self.version = version
-        self.capabilities = capabilities or {
-            "resources": True,
-            "tools": True
-        }
+        self.capabilities = capabilities or {"resources": True, "tools": True}
 
         self.resources = ResourceRegistry()
         self.tools = ToolRegistry()
@@ -76,7 +68,7 @@ class MCPServer:
         name: str | None = None,
         description: str | None = None,
         mime_type: str = "text/plain",
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Decorator to register a resource handler.
@@ -93,6 +85,7 @@ class MCPServer:
             >>> async def get_document(params):
             ...     return "Document content"
         """
+
         def decorator(func: Callable[[dict[str, Any]], Awaitable[Any]]):
             resource_name = name or uri
             self.resources.register(
@@ -101,9 +94,10 @@ class MCPServer:
                 handler=func,
                 description=description,
                 mime_type=mime_type,
-                metadata=metadata
+                metadata=metadata,
             )
             return func
+
         return decorator
 
     def tool(
@@ -111,7 +105,7 @@ class MCPServer:
         name: str,
         description: str,
         input_schema: dict[str, Any],
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Decorator to register a tool handler.
@@ -136,15 +130,17 @@ class MCPServer:
             >>> async def search_tool(params):
             ...     return {"results": [...]}
         """
+
         def decorator(func: Callable[[dict[str, Any]], Awaitable[Any]]):
             self.tools.register(
                 name=name,
                 description=description,
                 handler=func,
                 input_schema=input_schema,
-                metadata=metadata
+                metadata=metadata,
             )
             return func
+
         return decorator
 
     async def handle_request(self, request: MCPRequest) -> MCPResponse:  # noqa: PLR0911 - MCP protocol dispatcher with multiple method handlers
@@ -191,14 +187,12 @@ class MCPServer:
                 return create_error_response(
                     request_id=request.id,
                     code=ERROR_METHOD_NOT_FOUND,
-                    message=f"Method not found: {method}"
+                    message=f"Method not found: {method}",
                 )
 
         except Exception as e:
             return create_error_response(
-                request_id=request.id,
-                code=ERROR_INTERNAL_ERROR,
-                message=str(e)
+                request_id=request.id, code=ERROR_INTERNAL_ERROR, message=str(e)
             )
 
     async def _handle_initialize(self, request: MCPRequest) -> MCPResponse:
@@ -209,12 +203,9 @@ class MCPServer:
             request_id=request.id,
             result={
                 "protocolVersion": "1.0",
-                "serverInfo": {
-                    "name": self.name,
-                    "version": self.version
-                },
-                "capabilities": self.capabilities
-            }
+                "serverInfo": {"name": self.name, "version": self.version},
+                "capabilities": self.capabilities,
+            },
         )
 
     async def _handle_resources_list(self, request: MCPRequest) -> MCPResponse:
@@ -229,11 +220,11 @@ class MCPServer:
                         "uri": r.uri,
                         "name": r.name,
                         "description": r.description,
-                        "mimeType": r.mime_type
+                        "mimeType": r.mime_type,
                     }
                     for r in resources
                 ]
-            }
+            },
         )
 
     async def _handle_resources_read(self, request: MCPRequest) -> MCPResponse:
@@ -245,7 +236,7 @@ class MCPServer:
             return create_error_response(
                 request_id=request.id,
                 code=ERROR_INVALID_PARAMS,
-                message="Missing required parameter: uri"
+                message="Missing required parameter: uri",
             )
 
         try:
@@ -254,20 +245,20 @@ class MCPServer:
             return create_response(
                 request_id=request.id,
                 result={
-                    "contents": [{
-                        "uri": uri,
-                        "mimeType": self.resources.get(uri).mime_type,
-                        "text": str(data) if not isinstance(data, dict) else None,
-                        "blob": None  # Binary data support could be added
-                    }]
-                }
+                    "contents": [
+                        {
+                            "uri": uri,
+                            "mimeType": self.resources.get(uri).mime_type,
+                            "text": str(data) if not isinstance(data, dict) else None,
+                            "blob": None,  # Binary data support could be added
+                        }
+                    ]
+                },
             )
 
         except ValueError as e:
             return create_error_response(
-                request_id=request.id,
-                code=ERROR_INVALID_PARAMS,
-                message=str(e)
+                request_id=request.id, code=ERROR_INVALID_PARAMS, message=str(e)
             )
 
     async def _handle_tools_list(self, request: MCPRequest) -> MCPResponse:
@@ -278,14 +269,10 @@ class MCPServer:
             request_id=request.id,
             result={
                 "tools": [
-                    {
-                        "name": t.name,
-                        "description": t.description,
-                        "inputSchema": t.input_schema
-                    }
+                    {"name": t.name, "description": t.description, "inputSchema": t.input_schema}
                     for t in tools
                 ]
-            }
+            },
         )
 
     async def _handle_tools_call(self, request: MCPRequest) -> MCPResponse:
@@ -298,7 +285,7 @@ class MCPServer:
             return create_error_response(
                 request_id=request.id,
                 code=ERROR_INVALID_PARAMS,
-                message="Missing required parameter: name"
+                message="Missing required parameter: name",
             )
 
         try:
@@ -307,27 +294,25 @@ class MCPServer:
             return create_response(
                 request_id=request.id,
                 result={
-                    "content": [{
-                        "type": "text",
-                        "text": str(result) if not isinstance(result, dict) else None
-                    }] if result is not None else [],
-                    "isError": False
-                }
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": str(result) if not isinstance(result, dict) else None,
+                        }
+                    ]
+                    if result is not None
+                    else [],
+                    "isError": False,
+                },
             )
 
         except ValueError as e:
             return create_error_response(
-                request_id=request.id,
-                code=ERROR_INVALID_PARAMS,
-                message=str(e)
+                request_id=request.id, code=ERROR_INVALID_PARAMS, message=str(e)
             )
 
     async def start(
-        self,
-        transport: str = "http",
-        host: str = "localhost",
-        port: int = 3000,
-        **kwargs
+        self, transport: str = "http", host: str = "localhost", port: int = 3000, **kwargs
     ):
         """
         Start the MCP server.
@@ -345,11 +330,7 @@ class MCPServer:
         from .transports import create_transport
 
         self.transport = create_transport(
-            transport_type=transport,
-            server=self,
-            host=host,
-            port=port,
-            **kwargs
+            transport_type=transport, server=self, host=host, port=port, **kwargs
         )
 
         await self.transport.start()
@@ -371,5 +352,5 @@ class MCPServer:
             "version": self.version,
             "capabilities": self.capabilities,
             "resources_count": len(self.resources),
-            "tools_count": len(self.tools)
+            "tools_count": len(self.tools),
         }

@@ -16,6 +16,7 @@ from agenkit.techniques.protocols.a2a import A2AAction, A2AAgent, A2AServer, cre
 # Simple Echo Agent
 # ==============================================================================
 
+
 class EchoAgent:
     """
     Simple echo agent that returns messages with a prefix.
@@ -30,16 +31,13 @@ class EchoAgent:
         content = message.content
         response = f"Echo from {self.name}: {content}"
 
-        return Message(
-            role="assistant",
-            content=response,
-            metadata={"echoed": True}
-        )
+        return Message(role="assistant", content=response, metadata={"echoed": True})
 
 
 # ==============================================================================
 # Example: Basic Communication
 # ==============================================================================
+
 
 async def basic_communication_example():
     """Demonstrate basic A2A communication."""
@@ -56,7 +54,7 @@ async def basic_communication_example():
         agent_id="echo-001",
         agent=echo_agent,
         capabilities=["echo", "text-processing"],
-        name="Echo Server"
+        name="Echo Server",
     )
 
     print("\n1. Starting A2A server...")
@@ -68,11 +66,7 @@ async def basic_communication_example():
     print(f"   Capabilities: {', '.join(server.capabilities)}")
 
     # Create A2A client agent
-    client = A2AAgent(
-        agent_id="client-001",
-        capabilities=["general"],
-        transport="http"
-    )
+    client = A2AAgent(agent_id="client-001", capabilities=["general"], transport="http")
 
     print(f"\n2. Created client agent: {client.agent_id}")
 
@@ -82,7 +76,7 @@ async def basic_communication_example():
         from_agent=client.agent_id,
         to_agent=server.agent_id,
         action=A2AAction.PING.value,
-        content={}
+        content={},
     )
 
     ping_response = await server.handle_message(ping_request)
@@ -94,7 +88,7 @@ async def basic_communication_example():
         from_agent=client.agent_id,
         to_agent=server.agent_id,
         action=A2AAction.CAPABILITIES.value,
-        content={}
+        content={},
     )
 
     capabilities_response = await server.handle_message(capabilities_request)
@@ -106,7 +100,7 @@ async def basic_communication_example():
         from_agent=client.agent_id,
         to_agent=server.agent_id,
         action=A2AAction.STATUS.value,
-        content={}
+        content={},
     )
 
     status_response = await server.handle_message(status_request)
@@ -118,7 +112,7 @@ async def basic_communication_example():
         from_agent=client.agent_id,
         to_agent=server.agent_id,
         action=A2AAction.PROCESS.value,
-        content={"text": "Hello, A2A!"}
+        content={"text": "Hello, A2A!"},
     )
 
     process_response = await server.handle_message(process_request)

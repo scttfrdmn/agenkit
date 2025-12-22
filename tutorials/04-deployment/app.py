@@ -29,16 +29,15 @@ import redis.asyncio as redis
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 
 # Custom metrics
-REQUEST_COUNT = Counter('agent_requests_total', 'Total agent requests', ['status'])
-REQUEST_DURATION = Histogram('agent_request_duration_seconds', 'Request duration')
-ACTIVE_REQUESTS = Gauge('agent_active_requests', 'Active requests')
+REQUEST_COUNT = Counter("agent_requests_total", "Total agent requests", ["status"])
+REQUEST_DURATION = Histogram("agent_request_duration_seconds", "Request duration")
+ACTIVE_REQUESTS = Gauge("agent_active_requests", "Active requests")
 
 
 class ProductionAgent(Agent):
@@ -77,20 +76,13 @@ class ProductionAgent(Agent):
         return Message(
             role="assistant",
             content=response_content,
-            metadata={
-                "agent": self._name,
-                "processed_at": asyncio.get_event_loop().time()
-            }
+            metadata={"agent": self._name, "processed_at": asyncio.get_event_loop().time()},
         )
 
 
 async def health_check(request: Request) -> JSONResponse:
     """Health check endpoint for load balancers."""
-    return JSONResponse({
-        "status": "healthy",
-        "service": "agenkit-agent",
-        "version": "1.0.0"
-    })
+    return JSONResponse({"status": "healthy", "service": "agenkit-agent", "version": "1.0.0"})
 
 
 async def ready_check(request: Request) -> JSONResponse:
@@ -102,10 +94,7 @@ async def ready_check(request: Request) -> JSONResponse:
         return JSONResponse({"status": "ready"})
     except Exception as e:
         logger.error(f"Readiness check failed: {e}")
-        return JSONResponse(
-            {"status": "not ready", "error": str(e)},
-            status_code=503
-        )
+        return JSONResponse({"status": "not ready", "error": str(e)}, status_code=503)
 
 
 async def process_endpoint(request: Request) -> JSONResponse:
@@ -114,10 +103,7 @@ async def process_endpoint(request: Request) -> JSONResponse:
     try:
         # Parse request
         data = await request.json()
-        message = Message(
-            role=data.get("role", "user"),
-            content=data["content"]
-        )
+        message = Message(role=data.get("role", "user"), content=data["content"])
 
         # Process with agent
         with REQUEST_DURATION.time():
@@ -126,19 +112,14 @@ async def process_endpoint(request: Request) -> JSONResponse:
 
         REQUEST_COUNT.labels(status="success").inc()
 
-        return JSONResponse({
-            "role": response.role,
-            "content": response.content,
-            "metadata": response.metadata
-        })
+        return JSONResponse(
+            {"role": response.role, "content": response.content, "metadata": response.metadata}
+        )
 
     except Exception as e:
         logger.error(f"Processing failed: {e}", exc_info=True)
         REQUEST_COUNT.labels(status="error").inc()
-        return JSONResponse(
-            {"error": str(e)},
-            status_code=500
-        )
+        return JSONResponse({"error": str(e)}, status_code=500)
     finally:
         ACTIVE_REQUESTS.dec()
 
@@ -178,7 +159,7 @@ async def shutdown(app: Starlette):
     logger.info("Shutting down application...")
 
     # Close Redis connection
-    if hasattr(app.state, 'redis'):
+    if hasattr(app.state, "redis"):
         await app.state.redis.close()
         logger.info("Closed Redis connection")
 
@@ -189,13 +170,13 @@ async def shutdown(app: Starlette):
 app = Starlette(
     debug=False,
     routes=[
-        Route('/health', health_check),
-        Route('/ready', ready_check),
-        Route('/process', process_endpoint, methods=['POST']),
-        Mount('/metrics', make_asgi_app()),  # Prometheus metrics
+        Route("/health", health_check),
+        Route("/ready", ready_check),
+        Route("/process", process_endpoint, methods=["POST"]),
+        Mount("/metrics", make_asgi_app()),  # Prometheus metrics
     ],
     on_startup=[startup],
-    on_shutdown=[shutdown]
+    on_shutdown=[shutdown],
 )
 
 
@@ -226,5 +207,5 @@ if __name__ == "__main__":
         log_level="info",
         access_log=True,
         server_header=False,  # Security: don't leak server info
-        date_header=False     # Security: don't leak server time
+        date_header=False,  # Security: don't leak server time
     )

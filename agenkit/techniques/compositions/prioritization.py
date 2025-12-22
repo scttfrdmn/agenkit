@@ -51,6 +51,7 @@ class PrioritizedTask:
         task: The actual task data
         task_id: Unique task identifier
     """
+
     priority: float
     task: Any = field(compare=False)
     task_id: int = field(compare=False)
@@ -76,10 +77,7 @@ class TaskQueue:
         task_counter: Counter for unique task IDs
     """
 
-    def __init__(
-        self,
-        priority_fn: Callable[[Any], float] | None = None
-    ):
+    def __init__(self, priority_fn: Callable[[Any], float] | None = None):
         """
         Initialize task queue.
 
@@ -119,7 +117,7 @@ class TaskQueue:
         prioritized = PrioritizedTask(
             priority=-priority,  # Negative for max-heap
             task=task,
-            task_id=task_id
+            task_id=task_id,
         )
 
         heapq.heappush(self.queue, prioritized)
@@ -216,7 +214,7 @@ class PriorityTaskExecutor:
     def __init__(
         self,
         priority_fn: Callable[[Any], float] | None = None,
-        process_fn: Callable[[Any], Any] | None = None
+        process_fn: Callable[[Any], Any] | None = None,
     ):
         """
         Initialize priority task executor.

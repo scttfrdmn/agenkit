@@ -139,10 +139,12 @@ class ParallelAgent(Agent):
 
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                errors.append({
-                    "agent": self._agents[i].name,
-                    "error": str(result),
-                })
+                errors.append(
+                    {
+                        "agent": self._agents[i].name,
+                        "error": str(result),
+                    }
+                )
             else:
                 successes.append(result)
 

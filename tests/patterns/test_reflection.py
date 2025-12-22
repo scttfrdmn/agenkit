@@ -207,7 +207,10 @@ async def test_reflection_history():
     critic = MockCriticAgent(scores=[0.6, 0.8, 0.95])
 
     agent = ReflectionAgent(
-        generator=generator, critic=critic, max_reflections=3, verbose=True  # Enable history
+        generator=generator,
+        critic=critic,
+        max_reflections=3,
+        verbose=True,  # Enable history
     )
 
     result = await agent.process(Message(role="user", content="Test"))

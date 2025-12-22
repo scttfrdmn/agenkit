@@ -27,7 +27,9 @@ def main():
 
     logger.info("Starting Customer Support API")
     logger.info(f"Go worker endpoint: {settings.go_worker_endpoint}")
-    logger.info(f"Features: caching={settings.enable_caching}, audit={settings.enable_audit_logging}, tracing={settings.enable_tracing}")
+    logger.info(
+        f"Features: caching={settings.enable_caching}, audit={settings.enable_audit_logging}, tracing={settings.enable_tracing}"
+    )
 
     # Create app
     app = create_app(settings)

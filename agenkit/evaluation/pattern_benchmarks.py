@@ -184,7 +184,9 @@ class YAMLBenchmarkLoader:
         # Extract pattern info
         pattern_info = spec.get("pattern", {})
         pattern_display_name = pattern_info.get("name", pattern_name.title())
-        pattern_description = pattern_info.get("description", f"Benchmark for {pattern_display_name} pattern")
+        pattern_description = pattern_info.get(
+            "description", f"Benchmark for {pattern_display_name} pattern"
+        )
 
         # Convert scenarios to test cases
         test_cases = []
@@ -275,9 +277,7 @@ class YAMLBenchmarkLoader:
         )
 
     def _create_validator(
-        self,
-        expected_message: dict,
-        expected_behavior: dict
+        self, expected_message: dict, expected_behavior: dict
     ) -> Callable[[Message], bool]:
         """
         Create validation function from expected output specification.
@@ -289,6 +289,7 @@ class YAMLBenchmarkLoader:
         Returns:
             Validation function that checks if a Message meets expectations
         """
+
         def validator(msg: Message) -> bool:  # noqa: PLR0911 - Multiple validation checks require early returns
             """Validate message against expected output."""
             # Check role
@@ -447,7 +448,7 @@ class PatternBenchmarkSuite:
                 "passed": 0,
                 "failed": 0,
                 "total_time_ms": 0,
-            }
+            },
         }
 
         test_cases = await benchmark.generate_test_cases()
@@ -462,11 +463,7 @@ class PatternBenchmarkSuite:
 
             try:
                 # Create input message
-                input_msg = Message(
-                    role="user",
-                    content=test_case.input,
-                    metadata={}
-                )
+                input_msg = Message(role="user", content=test_case.input, metadata={})
 
                 # Process with agent
                 output_msg = await agent.process(input_msg)
@@ -480,12 +477,14 @@ class PatternBenchmarkSuite:
                 else:
                     passed = str(output_msg.content) == str(test_case.expected)
 
-                results["test_cases"].append({
-                    "scenario_id": test_case.metadata.get("scenario_id", "unknown"),
-                    "passed": passed,
-                    "time_ms": elapsed_ms,
-                    "output_length": len(str(output_msg.content)),
-                })
+                results["test_cases"].append(
+                    {
+                        "scenario_id": test_case.metadata.get("scenario_id", "unknown"),
+                        "passed": passed,
+                        "time_ms": elapsed_ms,
+                        "output_length": len(str(output_msg.content)),
+                    }
+                )
 
                 if passed:
                     results["summary"]["passed"] += 1
@@ -497,12 +496,14 @@ class PatternBenchmarkSuite:
             except Exception as e:
                 elapsed_ms = (time.perf_counter() - start_time) * 1000
 
-                results["test_cases"].append({
-                    "scenario_id": test_case.metadata.get("scenario_id", "unknown"),
-                    "passed": False,
-                    "error": str(e),
-                    "time_ms": elapsed_ms,
-                })
+                results["test_cases"].append(
+                    {
+                        "scenario_id": test_case.metadata.get("scenario_id", "unknown"),
+                        "passed": False,
+                        "error": str(e),
+                        "time_ms": elapsed_ms,
+                    }
+                )
 
                 results["summary"]["failed"] += 1
                 results["summary"]["total_time_ms"] += elapsed_ms
@@ -532,7 +533,7 @@ class PatternBenchmarkSuite:
                 "total_passed": 0,
                 "total_failed": 0,
                 "total_time_ms": 0,
-            }
+            },
         }
 
         for benchmark in self.benchmarks:
@@ -557,8 +558,5 @@ class PatternBenchmarkSuite:
         return {
             "patterns": [b._pattern_name for b in self.benchmarks],
             "total_benchmarks": len(self.benchmarks),
-            "descriptions": {
-                b._pattern_name: b._description
-                for b in self.benchmarks
-            }
+            "descriptions": {b._pattern_name: b._description for b in self.benchmarks},
         }

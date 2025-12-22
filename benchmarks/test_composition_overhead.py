@@ -110,6 +110,7 @@ def measure_time(func, iterations: int = 10_000) -> float:
     Returns:
         Total time in seconds
     """
+
     async def run():
         for _ in range(iterations):
             await func()
@@ -139,15 +140,17 @@ def print_benchmark_result(
     baseline_time: float,
     pattern_time: float,
     overhead: float,
-    threshold: float
+    threshold: float,
 ):
     """Print benchmark results in consistent format."""
     print(f"\n{name}:")
     print(f"  Iterations: {iterations:,}")
-    print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
-    print(f"  Pattern:    {pattern_time:.4f}s ({pattern_time/iterations*1000:.6f}ms per call)")
-    print(f"  Overhead:   {overhead*100:.2f}%")
-    print(f"  Threshold:  {threshold*100:.0f}%")
+    print(
+        f"  Baseline:   {baseline_time:.4f}s ({baseline_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(f"  Pattern:    {pattern_time:.4f}s ({pattern_time / iterations * 1000:.6f}ms per call)")
+    print(f"  Overhead:   {overhead * 100:.2f}%")
+    print(f"  Threshold:  {threshold * 100:.0f}%")
     print(f"  Status:     {'✅ PASS' if overhead < threshold else '❌ FAIL'}")
 
 
@@ -199,10 +202,10 @@ def test_sequential_pattern_overhead():
         baseline_time,
         pattern_time,
         overhead,
-        threshold=0.15
+        threshold=0.15,
     )
 
-    assert overhead < 0.15, f"Sequential pattern overhead {overhead*100:.2f}% exceeds 15%"
+    assert overhead < 0.15, f"Sequential pattern overhead {overhead * 100:.2f}% exceeds 15%"
 
 
 def test_sequential_pattern_scaling():
@@ -240,9 +243,11 @@ def test_sequential_pattern_scaling():
         pattern_time = measure_time(with_pattern, iterations)
 
         overhead = calculate_overhead(baseline_time, pattern_time)
-        print(f"  {num_agents} agents:  {overhead*100:6.2f}% overhead")
+        print(f"  {num_agents} agents:  {overhead * 100:6.2f}% overhead")
 
-        assert overhead < 0.20, f"Overhead {overhead*100:.2f}% exceeds 20% for {num_agents} agents"
+        assert overhead < 0.20, (
+            f"Overhead {overhead * 100:.2f}% exceeds 20% for {num_agents} agents"
+        )
 
 
 # ============================================
@@ -270,9 +275,7 @@ def test_parallel_pattern_overhead():
 
     async def baseline():
         results = await asyncio.gather(
-            agent1.process(msg),
-            agent2.process(msg),
-            agent3.process(msg)
+            agent1.process(msg), agent2.process(msg), agent3.process(msg)
         )
         return results
 
@@ -295,10 +298,10 @@ def test_parallel_pattern_overhead():
         baseline_time,
         pattern_time,
         overhead,
-        threshold=0.10
+        threshold=0.10,
     )
 
-    assert overhead < 0.10, f"Parallel pattern overhead {overhead*100:.2f}% exceeds 10%"
+    assert overhead < 0.10, f"Parallel pattern overhead {overhead * 100:.2f}% exceeds 10%"
 
 
 def test_parallel_pattern_scaling():
@@ -335,9 +338,11 @@ def test_parallel_pattern_scaling():
         pattern_time = measure_time(with_pattern, iterations)
 
         overhead = calculate_overhead(baseline_time, pattern_time)
-        print(f"  {num_agents} agents:  {overhead*100:6.2f}% overhead")
+        print(f"  {num_agents} agents:  {overhead * 100:6.2f}% overhead")
 
-        assert overhead < 0.15, f"Overhead {overhead*100:.2f}% exceeds 15% for {num_agents} agents"
+        assert overhead < 0.15, (
+            f"Overhead {overhead * 100:.2f}% exceeds 15% for {num_agents} agents"
+        )
 
 
 # ============================================
@@ -383,10 +388,10 @@ def test_fallback_pattern_overhead():
         baseline_time,
         pattern_time,
         overhead,
-        threshold=0.15
+        threshold=0.15,
     )
 
-    assert overhead < 0.15, f"Fallback pattern overhead {overhead*100:.2f}% exceeds 15%"
+    assert overhead < 0.15, f"Fallback pattern overhead {overhead * 100:.2f}% exceeds 15%"
 
 
 # ============================================
@@ -424,9 +429,7 @@ def test_conditional_pattern_overhead():
 
     # Pattern: Conditional pattern
     pattern = ConditionalPattern(
-        condition=condition,
-        then_agent=FastAgent("agent-true"),
-        else_agent=FastAgent("agent-false")
+        condition=condition, then_agent=FastAgent("agent-true"), else_agent=FastAgent("agent-false")
     )
 
     async def with_pattern():
@@ -442,10 +445,10 @@ def test_conditional_pattern_overhead():
         baseline_time,
         pattern_time,
         overhead,
-        threshold=0.15
+        threshold=0.15,
     )
 
-    assert overhead < 0.15, f"Conditional pattern overhead {overhead*100:.2f}% exceeds 15%"
+    assert overhead < 0.15, f"Conditional pattern overhead {overhead * 100:.2f}% exceeds 15%"
 
 
 # ============================================
@@ -505,12 +508,12 @@ def test_nested_composition_overhead():
         baseline_time,
         pattern_time,
         overhead,
-        threshold=0.30
+        threshold=0.30,
     )
 
     print("  Structure:  Parallel[Sequential[3 agents], Sequential[3 agents]]")
 
-    assert overhead < 0.30, f"Nested composition overhead {overhead*100:.2f}% exceeds 30%"
+    assert overhead < 0.30, f"Nested composition overhead {overhead * 100:.2f}% exceeds 30%"
 
 
 # ============================================
@@ -598,9 +601,7 @@ def test_composition_pattern_comparison():
     baseline_time = measure_time(baseline_conditional, iterations)
 
     pattern_conditional = ConditionalPattern(
-        condition=condition,
-        then_agent=FastAgent("true"),
-        else_agent=FastAgent("false")
+        condition=condition, then_agent=FastAgent("true"), else_agent=FastAgent("false")
     )
 
     async def test_conditional():
@@ -612,11 +613,11 @@ def test_composition_pattern_comparison():
     # Print results
     sorted_results = sorted(results.items(), key=lambda x: x[1])
     for name, overhead in sorted_results:
-        print(f"  {name:20s} {overhead*100:6.2f}% overhead")
+        print(f"  {name:20s} {overhead * 100:6.2f}% overhead")
 
     print()
-    print(f"  Fastest:    {sorted_results[0][0]} ({sorted_results[0][1]*100:.2f}%)")
-    print(f"  Slowest:    {sorted_results[-1][0]} ({sorted_results[-1][1]*100:.2f}%)")
+    print(f"  Fastest:    {sorted_results[0][0]} ({sorted_results[0][1] * 100:.2f}%)")
+    print(f"  Slowest:    {sorted_results[-1][0]} ({sorted_results[-1][1] * 100:.2f}%)")
 
 
 # ============================================
@@ -628,9 +629,9 @@ def test_composition_benchmark_summary():
     """
     Summary: Run all composition benchmarks and print aggregate results.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Composition Pattern Performance Benchmark Summary")
-    print("="*70)
+    print("=" * 70)
 
     # Run all benchmarks
     test_sequential_pattern_overhead()
@@ -642,11 +643,11 @@ def test_composition_benchmark_summary():
     test_nested_composition_overhead()
     test_composition_pattern_comparison()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Conclusion: All composition overhead <15%, nested <30%")
     print("Production impact: <0.01% on real workloads (LLM calls, I/O)")
     print("Benefits (clarity, reusability) far outweigh minimal cost")
-    print("="*70)
+    print("=" * 70)
 
 
 if __name__ == "__main__":

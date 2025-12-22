@@ -167,9 +167,7 @@ class CollaborativeAgent(Agent):
 
             for agent in self._agents:
                 # Build context message with conversation history
-                context_msg = self._build_context_message(
-                    current_context, round_num, agent.name
-                )
+                context_msg = self._build_context_message(current_context, round_num, agent.name)
 
                 # Get agent response
                 try:
@@ -227,16 +225,12 @@ class CollaborativeAgent(Agent):
                 parts.append(f"{msg.content}\n")
 
             parts.append("--- Your Turn ---")
-            parts.append(
-                "Please review the above responses and provide your refined contribution."
-            )
+            parts.append("Please review the above responses and provide your refined contribution.")
 
         content = "\n".join(parts)
         return Message(role="user", content=content)
 
-    def _build_final_result(
-        self, rounds: list[RoundResult], stop_reason: str
-    ) -> Message:
+    def _build_final_result(self, rounds: list[RoundResult], stop_reason: str) -> Message:
         """Merge all responses and add metadata."""
         # Collect all responses from final round
         final_round = rounds[-1]
@@ -295,6 +289,7 @@ class DefaultConsensusFuncs:
         Returns:
             Consensus function with configured threshold
         """
+
         def check_similarity(messages: list[Message]) -> bool:
             if len(messages) <= 1:
                 return True

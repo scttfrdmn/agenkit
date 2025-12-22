@@ -194,7 +194,9 @@ async def demo_basic_reflection():
     print("\n📊 Results:")
     print(f"  Initial Quality: {result.metadata['initial_quality_score']:.2f}")
     print(f"  Final Quality: {result.metadata['final_quality_score']:.2f}")
-    print(f"  Improvement: {result.metadata['total_improvement']:.2f} (+{result.metadata['total_improvement']*100:.0f}%)")
+    print(
+        f"  Improvement: {result.metadata['total_improvement']:.2f} (+{result.metadata['total_improvement'] * 100:.0f}%)"
+    )
     print(f"  Stop Reason: {result.metadata['stop_reason']}")
     print(f"  Iterations: {result.metadata['reflection_iterations']}")
 

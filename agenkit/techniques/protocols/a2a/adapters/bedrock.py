@@ -43,7 +43,7 @@ class BedrockAdapter:
         agent: "Agent",
         capabilities: list[str],
         region: str = "us-east-1",
-        account_id: str | None = None
+        account_id: str | None = None,
     ):
         """
         Initialize Bedrock adapter.
@@ -63,10 +63,7 @@ class BedrockAdapter:
 
         # Create A2A server
         self.server = A2AServer(
-            agent_id=agent_id,
-            agent=agent,
-            capabilities=capabilities,
-            name=f"bedrock-{agent_id}"
+            agent_id=agent_id, agent=agent, capabilities=capabilities, name=f"bedrock-{agent_id}"
         )
 
     @staticmethod
@@ -75,7 +72,7 @@ class BedrockAdapter:
         agent_id: str | None = None,
         region: str = "us-east-1",
         capabilities: list[str] | None = None,
-        account_id: str | None = None
+        account_id: str | None = None,
     ) -> "BedrockAdapter":
         """
         Create adapter from Agenkit agent.
@@ -91,25 +88,25 @@ class BedrockAdapter:
             BedrockAdapter instance
         """
         if agent_id is None:
-            agent_id = getattr(agent, 'name', 'agenkit-agent')
-            agent_id = agent_id.replace('_', '-').replace(' ', '-').lower()
+            agent_id = getattr(agent, "name", "agenkit-agent")
+            agent_id = agent_id.replace("_", "-").replace(" ", "-").lower()
 
         if capabilities is None:
-            capabilities = getattr(agent, 'capabilities', ['general'])
+            capabilities = getattr(agent, "capabilities", ["general"])
 
         return BedrockAdapter(
             agent_id=agent_id,
             agent=agent,
             capabilities=capabilities,
             region=region,
-            account_id=account_id
+            account_id=account_id,
         )
 
     async def deploy(
         self,
         host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
         port: int = 8080,
-        **kwargs
+        **kwargs,
     ):
         """
         Deploy agent for Bedrock integration.
@@ -125,12 +122,7 @@ class BedrockAdapter:
             **kwargs: Additional options
         """
         # Start A2A server
-        await self.server.start(
-            transport="http",
-            host=host,
-            port=port,
-            **kwargs
-        )
+        await self.server.start(transport="http", host=host, port=port, **kwargs)
 
         endpoint = f"http://{host}:{port}/a2a"
 
@@ -170,7 +162,7 @@ class BedrockAdapter:
             "region": self.region,
             "capabilities": self.capabilities,
             "protocol": "a2a",
-            "transport": "http"
+            "transport": "http",
         }
 
         if self.account_id:
@@ -183,11 +175,7 @@ class BedrockAdapter:
         await self.server.stop()
 
 
-def create_bedrock_agent(
-    agent: "Agent",
-    region: str = "us-east-1",
-    **kwargs
-) -> BedrockAdapter:
+def create_bedrock_agent(agent: "Agent", region: str = "us-east-1", **kwargs) -> BedrockAdapter:
     """
     Convenience function to create Bedrock adapter.
 
@@ -199,8 +187,4 @@ def create_bedrock_agent(
     Returns:
         BedrockAdapter instance
     """
-    return BedrockAdapter.from_agent(
-        agent=agent,
-        region=region,
-        **kwargs
-    )
+    return BedrockAdapter.from_agent(agent=agent, region=region, **kwargs)

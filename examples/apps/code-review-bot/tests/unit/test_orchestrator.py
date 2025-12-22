@@ -19,18 +19,14 @@ async def test_orchestrator_conducts_parallel_reviews():
 
     # Mock LLM responses
     mock_responses = {
-        "claude": Message(
-            role="assistant", content="Security review: No SQL injection found."
-        ),
+        "claude": Message(role="assistant", content="Security review: No SQL injection found."),
         "gpt4": Message(
             role="assistant", content="Architecture review: Good separation of concerns."
         ),
         "gemini": Message(role="assistant", content="Style review: Follows PEP 8."),
     }
 
-    with patch.object(
-        orchestrator, "_review_with_llm", new_callable=AsyncMock
-    ) as mock_review:
+    with patch.object(orchestrator, "_review_with_llm", new_callable=AsyncMock) as mock_review:
         mock_review.side_effect = lambda name, llm, prompt: {
             "reviewer": name,
             "content": mock_responses[name].content,
@@ -70,9 +66,7 @@ async def test_orchestrator_handles_llm_failures():
         else:
             return {"reviewer": "gemini", "content": "Style review complete", "success": True}
 
-    with patch.object(
-        orchestrator, "_review_with_llm", new_callable=AsyncMock
-    ) as mock_review:
+    with patch.object(orchestrator, "_review_with_llm", new_callable=AsyncMock) as mock_review:
         mock_review.side_effect = mock_review_side_effect
 
         code = "def test(): pass"
@@ -82,7 +76,7 @@ async def test_orchestrator_handles_llm_failures():
 
         # Only 2 successful reviews
         assert result.metadata["num_reviews"] == 2
-        assert result.metadata["consensus_score"] == pytest.approx(2/3, abs=0.01)
+        assert result.metadata["consensus_score"] == pytest.approx(2 / 3, abs=0.01)
 
 
 def test_consensus_calculation():
@@ -105,7 +99,7 @@ def test_consensus_calculation():
         {"reviewer": "gpt4", "success": False},
         {"reviewer": "gemini", "success": True},
     ]
-    assert orchestrator._calculate_consensus(reviews) == pytest.approx(2/3, abs=0.01)
+    assert orchestrator._calculate_consensus(reviews) == pytest.approx(2 / 3, abs=0.01)
 
     # All failed
     reviews = [

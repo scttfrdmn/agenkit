@@ -40,11 +40,7 @@ class MockAgent:
         if self.delay > 0:
             await asyncio.sleep(self.delay)
 
-        return Message(
-            role="assistant",
-            content=self.response,
-            metadata={"agent": self._name}
-        )
+        return Message(role="assistant", content=self.response, metadata={"agent": self._name})
 
 
 class FailingAgent:
@@ -80,7 +76,7 @@ def count_aggregator(messages: list[Message]) -> Message:
     return Message(
         role="assistant",
         content=f"Aggregated {len(messages)} results",
-        metadata={"count": len(messages)}
+        metadata={"count": len(messages)},
     )
 
 
@@ -296,7 +292,9 @@ async def test_parallel_default_aggregator_majority_vote():
     agent2 = MockAgent("agent2", response="Yes")
     agent3 = MockAgent("agent3", response="No")
 
-    parallel = ParallelAgent(agents=[agent1, agent2, agent3], aggregator=default_aggregators.majority_vote)
+    parallel = ParallelAgent(
+        agents=[agent1, agent2, agent3], aggregator=default_aggregators.majority_vote
+    )
 
     message = Message(role="user", content="input")
     result = await parallel.process(message)

@@ -141,7 +141,7 @@ class LeastToMost(Agent):
             subproblem_texts = self.decomposer(problem)
             subproblems = [
                 Subproblem(content=text, difficulty=i)
-                for i, text in enumerate(subproblem_texts[:self.max_subproblems])
+                for i, text in enumerate(subproblem_texts[: self.max_subproblems])
             ]
             return subproblems
 
@@ -157,7 +157,7 @@ Subproblems (from simplest to most complex):"""
 
         # Parse subproblems from response
         subproblems = []
-        lines = response.strip().split('\n')
+        lines = response.strip().split("\n")
 
         for i, line in enumerate(lines):
             line = line.strip()
@@ -166,12 +166,11 @@ Subproblems (from simplest to most complex):"""
 
             # Remove numbering (1., 1), etc.)
             import re
-            cleaned = re.sub(r'^\d+[\.)]\s*', '', line)
+
+            cleaned = re.sub(r"^\d+[\.)]\s*", "", line)
 
             if cleaned and len(subproblems) < self.max_subproblems:
-                subproblems.append(
-                    Subproblem(content=cleaned, difficulty=i)
-                )
+                subproblems.append(Subproblem(content=cleaned, difficulty=i))
 
         # If decomposition failed, treat as atomic problem
         if not subproblems:
@@ -179,11 +178,7 @@ Subproblems (from simplest to most complex):"""
 
         return subproblems
 
-    async def solve_subproblem(
-        self,
-        subproblem: Subproblem,
-        previous_solutions: list[str]
-    ) -> str:
+    async def solve_subproblem(self, subproblem: Subproblem, previous_solutions: list[str]) -> str:
         """
         Solve one subproblem, optionally using previous solutions as context.
 
@@ -196,10 +191,9 @@ Subproblems (from simplest to most complex):"""
         """
         if self.compose_solutions and previous_solutions:
             # Include previous solutions as context
-            context = "\n".join([
-                f"Previous solution {i+1}: {sol}"
-                for i, sol in enumerate(previous_solutions)
-            ])
+            context = "\n".join(
+                [f"Previous solution {i + 1}: {sol}" for i, sol in enumerate(previous_solutions)]
+            )
 
             prompt = f"""Given these previous solutions to simpler subproblems:
 
@@ -267,8 +261,8 @@ Solution:"""
                 "num_subproblems": len(subproblems),
                 "subproblems": [sp.content for sp in subproblems],
                 "subproblem_solutions": solutions,
-                "compose_solutions": self.compose_solutions
-            }
+                "compose_solutions": self.compose_solutions,
+            },
         )
 
     @property
@@ -284,5 +278,5 @@ Solution:"""
             "decomposition",
             "compositional_reasoning",
             "least_to_most",
-            "sequential_solving"
+            "sequential_solving",
         ]

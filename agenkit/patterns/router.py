@@ -146,9 +146,7 @@ class RouterAgent(Agent):
 
         # Validate default key if provided
         if config.default_key and config.default_key not in config.agents:
-            raise ValueError(
-                f"default key '{config.default_key}' not found in agents map"
-            )
+            raise ValueError(f"default key '{config.default_key}' not found in agents map")
 
         self._classifier = config.classifier
         self._agents = config.agents
@@ -218,17 +216,14 @@ class RouterAgent(Agent):
             else:
                 available_categories = ", ".join(self._agents.keys())
                 raise RuntimeError(
-                    f"no agent found for category '{category}' "
-                    f"(available: {available_categories})"
+                    f"no agent found for category '{category}' (available: {available_categories})"
                 )
 
         # Step 3: Execute selected agent
         try:
             result = await agent.process(message)
         except Exception as e:
-            raise RuntimeError(
-                f"agent '{agent.name}' (category: {category}) failed: {e}"
-            ) from e
+            raise RuntimeError(f"agent '{agent.name}' (category: {category}) failed: {e}") from e
 
         # Add routing metadata
         if result.metadata is None:
@@ -311,10 +306,7 @@ class SimpleClassifier:
         best_category = ""
 
         for category, keywords in self._keywords.items():
-            matches = sum(
-                1 for keyword in keywords
-                if keyword.lower() in content
-            )
+            matches = sum(1 for keyword in keywords if keyword.lower() in content)
 
             if matches > max_matches:
                 max_matches = matches
@@ -406,10 +398,7 @@ class LLMClassifier:
             raise ValueError("message cannot be None")
 
         # Build classification prompt
-        classification_msg = Message(
-            role="user",
-            content=self._prompt + message.content
-        )
+        classification_msg = Message(role="user", content=self._prompt + message.content)
 
         # Get LLM classification
         try:
@@ -425,6 +414,4 @@ class LLMClassifier:
                 return valid_cat
 
         categories_str = ", ".join(self._categories)
-        raise RuntimeError(
-            f"llm returned invalid category '{category}' (valid: {categories_str})"
-        )
+        raise RuntimeError(f"llm returned invalid category '{category}' (valid: {categories_str})")

@@ -34,6 +34,7 @@ from agenkit.interfaces import Agent, Message
 @dataclass
 class StreamingMetrics:
     """Metrics collected during streaming benchmark."""
+
     ttfc: float  # Time to first chunk (seconds)
     total_time: float  # Total streaming time (seconds)
     chunks_received: int  # Number of chunks received
@@ -80,7 +81,7 @@ class StreamingChunkAgent(Agent):
         for i in range(self._chunk_count):
             if self._delay_per_chunk_ms > 0:
                 await asyncio.sleep(self._delay_per_chunk_ms / 1000.0)
-            chunk = f"Chunk {i+1}: {'x' * self._chunk_size}"
+            chunk = f"Chunk {i + 1}: {'x' * self._chunk_size}"
             chunks.append(chunk)
 
         return Message(role="agent", content="\n".join(chunks))
@@ -91,7 +92,7 @@ class StreamingChunkAgent(Agent):
             if self._delay_per_chunk_ms > 0:
                 await asyncio.sleep(self._delay_per_chunk_ms / 1000.0)
 
-            chunk = f"Chunk {i+1}: {'x' * self._chunk_size}"
+            chunk = f"Chunk {i + 1}: {'x' * self._chunk_size}"
             yield Message(role="agent", content=chunk)
 
 
@@ -117,12 +118,7 @@ async def run_streaming_server(agent: Agent, protocol: str, port: int):
     enable_http2 = protocol == "h2c"
 
     # Create HTTP agent server
-    server = HTTPAgentServer(
-        agent=agent,
-        host="localhost",
-        port=port,
-        enable_http2=enable_http2
-    )
+    server = HTTPAgentServer(agent=agent, host="localhost", port=port, enable_http2=enable_http2)
 
     # Start server
     await server.start()
@@ -239,17 +235,18 @@ async def test_http1_streaming_latency():
             total_time += metrics.total_time
 
             # Verify chunks received
-            assert metrics.chunks_received == 10, \
+            assert metrics.chunks_received == 10, (
                 f"Expected 10 chunks, got {metrics.chunks_received}"
+            )
 
         avg_time = total_time / iterations
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("HTTP/1.1 Streaming Latency (10 chunks @ 50ms)")
-        print(f"{'='*60}")
-        print(f"Average total time: {avg_time*1000:.2f}ms")
+        print(f"{'=' * 60}")
+        print(f"Average total time: {avg_time * 1000:.2f}ms")
         print("Expected: ~500ms")
-        print(f"Status: {'✅ PASS' if 450 <= avg_time*1000 <= 600 else '❌ FAIL'}")
-        print(f"{'='*60}\n")
+        print(f"Status: {'✅ PASS' if 450 <= avg_time * 1000 <= 600 else '❌ FAIL'}")
+        print(f"{'=' * 60}\n")
 
 
 @pytest.mark.asyncio
@@ -280,12 +277,12 @@ async def test_http1_streaming_10_chunks():
             assert metrics.chunks_received == 10
 
         avg_time = total_time / iterations
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("HTTP/1.1 Streaming 10 Chunks (no delay)")
-        print(f"{'='*60}")
-        print(f"Average time: {avg_time*1000:.2f}ms ({avg_time*1000000:.0f}µs)")
+        print(f"{'=' * 60}")
+        print(f"Average time: {avg_time * 1000:.2f}ms ({avg_time * 1000000:.0f}µs)")
         print("Memory footprint: ~1-2KB per chunk")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
 
 @pytest.mark.asyncio
@@ -316,12 +313,12 @@ async def test_http1_streaming_50_chunks():
             assert metrics.chunks_received == 50
 
         avg_time = total_time / iterations
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("HTTP/1.1 Streaming 50 Chunks (no delay)")
-        print(f"{'='*60}")
-        print(f"Average time: {avg_time*1000:.2f}ms")
-        print(f"Throughput: {50/avg_time:.0f} chunks/sec")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}")
+        print(f"Average time: {avg_time * 1000:.2f}ms")
+        print(f"Throughput: {50 / avg_time:.0f} chunks/sec")
+        print(f"{'=' * 60}\n")
 
 
 @pytest.mark.asyncio
@@ -364,14 +361,14 @@ async def test_http1_streaming_vs_batch():
 
         overhead = (streaming_avg / batch_avg) if batch_avg > 0 else 0
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("HTTP/1.1 Streaming vs Batch Comparison")
-        print(f"{'='*60}")
-        print(f"Streaming: {streaming_avg*1000:.2f}ms ({streaming_avg*1000000:.0f}µs)")
-        print(f"Batch:     {batch_avg*1000:.2f}ms ({batch_avg*1000000:.0f}µs)")
+        print(f"{'=' * 60}")
+        print(f"Streaming: {streaming_avg * 1000:.2f}ms ({streaming_avg * 1000000:.0f}µs)")
+        print(f"Batch:     {batch_avg * 1000:.2f}ms ({batch_avg * 1000000:.0f}µs)")
         print(f"Overhead:  {overhead:.2f}x")
         print(f"Status: {'✅ EXPECTED' if 1.5 <= overhead <= 5.0 else '⚠️  UNEXPECTED'}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
 
 @pytest.mark.asyncio
@@ -398,16 +395,16 @@ async def test_http1_streaming_realistic():
         expected_time = 50 * 50 / 1000.0  # 50 tokens * 50ms = 2.5s
         overhead = (metrics.total_time - expected_time) * 1000  # in ms
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("HTTP/1.1 Realistic LLM Streaming (50 tokens @ 50ms)")
-        print(f"{'='*60}")
-        print(f"Total time:      {metrics.total_time*1000:.0f}ms ({metrics.total_time:.3f}s)")
-        print(f"Expected time:   {expected_time*1000:.0f}ms ({expected_time:.3f}s)")
-        print(f"TTFC:            {metrics.ttfc*1000:.2f}ms")
-        print(f"Overhead:        {overhead:.2f}ms ({overhead/metrics.total_time/10:.1f}%)")
+        print(f"{'=' * 60}")
+        print(f"Total time:      {metrics.total_time * 1000:.0f}ms ({metrics.total_time:.3f}s)")
+        print(f"Expected time:   {expected_time * 1000:.0f}ms ({expected_time:.3f}s)")
+        print(f"TTFC:            {metrics.ttfc * 1000:.2f}ms")
+        print(f"Overhead:        {overhead:.2f}ms ({overhead / metrics.total_time / 10:.1f}%)")
         print(f"Throughput:      {metrics.chunk_throughput:.1f} tokens/sec")
         print(f"Chunks received: {metrics.chunks_received}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
 
 # ============================================
@@ -443,13 +440,13 @@ async def test_http2_streaming_latency():
             assert metrics.chunks_received == 10
 
         avg_time = total_time / iterations
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("HTTP/2 Streaming Latency (10 chunks @ 50ms)")
-        print(f"{'='*60}")
-        print(f"Average total time: {avg_time*1000:.2f}ms")
+        print(f"{'=' * 60}")
+        print(f"Average total time: {avg_time * 1000:.2f}ms")
         print("Expected: ~500ms")
-        print(f"Status: {'✅ PASS' if 450 <= avg_time*1000 <= 600 else '❌ FAIL'}")
-        print(f"{'='*60}\n")
+        print(f"Status: {'✅ PASS' if 450 <= avg_time * 1000 <= 600 else '❌ FAIL'}")
+        print(f"{'=' * 60}\n")
 
 
 @pytest.mark.asyncio
@@ -480,13 +477,13 @@ async def test_http2_streaming_50_chunks():
             assert metrics.chunks_received == 50
 
         avg_time = total_time / iterations
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("HTTP/2 Streaming 50 Chunks (no delay)")
-        print(f"{'='*60}")
-        print(f"Average time: {avg_time*1000:.2f}ms")
-        print(f"Throughput: {50/avg_time:.0f} chunks/sec")
+        print(f"{'=' * 60}")
+        print(f"Average time: {avg_time * 1000:.2f}ms")
+        print(f"Throughput: {50 / avg_time:.0f} chunks/sec")
         print("Memory efficiency: Better than HTTP/1.1")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
 
 @pytest.mark.asyncio
@@ -529,14 +526,14 @@ async def test_http2_streaming_vs_batch():
 
         overhead = (streaming_avg / batch_avg) if batch_avg > 0 else 0
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("HTTP/2 Streaming vs Batch Comparison")
-        print(f"{'='*60}")
-        print(f"Streaming: {streaming_avg*1000:.2f}ms ({streaming_avg*1000000:.0f}µs)")
-        print(f"Batch:     {batch_avg*1000:.2f}ms ({batch_avg*1000000:.0f}µs)")
+        print(f"{'=' * 60}")
+        print(f"Streaming: {streaming_avg * 1000:.2f}ms ({streaming_avg * 1000000:.0f}µs)")
+        print(f"Batch:     {batch_avg * 1000:.2f}ms ({batch_avg * 1000000:.0f}µs)")
         print(f"Overhead:  {overhead:.2f}x")
         print(f"Status: {'✅ EXPECTED' if 1.5 <= overhead <= 5.0 else '⚠️  UNEXPECTED'}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
 
 # ============================================
@@ -546,9 +543,9 @@ async def test_http2_streaming_vs_batch():
 
 if __name__ == "__main__":
     """Run all streaming benchmarks and print summary."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print(" AGENKIT PYTHON STREAMING BENCHMARKS")
-    print("="*70)
+    print("=" * 70)
     print("\nRunning comprehensive streaming performance tests...")
     print("Comparing HTTP/1.1 and HTTP/2 cleartext (h2c) protocols\n")
 

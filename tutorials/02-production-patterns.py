@@ -16,7 +16,8 @@ app = marimo.App(width="medium")
 @app.cell
 def __():
     import marimo as mo
-    return mo,
+
+    return (mo,)
 
 
 @app.cell
@@ -71,10 +72,10 @@ def __(mo):
         """
     ).batch(
         max_retries=mo.ui.slider(1, 10, value=3, label="Max Retries"),
-        backoff_factor=mo.ui.slider(0.5, 5.0, step=0.5, value=2.0, label="Backoff Factor")
+        backoff_factor=mo.ui.slider(0.5, 5.0, step=0.5, value=2.0, label="Backoff Factor"),
     )
     retry_config
-    return retry_config,
+    return (retry_config,)
 
 
 @app.cell
@@ -94,12 +95,14 @@ def __(Agent, Message, retry_config):
             self.attempt += 1
 
             if self.attempt < self.required_attempts:
-                raise Exception(f"Simulated failure (attempt {self.attempt}/{self.required_attempts})")
+                raise Exception(
+                    f"Simulated failure (attempt {self.attempt}/{self.required_attempts})"
+                )
 
             return Message(
                 role="assistant",
                 content=f"✅ Success on attempt {self.attempt}!",
-                metadata={"attempts": self.attempt}
+                metadata={"attempts": self.attempt},
             )
 
     # Reactively create agent with current config
@@ -107,14 +110,14 @@ def __(Agent, Message, retry_config):
     retry_agent = RetryMiddleware(
         agent=unreliable,
         max_retries=retry_config.value["max_retries"],
-        backoff_factor=retry_config.value["backoff_factor"]
+        backoff_factor=retry_config.value["backoff_factor"],
     )
 
     config_summary = mo.md(f"""
     **Current Configuration:**
     - Max retries: {retry_config.value["max_retries"]}
     - Backoff factor: {retry_config.value["backoff_factor"]}x
-    - Total max time: ~{retry_config.value["backoff_factor"] * (2**retry_config.value["max_retries"] - 1):.1f}s
+    - Total max time: ~{retry_config.value["backoff_factor"] * (2 ** retry_config.value["max_retries"] - 1):.1f}s
     """)
     config_summary
     return (
@@ -138,7 +141,7 @@ async def __(Message, mo, retry_agent, time):
         **Result:**
         - {result.content}
         - Total time: {duration:.2f}s
-        - Attempts: {result.metadata.get('attempts', 1)}
+        - Attempts: {result.metadata.get("attempts", 1)}
         """)
     except Exception as e:
         duration = time.time() - start
@@ -163,16 +166,12 @@ def __(mo):
 def __(mo):
     # Interactive failure simulation
     failure_selector = mo.ui.dropdown(
-        options={
-            "success": "All succeed",
-            "partial": "Some fail",
-            "all_fail": "All fail"
-        },
+        options={"success": "All succeed", "partial": "Some fail", "all_fail": "All fail"},
         value="partial",
-        label="Failure scenario:"
+        label="Failure scenario:",
     )
     failure_selector
-    return failure_selector,
+    return (failure_selector,)
 
 
 @app.cell
@@ -195,17 +194,12 @@ def __(Agent, Message, failure_selector):
             elif self.scenario == "partial" and self.call_count % 2 == 0:
                 raise Exception(f"Configured partial failure (call {self.call_count})")
 
-            return Message(
-                role="assistant",
-                content=f"Success (call {self.call_count})"
-            )
+            return Message(role="assistant", content=f"Success (call {self.call_count})")
 
     # Reactively create circuit breaker with selected scenario
     configurable = ConfigurableAgent(failure_selector.value)
     circuit_breaker = CircuitBreakerMiddleware(
-        agent=configurable,
-        failure_threshold=3,
-        recovery_timeout=5.0
+        agent=configurable, failure_threshold=3, recovery_timeout=5.0
     )
 
     print(f"🔄 Circuit breaker configured for: {failure_selector.value}")
@@ -226,15 +220,9 @@ def __(mo):
 @app.cell
 def __(mo):
     # Interactive cache TTL
-    cache_ttl = mo.ui.slider(
-        start=1,
-        stop=60,
-        step=5,
-        value=10,
-        label="Cache TTL (seconds):"
-    )
+    cache_ttl = mo.ui.slider(start=1, stop=60, step=5, value=10, label="Cache TTL (seconds):")
     cache_ttl
-    return cache_ttl,
+    return (cache_ttl,)
 
 
 @app.cell
@@ -256,15 +244,12 @@ def __(Agent, Message, asyncio, cache_ttl):
             return Message(
                 role="assistant",
                 content=f"Result (call #{self.call_count})",
-                metadata={"cached": False, "call_count": self.call_count}
+                metadata={"cached": False, "call_count": self.call_count},
             )
 
     # Reactively create cache with current TTL
     expensive = ExpensiveAgent()
-    cached_agent = CachingMiddleware(
-        agent=expensive,
-        ttl=cache_ttl.value
-    )
+    cached_agent = CachingMiddleware(agent=expensive, ttl=cache_ttl.value)
 
     print(f"💾 Cache configured with {cache_ttl.value}s TTL")
     return CachingMiddleware, ExpensiveAgent, cached_agent, expensive
@@ -273,12 +258,9 @@ def __(Agent, Message, asyncio, cache_ttl):
 @app.cell
 def __(mo):
     # Button to trigger cache test
-    test_cache_btn = mo.ui.button(
-        label="Test Cache Performance",
-        on_click=lambda: "clicked"
-    )
+    test_cache_btn = mo.ui.button(label="Test Cache Performance", on_click=lambda: "clicked")
     test_cache_btn
-    return test_cache_btn,
+    return (test_cache_btn,)
 
 
 @app.cell
@@ -301,7 +283,7 @@ async def __(Message, cached_agent, mo, test_cache_btn, time):
         **Cache Performance:**
         - First call (miss): {duration1:.3f}s - {result1.content}
         - Second call (hit): {duration2:.3f}s - {result2.content}
-        - **Speedup: {duration1/duration2:.1f}x faster** 🚀
+        - **Speedup: {duration1 / duration2:.1f}x faster** 🚀
         """)
     else:
         cache_results = mo.md("*Click button to test cache*")
@@ -320,7 +302,7 @@ def __(mo):
 def __():
     # Simulated metrics storage
     metrics_history = []
-    return metrics_history,
+    return (metrics_history,)
 
 
 @app.cell
@@ -334,10 +316,10 @@ def __(mo):
         """
     ).batch(
         collect_metrics=mo.ui.switch(value=True, label="Collect Metrics"),
-        sample_rate=mo.ui.slider(1, 100, value=100, label="Sample Rate (%)")
+        sample_rate=mo.ui.slider(1, 100, value=100, label="Sample Rate (%)"),
     )
     metric_controls
-    return metric_controls,
+    return (metric_controls,)
 
 
 @app.cell
@@ -357,17 +339,20 @@ def __(Agent, Message, asyncio, metric_controls, metrics_history, time):
             # Conditionally collect metrics based on UI
             if metric_controls.value["collect_metrics"]:
                 import random
+
                 if random.randint(1, 100) <= metric_controls.value["sample_rate"]:
-                    metrics_history.append({
-                        "timestamp": time.time(),
-                        "duration_ms": duration * 1000,
-                        "message_length": len(message.content)
-                    })
+                    metrics_history.append(
+                        {
+                            "timestamp": time.time(),
+                            "duration_ms": duration * 1000,
+                            "message_length": len(message.content),
+                        }
+                    )
 
             return Message(
                 role="assistant",
-                content=f"Processed {len(message.content)} chars in {duration*1000:.1f}ms",
-                metadata={"duration_ms": duration * 1000}
+                content=f"Processed {len(message.content)} chars in {duration * 1000:.1f}ms",
+                metadata={"duration_ms": duration * 1000},
             )
 
     metered_agent = MeteredAgent()
@@ -383,23 +368,25 @@ def __(mo):
     test_input = mo.ui.text(
         placeholder="Type something to process...",
         value="Hello from Marimo!",
-        label="Test message:"
+        label="Test message:",
     )
     test_input
-    return test_input,
+    return (test_input,)
 
 
 @app.cell
 async def __(Message, metered_agent, metrics_history, mo, test_input):
     # Reactive processing (updates when input changes!)
     if test_input.value:
-        result = await metered_agent.process(
-            Message(role="user", content=test_input.value)
-        )
+        result = await metered_agent.process(Message(role="user", content=test_input.value))
 
         # Show recent metrics
         recent_metrics = metrics_history[-5:] if metrics_history else []
-        avg_duration = sum(m["duration_ms"] for m in recent_metrics) / len(recent_metrics) if recent_metrics else 0
+        avg_duration = (
+            sum(m["duration_ms"] for m in recent_metrics) / len(recent_metrics)
+            if recent_metrics
+            else 0
+        )
 
         metrics_display = mo.md(f"""
         **Processing Result:**
@@ -408,7 +395,7 @@ async def __(Message, metered_agent, metrics_history, mo, test_input):
         **Recent Metrics** (last 5 samples):
         - Average duration: {avg_duration:.2f}ms
         - Total samples: {len(metrics_history)}
-        - Latest: {recent_metrics[-1]["duration_ms"]:.2f}ms if recent_metrics else "N/A"}
+        - Latest: {recent_metrics[-1]["duration_ms"]:.2f}ms if recent_metrics else "N/A"
         """)
     else:
         metrics_display = mo.md("*Type something to see metrics*")
@@ -436,13 +423,13 @@ def __(mo):
             "basic": "Basic functionality",
             "error": "Error handling",
             "performance": "Performance",
-            "integration": "Integration"
+            "integration": "Integration",
         },
         value=["basic", "error"],
-        label="Select tests to run:"
+        label="Select tests to run:",
     )
     test_selector
-    return test_selector,
+    return (test_selector,)
 
 
 @app.cell
@@ -451,6 +438,7 @@ async def __(Agent, Message, mo, test_selector):
     test_results = []
 
     if "basic" in test_selector.value:
+
         class TestAgent(Agent):
             def name(self) -> str:
                 return "test-agent"
@@ -490,14 +478,15 @@ async def __(Agent, Message, mo, test_selector):
 
     if "performance" in test_selector.value:
         import time
+
         start = time.time()
         # Simulate performance test
         await asyncio.sleep(0.01)
         duration = time.time() - start
         if duration < 0.1:
-            test_results.append(f"✅ Performance test passed ({duration*1000:.1f}ms)")
+            test_results.append(f"✅ Performance test passed ({duration * 1000:.1f}ms)")
         else:
-            test_results.append(f"⚠️ Performance test slow ({duration*1000:.1f}ms)")
+            test_results.append(f"⚠️ Performance test slow ({duration * 1000:.1f}ms)")
 
     if "integration" in test_selector.value:
         # Simulate integration test

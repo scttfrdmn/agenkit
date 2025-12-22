@@ -95,15 +95,27 @@ use std::error::Error;""",
 PATTERNS = {
     "sequential": {
         "description": "Pipeline-style agent composition where each agent's output feeds the next",
-        "use_cases": ["Multi-stage data transformation", "Document processing", "Step-by-step refinement"],
+        "use_cases": [
+            "Multi-stage data transformation",
+            "Document processing",
+            "Step-by-step refinement",
+        ],
     },
     "parallel": {
         "description": "Concurrent execution of multiple agents with result aggregation",
-        "use_cases": ["Ensemble methods", "Multi-perspective analysis", "Independent parallel tasks"],
+        "use_cases": [
+            "Ensemble methods",
+            "Multi-perspective analysis",
+            "Independent parallel tasks",
+        ],
     },
     "router": {
         "description": "Conditional agent selection based on input classification",
-        "use_cases": ["Intent-based routing", "Specialized agent dispatch", "Dynamic workflow selection"],
+        "use_cases": [
+            "Intent-based routing",
+            "Specialized agent dispatch",
+            "Dynamic workflow selection",
+        ],
     },
     "supervisor": {
         "description": "Hierarchical coordination with task decomposition and delegation",
@@ -130,10 +142,10 @@ def generate_go_example(pattern: str, info: Dict) -> str:
 
     return f"""// Package main demonstrates the {pattern_class} pattern.
 //
-// {info['description']}
+// {info["description"]}
 //
 // Use cases:
-{chr(10).join(f"//   - {uc}" for uc in info['use_cases'])}
+{chr(10).join(f"//   - {uc}" for uc in info["use_cases"])}
 //
 // Run with: go run {pattern}_usage.go
 package main
@@ -192,14 +204,14 @@ def generate_typescript_example(pattern: str, info: Dict) -> str:
     return f"""/**
  * {pattern.capitalize()} Pattern Usage Example
  *
- * {info['description']}
+ * {info["description"]}
  *
  * Use cases:
-{chr(10).join(f" * - {uc}" for uc in info['use_cases'])}
+{chr(10).join(f" * - {uc}" for uc in info["use_cases"])}
  */
 
 import {{ Agent, Message }} from '../../src/core';
-import {{ {pattern.replace('-', '').capitalize()}Agent }} from '../../src/patterns';
+import {{ {pattern.replace("-", "").capitalize()}Agent }} from '../../src/patterns';
 
 class SimpleAgent implements Agent {{
   constructor(private agentName: string) {{}}
@@ -231,7 +243,7 @@ async function main() {{
   const agent3 = new SimpleAgent('Agent3');
 
   // Create pattern (adjust based on pattern type)
-  // const pattern = new {pattern.replace('-', '').capitalize()}Agent(...);
+  // const pattern = new {pattern.replace("-", "").capitalize()}Agent(...);
 
   console.log('\\n✅ {pattern.capitalize()} pattern example');
   console.log('\\nNote: This is a minimal template.');
@@ -247,10 +259,10 @@ def generate_cpp_example(pattern: str, info: Dict) -> str:
     return f"""/**
  * {pattern.capitalize()} Pattern Usage Example
  *
- * {info['description']}
+ * {info["description"]}
  *
  * Use cases:
-{chr(10).join(f" * - {uc}" for uc in info['use_cases'])}
+{chr(10).join(f" * - {uc}" for uc in info["use_cases"])}
  *
  * Build: cd build && cmake .. && make
  * Run: ./examples/{pattern}_usage
@@ -265,7 +277,7 @@ def generate_cpp_example(pattern: str, info: Dict) -> str:
 
 #include "agenkit/core/agent.hpp"
 #include "agenkit/core/message.hpp"
-#include "agenkit/patterns/{pattern.replace('-', '_')}.hpp"
+#include "agenkit/patterns/{pattern.replace("-", "_")}.hpp"
 
 using namespace agenkit;
 using namespace std::chrono_literals;
@@ -304,7 +316,7 @@ int main() {{
     auto agent3 = std::make_shared<SimpleAgent>("Agent3");
 
     // Create pattern (adjust based on pattern type)
-    // auto pattern = std::make_shared<{pattern.replace('-', '').capitalize()}Agent>(...);
+    // auto pattern = std::make_shared<{pattern.replace("-", "").capitalize()}Agent>(...);
 
     std::cout << "\\n✅ {pattern.capitalize()} pattern example" << std::endl;
     std::cout << "\\nNote: This is a minimal template." << std::endl;
@@ -320,10 +332,10 @@ def generate_rust_example(pattern: str, info: Dict) -> str:
     pattern_snake = pattern.replace("-", "_")
     return f"""//! {pattern.capitalize()} Pattern Usage Example
 //!
-//! {info['description']}
+//! {info["description"]}
 //!
 //! Use cases:
-{chr(10).join(f"//! - {uc}" for uc in info['use_cases'])}
+{chr(10).join(f"//! - {uc}" for uc in info["use_cases"])}
 //!
 //! Run: cargo run --example pattern-{pattern}-usage
 
@@ -374,7 +386,7 @@ async fn main() -> Result<(), Box<dyn Error>> {{
     let agent3 = SimpleAgent::new("Agent3");
 
     // Create pattern (adjust based on pattern type)
-    // let pattern = {pattern.replace('-', '_').capitalize()}Agent::new(...)?;
+    // let pattern = {pattern.replace("-", "_").capitalize()}Agent::new(...)?;
 
     println!("\\n✅ {pattern.capitalize()} pattern example");
     println!("\\nNote: This is a minimal template.");
@@ -401,7 +413,11 @@ def generate_examples():
         usage_dir.mkdir(parents=True, exist_ok=True)
 
         for pattern, info in PATTERNS.items():
-            filename = f"pattern-{pattern}-usage{config['ext']}" if lang == "rust" else f"{pattern}-usage{config['ext']}"
+            filename = (
+                f"pattern-{pattern}-usage{config['ext']}"
+                if lang == "rust"
+                else f"{pattern}-usage{config['ext']}"
+            )
             filepath = usage_dir / filename
 
             # Skip if already exists

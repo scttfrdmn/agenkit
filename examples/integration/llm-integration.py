@@ -78,7 +78,9 @@ async def example_anthropic() -> None:
 
     print('  Asking Claude: "What makes a good AI agent framework?"')
     try:
-        messages = [Message(role="user", content="What makes a good AI agent framework? One sentence.")]
+        messages = [
+            Message(role="user", content="What makes a good AI agent framework? One sentence.")
+        ]
         response = await llm.complete(messages)
         print(f"  🤖 Claude: {response.content}\n")
     except Exception as e:

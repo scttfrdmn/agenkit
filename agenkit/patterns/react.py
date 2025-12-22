@@ -342,7 +342,6 @@ Begin!"""
         combined_content = f"{self.system_prompt}\n\nUser: {message.content}"
         current_message = Message(role="user", content=combined_content)
 
-
         for iteration in range(self.max_steps):
             # Get agent reasoning
             response = await self.agent.process(current_message)
@@ -440,8 +439,11 @@ Begin!"""
         metadata = {
             "tool_calls_made": tool_calls_made,
             "iterations": len(self.steps) + 1,  # +1 for final answer step
-            "react_steps": [{"thought": s.thought, "action": s.action, "observation": s.observation} for s in self.steps],
-            "tools_used": unique_tools
+            "react_steps": [
+                {"thought": s.thought, "action": s.action, "observation": s.observation}
+                for s in self.steps
+            ],
+            "tools_used": unique_tools,
         }
 
         return Message(role="assistant", content=content, metadata=metadata)

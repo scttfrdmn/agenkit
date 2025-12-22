@@ -147,9 +147,9 @@ def test_state_transitions_are_valid(failure_threshold, success_threshold):
         next_state = history[i + 1]
 
         # Property: Transition must be valid
-        assert next_state in valid_transitions.get(
-            current, set()
-        ), f"Invalid transition from {current} to {next_state}"
+        assert next_state in valid_transitions.get(current, set()), (
+            f"Invalid transition from {current} to {next_state}"
+        )
 
 
 # ============================================
@@ -172,17 +172,17 @@ def test_opens_after_exact_threshold(failure_threshold):
     for i in range(failure_threshold - 1):
         cb.record_failure()
         # Should still be CLOSED
-        assert (
-            cb.get_state() == CircuitBreakerState.CLOSED
-        ), f"Should be CLOSED after {i + 1} failures (threshold={failure_threshold})"
+        assert cb.get_state() == CircuitBreakerState.CLOSED, (
+            f"Should be CLOSED after {i + 1} failures (threshold={failure_threshold})"
+        )
 
     # One more failure should open circuit
     cb.record_failure()
 
     # Property: Circuit should be OPEN after exactly failure_threshold failures
-    assert (
-        cb.get_state() == CircuitBreakerState.OPEN
-    ), f"Should be OPEN after {failure_threshold} failures"
+    assert cb.get_state() == CircuitBreakerState.OPEN, (
+        f"Should be OPEN after {failure_threshold} failures"
+    )
     assert cb.get_failure_count() == failure_threshold
 
 
@@ -220,9 +220,9 @@ async def test_transitions_to_half_open_after_timeout(failure_threshold, recover
     # After timeout: should allow request and transition to HALF_OPEN
     # Property: is_request_allowed() returns True and transitions to HALF_OPEN
     assert cb.is_request_allowed(), "Should allow request after recovery timeout"
-    assert (
-        cb.get_state() == CircuitBreakerState.HALF_OPEN
-    ), "Should transition to HALF_OPEN after recovery timeout"
+    assert cb.get_state() == CircuitBreakerState.HALF_OPEN, (
+        "Should transition to HALF_OPEN after recovery timeout"
+    )
 
 
 # ============================================
@@ -259,17 +259,17 @@ async def test_closes_after_success_threshold(failure_threshold, success_thresho
     for i in range(success_threshold - 1):
         cb.record_success()
         # Should still be HALF_OPEN
-        assert (
-            cb.get_state() == CircuitBreakerState.HALF_OPEN
-        ), f"Should be HALF_OPEN after {i + 1} successes (threshold={success_threshold})"
+        assert cb.get_state() == CircuitBreakerState.HALF_OPEN, (
+            f"Should be HALF_OPEN after {i + 1} successes (threshold={success_threshold})"
+        )
 
     # One more success should close circuit
     cb.record_success()
 
     # Property: Circuit should be CLOSED after exactly success_threshold successes
-    assert (
-        cb.get_state() == CircuitBreakerState.CLOSED
-    ), f"Should be CLOSED after {success_threshold} successes"
+    assert cb.get_state() == CircuitBreakerState.CLOSED, (
+        f"Should be CLOSED after {success_threshold} successes"
+    )
 
 
 # ============================================
@@ -344,9 +344,9 @@ def test_open_circuit_blocks_requests(failure_threshold, num_attempts):
         if not cb.is_request_allowed():
             blocked_count += 1
 
-    assert (
-        blocked_count == num_attempts
-    ), f"All {num_attempts} requests should be blocked in OPEN state"
+    assert blocked_count == num_attempts, (
+        f"All {num_attempts} requests should be blocked in OPEN state"
+    )
 
 
 # ============================================
@@ -410,9 +410,9 @@ async def test_half_open_failure_immediately_opens(failure_threshold):
     cb.record_failure()
 
     # Property: Should immediately transition back to OPEN
-    assert (
-        cb.get_state() == CircuitBreakerState.OPEN
-    ), "Failure in HALF_OPEN should immediately transition to OPEN"
+    assert cb.get_state() == CircuitBreakerState.OPEN, (
+        "Failure in HALF_OPEN should immediately transition to OPEN"
+    )
 
 
 if __name__ == "__main__":

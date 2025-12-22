@@ -158,7 +158,11 @@ class ConsoleAuditAdapter:
         message = " ".join(parts)
 
         # Write to stderr for warnings/errors, stdout for others
-        stream = sys.stderr if event.severity in (AuditSeverity.ERROR, AuditSeverity.CRITICAL) else sys.stdout
+        stream = (
+            sys.stderr
+            if event.severity in (AuditSeverity.ERROR, AuditSeverity.CRITICAL)
+            else sys.stdout
+        )
         print(message, file=stream)
 
 
@@ -401,7 +405,9 @@ class AuditLogger:
             window: Time window for rate limit
             **metadata: Additional metadata
         """
-        message = f"Rate limit exceeded for {client_id} on {endpoint} ({limit} requests per {window})"
+        message = (
+            f"Rate limit exceeded for {client_id} on {endpoint} ({limit} requests per {window})"
+        )
 
         event = AuditEvent(
             event_type=AuditEventType.RATE_LIMIT_EXCEEDED,

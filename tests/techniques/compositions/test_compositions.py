@@ -33,21 +33,18 @@ class MockAgent:
         self.capabilities = ["mock"]
 
     async def process(self, message: Message) -> Message:
-        return Message(
-            role="assistant",
-            content=self.response,
-            metadata={"processed": True}
-        )
+        return Message(role="assistant", content=self.response, metadata={"processed": True})
 
 
 # Simple Human Approval Tests
+
 
 @pytest.mark.asyncio
 async def test_simple_approval_tool():
     """Test basic approval tool."""
     tool = SimpleApprovalTool()
 
-    with patch('builtins.input', return_value='y'):
+    with patch("builtins.input", return_value="y"):
         result = await tool.execute("test action")
 
     assert result["approved"] is True
@@ -59,7 +56,7 @@ async def test_simple_approval_tool_reject():
     """Test approval rejection."""
     tool = SimpleApprovalTool()
 
-    with patch('builtins.input', return_value='n'):
+    with patch("builtins.input", return_value="n"):
         result = await tool.execute("test action")
 
     assert result["approved"] is False
@@ -71,7 +68,7 @@ async def test_simple_approval_with_details():
     """Test approval with details."""
     tool = SimpleApprovalTool()
 
-    with patch('builtins.input', return_value='yes'):
+    with patch("builtins.input", return_value="yes"):
         result = await tool.execute("delete file", details="file.txt")
 
     assert result["approved"] is True
@@ -79,23 +76,18 @@ async def test_simple_approval_with_details():
 
 # RAG Tests
 
+
 @pytest.mark.asyncio
 async def test_simple_rag():
     """Test basic RAG composition."""
+
     def mock_retriever(query: str):
         return ["Document 1 content", "Document 2 content"]
 
     agent = MockAgent("Answer based on documents")
-    rag = SimpleRAG(
-        retriever=mock_retriever,
-        answerer=agent,
-        max_docs=5
-    )
+    rag = SimpleRAG(retriever=mock_retriever, answerer=agent, max_docs=5)
 
-    response = await rag.process(Message(
-        role="user",
-        content="What is the answer?"
-    ))
+    response = await rag.process(Message(role="user", content="What is the answer?"))
 
     assert response.content == "Answer based on documents"
     assert response.metadata["technique"] == "simple_rag"
@@ -106,19 +98,14 @@ async def test_simple_rag():
 @pytest.mark.asyncio
 async def test_simple_rag_no_documents():
     """Test RAG with no retrieved documents."""
+
     def mock_retriever(query: str):
         return []
 
     agent = MockAgent("No documents available")
-    rag = SimpleRAG(
-        retriever=mock_retriever,
-        answerer=agent
-    )
+    rag = SimpleRAG(retriever=mock_retriever, answerer=agent)
 
-    response = await rag.process(Message(
-        role="user",
-        content="Question"
-    ))
+    response = await rag.process(Message(role="user", content="Question"))
 
     assert response.metadata["num_sources"] == 0
 
@@ -126,45 +113,32 @@ async def test_simple_rag_no_documents():
 @pytest.mark.asyncio
 async def test_simple_rag_max_docs():
     """Test RAG respects max_docs limit."""
+
     def mock_retriever(query: str):
         return [f"Doc {i}" for i in range(10)]
 
     agent = MockAgent()
-    rag = SimpleRAG(
-        retriever=mock_retriever,
-        answerer=agent,
-        max_docs=3
-    )
+    rag = SimpleRAG(retriever=mock_retriever, answerer=agent, max_docs=3)
 
-    response = await rag.process(Message(
-        role="user",
-        content="Question"
-    ))
+    response = await rag.process(Message(role="user", content="Question"))
 
     assert response.metadata["num_sources"] == 3
 
 
 # Cited RAG Tests
 
+
 @pytest.mark.asyncio
 async def test_cited_rag():
     """Test RAG with citations."""
+
     def mock_retriever(query: str):
-        return [
-            Document("Content 1", "Source 1"),
-            Document("Content 2", "Source 2")
-        ]
+        return [Document("Content 1", "Source 1"), Document("Content 2", "Source 2")]
 
     agent = MockAgent("Answer with [1] and [2] citations")
-    rag = CitedRAG(
-        retriever=mock_retriever,
-        answerer=agent
-    )
+    rag = CitedRAG(retriever=mock_retriever, answerer=agent)
 
-    response = await rag.process(Message(
-        role="user",
-        content="Question"
-    ))
+    response = await rag.process(Message(role="user", content="Question"))
 
     assert response.metadata["technique"] == "cited_rag"
     assert response.metadata["num_sources"] == 2
@@ -175,19 +149,14 @@ async def test_cited_rag():
 @pytest.mark.asyncio
 async def test_cited_rag_no_documents():
     """Test cited RAG with no documents."""
+
     def mock_retriever(query: str):
         return []
 
     agent = MockAgent()
-    rag = CitedRAG(
-        retriever=mock_retriever,
-        answerer=agent
-    )
+    rag = CitedRAG(retriever=mock_retriever, answerer=agent)
 
-    response = await rag.process(Message(
-        role="user",
-        content="Question"
-    ))
+    response = await rag.process(Message(role="user", content="Question"))
 
     assert response.metadata["num_sources"] == 0
     assert "No relevant sources" in response.content
@@ -196,31 +165,25 @@ async def test_cited_rag_no_documents():
 @pytest.mark.asyncio
 async def test_cited_rag_citation_format():
     """Test different citation formats."""
+
     def mock_retriever(query: str):
         return [Document("Content", "Author 2020")]
 
     agent = MockAgent()
 
     # Numeric format
-    rag_numeric = CitedRAG(
-        retriever=mock_retriever,
-        answerer=agent,
-        citation_format="numeric"
-    )
+    rag_numeric = CitedRAG(retriever=mock_retriever, answerer=agent, citation_format="numeric")
     response = await rag_numeric.process(Message(role="user", content="Q"))
     assert "[1]" in response.metadata["citations"][0]
 
     # Author-year format
-    rag_author = CitedRAG(
-        retriever=mock_retriever,
-        answerer=agent,
-        citation_format="author_year"
-    )
+    rag_author = CitedRAG(retriever=mock_retriever, answerer=agent, citation_format="author_year")
     response = await rag_author.process(Message(role="user", content="Q"))
     assert "(" in response.metadata["citations"][0]
 
 
 # Context Optimization Tests
+
 
 @pytest.mark.asyncio
 async def test_context_optimizer_no_optimization():
@@ -228,11 +191,7 @@ async def test_context_optimizer_no_optimization():
     agent = MockAgent("Response")
     summarizer = MockAgent("Summary")
 
-    optimizer = ContextOptimizer(
-        agent=agent,
-        summarizer=summarizer,
-        max_tokens=1000
-    )
+    optimizer = ContextOptimizer(agent=agent, summarizer=summarizer, max_tokens=1000)
 
     short_message = Message(role="user", content="Short query")
     response = await optimizer.process(short_message)
@@ -250,7 +209,7 @@ async def test_context_optimizer_with_optimization():
     optimizer = ContextOptimizer(
         agent=agent,
         summarizer=summarizer,
-        max_tokens=10  # Very low limit to trigger optimization
+        max_tokens=10,  # Very low limit to trigger optimization
     )
 
     long_message = Message(role="user", content=" ".join(["word"] * 100))
@@ -262,6 +221,7 @@ async def test_context_optimizer_with_optimization():
 
 
 # Prioritization Tests
+
 
 def test_task_queue_add_task():
     """Test adding tasks to queue."""
@@ -321,8 +281,7 @@ async def test_priority_task_executor():
         return task["name"]
 
     executor = PriorityTaskExecutor(
-        priority_fn=lambda t: t.get("priority", 0),
-        process_fn=process_fn
+        priority_fn=lambda t: t.get("priority", 0), process_fn=process_fn
     )
 
     executor.add_task({"name": "Low", "priority": 1})
@@ -336,6 +295,7 @@ async def test_priority_task_executor():
 
 # Goal Monitoring Tests
 
+
 @pytest.mark.asyncio
 async def test_goal_monitor_goal_reached():
     """Test goal monitoring when goal is reached."""
@@ -344,11 +304,7 @@ async def test_goal_monitor_goal_reached():
     def goal_fn(state):
         return state.get("progress", 0) >= 1.0
 
-    monitor = GoalMonitor(
-        agent=agent,
-        goal_fn=goal_fn,
-        max_iterations=10
-    )
+    monitor = GoalMonitor(agent=agent, goal_fn=goal_fn, max_iterations=10)
 
     # Mock extract state to return progress
     def extract_state(msg):
@@ -356,9 +312,7 @@ async def test_goal_monitor_goal_reached():
 
     monitor.extract_state_fn = extract_state
 
-    result = await monitor.achieve_goal(
-        initial_message=Message(role="user", content="Start task")
-    )
+    result = await monitor.achieve_goal(initial_message=Message(role="user", content="Start task"))
 
     assert result.metadata["goal_reached"] is True
     assert result.metadata["iterations"] <= 10
@@ -372,15 +326,9 @@ async def test_goal_monitor_max_iterations():
     def goal_fn(state):
         return False  # Never reached
 
-    monitor = GoalMonitor(
-        agent=agent,
-        goal_fn=goal_fn,
-        max_iterations=3
-    )
+    monitor = GoalMonitor(agent=agent, goal_fn=goal_fn, max_iterations=3)
 
-    result = await monitor.achieve_goal(
-        initial_message=Message(role="user", content="Start task")
-    )
+    result = await monitor.achieve_goal(initial_message=Message(role="user", content="Start task"))
 
     assert result.metadata["goal_reached"] is False
     assert result.metadata["iterations"] == 3
@@ -388,22 +336,16 @@ async def test_goal_monitor_max_iterations():
 
 # Exploration Strategy Tests
 
+
 @pytest.mark.asyncio
 async def test_exploration_strategy():
     """Test exploration strategy with UCB."""
     agent = MockAgent("Action result")
     actions = ["action1", "action2", "action3"]
 
-    explorer = ExplorationStrategy(
-        agent=agent,
-        actions=actions,
-        exploration_constant=1.0
-    )
+    explorer = ExplorationStrategy(agent=agent, actions=actions, exploration_constant=1.0)
 
-    response = await explorer.process(Message(
-        role="user",
-        content="Task"
-    ))
+    response = await explorer.process(Message(role="user", content="Task"))
 
     assert response.metadata["technique"] == "exploration_strategy"
     assert "selected_action" in response.metadata
@@ -416,10 +358,7 @@ async def test_exploration_selects_untried_first():
     agent = MockAgent("Result")
     actions = ["action1", "action2"]
 
-    explorer = ExplorationStrategy(
-        agent=agent,
-        actions=actions
-    )
+    explorer = ExplorationStrategy(agent=agent, actions=actions)
 
     # First call should select action (both untried)
     response1 = await explorer.process(Message(role="user", content="Task"))
@@ -448,21 +387,16 @@ def test_exploration_get_best_action():
 
 # Learning from Feedback Tests
 
+
 @pytest.mark.asyncio
 async def test_learning_from_feedback():
     """Test learning from feedback composition."""
     agent = MockAgent("Answer")
 
-    learner = LearningFromFeedback(
-        agent=agent,
-        max_context_examples=3
-    )
+    learner = LearningFromFeedback(agent=agent, max_context_examples=3)
 
     # First interaction - no context
-    response1 = await learner.process(Message(
-        role="user",
-        content="How do I sort a list?"
-    ))
+    response1 = await learner.process(Message(role="user", content="How do I sort a list?"))
 
     assert response1.metadata["similar_examples"] == 0
 
@@ -470,10 +404,7 @@ async def test_learning_from_feedback():
     learner.add_feedback(response1, score=0.8)
 
     # Second interaction - should use first as context
-    response2 = await learner.process(Message(
-        role="user",
-        content="How do I sort a dictionary?"
-    ))
+    response2 = await learner.process(Message(role="user", content="How do I sort a dictionary?"))
 
     assert response2.metadata["similar_examples"] > 0
 
@@ -483,10 +414,7 @@ def test_learning_similarity():
     agent = MockAgent()
     learner = LearningFromFeedback(agent=agent)
 
-    similarity = learner._default_similarity(
-        "sort a list",
-        "sort a dictionary"
-    )
+    similarity = learner._default_similarity("sort a list", "sort a dictionary")
 
     assert 0.0 <= similarity <= 1.0
     assert similarity > 0  # Should have some overlap
@@ -510,22 +438,16 @@ def test_learning_memory_stats():
 
 # Actor-Critic Variation Tests
 
+
 @pytest.mark.asyncio
 async def test_actor_critic_variation():
     """Test actor-critic composition."""
     actor = MockAgent("Initial solution")
     critic = MockAgent("Score: 8/10\nGood but could be better")
 
-    ac = ActorCriticVariation(
-        actor=actor,
-        critic=critic,
-        max_iterations=3
-    )
+    ac = ActorCriticVariation(actor=actor, critic=critic, max_iterations=3)
 
-    response = await ac.process(Message(
-        role="user",
-        content="Write a function"
-    ))
+    response = await ac.process(Message(role="user", content="Write a function"))
 
     assert response.metadata["technique"] == "actor_critic_variation"
     assert "iterations" in response.metadata
@@ -549,6 +471,7 @@ async def test_actor_critic_score_extraction():
 
 
 # Data Class Tests
+
 
 def test_prioritized_task():
     """Test PrioritizedTask dataclass."""
@@ -577,11 +500,7 @@ def test_action_stats():
 
 def test_interaction():
     """Test Interaction dataclass."""
-    interaction = Interaction(
-        query="Test query",
-        response="Test response",
-        feedback_score=0.9
-    )
+    interaction = Interaction(query="Test query", response="Test response", feedback_score=0.9)
 
     assert interaction.query == "Test query"
     assert interaction.response == "Test response"
@@ -591,11 +510,7 @@ def test_interaction():
 
 def test_document():
     """Test Document dataclass."""
-    doc = Document(
-        content="Document content",
-        source="Source 2020",
-        metadata={"page": 42}
-    )
+    doc = Document(content="Document content", source="Source 2020", metadata={"page": 42})
 
     assert doc.content == "Document content"
     assert doc.source == "Source 2020"
@@ -603,6 +518,7 @@ def test_document():
 
 
 # Capability Tests
+
 
 def test_simple_rag_capabilities():
     """Test SimpleRAG capabilities."""
@@ -616,10 +532,7 @@ def test_simple_rag_capabilities():
 
 def test_exploration_capabilities():
     """Test ExplorationStrategy capabilities."""
-    explorer = ExplorationStrategy(
-        agent=MockAgent(),
-        actions=["a1", "a2"]
-    )
+    explorer = ExplorationStrategy(agent=MockAgent(), actions=["a1", "a2"])
 
     caps = explorer.capabilities
 
@@ -628,6 +541,7 @@ def test_exploration_capabilities():
 
 
 # Name Tests
+
 
 def test_agent_names():
     """Test that all agents have correct names."""

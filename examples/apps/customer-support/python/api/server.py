@@ -64,9 +64,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     faq_with_middleware = create_middleware_stack(faq_agent, settings, agent_type="faq")
 
     # Initialize Go specialist worker (RemoteAgent)
-    specialist_agent = RemoteAgent(name="specialist", endpoint=settings.go_worker_endpoint, timeout=settings.timeout_rag)
+    specialist_agent = RemoteAgent(
+        name="specialist", endpoint=settings.go_worker_endpoint, timeout=settings.timeout_rag
+    )
 
-    specialist_with_middleware = create_middleware_stack(specialist_agent, settings, agent_type="rag")
+    specialist_with_middleware = create_middleware_stack(
+        specialist_agent, settings, agent_type="rag"
+    )
 
     logger.info("All agents initialized with middleware")
 
@@ -97,7 +101,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         # Try to ping Go worker
         try:
-            test_msg = Message(role="user", content="health_check", metadata={"type": "health_check"})
+            test_msg = Message(
+                role="user", content="health_check", metadata={"type": "health_check"}
+            )
             await specialist_agent.process(test_msg)
             checks["go_worker"] = True
         except Exception as e:
@@ -144,7 +150,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             # Create message
             user_message = Message(
-                role="user", content=request.message, metadata={**request.metadata, "user_id": request.user_id}
+                role="user",
+                content=request.message,
+                metadata={**request.metadata, "user_id": request.user_id},
             )
 
             # Step 1: Route the message

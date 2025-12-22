@@ -13,16 +13,10 @@ from agenkit.interfaces import Message
 async def test_python_to_go_specialist_agent():
     """Test Python can communicate with Go specialist agent."""
     # Assumes Go worker is running on localhost:50051
-    specialist = RemoteAgent(
-        name="specialist",
-        endpoint="grpc://localhost:50051",
-        timeout=30.0
-    )
+    specialist = RemoteAgent(name="specialist", endpoint="grpc://localhost:50051", timeout=30.0)
 
     message = Message(
-        role="user",
-        content="Tell me about API integration",
-        metadata={"user_id": "test_user"}
+        role="user", content="Tell me about API integration", metadata={"user_id": "test_user"}
     )
 
     try:
@@ -40,16 +34,12 @@ async def test_python_to_go_specialist_agent():
 @pytest.mark.asyncio
 async def test_specialist_agent_performance_query():
     """Test Go specialist handles performance queries."""
-    specialist = RemoteAgent(
-        name="specialist",
-        endpoint="grpc://localhost:50051",
-        timeout=30.0
-    )
+    specialist = RemoteAgent(name="specialist", endpoint="grpc://localhost:50051", timeout=30.0)
 
     message = Message(
         role="user",
         content="Why is my application running slow?",
-        metadata={"user_id": "test_user"}
+        metadata={"user_id": "test_user"},
     )
 
     try:
@@ -66,11 +56,7 @@ async def test_specialist_agent_performance_query():
 @pytest.mark.asyncio
 async def test_specialist_concurrent_requests():
     """Test Go specialist handles concurrent requests."""
-    specialist = RemoteAgent(
-        name="specialist",
-        endpoint="grpc://localhost:50051",
-        timeout=30.0
-    )
+    specialist = RemoteAgent(name="specialist", endpoint="grpc://localhost:50051", timeout=30.0)
 
     messages = [
         Message(role="user", content=f"Query {i}", metadata={"user_id": f"user{i}"})
@@ -79,8 +65,7 @@ async def test_specialist_concurrent_requests():
 
     try:
         responses = await asyncio.gather(
-            *[specialist.process(msg) for msg in messages],
-            return_exceptions=True
+            *[specialist.process(msg) for msg in messages], return_exceptions=True
         )
 
         # At least some should succeed
@@ -94,17 +79,9 @@ async def test_specialist_concurrent_requests():
 @pytest.mark.asyncio
 async def test_specialist_health_check():
     """Test Go specialist responds to health checks."""
-    specialist = RemoteAgent(
-        name="specialist",
-        endpoint="grpc://localhost:50051",
-        timeout=5.0
-    )
+    specialist = RemoteAgent(name="specialist", endpoint="grpc://localhost:50051", timeout=5.0)
 
-    message = Message(
-        role="user",
-        content="health_check",
-        metadata={"type": "health_check"}
-    )
+    message = Message(role="user", content="health_check", metadata={"type": "health_check"})
 
     try:
         response = await specialist.process(message)

@@ -249,15 +249,11 @@ class SpecificationLoader:
                     try:
                         re.compile(pattern)
                     except re.error as e:
-                        errors.append(
-                            f"Invalid regex pattern in {scenario.id}: {pattern} - {e}"
-                        )
+                        errors.append(f"Invalid regex pattern in {scenario.id}: {pattern} - {e}")
 
         return errors
 
-    def get_patterns_by_category(
-        self, specs: dict[str, PatternSpec]
-    ) -> dict[str, list[str]]:
+    def get_patterns_by_category(self, specs: dict[str, PatternSpec]) -> dict[str, list[str]]:
         """
         Group patterns by category.
 

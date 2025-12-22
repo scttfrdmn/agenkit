@@ -49,12 +49,7 @@ async def main():
 
     # Create MCP server
     server = MCPServer(
-        name="agenkit-demo",
-        version="1.0",
-        capabilities={
-            "resources": True,
-            "tools": True
-        }
+        name="agenkit-demo", version="1.0", capabilities={"resources": True, "tools": True}
     )
 
     # Register resources (data sources)
@@ -62,7 +57,7 @@ async def main():
         uri="user://profile",
         name="User Profile",
         description="Get user profile information",
-        mime_type="application/json"
+        mime_type="application/json",
     )
     async def get_user_profile(params):
         """Get user profile data."""
@@ -72,14 +67,14 @@ async def main():
             "name": "John Doe",
             "email": "john.doe@example.com",
             "role": "Developer",
-            "joined": "2024-01-15"
+            "joined": "2024-01-15",
         }
 
     @server.resource(
         uri="data://statistics",
         name="Usage Statistics",
         description="Get usage statistics",
-        mime_type="application/json"
+        mime_type="application/json",
     )
     async def get_statistics(params):
         """Get usage statistics."""
@@ -88,14 +83,14 @@ async def main():
             "period": period,
             "requests": 1250,
             "tokens_used": 45000,
-            "average_response_time": 1.2
+            "average_response_time": 1.2,
         }
 
     @server.resource(
         uri="docs://getting-started",
         name="Getting Started Guide",
         description="Agenkit getting started documentation",
-        mime_type="text/markdown"
+        mime_type="text/markdown",
     )
     async def get_docs(params):
         """Get documentation."""
@@ -134,18 +129,15 @@ Agenkit provides 11 agent patterns:
         input_schema={
             "type": "object",
             "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "Search query"
-                },
+                "query": {"type": "string", "description": "Search query"},
                 "category": {
                     "type": "string",
                     "description": "Category to search in",
-                    "enum": ["users", "docs", "statistics"]
-                }
+                    "enum": ["users", "docs", "statistics"],
+                },
             },
-            "required": ["query"]
-        }
+            "required": ["query"],
+        },
     )
     async def search_knowledge(params):
         """Search knowledge base."""
@@ -156,32 +148,33 @@ Agenkit provides 11 agent patterns:
         results = []
 
         if category in ["all", "users"]:
-            results.append({
-                "type": "user",
-                "title": "User Profile",
-                "content": "John Doe - Developer - john.doe@example.com"
-            })
+            results.append(
+                {
+                    "type": "user",
+                    "title": "User Profile",
+                    "content": "John Doe - Developer - john.doe@example.com",
+                }
+            )
 
         if category in ["all", "docs"]:
-            results.append({
-                "type": "documentation",
-                "title": "Agenkit Patterns",
-                "content": "11 agent patterns for building AI systems"
-            })
+            results.append(
+                {
+                    "type": "documentation",
+                    "title": "Agenkit Patterns",
+                    "content": "11 agent patterns for building AI systems",
+                }
+            )
 
         if category in ["all", "statistics"]:
-            results.append({
-                "type": "statistics",
-                "title": "Usage Stats",
-                "content": "1250 requests, 45K tokens used this week"
-            })
+            results.append(
+                {
+                    "type": "statistics",
+                    "title": "Usage Stats",
+                    "content": "1250 requests, 45K tokens used this week",
+                }
+            )
 
-        return {
-            "query": query,
-            "category": category,
-            "results": results,
-            "count": len(results)
-        }
+        return {"query": query, "category": category, "results": results, "count": len(results)}
 
     @server.tool(
         name="calculate",
@@ -191,11 +184,11 @@ Agenkit provides 11 agent patterns:
             "properties": {
                 "expression": {
                     "type": "string",
-                    "description": "Mathematical expression to evaluate"
+                    "description": "Mathematical expression to evaluate",
                 }
             },
-            "required": ["expression"]
-        }
+            "required": ["expression"],
+        },
     )
     async def calculate(params):
         """Perform calculation using safe AST evaluation."""
@@ -237,17 +230,9 @@ Agenkit provides 11 agent patterns:
         try:
             tree = ast.parse(expression, mode="eval")
             result = safe_eval(tree.body)
-            return {
-                "expression": expression,
-                "result": result,
-                "success": True
-            }
+            return {"expression": expression, "result": result, "success": True}
         except Exception as e:
-            return {
-                "expression": expression,
-                "error": str(e),
-                "success": False
-            }
+            return {"expression": expression, "error": str(e), "success": False}
 
     @server.tool(
         name="format_data",
@@ -255,18 +240,15 @@ Agenkit provides 11 agent patterns:
         input_schema={
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "object",
-                    "description": "Data to format"
-                },
+                "data": {"type": "object", "description": "Data to format"},
                 "format": {
                     "type": "string",
                     "description": "Output format",
-                    "enum": ["json", "markdown", "table"]
-                }
+                    "enum": ["json", "markdown", "table"],
+                },
             },
-            "required": ["data", "format"]
-        }
+            "required": ["data", "format"],
+        },
     )
     async def format_data(params):
         """Format data."""
@@ -275,6 +257,7 @@ Agenkit provides 11 agent patterns:
 
         if format_type == "json":
             import json
+
             return json.dumps(data, indent=2)
 
         elif format_type == "markdown":
@@ -300,14 +283,14 @@ Agenkit provides 11 agent patterns:
     sys.stderr.write(f"Tools: {len(server.tools)}\n")
     sys.stderr.write("\nConfiguration:\n")
     sys.stderr.write("Add to ~/.config/Claude/claude_desktop_config.json:\n")
-    sys.stderr.write('{\n')
+    sys.stderr.write("{\n")
     sys.stderr.write('  "mcpServers": {\n')
     sys.stderr.write('    "agenkit-demo": {\n')
     sys.stderr.write('      "command": "python",\n')
     sys.stderr.write(f'      "args": ["{sys.argv[0]}"]\n')
-    sys.stderr.write('    }\n')
-    sys.stderr.write('  }\n')
-    sys.stderr.write('}\n')
+    sys.stderr.write("    }\n")
+    sys.stderr.write("  }\n")
+    sys.stderr.write("}\n")
     sys.stderr.write("\nServer starting on stdio...\n")
     sys.stderr.write("=" * 60 + "\n")
     sys.stderr.flush()

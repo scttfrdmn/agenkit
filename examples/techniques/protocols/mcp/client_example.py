@@ -47,7 +47,9 @@ async def demonstrate_client(server_url: str):
         # Step 1: Initialize connection
         print("1. Initializing connection...")
         server_info = await client.initialize()
-        print(f"   ✓ Connected to {server_info['serverInfo']['name']} v{server_info['serverInfo']['version']}")
+        print(
+            f"   ✓ Connected to {server_info['serverInfo']['name']} v{server_info['serverInfo']['version']}"
+        )
         print(f"   Protocol version: {server_info.get('protocolVersion', 'unknown')}")
         print()
 
@@ -126,6 +128,7 @@ async def demonstrate_client(server_url: str):
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
 
     finally:
@@ -194,6 +197,7 @@ async def interactive_client(server_url: str):
 
                 elif command.startswith("tool "):
                     import json
+
                     parts = command[5:].split(maxsplit=1)
                     if len(parts) < 2:
                         print("Usage: tool <name> <json_params>")
@@ -229,13 +233,9 @@ def main():
     parser.add_argument(
         "--server",
         default="http://localhost:3000/mcp",
-        help="MCP server URL (default: http://localhost:3000/mcp)"
+        help="MCP server URL (default: http://localhost:3000/mcp)",
     )
-    parser.add_argument(
-        "--interactive",
-        action="store_true",
-        help="Run in interactive mode"
-    )
+    parser.add_argument("--interactive", action="store_true", help="Run in interactive mode")
 
     args = parser.parse_args()
 

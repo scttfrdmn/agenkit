@@ -301,7 +301,9 @@ async def test_react_agent_custom_system_prompt():
 
     custom_prompt = "You are a test assistant."
 
-    mock_agent = MockReActAgent(responses=["Thought: Answer\nAction: Final Answer\nAction Input: OK"])
+    mock_agent = MockReActAgent(
+        responses=["Thought: Answer\nAction: Final Answer\nAction Input: OK"]
+    )
 
     agent = ReActAgent(
         agent=mock_agent,

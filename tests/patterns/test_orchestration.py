@@ -52,7 +52,7 @@ class MockAgent:
         return Message(
             role="assistant",
             content=new_content,
-            metadata={"agent": self._name, "call_count": self.call_count}
+            metadata={"agent": self._name, "call_count": self.call_count},
         )
 
 
@@ -432,7 +432,7 @@ async def test_parallel_custom_aggregator_used():
         return Message(
             role="assistant",
             content=f"Aggregated {len(messages)} results",
-            metadata={"count": len(messages)}
+            metadata={"count": len(messages)},
         )
 
     parallel = ParallelPattern([agent1, agent2], aggregator=count_aggregator)
@@ -482,6 +482,7 @@ def test_parallel_unwrap():
 
 def test_router_creation():
     """Test basic router pattern creation."""
+
     def route_fn(msg: Message) -> str:
         return "handler1"
 
@@ -496,6 +497,7 @@ def test_router_creation():
 
 def test_router_empty_handlers_raises():
     """Test that empty handlers dict raises ValueError."""
+
     def route_fn(msg: Message) -> str:
         return "handler1"
 
@@ -505,6 +507,7 @@ def test_router_empty_handlers_raises():
 
 def test_router_custom_name():
     """Test router pattern with custom name."""
+
     def route_fn(msg: Message) -> str:
         return "handler1"
 
@@ -516,6 +519,7 @@ def test_router_custom_name():
 
 def test_router_with_default():
     """Test router pattern with default handler."""
+
     def route_fn(msg: Message) -> str:
         return "handler1"
 
@@ -535,6 +539,7 @@ def test_router_with_default():
 
 def test_router_capabilities_combined():
     """Test that capabilities are combined from all handlers."""
+
     def route_fn(msg: Message) -> str:
         return "handler1"
 
@@ -553,6 +558,7 @@ def test_router_capabilities_combined():
 
 def test_router_capabilities_with_default():
     """Test that default handler capabilities are included."""
+
     def route_fn(msg: Message) -> str:
         return "handler1"
 
@@ -575,6 +581,7 @@ def test_router_capabilities_with_default():
 @pytest.mark.asyncio
 async def test_router_basic_routing():
     """Test basic routing to correct handler."""
+
     def route_fn(msg: Message) -> str:
         if "code" in msg.content:
             return "code_handler"
@@ -584,8 +591,7 @@ async def test_router_basic_routing():
     general_agent = MockAgent("general_agent", response="General response")
 
     router = RouterPattern(
-        router=route_fn,
-        handlers={"code_handler": code_agent, "general_handler": general_agent}
+        router=route_fn, handlers={"code_handler": code_agent, "general_handler": general_agent}
     )
 
     # Test code routing
@@ -626,17 +632,14 @@ async def test_router_function_called():
 @pytest.mark.asyncio
 async def test_router_default_handler_used():
     """Test that default handler is used for unknown keys."""
+
     def route_fn(msg: Message) -> str:
         return "unknown_handler"
 
     agent1 = MockAgent("agent1")
     default = MockAgent("default")
 
-    router = RouterPattern(
-        router=route_fn,
-        handlers={"handler1": agent1},
-        default=default
-    )
+    router = RouterPattern(router=route_fn, handlers={"handler1": agent1}, default=default)
 
     message = Message(role="user", content="input")
     result = await router.process(message)
@@ -650,6 +653,7 @@ async def test_router_default_handler_used():
 @pytest.mark.asyncio
 async def test_router_unknown_key_no_default_raises():
     """Test that unknown key without default raises KeyError."""
+
     def route_fn(msg: Message) -> str:
         return "unknown_handler"
 
@@ -665,6 +669,7 @@ async def test_router_unknown_key_no_default_raises():
 @pytest.mark.asyncio
 async def test_router_error_propagates():
     """Test that errors from handlers propagate."""
+
     def route_fn(msg: Message) -> str:
         return "failing_handler"
 
@@ -684,6 +689,7 @@ async def test_router_error_propagates():
 
 def test_router_unwrap():
     """Test unwrap returns copy of handlers dict."""
+
     def route_fn(msg: Message) -> str:
         return "handler1"
 

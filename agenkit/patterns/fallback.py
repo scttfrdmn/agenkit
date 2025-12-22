@@ -168,9 +168,7 @@ class FallbackAgent(Agent):
         # All agents failed
         raise self._build_failure_error(attempts)
 
-    def _build_success_result(
-        self, message: Message, attempts: list[AttemptResult]
-    ) -> Message:
+    def _build_success_result(self, message: Message, attempts: list[AttemptResult]) -> Message:
         """Add fallback metadata to successful response."""
         if message.metadata is None:
             message.metadata = {}
@@ -201,9 +199,7 @@ class FallbackAgent(Agent):
         error_parts = [f"all {len(attempts)} agents failed:"]
 
         for attempt in attempts:
-            error_parts.append(
-                f"  [{attempt.agent_index}] {attempt.agent_name}: {attempt.error}"
-            )
+            error_parts.append(f"  [{attempt.agent_index}] {attempt.agent_name}: {attempt.error}")
 
         error_msg = "\n".join(error_parts)
         return RuntimeError(error_msg)
@@ -294,6 +290,7 @@ class DefaultRecovery:
             )
             ```
         """
+
         def recover(message: Message, error: Exception) -> Message:
             return Message(role="assistant", content=content)
 

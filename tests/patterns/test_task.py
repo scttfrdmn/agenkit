@@ -40,9 +40,7 @@ class MockAgent:
             await asyncio.sleep(self.delay)
 
         return Message(
-            role="assistant",
-            content=self.response,
-            metadata={"call_count": self.call_count}
+            role="assistant", content=self.response, metadata={"call_count": self.call_count}
         )
 
     async def call(self, messages, **kwargs):

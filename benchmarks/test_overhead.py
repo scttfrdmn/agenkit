@@ -89,6 +89,7 @@ def measure_time(func, iterations: int = 100_000) -> float:
     Returns:
         Total time in seconds
     """
+
     async def run():
         for _ in range(iterations):
             await func()
@@ -149,12 +150,16 @@ def test_agent_interface_overhead():
 
     print("\nAgent Interface Overhead Benchmark:")
     print(f"  Iterations: {iterations:,}")
-    print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
-    print(f"  Framework:  {framework_time:.4f}s ({framework_time/iterations*1000:.6f}ms per call)")
-    print(f"  Overhead:   {overhead*100:.2f}%")
+    print(
+        f"  Baseline:   {baseline_time:.4f}s ({baseline_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(
+        f"  Framework:  {framework_time:.4f}s ({framework_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(f"  Overhead:   {overhead * 100:.2f}%")
 
     # Assert <5% overhead
-    assert overhead < 0.05, f"Agent interface overhead {overhead*100:.2f}% exceeds 5%"
+    assert overhead < 0.05, f"Agent interface overhead {overhead * 100:.2f}% exceeds 5%"
 
 
 def test_tool_interface_overhead():
@@ -186,12 +191,16 @@ def test_tool_interface_overhead():
 
     print("\nTool Interface Overhead Benchmark:")
     print(f"  Iterations: {iterations:,}")
-    print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
-    print(f"  Framework:  {framework_time:.4f}s ({framework_time/iterations*1000:.6f}ms per call)")
-    print(f"  Overhead:   {overhead*100:.2f}%")
+    print(
+        f"  Baseline:   {baseline_time:.4f}s ({baseline_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(
+        f"  Framework:  {framework_time:.4f}s ({framework_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(f"  Overhead:   {overhead * 100:.2f}%")
 
     # Assert <10% overhead
-    assert overhead < 0.10, f"Tool interface overhead {overhead*100:.2f}% exceeds 10%"
+    assert overhead < 0.10, f"Tool interface overhead {overhead * 100:.2f}% exceeds 10%"
 
 
 # ============================================
@@ -235,12 +244,16 @@ def test_sequential_pattern_overhead():
     print("\nSequential Pattern Overhead Benchmark:")
     print(f"  Iterations: {iterations:,}")
     print("  Agents:     3")
-    print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
-    print(f"  Framework:  {framework_time:.4f}s ({framework_time/iterations*1000:.6f}ms per call)")
-    print(f"  Overhead:   {overhead*100:.2f}%")
+    print(
+        f"  Baseline:   {baseline_time:.4f}s ({baseline_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(
+        f"  Framework:  {framework_time:.4f}s ({framework_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(f"  Overhead:   {overhead * 100:.2f}%")
 
     # Assert <15% overhead
-    assert overhead < 0.15, f"Sequential pattern overhead {overhead*100:.2f}% exceeds 15%"
+    assert overhead < 0.15, f"Sequential pattern overhead {overhead * 100:.2f}% exceeds 15%"
 
 
 def test_parallel_pattern_overhead():
@@ -258,11 +271,7 @@ def test_parallel_pattern_overhead():
 
     # Baseline: Direct asyncio.gather
     async def baseline():
-        await asyncio.gather(
-            direct_process(msg),
-            direct_process(msg),
-            direct_process(msg)
-        )
+        await asyncio.gather(direct_process(msg), direct_process(msg), direct_process(msg))
 
     baseline_time = measure_time(baseline, iterations)
 
@@ -281,12 +290,16 @@ def test_parallel_pattern_overhead():
     print("\nParallel Pattern Overhead Benchmark:")
     print(f"  Iterations: {iterations:,}")
     print("  Agents:     3")
-    print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
-    print(f"  Framework:  {framework_time:.4f}s ({framework_time/iterations*1000:.6f}ms per call)")
-    print(f"  Overhead:   {overhead*100:.2f}%")
+    print(
+        f"  Baseline:   {baseline_time:.4f}s ({baseline_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(
+        f"  Framework:  {framework_time:.4f}s ({framework_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(f"  Overhead:   {overhead * 100:.2f}%")
 
     # Assert <10% overhead
-    assert overhead < 0.10, f"Parallel pattern overhead {overhead*100:.2f}% exceeds 10%"
+    assert overhead < 0.10, f"Parallel pattern overhead {overhead * 100:.2f}% exceeds 10%"
 
 
 def test_router_pattern_overhead():
@@ -321,10 +334,7 @@ def test_router_pattern_overhead():
     baseline_time = measure_time(baseline, iterations)
 
     # Framework: Via RouterPattern
-    pattern = RouterPattern(
-        router=router,
-        handlers={"route1": agent1, "route2": agent2}
-    )
+    pattern = RouterPattern(router=router, handlers={"route1": agent1, "route2": agent2})
 
     async def framework():
         await pattern.process(msg)
@@ -337,12 +347,16 @@ def test_router_pattern_overhead():
     print("\nRouter Pattern Overhead Benchmark:")
     print(f"  Iterations: {iterations:,}")
     print("  Handlers:   2")
-    print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
-    print(f"  Framework:  {framework_time:.4f}s ({framework_time/iterations*1000:.6f}ms per call)")
-    print(f"  Overhead:   {overhead*100:.2f}%")
+    print(
+        f"  Baseline:   {baseline_time:.4f}s ({baseline_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(
+        f"  Framework:  {framework_time:.4f}s ({framework_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(f"  Overhead:   {overhead * 100:.2f}%")
 
     # Assert <15% overhead
-    assert overhead < 0.15, f"Router pattern overhead {overhead*100:.2f}% exceeds 15%"
+    assert overhead < 0.15, f"Router pattern overhead {overhead * 100:.2f}% exceeds 15%"
 
 
 # ============================================
@@ -392,15 +406,21 @@ def test_message_creation_overhead():
 
     print("\nMessage Creation Overhead Benchmark:")
     print(f"  Iterations: {iterations:,}")
-    print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000000:.6f}μs per creation)")
-    print(f"  Framework:  {framework_time:.4f}s ({framework_time/iterations*1000000:.6f}μs per creation)")
-    print(f"  Overhead:   {overhead*100:.2f}%")
-    print(f"  Absolute:   {(framework_time-baseline_time)/iterations*1000000:.3f}μs per Message")
+    print(
+        f"  Baseline:   {baseline_time:.4f}s ({baseline_time / iterations * 1000000:.6f}μs per creation)"
+    )
+    print(
+        f"  Framework:  {framework_time:.4f}s ({framework_time / iterations * 1000000:.6f}μs per creation)"
+    )
+    print(f"  Overhead:   {overhead * 100:.2f}%")
+    print(
+        f"  Absolute:   {(framework_time - baseline_time) / iterations * 1000000:.3f}μs per Message"
+    )
     print("  Note: High overhead is intentional - we trade creation cost for immutability & safety")
 
     # Accept high overhead for safety/immutability benefits
     # Absolute cost is ~0.5μs per Message - negligible in production
-    assert overhead < 15.0, f"Message creation overhead {overhead*100:.2f}% unreasonably high"
+    assert overhead < 15.0, f"Message creation overhead {overhead * 100:.2f}% unreasonably high"
 
 
 # ============================================
@@ -414,9 +434,9 @@ def test_benchmark_summary():
 
     This provides a single test that shows all overhead measurements.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("agenkit Performance Benchmark Summary")
-    print("="*70)
+    print("=" * 70)
 
     # Run all benchmarks
     test_agent_interface_overhead()
@@ -426,7 +446,7 @@ def test_benchmark_summary():
     test_router_pattern_overhead()
     test_message_creation_overhead()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Conclusion: All overhead measurements <15% (microsecond-level)")
     print("Production impact: <0.001% on real workloads (LLM calls, I/O)")
-    print("="*70)
+    print("=" * 70)

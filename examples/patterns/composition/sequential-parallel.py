@@ -213,12 +213,14 @@ async def basic_composition():
     reporting_stage = ReportGenerator()
 
     # Compose into sequential pipeline
-    pipeline = SequentialAgent([
-        extraction_stage,
-        normalization_stage,
-        analysis_stage,
-        reporting_stage,
-    ])
+    pipeline = SequentialAgent(
+        [
+            extraction_stage,
+            normalization_stage,
+            analysis_stage,
+            reporting_stage,
+        ]
+    )
 
     # Process document
     message = Message(
@@ -231,6 +233,7 @@ async def basic_composition():
     print("  Stage 1: Parallel Extraction")
 
     import time
+
     start = time.time()
     result = await pipeline.process(message)
     elapsed = time.time() - start
@@ -279,10 +282,12 @@ async def error_handling():
         aggregator=default_aggregators["concatenate"],
     )
 
-    pipeline = SequentialAgent([
-        extraction_stage,
-        analysis_stage,
-    ])
+    pipeline = SequentialAgent(
+        [
+            extraction_stage,
+            analysis_stage,
+        ]
+    )
 
     message = Message(role="user", content="Test error handling")
 

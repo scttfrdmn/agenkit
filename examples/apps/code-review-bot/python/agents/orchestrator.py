@@ -62,16 +62,14 @@ class ReviewOrchestrator(Agent):
                 "num_reviews": len(successful_reviews),
                 "consensus_score": consensus,
                 "review_type": review_type,
-            }
+            },
         )
 
     async def _review_with_llm(self, name: str, llm: LiteLLMLLM, prompt: str) -> dict:
         """Conduct review with single LLM."""
         try:
             response = await llm.complete(
-                [Message(role="user", content=prompt)],
-                max_tokens=1000,
-                temperature=0.3
+                [Message(role="user", content=prompt)], max_tokens=1000, temperature=0.3
             )
             return {"reviewer": name, "content": str(response.content), "success": True}
         except Exception as e:

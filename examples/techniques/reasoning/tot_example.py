@@ -67,8 +67,14 @@ def quality_evaluator(text: str) -> float:
 
     # Quality keywords (up to 0.3)
     quality_keywords = [
-        "because", "therefore", "however", "consider",
-        "approach", "solution", "conclusion", "verify"
+        "because",
+        "therefore",
+        "however",
+        "consider",
+        "approach",
+        "solution",
+        "conclusion",
+        "verify",
     ]
     keyword_count = sum(1 for kw in quality_keywords if kw.lower() in text.lower())
     score += min(keyword_count * 0.1, 0.3)
@@ -86,9 +92,9 @@ async def basic_example():
     tot = TreeOfThought(
         llm=llm,
         branching_factor=3,  # Explore 3 alternatives per step
-        max_depth=3,         # Up to 3 reasoning steps
+        max_depth=3,  # Up to 3 reasoning steps
         evaluator=quality_evaluator,
-        strategy="best-first"
+        strategy="best-first",
     )
 
     query = "How should I approach solving a complex software architecture problem?"
@@ -97,11 +103,11 @@ async def basic_example():
     print(f"\nQuery: {query}")
     print(f"\nSearch Strategy: {response.metadata['search_strategy']}")
     print(f"\nBest Reasoning Path (Score: {response.metadata['best_score']:.2f}):")
-    for i, step in enumerate(response.metadata['reasoning_path'], 1):
+    for i, step in enumerate(response.metadata["reasoning_path"], 1):
         print(f"  {i}. {step}")
 
     print("\nTree Statistics:")
-    stats = response.metadata['reasoning_tree_stats']
+    stats = response.metadata["reasoning_tree_stats"]
     print(f"  Total nodes explored: {stats['total_nodes']}")
     print(f"  Max depth reached: {stats['max_depth']}")
     print(f"  Leaf nodes: {stats['num_leaves']}")
@@ -119,7 +125,7 @@ async def bfs_example():
         llm=llm,
         branching_factor=2,
         max_depth=4,
-        strategy="bfs"  # Explore all nodes at each depth before going deeper
+        strategy="bfs",  # Explore all nodes at each depth before going deeper
     )
 
     query = "Plan a strategy for learning a new programming language"
@@ -130,7 +136,7 @@ async def bfs_example():
     print(f"\nBest Path ({response.metadata['num_steps']} steps):")
     print(response.content)
 
-    stats = response.metadata['reasoning_tree_stats']
+    stats = response.metadata["reasoning_tree_stats"]
     print(f"\nExplored {stats['total_nodes']} reasoning paths")
 
 
@@ -145,7 +151,7 @@ async def dfs_example():
         llm=llm,
         branching_factor=2,
         max_depth=4,
-        strategy="dfs"  # Explore deep before wide
+        strategy="dfs",  # Explore deep before wide
     )
 
     query = "Debug a complex issue in a distributed system"
@@ -155,7 +161,7 @@ async def dfs_example():
     print(f"\nStrategy: {response.metadata['search_strategy']} (explores depth-first)")
     print(f"\nBest Path Score: {response.metadata['best_score']:.2f}")
 
-    stats = response.metadata['reasoning_tree_stats']
+    stats = response.metadata["reasoning_tree_stats"]
     print(f"Nodes explored: {stats['total_nodes']}")
     print(f"Max depth: {stats['max_depth']}")
 
@@ -181,7 +187,7 @@ async def pruning_example():
         branching_factor=3,
         max_depth=3,
         evaluator=strict_evaluator,
-        prune_threshold=0.5  # Prune paths scoring below 0.5
+        prune_threshold=0.5,  # Prune paths scoring below 0.5
     )
 
     query = "Design a caching strategy for a high-traffic web application"
@@ -190,7 +196,7 @@ async def pruning_example():
     print(f"\nQuery: {query}")
     print("\nPrune Threshold: 0.5 (removes low-quality reasoning paths)")
 
-    stats = response.metadata['reasoning_tree_stats']
+    stats = response.metadata["reasoning_tree_stats"]
     print("\nTree Statistics:")
     print(f"  Total nodes: {stats['total_nodes']}")
     print(f"  Pruned nodes: {stats['num_pruned']}")
@@ -215,11 +221,7 @@ async def comparison_example():
 
     # Tree-of-Thought: Multiple paths
     llm_tot = MockLLM()
-    tot = TreeOfThought(
-        llm=llm_tot,
-        branching_factor=3,
-        max_depth=2
-    )
+    tot = TreeOfThought(llm=llm_tot, branching_factor=3, max_depth=2)
     tot_response = await tot.process(Message(role="user", content=query))
 
     print(f"\nQuery: {query}\n")
@@ -230,7 +232,7 @@ async def comparison_example():
     print("  - Direct and fast")
 
     print("\nTree-of-Thought (ToT):")
-    stats = tot_response.metadata['reasoning_tree_stats']
+    stats = tot_response.metadata["reasoning_tree_stats"]
     print(f"  - Explored {stats['total_nodes']} alternative paths")
     print(f"  - Selected best path with score: {tot_response.metadata['best_score']:.2f}")
     print("  - More thorough but more expensive")

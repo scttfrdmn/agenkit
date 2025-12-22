@@ -449,7 +449,11 @@ async def demo_error_handling():
 
     # Check for error in trace
     trace = response.metadata["reasoning_trace"]
-    error_steps = [s for s in trace["steps"] if "error" in s["content"].lower() or "not found" in s["content"].lower()]
+    error_steps = [
+        s
+        for s in trace["steps"]
+        if "error" in s["content"].lower() or "not found" in s["content"].lower()
+    ]
 
     if error_steps:
         print("\nError Detected:")

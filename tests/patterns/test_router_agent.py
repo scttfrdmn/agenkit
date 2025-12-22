@@ -36,7 +36,7 @@ class MockAgent:
         return Message(
             role="assistant",
             content=f"{self._name}: {self.response}",
-            metadata={"agent": self._name}
+            metadata={"agent": self._name},
         )
 
 
@@ -152,11 +152,7 @@ def test_router_invalid_default_key_raises():
     """Test that invalid default_key raises ValueError."""
     classifier = MockClassifier()
     agent = MockAgent("agent")
-    config = RouterConfig(
-        classifier=classifier,
-        agents={"cat1": agent},
-        default_key="nonexistent"
-    )
+    config = RouterConfig(classifier=classifier, agents={"cat1": agent}, default_key="nonexistent")
 
     with pytest.raises(ValueError, match=r"default key .* not found"):
         RouterAgent(config)
@@ -169,9 +165,7 @@ def test_router_valid_default_key():
     agent2 = MockAgent("agent2")
 
     config = RouterConfig(
-        classifier=classifier,
-        agents={"cat1": agent1, "cat2": agent2},
-        default_key="cat1"
+        classifier=classifier, agents={"cat1": agent1, "cat2": agent2}, default_key="cat1"
     )
     router = RouterAgent(config)
 
@@ -214,8 +208,7 @@ async def test_router_basic_routing():
     tech_agent = MockAgent("tech_agent", response="Tech handled")
 
     config = RouterConfig(
-        classifier=classifier,
-        agents={"billing": billing_agent, "technical": tech_agent}
+        classifier=classifier, agents={"billing": billing_agent, "technical": tech_agent}
     )
     router = RouterAgent(config)
 
@@ -276,7 +269,7 @@ async def test_router_multiple_categories():
 
     config = RouterConfig(
         classifier=classifier,
-        agents={"billing": billing, "technical": technical, "account": account}
+        agents={"billing": billing, "technical": technical, "account": account},
     )
     router = RouterAgent(config)
 
@@ -305,7 +298,7 @@ async def test_router_default_key_used():
     config = RouterConfig(
         classifier=classifier,
         agents={"cat1": agent1, "default": default_agent},
-        default_key="default"
+        default_key="default",
     )
     router = RouterAgent(config)
 
@@ -394,8 +387,8 @@ async def test_simple_classifier_keyword_match():
         agent=base_agent,
         keywords={
             "billing": ["payment", "invoice", "charge"],
-            "technical": ["error", "bug", "issue"]
-        }
+            "technical": ["error", "bug", "issue"],
+        },
     )
 
     message = Message(role="user", content="I have a payment problem")
@@ -408,10 +401,7 @@ async def test_simple_classifier_keyword_match():
 async def test_simple_classifier_case_insensitive():
     """Test SimpleClassifier is case insensitive."""
     base_agent = MockAgent("base")
-    classifier = SimpleClassifier(
-        agent=base_agent,
-        keywords={"billing": ["PAYMENT", "Invoice"]}
-    )
+    classifier = SimpleClassifier(agent=base_agent, keywords={"billing": ["PAYMENT", "Invoice"]})
 
     message = Message(role="user", content="payment issue")
     category = await classifier.classify(message)
@@ -423,10 +413,7 @@ async def test_simple_classifier_case_insensitive():
 async def test_simple_classifier_no_match_raises():
     """Test SimpleClassifier raises when no keywords match."""
     base_agent = MockAgent("base")
-    classifier = SimpleClassifier(
-        agent=base_agent,
-        keywords={"billing": ["payment"]}
-    )
+    classifier = SimpleClassifier(agent=base_agent, keywords={"billing": ["payment"]})
 
     message = Message(role="user", content="hello there")
 
@@ -442,8 +429,8 @@ async def test_simple_classifier_multiple_matches():
         agent=base_agent,
         keywords={
             "billing": ["payment", "invoice"],
-            "technical": ["error", "bug", "issue", "problem"]
-        }
+            "technical": ["error", "bug", "issue", "problem"],
+        },
     )
 
     # "error" and "issue" match technical (2 matches)
@@ -462,6 +449,7 @@ async def test_simple_classifier_multiple_matches():
 @pytest.mark.asyncio
 async def test_llm_classifier_valid_category():
     """Test LLMClassifier with valid response."""
+
     # Create agent that returns just the category
     class LLMAgent:
         @property
@@ -475,10 +463,7 @@ async def test_llm_classifier_valid_category():
             return Message(role="assistant", content="billing")
 
     base_agent = LLMAgent()
-    classifier = LLMClassifier(
-        agent=base_agent,
-        categories=["billing", "technical", "account"]
-    )
+    classifier = LLMClassifier(agent=base_agent, categories=["billing", "technical", "account"])
 
     message = Message(role="user", content="payment question")
     category = await classifier.classify(message)
@@ -489,6 +474,7 @@ async def test_llm_classifier_valid_category():
 @pytest.mark.asyncio
 async def test_llm_classifier_case_insensitive_match():
     """Test LLMClassifier handles case variations."""
+
     # Create agent that returns uppercase category
     class LLMAgent:
         @property
@@ -502,10 +488,7 @@ async def test_llm_classifier_case_insensitive_match():
             return Message(role="assistant", content="BILLING")
 
     base_agent = LLMAgent()
-    classifier = LLMClassifier(
-        agent=base_agent,
-        categories=["billing", "technical"]
-    )
+    classifier = LLMClassifier(agent=base_agent, categories=["billing", "technical"])
 
     message = Message(role="user", content="question")
     category = await classifier.classify(message)
@@ -517,10 +500,7 @@ async def test_llm_classifier_case_insensitive_match():
 async def test_llm_classifier_invalid_category_raises():
     """Test LLMClassifier raises on invalid category."""
     base_agent = MockAgent("base", response="unknown_category")
-    classifier = LLMClassifier(
-        agent=base_agent,
-        categories=["billing", "technical"]
-    )
+    classifier = LLMClassifier(agent=base_agent, categories=["billing", "technical"])
 
     message = Message(role="user", content="question")
 
@@ -531,6 +511,7 @@ async def test_llm_classifier_invalid_category_raises():
 @pytest.mark.asyncio
 async def test_llm_classifier_custom_prompt():
     """Test LLMClassifier with custom prompt."""
+
     # Create agent that tracks last message and returns category
     class LLMAgent:
         def __init__(self):
@@ -551,9 +532,7 @@ async def test_llm_classifier_custom_prompt():
     custom_prompt = "Custom classification prompt: "
 
     classifier = LLMClassifier(
-        agent=base_agent,
-        categories=["billing", "technical"],
-        prompt=custom_prompt
+        agent=base_agent, categories=["billing", "technical"], prompt=custom_prompt
     )
 
     message = Message(role="user", content="payment")
@@ -574,18 +553,14 @@ async def test_router_with_simple_classifier_integration():
     base_agent = MockAgent("base")
     classifier = SimpleClassifier(
         agent=base_agent,
-        keywords={
-            "billing": ["payment", "invoice"],
-            "technical": ["error", "bug"]
-        }
+        keywords={"billing": ["payment", "invoice"], "technical": ["error", "bug"]},
     )
 
     billing_agent = MockAgent("billing", response="Billing handled")
     tech_agent = MockAgent("technical", response="Tech handled")
 
     config = RouterConfig(
-        classifier=classifier,
-        agents={"billing": billing_agent, "technical": tech_agent}
+        classifier=classifier, agents={"billing": billing_agent, "technical": tech_agent}
     )
     router = RouterAgent(config)
 

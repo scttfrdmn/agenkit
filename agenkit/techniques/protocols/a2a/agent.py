@@ -42,7 +42,7 @@ class A2AAgent:
         transport: str = "http",
         name: str | None = None,
         discovery_url: str | None = None,
-        timeout: float = 30.0
+        timeout: float = 30.0,
     ):
         """
         Initialize A2A agent.
@@ -90,14 +90,10 @@ class A2AAgent:
             capabilities=self.capabilities,
             endpoint="",  # Set by server
             transport=self.transport_type,
-            status="online"
+            status="online",
         )
 
-    async def send(
-        self,
-        message: A2AMessage,
-        endpoint: str
-    ) -> A2AMessage:
+    async def send(self, message: A2AMessage, endpoint: str) -> A2AMessage:
         """
         Send message to another agent.
 
@@ -122,11 +118,7 @@ class A2AAgent:
         return response
 
     async def send_to_agent(
-        self,
-        to_agent: str,
-        action: str,
-        content: dict[str, Any],
-        **kwargs
+        self, to_agent: str, action: str, content: dict[str, Any], **kwargs
     ) -> A2AMessage:
         """
         Send message to agent by ID.
@@ -148,6 +140,7 @@ class A2AAgent:
             # Try discovery if available
             if self.discovery_url:
                 from .discovery import A2ADiscoveryClient
+
                 discovery = A2ADiscoveryClient(self.discovery_url)
                 agents = await discovery.find_by_id(to_agent)
                 if agents:
@@ -161,11 +154,7 @@ class A2AAgent:
 
         # Create message
         message = create_request(
-            from_agent=self.agent_id,
-            to_agent=to_agent,
-            action=action,
-            content=content,
-            **kwargs
+            from_agent=self.agent_id, to_agent=to_agent, action=action, content=content, **kwargs
         )
 
         # Send to endpoint
@@ -180,11 +169,7 @@ class A2AAgent:
         """
         self._known_agents[agent_info.agent_id] = agent_info
 
-    def on_action(
-        self,
-        action: str,
-        handler: Callable[[A2AMessage], Awaitable[A2AMessage]]
-    ):
+    def on_action(self, action: str, handler: Callable[[A2AMessage], Awaitable[A2AMessage]]):
         """
         Register handler for action.
 
@@ -216,10 +201,9 @@ class A2AAgent:
             return await handler(message)
 
         # Default: echo back
-        return message.create_response({
-            "message": "No handler registered",
-            "action": message.action
-        })
+        return message.create_response(
+            {"message": "No handler registered", "action": message.action}
+        )
 
     async def ping(self, endpoint: str) -> float:
         """
@@ -237,7 +221,7 @@ class A2AAgent:
             from_agent=self.agent_id,
             to_agent="",  # Will be filled by server
             action=A2AAction.PING.value,
-            content={}
+            content={},
         )
 
         start = time.time()
@@ -257,10 +241,7 @@ class A2AAgent:
             List of capabilities
         """
         message = create_request(
-            from_agent=self.agent_id,
-            to_agent="",
-            action=A2AAction.CAPABILITIES.value,
-            content={}
+            from_agent=self.agent_id, to_agent="", action=A2AAction.CAPABILITIES.value, content={}
         )
 
         response = await self.send(message, endpoint)
@@ -316,7 +297,7 @@ class A2AAgent:
             capabilities=self.capabilities,
             endpoint=endpoint,
             transport=self.transport_type,
-            status="online"
+            status="online",
         )
 
         await discovery.register(info)

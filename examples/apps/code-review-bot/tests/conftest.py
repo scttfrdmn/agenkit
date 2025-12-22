@@ -1,7 +1,6 @@
 """Pytest configuration and fixtures."""
 
 
-
 def pytest_configure(config):
     """Configure pytest with custom markers."""
     config.addinivalue_line(

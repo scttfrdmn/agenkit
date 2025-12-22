@@ -122,7 +122,10 @@ class ABResult:
         """Percent improvement of treatment over control."""
         if self.control_variant.mean == 0:
             return 0.0
-        return ((self.treatment_variant.mean - self.control_variant.mean) / abs(self.control_variant.mean)) * 100
+        return (
+            (self.treatment_variant.mean - self.control_variant.mean)
+            / abs(self.control_variant.mean)
+        ) * 100
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -247,7 +250,9 @@ class ABTest:
 
         return self.results
 
-    async def _evaluate_variant(self, variant: ABVariant, test_cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    async def _evaluate_variant(
+        self, variant: ABVariant, test_cases: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Evaluate a variant on test cases."""
         results = []
 
@@ -294,7 +299,9 @@ class ABTest:
 
             # Cohen's d effect size
             pooled_std = ((self.control.std**2 + self.treatment.std**2) / 2) ** 0.5
-            effect_size = (self.treatment.mean - self.control.mean) / pooled_std if pooled_std > 0 else 0.0
+            effect_size = (
+                (self.treatment.mean - self.control.mean) / pooled_std if pooled_std > 0 else 0.0
+            )
 
             # Confidence interval for difference in means
             ci = stats.t.interval(
@@ -306,7 +313,9 @@ class ABTest:
 
         elif self.test_type == StatisticalTestType.MANN_WHITNEY:
             # Non-parametric test
-            statistic, p_value = stats.mannwhitneyu(control_samples, treatment_samples, alternative="two-sided")
+            statistic, p_value = stats.mannwhitneyu(
+                control_samples, treatment_samples, alternative="two-sided"
+            )
 
             # Effect size (rank-biserial correlation)
             n1, n2 = len(control_samples), len(treatment_samples)
@@ -343,7 +352,9 @@ class ABTest:
 
         for _ in range(n_iterations):
             control_resample = [random.choice(control_samples) for _ in range(len(control_samples))]  # noqa: S311
-            treatment_resample = [random.choice(treatment_samples) for _ in range(len(treatment_samples))]  # noqa: S311
+            treatment_resample = [
+                random.choice(treatment_samples) for _ in range(len(treatment_samples))
+            ]  # noqa: S311
 
             diff = statistics.mean(treatment_resample) - statistics.mean(control_resample)
             differences.append(diff)

@@ -526,8 +526,7 @@ def test_benchmark_router():
 
     # Simple classifier that always routes to agent1
     classifier = SimpleClassifier(
-        agent=EchoAgent(),
-        keywords={"agent1": ["test"], "agent2": ["other"]}
+        agent=EchoAgent(), keywords={"agent1": ["test"], "agent2": ["other"]}
     )
 
     config = RouterConfig(

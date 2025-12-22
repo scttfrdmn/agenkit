@@ -14,6 +14,7 @@ from typing import Any
 
 class MCPMessageType(Enum):
     """MCP message types."""
+
     REQUEST = "request"
     RESPONSE = "response"
     NOTIFICATION = "notification"
@@ -22,6 +23,7 @@ class MCPMessageType(Enum):
 
 class MCPMethod(Enum):
     """Standard MCP methods."""
+
     # Resource methods
     RESOURCES_LIST = "resources/list"
     RESOURCES_READ = "resources/read"
@@ -42,6 +44,7 @@ class MCPMethod(Enum):
 @dataclass
 class MCPResourceInfo:
     """Information about an MCP resource."""
+
     uri: str
     name: str
     description: str | None = None
@@ -52,6 +55,7 @@ class MCPResourceInfo:
 @dataclass
 class MCPToolInfo:
     """Information about an MCP tool."""
+
     name: str
     description: str
     input_schema: dict[str, Any]
@@ -61,6 +65,7 @@ class MCPToolInfo:
 @dataclass
 class MCPPromptInfo:
     """Information about an MCP prompt."""
+
     name: str
     description: str
     arguments: list[dict[str, Any]] = field(default_factory=list)
@@ -85,7 +90,13 @@ def validate_json_schema(data: dict[str, Any], schema: dict[str, Any]) -> bool:
     if "type" in schema:
         expected_type = schema["type"]
 
-        if (expected_type == "object" and not isinstance(data, dict)) or (expected_type == "array" and not isinstance(data, list)) or (expected_type == "string" and not isinstance(data, str)) or (expected_type == "number" and not isinstance(data, (int, float))) or (expected_type == "boolean" and not isinstance(data, bool)):
+        if (
+            (expected_type == "object" and not isinstance(data, dict))
+            or (expected_type == "array" and not isinstance(data, list))
+            or (expected_type == "string" and not isinstance(data, str))
+            or (expected_type == "number" and not isinstance(data, (int, float)))
+            or (expected_type == "boolean" and not isinstance(data, bool))
+        ):
             return False
 
     # Validate required properties
@@ -97,11 +108,7 @@ def validate_json_schema(data: dict[str, Any], schema: dict[str, Any]) -> bool:
     return True
 
 
-def create_tool_schema(
-    name: str,
-    description: str,
-    parameters: dict[str, Any]
-) -> dict[str, Any]:
+def create_tool_schema(name: str, description: str, parameters: dict[str, Any]) -> dict[str, Any]:
     """
     Create JSON schema for a tool.
 
@@ -131,18 +138,14 @@ def create_tool_schema(
             "parameters": {
                 "type": "object",
                 "properties": parameters,
-                "required": [k for k, v in parameters.items()
-                           if v.get("required", False)]
-            }
-        }
+                "required": [k for k, v in parameters.items() if v.get("required", False)],
+            },
+        },
     }
 
 
 def create_resource_schema(
-    uri: str,
-    name: str,
-    description: str,
-    mime_type: str = "text/plain"
+    uri: str, name: str, description: str, mime_type: str = "text/plain"
 ) -> dict[str, Any]:
     """
     Create schema for a resource.
@@ -156,9 +159,4 @@ def create_resource_schema(
     Returns:
         Resource schema
     """
-    return {
-        "uri": uri,
-        "name": name,
-        "description": description,
-        "mimeType": mime_type
-    }
+    return {"uri": uri, "name": name, "description": description, "mimeType": mime_type}

@@ -108,17 +108,16 @@ async def basic_example():
 
     print(f"\nProblem: {problem}")
     print(f"\n📋 Generated Plan ({len(response.metadata['plan_steps'])} steps):")
-    for i, step in enumerate(response.metadata['plan_steps'], 1):
+    for i, step in enumerate(response.metadata["plan_steps"], 1):
         print(f"  {i}. {step}")
 
     print(f"\n✓ Plan Validated: {response.metadata['validated']}")
     print(f"  Validation: {response.metadata['validation_notes']}")
 
     print("\n⚙️  Execution Results:")
-    for i, (step, result) in enumerate(zip(
-        response.metadata['plan_steps'],
-        response.metadata['execution_steps'], strict=False
-    ), 1):
+    for i, (step, result) in enumerate(
+        zip(response.metadata["plan_steps"], response.metadata["execution_steps"], strict=False), 1
+    ):
         print(f"  {i}. {step}")
         print(f"     → {result}")
 
@@ -139,11 +138,11 @@ async def no_validation_example():
 
     print(f"\nProblem: {problem}")
     print("\n📋 Plan (skip validation for speed):")
-    for i, step in enumerate(response.metadata['plan_steps'], 1):
+    for i, step in enumerate(response.metadata["plan_steps"], 1):
         print(f"  {i}. {step}")
 
     print("\n⚙️  Execution:")
-    for i, result in enumerate(response.metadata['execution_steps'], 1):
+    for i, result in enumerate(response.metadata["execution_steps"], 1):
         print(f"  Step {i} → {result}")
 
     print(f"\n🎯 Answer: {response.content}")
@@ -162,9 +161,24 @@ async def custom_planner_example():
             steps = [
                 PlanStep(description="Determine budget", order=0, estimated_complexity=1),
                 PlanStep(description="Research destinations", order=1, estimated_complexity=3),
-                PlanStep(description="Book transportation", order=2, dependencies=[0, 1], estimated_complexity=2),
-                PlanStep(description="Book accommodation", order=3, dependencies=[2], estimated_complexity=2),
-                PlanStep(description="Create itinerary", order=4, dependencies=[3], estimated_complexity=3),
+                PlanStep(
+                    description="Book transportation",
+                    order=2,
+                    dependencies=[0, 1],
+                    estimated_complexity=2,
+                ),
+                PlanStep(
+                    description="Book accommodation",
+                    order=3,
+                    dependencies=[2],
+                    estimated_complexity=2,
+                ),
+                PlanStep(
+                    description="Create itinerary",
+                    order=4,
+                    dependencies=[3],
+                    estimated_complexity=3,
+                ),
             ]
             return Plan(steps=steps, problem=problem, validated=True, strategy="vacation_planning")
         return Plan(steps=[], problem=problem)
@@ -177,7 +191,7 @@ async def custom_planner_example():
 
     print(f"\nProblem: {problem}")
     print("\n📋 Custom Domain Plan:")
-    for step in response.metadata['plan'].steps:
+    for step in response.metadata["plan"].steps:
         deps = f" (depends on: {step.dependencies})" if step.dependencies else ""
         complexity = "⭐" * step.estimated_complexity
         print(f"  {step.order + 1}. {step.description} {complexity}{deps}")
@@ -220,7 +234,7 @@ async def custom_solver_example():
 
     print(f"\nProblem: {problem}")
     print("\n📋 Plan:")
-    for i, step in enumerate(response.metadata['plan_steps'], 1):
+    for i, step in enumerate(response.metadata["plan_steps"], 1):
         print(f"  {i}. {step}")
 
     print("\n📝 Execution Log:")
@@ -275,7 +289,7 @@ async def replanning_example():
     print(f"   Reason: {response.metadata['validation_notes']}")
 
     print(f"\n✅ Replanned with {len(response.metadata['plan_steps'])} improved steps:")
-    for i, step in enumerate(response.metadata['plan_steps'], 1):
+    for i, step in enumerate(response.metadata["plan_steps"], 1):
         print(f"  {i}. {step}")
 
     print("\n💡 Replanning (allow_replanning=True):")
@@ -313,7 +327,7 @@ async def comparison_example():
 
     print("\n✅ Plan-and-Solve:")
     print(f"   {len(planned_response.metadata['plan_steps'])} clear steps:")
-    for i, step in enumerate(planned_response.metadata['plan_steps'], 1):
+    for i, step in enumerate(planned_response.metadata["plan_steps"], 1):
         print(f"   {i}. {step}")
 
     print("\n   Benefits:")

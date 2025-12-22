@@ -14,11 +14,8 @@ async def test_router_classifies_faq_query():
     router = RouterAgent(anthropic_api_key="test-key")
 
     # Mock Claude response
-    with patch.object(router._llm, 'complete', new_callable=AsyncMock) as mock_complete:
-        mock_complete.return_value = Message(
-            role="assistant",
-            content="faq|0.95"
-        )
+    with patch.object(router._llm, "complete", new_callable=AsyncMock) as mock_complete:
+        mock_complete.return_value = Message(role="assistant", content="faq|0.95")
 
         message = Message(role="user", content="How do I reset my password?")
         result = await router.process(message)
@@ -32,11 +29,8 @@ async def test_router_classifies_specialist_query():
     """Test router correctly classifies specialist query."""
     router = RouterAgent(anthropic_api_key="test-key")
 
-    with patch.object(router._llm, 'complete', new_callable=AsyncMock) as mock_complete:
-        mock_complete.return_value = Message(
-            role="assistant",
-            content="specialist|0.85"
-        )
+    with patch.object(router._llm, "complete", new_callable=AsyncMock) as mock_complete:
+        mock_complete.return_value = Message(role="assistant", content="specialist|0.85")
 
         message = Message(role="user", content="I need advanced API integration help")
         result = await router.process(message)
@@ -50,7 +44,7 @@ async def test_router_fallback_on_error():
     """Test router uses fallback classification on LLM error."""
     router = RouterAgent(anthropic_api_key="test-key")
 
-    with patch.object(router._llm, 'complete', side_effect=Exception("API error")):
+    with patch.object(router._llm, "complete", side_effect=Exception("API error")):
         message = Message(role="user", content="password reset")
         result = await router.process(message)
 
@@ -64,7 +58,7 @@ async def test_router_escalation_keywords():
     """Test router identifies escalation keywords."""
     router = RouterAgent(anthropic_api_key="test-key")
 
-    with patch.object(router._llm, 'complete', side_effect=Exception("Force fallback")):
+    with patch.object(router._llm, "complete", side_effect=Exception("Force fallback")):
         message = Message(role="user", content="I want a refund immediately!")
         result = await router.process(message)
 

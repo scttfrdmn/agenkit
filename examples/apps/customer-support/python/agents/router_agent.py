@@ -13,14 +13,14 @@ QueryType = Literal["faq", "specialist", "escalation"]
 
 class RouterAgent(Agent):
     """
-    Router agent that classifies customer queries using Claude.
+       Router agent that classifies customer queries using Claude.
 
-    Routes queries to:
-    - FAQ agent: Simple,
+       Routes queries to:
+       - FAQ agent: Simple,
 
- common questions
-    - Specialist agent: Complex queries requiring RAG or analysis
-    - Escalation: Issues requiring human intervention
+    common questions
+       - Specialist agent: Complex queries requiring RAG or analysis
+       - Escalation: Issues requiring human intervention
     """
 
     def __init__(self, anthropic_api_key: str):
@@ -69,7 +69,9 @@ Example: faq|0.95"""
 
         try:
             classification_msg = await self._llm.complete(
-                [Message(role="user", content=classification_prompt)], max_tokens=50, temperature=0.3
+                [Message(role="user", content=classification_prompt)],
+                max_tokens=50,
+                temperature=0.3,
             )
 
             # Parse response
@@ -127,7 +129,10 @@ Example: faq|0.95"""
             return ("escalation", 0.8)
 
         # FAQ keywords
-        if any(word in query_lower for word in ["password", "reset", "how do i", "how to", "login", "sign in"]):
+        if any(
+            word in query_lower
+            for word in ["password", "reset", "how do i", "how to", "login", "sign in"]
+        ):
             return ("faq", 0.7)
 
         # Default to specialist for complex queries

@@ -127,7 +127,9 @@ async def demo_multiple_metrics():
     control_agent = PromptVariantAgent(name="fast_agent", accuracy_rate=0.70, avg_latency_ms=50)
 
     # Slower but more accurate
-    treatment_agent = PromptVariantAgent(name="accurate_agent", accuracy_rate=0.85, avg_latency_ms=150)
+    treatment_agent = PromptVariantAgent(
+        name="accurate_agent", accuracy_rate=0.85, avg_latency_ms=150
+    )
 
     # Test both accuracy and latency
     ab_test = ABTest(

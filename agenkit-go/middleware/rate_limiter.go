@@ -36,12 +36,12 @@ func DefaultRateLimiterConfig() RateLimiterConfig {
 
 // RateLimiterMetrics tracks rate limiter metrics.
 type RateLimiterMetrics struct {
-	mu                sync.RWMutex
-	TotalRequests     int64
-	AllowedRequests   int64
-	RejectedRequests  int64
-	TotalWaitTime     time.Duration // Total time spent waiting for tokens
-	CurrentTokens     float64
+	mu               sync.RWMutex
+	TotalRequests    int64
+	AllowedRequests  int64
+	RejectedRequests int64
+	TotalWaitTime    time.Duration // Total time spent waiting for tokens
+	CurrentTokens    float64
 }
 
 // NewRateLimiterMetrics creates a new metrics instance.
@@ -53,8 +53,8 @@ func NewRateLimiterMetrics(initialTokens float64) *RateLimiterMetrics {
 
 // RateLimitError is returned when the rate limit is exceeded.
 type RateLimitError struct {
-	TokensNeeded     int
-	TokensAvailable  float64
+	TokensNeeded    int
+	TokensAvailable float64
 }
 
 // Error implements the error interface.

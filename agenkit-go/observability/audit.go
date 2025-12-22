@@ -17,18 +17,18 @@ import (
 type AuditEventType string
 
 const (
-	AuthAttempt          AuditEventType = "auth_attempt"
-	AuthSuccess          AuditEventType = "auth_success"
-	AuthFailure          AuditEventType = "auth_failure"
-	Authorization        AuditEventType = "authorization"
-	RateLimitExceeded    AuditEventType = "rate_limit_exceeded"
-	ValidationFailure    AuditEventType = "validation_failure"
-	ConfigurationChange  AuditEventType = "configuration_change"
-	SecurityViolation    AuditEventType = "security_violation"
-	SuspiciousActivity   AuditEventType = "suspicious_activity"
-	AgentRequest         AuditEventType = "agent_request"
-	AgentResponse        AuditEventType = "agent_response"
-	AgentError           AuditEventType = "agent_error"
+	AuthAttempt         AuditEventType = "auth_attempt"
+	AuthSuccess         AuditEventType = "auth_success"
+	AuthFailure         AuditEventType = "auth_failure"
+	Authorization       AuditEventType = "authorization"
+	RateLimitExceeded   AuditEventType = "rate_limit_exceeded"
+	ValidationFailure   AuditEventType = "validation_failure"
+	ConfigurationChange AuditEventType = "configuration_change"
+	SecurityViolation   AuditEventType = "security_violation"
+	SuspiciousActivity  AuditEventType = "suspicious_activity"
+	AgentRequest        AuditEventType = "agent_request"
+	AgentResponse       AuditEventType = "agent_response"
+	AgentError          AuditEventType = "agent_error"
 )
 
 // AuditSeverity represents the severity level of an audit event.

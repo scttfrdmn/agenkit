@@ -15,19 +15,19 @@ import (
 
 // WebSocketTransport implements transport over WebSocket with automatic reconnection and keepalive.
 type WebSocketTransport struct {
-	url                string
-	conn               *websocket.Conn
-	mu                 sync.Mutex
-	maxRetries         int
-	initialRetryDelay  time.Duration
-	pingInterval       time.Duration
-	pingTimeout        time.Duration
-	maxMessageSize     int64
-	dialer             *websocket.Dialer
-	connected          bool
-	reconnectMu        sync.Mutex
-	stopPing           chan struct{}
-	pingDone           chan struct{}
+	url               string
+	conn              *websocket.Conn
+	mu                sync.Mutex
+	maxRetries        int
+	initialRetryDelay time.Duration
+	pingInterval      time.Duration
+	pingTimeout       time.Duration
+	maxMessageSize    int64
+	dialer            *websocket.Dialer
+	connected         bool
+	reconnectMu       sync.Mutex
+	stopPing          chan struct{}
+	pingDone          chan struct{}
 }
 
 const (

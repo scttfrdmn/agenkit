@@ -101,7 +101,7 @@ func (a *MockLLMBatchAgent) Process(ctx context.Context, message *agenkit.Messag
 // Real-world example: PostgreSQL bulk INSERT is 10-100x faster than
 // individual INSERTs due to reduced round-trips and transaction overhead.
 type MockDatabaseAgent struct {
-	dbCalls        atomic.Int32
+	dbCalls         atomic.Int32
 	recordsInserted atomic.Int32
 }
 
@@ -188,7 +188,7 @@ func example1LLMBatchProcessing() {
 
 	// Configure batching for LLM: larger batches, willing to wait longer
 	config := middleware.BatchingConfig{
-		MaxBatchSize: 5,                  // Batch up to 5 requests
+		MaxBatchSize: 5,                      // Batch up to 5 requests
 		MaxWaitTime:  100 * time.Millisecond, // Wait up to 100ms to fill batch
 		MaxQueueSize: 100,
 	}
@@ -252,7 +252,7 @@ func example2DatabaseBulkOperations() {
 
 	// Configure batching for database: medium batches, short wait time
 	config := middleware.BatchingConfig{
-		MaxBatchSize: 10,                 // Batch up to 10 records
+		MaxBatchSize: 10,                    // Batch up to 10 records
 		MaxWaitTime:  50 * time.Millisecond, // Wait max 50ms
 		MaxQueueSize: 200,
 	}
@@ -317,7 +317,7 @@ func example3HighThroughputAnalytics() {
 
 	// Configure batching for analytics: aggressive batching
 	config := middleware.BatchingConfig{
-		MaxBatchSize: 20,                 // Large batches for throughput
+		MaxBatchSize: 20,                    // Large batches for throughput
 		MaxWaitTime:  50 * time.Millisecond, // Quick batching
 		MaxQueueSize: 500,
 	}

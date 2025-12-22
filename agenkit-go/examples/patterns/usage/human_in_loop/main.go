@@ -1,6 +1,6 @@
 // Package main demonstrates the HumanInLoopAgent pattern.
 //
-// Human approval gates for high-stakes decisions
+// # Human approval gates for high-stakes decisions
 //
 // Use cases:
 //   - Financial approvals
@@ -93,7 +93,7 @@ func main() {
 	fmt.Println("\n📝 Example 2: Medium confidence agent (requires approval)")
 	hilAgent2, err := patterns.NewHumanInLoopAgent(&patterns.HumanInLoopConfig{
 		Agent:             agent2,
-		ApprovalThreshold: 0.8, // Agent2 has 0.7 confidence
+		ApprovalThreshold: 0.8,                               // Agent2 has 0.7 confidence
 		ApprovalFunc:      patterns.SimpleApprovalFunc(true), // Auto-approve
 	})
 	if err != nil {
@@ -113,7 +113,7 @@ func main() {
 	fmt.Println("\n📝 Example 3: Low confidence agent (requires approval, rejected)")
 	hilAgent3, err := patterns.NewHumanInLoopAgent(&patterns.HumanInLoopConfig{
 		Agent:             agent3,
-		ApprovalThreshold: 0.8, // Agent3 has 0.5 confidence
+		ApprovalThreshold: 0.8,                                // Agent3 has 0.5 confidence
 		ApprovalFunc:      patterns.SimpleApprovalFunc(false), // Auto-reject
 	})
 	if err != nil {

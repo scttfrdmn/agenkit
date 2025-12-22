@@ -244,11 +244,11 @@ func TestFallbackAgent_Capabilities(t *testing.T) {
 	caps := fallback.Capabilities()
 
 	expectedCaps := map[string]bool{
-		"cap1":             true,
-		"cap2":             true,
-		"cap3":             true,
-		"fallback":         true,
-		"retry":            true,
+		"cap1":              true,
+		"cap2":              true,
+		"cap3":              true,
+		"fallback":          true,
+		"retry":             true,
 		"high-availability": true,
 	}
 

@@ -9,8 +9,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"github.com/google/uuid"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // InteractionRecord represents a record of single agent interaction.

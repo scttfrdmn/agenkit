@@ -210,9 +210,9 @@ func (b *BedrockLLM) Complete(ctx context.Context, messages []*agenkit.Message, 
 
 	// Build converse input
 	input := &bedrockruntime.ConverseInput{
-		ModelId:          aws.String(b.modelID),
-		Messages:         bedrockMessages,
-		InferenceConfig:  inferenceConfig,
+		ModelId:         aws.String(b.modelID),
+		Messages:        bedrockMessages,
+		InferenceConfig: inferenceConfig,
 	}
 
 	// Add system prompts if present

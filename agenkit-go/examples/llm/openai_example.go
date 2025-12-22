@@ -129,9 +129,9 @@ func customParameters(llmAdapter llm.LLM) {
 	response, err := llmAdapter.Complete(
 		ctx,
 		messages,
-		llm.WithTemperature(0.9),        // Higher temperature for creativity
-		llm.WithMaxTokens(200),           // Limit response length
-		llm.WithTopP(0.95),               // Nucleus sampling
+		llm.WithTemperature(0.9),               // Higher temperature for creativity
+		llm.WithMaxTokens(200),                 // Limit response length
+		llm.WithTopP(0.95),                     // Nucleus sampling
 		llm.WithExtra("presence_penalty", 0.6), // Encourage topic diversity
 	)
 	if err != nil {

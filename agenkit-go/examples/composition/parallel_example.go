@@ -1,6 +1,3 @@
-//go:build ignore
-// +build ignore
-
 /*
 Parallel Composition Example
 
@@ -42,8 +39,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-	"github.com/scttfrdmn/agenkit/agenkit-go/composition"
+	"github.com/agenkit/agenkit-go/agenkit"
+	"github.com/agenkit/agenkit-go/composition"
 )
 
 // SentimentAgent analyzes sentiment using a specific approach
@@ -56,7 +53,7 @@ func NewSentimentAgent(name, approach string) *SentimentAgent {
 	return &SentimentAgent{name: name, approach: approach}
 }
 
-func (a *SentimentAgent) Name() string { return a.name }
+func (a *SentimentAgent) Name() string           { return a.name }
 func (a *SentimentAgent) Capabilities() []string { return []string{"sentiment_analysis"} }
 
 func (a *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -106,12 +103,10 @@ func (a *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) 
 
 // Example 1: Ensemble sentiment analysis with voting
 func example1EnsembleVoting() {
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 1: Ensemble Voting")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("
-Use case: Combine multiple sentiment models for robust predictions")
+	fmt.Println("\nUse case: Combine multiple sentiment models for robust predictions")
 
 	// Create ensemble of different approaches
 	ensemble, _ := composition.NewParallelAgent("sentiment-ensemble",
@@ -129,27 +124,21 @@ Use case: Combine multiple sentiment models for robust predictions")
 	ctx := context.Background()
 
 	for _, text := range testTexts {
-		fmt.Printf("
-Text: '%s'
-", text)
+		fmt.Printf("\nText: '%s'\n", text)
 
 		start := time.Now()
 		result, err := ensemble.Process(ctx, agenkit.NewMessage("user", text))
 		elapsed := time.Since(start)
 
 		if err != nil {
-			fmt.Printf("Error: %v
-", err)
+			fmt.Printf("Error: %v\n", err)
 			continue
 		}
 
-		fmt.Printf("Combined result (in %v):
-%s
-", elapsed.Round(time.Millisecond), result.Content)
+		fmt.Printf("Combined result (in %v):\n%s\n", elapsed.Round(time.Millisecond), result.Content)
 	}
 
-	fmt.Println("
-WHY PARALLEL ENSEMBLE?")
+	fmt.Println("\nWHY PARALLEL ENSEMBLE?")
 	fmt.Println("  - More robust than single model")
 	fmt.Println("  - Reduces individual model bias")
 	fmt.Println("  - Latency = slowest model (not sum of 3)")
@@ -166,7 +155,7 @@ func NewSearchAgent(name, source string) *SearchAgent {
 	return &SearchAgent{name: name, source: source}
 }
 
-func (a *SearchAgent) Name() string { return a.name }
+func (a *SearchAgent) Name() string           { return a.name }
 func (a *SearchAgent) Capabilities() []string { return []string{"search"} }
 
 func (a *SearchAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -195,12 +184,10 @@ func (a *SearchAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 
 // Example 2: Multi-source search
 func example2MultisourceSearch() {
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 2: Multi-Source Search")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("
-Use case: Fan-out search across multiple backends")
+	fmt.Println("\nUse case: Fan-out search across multiple backends")
 
 	// Create multi-source search
 	search, _ := composition.NewParallelAgent("multi-search",
@@ -211,9 +198,7 @@ Use case: Fan-out search across multiple backends")
 	)
 
 	query := "agenkit framework"
-	fmt.Printf("
-Query: '%s'
-", query)
+	fmt.Printf("\nQuery: '%s'\n", query)
 	fmt.Println("Searching: cache, database, API, web...")
 
 	ctx := context.Background()
@@ -222,26 +207,17 @@ Query: '%s'
 	elapsed := time.Since(start)
 
 	if err != nil {
-		fmt.Printf("Error: %v
-", err)
+		fmt.Printf("Error: %v\n", err)
 		return
 	}
 
-	fmt.Printf("
-Result (completed in %v):
-%s
-", elapsed.Round(time.Millisecond), result.Content)
+	fmt.Printf("\nResult (completed in %v):\n%s\n", elapsed.Round(time.Millisecond), result.Content)
 
-	fmt.Println("
-PERFORMANCE COMPARISON:")
-	fmt.Printf("  Parallel:   %v (actual)
-", elapsed.Round(time.Millisecond))
-	fmt.Printf("  Sequential: ~860ms (10 + 50 + 300 + 500)
-")
-	fmt.Printf("  Speedup:    ~%.1fx faster
-", 860.0/float64(elapsed.Milliseconds()))
-	fmt.Println("
-  Latency = max(all sources), not sum!")
+	fmt.Println("\nPERFORMANCE COMPARISON:")
+	fmt.Printf("  Parallel:   %v (actual)\n", elapsed.Round(time.Millisecond))
+	fmt.Printf("  Sequential: ~860ms (10 + 50 + 300 + 500)\n")
+	fmt.Printf("  Speedup:    ~%.1fx faster\n", 860.0/float64(elapsed.Milliseconds()))
+	fmt.Println("\n  Latency = max(all sources), not sum!")
 }
 
 // LLMAgent simulates an LLM with specific characteristics
@@ -256,7 +232,7 @@ func NewLLMAgent(name, model string, latency time.Duration, quality float64) *LL
 	return &LLMAgent{name: name, model: model, latency: latency, quality: quality}
 }
 
-func (a *LLMAgent) Name() string { return a.name }
+func (a *LLMAgent) Name() string           { return a.name }
 func (a *LLMAgent) Capabilities() []string { return []string{"text_generation"} }
 
 func (a *LLMAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -280,12 +256,10 @@ func (a *LLMAgent) Process(ctx context.Context, message *agenkit.Message) (*agen
 
 // Example 3: A/B testing different models
 func example3ABTesting() {
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("EXAMPLE 3: A/B Testing Models")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("
-Use case: Compare different models simultaneously")
+	fmt.Println("\nUse case: Compare different models simultaneously")
 
 	// Test multiple models at once
 	abTest, _ := composition.NewParallelAgent("ab-test",
@@ -297,29 +271,21 @@ Use case: Compare different models simultaneously")
 
 	prompt := agenkit.NewMessage("user", "Explain quantum computing")
 
-	fmt.Println("
-Testing 4 models in parallel...")
+	fmt.Println("\nTesting 4 models in parallel...")
 	ctx := context.Background()
 	start := time.Now()
 	result, err := abTest.Process(ctx, prompt)
 	elapsed := time.Since(start)
 
 	if err != nil {
-		fmt.Printf("Error: %v
-", err)
+		fmt.Printf("Error: %v\n", err)
 		return
 	}
 
-	fmt.Printf("
-Completed in %v (vs ~1.1s sequential)
-", elapsed.Round(time.Millisecond))
-	fmt.Printf("
-Combined responses:
-%s
-", result.Content)
+	fmt.Printf("\nCompleted in %v (vs ~1.1s sequential)\n", elapsed.Round(time.Millisecond))
+	fmt.Printf("\nCombined responses:\n%s\n", result.Content)
 
-	fmt.Println("
-A/B TESTING BENEFITS:")
+	fmt.Println("\nA/B TESTING BENEFITS:")
 	fmt.Println("  - Get results from all models in parallel")
 	fmt.Println("  - Compare quality, latency, cost simultaneously")
 	fmt.Println("  - Make data-driven model selection decisions")
@@ -330,12 +296,10 @@ func main() {
 	// Seed random for demonstration
 	rand.Seed(time.Now().UnixNano())
 
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("PARALLEL COMPOSITION EXAMPLES FOR AGENKIT-GO")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println("
-Parallel composition reduces latency and enables ensemble methods.")
+	fmt.Println("\nParallel composition reduces latency and enables ensemble methods.")
 	fmt.Println("Use it for independent operations that can run concurrently.")
 
 	// Run examples
@@ -344,8 +308,7 @@ Parallel composition reduces latency and enables ensemble methods.")
 	example3ABTesting()
 
 	// Summary
-	fmt.Println("
-" + strings.Repeat("=", 80))
+	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("KEY TAKEAWAYS")
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println(`

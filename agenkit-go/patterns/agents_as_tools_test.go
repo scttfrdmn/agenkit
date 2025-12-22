@@ -20,10 +20,10 @@ func TestNewAgentTool(t *testing.T) {
 		{
 			name: "valid configuration",
 			config: AgentToolConfig{
-				Agent:       NewMockAgent("test", []string{"response"}),
-				Name:        "test_tool",
-				Description: "A test tool",
-				InputKey:    "query",
+				Agent:        NewMockAgent("test", []string{"response"}),
+				Name:         "test_tool",
+				Description:  "A test tool",
+				InputKey:     "query",
 				OutputFormat: OutputFormatString,
 			},
 			expectError: false,
@@ -141,10 +141,10 @@ func TestAgentToolDescription(t *testing.T) {
 func TestAgentToolExecute(t *testing.T) {
 	agent := NewMockAgent("test_agent", []string{"Hello from agent"})
 	tool, _ := NewAgentTool(AgentToolConfig{
-		Agent:       agent,
-		Name:        "test_tool",
-		Description: "Test tool",
-		InputKey:    "query",
+		Agent:        agent,
+		Name:         "test_tool",
+		Description:  "Test tool",
+		InputKey:     "query",
 		OutputFormat: OutputFormatString,
 	})
 

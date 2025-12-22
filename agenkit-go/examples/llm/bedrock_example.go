@@ -211,8 +211,8 @@ func customParametersExample(ctx context.Context) {
 		ctx,
 		messages,
 		llm.WithTemperature(0.3), // Lower temperature for precision
-		llm.WithMaxTokens(100),    // Limit response length
-		llm.WithTopP(0.9),         // Focused sampling
+		llm.WithMaxTokens(100),   // Limit response length
+		llm.WithTopP(0.9),        // Focused sampling
 	)
 	if err != nil {
 		log.Printf("Error: %v", err)

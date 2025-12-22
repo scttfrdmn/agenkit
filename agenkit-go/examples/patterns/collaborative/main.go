@@ -81,7 +81,7 @@ func (e *EditorAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 
 // CodeReviewerAgent reviews code
 type CodeReviewerAgent struct {
-	name     string
+	name      string
 	expertise string
 }
 
@@ -136,9 +136,9 @@ func (c *CodeReviewerAgent) Process(ctx context.Context, message *agenkit.Messag
 
 // AnalystAgent provides analysis
 type AnalystAgent struct {
-	name       string
+	name        string
 	perspective string
-	approved   bool
+	approved    bool
 }
 
 func (a *AnalystAgent) Name() string {

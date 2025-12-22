@@ -140,9 +140,9 @@ func exampleProductionMiddleware() {
 			middleware.WithRetry(
 				baseLLM,
 				&middleware.RetryConfig{
-					MaxRetries:         3,
-					InitialDelay:       1.0,
-					BackoffMultiplier:  2.0,
+					MaxRetries:        3,
+					InitialDelay:      1.0,
+					BackoffMultiplier: 2.0,
 				},
 			),
 			&middleware.TimeoutConfig{

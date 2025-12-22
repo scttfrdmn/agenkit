@@ -111,14 +111,14 @@ func (e *CircuitBreakerError) Error() string {
 // - HALF_OPEN -> CLOSED: After SuccessThreshold consecutive successes
 // - HALF_OPEN -> OPEN: On any failure
 type CircuitBreakerDecorator struct {
-	agent            agenkit.Agent
-	config           CircuitBreakerConfig
-	mu               sync.Mutex
-	state            CircuitState
-	failureCount     int
-	successCount     int
-	lastFailureTime  *time.Time
-	metrics          *CircuitBreakerMetrics
+	agent           agenkit.Agent
+	config          CircuitBreakerConfig
+	mu              sync.Mutex
+	state           CircuitState
+	failureCount    int
+	successCount    int
+	lastFailureTime *time.Time
+	metrics         *CircuitBreakerMetrics
 }
 
 // Verify that CircuitBreakerDecorator implements Agent interface.

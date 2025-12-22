@@ -19,8 +19,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"github.com/google/uuid"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // Metric is the interface for evaluation metrics.

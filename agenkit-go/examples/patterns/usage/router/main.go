@@ -1,6 +1,6 @@
 // Package main demonstrates the RouterAgent pattern.
 //
-// Conditional agent selection based on input classification
+// # Conditional agent selection based on input classification
 //
 // Use cases:
 //   - Intent-based routing
@@ -41,7 +41,7 @@ func (a *SimpleAgent) Introspect() *agenkit.IntrospectionResult {
 func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Printf("   🤖 %s processing...\n", a.name)
 	time.Sleep(100 * time.Millisecond)
-	
+
 	result := agenkit.NewMessage("agent", fmt.Sprintf("%s processed: %s", a.name, message.Content))
 	return result, nil
 }

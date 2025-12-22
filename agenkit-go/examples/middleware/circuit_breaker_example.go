@@ -103,10 +103,10 @@ func example1BasicCircuitBreaker() {
 
 	// Wrap with circuit breaker
 	config := middleware.CircuitBreakerConfig{
-		FailureThreshold: 3,                // Open after 3 failures
-		RecoveryTimeout:  2 * time.Second,  // Try recovery after 2 seconds
-		SuccessThreshold: 2,                // Need 2 successes to fully recover
-		Timeout:          1 * time.Second,  // 1 second request timeout
+		FailureThreshold: 3,               // Open after 3 failures
+		RecoveryTimeout:  2 * time.Second, // Try recovery after 2 seconds
+		SuccessThreshold: 2,               // Need 2 successes to fully recover
+		Timeout:          1 * time.Second, // 1 second request timeout
 	}
 	protectedAPI := middleware.NewCircuitBreakerDecorator(api, config)
 

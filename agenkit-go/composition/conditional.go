@@ -18,9 +18,9 @@ type ConditionalRoute struct {
 
 // ConditionalAgent routes messages to different agents based on conditions.
 type ConditionalAgent struct {
-	name          string
-	routes        []ConditionalRoute
-	defaultAgent  agenkit.Agent
+	name         string
+	routes       []ConditionalRoute
+	defaultAgent agenkit.Agent
 }
 
 // Verify that ConditionalAgent implements Agent interface.
@@ -86,9 +86,9 @@ func (c *ConditionalAgent) Introspect() *agenkit.IntrospectionResult {
 		c.Capabilities(),
 		nil,
 		map[string]interface{}{
-			"route_count":    len(c.routes),
-			"route_names":    routeNames,
-			"default_agent":  c.defaultAgent.Name(),
+			"route_count":   len(c.routes),
+			"route_names":   routeNames,
+			"default_agent": c.defaultAgent.Name(),
 		},
 		nil,
 	)

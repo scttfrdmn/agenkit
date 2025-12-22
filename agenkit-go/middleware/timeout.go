@@ -32,14 +32,14 @@ func DefaultTimeoutConfig() TimeoutConfig {
 
 // TimeoutMetrics tracks timeout middleware metrics.
 type TimeoutMetrics struct {
-	mu                  sync.RWMutex
-	TotalRequests       int64
-	SuccessfulRequests  int64
-	TimedOutRequests    int64
-	FailedRequests      int64 // Failed for reasons other than timeout
-	TotalDuration       time.Duration
-	MinDuration         *time.Duration
-	MaxDuration         *time.Duration
+	mu                 sync.RWMutex
+	TotalRequests      int64
+	SuccessfulRequests int64
+	TimedOutRequests   int64
+	FailedRequests     int64 // Failed for reasons other than timeout
+	TotalDuration      time.Duration
+	MinDuration        *time.Duration
+	MaxDuration        *time.Duration
 }
 
 // NewTimeoutMetrics creates a new metrics instance.

@@ -15,11 +15,11 @@ const (
 	Version         = "0.41.0"
 
 	// Exit codes
-	ExitSuccess         = 0
-	ExitError           = 1
-	ExitProtocolError   = 2
-	ExitTimeout         = 3
-	ExitInternalError   = 4
+	ExitSuccess       = 0
+	ExitError         = 1
+	ExitProtocolError = 2
+	ExitTimeout       = 3
+	ExitInternalError = 4
 )
 
 // Protocol message structures
@@ -390,8 +390,8 @@ func executePattern(ctx context.Context, patternName string, message Message, co
 			Role:    "assistant",
 			Content: fmt.Sprintf("Mock response for %s pattern", patternName),
 			Metadata: map[string]interface{}{
-				"pattern":   patternName,
-				"mock":      true,
+				"pattern": patternName,
+				"mock":    true,
 			},
 		}, nil
 	}
@@ -483,10 +483,10 @@ func executeSequential(ctx context.Context, message Message, config map[string]i
 		Role:    "assistant",
 		Content: fmt.Sprintf("Sequential result: %s", message.Content),
 		Metadata: map[string]interface{}{
-			"agent_count":      agentCount,
-			"pipeline_length":  agentCount,
-			"execution_order":  agentNames,
-			"pipeline_stages":  pipelineStages,
+			"agent_count":     agentCount,
+			"pipeline_length": agentCount,
+			"execution_order": agentNames,
+			"pipeline_stages": pipelineStages,
 		},
 	}, nil
 }
@@ -523,11 +523,11 @@ func executeParallel(ctx context.Context, message Message, config map[string]int
 		Role:    "assistant",
 		Content: fmt.Sprintf("Parallel result: %s", message.Content),
 		Metadata: map[string]interface{}{
-			"agent_count":        agentCount,
-			"parallel_agents":    agentCount,
-			"successful_agents":  agentCount,
-			"aggregated":         true,
-			"agents_executed":    agentNames,
+			"agent_count":       agentCount,
+			"parallel_agents":   agentCount,
+			"successful_agents": agentCount,
+			"aggregated":        true,
+			"agents_executed":   agentNames,
 		},
 	}, nil
 }
@@ -633,14 +633,14 @@ func executeRouter(ctx context.Context, message Message, config map[string]inter
 	}
 
 	metadata := map[string]interface{}{
-		"routed_category":   category,
-		"routed_agent":      routedAgent,
-		"available_routes":  availableRoutes,
+		"routed_category":  category,
+		"routed_agent":     routedAgent,
+		"available_routes": availableRoutes,
 	}
 
 	return &Message{
-		Role:    "assistant",
-		Content: message.Content,
+		Role:     "assistant",
+		Content:  message.Content,
 		Metadata: metadata,
 	}, nil
 }
@@ -684,8 +684,8 @@ func executeFallback(ctx context.Context, message Message, config map[string]int
 		}
 
 		return &Message{
-			Role:    "assistant",
-			Content: message.Content,
+			Role:     "assistant",
+			Content:  message.Content,
 			Metadata: metadata,
 		}, nil
 	}
@@ -813,15 +813,15 @@ func executeOrchestration(ctx context.Context, message Message, config map[strin
 	} else if strings.Contains(content, "conditional logic") {
 		// Scenario 2: Conditional branching
 		metadata = map[string]interface{}{
-			"branch_taken":    "then",
-			"agent_executed":  "json_processor",
+			"branch_taken":   "then",
+			"agent_executed": "json_processor",
 		}
 		responseContent = "Data processed with json_processor based on condition"
 	} else if strings.Contains(content, "quality threshold") {
 		// Scenario 3: Iterative loops
 		metadata = map[string]interface{}{
-			"loop_iterations":      3,
-			"break_condition_met":  true,
+			"loop_iterations":     3,
+			"break_condition_met": true,
 		}
 		responseContent = "Quality threshold met after 3 iterations"
 	} else if strings.Contains(content, "potential failures") {
@@ -1023,18 +1023,18 @@ func executeReasoningWithTools(ctx context.Context, message Message, config map[
 	if strings.Contains(content, "analyze") && strings.Contains(content, "sales data") {
 		// Scenario 1: Basic reasoning with tool integration
 		metadata = map[string]interface{}{
-			"reasoning_steps":              6,
-			"tools_used_during_reasoning":  []string{"data_analyzer", "statistical_calculator"},
-			"tool_calls_in_reasoning":      3,
+			"reasoning_steps":             6,
+			"tools_used_during_reasoning": []string{"data_analyzer", "statistical_calculator"},
+			"tool_calls_in_reasoning":     3,
 		}
 		responseContent = "After analyzing the trend using data_analyzer and statistical_calculator, I predict next quarter will show 15% growth"
 	} else if strings.Contains(content, "launch product") && strings.Contains(content, "market data") {
 		// Scenario 2: Complex multi-step reasoning with tools
 		metadata = map[string]interface{}{
-			"reasoning_trace":    true,
-			"tools_integrated":   []string{"market_research", "competitor_analysis", "financial_calculator"},
-			"decision_made":      true,
-			"confidence":         0.85,
+			"reasoning_trace":  true,
+			"tools_integrated": []string{"market_research", "competitor_analysis", "financial_calculator"},
+			"decision_made":    true,
+			"confidence":       0.85,
 		}
 		responseContent = "Based on market research, competitor analysis, and financial calculations, I recommend launching Product A"
 	} else if strings.Contains(content, "optimize inventory") {
@@ -1055,9 +1055,9 @@ func executeReasoningWithTools(ctx context.Context, message Message, config map[
 	} else if strings.Contains(content, "roi") && strings.Contains(content, "project") {
 		// Scenario 5: Chain-of-thought with tool augmentation
 		metadata = map[string]interface{}{
-			"thinking_steps":             []string{"Step 1: Calculate initial investment", "Step 2: Estimate returns", "Step 3: Compute ROI"},
-			"tools_used":                 []string{"financial_calculator"},
-			"tool_results_incorporated":  true,
+			"thinking_steps":            []string{"Step 1: Calculate initial investment", "Step 2: Estimate returns", "Step 3: Compute ROI"},
+			"tools_used":                []string{"financial_calculator"},
+			"tool_results_incorporated": true,
 		}
 		responseContent = "Step 1: Initial investment is $100k\nStep 2: Expected returns $150k\nStep 3: ROI is 50%"
 	} else {
@@ -1113,8 +1113,8 @@ func executePlanning(ctx context.Context, message Message, config map[string]int
 			maxSteps = int(ms)
 		}
 		metadata = map[string]interface{}{
-			"steps_count":     maxSteps,
-			"plan_completed":  false,
+			"steps_count":    maxSteps,
+			"plan_completed": false,
 		}
 		responseContent = "Plan: Created 3 steps (max reached), task not fully completed"
 	} else {
@@ -1212,16 +1212,16 @@ func executeHumanInLoop(ctx context.Context, message Message, config map[string]
 	} else if strings.Contains(content, "optimize") && strings.Contains(content, "database") {
 		// Scenario 3: Human makes decision between options
 		metadata = map[string]interface{}{
-			"options_presented": 3,
+			"options_presented":  3,
 			"decision_requested": true,
-			"awaiting_choice":   true,
+			"awaiting_choice":    true,
 		}
 		responseContent = "Options: 1) Add indexes 2) Partition tables 3) Optimize queries. Please choose."
 	} else if strings.Contains(content, "diagnose") && strings.Contains(content, "unusual") {
 		// Scenario 4: Escalates on uncertainty
 		metadata = map[string]interface{}{
-			"escalated":        true,
-			"confidence":       0.6,
+			"escalated":         true,
+			"confidence":        0.6,
 			"escalation_reason": "low_confidence",
 		}
 		responseContent = "Escalating to human expert due to low confidence"
@@ -1276,9 +1276,9 @@ func executeAutonomous(ctx context.Context, message Message, config map[string]i
 			checkpointID = meta
 		}
 		metadata = map[string]interface{}{
-			"resumed_from":        checkpointID,
+			"resumed_from":         checkpointID,
 			"iterations_remaining": 10,
-			"state_restored":      true,
+			"state_restored":       true,
 		}
 		responseContent = "Resumed from " + checkpointID
 	} else if strings.Contains(content, "until complete") {
@@ -1379,8 +1379,8 @@ func executeChainOfThought(ctx context.Context, message Message, config map[stri
 	}
 
 	return &Message{
-		Role:    "assistant",
-		Content: content,
+		Role:     "assistant",
+		Content:  content,
 		Metadata: metadata,
 	}, nil
 }
@@ -1420,27 +1420,27 @@ func executeTreeOfThought(ctx context.Context, message Message, config map[strin
 
 	// Mock tree statistics matching Python's structure
 	// Python creates branching_factor nodes from root, then prunes all children
-	totalNodes := branchingFactor + 1  // Root + children
+	totalNodes := branchingFactor + 1 // Root + children
 	numLeaves := branchingFactor
-	numEvaluated := 1  // Only best leaf evaluated
-	numPruned := branchingFactor  // All children pruned
+	numEvaluated := 1            // Only best leaf evaluated
+	numPruned := branchingFactor // All children pruned
 
 	// Mock scores matching Python's exact output
 	// Python's evaluator scores vary by input length + branching factor
 	var bestScore, avgScore float64
 	inputLen := len(message.Content)
 
-	if inputLen >= 18 {  // "Solve this problem"
-		bestScore = 0.29200000000000004  // Exact Python value
+	if inputLen >= 18 { // "Solve this problem"
+		bestScore = 0.29200000000000004 // Exact Python value
 		avgScore = 0.28600000000000003  // Exact Python value
-	} else if inputLen >= 10 {  // "Test query"
+	} else if inputLen >= 10 { // "Test query"
 		bestScore = 0.276
 		avgScore = 0.27
-	} else {  // "Test" (len=4)
+	} else { // "Test" (len=4)
 		bestScore = 0.264
 		// avg varies by branching_factor
 		if branchingFactor >= 3 {
-			avgScore = 0.23466666666666666  // Exact Python value for bf=3
+			avgScore = 0.23466666666666666 // Exact Python value for bf=3
 		} else {
 			avgScore = 0.258
 		}
@@ -1450,16 +1450,16 @@ func executeTreeOfThought(ctx context.Context, message Message, config map[strin
 		Role:    "assistant",
 		Content: content,
 		Metadata: map[string]interface{}{
-			"technique": "tree_of_thought",
+			"technique":       "tree_of_thought",
 			"search_strategy": strategy,
 			"reasoning_tree_stats": map[string]interface{}{
-				"total_nodes": totalNodes,
-				"max_depth":   1,  // Python creates shallow tree in mock
-				"num_leaves":  numLeaves,
+				"total_nodes":   totalNodes,
+				"max_depth":     1, // Python creates shallow tree in mock
+				"num_leaves":    numLeaves,
 				"num_evaluated": numEvaluated,
-				"num_pruned": numPruned,
-				"avg_score": avgScore,
-				"best_score": bestScore,
+				"num_pruned":    numPruned,
+				"avg_score":     avgScore,
+				"best_score":    bestScore,
 			},
 			"reasoning_path": reasoningPath,
 			"num_steps":      len(reasoningPath),
@@ -1572,14 +1572,14 @@ func executeSelfConsistency(ctx context.Context, message Message, config map[str
 		Role:    "assistant",
 		Content: finalAnswer,
 		Metadata: map[string]interface{}{
-			"technique":          "self_consistency",
-			"num_samples":        numSamples,
-			"voting_strategy":    votingStrategy,
-			"consistency_score":  consistencyScore,
-			"samples":            samples,
-			"extracted_answers":  extractedAnswers,
-			"answer_counts":      answerCounts,
-			"base_agent":         "mock_agent",
+			"technique":         "self_consistency",
+			"num_samples":       numSamples,
+			"voting_strategy":   votingStrategy,
+			"consistency_score": consistencyScore,
+			"samples":           samples,
+			"extracted_answers": extractedAnswers,
+			"answer_counts":     answerCounts,
+			"base_agent":        "mock_agent",
 		},
 	}, nil
 }

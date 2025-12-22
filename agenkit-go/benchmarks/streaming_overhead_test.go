@@ -45,9 +45,9 @@ import (
 // StreamingChunkAgent streams a configurable number of chunks with optional delays.
 // This simulates LLM token generation or other incremental processing.
 type StreamingChunkAgent struct {
-	name         string
-	chunkCount   int
-	chunkSize    int
+	name          string
+	chunkCount    int
+	chunkSize     int
 	delayPerChunk time.Duration
 }
 
@@ -118,11 +118,11 @@ func (s *StreamingChunkAgent) Introspect() *agenkit.IntrospectionResult {
 // ============================================
 
 type StreamingMetrics struct {
-	TTFC             time.Duration // Time to first chunk
-	TotalTime        time.Duration // Total streaming time
-	ChunksReceived   int
-	BytesReceived    int
-	ChunkThroughput  float64 // Chunks per second
+	TTFC            time.Duration // Time to first chunk
+	TotalTime       time.Duration // Total streaming time
+	ChunksReceived  int
+	BytesReceived   int
+	ChunkThroughput float64 // Chunks per second
 }
 
 func measureStreaming(ctx context.Context, client *remote.RemoteAgent, message *agenkit.Message) (*StreamingMetrics, error) {

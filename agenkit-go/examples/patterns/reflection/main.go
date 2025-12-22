@@ -141,11 +141,11 @@ func main() {
 	reflectionAgent, err := patterns.NewReflectionAgent(patterns.ReflectionConfig{
 		Generator:            generator,
 		Critic:               critic,
-		MaxIterations:        5,                             // Allow up to 5 refinement iterations
-		QualityThreshold:     0.9,                           // Stop when score >= 0.9
-		ImprovementThreshold: 0.05,                          // Stop if improvement < 0.05
-		CritiqueFormat:       patterns.CritiqueStructured,   // Expect JSON critique
-		Verbose:              true,                          // Include full history in output
+		MaxIterations:        5,                           // Allow up to 5 refinement iterations
+		QualityThreshold:     0.9,                         // Stop when score >= 0.9
+		ImprovementThreshold: 0.05,                        // Stop if improvement < 0.05
+		CritiqueFormat:       patterns.CritiqueStructured, // Expect JSON critique
+		Verbose:              true,                        // Include full history in output
 	})
 	if err != nil {
 		log.Fatalf("Failed to create reflection agent: %v", err)

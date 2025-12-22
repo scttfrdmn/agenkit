@@ -397,11 +397,11 @@ func TestHumanInLoopAgent_Capabilities(t *testing.T) {
 	caps := hil.Capabilities()
 
 	expectedCaps := map[string]bool{
-		"cap1":           true,
-		"cap2":           true,
-		"human-in-loop":  true,
-		"approval":       true,
-		"oversight":      true,
+		"cap1":          true,
+		"cap2":          true,
+		"human-in-loop": true,
+		"approval":      true,
+		"oversight":     true,
 	}
 
 	if len(caps) != len(expectedCaps) {

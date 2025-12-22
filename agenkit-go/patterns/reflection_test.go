@@ -82,8 +82,8 @@ func TestNewReflectionAgent(t *testing.T) {
 		{
 			name: "nil generator",
 			config: ReflectionConfig{
-				Critic:         NewMockAgent("critic", []string{}),
-				MaxIterations:  5,
+				Critic:        NewMockAgent("critic", []string{}),
+				MaxIterations: 5,
 			},
 			expectError: true,
 			errorMsg:    "generator agent is required",
@@ -325,23 +325,23 @@ func TestReflectionMinimalImprovement(t *testing.T) {
 // TestReflectionMaxIterations tests stopping when max iterations is reached
 func TestReflectionMaxIterations(t *testing.T) {
 	generator := NewMockAgent("generator", []string{
-		"Output v1",  // Initial generation
-		"Output v2",  // Refinement after iteration 1
-		"Output v3",  // Refinement after iteration 2
-		"Output v4",  // Refinement after iteration 3 (needed but won't be used as it's the last iteration)
+		"Output v1", // Initial generation
+		"Output v2", // Refinement after iteration 1
+		"Output v3", // Refinement after iteration 2
+		"Output v4", // Refinement after iteration 3 (needed but won't be used as it's the last iteration)
 	})
 
 	critic := NewMockAgent("critic", []string{
-		`{"score": 0.5, "feedback": "Needs work"}`,   // Iteration 1
-		`{"score": 0.6, "feedback": "Better"}`,       // Iteration 2
-		`{"score": 0.7, "feedback": "Improving"}`,    // Iteration 3
+		`{"score": 0.5, "feedback": "Needs work"}`, // Iteration 1
+		`{"score": 0.6, "feedback": "Better"}`,     // Iteration 2
+		`{"score": 0.7, "feedback": "Improving"}`,  // Iteration 3
 	})
 
 	agent, _ := NewReflectionAgent(ReflectionConfig{
-		Generator:        generator,
-		Critic:           critic,
-		MaxIterations:    3,
-		QualityThreshold: 0.9,
+		Generator:            generator,
+		Critic:               critic,
+		MaxIterations:        3,
+		QualityThreshold:     0.9,
 		ImprovementThreshold: 0.05,
 	})
 
@@ -369,33 +369,33 @@ func TestParseStructuredCritique(t *testing.T) {
 	}
 
 	tests := []struct {
-		name            string
-		input           string
-		expectedScore   float64
+		name             string
+		input            string
+		expectedScore    float64
 		expectedFeedback string
 	}{
 		{
-			name:            "valid JSON",
-			input:           `{"score": 0.8, "feedback": "Good work"}`,
-			expectedScore:   0.8,
+			name:             "valid JSON",
+			input:            `{"score": 0.8, "feedback": "Good work"}`,
+			expectedScore:    0.8,
 			expectedFeedback: "Good work",
 		},
 		{
-			name:            "JSON in markdown code block",
-			input:           "```json\n{\"score\": 0.7, \"feedback\": \"Needs improvement\"}\n```",
-			expectedScore:   0.7,
+			name:             "JSON in markdown code block",
+			input:            "```json\n{\"score\": 0.7, \"feedback\": \"Needs improvement\"}\n```",
+			expectedScore:    0.7,
 			expectedFeedback: "Needs improvement",
 		},
 		{
-			name:            "score out of range - clamped to 0",
-			input:           `{"score": -0.5, "feedback": "Test"}`,
-			expectedScore:   0.0,
+			name:             "score out of range - clamped to 0",
+			input:            `{"score": -0.5, "feedback": "Test"}`,
+			expectedScore:    0.0,
 			expectedFeedback: "Test",
 		},
 		{
-			name:            "score out of range - clamped to 1",
-			input:           `{"score": 1.5, "feedback": "Test"}`,
-			expectedScore:   1.0,
+			name:             "score out of range - clamped to 1",
+			input:            `{"score": 1.5, "feedback": "Test"}`,
+			expectedScore:    1.0,
 			expectedFeedback: "Test",
 		},
 	}
@@ -554,14 +554,14 @@ func TestGetHistoryAndClearHistory(t *testing.T) {
 // TestReflectionTotalImprovement tests total improvement calculation
 func TestReflectionTotalImprovement(t *testing.T) {
 	generator := NewMockAgent("generator", []string{
-		"Output v1",  // Initial generation
-		"Output v2",  // Refinement after iteration 1
-		"Output v3",  // Refinement after iteration 2 (needed but won't be used as it reaches max iterations)
+		"Output v1", // Initial generation
+		"Output v2", // Refinement after iteration 1
+		"Output v3", // Refinement after iteration 2 (needed but won't be used as it reaches max iterations)
 	})
 
 	critic := NewMockAgent("critic", []string{
-		`{"score": 0.60, "feedback": "Needs work"}`,    // Iteration 1
-		`{"score": 0.85, "feedback": "Much better"}`,   // Iteration 2
+		`{"score": 0.60, "feedback": "Needs work"}`,  // Iteration 1
+		`{"score": 0.85, "feedback": "Much better"}`, // Iteration 2
 	})
 
 	agent, _ := NewReflectionAgent(ReflectionConfig{

@@ -37,10 +37,10 @@ func (a *SimpleAgent) Introspect() *IntrospectionResult {
 
 // AgentWithMemory is a test agent that has memory state
 type AgentWithMemory struct {
-	name          string
-	capabilities  []string
-	memory        map[string][]string
-	messageCount  int
+	name         string
+	capabilities []string
+	memory       map[string][]string
+	messageCount int
 }
 
 func NewAgentWithMemory() *AgentWithMemory {

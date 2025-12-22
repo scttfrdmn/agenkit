@@ -92,39 +92,39 @@ func main() {
 	fmt.Println("----------------------------")
 	testCases := []map[string]interface{}{
 		{
-			"input":          "What is the capital of France?",
-			"expected":       "Paris",
-			"true_label":     true,
+			"input":           "What is the capital of France?",
+			"expected":        "Paris",
+			"true_label":      true,
 			"predicted_label": true,
 		},
 		{
-			"input":          "What is 2+2?",
-			"expected":       "4",
-			"true_label":     true,
+			"input":           "What is 2+2?",
+			"expected":        "4",
+			"true_label":      true,
 			"predicted_label": true,
 		},
 		{
-			"input":          "What is the largest ocean?",
-			"expected":       "Pacific",
-			"true_label":     true,
+			"input":           "What is the largest ocean?",
+			"expected":        "Pacific",
+			"true_label":      true,
 			"predicted_label": true,
 		},
 		{
-			"input":          "Tell me about the Python programming language",
-			"expected":       "Python",
-			"true_label":     true,
+			"input":           "Tell me about the Python programming language",
+			"expected":        "Python",
+			"true_label":      true,
 			"predicted_label": true,
 		},
 		{
-			"input":          "Explain photosynthesis",
-			"expected":       "photosynthesis",
-			"true_label":     true,
+			"input":           "Explain photosynthesis",
+			"expected":        "photosynthesis",
+			"true_label":      true,
 			"predicted_label": true,
 		},
 		{
-			"input":          "What is the meaning of life?",
-			"expected":       "42", // Agent will fail this
-			"true_label":     false,
+			"input":           "What is the meaning of life?",
+			"expected":        "42", // Agent will fail this
+			"true_label":      false,
 			"predicted_label": false,
 		},
 	}

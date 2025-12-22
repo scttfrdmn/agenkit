@@ -60,12 +60,12 @@ func GetMeter(name string) metric.Meter {
 
 // MetricsMiddleware wraps an agent with metrics collection.
 type MetricsMiddleware struct {
-	agent             agenkit.Agent
-	meter             metric.Meter
-	requestCounter    metric.Int64Counter
-	errorCounter      metric.Int64Counter
-	latencyHistogram  metric.Float64Histogram
-	messageSizeHist   metric.Int64Histogram
+	agent            agenkit.Agent
+	meter            metric.Meter
+	requestCounter   metric.Int64Counter
+	errorCounter     metric.Int64Counter
+	latencyHistogram metric.Float64Histogram
+	messageSizeHist  metric.Int64Histogram
 }
 
 // NewMetricsMiddleware creates a new metrics middleware.

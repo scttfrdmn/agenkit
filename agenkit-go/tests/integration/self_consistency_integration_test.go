@@ -13,10 +13,10 @@ import (
 
 // MockVariableAgent returns varying responses for testing
 type MockVariableAgent struct {
-	responses   []string
-	shouldFail  bool
-	callCount   int
-	mu          sync.Mutex
+	responses  []string
+	shouldFail bool
+	callCount  int
+	mu         sync.Mutex
 }
 
 func NewMockVariableAgent(responses []string) *MockVariableAgent {

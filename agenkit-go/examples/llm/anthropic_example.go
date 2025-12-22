@@ -124,9 +124,9 @@ func customParameters(llmAdapter llm.LLM) {
 	response, err := llmAdapter.Complete(
 		ctx,
 		messages,
-		llm.WithTemperature(0.3),  // Lower temperature for precision
-		llm.WithMaxTokens(100),     // Limit response length
-		llm.WithTopP(0.9),          // Focused sampling
+		llm.WithTemperature(0.3), // Lower temperature for precision
+		llm.WithMaxTokens(100),   // Limit response length
+		llm.WithTopP(0.9),        // Focused sampling
 	)
 	if err != nil {
 		log.Fatalf("Error: %v", err)

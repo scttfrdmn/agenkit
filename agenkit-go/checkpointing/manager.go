@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"github.com/google/uuid"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // CheckpointManager manages checkpoints for long-running agents.

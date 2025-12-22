@@ -53,10 +53,10 @@ func main() {
 
 	auditLogger, err := safety.NewSecurityAuditLogger(
 		logFile,
-		1024*1024,             // 1MB max size
-		3,                     // Keep 3 backups
-		safety.SeverityInfo,   // Log all events
-		true,                  // Also log to console
+		1024*1024,           // 1MB max size
+		3,                   // Keep 3 backups
+		safety.SeverityInfo, // Log all events
+		true,                // Also log to console
 	)
 	if err != nil {
 		log.Fatalf("Failed to create audit logger: %v", err)

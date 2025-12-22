@@ -26,7 +26,7 @@ import (
 //	messages, err := strategy.Select(ctx, memory, "session-123", 10)
 //	// Returns: [summary_message, msg1, msg2, msg3, msg4, msg5]
 type SummarizationStrategy struct {
-	recentCount     int
+	recentCount    int
 	summarizeOlder bool
 }
 
@@ -45,7 +45,7 @@ func NewSummarizationStrategy(recentCount int, summarizeOlder bool) *Summarizati
 		recentCount = 10
 	}
 	return &SummarizationStrategy{
-		recentCount:     recentCount,
+		recentCount:    recentCount,
 		summarizeOlder: summarizeOlder,
 	}
 }

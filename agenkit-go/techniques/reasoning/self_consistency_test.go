@@ -163,9 +163,9 @@ func TestSelfConsistencyWeightedVoting(t *testing.T) {
 	// "Paris" has short responses (total weight: 60)
 	// "London" has one long response (weight: 100)
 	mockAgent := NewMockAgent([]string{
-		"The answer is Paris.",                    // ~20 chars
-		"The answer is Paris.",                    // ~20 chars
-		"The answer is Paris.",                    // ~20 chars
+		"The answer is Paris.", // ~20 chars
+		"The answer is Paris.", // ~20 chars
+		"The answer is Paris.", // ~20 chars
 		"After careful consideration and analysis of the question, I believe London is correct.", // ~100 chars
 	})
 

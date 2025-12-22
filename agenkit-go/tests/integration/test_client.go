@@ -17,8 +17,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/remote"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 func main() {

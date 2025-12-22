@@ -404,13 +404,13 @@ func TestSupervisorAgent_Capabilities(t *testing.T) {
 	caps := supervisor.Capabilities()
 
 	expectedCaps := map[string]bool{
-		"planning":      true,
-		"synthesis":     true,
-		"coding":        true,
-		"testing":       true,
-		"supervisor":    true,
-		"hierarchical":  true,
-		"coordination":  true,
+		"planning":     true,
+		"synthesis":    true,
+		"coding":       true,
+		"testing":      true,
+		"supervisor":   true,
+		"hierarchical": true,
+		"coordination": true,
 	}
 
 	if len(caps) != len(expectedCaps) {

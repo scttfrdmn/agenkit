@@ -292,7 +292,8 @@ func (o *OpenAILLM) convertMessages(messages []*agenkit.Message) []openai.ChatCo
 // Unwrap returns the underlying OpenAI client.
 //
 // Returns:
-//   The *openai.Client for direct API access
+//
+//	The *openai.Client for direct API access
 //
 // Example:
 //

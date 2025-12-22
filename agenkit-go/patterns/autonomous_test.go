@@ -346,8 +346,8 @@ func TestAutonomousAgent_GetProgress(t *testing.T) {
 	goal2 := agent.AddGoal("Goal 2", 1)
 
 	// Set progress
-	goal1.Progress = 0.5  // 50% complete
-	goal2.Progress = 1.0  // 100% complete
+	goal1.Progress = 0.5 // 50% complete
+	goal2.Progress = 1.0 // 100% complete
 
 	// Average: (0.5 + 1.0) / 2 = 0.75 = 75%
 	progress := agent.GetProgress()

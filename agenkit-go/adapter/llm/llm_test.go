@@ -101,9 +101,9 @@ func TestCallOptions(t *testing.T) {
 
 // MockLLM is a mock implementation for testing.
 type MockLLM struct {
-	model             string
-	completeFunc      func(context.Context, []*agenkit.Message, ...CallOption) (*agenkit.Message, error)
-	streamFunc        func(context.Context, []*agenkit.Message, ...CallOption) (<-chan *agenkit.Message, error)
+	model        string
+	completeFunc func(context.Context, []*agenkit.Message, ...CallOption) (*agenkit.Message, error)
+	streamFunc   func(context.Context, []*agenkit.Message, ...CallOption) (<-chan *agenkit.Message, error)
 }
 
 func (m *MockLLM) Complete(ctx context.Context, messages []*agenkit.Message, opts ...CallOption) (*agenkit.Message, error) {

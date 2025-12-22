@@ -85,14 +85,14 @@ func (a *AnthropicLLM) Model() string {
 
 // anthropicRequest is the request structure for Anthropic's Messages API.
 type anthropicRequest struct {
-	Model       string                   `json:"model"`
-	Messages    []anthropicMessage       `json:"messages"`
-	MaxTokens   int                      `json:"max_tokens"`
-	Temperature *float64                 `json:"temperature,omitempty"`
-	TopP        *float64                 `json:"top_p,omitempty"`
-	System      string                   `json:"system,omitempty"`
-	Stream      bool                     `json:"stream,omitempty"`
-	Extra       map[string]interface{}   `json:"-"` // Not serialized directly
+	Model       string                 `json:"model"`
+	Messages    []anthropicMessage     `json:"messages"`
+	MaxTokens   int                    `json:"max_tokens"`
+	Temperature *float64               `json:"temperature,omitempty"`
+	TopP        *float64               `json:"top_p,omitempty"`
+	System      string                 `json:"system,omitempty"`
+	Stream      bool                   `json:"stream,omitempty"`
+	Extra       map[string]interface{} `json:"-"` // Not serialized directly
 }
 
 // anthropicMessage is a message in Anthropic's format.
@@ -103,14 +103,14 @@ type anthropicMessage struct {
 
 // anthropicResponse is the response structure from Anthropic's Messages API.
 type anthropicResponse struct {
-	ID           string                   `json:"id"`
-	Type         string                   `json:"type"`
-	Role         string                   `json:"role"`
-	Content      []anthropicContentBlock  `json:"content"`
-	Model        string                   `json:"model"`
-	StopReason   string                   `json:"stop_reason"`
-	StopSequence *string                  `json:"stop_sequence,omitempty"`
-	Usage        anthropicUsage           `json:"usage"`
+	ID           string                  `json:"id"`
+	Type         string                  `json:"type"`
+	Role         string                  `json:"role"`
+	Content      []anthropicContentBlock `json:"content"`
+	Model        string                  `json:"model"`
+	StopReason   string                  `json:"stop_reason"`
+	StopSequence *string                 `json:"stop_sequence,omitempty"`
+	Usage        anthropicUsage          `json:"usage"`
 }
 
 // anthropicContentBlock represents a content block in the response.
@@ -127,12 +127,12 @@ type anthropicUsage struct {
 
 // anthropicStreamEvent represents a server-sent event in the stream.
 type anthropicStreamEvent struct {
-	Type         string                  `json:"type"`
-	Message      *anthropicResponse      `json:"message,omitempty"`
-	Index        int                     `json:"index,omitempty"`
-	ContentBlock *anthropicContentBlock  `json:"content_block,omitempty"`
-	Delta        *anthropicDelta         `json:"delta,omitempty"`
-	Usage        *anthropicUsage         `json:"usage,omitempty"`
+	Type         string                 `json:"type"`
+	Message      *anthropicResponse     `json:"message,omitempty"`
+	Index        int                    `json:"index,omitempty"`
+	ContentBlock *anthropicContentBlock `json:"content_block,omitempty"`
+	Delta        *anthropicDelta        `json:"delta,omitempty"`
+	Usage        *anthropicUsage        `json:"usage,omitempty"`
 }
 
 // anthropicDelta represents a streaming delta.
@@ -406,7 +406,8 @@ func (a *AnthropicLLM) makeRequest(ctx context.Context, req anthropicRequest) (*
 // Unwrap returns the underlying HTTP client.
 //
 // Returns:
-//   The *http.Client for direct API access
+//
+//	The *http.Client for direct API access
 //
 // Example:
 //

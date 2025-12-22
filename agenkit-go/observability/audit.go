@@ -2,6 +2,7 @@
 package observability
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"

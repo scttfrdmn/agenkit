@@ -35,9 +35,10 @@ jobs:
         run: |
           ruff check agenkit/ tests/ examples/ --output-format=github
 
-      - name: Run Ruff (formatter check)
-        run: |
-          ruff format --check agenkit/ tests/ examples/
+      # Ruff formatter check disabled - Black handles formatting (ruff and Black have incompatible preferences)
+      # - name: Run Ruff (formatter check)
+      #   run: |
+      #     ruff format --check agenkit/ tests/ examples/
 
       - name: Run Black (formatter check)
         run: |

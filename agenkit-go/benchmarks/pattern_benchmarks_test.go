@@ -335,7 +335,7 @@ func BenchmarkMemoryHierarchy(b *testing.B) {
 
 		// Pre-populate
 		for i := 0; i < 10; i++ {
-			_ = memory.Store(ctx, "test content", map[string]interface{}{"priority": 0.7}, 0.7, "")
+			_, _ = memory.Store(ctx, "test content", map[string]interface{}{"priority": 0.7}, 0.7, "")
 		}
 
 		b.ResetTimer()

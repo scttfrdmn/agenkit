@@ -32,6 +32,13 @@ func (e *echoAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit
 	return agenkit.NewMessage("assistant", msg.Content), nil
 }
 
+func (e *echoAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    e.Name(),
+		Capabilities: e.Capabilities(),
+	}
+}
+
 // echoLLMClient implements LLMClient for Conversational and Planning patterns
 type echoLLMClient struct{}
 
@@ -556,4 +563,11 @@ func (c *echoClassifier) Process(ctx context.Context, msg *agenkit.Message) (*ag
 
 func (c *echoClassifier) Classify(ctx context.Context, msg *agenkit.Message) (string, error) {
 	return "route1", nil
+}
+
+func (c *echoClassifier) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    c.Name(),
+		Capabilities: c.Capabilities(),
+	}
 }

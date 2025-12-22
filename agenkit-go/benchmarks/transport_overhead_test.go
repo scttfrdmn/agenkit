@@ -57,6 +57,13 @@ func (a *EchoAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 	return agenkit.NewMessage("agent", "Echo: "+message.Content), nil
 }
 
+func (a *EchoAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 // SlowAgent simulates processing time.
 type SlowAgent struct {
 	delayMs int
@@ -73,6 +80,13 @@ func (a *SlowAgent) Capabilities() []string {
 func (a *SlowAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(time.Duration(a.delayMs) * time.Millisecond)
 	return agenkit.NewMessage("agent", "Processed: "+message.Content), nil
+}
+
+func (a *SlowAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
 }
 
 // ============================================

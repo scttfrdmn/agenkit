@@ -15,7 +15,6 @@ Setup:
 """
 
 import asyncio
-import os
 
 from agenkit.adapters.llm import OllamaLLM
 from agenkit.interfaces import Message

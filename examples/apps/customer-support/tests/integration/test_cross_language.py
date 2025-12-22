@@ -1,9 +1,11 @@
 """Integration tests for Python-Go cross-language communication."""
 
-import pytest
 import asyncio
-from agenkit.interfaces import Message
+
+import pytest
+
 from agenkit.adapters.python import RemoteAgent
+from agenkit.interfaces import Message
 
 
 @pytest.mark.integration

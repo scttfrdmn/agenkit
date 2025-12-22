@@ -29,9 +29,8 @@ Run: python examples/patterns/agents-as-tools-pattern.py
 
 import asyncio
 
-from agenkit.interfaces import Agent, Message
+from agenkit.interfaces import Message
 from agenkit.patterns import agent_as_tool
-
 
 # Specialist Agents (Mock implementations for demonstration)
 
@@ -57,7 +56,7 @@ class CodeSpecialistAgent:
 
         # Simulate specialized code assistance
         if "function" in query.lower() or "implement" in query.lower():
-            response = f"""🔧 Code Specialist Response:
+            response = """🔧 Code Specialist Response:
 
 ```python
 def parse_csv_file(filepath: str) -> list[dict]:

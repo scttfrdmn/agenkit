@@ -13,15 +13,11 @@ Run: python examples/patterns/09_reasoning_with_tools.py
 """
 
 import asyncio
-import json
-from datetime import datetime
 
 from agenkit.interfaces import Agent, Message, Tool, ToolResult
 from agenkit.patterns.reasoning_with_tools import (
-    ReasoningStepType,
     ReasoningWithToolsAgent,
 )
-
 
 # ============================================================================
 # Mock Tools for Examples

@@ -14,7 +14,6 @@ This example uses mock implementations for demonstration.
 """
 
 import asyncio
-from typing import Any
 
 from agenkit import Message
 from agenkit.patterns import (

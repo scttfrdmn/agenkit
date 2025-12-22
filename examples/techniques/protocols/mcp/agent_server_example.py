@@ -32,10 +32,11 @@ Requirements:
     pip install agenkit
 """
 
-import asyncio
 import argparse
+import asyncio
+
 from agenkit import Agent, Message
-from agenkit.techniques.protocols.mcp import MCPAdapter, AgentMCPServer
+from agenkit.techniques.protocols.mcp import AgentMCPServer
 
 
 class MathAgent(Agent):
@@ -142,7 +143,7 @@ Just send me a mathematical expression and I'll calculate it!
         except Exception as e:
             return Message(
                 role="assistant",
-                content=f"Error processing '{content}': {str(e)}",
+                content=f"Error processing '{content}': {e!s}",
                 metadata={
                     "error": str(e),
                     "agent": self.name
@@ -182,7 +183,7 @@ class DataProcessingAgent(Agent):
                 if isinstance(data, dict):
                     response = f"Analyzed dictionary: {len(data)} keys found - {list(data.keys())}"
                 elif isinstance(data, list):
-                    response = f"Analyzed list: {len(data)} items, types: {set(type(x).__name__ for x in data)}"
+                    response = f"Analyzed list: {len(data)} items, types: { {type(x).__name__ for x in data} }"
                 else:
                     response = f"Data type: {type(data).__name__}"
 
@@ -213,7 +214,7 @@ class DataProcessingAgent(Agent):
         except Exception as e:
             return Message(
                 role="assistant",
-                content=f"Error: {str(e)}",
+                content=f"Error: {e!s}",
                 metadata={"error": str(e), "agent": self.name}
             )
 
@@ -233,7 +234,7 @@ async def run_agent_server(agent: Agent, transport: str = "stdio", host: str = "
 
     # Print info
     print("=" * 60)
-    print(f"Agenkit Agent MCP Server")
+    print("Agenkit Agent MCP Server")
     print("=" * 60)
     print(f"Agent: {agent.name}")
     print(f"Capabilities: {', '.join(agent.capabilities)}")

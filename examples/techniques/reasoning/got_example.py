@@ -16,8 +16,9 @@ Requirements:
 """
 
 import asyncio
+
 from agenkit import Message
-from agenkit.techniques.reasoning import GraphOfThought, NodeType, EdgeType
+from agenkit.techniques.reasoning import GraphOfThought
 
 
 # Mock LLM for demonstration
@@ -95,7 +96,7 @@ async def basic_example():
     response = await agent.process(Message(role="user", content=problem))
 
     print(f"\nProblem: {problem}")
-    print(f"\n📊 Graph Statistics:")
+    print("\n📊 Graph Statistics:")
     print(f"   Nodes: {response.metadata['num_nodes']}")
     print(f"   Edges: {response.metadata['num_edges']}")
     print(f"   Node Types: {response.metadata['node_types']}")
@@ -104,7 +105,7 @@ async def basic_example():
     print(f"\n🎯 Final Answer: {response.content}")
 
     graph = response.metadata['graph']
-    print(f"\n📋 Graph Structure:")
+    print("\n📋 Graph Structure:")
     for node_id, node in graph.nodes.items():
         print(f"   Node {node_id} [{node.node_type.value}]: {node.content[:50]}...")
 
@@ -129,18 +130,18 @@ async def path_aggregation_example():
 
     print(f"\nProblem: {problem}")
 
-    print(f"\n📍 Path-Based Aggregation:")
-    print(f"   Strategy: Find best complete reasoning path")
+    print("\n📍 Path-Based Aggregation:")
+    print("   Strategy: Find best complete reasoning path")
     print(f"   Answer: {response_path.content}")
     print(f"   Paths found: {len(response_path.metadata['reasoning_paths'])}")
 
-    print(f"\n📊 Node-Based Aggregation:")
-    print(f"   Strategy: Aggregate most frequently used nodes")
+    print("\n📊 Node-Based Aggregation:")
+    print("   Strategy: Aggregate most frequently used nodes")
     print(f"   Answer: {response_node.content}")
 
-    print(f"\n💡 Choose aggregation based on your needs:")
-    print(f"   - Path-based: Best for finding coherent reasoning chains")
-    print(f"   - Node-based: Best for identifying key recurring concepts")
+    print("\n💡 Choose aggregation based on your needs:")
+    print("   - Path-based: Best for finding coherent reasoning chains")
+    print("   - Node-based: Best for identifying key recurring concepts")
 
 
 async def reasoning_paths_example():
@@ -189,18 +190,18 @@ async def cycle_detection_example():
     agent_with_cycles = GraphOfThought(llm=llm, max_nodes=8, allow_cycles=True)
     response_yes = await agent_with_cycles.process(Message(role="user", content="Test"))
 
-    print(f"\n❌ Without Cycles (allow_cycles=False):")
-    print(f"   Prevents circular reasoning")
+    print("\n❌ Without Cycles (allow_cycles=False):")
+    print("   Prevents circular reasoning")
     print(f"   Has cycles: {response_no.metadata['has_cycles']}")
 
-    print(f"\n✓ With Cycles (allow_cycles=True):")
-    print(f"   Allows thoughts to reinforce each other")
+    print("\n✓ With Cycles (allow_cycles=True):")
+    print("   Allows thoughts to reinforce each other")
     print(f"   Has cycles: {response_yes.metadata['has_cycles']}")
 
-    print(f"\n💡 Cycle detection helps identify:")
-    print(f"   - Circular reasoning flaws")
-    print(f"   - Mutually reinforcing concepts")
-    print(f"   - Complex dependency patterns")
+    print("\n💡 Cycle detection helps identify:")
+    print("   - Circular reasoning flaws")
+    print("   - Mutually reinforcing concepts")
+    print("   - Complex dependency patterns")
 
 
 async def graph_statistics_example():
@@ -220,17 +221,17 @@ async def graph_statistics_example():
 
     print(f"\nProblem: {problem}")
 
-    print(f"\n📊 Detailed Statistics:")
+    print("\n📊 Detailed Statistics:")
     print(f"   Total Nodes: {stats['num_nodes']}")
     print(f"   Total Edges: {stats['num_edges']}")
     print(f"   Average Confidence: {stats['avg_confidence']:.2f}")
     print(f"   Has Cycles: {stats['has_cycles']}")
 
-    print(f"\n📋 Node Distribution:")
+    print("\n📋 Node Distribution:")
     for node_type, count in stats['node_types'].items():
         print(f"   {node_type.capitalize()}: {count}")
 
-    print(f"\n🔗 Edge Distribution:")
+    print("\n🔗 Edge Distribution:")
     for edge_type, count in stats['edge_types'].items():
         print(f"   {edge_type.capitalize()}: {count}")
 
@@ -238,7 +239,7 @@ async def graph_statistics_example():
     paths = response.metadata['reasoning_paths']
     if paths:
         avg_path_length = sum(len(p) for p in paths) / len(paths)
-        print(f"\n🔍 Path Analysis:")
+        print("\n🔍 Path Analysis:")
         print(f"   Number of paths: {len(paths)}")
         print(f"   Average path length: {avg_path_length:.1f} nodes")
         print(f"   Shortest path: {min(len(p) for p in paths)} nodes")
@@ -258,8 +259,8 @@ async def multi_hop_reasoning_example():
     response = await agent.process(Message(role="user", content=problem))
 
     print(f"\nProblem: {problem}")
-    print(f"\n🔗 Multi-Hop Reasoning:")
-    print(f"   Graph-of-Thought excels at chaining multiple logical steps")
+    print("\n🔗 Multi-Hop Reasoning:")
+    print("   Graph-of-Thought excels at chaining multiple logical steps")
 
     graph = response.metadata['graph']
     print(f"\n📊 Graph has {graph.statistics()['num_nodes']} nodes connected by")

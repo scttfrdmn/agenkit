@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import Any
 
 from agenkit.interfaces import Agent, Message
-from agenkit.patterns import ParallelPattern, ReflectionAgent
 
 
 class Severity(Enum):
@@ -528,13 +527,9 @@ class ConsensusBuilder:
         minor: list[CodeIssue],
     ) -> ReviewDecision:
         """Determine final review decision based on issues."""
-        if blockers:
+        if blockers or len(major) > 2:
             return ReviewDecision.REQUEST_CHANGES
-        elif len(major) > 2:
-            return ReviewDecision.REQUEST_CHANGES
-        elif major:
-            return ReviewDecision.APPROVE_WITH_COMMENTS
-        elif minor:
+        elif major or minor:
             return ReviewDecision.APPROVE_WITH_COMMENTS
         else:
             return ReviewDecision.APPROVE
@@ -605,7 +600,7 @@ class ReviewCoordinator:
             Final review report
         """
         if self.verbose:
-            print(f"\n🔍 Starting Code Review")
+            print("\n🔍 Starting Code Review")
             print(f"📊 Reviewers: {len(self.reviewers)}")
             print(f"📝 Code length: {len(code)} characters\n")
 

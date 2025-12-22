@@ -278,7 +278,7 @@ async def demo_basic_hierarchy():
     print(f"\n✅ Response (delegated to {result2.metadata.get('specialist', 'supervisor')}):")
     print(result2.content[:200] + "..." if len(result2.content) > 200 else result2.content)
 
-    print(f"\n📊 Statistics:")
+    print("\n📊 Statistics:")
     print(f"  Code specialist tasks: {code_agent.tasks_handled}")
     print(f"  Data specialist tasks: {data_agent.tasks_handled}")
     print(f"  Research specialist tasks: {research_agent.tasks_handled}")
@@ -298,7 +298,7 @@ async def demo_tool_output_formats():
     )
 
     result_str = await tool_str.execute(query="Write a sort function")
-    print(f"\n📝 String format (default):")
+    print("\n📝 String format (default):")
     print(f"  Type: {type(result_str)}")
     print(f"  Content: {result_str[:80]}...")
 
@@ -313,7 +313,7 @@ async def demo_tool_output_formats():
     )
 
     result_dict = await tool_dict.execute(query="Write a sort function")
-    print(f"\n📝 Dictionary format (with metadata):")
+    print("\n📝 Dictionary format (with metadata):")
     print(f"  Type: {type(result_dict)}")
     print(f"  Keys: {list(result_dict.keys())}")
     print(f"  Metadata: {result_dict.get('metadata')}")
@@ -325,7 +325,7 @@ async def demo_tool_output_formats():
     )
 
     result_msg = await tool_msg.execute(query="Write a sort function")
-    print(f"\n📝 Message format:")
+    print("\n📝 Message format:")
     print(f"  Type: {type(result_msg)}")
     print(f"  Role: {result_msg.role}")
     print(f"  Has metadata: {bool(result_msg.metadata)}")
@@ -387,10 +387,10 @@ async def demo_direct_invocation():
     # Call tool directly
     result = await tool.execute(task="Write a Fibonacci function")
 
-    print(f"\n✅ Result:")
+    print("\n✅ Result:")
     print(result[:200] + "..." if len(result) > 200 else result)
 
-    print(f"\n💡 Direct invocation useful for:")
+    print("\n💡 Direct invocation useful for:")
     print("  • Testing specialist agents")
     print("  • Programmatic routing (you control delegation)")
     print("  • Integration with existing systems")

@@ -16,6 +16,7 @@ Requirements:
 """
 
 import asyncio
+
 from agenkit import Message
 from agenkit.techniques.reasoning import LeastToMost
 
@@ -91,11 +92,11 @@ async def basic_example():
     response = await ltm.process(Message(role="user", content=query))
 
     print(f"\nOriginal Problem: {query}")
-    print(f"\nDecomposed Subproblems:")
+    print("\nDecomposed Subproblems:")
     for i, subproblem in enumerate(response.metadata['subproblems'], 1):
         print(f"  {i}. {subproblem}")
 
-    print(f"\nSubproblem Solutions:")
+    print("\nSubproblem Solutions:")
     for i, solution in enumerate(response.metadata['subproblem_solutions'], 1):
         print(f"  {i}. {solution}")
 
@@ -116,12 +117,12 @@ async def composition_example():
     response = await ltm.process(Message(role="user", content=query))
 
     print(f"\nProblem: {query}")
-    print(f"\nWith Composition Enabled (compose_solutions=True):")
-    print(f"  Each subproblem uses previous solutions as context")
+    print("\nWith Composition Enabled (compose_solutions=True):")
+    print("  Each subproblem uses previous solutions as context")
 
     for i, (problem, solution) in enumerate(zip(
         response.metadata['subproblems'],
-        response.metadata['subproblem_solutions']
+        response.metadata['subproblem_solutions'], strict=False
     ), 1):
         print(f"\n  Step {i}: {problem}")
         print(f"  → Solution: {solution}")
@@ -146,19 +147,19 @@ async def custom_decomposer_example():
     query = "Choose destination then Book transportation then Book accommodation then Plan activities"
     response = await ltm.process(Message(role="user", content=query))
 
-    print(f"\nOriginal Problem:")
+    print("\nOriginal Problem:")
     print(f"  {query}")
 
-    print(f"\nCustom Decomposer splits on 'then':")
+    print("\nCustom Decomposer splits on 'then':")
     for i, subproblem in enumerate(response.metadata['subproblems'], 1):
         solution = response.metadata['subproblem_solutions'][i-1]
         print(f"  {i}. {subproblem}")
         print(f"     → {solution}")
 
-    print(f"\n💡 Custom decomposers are useful for:")
-    print(f"   - Domain-specific problem structures")
-    print(f"   - Deterministic decomposition strategies")
-    print(f"   - Avoiding LLM calls for decomposition")
+    print("\n💡 Custom decomposers are useful for:")
+    print("   - Domain-specific problem structures")
+    print("   - Deterministic decomposition strategies")
+    print("   - Avoiding LLM calls for decomposition")
 
 
 async def no_composition_example():
@@ -181,20 +182,20 @@ async def no_composition_example():
 
     print(f"\nProblem: {problem}")
 
-    print(f"\n📊 WITH Composition (compose_solutions=True):")
-    print(f"   Each step sees previous solutions")
-    print(f"   Better for problems where steps build on each other")
+    print("\n📊 WITH Composition (compose_solutions=True):")
+    print("   Each step sees previous solutions")
+    print("   Better for problems where steps build on each other")
     print(f"   Final answer: {response_with.content}")
 
-    print(f"\n📊 WITHOUT Composition (compose_solutions=False):")
-    print(f"   Each step solved independently")
-    print(f"   Faster, better for independent subproblems")
+    print("\n📊 WITHOUT Composition (compose_solutions=False):")
+    print("   Each step solved independently")
+    print("   Faster, better for independent subproblems")
     print(f"   Final answer: {response_without.content}")
 
-    print(f"\n💡 Use composition when:")
-    print(f"   - Later steps depend on earlier results")
-    print(f"   - Building up complex solutions incrementally")
-    print(f"   - Context from previous steps is valuable")
+    print("\n💡 Use composition when:")
+    print("   - Later steps depend on earlier results")
+    print("   - Building up complex solutions incrementally")
+    print("   - Context from previous steps is valuable")
 
 
 async def complexity_comparison():
@@ -214,30 +215,30 @@ async def complexity_comparison():
     ltm = LeastToMost(llm=llm_ltm, max_subproblems=5)
     ltm_response = await ltm.process(Message(role="user", content=problem))
 
-    print(f"\nComplex Problem:")
+    print("\nComplex Problem:")
     print(f"  {problem}")
 
-    print(f"\n❌ Direct Solving (Single LLM Call):")
+    print("\n❌ Direct Solving (Single LLM Call):")
     print(f"   Response: {direct_response}")
-    print(f"   Issues:")
-    print(f"   - May miss important details")
-    print(f"   - No step-by-step reasoning")
-    print(f"   - Hard to verify completeness")
+    print("   Issues:")
+    print("   - May miss important details")
+    print("   - No step-by-step reasoning")
+    print("   - Hard to verify completeness")
 
-    print(f"\n✅ Least-to-Most Decomposition:")
+    print("\n✅ Least-to-Most Decomposition:")
     print(f"   {len(ltm_response.metadata['subproblems'])} subproblems identified:")
     for i, (sub, sol) in enumerate(zip(
         ltm_response.metadata['subproblems'],
-        ltm_response.metadata['subproblem_solutions']
+        ltm_response.metadata['subproblem_solutions'], strict=False
     ), 1):
         print(f"   {i}. {sub}")
         print(f"      → {sol}")
 
-    print(f"\n   Benefits:")
-    print(f"   - Systematic coverage of all aspects")
-    print(f"   - Clear reasoning chain")
-    print(f"   - Each step can be verified")
-    print(f"   - Easier to debug if something is wrong")
+    print("\n   Benefits:")
+    print("   - Systematic coverage of all aspects")
+    print("   - Clear reasoning chain")
+    print("   - Each step can be verified")
+    print("   - Easier to debug if something is wrong")
 
 
 async def when_to_use():

@@ -1,6 +1,7 @@
 """Integration tests for Python-Go cross-language communication."""
 
 import pytest
+
 from agenkit.agent import RemoteAgent
 from agenkit.interfaces import Message
 

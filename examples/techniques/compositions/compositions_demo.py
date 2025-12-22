@@ -23,20 +23,19 @@ For production systems, use the full patterns from agenkit.patterns.
 """
 
 import asyncio
+
 from agenkit import Message
 from agenkit.techniques.compositions import (
-    SimpleApprovalTool,
-    simple_approval,
-    SimpleRAG,
+    ActorCriticVariation,
     CitedRAG,
-    Document,
     ContextOptimizer,
-    TaskQueue,
-    PriorityTaskExecutor,
-    GoalMonitor,
+    Document,
     ExplorationStrategy,
+    GoalMonitor,
     LearningFromFeedback,
-    ActorCriticVariation
+    SimpleApprovalTool,
+    SimpleRAG,
+    TaskQueue,
 )
 
 
@@ -126,7 +125,7 @@ async def demo_simple_rag():
         content="What is quantum computing?"
     ))
 
-    print(f"Query: What is quantum computing?")
+    print("Query: What is quantum computing?")
     print(f"\nRetrieved {response.metadata['num_sources']} documents")
     print(f"Answer: {response.content}")
     print("\nNote: This is ~40 LOC. Frameworks market this as 'advanced RAG'.")
@@ -160,9 +159,9 @@ async def demo_cited_rag():
         content="What are the effects of aspirin?"
     ))
 
-    print(f"Query: What are the effects of aspirin?")
+    print("Query: What are the effects of aspirin?")
     print(f"\nAnswer: {response.content}")
-    print(f"\nCitations:")
+    print("\nCitations:")
     for citation in response.metadata['citations']:
         print(f"  {citation}")
     print("\nNote: This is ~50 LOC. Books call this 'high-fidelity context engineering'.\n")
@@ -339,7 +338,7 @@ async def demo_learning_feedback():
         content="How do I sort a dictionary in Python?"
     ))
     print(f"  Similar examples used: {response2.metadata['similar_examples']}")
-    print(f"  Previous interaction was retrieved as context!\n")
+    print("  Previous interaction was retrieved as context!\n")
 
     # Memory stats
     stats = learner.get_memory_stats()

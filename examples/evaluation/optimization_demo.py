@@ -85,8 +85,8 @@ async def demo_random_search():
     test_cases = [{"input": f"Question {i}", "expected": "correct answer"} for i in range(10)]
 
     print("\n🔍 Running random search...")
-    print(f"  Search space: temperature=[0.0, 1.0], top_p=[0.5, 1.0]")
-    print(f"  Iterations: 20")
+    print("  Search space: temperature=[0.0, 1.0], top_p=[0.5, 1.0]")
+    print("  Iterations: 20")
 
     result = await optimizer.optimize(test_cases, n_iterations=20)
 
@@ -126,10 +126,10 @@ async def demo_bayesian_optimization():
     test_cases = [{"input": f"Question {i}", "expected": "correct answer"} for i in range(10)]
 
     print("\n🧠 Running Bayesian optimization...")
-    print(f"  Algorithm: Gaussian Process with Expected Improvement")
-    print(f"  Initial samples: 5 (random)")
-    print(f"  Optimization samples: 15 (intelligent)")
-    print(f"  Total iterations: 20")
+    print("  Algorithm: Gaussian Process with Expected Improvement")
+    print("  Initial samples: 5 (random)")
+    print("  Optimization samples: 15 (intelligent)")
+    print("  Total iterations: 20")
 
     result = await optimizer.optimize(test_cases, n_iterations=20)
 
@@ -180,13 +180,13 @@ Please answer the following question."""
     test_cases = [{"input": f"Question {i}", "expected": "correct answer"} for i in range(5)]
 
     print("\n📝 Running grid search over prompt variations...")
-    print(f"  Template variables: role (3 options), instructions (2 options)")
-    print(f"  Total combinations: 3 × 2 = 6")
+    print("  Template variables: role (3 options), instructions (2 options)")
+    print("  Total combinations: 3 × 2 = 6")
 
     result = await optimizer.optimize(test_cases, strategy="grid")
 
     print("\n📊 Results:")
-    print(f"  Best prompt config:")
+    print("  Best prompt config:")
     for key, value in result.best_config.items():
         print(f"    {key}: {value}")
     print(f"  Best score: {result.best_scores['accuracy']:.3f}")
@@ -232,17 +232,17 @@ async def demo_prompt_optimization_genetic():
     test_cases = [{"input": f"Question {i}", "expected": "correct answer"} for i in range(5)]
 
     print("\n🧬 Running genetic algorithm for prompt evolution...")
-    print(f"  Search space: 4 × 4 × 3 = 48 combinations")
-    print(f"  Population size: 10")
-    print(f"  Generations: 5")
-    print(f"  Mutation rate: 20%")
+    print("  Search space: 4 × 4 × 3 = 48 combinations")
+    print("  Population size: 10")
+    print("  Generations: 5")
+    print("  Mutation rate: 20%")
 
     result = await optimizer.optimize(
         test_cases, strategy="genetic", population_size=10, n_generations=5, mutation_rate=0.2
     )
 
     print("\n📊 Results:")
-    print(f"  Best prompt config:")
+    print("  Best prompt config:")
     for key, value in result.best_config.items():
         print(f"    {key}: {value}")
     print(f"  Best score: {result.best_scores['accuracy']:.3f}")
@@ -283,10 +283,10 @@ async def demo_complex_search_space():
     space.add_categorical("model", ["gpt-4", "claude-3", "gemini"])
 
     print("\n🔧 Defined search space:")
-    print(f"  Continuous: temperature, top_p")
-    print(f"  Discrete: max_tokens (4 values)")
-    print(f"  Integer: n_examples (0-5)")
-    print(f"  Categorical: model (3 options)")
+    print("  Continuous: temperature, top_p")
+    print("  Discrete: max_tokens (4 values)")
+    print("  Integer: n_examples (0-5)")
+    print("  Categorical: model (3 options)")
 
     print("\n🎲 Sampling 5 random configurations:")
     for i in range(5):

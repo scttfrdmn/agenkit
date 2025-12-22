@@ -1,10 +1,11 @@
 """Unit tests for FAQAgent."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from agenkit.interfaces import Message
+import pytest
 from python.agents import FAQAgent
+
+from agenkit.interfaces import Message
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,7 @@
 """Writer agent that synthesizes research into reports."""
 
 import logging
+
 from agenkit.adapters.llm import OpenAILLM
 from agenkit.interfaces import Agent, Message
 
@@ -57,7 +58,7 @@ Use markdown formatting."""
             logger.error(f"Writing error: {e}")
             return Message(
                 role="assistant",
-                content=f"# Research Report: {query}\n\nError synthesizing findings: {str(e)}",
+                content=f"# Research Report: {query}\n\nError synthesizing findings: {e!s}",
                 metadata={"type": "error"}
             )
 

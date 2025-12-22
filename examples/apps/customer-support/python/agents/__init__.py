@@ -3,4 +3,4 @@
 from .faq_agent import FAQAgent
 from .router_agent import RouterAgent
 
-__all__ = ["RouterAgent", "FAQAgent"]
+__all__ = ["FAQAgent", "RouterAgent"]

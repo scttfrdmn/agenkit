@@ -275,7 +275,7 @@ class ExpressionEvaluatorTool(Tool):
                             args = [safe_eval(arg) for arg in node.args]
                             return func(*args)
                         raise ValueError(f"Function '{func_name}' is not allowed")
-                    raise ValueError(f"Unsupported function call")
+                    raise ValueError("Unsupported function call")
                 else:
                     raise ValueError(f"Unsupported expression: {type(node).__name__}")
 

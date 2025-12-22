@@ -25,7 +25,6 @@ Run: python examples/patterns/08_memory_hierarchy.py
 import asyncio
 from datetime import datetime, timedelta, timezone
 
-from agenkit.interfaces import Message
 from agenkit.patterns import (
     LongTermMemory,
     MemoryEntry,

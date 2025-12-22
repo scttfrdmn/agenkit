@@ -2,14 +2,13 @@
 
 import logging
 from datetime import datetime
-from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
-
-from agenkit.interfaces import Message
 from python.agents.orchestrator import ReviewOrchestrator
 from python.config.settings import Settings
+
+from agenkit.interfaces import Message
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,7 @@ class ReviewRequest(BaseModel):
     """Code review request."""
 
     code: str
-    language: Optional[str] = None
+    language: str | None = None
     review_type: str = "general"
 
 
@@ -93,7 +92,7 @@ def create_app(settings: Settings) -> FastAPI:
 
         except Exception as e:
             logger.error(f"Review failed: {e}")
-            raise HTTPException(status_code=500, detail=f"Review failed: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Review failed: {e!s}")
 
     @app.post("/webhook/github")
     async def github_webhook(request: Request):
@@ -149,7 +148,7 @@ def main():
 
     uvicorn.run(
         app,
-        host="0.0.0.0",
+        host="0.0.0.0",  # noqa: S104 - Example server must bind to all interfaces
         port=settings.python_api_port,
         log_level=settings.log_level.lower(),
     )

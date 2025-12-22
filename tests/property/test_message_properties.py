@@ -141,9 +141,9 @@ def test_metadata_type_preservation(metadata):
         elif isinstance(original_value, int):
             assert isinstance(deserialized_value, int), f"Int type for {key} should be preserved"
         elif isinstance(original_value, float):
-            assert isinstance(deserialized_value, float), (
-                f"Float type for {key} should be preserved"
-            )
+            assert isinstance(
+                deserialized_value, float
+            ), f"Float type for {key} should be preserved"
         elif isinstance(original_value, str):
             assert isinstance(deserialized_value, str), f"String type for {key} should be preserved"
 
@@ -168,9 +168,9 @@ def test_serialized_size_is_reasonable(message):
 
     actual_size = len(serialized)
 
-    assert actual_size <= expected_max_size, (
-        f"Serialized size {actual_size} too large (expected <={expected_max_size})"
-    )
+    assert (
+        actual_size <= expected_max_size
+    ), f"Serialized size {actual_size} too large (expected <={expected_max_size})"
 
 
 # ============================================
@@ -215,9 +215,9 @@ def test_unicode_content_preservation(unicode_content):
     deserialized = deserialize_message(serialized)
 
     # Property: Unicode characters should be preserved exactly
-    assert deserialized.content == unicode_content, (
-        f"Unicode content not preserved: expected {unicode_content!r}, got {deserialized.content!r}"
-    )
+    assert (
+        deserialized.content == unicode_content
+    ), f"Unicode content not preserved: expected {unicode_content!r}, got {deserialized.content!r}"
 
 
 # ============================================
@@ -267,9 +267,9 @@ def test_large_metadata_handling(num_keys):
     deserialized = deserialize_message(serialized)
 
     # Property: All metadata keys should be preserved
-    assert len(deserialized.metadata) == num_keys, (
-        f"Expected {num_keys} keys, got {len(deserialized.metadata)}"
-    )
+    assert (
+        len(deserialized.metadata) == num_keys
+    ), f"Expected {num_keys} keys, got {len(deserialized.metadata)}"
 
     for i in range(num_keys):
         key = f"key_{i}"

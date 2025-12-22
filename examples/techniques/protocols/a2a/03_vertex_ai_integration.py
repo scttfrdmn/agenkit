@@ -134,7 +134,8 @@ async def vertex_ai_integration_example():
     print("DEPLOYMENT INSTRUCTIONS")
     print("=" * 70)
 
-    print("""
+    print(
+        """
 To deploy this agent to Vertex AI:
 
 1. Install required dependencies:
@@ -176,14 +177,16 @@ For production deployment:
 - Configure authentication (service account)
 - Set up monitoring and logging
 - Implement retry logic and error handling
-""")
+"""
+    )
 
     # Create convenience function example
     print("\n" + "=" * 70)
     print("CONVENIENCE FUNCTION EXAMPLE")
     print("=" * 70)
 
-    print("""
+    print(
+        """
 You can also use the convenience function:
 
     from agenkit.techniques.protocols.a2a import create_vertex_agent
@@ -197,7 +200,8 @@ You can also use the convenience function:
 
     # Deploy
     await adapter.deploy(port=8080)
-""")
+"""
+    )
 
     print("\n" + "=" * 70)
     print("Example completed successfully!")

@@ -30,6 +30,13 @@ func (a *AgentV1) Capabilities() []string {
 	return []string{"qa"}
 }
 
+func (a *AgentV1) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 func (a *AgentV1) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simple responses
 	query := strings.ToLower(message.Content)
@@ -55,6 +62,13 @@ func (a *AgentV2) Name() string {
 
 func (a *AgentV2) Capabilities() []string {
 	return []string{"qa"}
+}
+
+func (a *AgentV2) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
 }
 
 func (a *AgentV2) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

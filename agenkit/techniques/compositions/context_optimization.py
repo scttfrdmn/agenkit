@@ -183,9 +183,9 @@ Summary:"""
                 {
                     "optimized": True,
                     "compressed_tokens": compressed_tokens,
-                    "compression_ratio": original_tokens / compressed_tokens
-                    if compressed_tokens > 0
-                    else 1.0,
+                    "compression_ratio": (
+                        original_tokens / compressed_tokens if compressed_tokens > 0 else 1.0
+                    ),
                 }
             )
 

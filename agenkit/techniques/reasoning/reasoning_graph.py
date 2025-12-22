@@ -356,7 +356,9 @@ class ReasoningGraph:
             "node_types": node_types,
             "edge_types": edge_types,
             "has_cycles": self.has_cycle(),
-            "avg_confidence": sum(n.confidence for n in self.nodes.values()) / len(self.nodes)
-            if self.nodes
-            else 0.0,
+            "avg_confidence": (
+                sum(n.confidence for n in self.nodes.values()) / len(self.nodes)
+                if self.nodes
+                else 0.0
+            ),
         }

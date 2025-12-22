@@ -344,7 +344,8 @@ async def when_to_use():
     print("When to Use Plan-and-Solve")
     print("=" * 60)
 
-    print("""
+    print(
+        """
 ✅ BEST FOR:
   - Complex multi-step problems
   - Projects requiring strategic planning
@@ -376,7 +377,8 @@ async def when_to_use():
   - vs LeastToMost: Strategic planning vs problem decomposition
   - vs TreeOfThought: Single plan vs exploring multiple paths
   - vs PlanningAgent: Prompting technique vs agent orchestration pattern
-""")
+"""
+    )
 
 
 async def main():

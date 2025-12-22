@@ -220,7 +220,8 @@ async def custom_handlers_example():
     print("AGENT COLLABORATION PATTERN")
     print("=" * 70)
 
-    print("""
+    print(
+        """
 Custom handlers enable sophisticated agent collaboration:
 
 1. Data Pipeline Pattern:
@@ -260,7 +261,8 @@ Example workflow:
        action="retrieve",
        content={"key": "batch-1"}
    )
-""")
+"""
+    )
 
     print("\n" + "=" * 70)
     print("Example completed successfully!")

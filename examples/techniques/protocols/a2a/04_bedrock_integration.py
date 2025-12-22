@@ -144,7 +144,8 @@ async def bedrock_integration_example():
     print("DEPLOYMENT INSTRUCTIONS")
     print("=" * 70)
 
-    print("""
+    print(
+        """
 To deploy this agent to AWS Bedrock:
 
 1. Install required dependencies:
@@ -205,14 +206,16 @@ For production deployment:
 - Set up CloudWatch monitoring and logging
 - Implement API Gateway rate limiting
 - Use AWS Secrets Manager for credentials
-""")
+"""
+    )
 
     # Create convenience function example
     print("\n" + "=" * 70)
     print("CONVENIENCE FUNCTION EXAMPLE")
     print("=" * 70)
 
-    print("""
+    print(
+        """
 You can also use the convenience function:
 
     from agenkit.techniques.protocols.a2a import create_bedrock_agent
@@ -225,14 +228,16 @@ You can also use the convenience function:
 
     # Deploy
     await adapter.deploy(port=8080)
-""")
+"""
+    )
 
     # Show integration architecture
     print("\n" + "=" * 70)
     print("INTEGRATION ARCHITECTURE")
     print("=" * 70)
 
-    print("""
+    print(
+        """
 Architecture Overview:
 
 ┌─────────────────┐
@@ -259,7 +264,8 @@ Benefits:
 - Standard A2A protocol for interoperability
 - Easy to test locally before deployment
 - Supports all Bedrock features (guardrails, knowledge bases, etc.)
-""")
+"""
+    )
 
     print("\n" + "=" * 70)
     print("Example completed successfully!")

@@ -259,7 +259,8 @@ async def when_to_use():
     print("When to Use Least-to-Most")
     print("=" * 60)
 
-    print("""
+    print(
+        """
 ✅ BEST FOR:
   - Multi-step math problems (algebra, calculus)
   - Compositional reasoning (building complex from simple)
@@ -283,7 +284,8 @@ async def when_to_use():
   - Chain-of-Thought: Use CoT as the base LLM for reasoning
   - Self-Consistency: Sample multiple decompositions, vote on consensus
   - Tree-of-Thought: Explore multiple decomposition strategies
-""")
+"""
+    )
 
 
 async def main():

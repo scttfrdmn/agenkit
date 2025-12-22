@@ -143,7 +143,9 @@ class MCPServer:
 
         return decorator
 
-    async def handle_request(self, request: MCPRequest) -> MCPResponse:  # noqa: PLR0911 - MCP protocol dispatcher with multiple method handlers
+    async def handle_request(
+        self, request: MCPRequest
+    ) -> MCPResponse:  # noqa: PLR0911 - MCP protocol dispatcher with multiple method handlers
         """
         Handle an MCP request.
 
@@ -294,14 +296,16 @@ class MCPServer:
             return create_response(
                 request_id=request.id,
                 result={
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": str(result) if not isinstance(result, dict) else None,
-                        }
-                    ]
-                    if result is not None
-                    else [],
+                    "content": (
+                        [
+                            {
+                                "type": "text",
+                                "text": str(result) if not isinstance(result, dict) else None,
+                            }
+                        ]
+                        if result is not None
+                        else []
+                    ),
                     "isError": False,
                 },
             )

@@ -282,7 +282,8 @@ async def when_to_use():
     print("When to Use Graph-of-Thought")
     print("=" * 60)
 
-    print("""
+    print(
+        """
 ✅ BEST FOR:
   - Multi-hop reasoning problems
   - Problems with complex interdependencies
@@ -323,7 +324,8 @@ async def when_to_use():
   - vs Tree-of-Thought: Graph allows cycles, multiple paths to same conclusion
   - vs Chain-of-Thought: Graph explores multiple interconnected lines of thought
   - vs Least-to-Most: Graph for synthesis, LtM for decomposition
-""")
+"""
+    )
 
 
 async def main():

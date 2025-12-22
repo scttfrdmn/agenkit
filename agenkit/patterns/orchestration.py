@@ -454,7 +454,9 @@ class OrchestrationAgent(Agent):
             caps.update(agent.capabilities)
         return list(caps)
 
-    async def process(self, message: Message) -> Message:  # noqa: PLR0915 - Complex workflow orchestration requires many statements
+    async def process(
+        self, message: Message
+    ) -> Message:  # noqa: PLR0915 - Complex workflow orchestration requires many statements
         """
         Execute workflow stages.
 

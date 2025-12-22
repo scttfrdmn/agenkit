@@ -148,11 +148,17 @@ func (a *ConsoleAuditAdapter) LogEvent(event *AuditEvent) error {
 
 	for i, part := range parts {
 		if i > 0 {
-			fmt.Fprint(stream, " ")
+			if _, err := fmt.Fprint(stream, " "); err != nil {
+				return fmt.Errorf("failed to write separator: %w", err)
+			}
 		}
-		fmt.Fprint(stream, part)
+		if _, err := fmt.Fprint(stream, part); err != nil {
+			return fmt.Errorf("failed to write part: %w", err)
+		}
 	}
-	fmt.Fprintln(stream)
+	if _, err := fmt.Fprintln(stream); err != nil {
+		return fmt.Errorf("failed to write newline: %w", err)
+	}
 
 	return nil
 }

@@ -51,7 +51,7 @@ func (e *EditorAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 	round := 0
 	content := message.Content
 	if strings.Contains(content, "Round") {
-		fmt.Sscanf(content, "=== Collaboration Round %d ===", &round)
+		_, _ = fmt.Sscanf(content, "=== Collaboration Round %d ===", &round)
 	}
 
 	var feedback string
@@ -106,7 +106,7 @@ func (c *CodeReviewerAgent) Process(ctx context.Context, message *agenkit.Messag
 	// Simulate review based on round
 	round := 0
 	if strings.Contains(message.Content, "Round") {
-		fmt.Sscanf(message.Content, "=== Collaboration Round %d ===", &round)
+		_, _ = fmt.Sscanf(message.Content, "=== Collaboration Round %d ===", &round)
 	}
 
 	var review string

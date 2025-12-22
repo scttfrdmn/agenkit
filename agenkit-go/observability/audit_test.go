@@ -70,14 +70,16 @@ func TestFileAuditAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
-	tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	if err := tmpFile.Close(); err != nil {
+		t.Fatalf("Failed to close temp file: %v", err)
+	}
 
 	adapter, err := NewFileAuditAdapter(tmpFile.Name(), true)
 	if err != nil {
 		t.Fatalf("Failed to create file adapter: %v", err)
 	}
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	event := NewAuditEvent(ConfigurationChange, SeverityInfo, "Configuration updated")
 	event.Actor = "admin"

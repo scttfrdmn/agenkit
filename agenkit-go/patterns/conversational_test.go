@@ -396,7 +396,7 @@ func TestConversationalAgent_GetHistoryReturnsACopy(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "Test"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "Test"})
 
 	// Get history and modify it
 	history := agent.GetHistory()
@@ -467,7 +467,7 @@ func TestConversationalAgent_EmptyMaxHistory(t *testing.T) {
 	}
 
 	// System takes all space
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "A"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "A"})
 
 	// Should only have system message
 	if agent.HistoryLength() != 1 {
@@ -509,12 +509,12 @@ func TestConversationalAgent_HistoryLengthProperty(t *testing.T) {
 		t.Errorf("expected 0 messages initially, got %d", agent.HistoryLength())
 	}
 
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "A"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "A"})
 	if agent.HistoryLength() != 2 {
 		t.Errorf("expected 2 messages after 1 turn, got %d", agent.HistoryLength())
 	}
 
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "B"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "B"})
 	if agent.HistoryLength() != 4 {
 		t.Errorf("expected 4 messages after 2 turns, got %d", agent.HistoryLength())
 	}

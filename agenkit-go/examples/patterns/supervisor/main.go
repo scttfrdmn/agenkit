@@ -34,6 +34,13 @@ func (c *CoderAgent) Capabilities() []string {
 	return []string{"coding", "implementation"}
 }
 
+func (c *CoderAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    c.Name(),
+		Capabilities: c.Capabilities(),
+	}
+}
+
 func (c *CoderAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Println("   💻 Coder implementing...")
 
@@ -76,6 +83,13 @@ func (t *TesterAgent) Name() string {
 
 func (t *TesterAgent) Capabilities() []string {
 	return []string{"testing", "quality-assurance"}
+}
+
+func (t *TesterAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    t.Name(),
+		Capabilities: t.Capabilities(),
+	}
 }
 
 func (t *TesterAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -139,6 +153,13 @@ func (r *ReviewerAgent) Capabilities() []string {
 	return []string{"review", "quality-check"}
 }
 
+func (r *ReviewerAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    r.Name(),
+		Capabilities: r.Capabilities(),
+	}
+}
+
 func (r *ReviewerAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Println("   👀 Reviewer analyzing...")
 
@@ -186,6 +207,13 @@ func (s *SoftwarePlannerAgent) Name() string {
 
 func (s *SoftwarePlannerAgent) Capabilities() []string {
 	return []string{"planning", "synthesis", "coordination"}
+}
+
+func (s *SoftwarePlannerAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    s.Name(),
+		Capabilities: s.Capabilities(),
+	}
 }
 
 func (s *SoftwarePlannerAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -297,6 +325,13 @@ func (m *MockLLMAgent) Name() string {
 
 func (m *MockLLMAgent) Capabilities() []string {
 	return []string{"llm"}
+}
+
+func (m *MockLLMAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
 }
 
 func (m *MockLLMAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -418,6 +453,13 @@ func (b *BadPlannerAgent) Name() string {
 
 func (b *BadPlannerAgent) Capabilities() []string {
 	return []string{"planning"}
+}
+
+func (b *BadPlannerAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    b.Name(),
+		Capabilities: b.Capabilities(),
+	}
 }
 
 func (b *BadPlannerAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

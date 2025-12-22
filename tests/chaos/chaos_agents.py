@@ -189,7 +189,7 @@ class StreamingChaosAgent(StreamingAgent):
 
             # Random failures (before yielding)
             if (
-                self._chaos_mode == ChaosMode.INTERMITTENT and random.random() < self._failure_rate
+                self._chaos_mode == ChaosMode.INTERMITTENT and random.random() < self._failure_rate  # noqa: S311 - Pseudo-random acceptable for chaos testing
             ):
                 raise ConnectionError(f"Intermittent stream failure at chunk {chunk_count}")
 

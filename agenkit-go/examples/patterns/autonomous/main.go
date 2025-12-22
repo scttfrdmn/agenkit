@@ -26,7 +26,7 @@ import (
 
 // Example 1: Basic autonomous agent
 func exampleBasic() error {
-	fmt.Println("\n=== Example 1: Basic Autonomous Agent ===\n")
+	fmt.Println("\n=== Example 1: Basic Autonomous Agent ===")
 
 	agent := patterns.NewAutonomousAgent("Complete research project", 10)
 
@@ -43,7 +43,7 @@ func exampleBasic() error {
 		fmt.Printf("  - %s (priority: %d)\n", goal.Description, goal.Priority)
 	}
 
-	fmt.Println("\nRunning agent...\n")
+	fmt.Println("\nRunning agent...")
 	result, err := agent.Run(context.Background())
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ func exampleBasic() error {
 
 // Example 2: Custom worker function
 func exampleCustomWorker() error {
-	fmt.Println("\n=== Example 2: Custom Worker Function ===\n")
+	fmt.Println("\n=== Example 2: Custom Worker Function ===")
 
 	agent := patterns.NewAutonomousAgent("Build web application", 15)
 
@@ -91,7 +91,7 @@ func exampleCustomWorker() error {
 		return fmt.Sprintf("%s: %s", goal.Description, workDone), nil
 	})
 
-	fmt.Println("Running agent with custom worker...\n")
+	fmt.Println("Running agent with custom worker...")
 	result, err := agent.Run(context.Background())
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func exampleCustomWorker() error {
 
 // Example 3: Priority-based goal selection
 func examplePriority() error {
-	fmt.Println("\n=== Example 3: Priority-Based Goal Selection ===\n")
+	fmt.Println("\n=== Example 3: Priority-Based Goal Selection ===")
 
 	agent := patterns.NewAutonomousAgent("Incident response", 12)
 
@@ -123,7 +123,7 @@ func examplePriority() error {
 		fmt.Printf("  - %s [priority: %d]\n", goal.Description, goal.Priority)
 	}
 
-	fmt.Println("\nAgent will work on highest priority goals first...\n")
+	fmt.Println("\nAgent will work on highest priority goals first...")
 
 	result, err := agent.Run(context.Background())
 	if err != nil {
@@ -144,7 +144,7 @@ func examplePriority() error {
 
 // Example 4: Stop condition
 func exampleStopCondition() error {
-	fmt.Println("\n=== Example 4: Stop Condition ===\n")
+	fmt.Println("\n=== Example 4: Stop Condition ===")
 
 	agent := patterns.NewAutonomousAgent("Long-running task", 100)
 	agent.AddGoal("Process data", 10)
@@ -164,7 +164,7 @@ func exampleStopCondition() error {
 
 	fmt.Println("Target: Process 50 items")
 	fmt.Println("Max iterations: 100")
-	fmt.Println("\nRunning with stop condition...\n")
+	fmt.Println("\nRunning with stop condition...")
 
 	result, err := agent.Run(context.Background())
 	if err != nil {
@@ -172,14 +172,14 @@ func exampleStopCondition() error {
 	}
 
 	fmt.Printf("Stopped after %d iterations (target reached)\n", result.Iterations)
-	fmt.Println("Well before max_iterations=100!\n")
+	fmt.Println("Well before max_iterations=100!")
 
 	return nil
 }
 
 // Example 5: Manual stop
 func exampleManualStop() error {
-	fmt.Println("\n=== Example 5: Manual Stop ===\n")
+	fmt.Println("\n=== Example 5: Manual Stop ===")
 
 	agent := patterns.NewAutonomousAgent("Continuous monitoring", 1000)
 	agent.AddGoal("Monitor system health", 10)
@@ -192,7 +192,7 @@ func exampleManualStop() error {
 	}()
 
 	fmt.Println("Starting continuous monitoring...")
-	fmt.Println("(will be stopped externally after 200ms)\n")
+	fmt.Println("(will be stopped externally after 200ms)")
 
 	result, err := agent.Run(context.Background())
 	if err != nil {
@@ -200,14 +200,14 @@ func exampleManualStop() error {
 	}
 
 	fmt.Printf("\nAgent stopped after %d iterations\n", result.Iterations)
-	fmt.Println("(manually stopped before reaching max_iterations=1000)\n")
+	fmt.Println("(manually stopped before reaching max_iterations=1000)")
 
 	return nil
 }
 
 // Example 6: Progress tracking
 func exampleProgressTracking() error {
-	fmt.Println("\n=== Example 6: Progress Tracking ===\n")
+	fmt.Println("\n=== Example 6: Progress Tracking ===")
 
 	agent := patterns.NewAutonomousAgent("Software release", 20)
 
@@ -216,7 +216,7 @@ func exampleProgressTracking() error {
 	agent.AddGoal("Documentation", 5)
 	agent.AddGoal("Release notes", 3)
 
-	fmt.Println("Tracking progress during execution:\n")
+	fmt.Println("Tracking progress during execution:")
 
 	// Run agent
 	result, err := agent.Run(context.Background())
@@ -228,14 +228,14 @@ func exampleProgressTracking() error {
 	fmt.Printf("  Iterations: %d\n", result.Iterations)
 	fmt.Printf("  Goals completed: %d/%d\n", result.GoalsCompleted, len(agent.GetGoals()))
 
-	fmt.Println("\n✓ Release complete!\n")
+	fmt.Println("\n✓ Release complete!")
 
 	return nil
 }
 
 // Example 7: Goal lifecycle
 func exampleGoalLifecycle() error {
-	fmt.Println("\n=== Example 7: Goal Lifecycle ===\n")
+	fmt.Println("\n=== Example 7: Goal Lifecycle ===")
 
 	agent := patterns.NewAutonomousAgent("Study project lifecycle", 6)
 
@@ -248,7 +248,7 @@ func exampleGoalLifecycle() error {
 	fmt.Printf("  Progress: %.0f%%\n", goal.Progress*100)
 	fmt.Printf("  Created at: %s\n\n", goal.CreatedAt.Format(time.RFC3339))
 
-	fmt.Println("Running agent...\n")
+	fmt.Println("Running agent...")
 	result, err := agent.Run(context.Background())
 	if err != nil {
 		return err
@@ -264,7 +264,7 @@ func exampleGoalLifecycle() error {
 
 // Example 8: Multiple goals with different completion times
 func exampleGoalCompletionTimes() error {
-	fmt.Println("\n=== Example 8: Goal Completion Times ===\n")
+	fmt.Println("\n=== Example 8: Goal Completion Times ===")
 
 	agent := patterns.NewAutonomousAgent("Varied task durations", 30)
 
@@ -277,7 +277,7 @@ func exampleGoalCompletionTimes() error {
 		fmt.Printf("  - %s\n", goal.Description)
 	}
 
-	fmt.Println("\nRunning agent...\n")
+	fmt.Println("\nRunning agent...")
 	result, err := agent.Run(context.Background())
 	if err != nil {
 		return err

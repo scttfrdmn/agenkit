@@ -223,7 +223,7 @@ func (s *SupervisorAgent) Process(ctx context.Context, message *agenkit.Message)
 
 func main() {
 	fmt.Println("Agents-as-Tools Pattern Example: Hierarchical Delegation")
-	fmt.Println("========================================================\n")
+	fmt.Println("========================================================")
 
 	// Create specialist agents
 	codeAgent := &CodeSpecialistAgent{name: "CodeSpecialist"}
@@ -261,7 +261,7 @@ func main() {
 	supervisor.RegisterTool(codeTool)
 	supervisor.RegisterTool(dataTool)
 
-	fmt.Println("Supervisor registered with specialist tools\n")
+	fmt.Println("Supervisor registered with specialist tools")
 	fmt.Println("=" + strings.Repeat("=", 70))
 
 	// Test cases demonstrating delegation

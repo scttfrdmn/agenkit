@@ -67,7 +67,7 @@ func simulateAgentPerformance(config map[string]interface{}) float64 {
 
 func main() {
 	fmt.Println("Bayesian Optimization Example: Agent Hyperparameter Tuning")
-	fmt.Println("===========================================================\n")
+	fmt.Println("===========================================================")
 
 	// Step 1: Define the search space
 	fmt.Println("Step 1: Defining Search Space")
@@ -97,7 +97,7 @@ func main() {
 	fmt.Println("Step 2: Defining Objective Function")
 	fmt.Println("------------------------------------")
 	fmt.Println("Objective: Maximize agent performance score")
-	fmt.Println("(simulates training and evaluating an agent)\n")
+	fmt.Println("(simulates training and evaluating an agent)")
 
 	objective := func(ctx context.Context, config map[string]interface{}) (float64, error) {
 		score := simulateAgentPerformance(config)
@@ -132,7 +132,7 @@ func main() {
 
 	// Step 4: Analyze results
 	fmt.Println("Step 4: Optimization Results")
-	fmt.Println("----------------------------\n")
+	fmt.Println("----------------------------")
 
 	fmt.Printf("Duration: %v\n", result.Duration())
 	fmt.Printf("Total Iterations: %d\n", result.NIterations)

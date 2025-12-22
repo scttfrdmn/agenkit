@@ -77,7 +77,7 @@ func main() {
 	
 	fmt.Println("✓ MetricsCollector initialized (thread-safe)")
 	fmt.Println("✓ SessionRecorder configured with file storage")
-	fmt.Println("✓ RegressionDetector configured with baseline\n")
+	fmt.Println("✓ RegressionDetector configured with baseline")
 
 	// Step 2: Wrap agent for automatic monitoring
 	fmt.Println("Step 2: Wrapping Agent for Monitoring")
@@ -85,12 +85,12 @@ func main() {
 	agent := &ProductionAgent{}
 	monitoredAgent := recorder.Wrap(agent)
 	
-	fmt.Println("✓ Agent wrapped - all interactions will be recorded\n")
+	fmt.Println("✓ Agent wrapped - all interactions will be recorded")
 
 	// Step 3: Simulate production traffic
 	fmt.Println("Step 3: Simulating Production Traffic")
 	fmt.Println("--------------------------------------")
-	fmt.Println("Processing 50 user requests...\n")
+	fmt.Println("Processing 50 user requests...")
 	
 	for i := 0; i < 50; i++ {
 		sessionID := fmt.Sprintf("prod-session-%03d", i+1)
@@ -146,7 +146,7 @@ func main() {
 		}
 	}
 	
-	fmt.Println("\n✓ Processing complete\n")
+	fmt.Println("\n✓ Processing complete")
 
 	// Step 4: Real-time statistics
 	fmt.Println("Step 4: Real-time Performance Statistics")
@@ -196,7 +196,7 @@ func main() {
 	regressions := detector.Detect(currentEvaluation, true)
 	
 	if len(regressions) == 0 {
-		fmt.Println("✓ No regressions detected - performance is stable\n")
+		fmt.Println("✓ No regressions detected - performance is stable")
 	} else {
 		fmt.Printf("⚠ %d regressions detected:\n\n", len(regressions))
 		for _, reg := range regressions {

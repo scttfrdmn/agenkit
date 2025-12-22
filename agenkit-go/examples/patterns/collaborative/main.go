@@ -172,7 +172,7 @@ func (a *AnalystAgent) Process(ctx context.Context, message *agenkit.Message) (*
 
 func main() {
 	fmt.Println("=== Collaborative Pattern Demo ===")
-	fmt.Println("Demonstrating peer-to-peer agent collaboration\n")
+	fmt.Println("Demonstrating peer-to-peer agent collaboration")
 
 	ctx := context.Background()
 
@@ -209,7 +209,7 @@ func main() {
 	}
 
 	fmt.Println("\n" + strings.Repeat("=", 50))
-	fmt.Println("\n📤 Collaborative Review Result:\n")
+	fmt.Println("\n📤 Collaborative Review Result:")
 	fmt.Println(result.Content)
 
 	// Display collaboration metadata

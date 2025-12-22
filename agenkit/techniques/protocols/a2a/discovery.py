@@ -282,9 +282,8 @@ class InMemoryDiscoveryService:
 
             # Remove from capability index
             for capability in agent_info.capabilities:
-                if capability in self._capability_index:
-                    if agent_id in self._capability_index[capability]:
-                        self._capability_index[capability].remove(agent_id)
+                if capability in self._capability_index and agent_id in self._capability_index[capability]:
+                    self._capability_index[capability].remove(agent_id)
 
             # Remove agent
             del self._agents[agent_id]

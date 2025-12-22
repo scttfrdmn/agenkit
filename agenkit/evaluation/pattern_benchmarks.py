@@ -536,9 +536,9 @@ class PatternBenchmarkSuite:
         }
 
         for benchmark in self.benchmarks:
-            # Create pattern-specific agent factory
-            def pattern_agent_factory(config):
-                return agent_factory(benchmark._pattern_name, config)
+            # Create pattern-specific agent factory with captured benchmark
+            def pattern_agent_factory(config, _benchmark=benchmark):
+                return agent_factory(_benchmark._pattern_name, config)
 
             # Run benchmark
             results = await self.run_benchmark(benchmark, pattern_agent_factory)

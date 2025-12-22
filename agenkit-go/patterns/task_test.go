@@ -12,13 +12,12 @@ import (
 
 // mockTaskAgent is a mock agent for testing tasks.
 type mockTaskAgent struct {
-	name         string
-	response     string
-	err          error
-	delay        time.Duration
-	callCount    int
-	shouldBlock  bool
-	blockRelease chan struct{}
+	name        string
+	response    string
+	err         error
+	delay       time.Duration
+	callCount   int
+	shouldBlock bool
 }
 
 func (m *mockTaskAgent) Name() string {

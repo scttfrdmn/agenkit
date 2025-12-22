@@ -16,7 +16,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
@@ -90,6 +89,8 @@ func (m *MockLLMAgent) Process(ctx context.Context, message *agenkit.Message) (*
 }
 
 // Example 1: Basic conversation with name memory
+// TODO: Uncomment when ConversationalAgent is implemented
+/*
 func exampleBasicConversation() error {
 	fmt.Println("\n=== Example 1: Basic Conversation with Memory ===\n")
 
@@ -361,6 +362,7 @@ func exampleClearHistory() error {
 
 	return nil
 }
+*/
 
 func main() {
 	fmt.Println("Conversational Pattern Examples")

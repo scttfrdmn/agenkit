@@ -154,7 +154,7 @@ func exampleSequentialPattern() error {
 	processor := &ProcessorAgent{}
 	formatter := &FormatterAgent{}
 
-	pipeline, err := patterns.NewSequentialPattern([]agenkit.Agent{validator, processor, formatter})
+	pipeline, err := patterns.NewSequentialPattern([]agenkit.Agent{validator, processor, formatter}, nil)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,17 @@ func exampleParallelPattern() error {
 	reviewerB := &ReviewerAgent{perspective: "performance", icon: "⚡"}
 	reviewerC := &ReviewerAgent{perspective: "usability", icon: "🎨"}
 
-	parallel, err := patterns.NewParallelPattern([]agenkit.Agent{reviewerA, reviewerB, reviewerC})
+	// Aggregator that returns first result and stores all in metadata
+	aggregator := func(messages []*agenkit.Message) *agenkit.Message {
+		if len(messages) == 0 {
+			return agenkit.NewMessage("agent", "No results")
+		}
+		result := messages[0]
+		result.WithMetadata("parallel_results", messages)
+		return result
+	}
+
+	parallel, err := patterns.NewParallelPattern([]agenkit.Agent{reviewerA, reviewerB, reviewerC}, aggregator, nil)
 	if err != nil {
 		return err
 	}
@@ -220,9 +230,9 @@ func exampleComposedPattern() error {
 	// Stage 1: sequential validation and processing
 	stage1Validator := &ValidatorAgent{}
 	stage1Processor := &ProcessorAgent{}
-	stage1, err := patterns.NewSequentialPatternWithName(
+	stage1, err := patterns.NewSequentialPattern(
 		[]agenkit.Agent{stage1Validator, stage1Processor},
-		"stage1_prep",
+		&patterns.SequentialPatternConfig{Name: "stage1_prep"},
 	)
 	if err != nil {
 		return err
@@ -232,9 +242,10 @@ func exampleComposedPattern() error {
 	stage2ReviewerA := &ReviewerAgent{perspective: "security", icon: "🔒"}
 	stage2ReviewerB := &ReviewerAgent{perspective: "performance", icon: "⚡"}
 	stage2ReviewerC := &ReviewerAgent{perspective: "usability", icon: "🎨"}
-	stage2, err := patterns.NewParallelPatternWithName(
+	stage2, err := patterns.NewParallelPattern(
 		[]agenkit.Agent{stage2ReviewerA, stage2ReviewerB, stage2ReviewerC},
-		"stage2_review",
+		aggregator,
+		&patterns.ParallelPatternConfig{Name: "stage2_review"},
 	)
 	if err != nil {
 		return err
@@ -248,7 +259,7 @@ func exampleComposedPattern() error {
 		stage1,
 		stage2,
 		stage3,
-	})
+	}, nil)
 	if err != nil {
 		return err
 	}
@@ -275,7 +286,7 @@ func exampleErrorHandling() error {
 	validator := &ValidatorAgent{}
 	processor := &ProcessorAgent{}
 
-	pipeline, err := patterns.NewSequentialPattern([]agenkit.Agent{validator, processor})
+	pipeline, err := patterns.NewSequentialPattern([]agenkit.Agent{validator, processor}, nil)
 	if err != nil {
 		return err
 	}

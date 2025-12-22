@@ -99,7 +99,9 @@ func TestRandomSearchOptimizeMaximization(t *testing.T) {
 		y := toFloat64(config["y"])
 
 		// Maximize: higher when x and y are closer to 10
-		score := -(math.Pow(x-10.0, 2) + math.Pow(y-10.0, 2))
+		dx := x - 10.0
+		dy := y - 10.0
+		score := -(dx*dx + dy*dy)
 		return score, nil
 	}
 

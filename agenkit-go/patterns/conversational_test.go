@@ -275,9 +275,9 @@ func TestConversationalAgent_SystemPromptPreservedDuringPruning(t *testing.T) {
 	}
 
 	// Turn 1
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "A"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "A"})
 	// Turn 2
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "B"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "B"})
 
 	// Should have 4 messages: system + 3 most recent (1, B, 2)
 	if agent.HistoryLength() != 4 {
@@ -308,7 +308,7 @@ func TestConversationalAgent_ClearHistory(t *testing.T) {
 	}
 
 	// Add some conversation
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "Hello"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "Hello"})
 
 	// Clear history but keep system
 	agent.ClearHistory(true)
@@ -336,7 +336,7 @@ func TestConversationalAgent_ClearHistoryIncludingSystem(t *testing.T) {
 	}
 
 	// Add some conversation
-	agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "Hello"})
+	_, _ = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "Hello"})
 
 	// Clear all history
 	agent.ClearHistory(false)

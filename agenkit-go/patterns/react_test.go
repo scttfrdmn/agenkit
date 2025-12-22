@@ -24,6 +24,13 @@ func (m *mockReActAgent) Capabilities() []string {
 	return []string{"test"}
 }
 
+func (m *mockReActAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
+}
+
 func (m *mockReActAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	if m.callCount >= len(m.responses) {
 		return nil, fmt.Errorf("no more mock responses available")

@@ -102,6 +102,14 @@ func (s *SequentialPattern) Capabilities() []string {
 	return caps
 }
 
+// Introspect returns introspection information about the pattern
+func (s *SequentialPattern) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    s.Name(),
+		Capabilities: s.Capabilities(),
+	}
+}
+
 // Process executes agents sequentially
 func (s *SequentialPattern) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	current := message
@@ -216,6 +224,14 @@ func (p *ParallelPattern) Capabilities() []string {
 		caps = append(caps, cap)
 	}
 	return caps
+}
+
+// Introspect returns introspection information about the pattern
+func (p *ParallelPattern) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    p.Name(),
+		Capabilities: p.Capabilities(),
+	}
 }
 
 // Process executes agents in parallel and aggregates results
@@ -360,6 +376,14 @@ func (r *RouterPattern) Capabilities() []string {
 		caps = append(caps, cap)
 	}
 	return caps
+}
+
+// Introspect returns introspection information about the pattern
+func (r *RouterPattern) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    r.Name(),
+		Capabilities: r.Capabilities(),
+	}
 }
 
 // Process routes the message to the appropriate handler

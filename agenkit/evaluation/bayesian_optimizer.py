@@ -135,7 +135,10 @@ class BayesianOptimizer(Optimizer):
         return config
 
     def _expected_improvement(
-        self, X: np.ndarray, X_sample: np.ndarray, Y_sample: np.ndarray  # noqa: N803
+        self,
+        X: np.ndarray,
+        X_sample: np.ndarray,
+        Y_sample: np.ndarray,  # noqa: N803
     ) -> np.ndarray:
         """
         Expected Improvement acquisition function.
@@ -212,7 +215,10 @@ class BayesianOptimizer(Optimizer):
         return np.exp(-0.5 * x**2) / np.sqrt(2.0 * np.pi)
 
     def _propose_location(
-        self, X_sample: np.ndarray, Y_sample: np.ndarray, n_candidates: int = 1000  # noqa: N803
+        self,
+        X_sample: np.ndarray,
+        Y_sample: np.ndarray,
+        n_candidates: int = 1000,  # noqa: N803
     ) -> np.ndarray:
         """
         Propose next location to sample using acquisition function.

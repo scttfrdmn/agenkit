@@ -14,10 +14,10 @@ Part of Issue #71 - Agent Safety Framework (Q1 2026).
 from .anomaly_detection import AnomalyDetectionMiddleware, AnomalyDetector, SecurityEvent
 from .audit import AuditEvent, SecurityAuditLogger
 from .input_validation import (
-                                ContentFilter,
-                                InputValidationMiddleware,
-                                PromptInjectionDetector,
-                                ValidationError,
+    ContentFilter,
+    InputValidationMiddleware,
+    PromptInjectionDetector,
+    ValidationError,
 )
 from .output_validation import OutputValidationMiddleware, SchemaValidator, SensitiveDataRedactor
 from .permissions import Permission, PermissionDeniedError, PermissionMiddleware, Role, Sandbox

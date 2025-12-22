@@ -7,10 +7,8 @@ This module provides intelligent routing and tool selection:
 - EnhancedCircuitBreaker: Circuit breaker with advanced features
 """
 
-from .load_balancer import (AgentInstance, InstanceMetrics, LoadBalancerRouter,
-                            LoadBalancingStrategy)
-from .semantic_selector import (EmbeddingProvider, SemanticToolSelector,
-                                ToolDescription, ToolMatch)
+from .load_balancer import AgentInstance, InstanceMetrics, LoadBalancerRouter, LoadBalancingStrategy
+from .semantic_selector import EmbeddingProvider, SemanticToolSelector, ToolDescription, ToolMatch
 
 __all__ = [
     "AgentInstance",

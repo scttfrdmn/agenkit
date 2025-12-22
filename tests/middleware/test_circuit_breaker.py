@@ -5,8 +5,12 @@ import asyncio
 import pytest
 
 from agenkit.interfaces import Agent, Message
-from agenkit.middleware import (CircuitBreakerConfig, CircuitBreakerDecorator,
-                                CircuitBreakerError, CircuitState)
+from agenkit.middleware import (
+    CircuitBreakerConfig,
+    CircuitBreakerDecorator,
+    CircuitBreakerError,
+    CircuitState,
+)
 
 
 class UnreliableAgent(Agent):

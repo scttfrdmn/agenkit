@@ -2,9 +2,12 @@
 
 import pytest
 
-from agenkit.routing.semantic_selector import (SemanticToolSelector,
-                                               ToolDescription, ToolMatch,
-                                               cosine_similarity)
+from agenkit.routing.semantic_selector import (
+    SemanticToolSelector,
+    ToolDescription,
+    ToolMatch,
+    cosine_similarity,
+)
 
 
 # Mock embedding provider for testing

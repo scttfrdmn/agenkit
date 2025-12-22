@@ -32,17 +32,36 @@ from typing import Any
 import pytest
 
 from agenkit import Agent, Message
-from agenkit.patterns import (AgentTool, AutonomousAgent, CollaborativeAgent,
-                              CollaborativeConfig, ConversationalAgent,
-                              FallbackAgent, HumanInLoopAgent,
-                              HumanInLoopConfig, LongTermMemory, MemoryEntry,
-                              MemoryHierarchy, MultiAgentOrchestrator,
-                              ParallelAgent, PlanningAgent, ReActAgent,
-                              ReasoningWithToolsAgent, ReflectionAgent,
-                              RouterAgent, RouterConfig, SequentialAgent,
-                              ShortTermMemory, SimpleClassifier, SimplePlanner,
-                              SupervisorAgent, Task, Tool, ToolRegistry,
-                              WorkingMemory)
+from agenkit.patterns import (
+    AgentTool,
+    AutonomousAgent,
+    CollaborativeAgent,
+    CollaborativeConfig,
+    ConversationalAgent,
+    FallbackAgent,
+    HumanInLoopAgent,
+    HumanInLoopConfig,
+    LongTermMemory,
+    MemoryEntry,
+    MemoryHierarchy,
+    MultiAgentOrchestrator,
+    ParallelAgent,
+    PlanningAgent,
+    ReActAgent,
+    ReasoningWithToolsAgent,
+    ReflectionAgent,
+    RouterAgent,
+    RouterConfig,
+    SequentialAgent,
+    ShortTermMemory,
+    SimpleClassifier,
+    SimplePlanner,
+    SupervisorAgent,
+    Task,
+    Tool,
+    ToolRegistry,
+    WorkingMemory,
+)
 
 # ==============================================================================
 # Mock Agents for Benchmarking

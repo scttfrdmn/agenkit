@@ -11,9 +11,16 @@ from websockets.asyncio.server import ServerConnection, serve
 
 from agenkit.interfaces import Agent
 
-from .codec import (create_error_envelope, create_response_envelope,
-                    create_stream_chunk_envelope, create_stream_end_envelope,
-                    decode_bytes, decode_message, encode_bytes, encode_message)
+from .codec import (
+    create_error_envelope,
+    create_response_envelope,
+    create_stream_chunk_envelope,
+    create_stream_end_envelope,
+    decode_bytes,
+    decode_message,
+    encode_bytes,
+    encode_message,
+)
 from .errors import InvalidMessageError, ProtocolError
 from .transport import Transport
 

@@ -20,6 +20,7 @@ import asyncio
 from typing import Any
 
 from agents import ClassifierAgent, EscalationAgent, QAAgent, SynthesisAgent
+
 # Import our components
 from knowledge_base import create_sample_knowledge_base
 

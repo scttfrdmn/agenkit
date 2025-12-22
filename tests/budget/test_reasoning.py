@@ -5,8 +5,12 @@ Tests for extended thinking and reasoning budget allocation.
 import pytest
 
 from agenkit import Message
-from agenkit.budget.reasoning import (ThinkingBudget, ThinkingBudgetAllocator,
-                                      ThinkingMode, ThinkingModeDetector)
+from agenkit.budget.reasoning import (
+    ThinkingBudget,
+    ThinkingBudgetAllocator,
+    ThinkingMode,
+    ThinkingModeDetector,
+)
 
 
 class TestThinkingBudgetAllocator:

@@ -11,9 +11,15 @@ Demonstrates:
 
 import asyncio
 
-from agenkit.evaluation import (AccuracyMetric, BenchmarkSuite, Evaluator,
-                                QualityMetrics, RegressionDetector,
-                                SessionRecorder, SessionReplay)
+from agenkit.evaluation import (
+    AccuracyMetric,
+    BenchmarkSuite,
+    Evaluator,
+    QualityMetrics,
+    RegressionDetector,
+    SessionRecorder,
+    SessionReplay,
+)
 from agenkit.evaluation.context_metrics import LatencyMetric
 from agenkit.interfaces import Message
 

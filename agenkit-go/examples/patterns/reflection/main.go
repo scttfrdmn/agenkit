@@ -34,6 +34,13 @@ func (g *MockCodeGenerator) Capabilities() []string {
 	return []string{"code-generation", "python"}
 }
 
+func (g *MockCodeGenerator) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    g.Name(),
+		Capabilities: g.Capabilities(),
+	}
+}
+
 func (g *MockCodeGenerator) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	g.iteration++
 
@@ -85,6 +92,13 @@ func (c *MockCodeCritic) Name() string {
 
 func (c *MockCodeCritic) Capabilities() []string {
 	return []string{"code-review", "quality-assessment"}
+}
+
+func (c *MockCodeCritic) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    c.Name(),
+		Capabilities: c.Capabilities(),
+	}
 }
 
 func (c *MockCodeCritic) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

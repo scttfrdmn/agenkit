@@ -16,8 +16,7 @@ This example shows:
 import asyncio
 
 from agenkit.core import Agent, Message
-from agenkit.patterns import (ParallelAgent, SequentialAgent,
-                              default_aggregators)
+from agenkit.patterns import ParallelAgent, SequentialAgent, default_aggregators
 
 
 # Stage 1: Parallel Pre-processing

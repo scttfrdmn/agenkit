@@ -13,9 +13,8 @@ from opentelemetry.trace import SpanKind, Status, StatusCode
 from proto import agent_pb2, agent_pb2_grpc
 
 from ...observability.tracing import get_tracer
-from .errors import ConnectionClosedError
+from .errors import ConnectionClosedError, InvalidMessageError, MalformedPayloadError
 from .errors import ConnectionError as ConnError
-from .errors import InvalidMessageError, MalformedPayloadError
 from .transport import Transport
 
 

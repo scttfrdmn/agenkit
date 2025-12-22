@@ -6,8 +6,7 @@ import time
 import pytest
 
 from agenkit.interfaces import Agent, Message
-from agenkit.middleware import (BatchingConfig, BatchingDecorator,
-                                BatchingMetrics)
+from agenkit.middleware import BatchingConfig, BatchingDecorator, BatchingMetrics
 
 
 class TestAgent(Agent):

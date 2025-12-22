@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-	"github.com/scttfrdmn/agenkit/agenkit-go/patterns"
 )
 
 // MockLLMAgent simulates an LLM that responds contextually based on conversation history

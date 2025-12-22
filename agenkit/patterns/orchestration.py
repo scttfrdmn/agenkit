@@ -22,6 +22,7 @@ Design principles:
 import asyncio
 import warnings
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from agenkit.interfaces import Agent, Message
 
@@ -35,9 +36,6 @@ warnings.warn(
 )
 
 __all__ = ["OrchestrationAgent", "OrchestrationConfig", "ParallelPattern", "RouterPattern", "SequentialPattern"]
-
-
-from dataclasses import dataclass
 
 
 @dataclass

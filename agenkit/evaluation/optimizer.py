@@ -80,13 +80,13 @@ class SearchSpace:
         config = {}
         for name, spec in self.parameters.items():
             if spec["type"] == "continuous":
-                config[name] = random.uniform(spec["low"], spec["high"])
+                config[name] = random.uniform(spec["low"], spec["high"])  # noqa: S311
             elif spec["type"] == "discrete":
-                config[name] = random.choice(spec["values"])
+                config[name] = random.choice(spec["values"])  # noqa: S311
             elif spec["type"] == "integer":
-                config[name] = random.randint(spec["low"], spec["high"])
+                config[name] = random.randint(spec["low"], spec["high"])  # noqa: S311
             elif spec["type"] == "categorical":
-                config[name] = random.choice(spec["values"])
+                config[name] = random.choice(spec["values"])  # noqa: S311
         return config
 
     def validate(self, config: dict[str, Any]) -> bool:
@@ -102,9 +102,8 @@ class SearchSpace:
             elif spec["type"] == "discrete":
                 if value not in spec["values"]:
                     return False
-            elif spec["type"] == "integer":
-                if not isinstance(value, int) or not (spec["low"] <= value <= spec["high"]):
-                    return False
+            elif spec["type"] == "integer" and (not isinstance(value, int) or not (spec["low"] <= value <= spec["high"])):
+                return False
             elif spec["type"] == "categorical" and value not in spec["values"]:
                 return False
 

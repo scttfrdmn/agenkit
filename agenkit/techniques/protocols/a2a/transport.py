@@ -346,9 +346,8 @@ class GRPCTransport(Transport):
             host: Host to bind to
             port: Port to bind to
         """
-        try:
-            import grpc
-        except ImportError:
+        import importlib.util
+        if importlib.util.find_spec("grpc") is None:
             raise ImportError(
                 "grpcio is required for gRPC server. "
                 "Install with: pip install grpcio"

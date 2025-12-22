@@ -666,9 +666,7 @@ class RateLimitedSearchTool:
 
         # Remove old timestamps (outside window)
         self.call_timestamps = [
-            ts
-            for ts in self.call_timestamps
-            if now - ts < 60  # Keep last minute
+            ts for ts in self.call_timestamps if now - ts < 60  # Keep last minute
         ]
 
         # Check rate limit

@@ -74,23 +74,25 @@ async def sequential_with_claude():
     print("=" * 60)
 
     # Create a research pipeline
-    pipeline = SequentialAgent([
-        ClaudeAgent(
-            name="Researcher",
-            system_prompt="You are a research assistant. Identify 3 key research "
-            "questions for the given topic. Be concise.",
-        ),
-        ClaudeAgent(
-            name="Analyst",
-            system_prompt="You are an analyst. For the given research questions, "
-            "suggest methodologies. Keep it brief (3-4 sentences).",
-        ),
-        ClaudeAgent(
-            name="Synthesizer",
-            system_prompt="You are a synthesis expert. Create a concise research "
-            "plan from the questions and methodologies. 2-3 sentences.",
-        ),
-    ])
+    pipeline = SequentialAgent(
+        [
+            ClaudeAgent(
+                name="Researcher",
+                system_prompt="You are a research assistant. Identify 3 key research "
+                "questions for the given topic. Be concise.",
+            ),
+            ClaudeAgent(
+                name="Analyst",
+                system_prompt="You are an analyst. For the given research questions, "
+                "suggest methodologies. Keep it brief (3-4 sentences).",
+            ),
+            ClaudeAgent(
+                name="Synthesizer",
+                system_prompt="You are a synthesis expert. Create a concise research "
+                "plan from the questions and methodologies. 2-3 sentences.",
+            ),
+        ]
+    )
 
     message = Message(
         role="user",
@@ -150,6 +152,7 @@ async def parallel_with_claude():
 
     try:
         import time
+
         start = time.time()
         result = await reviewer.process(message)
         elapsed = time.time() - start

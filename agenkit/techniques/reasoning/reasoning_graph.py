@@ -95,7 +95,7 @@ class ReasoningGraph:
         content: str,
         node_type: NodeType,
         confidence: float = 1.0,
-        metadata: dict | None = None
+        metadata: dict | None = None,
     ) -> int:
         """
         Add a thought node to the graph.
@@ -117,7 +117,7 @@ class ReasoningGraph:
             content=content,
             node_type=node_type,
             confidence=confidence,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self.nodes[node_id] = node
@@ -132,7 +132,7 @@ class ReasoningGraph:
         to_node: int,
         edge_type: EdgeType,
         strength: float = 1.0,
-        metadata: dict | None = None
+        metadata: dict | None = None,
     ) -> None:
         """
         Add a logical edge between two nodes.
@@ -152,7 +152,7 @@ class ReasoningGraph:
             to_node=to_node,
             edge_type=edge_type,
             strength=strength,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self.edges.append(edge)
@@ -171,12 +171,7 @@ class ReasoningGraph:
         """Get all edges pointing to node."""
         return [e for e in self.edges if e.to_node == node_id]
 
-    def find_paths(
-        self,
-        start: int,
-        end: int,
-        max_length: int | None = None
-    ) -> list[list[int]]:
+    def find_paths(self, start: int, end: int, max_length: int | None = None) -> list[list[int]]:
         """
         Find all paths from start node to end node.
 
@@ -221,7 +216,7 @@ class ReasoningGraph:
             True if cycle exists, False otherwise
         """
         white = 0  # Not visited
-        gray = 1   # Being processed
+        gray = 1  # Being processed
         black = 2  # Fully processed
 
         color = dict.fromkeys(self.nodes, white)
@@ -331,8 +326,7 @@ class ReasoningGraph:
 
         edge_scores = []
         for i in range(len(path) - 1):
-            edges = [e for e in self.edges
-                    if e.from_node == path[i] and e.to_node == path[i + 1]]
+            edges = [e for e in self.edges if e.from_node == path[i] and e.to_node == path[i + 1]]
             if edges:
                 edge_scores.append(edges[0].strength)
 
@@ -362,5 +356,7 @@ class ReasoningGraph:
             "node_types": node_types,
             "edge_types": edge_types,
             "has_cycles": self.has_cycle(),
-            "avg_confidence": sum(n.confidence for n in self.nodes.values()) / len(self.nodes) if self.nodes else 0.0
+            "avg_confidence": sum(n.confidence for n in self.nodes.values()) / len(self.nodes)
+            if self.nodes
+            else 0.0,
         }

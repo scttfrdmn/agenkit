@@ -10,12 +10,14 @@ from typing import Any
 
 class A2AVersion(Enum):
     """A2A protocol versions."""
+
     V1_0 = "1.0"
     V1_1 = "1.1"
 
 
 class A2AAction(Enum):
     """Standard A2A actions."""
+
     # Core actions
     PROCESS = "process"  # Process message
     QUERY = "query"  # Query for information
@@ -38,6 +40,7 @@ class A2AAction(Enum):
 
 class A2ACapability(Enum):
     """Common agent capabilities."""
+
     # Processing
     TEXT_ANALYSIS = "text-analysis"
     SENTIMENT_ANALYSIS = "sentiment"
@@ -67,6 +70,7 @@ class A2ACapability(Enum):
 
 class ErrorCode(Enum):
     """A2A error codes."""
+
     # Client errors (4xx)
     BAD_REQUEST = "400"
     UNAUTHORIZED = "401"
@@ -119,7 +123,8 @@ def validate_agent_id(agent_id: str) -> bool:
 
     # Agent ID should be alphanumeric with hyphens/underscores
     import re
-    return bool(re.match(r'^[a-zA-Z0-9_-]+$', agent_id))
+
+    return bool(re.match(r"^[a-zA-Z0-9_-]+$", agent_id))
 
 
 def validate_capability(capability: str) -> bool:
@@ -137,7 +142,8 @@ def validate_capability(capability: str) -> bool:
 
     # Capability should be lowercase alphanumeric with hyphens
     import re
-    return bool(re.match(r'^[a-z0-9-]+$', capability))
+
+    return bool(re.match(r"^[a-z0-9-]+$", capability))
 
 
 def get_error_message(error_code: ErrorCode) -> str:
@@ -163,7 +169,7 @@ def get_error_message(error_code: ErrorCode) -> str:
         ErrorCode.PROTOCOL_ERROR: "Protocol error",
         ErrorCode.VERSION_MISMATCH: "Protocol version mismatch",
         ErrorCode.INVALID_MESSAGE: "Invalid message format",
-        ErrorCode.CAPABILITY_NOT_SUPPORTED: "Capability not supported"
+        ErrorCode.CAPABILITY_NOT_SUPPORTED: "Capability not supported",
     }
     return messages.get(error_code, "Unknown error")
 
@@ -175,7 +181,7 @@ class A2AError(Exception):
         self,
         error_code: ErrorCode,
         message: str | None = None,
-        details: dict[str, Any] | None = None
+        details: dict[str, Any] | None = None,
     ):
         """
         Initialize exception.
@@ -195,7 +201,7 @@ class A2AError(Exception):
         return {
             "error_code": self.error_code.value,
             "message": self.message,
-            "details": self.details
+            "details": self.details,
         }
 
 
@@ -211,9 +217,7 @@ class AgentNotFoundError(A2AError):
 
     def __init__(self, agent_id: str):
         super().__init__(
-            ErrorCode.NOT_FOUND,
-            f"Agent not found: {agent_id}",
-            {"agent_id": agent_id}
+            ErrorCode.NOT_FOUND, f"Agent not found: {agent_id}", {"agent_id": agent_id}
         )
 
 
@@ -224,7 +228,7 @@ class CapabilityNotSupportedError(A2AError):
         super().__init__(
             ErrorCode.CAPABILITY_NOT_SUPPORTED,
             f"Capability not supported: {capability}",
-            {"capability": capability}
+            {"capability": capability},
         )
 
 
@@ -258,15 +262,12 @@ def create_capabilities_response(capabilities: list) -> dict[str, Any]:
     return {
         "protocol_version": PROTOCOL_VERSION,
         "capabilities": capabilities,
-        "timestamp": None  # Will be set by message
+        "timestamp": None,  # Will be set by message
     }
 
 
 def create_status_response(
-    status: str,
-    agent_id: str,
-    load: float | None = None,
-    uptime_sec: int | None = None
+    status: str, agent_id: str, load: float | None = None, uptime_sec: int | None = None
 ) -> dict[str, Any]:
     """
     Create standard status response.
@@ -280,10 +281,7 @@ def create_status_response(
     Returns:
         Status response
     """
-    response = {
-        "status": status,
-        "agent_id": agent_id
-    }
+    response = {"status": status, "agent_id": agent_id}
 
     if load is not None:
         response["load"] = load
@@ -307,7 +305,7 @@ def create_ping_response(agent_id: str, latency_ms: float | None = None) -> dict
     """
     response = {
         "agent_id": agent_id,
-        "timestamp": None  # Will be set by message
+        "timestamp": None,  # Will be set by message
     }
 
     if latency_ms is not None:

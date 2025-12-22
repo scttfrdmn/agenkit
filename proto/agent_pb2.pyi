@@ -22,6 +22,7 @@ class ChunkType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     CHUNK_TYPE_MESSAGE: _ClassVar[ChunkType]
     CHUNK_TYPE_END: _ClassVar[ChunkType]
     CHUNK_TYPE_ERROR: _ClassVar[ChunkType]
+
 RESPONSE_TYPE_UNSPECIFIED: ResponseType
 RESPONSE_TYPE_MESSAGE: ResponseType
 RESPONSE_TYPE_TOOL_RESULT: ResponseType
@@ -32,7 +33,16 @@ CHUNK_TYPE_END: ChunkType
 CHUNK_TYPE_ERROR: ChunkType
 
 class Request(_message.Message):
-    __slots__ = ("agent_name", "id", "messages", "metadata", "method", "timestamp", "tool_call", "version")
+    __slots__ = (
+        "agent_name",
+        "id",
+        "messages",
+        "metadata",
+        "method",
+        "timestamp",
+        "tool_call",
+        "version",
+    )
     class MetadataEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -40,6 +50,7 @@ class Request(_message.Message):
         key: str
         value: str
         def __init__(self, key: str | None = ..., value: str | None = ...) -> None: ...
+
     VERSION_FIELD_NUMBER: _ClassVar[int]
     ID_FIELD_NUMBER: _ClassVar[int]
     TIMESTAMP_FIELD_NUMBER: _ClassVar[int]
@@ -56,10 +67,29 @@ class Request(_message.Message):
     messages: _containers.RepeatedCompositeFieldContainer[Message]
     metadata: _containers.ScalarMap[str, str]
     tool_call: ToolCall
-    def __init__(self, version: str | None = ..., id: str | None = ..., timestamp: str | None = ..., method: str | None = ..., agent_name: str | None = ..., messages: _Iterable[Message | _Mapping] | None = ..., metadata: _Mapping[str, str] | None = ..., tool_call: ToolCall | _Mapping | None = ...) -> None: ...
+    def __init__(
+        self,
+        version: str | None = ...,
+        id: str | None = ...,
+        timestamp: str | None = ...,
+        method: str | None = ...,
+        agent_name: str | None = ...,
+        messages: _Iterable[Message | _Mapping] | None = ...,
+        metadata: _Mapping[str, str] | None = ...,
+        tool_call: ToolCall | _Mapping | None = ...,
+    ) -> None: ...
 
 class Response(_message.Message):
-    __slots__ = ("error", "id", "message", "metadata", "timestamp", "tool_result", "type", "version")
+    __slots__ = (
+        "error",
+        "id",
+        "message",
+        "metadata",
+        "timestamp",
+        "tool_result",
+        "type",
+        "version",
+    )
     class MetadataEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -67,6 +97,7 @@ class Response(_message.Message):
         key: str
         value: str
         def __init__(self, key: str | None = ..., value: str | None = ...) -> None: ...
+
     VERSION_FIELD_NUMBER: _ClassVar[int]
     ID_FIELD_NUMBER: _ClassVar[int]
     TIMESTAMP_FIELD_NUMBER: _ClassVar[int]
@@ -83,7 +114,17 @@ class Response(_message.Message):
     tool_result: ToolResult
     error: Error
     metadata: _containers.ScalarMap[str, str]
-    def __init__(self, version: str | None = ..., id: str | None = ..., timestamp: str | None = ..., type: ResponseType | str | None = ..., message: Message | _Mapping | None = ..., tool_result: ToolResult | _Mapping | None = ..., error: Error | _Mapping | None = ..., metadata: _Mapping[str, str] | None = ...) -> None: ...
+    def __init__(
+        self,
+        version: str | None = ...,
+        id: str | None = ...,
+        timestamp: str | None = ...,
+        type: ResponseType | str | None = ...,
+        message: Message | _Mapping | None = ...,
+        tool_result: ToolResult | _Mapping | None = ...,
+        error: Error | _Mapping | None = ...,
+        metadata: _Mapping[str, str] | None = ...,
+    ) -> None: ...
 
 class StreamChunk(_message.Message):
     __slots__ = ("error", "id", "message", "timestamp", "type", "version")
@@ -99,7 +140,15 @@ class StreamChunk(_message.Message):
     type: ChunkType
     message: Message
     error: Error
-    def __init__(self, version: str | None = ..., id: str | None = ..., timestamp: str | None = ..., type: ChunkType | str | None = ..., message: Message | _Mapping | None = ..., error: Error | _Mapping | None = ...) -> None: ...
+    def __init__(
+        self,
+        version: str | None = ...,
+        id: str | None = ...,
+        timestamp: str | None = ...,
+        type: ChunkType | str | None = ...,
+        message: Message | _Mapping | None = ...,
+        error: Error | _Mapping | None = ...,
+    ) -> None: ...
 
 class Message(_message.Message):
     __slots__ = ("content", "metadata", "role", "timestamp")
@@ -110,6 +159,7 @@ class Message(_message.Message):
         key: str
         value: str
         def __init__(self, key: str | None = ..., value: str | None = ...) -> None: ...
+
     ROLE_FIELD_NUMBER: _ClassVar[int]
     CONTENT_FIELD_NUMBER: _ClassVar[int]
     METADATA_FIELD_NUMBER: _ClassVar[int]
@@ -118,7 +168,13 @@ class Message(_message.Message):
     content: str
     metadata: _containers.ScalarMap[str, str]
     timestamp: str
-    def __init__(self, role: str | None = ..., content: str | None = ..., metadata: _Mapping[str, str] | None = ..., timestamp: str | None = ...) -> None: ...
+    def __init__(
+        self,
+        role: str | None = ...,
+        content: str | None = ...,
+        metadata: _Mapping[str, str] | None = ...,
+        timestamp: str | None = ...,
+    ) -> None: ...
 
 class ToolCall(_message.Message):
     __slots__ = ("arguments", "metadata", "name")
@@ -129,13 +185,19 @@ class ToolCall(_message.Message):
         key: str
         value: str
         def __init__(self, key: str | None = ..., value: str | None = ...) -> None: ...
+
     NAME_FIELD_NUMBER: _ClassVar[int]
     ARGUMENTS_FIELD_NUMBER: _ClassVar[int]
     METADATA_FIELD_NUMBER: _ClassVar[int]
     name: str
     arguments: str
     metadata: _containers.ScalarMap[str, str]
-    def __init__(self, name: str | None = ..., arguments: str | None = ..., metadata: _Mapping[str, str] | None = ...) -> None: ...
+    def __init__(
+        self,
+        name: str | None = ...,
+        arguments: str | None = ...,
+        metadata: _Mapping[str, str] | None = ...,
+    ) -> None: ...
 
 class ToolResult(_message.Message):
     __slots__ = ("data", "error", "metadata", "success")
@@ -146,6 +208,7 @@ class ToolResult(_message.Message):
         key: str
         value: str
         def __init__(self, key: str | None = ..., value: str | None = ...) -> None: ...
+
     SUCCESS_FIELD_NUMBER: _ClassVar[int]
     DATA_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
@@ -154,7 +217,13 @@ class ToolResult(_message.Message):
     data: str
     error: str
     metadata: _containers.ScalarMap[str, str]
-    def __init__(self, success: bool = ..., data: str | None = ..., error: str | None = ..., metadata: _Mapping[str, str] | None = ...) -> None: ...
+    def __init__(
+        self,
+        success: bool = ...,
+        data: str | None = ...,
+        error: str | None = ...,
+        metadata: _Mapping[str, str] | None = ...,
+    ) -> None: ...
 
 class Error(_message.Message):
     __slots__ = ("code", "details", "message")
@@ -165,10 +234,16 @@ class Error(_message.Message):
         key: str
         value: str
         def __init__(self, key: str | None = ..., value: str | None = ...) -> None: ...
+
     CODE_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
     DETAILS_FIELD_NUMBER: _ClassVar[int]
     code: str
     message: str
     details: _containers.ScalarMap[str, str]
-    def __init__(self, code: str | None = ..., message: str | None = ..., details: _Mapping[str, str] | None = ...) -> None: ...
+    def __init__(
+        self,
+        code: str | None = ...,
+        message: str | None = ...,
+        details: _Mapping[str, str] | None = ...,
+    ) -> None: ...

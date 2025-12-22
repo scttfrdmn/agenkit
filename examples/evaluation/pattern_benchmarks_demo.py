@@ -43,7 +43,9 @@ class MockReflectionAgent(Agent):
         self.iteration_count += 1
 
         # Simulate reflection by improving response
-        improved_content = f"Improved response (iteration {self.iteration_count}): {message.content}"
+        improved_content = (
+            f"Improved response (iteration {self.iteration_count}): {message.content}"
+        )
 
         return Message(
             role="assistant",
@@ -123,19 +125,19 @@ async def demo_running_single_benchmark():
     print(f"  Failed: {results['summary']['failed']}")
     print(f"  Total time: {results['summary']['total_time_ms']:.2f}ms")
 
-    if results['summary']['total'] > 0:
-        pass_rate = (results['summary']['passed'] / results['summary']['total']) * 100
-        avg_time = results['summary']['total_time_ms'] / results['summary']['total']
+    if results["summary"]["total"] > 0:
+        pass_rate = (results["summary"]["passed"] / results["summary"]["total"]) * 100
+        avg_time = results["summary"]["total_time_ms"] / results["summary"]["total"]
         print(f"  Pass rate: {pass_rate:.1f}%")
         print(f"  Avg time per test: {avg_time:.2f}ms")
 
     # Show individual test case results
     print("\n  Test Case Details:")
-    for i, test_result in enumerate(results['test_cases'][:3], 1):
-        status = "✓ PASS" if test_result['passed'] else "✗ FAIL"
+    for i, test_result in enumerate(results["test_cases"][:3], 1):
+        status = "✓ PASS" if test_result["passed"] else "✗ FAIL"
         print(f"    {i}. {test_result['scenario_id']}: {status} ({test_result['time_ms']:.2f}ms)")
 
-    if len(results['test_cases']) > 3:
+    if len(results["test_cases"]) > 3:
         print(f"    ... and {len(results['test_cases']) - 3} more test cases")
 
     return results
@@ -191,11 +193,13 @@ async def demo_comparing_patterns():
             benchmark = loader.load_pattern_benchmark(pattern_name)
             test_cases = await benchmark.generate_test_cases()
 
-            results_comparison.append({
-                "pattern": pattern_name,
-                "test_cases": len(test_cases),
-                "description": benchmark.description[:60] + "...",
-            })
+            results_comparison.append(
+                {
+                    "pattern": pattern_name,
+                    "test_cases": len(test_cases),
+                    "description": benchmark.description[:60] + "...",
+                }
+            )
 
             print(f"  {pattern_name}:")
             print(f"    Test cases: {len(test_cases)}")

@@ -11,11 +11,7 @@ async def test_faq_workflow():
     async with httpx.AsyncClient(base_url="http://localhost:8000", timeout=30.0) as client:
         try:
             response = await client.post(
-                "/chat",
-                json={
-                    "message": "How do I reset my password?",
-                    "user_id": "test_user"
-                }
+                "/chat", json={"message": "How do I reset my password?", "user_id": "test_user"}
             )
 
             assert response.status_code == 200
@@ -37,8 +33,8 @@ async def test_specialist_workflow():
                 "/chat",
                 json={
                     "message": "I need help with API integration for my application",
-                    "user_id": "test_user"
-                }
+                    "user_id": "test_user",
+                },
             )
 
             assert response.status_code == 200
@@ -59,14 +55,16 @@ async def test_escalation_workflow():
                 "/chat",
                 json={
                     "message": "I want a refund immediately! This is terrible!",
-                    "user_id": "test_user"
-                }
+                    "user_id": "test_user",
+                },
             )
 
             assert response.status_code == 200
             data = response.json()
             assert data["route"] == "escalation"
-            assert "escalate" in data["response"].lower() or "support team" in data["response"].lower()
+            assert (
+                "escalate" in data["response"].lower() or "support team" in data["response"].lower()
+            )
         except httpx.ConnectError:
             pytest.skip("API server not running")
 
@@ -102,10 +100,7 @@ async def test_rate_limiting():
             for i in range(15):
                 response = await client.post(
                     "/chat",
-                    json={
-                        "message": f"Test message {i}",
-                        "user_id": "rate_limit_test_user"
-                    }
+                    json={"message": f"Test message {i}", "user_id": "rate_limit_test_user"},
                 )
                 responses.append(response.status_code)
 

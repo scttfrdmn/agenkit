@@ -55,9 +55,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmpdir:
         log_path = Path(tmpdir) / "audit.log"
 
-        file_logger = AuditLogger([
-            FileAuditAdapter(str(log_path), structured=True)
-        ])
+        file_logger = AuditLogger([FileAuditAdapter(str(log_path), structured=True)])
 
         file_logger.log_auth_attempt(
             user_id="bob",
@@ -86,11 +84,13 @@ def main():
     with tempfile.TemporaryDirectory() as tmpdir:
         log_path = Path(tmpdir) / "audit.log"
 
-        multi_logger = AuditLogger([
-            ConsoleAuditAdapter(use_colors=True),
-            FileAuditAdapter(str(log_path), structured=True),
-            StructuredAuditAdapter(),  # JSON to stdout
-        ])
+        multi_logger = AuditLogger(
+            [
+                ConsoleAuditAdapter(use_colors=True),
+                FileAuditAdapter(str(log_path), structured=True),
+                StructuredAuditAdapter(),  # JSON to stdout
+            ]
+        )
 
         multi_logger.log_security_violation(
             client_id="attacker",
@@ -142,10 +142,12 @@ def main():
     with tempfile.TemporaryDirectory() as tmpdir:
         log_path = Path(tmpdir) / "api_audit.log"
 
-        api_logger = AuditLogger([
-            ConsoleAuditAdapter(use_colors=True),
-            FileAuditAdapter(str(log_path), structured=True),
-        ])
+        api_logger = AuditLogger(
+            [
+                ConsoleAuditAdapter(use_colors=True),
+                FileAuditAdapter(str(log_path), structured=True),
+            ]
+        )
 
         # Simulate API request flow
         user_id = "charlie"

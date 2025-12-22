@@ -17,11 +17,11 @@ from typing import Any
 class NodeState(Enum):
     """State of a reasoning node during search."""
 
-    OPEN = "open"           # Not yet explored
-    ACTIVE = "active"       # Currently being explored
-    EVALUATED = "evaluated" # Evaluated, may have children
-    PRUNED = "pruned"       # Pruned from search
-    TERMINAL = "terminal"   # Leaf node (complete reasoning path)
+    OPEN = "open"  # Not yet explored
+    ACTIVE = "active"  # Currently being explored
+    EVALUATED = "evaluated"  # Evaluated, may have children
+    PRUNED = "pruned"  # Pruned from search
+    TERMINAL = "terminal"  # Leaf node (complete reasoning path)
 
 
 @dataclass
@@ -100,23 +100,14 @@ class ReasoningTree:
         node_id = self.next_id
         self.next_id += 1
 
-        node = ReasoningNode(
-            id=node_id,
-            content=content,
-            depth=0,
-            metadata=metadata or {}
-        )
+        node = ReasoningNode(id=node_id, content=content, depth=0, metadata=metadata or {})
 
         self.nodes[node_id] = node
         self.root_id = node_id
         return node_id
 
     def add_child(
-        self,
-        parent_id: int,
-        content: str,
-        score: float = 0.0,
-        metadata: dict | None = None
+        self, parent_id: int, content: str, score: float = 0.0, metadata: dict | None = None
     ) -> int:
         """
         Add child node to parent and return child ID.
@@ -146,7 +137,7 @@ class ReasoningTree:
             parent_id=parent_id,
             depth=parent.depth + 1,
             score=score,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self.nodes[child_id] = child
@@ -244,5 +235,5 @@ class ReasoningTree:
             "num_evaluated": len(evaluated),
             "num_pruned": len(pruned),
             "avg_score": sum(n.score for n in leaves) / len(leaves) if leaves else 0.0,
-            "best_score": max((n.score for n in leaves), default=0.0)
+            "best_score": max((n.score for n in leaves), default=0.0),
         }

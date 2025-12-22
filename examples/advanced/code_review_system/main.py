@@ -131,14 +131,18 @@ class ReviewReport:
             lines.append(f"\n## ⚠️ Major Issues ({len(self.major_issues)})")
             for i, issue in enumerate(self.major_issues, 1):
                 lines.append(f"\n### {i}. {issue.title}")
-                lines.append(f"**Reviewer**: {issue.reviewer} | **Line**: {issue.line_number or 'N/A'}")
+                lines.append(
+                    f"**Reviewer**: {issue.reviewer} | **Line**: {issue.line_number or 'N/A'}"
+                )
                 lines.append(f"\n{issue.description}")
 
         # Minor issues
         if self.minor_issues:
             lines.append(f"\n## 💡 Minor Suggestions ({len(self.minor_issues)})")
             for i, issue in enumerate(self.minor_issues, 1):
-                lines.append(f"- **{issue.title}** (Line {issue.line_number or 'N/A'}): {issue.description}")
+                lines.append(
+                    f"- **{issue.title}** (Line {issue.line_number or 'N/A'}): {issue.description}"
+                )
 
         # Debate summary
         if self.debate_rounds:
@@ -339,9 +343,7 @@ class DebateModerator:
     def __init__(self, max_rounds: int = 2):
         self.max_rounds = max_rounds
 
-    async def moderate_debate(
-        self, opinions: list[ReviewerOpinion]
-    ) -> list[DebateRound]:
+    async def moderate_debate(self, opinions: list[ReviewerOpinion]) -> list[DebateRound]:
         """
         Facilitate debate rounds between reviewers.
 
@@ -456,22 +458,14 @@ class ConsensusBuilder:
         consensus_blockers = self._apply_threshold(
             blocker_issues, len(opinions), self.blocker_threshold
         )
-        consensus_major = self._apply_threshold(
-            major_issues, len(opinions), self.major_threshold
-        )
-        consensus_minor = self._apply_threshold(
-            minor_issues, len(opinions), self.minor_threshold
-        )
+        consensus_major = self._apply_threshold(major_issues, len(opinions), self.major_threshold)
+        consensus_minor = self._apply_threshold(minor_issues, len(opinions), self.minor_threshold)
 
         # Determine decision
-        decision = self._determine_decision(
-            consensus_blockers, consensus_major, consensus_minor
-        )
+        decision = self._determine_decision(consensus_blockers, consensus_major, consensus_minor)
 
         # Calculate confidence
-        avg_confidence = (
-            sum(o.confidence for o in opinions) / len(opinions) if opinions else 0.0
-        )
+        avg_confidence = sum(o.confidence for o in opinions) / len(opinions) if opinions else 0.0
 
         # Generate summary
         summary = self._generate_summary(
@@ -545,9 +539,7 @@ class ConsensusBuilder:
         parts = []
 
         if blockers:
-            parts.append(
-                f"{len(blockers)} blocking issue(s) require immediate attention"
-            )
+            parts.append(f"{len(blockers)} blocking issue(s) require immediate attention")
         if major:
             parts.append(f"{len(major)} major issue(s) should be addressed")
         if minor:
@@ -581,14 +573,10 @@ class ReviewCoordinator:
             MockReviewerAgent(ReviewerType.MAINTAINABILITY, "maintainability_1"),
         ]
         self.debate_moderator = DebateModerator(max_rounds=debate_rounds)
-        self.consensus_builder = ConsensusBuilder(
-            **(consensus_thresholds or {})
-        )
+        self.consensus_builder = ConsensusBuilder(**(consensus_thresholds or {}))
         self.verbose = verbose
 
-    async def review_code(
-        self, code: str, context: dict[str, Any] | None = None
-    ) -> ReviewReport:
+    async def review_code(self, code: str, context: dict[str, Any] | None = None) -> ReviewReport:
         """
         Conduct multi-agent code review with debate and consensus.
 
@@ -609,8 +597,7 @@ class ReviewCoordinator:
             print("👥 Phase 1: Parallel Review...")
 
         review_tasks = [
-            reviewer.process(Message(role="user", content=code))
-            for reviewer in self.reviewers
+            reviewer.process(Message(role="user", content=code)) for reviewer in self.reviewers
         ]
 
         results = await asyncio.gather(*review_tasks)
@@ -641,9 +628,7 @@ class ReviewCoordinator:
             opinions.append(opinion)
 
             if self.verbose:
-                print(
-                    f"  ✓ {opinion.reviewer.value}: Found {len(issues)} issue(s)"
-                )
+                print(f"  ✓ {opinion.reviewer.value}: Found {len(issues)} issue(s)")
 
         # Step 2: Debate
         if self.verbose:
@@ -678,7 +663,7 @@ async def main():
     import sys
 
     # Sample code to review
-    sample_code = '''
+    sample_code = """
 def process_user_data(username, password):
     # TODO: Add input validation
     sql = "SELECT * FROM users WHERE username='" + username + "' AND password='" + password + "'"
@@ -693,7 +678,7 @@ def process_user_data(username, password):
     time.sleep(1)  # Rate limiting
 
     return results
-'''
+"""
 
     # Parse command line args
     code = sample_code

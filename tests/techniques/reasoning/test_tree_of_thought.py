@@ -19,7 +19,7 @@ class MockLLM:
         self.responses = responses or [
             "First reasoning branch",
             "Second reasoning branch",
-            "Third reasoning branch"
+            "Third reasoning branch",
         ]
         self.call_count = 0
 
@@ -39,12 +39,7 @@ def simple_evaluator(text: str) -> float:
 async def test_tot_basic():
     """Test basic ToT functionality."""
     llm = MockLLM()
-    tot = TreeOfThought(
-        llm=llm,
-        branching_factor=2,
-        max_depth=2,
-        evaluator=simple_evaluator
-    )
+    tot = TreeOfThought(llm=llm, branching_factor=2, max_depth=2, evaluator=simple_evaluator)
 
     response = await tot.process(Message(role="user", content="Test query"))
 
@@ -59,12 +54,7 @@ async def test_tot_basic():
 async def test_tot_bfs_strategy():
     """Test breadth-first search strategy."""
     llm = MockLLM()
-    tot = TreeOfThought(
-        llm=llm,
-        branching_factor=2,
-        max_depth=3,
-        strategy="bfs"
-    )
+    tot = TreeOfThought(llm=llm, branching_factor=2, max_depth=3, strategy="bfs")
 
     response = await tot.process(Message(role="user", content="Test query"))
 
@@ -77,12 +67,7 @@ async def test_tot_bfs_strategy():
 async def test_tot_dfs_strategy():
     """Test depth-first search strategy."""
     llm = MockLLM()
-    tot = TreeOfThought(
-        llm=llm,
-        branching_factor=2,
-        max_depth=3,
-        strategy="dfs"
-    )
+    tot = TreeOfThought(llm=llm, branching_factor=2, max_depth=3, strategy="dfs")
 
     response = await tot.process(Message(role="user", content="Test query"))
 
@@ -95,12 +80,7 @@ async def test_tot_dfs_strategy():
 async def test_tot_best_first_strategy():
     """Test best-first search strategy."""
     llm = MockLLM()
-    tot = TreeOfThought(
-        llm=llm,
-        branching_factor=2,
-        max_depth=3,
-        strategy="best-first"
-    )
+    tot = TreeOfThought(llm=llm, branching_factor=2, max_depth=3, strategy="best-first")
 
     response = await tot.process(Message(role="user", content="Test query"))
 
@@ -118,12 +98,7 @@ async def test_tot_custom_evaluator():
         return 0.9 if "reasoning" in text.lower() else 0.3
 
     llm = MockLLM(responses=["Contains reasoning", "No special word"])
-    tot = TreeOfThought(
-        llm=llm,
-        branching_factor=2,
-        max_depth=2,
-        evaluator=custom_evaluator
-    )
+    tot = TreeOfThought(llm=llm, branching_factor=2, max_depth=2, evaluator=custom_evaluator)
 
     response = await tot.process(Message(role="user", content="Test query"))
 
@@ -146,7 +121,7 @@ async def test_tot_pruning():
         branching_factor=3,
         max_depth=3,
         evaluator=strict_evaluator,
-        prune_threshold=0.5  # High threshold -> prune most paths
+        prune_threshold=0.5,  # High threshold -> prune most paths
     )
 
     response = await tot.process(Message(role="user", content="Test query"))
@@ -163,7 +138,7 @@ async def test_tot_max_depth():
     tot = TreeOfThought(
         llm=llm,
         branching_factor=2,
-        max_depth=2  # Limit to 2 levels
+        max_depth=2,  # Limit to 2 levels
     )
 
     response = await tot.process(Message(role="user", content="Test query"))
@@ -180,7 +155,7 @@ async def test_tot_branching_factor():
     tot = TreeOfThought(
         llm=llm,
         branching_factor=4,  # Create 4 branches per node
-        max_depth=2
+        max_depth=2,
     )
 
     response = await tot.process(Message(role="user", content="Test query"))
@@ -194,11 +169,7 @@ async def test_tot_branching_factor():
 async def test_tot_reasoning_path():
     """Test reasoning path extraction."""
     llm = MockLLM()
-    tot = TreeOfThought(
-        llm=llm,
-        branching_factor=2,
-        max_depth=3
-    )
+    tot = TreeOfThought(llm=llm, branching_factor=2, max_depth=3)
 
     response = await tot.process(Message(role="user", content="Test query"))
 
@@ -249,10 +220,7 @@ async def test_tot_with_agent_interface():
 
     class MockLLMAgent:
         async def process(self, message: Message) -> Message:
-            return Message(
-                role="assistant",
-                content="Response from agent interface"
-            )
+            return Message(role="assistant", content="Response from agent interface")
 
     llm = MockLLMAgent()
     tot = TreeOfThought(llm=llm, branching_factor=2, max_depth=2)
@@ -266,15 +234,17 @@ async def test_tot_with_agent_interface():
 @pytest.mark.asyncio
 async def test_tot_default_evaluator():
     """Test default evaluator behavior."""
-    llm = MockLLM(responses=[
-        "Very short",  # Low score
-        "This is a much longer response with more detail and structure",  # Higher score
-    ])
+    llm = MockLLM(
+        responses=[
+            "Very short",  # Low score
+            "This is a much longer response with more detail and structure",  # Higher score
+        ]
+    )
 
     tot = TreeOfThought(
         llm=llm,
         branching_factor=2,
-        max_depth=2
+        max_depth=2,
         # No evaluator provided - uses default
     )
 

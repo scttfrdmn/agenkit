@@ -43,5 +43,5 @@ __all__ = [
     "SelfConsistency",
     "Subproblem",
     "ThoughtNode",
-    "TreeOfThought"
+    "TreeOfThought",
 ]

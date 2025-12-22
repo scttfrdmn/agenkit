@@ -30,7 +30,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Initialize agents
     planner = PlannerAgent(settings.openai_api_key)
     writer = WriterAgent(settings.openai_api_key)
-    scraper = RemoteAgent("scraper", settings.go_scraper_endpoint, timeout=settings.timeout_scraping)
+    scraper = RemoteAgent(
+        "scraper", settings.go_scraper_endpoint, timeout=settings.timeout_scraping
+    )
 
     @app.get("/health")
     async def health_check():
@@ -38,14 +40,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/ready")
     async def readiness_check():
-        checks = {
-            "config": True,
-            "openai": bool(settings.openai_api_key),
-            "scraper": False
-        }
+        checks = {"config": True, "openai": bool(settings.openai_api_key), "scraper": False}
 
         try:
-            test_msg = Message(role="user", content="health_check", metadata={"type": "health_check"})
+            test_msg = Message(
+                role="user", content="health_check", metadata={"type": "health_check"}
+            )
             await scraper.process(test_msg)
             checks["scraper"] = True
         except Exception as e:
@@ -62,16 +62,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             plan = await planner.process(plan_msg)
 
             # Simulate findings (in production, execute plan steps)
-            findings = [
-                f"Finding 1 for: {request.query}",
-                f"Finding 2 for: {request.query}"
-            ]
+            findings = [f"Finding 1 for: {request.query}", f"Finding 2 for: {request.query}"]
 
             # Write report
             report_msg = Message(
-                role="user",
-                content="",
-                metadata={"findings": findings, "query": request.query}
+                role="user", content="", metadata={"findings": findings, "query": request.query}
             )
             report = await writer.process(report_msg)
 
@@ -79,7 +74,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "query": request.query,
                 "plan": str(plan.content),
                 "report": str(report.content),
-                "status": "completed"
+                "status": "completed",
             }
         except Exception as e:
             logger.error(f"Research error: {e}", exc_info=True)
@@ -107,7 +102,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             findings = [f"Finding for: {query}"]
 
             await websocket.send_json({"type": "status", "message": "Writing report..."})
-            report_msg = Message(role="user", content="", metadata={"findings": findings, "query": query})
+            report_msg = Message(
+                role="user", content="", metadata={"findings": findings, "query": query}
+            )
             report = await writer.process(report_msg)
 
             await websocket.send_json({"type": "report", "content": str(report.content)})

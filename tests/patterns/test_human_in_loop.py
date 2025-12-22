@@ -46,7 +46,7 @@ class MockAgent:
         return Message(
             role="assistant",
             content=self.response,
-            metadata={"agent": self._name, "confidence": self.confidence}
+            metadata={"agent": self._name, "confidence": self.confidence},
         )
 
 
@@ -169,11 +169,7 @@ def test_config_creation():
 def test_config_custom_threshold():
     """Test HumanInLoopConfig with custom threshold."""
     agent = MockAgent("agent")
-    config = HumanInLoopConfig(
-        agent=agent,
-        approval_func=always_approve,
-        approval_threshold=0.9
-    )
+    config = HumanInLoopConfig(agent=agent, approval_func=always_approve, approval_threshold=0.9)
 
     assert config.approval_threshold == 0.9
 
@@ -182,9 +178,7 @@ def test_config_custom_confidence_key():
     """Test HumanInLoopConfig with custom confidence key."""
     agent = MockAgent("agent")
     config = HumanInLoopConfig(
-        agent=agent,
-        approval_func=always_approve,
-        confidence_key="confidence_score"
+        agent=agent, approval_func=always_approve, confidence_key="confidence_score"
     )
 
     assert config.confidence_key == "confidence_score"
@@ -386,6 +380,7 @@ async def test_approval_with_modifications():
 @pytest.mark.asyncio
 async def test_missing_confidence_defaults_zero():
     """Test that missing confidence defaults to 0.0."""
+
     # Agent that doesn't include confidence in metadata
     class NoConfidenceAgent:
         @property
@@ -414,6 +409,7 @@ async def test_missing_confidence_defaults_zero():
 @pytest.mark.asyncio
 async def test_custom_confidence_key():
     """Test using custom confidence key."""
+
     # Agent that uses custom key
     class CustomKeyAgent:
         @property
@@ -425,9 +421,7 @@ async def test_custom_confidence_key():
 
         async def process(self, message: Message) -> Message:
             return Message(
-                role="assistant",
-                content="Response",
-                metadata={"confidence_score": 0.95}
+                role="assistant", content="Response", metadata={"confidence_score": 0.95}
             )
 
     agent = CustomKeyAgent()
@@ -435,7 +429,7 @@ async def test_custom_confidence_key():
         agent=agent,
         approval_func=always_reject,
         approval_threshold=0.8,
-        confidence_key="confidence_score"
+        confidence_key="confidence_score",
     )
 
     hil = HumanInLoopAgent(config)
@@ -611,7 +605,7 @@ async def test_full_workflow_high_confidence():
     config = HumanInLoopConfig(
         agent=agent,
         approval_func=simple_approval_func(auto_approve=False),  # Would reject
-        approval_threshold=0.8
+        approval_threshold=0.8,
     )
 
     hil = HumanInLoopAgent(config)
@@ -629,9 +623,7 @@ async def test_full_workflow_low_confidence_approved():
     """Test complete workflow with low confidence and approval."""
     agent = MockAgent("agent", response="Low confidence result", confidence=0.6)
     config = HumanInLoopConfig(
-        agent=agent,
-        approval_func=simple_approval_func(auto_approve=True),
-        approval_threshold=0.8
+        agent=agent, approval_func=simple_approval_func(auto_approve=True), approval_threshold=0.8
     )
 
     hil = HumanInLoopAgent(config)

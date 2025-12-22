@@ -172,11 +172,13 @@ async def basic_fallback():
     print("=" * 60)
 
     # Create fallback chain
-    fallback = FallbackAgent([
-        PrimaryServiceAgent(failure_rate=0.8),  # High failure rate
-        SecondaryServiceAgent(failure_rate=0.5),  # Medium failure rate
-        FallbackServiceAgent(),  # Always succeeds
-    ])
+    fallback = FallbackAgent(
+        [
+            PrimaryServiceAgent(failure_rate=0.8),  # High failure rate
+            SecondaryServiceAgent(failure_rate=0.5),  # Medium failure rate
+            FallbackServiceAgent(),  # Always succeeds
+        ]
+    )
 
     message = Message(role="user", content="Process this request")
 
@@ -202,11 +204,13 @@ async def multi_attempt_fallback():
     for i in range(attempts):
         print(f"\n--- Attempt {i + 1} of {attempts} ---")
 
-        fallback = FallbackAgent([
-            PrimaryServiceAgent(failure_rate=0.7),
-            SecondaryServiceAgent(failure_rate=0.4),
-            FallbackServiceAgent(),
-        ])
+        fallback = FallbackAgent(
+            [
+                PrimaryServiceAgent(failure_rate=0.7),
+                SecondaryServiceAgent(failure_rate=0.4),
+                FallbackServiceAgent(),
+            ]
+        )
 
         message = Message(role="user", content=f"Request {i + 1}")
         result = await fallback.process(message)
@@ -221,11 +225,13 @@ async def cache_with_fallback():
     print("=" * 60)
 
     # Cache -> API fallback
-    fallback = FallbackAgent([
-        CachedAgent(),
-        APIAgent("Primary", success_rate=0.8),
-        APIAgent("Backup", success_rate=0.9),
-    ])
+    fallback = FallbackAgent(
+        [
+            CachedAgent(),
+            APIAgent("Primary", success_rate=0.8),
+            APIAgent("Backup", success_rate=0.9),
+        ]
+    )
 
     # First request (cache miss, will use API)
     message1 = Message(role="user", content="Get user data for ID:12345")
@@ -277,10 +283,12 @@ async def recovery_strategies():
     recovered = with_recovery(retry_agent, default_recovery)
 
     # Add fallback chain
-    fallback = FallbackAgent([
-        recovered,  # Will retry
-        FallbackServiceAgent(),  # Ultimate fallback
-    ])
+    fallback = FallbackAgent(
+        [
+            recovered,  # Will retry
+            FallbackServiceAgent(),  # Ultimate fallback
+        ]
+    )
 
     message = Message(role="user", content="Retry this request")
 
@@ -298,11 +306,13 @@ async def error_aggregation():
     print("=" * 60)
 
     # All services fail except last one
-    fallback = FallbackAgent([
-        PrimaryServiceAgent(failure_rate=1.0),  # Always fails
-        SecondaryServiceAgent(failure_rate=1.0),  # Always fails
-        FallbackServiceAgent(),  # Succeeds
-    ])
+    fallback = FallbackAgent(
+        [
+            PrimaryServiceAgent(failure_rate=1.0),  # Always fails
+            SecondaryServiceAgent(failure_rate=1.0),  # Always fails
+            FallbackServiceAgent(),  # Succeeds
+        ]
+    )
 
     message = Message(role="user", content="Test error tracking")
 

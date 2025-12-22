@@ -75,9 +75,7 @@ class StdioTransport(Transport):
             while self.running:
                 try:
                     # Read line from stdin
-                    line = await asyncio.get_event_loop().run_in_executor(
-                        None, sys.stdin.readline
-                    )
+                    line = await asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
 
                     if not line:
                         # EOF reached
@@ -121,12 +119,7 @@ class HTTPTransport(Transport):
     Simple HTTP server that handles MCP requests via POST to a single endpoint.
     """
 
-    def __init__(
-        self,
-        server: "MCPServer",
-        host: str = "localhost",
-        port: int = 3000
-    ):
+    def __init__(self, server: "MCPServer", host: str = "localhost", port: int = 3000):
         """
         Initialize HTTP transport.
 
@@ -146,8 +139,7 @@ class HTTPTransport(Transport):
             from aiohttp import web
         except ImportError:
             raise ImportError(
-                "aiohttp is required for HTTP transport. "
-                "Install with: pip install aiohttp"
+                "aiohttp is required for HTTP transport. Install with: pip install aiohttp"
             )
 
         app = web.Application()
@@ -179,10 +171,7 @@ class HTTPTransport(Transport):
             return web.json_response(response.to_dict())
 
         except Exception as e:
-            return web.json_response(
-                {"error": str(e)},
-                status=500
-            )
+            return web.json_response({"error": str(e)}, status=500)
 
     async def stop(self):
         """Stop HTTP transport."""
@@ -197,12 +186,7 @@ class SSETransport(Transport):
     Allows streaming responses and notifications from server to client.
     """
 
-    def __init__(
-        self,
-        server: "MCPServer",
-        host: str = "localhost",
-        port: int = 3000
-    ):
+    def __init__(self, server: "MCPServer", host: str = "localhost", port: int = 3000):
         """
         Initialize SSE transport.
 
@@ -223,8 +207,7 @@ class SSETransport(Transport):
             from aiohttp import web
         except ImportError:
             raise ImportError(
-                "aiohttp is required for SSE transport. "
-                "Install with: pip install aiohttp"
+                "aiohttp is required for SSE transport. Install with: pip install aiohttp"
             )
 
         app = web.Application()
@@ -246,9 +229,9 @@ class SSETransport(Transport):
         from aiohttp.web import StreamResponse
 
         response = StreamResponse()
-        response.headers['Content-Type'] = 'text/event-stream'
-        response.headers['Cache-Control'] = 'no-cache'
-        response.headers['Connection'] = 'keep-alive'
+        response.headers["Content-Type"] = "text/event-stream"
+        response.headers["Cache-Control"] = "no-cache"
+        response.headers["Connection"] = "keep-alive"
 
         await response.prepare(http_request)
 
@@ -259,7 +242,7 @@ class SSETransport(Transport):
             # Keep connection alive
             while True:
                 await asyncio.sleep(30)
-                await response.write(b': keepalive\n\n')
+                await response.write(b": keepalive\n\n")
         finally:
             # Remove client
             self.clients.discard(response)
@@ -277,10 +260,7 @@ class SSETransport(Transport):
             return web.json_response(response.to_dict())
 
         except Exception as e:
-            return web.json_response(
-                {"error": str(e)},
-                status=500
-            )
+            return web.json_response({"error": str(e)}, status=500)
 
     async def stop(self):
         """Stop SSE transport."""
@@ -288,11 +268,7 @@ class SSETransport(Transport):
             await self.http_server.cleanup()
 
 
-def create_transport(
-    transport_type: str,
-    server: "MCPServer",
-    **kwargs
-) -> Transport:
+def create_transport(transport_type: str, server: "MCPServer", **kwargs) -> Transport:
     """
     Create a transport instance.
 

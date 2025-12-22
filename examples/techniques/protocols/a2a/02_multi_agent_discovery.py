@@ -23,6 +23,7 @@ from agenkit.techniques.protocols.a2a import (
 # Specialized Agents
 # ==============================================================================
 
+
 class SummarizerAgent:
     """Agent that summarizes text."""
 
@@ -37,9 +38,7 @@ class SummarizerAgent:
         summary = text[:50] + "..." if len(text) > 50 else text
 
         return Message(
-            role="assistant",
-            content=f"Summary: {summary}",
-            metadata={"summarized": True}
+            role="assistant", content=f"Summary: {summary}", metadata={"summarized": True}
         )
 
 
@@ -56,9 +55,7 @@ class TranslatorAgent:
         translated = text.upper()
 
         return Message(
-            role="assistant",
-            content=f"Translated: {translated}",
-            metadata={"translated": True}
+            role="assistant", content=f"Translated: {translated}", metadata={"translated": True}
         )
 
 
@@ -77,13 +74,14 @@ class AnalyzerAgent:
         return Message(
             role="assistant",
             content=f"Analysis: {word_count} words",
-            metadata={"word_count": word_count}
+            metadata={"word_count": word_count},
         )
 
 
 # ==============================================================================
 # Example: Multi-Agent Discovery
 # ==============================================================================
+
 
 async def multi_agent_discovery_example():
     """Demonstrate multi-agent coordination with discovery."""
@@ -108,20 +106,20 @@ async def multi_agent_discovery_example():
             agent_id="summarizer-001",
             agent=summarizer,
             capabilities=summarizer.capabilities,
-            name="Summarizer"
+            name="Summarizer",
         ),
         A2AServer(
             agent_id="translator-001",
             agent=translator,
             capabilities=translator.capabilities,
-            name="Translator"
+            name="Translator",
         ),
         A2AServer(
             agent_id="analyzer-001",
             agent=analyzer,
             capabilities=analyzer.capabilities,
-            name="Analyzer"
-        )
+            name="Analyzer",
+        ),
     ]
 
     # Register agents with discovery
@@ -132,7 +130,7 @@ async def multi_agent_discovery_example():
             name=server.name,
             capabilities=server.capabilities,
             endpoint=f"http://localhost:8080/a2a/{server.agent_id}",
-            transport="http"
+            transport="http",
         )
         await discovery.register(agent_info)
         print(f"   Registered: {server.name} ({server.agent_id})")
@@ -175,15 +173,13 @@ async def multi_agent_discovery_example():
     print("\n   Step 1: Analyze text")
     analyzer_agents = await discovery.discover("text-analysis")
     if analyzer_agents:
-        analyzer_server = next(
-            s for s in servers if s.agent_id == analyzer_agents[0].agent_id
-        )
+        analyzer_server = next(s for s in servers if s.agent_id == analyzer_agents[0].agent_id)
 
         analyze_request = create_request(
             from_agent="coordinator",
             to_agent=analyzer_server.agent_id,
             action=A2AAction.PROCESS.value,
-            content={"text": text}
+            content={"text": text},
         )
 
         analyze_response = await analyzer_server.handle_message(analyze_request)
@@ -193,34 +189,30 @@ async def multi_agent_discovery_example():
     print("\n   Step 2: Summarize text")
     summarizer_agents = await discovery.discover("summarization")
     if summarizer_agents:
-        summarizer_server = next(
-            s for s in servers if s.agent_id == summarizer_agents[0].agent_id
-        )
+        summarizer_server = next(s for s in servers if s.agent_id == summarizer_agents[0].agent_id)
 
         summarize_request = create_request(
             from_agent="coordinator",
             to_agent=summarizer_server.agent_id,
             action=A2AAction.PROCESS.value,
-            content={"text": text}
+            content={"text": text},
         )
 
         summarize_response = await summarizer_server.handle_message(summarize_request)
-        summary = summarize_response.content['content']
+        summary = summarize_response.content["content"]
         print(f"   Result: {summary}")
 
     # Step 3: Translate summary
     print("\n   Step 3: Translate summary")
     translator_agents = await discovery.discover("translation")
     if translator_agents:
-        translator_server = next(
-            s for s in servers if s.agent_id == translator_agents[0].agent_id
-        )
+        translator_server = next(s for s in servers if s.agent_id == translator_agents[0].agent_id)
 
         translate_request = create_request(
             from_agent="coordinator",
             to_agent=translator_server.agent_id,
             action=A2AAction.PROCESS.value,
-            content={"text": summary}
+            content={"text": summary},
         )
 
         translate_response = await translator_server.handle_message(translate_request)

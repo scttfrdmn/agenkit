@@ -61,6 +61,7 @@ class Document:
         source: Source identifier (e.g., "Smith et al. 2020")
         metadata: Additional metadata (page, section, etc.)
     """
+
     content: str
     source: str
     metadata: dict[str, Any] = None
@@ -95,7 +96,7 @@ class CitedRAG(Agent):
         retriever: Callable[[str], list[Document]],
         answerer: Agent,
         max_docs: int = 5,
-        citation_format: str = "numeric"
+        citation_format: str = "numeric",
     ):
         """
         Initialize cited RAG composition.
@@ -163,7 +164,7 @@ class CitedRAG(Agent):
         query = message.content
 
         # Step 1: Retrieve documents with metadata
-        documents = self.retriever(query)[:self.max_docs]
+        documents = self.retriever(query)[: self.max_docs]
 
         if not documents:
             return Message(
@@ -173,8 +174,8 @@ class CitedRAG(Agent):
                     "technique": "cited_rag",
                     "num_sources": 0,
                     "sources": [],
-                    "citations": []
-                }
+                    "citations": [],
+                },
             )
 
         # Step 2: Build citation mapping
@@ -184,9 +185,7 @@ class CitedRAG(Agent):
         context = self._build_context_with_citations(query, documents, citations)
 
         # Step 4: Generate cited answer
-        response = await self.answerer.process(
-            Message(role="user", content=context)
-        )
+        response = await self.answerer.process(Message(role="user", content=context))
 
         # Step 5: Add metadata
         metadata = {
@@ -194,17 +193,13 @@ class CitedRAG(Agent):
             "num_sources": len(documents),
             "sources": [doc.source for doc in documents],
             "citations": list(citations.values()),
-            "full_documents": documents  # Include full documents for reference
+            "full_documents": documents,  # Include full documents for reference
         }
 
         if response.metadata:
             metadata.update(response.metadata)
 
-        return Message(
-            role=response.role,
-            content=response.content,
-            metadata=metadata
-        )
+        return Message(role=response.role, content=response.content, metadata=metadata)
 
     def _build_citations(self, documents: list[Document]) -> dict[int, str]:
         """
@@ -229,10 +224,7 @@ class CitedRAG(Agent):
         return citations
 
     def _build_context_with_citations(
-        self,
-        query: str,
-        documents: list[Document],
-        citations: dict[int, str]
+        self, query: str, documents: list[Document], citations: dict[int, str]
     ) -> str:
         """
         Build context with citation instructions.
@@ -276,10 +268,4 @@ Answer:"""
     @property
     def capabilities(self) -> list[str]:
         """Return agent capabilities."""
-        return [
-            "retrieval",
-            "question_answering",
-            "rag",
-            "citation",
-            "source_attribution"
-        ]
+        return ["retrieval", "question_answering", "rag", "citation", "source_attribution"]

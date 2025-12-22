@@ -79,13 +79,15 @@ class MockDeterministicAgent(Agent):
 async def test_self_consistency_basic():
     """Test basic Self-Consistency with majority voting."""
     # Mock agent returns 3 votes for "42" and 2 for "43"
-    base_agent = MockVariableAgent([
-        "After calculation, the answer is 42.",
-        "Let me think... I believe it's 43.",
-        "The answer is 42.",
-        "Definitely 42.",
-        "I think the answer is 43.",
-    ])
+    base_agent = MockVariableAgent(
+        [
+            "After calculation, the answer is 42.",
+            "Let me think... I believe it's 43.",
+            "The answer is 42.",
+            "Definitely 42.",
+            "I think the answer is 43.",
+        ]
+    )
 
     sc = SelfConsistency(
         agent=base_agent,
@@ -142,13 +144,15 @@ async def test_self_consistency_perfect_agreement():
 @pytest.mark.asyncio
 async def test_self_consistency_no_agreement():
     """Test Self-Consistency with no agreement (all different answers)."""
-    base_agent = MockVariableAgent([
-        "The answer is 1.",
-        "The answer is 2.",
-        "The answer is 3.",
-        "The answer is 4.",
-        "The answer is 5.",
-    ])
+    base_agent = MockVariableAgent(
+        [
+            "The answer is 1.",
+            "The answer is 2.",
+            "The answer is 3.",
+            "The answer is 4.",
+            "The answer is 5.",
+        ]
+    )
 
     sc = SelfConsistency(
         agent=base_agent,
@@ -166,12 +170,14 @@ async def test_self_consistency_no_agreement():
 @pytest.mark.asyncio
 async def test_self_consistency_weighted_voting():
     """Test weighted voting strategy (longer responses weighted more)."""
-    base_agent = MockVariableAgent([
-        "Paris.",
-        "Paris.",
-        "Paris.",
-        "After extensive analysis of historical data, geographical considerations, and political significance, I can confidently conclude that the capital of France is London.",
-    ])
+    base_agent = MockVariableAgent(
+        [
+            "Paris.",
+            "Paris.",
+            "Paris.",
+            "After extensive analysis of historical data, geographical considerations, and political significance, I can confidently conclude that the capital of France is London.",
+        ]
+    )
 
     sc = SelfConsistency(
         agent=base_agent,
@@ -190,11 +196,13 @@ async def test_self_consistency_weighted_voting():
 @pytest.mark.asyncio
 async def test_self_consistency_first_strategy():
     """Test first strategy (no voting, just return first answer)."""
-    base_agent = MockVariableAgent([
-        "The answer is A.",
-        "The answer is B.",
-        "The answer is C.",
-    ])
+    base_agent = MockVariableAgent(
+        [
+            "The answer is A.",
+            "The answer is B.",
+            "The answer is C.",
+        ]
+    )
 
     sc = SelfConsistency(
         agent=base_agent,
@@ -214,15 +222,18 @@ async def test_self_consistency_first_strategy():
 @pytest.mark.asyncio
 async def test_self_consistency_custom_extractor():
     """Test custom answer extraction function."""
-    base_agent = MockVariableAgent([
-        "[ANSWER: 42]",
-        "[ANSWER: 42]",
-        "[ANSWER: 43]",
-    ])
+    base_agent = MockVariableAgent(
+        [
+            "[ANSWER: 42]",
+            "[ANSWER: 42]",
+            "[ANSWER: 43]",
+        ]
+    )
 
     def custom_extractor(text: str) -> str:
         """Extract answer from custom format."""
         import re
+
         match = re.search(r"\[ANSWER: ([^\]]+)\]", text)
         return match.group(1) if match else text
 
@@ -282,13 +293,15 @@ async def test_self_consistency_error_handling():
 @pytest.mark.asyncio
 async def test_self_consistency_case_insensitive_voting():
     """Test that voting is case-insensitive."""
-    base_agent = MockVariableAgent([
-        "The answer is PARIS.",
-        "The answer is Paris.",
-        "The answer is paris.",
-        "The answer is PaRiS.",
-        "The answer is London.",
-    ])
+    base_agent = MockVariableAgent(
+        [
+            "The answer is PARIS.",
+            "The answer is Paris.",
+            "The answer is paris.",
+            "The answer is PaRiS.",
+            "The answer is London.",
+        ]
+    )
 
     sc = SelfConsistency(
         agent=base_agent,
@@ -326,7 +339,9 @@ def has_anthropic_key() -> bool:
     return bool(os.getenv("ANTHROPIC_API_KEY"))
 
 
-@pytest.mark.skip(reason="Interface mismatch: ChainOfThought expects llm.complete(str) but LLM adapters expect llm.complete(list[Message])")
+@pytest.mark.skip(
+    reason="Interface mismatch: ChainOfThought expects llm.complete(str) but LLM adapters expect llm.complete(list[Message])"
+)
 @pytest.mark.asyncio
 @pytest.mark.slow
 async def test_self_consistency_with_openai():
@@ -361,7 +376,9 @@ async def test_self_consistency_with_openai():
     assert 0.0 <= response.metadata["consistency_score"] <= 1.0
 
 
-@pytest.mark.skip(reason="Interface mismatch: ChainOfThought expects llm.complete(str) but LLM adapters expect llm.complete(list[Message])")
+@pytest.mark.skip(
+    reason="Interface mismatch: ChainOfThought expects llm.complete(str) but LLM adapters expect llm.complete(list[Message])"
+)
 @pytest.mark.asyncio
 @pytest.mark.slow
 async def test_self_consistency_with_anthropic():
@@ -399,7 +416,9 @@ async def test_self_consistency_with_anthropic():
 # ============================================================================
 
 
-@pytest.mark.skip(reason="Interface mismatch: ChainOfThought expects llm.complete(str) but LLM adapters expect llm.complete(list[Message])")
+@pytest.mark.skip(
+    reason="Interface mismatch: ChainOfThought expects llm.complete(str) but LLM adapters expect llm.complete(list[Message])"
+)
 @pytest.mark.asyncio
 @pytest.mark.slow
 async def test_self_consistency_with_chain_of_thought():
@@ -431,8 +450,7 @@ async def test_self_consistency_with_chain_of_thought():
     samples = response.metadata["samples"]
     assert len(samples) == 3
     # At least some samples should show step-by-step reasoning
-    has_reasoning = any("step" in sample.lower() or "first" in sample.lower()
-                        for sample in samples)
+    has_reasoning = any("step" in sample.lower() or "first" in sample.lower() for sample in samples)
     assert has_reasoning, "Expected Chain-of-Thought reasoning in samples"
 
 
@@ -460,6 +478,7 @@ async def test_self_consistency_parallel_execution():
         async def process(self, message: Message) -> Message:
             """Simulate slow processing."""
             import asyncio
+
             await asyncio.sleep(0.2)  # 200ms per call
             return Message(role="assistant", content="The answer is 42.")
 

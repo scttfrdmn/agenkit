@@ -49,7 +49,7 @@ class MockAgent:
         return Message(
             role="assistant",
             content=content,
-            metadata={"agent": self._name, "call_count": self.call_count}
+            metadata={"agent": self._name, "call_count": self.call_count},
         )
 
 
@@ -99,8 +99,7 @@ def test_collaborative_config_creation():
     agent2 = MockAgent("agent2")
 
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate
     )
 
     assert len(config.agents) == 2
@@ -115,9 +114,7 @@ def test_collaborative_config_custom_rounds():
     agent2 = MockAgent("agent2")
 
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate,
-        max_rounds=5
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate, max_rounds=5
     )
 
     assert config.max_rounds == 5
@@ -131,7 +128,7 @@ def test_collaborative_config_with_consensus():
     config = CollaborativeConfig(
         agents=[agent1, agent2],
         merge_func=default_merge_funcs.vote,
-        consensus_func=default_consensus_funcs.exact_match
+        consensus_func=default_consensus_funcs.exact_match,
     )
 
     assert config.consensus_func is not None
@@ -148,8 +145,7 @@ def test_collaborative_creation():
     agent2 = MockAgent("agent2")
 
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate
     )
     collab = CollaborativeAgent(config)
 
@@ -188,9 +184,7 @@ def test_collaborative_zero_max_rounds_defaults():
     agent1 = MockAgent("agent1")
     agent2 = MockAgent("agent2")
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate,
-        max_rounds=0
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate, max_rounds=0
     )
 
     collab = CollaborativeAgent(config)
@@ -208,8 +202,7 @@ def test_collaborative_capabilities_combined():
     agent2 = MockAgent("agent2", capabilities=["write", "format"])
 
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate
     )
     collab = CollaborativeAgent(config)
     caps = collab.capabilities()
@@ -230,8 +223,7 @@ def test_collaborative_capabilities_deduplication():
     agent2 = MockAgent("agent2", capabilities=["search", "write"])
 
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate
     )
     collab = CollaborativeAgent(config)
     caps = collab.capabilities()
@@ -252,9 +244,7 @@ async def test_collaborative_basic_processing():
     agent2 = MockAgent("agent2", responses=["A2", "A2-refined"])
 
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate,
-        max_rounds=2
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate, max_rounds=2
     )
     collab = CollaborativeAgent(config)
 
@@ -277,9 +267,7 @@ async def test_collaborative_all_rounds_executed():
     agent2 = MockAgent("agent2", responses=["R2-1", "R2-2", "R2-3"])
 
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate,
-        max_rounds=3
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate, max_rounds=3
     )
     collab = CollaborativeAgent(config)
 
@@ -302,9 +290,7 @@ async def test_collaborative_metadata():
     agent2 = MockAgent("agent2")
 
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate,
-        max_rounds=2
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate, max_rounds=2
     )
     collab = CollaborativeAgent(config)
 
@@ -337,7 +323,7 @@ async def test_collaborative_consensus_early_stop():
         agents=[agent1, agent2],
         merge_func=default_merge_funcs.concatenate,
         max_rounds=5,
-        consensus_func=default_consensus_funcs.exact_match
+        consensus_func=default_consensus_funcs.exact_match,
     )
     collab = CollaborativeAgent(config)
 
@@ -362,7 +348,7 @@ async def test_collaborative_consensus_later_round():
         agents=[agent1, agent2],
         merge_func=default_merge_funcs.concatenate,
         max_rounds=5,
-        consensus_func=default_consensus_funcs.exact_match
+        consensus_func=default_consensus_funcs.exact_match,
     )
     collab = CollaborativeAgent(config)
 
@@ -387,7 +373,7 @@ async def test_collaborative_no_consensus_all_rounds():
         agents=[agent1, agent2],
         merge_func=default_merge_funcs.concatenate,
         max_rounds=3,
-        consensus_func=default_consensus_funcs.exact_match
+        consensus_func=default_consensus_funcs.exact_match,
     )
     collab = CollaborativeAgent(config)
 
@@ -412,9 +398,7 @@ async def test_collaborative_context_includes_previous_responses():
     agent2 = MockAgent("agent2", responses=["Round1", "Round2"])
 
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate,
-        max_rounds=2
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate, max_rounds=2
     )
     collab = CollaborativeAgent(config)
 
@@ -435,9 +419,7 @@ async def test_collaborative_first_round_no_previous():
     agent2 = MockAgent("agent2")
 
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate,
-        max_rounds=1
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate, max_rounds=1
     )
     collab = CollaborativeAgent(config)
 
@@ -460,8 +442,7 @@ async def test_collaborative_none_message_raises():
     agent2 = MockAgent("agent2")
 
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate
     )
     collab = CollaborativeAgent(config)
 
@@ -476,8 +457,7 @@ async def test_collaborative_agent_failure_raises():
     failing = FailingAgent("failing")
 
     config = CollaborativeConfig(
-        agents=[agent1, failing],
-        merge_func=default_merge_funcs.concatenate
+        agents=[agent1, failing], merge_func=default_merge_funcs.concatenate
     )
     collab = CollaborativeAgent(config)
 
@@ -636,7 +616,7 @@ async def test_collaborative_full_workflow():
         agents=[agent1, agent2],
         merge_func=default_merge_funcs.vote,
         max_rounds=3,
-        consensus_func=default_consensus_funcs.exact_match
+        consensus_func=default_consensus_funcs.exact_match,
     )
     collab = CollaborativeAgent(config)
 
@@ -656,9 +636,7 @@ async def test_collaborative_reuse():
     agent2 = MockAgent("agent2")
 
     config = CollaborativeConfig(
-        agents=[agent1, agent2],
-        merge_func=default_merge_funcs.concatenate,
-        max_rounds=2
+        agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate, max_rounds=2
     )
     collab = CollaborativeAgent(config)
 
@@ -681,9 +659,7 @@ async def test_collaborative_many_agents():
     agents = [MockAgent(f"agent{i}") for i in range(5)]
 
     config = CollaborativeConfig(
-        agents=agents,
-        merge_func=default_merge_funcs.concatenate,
-        max_rounds=2
+        agents=agents, merge_func=default_merge_funcs.concatenate, max_rounds=2
     )
     collab = CollaborativeAgent(config)
 

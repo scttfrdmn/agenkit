@@ -30,7 +30,9 @@ class Settings(BaseSettings):
     otel_exporter_otlp_endpoint: str = Field(
         default="http://jaeger:4318", description="OpenTelemetry exporter endpoint"
     )
-    otel_service_name: str = Field(default="customer-support-api", description="Service name for tracing")
+    otel_service_name: str = Field(
+        default="customer-support-api", description="Service name for tracing"
+    )
 
     # Middleware Configuration
     timeout_default: float = Field(default=5.0, description="Default timeout in seconds")
@@ -39,7 +41,9 @@ class Settings(BaseSettings):
 
     rate_limit_user_rate: float = Field(default=10.0, description="User rate limit (requests/sec)")
     rate_limit_user_capacity: int = Field(default=20, description="User rate limit capacity")
-    rate_limit_global_rate: float = Field(default=100.0, description="Global rate limit (requests/sec)")
+    rate_limit_global_rate: float = Field(
+        default=100.0, description="Global rate limit (requests/sec)"
+    )
     rate_limit_global_capacity: int = Field(default=200, description="Global rate limit capacity")
 
     cache_max_size: int = Field(default=1000, description="Max cache size")

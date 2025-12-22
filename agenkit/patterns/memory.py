@@ -695,7 +695,9 @@ class MemoryHierarchy:
             for entry in await self.long_term.retrieve("", limit=9999):
                 await self.long_term.delete(entry.id)
         else:
-            raise ValueError(f"Invalid tier: {tier}. Must be 'working', 'short_term', or 'long_term'")
+            raise ValueError(
+                f"Invalid tier: {tier}. Must be 'working', 'short_term', or 'long_term'"
+            )
 
     def get_stats(self) -> dict[str, Any]:
         """

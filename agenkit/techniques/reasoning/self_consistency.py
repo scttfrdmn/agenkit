@@ -133,7 +133,7 @@ class SelfConsistency(Agent):
             r"(?:therefore|thus|so),?\s+(?:the answer is\s+)?(.+?)(?:\.|$)",
             r"(?:the answer is|answer:)\s+(.+?)(?:\.|$)",
             r"=\s*(.+?)(?:\n|$)",
-            r"(?:conclusion|result):\s*(.+?)(?:\.|$)"
+            r"(?:conclusion|result):\s*(.+?)(?:\.|$)",
         ]
 
         for pattern in answer_patterns:
@@ -142,7 +142,7 @@ class SelfConsistency(Agent):
                 return match.group(1).strip()
 
         # Fallback: use last non-empty line
-        lines = [line.strip() for line in text.split('\n') if line.strip()]
+        lines = [line.strip() for line in text.split("\n") if line.strip()]
         if lines:
             return lines[-1]
 
@@ -203,7 +203,7 @@ class SelfConsistency(Agent):
         # Find original case version
         winning_answer = next(
             (ans for ans in answers if ans.lower().strip() == winning_answer_lower),
-            winning_answer_lower
+            winning_answer_lower,
         )
 
         # Consistency score = fraction that agree
@@ -230,11 +230,7 @@ class SelfConsistency(Agent):
         for answer, response in zip(answers, responses, strict=False):
             answer_key = answer.lower().strip()
             if answer_key not in answer_groups:
-                answer_groups[answer_key] = {
-                    "original": answer,
-                    "weight": 0,
-                    "count": 0
-                }
+                answer_groups[answer_key] = {"original": answer, "weight": 0, "count": 0}
             # Weight by response length
             answer_groups[answer_key]["weight"] += len(response)
             answer_groups[answer_key]["count"] += 1
@@ -320,8 +316,8 @@ class SelfConsistency(Agent):
                 "samples": full_responses,
                 "extracted_answers": extracted_answers,
                 "answer_counts": dict(answer_counts),
-                "base_agent": self.agent.name if hasattr(self.agent, 'name') else "unknown"
-            }
+                "base_agent": self.agent.name if hasattr(self.agent, "name") else "unknown",
+            },
         )
 
     @property
@@ -332,10 +328,4 @@ class SelfConsistency(Agent):
         Returns:
             List of capability strings describing what this agent can do
         """
-        return [
-            "reasoning",
-            "self_consistency",
-            "majority_voting",
-            "reliability",
-            "consensus"
-        ]
+        return ["reasoning", "self_consistency", "majority_voting", "reliability", "consensus"]

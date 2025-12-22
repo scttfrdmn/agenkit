@@ -38,7 +38,7 @@ class MockAgent:
         return Message(
             role="assistant",
             content=f"{self._name}: {self.response}",
-            metadata={"agent": self._name}
+            metadata={"agent": self._name},
         )
 
 
@@ -100,9 +100,7 @@ class MockPlanner:
         self.last_synthesize_original = original
         self.last_synthesize_results = results
         return Message(
-            role="assistant",
-            content=self.synthesis_response,
-            metadata={"synthesized": True}
+            role="assistant", content=self.synthesis_response, metadata={"synthesized": True}
         )
 
 
@@ -122,9 +120,7 @@ class FailingPlanner:
 
     async def plan(self, message: Message) -> list[Subtask]:
         """Return valid subtasks."""
-        return [
-            Subtask(type="specialist1", message=Message(role="user", content="task1"))
-        ]
+        return [Subtask(type="specialist1", message=Message(role="user", content="task1"))]
 
     async def synthesize(self, original: Message, results: dict[str, Message]) -> Message:
         """Always raises an error."""
@@ -194,7 +190,7 @@ def test_supervisor_multiple_specialists():
     specialists = {
         "coder": MockAgent("coder"),
         "tester": MockAgent("tester"),
-        "reviewer": MockAgent("reviewer")
+        "reviewer": MockAgent("reviewer"),
     }
 
     supervisor = SupervisorAgent(planner=planner, specialists=specialists)
@@ -333,14 +329,14 @@ async def test_supervisor_multiple_subtasks():
     subtasks = [
         Subtask(type="coder", message=Message(role="user", content="write code")),
         Subtask(type="tester", message=Message(role="user", content="test code")),
-        Subtask(type="reviewer", message=Message(role="user", content="review code"))
+        Subtask(type="reviewer", message=Message(role="user", content="review code")),
     ]
 
     planner = MockPlanner(subtasks=subtasks)
     specialists = {
         "coder": MockAgent("coder"),
         "tester": MockAgent("tester"),
-        "reviewer": MockAgent("reviewer")
+        "reviewer": MockAgent("reviewer"),
     }
 
     supervisor = SupervisorAgent(planner=planner, specialists=specialists)
@@ -362,14 +358,11 @@ async def test_supervisor_execution_order_tracked():
     """Test that execution order is tracked in metadata."""
     subtasks = [
         Subtask(type="coder", message=Message(role="user", content="task1")),
-        Subtask(type="tester", message=Message(role="user", content="task2"))
+        Subtask(type="tester", message=Message(role="user", content="task2")),
     ]
 
     planner = MockPlanner(subtasks=subtasks)
-    specialists = {
-        "coder": MockAgent("coder"),
-        "tester": MockAgent("tester")
-    }
+    specialists = {"coder": MockAgent("coder"), "tester": MockAgent("tester")}
 
     supervisor = SupervisorAgent(planner=planner, specialists=specialists)
 
@@ -394,7 +387,7 @@ async def test_supervisor_multiple_same_specialist():
     """Test supervisor using same specialist for multiple subtasks."""
     subtasks = [
         Subtask(type="coder", message=Message(role="user", content="task1")),
-        Subtask(type="coder", message=Message(role="user", content="task2"))
+        Subtask(type="coder", message=Message(role="user", content="task2")),
     ]
 
     planner = MockPlanner(subtasks=subtasks)
@@ -536,7 +529,7 @@ async def test_simple_planner_synthesize():
     original = Message(role="user", content="original")
     results = {
         "coder_0": Message(role="assistant", content="Code done"),
-        "tester_0": Message(role="assistant", content="Tests pass")
+        "tester_0": Message(role="assistant", content="Tests pass"),
     }
 
     result = await planner.synthesize(original, results)
@@ -565,7 +558,7 @@ async def test_supervisor_full_workflow():
         async def plan(self, message: Message) -> list[Subtask]:
             return [
                 Subtask(type="coder", message=Message(role="user", content="write code")),
-                Subtask(type="tester", message=Message(role="user", content="test code"))
+                Subtask(type="tester", message=Message(role="user", content="test code")),
             ]
 
     planner = WorkflowPlanner(base_agent)
@@ -573,7 +566,7 @@ async def test_supervisor_full_workflow():
     # Create specialists
     specialists = {
         "coder": MockAgent("coder", response="Feature implemented"),
-        "tester": MockAgent("tester", response="Tests passing")
+        "tester": MockAgent("tester", response="Tests passing"),
     }
 
     # Create supervisor

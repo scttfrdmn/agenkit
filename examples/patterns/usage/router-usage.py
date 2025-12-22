@@ -243,8 +243,9 @@ async def multi_classifier():
             tier = message.metadata.get("customer_tier", "standard")
 
             # VIP customers go to technical for anything important
-            if tier == "vip" and any(word in content for word in
-                                      ["urgent", "critical", "important"]):
+            if tier == "vip" and any(
+                word in content for word in ["urgent", "critical", "important"]
+            ):
                 return "technical"
 
             # Standard classification

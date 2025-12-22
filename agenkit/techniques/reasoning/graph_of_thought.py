@@ -70,7 +70,7 @@ class GraphOfThought(Agent):
         max_nodes: int = 20,
         max_edges: int = 40,
         aggregator: str = "path_based",
-        allow_cycles: bool = False
+        allow_cycles: bool = False,
     ):
         """
         Initialize Graph-of-Thought agent.
@@ -143,22 +143,20 @@ Premises:"""
 
         # Parse premises
         premises = []
-        for line in response.strip().split('\n'):
+        for line in response.strip().split("\n"):
             line = line.strip()
-            if line and not line.startswith('#'):
+            if line and not line.startswith("#"):
                 # Remove numbering and bullets
                 import re
-                cleaned = re.sub(r'^[•\-\*\d]+[\\.\\)\\s]*', '', line)
+
+                cleaned = re.sub(r"^[•\-\*\d]+[\\.\\)\\s]*", "", line)
                 if cleaned:
                     premises.append(cleaned)
 
         return premises[:4]  # Limit to 4 premises
 
     async def generate_thoughts(
-        self,
-        problem: str,
-        existing_thoughts: list[str],
-        max_new: int = 3
+        self, problem: str, existing_thoughts: list[str], max_new: int = 3
     ) -> list[str]:
         """
         Generate new intermediate thoughts based on existing ones.
@@ -192,21 +190,18 @@ Thoughts (one per line):"""
 
         # Parse new thoughts
         thoughts = []
-        for line in response.strip().split('\n'):
+        for line in response.strip().split("\n"):
             line = line.strip()
-            if line and not line.startswith('#'):
+            if line and not line.startswith("#"):
                 import re
-                cleaned = re.sub(r'^[•\-\*\d]+[\\.\\)\\s]*', '', line)
+
+                cleaned = re.sub(r"^[•\-\*\d]+[\\.\\)\\s]*", "", line)
                 if cleaned and len(thoughts) < max_new:
                     thoughts.append(cleaned)
 
         return thoughts
 
-    async def identify_connections(
-        self,
-        thought1: str,
-        thought2: str
-    ) -> EdgeType | None:
+    async def identify_connections(self, thought1: str, thought2: str) -> EdgeType | None:
         """
         Identify logical connection between two thoughts.
 
@@ -262,11 +257,7 @@ Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION"""
         premises = await self.generate_premises(problem)
         premise_ids = []
         for premise in premises:
-            node_id = graph.add_node(
-                content=premise,
-                node_type=NodeType.PREMISE,
-                confidence=0.9
-            )
+            node_id = graph.add_node(content=premise, node_type=NodeType.PREMISE, confidence=0.9)
             premise_ids.append(node_id)
 
         # Step 2: Generate intermediate thoughts
@@ -280,9 +271,7 @@ Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION"""
                 break
 
             new_thoughts = await self.generate_thoughts(
-                problem=problem,
-                existing_thoughts=all_thoughts,
-                max_new=max_new
+                problem=problem, existing_thoughts=all_thoughts, max_new=max_new
             )
 
             if not new_thoughts:
@@ -294,9 +283,7 @@ Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION"""
                     break
 
                 node_id = graph.add_node(
-                    content=thought,
-                    node_type=NodeType.INTERMEDIATE,
-                    confidence=0.7
+                    content=thought, node_type=NodeType.INTERMEDIATE, confidence=0.7
                 )
                 all_thoughts.append(thought)
                 node_ids.append(node_id)
@@ -330,15 +317,13 @@ Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION"""
 Problem: {problem}
 
 Thoughts:
-{chr(10).join([f'- {t}' for t in all_thoughts])}
+{chr(10).join([f"- {t}" for t in all_thoughts])}
 
 Final conclusion:"""
 
             conclusion = await self._llm_call(conclusion_prompt)
             conclusion_id = graph.add_node(
-                content=conclusion.strip(),
-                node_type=NodeType.CONCLUSION,
-                confidence=0.8
+                content=conclusion.strip(), node_type=NodeType.CONCLUSION, confidence=0.8
             )
 
             # Connect conclusion to recent thoughts
@@ -370,11 +355,7 @@ Final conclusion:"""
 
         return all_paths
 
-    async def aggregate_paths(
-        self,
-        graph: ReasoningGraph,
-        paths: list[list[int]]
-    ) -> str:
+    async def aggregate_paths(self, graph: ReasoningGraph, paths: list[list[int]]) -> str:
         """
         Aggregate multiple reasoning paths into final answer.
 
@@ -486,8 +467,8 @@ Final conclusion:"""
                 "node_types": stats["node_types"],
                 "edge_types": stats["edge_types"],
                 "aggregator": self.aggregator,
-                "allow_cycles": self.allow_cycles
-            }
+                "allow_cycles": self.allow_cycles,
+            },
         )
 
     @property
@@ -503,5 +484,5 @@ Final conclusion:"""
             "graph_of_thought",
             "multi_hop_reasoning",
             "path_aggregation",
-            "complex_synthesis"
+            "complex_synthesis",
         ]

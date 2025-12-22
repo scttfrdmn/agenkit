@@ -74,23 +74,25 @@ async def sequential_with_llm():
     print("=" * 60)
 
     # Create a content pipeline: Draft -> Review -> Polish
-    pipeline = SequentialAgent([
-        LLMAgent(
-            name="Drafter",
-            system_prompt="You are a content drafter. Create a brief outline or draft "
-            "for the given topic. Keep it concise (2-3 sentences).",
-        ),
-        LLMAgent(
-            name="Reviewer",
-            system_prompt="You are a content reviewer. Review the draft and suggest "
-            "2-3 specific improvements. Be constructive and brief.",
-        ),
-        LLMAgent(
-            name="Polisher",
-            system_prompt="You are a content polisher. Take the draft and review, "
-            "then create a final polished version. Keep it concise.",
-        ),
-    ])
+    pipeline = SequentialAgent(
+        [
+            LLMAgent(
+                name="Drafter",
+                system_prompt="You are a content drafter. Create a brief outline or draft "
+                "for the given topic. Keep it concise (2-3 sentences).",
+            ),
+            LLMAgent(
+                name="Reviewer",
+                system_prompt="You are a content reviewer. Review the draft and suggest "
+                "2-3 specific improvements. Be constructive and brief.",
+            ),
+            LLMAgent(
+                name="Polisher",
+                system_prompt="You are a content polisher. Take the draft and review, "
+                "then create a final polished version. Keep it concise.",
+            ),
+        ]
+    )
 
     message = Message(
         role="user",
@@ -150,6 +152,7 @@ async def parallel_with_llm():
 
     try:
         import time
+
         start = time.time()
         result = await analyzer.process(message)
         elapsed = time.time() - start
@@ -196,11 +199,15 @@ async def router_with_llm():
         def classify(self, message: Message) -> str:
             content = message.content.lower()
 
-            if any(word in content for word in
-                   ["code", "implement", "technical", "api", "debug", "algorithm"]):
+            if any(
+                word in content
+                for word in ["code", "implement", "technical", "api", "debug", "algorithm"]
+            ):
                 return "technical"
-            elif any(word in content for word in
-                     ["design", "creative", "brainstorm", "idea", "innovative"]):
+            elif any(
+                word in content
+                for word in ["design", "creative", "brainstorm", "idea", "innovative"]
+            ):
                 return "creative"
             else:
                 return "general"
@@ -272,10 +279,12 @@ async def composed_patterns():
     )
 
     # Compose
-    pipeline = SequentialAgent([
-        brainstorm_stage,
-        synthesizer,
-    ])
+    pipeline = SequentialAgent(
+        [
+            brainstorm_stage,
+            synthesizer,
+        ]
+    )
 
     message = Message(
         role="user",

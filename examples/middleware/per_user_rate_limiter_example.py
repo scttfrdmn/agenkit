@@ -58,7 +58,7 @@ async def main():
     for i in range(3):
         message = Message(
             role="user",
-            content=f"Request {i+1}",
+            content=f"Request {i + 1}",
             metadata={"user_id": "alice"},
         )
         response = await limited_agent.process(message)
@@ -120,17 +120,17 @@ async def main():
         user = users[i % 3]
         message = Message(
             role="user",
-            content=f"Request {i+1}",
+            content=f"Request {i + 1}",
             metadata={"user_id": user},
         )
 
         try:
             await limited_agent2.process(message)
             allowed += 1
-            print(f"  ✓ {user}: Request {i+1} allowed")
+            print(f"  ✓ {user}: Request {i + 1} allowed")
         except Exception as e:
             rate_limited += 1
-            print(f"  ✗ {user}: Request {i+1} rate limited ({type(e).__name__})")
+            print(f"  ✗ {user}: Request {i + 1} rate limited ({type(e).__name__})")
 
     print(f"\nResults: {allowed} allowed, {rate_limited} rate limited")
     print("Metrics:")

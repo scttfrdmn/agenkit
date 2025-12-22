@@ -47,7 +47,9 @@ class MockLLM:
             return "1. Fact A\n2. Fact B"
 
         # Thought generation
-        if "generate" in prompt.lower() and ("thoughts" in prompt.lower() or "insights" in prompt.lower()):
+        if "generate" in prompt.lower() and (
+            "thoughts" in prompt.lower() or "insights" in prompt.lower()
+        ):
             if "climate" in prompt:
                 return """1. Rising temperatures cause extreme weather
 2. Reducing emissions is critical
@@ -104,7 +106,7 @@ async def basic_example():
 
     print(f"\n🎯 Final Answer: {response.content}")
 
-    graph = response.metadata['graph']
+    graph = response.metadata["graph"]
     print("\n📋 Graph Structure:")
     for node_id, node in graph.nodes.items():
         print(f"   Node {node_id} [{node.node_type.value}]: {node.content[:50]}...")
@@ -158,8 +160,8 @@ async def reasoning_paths_example():
 
     print(f"\nProblem: {problem}")
 
-    graph = response.metadata['graph']
-    paths = response.metadata['reasoning_paths']
+    graph = response.metadata["graph"]
+    paths = response.metadata["reasoning_paths"]
 
     print(f"\n🔗 Found {len(paths)} reasoning paths:")
 
@@ -216,7 +218,7 @@ async def graph_statistics_example():
     problem = "What are the benefits of renewable energy?"
     response = await agent.process(Message(role="user", content=problem))
 
-    graph = response.metadata['graph']
+    graph = response.metadata["graph"]
     stats = graph.statistics()
 
     print(f"\nProblem: {problem}")
@@ -228,15 +230,15 @@ async def graph_statistics_example():
     print(f"   Has Cycles: {stats['has_cycles']}")
 
     print("\n📋 Node Distribution:")
-    for node_type, count in stats['node_types'].items():
+    for node_type, count in stats["node_types"].items():
         print(f"   {node_type.capitalize()}: {count}")
 
     print("\n🔗 Edge Distribution:")
-    for edge_type, count in stats['edge_types'].items():
+    for edge_type, count in stats["edge_types"].items():
         print(f"   {edge_type.capitalize()}: {count}")
 
     # Analyze path structure
-    paths = response.metadata['reasoning_paths']
+    paths = response.metadata["reasoning_paths"]
     if paths:
         avg_path_length = sum(len(p) for p in paths) / len(paths)
         print("\n🔍 Path Analysis:")
@@ -262,11 +264,11 @@ async def multi_hop_reasoning_example():
     print("\n🔗 Multi-Hop Reasoning:")
     print("   Graph-of-Thought excels at chaining multiple logical steps")
 
-    graph = response.metadata['graph']
+    graph = response.metadata["graph"]
     print(f"\n📊 Graph has {graph.statistics()['num_nodes']} nodes connected by")
     print(f"   {graph.statistics()['num_edges']} logical relationships")
 
-    paths = response.metadata['reasoning_paths']
+    paths = response.metadata["reasoning_paths"]
     if paths:
         longest_path = max(paths, key=len)
         print(f"\n🎯 Longest reasoning chain: {len(longest_path)} steps")

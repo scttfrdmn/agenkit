@@ -71,7 +71,7 @@ class ContextOptimizer(Agent):
         agent: Agent,
         summarizer: Agent,
         max_tokens: int = 4000,
-        token_counter: Callable[[str], int] | None = None
+        token_counter: Callable[[str], int] | None = None,
     ):
         """
         Initialize context optimizer.
@@ -133,9 +133,7 @@ class ContextOptimizer(Agent):
 
 Summary:"""
 
-        response = await self.summarizer.process(
-            Message(role="user", content=summary_request)
-        )
+        response = await self.summarizer.process(Message(role="user", content=summary_request))
 
         return response.content
 
@@ -171,7 +169,7 @@ Summary:"""
         metadata = {
             "technique": "context_optimization",
             "optimized": False,
-            "original_tokens": original_tokens
+            "original_tokens": original_tokens,
         }
 
         # Check if optimization needed
@@ -181,17 +179,19 @@ Summary:"""
             compressed_tokens = self.token_counter(summarized_content)
 
             # Update metadata
-            metadata.update({
-                "optimized": True,
-                "compressed_tokens": compressed_tokens,
-                "compression_ratio": original_tokens / compressed_tokens if compressed_tokens > 0 else 1.0
-            })
+            metadata.update(
+                {
+                    "optimized": True,
+                    "compressed_tokens": compressed_tokens,
+                    "compression_ratio": original_tokens / compressed_tokens
+                    if compressed_tokens > 0
+                    else 1.0,
+                }
+            )
 
             # Process with summarized content
             optimized_message = Message(
-                role=message.role,
-                content=summarized_content,
-                metadata=message.metadata
+                role=message.role, content=summarized_content, metadata=message.metadata
             )
             response = await self.agent.process(optimized_message)
         else:
@@ -202,14 +202,10 @@ Summary:"""
         if response.metadata:
             metadata.update(response.metadata)
 
-        return Message(
-            role=response.role,
-            content=response.content,
-            metadata=metadata
-        )
+        return Message(role=response.role, content=response.content, metadata=metadata)
 
     @property
     def capabilities(self) -> list[str]:
         """Return agent capabilities."""
-        base_caps = self.agent.capabilities if hasattr(self.agent, 'capabilities') else []
+        base_caps = self.agent.capabilities if hasattr(self.agent, "capabilities") else []
         return [*base_caps, "context_optimization", "summarization", "token_management"]

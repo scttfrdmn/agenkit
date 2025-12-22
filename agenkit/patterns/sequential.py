@@ -116,9 +116,7 @@ class SequentialAgent(Agent):
             try:
                 result = await agent.process(current)
             except Exception as e:
-                raise RuntimeError(
-                    f"agent {i} ({agent.name}) failed: {e}"
-                ) from e
+                raise RuntimeError(f"agent {i} ({agent.name}) failed: {e}") from e
 
             # Record stage metadata
             stage_info: dict[str, Any] = {

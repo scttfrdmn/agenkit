@@ -77,18 +77,14 @@ async def basic_example():
     print("=" * 60)
 
     agent = VariableAgent()
-    sc = SelfConsistency(
-        agent=agent,
-        num_samples=5,
-        voting_strategy="majority"
-    )
+    sc = SelfConsistency(agent=agent, num_samples=5, voting_strategy="majority")
 
     query = "What is the answer?"
     response = await sc.process(Message(role="user", content=query))
 
     print(f"\nQuery: {query}")
     print("\nAll Samples:")
-    for i, sample in enumerate(response.metadata['extracted_answers'], 1):
+    for i, sample in enumerate(response.metadata["extracted_answers"], 1):
         print(f"  {i}. {sample}")
 
     print(f"\nAnswer Counts: {response.metadata['answer_counts']}")
@@ -119,19 +115,14 @@ async def weighted_voting_example():
             return Message(role="assistant", content=response)
 
     agent = DetailedAgent()
-    sc = SelfConsistency(
-        agent=agent,
-        num_samples=3,
-        voting_strategy="weighted"
-    )
+    sc = SelfConsistency(agent=agent, num_samples=3, voting_strategy="weighted")
 
     response = await sc.process(Message(role="user", content="Question?"))
 
     print("\nSamples:")
-    for i, (answer, full) in enumerate(zip(
-        response.metadata['extracted_answers'],
-        response.metadata['samples'], strict=False
-    ), 1):
+    for i, (answer, full) in enumerate(
+        zip(response.metadata["extracted_answers"], response.metadata["samples"], strict=False), 1
+    ):
         print(f"  {i}. '{answer}' (length: {len(full)})")
 
     print(f"\nWeighted Winner: {response.content}")
@@ -156,7 +147,7 @@ async def cot_plus_sc_example():
     print(f"Samples: {response.metadata['num_samples']}")
 
     print("\nExtracted Answers:")
-    for i, answer in enumerate(response.metadata['extracted_answers'], 1):
+    for i, answer in enumerate(response.metadata["extracted_answers"], 1):
         print(f"  {i}. {answer}")
 
     print(f"\nConsensus: {response.content}")
@@ -172,7 +163,8 @@ async def custom_extractor_example():
     def extract_number(text: str) -> str:
         """Extract first number from text."""
         import re
-        match = re.search(r'\d+', text)
+
+        match = re.search(r"\d+", text)
         return match.group(0) if match else text
 
     class NumericAgent:
@@ -193,16 +185,12 @@ async def custom_extractor_example():
             return Message(role="assistant", content=response)
 
     agent = NumericAgent()
-    sc = SelfConsistency(
-        agent=agent,
-        num_samples=5,
-        answer_extractor=extract_number
-    )
+    sc = SelfConsistency(agent=agent, num_samples=5, answer_extractor=extract_number)
 
     response = await sc.process(Message(role="user", content="Calculate"))
 
     print("\nFull Responses:")
-    for i, sample in enumerate(response.metadata['samples'], 1):
+    for i, sample in enumerate(response.metadata["samples"], 1):
         print(f"  {i}. {sample}")
 
     print(f"\nExtracted Numbers: {response.metadata['extracted_answers']}")

@@ -147,17 +147,17 @@ async def test_partial_failure_with_retry():
                     await asyncio.sleep(0.01)
 
     # Retry should significantly improve success rate
-    assert (
-        successes_with_retry > successes_no_retry
-    ), f"Retry ({successes_with_retry}) should improve success rate over no retry ({successes_no_retry})"
+    assert successes_with_retry > successes_no_retry, (
+        f"Retry ({successes_with_retry}) should improve success rate over no retry ({successes_no_retry})"
+    )
 
     # With 70% failure rate and 5 retries:
     # - Theoretical success rate: 1 - 0.7^5 = 83.2%
     # - Expected successes: 16.64 out of 20
     # - Allow variance: accept >= 15 successes (75%)
-    assert (
-        successes_with_retry >= 15
-    ), f"Expected >=15 successes with retry (75% success rate), got {successes_with_retry}"
+    assert successes_with_retry >= 15, (
+        f"Expected >=15 successes with retry (75% success rate), got {successes_with_retry}"
+    )
 
 
 # ============================================

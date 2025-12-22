@@ -171,9 +171,9 @@ async def test_tail_latency_spikes():
 
     # Also check that max latency shows spikes exist
     max_latency = latencies[-1]
-    assert (
-        max_latency > 0.15
-    ), f"Max latency ({max_latency * 1000:.1f}ms) should show spikes (>150ms)"
+    assert max_latency > 0.15, (
+        f"Max latency ({max_latency * 1000:.1f}ms) should show spikes (>150ms)"
+    )
 
 
 # ============================================
@@ -333,9 +333,9 @@ async def test_performance_under_sustained_load():
     concurrent_time = time.time() - start
 
     # Concurrent should be faster than sequential despite per-request slowdown
-    assert (
-        concurrent_time < sequential_time
-    ), f"Concurrent ({concurrent_time:.2f}s) should be faster than sequential ({sequential_time:.2f}s)"
+    assert concurrent_time < sequential_time, (
+        f"Concurrent ({concurrent_time:.2f}s) should be faster than sequential ({sequential_time:.2f}s)"
+    )
 
 
 @pytest.mark.asyncio

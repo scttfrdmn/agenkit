@@ -44,22 +44,20 @@ Use markdown formatting."""
 
         try:
             response = await self._llm.complete(
-                [Message(role="user", content=prompt)],
-                max_tokens=2000,
-                temperature=0.7
+                [Message(role="user", content=prompt)], max_tokens=2000, temperature=0.7
             )
 
             return Message(
                 role="assistant",
                 content=str(response.content),
-                metadata={"type": "research_report", "query": query, "num_findings": len(findings)}
+                metadata={"type": "research_report", "query": query, "num_findings": len(findings)},
             )
         except Exception as e:
             logger.error(f"Writing error: {e}")
             return Message(
                 role="assistant",
                 content=f"# Research Report: {query}\n\nError synthesizing findings: {e!s}",
-                metadata={"type": "error"}
+                metadata={"type": "error"},
             )
 
     def _format_findings(self, findings: list) -> str:

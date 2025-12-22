@@ -75,6 +75,7 @@ def measure_time(func, iterations: int = 10_000) -> float:
     Returns:
         Total time in seconds
     """
+
     async def run():
         for _ in range(iterations):
             await func()
@@ -104,15 +105,19 @@ def print_benchmark_result(
     baseline_time: float,
     middleware_time: float,
     overhead: float,
-    threshold: float
+    threshold: float,
 ):
     """Print benchmark results in consistent format."""
     print(f"\n{name}:")
     print(f"  Iterations: {iterations:,}")
-    print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
-    print(f"  Middleware: {middleware_time:.4f}s ({middleware_time/iterations*1000:.6f}ms per call)")
-    print(f"  Overhead:   {overhead*100:.2f}%")
-    print(f"  Threshold:  {threshold*100:.0f}%")
+    print(
+        f"  Baseline:   {baseline_time:.4f}s ({baseline_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(
+        f"  Middleware: {middleware_time:.4f}s ({middleware_time / iterations * 1000:.6f}ms per call)"
+    )
+    print(f"  Overhead:   {overhead * 100:.2f}%")
+    print(f"  Threshold:  {threshold * 100:.0f}%")
     print(f"  Status:     {'✅ PASS' if overhead < threshold else '❌ FAIL'}")
 
 
@@ -144,8 +149,7 @@ def test_retry_middleware_overhead():
 
     # Middleware: Agent with retry (no failures, so no retries)
     retry_agent = RetryDecorator(
-        agent,
-        RetryConfig(max_attempts=3, initial_backoff=0.1, max_backoff=1.0)
+        agent, RetryConfig(max_attempts=3, initial_backoff=0.1, max_backoff=1.0)
     )
 
     async def middleware():
@@ -161,10 +165,10 @@ def test_retry_middleware_overhead():
         baseline_time,
         middleware_time,
         overhead,
-        threshold=0.15
+        threshold=0.15,
     )
 
-    assert overhead < 0.15, f"Retry middleware overhead {overhead*100:.2f}% exceeds 15%"
+    assert overhead < 0.15, f"Retry middleware overhead {overhead * 100:.2f}% exceeds 15%"
 
 
 def test_metrics_middleware_overhead():
@@ -205,10 +209,10 @@ def test_metrics_middleware_overhead():
         baseline_time,
         middleware_time,
         overhead,
-        threshold=0.10
+        threshold=0.10,
     )
 
-    assert overhead < 0.10, f"Metrics middleware overhead {overhead*100:.2f}% exceeds 10%"
+    assert overhead < 0.10, f"Metrics middleware overhead {overhead * 100:.2f}% exceeds 10%"
 
 
 def test_circuit_breaker_middleware_overhead():
@@ -235,12 +239,7 @@ def test_circuit_breaker_middleware_overhead():
 
     # Middleware: Agent with circuit breaker (CLOSED state)
     cb_agent = CircuitBreakerDecorator(
-        agent,
-        CircuitBreakerConfig(
-            failure_threshold=5,
-            recovery_timeout=1.0,
-            success_threshold=2
-        )
+        agent, CircuitBreakerConfig(failure_threshold=5, recovery_timeout=1.0, success_threshold=2)
     )
 
     async def middleware():
@@ -256,10 +255,10 @@ def test_circuit_breaker_middleware_overhead():
         baseline_time,
         middleware_time,
         overhead,
-        threshold=0.20
+        threshold=0.20,
     )
 
-    assert overhead < 0.20, f"Circuit breaker overhead {overhead*100:.2f}% exceeds 20%"
+    assert overhead < 0.20, f"Circuit breaker overhead {overhead * 100:.2f}% exceeds 20%"
 
 
 def test_rate_limiter_middleware_overhead():
@@ -286,8 +285,7 @@ def test_rate_limiter_middleware_overhead():
 
     # Middleware: Agent with rate limiter (high capacity, no waiting)
     rl_agent = RateLimiterDecorator(
-        agent,
-        RateLimiterConfig(rate=1000000.0, capacity=1000000, tokens_per_request=1)
+        agent, RateLimiterConfig(rate=1000000.0, capacity=1000000, tokens_per_request=1)
     )
 
     async def middleware():
@@ -303,10 +301,10 @@ def test_rate_limiter_middleware_overhead():
         baseline_time,
         middleware_time,
         overhead,
-        threshold=0.20
+        threshold=0.20,
     )
 
-    assert overhead < 0.20, f"Rate limiter overhead {overhead*100:.2f}% exceeds 20%"
+    assert overhead < 0.20, f"Rate limiter overhead {overhead * 100:.2f}% exceeds 20%"
 
 
 def test_timeout_middleware_overhead():
@@ -341,7 +339,7 @@ def test_timeout_middleware_overhead():
     # Middleware: Agent with timeout (generous timeout, no timeouts occur)
     timeout_agent = TimeoutDecorator(
         agent,
-        TimeoutConfig(timeout=30.0)  # 30 second timeout, agent responds instantly
+        TimeoutConfig(timeout=30.0),  # 30 second timeout, agent responds instantly
     )
 
     async def middleware():
@@ -357,10 +355,10 @@ def test_timeout_middleware_overhead():
         baseline_time,
         middleware_time,
         overhead,
-        threshold=4.0
+        threshold=4.0,
     )
 
-    assert overhead < 4.0, f"Timeout middleware overhead {overhead*100:.2f}% exceeds 400%"
+    assert overhead < 4.0, f"Timeout middleware overhead {overhead * 100:.2f}% exceeds 400%"
 
 
 def test_batching_middleware_overhead():
@@ -391,7 +389,7 @@ def test_batching_middleware_overhead():
     - Parallel execution with asyncio.gather
     """
     iterations = 1_000  # Total requests (processed in concurrent batches)
-    concurrency = 100   # Requests per batch
+    concurrency = 100  # Requests per batch
     msg = Message(role="user", content="test")
 
     # Baseline: Agent without middleware (concurrent)
@@ -410,8 +408,7 @@ def test_batching_middleware_overhead():
 
     # Middleware: Agent with batching (concurrent)
     batching_agent = BatchingDecorator(
-        agent,
-        BatchingConfig(max_batch_size=10, max_wait_time=0.01, max_queue_size=1000)
+        agent, BatchingConfig(max_batch_size=10, max_wait_time=0.01, max_queue_size=1000)
     )
 
     async def middleware_batch():
@@ -434,14 +431,14 @@ def test_batching_middleware_overhead():
         baseline_time,
         middleware_time,
         overhead,
-        threshold=5.0
+        threshold=5.0,
     )
 
     print(f"  Concurrency:    {concurrency} requests per batch")
     print(f"  Batch size:     {batching_agent.metrics.avg_batch_size:.1f} average")
     print(f"  Total batches:  {batching_agent.metrics.total_batches}")
 
-    assert overhead < 5.0, f"Batching middleware overhead {overhead*100:.2f}% exceeds 500%"
+    assert overhead < 5.0, f"Batching middleware overhead {overhead * 100:.2f}% exceeds 500%"
 
 
 # ============================================
@@ -479,26 +476,21 @@ def test_stacked_middleware_overhead():
 
     # Layer 1: Rate limiter (innermost)
     agent_with_rl = RateLimiterDecorator(
-        agent,
-        RateLimiterConfig(rate=1000000.0, capacity=1000000, tokens_per_request=1)
+        agent, RateLimiterConfig(rate=1000000.0, capacity=1000000, tokens_per_request=1)
     )
 
     # Layer 2: Circuit breaker
     agent_with_cb = CircuitBreakerDecorator(
         agent_with_rl,
-        CircuitBreakerConfig(failure_threshold=5, recovery_timeout=1.0, success_threshold=2)
+        CircuitBreakerConfig(failure_threshold=5, recovery_timeout=1.0, success_threshold=2),
     )
 
     # Layer 3: Timeout
-    agent_with_timeout = TimeoutDecorator(
-        agent_with_cb,
-        TimeoutConfig(timeout=30.0)
-    )
+    agent_with_timeout = TimeoutDecorator(agent_with_cb, TimeoutConfig(timeout=30.0))
 
     # Layer 4: Retry
     agent_with_retry = RetryDecorator(
-        agent_with_timeout,
-        RetryConfig(max_attempts=3, initial_backoff=0.1, max_backoff=1.0)
+        agent_with_timeout, RetryConfig(max_attempts=3, initial_backoff=0.1, max_backoff=1.0)
     )
 
     # Layer 5: Metrics (outermost)
@@ -517,13 +509,13 @@ def test_stacked_middleware_overhead():
         baseline_time,
         middleware_time,
         overhead,
-        threshold=0.60
+        threshold=0.60,
     )
 
     print("  Layers:     Metrics → Retry → Timeout → Circuit Breaker → Rate Limiter → Agent")
-    print(f"  Per-layer:  ~{overhead*100/5:.2f}% average overhead per middleware")
+    print(f"  Per-layer:  ~{overhead * 100 / 5:.2f}% average overhead per middleware")
 
-    assert overhead < 0.60, f"Stacked middleware overhead {overhead*100:.2f}% exceeds 60%"
+    assert overhead < 0.60, f"Stacked middleware overhead {overhead * 100:.2f}% exceeds 60%"
 
 
 def test_minimal_stack_overhead():
@@ -550,8 +542,7 @@ def test_minimal_stack_overhead():
 
     # Layer 1: Retry
     agent_with_retry = RetryDecorator(
-        agent,
-        RetryConfig(max_attempts=3, initial_backoff=0.1, max_backoff=1.0)
+        agent, RetryConfig(max_attempts=3, initial_backoff=0.1, max_backoff=1.0)
     )
 
     # Layer 2: Metrics
@@ -570,13 +561,13 @@ def test_minimal_stack_overhead():
         baseline_time,
         middleware_time,
         overhead,
-        threshold=0.25
+        threshold=0.25,
     )
 
     print("  Layers:     Metrics → Retry → Agent")
-    print(f"  Per-layer:  ~{overhead*100/2:.2f}% average overhead per middleware")
+    print(f"  Per-layer:  ~{overhead * 100 / 2:.2f}% average overhead per middleware")
 
-    assert overhead < 0.25, f"Minimal stack overhead {overhead*100:.2f}% exceeds 25%"
+    assert overhead < 0.25, f"Minimal stack overhead {overhead * 100:.2f}% exceeds 25%"
 
 
 # ============================================
@@ -606,56 +597,59 @@ def test_middleware_comparison():
 
     # 1. Retry
     retry_agent = RetryDecorator(
-        agent,
-        RetryConfig(max_attempts=3, initial_backoff=0.1, max_backoff=1.0)
+        agent, RetryConfig(max_attempts=3, initial_backoff=0.1, max_backoff=1.0)
     )
+
     async def test_retry():
         await retry_agent.process(msg)
+
     retry_time = measure_time(test_retry, iterations)
     middleware_results["Retry"] = calculate_overhead(baseline_time, retry_time)
 
     # 2. Metrics
     metrics_agent = MetricsDecorator(agent)
+
     async def test_metrics():
         await metrics_agent.process(msg)
+
     metrics_time = measure_time(test_metrics, iterations)
     middleware_results["Metrics"] = calculate_overhead(baseline_time, metrics_time)
 
     # 3. Circuit Breaker
     cb_agent = CircuitBreakerDecorator(
-        agent,
-        CircuitBreakerConfig(failure_threshold=5, recovery_timeout=1.0, success_threshold=2)
+        agent, CircuitBreakerConfig(failure_threshold=5, recovery_timeout=1.0, success_threshold=2)
     )
+
     async def test_cb():
         await cb_agent.process(msg)
+
     cb_time = measure_time(test_cb, iterations)
     middleware_results["Circuit Breaker"] = calculate_overhead(baseline_time, cb_time)
 
     # 4. Rate Limiter
     rl_agent = RateLimiterDecorator(
-        agent,
-        RateLimiterConfig(rate=1000000.0, capacity=1000000, tokens_per_request=1)
+        agent, RateLimiterConfig(rate=1000000.0, capacity=1000000, tokens_per_request=1)
     )
+
     async def test_rl():
         await rl_agent.process(msg)
+
     rl_time = measure_time(test_rl, iterations)
     middleware_results["Rate Limiter"] = calculate_overhead(baseline_time, rl_time)
 
     # 5. Timeout
-    timeout_agent = TimeoutDecorator(
-        agent,
-        TimeoutConfig(timeout=30.0)
-    )
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=30.0))
+
     async def test_timeout():
         await timeout_agent.process(msg)
+
     timeout_time = measure_time(test_timeout, iterations)
     middleware_results["Timeout"] = calculate_overhead(baseline_time, timeout_time)
 
     # 6. Batching (concurrent requests, as intended)
     # Note: Batching uses concurrent processing unlike other middleware
     batching_agent = BatchingDecorator(
-        agent,
-        BatchingConfig(max_batch_size=10, max_wait_time=0.01, max_queue_size=1000)
+        agent, BatchingConfig(max_batch_size=10, max_wait_time=0.01, max_queue_size=1000)
     )
 
     async def test_batching_concurrent():
@@ -673,17 +667,19 @@ def test_middleware_comparison():
     # Print comparison
     print("\nMiddleware Overhead Comparison:")
     print(f"  Iterations: {iterations:,}")
-    print(f"  Baseline:   {baseline_time:.4f}s ({baseline_time/iterations*1000:.6f}ms per call)")
+    print(
+        f"  Baseline:   {baseline_time:.4f}s ({baseline_time / iterations * 1000:.6f}ms per call)"
+    )
     print()
 
     # Sort by overhead
     sorted_results = sorted(middleware_results.items(), key=lambda x: x[1])
     for name, overhead in sorted_results:
-        print(f"  {name:20s} {overhead*100:6.2f}% overhead")
+        print(f"  {name:20s} {overhead * 100:6.2f}% overhead")
 
     print()
-    print(f"  Fastest:    {sorted_results[0][0]} ({sorted_results[0][1]*100:.2f}%)")
-    print(f"  Slowest:    {sorted_results[-1][0]} ({sorted_results[-1][1]*100:.2f}%)")
+    print(f"  Fastest:    {sorted_results[0][0]} ({sorted_results[0][1] * 100:.2f}%)")
+    print(f"  Slowest:    {sorted_results[-1][0]} ({sorted_results[-1][1] * 100:.2f}%)")
 
 
 # ============================================
@@ -695,9 +691,9 @@ def test_middleware_benchmark_summary():
     """
     Summary: Run all middleware benchmarks and print aggregate results.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Middleware Performance Benchmark Summary")
-    print("="*70)
+    print("=" * 70)
 
     # Run all benchmarks
     test_retry_middleware_overhead()
@@ -710,11 +706,11 @@ def test_middleware_benchmark_summary():
     test_stacked_middleware_overhead()
     test_middleware_comparison()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Conclusion: All middleware overhead <20% single, <50% stacked")
     print("Production impact: <0.01% on real workloads (LLM calls, I/O)")
     print("Benefits (resilience, observability) far outweigh minimal cost")
-    print("="*70)
+    print("=" * 70)
 
 
 if __name__ == "__main__":

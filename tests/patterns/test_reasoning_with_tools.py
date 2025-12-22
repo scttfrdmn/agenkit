@@ -246,10 +246,12 @@ async def test_simple_reasoning_without_tools():
 @pytest.mark.asyncio
 async def test_reasoning_with_single_tool_call():
     """Test reasoning with a single tool call."""
-    llm = MockLLM([
-        "I need to calculate this.\nTOOL_CALL: calculator\nPARAMETERS: {\"operation\": \"add\", \"a\": 1, \"b\": 2}",
-        "FINAL ANSWER: The result is 3",
-    ])
+    llm = MockLLM(
+        [
+            'I need to calculate this.\nTOOL_CALL: calculator\nPARAMETERS: {"operation": "add", "a": 1, "b": 2}',
+            "FINAL ANSWER: The result is 3",
+        ]
+    )
 
     calculator = MockTool("calculator", result=3)
 
@@ -274,11 +276,13 @@ async def test_reasoning_with_single_tool_call():
 @pytest.mark.asyncio
 async def test_reasoning_with_multiple_tool_calls():
     """Test reasoning with multiple tool calls."""
-    llm = MockLLM([
-        "First, I'll calculate 5 + 3.\nTOOL_CALL: calculator\nPARAMETERS: {\"a\": 5, \"b\": 3}",
-        "Now I'll multiply by 2.\nTOOL_CALL: calculator\nPARAMETERS: {\"a\": 8, \"b\": 2}",
-        "FINAL ANSWER: The result is 16",
-    ])
+    llm = MockLLM(
+        [
+            'First, I\'ll calculate 5 + 3.\nTOOL_CALL: calculator\nPARAMETERS: {"a": 5, "b": 3}',
+            'Now I\'ll multiply by 2.\nTOOL_CALL: calculator\nPARAMETERS: {"a": 8, "b": 2}',
+            "FINAL ANSWER: The result is 16",
+        ]
+    )
 
     calculator = MockTool("calculator", result=8)
 
@@ -298,10 +302,12 @@ async def test_reasoning_with_multiple_tool_calls():
 @pytest.mark.asyncio
 async def test_tool_execution_error():
     """Test handling tool execution errors."""
-    llm = MockLLM([
-        "TOOL_CALL: calculator\nPARAMETERS: {}",
-        "FINAL ANSWER: Could not calculate",
-    ])
+    llm = MockLLM(
+        [
+            "TOOL_CALL: calculator\nPARAMETERS: {}",
+            "FINAL ANSWER: Could not calculate",
+        ]
+    )
 
     calculator = MockTool("calculator", result=ValueError("Invalid operation"))
 
@@ -321,10 +327,12 @@ async def test_tool_execution_error():
 @pytest.mark.asyncio
 async def test_unknown_tool():
     """Test handling unknown tool calls."""
-    llm = MockLLM([
-        "TOOL_CALL: unknown_tool\nPARAMETERS: {}",
-        "FINAL ANSWER: Done",
-    ])
+    llm = MockLLM(
+        [
+            "TOOL_CALL: unknown_tool\nPARAMETERS: {}",
+            "FINAL ANSWER: Done",
+        ]
+    )
 
     agent = ReasoningWithToolsAgent(
         llm=llm,
@@ -451,7 +459,7 @@ def test_parse_tool_call():
     agent = ReasoningWithToolsAgent(llm=llm, tools=[], max_reasoning_steps=5)
 
     # Valid tool call
-    text = "I need to calculate.\nTOOL_CALL: calculator\nPARAMETERS: {\"a\": 1, \"b\": 2}"
+    text = 'I need to calculate.\nTOOL_CALL: calculator\nPARAMETERS: {"a": 1, "b": 2}'
     tool_name, params, remaining = agent._parse_tool_call(text)
 
     assert tool_name == "calculator"
@@ -509,12 +517,14 @@ def test_extract_answer():
 @pytest.mark.asyncio
 async def test_complex_multi_step_reasoning():
     """Test complex multi-step reasoning with interleaved tool use."""
-    llm = MockLLM([
-        "Let me break this down. First, I'll get the base price.\nTOOL_CALL: database\nPARAMETERS: {\"query\": \"price\"}",
-        "The base is $100. Now I'll calculate tax.\nTOOL_CALL: calculator\nPARAMETERS: {\"operation\": \"multiply\", \"a\": 100, \"b\": 0.08}",
-        "Tax is $8. Now I'll get the total.\nTOOL_CALL: calculator\nPARAMETERS: {\"operation\": \"add\", \"a\": 100, \"b\": 8}",
-        "FINAL ANSWER: The total cost is $108",
-    ])
+    llm = MockLLM(
+        [
+            'Let me break this down. First, I\'ll get the base price.\nTOOL_CALL: database\nPARAMETERS: {"query": "price"}',
+            'The base is $100. Now I\'ll calculate tax.\nTOOL_CALL: calculator\nPARAMETERS: {"operation": "multiply", "a": 100, "b": 0.08}',
+            'Tax is $8. Now I\'ll get the total.\nTOOL_CALL: calculator\nPARAMETERS: {"operation": "add", "a": 100, "b": 8}',
+            "FINAL ANSWER: The total cost is $108",
+        ]
+    )
 
     database = MockTool("database", result="$100")
     calculator = MockTool("calculator", result=108)
@@ -539,10 +549,12 @@ async def test_complex_multi_step_reasoning():
 @pytest.mark.asyncio
 async def test_reasoning_trace_structure():
     """Test the structure and content of reasoning trace."""
-    llm = MockLLM([
-        "I'll use the calculator.\nTOOL_CALL: calculator\nPARAMETERS: {\"x\": 5}",
-        "FINAL ANSWER: Result is 5",
-    ])
+    llm = MockLLM(
+        [
+            'I\'ll use the calculator.\nTOOL_CALL: calculator\nPARAMETERS: {"x": 5}',
+            "FINAL ANSWER: Result is 5",
+        ]
+    )
 
     calculator = MockTool("calculator", result=5)
 

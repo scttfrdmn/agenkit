@@ -40,7 +40,7 @@ class MockLLMAgent:
             role="assistant",
             content="""1. Analyze the input
 2. Process the data
-3. Return the result"""
+3. Return the result""",
         )
 
 
@@ -71,9 +71,7 @@ async def test_cot_basic():
 async def test_cot_custom_template():
     """Test custom prompt template."""
     llm = MockLLM()
-    cot = ChainOfThought(
-        llm=llm, prompt_template="Solve carefully:\n{query}"
-    )
+    cot = ChainOfThought(llm=llm, prompt_template="Solve carefully:\n{query}")
 
     response = await cot.process(Message(role="user", content="Calculate something"))
 

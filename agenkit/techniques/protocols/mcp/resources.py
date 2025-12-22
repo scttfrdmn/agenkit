@@ -20,6 +20,7 @@ class Resource:
 
     Represents a data source that can be accessed via URI.
     """
+
     uri: str
     name: str
     description: str | None
@@ -50,7 +51,7 @@ class Resource:
             name=self.name,
             description=self.description,
             mime_type=self.mime_type,
-            metadata=self.metadata
+            metadata=self.metadata,
         )
 
 
@@ -72,7 +73,7 @@ class ResourceRegistry:
         handler: Callable[[dict[str, Any]], Awaitable[Any]],
         description: str | None = None,
         mime_type: str = "text/plain",
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> Resource:
         """
         Register a resource.
@@ -105,7 +106,7 @@ class ResourceRegistry:
             description=description,
             handler=handler,
             mime_type=mime_type,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self.resources[uri] = resource
@@ -193,7 +194,7 @@ def resource_decorator(
     name: str,
     description: str | None = None,
     mime_type: str = "text/plain",
-    metadata: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None,
 ):
     """
     Decorator for registering resources.
@@ -216,6 +217,7 @@ def resource_decorator(
         ... async def get_user_profile(params):
         ...     return {"name": "John"}
     """
+
     def decorator(func: Callable[[dict[str, Any]], Awaitable[Any]]):
         # Store registration info on function
         func._mcp_resource = {
@@ -223,7 +225,8 @@ def resource_decorator(
             "name": name,
             "description": description,
             "mime_type": mime_type,
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
         return func
+
     return decorator

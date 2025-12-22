@@ -20,6 +20,7 @@ class Tool:
 
     Represents an action that can be invoked with parameters.
     """
+
     name: str
     description: str
     handler: Callable[[dict[str, Any]], Awaitable[Any]]
@@ -55,7 +56,7 @@ class Tool:
             name=self.name,
             description=self.description,
             input_schema=self.input_schema,
-            metadata=self.metadata
+            metadata=self.metadata,
         )
 
 
@@ -76,7 +77,7 @@ class ToolRegistry:
         description: str,
         handler: Callable[[dict[str, Any]], Awaitable[Any]],
         input_schema: dict[str, Any],
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> Tool:
         """
         Register a tool.
@@ -114,7 +115,7 @@ class ToolRegistry:
             description=description,
             handler=handler,
             input_schema=input_schema,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self.tools[name] = tool
@@ -156,11 +157,7 @@ class ToolRegistry:
         """
         return [tool.to_info() for tool in self.tools.values()]
 
-    async def execute(
-        self,
-        name: str,
-        params: dict[str, Any] | None = None
-    ) -> Any:
+    async def execute(self, name: str, params: dict[str, Any] | None = None) -> Any:
         """
         Execute a tool.
 
@@ -205,7 +202,7 @@ def tool_decorator(
     name: str,
     description: str,
     input_schema: dict[str, Any],
-    metadata: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None,
 ):
     """
     Decorator for registering tools.
@@ -232,13 +229,15 @@ def tool_decorator(
         ... async def calculate(params):
         ...     return {"result": eval(params["expression"])}
     """
+
     def decorator(func: Callable[[dict[str, Any]], Awaitable[Any]]):
         # Store registration info on function
         func._mcp_tool = {
             "name": name,
             "description": description,
             "input_schema": input_schema,
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
         return func
+
     return decorator

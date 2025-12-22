@@ -46,9 +46,7 @@ class MockAgent(Agent):
     async def process(self, message: Message) -> Message:
         """Echo the message back."""
         return Message(
-            role="assistant",
-            content=f"Processed: {message.content}",
-            metadata={"processed": True}
+            role="assistant", content=f"Processed: {message.content}", metadata={"processed": True}
         )
 
 
@@ -61,9 +59,7 @@ class MockAgent(Agent):
 async def test_request_creation():
     """Test creating MCP request."""
     request = create_request(
-        method=MCPMethod.RESOURCES_LIST,
-        params={"filter": "test"},
-        request_id="req-1"
+        method=MCPMethod.RESOURCES_LIST, params={"filter": "test"}, request_id="req-1"
     )
 
     assert request.id == "req-1"
@@ -75,11 +71,7 @@ async def test_request_creation():
 @pytest.mark.asyncio
 async def test_request_serialization():
     """Test request to/from dict."""
-    request = MCPRequest(
-        id="req-1",
-        method="resources/list",
-        params={"key": "value"}
-    )
+    request = MCPRequest(id="req-1", method="resources/list", params={"key": "value"})
 
     # To dict
     data = request.to_dict()
@@ -98,10 +90,7 @@ async def test_request_serialization():
 @pytest.mark.asyncio
 async def test_response_creation():
     """Test creating MCP response."""
-    response = create_response(
-        request_id="req-1",
-        result={"data": "test"}
-    )
+    response = create_response(request_id="req-1", result={"data": "test"})
 
     assert response.id == "req-1"
     assert response.result == {"data": "test"}
@@ -113,9 +102,7 @@ async def test_response_creation():
 async def test_error_response_creation():
     """Test creating error response."""
     error_response = create_error_response(
-        request_id="req-1",
-        code=-32600,
-        message="Invalid request"
+        request_id="req-1", code=-32600, message="Invalid request"
     )
 
     assert error_response.id == "req-1"
@@ -127,10 +114,7 @@ async def test_error_response_creation():
 @pytest.mark.asyncio
 async def test_notification_creation():
     """Test creating MCP notification."""
-    notification = create_notification(
-        method="notification/test",
-        params={"event": "updated"}
-    )
+    notification = create_notification(method="notification/test", params={"event": "updated"})
 
     assert notification.method == "notification/test"
     assert notification.params == {"event": "updated"}
@@ -167,7 +151,7 @@ async def test_resource_registry_register():
         name="Test Resource",
         handler=handler,
         description="A test resource",
-        mime_type="application/json"
+        mime_type="application/json",
     )
 
     assert resource.uri == "test://resource"
@@ -256,18 +240,12 @@ async def test_tool_registry_register():
 
     schema = {
         "type": "object",
-        "properties": {
-            "x": {"type": "number"},
-            "y": {"type": "number"}
-        },
-        "required": ["x", "y"]
+        "properties": {"x": {"type": "number"}, "y": {"type": "number"}},
+        "required": ["x", "y"],
     }
 
     tool = registry.register(
-        name="add",
-        description="Add two numbers",
-        handler=handler,
-        input_schema=schema
+        name="add", description="Add two numbers", handler=handler, input_schema=schema
     )
 
     assert tool.name == "add"
@@ -284,11 +262,8 @@ async def test_tool_execution():
 
     schema = {
         "type": "object",
-        "properties": {
-            "x": {"type": "number"},
-            "y": {"type": "number"}
-        },
-        "required": ["x", "y"]
+        "properties": {"x": {"type": "number"}, "y": {"type": "number"}},
+        "required": ["x", "y"],
     }
 
     registry.register("multiply", "Multiply numbers", multiply, schema)
@@ -307,10 +282,8 @@ async def test_tool_validation():
 
     schema = {
         "type": "object",
-        "properties": {
-            "required_param": {"type": "string"}
-        },
-        "required": ["required_param"]
+        "properties": {"required_param": {"type": "string"}},
+        "required": ["required_param"],
     }
 
     registry.register("test_tool", "Test", handler, schema)
@@ -364,9 +337,7 @@ async def test_tool_list():
 async def test_server_creation():
     """Test creating MCP server."""
     server = MCPServer(
-        name="test-server",
-        version="1.0",
-        capabilities={"resources": True, "tools": True}
+        name="test-server", version="1.0", capabilities={"resources": True, "tools": True}
     )
 
     assert server.name == "test-server"
@@ -379,11 +350,7 @@ async def test_server_resource_decorator():
     """Test @server.resource decorator."""
     server = MCPServer(name="test")
 
-    @server.resource(
-        uri="test://data",
-        name="Test Data",
-        description="Test resource"
-    )
+    @server.resource(uri="test://data", name="Test Data", description="Test resource")
     async def get_data(params):
         return {"value": 42}
 
@@ -404,12 +371,9 @@ async def test_server_tool_decorator():
         description="Calculate sum",
         input_schema={
             "type": "object",
-            "properties": {
-                "a": {"type": "number"},
-                "b": {"type": "number"}
-            },
-            "required": ["a", "b"]
-        }
+            "properties": {"a": {"type": "number"}, "b": {"type": "number"}},
+            "required": ["a", "b"],
+        },
     )
     async def calculate(params):
         return {"sum": params["a"] + params["b"]}
@@ -427,9 +391,7 @@ async def test_server_handle_initialize():
     server = MCPServer(name="test-server", version="1.0")
 
     request = create_request(
-        method=MCPMethod.INITIALIZE,
-        params={"protocolVersion": "1.0"},
-        request_id="req-1"
+        method=MCPMethod.INITIALIZE, params={"protocolVersion": "1.0"}, request_id="req-1"
     )
 
     response = await server.handle_request(request)
@@ -452,10 +414,7 @@ async def test_server_handle_resources_list():
     async def res2(params):
         return "data2"
 
-    request = create_request(
-        method=MCPMethod.RESOURCES_LIST,
-        request_id="req-1"
-    )
+    request = create_request(method=MCPMethod.RESOURCES_LIST, request_id="req-1")
 
     response = await server.handle_request(request)
 
@@ -474,9 +433,7 @@ async def test_server_handle_resources_read():
         return '{"name": "John", "email": "john@example.com"}'
 
     request = create_request(
-        method=MCPMethod.RESOURCES_READ,
-        params={"uri": "user://profile"},
-        request_id="req-1"
+        method=MCPMethod.RESOURCES_READ, params={"uri": "user://profile"}, request_id="req-1"
     )
 
     response = await server.handle_request(request)
@@ -500,10 +457,7 @@ async def test_server_handle_tools_list():
     async def tool2(params):
         return "result2"
 
-    request = create_request(
-        method=MCPMethod.TOOLS_LIST,
-        request_id="req-1"
-    )
+    request = create_request(method=MCPMethod.TOOLS_LIST, request_id="req-1")
 
     response = await server.handle_request(request)
 
@@ -522,8 +476,8 @@ async def test_server_handle_tools_call():
         input_schema={
             "type": "object",
             "properties": {"name": {"type": "string"}},
-            "required": ["name"]
-        }
+            "required": ["name"],
+        },
     )
     async def greet(params):
         return f"Hello, {params['name']}!"
@@ -531,7 +485,7 @@ async def test_server_handle_tools_call():
     request = create_request(
         method=MCPMethod.TOOLS_CALL,
         params={"name": "greet", "arguments": {"name": "Alice"}},
-        request_id="req-1"
+        request_id="req-1",
     )
 
     response = await server.handle_request(request)
@@ -547,10 +501,7 @@ async def test_server_error_handling():
     server = MCPServer(name="test")
 
     # Test with invalid method
-    request = create_request(
-        method="invalid/method",
-        request_id="req-1"
-    )
+    request = create_request(method="invalid/method", request_id="req-1")
 
     response = await server.handle_request(request)
 
@@ -589,10 +540,7 @@ async def test_adapter_from_agent():
     assert server.tools.has_tool("process")
 
     # Test calling the agent via MCP
-    result = await server.tools.execute(
-        "process",
-        {"content": "Hello"}
-    )
+    result = await server.tools.execute("process", {"content": "Hello"})
 
     assert "Processed: Hello" in result["content"]
     assert result["metadata"]["processed"] is True
@@ -641,7 +589,7 @@ async def test_mcp_resource_info():
         name="Test Resource",
         description="A test",
         mime_type="application/json",
-        metadata={"key": "value"}
+        metadata={"key": "value"},
     )
 
     assert info.uri == "test://resource"
@@ -652,16 +600,9 @@ async def test_mcp_resource_info():
 @pytest.mark.asyncio
 async def test_mcp_tool_info():
     """Test MCPToolInfo dataclass."""
-    schema = {
-        "type": "object",
-        "properties": {"x": {"type": "number"}}
-    }
+    schema = {"type": "object", "properties": {"x": {"type": "number"}}}
 
-    info = MCPToolInfo(
-        name="test_tool",
-        description="A test tool",
-        input_schema=schema
-    )
+    info = MCPToolInfo(name="test_tool", description="A test tool", input_schema=schema)
 
     assert info.name == "test_tool"
     assert info.description == "A test tool"
@@ -693,24 +634,19 @@ async def test_end_to_end_resource_flow():
         uri="data://users/123",
         name="User 123",
         description="User profile data",
-        mime_type="application/json"
+        mime_type="application/json",
     )
     async def get_user(params):
         return "User: Alice (alice@example.com)"
 
     # Test list request
-    list_request = create_request(
-        method=MCPMethod.RESOURCES_LIST,
-        request_id="list-1"
-    )
+    list_request = create_request(method=MCPMethod.RESOURCES_LIST, request_id="list-1")
     list_response = await server.handle_request(list_request)
     assert len(list_response.result["resources"]) == 1
 
     # Test read request
     read_request = create_request(
-        method=MCPMethod.RESOURCES_READ,
-        params={"uri": "data://users/123"},
-        request_id="read-1"
+        method=MCPMethod.RESOURCES_READ, params={"uri": "data://users/123"}, request_id="read-1"
     )
     read_response = await server.handle_request(read_request)
     assert not read_response.is_error
@@ -730,12 +666,9 @@ async def test_end_to_end_tool_flow():
         description="Search for items",
         input_schema={
             "type": "object",
-            "properties": {
-                "query": {"type": "string"},
-                "limit": {"type": "number"}
-            },
-            "required": ["query"]
-        }
+            "properties": {"query": {"type": "string"}, "limit": {"type": "number"}},
+            "required": ["query"],
+        },
     )
     async def search(params):
         query = params["query"]
@@ -743,21 +676,15 @@ async def test_end_to_end_tool_flow():
         return f"Search results for '{query}': Result 0, Result 1, Result 2"
 
     # Test list request
-    list_request = create_request(
-        method=MCPMethod.TOOLS_LIST,
-        request_id="list-1"
-    )
+    list_request = create_request(method=MCPMethod.TOOLS_LIST, request_id="list-1")
     list_response = await server.handle_request(list_request)
     assert len(list_response.result["tools"]) == 1
 
     # Test call request
     call_request = create_request(
         method=MCPMethod.TOOLS_CALL,
-        params={
-            "name": "search",
-            "arguments": {"query": "test", "limit": 5}
-        },
-        request_id="call-1"
+        params={"name": "search", "arguments": {"query": "test", "limit": 5}},
+        request_id="call-1",
     )
     call_response = await server.handle_request(call_request)
     assert not call_response.is_error
@@ -777,9 +704,7 @@ async def test_end_to_end_agent_integration():
 
     # Initialize
     init_request = create_request(
-        method=MCPMethod.INITIALIZE,
-        params={"protocolVersion": "1.0"},
-        request_id="init-1"
+        method=MCPMethod.INITIALIZE, params={"protocolVersion": "1.0"}, request_id="init-1"
     )
     init_response = await server.handle_request(init_request)
     assert not init_response.is_error
@@ -787,11 +712,8 @@ async def test_end_to_end_agent_integration():
     # Call agent via tools/call
     call_request = create_request(
         method=MCPMethod.TOOLS_CALL,
-        params={
-            "name": "process",
-            "arguments": {"content": "Test message"}
-        },
-        request_id="call-1"
+        params={"name": "process", "arguments": {"content": "Test message"}},
+        request_id="call-1",
     )
     call_response = await server.handle_request(call_request)
     assert not call_response.is_error

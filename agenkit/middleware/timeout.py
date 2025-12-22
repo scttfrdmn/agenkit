@@ -176,9 +176,7 @@ class TimeoutDecorator(Agent):
 
         try:
             # Use asyncio.wait_for to implement timeout
-            result = await asyncio.wait_for(
-                self._agent.process(message), timeout=timeout
-            )
+            result = await asyncio.wait_for(self._agent.process(message), timeout=timeout)
 
             duration = time.time() - start_time
             async with self._lock:
@@ -191,9 +189,7 @@ class TimeoutDecorator(Agent):
             async with self._lock:
                 self._metrics.record_timeout(duration)
 
-            raise TimeoutError(
-                f"Request to agent '{self.name}' timed out after {timeout}s"
-            )
+            raise TimeoutError(f"Request to agent '{self.name}' timed out after {timeout}s")
 
         except Exception:
             duration = time.time() - start_time

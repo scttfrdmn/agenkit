@@ -471,9 +471,7 @@ Refined Output:
                 if content.startswith("```"):
                     # Extract JSON from code block
                     lines = content.split("\n")
-                    json_lines = [
-                        line for line in lines if line and not line.startswith("```")
-                    ]
+                    json_lines = [line for line in lines if line and not line.startswith("```")]
                     content = "\n".join(json_lines)
 
                 data = json.loads(content)

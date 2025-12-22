@@ -63,10 +63,7 @@ class TestA2AMessage:
     def test_create_request(self):
         """Test creating a request message."""
         message = create_request(
-            from_agent="agent-1",
-            to_agent="agent-2",
-            action="process",
-            content={"text": "Hello"}
+            from_agent="agent-1", to_agent="agent-2", action="process", content={"text": "Hello"}
         )
 
         assert message.message_type == MessageType.REQUEST
@@ -83,7 +80,7 @@ class TestA2AMessage:
             from_agent="agent-1",
             to_agent="agent-2",
             action="status_update",
-            content={"status": "ready"}
+            content={"status": "ready"},
         )
 
         assert message.message_type == MessageType.NOTIFICATION
@@ -94,10 +91,7 @@ class TestA2AMessage:
     def test_message_to_dict(self):
         """Test message serialization to dict."""
         message = create_request(
-            from_agent="agent-1",
-            to_agent="agent-2",
-            action="process",
-            content={"data": "test"}
+            from_agent="agent-1", to_agent="agent-2", action="process", content={"data": "test"}
         )
 
         data = message.to_dict()
@@ -119,7 +113,7 @@ class TestA2AMessage:
             "action": "process",
             "content": {"data": "test"},
             "message_id": "msg-123",
-            "timestamp": "2024-01-01T00:00:00Z"
+            "timestamp": "2024-01-01T00:00:00Z",
         }
 
         message = A2AMessage.from_dict(data)
@@ -134,15 +128,10 @@ class TestA2AMessage:
     def test_create_response(self):
         """Test creating a response message."""
         request = create_request(
-            from_agent="agent-1",
-            to_agent="agent-2",
-            action="process",
-            content={"input": "test"}
+            from_agent="agent-1", to_agent="agent-2", action="process", content={"input": "test"}
         )
 
-        response = request.create_response(
-            content={"output": "result"}
-        )
+        response = request.create_response(content={"output": "result"})
 
         assert response.message_type == MessageType.RESPONSE
         assert response.from_agent == "agent-2"
@@ -152,15 +141,11 @@ class TestA2AMessage:
     def test_create_error_response(self):
         """Test creating an error response."""
         request = create_request(
-            from_agent="agent-1",
-            to_agent="agent-2",
-            action="process",
-            content={}
+            from_agent="agent-1", to_agent="agent-2", action="process", content={}
         )
 
         error_response = request.create_error(
-            error_code="PROCESSING_ERROR",
-            error_message="Failed to process"
+            error_code="PROCESSING_ERROR", error_message="Failed to process"
         )
 
         assert error_response.message_type == MessageType.ERROR
@@ -171,10 +156,7 @@ class TestA2AMessage:
     def test_to_agenkit_message(self):
         """Test conversion to Agenkit Message."""
         a2a_message = create_request(
-            from_agent="agent-1",
-            to_agent="agent-2",
-            action="process",
-            content={"text": "Hello"}
+            from_agent="agent-1", to_agent="agent-2", action="process", content={"text": "Hello"}
         )
         a2a_message.metadata = {"key": "value"}
 
@@ -188,15 +170,10 @@ class TestA2AMessage:
 
     def test_from_agenkit_message(self):
         """Test conversion from Agenkit Message."""
-        agenkit_message = Message(
-            role="assistant",
-            content="Response text"
-        )
+        agenkit_message = Message(role="assistant", content="Response text")
 
         a2a_message = A2AMessage.from_agenkit_message(
-            msg=agenkit_message,
-            from_agent="agent-1",
-            to_agent="agent-2"
+            msg=agenkit_message, from_agent="agent-1", to_agent="agent-2"
         )
 
         assert a2a_message.from_agent == "agent-1"
@@ -211,7 +188,7 @@ class TestA2AMessage:
             to_agent="agent-2",
             action="urgent",
             content={},
-            priority=MessagePriority.HIGH
+            priority=MessagePriority.HIGH,
         )
 
         assert high_priority.priority == MessagePriority.HIGH
@@ -227,7 +204,7 @@ class TestAgentInfo:
             name="Test Agent",
             capabilities=["text-analysis", "summarization"],
             endpoint="http://localhost:8080/a2a",
-            transport="http"
+            transport="http",
         )
 
         assert info.agent_id == "agent-1"
@@ -242,7 +219,7 @@ class TestAgentInfo:
             name="Test Agent",
             capabilities=["analysis"],
             endpoint="http://localhost:8080/a2a",
-            transport="http"
+            transport="http",
         )
 
         data = info.to_dict()
@@ -258,7 +235,7 @@ class TestAgentInfo:
             "name": "Test Agent",
             "capabilities": ["analysis"],
             "endpoint": "http://localhost:8080/a2a",
-            "transport": "http"
+            "transport": "http",
         }
 
         info = AgentInfo.from_dict(data)
@@ -310,10 +287,7 @@ class TestProtocol:
 
     def test_create_status_response(self):
         """Test creating status response."""
-        response_data = create_status_response(
-            status="online",
-            agent_id="agent-1"
-        )
+        response_data = create_status_response(status="online", agent_id="agent-1")
 
         assert response_data["status"] == "online"
         assert response_data["agent_id"] == "agent-1"
@@ -369,10 +343,7 @@ class TestTransport:
         """Test HTTP transport send."""
         transport = HTTPTransport()
         message = create_request(
-            from_agent="agent-1",
-            to_agent="agent-2",
-            action="process",
-            content={"text": "test"}
+            from_agent="agent-1", to_agent="agent-2", action="process", content={"text": "test"}
         )
 
         # Mock httpx
@@ -384,7 +355,7 @@ class TestTransport:
                 "to_agent": "agent-1",
                 "content": {"result": "ok"},
                 "message_id": "msg-2",
-                "timestamp": "2024-01-01T00:00:00Z"
+                "timestamp": "2024-01-01T00:00:00Z",
             }
             mock_client.return_value.__aenter__.return_value.post = AsyncMock(
                 return_value=mock_response
@@ -407,11 +378,7 @@ class TestA2AAgent:
     @pytest.mark.asyncio
     async def test_agent_creation(self):
         """Test creating A2A agent."""
-        agent = A2AAgent(
-            agent_id="agent-1",
-            capabilities=["text-analysis"],
-            transport="http"
-        )
+        agent = A2AAgent(agent_id="agent-1", capabilities=["text-analysis"], transport="http")
 
         assert agent.agent_id == "agent-1"
         assert "text-analysis" in agent.capabilities
@@ -420,17 +387,10 @@ class TestA2AAgent:
     @pytest.mark.asyncio
     async def test_agent_send(self):
         """Test agent send message."""
-        agent = A2AAgent(
-            agent_id="agent-1",
-            capabilities=["analysis"],
-            transport="http"
-        )
+        agent = A2AAgent(agent_id="agent-1", capabilities=["analysis"], transport="http")
 
         message = create_request(
-            from_agent="agent-1",
-            to_agent="agent-2",
-            action="process",
-            content={"text": "test"}
+            from_agent="agent-1", to_agent="agent-2", action="process", content={"text": "test"}
         )
 
         # Mock transport
@@ -450,7 +410,7 @@ class TestA2AAgent:
             agent_id="agent-1",
             capabilities=["analysis"],
             transport="http",
-            discovery_url="http://localhost:9000"
+            discovery_url="http://localhost:9000",
         )
 
         # Mock discovery client
@@ -459,10 +419,12 @@ class TestA2AAgent:
             name="Test Agent",
             capabilities=["summarization"],
             endpoint="http://localhost:8080/a2a",
-            transport="http"
+            transport="http",
         )
 
-        with patch("agenkit.techniques.protocols.a2a.discovery.A2ADiscoveryClient") as mock_client_class:
+        with patch(
+            "agenkit.techniques.protocols.a2a.discovery.A2ADiscoveryClient"
+        ) as mock_client_class:
             mock_client = Mock()
             mock_client.discover = AsyncMock(return_value=[mock_agent_info])
             mock_client_class.return_value = mock_client
@@ -480,7 +442,7 @@ class TestA2AAgent:
             agent_id="agent-1",
             capabilities=["analysis"],
             transport="http",
-            discovery_url="http://localhost:9000"
+            discovery_url="http://localhost:9000",
         )
 
         # Mock discovery
@@ -489,10 +451,12 @@ class TestA2AAgent:
             name="Target Agent",
             capabilities=["processing"],
             endpoint="http://localhost:8080/a2a",
-            transport="http"
+            transport="http",
         )
 
-        with patch("agenkit.techniques.protocols.a2a.discovery.A2ADiscoveryClient") as mock_client_class:
+        with patch(
+            "agenkit.techniques.protocols.a2a.discovery.A2ADiscoveryClient"
+        ) as mock_client_class:
             mock_client = Mock()
             mock_client.find_by_id = AsyncMock(return_value=[mock_agent_info])
             mock_client_class.return_value = mock_client
@@ -500,17 +464,12 @@ class TestA2AAgent:
             # Mock transport
             with patch.object(agent.transport, "send") as mock_send:
                 response_msg = create_request(
-                    from_agent="agent-2",
-                    to_agent="agent-1",
-                    action="process",
-                    content={}
+                    from_agent="agent-2", to_agent="agent-1", action="process", content={}
                 ).create_response(content={"result": "ok"})
                 mock_send.return_value = response_msg
 
                 response = await agent.send_to_agent(
-                    to_agent="agent-2",
-                    action="process",
-                    content={"data": "test"}
+                    to_agent="agent-2", action="process", content={"data": "test"}
                 )
 
                 assert response.content["result"] == "ok"
@@ -530,11 +489,7 @@ class TestA2AServer:
         mock_agent = Mock()
         mock_agent.process = AsyncMock(return_value=Message(role="assistant", content="result"))
 
-        server = A2AServer(
-            agent_id="agent-1",
-            agent=mock_agent,
-            capabilities=["processing"]
-        )
+        server = A2AServer(agent_id="agent-1", agent=mock_agent, capabilities=["processing"])
 
         assert server.agent_id == "agent-1"
         assert "processing" in server.capabilities
@@ -543,17 +498,10 @@ class TestA2AServer:
     async def test_server_handle_ping(self):
         """Test server handling ping."""
         mock_agent = Mock()
-        server = A2AServer(
-            agent_id="agent-1",
-            agent=mock_agent,
-            capabilities=["processing"]
-        )
+        server = A2AServer(agent_id="agent-1", agent=mock_agent, capabilities=["processing"])
 
         request = create_request(
-            from_agent="agent-2",
-            to_agent="agent-1",
-            action=A2AAction.PING.value,
-            content={}
+            from_agent="agent-2", to_agent="agent-1", action=A2AAction.PING.value, content={}
         )
 
         response = await server.handle_message(request)
@@ -566,16 +514,14 @@ class TestA2AServer:
         """Test server handling capabilities request."""
         mock_agent = Mock()
         server = A2AServer(
-            agent_id="agent-1",
-            agent=mock_agent,
-            capabilities=["text-analysis", "summarization"]
+            agent_id="agent-1", agent=mock_agent, capabilities=["text-analysis", "summarization"]
         )
 
         request = create_request(
             from_agent="agent-2",
             to_agent="agent-1",
             action=A2AAction.CAPABILITIES.value,
-            content={}
+            content={},
         )
 
         response = await server.handle_message(request)
@@ -588,17 +534,10 @@ class TestA2AServer:
     async def test_server_handle_status(self):
         """Test server handling status request."""
         mock_agent = Mock()
-        server = A2AServer(
-            agent_id="agent-1",
-            agent=mock_agent,
-            capabilities=["processing"]
-        )
+        server = A2AServer(agent_id="agent-1", agent=mock_agent, capabilities=["processing"])
 
         request = create_request(
-            from_agent="agent-2",
-            to_agent="agent-1",
-            action=A2AAction.STATUS.value,
-            content={}
+            from_agent="agent-2", to_agent="agent-1", action=A2AAction.STATUS.value, content={}
         )
 
         response = await server.handle_message(request)
@@ -615,17 +554,13 @@ class TestA2AServer:
             return_value=Message(role="assistant", content="Processed result")
         )
 
-        server = A2AServer(
-            agent_id="agent-1",
-            agent=mock_agent,
-            capabilities=["processing"]
-        )
+        server = A2AServer(agent_id="agent-1", agent=mock_agent, capabilities=["processing"])
 
         request = create_request(
             from_agent="agent-2",
             to_agent="agent-1",
             action=A2AAction.PROCESS.value,
-            content={"text": "input data"}
+            content={"text": "input data"},
         )
 
         response = await server.handle_message(request)
@@ -667,7 +602,7 @@ class TestInMemoryDiscoveryService:
             name="Test Agent",
             capabilities=["analysis"],
             endpoint="http://localhost:8080/a2a",
-            transport="http"
+            transport="http",
         )
 
         await service.register(agent_info)
@@ -686,7 +621,7 @@ class TestInMemoryDiscoveryService:
             name="Test Agent",
             capabilities=["analysis"],
             endpoint="http://localhost:8080/a2a",
-            transport="http"
+            transport="http",
         )
 
         await service.register(agent_info)
@@ -706,14 +641,14 @@ class TestInMemoryDiscoveryService:
             name="Analyzer",
             capabilities=["text-analysis", "sentiment"],
             endpoint="http://localhost:8080/a2a",
-            transport="http"
+            transport="http",
         )
         agent2 = AgentInfo(
             agent_id="agent-2",
             name="Summarizer",
             capabilities=["summarization", "text-analysis"],
             endpoint="http://localhost:8081/a2a",
-            transport="http"
+            transport="http",
         )
 
         await service.register(agent1)
@@ -743,7 +678,7 @@ class TestInMemoryDiscoveryService:
             name="Test Agent",
             capabilities=["analysis"],
             endpoint="http://localhost:8080/a2a",
-            transport="http"
+            transport="http",
         )
 
         await service.register(agent_info)
@@ -768,7 +703,7 @@ class TestInMemoryDiscoveryService:
             capabilities=["analysis"],
             endpoint="http://localhost:8080/a2a",
             transport="http",
-            status="online"
+            status="online",
         )
 
         await service.register(agent_info)
@@ -787,7 +722,7 @@ class TestInMemoryDiscoveryService:
             name="Test Agent",
             capabilities=["analysis"],
             endpoint="http://localhost:8080/a2a",
-            transport="http"
+            transport="http",
         )
 
         await service.register(agent_info)
@@ -809,7 +744,7 @@ class TestInMemoryDiscoveryService:
             name="Test Agent",
             capabilities=["analysis"],
             endpoint="http://localhost:8080/a2a",
-            transport="http"
+            transport="http",
         )
 
         await service.register(agent_info)
@@ -838,7 +773,7 @@ class TestA2ADiscoveryClient:
             name="Test Agent",
             capabilities=["analysis"],
             endpoint="http://localhost:8080/a2a",
-            transport="http"
+            transport="http",
         )
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -864,7 +799,7 @@ class TestA2ADiscoveryClient:
                         "name": "Test Agent",
                         "capabilities": ["analysis"],
                         "endpoint": "http://localhost:8080/a2a",
-                        "transport": "http"
+                        "transport": "http",
                     }
                 ]
             }
@@ -894,9 +829,7 @@ class TestVertexAIAdapter:
         mock_agent.capabilities = ["analysis"]
 
         adapter = VertexAIAdapter.from_agent(
-            agent=mock_agent,
-            project_id="my-project",
-            location="us-central1"
+            agent=mock_agent, project_id="my-project", location="us-central1"
         )
 
         assert adapter.agent_id == "test-agent"
@@ -910,9 +843,7 @@ class TestVertexAIAdapter:
         mock_agent.capabilities = ["analysis"]
 
         adapter = VertexAIAdapter.from_agent(
-            agent=mock_agent,
-            project_id="my-project",
-            location="us-central1"
+            agent=mock_agent, project_id="my-project", location="us-central1"
         )
 
         config = adapter.get_vertex_config()
@@ -928,10 +859,7 @@ class TestVertexAIAdapter:
         mock_agent.name = "test_agent"
         mock_agent.capabilities = ["analysis"]
 
-        adapter = create_vertex_agent(
-            agent=mock_agent,
-            project_id="my-project"
-        )
+        adapter = create_vertex_agent(agent=mock_agent, project_id="my-project")
 
         assert isinstance(adapter, VertexAIAdapter)
         assert adapter.project_id == "my-project"
@@ -946,10 +874,7 @@ class TestBedrockAdapter:
         mock_agent.name = "test_agent"
         mock_agent.capabilities = ["analysis"]
 
-        adapter = BedrockAdapter.from_agent(
-            agent=mock_agent,
-            region="us-east-1"
-        )
+        adapter = BedrockAdapter.from_agent(agent=mock_agent, region="us-east-1")
 
         assert adapter.agent_id == "test-agent"
         assert adapter.region == "us-east-1"
@@ -961,9 +886,7 @@ class TestBedrockAdapter:
         mock_agent.capabilities = ["analysis"]
 
         adapter = BedrockAdapter.from_agent(
-            agent=mock_agent,
-            region="us-east-1",
-            account_id="123456789012"
+            agent=mock_agent, region="us-east-1", account_id="123456789012"
         )
 
         config = adapter.get_bedrock_config()
@@ -979,10 +902,7 @@ class TestBedrockAdapter:
         mock_agent.name = "test_agent"
         mock_agent.capabilities = ["analysis"]
 
-        adapter = create_bedrock_agent(
-            agent=mock_agent,
-            region="us-west-2"
-        )
+        adapter = create_bedrock_agent(agent=mock_agent, region="us-west-2")
 
         assert isinstance(adapter, BedrockAdapter)
         assert adapter.region == "us-west-2"
@@ -1004,16 +924,10 @@ class TestA2AIntegration:
 
         # Create mock Agenkit agent
         mock_agent = Mock()
-        mock_agent.process = AsyncMock(
-            return_value=Message(role="assistant", content="Processed")
-        )
+        mock_agent.process = AsyncMock(return_value=Message(role="assistant", content="Processed"))
 
         # Create A2A server
-        server = A2AServer(
-            agent_id="agent-2",
-            agent=mock_agent,
-            capabilities=["processing"]
-        )
+        server = A2AServer(agent_id="agent-2", agent=mock_agent, capabilities=["processing"])
 
         # Register agent-2
         agent2_info = AgentInfo(
@@ -1021,16 +935,12 @@ class TestA2AIntegration:
             name="Processor",
             capabilities=["processing"],
             endpoint="http://localhost:8080/a2a",
-            transport="http"
+            transport="http",
         )
         await discovery.register(agent2_info)
 
         # Create A2A client agent
-        client_agent = A2AAgent(
-            agent_id="agent-1",
-            capabilities=["analysis"],
-            transport="http"
-        )
+        client_agent = A2AAgent(agent_id="agent-1", capabilities=["analysis"], transport="http")
         client_agent._discovery_service = discovery
 
         # Create request
@@ -1038,7 +948,7 @@ class TestA2AIntegration:
             from_agent="agent-1",
             to_agent="agent-2",
             action=A2AAction.PROCESS.value,
-            content={"text": "input data"}
+            content={"text": "input data"},
         )
 
         # Server processes request
@@ -1065,7 +975,7 @@ class TestA2AIntegration:
                 name=f"Agent {i}",
                 capabilities=["processing"] if i % 2 == 0 else ["analysis"],
                 endpoint=f"http://localhost:808{i}/a2a",
-                transport="http"
+                transport="http",
             )
             await discovery.register(agent_info)
 
@@ -1085,15 +995,11 @@ class TestA2AIntegration:
         mock_agent = Mock()
         mock_agent.name = "my_agent"
         mock_agent.capabilities = ["text-processing"]
-        mock_agent.process = AsyncMock(
-            return_value=Message(role="assistant", content="result")
-        )
+        mock_agent.process = AsyncMock(return_value=Message(role="assistant", content="result"))
 
         # Create Vertex AI adapter
         vertex_adapter = VertexAIAdapter.from_agent(
-            agent=mock_agent,
-            project_id="test-project",
-            location="us-central1"
+            agent=mock_agent, project_id="test-project", location="us-central1"
         )
 
         # Verify configuration
@@ -1106,7 +1012,7 @@ class TestA2AIntegration:
             from_agent="external",
             to_agent=vertex_adapter.agent_id,
             action=A2AAction.PROCESS.value,
-            content={"text": "test"}
+            content={"text": "test"},
         )
 
         response = await vertex_adapter.server.handle_message(request)

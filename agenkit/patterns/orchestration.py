@@ -32,10 +32,16 @@ warnings.warn(
     "Import from individual pattern modules instead: "
     "from agenkit.patterns import SequentialAgent, ParallelAgent, RouterAgent",
     DeprecationWarning,
-    stacklevel=2
+    stacklevel=2,
 )
 
-__all__ = ["OrchestrationAgent", "OrchestrationConfig", "ParallelPattern", "RouterPattern", "SequentialPattern"]
+__all__ = [
+    "OrchestrationAgent",
+    "OrchestrationConfig",
+    "ParallelPattern",
+    "RouterPattern",
+    "SequentialPattern",
+]
 
 
 @dataclass
@@ -48,6 +54,7 @@ class OrchestrationConfig:
         agents: Dictionary mapping agent names to Agent instances
         error_strategy: How to handle errors ("fail", "continue", "retry")
     """
+
     workflow: list[dict]
     agents: dict[str, Agent]
     error_strategy: str = "fail"
@@ -478,19 +485,25 @@ class OrchestrationAgent(Agent):
                     execution_pattern.append(mode)
 
                     if mode == "sequential":
-                        current_message = await self._execute_sequential(stage_config, current_message)
+                        current_message = await self._execute_sequential(
+                            stage_config, current_message
+                        )
                         total_agents += len(stage_config.get("agents", []))
                         stages_succeeded += 1
                         stages_completed += 1
 
                     elif mode == "parallel":
-                        current_message = await self._execute_parallel(stage_config, current_message)
+                        current_message = await self._execute_parallel(
+                            stage_config, current_message
+                        )
                         total_agents += len(stage_config.get("agents", []))
                         stages_succeeded += 1
                         stages_completed += 1
 
                     elif mode == "loop":
-                        current_message, iterations = await self._execute_loop(stage_config, current_message)
+                        current_message, iterations = await self._execute_loop(
+                            stage_config, current_message
+                        )
                         loop_iterations = iterations
                         total_agents += iterations  # Each iteration counts
                         stages_succeeded += 1
@@ -540,11 +553,13 @@ class OrchestrationAgent(Agent):
 
         # Build metadata
         metadata = current_message.metadata or {}
-        metadata.update({
-            "stages_completed": stages_completed,
-            "stages_attempted": stages_attempted,
-            "stages_succeeded": stages_succeeded,
-        })
+        metadata.update(
+            {
+                "stages_completed": stages_completed,
+                "stages_attempted": stages_attempted,
+                "stages_succeeded": stages_succeeded,
+            }
+        )
 
         if execution_pattern:
             metadata["execution_pattern"] = execution_pattern
@@ -556,11 +571,7 @@ class OrchestrationAgent(Agent):
             metadata["loop_iterations"] = loop_iterations
             metadata["break_condition_met"] = True
 
-        return Message(
-            role="assistant",
-            content=current_message.content,
-            metadata=metadata
-        )
+        return Message(role="assistant", content=current_message.content, metadata=metadata)
 
     async def _execute_sequential(self, stage_config: dict, message: Message) -> Message:
         """Execute agents sequentially."""
@@ -592,7 +603,7 @@ class OrchestrationAgent(Agent):
             return Message(
                 role="assistant",
                 content=combined_content or results[0].content,
-                metadata=results[0].metadata
+                metadata=results[0].metadata,
             )
 
         return message
@@ -663,6 +674,6 @@ class OrchestrationAgent(Agent):
             metadata={
                 **(message.metadata or {}),
                 "branch_taken": branch_taken,
-                "agent_executed": agent_executed
-            }
+                "agent_executed": agent_executed,
+            },
         )

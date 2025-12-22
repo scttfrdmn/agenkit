@@ -38,9 +38,7 @@ class EquivalenceTestRunner:
         self.comparator = ResultComparator()
         self.languages = languages or self.harness_manager.get_available_languages()
 
-    def run_all_tests(
-        self, patterns: list[str] | None = None
-    ) -> dict[str, dict[str, any]]:
+    def run_all_tests(self, patterns: list[str] | None = None) -> dict[str, dict[str, any]]:
         """
         Run all equivalence tests.
 
@@ -57,8 +55,7 @@ class EquivalenceTestRunner:
             # Filter to requested patterns (case-insensitive)
             patterns_lower = [p.lower() for p in patterns]
             all_specs = {
-                name: spec for name, spec in all_specs.items()
-                if name.lower() in patterns_lower
+                name: spec for name, spec in all_specs.items() if name.lower() in patterns_lower
             }
 
         print(f"Running equivalence tests for {len(all_specs)} patterns...")
@@ -100,8 +97,7 @@ class EquivalenceTestRunner:
             # For single-language: check if validation passed
             language_results = scenario_result.get("language_results", {})
             return all(
-                lr.get("validation", {}).get("valid", False)
-                for lr in language_results.values()
+                lr.get("validation", {}).get("valid", False) for lr in language_results.values()
             )
 
         passed_scenarios = sum(
@@ -115,9 +111,7 @@ class EquivalenceTestRunner:
             "pass_rate": passed_scenarios / total_scenarios if total_scenarios > 0 else 0.0,
         }
 
-        print(
-            f"  Pattern summary: {passed_scenarios}/{total_scenarios} scenarios passed"
-        )
+        print(f"  Pattern summary: {passed_scenarios}/{total_scenarios} scenarios passed")
 
         return pattern_results
 
@@ -205,12 +199,8 @@ class EquivalenceTestRunner:
         """
         # Generate summary
         total_patterns = len(results)
-        total_scenarios = sum(
-            len(r["scenarios"]) for r in results.values()
-        )
-        passed_patterns = sum(
-            1 for r in results.values() if r["summary"]["pass_rate"] == 1.0
-        )
+        total_scenarios = sum(len(r["scenarios"]) for r in results.values())
+        passed_patterns = sum(1 for r in results.values() if r["summary"]["pass_rate"] == 1.0)
 
         report = {
             "summary": {
@@ -273,9 +263,7 @@ class EquivalenceTestRunner:
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Run cross-language equivalence tests"
-    )
+    parser = argparse.ArgumentParser(description="Run cross-language equivalence tests")
     parser.add_argument(
         "--patterns",
         nargs="+",
@@ -320,9 +308,7 @@ def main():
 
     # Filter to requested languages
     if args.languages:
-        harness_configs = [
-            h for h in harness_configs if h.language in args.languages
-        ]
+        harness_configs = [h for h in harness_configs if h.language in args.languages]
 
     # Create runner
     runner = EquivalenceTestRunner(
@@ -347,9 +333,7 @@ def main():
     runner.generate_report(results, args.report)
 
     # Exit with non-zero if any tests failed
-    all_passed = all(
-        r["summary"]["pass_rate"] == 1.0 for r in results.values()
-    )
+    all_passed = all(r["summary"]["pass_rate"] == 1.0 for r in results.values())
     sys.exit(0 if all_passed else 1)
 
 

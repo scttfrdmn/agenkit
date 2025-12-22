@@ -88,7 +88,7 @@ class TestYAMLBenchmarkLoader:
             mock_msg = Message(
                 role="assistant",
                 content="test response",
-                metadata={"iterations": 1, "improved": True}
+                metadata={"iterations": 1, "improved": True},
             )
 
             # Validator should be callable
@@ -109,10 +109,7 @@ class TestPatternBenchmark:
 
         test_cases = [
             TestCase(
-                input="test input",
-                expected="test output",
-                metadata={"test": True},
-                tags=["test"]
+                input="test input", expected="test output", metadata={"test": True}, tags=["test"]
             )
         ]
 
@@ -199,14 +196,14 @@ class TestBenchmarkValidators:
     def test_role_validation(self):
         """Test role validation works."""
         from agenkit.evaluation.pattern_benchmarks import YAMLBenchmarkLoader
+
         specs_dir = Path(__file__).parent.parent.parent / "tests" / "cross_language" / "specs"
 
         loader = YAMLBenchmarkLoader(specs_dir)
 
         # Create validator with role check
         validator = loader._create_validator(
-            expected_message={"role": "assistant"},
-            expected_behavior={}
+            expected_message={"role": "assistant"}, expected_behavior={}
         )
 
         # Should pass with correct role
@@ -220,14 +217,14 @@ class TestBenchmarkValidators:
     def test_content_contains_validation(self):
         """Test content substring validation."""
         from agenkit.evaluation.pattern_benchmarks import YAMLBenchmarkLoader
+
         specs_dir = Path(__file__).parent.parent.parent / "tests" / "cross_language" / "specs"
 
         loader = YAMLBenchmarkLoader(specs_dir)
 
         # Create validator with content check
         validator = loader._create_validator(
-            expected_message={"content_contains": ["hello", "world"]},
-            expected_behavior={}
+            expected_message={"content_contains": ["hello", "world"]}, expected_behavior={}
         )
 
         # Should pass with both substrings
@@ -241,67 +238,51 @@ class TestBenchmarkValidators:
     def test_metadata_validation(self):
         """Test metadata validation."""
         from agenkit.evaluation.pattern_benchmarks import YAMLBenchmarkLoader
+
         specs_dir = Path(__file__).parent.parent.parent / "tests" / "cross_language" / "specs"
 
         loader = YAMLBenchmarkLoader(specs_dir)
 
         # Create validator with metadata check
         validator = loader._create_validator(
-            expected_message={"metadata": {"iterations": 1, "improved": True}},
-            expected_behavior={}
+            expected_message={"metadata": {"iterations": 1, "improved": True}}, expected_behavior={}
         )
 
         # Should pass with correct metadata
         msg_pass = Message(
-            role="assistant",
-            content="test",
-            metadata={"iterations": 2, "improved": True}
+            role="assistant", content="test", metadata={"iterations": 2, "improved": True}
         )
         assert validator(msg_pass) is True
 
         # Should fail with missing/wrong metadata
         msg_fail = Message(
-            role="assistant",
-            content="test",
-            metadata={"iterations": 0, "improved": False}
+            role="assistant", content="test", metadata={"iterations": 0, "improved": False}
         )
         assert validator(msg_fail) is False
 
     def test_behavior_validation(self):
         """Test behavioral property validation."""
         from agenkit.evaluation.pattern_benchmarks import YAMLBenchmarkLoader
+
         specs_dir = Path(__file__).parent.parent.parent / "tests" / "cross_language" / "specs"
 
         loader = YAMLBenchmarkLoader(specs_dir)
 
         # Create validator with behavior check
         validator = loader._create_validator(
-            expected_message={},
-            expected_behavior={"min_turns": 2, "max_turns": 5}
+            expected_message={}, expected_behavior={"min_turns": 2, "max_turns": 5}
         )
 
         # Should pass within range
-        msg_pass = Message(
-            role="assistant",
-            content="test",
-            metadata={"turns": 3}
-        )
+        msg_pass = Message(role="assistant", content="test", metadata={"turns": 3})
         assert validator(msg_pass) is True
 
         # Should fail below minimum
-        msg_fail_low = Message(
-            role="assistant",
-            content="test",
-            metadata={"turns": 1}
-        )
+        msg_fail_low = Message(role="assistant", content="test", metadata={"turns": 1})
         assert validator(msg_fail_low) is False
 
         # Should fail above maximum
-        msg_fail_high = Message(
-            role="assistant",
-            content="test",
-            metadata={"turns": 6}
-        )
+        msg_fail_high = Message(role="assistant", content="test", metadata={"turns": 6})
         assert validator(msg_fail_high) is False
 
 

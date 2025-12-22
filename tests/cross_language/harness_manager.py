@@ -63,13 +63,10 @@ class HarnessManager:
         for language, config in self.harnesses.items():
             if not config.executable_path.exists():
                 raise FileNotFoundError(
-                    f"Harness executable not found for {language}: "
-                    f"{config.executable_path}"
+                    f"Harness executable not found for {language}: {config.executable_path}"
                 )
 
-    def execute_test(
-        self, language: str, request: TestRequest
-    ) -> TestResult:
+    def execute_test(self, language: str, request: TestRequest) -> TestResult:
         """
         Execute a test on a specific language harness.
 
@@ -154,9 +151,7 @@ class HarnessManager:
         }
 
         try:
-            result = self._execute_harness(
-                config.executable_path, request_msg, timeout=10
-            )
+            result = self._execute_harness(config.executable_path, request_msg, timeout=10)
             response = self._parse_response(result)
             return response.output or {}
         except Exception as e:
@@ -188,13 +183,9 @@ class HarnessManager:
         }
 
         try:
-            result = self._execute_harness(
-                config.executable_path, request_msg, timeout=5
-            )
+            result = self._execute_harness(config.executable_path, request_msg, timeout=5)
             response = self._parse_response(result)
-            return response.status == "success" and response.output.get(
-                "healthy", False
-            )
+            return response.status == "success" and response.output.get("healthy", False)
         except Exception:
             return False
 
@@ -205,9 +196,7 @@ class HarnessManager:
         Returns:
             Dictionary mapping language names to health status
         """
-        return {
-            language: self.health_check(language) for language in self.harnesses
-        }
+        return {language: self.health_check(language) for language in self.harnesses}
 
     def _execute_harness(
         self,
@@ -250,8 +239,7 @@ class HarnessManager:
         if result.returncode not in {0, 1}:
             # Exit codes 0 (success) and 1 (error with JSON) are acceptable
             raise RuntimeError(
-                f"Harness failed with exit code {result.returncode}: "
-                f"{result.stderr}"
+                f"Harness failed with exit code {result.returncode}: {result.stderr}"
             )
 
         return result.stdout
@@ -278,8 +266,7 @@ class HarnessManager:
         protocol_version = data.get("protocol_version")
         if protocol_version != PROTOCOL_VERSION:
             raise ValueError(
-                f"Protocol version mismatch: expected {PROTOCOL_VERSION}, "
-                f"got {protocol_version}"
+                f"Protocol version mismatch: expected {PROTOCOL_VERSION}, got {protocol_version}"
             )
 
         # Parse result

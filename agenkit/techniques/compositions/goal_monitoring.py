@@ -71,7 +71,7 @@ class GoalMonitor(Agent):
         agent: Agent,
         goal_fn: Callable[[dict[str, Any]], bool],
         max_iterations: int = 10,
-        extract_state_fn: Callable[[Message], dict[str, Any]] | None = None
+        extract_state_fn: Callable[[Message], dict[str, Any]] | None = None,
     ):
         """
         Initialize goal monitor.
@@ -118,9 +118,7 @@ class GoalMonitor(Agent):
         return message.metadata if message.metadata else {}
 
     async def achieve_goal(
-        self,
-        initial_message: Message,
-        context: dict[str, Any] | None = None
+        self, initial_message: Message, context: dict[str, Any] | None = None
     ) -> Message:
         """
         Run agent until goal is achieved or max iterations reached.
@@ -174,14 +172,11 @@ class GoalMonitor(Agent):
             # Prepare next iteration
             # Add progress feedback to next message
             progress_feedback = self._generate_progress_feedback(
-                iteration=iteration,
-                max_iterations=self.max_iterations,
-                state=state
+                iteration=iteration, max_iterations=self.max_iterations, state=state
             )
 
             current_message = Message(
-                role="user",
-                content=f"{response.content}\n\n{progress_feedback}"
+                role="user", content=f"{response.content}\n\n{progress_feedback}"
             )
 
         # Get final response
@@ -193,23 +188,16 @@ class GoalMonitor(Agent):
             "goal_reached": goal_reached,
             "iterations": iteration,
             "max_iterations": self.max_iterations,
-            "history": history
+            "history": history,
         }
 
         if final_response.metadata:
             metadata.update(final_response.metadata)
 
-        return Message(
-            role=final_response.role,
-            content=final_response.content,
-            metadata=metadata
-        )
+        return Message(role=final_response.role, content=final_response.content, metadata=metadata)
 
     def _generate_progress_feedback(
-        self,
-        iteration: int,
-        max_iterations: int,
-        state: dict[str, Any]
+        self, iteration: int, max_iterations: int, state: dict[str, Any]
     ) -> str:
         """
         Generate feedback about progress toward goal.
@@ -252,5 +240,5 @@ class GoalMonitor(Agent):
     @property
     def capabilities(self) -> list[str]:
         """Return agent capabilities."""
-        base_caps = self.agent.capabilities if hasattr(self.agent, 'capabilities') else []
+        base_caps = self.agent.capabilities if hasattr(self.agent, "capabilities") else []
         return [*base_caps, "goal_monitoring", "progress_tracking", "iterative_execution"]

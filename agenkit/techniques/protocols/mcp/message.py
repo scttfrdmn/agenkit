@@ -21,6 +21,7 @@ class MCPMessage:
 
     All MCP messages follow JSON-RPC 2.0 format with method and params.
     """
+
     jsonrpc: str = "2.0"
     id: str | int | None = None
     method: str | None = None
@@ -56,6 +57,7 @@ class MCPRequest(MCPMessage):
 
     Represents a request to a server with method and parameters.
     """
+
     method: str = ""
     params: dict[str, Any] = field(default_factory=dict)
 
@@ -72,6 +74,7 @@ class MCPResponse(MCPMessage):
 
     Represents a response from server with result or error.
     """
+
     id: str | int = ""
 
     def __post_init__(self):
@@ -97,6 +100,7 @@ class MCPNotification(MCPMessage):
 
     One-way message that doesn't expect a response.
     """
+
     method: str = ""
     params: dict[str, Any] = field(default_factory=dict)
 
@@ -111,7 +115,7 @@ class MCPNotification(MCPMessage):
 def create_request(
     method: str | MCPMethod,
     params: dict[str, Any] | None = None,
-    request_id: str | int | None = None
+    request_id: str | int | None = None,
 ) -> MCPRequest:
     """
     Create an MCP request.
@@ -133,17 +137,11 @@ def create_request(
     if isinstance(method, MCPMethod):
         method = method.value
 
-    return MCPRequest(
-        id=request_id,
-        method=method,
-        params=params or {}
-    )
+    return MCPRequest(id=request_id, method=method, params=params or {})
 
 
 def create_response(
-    request_id: str | int,
-    result: Any = None,
-    error: dict[str, Any] | None = None
+    request_id: str | int, result: Any = None, error: dict[str, Any] | None = None
 ) -> MCPResponse:
     """
     Create an MCP response.
@@ -162,18 +160,11 @@ def create_response(
         ...     result={"data": "..."}
         ... )
     """
-    return MCPResponse(
-        id=request_id,
-        result=result,
-        error=error
-    )
+    return MCPResponse(id=request_id, result=result, error=error)
 
 
 def create_error_response(
-    request_id: str | int,
-    code: int,
-    message: str,
-    data: Any | None = None
+    request_id: str | int, code: int, message: str, data: Any | None = None
 ) -> MCPResponse:
     """
     Create an error response.
@@ -194,22 +185,15 @@ def create_error_response(
         ...     message="Invalid request"
         ... )
     """
-    error = {
-        "code": code,
-        "message": message
-    }
+    error = {"code": code, "message": message}
     if data is not None:
         error["data"] = data
 
-    return MCPResponse(
-        id=request_id,
-        error=error
-    )
+    return MCPResponse(id=request_id, error=error)
 
 
 def create_notification(
-    method: str | MCPMethod,
-    params: dict[str, Any] | None = None
+    method: str | MCPMethod, params: dict[str, Any] | None = None
 ) -> MCPNotification:
     """
     Create an MCP notification.
@@ -230,10 +214,7 @@ def create_notification(
     if isinstance(method, MCPMethod):
         method = method.value
 
-    return MCPNotification(
-        method=method,
-        params=params or {}
-    )
+    return MCPNotification(method=method, params=params or {})
 
 
 # Standard error codes (JSON-RPC 2.0)

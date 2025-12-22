@@ -26,12 +26,9 @@ class MockLLM:
 @pytest.mark.asyncio
 async def test_ltm_basic():
     """Test basic Least-to-Most functionality."""
-    llm = MockLLM(responses=[
-        "1. Calculate 3*4\n2. Calculate 2*5\n3. Add the results",
-        "12",
-        "10",
-        "22"
-    ])
+    llm = MockLLM(
+        responses=["1. Calculate 3*4\n2. Calculate 2*5\n3. Add the results", "12", "10", "22"]
+    )
 
     ltm = LeastToMost(llm=llm)
     response = await ltm.process(Message(role="user", content="Calculate 3*4 + 2*5"))
@@ -44,12 +41,14 @@ async def test_ltm_basic():
 @pytest.mark.asyncio
 async def test_ltm_decomposition():
     """Test problem decomposition."""
-    llm = MockLLM(responses=[
-        "1. First step\n2. Second step\n3. Final step",
-        "Solution 1",
-        "Solution 2",
-        "Final solution"
-    ])
+    llm = MockLLM(
+        responses=[
+            "1. First step\n2. Second step\n3. Final step",
+            "Solution 1",
+            "Solution 2",
+            "Final solution",
+        ]
+    )
 
     ltm = LeastToMost(llm=llm, max_subproblems=3)
     response = await ltm.process(Message(role="user", content="Complex problem"))
@@ -64,11 +63,7 @@ async def test_ltm_decomposition():
 @pytest.mark.asyncio
 async def test_ltm_sequential_solving():
     """Test that subproblems are solved sequentially."""
-    llm = MockLLM(responses=[
-        "1. Step A\n2. Step B",
-        "Answer A",
-        "Answer B using A"
-    ])
+    llm = MockLLM(responses=["1. Step A\n2. Step B", "Answer A", "Answer B using A"])
 
     ltm = LeastToMost(llm=llm, compose_solutions=True)
     response = await ltm.process(Message(role="user", content="Problem"))
@@ -90,9 +85,7 @@ async def test_ltm_custom_decomposer():
     llm = MockLLM(responses=["Result 1", "Result 2"])
 
     ltm = LeastToMost(llm=llm, decomposer=custom_decomposer)
-    response = await ltm.process(
-        Message(role="user", content="Do A then Do B")
-    )
+    response = await ltm.process(Message(role="user", content="Do A then Do B"))
 
     assert response.metadata["num_subproblems"] == 2
     assert "Do A" in response.metadata["subproblems"][0]
@@ -102,10 +95,14 @@ async def test_ltm_custom_decomposer():
 @pytest.mark.asyncio
 async def test_ltm_max_subproblems():
     """Test max_subproblems limiting."""
-    llm = MockLLM(responses=[
-        "1. One\n2. Two\n3. Three\n4. Four\n5. Five\n6. Six",  # 6 subproblems
-        "1", "2", "3"  # Solutions (only 3 needed)
-    ])
+    llm = MockLLM(
+        responses=[
+            "1. One\n2. Two\n3. Three\n4. Four\n5. Five\n6. Six",  # 6 subproblems
+            "1",
+            "2",
+            "3",  # Solutions (only 3 needed)
+        ]
+    )
 
     ltm = LeastToMost(llm=llm, max_subproblems=3)
     response = await ltm.process(Message(role="user", content="Problem"))
@@ -161,10 +158,12 @@ async def test_ltm_composition_disabled():
 @pytest.mark.asyncio
 async def test_ltm_atomic_problem():
     """Test handling of atomic (non-decomposable) problems."""
-    llm = MockLLM(responses=[
-        "",  # Empty decomposition response
-        "Direct answer"
-    ])
+    llm = MockLLM(
+        responses=[
+            "",  # Empty decomposition response
+            "Direct answer",
+        ]
+    )
 
     ltm = LeastToMost(llm=llm)
     response = await ltm.process(Message(role="user", content="Simple question"))
@@ -177,11 +176,7 @@ async def test_ltm_atomic_problem():
 @pytest.mark.asyncio
 async def test_ltm_metadata():
     """Test metadata completeness."""
-    llm = MockLLM(responses=[
-        "1. Part 1\n2. Part 2",
-        "Solution 1",
-        "Solution 2"
-    ])
+    llm = MockLLM(responses=["1. Part 1\n2. Part 2", "Solution 1", "Solution 2"])
 
     ltm = LeastToMost(llm=llm)
     response = await ltm.process(Message(role="user", content="Problem"))
@@ -257,10 +252,14 @@ async def test_subproblem_dataclass():
 @pytest.mark.asyncio
 async def test_ltm_numbering_formats():
     """Test parsing various numbering formats in decomposition."""
-    llm = MockLLM(responses=[
-        "1) First\n2) Second\n3) Third",  # Parentheses
-        "1", "2", "3"
-    ])
+    llm = MockLLM(
+        responses=[
+            "1) First\n2) Second\n3) Third",  # Parentheses
+            "1",
+            "2",
+            "3",
+        ]
+    )
 
     ltm = LeastToMost(llm=llm)
     response = await ltm.process(Message(role="user", content="Problem"))

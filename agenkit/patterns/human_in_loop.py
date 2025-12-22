@@ -148,9 +148,7 @@ class HumanInLoopAgent(Agent):
 
         threshold = config.approval_threshold
         if threshold < 0 or threshold > 1:
-            raise ValueError(
-                f"approval threshold must be between 0 and 1 (got {threshold:.2f})"
-            )
+            raise ValueError(f"approval threshold must be between 0 and 1 (got {threshold:.2f})")
 
         confidence_key = config.confidence_key or "confidence"
 
@@ -317,6 +315,7 @@ def simple_approval_func(auto_approve: bool) -> ApprovalFunc:
         approval_func = simple_approval_func(auto_approve=False)
         ```
     """
+
     def approve(request: ApprovalRequest) -> ApprovalResponse:
         status = "approved" if auto_approve else "rejected"
         return ApprovalResponse(
@@ -327,9 +326,7 @@ def simple_approval_func(auto_approve: bool) -> ApprovalFunc:
     return approve
 
 
-def confidence_based_approval_func(
-    reject_below: float, auto_approve_above: float
-) -> ApprovalFunc:
+def confidence_based_approval_func(reject_below: float, auto_approve_above: float) -> ApprovalFunc:
     """
     Create an approval function with dynamic thresholds.
 
@@ -355,6 +352,7 @@ def confidence_based_approval_func(
         )
         ```
     """
+
     def approve(request: ApprovalRequest) -> ApprovalResponse:
         conf = request.confidence
 

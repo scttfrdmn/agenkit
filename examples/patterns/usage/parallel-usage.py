@@ -158,6 +158,7 @@ async def multi_perspective_analysis():
     print("Running 3 analyzers in parallel...")
 
     import time
+
     start = time.time()
     result = await analyzer.process(message)
     elapsed = time.time() - start

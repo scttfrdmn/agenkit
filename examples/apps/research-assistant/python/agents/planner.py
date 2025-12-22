@@ -39,15 +39,13 @@ Format as JSON array:
 
         try:
             response = await self._llm.complete(
-                [Message(role="user", content=prompt)],
-                max_tokens=1000,
-                temperature=0.7
+                [Message(role="user", content=prompt)], max_tokens=1000, temperature=0.7
             )
 
             return Message(
                 role="assistant",
                 content=str(response.content),
-                metadata={"type": "research_plan", "query": query}
+                metadata={"type": "research_plan", "query": query},
             )
         except Exception as e:
             logger.error(f"Planning error: {e}")
@@ -55,5 +53,5 @@ Format as JSON array:
             return Message(
                 role="assistant",
                 content=f'[{{"step": 1, "action": "search", "question": "{query}", "sources": ["web"]}}]',
-                metadata={"type": "research_plan", "fallback": True}
+                metadata={"type": "research_plan", "fallback": True},
             )

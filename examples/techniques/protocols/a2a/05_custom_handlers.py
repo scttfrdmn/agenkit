@@ -23,6 +23,7 @@ from agenkit.techniques.protocols.a2a import (
 # Agent with Custom Handlers
 # ==============================================================================
 
+
 class DataProcessingAgent:
     """
     Agent with custom handlers for different data operations.
@@ -38,13 +39,14 @@ class DataProcessingAgent:
         return Message(
             role="assistant",
             content="Please use specific actions: store, retrieve, aggregate",
-            metadata={}
+            metadata={},
         )
 
 
 # ==============================================================================
 # Example: Custom Handlers
 # ==============================================================================
+
 
 async def custom_handlers_example():
     """Demonstrate custom message handlers."""
@@ -58,9 +60,7 @@ async def custom_handlers_example():
 
     # Create A2A agent wrapper
     a2a_agent = A2AAgent(
-        agent_id="processor-001",
-        capabilities=agent.capabilities,
-        transport="http"
+        agent_id="processor-001", capabilities=agent.capabilities, transport="http"
     )
 
     print("\n1. Registering custom action handlers...")
@@ -77,11 +77,7 @@ async def custom_handlers_example():
 
         print(f"   [HANDLER] Stored data with key: {key}")
 
-        return message.create_response({
-            "status": "stored",
-            "key": key,
-            "size": len(str(data))
-        })
+        return message.create_response({"status": "stored", "key": key, "size": len(str(data))})
 
     @a2a_agent.on_action("retrieve")
     async def handle_retrieve(message):
@@ -93,18 +89,11 @@ async def custom_handlers_example():
 
         if data is None:
             print(f"   [HANDLER] Key not found: {key}")
-            return message.create_error(
-                error_code="404",
-                error_message=f"Key not found: {key}"
-            )
+            return message.create_error(error_code="404", error_message=f"Key not found: {key}")
 
         print(f"   [HANDLER] Retrieved data for key: {key}")
 
-        return message.create_response({
-            "status": "retrieved",
-            "key": key,
-            "data": data
-        })
+        return message.create_response({"status": "retrieved", "key": key, "data": data})
 
     @a2a_agent.on_action("aggregate")
     async def handle_aggregate(message):
@@ -114,12 +103,14 @@ async def custom_handlers_example():
 
         print(f"   [HANDLER] Aggregated {total_items} items")
 
-        return message.create_response({
-            "status": "aggregated",
-            "total_items": total_items,
-            "total_size": total_size,
-            "keys": list(agent.data_store.keys())
-        })
+        return message.create_response(
+            {
+                "status": "aggregated",
+                "total_items": total_items,
+                "total_size": total_size,
+                "keys": list(agent.data_store.keys()),
+            }
+        )
 
     print("   Registered handlers: store, retrieve, aggregate")
 
@@ -132,7 +123,7 @@ async def custom_handlers_example():
         name=agent.name,
         capabilities=agent.capabilities,
         endpoint="http://localhost:8080/a2a",
-        transport="http"
+        transport="http",
     )
     await discovery.register(agent_info)
 
@@ -149,10 +140,7 @@ async def custom_handlers_example():
         from_agent="client",
         to_agent=a2a_agent.agent_id,
         action="store",
-        content={
-            "key": "user-001",
-            "data": {"name": "Alice", "age": 30, "role": "engineer"}
-        }
+        content={"key": "user-001", "data": {"name": "Alice", "age": 30, "role": "engineer"}},
     )
 
     store_response = await a2a_agent.handle_message(store_request)
@@ -164,10 +152,7 @@ async def custom_handlers_example():
         from_agent="client",
         to_agent=a2a_agent.agent_id,
         action="store",
-        content={
-            "key": "user-002",
-            "data": {"name": "Bob", "age": 25, "role": "designer"}
-        }
+        content={"key": "user-002", "data": {"name": "Bob", "age": 25, "role": "designer"}},
     )
 
     store_response2 = await a2a_agent.handle_message(store_request2)
@@ -179,7 +164,7 @@ async def custom_handlers_example():
         from_agent="client",
         to_agent=a2a_agent.agent_id,
         action="retrieve",
-        content={"key": "user-001"}
+        content={"key": "user-001"},
     )
 
     retrieve_response = await a2a_agent.handle_message(retrieve_request)
@@ -191,7 +176,7 @@ async def custom_handlers_example():
         from_agent="client",
         to_agent=a2a_agent.agent_id,
         action="retrieve",
-        content={"key": "user-999"}
+        content={"key": "user-999"},
     )
 
     retrieve_error_response = await a2a_agent.handle_message(retrieve_error_request)
@@ -201,10 +186,7 @@ async def custom_handlers_example():
     # Test 5: Aggregate data
     print("\n   Test 5: Aggregating data")
     aggregate_request = create_request(
-        from_agent="client",
-        to_agent=a2a_agent.agent_id,
-        action="aggregate",
-        content={}
+        from_agent="client", to_agent=a2a_agent.agent_id, action="aggregate", content={}
     )
 
     aggregate_response = await a2a_agent.handle_message(aggregate_request)
@@ -217,7 +199,7 @@ async def custom_handlers_example():
         from_agent="client",
         to_agent=a2a_agent.agent_id,
         action="status_update",
-        content={"status": "processing_complete"}
+        content={"status": "processing_complete"},
     )
 
     print(f"   Sent notification: {notification.action}")
@@ -227,10 +209,7 @@ async def custom_handlers_example():
     print("\n5. Testing unregistered action (default handler)...")
 
     unregistered_request = create_request(
-        from_agent="client",
-        to_agent=a2a_agent.agent_id,
-        action="unknown_action",
-        content={}
+        from_agent="client", to_agent=a2a_agent.agent_id, action="unknown_action", content={}
     )
 
     unregistered_response = await a2a_agent.handle_message(unregistered_request)

@@ -26,9 +26,7 @@ class MCPAdapter:
 
     @staticmethod
     def from_agent(
-        agent: Agent,
-        server_name: str | None = None,
-        capabilities: dict[str, Any] | None = None
+        agent: Agent, server_name: str | None = None, capabilities: dict[str, Any] | None = None
     ) -> MCPServer:
         """
         Convert Agenkit agent to MCP server.
@@ -55,7 +53,7 @@ class MCPAdapter:
             >>>
             >>> await mcp_server.start(transport="stdio")
         """
-        name = server_name or getattr(agent, 'name', 'agenkit-agent')
+        name = server_name or getattr(agent, "name", "agenkit-agent")
 
         server = MCPServer(name=name, capabilities=capabilities)
 
@@ -66,17 +64,11 @@ class MCPAdapter:
             input_schema={
                 "type": "object",
                 "properties": {
-                    "content": {
-                        "type": "string",
-                        "description": "Message content to process"
-                    },
-                    "metadata": {
-                        "type": "object",
-                        "description": "Optional metadata"
-                    }
+                    "content": {"type": "string", "description": "Message content to process"},
+                    "metadata": {"type": "object", "description": "Optional metadata"},
                 },
-                "required": ["content"]
-            }
+                "required": ["content"],
+            },
         )
         async def process_with_agent(params: dict[str, Any]) -> dict[str, Any]:
             """Process message with Agenkit agent."""
@@ -84,42 +76,30 @@ class MCPAdapter:
             metadata = params.get("metadata", {})
 
             # Create message
-            message = Message(
-                role="user",
-                content=content,
-                metadata=metadata
-            )
+            message = Message(role="user", content=content, metadata=metadata)
 
             # Process with agent
             response = await agent.process(message)
 
             # Return response
-            return {
-                "content": response.content,
-                "metadata": response.metadata
-            }
+            return {"content": response.content, "metadata": response.metadata}
 
         # If agent has capabilities, expose them as resources
-        if hasattr(agent, 'capabilities'):
+        if hasattr(agent, "capabilities"):
+
             @server.resource(
                 uri="agent://capabilities",
                 name="Agent Capabilities",
                 description="List agent capabilities",
-                mime_type="application/json"
+                mime_type="application/json",
             )
             async def get_capabilities(params: dict[str, Any]) -> dict[str, Any]:
-                return {
-                    "capabilities": agent.capabilities
-                }
+                return {"capabilities": agent.capabilities}
 
         return server
 
     @staticmethod
-    def to_tool(
-        client: MCPClient,
-        tool_name: str,
-        description: str | None = None
-    ):
+    def to_tool(client: MCPClient, tool_name: str, description: str | None = None):
         """
         Convert MCP tool to Agenkit Tool.
 
@@ -158,9 +138,7 @@ class MCPAdapter:
         # Get tool info from client
         # Note: Would need to cache tool schemas for efficiency
         tool = Tool(
-            name=tool_name,
-            description=description or f"MCP tool: {tool_name}",
-            func=execute
+            name=tool_name, description=description or f"MCP tool: {tool_name}", func=execute
         )
 
         return tool
@@ -182,11 +160,7 @@ class AgentMCPServer:
         >>> await mcp_wrapper.run()  # Uses stdio by default
     """
 
-    def __init__(
-        self,
-        agent: Agent,
-        server_name: str | None = None
-    ):
+    def __init__(self, agent: Agent, server_name: str | None = None):
         """
         Initialize agent MCP server.
 
@@ -197,11 +171,7 @@ class AgentMCPServer:
         self.agent = agent
         self.server = MCPAdapter.from_agent(agent, server_name)
 
-    async def run(
-        self,
-        transport: str = "stdio",
-        **kwargs
-    ):
+    async def run(self, transport: str = "stdio", **kwargs):
         """
         Run the MCP server.
 

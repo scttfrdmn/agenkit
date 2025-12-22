@@ -69,58 +69,73 @@ class MockAgent(Agent):
         # Check for specific test scenarios and respond appropriately
         content_lower = message.content.lower()
 
-
         # ReAct pattern - calculation (15 * 24 = 360)
         # Check for the query pattern and observation state
         # Match either the initial query OR follow-up observations
-        is_calc_query = ("15 * 24" in message.content or "What is 15" in message.content) and "color" not in content_lower
-        is_calc_followup = "What's your next thought/action?" in message.content and "360" in message.content
+        is_calc_query = (
+            "15 * 24" in message.content or "What is 15" in message.content
+        ) and "color" not in content_lower
+        is_calc_followup = (
+            "What's your next thought/action?" in message.content and "360" in message.content
+        )
         if is_calc_query or is_calc_followup:
             # Check if this is after getting tool result (actual observation from ReAct loop, not system prompt example)
             # The ReAct loop sends "Observation: <result>\n\nWhat's your next thought/action?"
-            has_actual_observation = "Observation: 360" in message.content or "What's your next thought/action?" in message.content
+            has_actual_observation = (
+                "Observation: 360" in message.content
+                or "What's your next thought/action?" in message.content
+            )
             if has_actual_observation:
                 # After observation - return final answer
                 return Message(
                     role="assistant",
-                    content="Thought: I now have the calculation result\nAction: Final Answer\nAction Input: The result of 15 * 24 is 360."
+                    content="Thought: I now have the calculation result\nAction: Final Answer\nAction Input: The result of 15 * 24 is 360.",
                 )
             else:
                 # Initial query - request calculator tool
                 return Message(
                     role="assistant",
-                    content="Thought: I need to use the calculator tool to compute 15 * 24\nAction: calculator\nAction Input: {\"a\": 15, \"b\": 24}"
+                    content='Thought: I need to use the calculator tool to compute 15 * 24\nAction: calculator\nAction Input: {"a": 15, "b": 24}',
                 )
 
         # ReAct pattern - multi-step with tools (weather + convert)
-        is_weather_query = "weather" in content_lower and "paris" in content_lower and ("fahrenheit" in content_lower or "convert" in content_lower)
-        is_weather_followup = "What's your next thought/action?" in message.content and ("paris" in content_lower or "temperature" in content_lower or "20°c" in content_lower or "68°f" in content_lower)
+        is_weather_query = (
+            "weather" in content_lower
+            and "paris" in content_lower
+            and ("fahrenheit" in content_lower or "convert" in content_lower)
+        )
+        is_weather_followup = "What's your next thought/action?" in message.content and (
+            "paris" in content_lower
+            or "temperature" in content_lower
+            or "20°c" in content_lower
+            or "68°f" in content_lower
+        )
         if is_weather_query or is_weather_followup:
             # Determine which step based on the observation content
             if "What's your next thought/action?" not in message.content:
                 # Initial query - search for weather
                 return Message(
                     role="assistant",
-                    content="Thought: First I need to search for the current weather in Paris\nAction: search\nAction Input: {\"query\": \"weather Paris\"}"
+                    content='Thought: First I need to search for the current weather in Paris\nAction: search\nAction Input: {"query": "weather Paris"}',
                 )
             elif "Temperature in Paris: 20°C" in message.content or "20°c" in content_lower:
                 # After search result - convert temperature
                 return Message(
                     role="assistant",
-                    content="Thought: Now I need to convert the temperature from Celsius to Fahrenheit\nAction: unit_converter\nAction Input: {\"from_unit\": \"celsius\", \"to_unit\": \"fahrenheit\", \"value\": 20}"
+                    content='Thought: Now I need to convert the temperature from Celsius to Fahrenheit\nAction: unit_converter\nAction Input: {"from_unit": "celsius", "to_unit": "fahrenheit", "value": 20}',
                 )
             else:
                 # After conversion result - final answer
                 return Message(
                     role="assistant",
-                    content="Thought: I have the weather data and the conversion\nAction: Final Answer\nAction Input: The weather in Paris is 20°C, which converts to 68°F."
+                    content="Thought: I have the weather data and the conversion\nAction: Final Answer\nAction Input: The weather in Paris is 20°C, which converts to 68°F.",
                 )
 
         # ReAct pattern - simple factual questions (no tools needed)
         if "color" in content_lower and "sky" in content_lower:
             return Message(
                 role="assistant",
-                content="Thought: This is a simple factual question I can answer directly\nAction: Final Answer\nAction Input: The sky is blue during the day due to Rayleigh scattering of sunlight."
+                content="Thought: This is a simple factual question I can answer directly\nAction: Final Answer\nAction Input: The sky is blue during the day due to Rayleigh scattering of sunlight.",
             )
 
         # Task pattern - impossible task (should fail)
@@ -131,18 +146,20 @@ class MockAgent(Agent):
         if "extract" in content_lower and "email" in content_lower:
             # Extract email addresses from the message content
             import re
-            emails = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', message.content)
+
+            emails = re.findall(
+                r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", message.content
+            )
             if emails:
                 return Message(
-                    role="assistant",
-                    content=f"Extracted email addresses: {', '.join(emails)}"
+                    role="assistant", content=f"Extracted email addresses: {', '.join(emails)}"
                 )
 
         # Reflection pattern - poetry about technology
         if "poem" in content_lower and "technology" in content_lower:
             return Message(
                 role="assistant",
-                content="Here's a poem about technology:\n\nCircuits hum with electric dreams,\nConnecting worlds through digital streams.\nInnovation's spark lights up the night,\nTechnology guides us to new height."
+                content="Here's a poem about technology:\n\nCircuits hum with electric dreams,\nConnecting worlds through digital streams.\nInnovation's spark lights up the night,\nTechnology guides us to new height.",
             )
 
         # Reflection pattern - critique prompt
@@ -150,42 +167,43 @@ class MockAgent(Agent):
             # Return feedback suggesting improvement with a quality score
             return Message(
                 role="assistant",
-                content="Quality Score: 7/10\n\nFeedback: The poem captures technology well but could be more specific. Consider adding more vivid imagery.\n\nSuggestion: Add references to specific technologies or their impact on society."
+                content="Quality Score: 7/10\n\nFeedback: The poem captures technology well but could be more specific. Consider adding more vivid imagery.\n\nSuggestion: Add references to specific technologies or their impact on society.",
             )
 
         # Planning pattern - expects specific format
         if "create a plan for:" in content_lower and "birthday" in content_lower:
             return Message(
                 role="assistant",
-                content="Goal: Plan a birthday party for 20 people\n\nSteps:\n1. Book a venue for the party\n2. Send invitations to all guests\n3. Order food and drinks for everyone"
+                content="Goal: Plan a birthday party for 20 people\n\nSteps:\n1. Book a venue for the party\n2. Send invitations to all guests\n3. Order food and drinks for everyone",
             )
 
         # Planning scenario - general
         if "plan" in content_lower and "birthday" in content_lower:
             return Message(
                 role="assistant",
-                content="Let's break this down into steps:\n1. Book a venue for the party\n2. Send invitations to all guests\n3. Order food and drinks for everyone"
+                content="Let's break this down into steps:\n1. Book a venue for the party\n2. Send invitations to all guests\n3. Order food and drinks for everyone",
             )
 
         # ReasoningWithTools pattern - sales data analysis
-        if "sales data" in content_lower and ("trend" in content_lower or "predict" in content_lower):
+        if "sales data" in content_lower and (
+            "trend" in content_lower or "predict" in content_lower
+        ):
             return Message(
                 role="assistant",
-                content="Based on the analysis, the trend shows steady growth in Q1-Q3. My prediction for next quarter is a 15% increase in sales, driven by seasonal factors and current market momentum."
+                content="Based on the analysis, the trend shows steady growth in Q1-Q3. My prediction for next quarter is a 15% increase in sales, driven by seasonal factors and current market momentum.",
             )
 
         # ReasoningWithTools pattern - simple question not requiring tools
         if "simple question" in content_lower and "not requiring tools" in content_lower:
             return Message(
-                role="assistant",
-                content="FINAL ANSWER: This is a straightforward answer."
+                role="assistant", content="FINAL ANSWER: This is a straightforward answer."
             )
 
         # HumanInLoop pattern - book a flight (missing information)
         if "book a flight" in content_lower or "book flight" in content_lower:
             return Message(
                 role="assistant",
-                content="I'd be happy to help you book a flight. To proceed, I need some information: What is your destination? What are your preferred departure and return dates?"
+                content="I'd be happy to help you book a flight. To proceed, I need some information: What is your destination? What are your preferred departure and return dates?",
             )
 
         # HumanInLoop pattern - diagnose system behavior (low confidence)
@@ -193,19 +211,21 @@ class MockAgent(Agent):
             return Message(
                 role="assistant",
                 content="The system appears to be experiencing intermittent network issues, though I'm not fully certain of the root cause.",
-                metadata={"confidence": 0.6}
+                metadata={"confidence": 0.6},
             )
 
         # AgentsAsTools pattern - calculation delegation
-        if "calculate" in content_lower and ("5 + 3" in message.content or "5+3" in message.content):
+        if "calculate" in content_lower and (
+            "5 + 3" in message.content or "5+3" in message.content
+        ):
             return Message(
                 role="assistant",
                 content="First, 5 + 3 = 8. Then, 8 * 2 = 16. The final result is 16.",
                 metadata={
                     "agents_called": 2,
                     "delegation_chain": ["calculator", "calculator"],
-                    "sub_agents": ["calculator"]
-                }
+                    "sub_agents": ["calculator"],
+                },
             )
 
         # AgentsAsTools pattern - weather query
@@ -213,10 +233,7 @@ class MockAgent(Agent):
             return Message(
                 role="assistant",
                 content="The weather in Tokyo is currently sunny with a temperature of 22°C.",
-                metadata={
-                    "selection_reason": "weather query",
-                    "sub_agents": ["weather_agent"]
-                }
+                metadata={"selection_reason": "weather query", "sub_agents": ["weather_agent"]},
             )
 
         # AgentsAsTools pattern - search and summarize
@@ -226,14 +243,23 @@ class MockAgent(Agent):
                 content="I searched for Python tutorials and found a comprehensive guide. Summary: Python is a versatile programming language with easy-to-learn syntax, popular for web development, data science, and automation.",
                 metadata={
                     "delegation_count": 2,
-                    "sub_agents": ["search_agent", "summarizer_agent"]
-                }
+                    "sub_agents": ["search_agent", "summarizer_agent"],
+                },
             )
 
         # Default response for generic ReAct queries (e.g., "Complex multi-step task")
-        is_generic_react_query = ("You are a helpful assistant that uses tools" in message.content or "Available tools:" in message.content) and \
-           "15" not in message.content and "weather" not in content_lower and "sky" not in content_lower
-        is_generic_react_followup = "What's your next thought/action?" in message.content and "mock result" in content_lower
+        is_generic_react_query = (
+            (
+                "You are a helpful assistant that uses tools" in message.content
+                or "Available tools:" in message.content
+            )
+            and "15" not in message.content
+            and "weather" not in content_lower
+            and "sky" not in content_lower
+        )
+        is_generic_react_followup = (
+            "What's your next thought/action?" in message.content and "mock result" in content_lower
+        )
         if is_generic_react_query or is_generic_react_followup:
             # Count actual observations from ReAct loop (not system prompt examples)
             # Look for "What's your next thought/action?" which ReAct sends after each observation
@@ -242,13 +268,13 @@ class MockAgent(Agent):
                 # First iteration - use tool1
                 return Message(
                     role="assistant",
-                    content="Thought: Let me try using a tool\nAction: tool1\nAction Input: {}"
+                    content="Thought: Let me try using a tool\nAction: tool1\nAction Input: {}",
                 )
             else:
                 # Subsequent iterations - return final answer
                 return Message(
                     role="assistant",
-                    content="Thought: I've reached my limit\nAction: Final Answer\nAction Input: Task completed within max iterations."
+                    content="Thought: I've reached my limit\nAction: Final Answer\nAction Input: Task completed within max iterations.",
                 )
 
         # Regular default response
@@ -265,6 +291,7 @@ class MockAgent(Agent):
             for msg in messages[:-1]:
                 # Simple name extraction - look for "My name is X" or "I'm X"
                 import re
+
                 if match := re.search(r"(?:name is|I'm|I am)\s+(\w+)", msg.content, re.IGNORECASE):
                     name = match.group(1)
                     return Message(role="assistant", content=f"Your name is {name}")
@@ -278,6 +305,7 @@ class MockAgent(Agent):
         """Plan method for Planner compatibility."""
         # Return a simple list of mock subtasks
         from agenkit.patterns.supervisor import Subtask
+
         return [
             Subtask(
                 type="default",
@@ -393,11 +421,13 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
             # Multiple messages (for Conversational pattern)
             messages_data = input_data["messages"]
             for msg_data in messages_data:
-                messages_list.append(Message(
-                    role=msg_data.get("role", "user"),
-                    content=msg_data.get("content", ""),
-                    metadata=msg_data.get("metadata", {}),
-                ))
+                messages_list.append(
+                    Message(
+                        role=msg_data.get("role", "user"),
+                        content=msg_data.get("content", ""),
+                        metadata=msg_data.get("metadata", {}),
+                    )
+                )
             # Last message is the one to process
             message = messages_list[-1] if messages_list else Message(role="user", content="")
         else:
@@ -428,9 +458,7 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
         if pattern_name == "ChainOfThought":
             agent = pattern_class(
                 llm=mock_agent,
-                prompt_template=config.get(
-                    "prompt_template", "Let's think step by step:\n{query}"
-                ),
+                prompt_template=config.get("prompt_template", "Let's think step by step:\n{query}"),
                 parse_steps=config.get("parse_steps", True),
                 step_delimiter=config.get("step_delimiter", "\n"),
                 max_steps=config.get("max_steps"),
@@ -456,6 +484,7 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
             )
         elif pattern_name == "Reflection":
             from agenkit.patterns.reflection import ReflectionConfig
+
             reflection_config = ReflectionConfig(
                 generator=mock_agent,
                 critic=mock_agent,
@@ -484,7 +513,9 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
                 if messages:
                     # Combine all message contents
                     combined_content = " ".join(msg.content for msg in messages)
-                    return Message(role="assistant", content=combined_content, metadata={"aggregated": True})
+                    return Message(
+                        role="assistant", content=combined_content, metadata={"aggregated": True}
+                    )
                 return Message(role="assistant", content="No results")
 
             # Get agent config from input
@@ -518,7 +549,9 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
                     # Get agent name from route
                     agent_name = route.get("agent", "default")
                     # Create agent with that name
-                    agents_dict[agent_name] = MockAgent(responses=[message.content], name=agent_name)
+                    agents_dict[agent_name] = MockAgent(
+                        responses=[message.content], name=agent_name
+                    )
                     # Get keywords or category for this route
                     # For classification-based routing, use category as keyword
                     if "category" in route:
@@ -529,7 +562,9 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
 
                 # Add default agent only if specified in config and not already in dict
                 if default_agent_name and default_agent_name not in agents_dict:
-                    agents_dict[default_agent_name] = MockAgent(responses=[message.content], name=default_agent_name)
+                    agents_dict[default_agent_name] = MockAgent(
+                        responses=[message.content], name=default_agent_name
+                    )
             else:
                 # Fallback
                 agents_dict = {"default": mock_agent}
@@ -539,6 +574,7 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
             # Create custom classifier that handles default fallback and metadata matching
             class TestClassifier:
                 """Test classifier that returns default on no match."""
+
                 def __init__(self, keywords_dict, default_key, routes_list):
                     self._keywords = keywords_dict
                     self._default = default_key
@@ -634,7 +670,9 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
             from agenkit.patterns.collaborative import CollaborativeConfig
 
             def simple_merge(messages):
-                return messages[0] if messages else Message(role="assistant", content="No consensus")
+                return (
+                    messages[0] if messages else Message(role="assistant", content="No consensus")
+                )
 
             collab_config = CollaborativeConfig(
                 agents=[mock_agent, mock_agent],
@@ -656,6 +694,7 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
             agent = pattern_class(hil_config)
         elif pattern_name == "Autonomous":
             from agenkit.patterns.autonomous import AutonomousConfig
+
             auto_config = AutonomousConfig(
                 objective=config.get("objective", "Test objective"),
                 max_iterations=config.get("max_iterations", 2),
@@ -665,6 +704,7 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
             autonomous_agent.add_goal("Test goal", priority=1)
             # Run and return result as message
             import asyncio
+
             result = asyncio.run(autonomous_agent.run())
             duration_ms = (time.time() - start_time) * 1000
             return {
@@ -732,8 +772,10 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
                     class GenericTool:
                         name = tool_name
                         description = tool_spec.get("description", "")
+
                         async def execute(self, **kwargs):
                             return "mock result"
+
                     tools.append(GenericTool())
 
             react_config = ReActConfig(
@@ -753,6 +795,7 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
             agent = mock_agent
         elif pattern_name == "Supervisor":
             from agenkit.patterns.supervisor import SupervisorConfig
+
             supervisor_config = SupervisorConfig(
                 planner=mock_agent,
                 specialists={"default": mock_agent},  # Dict of specialist name -> agent
@@ -760,6 +803,7 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
             agent = pattern_class(supervisor_config)
         elif pattern_name == "Planning":
             from agenkit.patterns.planning import PlanningConfig
+
             planning_config = PlanningConfig(
                 planner=mock_agent,
                 max_steps=config.get("max_steps", 5),
@@ -767,14 +811,18 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
             agent = pattern_class(planning_config)
         elif pattern_name == "Multiagent":
             from agenkit.patterns.multiagent import MultiAgentConfig
+
             multiagent_config = MultiAgentConfig(
-                strategy=config.get("strategy", "sequential"),  # Valid: sequential, parallel, delegate
+                strategy=config.get(
+                    "strategy", "sequential"
+                ),  # Valid: sequential, parallel, delegate
                 agents={"agent1": mock_agent, "agent2": mock_agent},  # Dict, not list
             )
             agent = pattern_class(multiagent_config)
         elif pattern_name == "Memory":
             # MemoryHierarchy manages memory tiers
             from agenkit.memory import EpisodicMemory, SemanticMemory, WorkingMemory
+
             working = WorkingMemory(capacity=100)
             episodic = EpisodicMemory()
             semantic = SemanticMemory()
@@ -847,9 +895,7 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
                             agents_dict[agent_name] = mock_agent
 
             orchestration_config = OrchestrationConfig(
-                workflow=workflow,
-                agents=agents_dict,
-                error_strategy=error_strategy
+                workflow=workflow, agents=agents_dict, error_strategy=error_strategy
             )
             agent = pattern_class(orchestration_config)
         else:
@@ -881,9 +927,17 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
             if "react_steps" in output_message.metadata:
                 react_steps = output_message.metadata["react_steps"]
                 # Extract unique tool names from steps
-                tool_calls = list({step["action"] for step in react_steps if step["action"].lower() != "final answer"})
+                tool_calls = list(
+                    {
+                        step["action"]
+                        for step in react_steps
+                        if step["action"].lower() != "final answer"
+                    }
+                )
                 # Turns = number of Thought-Action-Observation cycles + final answer
-                turns = len(react_steps) * 2 + 1  # Each step is Thought+Action, plus final Observation
+                turns = (
+                    len(react_steps) * 2 + 1
+                )  # Each step is Thought+Action, plus final Observation
             # AgentsAsTools pattern - uses sub_agents metadata directly
             elif "sub_agents" in output_message.metadata:
                 sub_agents = output_message.metadata["sub_agents"]
@@ -899,7 +953,7 @@ def execute_test(payload: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911, P
             elif "parallel_agents" in output_message.metadata:
                 # For parallel, we need to get agent names from the pattern instance
                 # This is a workaround since parallel doesn't track individual agent names in metadata
-                if hasattr(agent, '_agents'):
+                if hasattr(agent, "_agents"):
                     sub_agents = [a.name for a in agent._agents]
                     output_message.metadata["agent_count"] = len(sub_agents)
 

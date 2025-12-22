@@ -114,14 +114,14 @@ async def test_retry_count_never_exceeds_max(max_retries):
         await policy.execute(always_fails)
 
     # Property: Total attempts = 1 (initial) + max_retries
-    assert (
-        policy.get_attempt_count() == 1 + max_retries
-    ), f"Expected {1 + max_retries} attempts, got {policy.get_attempt_count()}"
+    assert policy.get_attempt_count() == 1 + max_retries, (
+        f"Expected {1 + max_retries} attempts, got {policy.get_attempt_count()}"
+    )
 
     # Property: Retry count = max_retries
-    assert (
-        policy.get_retry_count() == max_retries
-    ), f"Expected {max_retries} retries, got {policy.get_retry_count()}"
+    assert policy.get_retry_count() == max_retries, (
+        f"Expected {max_retries} retries, got {policy.get_retry_count()}"
+    )
 
 
 # ============================================
@@ -158,9 +158,9 @@ async def test_backoff_delays_are_monotonic(max_retries, backoff_base, backoff_m
 
     # Property: Each delay should be >= previous delay
     for i in range(1, len(delays)):
-        assert (
-            delays[i] >= delays[i - 1]
-        ), f"Delay {i} ({delays[i]}) should be >= delay {i - 1} ({delays[i - 1]})"
+        assert delays[i] >= delays[i - 1], (
+            f"Delay {i} ({delays[i]}) should be >= delay {i - 1} ({delays[i - 1]})"
+        )
 
 
 # ============================================
@@ -195,9 +195,9 @@ async def test_success_propagates_immediately(success_on_attempt, max_retries):
     result = await policy.execute(succeeds_on_nth_attempt)
 
     # Property: Should stop immediately on success
-    assert (
-        policy.get_attempt_count() == success_on_attempt
-    ), f"Should stop on attempt {success_on_attempt}, got {policy.get_attempt_count()}"
+    assert policy.get_attempt_count() == success_on_attempt, (
+        f"Should stop on attempt {success_on_attempt}, got {policy.get_attempt_count()}"
+    )
 
     assert result == "Success"
 
@@ -259,9 +259,9 @@ async def test_total_attempts_equals_one_plus_retries(max_retries):
         await policy.execute(always_fails)
 
     # Property: attempts = 1 + retries
-    assert (
-        policy.get_attempt_count() == 1 + policy.get_retry_count()
-    ), f"Attempts ({policy.get_attempt_count()}) != 1 + retries ({policy.get_retry_count()})"
+    assert policy.get_attempt_count() == 1 + policy.get_retry_count(), (
+        f"Attempts ({policy.get_attempt_count()}) != 1 + retries ({policy.get_retry_count()})"
+    )
 
 
 # ============================================
@@ -290,9 +290,9 @@ async def test_only_retries_on_configured_exceptions(max_retries):
         await policy.execute(raises_value_error)
 
     # Property: Should not retry (0 retries for non-retryable exception)
-    assert (
-        policy.get_retry_count() == 0
-    ), f"Should not retry non-retryable exception, got {policy.get_retry_count()} retries"
+    assert policy.get_retry_count() == 0, (
+        f"Should not retry non-retryable exception, got {policy.get_retry_count()} retries"
+    )
     assert policy.get_attempt_count() == 1, "Should only attempt once for non-retryable exception"
 
 
@@ -331,9 +331,9 @@ async def test_exponential_growth_formula(max_retries, backoff_base, backoff_mul
         expected_delay = backoff_base * (backoff_multiplier**i)
 
         # Allow small floating point error
-        assert (
-            abs(delay - expected_delay) < 0.001
-        ), f"Delay {i} ({delay}) doesn't match formula ({expected_delay})"
+        assert abs(delay - expected_delay) < 0.001, (
+            f"Delay {i} ({delay}) doesn't match formula ({expected_delay})"
+        )
 
 
 # ============================================
@@ -383,9 +383,9 @@ async def test_delays_length_equals_retry_count(max_retries):
     delays = policy.get_delays()
 
     # Property: len(delays) == retry_count
-    assert (
-        len(delays) == policy.get_retry_count()
-    ), f"Delays length ({len(delays)}) != retry count ({policy.get_retry_count()})"
+    assert len(delays) == policy.get_retry_count(), (
+        f"Delays length ({len(delays)}) != retry count ({policy.get_retry_count()})"
+    )
 
 
 # ============================================
@@ -413,9 +413,9 @@ async def test_first_delay_is_base_delay(backoff_base):
 
     # Property: First delay should be base delay
     assert len(delays) > 0, "Should have at least one delay"
-    assert (
-        abs(delays[0] - backoff_base) < 0.001
-    ), f"First delay ({delays[0]}) should equal backoff_base ({backoff_base})"
+    assert abs(delays[0] - backoff_base) < 0.001, (
+        f"First delay ({delays[0]}) should equal backoff_base ({backoff_base})"
+    )
 
 
 if __name__ == "__main__":

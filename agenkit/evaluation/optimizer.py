@@ -102,8 +102,10 @@ class SearchSpace:
             elif spec["type"] == "discrete":
                 if value not in spec["values"]:
                     return False
-            elif (spec["type"] == "integer" and (not isinstance(value, int) or not (spec["low"] <= value <= spec["high"]))) or \
-                 (spec["type"] == "categorical" and value not in spec["values"]):
+            elif (
+                spec["type"] == "integer"
+                and (not isinstance(value, int) or not (spec["low"] <= value <= spec["high"]))
+            ) or (spec["type"] == "categorical" and value not in spec["values"]):
                 return False
 
         return True

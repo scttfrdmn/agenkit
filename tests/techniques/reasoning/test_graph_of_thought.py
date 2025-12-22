@@ -13,6 +13,7 @@ from agenkit.techniques.reasoning import (
 
 # Test ReasoningGraph Data Structure
 
+
 def test_graph_creation():
     """Test creating an empty reasoning graph."""
     graph = ReasoningGraph()
@@ -264,6 +265,7 @@ def test_graph_statistics():
 
 
 # Test GraphOfThought Agent
+
 
 class MockLLM:
     """Mock LLM for testing GraphOfThought."""

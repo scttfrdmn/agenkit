@@ -16,7 +16,8 @@ app = marimo.App(width="medium")
 @app.cell
 def __():
     import marimo as mo
-    return mo,
+
+    return (mo,)
 
 
 @app.cell
@@ -98,7 +99,7 @@ Therefore, 15 × 24 = 360"""
             return "Let me think through this carefully..."
 
     print("✅ Created MockLLM")
-    return MockLLM,
+    return (MockLLM,)
 
 
 @app.cell
@@ -113,10 +114,10 @@ def __(mo):
     cot_query = mo.ui.text(
         placeholder="Enter a question or problem...",
         value="What is 15 * 24?",
-        label="Query for Chain-of-Thought:"
+        label="Query for Chain-of-Thought:",
     )
     cot_query
-    return cot_query,
+    return (cot_query,)
 
 
 @app.cell
@@ -135,11 +136,11 @@ async def __(ChainOfThought, Message, MockLLM, cot_query, mo):
         ```
 
         **Metadata:**
-        - Reasoning steps: {cot_response.metadata['num_steps']}
-        - Technique: {cot_response.metadata['technique']}
+        - Reasoning steps: {cot_response.metadata["num_steps"]}
+        - Technique: {cot_response.metadata["technique"]}
 
         **Extracted Steps:**
-        {chr(10).join(f"{i}. {step}" for i, step in enumerate(cot_response.metadata['reasoning_steps'], 1))}
+        {chr(10).join(f"{i}. {step}" for i, step in enumerate(cot_response.metadata["reasoning_steps"], 1))}
         """)
     else:
         cot_result = mo.md("*Enter a query to see Chain-of-Thought reasoning*")
@@ -177,14 +178,14 @@ def __(mo):
             options={
                 "best-first": "Best-First (recommended)",
                 "bfs": "Breadth-First Search",
-                "dfs": "Depth-First Search"
+                "dfs": "Depth-First Search",
             },
             value="best-first",
-            label="Search Strategy:"
-        )
+            label="Search Strategy:",
+        ),
     )
     tot_config
-    return tot_config,
+    return (tot_config,)
 
 
 @app.cell
@@ -193,10 +194,10 @@ def __(mo):
     tot_query = mo.ui.text(
         placeholder="Enter a planning or design problem...",
         value="Design a strategy for optimizing database queries",
-        label="Query for Tree-of-Thought:"
+        label="Query for Tree-of-Thought:",
     )
     tot_query
-    return tot_query,
+    return (tot_query,)
 
 
 @app.cell
@@ -219,11 +220,11 @@ async def __(Message, MockLLM, TreeOfThought, mo, tot_config, tot_query):
             branching_factor=tot_config.value["branching_factor"],
             max_depth=tot_config.value["max_depth"],
             evaluator=simple_evaluator,
-            strategy=tot_config.value["search_strategy"]
+            strategy=tot_config.value["search_strategy"],
         )
 
         tot_response = await tot_agent.process(Message(role="user", content=tot_query.value))
-        stats = tot_response.metadata['reasoning_tree_stats']
+        stats = tot_response.metadata["reasoning_tree_stats"]
 
         tot_result = mo.md(f"""
         **🌳 Tree-of-Thought Result:**
@@ -233,14 +234,14 @@ async def __(Message, MockLLM, TreeOfThought, mo, tot_config, tot_query):
         - Max depth: {tot_config.value["max_depth"]}
         - Strategy: {tot_config.value["search_strategy"]}
 
-        **Best Path (Score: {tot_response.metadata['best_score']:.2f}):**
-        {chr(10).join(f"{i}. {step}" for i, step in enumerate(tot_response.metadata['reasoning_path'], 1))}
+        **Best Path (Score: {tot_response.metadata["best_score"]:.2f}):**
+        {chr(10).join(f"{i}. {step}" for i, step in enumerate(tot_response.metadata["reasoning_path"], 1))}
 
         **Tree Statistics:**
-        - Total nodes explored: {stats['total_nodes']}
-        - Max depth reached: {stats['max_depth']}
-        - Leaf nodes: {stats['num_leaves']}
-        - Pruned nodes: {stats['num_pruned']}
+        - Total nodes explored: {stats["total_nodes"]}
+        - Max depth reached: {stats["max_depth"]}
+        - Leaf nodes: {stats["num_leaves"]}
+        - Pruned nodes: {stats["num_pruned"]}
 
         💡 **Try adjusting** branching factor or depth to see how exploration changes!
         """)
@@ -278,14 +279,14 @@ def __(mo):
             options={
                 "majority": "Majority Voting (recommended)",
                 "weighted": "Weighted Voting",
-                "first": "First Sample (baseline)"
+                "first": "First Sample (baseline)",
             },
             value="majority",
-            label="Voting Strategy:"
-        )
+            label="Voting Strategy:",
+        ),
     )
     sc_config
-    return sc_config,
+    return (sc_config,)
 
 
 @app.cell
@@ -294,10 +295,10 @@ def __(mo):
     sc_query = mo.ui.text(
         placeholder="Enter a question with objective answer...",
         value="What is 15 * 24?",
-        label="Query for Self-Consistency:"
+        label="Query for Self-Consistency:",
     )
     sc_query
-    return sc_query,
+    return (sc_query,)
 
 
 @app.cell
@@ -308,7 +309,7 @@ async def __(ChainOfThought, Message, MockLLM, SelfConsistency, mo, sc_config, s
         sc_agent = SelfConsistency(
             agent=sc_base,
             num_samples=sc_config.value["num_samples"],
-            voting_strategy=sc_config.value["voting_strategy"]
+            voting_strategy=sc_config.value["voting_strategy"],
         )
 
         sc_response = await sc_agent.process(Message(role="user", content=sc_query.value))
@@ -323,11 +324,11 @@ async def __(ChainOfThought, Message, MockLLM, SelfConsistency, mo, sc_config, s
         **Consensus Answer:** {sc_response.content}
 
         **Consistency Metrics:**
-        - Consistency score: {sc_response.metadata['consistency_score']:.2%}
-        - Base agent: {sc_response.metadata['base_agent']}
+        - Consistency score: {sc_response.metadata["consistency_score"]:.2%}
+        - Base agent: {sc_response.metadata["base_agent"]}
 
         **Answer Distribution:**
-        {chr(10).join(f"- '{ans}': {count} votes" for ans, count in sc_response.metadata['answer_counts'].items())}
+        {chr(10).join(f"- '{ans}': {count} votes" for ans, count in sc_response.metadata["answer_counts"].items())}
 
         💡 **Higher consistency score** = more agreement = higher confidence
         """)
@@ -350,25 +351,33 @@ def __(mo):
     comparison_query = mo.ui.text(
         placeholder="Enter problem to compare techniques...",
         value="What is 15 * 24?",
-        label="Query for comparison:"
+        label="Query for comparison:",
     )
     comparison_query
-    return comparison_query,
+    return (comparison_query,)
 
 
 @app.cell
 def __(mo):
     # Button to trigger comparison
-    compare_btn = mo.ui.button(
-        label="🔬 Run Comparison",
-        on_click=lambda: "clicked"
-    )
+    compare_btn = mo.ui.button(label="🔬 Run Comparison", on_click=lambda: "clicked")
     compare_btn
-    return compare_btn,
+    return (compare_btn,)
 
 
 @app.cell
-async def __(ChainOfThought, Message, MockLLM, SelfConsistency, TreeOfThought, compare_btn, comparison_query, mo, simple_evaluator, time):
+async def __(
+    ChainOfThought,
+    Message,
+    MockLLM,
+    SelfConsistency,
+    TreeOfThought,
+    compare_btn,
+    comparison_query,
+    mo,
+    simple_evaluator,
+    time,
+):
     # Reactive comparison (runs when button clicked)
     if compare_btn.value and comparison_query.value:
         message = Message(role="user", content=comparison_query.value)
@@ -381,19 +390,15 @@ async def __(ChainOfThought, Message, MockLLM, SelfConsistency, TreeOfThought, c
         # Tree-of-Thought
         start = time.time()
         tot_comp = await TreeOfThought(
-            llm=MockLLM(),
-            branching_factor=2,
-            max_depth=2,
-            evaluator=simple_evaluator
+            llm=MockLLM(), branching_factor=2, max_depth=2, evaluator=simple_evaluator
         ).process(message)
         tot_time = time.time() - start
-        tot_stats = tot_comp.metadata['reasoning_tree_stats']
+        tot_stats = tot_comp.metadata["reasoning_tree_stats"]
 
         # Self-Consistency
         start = time.time()
         sc_comp = await SelfConsistency(
-            agent=ChainOfThought(llm=MockLLM(vary_responses=True)),
-            num_samples=5
+            agent=ChainOfThought(llm=MockLLM(vary_responses=True)), num_samples=5
         ).process(message)
         sc_time = time.time() - start
 
@@ -405,23 +410,23 @@ async def __(ChainOfThought, Message, MockLLM, SelfConsistency, TreeOfThought, c
         ---
 
         **🔗 Chain-of-Thought:**
-        - Steps: {cot_comp.metadata['num_steps']}
+        - Steps: {cot_comp.metadata["num_steps"]}
         - Time: {cot_time:.3f}s
         - Cost: 1 LLM call
         - Best for: Fast, straightforward reasoning
 
         **🌳 Tree-of-Thought:**
-        - Nodes explored: {tot_stats['total_nodes']}
-        - Best path score: {tot_comp.metadata['best_score']:.2f}
+        - Nodes explored: {tot_stats["total_nodes"]}
+        - Best path score: {tot_comp.metadata["best_score"]:.2f}
         - Time: {tot_time:.3f}s
-        - Cost: {tot_stats['total_nodes']} LLM calls
+        - Cost: {tot_stats["total_nodes"]} LLM calls
         - Best for: Creative tasks, planning
 
         **🗳️  Self-Consistency:**
         - Consensus: {sc_comp.content}
-        - Confidence: {sc_comp.metadata['consistency_score']:.2%}
+        - Confidence: {sc_comp.metadata["consistency_score"]:.2%}
         - Time: {sc_time:.3f}s
-        - Cost: {sc_comp.metadata['num_samples']} LLM calls
+        - Cost: {sc_comp.metadata["num_samples"]} LLM calls
         - Best for: High-reliability decisions
 
         ---
@@ -436,7 +441,18 @@ async def __(ChainOfThought, Message, MockLLM, SelfConsistency, TreeOfThought, c
         comparison_result = mo.md("*Click button to compare techniques*")
 
     comparison_result
-    return comparison_result, cot_comp, cot_time, message, sc_comp, sc_time, start, tot_comp, tot_stats, tot_time
+    return (
+        comparison_result,
+        cot_comp,
+        cot_time,
+        message,
+        sc_comp,
+        sc_time,
+        start,
+        tot_comp,
+        tot_stats,
+        tot_time,
+    )
 
 
 @app.cell
@@ -477,14 +493,10 @@ def __(mo):
 def __(mo):
     # Interactive cost-quality slider
     quality_slider = mo.ui.slider(
-        start=1,
-        stop=10,
-        step=1,
-        value=5,
-        label="Quality Level (1=Fast, 10=Best):"
+        start=1, stop=10, step=1, value=5, label="Quality Level (1=Fast, 10=Best):"
     )
     quality_slider
-    return quality_slider,
+    return (quality_slider,)
 
 
 @app.cell

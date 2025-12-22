@@ -93,11 +93,11 @@ async def basic_example():
 
     print(f"\nOriginal Problem: {query}")
     print("\nDecomposed Subproblems:")
-    for i, subproblem in enumerate(response.metadata['subproblems'], 1):
+    for i, subproblem in enumerate(response.metadata["subproblems"], 1):
         print(f"  {i}. {subproblem}")
 
     print("\nSubproblem Solutions:")
-    for i, solution in enumerate(response.metadata['subproblem_solutions'], 1):
+    for i, solution in enumerate(response.metadata["subproblem_solutions"], 1):
         print(f"  {i}. {solution}")
 
     print(f"\nFinal Answer: {response.content}")
@@ -120,10 +120,14 @@ async def composition_example():
     print("\nWith Composition Enabled (compose_solutions=True):")
     print("  Each subproblem uses previous solutions as context")
 
-    for i, (problem, solution) in enumerate(zip(
-        response.metadata['subproblems'],
-        response.metadata['subproblem_solutions'], strict=False
-    ), 1):
+    for i, (problem, solution) in enumerate(
+        zip(
+            response.metadata["subproblems"],
+            response.metadata["subproblem_solutions"],
+            strict=False,
+        ),
+        1,
+    ):
         print(f"\n  Step {i}: {problem}")
         print(f"  → Solution: {solution}")
 
@@ -144,15 +148,17 @@ async def custom_decomposer_example():
     llm = MockLLM()
     ltm = LeastToMost(llm=llm, decomposer=step_decomposer)
 
-    query = "Choose destination then Book transportation then Book accommodation then Plan activities"
+    query = (
+        "Choose destination then Book transportation then Book accommodation then Plan activities"
+    )
     response = await ltm.process(Message(role="user", content=query))
 
     print("\nOriginal Problem:")
     print(f"  {query}")
 
     print("\nCustom Decomposer splits on 'then':")
-    for i, subproblem in enumerate(response.metadata['subproblems'], 1):
-        solution = response.metadata['subproblem_solutions'][i-1]
+    for i, subproblem in enumerate(response.metadata["subproblems"], 1):
+        solution = response.metadata["subproblem_solutions"][i - 1]
         print(f"  {i}. {subproblem}")
         print(f"     → {solution}")
 
@@ -204,7 +210,9 @@ async def complexity_comparison():
     print("Example 5: Complex Problem Comparison")
     print("=" * 60)
 
-    problem = "Plan a 10-day vacation to Europe including destination, flights, hotel, and activities"
+    problem = (
+        "Plan a 10-day vacation to Europe including destination, flights, hotel, and activities"
+    )
 
     # Direct solving (single shot)
     llm_direct = MockLLM()
@@ -227,10 +235,14 @@ async def complexity_comparison():
 
     print("\n✅ Least-to-Most Decomposition:")
     print(f"   {len(ltm_response.metadata['subproblems'])} subproblems identified:")
-    for i, (sub, sol) in enumerate(zip(
-        ltm_response.metadata['subproblems'],
-        ltm_response.metadata['subproblem_solutions'], strict=False
-    ), 1):
+    for i, (sub, sol) in enumerate(
+        zip(
+            ltm_response.metadata["subproblems"],
+            ltm_response.metadata["subproblem_solutions"],
+            strict=False,
+        ),
+        1,
+    ):
         print(f"   {i}. {sub}")
         print(f"      → {sol}")
 

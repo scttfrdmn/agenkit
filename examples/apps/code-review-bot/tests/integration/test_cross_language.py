@@ -10,9 +10,7 @@ from agenkit.interfaces import Message
 @pytest.mark.asyncio
 async def test_python_to_go_analyzer():
     """Test Python orchestrator can communicate with Go analyzer."""
-    analyzer = RemoteAgent(
-        name="analyzer", endpoint="grpc://localhost:50051", timeout=30.0
-    )
+    analyzer = RemoteAgent(name="analyzer", endpoint="grpc://localhost:50051", timeout=30.0)
 
     code = """
 def authenticate(username, password):
@@ -47,13 +45,9 @@ def authenticate(username, password):
 @pytest.mark.asyncio
 async def test_go_analyzer_health_check():
     """Test health check with Go analyzer."""
-    analyzer = RemoteAgent(
-        name="analyzer", endpoint="grpc://localhost:50051", timeout=10.0
-    )
+    analyzer = RemoteAgent(name="analyzer", endpoint="grpc://localhost:50051", timeout=10.0)
 
-    message = Message(
-        role="user", content="health_check", metadata={"type": "health_check"}
-    )
+    message = Message(role="user", content="health_check", metadata={"type": "health_check"})
 
     try:
         response = await analyzer.process(message)
@@ -70,9 +64,7 @@ async def test_go_analyzer_health_check():
 @pytest.mark.asyncio
 async def test_analyzer_complexity_calculation():
     """Test complexity calculation by Go analyzer."""
-    analyzer = RemoteAgent(
-        name="analyzer", endpoint="grpc://localhost:50051", timeout=30.0
-    )
+    analyzer = RemoteAgent(name="analyzer", endpoint="grpc://localhost:50051", timeout=30.0)
 
     # Complex code with many branches
     code = """
@@ -94,9 +86,7 @@ def process(data):
     return result if len(result) > 0 else None
 """
 
-    message = Message(
-        role="user", content=code, metadata={"language": "python"}
-    )
+    message = Message(role="user", content=code, metadata={"language": "python"})
 
     try:
         response = await analyzer.process(message)
@@ -117,9 +107,7 @@ def process(data):
 @pytest.mark.asyncio
 async def test_analyzer_clean_code():
     """Test analyzer with clean code (no issues)."""
-    analyzer = RemoteAgent(
-        name="analyzer", endpoint="grpc://localhost:50051", timeout=30.0
-    )
+    analyzer = RemoteAgent(name="analyzer", endpoint="grpc://localhost:50051", timeout=30.0)
 
     code = """
 def add(a: int, b: int) -> int:

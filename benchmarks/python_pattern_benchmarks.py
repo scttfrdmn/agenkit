@@ -36,7 +36,9 @@ class MockAgent(Agent):
         )
 
 
-async def benchmark_pattern(pattern_name: str, suite: PatternBenchmarkSuite, iterations: int = 1000) -> dict[str, Any]:
+async def benchmark_pattern(
+    pattern_name: str, suite: PatternBenchmarkSuite, iterations: int = 1000
+) -> dict[str, Any]:
     """Benchmark a single pattern."""
     benchmark = suite.get_benchmark(pattern_name)
     if not benchmark:
@@ -131,7 +133,9 @@ async def main():
             result = await benchmark_pattern(benchmark._pattern_name, suite, iterations=1000)
             if "error" not in result:
                 results.append(result)
-                print(f"{result['pattern']:<25} {result['avg_time_us']:<15.2f} {result['ops_per_sec']:<15.0f}")
+                print(
+                    f"{result['pattern']:<25} {result['avg_time_us']:<15.2f} {result['ops_per_sec']:<15.0f}"
+                )
             else:
                 print(f"{pattern_name:<25} SKIP ({result['error']})")
         else:

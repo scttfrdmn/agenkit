@@ -173,7 +173,7 @@ Solution Plan:"""
 
         # Parse plan from response
         steps = []
-        lines = response.strip().split('\n')
+        lines = response.strip().split("\n")
 
         for i, line in enumerate(lines):
             line = line.strip()
@@ -182,16 +182,11 @@ Solution Plan:"""
 
             # Remove numbering (1., 1), etc.)
             import re
-            cleaned = re.sub(r'^\d+[\\.)]\\s*', '', line)
+
+            cleaned = re.sub(r"^\d+[\\.)]\\s*", "", line)
 
             if cleaned:
-                steps.append(
-                    PlanStep(
-                        description=cleaned,
-                        order=i,
-                        estimated_complexity=1
-                    )
-                )
+                steps.append(PlanStep(description=cleaned, order=i, estimated_complexity=1))
 
         return Plan(steps=steps, problem=problem)
 
@@ -233,11 +228,7 @@ Validation (answer "VALID" or describe issues):"""
             lines.append(f"{i}. [{status}] {step.description}")
         return "\\n".join(lines)
 
-    async def execute_step(
-        self,
-        step: PlanStep,
-        previous_results: list[str]
-    ) -> str:
+    async def execute_step(self, step: PlanStep, previous_results: list[str]) -> str:
         """
         Execute a single plan step.
 
@@ -254,10 +245,12 @@ Validation (answer "VALID" or describe issues):"""
 
         # Use LLM to execute step
         if previous_results:
-            context = "\\n".join([
-                f"Previous step {i+1} result: {result}"
-                for i, result in enumerate(previous_results)
-            ])
+            context = "\\n".join(
+                [
+                    f"Previous step {i + 1} result: {result}"
+                    for i, result in enumerate(previous_results)
+                ]
+            )
 
             prompt = f"""Execute this step of the plan, using previous results as context.
 
@@ -366,8 +359,8 @@ Improved Plan:"""
                 "num_steps": len(plan.steps),
                 "validated": plan.validated,
                 "validation_notes": plan.validation_notes,
-                "allow_replanning": self.allow_replanning
-            }
+                "allow_replanning": self.allow_replanning,
+            },
         )
 
     @property
@@ -383,5 +376,5 @@ Improved Plan:"""
             "planning",
             "plan_and_solve",
             "strategic_thinking",
-            "step_by_step_execution"
+            "step_by_step_execution",
         ]

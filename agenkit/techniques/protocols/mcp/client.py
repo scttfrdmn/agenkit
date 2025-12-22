@@ -36,12 +36,7 @@ class MCPClient:
         >>> result = await client.call_tool("search", query="AI agents")
     """
 
-    def __init__(
-        self,
-        server_url: str,
-        auth: dict[str, str] | None = None,
-        timeout: float = 30.0
-    ):
+    def __init__(self, server_url: str, auth: dict[str, str] | None = None, timeout: float = 30.0):
         """
         Initialize MCP client.
 
@@ -61,11 +56,7 @@ class MCPClient:
         self.request_id_counter += 1
         return f"req-{self.request_id_counter}"
 
-    async def _send_request(
-        self,
-        method: str,
-        params: dict[str, Any] | None = None
-    ) -> MCPResponse:
+    async def _send_request(self, method: str, params: dict[str, Any] | None = None) -> MCPResponse:
         """
         Send request to server.
 
@@ -82,16 +73,9 @@ class MCPClient:
         try:
             import httpx
         except ImportError:
-            raise ImportError(
-                "httpx is required for MCP client. "
-                "Install with: pip install httpx"
-            )
+            raise ImportError("httpx is required for MCP client. Install with: pip install httpx")
 
-        request = create_request(
-            method=method,
-            params=params,
-            request_id=self._next_request_id()
-        )
+        request = create_request(method=method, params=params, request_id=self._next_request_id())
 
         try:
             async with httpx.AsyncClient() as client:
@@ -99,7 +83,7 @@ class MCPClient:
                     self.server_url,
                     json=request.to_dict(),
                     timeout=self.timeout,
-                    headers=self.auth if self.auth else None
+                    headers=self.auth if self.auth else None,
                 )
 
                 response.raise_for_status()
@@ -122,8 +106,7 @@ class MCPClient:
             >>> print(info["serverInfo"]["name"])
         """
         response = await self._send_request(
-            method=MCPMethod.INITIALIZE.value,
-            params={"protocolVersion": "1.0"}
+            method=MCPMethod.INITIALIZE.value, params={"protocolVersion": "1.0"}
         )
 
         if response.is_error:
@@ -144,9 +127,7 @@ class MCPClient:
             >>> for resource in resources:
             ...     print(f"{resource.name}: {resource.uri}")
         """
-        response = await self._send_request(
-            method=MCPMethod.RESOURCES_LIST.value
-        )
+        response = await self._send_request(method=MCPMethod.RESOURCES_LIST.value)
 
         if response.is_error:
             raise ValueError(f"Failed to list resources: {response.error}")
@@ -157,16 +138,12 @@ class MCPClient:
                 uri=r["uri"],
                 name=r["name"],
                 description=r.get("description"),
-                mime_type=r.get("mimeType", "text/plain")
+                mime_type=r.get("mimeType", "text/plain"),
             )
             for r in resources_data
         ]
 
-    async def get_resource(
-        self,
-        uri: str,
-        **params
-    ) -> Any:
+    async def get_resource(self, uri: str, **params) -> Any:
         """
         Read resource data.
 
@@ -181,8 +158,7 @@ class MCPClient:
             >>> data = await client.get_resource("user://profile", user_id="123")
         """
         response = await self._send_request(
-            method=MCPMethod.RESOURCES_READ.value,
-            params={"uri": uri, **params}
+            method=MCPMethod.RESOURCES_READ.value, params={"uri": uri, **params}
         )
 
         if response.is_error:
@@ -206,28 +182,18 @@ class MCPClient:
             >>> for tool in tools:
             ...     print(f"{tool.name}: {tool.description}")
         """
-        response = await self._send_request(
-            method=MCPMethod.TOOLS_LIST.value
-        )
+        response = await self._send_request(method=MCPMethod.TOOLS_LIST.value)
 
         if response.is_error:
             raise ValueError(f"Failed to list tools: {response.error}")
 
         tools_data = response.result.get("tools", [])
         return [
-            MCPToolInfo(
-                name=t["name"],
-                description=t["description"],
-                input_schema=t["inputSchema"]
-            )
+            MCPToolInfo(name=t["name"], description=t["description"], input_schema=t["inputSchema"])
             for t in tools_data
         ]
 
-    async def call_tool(
-        self,
-        name: str,
-        **arguments
-    ) -> Any:
+    async def call_tool(self, name: str, **arguments) -> Any:
         """
         Call a tool.
 
@@ -246,11 +212,7 @@ class MCPClient:
             ... )
         """
         response = await self._send_request(
-            method=MCPMethod.TOOLS_CALL.value,
-            params={
-                "name": name,
-                "arguments": arguments
-            }
+            method=MCPMethod.TOOLS_CALL.value, params={"name": name, "arguments": arguments}
         )
 
         if response.is_error:

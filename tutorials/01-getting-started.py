@@ -14,7 +14,8 @@ app = marimo.App(width="medium")
 @app.cell
 def __():
     import marimo as mo
-    return mo,
+
+    return (mo,)
 
 
 @app.cell
@@ -101,10 +102,7 @@ def __(agenkit):
         async def process(self, message: Message) -> Message:
             user_text = message.content
 
-            response = Message(
-                role="assistant",
-                content=f"Echo: {user_text}"
-            )
+            response = Message(role="assistant", content=f"Echo: {user_text}")
 
             return response
 
@@ -118,12 +116,10 @@ def __(agenkit):
 def __(mo):
     # Interactive input for testing the echo agent
     user_input = mo.ui.text(
-        placeholder="Type something...",
-        value="Hello, Agenkit!",
-        label="Message to Echo Agent:"
+        placeholder="Type something...", value="Hello, Agenkit!", label="Message to Echo Agent:"
     )
     user_input
-    return user_input,
+    return (user_input,)
 
 
 @app.cell
@@ -170,7 +166,7 @@ def __(Agent, Message):
             response = Message(
                 role="assistant",
                 content=f"{text} (Word count: {word_count})",
-                metadata={"word_count": word_count}
+                metadata={"word_count": word_count},
             )
 
             return response
@@ -185,10 +181,7 @@ def __(EchoAgent, WordCounterAgent):
     from agenkit.composition import SequentialAgent
 
     # Create pipeline: Echo first, then count words
-    pipeline = SequentialAgent([
-        EchoAgent(),
-        WordCounterAgent()
-    ])
+    pipeline = SequentialAgent([EchoAgent(), WordCounterAgent()])
 
     print(f"✅ Created pipeline: {pipeline.name()}")
     print(f"   Agents in pipeline: {len(pipeline.agents)}")
@@ -201,10 +194,10 @@ def __(mo):
     pipeline_input = mo.ui.text(
         placeholder="Test the pipeline...",
         value="Agenkit makes building agents easy",
-        label="Message to Pipeline:"
+        label="Message to Pipeline:",
     )
     pipeline_input
-    return pipeline_input,
+    return (pipeline_input,)
 
 
 @app.cell
@@ -245,10 +238,10 @@ def __(mo):
     status = mo.md(
         f"""
         API Key Status:
-        - OpenAI: {'✅ Set' if has_openai else '❌ Not set'}
-        - Anthropic: {'✅ Set' if has_anthropic else '❌ Not set'}
+        - OpenAI: {"✅ Set" if has_openai else "❌ Not set"}
+        - Anthropic: {"✅ Set" if has_anthropic else "❌ Not set"}
 
-        {'You can test LLM agents below!' if (has_openai or has_anthropic) else '⚠️ Set API keys as environment variables to test LLM agents'}
+        {"You can test LLM agents below!" if (has_openai or has_anthropic) else "⚠️ Set API keys as environment variables to test LLM agents"}
         """
     )
     status
@@ -264,14 +257,10 @@ def __(has_openai, mo, os):
         from agenkit.llm import OpenAIAdapter
         from agenkit.patterns import ConversationalAgent
 
-        llm = OpenAIAdapter(
-            api_key=os.getenv("OPENAI_API_KEY"),
-            model="gpt-4"
-        )
+        llm = OpenAIAdapter(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4")
 
         openai_agent = ConversationalAgent(
-            llm=llm,
-            system_prompt="You are a helpful AI assistant. Be concise and friendly."
+            llm=llm, system_prompt="You are a helpful AI assistant. Be concise and friendly."
         )
 
         mo.md("✅ GPT-4 agent ready!")
@@ -290,13 +279,12 @@ def __(has_anthropic, mo, os):
         from agenkit.patterns import ConversationalAgent as Conv
 
         anthropic_llm = AnthropicAdapter(
-            api_key=os.getenv("ANTHROPIC_API_KEY"),
-            model="claude-3-5-sonnet-20241022"
+            api_key=os.getenv("ANTHROPIC_API_KEY"), model="claude-3-5-sonnet-20241022"
         )
 
         claude_agent = Conv(
             llm=anthropic_llm,
-            system_prompt="You are a helpful AI assistant. Be concise and friendly."
+            system_prompt="You are a helpful AI assistant. Be concise and friendly.",
         )
 
         mo.md("✅ Claude agent ready!")
@@ -312,13 +300,13 @@ def __(claude_agent, has_anthropic, has_openai, mo, openai_agent):
         llm_input = mo.ui.text(
             placeholder="Ask the LLM something...",
             value="What is Agenkit in one sentence?",
-            label="Question for LLM:"
+            label="Question for LLM:",
         )
         llm_input
     else:
         llm_input = None
         mo.md("⚠️ No LLM API keys available - skipping this section")
-    return llm_input,
+    return (llm_input,)
 
 
 @app.cell

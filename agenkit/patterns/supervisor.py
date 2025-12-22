@@ -108,9 +108,7 @@ class PlannerAgent(Protocol):
         """
         ...
 
-    async def synthesize(
-        self, original: Message, results: dict[str, Message]
-    ) -> Message:
+    async def synthesize(self, original: Message, results: dict[str, Message]) -> Message:
         """
         Combine specialist results into final response.
 
@@ -330,20 +328,20 @@ class SupervisorAgent(Agent):
             try:
                 result = await specialist.process(subtask.message)
             except Exception as e:
-                raise RuntimeError(
-                    f"specialist '{subtask.type}' failed on subtask {i}: {e}"
-                ) from e
+                raise RuntimeError(f"specialist '{subtask.type}' failed on subtask {i}: {e}") from e
 
             # Store result keyed by specialist type and index for synthesis
             result_key = f"{subtask.type}_{i}"
             results[result_key] = result
 
             # Track execution order
-            execution_order.append({
-                "index": i,
-                "type": subtask.type,
-                "specialist": specialist.name,
-            })
+            execution_order.append(
+                {
+                    "index": i,
+                    "type": subtask.type,
+                    "specialist": specialist.name,
+                }
+            )
 
         # Step 4: Synthesize - combine specialist results
         try:
@@ -421,9 +419,7 @@ class SimplePlanner:
         # For now, return empty to trigger direct processing.
         return []
 
-    async def synthesize(
-        self, original: Message, results: dict[str, Message]
-    ) -> Message:
+    async def synthesize(self, original: Message, results: dict[str, Message]) -> Message:
         """
         Combine specialist results (simplified implementation).
 

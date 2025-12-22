@@ -88,12 +88,7 @@ async def run_agent_server(agent: Agent, protocol: str, port: int):
     enable_http2 = protocol in ["h2c", "h3"]
 
     # Create HTTP agent server
-    server = HTTPAgentServer(
-        agent=agent,
-        host="localhost",
-        port=port,
-        enable_http2=enable_http2
-    )
+    server = HTTPAgentServer(agent=agent, host="localhost", port=port, enable_http2=enable_http2)
 
     # Start server
     await server.start()
@@ -341,19 +336,19 @@ async def test_protocol_latency_comparison():
         results["HTTP/2 (h2c)"] = await measure_latency(remote_agent, message, iterations)
 
     # Print comparison
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Protocol Latency Comparison")
-    print("="*70)
+    print("=" * 70)
 
     for protocol, stats in results.items():
         print_latency_stats(protocol, stats)
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Summary (P95 latency):")
     sorted_results = sorted(results.items(), key=lambda x: x[1]["p95"])
     for i, (protocol, stats) in enumerate(sorted_results, 1):
         print(f"  {i}. {protocol:10s} {stats['p95']:7.2f}ms")
-    print("="*70)
+    print("=" * 70)
 
 
 # ============================================
@@ -387,19 +382,19 @@ async def test_protocol_throughput_comparison():
         results["HTTP/2 (h2c)"] = await measure_throughput(remote_agent, message, duration)
 
     # Print comparison
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Protocol Throughput Comparison")
-    print("="*70)
+    print("=" * 70)
 
     for protocol, stats in results.items():
         print_throughput_stats(protocol, stats)
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Summary (Requests/sec):")
     sorted_results = sorted(results.items(), key=lambda x: x[1]["requests_per_sec"], reverse=True)
     for i, (protocol, stats) in enumerate(sorted_results, 1):
         print(f"  {i}. {protocol:10s} {stats['requests_per_sec']:10,.2f} req/s")
-    print("="*70)
+    print("=" * 70)
 
 
 # ============================================
@@ -423,9 +418,9 @@ async def test_message_size_impact():
         "Large (1MB)": "x" * 1_000_000,
     }
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Message Size Impact on Latency")
-    print("="*70)
+    print("=" * 70)
 
     for size_label, content in sizes.items():
         message = Message(role="user", content=content)
@@ -444,7 +439,7 @@ async def test_message_size_impact():
             stats = await measure_latency(remote_agent, message, iterations=50)
             print(f"  HTTP/2:   P95 = {stats['p95']:.2f}ms, Avg = {stats['avg']:.2f}ms")
 
-    print("="*70)
+    print("=" * 70)
 
 
 # ============================================
@@ -464,9 +459,9 @@ async def test_concurrent_load_comparison():
     message = Message(role="user", content="test message")
     concurrency_levels = [1, 10, 50, 100]
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Concurrent Load Performance")
-    print("="*70)
+    print("=" * 70)
 
     for concurrency in concurrency_levels:
         print(f"\nConcurrency Level: {concurrency}")
@@ -477,7 +472,9 @@ async def test_concurrent_load_comparison():
             stats = await measure_concurrent_load(
                 remote_agent, message, concurrency=concurrency, requests_per_task=10
             )
-            print(f"  HTTP/1.1: {stats['requests_per_sec']:7,.2f} req/s, {stats['avg_latency_ms']:6.2f}ms avg")
+            print(
+                f"  HTTP/1.1: {stats['requests_per_sec']:7,.2f} req/s, {stats['avg_latency_ms']:6.2f}ms avg"
+            )
 
         # HTTP/2
         async with run_agent_server(agent, "h2c", 8141) as endpoint:
@@ -485,11 +482,13 @@ async def test_concurrent_load_comparison():
             stats = await measure_concurrent_load(
                 remote_agent, message, concurrency=concurrency, requests_per_task=10
             )
-            print(f"  HTTP/2:   {stats['requests_per_sec']:7,.2f} req/s, {stats['avg_latency_ms']:6.2f}ms avg")
+            print(
+                f"  HTTP/2:   {stats['requests_per_sec']:7,.2f} req/s, {stats['avg_latency_ms']:6.2f}ms avg"
+            )
 
-    print("="*70)
+    print("=" * 70)
     print("Note: HTTP/2 should handle higher concurrency better due to multiplexing")
-    print("="*70)
+    print("=" * 70)
 
 
 # ============================================
@@ -509,9 +508,9 @@ async def test_realistic_workload():
     message = Message(role="user", content="process this")
     concurrency = 10
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Realistic Workload (10ms agent processing time)")
-    print("="*70)
+    print("=" * 70)
 
     results = {}
 
@@ -533,13 +532,15 @@ async def test_realistic_workload():
         results["HTTP/2"] = stats
         print_concurrent_stats("HTTP/2", concurrency, stats)
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Analysis:")
     print("  Expected latency: ~10ms (agent processing) + network overhead")
     for protocol, stats in results.items():
         overhead = stats["avg_latency_ms"] - 10
-        print(f"  {protocol:10s} overhead: {overhead:.2f}ms ({overhead/10*100:.1f}% of processing time)")
-    print("="*70)
+        print(
+            f"  {protocol:10s} overhead: {overhead:.2f}ms ({overhead / 10 * 100:.1f}% of processing time)"
+        )
+    print("=" * 70)
 
 
 # ============================================
@@ -552,9 +553,9 @@ async def test_transport_benchmark_summary():
     """
     Summary: Run all transport benchmarks and print aggregate results.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Transport Protocol Performance Benchmark Summary")
-    print("="*70)
+    print("=" * 70)
 
     # Run all benchmarks
     await test_protocol_latency_comparison()
@@ -563,7 +564,7 @@ async def test_transport_benchmark_summary():
     await test_concurrent_load_comparison()
     await test_realistic_workload()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Key Findings:")
     print("1. HTTP/1.1: Baseline performance, good for simple scenarios")
     print("2. HTTP/2 (h2c): Better for concurrent load due to multiplexing")
@@ -573,7 +574,7 @@ async def test_transport_benchmark_summary():
     print("Note: HTTP/3 benchmarks require SSL/TLS configuration and are not")
     print("included in this test suite. HTTP/2 cleartext (h2c) provides a good")
     print("comparison for protocol efficiency without SSL overhead.")
-    print("="*70)
+    print("=" * 70)
 
 
 if __name__ == "__main__":

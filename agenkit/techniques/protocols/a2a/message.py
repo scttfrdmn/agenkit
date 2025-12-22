@@ -13,6 +13,7 @@ from typing import Any
 
 class MessageType(Enum):
     """A2A message types."""
+
     REQUEST = "request"
     RESPONSE = "response"
     NOTIFICATION = "notification"
@@ -21,6 +22,7 @@ class MessageType(Enum):
 
 class MessagePriority(Enum):
     """Message priority levels."""
+
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -42,6 +44,7 @@ class A2AMessage:
         ...     content={"text": "Analyze this document..."}
         ... )
     """
+
     # Routing
     from_agent: str
     to_agent: str
@@ -80,7 +83,7 @@ class A2AMessage:
             "timestamp": self.timestamp,
             "timeout_ms": self.timeout_ms,
             "retry_count": self.retry_count,
-            "max_retries": self.max_retries
+            "max_retries": self.max_retries,
         }
 
     @staticmethod
@@ -99,22 +102,26 @@ class A2AMessage:
             timestamp=data.get("timestamp", datetime.now(timezone.utc).isoformat()),
             timeout_ms=data.get("timeout_ms"),
             retry_count=data.get("retry_count", 0),
-            max_retries=data.get("max_retries", 3)
+            max_retries=data.get("max_retries", 3),
         )
 
     def to_json(self) -> str:
         """Serialize to JSON."""
         import json
+
         return json.dumps(self.to_dict())
 
     @staticmethod
     def from_json(json_str: str) -> "A2AMessage":
         """Deserialize from JSON."""
         import json
+
         return A2AMessage.from_dict(json.loads(json_str))
 
     @staticmethod
-    def from_agenkit_message(msg, from_agent: str, to_agent: str, action: str = "process") -> "A2AMessage":
+    def from_agenkit_message(
+        msg, from_agent: str, to_agent: str, action: str = "process"
+    ) -> "A2AMessage":
         """
         Convert Agenkit Message to A2A Message.
 
@@ -131,11 +138,8 @@ class A2AMessage:
             from_agent=from_agent,
             to_agent=to_agent,
             action=action,
-            content={
-                "role": msg.role,
-                "content": msg.content
-            },
-            metadata=msg.metadata or {}
+            content={"role": msg.role, "content": msg.content},
+            metadata=msg.metadata or {},
         )
 
     def to_agenkit_message(self):
@@ -164,14 +168,12 @@ class A2AMessage:
                 **self.metadata,
                 "a2a_message_id": self.message_id,
                 "a2a_from_agent": self.from_agent,
-                "a2a_action": self.action
-            }
+                "a2a_action": self.action,
+            },
         )
 
     def create_response(
-        self,
-        content: dict[str, Any],
-        metadata: dict[str, Any] | None = None
+        self, content: dict[str, Any], metadata: dict[str, Any] | None = None
     ) -> "A2AMessage":
         """
         Create response message for this request.
@@ -191,14 +193,11 @@ class A2AMessage:
             content=content,
             metadata=metadata or {},
             correlation_id=self.message_id,  # Link to request
-            priority=self.priority
+            priority=self.priority,
         )
 
     def create_error(
-        self,
-        error_code: str,
-        error_message: str,
-        details: dict[str, Any] | None = None
+        self, error_code: str, error_message: str, details: dict[str, Any] | None = None
     ) -> "A2AMessage":
         """
         Create error response for this request.
@@ -219,10 +218,10 @@ class A2AMessage:
             content={
                 "error_code": error_code,
                 "error_message": error_message,
-                "details": details or {}
+                "details": details or {},
             },
             correlation_id=self.message_id,
-            priority=self.priority
+            priority=self.priority,
         )
 
 
@@ -233,6 +232,7 @@ class AgentInfo:
 
     Used for agent discovery and capability advertisement.
     """
+
     agent_id: str
     name: str
     capabilities: list[str]
@@ -250,7 +250,7 @@ class AgentInfo:
             "endpoint": self.endpoint,
             "transport": self.transport,
             "status": self.status,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
     @staticmethod
@@ -263,7 +263,7 @@ class AgentInfo:
             endpoint=data["endpoint"],
             transport=data.get("transport", "http"),
             status=data.get("status", "online"),
-            metadata=data.get("metadata", {})
+            metadata=data.get("metadata", {}),
         )
 
 
@@ -273,7 +273,7 @@ def create_request(
     action: str,
     content: dict[str, Any],
     priority: MessagePriority = MessagePriority.NORMAL,
-    timeout_ms: int | None = None
+    timeout_ms: int | None = None,
 ) -> A2AMessage:
     """
     Create request message.
@@ -296,15 +296,12 @@ def create_request(
         action=action,
         content=content,
         priority=priority,
-        timeout_ms=timeout_ms
+        timeout_ms=timeout_ms,
     )
 
 
 def create_notification(
-    from_agent: str,
-    to_agent: str,
-    action: str,
-    content: dict[str, Any]
+    from_agent: str, to_agent: str, action: str, content: dict[str, Any]
 ) -> A2AMessage:
     """
     Create notification message (fire-and-forget).
@@ -323,5 +320,5 @@ def create_notification(
         to_agent=to_agent,
         message_type=MessageType.NOTIFICATION,
         action=action,
-        content=content
+        content=content,
     )

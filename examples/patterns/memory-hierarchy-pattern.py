@@ -232,7 +232,10 @@ async def demo_session_continuity():
 
     print("\n👤 User: Hi, my name is Bob")
     await hierarchy.store(
-        content="User's name is Bob", importance=0.95, metadata={"category": "identity"}, session_id=session_1
+        content="User's name is Bob",
+        importance=0.95,
+        metadata={"category": "identity"},
+        session_id=session_1,
     )
     print("🤖 Agent: Nice to meet you, Bob! (stored in all tiers)")
 
@@ -247,7 +250,10 @@ async def demo_session_continuity():
 
     print("\n👤 User: What's the weather like?")
     await hierarchy.store(
-        content="User asked about weather", importance=0.2, metadata={"category": "casual"}, session_id=session_1
+        content="User asked about weather",
+        importance=0.2,
+        metadata={"category": "casual"},
+        session_id=session_1,
     )
     print("🤖 Agent: Let me check... (stored in working + short-term only)")
 
@@ -276,7 +282,9 @@ async def demo_session_continuity():
     print("\n📊 Memory Statistics:")
     print(f"  Working: {stats['working']['size']}/{stats['working']['capacity']}")
     print(f"  Short-Term: {stats['short_term']['size']}/{stats['short_term']['capacity']}")
-    print(f"  Long-Term: {stats['long_term']['size']} (min importance: {stats['long_term']['min_importance']})")
+    print(
+        f"  Long-Term: {stats['long_term']['size']} (min importance: {stats['long_term']['min_importance']})"
+    )
 
     print("\n💡 High-importance memories (name, interests) persist across sessions")
     print("💡 Low-importance memories (casual questions) expire naturally")
@@ -306,7 +314,9 @@ async def demo_memory_consolidation():
     ]
 
     for content, importance, category in memories:
-        await hierarchy.store(content=content, importance=importance, metadata={"category": category}, session_id="s1")
+        await hierarchy.store(
+            content=content, importance=importance, metadata={"category": category}, session_id="s1"
+        )
         tier_info = "ALL TIERS" if importance >= 0.7 else "Working + Short-Term"
         print(f"[{importance:.2f}] {content}")
         print(f"       → {tier_info}")
@@ -352,7 +362,9 @@ async def main():
     print("=" * 70)
 
     print("\n📚 Key Takeaways:")
-    print("  • 3-tier memory system: Working (context), Short-Term (session), Long-Term (persistent)")
+    print(
+        "  • 3-tier memory system: Working (context), Short-Term (session), Long-Term (persistent)"
+    )
     print("  • Automatic tier routing based on importance")
     print("  • FIFO eviction (working), LRU + TTL (short-term)")
     print("  • Cross-tier search with deduplication")

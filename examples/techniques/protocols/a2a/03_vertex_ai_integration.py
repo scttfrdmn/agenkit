@@ -25,6 +25,7 @@ from agenkit.techniques.protocols.a2a import (
 # Custom Agent for Vertex AI
 # ==============================================================================
 
+
 class CustomerSupportAgent:
     """
     Customer support agent that can be deployed to Vertex AI.
@@ -32,11 +33,7 @@ class CustomerSupportAgent:
 
     def __init__(self):
         self.name = "customer_support_agent"
-        self.capabilities = [
-            "question-answering",
-            "customer-support",
-            "order-tracking"
-        ]
+        self.capabilities = ["question-answering", "customer-support", "order-tracking"]
 
     async def process(self, message: Message) -> Message:
         """Process customer support inquiries."""
@@ -59,26 +56,20 @@ class CustomerSupportAgent:
                 "Standard shipping takes 5-7 business days."
             )
         elif "hello" in query or "hi" in query:
-            response = (
-                "Hello! I'm your customer support assistant. "
-                "How can I help you today?"
-            )
+            response = "Hello! I'm your customer support assistant. How can I help you today?"
         else:
             response = (
                 "I'm here to help! I can assist with orders, "
                 "returns, shipping, and general inquiries."
             )
 
-        return Message(
-            role="assistant",
-            content=response,
-            metadata={"support_type": "general"}
-        )
+        return Message(role="assistant", content=response, metadata={"support_type": "general"})
 
 
 # ==============================================================================
 # Example: Vertex AI Integration
 # ==============================================================================
+
 
 async def vertex_ai_integration_example():
     """Demonstrate Vertex AI integration."""
@@ -96,9 +87,9 @@ async def vertex_ai_integration_example():
     adapter = VertexAIAdapter.from_agent(
         agent=agent,
         project_id="my-gcp-project",  # Your GCP project ID
-        location="us-central1",        # GCP region
+        location="us-central1",  # GCP region
         agent_id="customer-support-001",
-        capabilities=agent.capabilities
+        capabilities=agent.capabilities,
     )
 
     print(f"   Agent ID: {adapter.agent_id}")
@@ -119,7 +110,7 @@ async def vertex_ai_integration_example():
         "Hello!",
         "How can I track my order?",
         "What is your return policy?",
-        "Do you offer free shipping?"
+        "Do you offer free shipping?",
     ]
 
     for query in test_queries:
@@ -130,7 +121,7 @@ async def vertex_ai_integration_example():
             from_agent="test-client",
             to_agent=adapter.agent_id,
             action=A2AAction.PROCESS.value,
-            content={"text": query}
+            content={"text": query},
         )
 
         # Process through adapter's server

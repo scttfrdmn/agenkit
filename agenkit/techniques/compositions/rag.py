@@ -65,7 +65,7 @@ class SimpleRAG(Agent):
         retriever: Callable[[str], list[str]],
         answerer: Agent,
         max_docs: int = 5,
-        include_sources: bool = True
+        include_sources: bool = True,
     ):
         """
         Initialize simple RAG composition.
@@ -125,21 +125,16 @@ class SimpleRAG(Agent):
         query = message.content
 
         # Step 1: Retrieve relevant documents
-        documents = self.retriever(query)[:self.max_docs]
+        documents = self.retriever(query)[: self.max_docs]
 
         # Step 2: Build context from documents
         context = self._build_context(query, documents)
 
         # Step 3: Generate answer using answerer agent
-        response = await self.answerer.process(
-            Message(role="user", content=context)
-        )
+        response = await self.answerer.process(Message(role="user", content=context))
 
         # Add metadata
-        metadata = {
-            "technique": "simple_rag",
-            "num_sources": len(documents)
-        }
+        metadata = {"technique": "simple_rag", "num_sources": len(documents)}
 
         if self.include_sources:
             metadata["sources"] = documents
@@ -148,11 +143,7 @@ class SimpleRAG(Agent):
         if response.metadata:
             metadata.update(response.metadata)
 
-        return Message(
-            role=response.role,
-            content=response.content,
-            metadata=metadata
-        )
+        return Message(role=response.role, content=response.content, metadata=metadata)
 
     def _build_context(self, query: str, documents: list[str]) -> str:
         """
@@ -169,10 +160,7 @@ class SimpleRAG(Agent):
             return f"Question: {query}\n\nNo relevant documents found. Please answer based on your knowledge."
 
         # Format documents
-        docs_text = "\n\n".join([
-            f"Document {i+1}:\n{doc}"
-            for i, doc in enumerate(documents)
-        ])
+        docs_text = "\n\n".join([f"Document {i + 1}:\n{doc}" for i, doc in enumerate(documents)])
 
         # Build prompt
         context = f"""Answer the following question using the provided documents.
@@ -189,9 +177,4 @@ Answer:"""
     @property
     def capabilities(self) -> list[str]:
         """Return agent capabilities."""
-        return [
-            "retrieval",
-            "question_answering",
-            "rag",
-            "context_augmentation"
-        ]
+        return ["retrieval", "question_answering", "rag", "context_augmentation"]

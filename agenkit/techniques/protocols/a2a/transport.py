@@ -33,10 +33,7 @@ class Transport(ABC):
 
     @abstractmethod
     async def start_server(
-        self,
-        handler: Callable[["A2AMessage"], Awaitable["A2AMessage"]],
-        host: str,
-        port: int
+        self, handler: Callable[["A2AMessage"], Awaitable["A2AMessage"]], host: str, port: int
     ):
         """
         Start transport server.
@@ -86,18 +83,13 @@ class HTTPTransport(Transport):
             import httpx
         except ImportError:
             raise ImportError(
-                "httpx is required for HTTP transport. "
-                "Install with: pip install httpx"
+                "httpx is required for HTTP transport. Install with: pip install httpx"
             )
 
         from .message import A2AMessage
 
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                endpoint,
-                json=message.to_dict(),
-                timeout=self.timeout
-            )
+            response = await client.post(endpoint, json=message.to_dict(), timeout=self.timeout)
 
             response.raise_for_status()
             response_data = response.json()
@@ -108,7 +100,7 @@ class HTTPTransport(Transport):
         self,
         handler: Callable[["A2AMessage"], Awaitable["A2AMessage"]],
         host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
-        port: int = 8080
+        port: int = 8080,
     ):
         """
         Start HTTP server.
@@ -122,8 +114,7 @@ class HTTPTransport(Transport):
             from aiohttp import web
         except ImportError:
             raise ImportError(
-                "aiohttp is required for HTTP server. "
-                "Install with: pip install aiohttp"
+                "aiohttp is required for HTTP server. Install with: pip install aiohttp"
             )
 
         from .message import A2AMessage
@@ -142,10 +133,7 @@ class HTTPTransport(Transport):
                 return web.json_response(response.to_dict())
 
             except Exception as e:
-                return web.json_response(
-                    {"error": str(e)},
-                    status=500
-                )
+                return web.json_response({"error": str(e)}, status=500)
 
         app = web.Application()
         app.router.add_post("/a2a", handle_request)
@@ -210,10 +198,7 @@ class WebSocketTransport(Transport):
             await websocket.send(message.to_json())
 
             # Wait for response with timeout
-            response_str = await asyncio.wait_for(
-                websocket.recv(),
-                timeout=self.timeout
-            )
+            response_str = await asyncio.wait_for(websocket.recv(), timeout=self.timeout)
 
             return A2AMessage.from_json(response_str)
 
@@ -221,7 +206,7 @@ class WebSocketTransport(Transport):
         self,
         handler: Callable[["A2AMessage"], Awaitable["A2AMessage"]],
         host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
-        port: int = 8765
+        port: int = 8765,
     ):
         """
         Start WebSocket server.
@@ -235,8 +220,7 @@ class WebSocketTransport(Transport):
             import websockets
         except ImportError:
             raise ImportError(
-                "websockets is required for WebSocket server. "
-                "Install with: pip install websockets"
+                "websockets is required for WebSocket server. Install with: pip install websockets"
             )
 
         from .message import A2AMessage
@@ -259,9 +243,7 @@ class WebSocketTransport(Transport):
 
                     except Exception as e:
                         # Send error response
-                        error_response = {
-                            "error": str(e)
-                        }
+                        error_response = {"error": str(e)}
                         await websocket.send(str(error_response))
 
             finally:
@@ -310,10 +292,8 @@ class GRPCTransport(Transport):
             import grpc
         except ImportError:
             raise ImportError(
-                "grpcio is required for gRPC transport. "
-                "Install with: pip install grpcio"
+                "grpcio is required for gRPC transport. Install with: pip install grpcio"
             )
-
 
         # Create channel
         async with grpc.aio.insecure_channel(endpoint):
@@ -321,7 +301,7 @@ class GRPCTransport(Transport):
             # For now, we'll use a simplified approach
 
             # Serialize message
-            message.to_json().encode('utf-8')
+            message.to_json().encode("utf-8")
 
             # Make unary call (simplified - would use proper RPC in production)
             # This is a placeholder - actual gRPC requires proto definitions
@@ -336,7 +316,7 @@ class GRPCTransport(Transport):
         self,
         handler: Callable[["A2AMessage"], Awaitable["A2AMessage"]],
         host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
-        port: int = 50051
+        port: int = 50051,
     ):
         """
         Start gRPC server.
@@ -347,10 +327,10 @@ class GRPCTransport(Transport):
             port: Port to bind to
         """
         import importlib.util
+
         if importlib.util.find_spec("grpc") is None:
             raise ImportError(
-                "grpcio is required for gRPC server. "
-                "Install with: pip install grpcio"
+                "grpcio is required for gRPC server. Install with: pip install grpcio"
             )
 
         # Note: This is a placeholder
@@ -367,10 +347,7 @@ class GRPCTransport(Transport):
             await self.server.stop(grace=5)
 
 
-def create_transport(
-    transport_type: str,
-    timeout: float = 30.0
-) -> Transport:
+def create_transport(transport_type: str, timeout: float = 30.0) -> Transport:
     """
     Create transport instance.
 

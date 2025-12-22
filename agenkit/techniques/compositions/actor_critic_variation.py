@@ -91,7 +91,7 @@ class ActorCriticVariation(Agent):
         actor: Agent,
         critic: Agent,
         max_iterations: int = 5,
-        improvement_threshold: float = 0.05
+        improvement_threshold: float = 0.05,
     ):
         """
         Initialize actor-critic variation.
@@ -162,9 +162,7 @@ Solution:
 
 Evaluation:"""
 
-        critique_response = await self.critic.process(
-            Message(role="user", content=critique_prompt)
-        )
+        critique_response = await self.critic.process(Message(role="user", content=critique_prompt))
 
         # Extract score (simple parsing)
         score = self._extract_score(critique_response.content)
@@ -186,9 +184,9 @@ Evaluation:"""
 
         # Try to find "score: X" or "X/10"
         patterns = [
-            r'score[:\s]+(\d+(?:\.\d+)?)',
-            r'(\d+(?:\.\d+)?)/10',
-            r'quality[:\s]+(\d+(?:\.\d+)?)'
+            r"score[:\s]+(\d+(?:\.\d+)?)",
+            r"(\d+(?:\.\d+)?)/10",
+            r"quality[:\s]+(\d+(?:\.\d+)?)",
         ]
 
         for pattern in patterns:
@@ -265,10 +263,7 @@ Critique:
 
 Please refine your solution addressing the critique."""
 
-            current_solution = Message(
-                role="user",
-                content=refinement_prompt
-            )
+            current_solution = Message(role="user", content=refinement_prompt)
 
             previous_score = score
 
@@ -281,17 +276,13 @@ Please refine your solution addressing the critique."""
             "final_score": scores_history[-1] if scores_history else 0.0,
             "scores_history": scores_history,
             "critiques_history": critiques_history,
-            "note": "This is equivalent to ReflectionAgent. Use agenkit.patterns.reflection.ReflectionAgent for production."
+            "note": "This is equivalent to ReflectionAgent. Use agenkit.patterns.reflection.ReflectionAgent for production.",
         }
 
         if final_solution.metadata:
             metadata.update(final_solution.metadata)
 
-        return Message(
-            role=final_solution.role,
-            content=final_solution.content,
-            metadata=metadata
-        )
+        return Message(role=final_solution.role, content=final_solution.content, metadata=metadata)
 
     @property
     def capabilities(self) -> list[str]:
@@ -300,7 +291,7 @@ Please refine your solution addressing the critique."""
             "iterative_refinement",
             "actor_critic",
             "reflection",  # Because it's the same thing!
-            "quality_improvement"
+            "quality_improvement",
         ]
 
 

@@ -446,6 +446,7 @@ async def test_patterns_compose():
 
     assert result.content == "C: parallel_done"
 
+
 # ============================================
 # Additional Test Agents and Mocks
 # ============================================
@@ -467,7 +468,7 @@ class CountingAgent(Agent):
         return Message(
             role="agent",
             content=f"Call {self._call_count}: {message.content}",
-            metadata={"call_count": self._call_count}
+            metadata={"call_count": self._call_count},
         )
 
 
@@ -531,7 +532,7 @@ class ScoringAgent(Agent):
         return Message(
             role="agent",
             content=f"Scored content: {message.content}",
-            metadata={"quality_score": score}
+            metadata={"quality_score": score},
         )
 
 
@@ -685,11 +686,7 @@ async def test_conversational_exclude_system_from_history():
     from agenkit.patterns import ConversationalAgent
 
     llm = MockLLMClient(["response"])
-    agent = ConversationalAgent(
-        llm,
-        system_prompt="System prompt",
-        include_system=False
-    )
+    agent = ConversationalAgent(llm, system_prompt="System prompt", include_system=False)
 
     # System prompt should not be in history
     assert len(agent.history) == 0
@@ -742,7 +739,7 @@ async def test_reflection_basic():
             return Message(
                 role="assistant",
                 content=f"Draft {self.iteration}: {message.content}",
-                metadata={"quality_score": 0.5 + (self.iteration * 0.2)}
+                metadata={"quality_score": 0.5 + (self.iteration * 0.2)},
             )
 
     # Critic provides feedback
@@ -757,7 +754,7 @@ async def test_reflection_basic():
             return Message(
                 role="assistant",
                 content=f"Critique: {feedback}",
-                metadata={"quality_score": score, "improved": score > 0.8}
+                metadata={"quality_score": score, "improved": score > 0.8},
             )
 
     generator = GeneratorAgent()
@@ -790,7 +787,7 @@ async def test_reflection_max_iterations():
             return Message(
                 role="assistant",
                 content=f"Draft {iteration_count}",
-                metadata={"quality_score": 0.5}  # Never good enough
+                metadata={"quality_score": 0.5},  # Never good enough
             )
 
     class NeverSatisfiedCritic(Agent):
@@ -802,7 +799,7 @@ async def test_reflection_max_iterations():
             return Message(
                 role="assistant",
                 content="Not good enough",
-                metadata={"quality_score": 0.5, "improved": False}
+                metadata={"quality_score": 0.5, "improved": False},
             )
 
     generator = NeverSatisfiedGenerator()
@@ -836,7 +833,7 @@ async def test_reflection_early_stop_quality_threshold():
             return Message(
                 role="assistant",
                 content=f"Draft {iteration_count}",
-                metadata={"quality_score": score}
+                metadata={"quality_score": score},
             )
 
     class ApprovingCritic(Agent):
@@ -849,17 +846,12 @@ async def test_reflection_early_stop_quality_threshold():
             return Message(
                 role="assistant",
                 content="Good!" if score > 0.9 else "Keep trying",
-                metadata={"quality_score": score, "improved": score > 0.9}
+                metadata={"quality_score": score, "improved": score > 0.9},
             )
 
     generator = QuicklyImprovingGenerator()
     critic = ApprovingCritic()
-    agent = ReflectionAgent(
-        generator,
-        critic,
-        max_iterations=10,
-        quality_threshold=0.9
-    )
+    agent = ReflectionAgent(generator, critic, max_iterations=10, quality_threshold=0.9)
 
     msg = Message(role="user", content="test")
     await agent.process(msg)
@@ -950,7 +942,7 @@ async def test_react_basic():
     # Mock LLM that finishes immediately
     class SimpleLLM:
         async def chat(self, messages: list) -> Message:
-            return Message(role="assistant", content="Final Answer: Test complete",metadata={})
+            return Message(role="assistant", content="Final Answer: Test complete", metadata={})
 
     tool_registry = ToolRegistry()
     tool_registry.register(SimpleTool())
@@ -995,7 +987,7 @@ async def test_planning_basic():
             return Message(
                 role="assistant",
                 content="Goal: Complete task\nSteps:\n1. First step\n2. Second step",
-                metadata={}
+                metadata={},
             )
 
     llm = SimplePlanningLLM()

@@ -34,7 +34,7 @@ class MockEmbeddingProvider(EmbeddingProvider):
         embedding = [0.0] * self._dimension
 
         # Simple deterministic embedding
-        for i, char in enumerate(text.lower()[:self._dimension]):
+        for i, char in enumerate(text.lower()[: self._dimension]):
             embedding[i] = ord(char) / 255.0
 
         # Normalize to unit vector
@@ -77,11 +77,13 @@ async def benchmark_retrieve(memory, session_id: str, limit: int, iterations: in
         "mean": mean(times),
         "std": stdev(times) if len(times) > 1 else 0,
         "min": min(times),
-        "max": max(times)
+        "max": max(times),
     }
 
 
-async def benchmark_strategy(strategy, memory, session_id: str, context_limit: int, iterations: int = 100):
+async def benchmark_strategy(
+    strategy, memory, session_id: str, context_limit: int, iterations: int = 100
+):
     """Benchmark strategy selection."""
     times = []
 
@@ -95,18 +97,16 @@ async def benchmark_strategy(strategy, memory, session_id: str, context_limit: i
         "mean": mean(times),
         "std": stdev(times) if len(times) > 1 else 0,
         "min": min(times),
-        "max": max(times)
+        "max": max(times),
     }
 
 
 async def benchmark_concurrent_access(memory, session_count: int, messages_per_session: int):
     """Benchmark concurrent access across multiple sessions."""
+
     async def store_session(session_id: str):
         for i in range(messages_per_session):
-            await memory.store(
-                session_id,
-                Message(role="user", content=f"Message {i}")
-            )
+            await memory.store(session_id, Message(role="user", content=f"Message {i}"))
 
     sessions = [f"session-{i}" for i in range(session_count)]
 
@@ -136,7 +136,9 @@ async def run_benchmarks():
     for count in message_counts:
         session_id = f"bench-{count}"
         store_time = await benchmark_store(memory, session_id, count)
-        print(f"  Store {count} messages: {store_time:.2f}ms ({count/store_time*1000:.0f} msg/sec)")
+        print(
+            f"  Store {count} messages: {store_time:.2f}ms ({count / store_time * 1000:.0f} msg/sec)"
+        )
 
     print()
     for limit in retrieve_limits:
@@ -166,11 +168,10 @@ async def run_benchmarks():
         await vector_memory.retrieve("vector-bench", query="test query", limit=10)
         end = time.perf_counter()
         times.append((end - start) * 1000)
-    semantic_stats = {
-        "mean": mean(times),
-        "std": stdev(times) if len(times) > 1 else 0
-    }
-    print(f"  Semantic search (10 results): {semantic_stats['mean']:.2f}ms ± {semantic_stats['std']:.2f}ms")
+    semantic_stats = {"mean": mean(times), "std": stdev(times) if len(times) > 1 else 0}
+    print(
+        f"  Semantic search (10 results): {semantic_stats['mean']:.2f}ms ± {semantic_stats['std']:.2f}ms"
+    )
 
     # Benchmark Strategies
     print("\n3. Memory Strategy Benchmarks")
@@ -182,24 +183,21 @@ async def run_benchmarks():
         await test_memory.store(
             "strategy-bench",
             Message(role="user", content=f"Message {i}"),
-            metadata={"importance": 0.5 + (i % 5) * 0.1}
+            metadata={"importance": 0.5 + (i % 5) * 0.1},
         )
 
     strategies = {
         "SlidingWindow": SlidingWindowStrategy(window_size=20),
         "ImportanceWeighting": ImportanceWeightingStrategy(
-            importance_threshold=0.5,
-            recency_weight=0.3,
-            min_recent=5
+            importance_threshold=0.5, recency_weight=0.3, min_recent=5
         ),
-        "Summarization": SummarizationStrategy(
-            recent_count=10,
-            summarize_older=True
-        )
+        "Summarization": SummarizationStrategy(recent_count=10, summarize_older=True),
     }
 
     for name, strategy in strategies.items():
-        stats = await benchmark_strategy(strategy, test_memory, "strategy-bench", 20, iterations=100)
+        stats = await benchmark_strategy(
+            strategy, test_memory, "strategy-bench", 20, iterations=100
+        )
         print(f"  {name}: {stats['mean']:.2f}ms ± {stats['std']:.2f}ms")
 
     # Benchmark Concurrent Access
@@ -215,7 +213,9 @@ async def run_benchmarks():
         time_ms = await benchmark_concurrent_access(concurrent_memory, count, messages_per_session)
         total_messages = count * messages_per_session
         throughput = total_messages / (time_ms / 1000)
-        print(f"  {count} sessions × {messages_per_session} messages: {time_ms:.2f}ms ({throughput:.0f} msg/sec)")
+        print(
+            f"  {count} sessions × {messages_per_session} messages: {time_ms:.2f}ms ({throughput:.0f} msg/sec)"
+        )
 
     # Memory Usage
     print("\n5. Memory Usage Statistics")
@@ -225,7 +225,7 @@ async def run_benchmarks():
     for i in range(1000):
         await usage_memory.store(
             "usage-bench",
-            Message(role="user", content=f"Message {i}" * 10)  # ~100 chars
+            Message(role="user", content=f"Message {i}" * 10),  # ~100 chars
         )
 
     usage = usage_memory.get_memory_usage()

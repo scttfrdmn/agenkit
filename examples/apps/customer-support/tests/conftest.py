@@ -1,7 +1,6 @@
 """Pytest configuration for customer support tests."""
 
 
-
 def pytest_configure(config):
     """Register custom markers."""
     config.addinivalue_line("markers", "unit: Unit tests")

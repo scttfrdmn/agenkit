@@ -5,15 +5,22 @@ from unittest.mock import patch
 import pytest
 
 from agenkit import Message
-from agenkit.techniques.compositions import (ActionStats, ActorCriticVariation,
-                                             CitedRAG, ContextOptimizer,
-                                             Document, ExplorationStrategy,
-                                             GoalMonitor, Interaction,
-                                             LearningFromFeedback,
-                                             PrioritizedTask,
-                                             PriorityTaskExecutor,
-                                             SimpleApprovalTool, SimpleRAG,
-                                             TaskQueue)
+from agenkit.techniques.compositions import (
+    ActionStats,
+    ActorCriticVariation,
+    CitedRAG,
+    ContextOptimizer,
+    Document,
+    ExplorationStrategy,
+    GoalMonitor,
+    Interaction,
+    LearningFromFeedback,
+    PrioritizedTask,
+    PriorityTaskExecutor,
+    SimpleApprovalTool,
+    SimpleRAG,
+    TaskQueue,
+)
 
 
 # Mock agents for testing

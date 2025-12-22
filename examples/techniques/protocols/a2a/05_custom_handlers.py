@@ -11,10 +11,13 @@ Demonstrates:
 import asyncio
 
 from agenkit import Message
-from agenkit.techniques.protocols.a2a import (A2AAgent, AgentInfo,
-                                              InMemoryDiscoveryService,
-                                              create_notification,
-                                              create_request)
+from agenkit.techniques.protocols.a2a import (
+    A2AAgent,
+    AgentInfo,
+    InMemoryDiscoveryService,
+    create_notification,
+    create_request,
+)
 
 # ==============================================================================
 # Agent with Custom Handlers

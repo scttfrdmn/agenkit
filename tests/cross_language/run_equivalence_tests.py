@@ -11,8 +11,7 @@ import json
 import sys
 from pathlib import Path
 
-from harness_manager import (HarnessConfig, HarnessManager, TestRequest,
-                             discover_harnesses)
+from harness_manager import HarnessConfig, HarnessManager, TestRequest, discover_harnesses
 from result_comparator import ResultComparator
 from spec_loader import PatternSpec, SpecificationLoader
 

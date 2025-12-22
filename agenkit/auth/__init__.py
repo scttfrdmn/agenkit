@@ -27,8 +27,14 @@ Example:
 """
 
 from .middleware import APIKeyAuth, BearerTokenAuth
-from .providers import (AuthenticationError, AuthorizationError, AuthProvider,
-                        EnvTokenProvider, SimpleTokenProvider, User)
+from .providers import (
+                        AuthenticationError,
+                        AuthorizationError,
+                        AuthProvider,
+                        EnvTokenProvider,
+                        SimpleTokenProvider,
+                        User,
+)
 
 __all__ = [
     "APIKeyAuth",

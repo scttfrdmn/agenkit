@@ -5,9 +5,15 @@ import json
 import tempfile
 from pathlib import Path
 
-from agenkit.observability import (AuditEvent, AuditEventType, AuditLogger,
-                                   AuditSeverity, ConsoleAuditAdapter,
-                                   FileAuditAdapter, StructuredAuditAdapter)
+from agenkit.observability import (
+    AuditEvent,
+    AuditEventType,
+    AuditLogger,
+    AuditSeverity,
+    ConsoleAuditAdapter,
+    FileAuditAdapter,
+    StructuredAuditAdapter,
+)
 
 
 def test_audit_event_creation():

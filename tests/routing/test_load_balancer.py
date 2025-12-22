@@ -5,9 +5,12 @@ import asyncio
 import pytest
 
 from agenkit.interfaces import Message
-from agenkit.routing.load_balancer import (AgentInstance, LoadBalancerError,
-                                           LoadBalancerRouter,
-                                           LoadBalancingStrategy)
+from agenkit.routing.load_balancer import (
+    AgentInstance,
+    LoadBalancerError,
+    LoadBalancerRouter,
+    LoadBalancingStrategy,
+)
 
 
 # Mock agent for testing

@@ -13,8 +13,7 @@ This example shows:
 
 import asyncio
 
-from agenkit.routing.semantic_selector import (SemanticToolSelector,
-                                               ToolDescription)
+from agenkit.routing.semantic_selector import SemanticToolSelector, ToolDescription
 
 
 # For this example, we'll use a simple mock provider

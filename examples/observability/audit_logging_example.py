@@ -8,8 +8,12 @@ security-relevant events to multiple destinations simultaneously.
 import tempfile
 from pathlib import Path
 
-from agenkit.observability import (AuditLogger, ConsoleAuditAdapter,
-                                   FileAuditAdapter, StructuredAuditAdapter)
+from agenkit.observability import (
+    AuditLogger,
+    ConsoleAuditAdapter,
+    FileAuditAdapter,
+    StructuredAuditAdapter,
+)
 
 
 def main():

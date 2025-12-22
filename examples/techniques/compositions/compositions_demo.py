@@ -25,12 +25,18 @@ For production systems, use the full patterns from agenkit.patterns.
 import asyncio
 
 from agenkit import Message
-from agenkit.techniques.compositions import (ActorCriticVariation, CitedRAG,
-                                             ContextOptimizer, Document,
-                                             ExplorationStrategy, GoalMonitor,
-                                             LearningFromFeedback,
-                                             SimpleApprovalTool, SimpleRAG,
-                                             TaskQueue)
+from agenkit.techniques.compositions import (
+    ActorCriticVariation,
+    CitedRAG,
+    ContextOptimizer,
+    Document,
+    ExplorationStrategy,
+    GoalMonitor,
+    LearningFromFeedback,
+    SimpleApprovalTool,
+    SimpleRAG,
+    TaskQueue,
+)
 
 
 # Mock LLM for demonstration

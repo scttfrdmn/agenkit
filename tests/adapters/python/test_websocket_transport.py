@@ -6,8 +6,7 @@ import pytest
 from websockets.asyncio.server import serve
 
 from agenkit import Agent, Message
-from agenkit.adapters.python import (ConnectionClosedError, ConnectionError,
-                                     LocalAgent, RemoteAgent)
+from agenkit.adapters.python import ConnectionClosedError, ConnectionError, LocalAgent, RemoteAgent
 from agenkit.adapters.python.websocket_transport import WebSocketTransport
 
 

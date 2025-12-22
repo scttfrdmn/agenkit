@@ -12,9 +12,12 @@ Demonstrates:
 import asyncio
 import random
 
-from agenkit.evaluation.ab_testing import (ABTest, SignificanceLevel,
-                                           StatisticalTestType,
-                                           calculate_sample_size)
+from agenkit.evaluation.ab_testing import (
+    ABTest,
+    SignificanceLevel,
+    StatisticalTestType,
+    calculate_sample_size,
+)
 from agenkit.interfaces import Message
 
 

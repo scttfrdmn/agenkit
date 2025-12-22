@@ -26,49 +26,95 @@ Pattern Library (NEW in v0.32.0):
 
 from agenkit.patterns.agents_as_tools import AgentTool, agent_as_tool
 from agenkit.patterns.autonomous import AutonomousAgent, AutonomousConfig, Goal
-from agenkit.patterns.collaborative import (CollaborativeAgent,
-                                            CollaborativeConfig, ConsensusFunc,
-                                            MergeFunc, default_consensus_funcs,
-                                            default_merge_funcs)
-from agenkit.patterns.conversational import (ConversationalAgent, LLMClient,
-                                             StreamingConversationalAgent)
-from agenkit.patterns.fallback import (FallbackAgent, RecoveryAgent,
-                                       RecoveryFunc, default_recovery,
-                                       with_recovery)
-from agenkit.patterns.human_in_loop import (ApprovalFunc, ApprovalRequest,
-                                            ApprovalResponse, HumanInLoopAgent,
+from agenkit.patterns.collaborative import (
+                                            CollaborativeAgent,
+                                            CollaborativeConfig,
+                                            ConsensusFunc,
+                                            MergeFunc,
+                                            default_consensus_funcs,
+                                            default_merge_funcs,
+)
+from agenkit.patterns.conversational import (
+                                            ConversationalAgent,
+                                            LLMClient,
+                                            StreamingConversationalAgent,
+)
+from agenkit.patterns.fallback import (
+                                            FallbackAgent,
+                                            RecoveryAgent,
+                                            RecoveryFunc,
+                                            default_recovery,
+                                            with_recovery,
+)
+from agenkit.patterns.human_in_loop import (
+                                            ApprovalFunc,
+                                            ApprovalRequest,
+                                            ApprovalResponse,
+                                            HumanInLoopAgent,
                                             HumanInLoopConfig,
                                             confidence_based_approval_func,
-                                            simple_approval_func)
-from agenkit.patterns.memory import (LongTermMemory, MemoryEntry,
-                                     MemoryHierarchy, MemoryStore,
-                                     ShortTermMemory, WorkingMemory)
-from agenkit.patterns.multiagent import (AgentTask, ConsensusAgent,
-                                         ConsensusConfig, MultiAgentConfig,
-                                         MultiAgentOrchestrator)
-from agenkit.patterns.orchestration import (OrchestrationAgent,
+                                            simple_approval_func,
+)
+from agenkit.patterns.memory import (
+                                            LongTermMemory,
+                                            MemoryEntry,
+                                            MemoryHierarchy,
+                                            MemoryStore,
+                                            ShortTermMemory,
+                                            WorkingMemory,
+)
+from agenkit.patterns.multiagent import (
+                                            AgentTask,
+                                            ConsensusAgent,
+                                            ConsensusConfig,
+                                            MultiAgentConfig,
+                                            MultiAgentOrchestrator,
+)
+from agenkit.patterns.orchestration import (
+                                            OrchestrationAgent,
                                             OrchestrationConfig,
-                                            ParallelPattern, RouterPattern,
-                                            SequentialPattern)
-from agenkit.patterns.parallel import (AggregatorFunc, ParallelAgent,
-                                       default_aggregators)
-from agenkit.patterns.planning import (Plan, PlanningAgent, PlanningConfig,
-                                       PlanStep, StepExecutor, StepStatus)
-from agenkit.patterns.react import (ReActAgent, ReActConfig, ReActStep, Tool,
-                                    ToolResult)
-from agenkit.patterns.reasoning_with_tools import (ReasoningStep,
-                                                   ReasoningStepType,
-                                                   ReasoningTrace,
-                                                   ReasoningWithToolsAgent)
-from agenkit.patterns.reflection import (CritiqueFormat, ReflectionAgent,
-                                         ReflectionConfig, ReflectionStep,
-                                         StopReason)
-from agenkit.patterns.router import (ClassifierAgent, LLMClassifier,
-                                     RouterAgent, RouterConfig,
-                                     SimpleClassifier)
+                                            ParallelPattern,
+                                            RouterPattern,
+                                            SequentialPattern,
+)
+from agenkit.patterns.parallel import AggregatorFunc, ParallelAgent, default_aggregators
+from agenkit.patterns.planning import (
+                                            Plan,
+                                            PlanningAgent,
+                                            PlanningConfig,
+                                            PlanStep,
+                                            StepExecutor,
+                                            StepStatus,
+)
+from agenkit.patterns.react import ReActAgent, ReActConfig, ReActStep, Tool, ToolResult
+from agenkit.patterns.reasoning_with_tools import (
+                                            ReasoningStep,
+                                            ReasoningStepType,
+                                            ReasoningTrace,
+                                            ReasoningWithToolsAgent,
+)
+from agenkit.patterns.reflection import (
+                                            CritiqueFormat,
+                                            ReflectionAgent,
+                                            ReflectionConfig,
+                                            ReflectionStep,
+                                            StopReason,
+)
+from agenkit.patterns.router import (
+                                            ClassifierAgent,
+                                            LLMClassifier,
+                                            RouterAgent,
+                                            RouterConfig,
+                                            SimpleClassifier,
+)
 from agenkit.patterns.sequential import SequentialAgent
-from agenkit.patterns.supervisor import (PlannerAgent, SimplePlanner, Subtask,
-                                         SupervisorAgent, SupervisorConfig)
+from agenkit.patterns.supervisor import (
+                                            PlannerAgent,
+                                            SimplePlanner,
+                                            Subtask,
+                                            SupervisorAgent,
+                                            SupervisorConfig,
+)
 from agenkit.patterns.task import Task
 
 __all__ = [

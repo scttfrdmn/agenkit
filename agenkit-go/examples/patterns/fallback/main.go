@@ -38,6 +38,13 @@ func (p *PrimaryAgent) Capabilities() []string {
 	return []string{"primary", "high-quality"}
 }
 
+func (p *PrimaryAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    p.Name(),
+		Capabilities: p.Capabilities(),
+	}
+}
+
 func (p *PrimaryAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Println("   🔵 Primary service attempting...")
 	time.Sleep(100 * time.Millisecond)
@@ -64,6 +71,13 @@ func (b *BackupAgent) Capabilities() []string {
 	return []string{"backup", "reliable"}
 }
 
+func (b *BackupAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    b.Name(),
+		Capabilities: b.Capabilities(),
+	}
+}
+
 func (b *BackupAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Println("   🟡 Backup service attempting...")
 	time.Sleep(80 * time.Millisecond)
@@ -83,6 +97,13 @@ func (c *CacheAgent) Name() string {
 
 func (c *CacheAgent) Capabilities() []string {
 	return []string{"cache", "fast"}
+}
+
+func (c *CacheAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    c.Name(),
+		Capabilities: c.Capabilities(),
+	}
 }
 
 func (c *CacheAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -107,6 +128,13 @@ func (u *UnreliableAgent) Name() string {
 
 func (u *UnreliableAgent) Capabilities() []string {
 	return []string{"unreliable"}
+}
+
+func (u *UnreliableAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    u.Name(),
+		Capabilities: u.Capabilities(),
+	}
 }
 
 func (u *UnreliableAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

@@ -70,6 +70,7 @@ class A2AServer:
 
         self.transport: Transport | None = None
         self.running = False
+        self._stop_event = asyncio.Event()
 
     def info(self) -> AgentInfo:
         """
@@ -199,6 +200,7 @@ class A2AServer:
         if self.transport:
             await self.transport.stop_server()
             self.running = False
+            self._stop_event.set()
             print(f"A2A Server '{self.name}' stopped")
 
 
@@ -282,10 +284,9 @@ class AgentA2AServer:
             **kwargs
         )
 
-        # Keep running
+        # Keep running until stop event is set
         try:
-            while self.server.running:
-                await asyncio.sleep(1)
+            await self.server._stop_event.wait()
         except KeyboardInterrupt:
             await self.server.stop()
 

@@ -16,7 +16,8 @@ class Settings(BaseSettings):
 
     # Service Configuration
     python_api_host: str = Field(
-        default="0.0.0.0", description="Python API host"  # noqa: S104 - Example server configuration
+        default="0.0.0.0",  # noqa: S104 - Example server configuration
+        description="Python API host",
     )
     python_api_port: int = Field(default=8000, description="Python API port")
     go_worker_endpoint: str = Field(

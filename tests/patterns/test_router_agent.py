@@ -158,7 +158,7 @@ def test_router_invalid_default_key_raises():
         default_key="nonexistent"
     )
 
-    with pytest.raises(ValueError, match="default key .* not found"):
+    with pytest.raises(ValueError, match=r"default key .* not found"):
         RouterAgent(config)
 
 
@@ -377,7 +377,7 @@ async def test_router_agent_execution_failure():
 
     message = Message(role="user", content="input")
 
-    with pytest.raises(RuntimeError, match="agent .* failed"):
+    with pytest.raises(RuntimeError, match=r"agent .* failed"):
         await router.process(message)
 
 

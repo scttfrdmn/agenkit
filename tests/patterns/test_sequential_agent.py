@@ -258,7 +258,7 @@ async def test_sequential_first_agent_failure():
 
     message = Message(role="user", content="input")
 
-    with pytest.raises(RuntimeError, match="agent 0 .* failed"):
+    with pytest.raises(RuntimeError, match=r"agent 0 .* failed"):
         await seq.process(message)
 
     # Agent2 should not have been called
@@ -276,7 +276,7 @@ async def test_sequential_middle_agent_failure():
 
     message = Message(role="user", content="input")
 
-    with pytest.raises(RuntimeError, match="agent 1 .* failed"):
+    with pytest.raises(RuntimeError, match=r"agent 1 .* failed"):
         await seq.process(message)
 
     # Agent1 should have been called
@@ -295,7 +295,7 @@ async def test_sequential_error_includes_agent_name():
 
     message = Message(role="user", content="input")
 
-    with pytest.raises(RuntimeError, match="problematic_agent.*failed"):
+    with pytest.raises(RuntimeError, match=r"problematic_agent.*failed"):
         await seq.process(message)
 
 

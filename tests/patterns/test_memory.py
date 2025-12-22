@@ -421,10 +421,10 @@ async def test_long_term_memory_delete():
 
 def test_long_term_memory_validation():
     """Test LongTermMemory parameter validation."""
-    with pytest.raises(ValueError, match="min_importance must be between 0.0 and 1.0"):
+    with pytest.raises(ValueError, match=r"min_importance must be between 0.0 and 1.0"):
         LongTermMemory(min_importance=1.5)
 
-    with pytest.raises(ValueError, match="min_importance must be between 0.0 and 1.0"):
+    with pytest.raises(ValueError, match=r"min_importance must be between 0.0 and 1.0"):
         LongTermMemory(min_importance=-0.1)
 
 
@@ -592,10 +592,10 @@ async def test_memory_hierarchy_importance_validation():
     """Test importance parameter validation."""
     hierarchy = MemoryHierarchy(working_memory=WorkingMemory(max_messages=10))
 
-    with pytest.raises(ValueError, match="importance must be between 0.0 and 1.0"):
+    with pytest.raises(ValueError, match=r"importance must be between 0.0 and 1.0"):
         await hierarchy.store(content="Test", importance=1.5)
 
-    with pytest.raises(ValueError, match="importance must be between 0.0 and 1.0"):
+    with pytest.raises(ValueError, match=r"importance must be between 0.0 and 1.0"):
         await hierarchy.store(content="Test", importance=-0.1)
 
 

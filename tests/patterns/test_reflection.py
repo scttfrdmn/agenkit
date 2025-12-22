@@ -372,10 +372,10 @@ def test_reflection_validation_quality_threshold():
     generator = MockGeneratorAgent()
     critic = MockCriticAgent()
 
-    with pytest.raises(ValueError, match="quality_threshold must be between 0.0 and 1.0"):
+    with pytest.raises(ValueError, match=r"quality_threshold must be between 0.0 and 1.0"):
         ReflectionAgent(generator=generator, critic=critic, quality_threshold=1.5)
 
-    with pytest.raises(ValueError, match="quality_threshold must be between 0.0 and 1.0"):
+    with pytest.raises(ValueError, match=r"quality_threshold must be between 0.0 and 1.0"):
         ReflectionAgent(generator=generator, critic=critic, quality_threshold=-0.1)
 
 
@@ -384,7 +384,7 @@ def test_reflection_validation_improvement_threshold():
     generator = MockGeneratorAgent()
     critic = MockCriticAgent()
 
-    with pytest.raises(ValueError, match="improvement_threshold must be between 0.0 and 1.0"):
+    with pytest.raises(ValueError, match=r"improvement_threshold must be between 0.0 and 1.0"):
         ReflectionAgent(generator=generator, critic=critic, improvement_threshold=1.5)
 
 

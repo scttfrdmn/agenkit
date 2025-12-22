@@ -138,7 +138,7 @@ async def test_fallback_all_fail():
 
     message = Message(role="user", content="input")
 
-    with pytest.raises(RuntimeError, match="all .* agents failed"):
+    with pytest.raises(RuntimeError, match=r"all .* agents failed"):
         await fallback.process(message)
 
     # All agents should have been tried

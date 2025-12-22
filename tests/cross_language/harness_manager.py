@@ -236,7 +236,7 @@ class HarnessManager:
         request_json = json.dumps(request)
 
         # Execute harness
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603 - Test harness executable paths are controlled and trusted
             [str(executable)],
             input=request_json,
             capture_output=True,

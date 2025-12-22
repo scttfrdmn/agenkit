@@ -67,7 +67,7 @@ func (a *QuizAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 
 func main() {
 	fmt.Println("Quality Scoring Example")
-	fmt.Println("=======================\n")
+	fmt.Println("=======================")
 
 	// Step 1: Create agent and metrics
 	fmt.Println("Step 1: Setting Up Evaluation")
@@ -85,7 +85,7 @@ func main() {
 	)
 
 	fmt.Println("✓ Agent created: quiz-agent")
-	fmt.Println("✓ Metrics configured: accuracy, quality, precision/recall\n")
+	fmt.Println("✓ Metrics configured: accuracy, quality, precision/recall")
 
 	// Step 2: Define test cases
 	fmt.Println("Step 2: Defining Test Cases")
@@ -200,7 +200,7 @@ func main() {
 	// Step 7: Individual test case analysis
 	fmt.Println("Step 7: Individual Test Case Analysis")
 	fmt.Println("--------------------------------------")
-	fmt.Println("\nDetailed Results for Each Test Case:\n")
+	fmt.Println("\nDetailed Results for Each Test Case:")
 
 	accuracyMeasurements := result.Metrics["accuracy"]
 	qualityMeasurements := result.Metrics["quality"]

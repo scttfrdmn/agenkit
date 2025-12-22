@@ -64,9 +64,9 @@ class MockAgent(Agent):
     def capabilities(self) -> list[str]:
         return ["mock", "test"]
 
-    async def process(
+    async def process(  # noqa: PLR0911 - Mock agent handles many test scenarios with early returns
         self, message: Message
-    ) -> Message:  # noqa: PLR0911 - Mock agent handles many test scenarios with early returns
+    ) -> Message:
         """Return a mock response."""
         # Check for specific test scenarios and respond appropriately
         content_lower = message.content.lower()
@@ -378,9 +378,9 @@ PATTERNS = {
 }
 
 
-def execute_test(
+def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles all 18 patterns
     payload: dict[str, Any],
-) -> dict[str, Any]:  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles all 18 patterns
+) -> dict[str, Any]:
     """
     Execute a test scenario.
 

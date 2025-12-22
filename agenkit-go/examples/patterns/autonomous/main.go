@@ -273,7 +273,7 @@ func exampleGoalCompletionTimes() error {
 	agent.AddGoal("Long task (15 iterations)", 5)
 
 	fmt.Println("Goals with different estimated durations:")
-	for _, goal := range agent.Goals() {
+	for _, goal := range agent.GetGoals() {
 		fmt.Printf("  - %s\n", goal.Description)
 	}
 
@@ -288,7 +288,7 @@ func exampleGoalCompletionTimes() error {
 	fmt.Printf("  Goals completed: %d\n", result.GoalsCompleted)
 
 	fmt.Println("\nFinal goal states:")
-	for _, goal := range agent.Goals() {
+	for _, goal := range agent.GetGoals() {
 		statusIcon := "○"
 		switch goal.Status {
 		case patterns.GoalStatusCompleted:

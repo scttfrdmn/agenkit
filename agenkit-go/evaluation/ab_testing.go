@@ -331,12 +331,13 @@ func (t *ABTest) runStatisticalTest(metricName string) (*ABResult, error) {
 	var effectSize float64
 	var confidenceInterval [2]float64
 
-	if t.TestType == TestTypeTTest {
+	switch t.TestType {
+	case TestTypeTTest:
 		// Independent samples t-test
 		pValue = tTest(controlSamples, treatmentSamples)
 
 		// Cohen's d effect size
-		pooledStd := math.Sqrt((math.Pow(t.Control.StdDev(), 2) + math.Pow(t.Treatment.StdDev(), 2)) / 2)
+		pooledStd := math.Sqrt((t.Control.StdDev()*t.Control.StdDev() + t.Treatment.StdDev()*t.Treatment.StdDev()) / 2)
 		if pooledStd > 0 {
 			effectSize = (t.Treatment.Mean() - t.Control.Mean()) / pooledStd
 		}
@@ -346,7 +347,7 @@ func (t *ABTest) runStatisticalTest(metricName string) (*ABResult, error) {
 		margin := 1.96 * pooledStd // 95% confidence
 		confidenceInterval = [2]float64{diff - margin, diff + margin}
 
-	} else if t.TestType == TestTypeMannWhitney {
+	case TestTypeMannWhitney:
 		// Mann-Whitney U test
 		pValue = mannWhitneyU(controlSamples, treatmentSamples)
 
@@ -416,7 +417,7 @@ func CalculateSampleSize(baselineMean, minimumDetectableEffect, alpha, power flo
 	}
 
 	// Sample size calculation
-	n := math.Pow(zAlpha+zBeta, 2) * 2 * math.Pow(sd, 2) / math.Pow(minimumDetectableEffect, 2)
+	n := (zAlpha+zBeta)*(zAlpha+zBeta) * 2 * sd*sd / (minimumDetectableEffect * minimumDetectableEffect)
 
 	return int(n) + 1
 }
@@ -481,7 +482,9 @@ func tTest(sample1, sample2 []float64) float64 {
 	t := (mean1 - mean2) / se
 
 	// Degrees of freedom (Welch's approximation)
-	df := math.Pow(var1/n1+var2/n2, 2) / (math.Pow(var1/n1, 2)/(n1-1) + math.Pow(var2/n2, 2)/(n2-1))
+	varRatio1 := var1 / n1
+	varRatio2 := var2 / n2
+	df := (varRatio1+varRatio2)*(varRatio1+varRatio2) / (varRatio1*varRatio1/(n1-1) + varRatio2*varRatio2/(n2-1))
 
 	// Approximate p-value using t-distribution (simplified)
 	pValue := 2 * (1 - tCDF(math.Abs(t), df))

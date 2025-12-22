@@ -14,7 +14,9 @@ func mockObjectiveFunc(ctx context.Context, config map[string]interface{}) (floa
 	x := toFloat64(config["x"])
 	y := toFloat64(config["y"])
 
-	score := math.Pow(x-5.0, 2) + math.Pow(y-3.0, 2)
+	dx := x - 5.0
+	dy := y - 3.0
+	score := dx*dx + dy*dy
 	return score, nil
 }
 

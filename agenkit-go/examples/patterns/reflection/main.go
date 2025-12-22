@@ -46,8 +46,8 @@ func (g *MockCodeGenerator) Process(ctx context.Context, message *agenkit.Messag
 
 	// Simulate progressive improvement in code quality
 	var code string
-	switch {
-	case g.iteration == 1:
+	switch g.iteration {
+	case 1:
 		// Initial version - basic but works
 		code = `def is_prime(n):
     for i in range(2, n):
@@ -55,7 +55,7 @@ func (g *MockCodeGenerator) Process(ctx context.Context, message *agenkit.Messag
             return False
     return True`
 
-	case g.iteration == 2:
+	case 2:
 		// Improved version - better edge case handling
 		code = `def is_prime(n):
     if n < 2:

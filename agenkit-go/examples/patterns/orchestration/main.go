@@ -19,6 +19,9 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"github.com/scttfrdmn/agenkit/agenkit-go/patterns"
 )
@@ -140,7 +143,7 @@ func (r *ReviewerAgent) Process(ctx context.Context, message *agenkit.Message) (
 	}
 
 	review := fmt.Sprintf("%s %s Review:\nInput: %s\nAssessment: %s",
-		r.icon, strings.Title(r.perspective), content, assessment)
+		r.icon, cases.Title(language.Und).String(r.perspective), content, assessment)
 	return agenkit.NewMessage("assistant", review), nil
 }
 

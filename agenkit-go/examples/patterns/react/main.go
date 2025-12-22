@@ -130,6 +130,13 @@ func (m *MockReasoningAgent) Capabilities() []string {
 	return []string{"reasoning", "planning"}
 }
 
+func (m *MockReasoningAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
+}
+
 func (m *MockReasoningAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	content := message.Content
 

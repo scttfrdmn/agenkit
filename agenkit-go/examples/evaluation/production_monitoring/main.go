@@ -46,7 +46,7 @@ func (a *ProductionAgent) Process(ctx context.Context, message *agenkit.Message)
 
 func main() {
 	fmt.Println("Production Monitoring Example")
-	fmt.Println("=============================\n")
+	fmt.Println("=============================")
 
 	// Step 1: Initialize monitoring infrastructure
 	fmt.Println("Step 1: Initializing Monitoring Infrastructure")

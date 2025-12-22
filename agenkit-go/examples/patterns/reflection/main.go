@@ -131,7 +131,7 @@ func (c *MockCodeCritic) Process(ctx context.Context, message *agenkit.Message) 
 
 func main() {
 	fmt.Println("Reflection Pattern Example: Iterative Code Refinement")
-	fmt.Println("======================================================\n")
+	fmt.Println("======================================================")
 
 	// Create generator and critic agents
 	generator := &MockCodeGenerator{}

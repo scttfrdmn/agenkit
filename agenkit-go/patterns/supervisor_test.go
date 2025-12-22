@@ -26,6 +26,13 @@ func (m *mockPlanner) Capabilities() []string {
 	return []string{"planning", "synthesis"}
 }
 
+func (m *mockPlanner) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
+}
+
 func (m *mockPlanner) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return agenkit.NewMessage("assistant", "direct response"), nil
 }

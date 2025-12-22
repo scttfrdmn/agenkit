@@ -28,6 +28,13 @@ func (m *mockClassifier) Capabilities() []string {
 	return []string{"classification"}
 }
 
+func (m *mockClassifier) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
+}
+
 func (m *mockClassifier) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return agenkit.NewMessage("assistant", "classifier response"), nil
 }

@@ -29,6 +29,13 @@ func (m *mockTaskAgent) Capabilities() []string {
 	return []string{"test"}
 }
 
+func (m *mockTaskAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
+}
+
 func (m *mockTaskAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	m.callCount++
 
@@ -266,6 +273,13 @@ func (m *mockFailThenSucceedAgent) Name() string {
 
 func (m *mockFailThenSucceedAgent) Capabilities() []string {
 	return []string{"test"}
+}
+
+func (m *mockFailThenSucceedAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
 }
 
 func (m *mockFailThenSucceedAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

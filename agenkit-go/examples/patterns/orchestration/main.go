@@ -242,6 +242,17 @@ func exampleComposedPattern() error {
 	stage2ReviewerA := &ReviewerAgent{perspective: "security", icon: "🔒"}
 	stage2ReviewerB := &ReviewerAgent{perspective: "performance", icon: "⚡"}
 	stage2ReviewerC := &ReviewerAgent{perspective: "usability", icon: "🎨"}
+
+	// Aggregator that returns first result and stores all in metadata
+	aggregator := func(messages []*agenkit.Message) *agenkit.Message {
+		if len(messages) == 0 {
+			return agenkit.NewMessage("agent", "No results")
+		}
+		result := messages[0]
+		result.WithMetadata("parallel_results", messages)
+		return result
+	}
+
 	stage2, err := patterns.NewParallelPattern(
 		[]agenkit.Agent{stage2ReviewerA, stage2ReviewerB, stage2ReviewerC},
 		aggregator,

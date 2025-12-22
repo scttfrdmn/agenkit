@@ -125,7 +125,7 @@ func NewReActAgent(config *ReActConfig) (*ReActAgent, error) {
 
 	verbose := config.Verbose
 	// Default to true if not explicitly set
-	if config.Verbose == false && config.MaxSteps == 0 && config.PromptTemplate == "" {
+	if !config.Verbose && config.MaxSteps == 0 && config.PromptTemplate == "" {
 		verbose = true
 	}
 

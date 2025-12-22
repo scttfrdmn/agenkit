@@ -270,11 +270,7 @@ func TestRandomSearchOptimizeHistory(t *testing.T) {
 		if step.Config == nil {
 			t.Errorf("Expected config to be set in step %d", i)
 		}
-
-		// Score should be recorded
-		if step.Score == 0 && step.Config != nil {
-			// Could be 0, but check config is set
-		}
+		// Score should be recorded (could be 0, checked config above)
 	}
 }
 

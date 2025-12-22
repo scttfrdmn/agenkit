@@ -26,6 +26,13 @@ func (a *SimpleTestAgent) Capabilities() []string {
 	return []string{"test"}
 }
 
+func (a *SimpleTestAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 func (a *SimpleTestAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "agent",
@@ -45,6 +52,13 @@ func (a *ErrorTestAgent) Name() string {
 
 func (a *ErrorTestAgent) Capabilities() []string {
 	return []string{}
+}
+
+func (a *ErrorTestAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
 }
 
 func (a *ErrorTestAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

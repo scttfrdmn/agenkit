@@ -168,9 +168,9 @@ class ReflectionAgent(Agent):
     4. Repeat until quality threshold, minimal improvement, or max iterations
 
     Performance Characteristics:
-    - Latency: N × (generator + critic), where N = number of iterations
+    - Latency: N x (generator + critic), where N = number of iterations
     - Quality: Generally improves with iterations
-    - Cost: N × (generator cost + critic cost)
+    - Cost: N x (generator cost + critic cost)
     - Best for: Tasks where quality improvement justifies additional cost
 
     Args:

@@ -30,16 +30,16 @@ func exampleBasic() error {
 
 	agent := patterns.NewAutonomousAgent("Complete research project", 10)
 
-	fmt.Printf("Objective: %s\n", agent.Objective())
-	fmt.Printf("Max iterations: %d\n\n", agent.MaxIterations())
+	fmt.Printf("Objective: %s\n", agent.GetObjective())
+	fmt.Printf("Max iterations: %d\n\n", 10) // maxIterations is not exposed via getter
 
 	agent.AddGoal("Literature review", 10)
 	agent.AddGoal("Data collection", 8)
 	agent.AddGoal("Analysis", 5)
 	agent.AddGoal("Write paper", 3)
 
-	fmt.Printf("Goals added: %d\n", len(agent.Goals()))
-	for _, goal := range agent.Goals() {
+	fmt.Printf("Goals added: %d\n", len(agent.GetGoals()))
+	for _, goal := range agent.GetGoals() {
 		fmt.Printf("  - %s (priority: %d)\n", goal.Description, goal.Priority)
 	}
 
@@ -52,7 +52,7 @@ func exampleBasic() error {
 	fmt.Println("Result:")
 	fmt.Printf("  Objective: %s\n", result.Objective)
 	fmt.Printf("  Iterations: %d\n", result.Iterations)
-	fmt.Printf("  Goals completed: %d/%d\n", result.GoalsCompleted, len(agent.Goals()))
+	fmt.Printf("  Goals completed: %d/%d\n", result.GoalsCompleted, len(agent.GetGoals()))
 	fmt.Printf("\nProgress: %.1f%%\n", agent.GetProgress())
 
 	return nil
@@ -71,7 +71,7 @@ func exampleCustomWorker() error {
 	agent.AddGoal("Deploy to production", 2)
 
 	// Custom worker that simulates detailed work
-	agent.SetWorker(func(goal *patterns.Goal) (string, error) {
+	agent.SetWorker(func(ctx context.Context, goal *patterns.Goal) (string, error) {
 		var workDone string
 		switch {
 		case strings.Contains(goal.Description, "database"):
@@ -119,7 +119,7 @@ func examplePriority() error {
 	agent.AddGoal("Write post-mortem", 1)
 
 	fmt.Println("Goals (with priorities):")
-	for _, goal := range agent.Goals() {
+	for _, goal := range agent.GetGoals() {
 		fmt.Printf("  - %s [priority: %d]\n", goal.Description, goal.Priority)
 	}
 
@@ -157,7 +157,7 @@ func exampleStopCondition() error {
 		return atomic.LoadInt32(&processedItems) >= target
 	})
 
-	agent.SetWorker(func(goal *patterns.Goal) (string, error) {
+	agent.SetWorker(func(ctx context.Context, goal *patterns.Goal) (string, error) {
 		count := atomic.AddInt32(&processedItems, 10)
 		return fmt.Sprintf("%s: Processed %d items", goal.Description, count), nil
 	})
@@ -226,7 +226,7 @@ func exampleProgressTracking() error {
 
 	fmt.Printf("Phase 1: %.1f%% complete\n", agent.GetProgress())
 	fmt.Printf("  Iterations: %d\n", result.Iterations)
-	fmt.Printf("  Goals completed: %d/%d\n", result.GoalsCompleted, len(agent.Goals()))
+	fmt.Printf("  Goals completed: %d/%d\n", result.GoalsCompleted, len(agent.GetGoals()))
 
 	fmt.Println("\n✓ Release complete!\n")
 
@@ -255,7 +255,7 @@ func exampleGoalLifecycle() error {
 	}
 
 	fmt.Printf("After %d iterations:\n", result.Iterations)
-	finalGoal := agent.Goals()[0]
+	finalGoal := agent.GetGoals()[0]
 	fmt.Printf("  Status: %s\n", finalGoal.Status)
 	fmt.Printf("  Progress: %.0f%%\n\n", finalGoal.Progress*100)
 

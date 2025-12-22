@@ -30,6 +30,13 @@ func (m *mockAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 	}, nil
 }
 
+func (m *mockAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
+}
+
 // TestPromptInjectionDetector tests for PromptInjectionDetector
 func TestPromptInjectionDetectorIgnoreInstructions(t *testing.T) {
 	detector := NewPromptInjectionDetector(8) // Lower threshold to catch this pattern

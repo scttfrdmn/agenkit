@@ -106,6 +106,13 @@ func (s *StreamingChunkAgent) Stream(ctx context.Context, message *agenkit.Messa
 	return messageChan, errorChan
 }
 
+func (s *StreamingChunkAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    s.Name(),
+		Capabilities: s.Capabilities(),
+	}
+}
+
 // ============================================
 // Streaming Metrics Helper
 // ============================================

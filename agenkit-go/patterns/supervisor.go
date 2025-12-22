@@ -267,3 +267,11 @@ func (p *SimplePlanner) Synthesize(ctx context.Context, original *agenkit.Messag
 
 	return agenkit.NewMessage("assistant", combined.String()), nil
 }
+
+// Introspect examines the planner's internal state.
+func (p *SimplePlanner) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    p.Name(),
+		Capabilities: p.Capabilities(),
+	}
+}

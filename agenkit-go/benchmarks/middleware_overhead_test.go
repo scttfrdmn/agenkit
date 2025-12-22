@@ -52,6 +52,13 @@ func (f *FastAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 	return agenkit.NewMessage("agent", "Processed: "+message.Content), nil
 }
 
+func (f *FastAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    f.Name(),
+		Capabilities: f.Capabilities(),
+	}
+}
+
 // ============================================
 // Single Middleware Benchmarks
 // ============================================

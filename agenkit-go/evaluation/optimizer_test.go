@@ -3,7 +3,6 @@ package evaluation
 import (
 	"context"
 	"fmt"
-	"math"
 	"testing"
 	"time"
 )

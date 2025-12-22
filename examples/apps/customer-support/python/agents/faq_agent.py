@@ -1,7 +1,6 @@
 """FAQ agent that handles common questions with caching."""
 
 import logging
-from typing import Optional
 
 from agenkit.adapters.llm import AnthropicLLM
 from agenkit.interfaces import Agent, Message
@@ -67,7 +66,7 @@ class FAQAgent(Agent):
         answer = self._search_faq_database(query)
 
         if answer:
-            logger.info(f"Found FAQ answer in database")
+            logger.info("Found FAQ answer in database")
             return Message(
                 role="assistant",
                 content=answer,
@@ -79,7 +78,7 @@ class FAQAgent(Agent):
             )
 
         # If not in database, use Claude to generate answer
-        logger.info(f"FAQ not in database, using Claude")
+        logger.info("FAQ not in database, using Claude")
 
         try:
             faq_prompt = f"""You are a helpful customer support agent. Answer this question concisely and accurately:
@@ -114,7 +113,7 @@ Provide a clear, friendly answer in 2-3 sentences. If you're not certain, say so
                 },
             )
 
-    def _search_faq_database(self, query: str) -> Optional[str]:
+    def _search_faq_database(self, query: str) -> str | None:
         """
         Search FAQ database for matching answer.
 

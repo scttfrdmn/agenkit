@@ -21,7 +21,6 @@ from enum import Enum
 from typing import Any
 
 from agenkit.interfaces import Agent, Message
-from agenkit.patterns import ParallelPattern, ReflectionAgent, SequentialPattern
 
 
 class ResearchDepth(Enum):
@@ -440,7 +439,7 @@ async def main():
     for i, citation in enumerate(report.citations, 1):
         print(f"  [{i}] {citation}")
 
-    print(f"\n📊 Metadata:")
+    print("\n📊 Metadata:")
     print(f"  Researchers: {report.metadata['num_researchers']}")
     print(f"  Consensus Threshold: {report.metadata['consensus_threshold']*100}%")
     print(f"  Overall Confidence: {report.confidence_score:.2f}")

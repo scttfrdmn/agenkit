@@ -16,8 +16,9 @@ Requirements:
 """
 
 import asyncio
+
 from agenkit import Message
-from agenkit.techniques.reasoning import PlanAndSolve, Plan, PlanStep
+from agenkit.techniques.reasoning import Plan, PlanAndSolve, PlanStep
 
 
 # Mock LLM for demonstration
@@ -113,10 +114,10 @@ async def basic_example():
     print(f"\n✓ Plan Validated: {response.metadata['validated']}")
     print(f"  Validation: {response.metadata['validation_notes']}")
 
-    print(f"\n⚙️  Execution Results:")
+    print("\n⚙️  Execution Results:")
     for i, (step, result) in enumerate(zip(
         response.metadata['plan_steps'],
-        response.metadata['execution_steps']
+        response.metadata['execution_steps'], strict=False
     ), 1):
         print(f"  {i}. {step}")
         print(f"     → {result}")
@@ -137,16 +138,16 @@ async def no_validation_example():
     response = await agent.process(Message(role="user", content=problem))
 
     print(f"\nProblem: {problem}")
-    print(f"\n📋 Plan (skip validation for speed):")
+    print("\n📋 Plan (skip validation for speed):")
     for i, step in enumerate(response.metadata['plan_steps'], 1):
         print(f"  {i}. {step}")
 
-    print(f"\n⚙️  Execution:")
+    print("\n⚙️  Execution:")
     for i, result in enumerate(response.metadata['execution_steps'], 1):
         print(f"  Step {i} → {result}")
 
     print(f"\n🎯 Answer: {response.content}")
-    print(f"\n💡 Set validate_plan=False for simple problems or when speed matters")
+    print("\n💡 Set validate_plan=False for simple problems or when speed matters")
 
 
 async def custom_planner_example():
@@ -175,17 +176,17 @@ async def custom_planner_example():
     response = await agent.process(Message(role="user", content=problem))
 
     print(f"\nProblem: {problem}")
-    print(f"\n📋 Custom Domain Plan:")
+    print("\n📋 Custom Domain Plan:")
     for step in response.metadata['plan'].steps:
         deps = f" (depends on: {step.dependencies})" if step.dependencies else ""
         complexity = "⭐" * step.estimated_complexity
         print(f"  {step.order + 1}. {step.description} {complexity}{deps}")
 
-    print(f"\n💡 Custom planners enable:")
-    print(f"   - Domain-specific planning strategies")
-    print(f"   - Dependency tracking between steps")
-    print(f"   - Complexity estimation")
-    print(f"   - Avoiding LLM calls for planning")
+    print("\n💡 Custom planners enable:")
+    print("   - Domain-specific planning strategies")
+    print("   - Dependency tracking between steps")
+    print("   - Complexity estimation")
+    print("   - Avoiding LLM calls for planning")
 
 
 async def custom_solver_example():
@@ -218,19 +219,19 @@ async def custom_solver_example():
     response = await agent.process(Message(role="user", content=problem))
 
     print(f"\nProblem: {problem}")
-    print(f"\n📋 Plan:")
+    print("\n📋 Plan:")
     for i, step in enumerate(response.metadata['plan_steps'], 1):
         print(f"  {i}. {step}")
 
-    print(f"\n📝 Execution Log:")
+    print("\n📝 Execution Log:")
     for log_entry in execution_log:
         print(f"  • {log_entry}")
 
     print(f"\n🎯 Result: {response.content}")
-    print(f"\n💡 Custom solvers enable:")
-    print(f"   - Execution logging and monitoring")
-    print(f"   - Integration with external systems")
-    print(f"   - Custom step execution logic")
+    print("\n💡 Custom solvers enable:")
+    print("   - Execution logging and monitoring")
+    print("   - Integration with external systems")
+    print("   - Custom step execution logic")
 
 
 async def replanning_example():
@@ -270,17 +271,17 @@ async def replanning_example():
     response = await agent.process(Message(role="user", content=problem))
 
     print(f"\nProblem: {problem}")
-    print(f"\n❌ Initial Plan Failed Validation:")
+    print("\n❌ Initial Plan Failed Validation:")
     print(f"   Reason: {response.metadata['validation_notes']}")
 
     print(f"\n✅ Replanned with {len(response.metadata['plan_steps'])} improved steps:")
     for i, step in enumerate(response.metadata['plan_steps'], 1):
         print(f"  {i}. {step}")
 
-    print(f"\n💡 Replanning (allow_replanning=True):")
-    print(f"   - Catches incomplete or flawed plans")
-    print(f"   - Automatically improves plan based on validation feedback")
-    print(f"   - Ensures high-quality plans before execution")
+    print("\n💡 Replanning (allow_replanning=True):")
+    print("   - Catches incomplete or flawed plans")
+    print("   - Automatically improves plan based on validation feedback")
+    print("   - Ensures high-quality plans before execution")
 
 
 async def comparison_example():
@@ -302,25 +303,25 @@ async def comparison_example():
 
     print(f"\nProblem: {problem}")
 
-    print(f"\n❌ Direct Solving (No Planning):")
+    print("\n❌ Direct Solving (No Planning):")
     print(f"   Response: {direct_response}")
-    print(f"   Issues:")
-    print(f"   - No clear structure")
-    print(f"   - May miss important steps")
-    print(f"   - Hard to track progress")
-    print(f"   - Difficult to modify mid-execution")
+    print("   Issues:")
+    print("   - No clear structure")
+    print("   - May miss important steps")
+    print("   - Hard to track progress")
+    print("   - Difficult to modify mid-execution")
 
-    print(f"\n✅ Plan-and-Solve:")
+    print("\n✅ Plan-and-Solve:")
     print(f"   {len(planned_response.metadata['plan_steps'])} clear steps:")
     for i, step in enumerate(planned_response.metadata['plan_steps'], 1):
         print(f"   {i}. {step}")
 
-    print(f"\n   Benefits:")
-    print(f"   - ✓ Structured approach")
-    print(f"   - ✓ All steps identified upfront")
-    print(f"   - ✓ Progress tracking built-in")
-    print(f"   - ✓ Easy to validate before execution")
-    print(f"   - ✓ Can replan if needed")
+    print("\n   Benefits:")
+    print("   - ✓ Structured approach")
+    print("   - ✓ All steps identified upfront")
+    print("   - ✓ Progress tracking built-in")
+    print("   - ✓ Easy to validate before execution")
+    print("   - ✓ Can replan if needed")
 
 
 async def when_to_use():

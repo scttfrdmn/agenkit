@@ -8,14 +8,9 @@ Demonstrates:
 """
 
 import asyncio
-from agenkit import Message
-from agenkit.techniques.protocols.a2a import (
-    A2AAgent,
-    A2AServer,
-    create_request,
-    A2AAction
-)
 
+from agenkit import Message
+from agenkit.techniques.protocols.a2a import A2AAction, A2AAgent, A2AServer, create_request
 
 # ==============================================================================
 # Simple Echo Agent
@@ -127,7 +122,7 @@ async def basic_communication_example():
     )
 
     process_response = await server.handle_message(process_request)
-    print(f"   Request: Hello, A2A!")
+    print("   Request: Hello, A2A!")
     print(f"   Response: {process_response.content['content']}")
 
     print("\n" + "=" * 70)

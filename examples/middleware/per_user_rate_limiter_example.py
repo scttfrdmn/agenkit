@@ -8,7 +8,11 @@ consuming the entire system quota while maintaining fair access for all users.
 import asyncio
 
 from agenkit.interfaces import Message
-from agenkit.middleware import PerUserRateLimiterConfig, PerUserRateLimiterDecorator, PerUserRateLimitError
+from agenkit.middleware import (
+    PerUserRateLimiterConfig,
+    PerUserRateLimiterDecorator,
+    PerUserRateLimitError,
+)
 
 
 # Simple echo agent for demonstration
@@ -83,7 +87,7 @@ async def main():
     response = await limited_agent.process(message)
     print(f"  ✓ {response.content}")
 
-    print(f"\nMetrics:")
+    print("\nMetrics:")
     print(f"  Total requests: {limited_agent.metrics.total_requests}")
     print(f"  Allowed: {limited_agent.metrics.allowed_requests}")
     print(f"  Rejected (user limit): {limited_agent.metrics.rejected_user_limit}")
@@ -129,7 +133,7 @@ async def main():
             print(f"  ✗ {user}: Request {i+1} rate limited ({type(e).__name__})")
 
     print(f"\nResults: {allowed} allowed, {rate_limited} rate limited")
-    print(f"Metrics:")
+    print("Metrics:")
     print(f"  Per-user rejections: {limited_agent2.metrics.rejected_user_limit}")
     print(f"  Global rejections: {limited_agent2.metrics.rejected_global_limit}")
     print()

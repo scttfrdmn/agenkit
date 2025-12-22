@@ -28,7 +28,7 @@ Run: python examples/patterns/task-pattern.py
 
 import asyncio
 
-from agenkit.interfaces import Agent, Message
+from agenkit.interfaces import Message
 from agenkit.patterns import Task
 
 

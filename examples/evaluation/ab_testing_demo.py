@@ -82,8 +82,8 @@ async def demo_basic_ab_test():
 
     print("\n🔬 Running A/B experiment...")
     print(f"  Sample size: {len(test_cases)} per variant")
-    print(f"  Metrics: accuracy")
-    print(f"  Significance level: α = 0.05 (95% confidence)")
+    print("  Metrics: accuracy")
+    print("  Significance level: α = 0.05 (95% confidence)")
 
     # Run experiment
     results = await ab_test.run(test_cases, sample_size=50, shuffle=False)
@@ -92,15 +92,15 @@ async def demo_basic_ab_test():
     accuracy_result = results["accuracy"]
 
     print("\n📊 Results:")
-    print(f"  Control (baseline_prompt):")
+    print("  Control (baseline_prompt):")
     print(f"    Mean accuracy: {accuracy_result.control_variant.mean:.3f}")
     print(f"    Std dev: {accuracy_result.control_variant.std:.3f}")
 
-    print(f"\n  Treatment (optimized_prompt):")
+    print("\n  Treatment (optimized_prompt):")
     print(f"    Mean accuracy: {accuracy_result.treatment_variant.mean:.3f}")
     print(f"    Std dev: {accuracy_result.treatment_variant.std:.3f}")
 
-    print(f"\n  Statistical Analysis:")
+    print("\n  Statistical Analysis:")
     print(f"    p-value: {accuracy_result.p_value:.4f}")
     print(f"    Effect size (Cohen's d): {accuracy_result.effect_size:.2f}")
     print(f"    Confidence interval: {accuracy_result.confidence_interval}")
@@ -110,7 +110,7 @@ async def demo_basic_ab_test():
         print(f"\n✅ Result: {accuracy_result.winner} wins!")
         print(f"   Improvement: {accuracy_result.improvement_percent:.1f}%")
     else:
-        print(f"\n❌ Result: No statistically significant difference detected")
+        print("\n❌ Result: No statistically significant difference detected")
 
     return results
 
@@ -141,7 +141,7 @@ async def demo_multiple_metrics():
     test_cases = [{"input": f"Test {i}", "expected": "correct answer"} for i in range(40)]
 
     print("\n🔬 Running multi-metric experiment...")
-    print(f"  Comparing: accuracy vs latency trade-off")
+    print("  Comparing: accuracy vs latency trade-off")
     print(f"  Sample size: {len(test_cases)} per variant")
 
     results = await ab_test.run(test_cases, sample_size=40, shuffle=False)
@@ -173,7 +173,7 @@ async def demo_multiple_metrics():
         )
         print(f"  Treatment is {improvement:.1f}% more accurate")
         print(f"  But {latency_increase:.1f}% slower")
-        print(f"  Decision: Consider use case requirements")
+        print("  Decision: Consider use case requirements")
 
     return results
 
@@ -197,7 +197,7 @@ async def demo_sample_size_calculation():
         std_dev=0.15,
     )
 
-    print(f"\nScenario 1: Detect 5% improvement")
+    print("\nScenario 1: Detect 5% improvement")
     print(f"  Baseline accuracy: {baseline:.2%}")
     print(f"  Minimum detectable effect: {min_effect:.2%}")
     print(f"  Required sample size per variant: {n1}")
@@ -212,7 +212,7 @@ async def demo_sample_size_calculation():
         std_dev=0.15,
     )
 
-    print(f"\nScenario 2: Detect 2% improvement (smaller effect)")
+    print("\nScenario 2: Detect 2% improvement (smaller effect)")
     print(f"  Baseline accuracy: {baseline:.2%}")
     print(f"  Minimum detectable effect: {min_effect_small:.2%}")
     print(f"  Required sample size per variant: {n2}")
@@ -227,10 +227,10 @@ async def demo_sample_size_calculation():
         std_dev=0.15,
     )
 
-    print(f"\nScenario 3: 95% power (more confident)")
+    print("\nScenario 3: 95% power (more confident)")
     print(f"  Baseline accuracy: {baseline:.2%}")
     print(f"  Minimum detectable effect: {min_effect:.2%}")
-    print(f"  Statistical power: 95%")
+    print("  Statistical power: 95%")
     print(f"  Required sample size per variant: {n3}")
     print(f"  📈 {(n3 / n1):.1f}x more samples for higher confidence")
 
@@ -266,7 +266,7 @@ async def demo_mann_whitney_test():
     test_cases = [{"input": f"Test {i}", "expected": "correct answer"} for i in range(35)]
 
     print("\n🔬 Running experiment with Mann-Whitney U test...")
-    print(f"  Use case: Non-normal distributions or small samples")
+    print("  Use case: Non-normal distributions or small samples")
     print(f"  Sample size: {len(test_cases)} per variant")
 
     results = await ab_test.run(test_cases, sample_size=35, shuffle=False)
@@ -281,11 +281,11 @@ async def demo_mann_whitney_test():
     print(f"  Effect size (rank-biserial): {accuracy_result.effect_size:.2f}")
 
     if accuracy_result.is_significant:
-        print(f"\n✅ Result: Significant difference detected!")
+        print("\n✅ Result: Significant difference detected!")
         print(f"   Winner: {accuracy_result.winner}")
         print(f"   Improvement: {accuracy_result.improvement_percent:.1f}%")
     else:
-        print(f"\n❌ No significant difference detected")
+        print("\n❌ No significant difference detected")
 
     print("\n💡 When to use Mann-Whitney U:")
     print("  • Non-normal distributions")

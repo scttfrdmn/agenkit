@@ -20,6 +20,7 @@ Requirements:
 """
 
 import asyncio
+
 from agenkit.techniques.protocols.mcp import MCPServer
 
 
@@ -46,6 +47,7 @@ async def main():
     async def get_system_info(params):
         """Get system information."""
         import platform
+
         import psutil  # type: ignore
 
         return {
@@ -126,9 +128,9 @@ async def main():
 
         try:
             # Simple ping command (works on Unix-like systems)
-            result = subprocess.run(
-                ["ping", "-c", str(count), host],
-                capture_output=True,
+            result = subprocess.run(  # noqa: ASYNC221, S603 - Example MCP tool demonstrating process execution
+                ["ping", "-c", str(count), host],  # noqa: S607 - Standard ping utility for example
+                check=False, capture_output=True,
                 text=True,
                 timeout=10
             )

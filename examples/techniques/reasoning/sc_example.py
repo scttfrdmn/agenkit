@@ -16,8 +16,9 @@ Requirements:
 """
 
 import asyncio
+
 from agenkit import Message
-from agenkit.techniques.reasoning import SelfConsistency, ChainOfThought
+from agenkit.techniques.reasoning import ChainOfThought, SelfConsistency
 
 
 # Mock LLM for demonstration
@@ -86,14 +87,14 @@ async def basic_example():
     response = await sc.process(Message(role="user", content=query))
 
     print(f"\nQuery: {query}")
-    print(f"\nAll Samples:")
+    print("\nAll Samples:")
     for i, sample in enumerate(response.metadata['extracted_answers'], 1):
         print(f"  {i}. {sample}")
 
     print(f"\nAnswer Counts: {response.metadata['answer_counts']}")
     print(f"\nConsensus Answer: {response.content}")
     print(f"Consistency Score: {response.metadata['consistency_score']:.2f}")
-    print(f"  (4 out of 5 agree = 0.80)")
+    print("  (4 out of 5 agree = 0.80)")
 
 
 async def weighted_voting_example():
@@ -126,15 +127,15 @@ async def weighted_voting_example():
 
     response = await sc.process(Message(role="user", content="Question?"))
 
-    print(f"\nSamples:")
+    print("\nSamples:")
     for i, (answer, full) in enumerate(zip(
         response.metadata['extracted_answers'],
-        response.metadata['samples']
+        response.metadata['samples'], strict=False
     ), 1):
         print(f"  {i}. '{answer}' (length: {len(full)})")
 
     print(f"\nWeighted Winner: {response.content}")
-    print(f"  (Longer response gets more weight)")
+    print("  (Longer response gets more weight)")
 
 
 async def cot_plus_sc_example():
@@ -154,7 +155,7 @@ async def cot_plus_sc_example():
     print(f"\nBase Agent: {response.metadata['base_agent']}")
     print(f"Samples: {response.metadata['num_samples']}")
 
-    print(f"\nExtracted Answers:")
+    print("\nExtracted Answers:")
     for i, answer in enumerate(response.metadata['extracted_answers'], 1):
         print(f"  {i}. {answer}")
 
@@ -200,7 +201,7 @@ async def custom_extractor_example():
 
     response = await sc.process(Message(role="user", content="Calculate"))
 
-    print(f"\nFull Responses:")
+    print("\nFull Responses:")
     for i, sample in enumerate(response.metadata['samples'], 1):
         print(f"  {i}. {sample}")
 
@@ -232,7 +233,7 @@ async def reliability_comparison():
 
     print("\nSingle Sample:")
     print(f"  Answer: {response_single.content}")
-    print(f"  Reliability: Unknown (single data point)")
+    print("  Reliability: Unknown (single data point)")
 
     print("\nSelf-Consistency (5 samples):")
     print(f"  Answers: {response_sc.metadata['extracted_answers']}")

@@ -40,7 +40,7 @@ Requirements:
 
 import asyncio
 import sys
-from agenkit import Message
+
 from agenkit.techniques.protocols.mcp import MCPServer
 
 

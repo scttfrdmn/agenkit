@@ -13,14 +13,13 @@ Note: This example shows the setup. Actual deployment requires:
 """
 
 import asyncio
+
 from agenkit import Message
 from agenkit.techniques.protocols.a2a import (
+    A2AAction,
     VertexAIAdapter,
-    create_vertex_agent,
     create_request,
-    A2AAction
 )
-
 
 # ==============================================================================
 # Custom Agent for Vertex AI

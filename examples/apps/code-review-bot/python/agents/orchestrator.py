@@ -1,8 +1,8 @@
 """Orchestrator for multi-LLM code review with consensus."""
 
-import logging
 import asyncio
-from typing import List, Dict
+import logging
+
 from agenkit.adapters.llm import LiteLLMLLM
 from agenkit.interfaces import Agent, Message
 
@@ -46,7 +46,7 @@ class ReviewOrchestrator(Agent):
         logger.info("Starting parallel reviews from 3 LLMs")
         review_tasks = [
             self._review_with_llm(name, llm, prompt)
-            for (name, llm), prompt in zip(self._reviewers.items(), prompts.values())
+            for (name, llm), prompt in zip(self._reviewers.items(), prompts.values(), strict=False)
         ]
 
         reviews = await asyncio.gather(*review_tasks, return_exceptions=True)
@@ -65,7 +65,7 @@ class ReviewOrchestrator(Agent):
             }
         )
 
-    async def _review_with_llm(self, name: str, llm: LiteLLMLLM, prompt: str) -> Dict:
+    async def _review_with_llm(self, name: str, llm: LiteLLMLLM, prompt: str) -> dict:
         """Conduct review with single LLM."""
         try:
             response = await llm.complete(
@@ -102,7 +102,7 @@ Provide specific recommendations."""
 Focus on: naming, formatting, documentation, idioms, error handling.
 Provide specific suggestions."""
 
-    def _calculate_consensus(self, reviews: List[Dict]) -> float:
+    def _calculate_consensus(self, reviews: list[dict]) -> float:
         """Calculate consensus score from reviews."""
         if not reviews:
             return 0.0
@@ -111,7 +111,7 @@ Provide specific suggestions."""
         successful = sum(1 for r in reviews if r.get("success", False))
         return successful / len(reviews)
 
-    def _synthesize_reviews(self, reviews: List[Dict], consensus: float) -> str:
+    def _synthesize_reviews(self, reviews: list[dict], consensus: float) -> str:
         """Synthesize multiple reviews into single report."""
         report = f"# Code Review Report\n\n**Consensus Score**: {consensus:.2f}\n\n"
 

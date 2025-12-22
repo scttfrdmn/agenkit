@@ -191,7 +191,7 @@ async def demo_basic_reflection():
     print(result.content)
     print("-" * 70)
 
-    print(f"\n📊 Results:")
+    print("\n📊 Results:")
     print(f"  Initial Quality: {result.metadata['initial_quality_score']:.2f}")
     print(f"  Final Quality: {result.metadata['final_quality_score']:.2f}")
     print(f"  Improvement: {result.metadata['total_improvement']:.2f} (+{result.metadata['total_improvement']*100:.0f}%)")
@@ -222,7 +222,7 @@ async def demo_reflection_with_history():
 
     result = await agent.process(Message(role="user", content="Write a fibonacci function"))
 
-    print(f"📊 Iteration History:")
+    print("📊 Iteration History:")
     print("-" * 70)
 
     for step in result.metadata["reflection_history"]:
@@ -232,7 +232,7 @@ async def demo_reflection_with_history():
         print(f"  Critique: {step['critique'][:80]}...")
 
     print("-" * 70)
-    print(f"\n✅ Final Result:")
+    print("\n✅ Final Result:")
     print(f"  Achieved {result.metadata['final_quality_score']:.2f} quality")
     print(f"  Stopped due to: {result.metadata['stop_reason']}")
 

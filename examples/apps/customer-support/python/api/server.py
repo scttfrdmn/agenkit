@@ -181,12 +181,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         except Exception as e:
             logger.error(f"Error processing chat: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error processing request: {e!s}")
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
         """Global exception handler."""
-        logger.error(f"Unhandled exception: {exc}", exc_info=True)
+        logger.error(f"Unhandled exception: {exc}")
         return JSONResponse(
             status_code=500,
             content={

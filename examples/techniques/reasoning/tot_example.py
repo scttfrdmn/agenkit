@@ -15,6 +15,7 @@ Requirements:
 """
 
 import asyncio
+
 from agenkit import Message
 from agenkit.techniques.reasoning import TreeOfThought
 
@@ -99,7 +100,7 @@ async def basic_example():
     for i, step in enumerate(response.metadata['reasoning_path'], 1):
         print(f"  {i}. {step}")
 
-    print(f"\nTree Statistics:")
+    print("\nTree Statistics:")
     stats = response.metadata['reasoning_tree_stats']
     print(f"  Total nodes explored: {stats['total_nodes']}")
     print(f"  Max depth reached: {stats['max_depth']}")
@@ -187,10 +188,10 @@ async def pruning_example():
     response = await tot.process(Message(role="user", content=query))
 
     print(f"\nQuery: {query}")
-    print(f"\nPrune Threshold: 0.5 (removes low-quality reasoning paths)")
+    print("\nPrune Threshold: 0.5 (removes low-quality reasoning paths)")
 
     stats = response.metadata['reasoning_tree_stats']
-    print(f"\nTree Statistics:")
+    print("\nTree Statistics:")
     print(f"  Total nodes: {stats['total_nodes']}")
     print(f"  Pruned nodes: {stats['num_pruned']}")
     print(f"  Pruning rate: {stats['num_pruned'] / stats['total_nodes'] * 100:.1f}%")
@@ -224,15 +225,15 @@ async def comparison_example():
     print(f"\nQuery: {query}\n")
 
     print("Chain-of-Thought (CoT):")
-    print(f"  - Single reasoning path")
+    print("  - Single reasoning path")
     print(f"  - Steps: {cot_response.metadata['num_steps']}")
-    print(f"  - Direct and fast")
+    print("  - Direct and fast")
 
     print("\nTree-of-Thought (ToT):")
     stats = tot_response.metadata['reasoning_tree_stats']
     print(f"  - Explored {stats['total_nodes']} alternative paths")
     print(f"  - Selected best path with score: {tot_response.metadata['best_score']:.2f}")
-    print(f"  - More thorough but more expensive")
+    print("  - More thorough but more expensive")
 
     print("\n💡 Use CoT for: straightforward problems, speed-critical tasks")
     print("💡 Use ToT for: creative tasks, planning, exploring alternatives")

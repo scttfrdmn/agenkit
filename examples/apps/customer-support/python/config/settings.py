@@ -1,7 +1,6 @@
 """Application settings using pydantic for environment-based configuration."""
 
 from functools import lru_cache
-from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,7 +15,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = Field(..., description="Anthropic API key for Claude")
 
     # Service Configuration
-    python_api_host: str = Field(default="0.0.0.0", description="Python API host")
+    python_api_host: str = Field(default="0.0.0.0", description="Python API host")  # noqa: S104 - Example server configuration
     python_api_port: int = Field(default=8000, description="Python API port")
     go_worker_endpoint: str = Field(
         default="grpc://go-worker:50051", description="Go worker gRPC endpoint"
@@ -25,7 +24,7 @@ class Settings(BaseSettings):
     # Redis Configuration
     redis_host: str = Field(default="redis", description="Redis host")
     redis_port: int = Field(default=6379, description="Redis port")
-    redis_password: Optional[str] = Field(default=None, description="Redis password")
+    redis_password: str | None = Field(default=None, description="Redis password")
 
     # Observability
     otel_exporter_otlp_endpoint: str = Field(

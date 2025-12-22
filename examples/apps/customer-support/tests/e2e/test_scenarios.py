@@ -1,7 +1,7 @@
 """End-to-end tests for complete customer support workflows."""
 
-import pytest
 import httpx
+import pytest
 
 
 @pytest.mark.e2e

@@ -21,8 +21,9 @@ Requirements:
     pip install agenkit httpx
 """
 
-import asyncio
 import argparse
+import asyncio
+
 from agenkit.techniques.protocols.mcp import MCPClient
 
 

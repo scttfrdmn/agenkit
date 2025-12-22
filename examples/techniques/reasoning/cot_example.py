@@ -15,6 +15,7 @@ Requirements:
 """
 
 import asyncio
+
 from agenkit import Message
 from agenkit.techniques.reasoning import ChainOfThought
 
@@ -110,7 +111,7 @@ async def limiting_steps_example():
     response = await cot.process(Message(role="user", content=query))
 
     print(f"\nQuery: {query}")
-    print(f"Max steps configured: 3")
+    print("Max steps configured: 3")
     print(f"Steps extracted: {response.metadata['num_steps']}")
     print("\nFirst 3 steps only:")
     for i, step in enumerate(response.metadata["reasoning_steps"], 1):

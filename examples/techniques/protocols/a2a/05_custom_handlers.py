@@ -9,17 +9,15 @@ Demonstrates:
 """
 
 import asyncio
+
 from agenkit import Message
 from agenkit.techniques.protocols.a2a import (
     A2AAgent,
-    A2AServer,
     AgentInfo,
     InMemoryDiscoveryService,
-    create_request,
     create_notification,
-    A2AAction
+    create_request,
 )
-
 
 # ==============================================================================
 # Agent with Custom Handlers

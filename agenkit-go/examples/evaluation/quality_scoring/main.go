@@ -32,6 +32,13 @@ func (a *QuizAgent) Capabilities() []string {
 	return []string{"qa"}
 }
 
+func (a *QuizAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 func (a *QuizAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simple rule-based responses for demo
 	query := strings.ToLower(message.Content)
@@ -159,7 +166,7 @@ func main() {
 		fmt.Printf("  Std Deviation: %.3f\n\n", qualityStats["std"])
 
 		// Interpretation
-		meanQuality := qualityStats["mean"].(float64)
+		meanQuality := qualityStats["mean"]
 		fmt.Println("Interpretation:")
 		switch {
 		case meanQuality >= 0.8:

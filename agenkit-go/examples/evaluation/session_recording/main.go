@@ -53,21 +53,21 @@ func (a *MockAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 
 func main() {
 	fmt.Println("Session Recording and Replay Example")
-	fmt.Println("=====================================\n")
+	fmt.Println("=====================================")
 
 	// Step 1: Create recorder with file storage
 	fmt.Println("Step 1: Setting Up Session Recorder")
 	fmt.Println("------------------------------------")
 	storage := evaluation.NewFileRecordingStorage("./recordings")
 	recorder := evaluation.NewSessionRecorder(storage)
-	fmt.Println("✓ Recorder created with file storage: ./recordings/\n")
+	fmt.Println("✓ Recorder created with file storage: ./recordings/")
 
 	// Step 2: Create agent and wrap with recorder
 	fmt.Println("Step 2: Creating and Wrapping Agent")
 	fmt.Println("------------------------------------")
 	agentV1 := &MockAgent{name: "echo-agent", version: "v1"}
 	wrappedAgent := recorder.Wrap(agentV1)
-	fmt.Println("✓ Agent wrapped with recorder\n")
+	fmt.Println("✓ Agent wrapped with recorder")
 
 	// Step 3: Record a session
 	fmt.Println("Step 3: Recording Agent Session")

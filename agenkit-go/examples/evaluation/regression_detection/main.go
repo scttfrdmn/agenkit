@@ -31,7 +31,7 @@ func createEvaluationResult(id string, accuracy, quality, latency float64) *eval
 
 func main() {
 	fmt.Println("Regression Detection Example")
-	fmt.Println("============================\n")
+	fmt.Println("============================")
 
 	// Step 1: Establish baseline
 	fmt.Println("Step 1: Establishing Baseline Performance")
@@ -51,7 +51,7 @@ func main() {
 	fmt.Println("✓ Detector created with default thresholds:")
 	fmt.Println("  Accuracy: 10% degradation")
 	fmt.Println("  Quality: 10% degradation")
-	fmt.Println("  Latency: 20% increase\n")
+	fmt.Println("  Latency: 20% increase")
 
 	// Step 3: Simulate good performance (no regression)
 	fmt.Println("Step 3: Testing Good Performance (No Regression)")
@@ -65,7 +65,7 @@ func main() {
 	fmt.Printf("  Latency: %.0fms\n", *goodResult.AvgLatencyMs)
 	fmt.Printf("\nRegressions Detected: %d\n", len(regressions))
 	if len(regressions) == 0 {
-		fmt.Println("✓ Performance within acceptable range\n")
+		fmt.Println("✓ Performance within acceptable range")
 	}
 
 	// Step 4: Simulate moderate regression

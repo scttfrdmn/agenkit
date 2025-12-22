@@ -340,7 +340,7 @@ func (m *MockLLMAgent) Process(ctx context.Context, message *agenkit.Message) (*
 
 func main() {
 	fmt.Println("=== Supervisor Pattern Demo ===")
-	fmt.Println("Demonstrating hierarchical agent coordination\n")
+	fmt.Println("Demonstrating hierarchical agent coordination")
 
 	ctx := context.Background()
 
@@ -380,7 +380,7 @@ func main() {
 	}
 
 	fmt.Println("\n" + strings.Repeat("=", 50))
-	fmt.Println("\n📤 Final Result:\n")
+	fmt.Println("\n📤 Final Result:")
 	fmt.Println(result.Content)
 
 	// Display supervisor metadata

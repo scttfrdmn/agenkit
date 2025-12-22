@@ -164,7 +164,7 @@ func (s *SummarizerAgent) Process(ctx context.Context, message *agenkit.Message)
 
 func main() {
 	fmt.Println("=== Sequential Pattern Demo ===")
-	fmt.Println("Demonstrating document processing pipeline\n")
+	fmt.Println("Demonstrating document processing pipeline")
 
 	// Create agents for each stage
 	extractor := &ExtractorAgent{}

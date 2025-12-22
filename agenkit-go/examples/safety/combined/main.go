@@ -42,7 +42,7 @@ func (a *DemoAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 }
 
 func main() {
-	fmt.Println("=== Combined Safety Example ===\n")
+	fmt.Println("=== Combined Safety Example ===")
 
 	// 1. Create base agent
 	baseAgent := &DemoAgent{}
@@ -108,7 +108,7 @@ func main() {
 	fmt.Println("✓ Input validation (prompt injection, content filter)")
 	fmt.Println("✓ Permission control (user role, sandbox)")
 	fmt.Println("✓ Anomaly detection (rate limiting, pattern detection)")
-	fmt.Println("✓ Audit logging (all events logged)\n")
+	fmt.Println("✓ Audit logging (all events logged)")
 
 	// Test 1: Normal request (should work)
 	fmt.Println("Test 1: Normal request")

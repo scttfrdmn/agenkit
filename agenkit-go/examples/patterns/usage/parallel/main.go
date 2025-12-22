@@ -63,7 +63,7 @@ func (a *SimpleAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func main() {
-	fmt.Println("=== ParallelAgent Demo ===\n")
+	fmt.Println("=== ParallelAgent Demo ===")
 
 	// Create agents with different processing speeds
 	agent1 := &SimpleAgent{name: "Agent1"} // Fast (100ms)
@@ -145,7 +145,7 @@ func main() {
 
 	// Example 3: Error handling - one agent fails
 	fmt.Println("📝 Example 3: Error handling (one agent fails)")
-	fmt.Println("   Note: ParallelAgent continues despite individual failures\n")
+	fmt.Println("   Note: ParallelAgent continues despite individual failures")
 
 	fmt.Println("✅ ParallelAgent pattern examples completed")
 	fmt.Println("\nUse cases:")

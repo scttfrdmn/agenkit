@@ -143,7 +143,7 @@ func (c *CustomStepExecutor) Execute(ctx context.Context, step *patterns.PlanSte
 // TODO: Fix API usage - examples use incorrect PlanningAgent API
 /*
 func exampleSimplePlanning() error {
-	fmt.Println("\n=== Example 1: Simple Event Planning (Default Executor) ===\n")
+	fmt.Println("\n=== Example 1: Simple Event Planning (Default Executor) ===")
 
 	llm := &MockLLMAgent{scenario: "event"}
 
@@ -187,7 +187,7 @@ func exampleSimplePlanning() error {
 
 // Example 2: Website launch with custom executor
 func exampleCustomExecutor() error {
-	fmt.Println("\n=== Example 2: Website Launch (Custom Executor) ===\n")
+	fmt.Println("\n=== Example 2: Website Launch (Custom Executor) ===")
 
 	llm := &MockLLMAgent{scenario: "website"}
 	customExecutor := &CustomStepExecutor{verbose: true}
@@ -222,7 +222,7 @@ func exampleCustomExecutor() error {
 
 // Example 3: Marketing campaign with progress tracking
 func exampleProgressTracking() error {
-	fmt.Println("\n=== Example 3: Marketing Campaign (Progress Tracking) ===\n")
+	fmt.Println("\n=== Example 3: Marketing Campaign (Progress Tracking) ===")
 
 	llm := &MockLLMAgent{scenario: "campaign"}
 	customExecutor := &CustomStepExecutor{verbose: false}
@@ -240,7 +240,7 @@ func exampleProgressTracking() error {
 		return err
 	}
 
-	fmt.Println("Starting marketing campaign planning...\n")
+	fmt.Println("Starting marketing campaign planning...")
 
 	message := agenkit.NewMessage("user", "Execute a marketing campaign")
 	result, err := planner.Process(context.Background(), message)
@@ -288,7 +288,7 @@ func exampleProgressTracking() error {
 
 // Example 4: Step dependencies demonstration
 func exampleDependencies() error {
-	fmt.Println("\n=== Example 4: Step Dependencies ===\n")
+	fmt.Println("\n=== Example 4: Step Dependencies ===")
 
 	// Create a plan manually to demonstrate dependencies
 	plan := patterns.NewPlan(

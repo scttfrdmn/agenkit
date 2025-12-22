@@ -157,7 +157,7 @@ func exampleBasicReasoning() error {
 
 	fmt.Println("Question: What is 2 + 2?")
 	fmt.Printf("Answer: %s\n", result.Content)
-	fmt.Println("✓ Tool was called DURING reasoning, not after\n")
+	fmt.Println("✓ Tool was called DURING reasoning, not after")
 
 	return nil
 }
@@ -191,7 +191,7 @@ func exampleMultipleTools() error {
 	fmt.Println("Question: Search for Go and calculate 15 + 30")
 	fmt.Println("Tools used: search, calculator")
 	fmt.Printf("Answer: %s\n", result.Content)
-	fmt.Println("✓ Multiple tools orchestrated through reasoning\n")
+	fmt.Println("✓ Multiple tools orchestrated through reasoning")
 
 	return nil
 }
@@ -234,7 +234,7 @@ func exampleExtendedThinking() error {
 		fmt.Println("  - Thinking steps")
 		fmt.Println("  - Tool calls with parameters")
 		fmt.Println("  - Tool results")
-		fmt.Println("  - Full observability\n")
+		fmt.Println("  - Full observability")
 	}
 
 	return nil
@@ -272,7 +272,7 @@ func exampleToolChaining() error {
 	fmt.Println("  1. Reasoning → Search tool")
 	fmt.Println("  2. Reasoning → Calculator tool")
 	fmt.Println("  3. Reasoning → Conclusion")
-	fmt.Println("✓ Tools used sequentially with reasoning between each\n")
+	fmt.Println("✓ Tools used sequentially with reasoning between each")
 
 	return nil
 }
@@ -305,13 +305,13 @@ func exampleMaxStepsLimit() error {
 	fmt.Println("Question: Think deeply")
 	fmt.Println("Max reasoning steps: 5")
 	fmt.Printf("Answer: %s\n", result.Content)
-	fmt.Println("✓ Reasoning terminated at max steps to prevent infinite loops\n")
+	fmt.Println("✓ Reasoning terminated at max steps to prevent infinite loops")
 
 	return nil
 }
 
 func main() {
-	fmt.Println("=== Reasoning with Tools Pattern Examples ===\n")
+	fmt.Println("=== Reasoning with Tools Pattern Examples ===")
 
 	// Run all examples
 	if err := exampleBasicReasoning(); err != nil {

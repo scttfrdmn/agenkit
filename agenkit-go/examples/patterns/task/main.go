@@ -128,7 +128,7 @@ func (s *SlowAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 
 // Example 1: Basic task execution
 func exampleBasicTask() error {
-	fmt.Println("\n=== Example 1: Basic Task Execution ===\n")
+	fmt.Println("\n=== Example 1: Basic Task Execution ===")
 
 	agent := &SummarizationAgent{model: "GPT-4"}
 
@@ -158,7 +158,7 @@ func exampleBasicTask() error {
 
 // Example 2: Task with timeout
 func exampleTimeout() error {
-	fmt.Println("\n=== Example 2: Task with Timeout ===\n")
+	fmt.Println("\n=== Example 2: Task with Timeout ===")
 
 	agent := &SlowAgent{delay: 500 * time.Millisecond}
 
@@ -189,7 +189,7 @@ func exampleTimeout() error {
 
 // Example 3: Task with retries
 func exampleRetries() error {
-	fmt.Println("\n=== Example 3: Task with Retries ===\n")
+	fmt.Println("\n=== Example 3: Task with Retries ===")
 
 	agent := &UnreliableAgent{failRate: 70}
 
@@ -215,7 +215,7 @@ func exampleRetries() error {
 
 // Example 4: Cannot reuse task
 func exampleReusePrevention() error {
-	fmt.Println("\n=== Example 4: Reuse Prevention ===\n")
+	fmt.Println("\n=== Example 4: Reuse Prevention ===")
 
 	agent := &SummarizationAgent{model: "GPT-4"}
 
@@ -242,7 +242,7 @@ func exampleReusePrevention() error {
 	if err != nil {
 		fmt.Println("Second execution failed as expected:")
 		fmt.Printf("Error: %v\n", err)
-		fmt.Println("✓ Task reuse correctly prevented\n")
+		fmt.Println("✓ Task reuse correctly prevented")
 	} else {
 		fmt.Println("Unexpectedly succeeded!")
 	}
@@ -252,7 +252,7 @@ func exampleReusePrevention() error {
 
 // Example 5: Convenience function
 func exampleConvenienceFunction() error {
-	fmt.Println("\n=== Example 5: Convenience Function ===\n")
+	fmt.Println("\n=== Example 5: Convenience Function ===")
 
 	agent := &SummarizationAgent{model: "Claude"}
 
@@ -274,14 +274,14 @@ func exampleConvenienceFunction() error {
 	}
 
 	fmt.Printf("Result: %s\n", result.Content)
-	fmt.Println("✓ Task executed and cleaned up automatically\n")
+	fmt.Println("✓ Task executed and cleaned up automatically")
 
 	return nil
 }
 
 // Example 6: Batch processing with tasks
 func exampleBatchProcessing() error {
-	fmt.Println("\n=== Example 6: Batch Processing ===\n")
+	fmt.Println("\n=== Example 6: Batch Processing ===")
 
 	documents := []string{
 		"Process document 1 about machine learning",
@@ -337,14 +337,14 @@ func exampleBatchProcessing() error {
 		}
 	}
 
-	fmt.Println("\n✓ All tasks completed\n")
+	fmt.Println("\n✓ All tasks completed")
 
 	return nil
 }
 
 // Example 7: Task lifecycle
 func exampleLifecycle() error {
-	fmt.Println("\n=== Example 7: Task Lifecycle ===\n")
+	fmt.Println("\n=== Example 7: Task Lifecycle ===")
 
 	agent := &SummarizationAgent{model: "GPT-4"}
 
@@ -376,7 +376,7 @@ func exampleLifecycle() error {
 
 	fmt.Println("\nPerforming cleanup...")
 	task.Cleanup()
-	fmt.Println("✓ Lifecycle complete\n")
+	fmt.Println("✓ Lifecycle complete")
 
 	return nil
 }

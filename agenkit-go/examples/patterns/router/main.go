@@ -34,6 +34,13 @@ func (b *BillingAgent) Capabilities() []string {
 	return []string{"billing", "payments", "invoices"}
 }
 
+func (b *BillingAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    b.Name(),
+		Capabilities: b.Capabilities(),
+	}
+}
+
 func (b *BillingAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Println("   💰 Billing specialist handling request...")
 
@@ -58,6 +65,13 @@ func (t *TechnicalAgent) Name() string {
 
 func (t *TechnicalAgent) Capabilities() []string {
 	return []string{"technical", "support", "troubleshooting"}
+}
+
+func (t *TechnicalAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    t.Name(),
+		Capabilities: t.Capabilities(),
+	}
 }
 
 func (t *TechnicalAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -86,6 +100,13 @@ func (a *AccountAgent) Capabilities() []string {
 	return []string{"account", "profile", "settings"}
 }
 
+func (a *AccountAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 func (a *AccountAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Println("   👤 Account manager handling request...")
 
@@ -112,6 +133,13 @@ func (g *GeneralAgent) Capabilities() []string {
 	return []string{"general", "information"}
 }
 
+func (g *GeneralAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    g.Name(),
+		Capabilities: g.Capabilities(),
+	}
+}
+
 func (g *GeneralAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Println("   ℹ️  General inquiries handling request...")
 
@@ -136,6 +164,13 @@ func (m *MockLLMAgent) Name() string {
 
 func (m *MockLLMAgent) Capabilities() []string {
 	return []string{"classification", "llm"}
+}
+
+func (m *MockLLMAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    m.Name(),
+		Capabilities: m.Capabilities(),
+	}
 }
 
 func (m *MockLLMAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

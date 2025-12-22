@@ -147,10 +147,7 @@ func exampleBasicReasoning() error {
 		EnableTrace:       true,
 	}
 
-	agent, err := patterns.NewReasoningWithToolsAgent(llm, tools, config)
-	if err != nil {
-		return err
-	}
+	agent := patterns.NewReasoningWithToolsAgent(llm, tools, &config)
 
 	message := agenkit.NewMessage("user", "What is 2 + 2?")
 	result, err := agent.Process(context.Background(), message)
@@ -183,10 +180,7 @@ func exampleMultipleTools() error {
 		EnableTrace:       true,
 	}
 
-	agent, err := patterns.NewReasoningWithToolsAgent(llm, tools, config)
-	if err != nil {
-		return err
-	}
+	agent := patterns.NewReasoningWithToolsAgent(llm, tools, &config)
 
 	message := agenkit.NewMessage("user", "Search for Go and calculate 15 + 30")
 	result, err := agent.Process(context.Background(), message)
@@ -223,10 +217,7 @@ func exampleExtendedThinking() error {
 		EnableTrace:       true,
 	}
 
-	agent, err := patterns.NewReasoningWithToolsAgent(llm, tools, config)
-	if err != nil {
-		return err
-	}
+	agent := patterns.NewReasoningWithToolsAgent(llm, tools, &config)
 
 	message := agenkit.NewMessage("user", "Calculate 10 * 5 and 100 / 4")
 	result, err := agent.Process(context.Background(), message)
@@ -268,13 +259,10 @@ func exampleToolChaining() error {
 		EnableTrace:       true,
 	}
 
-	agent, err := patterns.NewReasoningWithToolsAgent(llm, tools, config)
-	if err != nil {
-		return err
-	}
+	agent := patterns.NewReasoningWithToolsAgent(llm, tools, &config)
 
 	message := agenkit.NewMessage("user", "Find population and calculate")
-	result, err := agent.Process(context.Background(), message)
+	_, err := agent.Process(context.Background(), message)
 	if err != nil {
 		return err
 	}
@@ -306,10 +294,7 @@ func exampleMaxStepsLimit() error {
 		EnableTrace:       false,
 	}
 
-	agent, err := patterns.NewReasoningWithToolsAgent(llm, tools, config)
-	if err != nil {
-		return err
-	}
+	agent := patterns.NewReasoningWithToolsAgent(llm, tools, &config)
 
 	message := agenkit.NewMessage("user", "Think deeply")
 	result, err := agent.Process(context.Background(), message)

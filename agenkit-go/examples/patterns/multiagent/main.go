@@ -155,17 +155,11 @@ func (c *CriticAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 func exampleSequentialOrchestration() error {
 	fmt.Println("\n=== Example 1: Sequential Orchestration ===\n")
 
-	orchestrator := patterns.NewMultiAgentOrchestrator(patterns.OrchestrationStrategySequential)
+	orchestrator := patterns.NewMultiAgentOrchestrator(patterns.StrategySequential)
 
-	if err := orchestrator.RegisterAgent("researcher", &ResearchAgent{specialty: "ML"}); err != nil {
-		return err
-	}
-	if err := orchestrator.RegisterAgent("writer", &WritingAgent{style: "academic"}); err != nil {
-		return err
-	}
-	if err := orchestrator.RegisterAgent("editor", &EditorAgent{}); err != nil {
-		return err
-	}
+	orchestrator.RegisterAgent("researcher", &ResearchAgent{specialty: "ML"})
+	orchestrator.RegisterAgent("writer", &WritingAgent{style: "academic"})
+	orchestrator.RegisterAgent("editor", &EditorAgent{})
 
 	fmt.Printf("Registered agents: %v\n", orchestrator.ListAgents())
 	fmt.Println("\nProcessing: Write a report on AI agents\n")
@@ -192,7 +186,7 @@ func exampleSequentialOrchestration() error {
 func exampleConsensus() error {
 	fmt.Println("\n=== Example 2: Consensus Building ===\n")
 
-	consensus := patterns.NewConsensusAgent(patterns.VotingStrategyMajority)
+	consensus := patterns.NewConsensusAgent(patterns.VotingMajority)
 
 	consensus.AddAgent(&CriticAgent{perspective: "conservative"})
 	consensus.AddAgent(&CriticAgent{perspective: "innovative"})
@@ -216,17 +210,11 @@ func exampleConsensus() error {
 func exampleResearchTeam() error {
 	fmt.Println("\n=== Example 3: Research Team Collaboration ===\n")
 
-	orchestrator := patterns.NewMultiAgentOrchestrator(patterns.OrchestrationStrategySequential)
+	orchestrator := patterns.NewMultiAgentOrchestrator(patterns.StrategySequential)
 
-	if err := orchestrator.RegisterAgent("ml_researcher", &ResearchAgent{specialty: "Machine Learning"}); err != nil {
-		return err
-	}
-	if err := orchestrator.RegisterAgent("nlp_researcher", &ResearchAgent{specialty: "Natural Language Processing"}); err != nil {
-		return err
-	}
-	if err := orchestrator.RegisterAgent("systems_researcher", &ResearchAgent{specialty: "Distributed Systems"}); err != nil {
-		return err
-	}
+	orchestrator.RegisterAgent("ml_researcher", &ResearchAgent{specialty: "Machine Learning"})
+	orchestrator.RegisterAgent("nlp_researcher", &ResearchAgent{specialty: "Natural Language Processing"})
+	orchestrator.RegisterAgent("systems_researcher", &ResearchAgent{specialty: "Distributed Systems"})
 
 	message := agenkit.NewMessage("user", "conversational AI architectures")
 	result, err := orchestrator.Process(context.Background(), message)
@@ -243,22 +231,16 @@ func exampleResearchTeam() error {
 func exampleContentPipeline() error {
 	fmt.Println("\n=== Example 4: Content Creation Pipeline ===\n")
 
-	orchestrator := patterns.NewMultiAgentOrchestrator(patterns.OrchestrationStrategySequential)
+	orchestrator := patterns.NewMultiAgentOrchestrator(patterns.StrategySequential)
 
 	fmt.Println("Stage 1: Research")
-	if err := orchestrator.RegisterAgent("researcher", &ResearchAgent{specialty: "Technical"}); err != nil {
-		return err
-	}
+	orchestrator.RegisterAgent("researcher", &ResearchAgent{specialty: "Technical"})
 
 	fmt.Println("Stage 2: Writing")
-	if err := orchestrator.RegisterAgent("writer", &WritingAgent{style: "technical"}); err != nil {
-		return err
-	}
+	orchestrator.RegisterAgent("writer", &WritingAgent{style: "technical"})
 
 	fmt.Println("Stage 3: Editing")
-	if err := orchestrator.RegisterAgent("editor", &EditorAgent{}); err != nil {
-		return err
-	}
+	orchestrator.RegisterAgent("editor", &EditorAgent{})
 
 	fmt.Println("\nProcessing content pipeline...\n")
 
@@ -284,21 +266,17 @@ func exampleContentPipeline() error {
 func exampleDynamicRegistration() error {
 	fmt.Println("\n=== Example 5: Dynamic Agent Registration ===\n")
 
-	orchestrator := patterns.NewMultiAgentOrchestrator(patterns.OrchestrationStrategySequential)
+	orchestrator := patterns.NewMultiAgentOrchestrator(patterns.StrategySequential)
 
 	fmt.Printf("Initial agents: %v\n", orchestrator.ListAgents())
 
 	// Add agents dynamically
 	fmt.Println("\nAdding researcher...")
-	if err := orchestrator.RegisterAgent("researcher", &ResearchAgent{specialty: "AI"}); err != nil {
-		return err
-	}
+	orchestrator.RegisterAgent("researcher", &ResearchAgent{specialty: "AI"})
 	fmt.Printf("Agents: %v\n", orchestrator.ListAgents())
 
 	fmt.Println("\nAdding writer...")
-	if err := orchestrator.RegisterAgent("writer", &WritingAgent{style: "concise"}); err != nil {
-		return err
-	}
+	orchestrator.RegisterAgent("writer", &WritingAgent{style: "concise"})
 	fmt.Printf("Agents: %v\n", orchestrator.ListAgents())
 
 	// Process with current agents

@@ -10,9 +10,10 @@ Detects:
 
 import time
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from agenkit import Agent, Message
 

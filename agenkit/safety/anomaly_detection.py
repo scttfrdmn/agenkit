@@ -12,7 +12,7 @@ import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 from agenkit import Agent, Message
 
@@ -265,7 +265,7 @@ class AnomalyDetectionMiddleware(Agent):
         agent: Agent,
         detector: AnomalyDetector | None = None,
         user_id: str = "default",
-        on_anomaly: callable | None = None,
+        on_anomaly: Callable | None = None,
     ):
         """
         Initialize anomaly detection middleware.

@@ -59,7 +59,6 @@ from agenkit.patterns import (
     SupervisorAgent,
     Task,
     Tool,
-    ToolRegistry,
     WorkingMemory,
 )
 
@@ -214,10 +213,8 @@ def test_benchmark_reflection():
 def test_benchmark_react():
     """Benchmark ReAct pattern (3 steps)."""
     llm = MockLLMClient()
-    tools = ToolRegistry()
-    tools.register(MockTool("tool1"))
-    tools.register(MockTool("tool2"))
-    agent = ReActAgent(llm_client=llm, tool_registry=tools, max_iterations=3)
+    tools = [MockTool("tool1"), MockTool("tool2")]
+    agent = ReActAgent(agent=llm, tools=tools, max_steps=3)
     msg = Message(role="user", content="test")
 
     async def bench():

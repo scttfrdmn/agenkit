@@ -1,5 +1,3 @@
-//go:build ignore
-
 /*
 Fallback Composition Example
 
@@ -42,8 +40,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/agenkit/agenkit-go/agenkit"
-	"github.com/agenkit/agenkit-go/composition"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/composition"
 )
 
 // PremiumLLM is expensive, high quality, rate limited
@@ -56,8 +54,15 @@ func NewPremiumLLM(quota int) *PremiumLLM {
 	return &PremiumLLM{quota: quota}
 }
 
-func (a *PremiumLLM) Name() string           { return "gpt-4" }
+func (a *PremiumLLM) Name() string { return "gpt-4" }
 func (a *PremiumLLM) Capabilities() []string { return []string{"text_generation", "premium"} }
+func (a *PremiumLLM) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *PremiumLLM) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	a.requests++
@@ -84,8 +89,15 @@ func NewStandardLLM(failureRate float64) *StandardLLM {
 	return &StandardLLM{failureRate: failureRate}
 }
 
-func (a *StandardLLM) Name() string           { return "gpt-3.5-turbo" }
+func (a *StandardLLM) Name() string { return "gpt-3.5-turbo" }
 func (a *StandardLLM) Capabilities() []string { return []string{"text_generation", "standard"} }
+func (a *StandardLLM) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *StandardLLM) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate occasional failures
@@ -104,8 +116,15 @@ func (a *StandardLLM) Process(ctx context.Context, message *agenkit.Message) (*a
 // BasicLLM is cheap, always available, lower quality
 type BasicLLM struct{}
 
-func (a *BasicLLM) Name() string           { return "llama-3-8b" }
+func (a *BasicLLM) Name() string { return "llama-3-8b" }
 func (a *BasicLLM) Capabilities() []string { return []string{"text_generation", "basic"} }
+func (a *BasicLLM) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *BasicLLM) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Always succeeds (local model)
@@ -126,7 +145,7 @@ func example1CostOptimization() {
 
 	// Create fallback chain: Premium → Standard → Basic
 	costOptimizer, _ := composition.NewFallbackAgent("cost-optimized-llm",
-		NewPremiumLLM(5),    // Limited quota
+		NewPremiumLLM(5), // Limited quota
 		NewStandardLLM(0.2), // 20% failure rate
 		&BasicLLM{},
 	)
@@ -182,8 +201,15 @@ func NewRegionalService(region string, failureRate float64) *RegionalService {
 	return &RegionalService{region: region, failureRate: failureRate}
 }
 
-func (a *RegionalService) Name() string           { return fmt.Sprintf("service-%s", a.region) }
+func (a *RegionalService) Name() string { return fmt.Sprintf("service-%s", a.region) }
 func (a *RegionalService) Capabilities() []string { return []string{"processing"} }
+func (a *RegionalService) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *RegionalService) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate regional outage
@@ -239,7 +265,7 @@ func example2GeographicFailover() {
 	}
 
 	// Calculate theoretical availability
-	singleRegion := 0.7                  // 1 - 0.3 failure rate
+	singleRegion := 0.7 // 1 - 0.3 failure rate
 	multiRegion := 1 - (0.3 * 0.3 * 0.3) // Probability at least one works
 
 	fmt.Println("\nHIGH AVAILABILITY BENEFITS:")
@@ -251,8 +277,15 @@ func example2GeographicFailover() {
 // QualityTier agents for graceful degradation
 type HighQualityAgent struct{}
 
-func (a *HighQualityAgent) Name() string           { return "high-quality" }
+func (a *HighQualityAgent) Name() string { return "high-quality" }
 func (a *HighQualityAgent) Capabilities() []string { return []string{"analysis"} }
+func (a *HighQualityAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *HighQualityAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Fail if system is under load
@@ -269,8 +302,15 @@ func (a *HighQualityAgent) Process(ctx context.Context, message *agenkit.Message
 
 type MediumQualityAgent struct{}
 
-func (a *MediumQualityAgent) Name() string           { return "medium-quality" }
+func (a *MediumQualityAgent) Name() string { return "medium-quality" }
 func (a *MediumQualityAgent) Capabilities() []string { return []string{"analysis"} }
+func (a *MediumQualityAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *MediumQualityAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// More reliable
@@ -287,8 +327,15 @@ func (a *MediumQualityAgent) Process(ctx context.Context, message *agenkit.Messa
 
 type LowQualityAgent struct{}
 
-func (a *LowQualityAgent) Name() string           { return "low-quality" }
+func (a *LowQualityAgent) Name() string { return "low-quality" }
 func (a *LowQualityAgent) Capabilities() []string { return []string{"analysis"} }
+func (a *LowQualityAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *LowQualityAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Always succeeds
@@ -342,7 +389,6 @@ func example3GracefulDegradation() {
 
 func main() {
 	// Seed random for demonstration
-	rand.Seed(time.Now().UnixNano())
 
 	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("FALLBACK COMPOSITION EXAMPLES FOR AGENKIT-GO")

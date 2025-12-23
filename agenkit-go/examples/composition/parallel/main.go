@@ -1,5 +1,3 @@
-//go:build ignore
-
 /*
 Parallel Composition Example
 
@@ -41,8 +39,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/agenkit/agenkit-go/agenkit"
-	"github.com/agenkit/agenkit-go/composition"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/composition"
 )
 
 // SentimentAgent analyzes sentiment using a specific approach
@@ -55,8 +53,15 @@ func NewSentimentAgent(name, approach string) *SentimentAgent {
 	return &SentimentAgent{name: name, approach: approach}
 }
 
-func (a *SentimentAgent) Name() string           { return a.name }
+func (a *SentimentAgent) Name() string { return a.name }
 func (a *SentimentAgent) Capabilities() []string { return []string{"sentiment_analysis"} }
+func (a *SentimentAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate different analysis latencies
@@ -157,8 +162,15 @@ func NewSearchAgent(name, source string) *SearchAgent {
 	return &SearchAgent{name: name, source: source}
 }
 
-func (a *SearchAgent) Name() string           { return a.name }
+func (a *SearchAgent) Name() string { return a.name }
 func (a *SearchAgent) Capabilities() []string { return []string{"search"} }
+func (a *SearchAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *SearchAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate different latencies per source
@@ -234,8 +246,15 @@ func NewLLMAgent(name, model string, latency time.Duration, quality float64) *LL
 	return &LLMAgent{name: name, model: model, latency: latency, quality: quality}
 }
 
-func (a *LLMAgent) Name() string           { return a.name }
+func (a *LLMAgent) Name() string { return a.name }
 func (a *LLMAgent) Capabilities() []string { return []string{"text_generation"} }
+func (a *LLMAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *LLMAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(a.latency)
@@ -296,7 +315,6 @@ func example3ABTesting() {
 
 func main() {
 	// Seed random for demonstration
-	rand.Seed(time.Now().UnixNano())
 
 	fmt.Println("\n" + strings.Repeat("=", 80))
 	fmt.Println("PARALLEL COMPOSITION EXAMPLES FOR AGENKIT-GO")

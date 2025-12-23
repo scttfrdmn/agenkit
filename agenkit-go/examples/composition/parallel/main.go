@@ -53,7 +53,7 @@ func NewSentimentAgent(name, approach string) *SentimentAgent {
 	return &SentimentAgent{name: name, approach: approach}
 }
 
-func (a *SentimentAgent) Name() string { return a.name }
+func (a *SentimentAgent) Name() string           { return a.name }
 func (a *SentimentAgent) Capabilities() []string { return []string{"sentiment_analysis"} }
 func (a *SentimentAgent) Introspect() *agenkit.IntrospectionResult {
 	return &agenkit.IntrospectionResult{
@@ -61,7 +61,6 @@ func (a *SentimentAgent) Introspect() *agenkit.IntrospectionResult {
 		Capabilities: a.Capabilities(),
 	}
 }
-
 
 func (a *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate different analysis latencies
@@ -162,7 +161,7 @@ func NewSearchAgent(name, source string) *SearchAgent {
 	return &SearchAgent{name: name, source: source}
 }
 
-func (a *SearchAgent) Name() string { return a.name }
+func (a *SearchAgent) Name() string           { return a.name }
 func (a *SearchAgent) Capabilities() []string { return []string{"search"} }
 func (a *SearchAgent) Introspect() *agenkit.IntrospectionResult {
 	return &agenkit.IntrospectionResult{
@@ -170,7 +169,6 @@ func (a *SearchAgent) Introspect() *agenkit.IntrospectionResult {
 		Capabilities: a.Capabilities(),
 	}
 }
-
 
 func (a *SearchAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate different latencies per source
@@ -246,7 +244,7 @@ func NewLLMAgent(name, model string, latency time.Duration, quality float64) *LL
 	return &LLMAgent{name: name, model: model, latency: latency, quality: quality}
 }
 
-func (a *LLMAgent) Name() string { return a.name }
+func (a *LLMAgent) Name() string           { return a.name }
 func (a *LLMAgent) Capabilities() []string { return []string{"text_generation"} }
 func (a *LLMAgent) Introspect() *agenkit.IntrospectionResult {
 	return &agenkit.IntrospectionResult{
@@ -254,7 +252,6 @@ func (a *LLMAgent) Introspect() *agenkit.IntrospectionResult {
 		Capabilities: a.Capabilities(),
 	}
 }
-
 
 func (a *LLMAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(a.latency)

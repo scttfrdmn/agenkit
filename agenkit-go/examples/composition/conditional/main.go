@@ -45,7 +45,7 @@ import (
 // CodeAgent is specialized in code generation
 type CodeAgent struct{}
 
-func (a *CodeAgent) Name() string { return "code-specialist" }
+func (a *CodeAgent) Name() string           { return "code-specialist" }
 func (a *CodeAgent) Capabilities() []string { return []string{"code_generation", "debugging"} }
 func (a *CodeAgent) Introspect() *agenkit.IntrospectionResult {
 	return &agenkit.IntrospectionResult{
@@ -53,7 +53,6 @@ func (a *CodeAgent) Introspect() *agenkit.IntrospectionResult {
 		Capabilities: a.Capabilities(),
 	}
 }
-
 
 func (a *CodeAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(200 * time.Millisecond)
@@ -73,7 +72,7 @@ func (a *CodeAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 // DocsAgent is specialized in documentation
 type DocsAgent struct{}
 
-func (a *DocsAgent) Name() string { return "docs-specialist" }
+func (a *DocsAgent) Name() string           { return "docs-specialist" }
 func (a *DocsAgent) Capabilities() []string { return []string{"documentation", "explanations"} }
 func (a *DocsAgent) Introspect() *agenkit.IntrospectionResult {
 	return &agenkit.IntrospectionResult{
@@ -81,7 +80,6 @@ func (a *DocsAgent) Introspect() *agenkit.IntrospectionResult {
 		Capabilities: a.Capabilities(),
 	}
 }
-
 
 func (a *DocsAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(150 * time.Millisecond)
@@ -104,7 +102,7 @@ Example: go processData()`
 // GeneralAgent handles other requests
 type GeneralAgent struct{}
 
-func (a *GeneralAgent) Name() string { return "general-assistant" }
+func (a *GeneralAgent) Name() string           { return "general-assistant" }
 func (a *GeneralAgent) Capabilities() []string { return []string{"general_qa", "conversation"} }
 func (a *GeneralAgent) Introspect() *agenkit.IntrospectionResult {
 	return &agenkit.IntrospectionResult{
@@ -112,7 +110,6 @@ func (a *GeneralAgent) Introspect() *agenkit.IntrospectionResult {
 		Capabilities: a.Capabilities(),
 	}
 }
-
 
 func (a *GeneralAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(100 * time.Millisecond)
@@ -189,7 +186,7 @@ func example1IntentRouting() {
 // SimpleQueryAgent handles fast queries
 type SimpleQueryAgent struct{}
 
-func (a *SimpleQueryAgent) Name() string { return "simple-query-agent" }
+func (a *SimpleQueryAgent) Name() string           { return "simple-query-agent" }
 func (a *SimpleQueryAgent) Capabilities() []string { return []string{"simple_qa"} }
 func (a *SimpleQueryAgent) Introspect() *agenkit.IntrospectionResult {
 	return &agenkit.IntrospectionResult{
@@ -197,7 +194,6 @@ func (a *SimpleQueryAgent) Introspect() *agenkit.IntrospectionResult {
 		Capabilities: a.Capabilities(),
 	}
 }
-
 
 func (a *SimpleQueryAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(50 * time.Millisecond)
@@ -222,7 +218,7 @@ func (a *SimpleQueryAgent) Process(ctx context.Context, message *agenkit.Message
 // ComplexQueryAgent handles powerful queries
 type ComplexQueryAgent struct{}
 
-func (a *ComplexQueryAgent) Name() string { return "complex-query-agent" }
+func (a *ComplexQueryAgent) Name() string           { return "complex-query-agent" }
 func (a *ComplexQueryAgent) Capabilities() []string { return []string{"complex_reasoning"} }
 func (a *ComplexQueryAgent) Introspect() *agenkit.IntrospectionResult {
 	return &agenkit.IntrospectionResult{
@@ -230,7 +226,6 @@ func (a *ComplexQueryAgent) Introspect() *agenkit.IntrospectionResult {
 		Capabilities: a.Capabilities(),
 	}
 }
-
 
 func (a *ComplexQueryAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(500 * time.Millisecond)
@@ -313,7 +308,7 @@ func example2ComplexityRouting() {
 // PremiumAgent provides advanced features
 type PremiumAgent struct{}
 
-func (a *PremiumAgent) Name() string { return "premium-service" }
+func (a *PremiumAgent) Name() string           { return "premium-service" }
 func (a *PremiumAgent) Capabilities() []string { return []string{"premium", "advanced"} }
 func (a *PremiumAgent) Introspect() *agenkit.IntrospectionResult {
 	return &agenkit.IntrospectionResult{
@@ -321,7 +316,6 @@ func (a *PremiumAgent) Introspect() *agenkit.IntrospectionResult {
 		Capabilities: a.Capabilities(),
 	}
 }
-
 
 func (a *PremiumAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(300 * time.Millisecond)
@@ -334,7 +328,7 @@ func (a *PremiumAgent) Process(ctx context.Context, message *agenkit.Message) (*
 // FreeAgent provides basic features
 type FreeAgent struct{}
 
-func (a *FreeAgent) Name() string { return "free-service" }
+func (a *FreeAgent) Name() string           { return "free-service" }
 func (a *FreeAgent) Capabilities() []string { return []string{"basic"} }
 func (a *FreeAgent) Introspect() *agenkit.IntrospectionResult {
 	return &agenkit.IntrospectionResult{
@@ -342,7 +336,6 @@ func (a *FreeAgent) Introspect() *agenkit.IntrospectionResult {
 		Capabilities: a.Capabilities(),
 	}
 }
-
 
 func (a *FreeAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(100 * time.Millisecond)

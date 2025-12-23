@@ -107,7 +107,7 @@ func NewGRPCTransportWithConfig(endpoint string, config *GRPCTransportConfig) (*
 
 // Connect establishes connection to gRPC endpoint with keepalive and connection pooling.
 func (t *GRPCTransport) Connect(ctx context.Context) error {
-	ctx, span := t.tracer.Start(ctx, "grpc.connect", trace.WithSpanKind(trace.SpanKindClient)) //nolint:ineffassign,staticcheck // ctx updated with span for OpenTelemetry context propagation
+	_, span := t.tracer.Start(ctx, "grpc.connect", trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
 	// Add span attributes

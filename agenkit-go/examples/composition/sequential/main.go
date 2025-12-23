@@ -1,5 +1,3 @@
-//go:build ignore
-
 /*
 Sequential Composition Example
 
@@ -38,15 +36,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/agenkit/agenkit-go/agenkit"
-	"github.com/agenkit/agenkit-go/composition"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/composition"
 )
 
 // TranslationAgent translates text to English
 type TranslationAgent struct{}
 
-func (a *TranslationAgent) Name() string           { return "translator" }
+func (a *TranslationAgent) Name() string { return "translator" }
 func (a *TranslationAgent) Capabilities() []string { return []string{"translation"} }
+func (a *TranslationAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *TranslationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(100 * time.Millisecond) // Simulate processing
@@ -73,8 +78,15 @@ func (a *TranslationAgent) Process(ctx context.Context, message *agenkit.Message
 // SummarizationAgent summarizes text
 type SummarizationAgent struct{}
 
-func (a *SummarizationAgent) Name() string           { return "summarizer" }
+func (a *SummarizationAgent) Name() string { return "summarizer" }
 func (a *SummarizationAgent) Capabilities() []string { return []string{"summarization"} }
+func (a *SummarizationAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *SummarizationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(200 * time.Millisecond) // Simulate processing
@@ -100,8 +112,15 @@ func (a *SummarizationAgent) Process(ctx context.Context, message *agenkit.Messa
 // SentimentAgent analyzes sentiment
 type SentimentAgent struct{}
 
-func (a *SentimentAgent) Name() string           { return "sentiment" }
+func (a *SentimentAgent) Name() string { return "sentiment" }
 func (a *SentimentAgent) Capabilities() []string { return []string{"sentiment_analysis"} }
+func (a *SentimentAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(50 * time.Millisecond) // Simulate processing
@@ -191,8 +210,15 @@ func example1ContentPipeline() {
 // ValidationAgent validates input data
 type ValidationAgent struct{}
 
-func (a *ValidationAgent) Name() string           { return "validator" }
+func (a *ValidationAgent) Name() string { return "validator" }
 func (a *ValidationAgent) Capabilities() []string { return []string{"validation"} }
+func (a *ValidationAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *ValidationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	text := message.Content
@@ -220,8 +246,15 @@ func (a *ValidationAgent) Process(ctx context.Context, message *agenkit.Message)
 // NormalizationAgent normalizes text format
 type NormalizationAgent struct{}
 
-func (a *NormalizationAgent) Name() string           { return "normalizer" }
+func (a *NormalizationAgent) Name() string { return "normalizer" }
 func (a *NormalizationAgent) Capabilities() []string { return []string{"normalization"} }
+func (a *NormalizationAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 
 func (a *NormalizationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Short-circuit if validation failed

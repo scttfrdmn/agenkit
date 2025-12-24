@@ -24,6 +24,7 @@ CMakeFiles/
 cmake_install.cmake
 CTestTestfile.cmake
 Makefile
+!tests/Makefile
 compile_commands.json
 
 # Testing

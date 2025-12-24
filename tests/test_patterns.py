@@ -851,7 +851,9 @@ async def test_reflection_early_stop_quality_threshold():
 
     generator = QuicklyImprovingGenerator()
     critic = ApprovingCritic()
-    agent = ReflectionAgent(generator=generator, critic=critic, max_reflections=10, quality_threshold=0.9)
+    agent = ReflectionAgent(
+        generator=generator, critic=critic, max_reflections=10, quality_threshold=0.9
+    )
 
     msg = Message(role="user", content="test")
     await agent.process(msg)

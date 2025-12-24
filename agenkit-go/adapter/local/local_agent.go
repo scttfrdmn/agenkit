@@ -135,9 +135,9 @@ func (l *LocalAgent) Start(ctx context.Context) error {
 // Stop stops the agent server.
 func (l *LocalAgent) Stop() error {
 	l.mu.Lock()
-	defer l.mu.Unlock()
 
 	if !l.running {
+		l.mu.Unlock()
 		return nil
 	}
 
@@ -145,6 +145,7 @@ func (l *LocalAgent) Stop() error {
 
 	// Stop HTTP agent if using WebSocket
 	if l.httpAgent != nil {
+		l.mu.Unlock() // Release lock before stopping HTTP agent
 		if err := l.httpAgent.Stop(); err != nil {
 			log.Printf("Error stopping HTTP agent: %v\n", err)
 		}
@@ -158,6 +159,10 @@ func (l *LocalAgent) Stop() error {
 		_ = l.listener.Close()
 		l.listener = nil
 	}
+
+	// Release lock before waiting for goroutines
+	// This prevents deadlock where goroutines need the lock to call isRunning()
+	l.mu.Unlock()
 
 	// Close all active connections
 	l.connMu.Lock()
@@ -174,7 +179,7 @@ func (l *LocalAgent) Stop() error {
 		}
 	}
 
-	// Wait for all client handlers to finish
+	// Wait for all client handlers to finish (without holding lock)
 	l.wg.Wait()
 
 	log.Printf("Agent '%s' stopped\n", l.agent.Name())

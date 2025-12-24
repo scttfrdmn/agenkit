@@ -278,3 +278,22 @@ func (t *TimeoutDecorator) Process(ctx context.Context, message *agenkit.Message
 		}
 	}
 }
+
+// Stream implements the StreamingAgent interface by passing through to the underlying agent.
+// If the underlying agent doesn't support streaming, it returns an error.
+func (t *TimeoutDecorator) Stream(ctx context.Context, message *agenkit.Message) (<-chan *agenkit.Message, <-chan error) {
+	// Check if underlying agent supports streaming
+	streamingAgent, ok := t.agent.(agenkit.StreamingAgent)
+	if !ok {
+		// Return channels with error
+		messageChan := make(chan *agenkit.Message)
+		errorChan := make(chan error, 1)
+		close(messageChan)
+		errorChan <- fmt.Errorf("underlying agent does not support streaming")
+		close(errorChan)
+		return messageChan, errorChan
+	}
+
+	// Pass through to underlying streaming agent
+	return streamingAgent.Stream(ctx, message)
+}

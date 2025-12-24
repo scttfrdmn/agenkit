@@ -240,6 +240,46 @@ func (r *RateLimiterDecorator) Process(ctx context.Context, message *agenkit.Mes
 	return r.agent.Process(ctx, message)
 }
 
+// Stream implements the StreamingAgent interface by passing through to the underlying agent.
+// If the underlying agent doesn't support streaming, it returns an error.
+// Note: Rate limiting is applied per Stream() call, not per chunk.
+func (r *RateLimiterDecorator) Stream(ctx context.Context, message *agenkit.Message) (<-chan *agenkit.Message, <-chan error) {
+	// Check if underlying agent supports streaming
+	streamingAgent, ok := r.agent.(agenkit.StreamingAgent)
+	if !ok {
+		// Return channels with error
+		messageChan := make(chan *agenkit.Message)
+		errorChan := make(chan error, 1)
+		close(messageChan)
+		errorChan <- fmt.Errorf("underlying agent does not support streaming")
+		close(errorChan)
+		return messageChan, errorChan
+	}
+
+	// Acquire tokens before streaming (rate limit the Stream call itself)
+	tokensNeeded := r.config.TokensPerRequest
+	if err := r.acquireTokens(ctx, tokensNeeded, true); err != nil {
+		// Return channels with error
+		messageChan := make(chan *agenkit.Message)
+		errorChan := make(chan error, 1)
+		close(messageChan)
+		errorChan <- err
+		close(errorChan)
+
+		r.metrics.mu.Lock()
+		r.metrics.RejectedRequests++
+		r.metrics.mu.Unlock()
+		return messageChan, errorChan
+	}
+
+	r.metrics.mu.Lock()
+	r.metrics.AllowedRequests++
+	r.metrics.mu.Unlock()
+
+	// Pass through to underlying streaming agent
+	return streamingAgent.Stream(ctx, message)
+}
+
 // min returns the minimum of two float64 values.
 func min(a, b float64) float64 {
 	if a < b {

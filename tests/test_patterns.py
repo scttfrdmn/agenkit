@@ -759,7 +759,7 @@ async def test_reflection_basic():
 
     generator = GeneratorAgent()
     critic = CriticAgent()
-    agent = ReflectionAgent(generator, critic, max_iterations=3)
+    agent = ReflectionAgent(generator=generator, critic=critic, max_reflections=3)
 
     msg = Message(role="user", content="Write something")
     result = await agent.process(msg)
@@ -804,7 +804,7 @@ async def test_reflection_max_iterations():
 
     generator = NeverSatisfiedGenerator()
     critic = NeverSatisfiedCritic()
-    agent = ReflectionAgent(generator, critic, max_iterations=5)
+    agent = ReflectionAgent(generator=generator, critic=critic, max_reflections=5)
 
     msg = Message(role="user", content="test")
     await agent.process(msg)
@@ -851,7 +851,7 @@ async def test_reflection_early_stop_quality_threshold():
 
     generator = QuicklyImprovingGenerator()
     critic = ApprovingCritic()
-    agent = ReflectionAgent(generator, critic, max_iterations=10, quality_threshold=0.9)
+    agent = ReflectionAgent(generator=generator, critic=critic, max_reflections=10, quality_threshold=0.9)
 
     msg = Message(role="user", content="test")
     await agent.process(msg)
@@ -869,7 +869,7 @@ async def test_reflection_generator_failure():
     generator = ErrorAgent()
     critic = UpperAgent()
 
-    agent = ReflectionAgent(generator, critic)
+    agent = ReflectionAgent(generator=generator, critic=critic)
 
     msg = Message(role="user", content="test")
 
@@ -885,7 +885,7 @@ async def test_reflection_critic_failure():
     generator = UpperAgent()
     critic = ErrorAgent()
 
-    agent = ReflectionAgent(generator, critic)
+    agent = ReflectionAgent(generator=generator, critic=critic)
 
     msg = Message(role="user", content="test")
 
@@ -901,7 +901,7 @@ async def test_reflection_name_property():
     generator = UpperAgent()
     critic = EchoAgent("critic")
 
-    agent = ReflectionAgent(generator, critic)
+    agent = ReflectionAgent(generator=generator, critic=critic)
 
     assert "reflection" in agent.name.lower()
 
@@ -914,7 +914,7 @@ async def test_reflection_unwrap():
     generator = UpperAgent()
     critic = EchoAgent("critic")
 
-    agent = ReflectionAgent(generator, critic)
+    agent = ReflectionAgent(generator=generator, critic=critic)
 
     unwrapped = agent.unwrap()
     # unwrap returns the reflection agent itself
@@ -928,8 +928,8 @@ async def test_reflection_unwrap():
 
 @pytest.mark.asyncio
 async def test_react_basic():
-    """Test basic ReAct agent with tool registry."""
-    from agenkit.patterns import ReActAgent, ToolRegistry
+    """Test basic ReAct agent with tools."""
+    from agenkit.patterns import ReActAgent
 
     # Create a simple tool
     class SimpleTool:
@@ -940,15 +940,23 @@ async def test_react_basic():
             return f"Result: {input_data}"
 
     # Mock LLM that finishes immediately
-    class SimpleLLM:
+    class SimpleLLM(Agent):
+        @property
+        def name(self) -> str:
+            return "simple_llm"
+
+        def capabilities(self) -> list[str]:
+            return ["chat"]
+
+        async def process(self, message: Message) -> Message:
+            return Message(role="assistant", content="Final Answer: Test complete", metadata={})
+
         async def chat(self, messages: list) -> Message:
             return Message(role="assistant", content="Final Answer: Test complete", metadata={})
 
-    tool_registry = ToolRegistry()
-    tool_registry.register(SimpleTool())
-
+    tools = [SimpleTool()]
     llm = SimpleLLM()
-    agent = ReActAgent(llm, tool_registry)
+    agent = ReActAgent(agent=llm, tools=tools)
 
     msg = Message(role="user", content="test")
     result = await agent.process(msg)
@@ -960,14 +968,23 @@ async def test_react_basic():
 @pytest.mark.asyncio
 async def test_react_name_property():
     """Test ReAct agent name."""
-    from agenkit.patterns import ReActAgent, ToolRegistry
+    from agenkit.patterns import ReActAgent
 
-    class SimpleLLM:
+    class SimpleLLM(Agent):
+        @property
+        def name(self) -> str:
+            return "simple_llm"
+
+        def capabilities(self) -> list[str]:
+            return ["chat"]
+
+        async def process(self, message: Message) -> Message:
+            return Message(role="assistant", content="Done", metadata={})
+
         async def chat(self, messages: list) -> Message:
             return Message(role="assistant", content="Done", metadata={})
 
-    registry = ToolRegistry()
-    agent = ReActAgent(SimpleLLM(), registry)
+    agent = ReActAgent(agent=SimpleLLM(), tools=[])
 
     assert "react" in agent.name.lower()
 
@@ -982,7 +999,21 @@ async def test_planning_basic():
     """Test basic planning agent."""
     from agenkit.patterns import PlanningAgent
 
-    class SimplePlanningLLM:
+    class SimplePlanningLLM(Agent):
+        @property
+        def name(self) -> str:
+            return "simple_planning_llm"
+
+        def capabilities(self) -> list[str]:
+            return ["planning"]
+
+        async def process(self, message: Message) -> Message:
+            return Message(
+                role="assistant",
+                content="Goal: Complete task\nSteps:\n1. First step\n2. Second step",
+                metadata={},
+            )
+
         async def chat(self, messages: list) -> Message:
             return Message(
                 role="assistant",
@@ -991,7 +1022,7 @@ async def test_planning_basic():
             )
 
     llm = SimplePlanningLLM()
-    agent = PlanningAgent(llm)
+    agent = PlanningAgent(planner=llm)
 
     msg = Message(role="user", content="Make a plan")
     result = await agent.process(msg)
@@ -1005,11 +1036,21 @@ async def test_planning_name_property():
     """Test planning agent name."""
     from agenkit.patterns import PlanningAgent
 
-    class SimpleLLM:
+    class SimpleLLM(Agent):
+        @property
+        def name(self) -> str:
+            return "simple_llm"
+
+        def capabilities(self) -> list[str]:
+            return ["planning"]
+
+        async def process(self, message: Message) -> Message:
+            return Message(role="assistant", content="Plan", metadata={})
+
         async def chat(self, messages: list) -> Message:
             return Message(role="assistant", content="Plan", metadata={})
 
-    agent = PlanningAgent(SimpleLLM())
+    agent = PlanningAgent(planner=SimpleLLM())
 
     assert "plan" in agent.name.lower()
 

@@ -353,7 +353,7 @@ class AnomalyDetectionMiddleware(Agent):
 def anomaly_detection(
     detector: AnomalyDetector | None = None,
     user_id: str = "default",
-    on_anomaly: callable | None = None,
+    on_anomaly: Callable | None = None,
 ):
     """
     Create anomaly detection middleware function.

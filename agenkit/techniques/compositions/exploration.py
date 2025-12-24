@@ -43,6 +43,7 @@ Example:
 """
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from agenkit import Agent, Message
@@ -103,7 +104,7 @@ class ExplorationStrategy(Agent):
         agent: Agent,
         actions: list[str],
         exploration_constant: float = 1.0,
-        reward_fn: callable | None = None,
+        reward_fn: Callable | None = None,
     ):
         """
         Initialize exploration strategy.

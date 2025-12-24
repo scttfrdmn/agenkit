@@ -181,14 +181,21 @@ func (l *LocalAgent) Stop() error {
 	return nil
 }
 
+// isRunning safely checks if the agent is running.
+func (l *LocalAgent) isRunning() bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.running
+}
+
 // acceptConnections accepts incoming client connections.
 func (l *LocalAgent) acceptConnections(ctx context.Context) {
 	defer l.wg.Done()
 
-	for l.running {
+	for l.isRunning() {
 		conn, err := l.listener.Accept()
 		if err != nil {
-			if l.running {
+			if l.isRunning() {
 				log.Printf("Accept error: %v\n", err)
 			}
 			continue
@@ -218,7 +225,7 @@ func (l *LocalAgent) handleClient(ctx context.Context, conn net.Conn) {
 
 	log.Printf("Client connected: %v\n", conn.RemoteAddr())
 
-	for l.running {
+	for l.isRunning() {
 		// Read length prefix (4 bytes, big-endian)
 		var length uint32
 		if err := binary.Read(conn, binary.BigEndian, &length); err != nil {
@@ -471,5 +478,5 @@ func (l *LocalAgent) isExpectedDisconnect(err error) bool {
 	errStr := err.Error()
 	return errStr == "use of closed network connection" ||
 		// Also check if server is shutting down
-		!l.running
+		!l.isRunning()
 }

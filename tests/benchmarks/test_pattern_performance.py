@@ -89,8 +89,19 @@ class EchoAgent(Agent):
         return await self.process(messages[0] if messages else Message(role="user", content=""))
 
 
-class MockLLMClient:
+class MockLLMClient(Agent):
     """Mock LLM client for patterns that need it."""
+
+    @property
+    def name(self) -> str:
+        return "mock-client"
+
+    def capabilities(self) -> list[str]:
+        return ["chat"]
+
+    async def process(self, message: Message) -> Message:
+        """Return simple response."""
+        return Message(role="assistant", content="response")
 
     async def chat(self, messages: list[Message]) -> Message:
         """Return simple response."""
@@ -197,7 +208,7 @@ def test_benchmark_reflection():
     generator = EchoAgent()
     critic = MockCritic()
     agent = ReflectionAgent(
-        generator=generator, critic=critic, max_iterations=2, quality_threshold=0.99
+        generator=generator, critic=critic, max_reflections=2, quality_threshold=0.99
     )
     msg = Message(role="user", content="test")
 
@@ -337,7 +348,7 @@ def test_benchmark_multiagent():
 def test_benchmark_planning():
     """Benchmark Planning pattern (plan + execute)."""
     llm = MockLLMClient()
-    agent = PlanningAgent(llm_client=llm, max_steps=2)
+    agent = PlanningAgent(planner=llm, max_steps=2)
     msg = Message(role="user", content="test")
 
     async def bench():

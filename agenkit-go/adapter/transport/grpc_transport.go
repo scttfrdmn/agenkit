@@ -58,7 +58,16 @@ type GRPCTransport struct {
 // URL format: grpc://host:port (no TLS) or grpcs://host:port (TLS)
 // For production, use TLS: grpcs://host:443
 func NewGRPCTransport(endpoint string) (*GRPCTransport, error) {
-	return NewGRPCTransportWithConfig(endpoint, &GRPCTransportConfig{UseTLS: true})
+	// Parse URL to determine if TLS should be used
+	// grpc:// = no TLS (for local testing)
+	// grpcs:// = TLS (handled in NewGRPCTransportWithConfig)
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("invalid gRPC URL: %w", err)
+	}
+
+	useTLS := u.Scheme == "grpcs"
+	return NewGRPCTransportWithConfig(endpoint, &GRPCTransportConfig{UseTLS: useTLS})
 }
 
 // NewGRPCTransportWithConfig creates a new gRPC transport with custom config.
@@ -589,8 +598,12 @@ func (t *GRPCTransport) jsonToProtobufRequest(envelope *codec.Envelope) (*agentp
 		}
 	} else if messageRaw, ok := payload["message"]; ok {
 		// Check for single "message" (singular) - used by RemoteAgent
+		// Handle both map[string]interface{} (from JSON) and codec.MessageData (from fast path)
+		var pbMsg *agentpb.Message
+
 		if msgMap, ok := messageRaw.(map[string]interface{}); ok {
-			pbMsg := &agentpb.Message{
+			// Map format (from JSON encoding/decoding)
+			pbMsg = &agentpb.Message{
 				Role:      getStringFromMap(msgMap, "role", ""),
 				Content:   t.serializeContent(msgMap["content"]),
 				Timestamp: getStringFromMap(msgMap, "timestamp", ""),
@@ -605,7 +618,22 @@ func (t *GRPCTransport) jsonToProtobufRequest(envelope *codec.Envelope) (*agentp
 					}
 				}
 			}
+		} else if msgData, ok := messageRaw.(codec.MessageData); ok {
+			// MessageData format (from fast path without JSON encoding)
+			pbMsg = &agentpb.Message{
+				Role:      msgData.Role,
+				Content:   t.serializeContent(msgData.Content),
+				Timestamp: msgData.Timestamp,
+				Metadata:  make(map[string]string),
+			}
 
+			// Add metadata
+			for k, v := range msgData.Metadata {
+				pbMsg.Metadata[k] = fmt.Sprintf("%v", v)
+			}
+		}
+
+		if pbMsg != nil {
 			request.Messages = append(request.Messages, pbMsg)
 		}
 	}

@@ -172,8 +172,18 @@ func (r *RemoteAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 	msgData := codec.MessageData{
 		Role:      messageData["role"].(string),
 		Content:   messageData["content"].(string),
-		Metadata:  messageData["metadata"].(map[string]interface{}),
 		Timestamp: messageData["timestamp"].(string),
+	}
+
+	// Handle metadata - can be map[string]interface{} or map[string]string
+	if metadata, ok := messageData["metadata"].(map[string]interface{}); ok {
+		msgData.Metadata = metadata
+	} else if metadata, ok := messageData["metadata"].(map[string]string); ok {
+		// Convert map[string]string to map[string]interface{}
+		msgData.Metadata = make(map[string]interface{})
+		for k, v := range metadata {
+			msgData.Metadata[k] = v
+		}
 	}
 
 	return codec.DecodeMessage(msgData)

@@ -99,8 +99,12 @@ func TestParallelAgent_ConcurrentExecution(t *testing.T) {
 			name: name,
 			processFunc: func(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
 				current := atomic.AddInt32(&counter, 1)
-				if current > maxConcurrent {
-					atomic.StoreInt32(&maxConcurrent, current)
+				// Atomically update maxConcurrent if current is greater
+				for {
+					max := atomic.LoadInt32(&maxConcurrent)
+					if current <= max || atomic.CompareAndSwapInt32(&maxConcurrent, max, current) {
+						break
+					}
 				}
 
 				// Sleep to ensure overlap

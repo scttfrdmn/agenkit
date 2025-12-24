@@ -162,9 +162,32 @@ func (d *BatchingDecorator) Introspect() *agenkit.IntrospectionResult {
 	return d.agent.Introspect()
 }
 
-// Metrics returns the batching metrics.
+// Metrics returns a copy of the batching metrics (thread-safe).
 func (d *BatchingDecorator) Metrics() *BatchingMetrics {
-	return d.metrics
+	d.metrics.mu.RLock()
+	defer d.metrics.mu.RUnlock()
+
+	// Create a copy of the metrics
+	copy := &BatchingMetrics{
+		TotalRequests:     d.metrics.TotalRequests,
+		TotalBatches:      d.metrics.TotalBatches,
+		SuccessfulBatches: d.metrics.SuccessfulBatches,
+		FailedBatches:     d.metrics.FailedBatches,
+		PartialBatches:    d.metrics.PartialBatches,
+		TotalWaitTime:     d.metrics.TotalWaitTime,
+	}
+
+	// Copy pointer fields
+	if d.metrics.MinBatchSize != nil {
+		size := *d.metrics.MinBatchSize
+		copy.MinBatchSize = &size
+	}
+	if d.metrics.MaxBatchSize != nil {
+		size := *d.metrics.MaxBatchSize
+		copy.MaxBatchSize = &size
+	}
+
+	return copy
 }
 
 // Process processes a message with batching.

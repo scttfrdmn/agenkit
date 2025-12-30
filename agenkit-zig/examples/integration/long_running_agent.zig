@@ -49,6 +49,7 @@ const AssistantAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -109,6 +110,13 @@ const AssistantAgent = struct {
         };
 
         return agenkit.Result{ .ok = response };
+    }
+
+    fn introspectImpl(ptr: *anyopaque, allocator: std.mem.Allocator) std.mem.Allocator.Error!agenkit.IntrospectionResult {
+        const self: *AssistantAgent = @ptrCast(@alignCast(ptr));
+        const caps = try capabilitiesImpl(ptr, allocator);
+        defer allocator.free(caps);
+        return agenkit.createDefaultIntrospectionResult(allocator, self.name, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

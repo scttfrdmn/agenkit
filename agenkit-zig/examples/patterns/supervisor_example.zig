@@ -38,6 +38,7 @@ const SpecialistAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -74,6 +75,13 @@ const SpecialistAgent = struct {
         return agenkit.Result{ .ok = response_msg };
     }
 
+    fn introspectImpl(ptr: *anyopaque, allocator: std.mem.Allocator) std.mem.Allocator.Error!agenkit.IntrospectionResult {
+        const self: *SpecialistAgent = @ptrCast(@alignCast(ptr));
+        const caps = try capabilitiesImpl(ptr, allocator);
+        defer allocator.free(caps);
+        return agenkit.createDefaultIntrospectionResult(allocator, self.name, caps);
+    }
+
     fn deinitImpl(ptr: *anyopaque) void {
         const self: *SpecialistAgent = @ptrCast(@alignCast(ptr));
         self.deinit();
@@ -103,6 +111,7 @@ const PlanningAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -131,6 +140,12 @@ const PlanningAgent = struct {
 
         const response_msg = Message.withText(self.allocator, .assistant, response) catch return agenkit.AgentError.ProcessingFailed;
         return agenkit.Result{ .ok = response_msg };
+    }
+
+    fn introspectImpl(_: *anyopaque, allocator: std.mem.Allocator) std.mem.Allocator.Error!agenkit.IntrospectionResult {
+        const caps = try capabilitiesImpl(undefined, allocator);
+        defer allocator.free(caps);
+        return agenkit.createDefaultIntrospectionResult(allocator, "PlanningAgent", caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

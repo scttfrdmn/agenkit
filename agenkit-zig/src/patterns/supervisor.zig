@@ -53,6 +53,8 @@ const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const Result = @import("../agent.zig").Result;
 const Message = @import("../message.zig").Message;
+const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
+const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
 const Allocator = std.mem.Allocator;
 
 /// Subtask decomposed from main task
@@ -167,6 +169,7 @@ pub const SupervisorAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -319,6 +322,13 @@ pub const SupervisorAgent = struct {
         // TODO: Add metadata: subtask_count, specialists_used, execution_order
 
         return Result{ .ok = synthesized };
+    }
+
+    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult {
+        const self: *SupervisorAgent = @ptrCast(@alignCast(ptr));
+        const caps = try capabilitiesImpl(ptr, allocator);
+        defer allocator.free(caps);
+        return createDefaultIntrospectionResult(allocator, self.agent_name, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

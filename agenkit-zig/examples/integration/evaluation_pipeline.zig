@@ -51,6 +51,7 @@ const BenchmarkAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -97,6 +98,13 @@ const BenchmarkAgent = struct {
         };
 
         return agenkit.Result{ .ok = response };
+    }
+
+    fn introspectImpl(ptr: *anyopaque, allocator: std.mem.Allocator) std.mem.Allocator.Error!agenkit.IntrospectionResult {
+        const self: *BenchmarkAgent = @ptrCast(@alignCast(ptr));
+        const caps = try capabilitiesImpl(ptr, allocator);
+        defer allocator.free(caps);
+        return agenkit.createDefaultIntrospectionResult(allocator, self.agent_name, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

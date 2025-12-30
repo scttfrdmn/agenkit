@@ -172,7 +172,9 @@ def test_supervisor_none_planner_raises():
     """Test that None planner raises ValueError."""
     specialists = {"coder": MockAgent("coder")}
 
-    with pytest.raises(ValueError, match=r"Either 'config' or both 'planner' and 'specialists' must be provided"):
+    with pytest.raises(
+        ValueError, match=r"Either 'config' or both 'planner' and 'specialists' must be provided"
+    ):
         SupervisorAgent(planner=None, specialists=specialists)  # type: ignore
 
 

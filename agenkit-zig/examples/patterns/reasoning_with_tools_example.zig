@@ -37,6 +37,7 @@ const MockLLMAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -78,6 +79,13 @@ const MockLLMAgent = struct {
         ) catch return agenkit.AgentError.ProcessingFailed;
 
         return agenkit.Result{ .ok = response_msg };
+    }
+
+    fn introspectImpl(ptr: *anyopaque, allocator: std.mem.Allocator) std.mem.Allocator.Error!agenkit.IntrospectionResult {
+        const self: *MockLLMAgent = @ptrCast(@alignCast(ptr));
+        const caps = try capabilitiesImpl(ptr, allocator);
+        defer allocator.free(caps);
+        return agenkit.createDefaultIntrospectionResult(allocator, self.name, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

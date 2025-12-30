@@ -187,6 +187,10 @@ async def test_weighted_round_robin_strategy():
         await balancer.process(message)
 
     # Agent2 (weight=2.0) should receive roughly twice as many as others
+    # Ensure no division by zero
+    assert agents[0].call_count > 0, "Agent 0 should have received requests"
+    assert agents[2].call_count > 0, "Agent 2 should have received requests"
+
     ratio1 = agents[1].call_count / agents[0].call_count
     ratio2 = agents[1].call_count / agents[2].call_count
 
@@ -313,8 +317,8 @@ async def test_success_rate_calculation():
     instance.metrics.successful_requests = 8
     instance.metrics.failed_requests = 2
 
-    assert instance.metrics.success_rate == 0.8
-    assert instance.metrics.error_rate == 0.2
+    assert instance.metrics.success_rate == pytest.approx(0.8)
+    assert instance.metrics.error_rate == pytest.approx(0.2)
 
 
 @pytest.mark.asyncio
@@ -327,7 +331,7 @@ async def test_avg_response_time():
     instance.metrics.successful_requests = 3
     instance.metrics.total_response_time = 0.6  # 3 requests * 0.2s avg
 
-    assert instance.metrics.avg_response_time == 0.2
+    assert instance.metrics.avg_response_time == pytest.approx(0.2)
 
 
 @pytest.mark.asyncio

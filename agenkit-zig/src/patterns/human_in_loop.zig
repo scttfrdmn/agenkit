@@ -55,6 +55,8 @@ const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const Result = @import("../agent.zig").Result;
 const Message = @import("../message.zig").Message;
+const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
+const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
 const Allocator = std.mem.Allocator;
 
 /// Approval request presented to human reviewer
@@ -156,6 +158,7 @@ pub const HumanInLoopAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -257,6 +260,13 @@ pub const HumanInLoopAgent = struct {
                 }
             },
         }
+    }
+
+    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult {
+        const self: *HumanInLoopAgent = @ptrCast(@alignCast(ptr));
+        const caps = try capabilitiesImpl(ptr, allocator);
+        defer allocator.free(caps);
+        return createDefaultIntrospectionResult(allocator, self.agent_name, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

@@ -40,6 +40,7 @@ const ConfidenceAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -74,6 +75,13 @@ const ConfidenceAgent = struct {
 
         // TODO: In full implementation, would add confidence to metadata
         return agenkit.Result{ .ok = response_msg };
+    }
+
+    fn introspectImpl(ptr: *anyopaque, allocator: std.mem.Allocator) std.mem.Allocator.Error!agenkit.IntrospectionResult {
+        const self: *ConfidenceAgent = @ptrCast(@alignCast(ptr));
+        const caps = try capabilitiesImpl(ptr, allocator);
+        defer allocator.free(caps);
+        return agenkit.createDefaultIntrospectionResult(allocator, self.name, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

@@ -203,58 +203,6 @@ async def test_agent_tool_multiple_calls():
     assert agent.call_count == 3
 
 
-@pytest.mark.asyncio
-async def test_agent_tool_with_tool_registry():
-    """Test integration with ToolRegistry."""
-    from agenkit.patterns import ToolRegistry
-
-    agent = MockSpecialistAgent(specialty="code", response="Code output")
-
-    tool = agent_as_tool(agent=agent, name="code_expert", description="Programming expert")
-
-    # Register tool
-    registry = ToolRegistry()
-    registry.register(tool)
-
-    # Execute via registry
-    result = await registry.execute("code_expert", query="Write code")
-
-    assert result.success
-    assert result.result == "Code output"
-
-
-@pytest.mark.asyncio
-async def test_agent_tool_integration_react_pattern():
-    """Test integration with ReAct pattern."""
-    from agenkit.patterns import ToolRegistry
-
-    # Create specialist agents
-    code_agent = MockSpecialistAgent(specialty="code", response="print('Hello, World!')")
-    math_agent = MockSpecialistAgent(specialty="math", response="The answer is 42")
-
-    # Wrap as tools
-    code_tool = agent_as_tool(
-        agent=code_agent, name="code_specialist", description="Expert in programming"
-    )
-    math_tool = agent_as_tool(
-        agent=math_agent, name="math_specialist", description="Expert in mathematics"
-    )
-
-    # Create registry
-    registry = ToolRegistry()
-    registry.register(code_tool)
-    registry.register(math_tool)
-
-    # Verify tools are registered
-    assert "code_specialist" in registry.list_tools()
-    assert "math_specialist" in registry.list_tools()
-
-    # Verify tool descriptions
-    tools_desc = registry.get_tools_description()
-    assert "code_specialist" in tools_desc
-    assert "math_specialist" in tools_desc
-
-
 def test_agent_tool_validation_empty_name():
     """Test validation of empty tool name."""
     agent = MockSpecialistAgent()

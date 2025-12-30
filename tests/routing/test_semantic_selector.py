@@ -17,19 +17,19 @@ class MockEmbeddingProvider:
     async def embed(self, text: str) -> list[float]:
         """Generate mock embedding based on text content."""
         # Simple mock: use word count as vector
-        words = text.lower().split()
+        text_lower = text.lower()
 
-        # Create vector based on keywords
+        # Create vector based on keywords (check substring, not exact word match)
         vector = [0.0] * 10
-        if "weather" in words or "temperature" in words or "forecast" in words:
+        if "weather" in text_lower or "temperature" in text_lower or "forecast" in text_lower:
             vector[0] = 1.0
-        if "calculate" in words or "math" in words or "number" in words:
+        if "calculate" in text_lower or "math" in text_lower or "number" in text_lower:
             vector[1] = 1.0
-        if "search" in words or "find" in words or "web" in words:
+        if "search" in text_lower or "find" in text_lower or "web" in text_lower:
             vector[2] = 1.0
-        if "database" in words or "sql" in words or "query" in words:
+        if "database" in text_lower or "sql" in text_lower or "query" in text_lower:
             vector[3] = 1.0
-        if "email" in words or "send" in words or "message" in words:
+        if "email" in text_lower or "send" in text_lower or "message" in text_lower:
             vector[4] = 1.0
 
         return vector

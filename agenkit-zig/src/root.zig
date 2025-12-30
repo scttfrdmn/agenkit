@@ -68,6 +68,10 @@ pub const AgentError = @import("agent.zig").AgentError;
 pub const Result = @import("agent.zig").Result;
 pub const EchoAgent = @import("agent.zig").EchoAgent;
 
+// Introspection
+pub const IntrospectionResult = @import("introspection.zig").IntrospectionResult;
+pub const createDefaultIntrospectionResult = @import("introspection.zig").createDefaultIntrospectionResult;
+
 // Patterns
 pub const patterns = struct {
     // Sequential pattern

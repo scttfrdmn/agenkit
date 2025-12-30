@@ -30,6 +30,8 @@ const AgentError = @import("../agent.zig").AgentError;
 const Result = @import("../agent.zig").Result;
 const Message = @import("../message.zig").Message;
 const Allocator = std.mem.Allocator;
+const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
+const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
 
 /// Span context containing trace identifiers
 pub const SpanContext = struct {
@@ -230,6 +232,7 @@ pub const TracingMiddleware = struct {
                 .name = name,
                 .capabilities = capabilities,
                 .process = process,
+                .introspect = introspect,
                 .deinit = deinitVTable,
             },
         };
@@ -312,6 +315,14 @@ pub const TracingMiddleware = struct {
         }
 
         return Result{ .ok = response };
+    }
+
+    /// Introspect implementation
+    fn introspect(ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult {
+        const self: *TracingMiddleware = @ptrCast(@alignCast(ptr));
+        const caps = try capabilities(ptr, allocator);
+        defer allocator.free(caps);
+        return createDefaultIntrospectionResult(allocator, self.service_name, caps);
     }
 
     /// Deinit implementation for VTable

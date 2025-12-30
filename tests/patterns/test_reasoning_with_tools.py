@@ -270,7 +270,7 @@ async def test_reasoning_with_single_tool_call():
     trace = response.metadata["reasoning_trace"]
     assert trace["total_tools_used"] == 1
     assert len(trace["steps"]) >= 3  # thinking, tool_call, tool_result, conclusion
-    assert response.metadata["reasoning_steps"] >= 3
+    assert response.metadata["reasoning_steps"] == 2  # 2 LLM calls (tool call + final answer)
 
 
 @pytest.mark.asyncio

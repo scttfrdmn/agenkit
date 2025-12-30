@@ -51,6 +51,8 @@ const AgentError = @import("../agent.zig").AgentError;
 const Result = @import("../agent.zig").Result;
 const Message = @import("../message.zig").Message;
 const Allocator = std.mem.Allocator;
+const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
+const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
 
 /// Consensus function signature - returns true if messages represent consensus
 pub const ConsensusFn = *const fn (messages: []const Message) bool;
@@ -130,6 +132,7 @@ pub const CollaborativeAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -266,6 +269,13 @@ pub const CollaborativeAgent = struct {
         // - participants: list of agent names
 
         return Result{ .ok = merged_message };
+    }
+
+    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult {
+        const self: *CollaborativeAgent = @ptrCast(@alignCast(ptr));
+        const caps = try capabilitiesImpl(ptr, allocator);
+        defer allocator.free(caps);
+        return createDefaultIntrospectionResult(allocator, self.agent_name, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

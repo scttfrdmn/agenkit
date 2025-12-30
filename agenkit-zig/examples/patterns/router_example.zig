@@ -37,6 +37,7 @@ const SpecialistAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -69,6 +70,13 @@ const SpecialistAgent = struct {
 
         const response_msg = Message.withText(self.allocator, .assistant, response) catch return agenkit.AgentError.ProcessingFailed;
         return agenkit.Result{ .ok = response_msg };
+    }
+
+    fn introspectImpl(ptr: *anyopaque, allocator: std.mem.Allocator) std.mem.Allocator.Error!agenkit.IntrospectionResult {
+        const self: *SpecialistAgent = @ptrCast(@alignCast(ptr));
+        const caps = try capabilitiesImpl(ptr, allocator);
+        defer allocator.free(caps);
+        return agenkit.createDefaultIntrospectionResult(allocator, self.name, caps);
     }
 
     fn deinitImpl(ptr: *anyopaque) void {

@@ -196,12 +196,13 @@ func (r *RateLimiterDecorator) acquireTokens(ctx context.Context, tokensNeeded i
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// Manually add tokens for the time we waited
-	tokensToAdd := actualWaitDuration.Seconds() * r.config.Rate
-	r.tokens = min(r.tokens+tokensToAdd, float64(r.config.Capacity))
-	r.lastUpdate = time.Now()
+	// Refill tokens based on actual elapsed time
+	r.refillTokens()
 
-	if r.tokens >= float64(tokensNeeded) {
+	// Use small epsilon for floating point comparison to avoid precision issues
+	// Need epsilon >= 0.005 since error message uses %.2f formatting
+	const epsilon = 0.01
+	if r.tokens >= float64(tokensNeeded)-epsilon {
 		r.tokens -= float64(tokensNeeded)
 		r.metrics.mu.Lock()
 		r.metrics.CurrentTokens = r.tokens

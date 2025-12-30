@@ -140,7 +140,7 @@ class RemoteAgent(Agent):
                     error_payload = response["payload"]
                     raise RemoteExecutionError(
                         self._name,
-                        error_payload["error_message"],
+                        error_payload.get("error_message", "Unknown error"),
                         error_payload.get("error_details"),
                     )
 
@@ -205,7 +205,7 @@ class RemoteAgent(Agent):
                             error_payload = response["payload"]
                             raise RemoteExecutionError(
                                 self._name,
-                                error_payload["error_message"],
+                                error_payload.get("error_message", "Unknown error"),
                                 error_payload.get("error_details"),
                             )
 
@@ -245,7 +245,7 @@ class RemoteAgent(Agent):
                             error_payload = response["payload"]
                             raise RemoteExecutionError(
                                 self._name,
-                                error_payload["error_message"],
+                                error_payload.get("error_message", "Unknown error"),
                                 error_payload.get("error_details"),
                             )
 

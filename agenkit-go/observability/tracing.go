@@ -195,6 +195,11 @@ func (t *TracingMiddleware) Capabilities() []string {
 	return t.agent.Capabilities()
 }
 
+// Introspect returns the agent's introspection result.
+func (t *TracingMiddleware) Introspect() *agenkit.IntrospectionResult {
+	return t.agent.Introspect()
+}
+
 // Process processes a message with distributed tracing.
 func (t *TracingMiddleware) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Extract parent context from message metadata

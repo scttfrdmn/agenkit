@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(agenkit VERSION 0.29.2 LANGUAGES CXX)
+project(agenkit VERSION 0.44.0 LANGUAGES CXX)
 
 # C++17 standard
 set(CMAKE_CXX_STANDARD 17)

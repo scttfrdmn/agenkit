@@ -17,6 +17,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# DISABLED: Use local testing instead (./scripts/test-local.sh)
+if: false
+
 jobs:
   # Go benchmarks with regression detection
   benchmark-go:

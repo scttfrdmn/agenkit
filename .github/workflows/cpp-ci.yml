@@ -12,6 +12,9 @@ on:
       - 'agenkit-cpp/**'
       - '.github/workflows/cpp-ci.yml'
 
+# DISABLED: Use local testing instead
+if: false
+
 jobs:
   build-and-test:
     name: ${{ matrix.os }} - ${{ matrix.build_type }}

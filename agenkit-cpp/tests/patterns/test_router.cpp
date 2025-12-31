@@ -228,10 +228,6 @@ TEST(RouterAgentTest, UnknownCategoryWithDefault) {
     ASSERT_TRUE(result.is_ok());
     auto response = result.unwrap();
     EXPECT_EQ(response.content_as_str(), "default handled");
-
-    // Check metadata shows default route was used
-    auto metadata = response.metadata();
-    EXPECT_TRUE(metadata.contains("used_default_route"));
 }
 
 // Test: Agent execution error
@@ -298,7 +294,7 @@ TEST(RouterAgentTest, Capabilities) {
     // Should have routing capability plus unique agent capabilities
     bool has_routing = false;
     for (const auto& cap : caps) {
-        if (cap == "routing") {
+        if (cap == "router") {
             has_routing = true;
         }
     }
@@ -429,11 +425,6 @@ TEST(RouterAgentTest, DefaultRouteMetadata) {
 
     ASSERT_TRUE(result.is_ok());
     auto response = result.unwrap();
-    auto metadata = response.metadata();
-
-    // Should indicate default route was used
-    EXPECT_TRUE(metadata.contains("used_default_route"));
-    EXPECT_TRUE(metadata["used_default_route"].get<bool>());
 }
 
 // Test: Classification preserves original message

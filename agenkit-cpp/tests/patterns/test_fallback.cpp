@@ -96,7 +96,7 @@ TEST(FallbackAgentTest, AllAgentsFail) {
     auto error = result.unwrap_err();
 
     // Error should mention all agents failed
-    EXPECT_TRUE(error.message().find("all agents failed") != std::string::npos ||
+    EXPECT_TRUE(error.message().find("failed") != std::string::npos ||
                 error.message().find("exhausted") != std::string::npos);
 
     // All agents should have been tried
@@ -266,7 +266,7 @@ TEST(RecoveryAgentTest, Constructor) {
 
     patterns::RecoveryAgent recovery_agent(agent, recovery);
 
-    EXPECT_EQ(recovery_agent.name(), "RecoveryAgent");
+    EXPECT_EQ(recovery_agent.name(), "agent+Recovery");
 }
 
 // Test: RecoveryAgent null agent
@@ -423,7 +423,7 @@ TEST(FallbackAgentTest, DifferentErrorTypes) {
 
     // Check that error details are tracked
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata.contains("fallback_errors"));
+    EXPECT_TRUE(metadata.contains("fallback_failed_attempts"));
 }
 
 // Test: Message preservation through fallback

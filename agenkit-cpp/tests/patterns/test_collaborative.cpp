@@ -163,8 +163,8 @@ TEST(CollaborativeAgentTest, EarlyConsensus) {
     EXPECT_LT(agent1->call_count(), 5);
 
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata.contains("consensus_reached"));
-    EXPECT_TRUE(metadata["consensus_reached"].get<bool>());
+    EXPECT_TRUE(metadata.contains("consensus"));
+    EXPECT_TRUE(metadata["consensus"].get<bool>());
 }
 
 // Test: No consensus - max rounds reached
@@ -196,7 +196,7 @@ TEST(CollaborativeAgentTest, NoConsensusMaxRounds) {
 
     auto metadata = response.metadata();
     expect_metadata_value<int>(response, "collaborative_rounds", 3);
-    EXPECT_FALSE(metadata["consensus_reached"].get<bool>());
+    EXPECT_FALSE(metadata["consensus"].get<bool>());
 }
 
 // Test: Metadata tracking
@@ -228,7 +228,7 @@ TEST(CollaborativeAgentTest, Metadata) {
     expect_metadata_exists(response, "collaborative_rounds");
     expect_metadata_value<int>(response, "collaborative_rounds", 2);
 
-    expect_metadata_exists(response, "consensus_reached");
+    expect_metadata_exists(response, "consensus");
 }
 
 // Test: Agent error handling
@@ -308,7 +308,7 @@ TEST(CollaborativeAgentTest, DefaultMergeVote) {
     EXPECT_EQ(response.content_as_str(), "answer_A");
 
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata.contains("vote_count"));
+    EXPECT_TRUE(metadata.contains("votes"));
 }
 
 // Test: Default consensus - exact match
@@ -338,7 +338,7 @@ TEST(CollaborativeAgentTest, DefaultConsensusExactMatch) {
     EXPECT_LT(agent1->call_count(), 5);
 
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata["consensus_reached"].get<bool>());
+    EXPECT_TRUE(metadata["consensus"].get<bool>());
 }
 
 // Test: Default consensus - majority agreement
@@ -366,7 +366,7 @@ TEST(CollaborativeAgentTest, DefaultConsensusMajority) {
 
     // Should reach majority consensus
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata["consensus_reached"].get<bool>());
+    EXPECT_TRUE(metadata["consensus"].get<bool>());
 }
 
 // Test: Capabilities aggregation
@@ -583,7 +583,7 @@ TEST(CollaborativeAgentTest, CustomConsensusFunction) {
 
     // Should reach custom consensus quickly
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata["consensus_reached"].get<bool>());
+    EXPECT_TRUE(metadata["consensus"].get<bool>());
 }
 
 // Test: Round history in metadata

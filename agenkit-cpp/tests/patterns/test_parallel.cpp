@@ -251,7 +251,7 @@ TEST(ParallelAgentTest, DefaultAggregatorMajorityVote) {
 
     // Should have vote metadata
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata.contains("vote_count"));
+    EXPECT_TRUE(metadata.contains("votes"));
 }
 
 // Test: Single agent parallel

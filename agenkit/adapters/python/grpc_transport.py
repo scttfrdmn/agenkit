@@ -36,7 +36,7 @@ class GRPCTransport(Transport):
     def __init__(
         self,
         url: str,
-        use_tls: bool = True,
+        use_tls: bool | None = None,
         root_certificates: bytes | None = None,
         private_key: bytes | None = None,
         certificate_chain: bytes | None = None,
@@ -45,7 +45,7 @@ class GRPCTransport(Transport):
 
         Args:
             url: gRPC endpoint URL (e.g., "grpc://localhost:50051" or "grpcs://host:443")
-            use_tls: Whether to use TLS encryption (default: True for security)
+            use_tls: Whether to use TLS encryption (default: scheme-dependent - grpcs:// uses TLS, grpc:// does not)
             root_certificates: Optional PEM-encoded root certificates for server verification
             private_key: Optional PEM-encoded private key for mutual TLS
             certificate_chain: Optional PEM-encoded certificate chain for mutual TLS
@@ -54,9 +54,10 @@ class GRPCTransport(Transport):
             ValueError: If URL format is invalid
 
         Security Note:
-            - TLS is ENABLED by default (use_tls=True) for production security
-            - Only disable TLS (use_tls=False) for local development/testing
-            - For production, provide root_certificates for proper server verification
+            - grpcs:// scheme always uses TLS for security
+            - grpc:// scheme is insecure by default (use_tls=False) for compatibility
+            - Override with explicit use_tls=True/False to force specific behavior
+            - For production, use grpcs:// and provide root_certificates for proper server verification
             - Use mutual TLS (private_key + certificate_chain) for strongest security
         """
         self._url = url
@@ -68,20 +69,24 @@ class GRPCTransport(Transport):
         self._lock = asyncio.Lock()
         self._tracer = get_tracer()
 
-        # TLS configuration
-        self._use_tls = use_tls
-        self._root_certificates = root_certificates
-        self._private_key = private_key
-        self._certificate_chain = certificate_chain
-
-        # Parse URL
+        # Parse URL first to determine TLS defaults based on scheme
         parsed = urlparse(url)
         if parsed.scheme not in ("grpc", "grpcs"):
             raise ValueError(f"Invalid gRPC URL scheme: {parsed.scheme} (use 'grpc' or 'grpcs')")
 
-        # grpcs:// implies TLS
+        # Determine TLS based on scheme and explicit parameter
+        # grpcs:// always uses TLS, grpc:// defaults to insecure
         if parsed.scheme == "grpcs":
             self._use_tls = True
+        elif parsed.scheme == "grpc":
+            # grpc:// is insecure by default, but can be overridden with explicit use_tls
+            self._use_tls = use_tls if use_tls is not None else False
+        else:
+            self._use_tls = use_tls if use_tls is not None else False
+
+        self._root_certificates = root_certificates
+        self._private_key = private_key
+        self._certificate_chain = certificate_chain
 
         if not parsed.hostname:
             raise ValueError(f"Missing hostname in gRPC URL: {url}")

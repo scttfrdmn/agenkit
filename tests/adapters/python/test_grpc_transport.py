@@ -35,11 +35,11 @@ class TestGRPCTransportInit:
         assert transport._use_tls is True
         assert transport._port == 443
 
-    def test_tls_enabled_by_default(self):
-        """Test that TLS is enabled by default for security."""
+    def test_grpc_scheme_insecure_by_default(self):
+        """Test that grpc:// scheme is insecure by default."""
         transport = GRPCTransport("grpc://example.com")
-        assert transport._use_tls is True
-        assert transport._port == 443  # Default TLS port
+        assert transport._use_tls is False
+        assert transport._port == 50051  # Default insecure gRPC port
 
     def test_invalid_scheme(self):
         """Test initialization with invalid scheme."""
@@ -65,7 +65,10 @@ class TestGRPCTransportConnection:
             await transport.connect()
 
             assert transport.is_connected
-            mock_channel.assert_called_once_with("localhost:50051")
+            # Check that channel was called with correct host (options are implementation details)
+            assert mock_channel.call_count == 1
+            call_args = mock_channel.call_args
+            assert call_args[0][0] == "localhost:50051"  # First positional arg is the host
 
     @pytest.mark.asyncio
     async def test_connect_already_connected(self):

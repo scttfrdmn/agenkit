@@ -1,6 +1,7 @@
 """Tests for HTTP transport with HTTP/2 support."""
 
 import asyncio
+from collections.abc import AsyncIterator
 
 import pytest
 
@@ -10,7 +11,7 @@ from agenkit.interfaces import Agent, Message
 
 
 class EchoAgent(Agent):
-    """Simple echo agent for testing."""
+    """Simple echo agent for testing with streaming support."""
 
     async def process(self, message: Message) -> Message:
         """Echo the input message."""
@@ -20,6 +21,17 @@ class EchoAgent(Agent):
             metadata=message.metadata,
         )
 
+    async def stream(self, message: Message) -> AsyncIterator[Message]:
+        """Stream the echo response word by word."""
+        content = f"Echo: {message.content}"
+        words = content.split()
+        for word in words:
+            yield Message(
+                role="agent",
+                content=word + " ",
+                metadata=message.metadata,
+            )
+
     @property
     def name(self) -> str:
         return "echo"
@@ -28,7 +40,7 @@ class EchoAgent(Agent):
 class StreamingEchoAgent(Agent):
     """Streaming echo agent that returns 5 chunks."""
 
-    async def stream(self, message: Message):
+    async def stream(self, message: Message) -> AsyncIterator[Message]:
         """Stream 5 chunks."""
         for i in range(5):
             yield Message(

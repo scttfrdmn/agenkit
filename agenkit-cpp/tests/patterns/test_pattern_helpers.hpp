@@ -272,25 +272,30 @@ public:
 
     std::future<core::Result<core::Message, core::AgentError>>
     process(core::Message /* message */) override {
-        // Increment active counter
-        int current = active_counter_->fetch_add(1) + 1;
+        // Launch async work to enable true concurrent execution
+        return std::async(std::launch::async, [this]() {
+            // Increment active counter
+            if (active_counter_) {
+                int current = active_counter_->fetch_add(1) + 1;
 
-        // Update max if higher
-        int max = max_counter_->load();
-        while (current > max && !max_counter_->compare_exchange_weak(max, current)) {
-            max = max_counter_->load();
-        }
+                // Update max if higher
+                int max = max_counter_->load();
+                while (current > max && !max_counter_->compare_exchange_weak(max, current)) {
+                    max = max_counter_->load();
+                }
+            }
 
-        // Simulate work
-        std::this_thread::sleep_for(delay_);
+            // Simulate work
+            std::this_thread::sleep_for(delay_);
 
-        // Decrement active counter
-        active_counter_->fetch_sub(1);
+            // Decrement active counter
+            if (active_counter_) {
+                active_counter_->fetch_sub(1);
+            }
 
-        auto response_msg = core::Message::with_text("assistant", response_);
-        return core::make_ready_future(
-            core::Result<core::Message, core::AgentError>::ok(response_msg)
-        );
+            auto response_msg = core::Message::with_text("assistant", response_);
+            return core::Result<core::Message, core::AgentError>::ok(response_msg);
+        });
     }
 };
 

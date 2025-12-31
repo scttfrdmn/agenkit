@@ -83,19 +83,17 @@ TEST(ParallelAgentTest, BasicProcess) {
     EXPECT_EQ(response.content_as_str(), "aggregated 3 responses");
 }
 
-// Test: Concurrent execution verification
+// Test: Concurrent execution verification (timing-based)
 TEST(ParallelAgentTest, ConcurrentExecution) {
-    std::atomic<int> active_counter(0);
-    std::atomic<int> max_counter(0);
-
+    // Agents with 50ms delay each - if sequential would take 150ms+
     auto delay = std::chrono::milliseconds(50);
 
     auto agent1 = std::make_shared<ConcurrencyTrackingAgent>(
-        "agent1", "r1", delay, &active_counter, &max_counter);
+        "agent1", "r1", delay, nullptr, nullptr);
     auto agent2 = std::make_shared<ConcurrencyTrackingAgent>(
-        "agent2", "r2", delay, &active_counter, &max_counter);
+        "agent2", "r2", delay, nullptr, nullptr);
     auto agent3 = std::make_shared<ConcurrencyTrackingAgent>(
-        "agent3", "r3", delay, &active_counter, &max_counter);
+        "agent3", "r3", delay, nullptr, nullptr);
 
     auto aggregator = patterns::default_aggregators::first;
 
@@ -103,12 +101,18 @@ TEST(ParallelAgentTest, ConcurrentExecution) {
     patterns::ParallelAgent parallel(agents, aggregator);
 
     auto msg = core::Message::with_text("user", "test");
+
+    auto start = std::chrono::steady_clock::now();
     auto result = parallel.process(std::move(msg)).get();
+    auto end = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
     ASSERT_TRUE(result.is_ok());
 
-    // If truly concurrent, max should be > 1
-    EXPECT_GT(max_counter.load(), 1) << "Expected concurrent execution";
+    // Should complete in ~50-120ms (parallel) not 150ms+ (sequential)
+    // Allow margin for overhead and system variations
+    EXPECT_LT(elapsed.count(), 130)
+        << "Expected concurrent execution (elapsed: " << elapsed.count() << "ms)";
 }
 
 // Test: Metadata tracking

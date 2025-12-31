@@ -344,24 +344,33 @@ class LoadBalancerRouter(Agent):
         return available[0]
 
     def _select_weighted_round_robin(self) -> AgentInstance | None:
-        """Select instance based on weight (higher weight = more requests)."""
+        """Select instance based on weight using smooth weighted round-robin algorithm.
+
+        SWRR ensures fair distribution based on weights by maintaining a running
+        weight counter for each instance. Higher weights receive proportionally more requests.
+        """
         available = [i for i in self.instances if i.can_accept_request]
 
         if not available:
             return None
 
-        # Smooth weighted round robin (SWRR) algorithm
-        sum(i.weight for i in available)
-
-        # Find instance with highest (weight - current_weight)
-        best_instance = None
-        best_score = float("-inf")
-
+        # Initialize current_weight attribute if not present
         for instance in available:
-            score = instance.weight - (instance.metrics.active_requests / instance.max_concurrent)
-            if score > best_score:
-                best_score = score
-                best_instance = instance
+            if not hasattr(instance, '_current_weight'):
+                instance._current_weight = 0
+
+        # Smooth weighted round robin (SWRR) algorithm
+        total_weight = sum(i.weight for i in available)
+
+        # Increment each instance's current weight by its weight
+        for instance in available:
+            instance._current_weight += instance.weight
+
+        # Select instance with highest current weight
+        best_instance = max(available, key=lambda i: i._current_weight)
+
+        # Reduce selected instance's current weight by total weight
+        best_instance._current_weight -= total_weight
 
         return best_instance
 

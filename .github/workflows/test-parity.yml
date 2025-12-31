@@ -1,0 +1,228 @@
+name: Test Parity Tracking
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'tests/**'
+      - 'agenkit-go/**/*_test.go'
+      - 'agenkit-cpp/tests/**'
+      - 'agenkit-rust/tests/**'
+      - 'agenkit-zig/**/*.zig'
+      - 'agenkit-ts/**/*.test.ts'
+      - 'agenkit-ts/**/*.spec.ts'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    # Run daily at 00:00 UTC
+    - cron: '0 0 * * *'
+
+jobs:
+  test-parity:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Set up Zig
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.13.0
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install uv
+        uv sync
+
+    - name: Install C++ build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential
+
+    - name: Build C++ tests
+      run: |
+        cd agenkit-cpp
+        mkdir -p build
+        cd build
+        cmake ..
+        make -j$(nproc)
+
+    - name: Install TypeScript dependencies
+      run: |
+        cd agenkit-ts
+        npm install
+
+    - name: Install jq for JSON processing
+      run: sudo apt-get install -y jq bc
+
+    - name: Run test parity script
+      id: parity
+      run: |
+        chmod +x ./scripts/test-parity.sh
+        ./scripts/test-parity.sh > parity-output.txt 2>&1 || true
+
+        # Extract summary for PR comment
+        echo "## Test Parity Report" > parity-summary.md
+        echo "" >> parity-summary.md
+        echo "**Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> parity-summary.md
+        echo "" >> parity-summary.md
+
+        # Extract totals from JSON
+        PYTHON_TOTAL=$(jq -r '.languages.python.total' test-parity-report.json)
+        GO_TOTAL=$(jq -r '.languages.go.total' test-parity-report.json)
+        CPP_TOTAL=$(jq -r '.languages.cpp.total' test-parity-report.json)
+        RUST_TOTAL=$(jq -r '.languages.rust.total' test-parity-report.json)
+        ZIG_TOTAL=$(jq -r '.languages.zig.total' test-parity-report.json)
+        TS_TOTAL=$(jq -r '.languages.typescript.total' test-parity-report.json)
+
+        # Calculate parity
+        GO_PARITY=$(echo "scale=1; ($GO_TOTAL * 100) / $PYTHON_TOTAL" | bc)
+        RUST_PARITY=$(echo "scale=1; ($RUST_TOTAL * 100) / $PYTHON_TOTAL" | bc)
+        ZIG_PARITY=$(echo "scale=1; ($ZIG_TOTAL * 100) / $PYTHON_TOTAL" | bc)
+        TS_PARITY=$(echo "scale=1; ($TS_TOTAL * 100) / $PYTHON_TOTAL" | bc)
+
+        echo "| Language | Tests | Parity | Status |" >> parity-summary.md
+        echo "|----------|-------|--------|--------|" >> parity-summary.md
+        echo "| Python | $PYTHON_TOTAL | 100% | ✅ Reference |" >> parity-summary.md
+        echo "| Go | $GO_TOTAL | ${GO_PARITY}% | $([ "$GO_PARITY" -ge 80 ] && echo "✅" || [ "$GO_PARITY" -ge 40 ] && echo "🟡" || echo "🔴") |" >> parity-summary.md
+        echo "| C++ | $CPP_TOTAL suites | N/A | $([ "$CPP_TOTAL" -ge 40 ] && echo "✅" || echo "🔴") |" >> parity-summary.md
+        echo "| Rust | $RUST_TOTAL | ${RUST_PARITY}% | $([ "$RUST_PARITY" -ge 80 ] && echo "✅" || [ "$RUST_PARITY" -ge 40 ] && echo "🟡" || echo "🔴") |" >> parity-summary.md
+        echo "| Zig | $ZIG_TOTAL | ${ZIG_PARITY}% | $([ "$ZIG_PARITY" -ge 80 ] && echo "✅" || [ "$ZIG_PARITY" -ge 40 ] && echo "🟡" || echo "🔴") |" >> parity-summary.md
+        echo "| TypeScript | $TS_TOTAL | ${TS_PARITY}% | $([ "$TS_PARITY" -ge 80 ] && echo "✅" || [ "$TS_PARITY" -ge 40 ] && echo "🟡" || echo "🔴") |" >> parity-summary.md
+        echo "" >> parity-summary.md
+        echo "📊 [Full Dashboard](https://github.com/${{ github.repository }}/blob/main/docs/TEST_PARITY.md)" >> parity-summary.md
+        echo "📋 [Raw Data (JSON)](https://github.com/${{ github.repository }}/blob/main/test-parity-report.json)" >> parity-summary.md
+
+        cat parity-summary.md
+
+    - name: Comment PR with parity report
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const summary = fs.readFileSync('parity-summary.md', 'utf8');
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: summary
+          });
+
+    - name: Commit updated dashboard
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+
+        git add docs/TEST_PARITY.md test-parity-report.json
+
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "chore: Update test parity dashboard [skip ci]"
+          git push
+        fi
+
+    - name: Upload parity report artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-parity-report
+        path: |
+          test-parity-report.json
+          docs/TEST_PARITY.md
+          parity-output.txt
+        retention-days: 90
+
+    - name: Check parity regression
+      id: check-regression
+      run: |
+        # Check if parity has decreased compared to main branch
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          # Fetch main branch data (if available)
+          git fetch origin main:main || true
+
+          if git show main:test-parity-report.json > main-parity.json 2>/dev/null; then
+            MAIN_GO=$(jq -r '.languages.go.total' main-parity.json)
+            MAIN_CPP=$(jq -r '.languages.cpp.total' main-parity.json)
+            MAIN_RUST=$(jq -r '.languages.rust.total' main-parity.json)
+
+            PR_GO=$(jq -r '.languages.go.total' test-parity-report.json)
+            PR_CPP=$(jq -r '.languages.cpp.total' test-parity-report.json)
+            PR_RUST=$(jq -r '.languages.rust.total' test-parity-report.json)
+
+            REGRESSION=0
+
+            if [ "$PR_GO" -lt "$MAIN_GO" ]; then
+              echo "⚠️ Go tests decreased: $MAIN_GO → $PR_GO (-$((MAIN_GO - PR_GO)))"
+              REGRESSION=1
+            fi
+
+            if [ "$PR_CPP" -lt "$MAIN_CPP" ]; then
+              echo "⚠️ C++ tests decreased: $MAIN_CPP → $PR_CPP (-$((MAIN_CPP - PR_CPP)))"
+              REGRESSION=1
+            fi
+
+            if [ "$PR_RUST" -lt "$MAIN_RUST" ]; then
+              echo "⚠️ Rust tests decreased: $MAIN_RUST → $PR_RUST (-$((MAIN_RUST - PR_RUST)))"
+              REGRESSION=1
+            fi
+
+            if [ "$REGRESSION" -eq 1 ]; then
+              echo "regression=true" >> $GITHUB_OUTPUT
+              exit 1
+            else
+              echo "✅ No test parity regression detected"
+            fi
+          else
+            echo "ℹ️ No baseline data from main branch"
+          fi
+        fi
+
+    - name: Generate parity badge
+      run: |
+        PYTHON_TOTAL=$(jq -r '.languages.python.total' test-parity-report.json)
+        GO_TOTAL=$(jq -r '.languages.go.total' test-parity-report.json)
+        OVERALL_PARITY=$(echo "scale=1; (($GO_TOTAL * 1.0) / $PYTHON_TOTAL) * 100" | bc)
+
+        COLOR="red"
+        if (( $(echo "$OVERALL_PARITY >= 80" | bc -l) )); then
+          COLOR="brightgreen"
+        elif (( $(echo "$OVERALL_PARITY >= 60" | bc -l) )); then
+          COLOR="green"
+        elif (( $(echo "$OVERALL_PARITY >= 40" | bc -l) )); then
+          COLOR="yellow"
+        elif (( $(echo "$OVERALL_PARITY >= 20" | bc -l) )); then
+          COLOR="orange"
+        fi
+
+        echo "Test Parity: ${OVERALL_PARITY}% | Color: $COLOR"
+
+        # Could integrate with shields.io endpoint or badges

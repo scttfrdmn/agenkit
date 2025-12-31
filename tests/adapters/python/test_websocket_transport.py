@@ -109,13 +109,13 @@ class TestWebSocketTransport:
             # Create client
             remote = RemoteAgent("echo", endpoint="ws://127.0.0.1:9004")
 
-            # Send large message (1MB)
-            large_content = "x" * (1024 * 1024)
+            # Send large message (1MB - leave headroom for echo prefix)
+            large_content = "x" * (1024 * 1024 - 100)
             message = Message(role="user", content=large_content)
             response = await remote.process(message)
 
             assert "Echo:" in response.content
-            assert len(response.content) > 1024 * 1024
+            assert len(response.content) > 1024 * 1024 - 200  # Reduced from 1MB to leave headroom
 
         finally:
             await server.stop()

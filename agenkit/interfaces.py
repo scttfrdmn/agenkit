@@ -68,11 +68,11 @@ class Message:
         if self.role not in allowed_roles:
             raise ValueError(f"Invalid message role: {self.role}. Must be one of {allowed_roles}")
 
-        # Content validation - max 1MB
+        # Content validation - max 16MB (allows for large payloads in testing and production)
         if self.content is not None:
             content_str = str(self.content)
             content_size = len(content_str.encode("utf-8"))
-            max_content_size = 1024 * 1024  # 1MB
+            max_content_size = 16 * 1024 * 1024  # 16MB
             if content_size > max_content_size:
                 raise ValueError(
                     f"Message content exceeds maximum size of {max_content_size} bytes "
@@ -89,7 +89,7 @@ class Message:
 
             # Validate each key and value
             max_key_length = 50
-            max_value_size = 10 * 1024  # 10KB
+            max_value_size = 16 * 1024 * 1024  # 16MB - match content size limit
 
             for key, value in self.metadata.items():
                 # Key length validation

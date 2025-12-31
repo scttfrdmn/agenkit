@@ -199,8 +199,8 @@ class TestRemoteAgentCommunication:
             try:
                 remote = RemoteAgent("echo", endpoint=endpoint)
 
-                # Send large message (1 MB)
-                large_content = "x" * (1024 * 1024)
+                # Send large message (1 MB - leave headroom for echo prefix)
+                large_content = "x" * (1024 * 1024 - 100)
                 msg = Message(role="user", content=large_content)
                 response = await remote.process(msg)
 

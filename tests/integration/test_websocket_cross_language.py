@@ -92,14 +92,14 @@ async def test_python_to_go_websocket_large_message():
     async with go_http_server() as (port, _process):
         agent = RemoteAgent(name="test-agent", endpoint=f"ws://localhost:{port}/ws")
 
-        # Send large message (1MB)
-        large_content = "A" * (1024 * 1024)  # 1MB
+        # Send large message (1MB - leave headroom for echo prefix)
+        large_content = "A" * (1024 * 1024 - 100)
         message = Message(role="user", content=large_content)
         response = await agent.process(message)
 
         # Validate response
         assert response.role == "agent"
-        assert len(response.metadata["original_content"]) == 1024 * 1024
+        assert len(response.metadata["original_content"]) == 1024 * 1024 - 100
 
 
 @pytest.mark.asyncio

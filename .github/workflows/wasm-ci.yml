@@ -23,6 +23,9 @@ on:
       - '.github/workflows/wasm-ci.yml'
   workflow_dispatch:
 
+# DISABLED: Use local testing instead
+if: false
+
 jobs:
   # Build Zig WASM modules
   build-zig-wasm:

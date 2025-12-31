@@ -11,6 +11,9 @@ on:
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
+# DISABLED: Docs deployment disabled for solo development
+if: false
+
 permissions:
   contents: write
 

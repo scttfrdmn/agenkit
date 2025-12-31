@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+# DISABLED: Use local testing instead (./scripts/test-local.sh)
+if: false
+
 jobs:
   python-integration:
     name: Python Integration Tests

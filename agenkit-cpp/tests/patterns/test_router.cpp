@@ -75,7 +75,7 @@ TEST(RouterAgentTest, Constructor) {
     patterns::RouterConfig config{classifier, agents, std::nullopt};
     patterns::RouterAgent router(config);
 
-    EXPECT_EQ(router.name(), "RouterAgent");
+    EXPECT_EQ(router.name(), "router");
 }
 
 // Test: Constructor with null classifier

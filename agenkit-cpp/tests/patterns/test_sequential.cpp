@@ -21,7 +21,7 @@ TEST(SequentialAgentTest, Constructor) {
     std::vector<std::shared_ptr<core::Agent>> agents = {agent1, agent2};
     patterns::SequentialAgent seq(agents);
 
-    EXPECT_EQ(seq.name(), "SequentialAgent");
+    EXPECT_EQ(seq.name(), "sequential");
 }
 
 // Test: Constructor with empty agents list

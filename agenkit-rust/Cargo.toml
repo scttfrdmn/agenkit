@@ -137,47 +137,47 @@ path = "examples/http_transport.rs"
 
 [[example]]
 name = "reflection_pattern"
-path = "examples/reflection_pattern.rs"
+path = "examples/reflection-pattern.rs"
 
 [[example]]
-name = "agents_as_tools"
-path = "examples/agents_as_tools.rs"
+name = "agents_as_tools_pattern"
+path = "examples/agents-as-tools-pattern.rs"
 
 [[example]]
-name = "orchestration"
-path = "examples/orchestration.rs"
+name = "orchestration_pattern"
+path = "examples/orchestration-pattern.rs"
 
 [[example]]
 name = "react_pattern"
-path = "examples/react_pattern.rs"
+path = "examples/react-pattern.rs"
 
 [[example]]
 name = "planning_pattern"
-path = "examples/planning_pattern.rs"
+path = "examples/planning-pattern.rs"
 
 [[example]]
 name = "conversational_pattern"
-path = "examples/conversational_pattern.rs"
+path = "examples/conversational-pattern.rs"
 
 [[example]]
 name = "task_pattern"
-path = "examples/task_pattern.rs"
+path = "examples/task-pattern.rs"
 
 [[example]]
 name = "multiagent_pattern"
-path = "examples/multiagent_pattern.rs"
+path = "examples/multiagent-pattern.rs"
 
 [[example]]
 name = "autonomous_pattern"
-path = "examples/autonomous_pattern.rs"
+path = "examples/autonomous-pattern.rs"
 
 [[example]]
 name = "memory_hierarchy_pattern"
-path = "examples/memory_hierarchy_pattern.rs"
+path = "examples/memory-hierarchy-pattern.rs"
 
 [[example]]
 name = "reasoning_with_tools_pattern"
-path = "examples/reasoning_with_tools_pattern.rs"
+path = "examples/reasoning-with-tools-pattern.rs"
 
 [[example]]
 name = "litellm_example"

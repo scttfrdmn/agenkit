@@ -100,7 +100,7 @@ TEST(SupervisorAgentTest, Constructor) {
 
     patterns::SupervisorAgent supervisor(planner, specialists);
 
-    EXPECT_EQ(supervisor.name(), "SupervisorAgent");
+    EXPECT_EQ(supervisor.name(), "supervisor");
 }
 
 // Test: Constructor with null planner

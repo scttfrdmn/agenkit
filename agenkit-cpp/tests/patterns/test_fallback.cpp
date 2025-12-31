@@ -21,7 +21,7 @@ TEST(FallbackAgentTest, Constructor) {
     std::vector<std::shared_ptr<core::Agent>> agents = {agent1, agent2};
     patterns::FallbackAgent fallback(agents);
 
-    EXPECT_EQ(fallback.name(), "FallbackAgent");
+    EXPECT_EQ(fallback.name(), "fallback");
 }
 
 // Test: Constructor with empty agents list

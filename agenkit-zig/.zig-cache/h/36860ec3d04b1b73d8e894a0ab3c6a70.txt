@@ -1,6 +1,6 @@
 0
 15678 95843046 1760154801000000000 f0bdf7a0d76753ffab1319907ec69cf1 1 compiler/test_runner.zig
-13214 108045824 1766033021215186115 09f30a696df24d957e5e85f383d29bc3 0 src/root.zig
+13422 111408658 1767133509559941201 2dad683441ac5d7f6682a9485d7fb757 0 src/root.zig
 22376 95862233 1760154801000000000 2d968f90418b6afe5ba91eaa2e18ba71 1 ubsan_rt.zig
 11083 95843348 1760154801000000000 3c8016eb348fede9a19b94ec4869d8a6 1 compiler_rt.zig
 7957 95862162 1760154801000000000 0ebbb46b337b65e85e7d177cfc93d2ca 1 std/std.zig
@@ -834,9 +834,10 @@
 419 95862061 1760154801000000000 ed7dfc04a5d0c4f0853edb5414ce981e 1 std/os/linux/bpf/btf_ext.zig
 24293 95862062 1760154801000000000 0c7d3ee9ea8e698a843ee6039fd161c4 1 std/os/linux/bpf/helpers.zig
 3221 95861809 1760154801000000000 fda67b74062c7f535bb0a6d0f1fe74fb 1 std/crypto/codecs/asn1/der/ArrayListReverse.zig
-13214 108045824 1766033021215186115 09f30a696df24d957e5e85f383d29bc3 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/root.zig
+13422 111408658 1767133509559941201 2dad683441ac5d7f6682a9485d7fb757 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/root.zig
 6173 95883437 1764553324121726395 ff3c04b746859d9629fa8d637557e10f 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/message.zig
 7333 108262230 1766091656962730759 43766172c44007bb15d554e32603b9e1 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/agent.zig
+10517 111555951 1767149137203055563 129aecfa25a76446b91eaa09ebcb8f1c 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/introspection.zig
 11497 108263926 1766092285496117064 acea09298c6f80ada52b6fe72a74eeb7 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/sequential.zig
 12209 108264473 1766092315959378764 2eef1208c51e9ab2dcdf8ee3a4f7aec7 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/parallel.zig
 22973 108264478 1766092316003360944 16b13055461c3f2a54890dbddfbe6869 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/reflection.zig
@@ -848,11 +849,11 @@
 16106 108264472 1766092315951865074 2b680ec3fe78bc0350b2905d54810985 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/multiagent.zig
 14060 101361467 1765332926160547124 9bb3c557e146fdb513c2bbba672cab74 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/autonomous.zig
 36425 101373131 1765333424413355529 1dcc6796ebbc0d0c5c0ca7a29201240e 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/memory.zig
-14327 102945106 1765588460448348481 3423919d48df1645076e9866028f8642 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/router.zig
+14907 111412035 1767133694639755791 905ecdc81fed00ebe00eaecde092516f 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/router.zig
 10614 108264849 1766092349502697114 a87122d2a8b09b7d263d231d5b794ce0 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/fallback.zig
-14021 102966948 1765589239316173172 a1ed0b007952e4feb7aa655109ea7cf0 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/collaborative.zig
-11319 102972772 1765589630030252944 2158d4ed529c860819f11d0aeb062e0a 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/human_in_loop.zig
-16845 102979400 1765590517645987934 5af2e189eb7d9039903ef85627c40575 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/supervisor.zig
+14608 111424022 1767136299048434368 f86421749533d6be78a2a15ecb70b899 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/collaborative.zig
+11904 111399676 1767131376982210880 4d7fd4916971baed617859e9608f184a 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/human_in_loop.zig
+17429 111400019 1767131433525751969 77de68ccc8e7086fca512a458f3db651 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/supervisor.zig
 2180 102984449 1765590744663892708 53eeb9b8001579a75f8d7316786b2a80 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/orchestration.zig
 10984 108264476 1766092315990765768 a072a1035b614d8e89531d4e7b6b2fb1 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/patterns/reasoning_with_tools.zig
 8110 106564773 1765920413092057160 92928ee435052d35f90d47bd89633aca 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/adapter/llm.zig
@@ -868,7 +869,6 @@
 10174 108045278 1766032874606354149 7cbe992dd78583bb8bbb90a9ab1ad59e 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/techniques/reasoning/chain_of_thought.zig
 13353 108045466 1766032966780857683 ae2cc58f2eedf38773cfff6305832a4d 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/techniques/reasoning/tree_of_thought.zig
 8343 108045376 1766032914216633304 adf5e8231cc2631d41c88339fba91331 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/techniques/reasoning/reasoning_tree.zig
-10265 108261383 1766091606485774942 4cf27d1a6720315d42a1cfc9998174b1 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/introspection.zig
 12915 106632591 1765925278971699703 db12605f9919f81fd0473f1b45945ca9 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/evaluation/core.zig
 18910 106940820 1765935405078387118 b1cbcbfb827c904b220fac044388cb6f 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/evaluation/metrics.zig
 20080 106941377 1765935560558451674 c89e2e7543cee17998aefef0f03352a4 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/evaluation/quality_metrics.zig
@@ -880,4 +880,4 @@
 13226 106941232 1765935505457578857 6b33a22ddade6a1812719ab1519f9385 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/evaluation/ab_testing.zig
 19638 106941718 1765935687556851775 b4d151a02bf17bf0d8b932be89706875 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/evaluation/bayesian_optimizer.zig
 28686 106942569 1765935890383270640 e5a100cb443e05889937ff1a36f37ccb 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/evaluation/prompt_optimizer.zig
-13205 106930377 1765933185897626712 00b9b5ba60317f78e5915e6e78f430df 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/observability/tracing.zig
+13815 111434788 1767136387355643015 1c6b3219a3c9b0cdcaa8c23233a58e17 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/observability/tracing.zig

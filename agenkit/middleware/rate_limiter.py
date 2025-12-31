@@ -2,6 +2,7 @@
 
 import asyncio
 import time
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 
 from agenkit.interfaces import Agent, Message
@@ -176,3 +177,33 @@ class RateLimiterDecorator(Agent):
 
         # Process request
         return await self._agent.process(message)
+
+    async def stream(self, message: Message) -> AsyncIterator[Message]:
+        """Stream responses with rate limiting.
+
+        Note: Rate limiting is applied once per stream() call, not per chunk.
+
+        Args:
+            message: Input message
+
+        Yields:
+            Response messages from agent
+
+        Raises:
+            RateLimitError: If rate limit is exceeded and wait=False
+            NotImplementedError: If underlying agent doesn't support streaming
+            Exception: If underlying agent raises an exception
+        """
+        self._metrics.total_requests += 1
+
+        # Acquire tokens once for the stream
+        try:
+            await self._acquire_tokens(self._config.tokens_per_request, wait=True)
+            self._metrics.allowed_requests += 1
+        except RateLimitError:
+            self._metrics.rejected_requests += 1
+            raise
+
+        # Stream from underlying agent
+        async for chunk in self._agent.stream(message):
+            yield chunk

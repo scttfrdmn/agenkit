@@ -112,15 +112,15 @@ async def test_python_to_go_large_message():
     async with go_http_server() as (port, _process):
         agent = RemoteAgent(name="test-agent", endpoint=f"http://localhost:{port}")
 
-        # Send large message (1MB)
-        large_content = "A" * (1024 * 1024)  # 1MB
+        # Send large message (1MB - leave headroom for echo prefix)
+        large_content = "A" * (1024 * 1024 - 100)
         message = Message(role="user", content=large_content)
         response = await agent.process(message)
 
         # Validate response
         assert response.role == "agent"
         assert f"Echo: {large_content}" in response.content
-        assert len(response.metadata["original_content"]) == 1024 * 1024
+        assert len(response.metadata["original_content"]) == 1024 * 1024 - 100
 
 
 @pytest.mark.asyncio
@@ -261,7 +261,7 @@ async def test_go_to_python_unicode_content():
 async def test_go_to_python_large_message():
     """Test large message: Go client → Python server."""
     async with python_http_server() as (port, _server), httpx.AsyncClient(timeout=30.0) as client:
-        large_content = "A" * (1024 * 1024)  # 1MB
+        large_content = "A" * (1024 * 1024 - 100)  # 1MB - leave headroom for echo prefix
         envelope = {
             "id": "test-004",
             "type": "request",
@@ -282,7 +282,7 @@ async def test_go_to_python_large_message():
         message_data = response_data["payload"]["message"]
 
         assert message_data["role"] == "agent"
-        assert len(message_data["metadata"]["original"]) == 1024 * 1024
+        assert len(message_data["metadata"]["original"]) == 1024 * 1024 - 100
 
 
 # Concurrent Request Tests

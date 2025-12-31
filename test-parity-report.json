@@ -1,0 +1,90 @@
+{
+  "generated_at": "2025-12-31T04:23:26Z",
+  "languages": {
+    "python": {
+      "total": 1789,
+      "categories": {
+        "patterns": 439,
+        "techniques": 240,
+        "safety": 162,
+        "adapters": 159,
+        "evaluation": 116,
+        "middleware": 92,
+        "memory": 80,
+        "routing": 34,
+        "chaos": 53,
+        "property": 37,
+        "budget": 51,
+        "observability": 41,
+        "integration": 90,
+        "tools": 32,
+        "composition": 40
+      }
+    },
+    "go": {
+      "total": 926,
+      "categories": {
+        "patterns": 362,
+        "techniques": 37,
+        "safety": 94,
+        "adapters": 54,
+        "evaluation": 127,
+        "middleware": 79,
+        "memory": 6,
+        "routing": 0,
+        "chaos": 0,
+        "property": 0,
+        "tools": 17,
+        "observability": 41,
+        "composition": 16
+      }
+    },
+    "cpp": {
+      "total": 0,
+      "note": "C++ counts are test suites, not individual tests",
+      "categories": {
+        "patterns": 18,
+        "techniques": 2,
+        "unit": 5,
+        "integration": 6,
+        "safety": 0,
+        "adapters": 8,
+        "routing": 0,
+        "chaos": 0,
+        "property": 0
+      }
+    },
+    "rust": {
+      "total": 277,
+      "categories": {
+        "patterns": 133,
+        "techniques": 0,
+        "adapters": 31,
+        "evaluation": 73,
+        "safety": 0,
+        "routing": 0,
+        "chaos": 0,
+        "property": 0
+      }
+    },
+    "zig": {
+      "total": 214,
+      "note": "Zig uses in-code tests with no clear category separation",
+      "categories": {}
+    },
+    "typescript": {
+      "total": 328,
+      "test_files": 41,
+      "note": "Counts may be estimated from test files",
+      "categories": {
+        "patterns": 7,
+        "techniques": 0,
+        "safety": 0,
+        "adapters": 0,
+        "routing": 0,
+        "chaos": 0,
+        "property": 0
+      }
+    }
+  }
+}

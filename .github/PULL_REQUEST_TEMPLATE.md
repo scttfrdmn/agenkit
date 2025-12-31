@@ -114,6 +114,18 @@ result, err := agent.Call(ctx, ...)
 - [ ] Transport compatibility maintained
 - [ ] Both languages tested together
 
+### Test Parity (Auto-reported by CI)
+
+<!--
+The test parity CI will automatically comment on this PR with:
+- Current test counts per language
+- Parity percentages
+- Any regressions detected
+- Link to full dashboard
+
+If you're adding tests, please note which categories are affected.
+-->
+
 ## Breaking Changes
 
 **Is this a breaking change?**

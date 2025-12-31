@@ -507,3 +507,17 @@ Apache License 2.0 - See [LICENSE](LICENSE) for details.
 ---
 
 **Ready to build production AI agents?** Visit [agenkit.dev](https://agenkit.dev) or [get started in 5 minutes →](GETTING_STARTED.md)
+
+## Test Parity
+
+Agenkit maintains test parity across all 6 language implementations to ensure consistent behavior and quality. View the [Test Parity Dashboard](docs/TEST_PARITY.md) to track progress.
+
+**Current Status:**
+- ✅ **Patterns**: 100% parity (all 18 patterns implemented)
+- 🟡 **Go**: 51.7% parity (926/1789 tests)
+- 🔴 **C++**: Limited (598 estimated tests)
+- 🔴 **Rust**: 15.4% parity (277/1789 tests)
+- 🔴 **Zig**: 11.9% parity (214/1789 tests)
+- 🔴 **TypeScript**: 18.3% parity (328/1789 tests)
+
+See [README-test-parity.md](README-test-parity.md) for full documentation.

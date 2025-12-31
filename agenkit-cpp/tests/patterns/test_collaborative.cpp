@@ -132,8 +132,8 @@ TEST(CollaborativeAgentTest, MultiRoundIteration) {
 
     // Check metadata
     auto metadata = response.metadata();
-    expect_metadata_exists(response, "collaborative_rounds");
-    expect_metadata_value<int>(response, "collaborative_rounds", 3);
+    expect_metadata_exists(response, "collaboration_rounds");
+    expect_metadata_value<int>(response, "collaboration_rounds", 3);
 }
 
 // Test: Early consensus termination
@@ -163,8 +163,8 @@ TEST(CollaborativeAgentTest, EarlyConsensus) {
     EXPECT_LT(agent1->call_count(), 5);
 
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata.contains("consensus"));
-    EXPECT_TRUE(metadata["consensus"].get<bool>());
+    EXPECT_TRUE(metadata.contains("stop_reason"));
+    EXPECT_EQ(metadata["stop_reason"].get<std::string>(), "consensus");
 }
 
 // Test: No consensus - max rounds reached
@@ -195,8 +195,8 @@ TEST(CollaborativeAgentTest, NoConsensusMaxRounds) {
     EXPECT_EQ(agent2->call_count(), 3);
 
     auto metadata = response.metadata();
-    expect_metadata_value<int>(response, "collaborative_rounds", 3);
-    EXPECT_FALSE(metadata["consensus"].get<bool>());
+    expect_metadata_value<int>(response, "collaboration_rounds", 3);
+    EXPECT_EQ(metadata["stop_reason"].get<std::string>(), "max_rounds");
 }
 
 // Test: Metadata tracking
@@ -222,13 +222,13 @@ TEST(CollaborativeAgentTest, Metadata) {
     auto response = result.unwrap();
     auto metadata = response.metadata();
 
-    expect_metadata_exists(response, "collaborative_agents");
-    expect_metadata_value<int>(response, "collaborative_agents", 2);
+    expect_metadata_exists(response, "collaboration_agents");
+    expect_metadata_value<int>(response, "collaboration_agents", 2);
 
-    expect_metadata_exists(response, "collaborative_rounds");
-    expect_metadata_value<int>(response, "collaborative_rounds", 2);
+    expect_metadata_exists(response, "collaboration_rounds");
+    expect_metadata_value<int>(response, "collaboration_rounds", 2);
 
-    expect_metadata_exists(response, "consensus");
+    expect_metadata_exists(response, "stop_reason");
 }
 
 // Test: Agent error handling
@@ -338,7 +338,7 @@ TEST(CollaborativeAgentTest, DefaultConsensusExactMatch) {
     EXPECT_LT(agent1->call_count(), 5);
 
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata["consensus"].get<bool>());
+    EXPECT_EQ(metadata["stop_reason"].get<std::string>(), "consensus");
 }
 
 // Test: Default consensus - majority agreement
@@ -366,7 +366,7 @@ TEST(CollaborativeAgentTest, DefaultConsensusMajority) {
 
     // Should reach majority consensus
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata["consensus"].get<bool>());
+    EXPECT_EQ(metadata["stop_reason"].get<std::string>(), "consensus");
 }
 
 // Test: Capabilities aggregation
@@ -401,7 +401,7 @@ TEST(CollaborativeAgentTest, Capabilities) {
     EXPECT_TRUE(has_collaborative);
 }
 
-// Test: Single agent collaboration
+// Test: Single agent collaboration should fail
 TEST(CollaborativeAgentTest, SingleAgent) {
     auto agent = make_mock_agent("solo", "result");
 
@@ -414,17 +414,13 @@ TEST(CollaborativeAgentTest, SingleAgent) {
         merge
     };
 
-    patterns::CollaborativeAgent collab(config);
-
-    auto msg = core::Message::with_text("user", "input");
-    auto result = collab.process(std::move(msg)).get();
-
-    ASSERT_TRUE(result.is_ok());
-    auto response = result.unwrap();
-    EXPECT_EQ(response.content_as_str(), "result");
-
-    // Should run for all rounds
-    EXPECT_EQ(agent->call_count(), 3);
+    // Should throw exception - collaboration requires at least 2 agents
+    EXPECT_THROW(
+        {
+            patterns::CollaborativeAgent collab(config);
+        },
+        std::invalid_argument
+    );
 }
 
 // Test: Many agents collaboration
@@ -453,18 +449,19 @@ TEST(CollaborativeAgentTest, ManyAgents) {
     ASSERT_TRUE(result.is_ok());
     auto response = result.unwrap();
 
-    expect_metadata_value<int>(response, "collaborative_agents", num_agents);
-    expect_metadata_value<int>(response, "collaborative_rounds", 2);
+    expect_metadata_value<int>(response, "collaboration_agents", num_agents);
+    expect_metadata_value<int>(response, "collaboration_rounds", 2);
 }
 
 // Test: Empty message handling
 TEST(CollaborativeAgentTest, EmptyMessage) {
-    auto agent = make_mock_agent("agent1", "response");
+    auto agent1 = make_mock_agent("agent1", "response");
+    auto agent2 = make_mock_agent("agent2", "response");
 
     auto merge = patterns::default_merge::first;
 
     patterns::CollaborativeConfig config{
-        {agent},
+        {agent1, agent2},
         1,
         nullptr,
         merge
@@ -483,7 +480,7 @@ TEST(CollaborativeAgentTest, EmptyMessage) {
 TEST(CollaborativeAgentTest, ContextBuilding) {
     // Agent that accumulates context
     int call_count = 0;
-    auto agent = std::make_shared<MockAgent>(
+    auto agent1 = std::make_shared<MockAgent>(
         "accumulator",
         [&call_count](const core::Message& msg) -> core::Result<core::Message, core::AgentError> {
             call_count++;
@@ -493,11 +490,12 @@ TEST(CollaborativeAgentTest, ContextBuilding) {
             );
         }
     );
+    auto agent2 = make_mock_agent("helper", "helper");
 
-    auto merge = patterns::default_merge::last;
+    auto merge = patterns::default_merge::first;
 
     patterns::CollaborativeConfig config{
-        {agent},
+        {agent1, agent2},
         3,
         nullptr,
         merge
@@ -583,7 +581,7 @@ TEST(CollaborativeAgentTest, CustomConsensusFunction) {
 
     // Should reach custom consensus quickly
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata["consensus"].get<bool>());
+    EXPECT_EQ(metadata["stop_reason"].get<std::string>(), "consensus");
 }
 
 // Test: Round history in metadata
@@ -610,17 +608,17 @@ TEST(CollaborativeAgentTest, RoundHistory) {
     auto metadata = response.metadata();
 
     // Check for round history
-    EXPECT_TRUE(metadata.contains("round_history"));
-    ASSERT_TRUE(metadata["round_history"].is_array());
+    EXPECT_TRUE(metadata.contains("rounds"));
+    ASSERT_TRUE(metadata["rounds"].is_array());
 
-    auto history = metadata["round_history"];
+    auto history = metadata["rounds"];
     EXPECT_EQ(history.size(), 2);
 }
 
 // Test: Different responses each round
 TEST(CollaborativeAgentTest, EvolvingResponses) {
     int round = 0;
-    auto agent = std::make_shared<MockAgent>(
+    auto agent1 = std::make_shared<MockAgent>(
         "evolving",
         [&round](const core::Message& /* msg */) -> core::Result<core::Message, core::AgentError> {
             round++;
@@ -630,11 +628,12 @@ TEST(CollaborativeAgentTest, EvolvingResponses) {
             );
         }
     );
+    auto agent2 = make_mock_agent("helper", "helper_response");
 
-    auto merge = patterns::default_merge::last;
+    auto merge = patterns::default_merge::first;
 
     patterns::CollaborativeConfig config{
-        {agent},
+        {agent1, agent2},
         3,
         nullptr,
         merge

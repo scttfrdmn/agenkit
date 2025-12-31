@@ -169,10 +169,10 @@ TEST(HumanInLoopAgentTest, ApprovalGranted) {
 
     // Check approval metadata
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata.contains("approval_required"));
-    EXPECT_TRUE(metadata["approval_required"].get<bool>());
-    EXPECT_TRUE(metadata.contains("approval_granted"));
-    EXPECT_TRUE(metadata["approval_granted"].get<bool>());
+    EXPECT_TRUE(metadata.contains("approval_needed"));
+    EXPECT_TRUE(metadata["approval_needed"].get<bool>());
+    EXPECT_TRUE(metadata.contains("approval_status"));
+    EXPECT_EQ(metadata["approval_status"].get<std::string>(), "approved");
 }
 
 // Test: Approval denied
@@ -197,10 +197,13 @@ TEST(HumanInLoopAgentTest, ApprovalDenied) {
     auto msg = core::Message::with_text("user", "test");
     auto result = hil.process(std::move(msg)).get();
 
-    ASSERT_TRUE(result.is_err());
-    auto error = result.unwrap_err();
-    EXPECT_TRUE(error.message().find("denied") != std::string::npos ||
-                error.message().find("rejected") != std::string::npos);
+    ASSERT_TRUE(result.is_ok());
+    auto response = result.unwrap();
+
+    // Should have rejection metadata
+    auto metadata = response.metadata();
+    EXPECT_TRUE(metadata.contains("approval_status"));
+    EXPECT_EQ(metadata["approval_status"].get<std::string>(), "rejected");
 }
 
 // Test: Missing confidence metadata
@@ -220,7 +223,7 @@ TEST(HumanInLoopAgentTest, MissingConfidenceMetadata) {
 
     // Should default to low confidence (0.0) and require approval
     auto metadata = response.metadata();
-    EXPECT_TRUE(metadata.contains("approval_required"));
+    EXPECT_TRUE(metadata.contains("approval_needed"));
 }
 
 // Test: Agent execution error
@@ -383,10 +386,10 @@ TEST(HumanInLoopAgentTest, Capabilities) {
 
     auto caps = hil.capabilities();
 
-    // Should have human_in_loop capability plus agent capabilities
+    // Should have human-in-loop capability plus agent capabilities
     bool has_hil = false;
     for (const auto& cap : caps) {
-        if (cap == "human_in_loop") {
+        if (cap == "human-in-loop") {
             has_hil = true;
         }
     }
@@ -451,7 +454,10 @@ TEST(HumanInLoopAgentTest, ConfidenceBasedApprovalFunc) {
     auto result = hil.process(std::move(msg)).get();
 
     // Should be auto-rejected (confidence 0.3 < reject_below 0.4)
-    ASSERT_TRUE(result.is_err());
+    ASSERT_TRUE(result.is_ok());
+    auto response = result.unwrap();
+    auto metadata = response.metadata();
+    EXPECT_EQ(metadata["approval_status"].get<std::string>(), "rejected");
 }
 
 // Test: Empty message handling
@@ -485,10 +491,11 @@ TEST(HumanInLoopAgentTest, ApprovalRequestContext) {
     );
 
     double received_confidence = 0.0;
-    auto approval_func = [&received_confidence](const patterns::ApprovalRequest& request) {
+    bool has_extra_metadata = false;
+    auto approval_func = [&received_confidence, &has_extra_metadata](const patterns::ApprovalRequest& request) {
         received_confidence = request.confidence;
-        // Context should include metadata
-        EXPECT_TRUE(request.context.contains("extra"));
+        // Message should include metadata
+        has_extra_metadata = request.message.metadata().contains("extra");
         return core::Result<patterns::ApprovalResponse, core::AgentError>::ok(
             patterns::ApprovalResponse{true, ""}
         );
@@ -502,6 +509,7 @@ TEST(HumanInLoopAgentTest, ApprovalRequestContext) {
 
     ASSERT_TRUE(result.is_ok());
     EXPECT_EQ(received_confidence, 0.5);
+    EXPECT_TRUE(has_extra_metadata);
 }
 
 // Test: Very low threshold

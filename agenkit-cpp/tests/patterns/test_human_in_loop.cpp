@@ -28,7 +28,7 @@ TEST(HumanInLoopAgentTest, Constructor) {
 
     patterns::HumanInLoopAgent hil(config);
 
-    EXPECT_EQ(hil.name(), "HumanInLoopAgent");
+    EXPECT_EQ(hil.name(), "human_in_loop");
 }
 
 // Test: Constructor with null agent

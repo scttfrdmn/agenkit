@@ -32,7 +32,7 @@ TEST(CollaborativeAgentTest, Constructor) {
 
     patterns::CollaborativeAgent collab(config);
 
-    EXPECT_EQ(collab.name(), "CollaborativeAgent");
+    EXPECT_EQ(collab.name(), "collaborative");
 }
 
 // Test: Constructor with empty agents

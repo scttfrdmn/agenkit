@@ -27,7 +27,7 @@ TEST(ParallelAgentTest, Constructor) {
     std::vector<std::shared_ptr<core::Agent>> agents = {agent1, agent2};
     patterns::ParallelAgent parallel(agents, aggregator);
 
-    EXPECT_EQ(parallel.name(), "ParallelAgent");
+    EXPECT_EQ(parallel.name(), "parallel");
 }
 
 // Test: Constructor with empty agents list

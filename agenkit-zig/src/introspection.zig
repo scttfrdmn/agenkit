@@ -108,9 +108,21 @@ pub const IntrospectionResult = struct {
         }
         self.allocator.free(self.capabilities);
 
-        // Memory state, internal_state, and metadata are JSON values
-        // that manage their own memory (they'll be freed when their
-        // parent arena is freed or when explicitly freed)
+        // Free JSON object maps
+        if (self.memory_state) |mem| {
+            if (mem == .object) {
+                var obj = mem.object;
+                obj.deinit();
+            }
+        }
+        if (self.internal_state == .object) {
+            var obj = self.internal_state.object;
+            obj.deinit();
+        }
+        if (self.metadata == .object) {
+            var obj = self.metadata.object;
+            obj.deinit();
+        }
     }
 
     /// Validate an introspection result.

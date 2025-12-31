@@ -89,16 +89,16 @@ def test_message_valid_roles():
 
 def test_message_content_size_validation():
     """Test that content exceeding max size raises ValueError."""
-    # Create content larger than 1MB
-    large_content = "a" * (1024 * 1024 + 1)  # 1MB + 1 byte
+    # Create content larger than 16MB
+    large_content = "a" * (16 * 1024 * 1024 + 1)  # 16MB + 1 byte
     with pytest.raises(ValueError, match="exceeds maximum size"):
         Message(role="user", content=large_content)
 
 
 def test_message_content_at_max_size():
     """Test that content at exactly max size is accepted."""
-    # Create content at exactly 1MB
-    max_content = "a" * (1024 * 1024)  # Exactly 1MB
+    # Create content at exactly 16MB
+    max_content = "a" * (16 * 1024 * 1024)  # Exactly 16MB
     msg = Message(role="user", content=max_content)
     assert msg.content == max_content
 
@@ -129,8 +129,8 @@ def test_message_metadata_key_length_validation():
 
 def test_message_metadata_value_size_validation():
     """Test that metadata value exceeding max size raises ValueError."""
-    # Create value larger than 10KB
-    large_value = "a" * (10 * 1024 + 1)  # 10KB + 1 byte
+    # Create value larger than 16MB
+    large_value = "a" * (16 * 1024 * 1024 + 1)  # 16MB + 1 byte
     metadata = {"key": large_value}
     with pytest.raises(ValueError, match="exceeds maximum size of"):
         Message(role="user", content="test", metadata=metadata)
@@ -138,8 +138,8 @@ def test_message_metadata_value_size_validation():
 
 def test_message_metadata_value_at_max_size():
     """Test that metadata value at exactly max size is accepted."""
-    # Create value at exactly 10KB
-    max_value = "a" * (10 * 1024)  # Exactly 10KB
+    # Create value at exactly 16MB
+    max_value = "a" * (16 * 1024 * 1024)  # Exactly 16MB
     metadata = {"key": max_value}
     msg = Message(role="user", content="test", metadata=metadata)
     assert msg.metadata["key"] == max_value

@@ -90,15 +90,16 @@ asyncio_mode = "auto"
 # pytest-timeout: Kill tests that hang after 30 seconds
 timeout = 30
 timeout_method = "thread"
-# NOTE: pytest-xdist parallel execution disabled - causes 6+ hour hangs in CI
-# Works great locally (15s with 12 workers) but deadlocks in CI environment
-# Likely due to pytest-asyncio compatibility issues or resource contention
+# pytest-xdist: Parallel execution with worker restart disabled
+# --max-worker-restart=0 prevents teardown issues with pytest-asyncio
+# Reference: https://github.com/pytest-dev/pytest-xdist/issues/537
 addopts = [
     "--strict-markers",
     "--strict-config",
     "-ra",
-    # "-n", "auto",  # DISABLED: Causes CI hangs
-    # "--dist", "loadfile",  # DISABLED: Not needed without -n
+    "-n", "auto",  # Parallel execution with auto worker count
+    "--dist", "loadfile",  # Distribute tests by file for better isolation
+    "--max-worker-restart", "0",  # Disable worker restarts (fixes asyncio teardown issues)
     "--durations=10",  # Show 10 slowest tests
 ]
 markers = [

@@ -80,3 +80,32 @@ site/
 
 # Ruff cache
 .ruff_cache/
+
+# Node.js
+node_modules/
+package-lock.json
+.npm/
+
+# Deployment artifacts
+deploy/**/node_modules/
+deploy/**/.terraform/
+deploy/**/.terraform.lock.hcl
+deploy/**/terraform.tfstate
+deploy/**/terraform.tfstate.backup
+deploy/**/tfplan
+deploy/**/bootstrap
+deploy/**/*.zip
+deploy/**/.mf/
+deploy/**/.wrangler/
+
+# Rust build artifacts
+agenkit-rust/target/
+agenkit-rust/Cargo.lock
+
+# Zig build artifacts
+agenkit-zig/zig-cache/
+agenkit-zig/zig-out/
+
+# C++ build artifacts
+agenkit-cpp/build/
+agenkit-cpp/.cmake/

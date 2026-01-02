@@ -51,6 +51,11 @@ func (a *CrossLanguageTestAgent) Process(ctx context.Context, message *agenkit.M
 	}, nil
 }
 
+// Introspect returns the agent's introspection result.
+func (a *CrossLanguageTestAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func main() {
 	// Get port from command line or use default
 	port := 50051

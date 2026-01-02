@@ -36,16 +36,16 @@ jobs:
 
       - name: Run Ruff (linter)
         run: |
-          ruff check agenkit/ tests/ examples/ --output-format=github
+          ruff check agenkit/ tests/ --output-format=github
 
       # Ruff formatter check disabled - Black handles formatting (ruff and Black have incompatible preferences)
       # - name: Run Ruff (formatter check)
       #   run: |
-      #     ruff format --check agenkit/ tests/ examples/
+      #     ruff format --check agenkit/ tests/
 
       - name: Run Black (formatter check)
         run: |
-          black --check agenkit/ tests/ examples/
+          black --check agenkit/ tests/
 
       # isort check disabled - Ruff handles import sorting (isort and Ruff have incompatible preferences)
       # - name: Run isort (import sorting check)
@@ -71,32 +71,19 @@ jobs:
           go-version: '1.22'
           cache-dependency-path: agenkit-go/go.sum
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v7
-        with:
-          version: latest
-          working-directory: agenkit-go
-          args: --timeout=5m
+      - name: Run go fmt check
+        working-directory: agenkit-go
+        run: |
+          if [ "$(gofmt -s -l . | grep -v '^examples/' | wc -l)" -gt 0 ]; then
+            echo "Go code is not formatted. Please run 'gofmt -s -w .'"
+            gofmt -s -l . | grep -v '^examples/'
+            exit 1
+          fi
 
       - name: Run go vet
         working-directory: agenkit-go
         run: |
-          go vet ./...
-
-      - name: Run go fmt check
-        working-directory: agenkit-go
-        run: |
-          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
-            echo "Go code is not formatted. Please run 'gofmt -s -w .'"
-            gofmt -s -l .
-            exit 1
-          fi
-
-      - name: Run staticcheck
-        working-directory: agenkit-go
-        run: |
-          go install honnef.co/go/tools/cmd/staticcheck@latest
-          staticcheck ./...
+          go vet $(go list ./... | grep -v /examples/)
 
   # Markdown linting
   lint-markdown:

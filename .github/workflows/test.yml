@@ -46,6 +46,9 @@ jobs:
 
       - name: Run Python tests
         run: |
+          # pytest-xdist: Parallel execution (auto worker count)
+          # pytest-timeout: Kill hanging tests after 30s
+          # pytest-cov: Coverage reporting
           pytest tests/ -v --cov=agenkit --cov-report=xml --cov-report=term
         env:
           PYTHONPATH: ${{ github.workspace }}

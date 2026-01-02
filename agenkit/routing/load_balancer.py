@@ -356,7 +356,7 @@ class LoadBalancerRouter(Agent):
 
         # Initialize current_weight attribute if not present
         for instance in available:
-            if not hasattr(instance, '_current_weight'):
+            if not hasattr(instance, "_current_weight"):
                 instance._current_weight = 0
 
         # Smooth weighted round robin (SWRR) algorithm

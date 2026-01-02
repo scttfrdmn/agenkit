@@ -83,3 +83,54 @@ CI now runs minimal smoke tests only:
 Purpose: Catch obvious regressions, not primary validation.
 
 **Local testing is your primary validation.**
+
+---
+
+## Multi-Language Test Status
+
+This project includes implementations in **6 languages**. All should be tested locally:
+
+| Language | Status | Tests | Command |
+|----------|--------|-------|---------|
+| Python | ✅ 1739/1741 | 2:08 | `make test` |
+| Go | ✅ All Pass | ~10s | `cd agenkit-go && go test ./...` |
+| Rust | ✅ 276 Pass | 0.4s | `cd agenkit-rust && cargo test` |
+| TypeScript | ⚠️ 1037/1039 | 5.5s | `cd agenkit-ts && npm test` |
+| Zig | ❓ TBD | - | `cd agenkit-zig && zig build test` |
+| C++ | ❓ TBD | - | `cd agenkit-cpp/build && make test` |
+
+### Quick Test All Languages
+
+```bash
+# Python (primary)
+make test
+
+# Go
+(cd agenkit-go && go test ./...)
+
+# Rust
+(cd agenkit-rust && cargo test)
+
+# TypeScript
+(cd agenkit-ts && npm test)
+
+# Zig
+(cd agenkit-zig && zig build test)
+
+# C++ (requires cmake first)
+(cd agenkit-cpp/build && make test)
+```
+
+### Cross-Language Integration Tests
+
+Python tests can spawn Go/other language servers for integration testing:
+
+```bash
+# Ensure Go servers are built first
+(cd agenkit-go/tests/integration && go build test_server.go && go build test_grpc_server.go)
+
+# Run cross-language tests
+uv run pytest tests/cross_language/ -v
+```
+
+See each language's README for detailed testing instructions.

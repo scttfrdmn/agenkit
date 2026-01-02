@@ -11,10 +11,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-# DISABLED: Use local testing instead (./scripts/test-local.sh)
-# CI disabled for solo development - re-enable by removing 'if: false' below
-if: false
-
 jobs:
   # Python tests
   test-python:

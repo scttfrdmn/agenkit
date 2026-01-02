@@ -230,6 +230,105 @@ except Exception:  # noqa: S110
 - [ ] Type hints are present on function signatures
 - [ ] Code passes ruff, black, and mypy without warnings
 
+## Python Development with uv
+
+**This project uses `uv` for Python package management and virtual environment management.**
+
+### Why uv?
+
+- **Fast**: 10-100x faster than pip for dependency resolution and installation
+- **Reliable**: Deterministic dependency resolution with lock files
+- **Consistent**: Works the same across all platforms
+- **Modern**: Built with Rust, follows PEP 621 (pyproject.toml)
+
+### Common Commands
+
+**Running Python/pytest:**
+```bash
+# WRONG - Don't use system python or bare commands
+python script.py
+pytest tests/
+
+# CORRECT - Always use 'uv run' to ensure correct environment
+uv run python script.py
+uv run pytest tests/
+```
+
+**Installing dependencies:**
+```bash
+# Install project with dependencies
+uv pip install -e ".[dev]"      # Development dependencies
+uv pip install -e ".[test]"     # Test dependencies only
+uv pip install -e ".[llm]"      # LLM provider dependencies
+
+# Install specific package
+uv pip install "package>=1.0.0"
+```
+
+**Checking installed packages:**
+```bash
+uv pip list                     # List all installed packages
+uv pip list | grep pytest       # Find specific packages
+```
+
+**Creating/managing venv:**
+```bash
+uv venv                         # Create .venv if it doesn't exist
+uv venv --python 3.12           # Create venv with specific Python version
+```
+
+### Test Execution
+
+**Local testing:**
+```bash
+# Use the provided test script (already uses uv)
+./scripts/test-local.sh                # Full test suite (~15-30s)
+./scripts/test-local.sh --quick        # Skip integration (~10s)
+./scripts/test-local.sh --lint         # Full lint + test
+
+# Or use Makefile (also uses uv internally)
+make test                       # Full test suite
+make test-quick                 # Skip integration
+```
+
+**Direct pytest execution:**
+```bash
+# WRONG - May use system pytest
+pytest tests/
+
+# CORRECT - Uses venv pytest via uv
+uv run pytest tests/
+```
+
+### Important Notes
+
+- **Never use `python`, `python3`, or `pytest` directly** - always prefix with `uv run`
+- The `.venv` directory is managed by uv and contains Python 3.12
+- Test dependencies are defined in `pyproject.toml` under `[project.optional-dependencies]`
+- If imports fail, ensure you've installed with the correct extras: `uv pip install -e ".[test]"`
+
+### Troubleshooting
+
+**"ModuleNotFoundError" when running tests:**
+```bash
+# Install test dependencies
+uv pip install -e ".[test]"
+
+# Verify installation
+uv run python -c "import pytest_xdist; print('✓ pytest-xdist installed')"
+```
+
+**Wrong Python version:**
+```bash
+# Check current version
+uv run python --version
+
+# Recreate venv with correct version
+rm -rf .venv
+uv venv --python 3.12
+uv pip install -e ".[test]"
+```
+
 ## Why This Matters
 
 **Token Cost:** Fixing non-idiomatic code after the fact costs 10-100x more tokens than writing it correctly initially.

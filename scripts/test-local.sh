@@ -110,8 +110,8 @@ else
     PYTEST_ARGS+=("-q")
 fi
 
-# Use pytest-xdist for parallel execution (10-15x faster!)
-PYTEST_ARGS+=("-n" "auto" "--dist" "loadfile")
+# pytest-xdist settings are now in pyproject.toml
+# (-n auto --dist loadfile --max-worker-restart 0)
 
 # Add coverage
 PYTEST_ARGS+=("--cov=agenkit" "--cov-report=term-missing:skip-covered")

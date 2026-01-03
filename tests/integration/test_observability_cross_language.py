@@ -53,6 +53,8 @@ def clear_spans(tracing_setup):
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.cross_language
+@pytest.mark.timeout(60)
+@pytest.mark.xdist_group("cross_language")
 async def test_trace_propagation_python_to_go_http(tracing_setup):
     """Test trace context propagates from Python → Go over HTTP."""
     provider, span_exporter = tracing_setup
@@ -100,6 +102,8 @@ async def test_trace_propagation_python_to_go_http(tracing_setup):
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.cross_language
+@pytest.mark.timeout(60)
+@pytest.mark.xdist_group("cross_language")
 async def test_trace_propagation_python_to_go_http_with_metadata(tracing_setup):
     """Test trace propagation preserves message metadata: Python → Go HTTP."""
     _provider, _span_exporter = tracing_setup
@@ -127,6 +131,8 @@ async def test_trace_propagation_python_to_go_http_with_metadata(tracing_setup):
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.cross_language
+@pytest.mark.timeout(60)
+@pytest.mark.xdist_group("cross_language")
 async def test_go_to_python_http_trace_propagation(tracing_setup):
     """Test trace context from Go → Python server over HTTP."""
     provider, span_exporter = tracing_setup
@@ -208,6 +214,8 @@ async def test_go_to_python_http_trace_propagation(tracing_setup):
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.cross_language
+@pytest.mark.timeout(60)
+@pytest.mark.xdist_group("cross_language")
 async def test_trace_propagation_python_to_go_grpc(tracing_setup):
     """Test trace context propagates from Python → Go over gRPC."""
     provider, span_exporter = tracing_setup
@@ -248,6 +256,8 @@ async def test_trace_propagation_python_to_go_grpc(tracing_setup):
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.cross_language
+@pytest.mark.timeout(60)
+@pytest.mark.xdist_group("cross_language")
 async def test_trace_propagation_go_to_python_grpc(tracing_setup):
     """Test trace context from Go → Python server over gRPC."""
     provider, span_exporter = tracing_setup
@@ -331,6 +341,8 @@ async def test_trace_propagation_go_to_python_grpc(tracing_setup):
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.cross_language
+@pytest.mark.timeout(60)
+@pytest.mark.xdist_group("cross_language")
 async def test_w3c_trace_context_format():
     """Test W3C Trace Context format is used for cross-language compatibility."""
 
@@ -367,6 +379,8 @@ async def test_w3c_trace_context_format():
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.cross_language
+@pytest.mark.timeout(60)
+@pytest.mark.xdist_group("cross_language")
 async def test_trace_context_extraction():
     """Test trace context can be extracted from metadata."""
     from agenkit.observability.tracing import extract_trace_context, inject_trace_context

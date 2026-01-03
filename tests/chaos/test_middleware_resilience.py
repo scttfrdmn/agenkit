@@ -97,6 +97,8 @@ class RetryMiddleware:
 
 @pytest.mark.asyncio
 @pytest.mark.chaos
+@pytest.mark.timeout(60)
+@pytest.mark.xdist_group("chaos")
 async def test_retry_with_intermittent_failures():
     """Test that retry middleware handles intermittent failures."""
     base_agent = SimpleAgent()

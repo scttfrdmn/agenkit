@@ -113,6 +113,8 @@ async def test_some_requests_succeed_others_fail():
 
 @pytest.mark.asyncio
 @pytest.mark.chaos
+@pytest.mark.timeout(60)
+@pytest.mark.xdist_group("chaos")
 async def test_partial_failure_with_retry():
     """Test that retry converts partial failures to successes."""
     base_agent = SimpleAgent()

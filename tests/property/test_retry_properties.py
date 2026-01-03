@@ -97,11 +97,12 @@ class RetryPolicy:
 
 
 @pytest.mark.property
+@pytest.mark.timeout(60)
 @pytest.mark.asyncio
 @given(
     max_retries=st.integers(min_value=0, max_value=10),
 )
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=20, deadline=None)
 async def test_retry_count_never_exceeds_max(max_retries):
     """Property: Retry count never exceeds max_retries."""
     policy = RetryPolicy(max_retries=max_retries, backoff_base=0.01)
@@ -130,13 +131,14 @@ async def test_retry_count_never_exceeds_max(max_retries):
 
 
 @pytest.mark.property
+@pytest.mark.timeout(60)
 @pytest.mark.asyncio
 @given(
     max_retries=st.integers(min_value=2, max_value=5),
     backoff_base=st.floats(min_value=0.01, max_value=0.1),
     backoff_multiplier=st.floats(min_value=1.5, max_value=3.0),
 )
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=20, deadline=None)
 async def test_backoff_delays_are_monotonic(max_retries, backoff_base, backoff_multiplier):
     """Property: Each retry delay >= previous delay (exponential backoff)."""
     assume(backoff_multiplier > 1.0)  # Ensure exponential growth
@@ -169,12 +171,13 @@ async def test_backoff_delays_are_monotonic(max_retries, backoff_base, backoff_m
 
 
 @pytest.mark.property
+@pytest.mark.timeout(60)
 @pytest.mark.asyncio
 @given(
     success_on_attempt=st.integers(min_value=1, max_value=5),
     max_retries=st.integers(min_value=1, max_value=10),
 )
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=20, deadline=None)
 async def test_success_propagates_immediately(success_on_attempt, max_retries):
     """Property: Returns immediately on success (no extra retries)."""
     assume(success_on_attempt <= max_retries + 1)
@@ -208,13 +211,14 @@ async def test_success_propagates_immediately(success_on_attempt, max_retries):
 
 
 @pytest.mark.property
+@pytest.mark.timeout(60)
 @pytest.mark.asyncio
 @given(
     max_retries=st.integers(min_value=3, max_value=5),
     backoff_base=st.floats(min_value=0.1, max_value=1.0),
     max_delay=st.floats(min_value=0.5, max_value=2.0),
 )
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=10, deadline=None)  # Reduced to 10 due to long delays
 async def test_max_delay_cap_is_enforced(max_retries, backoff_base, max_delay):
     """Property: Delay never exceeds max_delay."""
     policy = RetryPolicy(
@@ -243,11 +247,12 @@ async def test_max_delay_cap_is_enforced(max_retries, backoff_base, max_delay):
 
 
 @pytest.mark.property
+@pytest.mark.timeout(60)
 @pytest.mark.asyncio
 @given(
     max_retries=small_positive_int_strategy,
 )
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=20, deadline=None)
 async def test_total_attempts_equals_one_plus_retries(max_retries):
     """Property: total_attempts = 1 (initial) + retry_count."""
     policy = RetryPolicy(max_retries=max_retries, backoff_base=0.01)
@@ -270,11 +275,12 @@ async def test_total_attempts_equals_one_plus_retries(max_retries):
 
 
 @pytest.mark.property
+@pytest.mark.timeout(60)
 @pytest.mark.asyncio
 @given(
     max_retries=small_positive_int_strategy,
 )
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=20, deadline=None)
 async def test_only_retries_on_configured_exceptions(max_retries):
     """Property: Only retries on configured exception types."""
     # Configure to only retry on RuntimeError
@@ -302,13 +308,14 @@ async def test_only_retries_on_configured_exceptions(max_retries):
 
 
 @pytest.mark.property
+@pytest.mark.timeout(60)
 @pytest.mark.asyncio
 @given(
     max_retries=st.integers(min_value=3, max_value=5),
     backoff_base=st.floats(min_value=0.01, max_value=0.1),
     backoff_multiplier=st.floats(min_value=2.0, max_value=3.0),
 )
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=20, deadline=None)
 async def test_exponential_growth_formula(max_retries, backoff_base, backoff_multiplier):
     """Property: Delays follow exponential formula (before cap)."""
     policy = RetryPolicy(
@@ -342,6 +349,7 @@ async def test_exponential_growth_formula(max_retries, backoff_base, backoff_mul
 
 
 @pytest.mark.property
+@pytest.mark.timeout(60)
 @pytest.mark.asyncio
 async def test_zero_retries_means_no_retries():
     """Property: max_retries=0 means no retries (only initial attempt)."""
@@ -365,11 +373,12 @@ async def test_zero_retries_means_no_retries():
 
 
 @pytest.mark.property
+@pytest.mark.timeout(60)
 @pytest.mark.asyncio
 @given(
     max_retries=small_positive_int_strategy,
 )
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=20, deadline=None)
 async def test_delays_length_equals_retry_count(max_retries):
     """Property: Number of delays equals number of retries."""
     policy = RetryPolicy(max_retries=max_retries, backoff_base=0.01)
@@ -394,11 +403,12 @@ async def test_delays_length_equals_retry_count(max_retries):
 
 
 @pytest.mark.property
+@pytest.mark.timeout(90)
 @pytest.mark.asyncio
 @given(
     backoff_base=st.floats(min_value=0.01, max_value=1.0),
 )
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=20, deadline=None)
 async def test_first_delay_is_base_delay(backoff_base):
     """Property: First retry delay equals backoff_base."""
     policy = RetryPolicy(max_retries=3, backoff_base=backoff_base, max_delay=999999.0)

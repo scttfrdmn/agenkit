@@ -82,10 +82,10 @@ export class GrpcAgent implements Agent {
     // Load proto file
     const PROTO_PATH = path.join(__dirname, '../../proto/agent.proto');
     this.packageDefinition = protoLoader.loadSync(PROTO_PATH, {
-      keepCase: true,
+      keepCase: false,  // Use camelCase for field names
       longs: String,
       enums: String,
-      defaults: true,
+      defaults: false,  // Don't apply default values
       oneofs: true,
     });
 
@@ -310,10 +310,10 @@ export class GrpcServer {
     // Load proto file
     const PROTO_PATH = path.join(__dirname, '../../proto/agent.proto');
     this.packageDefinition = protoLoader.loadSync(PROTO_PATH, {
-      keepCase: true,
+      keepCase: false,  // Use camelCase for field names
       longs: String,
       enums: String,
-      defaults: true,
+      defaults: false,  // Don't apply default values
       oneofs: true,
     });
 

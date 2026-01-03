@@ -180,14 +180,14 @@ describe('GrpcServer', () => {
   it('should handle process requests', async () => {
     const mockAgent = createMockAgent();
     const server = new GrpcServer(mockAgent, {
-      address: '0.0.0.0:50053',
+      address: '0.0.0.0:50055',
     });
 
     await server.start();
 
     // Create client to test
     const client = new GrpcAgent('test-client', {
-      address: 'localhost:50053',
+      address: 'localhost:50055',
     });
 
     try {

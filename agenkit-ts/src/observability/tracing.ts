@@ -269,21 +269,20 @@ export class TracingMiddleware extends BaseMiddleware {
       });
 
       try {
-        // Process message in span context
+        // Process message in span context and inject trace context
         const response = await context.with(trace.setSpan(parentContext, span), async () => {
-          return this.agent.process(message);
+          const result = await this.agent.process(message);
+          // Inject trace context while span is active
+          return {
+            ...result,
+            metadata: injectTraceContext(result.metadata || {}),
+          };
         });
-
-        // Inject trace context into response
-        const responseWithTrace: Message = {
-          ...response,
-          metadata: injectTraceContext(response.metadata || {}),
-        };
 
         // Mark span as successful
         span.setStatus({ code: SpanStatusCode.OK });
 
-        return responseWithTrace;
+        return response;
       } catch (error) {
         // Record error in span
         span.recordException(error as Error);

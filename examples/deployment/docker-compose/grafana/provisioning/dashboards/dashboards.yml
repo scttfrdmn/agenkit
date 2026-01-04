@@ -1,0 +1,17 @@
+# ============================================================
+# Grafana Dashboards Provisioning Configuration
+# ============================================================
+
+apiVersion: 1
+
+providers:
+  - name: 'Agenkit Dashboards'
+    orgId: 1
+    folder: 'Agenkit'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true

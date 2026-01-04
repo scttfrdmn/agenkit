@@ -1,0 +1,254 @@
+version: '3.9'
+
+# ============================================================
+# Agenkit Development Docker Compose Configuration
+# ============================================================
+#
+# Simplified configuration for local development:
+# - Hot reloading enabled
+# - Minimal resource limits
+# - Local volume mounts
+# - Debug logging
+# - No SSL/production hardening
+#
+# Quick Start:
+#   docker-compose -f docker-compose.dev.yml up
+#
+# Access:
+#   - Python Agent: http://localhost:8000
+#   - Go Agent:     http://localhost:8001
+#   - Redis:        localhost:6379
+#   - PostgreSQL:   localhost:5432
+#   - Grafana:      http://localhost:3000
+#   - Jaeger:       http://localhost:16686
+# ============================================================
+
+services:
+  # ============================================================
+  # Development Agent Services
+  # ============================================================
+
+  agenkit-python:
+    build:
+      context: ./python
+      dockerfile: Dockerfile.dev
+      args:
+        - PYTHON_VERSION=3.12
+    container_name: agenkit-python-dev
+    image: agenkit-python:dev
+
+    ports:
+      - "8000:8000"
+      - "5678:5678"  # Python debugger (debugpy)
+
+    environment:
+      - ENVIRONMENT=development
+      - AGENT_TYPE=react
+      - LOG_LEVEL=DEBUG
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://agenkit:agenkit_dev@postgres:5432/agenkit_dev
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+      - PYTHONUNBUFFERED=1
+      - WATCHFILES_FORCE_POLLING=true  # For hot reload
+
+    env_file:
+      - .env.dev
+
+    depends_on:
+      - redis
+      - postgres
+
+    volumes:
+      # Mount source code for hot reload
+      - ../../agenkit:/app/agenkit:ro
+      - ./python/app.py:/app/app.py
+      - ./python/logs:/app/logs
+
+    command: >
+      sh -c "pip install watchfiles debugpy &&
+             python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload"
+
+    networks:
+      - agenkit-dev-network
+
+  agenkit-go:
+    build:
+      context: ./go
+      dockerfile: Dockerfile.dev
+      args:
+        - GO_VERSION=1.22
+    container_name: agenkit-go-dev
+    image: agenkit-go:dev
+
+    ports:
+      - "8001:8000"
+      - "2345:2345"  # Delve debugger
+
+    environment:
+      - ENVIRONMENT=development
+      - AGENT_TYPE=conversational
+      - LOG_LEVEL=DEBUG
+      - REDIS_URL=redis://redis:6379/1
+      - DATABASE_URL=postgresql://agenkit:agenkit_dev@postgres:5432/agenkit_dev
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+
+    env_file:
+      - .env.dev
+
+    depends_on:
+      - redis
+      - postgres
+
+    volumes:
+      # Mount source code for hot reload
+      - ./go:/app
+      - /app/tmp  # Exclude tmp dir
+
+    command: >
+      sh -c "go install github.com/cosmtrek/air@latest &&
+             go install github.com/go-delve/delve/cmd/dlv@latest &&
+             air -c .air.toml"
+
+    networks:
+      - agenkit-dev-network
+
+    security_opt:
+      - "apparmor=unconfined"
+      - "seccomp=unconfined"
+    cap_add:
+      - SYS_PTRACE
+
+  # ============================================================
+  # Data Services
+  # ============================================================
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: agenkit-redis-dev
+
+    ports:
+      - "6379:6379"
+
+    command: redis-server --appendonly yes
+
+    volumes:
+      - redis-dev-data:/data
+
+    networks:
+      - agenkit-dev-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: agenkit-postgres-dev
+
+    ports:
+      - "5432:5432"
+
+    environment:
+      - POSTGRES_DB=agenkit_dev
+      - POSTGRES_USER=agenkit
+      - POSTGRES_PASSWORD=agenkit_dev
+      - POSTGRES_HOST_AUTH_METHOD=trust
+
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    networks:
+      - agenkit-dev-network
+
+  # ============================================================
+  # Observability (Optional for Dev)
+  # ============================================================
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    container_name: agenkit-jaeger-dev
+
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+      - COLLECTOR_OTLP_ENABLED=true
+
+    networks:
+      - agenkit-dev-network
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: agenkit-grafana-dev
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-dev-data:/var/lib/grafana
+
+    networks:
+      - agenkit-dev-network
+
+  # ============================================================
+  # Development Tools
+  # ============================================================
+
+  # Redis Commander (Redis GUI)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: agenkit-redis-commander
+
+    ports:
+      - "8081:8081"
+
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+
+    depends_on:
+      - redis
+
+    networks:
+      - agenkit-dev-network
+
+  # pgAdmin (PostgreSQL GUI)
+  pgadmin:
+    image: dpage/pgadmin4:8.2
+    container_name: agenkit-pgadmin
+
+    ports:
+      - "5050:80"
+
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@agenkit.dev
+      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
+
+    volumes:
+      - pgadmin-dev-data:/var/lib/pgadmin
+
+    depends_on:
+      - postgres
+
+    networks:
+      - agenkit-dev-network
+
+networks:
+  agenkit-dev-network:
+    driver: bridge
+
+volumes:
+  redis-dev-data:
+  postgres-dev-data:
+  grafana-dev-data:
+  pgadmin-dev-data:

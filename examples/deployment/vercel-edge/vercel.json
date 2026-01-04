@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "name": "agenkit-vercel-edge",
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "devCommand": "next dev",
+  "installCommand": "npm install",
+  "regions": ["iad1", "sfo1", "lhr1", "fra1", "syd1", "sin1", "nrt1"],
+  "env": {
+    "OPENAI_API_KEY": "@openai-api-key",
+    "ANTHROPIC_API_KEY": "@anthropic-api-key",
+    "KV_URL": "@kv-url",
+    "KV_REST_API_URL": "@kv-rest-api-url",
+    "KV_REST_API_TOKEN": "@kv-rest-api-token",
+    "KV_REST_API_READ_ONLY_TOKEN": "@kv-rest-api-read-only-token"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_APP_VERSION": "0.45.0"
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/health",
+      "destination": "/api/health"
+    }
+  ],
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "edge",
+      "memory": 128,
+      "maxDuration": 10
+    }
+  }
+}

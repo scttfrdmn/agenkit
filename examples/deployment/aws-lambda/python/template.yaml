@@ -1,0 +1,181 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Agenkit Lambda Function - Python Implementation
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.12
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        POWERTOOLS_SERVICE_NAME: agenkit-lambda
+        LOG_LEVEL: INFO
+        # Add your LLM API keys here or use Secrets Manager
+        # OPENAI_API_KEY: !Ref OpenAIAPIKey
+        # ANTHROPIC_API_KEY: !Ref AnthropicAPIKey
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
+
+  AgentType:
+    Type: String
+    Default: react
+    AllowedValues:
+      - react
+      - conversational
+      - router
+    Description: Default agent type to deploy
+
+Resources:
+  # Lambda Function
+  AgenkitFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub agenkit-${Environment}-${AgentType}
+      CodeUri: .
+      Handler: handler.lambda_handler
+      Description: Agenkit agent running on AWS Lambda
+      Timeout: 30
+      MemorySize: 512
+
+      # X-Ray Tracing
+      Tracing: Active
+
+      # Environment Variables
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          AGENT_TYPE: !Ref AgentType
+
+      # IAM Role
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXRayDaemonWriteAccess
+        # Add additional policies as needed:
+        # - AmazonBedrockFullAccess  # For AWS Bedrock
+        # - SecretsManagerReadWrite  # For API keys in Secrets Manager
+
+      # API Gateway Event
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /agent
+            Method: POST
+            RestApiId: !Ref AgenkitApi
+
+      # Lambda Insights for monitoring
+      # Layers:
+      #   - !Sub arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:21
+
+  # API Gateway
+  AgenkitApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub agenkit-api-${Environment}
+      StageName: !Ref Environment
+
+      # CORS Configuration
+      Cors:
+        AllowMethods: "'POST, OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+
+      # Throttling
+      MethodSettings:
+        - ResourcePath: /*
+          HttpMethod: '*'
+          ThrottlingBurstLimit: 100
+          ThrottlingRateLimit: 50
+
+      # CloudWatch Logging
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiAccessLogGroup.Arn
+        Format: '$context.requestId $context.error.message $context.error.messageString'
+
+      # Enable X-Ray
+      TracingEnabled: true
+
+  # CloudWatch Log Group for API Gateway
+  ApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/agenkit-${Environment}
+      RetentionInDays: 30
+
+  # CloudWatch Log Group for Lambda
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/agenkit-${Environment}-${AgentType}
+      RetentionInDays: 30
+
+  # Lambda Function URL (Alternative to API Gateway)
+  AgenkitFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt AgenkitFunction.Arn
+      AuthType: NONE  # Change to AWS_IAM for authentication
+      Cors:
+        AllowOrigins:
+          - '*'
+        AllowMethods:
+          - POST
+        AllowHeaders:
+          - '*'
+        MaxAge: 86400
+
+  # Permission for Function URL
+  FunctionUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AgenkitFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: '*'
+      FunctionUrlAuthType: NONE
+
+Outputs:
+  # API Gateway Endpoint
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${AgenkitApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/agent
+    Export:
+      Name: !Sub ${AWS::StackName}-ApiEndpoint
+
+  # Lambda Function URL
+  FunctionUrl:
+    Description: Lambda Function URL (direct invocation)
+    Value: !GetAtt AgenkitFunctionUrl.FunctionUrl
+    Export:
+      Name: !Sub ${AWS::StackName}-FunctionUrl
+
+  # Lambda Function ARN
+  FunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt AgenkitFunction.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-FunctionArn
+
+  # Lambda Function Name
+  FunctionName:
+    Description: Lambda Function Name
+    Value: !Ref AgenkitFunction
+    Export:
+      Name: !Sub ${AWS::StackName}-FunctionName
+
+  # CloudWatch Log Group
+  LogGroupName:
+    Description: CloudWatch Log Group Name
+    Value: !Ref LambdaLogGroup
+    Export:
+      Name: !Sub ${AWS::StackName}-LogGroupName

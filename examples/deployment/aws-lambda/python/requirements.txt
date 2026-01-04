@@ -1,0 +1,14 @@
+# Core Agenkit
+agenkit>=0.44.0
+
+# AWS X-Ray SDK for tracing
+aws-xray-sdk>=2.12.0
+
+# Optional: Add your LLM provider SDK
+# openai>=1.0.0
+# anthropic>=0.18.0
+# boto3>=1.34.0  # For AWS Bedrock
+
+# Optional: Additional tools
+# requests>=2.31.0
+# boto3>=1.34.0

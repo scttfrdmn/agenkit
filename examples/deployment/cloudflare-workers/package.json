@@ -1,0 +1,57 @@
+{
+  "name": "agenkit-cloudflare-workers",
+  "version": "0.45.0",
+  "description": "Agenkit deployment on Cloudflare Workers with edge computing",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.js --external:cloudflare:* --minify",
+    "deploy": "wrangler deploy",
+    "deploy:dev": "wrangler deploy --env dev",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "tail": "wrangler tail",
+    "tail:production": "wrangler tail --env production",
+    "kv:create": "wrangler kv:namespace create AGENT_CACHE",
+    "kv:create:preview": "wrangler kv:namespace create AGENT_CACHE --preview",
+    "d1:create": "wrangler d1 create agenkit-db",
+    "d1:migrate": "wrangler d1 migrations apply agenkit-db",
+    "d1:migrate:local": "wrangler d1 migrations apply agenkit-db --local",
+    "d1:query": "wrangler d1 execute agenkit-db --command",
+    "secret:put": "wrangler secret put",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "agenkit",
+    "cloudflare",
+    "workers",
+    "edge",
+    "ai",
+    "agents",
+    "llm"
+  ],
+  "author": "Agenkit Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "@types/node": "^20.10.6",
+    "esbuild": "^0.19.11",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.17.0",
+    "@typescript-eslint/parser": "^6.17.0",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0",
+    "wrangler": "^3.78.0"
+  },
+  "dependencies": {
+    "itty-router": "^4.0.13"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,180 @@
+# ============================================================
+# Agenkit Cloudflare Workers Configuration
+# ============================================================
+
+name = "agenkit-worker"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+# Account ID (get from Cloudflare dashboard)
+account_id = ""  # Add your Cloudflare account ID
+
+# ============================================================
+# Build Configuration
+# ============================================================
+
+[build]
+command = "npm run build"
+
+[build.upload]
+format = "modules"
+main = "./dist/index.js"
+
+# ============================================================
+# Durable Objects
+# ============================================================
+
+[[durable_objects.bindings]]
+name = "AGENT_SESSIONS"
+class_name = "AgentSession"
+script_name = "agenkit-worker"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["AgentSession"]
+
+# ============================================================
+# KV Namespaces
+# ============================================================
+
+# Development KV
+[[kv_namespaces]]
+binding = "AGENT_CACHE"
+id = ""  # Add your KV namespace ID (create with: wrangler kv:namespace create "AGENT_CACHE")
+preview_id = ""  # Add your preview KV namespace ID
+
+# ============================================================
+# D1 Databases
+# ============================================================
+
+[[d1_databases]]
+binding = "AGENT_DB"
+database_name = "agenkit-db"
+database_id = ""  # Add your D1 database ID (create with: wrangler d1 create agenkit-db)
+migrations_dir = "./migrations"
+
+# ============================================================
+# Environment Variables
+# ============================================================
+
+[vars]
+ENVIRONMENT = "production"
+LOG_LEVEL = "info"
+
+# ============================================================
+# Secrets (set with: wrangler secret put <NAME>)
+# ============================================================
+# OPENAI_API_KEY
+# ANTHROPIC_API_KEY
+
+# ============================================================
+# Development Environment
+# ============================================================
+
+[env.dev]
+name = "agenkit-worker-dev"
+workers_dev = true
+
+[env.dev.vars]
+ENVIRONMENT = "development"
+LOG_LEVEL = "debug"
+
+[[env.dev.kv_namespaces]]
+binding = "AGENT_CACHE"
+id = ""  # Dev KV namespace ID
+preview_id = ""
+
+[[env.dev.d1_databases]]
+binding = "AGENT_DB"
+database_name = "agenkit-db-dev"
+database_id = ""  # Dev D1 database ID
+
+# ============================================================
+# Staging Environment
+# ============================================================
+
+[env.staging]
+name = "agenkit-worker-staging"
+route = "staging-agenkit.example.com/*"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+LOG_LEVEL = "info"
+
+[[env.staging.kv_namespaces]]
+binding = "AGENT_CACHE"
+id = ""  # Staging KV namespace ID
+
+[[env.staging.d1_databases]]
+binding = "AGENT_DB"
+database_name = "agenkit-db-staging"
+database_id = ""  # Staging D1 database ID
+
+# ============================================================
+# Production Environment
+# ============================================================
+
+[env.production]
+name = "agenkit-worker-production"
+route = "agenkit.example.com/*"
+# routes = [
+#   { pattern = "agenkit.example.com/*", zone_name = "example.com" }
+# ]
+
+[env.production.vars]
+ENVIRONMENT = "production"
+LOG_LEVEL = "warn"
+
+[[env.production.kv_namespaces]]
+binding = "AGENT_CACHE"
+id = ""  # Production KV namespace ID
+
+[[env.production.d1_databases]]
+binding = "AGENT_DB"
+database_name = "agenkit-db-production"
+database_id = ""  # Production D1 database ID
+
+# ============================================================
+# Limits and Performance
+# ============================================================
+
+# CPU time limit (10ms - 50ms)
+cpu_ms = 50
+
+# Compatibility flags
+compatibility_flags = []
+
+# Logpush (for analytics)
+[logpush]
+enabled = false
+
+# ============================================================
+# Observability
+# ============================================================
+
+[observability]
+enabled = true
+head_sampling_rate = 1  # 100% sampling for production
+
+# ============================================================
+# Tail Consumers (for real-time logging)
+# ============================================================
+
+# [[tail_consumers]]
+# service = "agenkit-logger"
+
+# ============================================================
+# Analytics Engine
+# ============================================================
+
+[analytics_engine_datasets]
+# binding = "AGENT_ANALYTICS"
+# dataset = "agenkit_analytics"
+
+# ============================================================
+# Placement (optional - for regional control)
+# ============================================================
+
+# [placement]
+# mode = "smart"  # "smart" or specific regions

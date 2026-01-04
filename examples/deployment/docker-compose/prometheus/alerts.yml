@@ -1,0 +1,181 @@
+# ============================================================
+# Prometheus Alert Rules for Agenkit
+# ============================================================
+
+groups:
+  # Agent Health Alerts
+  - name: agent_health
+    interval: 30s
+    rules:
+      - alert: AgentDown
+        expr: up{job=~"agenkit-.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Agenkit agent is down"
+          description: "{{ $labels.job }} has been down for more than 1 minute."
+
+      - alert: AgentHighErrorRate
+        expr: rate(agenkit_errors_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "{{ $labels.job }} error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: AgentHighLatency
+        expr: histogram_quantile(0.95, rate(agenkit_request_duration_seconds_bucket[5m])) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency detected"
+          description: "{{ $labels.job }} p95 latency is {{ $value }}s (threshold: 5s)"
+
+  # Resource Utilization Alerts
+  - name: resource_utilization
+    interval: 30s
+    rules:
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{name=~"agenkit-.*"}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "{{ $labels.name }} CPU usage is {{ $value | humanizePercentage }}"
+
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes{name=~"agenkit-.*"} / container_spec_memory_limit_bytes{name=~"agenkit-.*"}) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "{{ $labels.name }} memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: ContainerRestarting
+        expr: rate(container_start_time_seconds{name=~"agenkit-.*"}[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container restarting"
+          description: "{{ $labels.name }} has restarted {{ $value }} times in the last 15 minutes"
+
+  # Database Alerts
+  - name: database_health
+    interval: 30s
+    rules:
+      - alert: PostgresDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL has been down for more than 1 minute"
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been down for more than 1 minute"
+
+      - alert: HighDatabaseConnections
+        expr: pg_stat_database_numbackends{datname="agenkit"} > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High database connections"
+          description: "PostgreSQL has {{ $value }} active connections (threshold: 80)"
+
+  # Request Volume Alerts
+  - name: request_volume
+    interval: 30s
+    rules:
+      - alert: LowRequestVolume
+        expr: rate(agenkit_requests_total[5m]) < 0.1
+        for: 15m
+        labels:
+          severity: info
+        annotations:
+          summary: "Low request volume"
+          description: "{{ $labels.job }} is receiving fewer than 0.1 requests/second"
+
+      - alert: HighRequestVolume
+        expr: rate(agenkit_requests_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "High request volume"
+          description: "{{ $labels.job }} is receiving {{ $value }} requests/second (threshold: 100)"
+
+      - alert: SuddenTrafficSpike
+        expr: (rate(agenkit_requests_total[1m]) / rate(agenkit_requests_total[5m])) > 2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sudden traffic spike detected"
+          description: "{{ $labels.job }} request rate has increased by {{ $value | humanizePercentage }}"
+
+  # Tracing Alerts
+  - name: tracing_health
+    interval: 30s
+    rules:
+      - alert: JaegerDown
+        expr: up{job="jaeger"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Jaeger is down"
+          description: "Jaeger tracing service has been down for more than 5 minutes"
+
+      - alert: HighTraceDropRate
+        expr: rate(jaeger_collector_traces_dropped_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High trace drop rate"
+          description: "Jaeger is dropping traces at {{ $value }} traces/second"
+
+  # Monitoring Stack Alerts
+  - name: monitoring_stack
+    interval: 60s
+    rules:
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus is down"
+          description: "Prometheus monitoring service is down"
+
+      - alert: GrafanaDown
+        expr: up{job="grafana"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Grafana is down"
+          description: "Grafana visualization service is down"
+
+      - alert: PrometheusTSDBCompactionsFailing
+        expr: rate(prometheus_tsdb_compactions_failed_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus TSDB compactions failing"
+          description: "Prometheus TSDB compactions are failing"

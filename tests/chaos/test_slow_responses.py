@@ -119,7 +119,9 @@ async def test_gradual_performance_degradation():
 
     assert elapsed5 >= 0.06, f"6th request should take >=60ms, took {elapsed5:.3f}s"
     # Later requests should be significantly slower (use 2x multiplier to handle timing variance)
-    assert elapsed5 > elapsed1 * 2, f"6th request ({elapsed5:.3f}s) should be > 2x first request ({elapsed1:.3f}s)"
+    assert (
+        elapsed5 > elapsed1 * 2
+    ), f"6th request ({elapsed5:.3f}s) should be > 2x first request ({elapsed1:.3f}s)"
 
 
 @pytest.mark.asyncio

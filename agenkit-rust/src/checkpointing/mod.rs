@@ -52,4 +52,4 @@ pub mod durable_agent;
 pub use checkpoint::Checkpoint;
 pub use storage::{CheckpointStorage, FileCheckpointStorage, InMemoryCheckpointStorage};
 pub use manager::CheckpointManager;
-pub use durable_agent::DurableAgent;
+pub use durable_agent::{DurableAgent, DurableAgentConfig};

@@ -25,7 +25,7 @@ This document outlines the development roadmap for agenkit, organized by phases 
 - ✅ **Memory**: Three-tier hierarchy handles 30-hour sessions beyond 200K context windows
 - ✅ **Cost**: Budget tracking with intelligent model routing for expensive reasoning models (o3: $5-15/1M, Opus 4: $15-75/1M)
 - ✅ **Durability**: Checkpointing system enables long-running agents with automatic state persistence and resume
-- ✅ **Safety**: Comprehensive security framework (prompt injection, output redaction, permissions, audit logging) - Python/Go/Rust complete
+- ✅ **Safety**: Comprehensive security framework (prompt injection, output redaction, permissions, audit logging) - Python/Go/Rust/TypeScript complete
 - **Evaluation**: Existing comprehensive evaluation framework sufficient for v1.0
 
 **✅ Evaluation Framework: Already Implemented**
@@ -970,11 +970,11 @@ Focus: New agent patterns from 2025 research + production capabilities.
 ### Q1 2026: Safety & Reasoning
 
 #### [#71](https://github.com/scttfrdmn/agenkit/issues/71) Agent Safety Framework ✅ COMPLETE
-- [x] Input validation (prompt injection defense) - Python ✅ Go ✅ Rust ✅
-- [x] Output validation (schema, content filtering) - Python ✅ Go ✅ Rust ✅
-- [x] Action constraints (sandboxing, permissions) - Python ✅ Go ✅ Rust ✅
-- [x] Anomaly detection - Python ✅ Go ✅ Rust ✅
-- [x] Audit logging - Python ✅ Go ✅ Rust ✅
+- [x] Input validation (prompt injection defense) - Python ✅ Go ✅ Rust ✅ TypeScript ✅
+- [x] Output validation (schema, content filtering) - Python ✅ Go ✅ Rust ✅ TypeScript ✅
+- [x] Action constraints (sandboxing, permissions) - Python ✅ Go ✅ Rust ✅ TypeScript ✅
+- [x] Anomaly detection - Python ✅ Go ✅ Rust ✅ TypeScript ✅
+- [x] Audit logging - Python ✅ Go ✅ Rust ✅ TypeScript ✅
 - [x] Python examples (4 examples) ✅
 - [x] Python tests - 162 tests ✅ (input:39, output:40, permissions:45, anomaly:21, audit:17)
 - [x] Go examples (2 examples) ✅
@@ -982,9 +982,12 @@ Focus: New agent patterns from 2025 research + production capabilities.
 - [x] **Rust examples (4 examples) ✅** - safety_simple, safety_framework, production_secure, production_agent_secure
 - [x] **Rust tests - 30 tests ✅** (unit:17, integration:13) - Full feature parity achieved
 - [x] **Rust production integration ✅** - Complete security + checkpointing + budget + memory
+- [x] **TypeScript examples (3 examples) ✅** - safety-simple, safety-framework, production-secure
+- [x] **TypeScript tests - 35 tests ✅** (input:15, output:9, permissions:6, anomaly:6, audit:2, integration:3)
+- [x] **TypeScript production integration ✅** - Complete security + checkpointing + budget + memory
 - [x] Documentation (docs/safety.md) ✅
 
-**Status:** ✅ Complete. Full Python, Go, and Rust implementation with comprehensive test coverage (286 total tests across 3 languages) and practical examples. Rust includes unique production integration demonstrating all 4 systems working together securely.
+**Status:** ✅ Complete. Full Python, Go, Rust, and TypeScript implementation with comprehensive test coverage (321 total tests across 4 languages) and practical examples. Rust and TypeScript include production integration demonstrating all 4 systems working together securely.
 
 **Why**: Autonomous agents need guardrails. Research: "prompt injection = complete control."
 

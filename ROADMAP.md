@@ -1,5 +1,11 @@
 # Agenkit Roadmap
 
+> **⚠️ IMPORTANT:** This document provides a high-level overview. **GitHub Issues and Milestones are the single source of truth** for planning, status, and detailed work tracking.
+>
+> - **Current work:** See [GitHub Milestones](https://github.com/scttfrdmn/agenkit/milestones)
+> - **Issue tracking:** See [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
+> - **Project board:** See [GitHub Projects](https://github.com/scttfrdmn/agenkit/projects)
+
 This document outlines the development roadmap for agenkit, organized by phases and milestones.
 
 ## Current Status (November 2025)

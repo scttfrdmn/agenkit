@@ -99,6 +99,7 @@ pub mod patterns;
 pub mod evaluation;
 pub mod techniques;
 pub mod middleware;
+pub mod safety;
 
 // Re-export commonly used types
 pub use core::{

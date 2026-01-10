@@ -25,7 +25,7 @@ This document outlines the development roadmap for agenkit, organized by phases 
 - ✅ **Memory**: Three-tier hierarchy handles 30-hour sessions beyond 200K context windows
 - ✅ **Cost**: Budget tracking with intelligent model routing for expensive reasoning models (o3: $5-15/1M, Opus 4: $15-75/1M)
 - ✅ **Durability**: Checkpointing system enables long-running agents with automatic state persistence and resume
-- **Safety**: Autonomous agents need guardrails (prompt injection, resource limits) - Python/Go complete, Rust in progress
+- ✅ **Safety**: Comprehensive security framework (prompt injection, output redaction, permissions, audit logging) - Python/Go/Rust complete
 - **Evaluation**: Existing comprehensive evaluation framework sufficient for v1.0
 
 **✅ Evaluation Framework: Already Implemented**
@@ -970,18 +970,21 @@ Focus: New agent patterns from 2025 research + production capabilities.
 ### Q1 2026: Safety & Reasoning
 
 #### [#71](https://github.com/scttfrdmn/agenkit/issues/71) Agent Safety Framework ✅ COMPLETE
-- [x] Input validation (prompt injection defense) - Python ✅ Go ✅
-- [x] Output validation (schema, content filtering) - Python ✅ Go ✅
-- [x] Action constraints (sandboxing, permissions) - Python ✅ Go ✅
-- [x] Anomaly detection - Python ✅ Go ✅
-- [x] Audit logging - Python ✅ Go ✅
+- [x] Input validation (prompt injection defense) - Python ✅ Go ✅ Rust ✅
+- [x] Output validation (schema, content filtering) - Python ✅ Go ✅ Rust ✅
+- [x] Action constraints (sandboxing, permissions) - Python ✅ Go ✅ Rust ✅
+- [x] Anomaly detection - Python ✅ Go ✅ Rust ✅
+- [x] Audit logging - Python ✅ Go ✅ Rust ✅
 - [x] Python examples (4 examples) ✅
 - [x] Python tests - 162 tests ✅ (input:39, output:40, permissions:45, anomaly:21, audit:17)
-- [x] Documentation (docs/safety.md) ✅
 - [x] Go examples (2 examples) ✅
 - [x] Go tests - 94 tests ✅ (input:30, permissions:34, anomaly:17, audit:13)
+- [x] **Rust examples (4 examples) ✅** - safety_simple, safety_framework, production_secure, production_agent_secure
+- [x] **Rust tests - 30 tests ✅** (unit:17, integration:13) - Full feature parity achieved
+- [x] **Rust production integration ✅** - Complete security + checkpointing + budget + memory
+- [x] Documentation (docs/safety.md) ✅
 
-**Status:** ✅ Complete. Full Python and Go implementation with comprehensive test coverage (256 total tests) and practical examples.
+**Status:** ✅ Complete. Full Python, Go, and Rust implementation with comprehensive test coverage (286 total tests across 3 languages) and practical examples. Rust includes unique production integration demonstrating all 4 systems working together securely.
 
 **Why**: Autonomous agents need guardrails. Research: "prompt injection = complete control."
 
@@ -1293,10 +1296,20 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 - ✅ Checkpointing System (#381): 1,548 LOC, 14 tests, durable execution with automatic state persistence
 - ✅ Budget Tracking System (#384): 2,242 LOC, 37 tests, intelligent model routing with thinking mode allocation
 - ✅ Memory Systems (#388): 1,247 LOC, 27 tests, three-tier hierarchy (working/short-term/long-term)
-- ✅ Production Integration: 368-line example demonstrating full system integration
-- ✅ **Total Impact**: 5,405 LOC production code, 78 comprehensive tests, 399 total tests passing
-- ✅ **Feature Parity**: 100% parity with Python/TypeScript for production infrastructure
-- ✅ **Production Ready**: Enables 30+ hour autonomous agents with durable execution, cost control, and memory management
+- ✅ **Safety Framework (#71)**: 30 tests (17 unit + 13 integration), 4 examples, complete security integration
+  - Input validation (prompt injection defense)
+  - Output validation (sensitive data redaction)
+  - Permissions (RBAC with 4 roles, sandbox constraints)
+  - Anomaly detection (rate limiting, behavioral monitoring)
+  - Audit logging (structured security events)
+- ✅ **Production Integration**: 4 examples demonstrating secure, cost-aware, durable agents
+  - production_agent.rs (368 lines) - Original integration
+  - production_secure.rs (255 lines) - Complete security integration ✅ RUNNING
+  - production_agent_secure.rs (509 lines) - Extended with audit logging
+  - Full pipeline: Input validation → Memory → Budget → Processing → Output redaction → Checkpointing
+- ✅ **Total Impact**: 6,400+ LOC production code, 108 comprehensive tests, 429 total tests passing
+- ✅ **Feature Parity**: 100% parity with Python/Go for production infrastructure + security
+- ✅ **Production Ready**: Enables secure, cost-aware, durable 30+ hour autonomous agents
 
 ---
 
@@ -1560,7 +1573,7 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 **v0.39.0 (Complete):** ✅ Zig Language Foundation - Infrastructure, 4 patterns, 2 advanced examples complete (#148, #149, #222)
 **v0.40.0 (Complete):** ✅ Zig Pattern Parity + 6-Language Achievement - All 18 patterns, 2,101+ tests, historic milestone! (#252)
 **v0.41.0 (Complete):** ✅ Zig Examples & Documentation - 11 examples, ~4,000 LOC documentation, production-ready
-**v0.47.0 (Complete):** ✅ Rust Production Stack - Phase 1 - Checkpointing, budget tracking, memory systems (#381, #384, #388)
+**v0.47.0 (Complete):** ✅ Rust Production Stack - Phase 1 - Checkpointing, budget tracking, memory systems, safety framework (#381, #384, #388, #71)
 
 **Q1 2026 (Dec-May):** 🚧 Progressive Releases to v1.0.0
 
@@ -1650,4 +1663,4 @@ See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for d
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: January 10, 2026 (v0.47.0 current - Rust Production Stack Phase 1 complete: checkpointing, budget tracking, memory systems)
+Last updated: January 10, 2026 (v0.47.0 current - Rust Production Stack Phase 1 complete: checkpointing, budget tracking, memory systems, safety framework with full production integration)

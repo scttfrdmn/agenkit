@@ -102,6 +102,7 @@ pub mod middleware;
 pub mod safety;
 pub mod checkpointing;
 pub mod budget;
+pub mod memory;
 
 // Re-export commonly used types
 pub use core::{
@@ -123,6 +124,10 @@ pub use middleware::{
 pub use budget::{
     BudgetConfig, BudgetConfigBuilder, BudgetLimiter, CostRecord, CostTracker, ModelOptimizer,
     ModelPricing, OptimizerConfig, ThinkingBudgetAllocator, ThinkingModeDetector, UsageStats,
+};
+
+pub use memory::{
+    LongTermMemory, MemoryEntry, MemoryHierarchy, ShortTermMemory, WorkingMemory,
 };
 
 // WASM-specific initialization

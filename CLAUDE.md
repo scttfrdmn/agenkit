@@ -4,6 +4,31 @@
 
 ---
 
+## 🚨 Critical Rule: Project Tracking
+
+**ALL project status, progress, plans, and milestones ONLY go in GitHub:**
+- Issues: Track specific work items
+- Milestones: Track releases and phases
+- Project boards: Optional for sprint planning
+
+**❌ NEVER create these files:**
+- `docs/PARITY_STATUS.md`
+- `docs/v0.47.0_EXECUTION_PLAN.md`
+- `docs/SPRINT_*.md`
+- `docs/PROGRESS_*.md`
+- Any status/progress/planning documents
+
+**✅ GitHub is the single source of truth for:**
+- Release planning
+- Feature status
+- Parity tracking
+- Issue management
+- Work prioritization
+
+**Exception:** ROADMAP.md exists for high-level strategy only.
+
+---
+
 ## Quick Reference
 
 ### Project Context

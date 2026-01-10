@@ -68,6 +68,10 @@ func (a *UnstableExternalAPI) Capabilities() []string {
 	return []string{"weather_data"}
 }
 
+func (a *UnstableExternalAPI) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *UnstableExternalAPI) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	a.callCount++
 
@@ -253,6 +257,10 @@ func (d *FlakeyDatabase) Capabilities() []string {
 	return []string{"query"}
 }
 
+func (d *FlakeyDatabase) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(d)
+}
+
 func (d *FlakeyDatabase) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	idx := d.callCount % len(d.failurePattern)
 	d.callCount++
@@ -339,6 +347,10 @@ func (s *OverloadedService) Name() string {
 
 func (s *OverloadedService) Capabilities() []string {
 	return []string{"process_job"}
+}
+
+func (s *OverloadedService) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(s)
 }
 
 func (s *OverloadedService) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

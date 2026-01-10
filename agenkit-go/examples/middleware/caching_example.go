@@ -73,6 +73,10 @@ func (a *SlowAgent) Capabilities() []string {
 	return []string{"processing"}
 }
 
+func (a *SlowAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *SlowAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate expensive operation (e.g., LLM API call, database query)
 	time.Sleep(500 * time.Millisecond)

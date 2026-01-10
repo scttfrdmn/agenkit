@@ -69,6 +69,10 @@ func (a *SlowLLMAgent) Capabilities() []string {
 	return []string{"text-generation"}
 }
 
+func (a *SlowLLMAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *SlowLLMAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	fmt.Printf("   LLM processing (will take %.1fs)...\n", a.responseTime.Seconds())
 
@@ -103,6 +107,10 @@ func (a *UnpredictableAgent) Name() string {
 
 func (a *UnpredictableAgent) Capabilities() []string {
 	return []string{"analysis"}
+}
+
+func (a *UnpredictableAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
 }
 
 func (a *UnpredictableAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

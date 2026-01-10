@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Rust Safety Framework - Examples and Integration Tests
+- **Examples**: Created 2 safety framework examples
+  - `safety_simple.rs` (74 lines) - Simple demonstration of all safety layers working together
+  - `safety_framework.rs` (313 lines) - Comprehensive safety demonstration (ready for future API enhancements)
+- **Integration Tests**: Added 13 comprehensive integration tests (`tests/safety_integration.rs`, 207 lines)
+  - Input validation middleware (prompt injection, content filtering)
+  - Output validation middleware (redaction, size limits)
+  - Permission middleware (all 4 roles: Admin, User, ReadOnly, Restricted)
+  - Full security stack integration (multiple layers)
+  - Multi-message processing through security layers
+- **Test Coverage**: 30 safety tests passing (17 unit + 13 integration)
+
+**Safety Framework Status:**
+- ✅ Implementation: Complete (Python/Go/Rust parity achieved)
+- ✅ Unit Tests: 17 tests covering all modules
+- ✅ Integration Tests: 13 tests covering middleware composition
+- ✅ Examples: 2 working examples demonstrating usage
+- 📊 **Total**: 30 tests, 100% pass rate
+
+**Features:**
+- Input validation (prompt injection defense, content filtering, PII detection)
+- Output validation (schema validation, sensitive data redaction)
+- Permission-based access control (RBAC with 4 roles, sandbox constraints)
+- Anomaly detection (rate limiting, behavioral monitoring)
+- Security audit logging (structured event logging with rotation)
+
 ## [0.47.0] - 2026-01-10
 
 ### 🚀 Rust Production Stack - Phase 1 Complete

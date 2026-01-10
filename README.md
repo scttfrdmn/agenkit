@@ -2,7 +2,7 @@
 
 **Build production-ready AI agent systems.**
 
-Agenkit is a lightweight, cross-language framework for building distributed AI agents that scale from prototype to production without rewriting your code.
+Agenkit is a lightweight, cross-language toolkit for building distributed AI agents that scale from prototype to production without rewriting your code.
 
 [![Website](https://img.shields.io/badge/website-agenkit.dev-blue)](https://agenkit.dev)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -37,7 +37,7 @@ Prototype → Production
                │ Same Interface
                ↓
 ┌─────────────────────────────────────────────┐
-│  Agenkit Framework                          │
+│  Agenkit Toolkit                            │
 │  • Automatic retries & circuit breakers    │
 │  • Distributed tracing & metrics           │
 │  • Cross-language support (Python ↔ Go)    │
@@ -436,7 +436,7 @@ We provide 27+ examples covering common use cases:
 **Advanced:**
 - [Remote Agents](examples/adapters/01_basic_remote_agent.py) - Cross-process communication
 - [Streaming Responses](examples/adapters/03_streaming.py) - Server-sent events
-- [Custom Middleware](examples/middleware/custom_middleware_example.py) - Extend the framework
+- [Custom Middleware](examples/middleware/custom_middleware_example.py) - Extend the toolkit
 
 [Browse all examples →](examples/README.md)
 
@@ -487,14 +487,14 @@ Apache License 2.0 - See [LICENSE](LICENSE) for details.
 | **Rust** | 18/18 (100%) | 6/6 (100%) | 6/6 (100%) | 242 | ✅ Complete | 20x Python |
 | **Zig** | 18/18 (100%) | - | - | 113 | ✅ Complete | 22x Python |
 
-**Historic Milestone:** First AI agent framework to achieve 100% feature parity across 6 languages!
+**Historic Milestone:** First AI agent toolkit to achieve 100% feature parity across 6 languages!
 
 ### Project Status
 
-- ✅ Core framework complete across 6 languages
+- ✅ Core toolkit complete across 6 languages
 - ✅ **100% Pattern Parity** - All 18 patterns in all 6 languages
 - ✅ **100% Adapter Parity** - All 6 LLM adapters (OpenAI, Anthropic, Ollama, Bedrock, Gemini, LiteLLM)
-- ✅ **100% Evaluation Parity** - Complete eval framework + benchmarks
+- ✅ **100% Evaluation Parity** - Complete evaluation system + benchmarks
 - ✅ **100% CI/CD Health** - All GitHub Actions workflows passing
 - ✅ 2,101+ tests passing (100% success rate across all 6 languages)
 - ✅ Production middleware ready (retry, circuit breaker, timeout, rate limiting, caching, batching)

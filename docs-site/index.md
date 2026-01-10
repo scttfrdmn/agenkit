@@ -2,7 +2,7 @@
 
 **The foundation for AI agents.**
 
-A production-ready framework for building distributed AI agent systems with cross-language support, comprehensive middleware, and full observability.
+A production-ready toolkit for building distributed AI agent systems with cross-language support, comprehensive middleware, and full observability.
 
 [![Website](https://img.shields.io/badge/website-agenkit.dev-blue)](https://agenkit.dev)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)

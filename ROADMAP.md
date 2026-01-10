@@ -32,9 +32,9 @@ This document outlines the development roadmap for agenkit, organized by phases 
 - **Regression Testing**: RegressionDetector for continuous quality
 - **AB Testing**: Workflow comparison and optimization
 
-**Advanced evaluation features** (ErrorTracker, FailurePredictor, CLI tools, dashboards) were planned for v0.43-v0.47 but have been **deferred to v1.1+** (19 issues moved to "Ideas: Evaluation Framework" milestone). The existing evaluation framework is sufficient for v1.0.0.
+**Advanced evaluation features** (ErrorTracker, FailurePredictor, CLI tools, dashboards) were planned for v0.43-v0.47 but have been **deferred to v1.1+** (19 issues moved to "Ideas: Evaluation Framework" milestone). The existing evaluation system is sufficient for v1.0.0.
 
-**Note**: Recent research (Patronus AI, December 2025) shows 63% of multi-step AI agents fail due to error compounding. Agenkit's existing evaluation framework addresses this through comprehensive metrics and testing. Future enhancements (real-time error tracking, failure prediction) can be built on this foundation post-v1.0.0.
+**Note**: Recent research (Patronus AI, December 2025) shows 63% of multi-step AI agents fail due to error compounding. Agenkit's existing evaluation system addresses this through comprehensive metrics and testing. Future enhancements (real-time error tracking, failure prediction) can be built on this foundation post-v1.0.0.
 
 See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for comprehensive 2026 strategy.
 
@@ -870,7 +870,7 @@ Focus: TypeScript and Rust ports for web/edge computing.
 - [x] HTTP/WebSocket/gRPC transports ✅
 - [x] All 11 agent patterns ✅
 - [x] LLM adapters (OpenAI, Anthropic, Ollama) ✅
-- [x] Evaluation framework ✅
+- [x] Evaluation system ✅
 - [x] 242 tests passing (100% pass rate) ✅
 - [x] Cargo package publication ✅
 
@@ -879,7 +879,7 @@ Focus: TypeScript and Rust ports for web/edge computing.
 **Implementation Stats:**
 - 242 tests passing (100% pass rate)
 - 11/11 patterns implemented
-- Complete evaluation framework
+- Complete evaluation system
 - Performance: 10-100x faster than Python for CPU-bound tasks
 
 **Why**: Edge computing, embedded agents, performance-critical systems.
@@ -1275,7 +1275,7 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 **v0.40.0 (Complete):** ✅ Zig Pattern Parity + 6-Language Achievement - December 13, 2025
 - ✅ All 7 missing Zig patterns implemented (1,445 LOC, 113 tests)
 - ✅ **HISTORIC MILESTONE**: 100% pattern parity across all 6 languages!
-- ✅ First multi-language AI agent framework to achieve 6-language parity
+- ✅ First multi-language AI agent toolkit to achieve 6-language parity
 - ✅ 2,101+ tests passing across all languages (100% pass rate)
 - ✅ Documentation updates complete
 

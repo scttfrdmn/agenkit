@@ -46,8 +46,8 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  PYTHON_VERSION: '3.12'
-  GO_VERSION: '1.22'
+  PYTHON_VERSION: '3.13'
+  GO_VERSION: '1.23'
 
 jobs:
   # ============================================================

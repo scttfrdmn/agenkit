@@ -44,9 +44,9 @@ jobs:
 
       - name: Run Python smoke tests (quick, no integration)
         run: |
-          # Quick unit tests only - integration tests run locally
+          # Quick unit tests only - integration/chaos tests run locally
           # Using -n auto for parallel execution (much faster)
-          uv run pytest tests/ -n auto -q -m "not integration and not cross_language" --maxfail=5
+          uv run pytest tests/ -n auto -q -m "not integration and not cross_language and not chaos" --maxfail=5
         env:
           PYTHONPATH: ${{ github.workspace }}
 

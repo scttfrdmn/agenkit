@@ -173,6 +173,7 @@ async def go_server():
 # ============================================
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_python_client_to_go_server(go_server):
     """Test Python client connecting to Go server via HTTP/1.1."""
@@ -216,6 +217,7 @@ async def test_go_client_to_python_server(python_server):
     assert "python" in result.stdout.lower()
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_bidirectional_communication(python_server, go_server):
     """Test bidirectional communication between Python and Go."""
@@ -290,6 +292,7 @@ async def test_message_serialization():
         await local_agent.stop()
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_error_handling_connection_refused():
     """Test error handling when server is unavailable."""

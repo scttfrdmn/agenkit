@@ -375,3 +375,41 @@ export {
   getLoggingConfig,
   getLoggerWithTrace,
 } from './observability';
+
+// Safety and Security
+export {
+  AuditEventType,
+  AuditSeverity,
+  AuditEvent,
+  SecurityAuditLoggerConfig,
+  SecurityAuditLogger,
+  getAuditLogger,
+  configureAuditLogger,
+  SecurityEvent,
+  AnomalyDetector,
+  AnomalyDetectionMiddleware,
+  anomalyDetection,
+  ValidationError,
+  PromptInjectionDetector,
+  ContentFilter,
+  InputValidationMiddleware,
+  inputValidation,
+  OutputValidationError,
+  SchemaValidator,
+  SensitiveDataRedactor,
+  OutputValidationMiddleware,
+  outputValidation,
+  Permission,
+  Role,
+  ROLE_PERMISSIONS,
+  PermissionDeniedError,
+  Sandbox,
+  PermissionMiddleware,
+  permissions,
+} from './safety';
+
+// Memory Systems
+export { Memory, InMemoryMemory } from './memory';
+
+// Budget Management
+export { ModelPricing, Cost, costToDict, Storage, InMemoryStorage, CostTracker } from './budget';

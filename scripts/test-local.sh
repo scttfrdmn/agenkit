@@ -120,11 +120,11 @@ if [ "$QUICK" = true ]; then
     # Skip integration and cross-language tests
     PYTEST_ARGS+=("-m" "not integration and not cross_language")
     run_step "pytest (quick: unit tests only)" \
-        pytest tests/ "${PYTEST_ARGS[@]}"
+        uv run pytest tests/ -n auto "${PYTEST_ARGS[@]}"
 else
     # Run all tests including integration
     run_step "pytest (all tests with parallel execution)" \
-        pytest tests/ "${PYTEST_ARGS[@]}"
+        uv run pytest tests/ -n auto "${PYTEST_ARGS[@]}"
 fi
 
 # Go Tests

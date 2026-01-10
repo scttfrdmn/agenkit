@@ -95,9 +95,9 @@ This project includes implementations in **6 languages**. All should be tested l
 | Python | ✅ 1739/1741 | 2:08 | `make test` |
 | Go | ✅ All Pass | ~10s | `cd agenkit-go && go test ./...` |
 | Rust | ✅ 276 Pass | 0.4s | `cd agenkit-rust && cargo test` |
-| TypeScript | ⚠️ 1037/1039 | 5.5s | `cd agenkit-ts && npm test` |
-| Zig | ❓ TBD | - | `cd agenkit-zig && zig build test` |
-| C++ | ❓ TBD | - | `cd agenkit-cpp/build && make test` |
+| TypeScript | ✅ 1039/1039 | 4.5s | `cd agenkit-ts && npm test` |
+| Zig | ✅ 214/214 | 0.16s | `cd agenkit-zig && zig build test` |
+| C++ | ✅ 42/42 | 50s | `cd agenkit-cpp/build && ctest` |
 
 ### Quick Test All Languages
 
@@ -117,8 +117,8 @@ make test
 # Zig
 (cd agenkit-zig && zig build test)
 
-# C++ (requires cmake first)
-(cd agenkit-cpp/build && make test)
+# C++ (already built)
+(cd agenkit-cpp/build && ctest)
 ```
 
 ### Cross-Language Integration Tests

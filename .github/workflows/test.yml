@@ -40,7 +40,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          uv pip install -e ".[test]"
+          uv pip install --system -e ".[test]"
 
       - name: Run Python smoke tests (quick, no integration)
         run: |

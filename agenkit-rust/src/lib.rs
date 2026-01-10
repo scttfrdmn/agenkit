@@ -98,6 +98,7 @@ pub mod transports;
 pub mod patterns;
 pub mod evaluation;
 pub mod techniques;
+pub mod middleware;
 
 // Re-export commonly used types
 pub use core::{
@@ -107,6 +108,14 @@ pub use core::{
 
 #[cfg(feature = "native")]
 pub use transports::{HttpAgent, HttpServer, HttpTransportConfig};
+
+pub use middleware::{
+    BatchingConfig, BatchingConfigBuilder, BatchingMiddleware, CachingConfig,
+    CachingConfigBuilder, CachingMiddleware, CircuitBreakerConfig, CircuitBreakerConfigBuilder,
+    CircuitBreakerMiddleware, CircuitState, RateLimiterConfig, RateLimiterConfigBuilder,
+    RateLimiterMiddleware, RetryConfig, RetryConfigBuilder, RetryMiddleware, TimeoutConfig,
+    TimeoutConfigBuilder, TimeoutMiddleware,
+};
 
 // WASM-specific initialization
 #[cfg(feature = "wasm")]

@@ -191,6 +191,10 @@ path = "examples/gemini_example.rs"
 name = "bedrock_example"
 path = "examples/bedrock_example.rs"
 
+[[example]]
+name = "middleware_example"
+path = "examples/middleware_example.rs"
+
 [[bench]]
 name = "pattern_benchmarks"
 path = "benches/pattern_benchmarks.rs"

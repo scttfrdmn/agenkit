@@ -38,25 +38,70 @@ export {
   WebSocketTransportConfig,
   WebSocketTransportError,
 } from './transports/websocket';
+export { TCPTransport } from './transports/tcp';
+export { RemoteAgent, RemoteAgentConfig } from './transports/remote';
 export {
-  GrpcAgent,
-  GrpcServer,
-  GrpcTransportConfig,
-  GrpcServerConfig,
-  GrpcTransportError,
-} from './transports/grpc';
+  Transport,
+  parseEndpoint,
+  MAX_MESSAGE_SIZE,
+  ProtocolError,
+  ProtocolErrorCode,
+  ConnectionError,
+  ConnectionTimeoutError,
+  ConnectionClosedError,
+  InvalidMessageError,
+  UnsupportedVersionError,
+  MalformedPayloadError,
+  AgentNotFoundError,
+  AgentUnavailableError,
+  AgentTimeoutError,
+  ToolNotFoundError,
+  ToolExecutionFailedError,
+  RegistrationFailedError,
+  DuplicateAgentError,
+  RemoteExecutionError,
+  PROTOCOL_VERSION,
+  ProtocolEnvelope,
+  encodeMessage,
+  decodeMessage,
+  encodeToolResult,
+  decodeToolResult,
+  createRequestEnvelope,
+  createResponseEnvelope,
+  createErrorEnvelope,
+  createStreamChunkEnvelope,
+  createStreamEndEnvelope,
+  validateEnvelope,
+  encodeBytes,
+  decodeBytes,
+} from './transports';
 
 // Middleware
 export { Middleware, applyMiddleware, BaseMiddleware } from './middleware/base';
-export { RetryMiddleware, RetryConfig, retry } from './middleware/retry';
-export { TimeoutMiddleware, TimeoutConfig, TimeoutError, timeout } from './middleware/timeout';
+export { RetryDecorator, RetryConfig, RetryStrategy, MaxRetriesExceededError } from './middleware/retry';
+export { TimeoutDecorator, TimeoutConfig, TimeoutError } from './middleware/timeout';
 export {
-  CircuitBreakerMiddleware,
+  CircuitBreakerDecorator,
   CircuitBreakerConfig,
+  CircuitBreakerState,
   CircuitBreakerError,
-  CircuitState,
-  circuitBreaker,
 } from './middleware/circuit-breaker';
+export { BatchingDecorator, BatchingConfig, BatchingMetrics } from './middleware/batching';
+export { CachingDecorator, CachingConfig, CachingMetrics } from './middleware/caching';
+export { MetricsDecorator, Metrics } from './middleware/metrics';
+export {
+  RateLimiterDecorator,
+  RateLimiterConfig,
+  RateLimiterMetrics,
+  RateLimitError,
+} from './middleware/rate-limiter';
+export {
+  PerUserRateLimiterDecorator,
+  PerUserRateLimiterConfig,
+  PerUserRateLimiterMetrics,
+  PerUserRateLimitError,
+  GlobalRateLimitError,
+} from './middleware/per-user-rate-limiter';
 
 // LLM Adapters
 export { OpenAIAgent, OpenAIConfig } from './llm/openai';

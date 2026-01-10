@@ -76,6 +76,10 @@ func (a *MockLLMAgent) Capabilities() []string {
 	return []string{"text_generation"}
 }
 
+func (a *MockLLMAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *MockLLMAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate API processing time
 	time.Sleep(a.latency)

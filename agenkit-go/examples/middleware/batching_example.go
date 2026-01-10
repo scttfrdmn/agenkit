@@ -78,6 +78,10 @@ func (a *MockLLMBatchAgent) Capabilities() []string {
 	return []string{"text-generation", "batch-processing"}
 }
 
+func (a *MockLLMBatchAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *MockLLMBatchAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate per-batch setup overhead (amortized across batch)
 	time.Sleep(50 * time.Millisecond)
@@ -117,6 +121,10 @@ func (a *MockDatabaseAgent) Capabilities() []string {
 	return []string{"database", "bulk-operations"}
 }
 
+func (a *MockDatabaseAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *MockDatabaseAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate network + connection overhead (amortized in batch)
 	time.Sleep(20 * time.Millisecond)
@@ -154,6 +162,10 @@ func (a *MockAnalyticsAgent) Name() string {
 
 func (a *MockAnalyticsAgent) Capabilities() []string {
 	return []string{"analytics", "stream-processing"}
+}
+
+func (a *MockAnalyticsAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
 }
 
 func (a *MockAnalyticsAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
@@ -377,6 +389,10 @@ func (a *PartialFailAgent) Name() string {
 
 func (a *PartialFailAgent) Capabilities() []string {
 	return []string{}
+}
+
+func (a *PartialFailAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
 }
 
 func (a *PartialFailAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {

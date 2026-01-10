@@ -67,6 +67,11 @@ func (a *UnreliableAgent) Capabilities() []string {
 	return []string{"translation"}
 }
 
+func (a *UnreliableAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
+
 func (a *UnreliableAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	a.attemptCount++
 	fmt.Printf("  Attempt %d: ", a.attemptCount)

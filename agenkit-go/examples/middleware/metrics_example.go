@@ -64,6 +64,10 @@ func (a *LLMAgent) Capabilities() []string {
 	return []string{"text_generation"}
 }
 
+func (a *LLMAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *LLMAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simulate realistic latency distribution
 	jitter := time.Duration(rand.NormFloat64() * float64(a.meanLatency) * 0.3)

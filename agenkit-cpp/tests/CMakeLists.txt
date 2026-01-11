@@ -190,6 +190,11 @@ add_executable(test_tree_of_thought techniques/reasoning/test_tree_of_thought.cp
 target_link_libraries(test_tree_of_thought agenkit gtest_main)
 add_test(NAME tree_of_thought_tests COMMAND test_tree_of_thought)
 
+# Infrastructure tests - Safety
+add_executable(test_safety infrastructure/test_safety.cpp)
+target_link_libraries(test_safety agenkit gtest_main)
+add_test(NAME safety_tests COMMAND test_safety)
+
 # Cross-language test harness (standalone executable, not a gtest)
 add_executable(cross_language_harness cross_language_harness.cpp)
 target_link_libraries(cross_language_harness nlohmann_json::nlohmann_json)

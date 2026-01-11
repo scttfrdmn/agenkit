@@ -91,6 +91,16 @@ target_link_libraries(bayesian_optimizer_example agenkit)
 add_executable(prompt_optimizer_example evaluation/prompt_optimizer_example.cpp)
 target_link_libraries(prompt_optimizer_example agenkit)
 
+# Infrastructure examples - Safety
+add_executable(safety_simple_example infrastructure/safety-simple.cpp)
+target_link_libraries(safety_simple_example agenkit)
+
+add_executable(safety_framework_example infrastructure/safety-framework.cpp)
+target_link_libraries(safety_framework_example agenkit)
+
+add_executable(production_secure_example infrastructure/production-secure.cpp)
+target_link_libraries(production_secure_example agenkit)
+
 # Set output directory for all example executables
 set_target_properties(
     litellm_basic gemini_basic bedrock_basic
@@ -103,6 +113,7 @@ set_target_properties(
     context_metrics optimizer_example ab_testing_example
     benchmarks_example bayesian_optimizer_example
     prompt_optimizer_example
+    safety_simple_example safety_framework_example production_secure_example
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
 )

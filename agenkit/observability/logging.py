@@ -96,7 +96,13 @@ class StructuredFormatter(logging.Formatter):
                 "span_id",
                 "trace_flags",
             ]:
-                log_data[key] = value
+                # Only add JSON-serializable values to avoid recursion errors
+                try:
+                    json.dumps(value)
+                    log_data[key] = value
+                except (TypeError, ValueError, OverflowError):
+                    # Value is not JSON serializable, convert to string
+                    log_data[key] = str(value)
 
         return json.dumps(log_data)
 

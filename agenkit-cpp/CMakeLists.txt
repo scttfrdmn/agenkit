@@ -109,6 +109,11 @@ add_library(agenkit
     src/infrastructure/budget/models.cpp
     src/infrastructure/budget/pricing.cpp
     src/infrastructure/budget/tracker.cpp
+    src/middleware/retry.cpp
+    src/middleware/timeout.cpp
+    src/middleware/circuit_breaker.cpp
+    src/middleware/rate_limiter.cpp
+    src/middleware/caching.cpp
 )
 
 target_include_directories(agenkit

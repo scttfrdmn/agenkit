@@ -109,6 +109,10 @@ target_link_libraries(basic_checkpointing agenkit)
 add_executable(basic_budget infrastructure/basic_budget.cpp)
 target_link_libraries(basic_budget agenkit)
 
+# Infrastructure examples - Middleware
+add_executable(middleware_example infrastructure/middleware_example.cpp)
+target_link_libraries(middleware_example agenkit)
+
 # Set output directory for all example executables
 set_target_properties(
     litellm_basic gemini_basic bedrock_basic
@@ -122,7 +126,7 @@ set_target_properties(
     benchmarks_example bayesian_optimizer_example
     prompt_optimizer_example
     safety_simple_example safety_framework_example production_secure_example
-    basic_checkpointing basic_budget
+    basic_checkpointing basic_budget middleware_example
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
 )

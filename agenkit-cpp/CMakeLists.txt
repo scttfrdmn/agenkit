@@ -106,6 +106,9 @@ add_library(agenkit
     src/infrastructure/checkpointing/checkpoint.cpp
     src/infrastructure/checkpointing/storage.cpp
     src/infrastructure/checkpointing/manager.cpp
+    src/infrastructure/budget/models.cpp
+    src/infrastructure/budget/pricing.cpp
+    src/infrastructure/budget/tracker.cpp
 )
 
 target_include_directories(agenkit

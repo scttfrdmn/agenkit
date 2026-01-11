@@ -15,11 +15,12 @@
 #include "agenkit/core/agent.hpp"
 #include "agenkit/core/message.hpp"
 #include "agenkit/core/result.hpp"
+#include <functional>
+#include <future>
+#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
-#include <functional>
-#include <memory>
-#include <future>
 
 namespace agenkit {
 namespace techniques {

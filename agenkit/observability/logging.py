@@ -68,7 +68,7 @@ class StructuredFormatter(logging.Formatter):
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
 
-        # Add extra fields
+        # Add extra fields (only basic types to avoid recursion errors)
         for key, value in record.__dict__.items():
             if key not in [
                 "name",
@@ -96,13 +96,26 @@ class StructuredFormatter(logging.Formatter):
                 "span_id",
                 "trace_flags",
             ]:
-                # Only add JSON-serializable values to avoid recursion errors
-                try:
-                    json.dumps(value)
+                # Only add JSON-serializable basic types to avoid recursion errors
+                # Check type first before attempting serialization
+                if isinstance(value, (str, int, float, bool, type(None))):
                     log_data[key] = value
-                except (TypeError, ValueError, OverflowError):
-                    # Value is not JSON serializable, convert to string
-                    log_data[key] = str(value)
+                elif isinstance(value, (list, tuple)) and all(
+                    isinstance(v, (str, int, float, bool, type(None))) for v in value
+                ):
+                    log_data[key] = value
+                elif isinstance(value, dict) and all(
+                    isinstance(k, str) and isinstance(v, (str, int, float, bool, type(None)))
+                    for k, v in value.items()
+                ):
+                    log_data[key] = value
+                else:
+                    # Complex object, convert to string representation
+                    try:
+                        log_data[key] = str(value)
+                    except Exception:  # noqa: S110
+                        # If even str() fails, skip it
+                        pass
 
         return json.dumps(log_data)
 

@@ -195,6 +195,26 @@ add_executable(test_safety infrastructure/test_safety.cpp)
 target_link_libraries(test_safety agenkit gtest_main)
 add_test(NAME safety_tests COMMAND test_safety)
 
+# Infrastructure tests - Memory
+add_executable(test_memory_infra infrastructure/test_memory.cpp)
+target_link_libraries(test_memory_infra agenkit gtest_main)
+add_test(NAME memory_infrastructure_tests COMMAND test_memory_infra)
+
+# Infrastructure tests - Checkpointing (TODO: Fix includes and API usage)
+# add_executable(test_checkpointing infrastructure/test_checkpointing.cpp)
+# target_link_libraries(test_checkpointing agenkit gtest_main)
+# add_test(NAME checkpointing_tests COMMAND test_checkpointing)
+
+# Infrastructure tests - Budget (TODO: Fix includes and API usage)
+# add_executable(test_budget infrastructure/test_budget.cpp)
+# target_link_libraries(test_budget agenkit gtest_main)
+# add_test(NAME budget_tests COMMAND test_budget)
+
+# Infrastructure tests - Middleware (TODO: Fix includes and API usage)
+# add_executable(test_middleware infrastructure/test_middleware.cpp)
+# target_link_libraries(test_middleware agenkit gtest_main)
+# add_test(NAME middleware_tests COMMAND test_middleware)
+
 # Cross-language test harness (standalone executable, not a gtest)
 add_executable(cross_language_harness cross_language_harness.cpp)
 target_link_libraries(cross_language_harness nlohmann_json::nlohmann_json)

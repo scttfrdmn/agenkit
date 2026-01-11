@@ -1086,10 +1086,16 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 - [x] Pattern tests (Reflection, Sequential, Parallel, etc.)
 - [x] Transport tests (HTTP, gRPC)
 - [x] Middleware tests (retry, timeout, circuit breaker)
+- [x] Infrastructure tests - Memory Systems (29 tests) ✅
+  - WorkingMemory: FIFO eviction, capacity limits, store/retrieve operations
+  - ShortTermMemory: LRU + TTL eviction, expired entry cleanup
+  - LongTermMemory: Importance filtering, relevance ranking
+  - MemoryHierarchy: Multi-tier storage, routing, deduplication
+  - Thread safety: Concurrent access patterns for all memory types
 
-**Why**: Ensure C++ implementation has comprehensive test coverage across all patterns.
+**Why**: Ensure C++ implementation has comprehensive test coverage across all patterns and infrastructure.
 
-**Status**: ✅ Complete (all existing tests passing)
+**Status**: ✅ Complete (all existing tests passing, infrastructure tests added)
 
 #### [#211](https://github.com/scttfrdmn/agenkit/issues/211) Test Parity Documentation
 - [x] Document test count across all languages

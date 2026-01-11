@@ -101,6 +101,10 @@ target_link_libraries(safety_framework_example agenkit)
 add_executable(production_secure_example infrastructure/production-secure.cpp)
 target_link_libraries(production_secure_example agenkit)
 
+# Infrastructure examples - Checkpointing
+add_executable(basic_checkpointing infrastructure/basic_checkpointing.cpp)
+target_link_libraries(basic_checkpointing agenkit)
+
 # Set output directory for all example executables
 set_target_properties(
     litellm_basic gemini_basic bedrock_basic
@@ -114,6 +118,7 @@ set_target_properties(
     benchmarks_example bayesian_optimizer_example
     prompt_optimizer_example
     safety_simple_example safety_framework_example production_secure_example
+    basic_checkpointing
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
 )

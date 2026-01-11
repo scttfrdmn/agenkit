@@ -98,6 +98,14 @@ add_library(agenkit
     src/infrastructure/permissions.cpp
     src/infrastructure/anomaly.cpp
     src/infrastructure/audit.cpp
+    src/infrastructure/memory/entry.cpp
+    src/infrastructure/memory/working.cpp
+    src/infrastructure/memory/short_term.cpp
+    src/infrastructure/memory/long_term.cpp
+    src/infrastructure/memory/hierarchy.cpp
+    src/infrastructure/checkpointing/checkpoint.cpp
+    src/infrastructure/checkpointing/storage.cpp
+    src/infrastructure/checkpointing/manager.cpp
 )
 
 target_include_directories(agenkit

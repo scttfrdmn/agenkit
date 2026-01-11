@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### C++ Infrastructure Tests
+- **Memory System Tests** (`tests/infrastructure/test_memory.cpp`, 29 tests)
+  - WorkingMemory: FIFO eviction, capacity limits, store/retrieve operations
+  - ShortTermMemory: LRU + TTL eviction, expired entry cleanup
+  - LongTermMemory: Importance filtering, relevance ranking
+  - MemoryHierarchy: Multi-tier storage, routing, deduplication
+  - Thread safety: Concurrent access patterns for all memory types
+  - ✅ **All 29 tests passing**
+- **Test Skeletons Created**: Checkpointing, budget, and middleware test files created (pending API alignment)
+
 #### Rust Production Agent with Complete Security Integration
 - **Secure Production Example** (`production_secure.rs`, 255 lines)
   - Complete integration of all 4 production systems:

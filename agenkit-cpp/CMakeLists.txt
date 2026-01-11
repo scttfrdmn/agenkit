@@ -94,6 +94,10 @@ add_library(agenkit
     src/techniques/reasoning/chain_of_thought.cpp
     src/techniques/reasoning/reasoning_tree.cpp
     src/techniques/reasoning/tree_of_thought.cpp
+    src/infrastructure/validation.cpp
+    src/infrastructure/permissions.cpp
+    src/infrastructure/anomaly.cpp
+    src/infrastructure/audit.cpp
 )
 
 target_include_directories(agenkit

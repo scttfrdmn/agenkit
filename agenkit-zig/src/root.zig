@@ -217,6 +217,9 @@ pub const evaluation = @import("evaluation/mod.zig");
 // Observability framework
 pub const observability = @import("observability/mod.zig");
 
+// Safety framework
+pub const safety = @import("safety.zig");
+
 // Techniques
 pub const techniques = struct {
     // Reasoning techniques
@@ -277,6 +280,8 @@ test {
     _ = @import("adapter/bedrock.zig");
     // Also test observability
     _ = @import("observability/mod.zig");
+    // Also test safety
+    _ = @import("safety.zig");
     // Also test techniques
     _ = @import("techniques/reasoning/self_consistency.zig");
     _ = @import("techniques/reasoning/chain_of_thought.zig");

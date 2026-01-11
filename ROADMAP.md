@@ -970,11 +970,11 @@ Focus: New agent patterns from 2025 research + production capabilities.
 ### Q1 2026: Safety & Reasoning
 
 #### [#71](https://github.com/scttfrdmn/agenkit/issues/71) Agent Safety Framework ✅ COMPLETE
-- [x] Input validation (prompt injection defense) - Python ✅ Go ✅ Rust ✅ TypeScript ✅ C++ ✅
-- [x] Output validation (schema, content filtering) - Python ✅ Go ✅ Rust ✅ TypeScript ✅ C++ ✅
-- [x] Action constraints (sandboxing, permissions) - Python ✅ Go ✅ Rust ✅ TypeScript ✅ C++ ✅
-- [x] Anomaly detection - Python ✅ Go ✅ Rust ✅ TypeScript ✅ C++ ✅
-- [x] Audit logging - Python ✅ Go ✅ Rust ✅ TypeScript ✅ C++ ✅
+- [x] Input validation (prompt injection defense) - Python ✅ Go ✅ Rust ✅ TypeScript ✅ C++ ✅ Zig ✅
+- [x] Output validation (schema, content filtering) - Python ✅ Go ✅ Rust ✅ TypeScript ✅ C++ ✅ Zig ✅
+- [x] Action constraints (sandboxing, permissions) - Python ✅ Go ✅ Rust ✅ TypeScript ✅ C++ ✅ Zig ✅
+- [x] Anomaly detection - Python ✅ Go ✅ Rust ✅ TypeScript ✅ C++ ✅ Zig ✅
+- [x] Audit logging - Python ✅ Go ✅ Rust ✅ TypeScript ✅ C++ ✅ Zig ✅
 - [x] Python examples (4 examples) ✅
 - [x] Python tests - 162 tests ✅ (input:39, output:40, permissions:45, anomaly:21, audit:17)
 - [x] Go examples (2 examples) ✅
@@ -987,9 +987,11 @@ Focus: New agent patterns from 2025 research + production capabilities.
 - [x] **TypeScript production integration ✅** - Complete security + checkpointing + budget + memory
 - [x] **C++ examples (3 examples) ✅** - safety-simple, safety-framework, production-secure
 - [x] **C++ tests - 38 tests ✅** (input:12, output:2, permissions:11, anomaly:5, audit:3, integration:4)
+- [x] **Zig examples (1 example) ✅** - basic_safety (comprehensive demonstration with 7 scenarios)
+- [x] **Zig tests - 10 tests ✅** (input:3, permissions:4, anomaly:2, audit:2)
 - [x] Documentation (docs/safety.md) ✅
 
-**Status:** ✅ Complete. Full Python, Go, Rust, TypeScript, and C++ implementation with comprehensive test coverage (359 total tests across 5 languages) and practical examples. Rust, TypeScript, and C++ include production integration demonstrating complete security stack.
+**Status:** ✅ Complete. Full Python, Go, Rust, TypeScript, C++, and Zig implementation with comprehensive test coverage (369 total tests across 6 languages) and practical examples. Rust, TypeScript, and C++ include production integration demonstrating complete security stack.
 
 **Why**: Autonomous agents need guardrails. Research: "prompt injection = complete control."
 

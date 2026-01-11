@@ -802,4 +802,22 @@ pub fn build(b: *std.Build) void {
     const bench_run = b.addRunArtifact(pattern_benchmarks);
     bench_step.dependOn(&bench_run.step);
     bench_run.step.dependOn(b.getInstallStep());
+
+    // Safety examples
+
+    // Add Basic Safety example
+    const basic_safety_example = b.addExecutable(.{
+        .name = "basic_safety",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/safety/basic_safety.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(basic_safety_example);
+    const basic_safety_step = b.step("run-safety-basic", "Run the basic safety framework example");
+    const basic_safety_run = b.addRunArtifact(basic_safety_example);
+    basic_safety_step.dependOn(&basic_safety_run.step);
+    basic_safety_run.step.dependOn(b.getInstallStep());
 }

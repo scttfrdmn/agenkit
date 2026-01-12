@@ -78,13 +78,15 @@ export {
 
 // Middleware
 export { Middleware, applyMiddleware, BaseMiddleware } from './middleware/base';
-export { RetryDecorator, RetryConfig, RetryStrategy, MaxRetriesExceededError } from './middleware/retry';
-export { TimeoutDecorator, TimeoutConfig, TimeoutError } from './middleware/timeout';
+export { RetryMiddleware, RetryConfig, RetryMetrics, retry } from './middleware/retry';
+export { TimeoutMiddleware, TimeoutConfig, TimeoutError, TimeoutMetrics, timeout } from './middleware/timeout';
 export {
-  CircuitBreakerDecorator,
+  CircuitBreakerMiddleware,
   CircuitBreakerConfig,
-  CircuitBreakerState,
+  CircuitState,
   CircuitBreakerError,
+  CircuitBreakerMetrics,
+  circuitBreaker,
 } from './middleware/circuit-breaker';
 export { BatchingDecorator, BatchingConfig, BatchingMetrics } from './middleware/batching';
 export { CachingDecorator, CachingConfig, CachingMetrics } from './middleware/caching';

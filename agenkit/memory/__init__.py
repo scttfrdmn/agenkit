@@ -7,6 +7,7 @@ enabling context management beyond raw message lists.
 Classes:
     Memory: Abstract base class for memory systems
     InMemoryMemory: Simple in-memory storage with LRU eviction
+    HierarchyMemory: 3-tier hierarchy adapter (backward compatible)
     RedisMemory: Redis-backed memory with persistence
     VectorMemory: Vector database for semantic retrieval
     EndlessMemory: Integration with endless project for infinite context
@@ -27,6 +28,7 @@ Example:
 
 from .base import Memory
 from .endless_memory import EndlessClient, EndlessMemory
+from .hierarchy_memory import HierarchyMemory
 from .in_memory import InMemoryMemory
 
 # Import strategies
@@ -46,6 +48,7 @@ try:
         "EmbeddingProvider",
         "EndlessClient",
         "EndlessMemory",
+        "HierarchyMemory",
         "ImportanceWeightingStrategy",
         "InMemoryMemory",
         "InMemoryVectorStore",
@@ -62,6 +65,7 @@ except ImportError:
         "EmbeddingProvider",
         "EndlessClient",
         "EndlessMemory",
+        "HierarchyMemory",
         "ImportanceWeightingStrategy",
         "InMemoryMemory",
         "InMemoryVectorStore",

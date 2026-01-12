@@ -45,6 +45,32 @@ export class CircuitBreakerError extends Error {
 }
 
 /**
+ * Circuit breaker metrics.
+ */
+export interface CircuitBreakerMetrics {
+  /** Total number of requests attempted */
+  totalRequests: number;
+
+  /** Number of successful requests */
+  successfulRequests: number;
+
+  /** Number of failed requests */
+  failedRequests: number;
+
+  /** Number of requests rejected due to open circuit */
+  rejectedRequests: number;
+
+  /** State transition counts (e.g., "CLOSED->OPEN": 3) */
+  stateChanges: Record<string, number>;
+
+  /** Timestamp of last state change */
+  lastStateChange: number | null;
+
+  /** Current circuit state */
+  currentState: CircuitState;
+}
+
+/**
  * CircuitBreakerMiddleware implements the circuit breaker pattern.
  *
  * Features:
@@ -70,6 +96,7 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
   private successThreshold: number;
   private timeout: number;
   private cbName: string;
+  private _metrics: CircuitBreakerMetrics;
 
   constructor(agent: Agent, config: CircuitBreakerConfig = {}) {
     super(agent);
@@ -77,16 +104,47 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
     this.successThreshold = config.successThreshold || 2;
     this.timeout = config.timeout || 60000;
     this.cbName = config.name || `circuit-breaker-${agent.name}`;
+    this._metrics = {
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+      rejectedRequests: 0,
+      stateChanges: {},
+      lastStateChange: null,
+      currentState: CircuitState.CLOSED,
+    };
+  }
+
+  /**
+   * Get current metrics.
+   */
+  get metrics(): CircuitBreakerMetrics {
+    return {
+      ...this._metrics,
+      stateChanges: { ...this._metrics.stateChanges },
+    };
+  }
+
+  private recordStateChange(from: CircuitState, to: CircuitState): void {
+    const key = `${from}->${to}`;
+    this._metrics.stateChanges[key] = (this._metrics.stateChanges[key] || 0) + 1;
+    this._metrics.lastStateChange = Date.now();
+    this._metrics.currentState = to;
   }
 
   async process(message: Message): Promise<Message> {
+    this._metrics.totalRequests++;
+
     // Check circuit state
     if (this.state === CircuitState.OPEN) {
       // Check if timeout expired
       if (Date.now() >= this.nextAttempt) {
+        const oldState = this.state;
         this.state = CircuitState.HALF_OPEN;
         this.successCount = 0;
+        this.recordStateChange(oldState, CircuitState.HALF_OPEN);
       } else {
+        this._metrics.rejectedRequests++;
         throw new CircuitBreakerError(this.agent.name);
       }
     }
@@ -95,11 +153,13 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
       const response = await this.agent.process(message);
 
       // Record success
+      this._metrics.successfulRequests++;
       this.onSuccess();
 
       return response;
     } catch (error) {
       // Record failure
+      this._metrics.failedRequests++;
       this.onFailure();
 
       throw error;
@@ -113,8 +173,10 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
       this.successCount++;
 
       if (this.successCount >= this.successThreshold) {
+        const oldState = this.state;
         this.state = CircuitState.CLOSED;
         this.successCount = 0;
+        this.recordStateChange(oldState, CircuitState.CLOSED);
       }
     }
   }
@@ -124,13 +186,17 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
 
     if (this.state === CircuitState.HALF_OPEN) {
       // Failed in half-open, immediately open circuit
+      const oldState = this.state;
       this.state = CircuitState.OPEN;
       this.nextAttempt = Date.now() + this.timeout;
       this.successCount = 0;
+      this.recordStateChange(oldState, CircuitState.OPEN);
     } else if (this.failureCount >= this.failureThreshold) {
       // Exceeded threshold, open circuit
+      const oldState = this.state;
       this.state = CircuitState.OPEN;
       this.nextAttempt = Date.now() + this.timeout;
+      this.recordStateChange(oldState, CircuitState.OPEN);
     }
   }
 

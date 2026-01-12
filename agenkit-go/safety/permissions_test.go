@@ -229,7 +229,7 @@ func TestSandboxSQLOperationAllowed(t *testing.T) {
 	sandbox := NewSandbox()
 
 	// SELECT is in default allowed SQL operations
-	isAllowed, err := sandbox.IsSQLOperationAllowed("SELECT * FROM users")
+	isAllowed, err := sandbox.IsSqlOperationAllowed("SELECT * FROM users")
 
 	if !isAllowed {
 		t.Errorf("Expected SELECT to be allowed, got error: %v", err)
@@ -240,7 +240,7 @@ func TestSandboxSQLOperationDenied(t *testing.T) {
 	sandbox := NewSandbox()
 
 	// DELETE is not in default allowed SQL operations
-	isAllowed, err := sandbox.IsSQLOperationAllowed("DELETE FROM users")
+	isAllowed, err := sandbox.IsSqlOperationAllowed("DELETE FROM users")
 
 	if isAllowed {
 		t.Error("Expected DELETE to be denied")
@@ -254,7 +254,7 @@ func TestSandboxSQLOperationCaseInsensitive(t *testing.T) {
 	sandbox := NewSandbox()
 
 	// Should work with lowercase
-	isAllowed, _ := sandbox.IsSQLOperationAllowed("select * from users")
+	isAllowed, _ := sandbox.IsSqlOperationAllowed("select * from users")
 
 	if !isAllowed {
 		t.Error("Expected lowercase SELECT to be allowed")
@@ -265,7 +265,7 @@ func TestSandboxEmptySQL(t *testing.T) {
 	sandbox := NewSandbox()
 
 	// Empty SQL should be allowed (no-op)
-	isAllowed, err := sandbox.IsSQLOperationAllowed("")
+	isAllowed, err := sandbox.IsSqlOperationAllowed("")
 
 	if !isAllowed {
 		t.Errorf("Expected empty SQL to be allowed, got error: %v", err)

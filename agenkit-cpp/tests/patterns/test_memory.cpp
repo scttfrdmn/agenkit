@@ -124,7 +124,7 @@ TEST(WorkingMemoryTest, Remove) {
     memory.store(entry);
 
     std::string id = memory.get_all()[0].id;
-    memory.remove(id);
+    memory.del(id);
 
     EXPECT_EQ(memory.size(), 0);
 }
@@ -232,7 +232,7 @@ TEST(ShortTermMemoryTest, Remove) {
     memory.store(entry);
 
     std::string id = memory.get_all()[0].id;
-    memory.remove(id);
+    memory.del(id);
 
     EXPECT_EQ(memory.size(), 0);
 }
@@ -311,7 +311,7 @@ TEST(LongTermMemoryTest, Remove) {
     memory.store(entry);
 
     std::string id = memory.get_all()[0].id;
-    memory.remove(id);
+    memory.del(id);
 
     EXPECT_EQ(memory.size(), 0);
 }

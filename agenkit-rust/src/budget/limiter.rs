@@ -319,7 +319,7 @@ mod tests {
 
         // Record a small cost
         tracker
-            .record_cost("session-1", "agent-1", "gpt-3.5-turbo", 100, 50, None)
+            .record_cost("session-1", "agent-1", "gpt-3.5-turbo", 100, 50, 0, None)
             .await
             .unwrap();
 
@@ -346,7 +346,7 @@ mod tests {
 
         // Record a large cost that exceeds session limit
         tracker
-            .record_cost_explicit("session-1", "agent-1", "gpt-4", 100000, 50000, 15.0, None)
+            .record_cost_explicit("session-1", "agent-1", "gpt-4", 100000, 50000, 0, 15.0, 0.0, None)
             .await
             .unwrap();
 
@@ -373,7 +373,7 @@ mod tests {
 
         // Record a large cost
         tracker
-            .record_cost_explicit("session-1", "agent-1", "gpt-4", 100000, 50000, 15.0, None)
+            .record_cost_explicit("session-1", "agent-1", "gpt-4", 100000, 50000, 0, 15.0, 0.0, None)
             .await
             .unwrap();
 

@@ -15,37 +15,43 @@ import (
 //   - Model: Model identifier
 //   - InputTokens: Number of input tokens
 //   - OutputTokens: Number of output tokens
+//   - ThinkingTokens: Number of thinking/reasoning tokens (o3, Claude 4 extended)
 //   - InputCost: Cost for input tokens ($)
 //   - OutputCost: Cost for output tokens ($)
+//   - ThinkingCost: Cost for thinking tokens ($)
 //   - TotalCost: Total cost ($)
 //   - Timestamp: When cost was recorded
 //   - Metadata: Additional metadata
 type Cost struct {
-	SessionID    string
-	AgentName    string
-	Model        string
-	InputTokens  int
-	OutputTokens int
-	InputCost    float64
-	OutputCost   float64
-	TotalCost    float64
-	Timestamp    time.Time
-	Metadata     map[string]interface{}
+	SessionID      string
+	AgentName      string
+	Model          string
+	InputTokens    int
+	OutputTokens   int
+	ThinkingTokens int
+	InputCost      float64
+	OutputCost     float64
+	ThinkingCost   float64
+	TotalCost      float64
+	Timestamp      time.Time
+	Metadata       map[string]interface{}
 }
 
 // ToMap converts Cost to a map for serialization.
 func (c *Cost) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"session_id":    c.SessionID,
-		"agent_name":    c.AgentName,
-		"model":         c.Model,
-		"input_tokens":  c.InputTokens,
-		"output_tokens": c.OutputTokens,
-		"input_cost":    c.InputCost,
-		"output_cost":   c.OutputCost,
-		"total_cost":    c.TotalCost,
-		"timestamp":     c.Timestamp.Format(time.RFC3339),
-		"metadata":      c.Metadata,
+		"session_id":      c.SessionID,
+		"agent_name":      c.AgentName,
+		"model":           c.Model,
+		"input_tokens":    c.InputTokens,
+		"output_tokens":   c.OutputTokens,
+		"thinking_tokens": c.ThinkingTokens,
+		"input_cost":      c.InputCost,
+		"output_cost":     c.OutputCost,
+		"thinking_cost":   c.ThinkingCost,
+		"total_cost":      c.TotalCost,
+		"timestamp":       c.Timestamp.Format(time.RFC3339),
+		"metadata":        c.Metadata,
 	}
 }
 
@@ -164,6 +170,7 @@ func NewCostTracker(storage Storage) *CostTracker {
 //	model: Model identifier
 //	inputTokens: Number of input tokens
 //	outputTokens: Number of output tokens
+//	thinkingTokens: Number of thinking/reasoning tokens (default: 0)
 //	metadata: Optional metadata
 //
 // Returns:
@@ -174,12 +181,12 @@ func NewCostTracker(storage Storage) *CostTracker {
 //
 //	cost, err := tracker.RecordCost(ctx,
 //	    "session-1", "assistant", "claude-sonnet-4",
-//	    1000, 500, nil)
-//	fmt.Printf("$%.4f\n", cost.TotalCost) // $0.0105
+//	    1000, 500, 5000, nil)
+//	fmt.Printf("$%.4f\n", cost.TotalCost) // $0.0180
 func (t *CostTracker) RecordCost(
 	ctx context.Context,
 	sessionID, agentName, model string,
-	inputTokens, outputTokens int,
+	inputTokens, outputTokens, thinkingTokens int,
 	metadata map[string]interface{},
 ) (*Cost, error) {
 	// Calculate costs
@@ -193,7 +200,17 @@ func (t *CostTracker) RecordCost(
 		return nil, err
 	}
 
-	totalCost := inputCost + outputCost
+	// Thinking tokens typically use output token pricing
+	// (some models may charge differently, but this is a reasonable default)
+	var thinkingCost float64
+	if thinkingTokens > 0 {
+		thinkingCost, err = t.modelPricing.Calculate(model, thinkingTokens, "output")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	totalCost := inputCost + outputCost + thinkingCost
 
 	// Create record
 	if metadata == nil {
@@ -201,16 +218,18 @@ func (t *CostTracker) RecordCost(
 	}
 
 	cost := &Cost{
-		SessionID:    sessionID,
-		AgentName:    agentName,
-		Model:        model,
-		InputTokens:  inputTokens,
-		OutputTokens: outputTokens,
-		InputCost:    inputCost,
-		OutputCost:   outputCost,
-		TotalCost:    totalCost,
-		Timestamp:    time.Now().UTC(),
-		Metadata:     metadata,
+		SessionID:      sessionID,
+		AgentName:      agentName,
+		Model:          model,
+		InputTokens:    inputTokens,
+		OutputTokens:   outputTokens,
+		ThinkingTokens: thinkingTokens,
+		InputCost:      inputCost,
+		OutputCost:     outputCost,
+		ThinkingCost:   thinkingCost,
+		TotalCost:      totalCost,
+		Timestamp:      time.Now().UTC(),
+		Metadata:       metadata,
 	}
 
 	// Store

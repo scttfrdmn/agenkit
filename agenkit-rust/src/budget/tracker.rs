@@ -30,7 +30,7 @@ pub trait CostStorage: Send + Sync {
     async fn get_session_records(&self, session_id: &str) -> StorageResult<Vec<CostRecord>>;
 
     /// Get all records for an agent.
-    async fn get_agent_records(&self, agent_id: &str) -> StorageResult<Vec<CostRecord>>;
+    async fn get_agent_records(&self, agent_name: &str) -> StorageResult<Vec<CostRecord>>;
 
     /// Get all records.
     async fn get_all_records(&self) -> StorageResult<Vec<CostRecord>>;
@@ -80,11 +80,11 @@ impl CostStorage for InMemoryCostStorage {
             .collect())
     }
 
-    async fn get_agent_records(&self, agent_id: &str) -> StorageResult<Vec<CostRecord>> {
+    async fn get_agent_records(&self, agent_name: &str) -> StorageResult<Vec<CostRecord>> {
         let records = self.records.read().await;
         Ok(records
             .iter()
-            .filter(|r| r.agent_id == agent_id)
+            .filter(|r| r.agent_name == agent_name)
             .cloned()
             .collect())
     }
@@ -137,26 +137,38 @@ impl CostTracker {
     pub async fn record_cost(
         &self,
         session_id: &str,
-        agent_id: &str,
+        agent_name: &str,
         model: &str,
         input_tokens: usize,
         output_tokens: usize,
+        thinking_tokens: usize,
         metadata: Option<serde_json::Value>,
     ) -> Result<String, String> {
-        // Calculate cost
+        // Calculate base cost
         let cost = self
             .pricing
             .calculate(model, input_tokens, output_tokens)
             .await?;
 
+        // Calculate thinking cost (typically uses output token pricing)
+        let thinking_cost = if thinking_tokens > 0 {
+            self.pricing
+                .calculate(model, 0, thinking_tokens)
+                .await?
+        } else {
+            0.0
+        };
+
         // Create record
         let mut record = CostRecord::new(
             session_id.to_string(),
-            agent_id.to_string(),
+            agent_name.to_string(),
             model.to_string(),
             input_tokens,
             output_tokens,
-            cost,
+            thinking_tokens,
+            cost + thinking_cost,
+            thinking_cost,
         );
 
         if let Some(metadata) = metadata {
@@ -176,20 +188,24 @@ impl CostTracker {
     pub async fn record_cost_explicit(
         &self,
         session_id: &str,
-        agent_id: &str,
+        agent_name: &str,
         model: &str,
         input_tokens: usize,
         output_tokens: usize,
+        thinking_tokens: usize,
         cost: f64,
+        thinking_cost: f64,
         metadata: Option<serde_json::Value>,
     ) -> Result<String, String> {
         let mut record = CostRecord::new(
             session_id.to_string(),
-            agent_id.to_string(),
+            agent_name.to_string(),
             model.to_string(),
             input_tokens,
             output_tokens,
+            thinking_tokens,
             cost,
+            thinking_cost,
         );
 
         if let Some(metadata) = metadata {
@@ -216,10 +232,10 @@ impl CostTracker {
     }
 
     /// Get total cost for an agent.
-    pub async fn get_agent_cost(&self, agent_id: &str) -> Result<f64, String> {
+    pub async fn get_agent_cost(&self, agent_name: &str) -> Result<f64, String> {
         let records = self
             .storage
-            .get_agent_records(agent_id)
+            .get_agent_records(agent_name)
             .await
             .map_err(|e| e.to_string())?;
 
@@ -254,10 +270,10 @@ impl CostTracker {
     }
 
     /// Get usage stats for an agent.
-    pub async fn get_agent_stats(&self, agent_id: &str) -> Result<UsageStats, String> {
+    pub async fn get_agent_stats(&self, agent_name: &str) -> Result<UsageStats, String> {
         let records = self
             .storage
-            .get_agent_records(agent_id)
+            .get_agent_records(agent_name)
             .await
             .map_err(|e| e.to_string())?;
 
@@ -313,7 +329,7 @@ impl CostTracker {
 
         let mut agent_costs = HashMap::new();
         for record in records {
-            *agent_costs.entry(record.agent_id.clone()).or_insert(0.0) += record.cost;
+            *agent_costs.entry(record.agent_name.clone()).or_insert(0.0) += record.cost;
         }
 
         Ok(agent_costs)
@@ -348,7 +364,7 @@ mod tests {
         let tracker = CostTracker::new();
 
         let record_id = tracker
-            .record_cost("session-1", "agent-1", "gpt-4", 1000, 500, None)
+            .record_cost("session-1", "agent-1", "gpt-4", 1000, 500, 0, None)
             .await
             .unwrap();
 
@@ -363,12 +379,12 @@ mod tests {
         let tracker = CostTracker::new();
 
         tracker
-            .record_cost("session-1", "agent-1", "gpt-4", 1000, 500, None)
+            .record_cost("session-1", "agent-1", "gpt-4", 1000, 500, 0, None)
             .await
             .unwrap();
 
         tracker
-            .record_cost("session-2", "agent-1", "gpt-3.5-turbo", 2000, 1000, None)
+            .record_cost("session-2", "agent-1", "gpt-3.5-turbo", 2000, 1000, 0, None)
             .await
             .unwrap();
 
@@ -385,17 +401,17 @@ mod tests {
         let tracker = CostTracker::new();
 
         tracker
-            .record_cost("session-1", "agent-1", "gpt-4", 1000, 500, None)
+            .record_cost("session-1", "agent-1", "gpt-4", 1000, 500, 0, None)
             .await
             .unwrap();
 
         tracker
-            .record_cost("session-2", "agent-1", "gpt-4", 1000, 500, None)
+            .record_cost("session-2", "agent-1", "gpt-4", 1000, 500, 0, None)
             .await
             .unwrap();
 
         tracker
-            .record_cost("session-1", "agent-2", "gpt-3.5-turbo", 1000, 500, None)
+            .record_cost("session-1", "agent-2", "gpt-3.5-turbo", 1000, 500, 0, None)
             .await
             .unwrap();
 
@@ -410,12 +426,12 @@ mod tests {
         let tracker = CostTracker::new();
 
         tracker
-            .record_cost("session-1", "agent-1", "gpt-4", 1000, 500, None)
+            .record_cost("session-1", "agent-1", "gpt-4", 1000, 500, 0, None)
             .await
             .unwrap();
 
         tracker
-            .record_cost("session-1", "agent-1", "gpt-3.5-turbo", 2000, 1000, None)
+            .record_cost("session-1", "agent-1", "gpt-3.5-turbo", 2000, 1000, 0, None)
             .await
             .unwrap();
 
@@ -432,12 +448,12 @@ mod tests {
         let tracker = CostTracker::new();
 
         tracker
-            .record_cost("session-1", "agent-1", "gpt-4", 1000, 500, None)
+            .record_cost("session-1", "agent-1", "gpt-4", 1000, 500, 0, None)
             .await
             .unwrap();
 
         tracker
-            .record_cost("session-2", "agent-1", "gpt-4", 1000, 500, None)
+            .record_cost("session-2", "agent-1", "gpt-4", 1000, 500, 0, None)
             .await
             .unwrap();
 

@@ -2,9 +2,29 @@
 
 import asyncio
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from agenkit.interfaces import Agent, Message
+
+
+@dataclass
+class RetryMetrics:
+    """Metrics for retry middleware."""
+
+    total_attempts: int = 0
+    """Total number of requests (including retries)."""
+
+    successful_first_attempt: int = 0
+    """Number of requests that succeeded on first try."""
+
+    successful_on_retry: int = 0
+    """Number of requests that succeeded after retry."""
+
+    failed_after_retries: int = 0
+    """Number of requests that failed after all retries."""
+
+    total_retries: int = 0
+    """Total number of retry attempts across all requests."""
 
 
 @dataclass
@@ -41,6 +61,7 @@ class RetryDecorator(Agent):
         """
         self._agent = agent
         self._config = config or RetryConfig()
+        self._metrics = RetryMetrics()
 
     @property
     def name(self) -> str:
@@ -51,6 +72,11 @@ class RetryDecorator(Agent):
     def capabilities(self) -> list[str]:
         """Return capabilities of the underlying agent."""
         return self._agent.capabilities
+
+    @property
+    def metrics(self) -> RetryMetrics:
+        """Return current retry metrics."""
+        return self._metrics
 
     async def process(self, message: Message) -> Message:
         """Process message with retry logic.
@@ -68,24 +94,41 @@ class RetryDecorator(Agent):
         backoff = self._config.initial_backoff
 
         for attempt in range(1, self._config.max_attempts + 1):
+            # Track attempt
+            self._metrics.total_attempts += 1
+
             try:
-                return await self._agent.process(message)
+                response = await self._agent.process(message)
+
+                # Track success
+                if attempt == 1:
+                    self._metrics.successful_first_attempt += 1
+                else:
+                    self._metrics.successful_on_retry += 1
+
+                return response
+
             except Exception as e:
                 last_error = e
 
                 # Check if we should retry this error
                 if self._config.should_retry and not self._config.should_retry(e):
+                    self._metrics.failed_after_retries += 1
                     raise Exception(f"Non-retryable error: {e}") from e
 
                 # Don't sleep after last attempt
                 if attempt == self._config.max_attempts:
                     break
 
+                # Track retry
+                self._metrics.total_retries += 1
+
                 # Exponential backoff
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * self._config.backoff_multiplier, self._config.max_backoff)
 
         # All attempts failed
+        self._metrics.failed_after_retries += 1
         raise Exception(
             f"Max retry attempts ({self._config.max_attempts}) exceeded: {last_error}"
         ) from last_error

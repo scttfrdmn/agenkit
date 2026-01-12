@@ -9,14 +9,24 @@
  *   CheckpointStorage: Abstract storage interface
  *   InMemoryCheckpointStorage: In-memory storage (testing)
  *   FileCheckpointStorage: File-based storage (production)
+ *   CheckpointManager: High-level checkpoint orchestration
+ *   DurableAgent: Agent wrapper with automatic checkpointing
  *
  * Example:
- *   import { FileCheckpointStorage, Checkpoint } from 'agenkit';
+ *   import { DurableAgent, makeDurable } from 'agenkit';
  *
- *   // Create storage
+ *   // Create durable agent with automatic checkpointing
+ *   const durableAgent = makeDurable(
+ *     myAgent,
+ *     './checkpoints',
+ *     10,  // checkpoint every 10 steps
+ *   );
+ *
+ *   // Use agent (automatically checkpoints and resumes)
+ *   const response = await durableAgent.process(message, 'session-1');
+ *
+ *   // Or use low-level storage directly
  *   const storage = new FileCheckpointStorage('./checkpoints');
- *
- *   // Save checkpoint
  *   const checkpoint: Checkpoint = {
  *     checkpointId: 'ckpt-123',
  *     sessionId: 'session-456',
@@ -28,9 +38,6 @@
  *     metadata: {},
  *   };
  *   await storage.save(checkpoint);
- *
- *   // Load checkpoint
- *   const loaded = await storage.load('ckpt-123');
  */
 
 export {
@@ -43,3 +50,7 @@ export {
 } from './checkpoint';
 
 export { InMemoryCheckpointStorage, FileCheckpointStorage } from './storage';
+
+export { CheckpointManager } from './manager';
+
+export { DurableAgent, makeDurable } from './durable';

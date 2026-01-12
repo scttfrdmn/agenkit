@@ -268,7 +268,7 @@ func (l *BudgetLimiter) recordCost(ctx context.Context, sessionID, agentName str
 		metadata["message_id"] = msgID
 	}
 
-	_, err := l.tracker.RecordCost(ctx, sessionID, agentName, model, promptTokens, completionTokens, metadata)
+	_, err := l.tracker.RecordCost(ctx, sessionID, agentName, model, promptTokens, completionTokens, 0, metadata)
 	return err
 }
 
@@ -455,7 +455,7 @@ func (a *budgetWarnedAgent) Process(ctx context.Context, message *agenkit.Messag
 				completionTokens = int(ct)
 			}
 
-			if _, err := a.warning.tracker.RecordCost(ctx, sessionID, agentName, model, promptTokens, completionTokens, nil); err != nil {
+			if _, err := a.warning.tracker.RecordCost(ctx, sessionID, agentName, model, promptTokens, completionTokens, 0, nil); err != nil {
 				log.Printf("WARNING: Failed to record cost: %v", err)
 			}
 		}

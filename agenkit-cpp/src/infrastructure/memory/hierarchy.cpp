@@ -124,12 +124,12 @@ LongTermMemoryResult<std::vector<MemoryEntry>> MemoryHierarchy::retrieve(
     return core::Result<std::vector<MemoryEntry>, LongTermMemoryError>::ok(std::move(all_entries));
 }
 
-HierarchyResult<bool> MemoryHierarchy::remove(const std::string& entry_id) {
+HierarchyResult<bool> MemoryHierarchy::del(const std::string& entry_id) {
     bool deleted_any = false;
 
     // Delete from working
     if (working_) {
-        auto result = working_->remove(entry_id);
+        auto result = working_->del(entry_id);
         if (result.is_ok() && result.unwrap()) {
             deleted_any = true;
         }
@@ -137,7 +137,7 @@ HierarchyResult<bool> MemoryHierarchy::remove(const std::string& entry_id) {
 
     // Delete from short-term
     if (short_term_) {
-        auto result = short_term_->remove(entry_id);
+        auto result = short_term_->del(entry_id);
         if (result.is_ok() && result.unwrap()) {
             deleted_any = true;
         }
@@ -145,7 +145,7 @@ HierarchyResult<bool> MemoryHierarchy::remove(const std::string& entry_id) {
 
     // Delete from long-term
     if (long_term_) {
-        auto result = long_term_->remove(entry_id);
+        auto result = long_term_->del(entry_id);
         if (result.is_ok() && result.unwrap()) {
             deleted_any = true;
         }

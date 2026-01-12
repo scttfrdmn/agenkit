@@ -65,7 +65,23 @@ public:
      * @brief Delete a memory entry
      * @param entry_id ID of entry to delete
      */
-    virtual void remove(const std::string& entry_id) = 0;
+    virtual void del(const std::string& entry_id) = 0;
+
+    /**
+     * @brief Delete a memory entry (deprecated, use del)
+     * @param entry_id ID of entry to delete
+     * @deprecated Use del() for consistency with other languages
+     */
+    [[deprecated("Use del() for consistency with other languages")]]
+    void deleteEntry(const std::string& entry_id) { del(entry_id); }
+
+    /**
+     * @brief Delete a memory entry (deprecated, use del)
+     * @param entry_id ID of entry to delete
+     * @deprecated Use del() for consistency with other languages
+     */
+    [[deprecated("Use del() for consistency with other languages")]]
+    void remove(const std::string& entry_id) { del(entry_id); }
 
     /**
      * @brief Get all entries
@@ -105,7 +121,7 @@ public:
         int limit = 10
     ) override;
 
-    void remove(const std::string& entry_id) override;
+    void del(const std::string& entry_id) override;
 
     std::vector<MemoryEntry> get_all() const override;
 
@@ -150,7 +166,7 @@ public:
         int limit = 10
     ) override;
 
-    void remove(const std::string& entry_id) override;
+    void del(const std::string& entry_id) override;
 
     std::vector<MemoryEntry> get_all() const override;
 
@@ -199,7 +215,7 @@ public:
         int limit = 10
     ) override;
 
-    void remove(const std::string& entry_id) override;
+    void del(const std::string& entry_id) override;
 
     std::vector<MemoryEntry> get_all() const override;
 

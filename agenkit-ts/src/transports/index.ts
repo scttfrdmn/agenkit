@@ -50,6 +50,10 @@ export {
 export { HTTPAgent, HttpTransportConfig, HttpTransportError } from './http';
 export { WebSocketAgent, WebSocketTransportConfig, WebSocketTransportError } from './websocket';
 export { TCPTransport } from './tcp';
+export { GRPCTransport, GRPCTransportConfig } from './grpc-transport';
+
+// Legacy gRPC implementation (standalone, doesn't extend Transport)
+export { GrpcAgent, GrpcServer, GrpcTransportError, GrpcTransportConfig, GrpcServerConfig } from './grpc';
 
 // Remote agent
 export { RemoteAgent, RemoteAgentConfig } from './remote';

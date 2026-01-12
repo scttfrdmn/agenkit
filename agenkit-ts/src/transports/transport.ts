@@ -152,6 +152,8 @@ export abstract class Transport {
  *   - https://host:port -> HTTPS Transport
  *   - ws://host:port -> WebSocket Transport
  *   - wss://host:port -> WebSocket Secure Transport
+ *   - grpc://host:port -> gRPC Transport (insecure, for local testing)
+ *   - grpcs://host:port -> gRPC Transport with TLS (for production)
  *
  * @param endpoint Endpoint string
  * @returns Transport instance
@@ -181,6 +183,11 @@ export function parseEndpoint(endpoint: string): Transport {
   if (endpoint.startsWith('ws://') || endpoint.startsWith('wss://')) {
     const { WebSocketAgent } = require('./websocket');
     return new WebSocketAgent({ url: endpoint });
+  }
+
+  if (endpoint.startsWith('grpc://') || endpoint.startsWith('grpcs://')) {
+    const { GRPCTransport } = require('./grpc-transport');
+    return new GRPCTransport(endpoint);
   }
 
   throw new Error(`Unsupported endpoint format: ${endpoint}`);

@@ -164,6 +164,13 @@ export class WorkingMemory implements MemoryStore {
   get length(): number {
     return this.messages.length;
   }
+
+  /**
+   * Maximum capacity of working memory.
+   */
+  get capacity(): number {
+    return this.maxMessages;
+  }
 }
 
 /**
@@ -246,6 +253,20 @@ export class ShortTermMemory implements MemoryStore {
    */
   get length(): number {
     return this.messages.length;
+  }
+
+  /**
+   * Maximum capacity of short-term memory.
+   */
+  get capacity(): number {
+    return this.maxMessages;
+  }
+
+  /**
+   * TTL in seconds.
+   */
+  get ttlSeconds(): number {
+    return this.ttlMs / 1000;
   }
 }
 
@@ -346,6 +367,13 @@ export class LongTermMemory implements MemoryStore {
    */
   get length(): number {
     return this.storage.size;
+  }
+
+  /**
+   * Minimum importance threshold.
+   */
+  get minImportanceThreshold(): number {
+    return this.minImportance;
   }
 }
 
@@ -485,5 +513,55 @@ export class MemoryHierarchy {
    */
   getWorking(): MemoryEntry[] {
     return this.working.getAll();
+  }
+
+  /**
+   * Get working memory tier.
+   */
+  get workingTier(): WorkingMemory {
+    return this.working;
+  }
+
+  /**
+   * Get short-term memory tier.
+   */
+  get shortTermTier(): ShortTermMemory | undefined {
+    return this.shortTerm;
+  }
+
+  /**
+   * Get long-term memory tier.
+   */
+  get longTermTier(): LongTermMemory | undefined {
+    return this.longTerm;
+  }
+
+  /**
+   * Get memory usage statistics from all tiers.
+   */
+  getStats(): Record<string, unknown> {
+    const stats: Record<string, unknown> = {};
+
+    stats.working = {
+      size: this.working.length,
+      capacity: this.working.capacity,
+    };
+
+    if (this.shortTerm) {
+      stats.short_term = {
+        size: this.shortTerm.length,
+        capacity: this.shortTerm.capacity,
+        ttl_seconds: this.shortTerm.ttlSeconds,
+      };
+    }
+
+    if (this.longTerm) {
+      stats.long_term = {
+        size: this.longTerm.length,
+        min_importance: this.longTerm.minImportanceThreshold,
+      };
+    }
+
+    return stats;
   }
 }

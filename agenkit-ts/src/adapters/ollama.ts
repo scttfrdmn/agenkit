@@ -156,7 +156,7 @@ export class OllamaAdapter implements Agent {
     // Convert single message to array for API
     const messages: OllamaMessage[] = [{
       role: message.role,
-      content: message.content,
+      content: String(message.content),
     }];
 
     // Build request
@@ -226,7 +226,188 @@ export class OllamaAdapter implements Agent {
   }
 
   /**
-   * Stream a response from Ollama (not yet implemented).
+   * Complete a multi-turn conversation.
+   *
+   * @param messages - Array of conversation messages
+   * @returns Response message with content and metadata
+   */
+  async complete(messages: Message[]): Promise<Message> {
+    messages.forEach(validateMessage);
+
+    // Convert messages to Ollama format
+    const ollamaMessages: OllamaMessage[] = messages.map(msg => ({
+      role: msg.role,
+      content: String(msg.content),
+    }));
+
+    // Build request
+    const request: OllamaChatRequest = {
+      model: this.config.model,
+      messages: ollamaMessages,
+      stream: false,
+      options: {
+        temperature: this.config.temperature,
+        num_predict: this.config.maxTokens,
+        top_p: this.config.topP,
+        top_k: this.config.topK,
+      },
+    };
+
+    try {
+      // Make HTTP request to Ollama
+      const response = await fetch(`${this.config.baseURL}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+        signal: AbortSignal.timeout(this.config.timeout),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ollama API error (${response.status}): ${errorText}`);
+      }
+
+      const data: OllamaChatResponse = await response.json();
+
+      // Build metadata
+      const metadata: Record<string, any> = {
+        model: data.model,
+        created_at: data.created_at,
+      };
+
+      if (data.total_duration) {
+        metadata.total_duration_ms = data.total_duration / 1_000_000;
+      }
+
+      if (data.prompt_eval_count || data.eval_count) {
+        metadata.usage = {
+          prompt_tokens: data.prompt_eval_count || 0,
+          completion_tokens: data.eval_count || 0,
+          total_tokens: (data.prompt_eval_count || 0) + (data.eval_count || 0),
+        };
+      }
+
+      // Create response message
+      return createMessage({
+        role: data.message.role,
+        content: data.message.content,
+        metadata,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error(`Ollama request timeout after ${this.config.timeout}ms`);
+        }
+        throw new Error(`Ollama request failed: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Stream a multi-turn conversation.
+   *
+   * @param messages - Array of conversation messages
+   * @returns Async iterator of response chunks
+   */
+  async *completeStream(messages: Message[]): AsyncGenerator<Message, void, undefined> {
+    messages.forEach(validateMessage);
+
+    // Convert messages to Ollama format
+    const ollamaMessages: OllamaMessage[] = messages.map(msg => ({
+      role: msg.role,
+      content: String(msg.content),
+    }));
+
+    // Build request
+    const request: OllamaChatRequest = {
+      model: this.config.model,
+      messages: ollamaMessages,
+      stream: true,
+      options: {
+        temperature: this.config.temperature,
+        num_predict: this.config.maxTokens,
+        top_p: this.config.topP,
+        top_k: this.config.topK,
+      },
+    };
+
+    try {
+      // Make HTTP request to Ollama
+      const response = await fetch(`${this.config.baseURL}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+        signal: AbortSignal.timeout(this.config.timeout),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ollama API error (${response.status}): ${errorText}`);
+      }
+
+      if (!response.body) {
+        throw new Error('Response body is null');
+      }
+
+      // Parse streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Split by newlines to handle multiple JSON objects
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep last incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const data: OllamaChatResponse = JSON.parse(line);
+
+              // Yield chunk
+              yield createMessage({
+                role: data.message.role,
+                content: data.message.content,
+                metadata: {
+                  model: data.model,
+                  done: data.done,
+                },
+              });
+
+              if (data.done) {
+                return;
+              }
+            } catch (e) {
+              // Skip malformed JSON lines
+              continue;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error(`Ollama stream timeout after ${this.config.timeout}ms`);
+        }
+        throw new Error(`Ollama stream failed: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Stream a response from Ollama (single message).
    *
    * @param message - Input message
    * @returns Async iterator of response chunks
@@ -237,7 +418,7 @@ export class OllamaAdapter implements Agent {
     // Convert single message to array for API
     const messages: OllamaMessage[] = [{
       role: message.role,
-      content: message.content,
+      content: String(message.content),
     }];
 
     // Build request

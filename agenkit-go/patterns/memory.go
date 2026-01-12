@@ -612,9 +612,46 @@ func (m *MemoryHierarchy) ClearWorking() {
 	m.working.Clear()
 }
 
-// GetWorking returns working memory entries.
-func (m *MemoryHierarchy) GetWorking() []*MemoryEntry {
-	return m.working.GetAll()
+// GetWorking returns the working memory tier.
+func (m *MemoryHierarchy) GetWorking() *WorkingMemory {
+	return m.working
+}
+
+// GetShortTerm returns the short-term memory tier (may be nil).
+func (m *MemoryHierarchy) GetShortTerm() *ShortTermMemory {
+	return m.shortTerm
+}
+
+// GetLongTerm returns the long-term memory tier (may be nil).
+func (m *MemoryHierarchy) GetLongTerm() *LongTermMemory {
+	return m.longTerm
+}
+
+// GetStats returns memory usage statistics from hierarchy.
+func (m *MemoryHierarchy) GetStats() map[string]interface{} {
+	stats := make(map[string]interface{})
+
+	stats["working"] = map[string]interface{}{
+		"size":     m.working.Length(),
+		"capacity": m.working.maxMessages,
+	}
+
+	if m.shortTerm != nil {
+		stats["short_term"] = map[string]interface{}{
+			"size":        m.shortTerm.Length(),
+			"capacity":    m.shortTerm.maxMessages,
+			"ttl_seconds": m.shortTerm.ttl,
+		}
+	}
+
+	if m.longTerm != nil {
+		stats["long_term"] = map[string]interface{}{
+			"size":           m.longTerm.Length(),
+			"min_importance": m.longTerm.minImportance,
+		}
+	}
+
+	return stats
 }
 
 func contains(slice []string, item string) bool {

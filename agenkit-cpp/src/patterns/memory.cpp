@@ -80,7 +80,7 @@ std::vector<MemoryEntry> WorkingMemory::retrieve(
     return results;
 }
 
-void WorkingMemory::remove(const std::string& entry_id) {
+void WorkingMemory::del(const std::string& entry_id) {
     messages_.erase(
         std::remove_if(messages_.begin(), messages_.end(),
             [&entry_id](const MemoryEntry& e) { return e.id == entry_id; }),
@@ -151,7 +151,7 @@ std::vector<MemoryEntry> ShortTermMemory::retrieve(
     return results;
 }
 
-void ShortTermMemory::remove(const std::string& entry_id) {
+void ShortTermMemory::del(const std::string& entry_id) {
     messages_.erase(
         std::remove_if(messages_.begin(), messages_.end(),
             [&entry_id](const MemoryEntry& e) { return e.id == entry_id; }),
@@ -243,7 +243,7 @@ std::vector<MemoryEntry> LongTermMemory::retrieve(
     return results;
 }
 
-void LongTermMemory::remove(const std::string& entry_id) {
+void LongTermMemory::del(const std::string& entry_id) {
     memories_.erase(
         std::remove_if(memories_.begin(), memories_.end(),
             [&entry_id](const MemoryEntry& e) { return e.id == entry_id; }),

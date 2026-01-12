@@ -68,7 +68,23 @@ public:
     ///
     /// @param checkpoint_id Checkpoint ID
     /// @return true if deleted, false if not found
-    virtual StorageResult<bool> remove(const std::string& checkpoint_id) = 0;
+    virtual StorageResult<bool> del(const std::string& checkpoint_id) = 0;
+
+    /// Delete a checkpoint (deprecated, use del)
+    ///
+    /// @param checkpoint_id Checkpoint ID
+    /// @return true if deleted, false if not found
+    /// @deprecated Use del() for consistency with other languages
+    [[deprecated("Use del() for consistency with other languages")]]
+    StorageResult<bool> deleteCheckpoint(const std::string& checkpoint_id) { return del(checkpoint_id); }
+
+    /// Delete a checkpoint (deprecated, use del)
+    ///
+    /// @param checkpoint_id Checkpoint ID
+    /// @return true if deleted, false if not found
+    /// @deprecated Use del() for consistency with other languages
+    [[deprecated("Use del() for consistency with other languages")]]
+    StorageResult<bool> remove(const std::string& checkpoint_id) { return del(checkpoint_id); }
 
     /// Delete all checkpoints for a session
     ///
@@ -109,7 +125,7 @@ public:
         const std::string& session_id
     ) override;
 
-    StorageResult<bool> remove(const std::string& checkpoint_id) override;
+    StorageResult<bool> del(const std::string& checkpoint_id) override;
 
     StorageResult<size_t> delete_session(const std::string& session_id) override;
 
@@ -165,7 +181,7 @@ public:
         const std::string& session_id
     ) override;
 
-    StorageResult<bool> remove(const std::string& checkpoint_id) override;
+    StorageResult<bool> del(const std::string& checkpoint_id) override;
 
     StorageResult<size_t> delete_session(const std::string& session_id) override;
 

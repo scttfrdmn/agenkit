@@ -99,7 +99,7 @@ ManagerResult<std::vector<Checkpoint>> CheckpointManager::list_session_checkpoin
 }
 
 ManagerResult<bool> CheckpointManager::delete_checkpoint(const std::string& checkpoint_id) {
-    auto result = storage_->remove(checkpoint_id);
+    auto result = storage_->del(checkpoint_id);
     if (!result.is_ok()) {
         return core::Result<bool, ManagerError>::err(ManagerError::StorageError);
     }
@@ -172,7 +172,7 @@ ManagerResult<size_t> CheckpointManager::prune_session(
     // Delete everything after keep_count
     size_t pruned = 0;
     for (size_t i = keep_count; i < checkpoints.size(); i++) {
-        auto delete_result = storage_->remove(checkpoints[i].checkpoint_id);
+        auto delete_result = storage_->del(checkpoints[i].checkpoint_id);
         if (delete_result.is_ok() && delete_result.unwrap()) {
             pruned++;
         }

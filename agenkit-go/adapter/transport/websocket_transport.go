@@ -9,8 +9,12 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/errors"
+	"github.com/scttfrdmn/agenkit/agenkit-go/observability"
 )
 
 // WebSocketTransport implements transport over WebSocket with automatic reconnection and keepalive.
@@ -28,6 +32,7 @@ type WebSocketTransport struct {
 	reconnectMu       sync.Mutex
 	stopPing          chan struct{}
 	pingDone          chan struct{}
+	tracer            trace.Tracer
 }
 
 const (
@@ -85,6 +90,7 @@ func NewWebSocketTransportWithOptions(urlStr string, opts WebSocketOptions) *Web
 		dialer:            dialer,
 		stopPing:          make(chan struct{}),
 		pingDone:          make(chan struct{}),
+		tracer:            observability.GetTracer("agenkit.transport.websocket"),
 	}
 }
 
@@ -95,15 +101,46 @@ func (t *WebSocketTransport) Connect(ctx context.Context) error {
 
 // connectWithRetry connects with exponential backoff retry logic.
 func (t *WebSocketTransport) connectWithRetry(ctx context.Context) error {
+	ctx, span := t.tracer.Start(ctx, "websocket.connect", trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	// Parse URL for span attributes
+	parsedURL, _ := url.Parse(t.url)
+	scheme := parsedURL.Scheme
+	host := parsedURL.Hostname()
+	port := parsedURL.Port()
+	if port == "" {
+		if scheme == "wss" {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	}
+
+	span.SetAttributes(
+		attribute.String("net.protocol.name", "websocket"),
+		attribute.String("url.scheme", scheme),
+		attribute.String("server.address", host),
+		attribute.String("server.port", port),
+		attribute.Int("retry.max_attempts", t.maxRetries),
+	)
+
 	var lastErr error
 	retryDelay := t.initialRetryDelay
 
 	for attempt := 0; attempt < t.maxRetries; attempt++ {
 		if attempt > 0 {
+			span.AddEvent("retry_attempt", trace.WithAttributes(
+				attribute.Int("attempt", attempt),
+				attribute.String("retry_delay", retryDelay.String()),
+			))
+
 			// Wait before retrying
 			select {
 			case <-time.After(retryDelay):
 			case <-ctx.Done():
+				span.RecordError(ctx.Err())
+				span.SetStatus(codes.Error, "connection cancelled")
 				return errors.NewConnectionError("connection cancelled", ctx.Err())
 			}
 			retryDelay *= 2 // Exponential backoff
@@ -133,13 +170,17 @@ func (t *WebSocketTransport) connectWithRetry(ctx context.Context) error {
 		// Start ping loop
 		t.startPingLoop()
 
+		span.SetStatus(codes.Ok, "connected")
 		return nil
 	}
 
-	return errors.NewConnectionError(
+	err := errors.NewConnectionError(
 		fmt.Sprintf("failed to connect to %s after %d attempts", t.url, t.maxRetries),
 		lastErr,
 	)
+	span.RecordError(err)
+	span.SetStatus(codes.Error, fmt.Sprintf("failed after %d attempts", t.maxRetries))
+	return err
 }
 
 // startPingLoop starts the ping/pong keepalive loop.
@@ -212,29 +253,46 @@ func (t *WebSocketTransport) ensureConnected(ctx context.Context) error {
 
 // SendFramed sends data over WebSocket (no length prefix needed - WebSocket handles framing).
 func (t *WebSocketTransport) SendFramed(ctx context.Context, data []byte) error {
+	ctx, span := t.tracer.Start(ctx, "websocket.send", trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.Int("message.size", len(data)),
+	)
+
 	if err := t.ensureConnected(ctx); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "not connected")
 		return err
 	}
 
 	// Check size limit
 	if int64(len(data)) > t.maxMessageSize {
-		return errors.NewInvalidMessageError(
+		err := errors.NewInvalidMessageError(
 			fmt.Sprintf("message size %d exceeds maximum %d", len(data), t.maxMessageSize),
 			nil,
 		)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "message too large")
+		return err
 	}
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	if t.conn == nil {
-		return errors.NewConnectionError("not connected", nil)
+		err := errors.NewConnectionError("not connected", nil)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "not connected")
+		return err
 	}
 
 	// Set write deadline based on context
 	deadline, ok := ctx.Deadline()
 	if ok {
 		if err := t.conn.SetWriteDeadline(deadline); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to set deadline")
 			return errors.NewConnectionError("failed to set write deadline", err)
 		}
 	}
@@ -242,6 +300,8 @@ func (t *WebSocketTransport) SendFramed(ctx context.Context, data []byte) error 
 	// Send binary message
 	if err := t.conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
 		t.connected = false
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "send failed")
 		return errors.NewConnectionError("failed to send message", err)
 	}
 
@@ -250,12 +310,18 @@ func (t *WebSocketTransport) SendFramed(ctx context.Context, data []byte) error 
 		_ = t.conn.SetWriteDeadline(time.Time{})
 	}
 
+	span.SetStatus(codes.Ok, "sent")
 	return nil
 }
 
 // ReceiveFramed receives data from WebSocket (no length prefix needed - WebSocket handles framing).
 func (t *WebSocketTransport) ReceiveFramed(ctx context.Context) ([]byte, error) {
+	ctx, span := t.tracer.Start(ctx, "websocket.receive", trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
 	if err := t.ensureConnected(ctx); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "not connected")
 		return nil, err
 	}
 
@@ -263,13 +329,18 @@ func (t *WebSocketTransport) ReceiveFramed(ctx context.Context) ([]byte, error) 
 	defer t.mu.Unlock()
 
 	if t.conn == nil {
-		return nil, errors.NewConnectionError("not connected", nil)
+		err := errors.NewConnectionError("not connected", nil)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "not connected")
+		return nil, err
 	}
 
 	// Set read deadline based on context
 	deadline, ok := ctx.Deadline()
 	if ok {
 		if err := t.conn.SetReadDeadline(deadline); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to set deadline")
 			return nil, errors.NewConnectionError("failed to set read deadline", err)
 		}
 	}
@@ -278,9 +349,12 @@ func (t *WebSocketTransport) ReceiveFramed(ctx context.Context) ([]byte, error) 
 	messageType, data, err := t.conn.ReadMessage()
 	if err != nil {
 		t.connected = false
+		span.RecordError(err)
 		if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+			span.SetStatus(codes.Error, "connection closed")
 			return nil, errors.NewConnectionError("connection closed", err)
 		}
+		span.SetStatus(codes.Error, "receive failed")
 		return nil, errors.NewConnectionError("failed to receive message", err)
 	}
 
@@ -289,40 +363,78 @@ func (t *WebSocketTransport) ReceiveFramed(ctx context.Context) ([]byte, error) 
 		_ = t.conn.SetReadDeadline(time.Time{})
 	}
 
+	span.SetAttributes(
+		attribute.Int("message.size", len(data)),
+		attribute.String("message.type", messageTypeToString(messageType)),
+	)
+
 	// Handle different message types
 	switch messageType {
 	case websocket.BinaryMessage:
 		// Check size limit
 		if int64(len(data)) > t.maxMessageSize {
-			return nil, errors.NewInvalidMessageError(
+			err := errors.NewInvalidMessageError(
 				fmt.Sprintf("message size %d exceeds maximum %d", len(data), t.maxMessageSize),
 				nil,
 			)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "message too large")
+			return nil, err
 		}
+		span.SetStatus(codes.Ok, "received")
 		return data, nil
 	case websocket.TextMessage:
 		// Convert text to binary
 		if int64(len(data)) > t.maxMessageSize {
-			return nil, errors.NewInvalidMessageError(
+			err := errors.NewInvalidMessageError(
 				fmt.Sprintf("message size %d exceeds maximum %d", len(data), t.maxMessageSize),
 				nil,
 			)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "message too large")
+			return nil, err
 		}
+		span.SetStatus(codes.Ok, "received")
 		return data, nil
 	default:
-		return nil, errors.NewInvalidMessageError(
+		err := errors.NewInvalidMessageError(
 			fmt.Sprintf("unexpected message type: %d", messageType),
 			nil,
 		)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "unexpected message type")
+		return nil, err
+	}
+}
+
+// messageTypeToString converts WebSocket message type to string.
+func messageTypeToString(messageType int) string {
+	switch messageType {
+	case websocket.BinaryMessage:
+		return "binary"
+	case websocket.TextMessage:
+		return "text"
+	case websocket.PingMessage:
+		return "ping"
+	case websocket.PongMessage:
+		return "pong"
+	case websocket.CloseMessage:
+		return "close"
+	default:
+		return fmt.Sprintf("unknown(%d)", messageType)
 	}
 }
 
 // Close closes the WebSocket connection gracefully.
 func (t *WebSocketTransport) Close() error {
+	_, span := t.tracer.Start(context.Background(), "websocket.close", trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	if t.conn == nil {
+		span.SetStatus(codes.Ok, "already closed")
 		return nil
 	}
 
@@ -342,9 +454,18 @@ func (t *WebSocketTransport) Close() error {
 
 	// Return first error encountered
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "close message failed")
 		return err
 	}
-	return closeErr
+	if closeErr != nil {
+		span.RecordError(closeErr)
+		span.SetStatus(codes.Error, "close failed")
+		return closeErr
+	}
+
+	span.SetStatus(codes.Ok, "closed")
+	return nil
 }
 
 // IsConnected returns whether the transport is connected.

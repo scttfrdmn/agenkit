@@ -93,7 +93,7 @@ StorageResult<std::optional<Checkpoint>> InMemoryCheckpointStorage::get_latest(
     return core::Result<std::optional<Checkpoint>, StorageError>::ok(std::nullopt);
 }
 
-StorageResult<bool> InMemoryCheckpointStorage::remove(const std::string& checkpoint_id) {
+StorageResult<bool> InMemoryCheckpointStorage::del(const std::string& checkpoint_id) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     auto it = checkpoints_.find(checkpoint_id);
@@ -342,7 +342,7 @@ StorageResult<std::optional<Checkpoint>> FileCheckpointStorage::get_latest(
     return core::Result<std::optional<Checkpoint>, StorageError>::ok(std::nullopt);
 }
 
-StorageResult<bool> FileCheckpointStorage::remove(const std::string& checkpoint_id) {
+StorageResult<bool> FileCheckpointStorage::del(const std::string& checkpoint_id) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     try {

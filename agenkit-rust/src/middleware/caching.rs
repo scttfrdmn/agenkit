@@ -129,6 +129,45 @@ impl CachingConfigBuilder {
     }
 }
 
+/// Metrics for caching middleware.
+#[derive(Debug, Clone, Default)]
+pub struct CachingMetrics {
+    /// Total number of requests processed.
+    pub total_requests: u64,
+
+    /// Number of cache hits.
+    pub cache_hits: u64,
+
+    /// Number of cache misses.
+    pub cache_misses: u64,
+
+    /// Number of evictions (LRU + expired).
+    pub evictions: u64,
+
+    /// Current cache size.
+    pub current_size: usize,
+}
+
+impl CachingMetrics {
+    /// Calculate cache hit rate (percentage).
+    pub fn hit_rate(&self) -> f64 {
+        if self.total_requests == 0 {
+            0.0
+        } else {
+            (self.cache_hits as f64 / self.total_requests as f64) * 100.0
+        }
+    }
+
+    /// Calculate cache miss rate (percentage).
+    pub fn miss_rate(&self) -> f64 {
+        if self.total_requests == 0 {
+            0.0
+        } else {
+            (self.cache_misses as f64 / self.total_requests as f64) * 100.0
+        }
+    }
+}
+
 /// Cache entry with value and metadata.
 #[derive(Debug, Clone)]
 struct CacheEntry {
@@ -172,6 +211,7 @@ struct LruCache {
     entries: HashMap<u64, CacheEntry>,
     max_size: usize,
     ttl: Duration,
+    metrics: CachingMetrics,
 }
 
 impl LruCache {
@@ -180,20 +220,39 @@ impl LruCache {
             entries: HashMap::new(),
             max_size,
             ttl,
+            metrics: CachingMetrics::default(),
         }
     }
 
     fn get(&mut self, key: u64) -> Option<Message> {
-        if let Some(entry) = self.entries.get_mut(&key) {
-            if entry.is_expired(self.ttl) {
-                self.entries.remove(&key);
-                return None;
-            }
+        // Check if entry exists and is not expired
+        let is_expired = if let Some(entry) = self.entries.get(&key) {
+            entry.is_expired(self.ttl)
+        } else {
+            return None;
+        };
+
+        if is_expired {
+            self.entries.remove(&key);
+            self.metrics.current_size = self.entries.len();
+            return None;
+        }
+
+        // Entry exists and is valid - touch it and return
+        let result = if let Some(entry) = self.entries.get_mut(&key) {
             entry.touch();
             Some(entry.value.clone())
         } else {
             None
+        };
+
+        // Update metrics after releasing mutable borrow
+        if result.is_some() {
+            self.metrics.cache_hits += 1;
+            self.metrics.current_size = self.entries.len();
         }
+
+        result
     }
 
     fn insert(&mut self, key: u64, value: Message) {
@@ -206,6 +265,7 @@ impl LruCache {
         }
 
         self.entries.insert(key, CacheEntry::new(value));
+        self.metrics.current_size = self.entries.len();
     }
 
     fn evict_expired(&mut self) {
@@ -216,8 +276,14 @@ impl LruCache {
             .map(|(k, _)| *k)
             .collect();
 
+        let eviction_count = expired_keys.len();
         for key in expired_keys {
             self.entries.remove(&key);
+        }
+
+        if eviction_count > 0 {
+            self.metrics.evictions += eviction_count as u64;
+            self.metrics.current_size = self.entries.len();
         }
     }
 
@@ -228,11 +294,17 @@ impl LruCache {
             .min_by_key(|(_, entry)| entry.last_accessed)
         {
             self.entries.remove(&lru_key);
+            self.metrics.evictions += 1;
+            self.metrics.current_size = self.entries.len();
         }
     }
 
     fn size(&self) -> usize {
         self.entries.len()
+    }
+
+    fn get_metrics(&self) -> CachingMetrics {
+        self.metrics.clone()
     }
 }
 
@@ -259,6 +331,12 @@ impl<A: Agent> CachingMiddleware<A> {
     /// Create a new caching middleware with default configuration.
     pub fn with_defaults(agent: A) -> Self {
         Self::new(agent, CachingConfig::default())
+    }
+
+    /// Get current caching metrics.
+    pub async fn get_metrics(&self) -> CachingMetrics {
+        let cache = self.cache.read().await;
+        cache.get_metrics()
     }
 }
 
@@ -290,15 +368,21 @@ impl<A: Agent> Agent for CachingMiddleware<A> {
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         let key = cache_key(&message);
 
-        // Try to get from cache
+        // Track total requests and try to get from cache
         {
             let mut cache = self.cache.write().await;
+            cache.metrics.total_requests += 1;
             if let Some(cached) = cache.get(key) {
                 return Ok(cached);
             }
         }
 
-        // Cache miss - call inner agent
+        // Cache miss - track and call inner agent
+        {
+            let mut cache = self.cache.write().await;
+            cache.metrics.cache_misses += 1;
+        }
+
         let response = self.inner.process(message).await?;
 
         // Store in cache

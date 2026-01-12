@@ -52,11 +52,15 @@ pub mod rate_limiter;
 pub mod caching;
 pub mod batching;
 
-pub use retry::{RetryConfig, RetryConfigBuilder, RetryMiddleware};
+pub use retry::{RetryConfig, RetryConfigBuilder, RetryMiddleware, RetryMetrics};
 pub use circuit_breaker::{
-    CircuitBreakerConfig, CircuitBreakerConfigBuilder, CircuitBreakerMiddleware, CircuitState,
+    CircuitBreakerConfig,
+    CircuitBreakerConfigBuilder,
+    CircuitBreakerMiddleware,
+    CircuitBreakerMetrics,
+    CircuitState,
 };
-pub use timeout::{TimeoutConfig, TimeoutConfigBuilder, TimeoutMiddleware};
+pub use timeout::{TimeoutConfig, TimeoutConfigBuilder, TimeoutMiddleware, TimeoutMetrics};
 pub use rate_limiter::{RateLimiterConfig, RateLimiterConfigBuilder, RateLimiterMiddleware};
 pub use caching::{CachingConfig, CachingConfigBuilder, CachingMiddleware};
 pub use batching::{BatchingConfig, BatchingConfigBuilder, BatchingMiddleware};

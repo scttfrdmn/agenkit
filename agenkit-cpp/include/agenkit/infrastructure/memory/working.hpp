@@ -57,7 +57,23 @@ public:
     ///
     /// @param entry_id Entry ID to delete
     /// @return true if deleted, false if not found
-    WorkingMemoryResult<bool> remove(const std::string& entry_id);
+    WorkingMemoryResult<bool> del(const std::string& entry_id);
+
+    /// Delete an entry by ID (deprecated, use del)
+    ///
+    /// @param entry_id Entry ID to delete
+    /// @return true if deleted, false if not found
+    /// @deprecated Use del() for consistency with other languages
+    [[deprecated("Use del() for consistency with other languages")]]
+    WorkingMemoryResult<bool> deleteEntry(const std::string& entry_id) { return del(entry_id); }
+
+    /// Delete an entry by ID (deprecated, use del)
+    ///
+    /// @param entry_id Entry ID to delete
+    /// @return true if deleted, false if not found
+    /// @deprecated Use del() for consistency with other languages
+    [[deprecated("Use del() for consistency with other languages")]]
+    WorkingMemoryResult<bool> remove(const std::string& entry_id) { return del(entry_id); }
 
     /// Get all entries
     ///

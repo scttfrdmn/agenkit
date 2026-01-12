@@ -42,8 +42,10 @@ pub const CachingDecorator = @import("caching.zig").CachingDecorator;
 pub const CachingConfig = @import("caching.zig").CachingConfig;
 pub const CachingMetrics = @import("caching.zig").CachingMetrics;
 
-// TODO: Add more middleware as they are implemented
-// pub const BatchingDecorator = @import("batching.zig").BatchingDecorator;
+// Batching middleware
+pub const BatchingDecorator = @import("batching.zig").BatchingDecorator;
+pub const BatchingConfig = @import("batching.zig").BatchingConfig;
+pub const BatchingMetrics = @import("batching.zig").BatchingMetrics;
 
 test {
     const std = @import("std");
@@ -53,4 +55,5 @@ test {
     _ = @import("circuit_breaker.zig");
     _ = @import("rate_limiter.zig");
     _ = @import("caching.zig");
+    _ = @import("batching.zig");
 }

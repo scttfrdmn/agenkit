@@ -81,6 +81,10 @@ pub struct BatchingConfig {
     /// Maximum time to wait for batch to fill.
     /// Default: 100ms
     pub max_wait_time: Duration,
+
+    /// Maximum queue size (total pending requests).
+    /// Default: 100
+    pub max_queue_size: usize,
 }
 
 impl Default for BatchingConfig {
@@ -88,6 +92,7 @@ impl Default for BatchingConfig {
         Self {
             max_batch_size: 10,
             max_wait_time: Duration::from_millis(100),
+            max_queue_size: 100,
         }
     }
 }
@@ -104,6 +109,7 @@ impl BatchingConfig {
 pub struct BatchingConfigBuilder {
     max_batch_size: Option<usize>,
     max_wait_time: Option<Duration>,
+    max_queue_size: Option<usize>,
 }
 
 impl BatchingConfigBuilder {
@@ -119,12 +125,19 @@ impl BatchingConfigBuilder {
         self
     }
 
+    /// Set maximum queue size.
+    pub fn max_queue_size(mut self, size: usize) -> Self {
+        self.max_queue_size = Some(size);
+        self
+    }
+
     /// Build the BatchingConfig.
     pub fn build(self) -> BatchingConfig {
         let default = BatchingConfig::default();
         BatchingConfig {
             max_batch_size: self.max_batch_size.unwrap_or(default.max_batch_size),
             max_wait_time: self.max_wait_time.unwrap_or(default.max_wait_time),
+            max_queue_size: self.max_queue_size.unwrap_or(default.max_queue_size),
         }
     }
 }
@@ -436,6 +449,7 @@ impl<A: Agent + 'static> Agent for BatchingMiddleware<A> {
             serde_json::json!({
                 "max_batch_size": self.config.max_batch_size,
                 "max_wait_time_ms": self.config.max_wait_time.as_millis(),
+                "max_queue_size": self.config.max_queue_size,
             }),
         );
         result
@@ -450,9 +464,19 @@ impl<A: Agent + 'static> Agent for BatchingMiddleware<A> {
             enqueued_at: Instant::now(),
         };
 
-        // Add to batch queue
+        // Add to batch queue with backpressure check
         {
             let mut state = self.state.lock().await;
+
+            // Check if queue is full (backpressure)
+            if state.len() >= self.config.max_queue_size {
+                return Err(AgentError::Internal(format!(
+                    "batch queue full: {} requests pending (max: {})",
+                    state.len(),
+                    self.config.max_queue_size
+                )));
+            }
+
             state.add(request);
 
             // Immediate flush if batch is full

@@ -24,8 +24,14 @@ pub const TimeoutConfig = @import("timeout.zig").TimeoutConfig;
 pub const TimeoutMetrics = @import("timeout.zig").TimeoutMetrics;
 pub const MethodTimeout = @import("timeout.zig").MethodTimeout;
 
+// Circuit Breaker middleware
+pub const CircuitBreakerDecorator = @import("circuit_breaker.zig").CircuitBreakerDecorator;
+pub const CircuitBreakerConfig = @import("circuit_breaker.zig").CircuitBreakerConfig;
+pub const CircuitBreakerMetrics = @import("circuit_breaker.zig").CircuitBreakerMetrics;
+pub const CircuitState = @import("circuit_breaker.zig").CircuitState;
+pub const CircuitBreakerError = @import("circuit_breaker.zig").CircuitBreakerError;
+
 // TODO: Add more middleware as they are implemented
-// pub const CircuitBreakerDecorator = @import("circuit_breaker.zig").CircuitBreakerDecorator;
 // pub const RateLimiter = @import("rate_limiter.zig").RateLimiter;
 // pub const CachingDecorator = @import("caching.zig").CachingDecorator;
 // pub const BatchingDecorator = @import("batching.zig").BatchingDecorator;
@@ -35,4 +41,5 @@ test {
     std.testing.refAllDecls(@This());
     _ = @import("retry.zig");
     _ = @import("timeout.zig");
+    _ = @import("circuit_breaker.zig");
 }

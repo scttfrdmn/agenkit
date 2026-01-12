@@ -81,6 +81,11 @@ pub struct RateLimiterConfig {
     /// Maximum time to wait for a token.
     /// Default: 30 seconds
     pub max_wait_time: Duration,
+
+    /// Number of tokens consumed per request.
+    /// Default: 1.0 token/request
+    /// Can be overridden per-request via message metadata with key "tokens"
+    pub tokens_per_request: f64,
 }
 
 impl Default for RateLimiterConfig {
@@ -89,6 +94,7 @@ impl Default for RateLimiterConfig {
             tokens_per_second: 10.0,
             capacity: 10.0,
             max_wait_time: Duration::from_secs(30),
+            tokens_per_request: 1.0,
         }
     }
 }
@@ -106,6 +112,7 @@ pub struct RateLimiterConfigBuilder {
     tokens_per_second: Option<f64>,
     capacity: Option<f64>,
     max_wait_time: Option<Duration>,
+    tokens_per_request: Option<f64>,
 }
 
 impl RateLimiterConfigBuilder {
@@ -127,6 +134,12 @@ impl RateLimiterConfigBuilder {
         self
     }
 
+    /// Set tokens consumed per request.
+    pub fn tokens_per_request(mut self, tokens: f64) -> Self {
+        self.tokens_per_request = Some(tokens);
+        self
+    }
+
     /// Build the RateLimiterConfig.
     pub fn build(self) -> RateLimiterConfig {
         let default = RateLimiterConfig::default();
@@ -135,6 +148,7 @@ impl RateLimiterConfigBuilder {
             tokens_per_second,
             capacity: self.capacity.unwrap_or(tokens_per_second), // Default capacity = rate
             max_wait_time: self.max_wait_time.unwrap_or(default.max_wait_time),
+            tokens_per_request: self.tokens_per_request.unwrap_or(default.tokens_per_request),
         }
     }
 }
@@ -221,22 +235,22 @@ impl RateLimiterState {
         self.metrics.current_tokens = self.tokens;
     }
 
-    /// Try to consume a token.
-    fn try_consume(&mut self) -> bool {
-        if self.tokens >= 1.0 {
-            self.tokens -= 1.0;
+    /// Try to consume tokens.
+    fn try_consume(&mut self, token_count: f64) -> bool {
+        if self.tokens >= token_count {
+            self.tokens -= token_count;
             true
         } else {
             false
         }
     }
 
-    /// Calculate wait time until next token is available.
-    fn time_until_token(&self, tokens_per_second: f64) -> Duration {
-        if self.tokens >= 1.0 {
+    /// Calculate wait time until enough tokens are available.
+    fn time_until_token(&self, tokens_per_second: f64, token_count: f64) -> Duration {
+        if self.tokens >= token_count {
             Duration::ZERO
         } else {
-            let tokens_needed = 1.0 - self.tokens;
+            let tokens_needed = token_count - self.tokens;
             let seconds = tokens_needed / tokens_per_second;
             Duration::from_secs_f64(seconds)
         }
@@ -305,6 +319,22 @@ impl<A: Agent> Agent for RateLimiterMiddleware<A> {
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         #[cfg(feature = "native")]
         {
+            // Determine token count (from message metadata or config default)
+            // Metadata is HashMap<String, serde_json::Value>
+            let token_count = message
+                .metadata
+                .get("tokens")
+                .and_then(|v| {
+                    if let Some(num) = v.as_f64() {
+                        Some(num)
+                    } else if let Some(s) = v.as_str() {
+                        s.parse::<f64>().ok()
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or(self.config.tokens_per_request);
+
             let start_wait = Instant::now();
             let mut waited = false;
 
@@ -320,8 +350,8 @@ impl<A: Agent> Agent for RateLimiterMiddleware<A> {
                 // Refill tokens based on elapsed time
                 state.refill(self.config.tokens_per_second, self.config.capacity);
 
-                // Try to consume a token
-                if state.try_consume() {
+                // Try to consume tokens
+                if state.try_consume(token_count) {
                     // Track metrics for successful acquisition
                     if waited {
                         state.metrics.waited_requests += 1;
@@ -343,7 +373,8 @@ impl<A: Agent> Agent for RateLimiterMiddleware<A> {
                 }
 
                 // Calculate wait time
-                let wait_time = state.time_until_token(self.config.tokens_per_second);
+                let wait_time =
+                    state.time_until_token(self.config.tokens_per_second, token_count);
                 let remaining_time = self
                     .config
                     .max_wait_time

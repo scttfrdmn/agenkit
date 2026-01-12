@@ -18,8 +18,13 @@ pub const RetryDecorator = @import("retry.zig").RetryDecorator;
 pub const RetryConfig = @import("retry.zig").RetryConfig;
 pub const RetryMetrics = @import("retry.zig").RetryMetrics;
 
+// Timeout middleware
+pub const TimeoutDecorator = @import("timeout.zig").TimeoutDecorator;
+pub const TimeoutConfig = @import("timeout.zig").TimeoutConfig;
+pub const TimeoutMetrics = @import("timeout.zig").TimeoutMetrics;
+pub const MethodTimeout = @import("timeout.zig").MethodTimeout;
+
 // TODO: Add more middleware as they are implemented
-// pub const TimeoutDecorator = @import("timeout.zig").TimeoutDecorator;
 // pub const CircuitBreakerDecorator = @import("circuit_breaker.zig").CircuitBreakerDecorator;
 // pub const RateLimiter = @import("rate_limiter.zig").RateLimiter;
 // pub const CachingDecorator = @import("caching.zig").CachingDecorator;
@@ -29,4 +34,5 @@ test {
     const std = @import("std");
     std.testing.refAllDecls(@This());
     _ = @import("retry.zig");
+    _ = @import("timeout.zig");
 }

@@ -129,16 +129,78 @@ impl BatchingConfigBuilder {
     }
 }
 
+/// Metrics for batching middleware.
+#[derive(Debug, Clone, Default)]
+pub struct BatchingMetrics {
+    /// Total number of requests processed.
+    pub total_requests: u64,
+
+    /// Total number of batches processed.
+    pub total_batches: u64,
+
+    /// Number of successful batches (all requests succeeded).
+    pub successful_batches: u64,
+
+    /// Number of failed batches (all requests failed).
+    pub failed_batches: u64,
+
+    /// Number of partial batches (mixed success/failure).
+    pub partial_batches: u64,
+
+    /// Minimum batch size observed.
+    pub min_batch_size: Option<usize>,
+
+    /// Maximum batch size observed.
+    pub max_batch_size: Option<usize>,
+
+    /// Total batch size (for calculating average).
+    pub total_batch_size: u64,
+
+    /// Total wait time (milliseconds) across all requests.
+    pub total_wait_time_ms: u64,
+}
+
+impl BatchingMetrics {
+    /// Calculate average batch size.
+    pub fn avg_batch_size(&self) -> f64 {
+        if self.total_batches == 0 {
+            0.0
+        } else {
+            self.total_batch_size as f64 / self.total_batches as f64
+        }
+    }
+
+    /// Calculate average wait time per request (milliseconds).
+    pub fn avg_wait_time_ms(&self) -> f64 {
+        if self.total_requests == 0 {
+            0.0
+        } else {
+            self.total_wait_time_ms as f64 / self.total_requests as f64
+        }
+    }
+
+    /// Calculate throughput improvement (requests / batches).
+    pub fn throughput_improvement(&self) -> f64 {
+        if self.total_batches == 0 {
+            1.0
+        } else {
+            self.total_requests as f64 / self.total_batches as f64
+        }
+    }
+}
+
 /// Request in the batch queue.
 struct BatchRequest {
     message: Message,
     response_tx: oneshot::Sender<Result<Message, AgentError>>,
+    enqueued_at: Instant,
 }
 
 /// Batch state.
 struct BatchState {
     queue: VecDeque<BatchRequest>,
     first_request_time: Option<Instant>,
+    metrics: BatchingMetrics,
 }
 
 impl BatchState {
@@ -146,6 +208,7 @@ impl BatchState {
         Self {
             queue: VecDeque::new(),
             first_request_time: None,
+            metrics: BatchingMetrics::default(),
         }
     }
 
@@ -153,6 +216,7 @@ impl BatchState {
         if self.queue.is_empty() {
             self.first_request_time = Some(Instant::now());
         }
+        self.metrics.total_requests += 1;
         self.queue.push_back(request);
     }
 
@@ -183,6 +247,10 @@ impl BatchState {
 
     fn len(&self) -> usize {
         self.queue.len()
+    }
+
+    fn get_metrics(&self) -> BatchingMetrics {
+        self.metrics.clone()
     }
 }
 
@@ -216,6 +284,12 @@ impl<A: Agent + 'static> BatchingMiddleware<A> {
     /// Create a new batching middleware with default configuration.
     pub fn with_defaults(agent: A) -> Self {
         Self::new(agent, BatchingConfig::default())
+    }
+
+    /// Get current batching metrics.
+    pub async fn get_metrics(&self) -> BatchingMetrics {
+        let state = self.state.lock().await;
+        state.get_metrics()
     }
 
     /// Start background task that periodically flushes batches.
@@ -258,13 +332,67 @@ impl<A: Agent + 'static> BatchingMiddleware<A> {
             state.drain()
         };
 
+        let batch_size = requests.len();
+        if batch_size == 0 {
+            return;
+        }
+
+        let batch_start = Instant::now();
+        let mut successes = 0;
+        let mut failures = 0;
+
         // Process each request individually
         // Note: A production implementation might have a batch-aware agent
         // that can process multiple requests more efficiently
         for request in requests {
+            // Calculate wait time
+            let wait_time_ms = request.enqueued_at.elapsed().as_millis() as u64;
+
             let result = inner.process(request.message).await;
+            if result.is_ok() {
+                successes += 1;
+            } else {
+                failures += 1;
+            }
+
             // Ignore send errors (receiver dropped)
             let _ = request.response_tx.send(result);
+
+            // Update metrics with wait time
+            {
+                let mut state = state.lock().await;
+                state.metrics.total_wait_time_ms += wait_time_ms;
+            }
+        }
+
+        // Update batch metrics
+        {
+            let mut state = state.lock().await;
+            state.metrics.total_batches += 1;
+            state.metrics.total_batch_size += batch_size as u64;
+
+            // Update min/max batch size
+            state.metrics.min_batch_size = Some(
+                state
+                    .metrics
+                    .min_batch_size
+                    .map_or(batch_size, |min| min.min(batch_size)),
+            );
+            state.metrics.max_batch_size = Some(
+                state
+                    .metrics
+                    .max_batch_size
+                    .map_or(batch_size, |max| max.max(batch_size)),
+            );
+
+            // Classify batch outcome
+            if failures == 0 {
+                state.metrics.successful_batches += 1;
+            } else if successes == 0 {
+                state.metrics.failed_batches += 1;
+            } else {
+                state.metrics.partial_batches += 1;
+            }
         }
     }
 }
@@ -313,6 +441,7 @@ impl<A: Agent + 'static> Agent for BatchingMiddleware<A> {
         let request = BatchRequest {
             message,
             response_tx: tx,
+            enqueued_at: Instant::now(),
         };
 
         // Add to batch queue

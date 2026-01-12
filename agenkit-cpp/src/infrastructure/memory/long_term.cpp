@@ -60,7 +60,7 @@ LongTermMemoryResult<std::vector<MemoryEntry>> LongTermMemory::retrieve(
     return core::Result<std::vector<MemoryEntry>, LongTermMemoryError>::ok(std::move(results));
 }
 
-LongTermMemoryResult<bool> LongTermMemory::remove(const std::string& entry_id) {
+LongTermMemoryResult<bool> LongTermMemory::del(const std::string& entry_id) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     auto it = storage_.find(entry_id);

@@ -91,7 +91,7 @@ ShortTermMemoryResult<std::vector<MemoryEntry>> ShortTermMemory::retrieve(size_t
     return core::Result<std::vector<MemoryEntry>, ShortTermMemoryError>::ok(std::move(results));
 }
 
-ShortTermMemoryResult<bool> ShortTermMemory::remove(const std::string& entry_id) {
+ShortTermMemoryResult<bool> ShortTermMemory::del(const std::string& entry_id) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     auto it = std::find_if(messages_.begin(), messages_.end(),

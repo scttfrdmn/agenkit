@@ -68,6 +68,7 @@
 
 use crate::core::{Agent, AgentError, IntrospectionResult, Message};
 use async_trait::async_trait;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
@@ -81,6 +82,55 @@ pub enum CircuitState {
     Open,
     /// Testing recovery - limited requests allowed.
     HalfOpen,
+}
+
+impl std::fmt::Display for CircuitState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CircuitState::Closed => write!(f, "CLOSED"),
+            CircuitState::Open => write!(f, "OPEN"),
+            CircuitState::HalfOpen => write!(f, "HALF_OPEN"),
+        }
+    }
+}
+
+/// Metrics for circuit breaker middleware.
+#[derive(Debug, Clone)]
+pub struct CircuitBreakerMetrics {
+    /// Total number of requests attempted.
+    pub total_requests: u64,
+
+    /// Number of successful requests.
+    pub successful_requests: u64,
+
+    /// Number of failed requests.
+    pub failed_requests: u64,
+
+    /// Number of requests rejected due to open circuit.
+    pub rejected_requests: u64,
+
+    /// State transition counts (e.g., "CLOSED->OPEN": 3).
+    pub state_changes: HashMap<String, u64>,
+
+    /// Timestamp of last state change.
+    pub last_state_change: Option<Instant>,
+
+    /// Current circuit state.
+    pub current_state: CircuitState,
+}
+
+impl Default for CircuitBreakerMetrics {
+    fn default() -> Self {
+        Self {
+            total_requests: 0,
+            successful_requests: 0,
+            failed_requests: 0,
+            rejected_requests: 0,
+            state_changes: HashMap::new(),
+            last_state_change: None,
+            current_state: CircuitState::Closed,
+        }
+    }
 }
 
 /// Configuration for circuit breaker middleware.
@@ -161,6 +211,16 @@ struct CircuitBreakerState {
     failure_count: u32,
     success_count: u32,
     last_failure_time: Option<Instant>,
+    metrics: CircuitBreakerMetrics,
+}
+
+impl CircuitBreakerState {
+    fn record_state_change(&mut self, from: CircuitState, to: CircuitState) {
+        let key = format!("{}->{}", from, to);
+        *self.metrics.state_changes.entry(key).or_insert(0) += 1;
+        self.metrics.last_state_change = Some(Instant::now());
+        self.metrics.current_state = to;
+    }
 }
 
 impl Default for CircuitBreakerState {
@@ -170,6 +230,7 @@ impl Default for CircuitBreakerState {
             failure_count: 0,
             success_count: 0,
             last_failure_time: None,
+            metrics: CircuitBreakerMetrics::default(),
         }
     }
 }
@@ -200,6 +261,11 @@ impl<A: Agent> CircuitBreakerMiddleware<A> {
         Self::new(agent, CircuitBreakerConfig::default())
     }
 
+    /// Get current metrics.
+    pub async fn get_metrics(&self) -> CircuitBreakerMetrics {
+        self.state.read().await.metrics.clone()
+    }
+
     /// Check if circuit should transition to half-open state.
     async fn should_attempt_reset(&self) -> bool {
         let state = self.state.read().await;
@@ -224,10 +290,12 @@ impl<A: Agent> CircuitBreakerMiddleware<A> {
                 state.success_count += 1;
                 if state.success_count >= self.config.success_threshold {
                     // Transition to closed
+                    let old_state = state.state;
                     state.state = CircuitState::Closed;
                     state.failure_count = 0;
                     state.success_count = 0;
                     state.last_failure_time = None;
+                    state.record_state_change(old_state, CircuitState::Closed);
                 }
             }
             CircuitState::Closed => {
@@ -236,10 +304,12 @@ impl<A: Agent> CircuitBreakerMiddleware<A> {
             }
             CircuitState::Open => {
                 // Should not happen, but reset if it does
+                let old_state = state.state;
                 state.state = CircuitState::Closed;
                 state.failure_count = 0;
                 state.success_count = 0;
                 state.last_failure_time = None;
+                state.record_state_change(old_state, CircuitState::Closed);
             }
         }
     }
@@ -255,15 +325,19 @@ impl<A: Agent> CircuitBreakerMiddleware<A> {
 
                 if state.failure_count >= self.config.failure_threshold {
                     // Transition to open
+                    let old_state = state.state;
                     state.state = CircuitState::Open;
+                    state.record_state_change(old_state, CircuitState::Open);
                 }
             }
             CircuitState::HalfOpen => {
                 // Transition back to open
+                let old_state = state.state;
                 state.state = CircuitState::Open;
                 state.failure_count = self.config.failure_threshold; // Keep at threshold
                 state.success_count = 0;
                 state.last_failure_time = Some(Instant::now());
+                state.record_state_change(old_state, CircuitState::Open);
             }
             CircuitState::Open => {
                 // Update timestamp
@@ -304,17 +378,27 @@ impl<A: Agent> Agent for CircuitBreakerMiddleware<A> {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        // Increment total requests
+        {
+            let mut state = self.state.write().await;
+            state.metrics.total_requests += 1;
+        }
+
         // Check if we should attempt reset
         if self.should_attempt_reset().await {
             let mut state = self.state.write().await;
+            let old_state = state.state;
             state.state = CircuitState::HalfOpen;
             state.success_count = 0;
+            state.record_state_change(old_state, CircuitState::HalfOpen);
         }
 
         // Check circuit state
         {
             let state = self.state.read().await;
             if state.state == CircuitState::Open {
+                let mut state_mut = self.state.write().await;
+                state_mut.metrics.rejected_requests += 1;
                 return Err(AgentError::ProcessingError(
                     "circuit breaker is open".to_string(),
                 ));
@@ -324,10 +408,18 @@ impl<A: Agent> Agent for CircuitBreakerMiddleware<A> {
         // Attempt request
         match self.inner.process(message).await {
             Ok(response) => {
+                {
+                    let mut state = self.state.write().await;
+                    state.metrics.successful_requests += 1;
+                }
                 self.on_success().await;
                 Ok(response)
             }
             Err(err) => {
+                {
+                    let mut state = self.state.write().await;
+                    state.metrics.failed_requests += 1;
+                }
                 self.on_failure().await;
                 Err(err)
             }

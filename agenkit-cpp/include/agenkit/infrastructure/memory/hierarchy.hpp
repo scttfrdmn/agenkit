@@ -87,7 +87,23 @@ public:
     ///
     /// @param entry_id Entry ID to delete
     /// @return true if deleted from any tier
-    HierarchyResult<bool> remove(const std::string& entry_id);
+    HierarchyResult<bool> del(const std::string& entry_id);
+
+    /// Delete an entry from all tiers (deprecated, use del)
+    ///
+    /// @param entry_id Entry ID to delete
+    /// @return true if deleted from any tier
+    /// @deprecated Use del() for consistency with other languages
+    [[deprecated("Use del() for consistency with other languages")]]
+    HierarchyResult<bool> deleteEntry(const std::string& entry_id) { return del(entry_id); }
+
+    /// Delete an entry from all tiers (deprecated, use del)
+    ///
+    /// @param entry_id Entry ID to delete
+    /// @return true if deleted from any tier
+    /// @deprecated Use del() for consistency with other languages
+    [[deprecated("Use del() for consistency with other languages")]]
+    HierarchyResult<bool> remove(const std::string& entry_id) { return del(entry_id); }
 
     /// Clear working memory only
     void clear_working();

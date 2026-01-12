@@ -4,10 +4,45 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
+
+// RetryMetrics tracks retry middleware metrics.
+type RetryMetrics struct {
+	mu sync.RWMutex
+
+	// TotalAttempts is the total number of requests (including retries).
+	TotalAttempts int64
+
+	// SuccessfulFirstAttempt is the number of requests that succeeded on first try.
+	SuccessfulFirstAttempt int64
+
+	// SuccessfulOnRetry is the number of requests that succeeded after retry.
+	SuccessfulOnRetry int64
+
+	// FailedAfterRetries is the number of requests that failed after all retries.
+	FailedAfterRetries int64
+
+	// TotalRetries is the total number of retry attempts across all requests.
+	TotalRetries int64
+}
+
+// Snapshot returns a copy of the current metrics.
+func (m *RetryMetrics) Snapshot() RetryMetrics {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	return RetryMetrics{
+		TotalAttempts:          m.TotalAttempts,
+		SuccessfulFirstAttempt: m.SuccessfulFirstAttempt,
+		SuccessfulOnRetry:      m.SuccessfulOnRetry,
+		FailedAfterRetries:     m.FailedAfterRetries,
+		TotalRetries:           m.TotalRetries,
+	}
+}
 
 // RetryConfig configures retry behavior.
 type RetryConfig struct {
@@ -45,8 +80,9 @@ func DefaultRetryConfig() RetryConfig {
 
 // RetryDecorator wraps an agent with retry logic.
 type RetryDecorator struct {
-	agent  agenkit.Agent
-	config RetryConfig
+	agent   agenkit.Agent
+	config  RetryConfig
+	metrics *RetryMetrics
 }
 
 // Verify that RetryDecorator implements Agent interface.
@@ -69,8 +105,9 @@ func NewRetryDecorator(agent agenkit.Agent, config RetryConfig) *RetryDecorator 
 	}
 
 	return &RetryDecorator{
-		agent:  agent,
-		config: config,
+		agent:   agent,
+		config:  config,
+		metrics: &RetryMetrics{},
 	}
 }
 
@@ -89,17 +126,36 @@ func (r *RetryDecorator) Introspect() *agenkit.IntrospectionResult {
 	return r.agent.Introspect()
 }
 
+// Metrics returns the current retry metrics.
+func (r *RetryDecorator) Metrics() *RetryMetrics {
+	return r.metrics
+}
+
 // Process implements the Agent interface with retry logic.
 func (r *RetryDecorator) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	var lastErr error
 	backoff := r.config.InitialBackoff
 
 	for attempt := 1; attempt <= r.config.MaxAttempts; attempt++ {
+		// Track attempt
+		r.metrics.mu.Lock()
+		r.metrics.TotalAttempts++
+		r.metrics.mu.Unlock()
+
 		// Try the operation
 		response, err := r.agent.Process(ctx, message)
 
 		// Success
 		if err == nil {
+			// Track success
+			r.metrics.mu.Lock()
+			if attempt == 1 {
+				r.metrics.SuccessfulFirstAttempt++
+			} else {
+				r.metrics.SuccessfulOnRetry++
+			}
+			r.metrics.mu.Unlock()
+
 			return response, nil
 		}
 
@@ -108,6 +164,9 @@ func (r *RetryDecorator) Process(ctx context.Context, message *agenkit.Message) 
 
 		// Check if we should retry this error
 		if r.config.ShouldRetry != nil && !r.config.ShouldRetry(err) {
+			r.metrics.mu.Lock()
+			r.metrics.FailedAfterRetries++
+			r.metrics.mu.Unlock()
 			return nil, fmt.Errorf("non-retryable error on attempt %d/%d: %w", attempt, r.config.MaxAttempts, err)
 		}
 
@@ -116,9 +175,17 @@ func (r *RetryDecorator) Process(ctx context.Context, message *agenkit.Message) 
 			break
 		}
 
+		// Track retry
+		r.metrics.mu.Lock()
+		r.metrics.TotalRetries++
+		r.metrics.mu.Unlock()
+
 		// Wait before retrying
 		select {
 		case <-ctx.Done():
+			r.metrics.mu.Lock()
+			r.metrics.FailedAfterRetries++
+			r.metrics.mu.Unlock()
 			return nil, fmt.Errorf("retry cancelled after %d attempts: %w", attempt, ctx.Err())
 		case <-time.After(backoff):
 			// Calculate next backoff
@@ -128,6 +195,11 @@ func (r *RetryDecorator) Process(ctx context.Context, message *agenkit.Message) 
 			}
 		}
 	}
+
+	// All attempts failed
+	r.metrics.mu.Lock()
+	r.metrics.FailedAfterRetries++
+	r.metrics.mu.Unlock()
 
 	return nil, fmt.Errorf("max retry attempts (%d) exceeded: %w", r.config.MaxAttempts, lastErr)
 }

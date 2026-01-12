@@ -10,25 +10,29 @@ export { Middleware, applyMiddleware, BaseMiddleware } from './base';
 
 // Circuit breaker
 export {
-  CircuitBreakerDecorator,
+  CircuitBreakerMiddleware,
   CircuitBreakerConfig,
-  CircuitBreakerState,
+  CircuitState,
   CircuitBreakerError,
+  CircuitBreakerMetrics,
+  circuitBreaker,
 } from './circuit-breaker';
 
 // Retry
 export {
-  RetryDecorator,
+  RetryMiddleware,
   RetryConfig,
-  RetryStrategy,
-  MaxRetriesExceededError,
+  RetryMetrics,
+  retry,
 } from './retry';
 
 // Timeout
 export {
-  TimeoutDecorator,
+  TimeoutMiddleware,
   TimeoutConfig,
   TimeoutError,
+  TimeoutMetrics,
+  timeout,
 } from './timeout';
 
 // Batching

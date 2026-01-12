@@ -257,7 +257,7 @@ func (s *Sandbox) IsCommandAllowed(command string) (bool, *string) {
 	return true, nil
 }
 
-// IsSQLOperationAllowed checks if SQL operation is allowed.
+// IsSqlOperationAllowed checks if SQL operation is allowed.
 //
 // Args:
 //
@@ -267,7 +267,7 @@ func (s *Sandbox) IsCommandAllowed(command string) (bool, *string) {
 //
 //	isAllowed: true if operation is allowed
 //	errorMessage: Error message if denied (nil if allowed)
-func (s *Sandbox) IsSQLOperationAllowed(sql string) (bool, *string) {
+func (s *Sandbox) IsSqlOperationAllowed(sql string) (bool, *string) {
 	if sql == "" {
 		return true, nil
 	}

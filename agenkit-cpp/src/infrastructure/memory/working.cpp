@@ -50,7 +50,7 @@ WorkingMemoryResult<std::vector<MemoryEntry>> WorkingMemory::retrieve(size_t lim
     return core::Result<std::vector<MemoryEntry>, WorkingMemoryError>::ok(std::move(results));
 }
 
-WorkingMemoryResult<bool> WorkingMemory::remove(const std::string& entry_id) {
+WorkingMemoryResult<bool> WorkingMemory::del(const std::string& entry_id) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     auto it = std::find_if(messages_.begin(), messages_.end(),

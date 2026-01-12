@@ -29,6 +29,26 @@ export interface RetryConfig {
 }
 
 /**
+ * Retry metrics.
+ */
+export interface RetryMetrics {
+  /** Total number of requests (including retries) */
+  totalAttempts: number;
+
+  /** Number of requests that succeeded on first try */
+  successfulFirstAttempt: number;
+
+  /** Number of requests that succeeded after retry */
+  successfulOnRetry: number;
+
+  /** Number of requests that failed after all retries */
+  failedAfterRetries: number;
+
+  /** Total number of retry attempts across all requests */
+  totalRetries: number;
+}
+
+/**
  * Default retry predicate - retries on network errors.
  */
 function defaultShouldRetry(error: Error): boolean {
@@ -65,6 +85,7 @@ export class RetryMiddleware extends BaseMiddleware {
   private backoffMultiplier: number;
   private maxDelay: number;
   private shouldRetry: (error: Error) => boolean;
+  private _metrics: RetryMetrics;
 
   constructor(agent: Agent, config: RetryConfig = {}) {
     super(agent);
@@ -73,19 +94,49 @@ export class RetryMiddleware extends BaseMiddleware {
     this.backoffMultiplier = config.backoffMultiplier || 2.0;
     this.maxDelay = config.maxDelay || 30000;
     this.shouldRetry = config.shouldRetry || defaultShouldRetry;
+    this._metrics = {
+      totalAttempts: 0,
+      successfulFirstAttempt: 0,
+      successfulOnRetry: 0,
+      failedAfterRetries: 0,
+      totalRetries: 0,
+    };
+  }
+
+  /**
+   * Get current metrics.
+   */
+  get metrics(): RetryMetrics {
+    return { ...this._metrics };
   }
 
   async process(message: Message): Promise<Message> {
     let lastError: Error | null = null;
+    this._metrics.totalAttempts++;
 
     for (let attempt = 0; attempt < this.maxAttempts; attempt++) {
       try {
-        return await this.agent.process(message);
+        const result = await this.agent.process(message);
+
+        // Record success
+        if (attempt === 0) {
+          this._metrics.successfulFirstAttempt++;
+        } else {
+          this._metrics.successfulOnRetry++;
+        }
+
+        return result;
       } catch (error) {
         lastError = error as Error;
 
+        // Track retry attempts (not counting the initial attempt)
+        if (attempt > 0) {
+          this._metrics.totalRetries++;
+        }
+
         // Don't retry if predicate says no or if we're on last attempt
         if (!this.shouldRetry(lastError) || attempt === this.maxAttempts - 1) {
+          this._metrics.failedAfterRetries++;
           throw lastError;
         }
 
@@ -101,6 +152,7 @@ export class RetryMiddleware extends BaseMiddleware {
     }
 
     // Should never reach here, but TypeScript needs it
+    this._metrics.failedAfterRetries++;
     throw lastError || new Error('Retry failed');
   }
 }

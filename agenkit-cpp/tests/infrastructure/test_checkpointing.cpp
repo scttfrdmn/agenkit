@@ -172,7 +172,7 @@ TEST(InMemoryStorageTest, RemoveCheckpoint) {
     auto checkpoint = Checkpoint::create("session-1", "agent-1", 1, {}, {});
     storage.save(checkpoint);
 
-    auto remove_result = storage.remove(checkpoint.checkpoint_id);
+    auto remove_result = storage.deleteCheckpoint(checkpoint.checkpoint_id);
     ASSERT_TRUE(remove_result.is_ok());
     EXPECT_TRUE(remove_result.value());
 

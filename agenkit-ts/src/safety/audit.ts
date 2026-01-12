@@ -34,10 +34,10 @@ export enum AuditEventType {
  * Severity levels for audit events.
  */
 export enum AuditSeverity {
-  INFO = 'INFO',
-  WARNING = 'WARNING',
-  ERROR = 'ERROR',
-  CRITICAL = 'CRITICAL',
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error',
+  CRITICAL = 'critical',
 }
 
 /**

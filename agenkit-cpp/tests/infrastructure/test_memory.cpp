@@ -76,14 +76,14 @@ TEST(WorkingMemoryTest, Remove) {
 
     std::string entry_id = store_result.unwrap();
 
-    auto remove_result = memory.remove(entry_id);
+    auto remove_result = memory.deleteEntry(entry_id);
     ASSERT_TRUE(remove_result.is_ok());
     EXPECT_TRUE(remove_result.unwrap());
 
     EXPECT_EQ(memory.count(), 0);
 
     // Try to remove again - should return false
-    auto remove_again = memory.remove(entry_id);
+    auto remove_again = memory.deleteEntry(entry_id);
     ASSERT_TRUE(remove_again.is_ok());
     EXPECT_FALSE(remove_again.unwrap());
 }
@@ -219,7 +219,7 @@ TEST(ShortTermMemoryTest, Remove) {
 
     std::string id = store_result.unwrap();
 
-    auto remove_result = memory.remove(id);
+    auto remove_result = memory.deleteEntry(id);
     ASSERT_TRUE(remove_result.is_ok());
     EXPECT_TRUE(remove_result.unwrap());
 
@@ -324,7 +324,7 @@ TEST(LongTermMemoryTest, Remove) {
 
     std::string id = opt_id.value();
 
-    auto remove_result = memory.remove(id);
+    auto remove_result = memory.deleteEntry(id);
     ASSERT_TRUE(remove_result.is_ok());
     EXPECT_TRUE(remove_result.unwrap());
 
@@ -486,7 +486,7 @@ TEST(MemoryHierarchyTest, RemoveFromAllTiers) {
 
     std::string entry_id = store_result.unwrap();
 
-    auto remove_result = hierarchy.remove(entry_id);
+    auto remove_result = hierarchy.deleteEntry(entry_id);
     ASSERT_TRUE(remove_result.is_ok());
 
     // Should be removed from all tiers

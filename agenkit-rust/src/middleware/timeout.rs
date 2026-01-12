@@ -48,7 +48,68 @@
 
 use crate::core::{Agent, AgentError, IntrospectionResult, Message};
 use async_trait::async_trait;
-use std::time::Duration;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use tokio::sync::Mutex;
+
+/// Metrics for timeout middleware.
+#[derive(Debug, Clone)]
+pub struct TimeoutMetrics {
+    /// Total number of requests.
+    pub total_requests: u64,
+
+    /// Number of successful requests (completed within timeout).
+    pub successful_requests: u64,
+
+    /// Number of requests that timed out.
+    pub timed_out_requests: u64,
+
+    /// Number of requests that failed for other reasons.
+    pub failed_requests: u64,
+
+    /// Minimum request duration.
+    pub min_duration: Option<Duration>,
+
+    /// Maximum request duration.
+    pub max_duration: Option<Duration>,
+
+    /// Average request duration.
+    pub avg_duration: Duration,
+
+    /// Total duration of all requests.
+    pub total_duration: Duration,
+}
+
+impl Default for TimeoutMetrics {
+    fn default() -> Self {
+        Self {
+            total_requests: 0,
+            successful_requests: 0,
+            timed_out_requests: 0,
+            failed_requests: 0,
+            min_duration: None,
+            max_duration: None,
+            avg_duration: Duration::ZERO,
+            total_duration: Duration::ZERO,
+        }
+    }
+}
+
+impl TimeoutMetrics {
+    fn update_duration_stats(&mut self, duration: Duration) {
+        self.total_duration += duration;
+
+        if self.min_duration.is_none() || duration < self.min_duration.unwrap() {
+            self.min_duration = Some(duration);
+        }
+
+        if self.max_duration.is_none() || duration > self.max_duration.unwrap() {
+            self.max_duration = Some(duration);
+        }
+
+        self.avg_duration = self.total_duration / self.total_requests as u32;
+    }
+}
 
 /// Configuration for timeout middleware.
 #[derive(Debug, Clone)]
@@ -102,6 +163,7 @@ impl TimeoutConfigBuilder {
 pub struct TimeoutMiddleware<A: Agent> {
     inner: A,
     config: TimeoutConfig,
+    metrics: Arc<Mutex<TimeoutMetrics>>,
 }
 
 impl<A: Agent> TimeoutMiddleware<A> {
@@ -110,12 +172,18 @@ impl<A: Agent> TimeoutMiddleware<A> {
         Self {
             inner: agent,
             config,
+            metrics: Arc::new(Mutex::new(TimeoutMetrics::default())),
         }
     }
 
     /// Create a new timeout middleware with default configuration (30s).
     pub fn with_defaults(agent: A) -> Self {
         Self::new(agent, TimeoutConfig::default())
+    }
+
+    /// Get current metrics.
+    pub async fn get_metrics(&self) -> TimeoutMetrics {
+        self.metrics.lock().await.clone()
     }
 }
 
@@ -144,14 +212,43 @@ impl<A: Agent> Agent for TimeoutMiddleware<A> {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        let start_time = Instant::now();
+
+        // Increment total requests
+        {
+            let mut metrics = self.metrics.lock().await;
+            metrics.total_requests += 1;
+        }
+
         #[cfg(feature = "native")]
         {
-            match tokio::time::timeout(self.config.timeout, self.inner.process(message)).await {
-                Ok(result) => result,
-                Err(_) => Err(AgentError::Timeout(format!(
-                    "operation timed out after {:?}",
-                    self.config.timeout
-                ))),
+            let result =
+                tokio::time::timeout(self.config.timeout, self.inner.process(message)).await;
+
+            let duration = start_time.elapsed();
+
+            match result {
+                Ok(Ok(response)) => {
+                    let mut metrics = self.metrics.lock().await;
+                    metrics.successful_requests += 1;
+                    metrics.update_duration_stats(duration);
+                    Ok(response)
+                }
+                Ok(Err(err)) => {
+                    let mut metrics = self.metrics.lock().await;
+                    metrics.failed_requests += 1;
+                    metrics.update_duration_stats(duration);
+                    Err(err)
+                }
+                Err(_) => {
+                    let mut metrics = self.metrics.lock().await;
+                    metrics.timed_out_requests += 1;
+                    metrics.update_duration_stats(duration);
+                    Err(AgentError::Timeout(format!(
+                        "operation timed out after {:?}",
+                        self.config.timeout
+                    )))
+                }
             }
         }
 
@@ -160,7 +257,24 @@ impl<A: Agent> Agent for TimeoutMiddleware<A> {
             // WASM doesn't support tokio::time::timeout directly
             // For now, just call the inner agent without timeout
             // TODO: Implement timeout for WASM using Promise.race
-            self.inner.process(message).await
+            let result = self.inner.process(message).await;
+
+            let duration = start_time.elapsed();
+
+            match &result {
+                Ok(_) => {
+                    let mut metrics = self.metrics.lock().await;
+                    metrics.successful_requests += 1;
+                    metrics.update_duration_stats(duration);
+                }
+                Err(_) => {
+                    let mut metrics = self.metrics.lock().await;
+                    metrics.failed_requests += 1;
+                    metrics.update_duration_stats(duration);
+                }
+            }
+
+            result
         }
     }
 }

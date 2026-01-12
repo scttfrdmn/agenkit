@@ -7,6 +7,7 @@
  * Classes:
  *   Memory: Abstract base interface for memory systems
  *   InMemoryMemory: Simple in-memory storage with LRU eviction
+ *   HierarchyMemory: 3-tier hierarchy adapter (backward compatible)
  *
  * Example:
  *   import { InMemoryMemory } from 'agenkit';
@@ -18,3 +19,4 @@
 
 export { Memory } from './base';
 export { InMemoryMemory } from './in-memory';
+export { HierarchyMemory, HierarchyConfig } from './hierarchyMemory';

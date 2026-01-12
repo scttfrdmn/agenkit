@@ -71,7 +71,28 @@
 
 use crate::core::{Agent, AgentError, IntrospectionResult, Message};
 use async_trait::async_trait;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
+
+/// Metrics for retry middleware.
+#[derive(Debug, Clone, Default)]
+pub struct RetryMetrics {
+    /// Total number of requests.
+    pub total_attempts: u64,
+
+    /// Number of requests that succeeded on first attempt.
+    pub successful_first_attempt: u64,
+
+    /// Number of requests that succeeded after retry.
+    pub successful_on_retry: u64,
+
+    /// Number of requests that failed after all retries.
+    pub failed_after_retries: u64,
+
+    /// Total number of retry attempts across all requests.
+    pub total_retries: u64,
+}
 
 /// Configuration for retry middleware.
 #[derive(Debug, Clone)]
@@ -177,6 +198,7 @@ impl RetryConfigBuilder {
 pub struct RetryMiddleware<A: Agent> {
     inner: A,
     config: RetryConfig,
+    metrics: Arc<Mutex<RetryMetrics>>,
 }
 
 impl<A: Agent> RetryMiddleware<A> {
@@ -185,12 +207,18 @@ impl<A: Agent> RetryMiddleware<A> {
         Self {
             inner: agent,
             config,
+            metrics: Arc::new(Mutex::new(RetryMetrics::default())),
         }
     }
 
     /// Create a new retry middleware with default configuration.
     pub fn with_defaults(agent: A) -> Self {
         Self::new(agent, RetryConfig::default())
+    }
+
+    /// Get current metrics.
+    pub async fn get_metrics(&self) -> RetryMetrics {
+        self.metrics.lock().await.clone()
     }
 }
 
@@ -224,9 +252,21 @@ impl<A: Agent> Agent for RetryMiddleware<A> {
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         let mut last_error = None;
 
+        // Increment total attempts
+        {
+            let mut metrics = self.metrics.lock().await;
+            metrics.total_attempts += 1;
+        }
+
         for attempt in 0..self.config.max_attempts {
             // Calculate and apply delay (skip on first attempt)
             if attempt > 0 {
+                // Track retry attempts (not counting the initial attempt)
+                {
+                    let mut metrics = self.metrics.lock().await;
+                    metrics.total_retries += 1;
+                }
+
                 let delay = self.config.calculate_delay(attempt);
                 #[cfg(feature = "native")]
                 tokio::time::sleep(delay).await;
@@ -246,7 +286,16 @@ impl<A: Agent> Agent for RetryMiddleware<A> {
 
             // Attempt the operation
             match self.inner.process(message.clone()).await {
-                Ok(response) => return Ok(response),
+                Ok(response) => {
+                    // Record success
+                    let mut metrics = self.metrics.lock().await;
+                    if attempt == 0 {
+                        metrics.successful_first_attempt += 1;
+                    } else {
+                        metrics.successful_on_retry += 1;
+                    }
+                    return Ok(response);
+                }
                 Err(err) => {
                     last_error = Some(err);
                     // Continue to next attempt
@@ -255,6 +304,11 @@ impl<A: Agent> Agent for RetryMiddleware<A> {
         }
 
         // All attempts failed
+        {
+            let mut metrics = self.metrics.lock().await;
+            metrics.failed_after_retries += 1;
+        }
+
         Err(last_error.unwrap_or_else(|| {
             AgentError::Internal("retry failed with no error".to_string())
         }))

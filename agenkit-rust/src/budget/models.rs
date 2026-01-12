@@ -14,7 +14,7 @@ pub struct CostRecord {
     pub session_id: String,
 
     /// Agent identifier
-    pub agent_id: String,
+    pub agent_name: String,
 
     /// Model name (e.g., "gpt-4", "claude-3-opus")
     pub model: String,
@@ -28,8 +28,16 @@ pub struct CostRecord {
     /// Number of output tokens
     pub output_tokens: usize,
 
+    /// Number of thinking/reasoning tokens (o3, Claude 4 extended)
+    #[serde(default)]
+    pub thinking_tokens: usize,
+
     /// Total cost in USD
     pub cost: f64,
+
+    /// Cost for thinking tokens in USD
+    #[serde(default)]
+    pub thinking_cost: f64,
 
     /// Optional metadata (e.g., request_id, endpoint)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -40,21 +48,25 @@ impl CostRecord {
     /// Create a new cost record.
     pub fn new(
         session_id: String,
-        agent_id: String,
+        agent_name: String,
         model: String,
         input_tokens: usize,
         output_tokens: usize,
+        thinking_tokens: usize,
         cost: f64,
+        thinking_cost: f64,
     ) -> Self {
         Self {
             record_id: uuid::Uuid::new_v4().to_string(),
             session_id,
-            agent_id,
+            agent_name,
             model,
             timestamp: Utc::now(),
             input_tokens,
             output_tokens,
+            thinking_tokens,
             cost,
+            thinking_cost,
             metadata: None,
         }
     }
@@ -67,7 +79,7 @@ impl CostRecord {
 
     /// Get total tokens.
     pub fn total_tokens(&self) -> usize {
-        self.input_tokens + self.output_tokens
+        self.input_tokens + self.output_tokens + self.thinking_tokens
     }
 
     /// Convert to dictionary representation.
@@ -75,12 +87,14 @@ impl CostRecord {
         let mut dict = HashMap::new();
         dict.insert("record_id".to_string(), serde_json::json!(self.record_id));
         dict.insert("session_id".to_string(), serde_json::json!(self.session_id));
-        dict.insert("agent_id".to_string(), serde_json::json!(self.agent_id));
+        dict.insert("agent_name".to_string(), serde_json::json!(self.agent_name));
         dict.insert("model".to_string(), serde_json::json!(self.model));
         dict.insert("timestamp".to_string(), serde_json::json!(self.timestamp.to_rfc3339()));
         dict.insert("input_tokens".to_string(), serde_json::json!(self.input_tokens));
         dict.insert("output_tokens".to_string(), serde_json::json!(self.output_tokens));
+        dict.insert("thinking_tokens".to_string(), serde_json::json!(self.thinking_tokens));
         dict.insert("cost".to_string(), serde_json::json!(self.cost));
+        dict.insert("thinking_cost".to_string(), serde_json::json!(self.thinking_cost));
 
         if let Some(ref metadata) = self.metadata {
             dict.insert("metadata".to_string(), metadata.clone());
@@ -139,7 +153,7 @@ impl UsageStats {
 
         // Update agent stats if tracking
         if let Some(ref mut by_agent) = self.by_agent {
-            let agent_stats = by_agent.entry(record.agent_id.clone()).or_insert_with(AgentStats::new);
+            let agent_stats = by_agent.entry(record.agent_name.clone()).or_insert_with(AgentStats::new);
             agent_stats.add_record(record);
         }
     }
@@ -250,15 +264,19 @@ mod tests {
             "gpt-4".to_string(),
             1000,
             500,
+            0,
             0.05,
+            0.0,
         );
 
         assert_eq!(record.session_id, "session-1");
-        assert_eq!(record.agent_id, "agent-1");
+        assert_eq!(record.agent_name, "agent-1");
         assert_eq!(record.model, "gpt-4");
         assert_eq!(record.input_tokens, 1000);
         assert_eq!(record.output_tokens, 500);
+        assert_eq!(record.thinking_tokens, 0);
         assert_eq!(record.cost, 0.05);
+        assert_eq!(record.thinking_cost, 0.0);
         assert_eq!(record.total_tokens(), 1500);
     }
 
@@ -272,7 +290,9 @@ mod tests {
             "gpt-4".to_string(),
             1000,
             500,
+            0,
             0.05,
+            0.0,
         );
 
         let record2 = CostRecord::new(
@@ -281,7 +301,9 @@ mod tests {
             "gpt-3.5-turbo".to_string(),
             2000,
             1000,
+            0,
             0.01,
+            0.0,
         );
 
         stats.enable_agent_tracking();
@@ -306,7 +328,9 @@ mod tests {
             "gpt-4".to_string(),
             1000,
             500,
+            0,
             0.05,
+            0.0,
         );
 
         model_stats.add_record(&record);

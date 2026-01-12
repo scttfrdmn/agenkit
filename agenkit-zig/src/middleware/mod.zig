@@ -37,8 +37,12 @@ pub const RateLimiterConfig = @import("rate_limiter.zig").RateLimiterConfig;
 pub const RateLimiterMetrics = @import("rate_limiter.zig").RateLimiterMetrics;
 pub const RateLimitError = @import("rate_limiter.zig").RateLimitError;
 
+// Caching middleware
+pub const CachingDecorator = @import("caching.zig").CachingDecorator;
+pub const CachingConfig = @import("caching.zig").CachingConfig;
+pub const CachingMetrics = @import("caching.zig").CachingMetrics;
+
 // TODO: Add more middleware as they are implemented
-// pub const CachingDecorator = @import("caching.zig").CachingDecorator;
 // pub const BatchingDecorator = @import("batching.zig").BatchingDecorator;
 
 test {
@@ -48,4 +52,5 @@ test {
     _ = @import("timeout.zig");
     _ = @import("circuit_breaker.zig");
     _ = @import("rate_limiter.zig");
+    _ = @import("caching.zig");
 }

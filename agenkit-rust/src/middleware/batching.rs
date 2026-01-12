@@ -340,28 +340,33 @@ impl<A: Agent + 'static> BatchingMiddleware<A> {
         let batch_start = Instant::now();
         let mut successes = 0;
         let mut failures = 0;
+        let mut total_wait_time_ms = 0u64;
 
-        // Process each request individually
-        // Note: A production implementation might have a batch-aware agent
-        // that can process multiple requests more efficiently
+        // Process requests in parallel using JoinSet
+        let mut join_set = tokio::task::JoinSet::new();
+
         for request in requests {
-            // Calculate wait time
+            let inner_clone = Arc::clone(&inner);
             let wait_time_ms = request.enqueued_at.elapsed().as_millis() as u64;
 
-            let result = inner.process(request.message).await;
-            if result.is_ok() {
-                successes += 1;
-            } else {
-                failures += 1;
-            }
+            join_set.spawn(async move {
+                let result = inner_clone.process(request.message).await;
+                let is_success = result.is_ok();
+                // Send result to waiting caller (ignore if receiver dropped)
+                let _ = request.response_tx.send(result);
+                (is_success, wait_time_ms)
+            });
+        }
 
-            // Ignore send errors (receiver dropped)
-            let _ = request.response_tx.send(result);
-
-            // Update metrics with wait time
-            {
-                let mut state = state.lock().await;
-                state.metrics.total_wait_time_ms += wait_time_ms;
+        // Wait for all tasks to complete and collect results
+        while let Some(task_result) = join_set.join_next().await {
+            if let Ok((is_success, wait_ms)) = task_result {
+                if is_success {
+                    successes += 1;
+                } else {
+                    failures += 1;
+                }
+                total_wait_time_ms += wait_ms;
             }
         }
 
@@ -370,6 +375,7 @@ impl<A: Agent + 'static> BatchingMiddleware<A> {
             let mut state = state.lock().await;
             state.metrics.total_batches += 1;
             state.metrics.total_batch_size += batch_size as u64;
+            state.metrics.total_wait_time_ms += total_wait_time_ms;
 
             // Update min/max batch size
             state.metrics.min_batch_size = Some(

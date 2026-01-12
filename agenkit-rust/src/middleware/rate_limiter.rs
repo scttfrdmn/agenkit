@@ -139,11 +139,63 @@ impl RateLimiterConfigBuilder {
     }
 }
 
+/// Metrics for rate limiter middleware.
+#[derive(Debug, Clone, Default)]
+pub struct RateLimiterMetrics {
+    /// Total number of requests processed.
+    pub total_requests: u64,
+
+    /// Number of requests that were allowed immediately.
+    pub allowed_requests: u64,
+
+    /// Number of requests that were rejected (exceeded max wait time).
+    pub rejected_requests: u64,
+
+    /// Number of requests that had to wait for tokens.
+    pub waited_requests: u64,
+
+    /// Total time spent waiting for tokens (in milliseconds).
+    pub total_wait_time_ms: u64,
+
+    /// Current number of tokens in the bucket.
+    pub current_tokens: f64,
+}
+
+impl RateLimiterMetrics {
+    /// Calculate average wait time per request (in milliseconds).
+    pub fn avg_wait_time_ms(&self) -> f64 {
+        if self.total_requests == 0 {
+            0.0
+        } else {
+            self.total_wait_time_ms as f64 / self.total_requests as f64
+        }
+    }
+
+    /// Calculate wait rate (percentage of requests that waited).
+    pub fn wait_rate(&self) -> f64 {
+        if self.total_requests == 0 {
+            0.0
+        } else {
+            (self.waited_requests as f64 / self.total_requests as f64) * 100.0
+        }
+    }
+
+    /// Calculate rejection rate (percentage of requests rejected).
+    pub fn rejection_rate(&self) -> f64 {
+        if self.total_requests == 0 {
+            0.0
+        } else {
+            (self.rejected_requests as f64 / self.total_requests as f64) * 100.0
+        }
+    }
+}
+
 /// Internal state for rate limiter.
 #[derive(Debug)]
 struct RateLimiterState {
     tokens: f64,
     last_refill: Instant,
+    metrics: RateLimiterMetrics,
 }
 
 impl RateLimiterState {
@@ -151,6 +203,10 @@ impl RateLimiterState {
         Self {
             tokens: initial_tokens,
             last_refill: Instant::now(),
+            metrics: RateLimiterMetrics {
+                current_tokens: initial_tokens,
+                ..Default::default()
+            },
         }
     }
 
@@ -162,6 +218,7 @@ impl RateLimiterState {
 
         self.tokens = (self.tokens + new_tokens).min(capacity);
         self.last_refill = now;
+        self.metrics.current_tokens = self.tokens;
     }
 
     /// Try to consume a token.
@@ -210,6 +267,12 @@ impl<A: Agent> RateLimiterMiddleware<A> {
     pub fn with_defaults(agent: A) -> Self {
         Self::new(agent, RateLimiterConfig::default())
     }
+
+    /// Get current rate limiter metrics.
+    pub async fn get_metrics(&self) -> RateLimiterMetrics {
+        let state = self.state.lock().await;
+        state.metrics.clone()
+    }
 }
 
 #[async_trait]
@@ -243,6 +306,13 @@ impl<A: Agent> Agent for RateLimiterMiddleware<A> {
         #[cfg(feature = "native")]
         {
             let start_wait = Instant::now();
+            let mut waited = false;
+
+            // Track total requests
+            {
+                let mut state = self.state.lock().await;
+                state.metrics.total_requests += 1;
+            }
 
             loop {
                 let mut state = self.state.lock().await;
@@ -252,12 +322,21 @@ impl<A: Agent> Agent for RateLimiterMiddleware<A> {
 
                 // Try to consume a token
                 if state.try_consume() {
+                    // Track metrics for successful acquisition
+                    if waited {
+                        state.metrics.waited_requests += 1;
+                        let wait_time_ms = start_wait.elapsed().as_millis() as u64;
+                        state.metrics.total_wait_time_ms += wait_time_ms;
+                    } else {
+                        state.metrics.allowed_requests += 1;
+                    }
                     drop(state); // Release lock before calling inner agent
                     return self.inner.process(message).await;
                 }
 
                 // Check if we've exceeded max wait time
                 if start_wait.elapsed() >= self.config.max_wait_time {
+                    state.metrics.rejected_requests += 1;
                     return Err(AgentError::ProcessingError(
                         "rate limit exceeded: max wait time reached".to_string(),
                     ));
@@ -274,6 +353,7 @@ impl<A: Agent> Agent for RateLimiterMiddleware<A> {
                 drop(state); // Release lock while waiting
 
                 if actual_wait > Duration::ZERO {
+                    waited = true;
                     tokio::time::sleep(actual_wait).await;
                 }
             }

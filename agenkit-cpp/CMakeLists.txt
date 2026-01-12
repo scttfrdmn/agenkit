@@ -114,6 +114,7 @@ add_library(agenkit
     src/middleware/circuit_breaker.cpp
     src/middleware/rate_limiter.cpp
     src/middleware/caching.cpp
+    src/middleware/batching.cpp
 )
 
 target_include_directories(agenkit

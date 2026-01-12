@@ -15,6 +15,7 @@
  * ### Performance
  * - **Rate Limiter**: Token bucket rate limiting
  * - **Caching**: LRU cache with TTL expiration
+ * - **Batching**: Request aggregation with parallel processing
  *
  * ## Design Pattern
  *
@@ -166,6 +167,7 @@
 #include "agenkit/middleware/circuit_breaker.hpp"
 #include "agenkit/middleware/rate_limiter.hpp"
 #include "agenkit/middleware/caching.hpp"
+#include "agenkit/middleware/batching.hpp"
 
 namespace agenkit {
 

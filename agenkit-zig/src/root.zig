@@ -220,6 +220,9 @@ pub const observability = @import("observability/mod.zig");
 // Safety framework
 pub const safety = @import("safety.zig");
 
+// Middleware
+pub const middleware = @import("middleware/mod.zig");
+
 // Techniques
 pub const techniques = struct {
     // Reasoning techniques
@@ -282,6 +285,8 @@ test {
     _ = @import("observability/mod.zig");
     // Also test safety
     _ = @import("safety.zig");
+    // Also test middleware
+    _ = @import("middleware/mod.zig");
     // Also test techniques
     _ = @import("techniques/reasoning/self_consistency.zig");
     _ = @import("techniques/reasoning/chain_of_thought.zig");

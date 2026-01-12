@@ -31,8 +31,13 @@ pub const CircuitBreakerMetrics = @import("circuit_breaker.zig").CircuitBreakerM
 pub const CircuitState = @import("circuit_breaker.zig").CircuitState;
 pub const CircuitBreakerError = @import("circuit_breaker.zig").CircuitBreakerError;
 
+// Rate Limiter middleware
+pub const RateLimiterDecorator = @import("rate_limiter.zig").RateLimiterDecorator;
+pub const RateLimiterConfig = @import("rate_limiter.zig").RateLimiterConfig;
+pub const RateLimiterMetrics = @import("rate_limiter.zig").RateLimiterMetrics;
+pub const RateLimitError = @import("rate_limiter.zig").RateLimitError;
+
 // TODO: Add more middleware as they are implemented
-// pub const RateLimiter = @import("rate_limiter.zig").RateLimiter;
 // pub const CachingDecorator = @import("caching.zig").CachingDecorator;
 // pub const BatchingDecorator = @import("batching.zig").BatchingDecorator;
 
@@ -42,4 +47,5 @@ test {
     _ = @import("retry.zig");
     _ = @import("timeout.zig");
     _ = @import("circuit_breaker.zig");
+    _ = @import("rate_limiter.zig");
 }

@@ -1,6 +1,11 @@
 #include "agenkit/infrastructure/memory/short_term.hpp"
+#include "agenkit/utils/simd.hpp"
 #include <algorithm>
 #include <stdexcept>
+
+#if AGENKIT_HAS_AVX2
+#include <immintrin.h>
+#endif
 
 namespace agenkit {
 namespace infrastructure {
@@ -17,14 +22,77 @@ ShortTermMemory::ShortTermMemory(size_t max_messages, int64_t ttl_seconds)
 }
 
 void ShortTermMemory::clean_expired() {
-    // Remove entries where age > TTL
+    if (messages_.empty()) {
+        return;
+    }
+
+    // Get current time once (not N times)
+    auto now = std::chrono::system_clock::now();
+
+#if AGENKIT_HAS_AVX2
+    // SIMD-optimized expiration checking (process 4 entries at a time)
+    auto now_ticks = now.time_since_epoch().count();
+    int64_t ttl_ticks = ttl_seconds_ * 1000000000LL;  // Convert to nanoseconds
+
+    std::vector<MemoryEntry> valid_entries;
+    valid_entries.reserve(messages_.size());
+
+    size_t i = 0;
+    const size_t batch_size = 4;
+
+    // Process in batches of 4 using AVX2
+    __m256i now_vec = _mm256_set1_epi64x(now_ticks);
+    __m256i ttl_vec = _mm256_set1_epi64x(ttl_ticks);
+
+    for (; i + batch_size <= messages_.size(); i += batch_size) {
+        // Load 4 timestamps
+        int64_t timestamps[4];
+        for (size_t j = 0; j < batch_size; j++) {
+            timestamps[j] = messages_[i + j].timestamp.time_since_epoch().count();
+        }
+
+        __m256i ts_vec = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(timestamps));
+
+        // Calculate ages: now - timestamp
+        __m256i age_vec = _mm256_sub_epi64(now_vec, ts_vec);
+
+        // Check if age > ttl (entry is expired)
+        __m256i expired_mask = _mm256_cmpgt_epi64(age_vec, ttl_vec);
+
+        // Extract mask (1 bit per 64-bit element)
+        // We need to check which entries are NOT expired
+        int64_t expired[4];
+        _mm256_storeu_si256(reinterpret_cast<__m256i*>(expired), expired_mask);
+
+        // Keep non-expired entries
+        for (size_t j = 0; j < batch_size; j++) {
+            if (expired[j] == 0) {  // Not expired (mask is 0)
+                valid_entries.push_back(std::move(messages_[i + j]));
+            }
+        }
+    }
+
+    // Handle remaining entries (scalar)
+    for (; i < messages_.size(); i++) {
+        if (!messages_[i].is_expired(ttl_seconds_)) {
+            valid_entries.push_back(std::move(messages_[i]));
+        }
+    }
+
+    messages_ = std::move(valid_entries);
+#else
+    // Scalar fallback (still optimized to get time once)
+    // Use chrono duration for correct unit handling
+    auto threshold = now - std::chrono::seconds(ttl_seconds_);
+
     messages_.erase(
         std::remove_if(messages_.begin(), messages_.end(),
-            [this](const MemoryEntry& entry) {
-                return entry.is_expired(ttl_seconds_);
+            [threshold](const MemoryEntry& entry) {
+                return entry.timestamp < threshold;
             }),
         messages_.end()
     );
+#endif
 }
 
 void ShortTermMemory::evict_lru() {
@@ -74,6 +142,7 @@ ShortTermMemoryResult<std::vector<MemoryEntry>> ShortTermMemory::retrieve(size_t
     clean_expired();
 
     std::vector<MemoryEntry> results;
+    results.reserve(std::min(limit, messages_.size()));  // Pre-allocate for efficiency
 
     // Get most recent non-expired entries
     size_t start_index = messages_.size() > limit ? messages_.size() - limit : 0;

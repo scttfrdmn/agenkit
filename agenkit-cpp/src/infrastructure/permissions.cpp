@@ -3,6 +3,7 @@
  */
 
 #include "agenkit/infrastructure/permissions.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -217,7 +218,7 @@ void PermissionMiddleware::check_permission(Permission permission) const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 PermissionMiddleware::process(core::Message message) {
-  return std::async(std::launch::async, [this, message]() mutable {
+  return infrastructure::global_thread_pool().enqueue([this, message]() mutable {
     try {
       // Basic permission check
       check_permission(Permission::USE_TOOLS);

@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/evaluation/prompt_optimizer.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 #include <algorithm>
 #include <random>
 #include <sstream>
@@ -59,7 +60,7 @@ PromptOptimizer::PromptOptimizer(
 // ============================================================================
 
 std::future<PromptOptimizationResult> PromptOptimizer::optimize_grid() {
-    return std::async(std::launch::async, [this]() {
+    return infrastructure::global_thread_pool().enqueue([this]() {
         auto start_time = std::chrono::system_clock::now();
 
         // Generate all possible configurations
@@ -98,7 +99,7 @@ std::future<PromptOptimizationResult> PromptOptimizer::optimize_grid() {
 }
 
 std::future<PromptOptimizationResult> PromptOptimizer::optimize_random(size_t n_samples) {
-    return std::async(std::launch::async, [this, n_samples]() {
+    return infrastructure::global_thread_pool().enqueue([this, n_samples]() {
         auto start_time = std::chrono::system_clock::now();
 
         PromptOptimizationResult result;
@@ -139,7 +140,7 @@ std::future<PromptOptimizationResult> PromptOptimizer::optimize_genetic(
     size_t n_generations,
     double mutation_rate
 ) {
-    return std::async(std::launch::async, [this, population_size, n_generations, mutation_rate]() {
+    return infrastructure::global_thread_pool().enqueue([this, population_size, n_generations, mutation_rate]() {
         auto start_time = std::chrono::system_clock::now();
 
         PromptOptimizationResult result;

@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/evaluation/bayesian_optimizer.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 #include <algorithm>
 #include <numeric>
 #include <cmath>
@@ -41,7 +42,7 @@ BayesianOptimizer::BayesianOptimizer(
 // ============================================================================
 
 std::future<OptimizationResult> BayesianOptimizer::optimize(size_t n_iterations) {
-    return std::async(std::launch::async, [this, n_iterations]() {
+    return infrastructure::global_thread_pool().enqueue([this, n_iterations]() {
         auto start_time = std::chrono::system_clock::now();
         history_.clear();
 

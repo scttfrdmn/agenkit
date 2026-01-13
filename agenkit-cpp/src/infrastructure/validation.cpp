@@ -3,6 +3,7 @@
  */
 
 #include "agenkit/infrastructure/validation.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -312,7 +313,7 @@ std::string InputValidationMiddleware::name() const { return agent_->name(); }
 
 std::future<core::Result<core::Message, core::AgentError>>
 InputValidationMiddleware::process(core::Message message) {
-  return std::async(std::launch::async, [this, message]() mutable {
+  return infrastructure::global_thread_pool().enqueue([this, message]() mutable {
     // Validate message content
     std::string content_str = message.content();
 
@@ -367,7 +368,7 @@ std::string OutputValidationMiddleware::name() const { return agent_->name(); }
 
 std::future<core::Result<core::Message, core::AgentError>>
 OutputValidationMiddleware::process(core::Message message) {
-  return std::async(std::launch::async, [this, message]() mutable {
+  return infrastructure::global_thread_pool().enqueue([this, message]() mutable {
     // Process with wrapped agent
     auto result = agent_->process(std::move(message)).get();
 

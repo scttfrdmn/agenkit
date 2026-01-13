@@ -200,6 +200,21 @@ add_executable(test_memory_infra infrastructure/test_memory.cpp)
 target_link_libraries(test_memory_infra agenkit gtest_main)
 add_test(NAME memory_infrastructure_tests COMMAND test_memory_infra)
 
+# Infrastructure tests - Object Pool
+add_executable(test_object_pool infrastructure/test_object_pool.cpp)
+target_link_libraries(test_object_pool agenkit gtest_main)
+add_test(NAME object_pool_tests COMMAND test_object_pool)
+
+# Infrastructure tests - Thread Pool
+add_executable(test_thread_pool infrastructure/test_thread_pool.cpp)
+target_link_libraries(test_thread_pool agenkit gtest_main)
+add_test(NAME thread_pool_tests COMMAND test_thread_pool)
+
+# Utils tests - SIMD
+add_executable(test_simd utils/test_simd.cpp)
+target_link_libraries(test_simd agenkit gtest_main)
+add_test(NAME simd_tests COMMAND test_simd)
+
 # Infrastructure tests - Checkpointing (TODO: Fix includes and API usage)
 # add_executable(test_checkpointing infrastructure/test_checkpointing.cpp)
 # target_link_libraries(test_checkpointing agenkit gtest_main)
@@ -214,6 +229,11 @@ add_test(NAME memory_infrastructure_tests COMMAND test_memory_infra)
 # add_executable(test_middleware infrastructure/test_middleware.cpp)
 # target_link_libraries(test_middleware agenkit gtest_main)
 # add_test(NAME middleware_tests COMMAND test_middleware)
+
+# Middleware tests - Batching
+add_executable(test_batching middleware/test_batching.cpp)
+target_link_libraries(test_batching agenkit gtest_main)
+add_test(NAME batching_middleware_tests COMMAND test_batching)
 
 # Cross-language test harness (standalone executable, not a gtest)
 add_executable(cross_language_harness cross_language_harness.cpp)

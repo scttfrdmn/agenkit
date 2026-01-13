@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/evaluation/context_metrics.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 #include <algorithm>
 #include <cmath>
 #include <numeric>
@@ -272,7 +273,7 @@ std::future<std::map<size_t, CompressionStats>> CompressionMetrics::evaluate_at_
     const std::string& session_id,
     const std::vector<std::string>& needle_content
 ) {
-    return std::async(std::launch::async, [this, agent, session_id, needle_content]() {
+    return infrastructure::global_thread_pool().enqueue([this, agent, session_id, needle_content]() {
         std::map<size_t, CompressionStats> results;
 
         std::vector<std::string> needles = needle_content.empty() ?
@@ -364,7 +365,7 @@ std::future<double> CompressionMetrics::test_retrieval(
     const std::string& session_id,
     const std::vector<std::string>& needles
 ) {
-    return std::async(std::launch::async, [agent, session_id, needles]() {
+    return infrastructure::global_thread_pool().enqueue([agent, session_id, needles]() {
         if (needles.empty()) {
             return 0.0;
         }

@@ -16,8 +16,12 @@ target_link_libraries(bench_patterns agenkit)
 add_executable(bench_evaluation bench_evaluation.cpp)
 target_link_libraries(bench_evaluation agenkit)
 
+# Optimization benchmarks (Phase 1-3)
+add_executable(bench_optimizations bench_optimizations.cpp)
+target_link_libraries(bench_optimizations agenkit)
+
 # Set output directory
-set_target_properties(bench_core bench_http bench_patterns bench_evaluation
+set_target_properties(bench_core bench_http bench_patterns bench_evaluation bench_optimizations
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/benchmarks"
 )
@@ -28,6 +32,7 @@ add_custom_target(run_benchmarks
     COMMAND ${CMAKE_BINARY_DIR}/benchmarks/bench_http
     COMMAND ${CMAKE_BINARY_DIR}/benchmarks/bench_patterns
     COMMAND ${CMAKE_BINARY_DIR}/benchmarks/bench_evaluation
-    DEPENDS bench_core bench_http bench_patterns bench_evaluation
+    COMMAND ${CMAKE_BINARY_DIR}/benchmarks/bench_optimizations
+    DEPENDS bench_core bench_http bench_patterns bench_evaluation bench_optimizations
     COMMENT "Running all benchmarks..."
 )

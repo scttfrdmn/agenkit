@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/patterns/multiagent.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 #include <sstream>
 
 namespace agenkit {
@@ -145,10 +146,10 @@ MultiAgentOrchestrator::execute_parallel(const core::Message& message) {
         task.status = TaskStatus::InProgress;
         pending_tasks.push_back(task);
 
-        // Use std::async with launch::async policy to force parallel execution
+        // Use thread pool for parallel execution
         // Capture agent pointer separately to avoid C++20 structured binding capture issue
         auto agent_ptr = agent;
-        auto future = std::async(std::launch::async, [agent_ptr, msg = core::Message(message)]() mutable {
+        auto future = infrastructure::global_thread_pool().enqueue([agent_ptr, msg = core::Message(message)]() mutable {
             return agent_ptr->process(std::move(msg)).get();
         });
         futures.push_back(std::move(future));
@@ -216,7 +217,7 @@ ConsensusAgent::process(core::Message message) {
     for (auto& agent : agents_) {
         // Capture agent pointer separately to avoid potential issues
         auto agent_ptr = agent;
-        auto future = std::async(std::launch::async, [agent_ptr, msg = core::Message(message)]() mutable {
+        auto future = infrastructure::global_thread_pool().enqueue([agent_ptr, msg = core::Message(message)]() mutable {
             return agent_ptr->process(std::move(msg)).get();
         });
         futures.push_back(std::move(future));

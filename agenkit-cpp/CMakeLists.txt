@@ -98,6 +98,7 @@ add_library(agenkit
     src/infrastructure/permissions.cpp
     src/infrastructure/anomaly.cpp
     src/infrastructure/audit.cpp
+    src/infrastructure/thread_pool.cpp
     src/infrastructure/memory/entry.cpp
     src/infrastructure/memory/working.cpp
     src/infrastructure/memory/short_term.cpp

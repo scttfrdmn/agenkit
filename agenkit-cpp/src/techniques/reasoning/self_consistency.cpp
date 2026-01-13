@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/techniques/reasoning/self_consistency.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 #include <regex>
 #include <algorithm>
 #include <cctype>
@@ -229,7 +230,7 @@ SelfConsistencyAgent::count_answers(const std::vector<std::string>& answers) {
 
 std::future<core::Result<core::Message, core::AgentError>>
 SelfConsistencyAgent::process(core::Message message) {
-    return std::async(std::launch::async, [this, message]() -> core::Result<core::Message, core::AgentError> {
+    return infrastructure::global_thread_pool().enqueue([this, message]() -> core::Result<core::Message, core::AgentError> {
         try {
             // Generate multiple samples
             auto samples = generate_samples(message);

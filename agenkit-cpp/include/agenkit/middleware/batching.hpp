@@ -203,7 +203,7 @@ public:
 private:
     struct PendingRequest {
         core::Message message;
-        std::promise<core::Result<core::Message, core::AgentError>> promise;
+        std::shared_ptr<std::promise<core::Result<core::Message, core::AgentError>>> promise;
         std::chrono::steady_clock::time_point enqueued_at;
     };
 

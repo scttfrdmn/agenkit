@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/evaluation/optimizer.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -387,7 +388,7 @@ RandomSearchOptimizer::RandomSearchOptimizer(
 }
 
 std::future<OptimizationResult> RandomSearchOptimizer::optimize(int n_iterations) {
-    return std::async(std::launch::async, [this, n_iterations]() {
+    return infrastructure::global_thread_pool().enqueue([this, n_iterations]() {
         OptimizationResult result;
         result.start_time = std::chrono::system_clock::now();
         result.n_iterations = n_iterations;

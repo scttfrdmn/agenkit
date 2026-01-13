@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/evaluation/benchmarks.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 #include <algorithm>
 #include <sstream>
 #include <random>
@@ -108,7 +109,7 @@ std::string SimpleQABenchmark::description() const {
 }
 
 std::future<std::vector<TestCase>> SimpleQABenchmark::generate_test_cases() {
-    return std::async(std::launch::async, []() {
+    return infrastructure::global_thread_pool().enqueue([]() {
         std::vector<TestCase> cases;
 
         // Test 1: Arithmetic
@@ -196,7 +197,7 @@ std::string NeedleInHaystackBenchmark::description() const {
 }
 
 std::future<std::vector<TestCase>> NeedleInHaystackBenchmark::generate_test_cases() {
-    return std::async(std::launch::async, [this]() {
+    return infrastructure::global_thread_pool().enqueue([this]() {
         std::vector<TestCase> cases;
         std::vector<std::string> needles;
 
@@ -319,7 +320,7 @@ std::string ExtremeScaleBenchmark::description() const {
 }
 
 std::future<std::vector<TestCase>> ExtremeScaleBenchmark::generate_test_cases() {
-    return std::async(std::launch::async, [this]() {
+    return infrastructure::global_thread_pool().enqueue([this]() {
         std::vector<TestCase> all_cases;
 
         for (size_t length : test_lengths_) {
@@ -369,7 +370,7 @@ std::string InformationRetentionBenchmark::description() const {
 }
 
 std::future<std::vector<TestCase>> InformationRetentionBenchmark::generate_test_cases() {
-    return std::async(std::launch::async, [this]() {
+    return infrastructure::global_thread_pool().enqueue([this]() {
         std::vector<TestCase> cases;
         std::vector<std::string> facts;
 
@@ -490,7 +491,7 @@ void BenchmarkSuite::add_benchmark(std::shared_ptr<Benchmark> benchmark) {
 }
 
 std::future<std::vector<TestCase>> BenchmarkSuite::generate_all_test_cases() {
-    return std::async(std::launch::async, [this]() {
+    return infrastructure::global_thread_pool().enqueue([this]() {
         std::vector<std::future<std::vector<TestCase>>> futures;
 
         // Launch all benchmarks in parallel
@@ -526,7 +527,7 @@ std::optional<std::shared_ptr<Benchmark>> BenchmarkSuite::get_benchmark(
 std::future<std::vector<TestCase>> BenchmarkSuite::generate_test_cases_by_tags(
     const std::vector<std::string>& tags
 ) {
-    return std::async(std::launch::async, [this, tags]() {
+    return infrastructure::global_thread_pool().enqueue([this, tags]() {
         auto all_cases_future = generate_all_test_cases();
         auto all_cases = all_cases_future.get();
 
@@ -549,7 +550,7 @@ std::future<std::vector<TestCase>> BenchmarkSuite::generate_test_cases_by_tags(
 }
 
 std::future<nlohmann::json> BenchmarkSuite::get_summary() {
-    return std::async(std::launch::async, [this]() {
+    return infrastructure::global_thread_pool().enqueue([this]() {
         nlohmann::json summary = nlohmann::json::object();
         std::vector<std::future<std::vector<TestCase>>> futures;
         std::vector<std::string> names;

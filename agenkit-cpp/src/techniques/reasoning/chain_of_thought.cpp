@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/techniques/reasoning/chain_of_thought.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 #include <regex>
 #include <algorithm>
 #include <sstream>
@@ -33,7 +34,7 @@ std::vector<std::string> ChainOfThoughtAgent::capabilities() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 ChainOfThoughtAgent::process(core::Message message) {
-    return std::async(std::launch::async, [this, msg = std::move(message)]() -> core::Result<core::Message, core::AgentError> {
+    return infrastructure::global_thread_pool().enqueue([this, msg = std::move(message)]() -> core::Result<core::Message, core::AgentError> {
         // Validate prompt template
         if (config_.prompt_template.find("{query}") == std::string::npos) {
             return core::Result<core::Message, core::AgentError>::err(

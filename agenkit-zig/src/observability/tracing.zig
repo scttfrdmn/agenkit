@@ -27,6 +27,7 @@
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
+const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
 const Result = @import("../agent.zig").Result;
 const Message = @import("../message.zig").Message;
 const Allocator = std.mem.Allocator;
@@ -225,6 +226,13 @@ pub const TracingMiddleware = struct {
     }
 
     /// Convert to Agent interface
+
+    fn processStream(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+        _ = ptr;
+        _ = message;
+        callbacks.onError(AgentError.NotImplemented);
+    }
+
     pub fn agent(self: *TracingMiddleware) Agent {
         return Agent{
             .ptr = self,
@@ -232,6 +240,7 @@ pub const TracingMiddleware = struct {
                 .name = name,
                 .capabilities = capabilities,
                 .process = process,
+                .process_stream = processStream,
                 .introspect = introspect,
                 .deinit = deinitVTable,
             },

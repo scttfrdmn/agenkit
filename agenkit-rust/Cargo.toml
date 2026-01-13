@@ -34,6 +34,7 @@ opt-level = "z"     # Optimize dependencies for size too
 [dependencies]
 # Async runtime
 tokio = { version = "1.35", features = ["full"], optional = true }
+tokio-stream = { version = "0.1", optional = true }
 async-trait = "0.1"
 futures = "0.3"
 
@@ -101,6 +102,7 @@ default = ["native"]
 # Native (non-WASM) build with full features
 native = [
     "tokio",
+    "tokio-stream",
     "reqwest",
     "axum",
     "tower",

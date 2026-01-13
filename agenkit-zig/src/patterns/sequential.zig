@@ -24,6 +24,7 @@
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
+const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
 const Result = @import("../agent.zig").Result;
 const Message = @import("../message.zig").Message;
 const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
@@ -81,6 +82,7 @@ pub const SequentialAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -195,6 +197,13 @@ pub const SequentialPattern = SequentialAgent;
 // Tests
 // ============================================================================
 
+
+    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+        _ = ptr;
+        _ = message;
+        callbacks.onError(AgentError.NotImplemented);
+    }
+
 test "SequentialAgent basic execution" {
     const allocator = std.testing.allocator;
     const EchoAgent = @import("../agent.zig").EchoAgent;
@@ -248,6 +257,7 @@ test "SequentialAgent preserves transformations" {
                     .name = nameImplTransform,
                     .capabilities = capabilitiesImplTransform,
                     .process = processImplTransform,
+                    .process_stream = processStreamImplTransform,
                     .introspect = introspectImplTransform,
                     .deinit = deinitImplTransform,
                 },
@@ -287,6 +297,13 @@ test "SequentialAgent preserves transformations" {
             };
 
             return Result{ .ok = response };
+        }
+
+
+        fn processStreamImplTransform(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            callbacks.onError(AgentError.NotImplemented);
         }
 
         fn introspectImplTransform(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {

@@ -58,6 +58,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
+const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
 const Message = @import("../message.zig").Message;
 const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
 const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
@@ -203,6 +204,13 @@ fn cloneMessage(allocator: Allocator, msg: Message) !Message {
 const testing = std.testing;
 const EchoAgent = @import("../agent.zig").EchoAgent;
 
+
+    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+        _ = ptr;
+        _ = message;
+        callbacks.onError(AgentError.NotImplemented);
+    }
+
 test "TaskConfig default" {
     const config = TaskConfig{};
     try testing.expectEqual(@as(usize, 0), config.retries);
@@ -344,6 +352,7 @@ const FailingAgent = struct {
             .ptr = self,
             .vtable = &.{
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
                 .name = nameImpl,

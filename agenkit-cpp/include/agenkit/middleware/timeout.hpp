@@ -186,6 +186,15 @@ public:
     std::future<core::Result<core::Message, core::AgentError>>
     process(core::Message message) override;
 
+    /// Process message with streaming and timeout enforcement
+    std::future<core::Result<bool, core::AgentError>>
+    process_stream(
+        core::Message message,
+        std::function<void(core::Message)> on_message,
+        std::function<void(core::AgentError)> on_error,
+        std::function<void()> on_complete
+    ) override;
+
     /// Get current metrics
     const TimeoutMetrics& metrics() const {
         return metrics_;

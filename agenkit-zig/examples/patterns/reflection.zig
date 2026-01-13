@@ -49,6 +49,7 @@ const SimpleGenerator = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -149,6 +150,7 @@ const MockCritic = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -210,6 +212,12 @@ const MockCritic = struct {
     }
 };
 
+
+fn processStreamImpl(ptr: *anyopaque, message: agenkit.Message, callbacks: agenkit.StreamCallbacks) agenkit.AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(agenkit.AgentError.NotImplemented);
+}
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();

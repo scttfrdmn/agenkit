@@ -16,6 +16,9 @@
 #include <vector>
 #include <future>
 #include <memory>
+#include <functional>
+#include <atomic>
+#include <thread>
 
 namespace agenkit {
 namespace core {
@@ -80,6 +83,55 @@ public:
      */
     virtual std::vector<std::string> capabilities() const {
         return {};
+    }
+
+    /**
+     * @brief Process a message with streaming response (optional)
+     *
+     * This method enables streaming responses where the agent can return
+     * multiple message chunks over time. The implementation uses callbacks
+     * to deliver messages and errors asynchronously.
+     *
+     * @param message Input message
+     * @param on_message Callback invoked for each message chunk
+     * @param on_error Callback invoked on error (terminates stream)
+     * @param on_complete Callback invoked when stream completes successfully
+     *
+     * @return Future that completes when streaming starts (true = started, false/error = not supported)
+     *
+     * @note Default implementation calls on_error indicating no streaming support
+     * @note Callbacks may be invoked from background threads
+     *
+     * @example
+     * @code
+     * agent->process_stream(
+     *     message,
+     *     [](Message chunk) { std::cout << "Chunk: " << chunk.content_as_str() << "\n"; },
+     *     [](AgentError error) { std::cerr << "Error: " << error.message() << "\n"; },
+     *     []() { std::cout << "Stream complete\n"; }
+     * );
+     * @endcode
+     */
+    virtual std::future<Result<bool, AgentError>>
+    process_stream(
+        Message message,
+        std::function<void(Message)> on_message,
+        std::function<void(AgentError)> on_error,
+        std::function<void()> on_complete
+    ) {
+        (void)message;
+        (void)on_message;
+        (void)on_complete;
+
+        // Default: streaming not supported
+        on_error(AgentError(
+            AgentErrorType::ProcessingError,
+            "streaming not supported by this agent"
+        ));
+
+        std::promise<Result<bool, AgentError>> promise;
+        promise.set_value(Result<bool, AgentError>::ok(true));
+        return promise.get_future();
     }
 };
 

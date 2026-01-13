@@ -14,6 +14,9 @@
 
 const std = @import("std");
 const agenkit = @import("agenkit");
+const Message = agenkit.Message;
+const AgentError = agenkit.AgentError;
+const StreamCallbacks = agenkit.StreamCallbacks;
 
 /// Custom specialist agent that prefixes messages with a domain label
 const SpecialistAgent = struct {
@@ -36,6 +39,7 @@ const SpecialistAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -96,6 +100,12 @@ const SpecialistAgent = struct {
     }
 };
 
+
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();

@@ -6,6 +6,7 @@
 const std = @import("std");
 const agenkit = @import("agenkit");
 const Agent = agenkit.Agent;
+const StreamCallbacks = agenkit.StreamCallbacks;
 const AgentError = agenkit.AgentError;
 const Result = agenkit.Result;
 const Message = agenkit.Message;
@@ -31,6 +32,7 @@ pub const EchoAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -195,6 +197,12 @@ fn benchFallback(allocator: std.mem.Allocator) !void {
     _ = result; // Result is owned by the pattern, don't deinit
 }
 
+
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();

@@ -23,6 +23,7 @@ const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const Result = @import("../agent.zig").Result;
+const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
 const Message = @import("../message.zig").Message;
 const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
 const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
@@ -145,6 +146,7 @@ pub const TimeoutDecorator = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -278,6 +280,107 @@ pub const TimeoutDecorator = struct {
 
         // Should not reach here
         return AgentError.ProcessingFailed;
+    }
+
+    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+        const self: *TimeoutDecorator = @ptrCast(@alignCast(ptr));
+
+        // Get timeout for this message
+        const timeout_ms = self.getTimeoutForMessage(message);
+
+        // Track request
+        self.mutex.lock();
+        self.metrics_data.total_requests += 1;
+        self.mutex.unlock();
+
+        // Record start time and deadline
+        const start_time = std.time.milliTimestamp();
+        const deadline = start_time + @as(i64, @intCast(timeout_ms));
+
+        // Create context for wrapped callbacks
+        const CallbackContext = struct {
+            decorator: *TimeoutDecorator,
+            original_callbacks: StreamCallbacks,
+            deadline: i64,
+            start_time: i64,
+            timeout_ms: u64,
+        };
+
+        // Allocate context on heap for async callbacks
+        const context = try self.allocator.create(CallbackContext);
+        context.* = CallbackContext{
+            .decorator = self,
+            .original_callbacks = callbacks,
+            .deadline = deadline,
+            .start_time = start_time,
+            .timeout_ms = timeout_ms,
+        };
+
+        // Create wrapped callbacks with timeout checking
+        const wrapped_callbacks = StreamCallbacks{
+            .ptr = context,
+            .on_message_fn = struct {
+                fn callback(ctx_ptr: *anyopaque, msg: Message) void {
+                    const ctx: *CallbackContext = @ptrCast(@alignCast(ctx_ptr));
+                    const now = std.time.milliTimestamp();
+
+                    if (now >= ctx.deadline) {
+                        // Timeout exceeded - call error callback
+                        const duration_ms = @as(u64, @intCast(now - ctx.start_time));
+
+                        ctx.decorator.mutex.lock();
+                        ctx.decorator.metrics_data.timed_out_requests += 1;
+                        ctx.decorator.updateDurationMetrics(duration_ms);
+                        ctx.decorator.mutex.unlock();
+
+                        ctx.original_callbacks.onError(AgentError.Timeout);
+                        return;
+                    }
+
+                    // Forward message to original callback
+                    ctx.original_callbacks.onMessage(msg);
+                }
+            }.callback,
+            .on_error_fn = struct {
+                fn callback(ctx_ptr: *anyopaque, err: AgentError) void {
+                    const ctx: *CallbackContext = @ptrCast(@alignCast(ctx_ptr));
+                    const now = std.time.milliTimestamp();
+                    const duration_ms = @as(u64, @intCast(now - ctx.start_time));
+
+                    ctx.decorator.mutex.lock();
+                    ctx.decorator.metrics_data.failed_requests += 1;
+                    ctx.decorator.updateDurationMetrics(duration_ms);
+                    ctx.decorator.mutex.unlock();
+
+                    // Forward error to original callback
+                    ctx.original_callbacks.onError(err);
+
+                    // Clean up context
+                    ctx.decorator.allocator.destroy(ctx);
+                }
+            }.callback,
+            .on_complete_fn = struct {
+                fn callback(ctx_ptr: *anyopaque) void {
+                    const ctx: *CallbackContext = @ptrCast(@alignCast(ctx_ptr));
+                    const now = std.time.milliTimestamp();
+                    const duration_ms = @as(u64, @intCast(now - ctx.start_time));
+
+                    ctx.decorator.mutex.lock();
+                    ctx.decorator.metrics_data.successful_requests += 1;
+                    ctx.decorator.updateDurationMetrics(duration_ms);
+                    ctx.decorator.mutex.unlock();
+
+                    // Forward completion to original callback
+                    ctx.original_callbacks.onComplete();
+
+                    // Clean up context
+                    ctx.decorator.allocator.destroy(ctx);
+                }
+            }.callback,
+        };
+
+        // Call inner agent's process_stream with wrapped callbacks
+        return self.inner_agent.processStream(message, wrapped_callbacks);
     }
 
     fn updateDurationMetrics(self: *TimeoutDecorator, duration_ms: u64) void {

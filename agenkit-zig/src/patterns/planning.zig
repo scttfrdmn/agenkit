@@ -48,6 +48,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
+const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
 const Message = @import("../message.zig").Message;
 const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
 const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
@@ -534,6 +535,7 @@ pub const PlanningAgent = struct {
             .ptr = self,
             .vtable = &.{
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
                 .name = nameImpl,
@@ -620,6 +622,13 @@ pub const PlanningAgent = struct {
 
 // Tests
 const testing = std.testing;
+
+
+    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+        _ = ptr;
+        _ = message;
+        callbacks.onError(AgentError.NotImplemented);
+    }
 
 test "StepStatus toString" {
     try testing.expectEqualStrings("pending", StepStatus.pending.toString());

@@ -48,9 +48,9 @@ WorkingMemory::WorkingMemory(int max_messages)
 void WorkingMemory::store(const MemoryEntry& entry) {
     messages_.push_back(entry);
 
-    // FIFO eviction: Remove oldest if over capacity
+    // FIFO eviction: Remove oldest if over capacity (O(1) with deque)
     while (static_cast<int>(messages_.size()) > max_messages_) {
-        messages_.erase(messages_.begin());
+        messages_.pop_front();
     }
 }
 
@@ -59,6 +59,7 @@ std::vector<MemoryEntry> WorkingMemory::retrieve(
     int limit
 ) {
     std::vector<MemoryEntry> results;
+    results.reserve(std::min(static_cast<size_t>(limit), messages_.size()));
 
     // Simple substring search in reverse order (most recent first)
     for (auto it = messages_.rbegin(); it != messages_.rend(); ++it) {
@@ -89,7 +90,7 @@ void WorkingMemory::del(const std::string& entry_id) {
 }
 
 std::vector<MemoryEntry> WorkingMemory::get_all() const {
-    return messages_;
+    return std::vector<MemoryEntry>(messages_.begin(), messages_.end());
 }
 
 size_t WorkingMemory::size() const {
@@ -116,9 +117,9 @@ void ShortTermMemory::store(const MemoryEntry& entry) {
 
     messages_.push_back(entry);
 
-    // Remove oldest if over capacity
+    // Remove oldest if over capacity (O(1) with deque)
     while (static_cast<int>(messages_.size()) > max_messages_) {
-        messages_.erase(messages_.begin());
+        messages_.pop_front();
     }
 }
 
@@ -130,6 +131,7 @@ std::vector<MemoryEntry> ShortTermMemory::retrieve(
     cleanup_expired();
 
     std::vector<MemoryEntry> results;
+    results.reserve(std::min(static_cast<size_t>(limit), messages_.size()));
 
     // Search in reverse order (most recent first)
     for (auto it = messages_.rbegin(); it != messages_.rend(); ++it) {
@@ -160,7 +162,7 @@ void ShortTermMemory::del(const std::string& entry_id) {
 }
 
 std::vector<MemoryEntry> ShortTermMemory::get_all() const {
-    return messages_;
+    return std::vector<MemoryEntry>(messages_.begin(), messages_.end());
 }
 
 size_t ShortTermMemory::size() const {
@@ -236,6 +238,7 @@ std::vector<MemoryEntry> LongTermMemory::retrieve(
 
     // Build results from sorted indices
     std::vector<MemoryEntry> results;
+    results.reserve(std::min(matching_indices.size(), static_cast<size_t>(limit)));
     for (size_t i = 0; i < matching_indices.size() && static_cast<int>(i) < limit; ++i) {
         results.push_back(memories_[matching_indices[i]]);
     }

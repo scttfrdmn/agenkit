@@ -34,6 +34,7 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+#include <condition_variable>
 
 namespace agenkit {
 namespace middleware {
@@ -226,6 +227,7 @@ private:
 
     // Token bucket state (protected by mutex)
     mutable std::mutex mutex_;
+    std::condition_variable token_cv_;  // Condition variable for efficient waiting
     double tokens_;
     std::chrono::steady_clock::time_point last_refill_;
 
@@ -234,6 +236,9 @@ private:
 
     /// Try to consume tokens (returns true if successful)
     bool try_consume_tokens(uint32_t tokens_needed);
+
+    /// Try to consume tokens without locking (assumes mutex is already held)
+    bool try_consume_tokens_unlocked(uint32_t tokens_needed);
 
     /// Wait for tokens to become available
     bool wait_for_available_tokens(uint32_t tokens_needed);

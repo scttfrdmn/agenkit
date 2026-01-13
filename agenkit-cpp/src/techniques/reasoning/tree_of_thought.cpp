@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/techniques/reasoning/tree_of_thought.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 #include <regex>
 #include <algorithm>
 #include <sstream>
@@ -45,7 +46,7 @@ std::vector<std::string> TreeOfThoughtAgent::capabilities() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 TreeOfThoughtAgent::process(core::Message message) {
-    return std::async(std::launch::async, [this, msg = std::move(message)]() -> core::Result<core::Message, core::AgentError> {
+    return infrastructure::global_thread_pool().enqueue([this, msg = std::move(message)]() -> core::Result<core::Message, core::AgentError> {
         const std::string query = msg.content_as_str();
 
         // Create reasoning tree
@@ -156,7 +157,7 @@ std::vector<std::string> TreeOfThoughtAgent::generate_branches(
     futures.reserve(n);
 
     for (int i = 0; i < n; ++i) {
-        futures.push_back(std::async(std::launch::async, [this, prompt, i]() -> std::string {
+        futures.push_back(infrastructure::global_thread_pool().enqueue([this, prompt, i]() -> std::string {
             std::string varied_prompt = prompt + "\n\nAlternative approach #" +
                                        std::to_string(i + 1) + ":";
 

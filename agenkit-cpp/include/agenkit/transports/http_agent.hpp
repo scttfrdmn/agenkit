@@ -24,10 +24,19 @@ namespace transports {
 
 /**
  * @brief Configuration for HTTP transport
+ *
+ * Timeout Behavior:
+ * The timeout_secs parameter controls three types of timeouts:
+ * - Connection timeout: Maximum time to establish connection (prevents hangs on non-routable addresses)
+ * - Read timeout: Maximum time waiting for response data
+ * - Write timeout: Maximum time sending request data
+ *
+ * All three timeouts use the same value. If any timeout is exceeded,
+ * the request will fail with a Transport error.
  */
 struct HttpTransportConfig {
     std::string base_url;           ///< Base URL (e.g., "http://localhost:8080")
-    int timeout_secs = 30;          ///< Request timeout in seconds
+    int timeout_secs = 30;          ///< Timeout in seconds (connection, read, and write)
     std::optional<std::string> api_key;  ///< Optional API key for authentication
     int pool_size = 10;             ///< Maximum connections per host in pool
     bool keep_alive = true;         ///< Enable HTTP keep-alive

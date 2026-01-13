@@ -12,6 +12,7 @@
 #include "agenkit/core/message.hpp"
 #include <string>
 #include <vector>
+#include <deque>
 #include <memory>
 #include <chrono>
 #include <optional>
@@ -134,7 +135,7 @@ public:
 
 private:
     int max_messages_;
-    std::vector<MemoryEntry> messages_;
+    std::deque<MemoryEntry> messages_;  // Deque for O(1) pop_front
 };
 
 /**
@@ -181,7 +182,7 @@ public:
 private:
     int max_messages_;
     std::chrono::seconds ttl_;
-    std::vector<MemoryEntry> messages_;
+    std::deque<MemoryEntry> messages_;  // Deque for O(1) pop_front
 
     /**
      * @brief Check if entry is expired

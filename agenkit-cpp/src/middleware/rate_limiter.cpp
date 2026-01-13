@@ -5,7 +5,6 @@
 
 #include "agenkit/middleware/rate_limiter.hpp"
 #include <algorithm>
-#include <thread>
 
 namespace agenkit {
 namespace middleware {
@@ -19,11 +18,17 @@ void RateLimiterMiddleware::refill_tokens() {
     if (elapsed.count() > 0) {
         // Calculate tokens to add based on elapsed time
         double tokens_to_add = (elapsed.count() / 1000.0) * config_.rate_per_second;
+        double old_tokens = tokens_;
         tokens_ = std::min(
             tokens_ + tokens_to_add,
             static_cast<double>(config_.capacity)
         );
         last_refill_ = now;
+
+        // Notify waiters if we added tokens
+        if (tokens_ > old_tokens) {
+            token_cv_.notify_all();
+        }
     }
 }
 
@@ -42,28 +47,44 @@ bool RateLimiterMiddleware::try_consume_tokens(uint32_t tokens_needed) {
     return false;
 }
 
+bool RateLimiterMiddleware::try_consume_tokens_unlocked(uint32_t tokens_needed) {
+    // Assumes mutex is already held by caller
+
+    // Refill tokens based on time passed
+    refill_tokens();
+
+    // Check if we have enough tokens
+    if (tokens_ >= tokens_needed) {
+        tokens_ -= tokens_needed;
+        return true;
+    }
+
+    return false;
+}
+
 bool RateLimiterMiddleware::wait_for_available_tokens(uint32_t tokens_needed) {
     auto start = std::chrono::steady_clock::now();
     auto deadline = start + config_.max_wait_time;
 
-    while (std::chrono::steady_clock::now() < deadline) {
-        if (try_consume_tokens(tokens_needed)) {
-            auto end = std::chrono::steady_clock::now();
-            auto wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-                end - start
-            );
-            if (wait_time.count() > 0) {
-                metrics_.waited_requests++;
-                metrics_.total_wait_time_ms += wait_time.count();
-            }
-            return true;
-        }
+    std::unique_lock<std::mutex> lock(mutex_);
 
-        // Sleep briefly before checking again
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    // Use condition variable to wait efficiently (no polling)
+    bool acquired = token_cv_.wait_until(lock, deadline, [this, tokens_needed] {
+        return try_consume_tokens_unlocked(tokens_needed);
+    });
+
+    if (acquired) {
+        auto end = std::chrono::steady_clock::now();
+        auto wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+            end - start
+        );
+        if (wait_time.count() > 0) {
+            metrics_.waited_requests++;
+            metrics_.total_wait_time_ms += wait_time.count();
+        }
     }
 
-    return false;
+    return acquired;
 }
 
 std::future<core::Result<core::Message, core::AgentError>>

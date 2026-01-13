@@ -3,6 +3,7 @@
  */
 
 #include "agenkit/infrastructure/anomaly.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -268,7 +269,7 @@ void AnomalyDetectionMiddleware::default_anomaly_handler(
 
 std::future<core::Result<core::Message, core::AgentError>>
 AnomalyDetectionMiddleware::process(core::Message message) {
-  return std::async(std::launch::async, [this, message]() mutable {
+  return infrastructure::global_thread_pool().enqueue([this, message]() mutable {
     auto start_time = std::chrono::high_resolution_clock::now();
 
     // 1. Check rate anomaly

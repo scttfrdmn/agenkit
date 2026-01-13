@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/middleware/batching.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 #include <algorithm>
 #include <stdexcept>
 
@@ -52,7 +53,7 @@ std::future<core::Result<core::Message, core::AgentError>> BatchingMiddleware::p
         // Add to queue
         PendingRequest req{
             std::move(message),
-            std::move(*promise),
+            promise,
             std::chrono::steady_clock::now()
         };
         queue_.push(std::move(req));
@@ -90,19 +91,21 @@ void BatchingMiddleware::process_loop() {
             queue_cv_.wait_for(lock, std::chrono::milliseconds(10));
         }
 
-        // Check if we should process batch
-        bool should_process = false;
+        // Move items from queue to batch if available
         if (!queue_.empty()) {
             if (batch.empty()) {
                 batch_start_time = std::chrono::steady_clock::now();
             }
 
-            // Move items from queue to batch
             while (!queue_.empty() && batch.size() < config_.max_batch_size) {
                 batch.push_back(std::move(queue_.front()));
                 queue_.pop();
             }
+        }
 
+        // Check if we should process batch (if batch has items)
+        bool should_process = false;
+        if (!batch.empty()) {
             // Check flush conditions
             if (batch.size() >= config_.max_batch_size) {
                 should_process = true;
@@ -164,7 +167,7 @@ void BatchingMiddleware::process_batch(std::vector<PendingRequest>&& batch) {
 
         // Launch async task - copy message for async call
         auto msg = req.message;
-        futures.push_back(std::async(std::launch::async, [this, msg]() mutable {
+        futures.push_back(infrastructure::global_thread_pool().enqueue([this, msg]() mutable {
             return inner_->process(std::move(msg)).get();
         }));
     }
@@ -181,11 +184,11 @@ void BatchingMiddleware::process_batch(std::vector<PendingRequest>&& batch) {
             } else {
                 failures++;
             }
-            batch[i].promise.set_value(std::move(result));
+            batch[i].promise->set_value(std::move(result));
         } catch (...) {
             // Unexpected exception - wrap as error
             core::AgentError error(core::AgentErrorType::ProcessingError, "unexpected exception during batch processing");
-            batch[i].promise.set_value(core::Result<core::Message, core::AgentError>::err(std::move(error)));
+            batch[i].promise->set_value(core::Result<core::Message, core::AgentError>::err(std::move(error)));
             failures++;
         }
     }

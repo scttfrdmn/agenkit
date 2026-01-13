@@ -37,8 +37,9 @@ std::shared_ptr<httplib::Client> HttpConnectionPool::acquire(
     auto client = std::make_shared<httplib::Client>(base_url);
 
     // Configure timeouts
-    client->set_read_timeout(config.timeout_secs, 0);
-    client->set_write_timeout(config.timeout_secs, 0);
+    client->set_connection_timeout(config.timeout_secs, 0);  // Connection timeout
+    client->set_read_timeout(config.timeout_secs, 0);        // Read timeout
+    client->set_write_timeout(config.timeout_secs, 0);       // Write timeout
 
     // Enable keep-alive for connection reuse
     if (config.keep_alive) {

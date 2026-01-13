@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/patterns/orchestration.hpp"
+#include "agenkit/infrastructure/thread_pool.hpp"
 #include <stdexcept>
 #include <sstream>
 
@@ -175,10 +176,10 @@ OrchestrationAgent::execute_parallel(core::Message message) {
     for (const auto& [name, agent] : agents_) {
         agent_names.push_back(name);
 
-        // Use std::async with launch::async policy to force parallel execution
+        // Use thread pool for parallel execution
         // Capture agent pointer separately to avoid C++20 structured binding capture issue
         auto agent_ptr = agent;
-        auto future = std::async(std::launch::async, [agent_ptr, msg = core::Message(message)]() mutable {
+        auto future = infrastructure::global_thread_pool().enqueue([agent_ptr, msg = core::Message(message)]() mutable {
             return agent_ptr->process(std::move(msg)).get();
         });
         futures.push_back(std::move(future));

@@ -164,3 +164,29 @@ TEST(HttpServerTest, NullAgentThrows) {
         std::invalid_argument
     );
 }
+
+TEST(HttpClientTimeoutTest, ConnectionTimeout) {
+    // Test connection timeout to non-routable address
+    // Using 192.0.2.1 (TEST-NET-1, RFC 5737) which is non-routable
+    transports::HttpTransportConfig config{
+        "http://192.0.2.1:8080",
+        1,  // 1 second timeout
+        std::nullopt
+    };
+
+    transports::HttpAgent client("timeout-test", config);
+
+    auto msg = core::Message::with_text("user", "test");
+    auto start = std::chrono::steady_clock::now();
+    auto future = client.process(std::move(msg));
+    auto result = future.get();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::steady_clock::now() - start
+    ).count();
+
+    // Should timeout and fail
+    EXPECT_FALSE(result.is_ok());
+
+    // Should timeout within reasonable time (allow 2x timeout for overhead)
+    EXPECT_LE(elapsed, 3);
+}

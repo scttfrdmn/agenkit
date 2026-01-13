@@ -100,7 +100,7 @@ export class BatchingDecorator implements Agent {
   private queue: BatchRequest[] = [];
   private queueSize = 0;
   private batchTimeout: NodeJS.Timeout | null = null;
-  private shutdown = false;
+  private isShutdown = false;
 
   constructor(agent: Agent, config?: BatchingConfig) {
     this.agent = agent;
@@ -169,7 +169,7 @@ export class BatchingDecorator implements Agent {
    * @throws Error if queue is at capacity (backpressure)
    */
   async process(message: Message): Promise<Message> {
-    if (this.shutdown) {
+    if (this.isShutdown) {
       throw new Error('Batching middleware is shut down');
     }
 
@@ -315,8 +315,8 @@ export class BatchingDecorator implements Agent {
    * 2. Flushes pending requests
    * 3. Clears any pending timeout
    */
-  async shutdownMiddleware(): Promise<void> {
-    this.shutdown = true;
+  async shutdown(): Promise<void> {
+    this.isShutdown = true;
 
     // Clear timeout
     if (this.batchTimeout) {

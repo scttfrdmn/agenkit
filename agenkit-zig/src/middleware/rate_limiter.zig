@@ -54,6 +54,11 @@ pub const RateLimiterConfig = struct {
     /// Default: 1
     tokens_per_request: u32 = 1,
 
+    /// Maximum time to wait for tokens in milliseconds (null = wait indefinitely)
+    /// Prevents requests from waiting too long when rate limiter is heavily loaded
+    /// Default: null (wait indefinitely)
+    max_wait_timeout_ms: ?u64 = null,
+
     /// Validate configuration
     pub fn validate(self: RateLimiterConfig) !void {
         if (self.rate <= 0.0) {
@@ -67,6 +72,11 @@ pub const RateLimiterConfig = struct {
         }
         if (self.tokens_per_request > self.capacity) {
             return error.InvalidConfig;
+        }
+        if (self.max_wait_timeout_ms) |timeout| {
+            if (timeout == 0) {
+                return error.InvalidConfig;
+            }
         }
     }
 };
@@ -203,6 +213,14 @@ pub const RateLimiterDecorator = struct {
         const tokens_deficit = tokens_needed_f64 - self.tokens;
         const wait_time_sec = tokens_deficit / self.config.rate;
         const wait_time_ms = @as(u64, @intFromFloat(wait_time_sec * 1000.0));
+
+        // Check if wait time exceeds max_wait_timeout
+        if (self.config.max_wait_timeout_ms) |max_timeout| {
+            if (wait_time_ms > max_timeout) {
+                self.mutex.unlock();
+                return RateLimitError.RateLimitExceeded;
+            }
+        }
 
         self.mutex.unlock();
 

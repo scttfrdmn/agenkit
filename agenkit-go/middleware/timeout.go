@@ -279,9 +279,15 @@ func (t *TimeoutDecorator) Process(ctx context.Context, message *agenkit.Message
 	}
 }
 
-// Stream implements the StreamingAgent interface by passing through to the underlying agent.
+// Stream implements the StreamingAgent interface with timeout enforcement.
 // If the underlying agent doesn't support streaming, it returns an error.
+//
+// The timeout applies to the entire streaming operation - if no message is received
+// within the timeout period from the start of the stream, the operation times out.
+// This prevents hung streams from consuming resources indefinitely.
 func (t *TimeoutDecorator) Stream(ctx context.Context, message *agenkit.Message) (<-chan *agenkit.Message, <-chan error) {
+	startTime := time.Now()
+
 	// Check if underlying agent supports streaming
 	streamingAgent, ok := t.agent.(agenkit.StreamingAgent)
 	if !ok {
@@ -294,6 +300,102 @@ func (t *TimeoutDecorator) Stream(ctx context.Context, message *agenkit.Message)
 		return messageChan, errorChan
 	}
 
-	// Pass through to underlying streaming agent
-	return streamingAgent.Stream(ctx, message)
+	// Get timeout for this specific message/method
+	timeout := t.getTimeoutForMessage(message)
+
+	// Create timeout context
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+
+	// Get source channels
+	sourceMsgCh, sourceErrCh := streamingAgent.Stream(timeoutCtx, message)
+
+	// Create output channels
+	outMsgCh := make(chan *agenkit.Message, 10)
+	outErrCh := make(chan error, 1)
+
+	// Proxy messages with timeout enforcement
+	go func() {
+		defer close(outMsgCh)
+		defer close(outErrCh)
+		defer cancel()
+
+		for {
+			select {
+			case msg, ok := <-sourceMsgCh:
+				if !ok {
+					// Source channel closed, check for errors
+					select {
+					case err, errOk := <-sourceErrCh:
+						if errOk && err != nil {
+							duration := time.Since(startTime)
+							// Check if it's a timeout
+							if timeoutCtx.Err() == context.DeadlineExceeded {
+								t.metrics.RecordTimeout(duration)
+								outErrCh <- &TimeoutError{
+									AgentName: t.Name(),
+									Timeout:   timeout,
+								}
+							} else {
+								t.metrics.RecordFailure(duration)
+								outErrCh <- err
+							}
+						} else {
+							// Success - stream completed without error
+							duration := time.Since(startTime)
+							t.metrics.RecordSuccess(duration)
+						}
+					default:
+						// No error, stream completed successfully
+						duration := time.Since(startTime)
+						t.metrics.RecordSuccess(duration)
+					}
+					return
+				}
+
+				// Forward message to output channel
+				select {
+				case outMsgCh <- msg:
+					// Message sent successfully
+				case <-timeoutCtx.Done():
+					// Timeout while sending message
+					duration := time.Since(startTime)
+					t.metrics.RecordTimeout(duration)
+					outErrCh <- &TimeoutError{
+						AgentName: t.Name(),
+						Timeout:   timeout,
+					}
+					return
+				}
+
+			case err, ok := <-sourceErrCh:
+				if ok && err != nil {
+					duration := time.Since(startTime)
+					// Check if it's a timeout
+					if timeoutCtx.Err() == context.DeadlineExceeded {
+						t.metrics.RecordTimeout(duration)
+						outErrCh <- &TimeoutError{
+							AgentName: t.Name(),
+							Timeout:   timeout,
+						}
+					} else {
+						t.metrics.RecordFailure(duration)
+						outErrCh <- err
+					}
+					return
+				}
+
+			case <-timeoutCtx.Done():
+				// Timeout occurred
+				duration := time.Since(startTime)
+				t.metrics.RecordTimeout(duration)
+				outErrCh <- &TimeoutError{
+					AgentName: t.Name(),
+					Timeout:   timeout,
+				}
+				return
+			}
+		}
+	}()
+
+	return outMsgCh, outErrCh
 }

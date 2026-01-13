@@ -18,6 +18,7 @@ const Message = @import("../message.zig").Message;
 const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
 const createDefaultIntrospectionResult = @import("../introspection.zig").createDefaultIntrospectionResult;
 const AgentError = @import("../agent.zig").AgentError;
+const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
 const Result = @import("../agent.zig").Result;
 
 const Allocator = std.mem.Allocator;
@@ -296,6 +297,7 @@ pub const ReActAgent = struct {
             .ptr = self,
             .vtable = &.{
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
@@ -502,6 +504,13 @@ pub const ReActAgent = struct {
 };
 
 // Tests
+
+    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+        _ = ptr;
+        _ = message;
+        callbacks.onError(AgentError.NotImplemented);
+    }
+
 test "Tool creation and execution" {
     const allocator = std.testing.allocator;
 

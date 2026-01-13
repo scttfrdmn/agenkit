@@ -166,6 +166,7 @@
 #include "agenkit/middleware/timeout.hpp"
 #include "agenkit/middleware/circuit_breaker.hpp"
 #include "agenkit/middleware/rate_limiter.hpp"
+#include "agenkit/middleware/per_user_rate_limiter.hpp"
 #include "agenkit/middleware/caching.hpp"
 #include "agenkit/middleware/batching.hpp"
 

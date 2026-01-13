@@ -49,6 +49,7 @@ pub mod retry;
 pub mod circuit_breaker;
 pub mod timeout;
 pub mod rate_limiter;
+pub mod per_user_rate_limiter;
 pub mod caching;
 pub mod batching;
 
@@ -62,5 +63,13 @@ pub use circuit_breaker::{
 };
 pub use timeout::{TimeoutConfig, TimeoutConfigBuilder, TimeoutMiddleware, TimeoutMetrics};
 pub use rate_limiter::{RateLimiterConfig, RateLimiterConfigBuilder, RateLimiterMiddleware};
+pub use per_user_rate_limiter::{
+    PerUserRateLimiterConfig,
+    PerUserRateLimiterConfigBuilder,
+    PerUserRateLimiterMetrics,
+    PerUserRateLimiterMiddleware,
+    PerUserRateLimitError,
+    UserIdExtractor,
+};
 pub use caching::{CachingConfig, CachingConfigBuilder, CachingMiddleware};
 pub use batching::{BatchingConfig, BatchingConfigBuilder, BatchingMiddleware};

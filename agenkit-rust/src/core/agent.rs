@@ -6,7 +6,9 @@
 use super::introspection::IntrospectionResult;
 use super::message::{Message, ToolResult};
 use async_trait::async_trait;
+use futures::stream::Stream;
 use std::fmt;
+use std::pin::Pin;
 use thiserror::Error;
 
 /// Error types for agent operations.
@@ -160,6 +162,45 @@ pub trait Agent: Send + Sync {
             self.name().to_string(),
             self.capabilities(),
         )
+    }
+
+    /// Process a message with streaming response (optional).
+    ///
+    /// This method enables streaming responses where the agent can return
+    /// multiple message chunks over time rather than waiting for a complete response.
+    ///
+    /// # Default Implementation
+    /// Returns a stream that immediately yields an error indicating streaming is not supported.
+    /// Override this method to provide streaming support.
+    ///
+    /// # Arguments
+    /// * `message` - Input message
+    ///
+    /// # Returns
+    /// Stream of response messages or errors
+    ///
+    /// # Example
+    /// ```ignore
+    /// use futures::stream::{self, StreamExt};
+    ///
+    /// async fn process_stream(&self, message: Message) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+    ///     let chunks = vec![
+    ///         Ok(Message::with_text("assistant", "First chunk")),
+    ///         Ok(Message::with_text("assistant", "Second chunk")),
+    ///     ];
+    ///     Box::pin(stream::iter(chunks))
+    /// }
+    /// ```
+    fn process_stream(
+        &self,
+        _message: Message,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        use futures::stream;
+        Box::pin(stream::once(async {
+            Err(AgentError::ProcessingError(
+                "streaming not supported by this agent".to_string(),
+            ))
+        }))
     }
 }
 

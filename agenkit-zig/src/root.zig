@@ -65,6 +65,7 @@ pub const Content = @import("message.zig").Content;
 // Agent interface and implementations
 pub const Agent = @import("agent.zig").Agent;
 pub const AgentError = @import("agent.zig").AgentError;
+pub const StreamCallbacks = @import("agent.zig").StreamCallbacks;
 pub const Result = @import("agent.zig").Result;
 pub const EchoAgent = @import("agent.zig").EchoAgent;
 

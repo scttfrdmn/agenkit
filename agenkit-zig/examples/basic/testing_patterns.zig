@@ -15,6 +15,9 @@
 
 const std = @import("std");
 const agenkit = @import("agenkit");
+const Message = agenkit.Message;
+const AgentError = agenkit.AgentError;
+const StreamCallbacks = agenkit.StreamCallbacks;
 const testing = std.testing;
 
 /// Custom agent for testing purposes
@@ -51,6 +54,7 @@ const TestableAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -109,6 +113,12 @@ const TestableAgent = struct {
     }
 };
 
+
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();

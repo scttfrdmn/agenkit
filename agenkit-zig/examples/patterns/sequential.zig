@@ -13,6 +13,9 @@
 
 const std = @import("std");
 const agenkit = @import("agenkit");
+const Message = agenkit.Message;
+const AgentError = agenkit.AgentError;
+const StreamCallbacks = agenkit.StreamCallbacks;
 
 /// Transform agent that adds a prefix to messages
 const PrefixAgent = struct {
@@ -47,6 +50,7 @@ const PrefixAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -104,6 +108,12 @@ const PrefixAgent = struct {
     }
 };
 
+
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();

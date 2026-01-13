@@ -14,6 +14,9 @@
 
 const std = @import("std");
 const agenkit = @import("agenkit");
+const Message = agenkit.Message;
+const AgentError = agenkit.AgentError;
+const StreamCallbacks = agenkit.StreamCallbacks;
 
 /// Personal assistant agent with memory
 const AssistantAgent = struct {
@@ -49,6 +52,7 @@ const AssistantAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -125,6 +129,12 @@ const AssistantAgent = struct {
     }
 };
 
+
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();

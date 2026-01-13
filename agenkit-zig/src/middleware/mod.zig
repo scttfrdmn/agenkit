@@ -37,6 +37,13 @@ pub const RateLimiterConfig = @import("rate_limiter.zig").RateLimiterConfig;
 pub const RateLimiterMetrics = @import("rate_limiter.zig").RateLimiterMetrics;
 pub const RateLimitError = @import("rate_limiter.zig").RateLimitError;
 
+// Per-User Rate Limiter middleware
+pub const PerUserRateLimiterDecorator = @import("per_user_rate_limiter.zig").PerUserRateLimiterDecorator;
+pub const PerUserRateLimiterConfig = @import("per_user_rate_limiter.zig").PerUserRateLimiterConfig;
+pub const PerUserRateLimiterMetrics = @import("per_user_rate_limiter.zig").PerUserRateLimiterMetrics;
+pub const PerUserRateLimitError = @import("per_user_rate_limiter.zig").PerUserRateLimitError;
+pub const UserIdExtractor = @import("per_user_rate_limiter.zig").UserIdExtractor;
+
 // Caching middleware
 pub const CachingDecorator = @import("caching.zig").CachingDecorator;
 pub const CachingConfig = @import("caching.zig").CachingConfig;
@@ -54,6 +61,7 @@ test {
     _ = @import("timeout.zig");
     _ = @import("circuit_breaker.zig");
     _ = @import("rate_limiter.zig");
+    _ = @import("per_user_rate_limiter.zig");
     _ = @import("caching.zig");
     _ = @import("batching.zig");
 }

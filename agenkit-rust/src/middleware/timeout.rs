@@ -48,6 +48,8 @@
 
 use crate::core::{Agent, AgentError, IntrospectionResult, Message};
 use async_trait::async_trait;
+use futures::stream::{Stream, StreamExt};
+use std::pin::Pin;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
@@ -114,15 +116,39 @@ impl TimeoutMetrics {
 /// Configuration for timeout middleware.
 #[derive(Debug, Clone)]
 pub struct TimeoutConfig {
-    /// Maximum duration for agent operations.
+    /// Default maximum duration for agent operations.
     /// Default: 30 seconds
     pub timeout: Duration,
+
+    /// Method-specific timeouts (optional).
+    ///
+    /// Allows configuring different timeouts for different operations.
+    /// The method is determined from message metadata "method" or "operation" field.
+    /// If not specified for a method, defaults to the main timeout value.
+    ///
+    /// Example:
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use std::time::Duration;
+    /// use agenkit::middleware::TimeoutConfig;
+    ///
+    /// let mut method_timeouts = HashMap::new();
+    /// method_timeouts.insert("health_check".to_string(), Duration::from_secs(5));
+    /// method_timeouts.insert("long_operation".to_string(), Duration::from_secs(120));
+    ///
+    /// let config = TimeoutConfig::builder()
+    ///     .timeout(Duration::from_secs(30))
+    ///     .method_timeouts(method_timeouts)
+    ///     .build();
+    /// ```
+    pub method_timeouts: Option<std::collections::HashMap<String, Duration>>,
 }
 
 impl Default for TimeoutConfig {
     fn default() -> Self {
         Self {
             timeout: Duration::from_secs(30),
+            method_timeouts: None,
         }
     }
 }
@@ -138,12 +164,22 @@ impl TimeoutConfig {
 #[derive(Debug, Default)]
 pub struct TimeoutConfigBuilder {
     timeout: Option<Duration>,
+    method_timeouts: Option<std::collections::HashMap<String, Duration>>,
 }
 
 impl TimeoutConfigBuilder {
-    /// Set timeout duration.
+    /// Set default timeout duration.
     pub fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
+        self
+    }
+
+    /// Set method-specific timeouts.
+    ///
+    /// Allows different timeout durations for different operations based on
+    /// the "method" or "operation" field in message metadata.
+    pub fn method_timeouts(mut self, timeouts: std::collections::HashMap<String, Duration>) -> Self {
+        self.method_timeouts = Some(timeouts);
         self
     }
 
@@ -152,6 +188,7 @@ impl TimeoutConfigBuilder {
         let default = TimeoutConfig::default();
         TimeoutConfig {
             timeout: self.timeout.unwrap_or(default.timeout),
+            method_timeouts: self.method_timeouts,
         }
     }
 }
@@ -185,6 +222,36 @@ impl<A: Agent> TimeoutMiddleware<A> {
     pub async fn get_metrics(&self) -> TimeoutMetrics {
         self.metrics.lock().await.clone()
     }
+
+    /// Get timeout for a specific message.
+    ///
+    /// Checks message metadata for "method" or "operation" field to determine
+    /// the operation type, then returns the method-specific timeout if configured,
+    /// otherwise returns the default timeout.
+    fn get_timeout_for_message(&self, message: &Message) -> Duration {
+        // If no method timeouts configured, return default
+        let method_timeouts = match &self.config.method_timeouts {
+            Some(timeouts) => timeouts,
+            None => return self.config.timeout,
+        };
+
+        // Try to extract method from metadata
+        let method = message
+            .metadata
+            .get("method")
+            .and_then(|v| v.as_str())
+            .or_else(|| {
+                // Try "operation" field as fallback
+                message.metadata.get("operation").and_then(|v| v.as_str())
+            })
+            .unwrap_or("process"); // Default to "process"
+
+        // Return method-specific timeout if configured, otherwise default
+        method_timeouts
+            .get(method)
+            .copied()
+            .unwrap_or(self.config.timeout)
+    }
 }
 
 #[async_trait]
@@ -214,6 +281,9 @@ impl<A: Agent> Agent for TimeoutMiddleware<A> {
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         let start_time = Instant::now();
 
+        // Get timeout for this specific message
+        let timeout = self.get_timeout_for_message(&message);
+
         // Increment total requests
         {
             let mut metrics = self.metrics.lock().await;
@@ -223,7 +293,7 @@ impl<A: Agent> Agent for TimeoutMiddleware<A> {
         #[cfg(feature = "native")]
         {
             let result =
-                tokio::time::timeout(self.config.timeout, self.inner.process(message)).await;
+                tokio::time::timeout(timeout, self.inner.process(message)).await;
 
             let duration = start_time.elapsed();
 
@@ -246,7 +316,7 @@ impl<A: Agent> Agent for TimeoutMiddleware<A> {
                     metrics.update_duration_stats(duration);
                     Err(AgentError::Timeout(format!(
                         "operation timed out after {:?}",
-                        self.config.timeout
+                        timeout
                     )))
                 }
             }
@@ -275,6 +345,85 @@ impl<A: Agent> Agent for TimeoutMiddleware<A> {
             }
 
             result
+        }
+    }
+
+    /// Process a message with streaming response and timeout enforcement.
+    ///
+    /// The timeout applies to the entire streaming operation - if the stream takes
+    /// longer than the configured timeout to complete, it will be cancelled.
+    ///
+    /// # Arguments
+    /// * `message` - Input message
+    ///
+    /// # Returns
+    /// Stream of response messages with timeout enforcement
+    ///
+    /// # Example
+    /// ```ignore
+    /// use futures::stream::StreamExt;
+    ///
+    /// let config = TimeoutConfig::builder()
+    ///     .timeout(Duration::from_secs(30))
+    ///     .build();
+    ///
+    /// let timeout_agent = TimeoutMiddleware::new(agent, config);
+    ///
+    /// let msg = Message::with_text("user", "Hello");
+    /// let mut stream = timeout_agent.process_stream(msg);
+    ///
+    /// while let Some(chunk_result) = stream.next().await {
+    ///     match chunk_result {
+    ///         Ok(chunk) => println!("Chunk: {:?}", chunk),
+    ///         Err(e) => eprintln!("Error: {}", e),
+    ///     }
+    /// }
+    /// ```
+    fn process_stream(
+        &self,
+        message: Message,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        let timeout = self.get_timeout_for_message(&message);
+        let inner_stream = self.inner.process_stream(message);
+        let metrics = Arc::clone(&self.metrics);
+        let start_time = Instant::now();
+
+        #[cfg(feature = "native")]
+        {
+            // Create a timeout stream that wraps the inner stream
+            let timeout_stream = tokio_stream::StreamExt::timeout(inner_stream, timeout);
+
+            // Map the stream to handle timeout errors
+            let mapped_stream = futures::StreamExt::then(timeout_stream, move |item| {
+                let metrics = Arc::clone(&metrics);
+                let start_time = start_time;
+                async move {
+                    match item {
+                        Ok(result) => result,
+                        Err(_) => {
+                            // Timeout occurred
+                            let duration = start_time.elapsed();
+                            let mut m = metrics.lock().await;
+                            m.timed_out_requests += 1;
+                            m.update_duration_stats(duration);
+                            Err(AgentError::Timeout(format!(
+                                "stream timed out after {:?}",
+                                timeout
+                            )))
+                        }
+                    }
+                }
+            });
+
+            Box::pin(mapped_stream)
+        }
+
+        #[cfg(feature = "wasm")]
+        {
+            // WASM doesn't support tokio::time::timeout directly
+            // For now, just pass through the stream without timeout
+            // TODO: Implement timeout for WASM using web APIs
+            Box::pin(inner_stream)
         }
     }
 }

@@ -22,6 +22,7 @@
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
+const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
 const Result = @import("../agent.zig").Result;
 const Message = @import("../message.zig").Message;
 const IntrospectionResult = @import("../introspection.zig").IntrospectionResult;
@@ -126,6 +127,7 @@ pub const RetryDecorator = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -271,6 +273,13 @@ pub const RetryDecorator = struct {
 
 // Tests
 const testing = std.testing;
+
+
+    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+        _ = ptr;
+        _ = message;
+        callbacks.onError(AgentError.NotImplemented);
+    }
 
 test "RetryConfig validation" {
     var config = RetryConfig{};

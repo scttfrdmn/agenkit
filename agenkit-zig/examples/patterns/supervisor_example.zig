@@ -11,6 +11,8 @@ const std = @import("std");
 const agenkit = @import("agenkit");
 
 const Agent = agenkit.Agent;
+const StreamCallbacks = agenkit.StreamCallbacks;
+const AgentError = agenkit.AgentError;
 const Message = agenkit.Message;
 const SupervisorAgent = agenkit.patterns.SupervisorAgent;
 const SimplePlanner = agenkit.patterns.SimplePlanner;
@@ -38,6 +40,7 @@ const SpecialistAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -111,6 +114,7 @@ const PlanningAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -158,6 +162,12 @@ const PlanningAgent = struct {
     }
 };
 
+
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();

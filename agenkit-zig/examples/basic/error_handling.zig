@@ -11,6 +11,9 @@
 
 const std = @import("std");
 const agenkit = @import("agenkit");
+const Message = agenkit.Message;
+const AgentError = agenkit.AgentError;
+const StreamCallbacks = agenkit.StreamCallbacks;
 
 /// Custom agent that can fail on demand for demonstration
 const FailableAgent = struct {
@@ -43,6 +46,7 @@ const FailableAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -97,6 +101,12 @@ const FailableAgent = struct {
     }
 };
 
+
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 pub fn main() !void {
     // Initialize allocator
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};

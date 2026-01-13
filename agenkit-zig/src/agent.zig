@@ -23,6 +23,29 @@ pub const AgentError = error{
     NotImplemented,
 };
 
+/// Callbacks for streaming responses
+pub const StreamCallbacks = struct {
+    ptr: *anyopaque,
+    on_message_fn: *const fn (ptr: *anyopaque, message: Message) void,
+    on_error_fn: *const fn (ptr: *anyopaque, err: AgentError) void,
+    on_complete_fn: *const fn (ptr: *anyopaque) void,
+
+    /// Invoke the message callback
+    pub fn onMessage(self: StreamCallbacks, message: Message) void {
+        self.on_message_fn(self.ptr, message);
+    }
+
+    /// Invoke the error callback
+    pub fn onError(self: StreamCallbacks, err: AgentError) void {
+        self.on_error_fn(self.ptr, err);
+    }
+
+    /// Invoke the completion callback
+    pub fn onComplete(self: StreamCallbacks) void {
+        self.on_complete_fn(self.ptr);
+    }
+};
+
 /// Result type for agent processing
 pub const Result = union(enum) {
     ok: Message,
@@ -60,6 +83,7 @@ pub const Agent = struct {
         name: *const fn (ptr: *anyopaque) []const u8,
         capabilities: *const fn (ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const []const u8,
         process: *const fn (ptr: *anyopaque, message: Message) AgentError!Result,
+        process_stream: *const fn (ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void,
         introspect: *const fn (ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult,
         deinit: *const fn (ptr: *anyopaque) void,
     };
@@ -77,6 +101,45 @@ pub const Agent = struct {
     /// Process a message and return a result
     pub fn process(self: Agent, message: Message) !Result {
         return self.vtable.process(self.ptr, message);
+    }
+
+    /// Process a message with streaming response (optional)
+    ///
+    /// This method enables streaming responses where the agent can return
+    /// multiple message chunks over time. The implementation uses callbacks
+    /// to deliver messages and errors asynchronously.
+    ///
+    /// Callbacks:
+    /// - on_message: Called for each message chunk
+    /// - on_error: Called on error (terminates stream)
+    /// - on_complete: Called when stream completes successfully
+    ///
+    /// Default implementation (if not overridden) will call on_error with
+    /// AgentError.NotImplemented.
+    ///
+    /// Example:
+    /// ```zig
+    /// const Context = struct {
+    ///     chunks: *std.ArrayList(Message),
+    /// };
+    /// var ctx = Context{ .chunks = &chunks };
+    ///
+    /// const callbacks = StreamCallbacks{
+    ///     .ptr = &ctx,
+    ///     .on_message_fn = struct {
+    ///         fn callback(ptr: *anyopaque, msg: Message) void {
+    ///             const c: *Context = @ptrCast(@alignCast(ptr));
+    ///             c.chunks.append(msg) catch {};
+    ///         }
+    ///     }.callback,
+    ///     .on_error_fn = ...,
+    ///     .on_complete_fn = ...,
+    /// };
+    ///
+    /// try agent.processStream(message, callbacks);
+    /// ```
+    pub fn processStream(self: Agent, message: Message, callbacks: StreamCallbacks) !void {
+        return self.vtable.process_stream(self.ptr, message, callbacks);
     }
 
     /// Examine agent's internal state, memory, and capabilities.
@@ -129,6 +192,7 @@ pub const EchoAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
@@ -168,6 +232,13 @@ pub const EchoAgent = struct {
         }
 
         return Result{ .ok = response };
+    }
+
+    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+        // Default implementation: streaming not supported
+        _ = ptr;
+        _ = message;
+        callbacks.onError(AgentError.NotImplemented);
     }
 
     fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult {

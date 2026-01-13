@@ -114,6 +114,7 @@ add_library(agenkit
     src/middleware/timeout.cpp
     src/middleware/circuit_breaker.cpp
     src/middleware/rate_limiter.cpp
+    src/middleware/per_user_rate_limiter.cpp
     src/middleware/caching.cpp
     src/middleware/batching.cpp
 )

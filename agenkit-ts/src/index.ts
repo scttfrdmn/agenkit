@@ -38,6 +38,13 @@ export {
   WebSocketTransportConfig,
   WebSocketTransportError,
 } from './transports/websocket';
+export {
+  GrpcAgent,
+  GrpcServer,
+  GrpcTransportConfig,
+  GrpcServerConfig,
+  GrpcTransportError,
+} from './transports/grpc';
 export { TCPTransport } from './transports/tcp';
 export { RemoteAgent, RemoteAgentConfig } from './transports/remote';
 export {

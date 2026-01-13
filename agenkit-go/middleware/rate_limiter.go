@@ -23,6 +23,12 @@ type RateLimiterConfig struct {
 	// TokensPerRequest is the number of tokens consumed per request.
 	// Default: 1
 	TokensPerRequest int
+
+	// MaxWaitTimeout is the maximum time to wait for tokens before failing.
+	// If 0 (default), waits indefinitely (or until context is cancelled).
+	// This prevents requests from waiting too long when the rate limiter is heavily loaded.
+	// Example: time.Second * 5 means requests will wait at most 5 seconds for tokens.
+	MaxWaitTimeout time.Duration
 }
 
 // DefaultRateLimiterConfig returns a rate limiter config with sensible defaults.
@@ -181,6 +187,16 @@ func (r *RateLimiterDecorator) acquireTokens(ctx context.Context, tokensNeeded i
 	tokensDeficit := float64(tokensNeeded) - r.tokens
 	waitDuration := time.Duration(tokensDeficit/r.config.Rate*1000) * time.Millisecond
 
+	// Apply max wait timeout if configured
+	if r.config.MaxWaitTimeout > 0 && waitDuration > r.config.MaxWaitTimeout {
+		tokensAvailable := r.tokens
+		r.mu.Unlock()
+		return &RateLimitError{
+			TokensNeeded:    tokensNeeded,
+			TokensAvailable: tokensAvailable,
+		}
+	}
+
 	r.mu.Unlock()
 
 	// Wait outside the lock to allow other operations
@@ -287,4 +303,339 @@ func min(a, b float64) float64 {
 		return a
 	}
 	return b
+}
+
+// ==================== Per-User Rate Limiter ====================
+
+// PerUserRateLimiterConfig configures per-user rate limiter behavior.
+type PerUserRateLimiterConfig struct {
+	// Rate is the number of tokens added per second per user.
+	// Default: 10
+	Rate float64
+
+	// Capacity is the maximum burst capacity per user (maximum tokens in bucket).
+	// Default: 10
+	Capacity int
+
+	// TokensPerRequest is the number of tokens consumed per request.
+	// Default: 1
+	TokensPerRequest int
+
+	// MaxWaitTimeout is the maximum time to wait for tokens before failing.
+	// If 0 (default), waits indefinitely (or until context is cancelled).
+	MaxWaitTimeout time.Duration
+
+	// UserIDExtractor is a function that extracts the user ID from a message.
+	// If not provided, defaults to checking message.Metadata["user_id"].
+	// The function should return an empty string for anonymous/unknown users.
+	UserIDExtractor func(*agenkit.Message) string
+}
+
+// DefaultPerUserRateLimiterConfig returns a per-user rate limiter config with sensible defaults.
+func DefaultPerUserRateLimiterConfig() PerUserRateLimiterConfig {
+	return PerUserRateLimiterConfig{
+		Rate:             10.0,
+		Capacity:         10,
+		TokensPerRequest: 1,
+		UserIDExtractor: func(msg *agenkit.Message) string {
+			if msg.Metadata == nil {
+				return ""
+			}
+			if userID, ok := msg.Metadata["user_id"].(string); ok {
+				return userID
+			}
+			return ""
+		},
+	}
+}
+
+// userBucket represents a token bucket for a single user.
+type userBucket struct {
+	tokens     float64
+	lastUpdate time.Time
+}
+
+// PerUserRateLimiterMetrics tracks per-user rate limiter metrics.
+type PerUserRateLimiterMetrics struct {
+	mu               sync.RWMutex
+	TotalRequests    int64
+	AllowedRequests  int64
+	RejectedRequests int64
+	TotalWaitTime    time.Duration
+	ActiveUsers      int // Number of users with active buckets
+}
+
+// NewPerUserRateLimiterMetrics creates a new per-user metrics instance.
+func NewPerUserRateLimiterMetrics() *PerUserRateLimiterMetrics {
+	return &PerUserRateLimiterMetrics{}
+}
+
+// PerUserRateLimiterDecorator wraps an agent with per-user rate limiting protection.
+//
+// Unlike the global RateLimiterDecorator, this maintains separate token buckets for each user,
+// providing fair resource allocation across multiple users/tenants. This is essential for:
+//
+// - Multi-tenant applications where each user should have independent rate limits
+// - Preventing a single user from monopolizing resources
+// - Implementing tiered access (different rates for different user tiers)
+// - Fair queuing across concurrent users
+//
+// Example:
+//
+//	agent := &MyAgent{}
+//	perUserLimiter := middleware.NewPerUserRateLimiterDecorator(
+//		agent,
+//		middleware.PerUserRateLimiterConfig{
+//			Rate:     5.0,  // 5 requests per second per user
+//			Capacity: 10,   // Allow burst of 10 requests
+//		},
+//	)
+type PerUserRateLimiterDecorator struct {
+	agent   agenkit.Agent
+	config  PerUserRateLimiterConfig
+	mu      sync.Mutex
+	buckets map[string]*userBucket
+	metrics *PerUserRateLimiterMetrics
+}
+
+// Verify that PerUserRateLimiterDecorator implements Agent interface.
+var _ agenkit.Agent = (*PerUserRateLimiterDecorator)(nil)
+
+// NewPerUserRateLimiterDecorator creates a new per-user rate limiter decorator.
+func NewPerUserRateLimiterDecorator(agent agenkit.Agent, config PerUserRateLimiterConfig) *PerUserRateLimiterDecorator {
+	// Apply defaults
+	if config.Rate <= 0 {
+		config.Rate = 10.0
+	}
+	if config.Capacity < 1 {
+		config.Capacity = 10
+	}
+	if config.TokensPerRequest < 1 {
+		config.TokensPerRequest = 1
+	}
+	if config.UserIDExtractor == nil {
+		config.UserIDExtractor = func(msg *agenkit.Message) string {
+			if msg.Metadata == nil {
+				return ""
+			}
+			if userID, ok := msg.Metadata["user_id"].(string); ok {
+				return userID
+			}
+			return ""
+		}
+	}
+
+	// Validate
+	if config.TokensPerRequest > config.Capacity {
+		config.TokensPerRequest = config.Capacity
+	}
+
+	return &PerUserRateLimiterDecorator{
+		agent:   agent,
+		config:  config,
+		buckets: make(map[string]*userBucket),
+		metrics: NewPerUserRateLimiterMetrics(),
+	}
+}
+
+// Name returns the name of the underlying agent.
+func (r *PerUserRateLimiterDecorator) Name() string {
+	return r.agent.Name()
+}
+
+// Capabilities returns the capabilities of the underlying agent.
+func (r *PerUserRateLimiterDecorator) Capabilities() []string {
+	return r.agent.Capabilities()
+}
+
+// Introspect returns the introspection result of the underlying agent.
+func (r *PerUserRateLimiterDecorator) Introspect() *agenkit.IntrospectionResult {
+	return r.agent.Introspect()
+}
+
+// Metrics returns the per-user rate limiter metrics.
+func (r *PerUserRateLimiterDecorator) Metrics() *PerUserRateLimiterMetrics {
+	return r.metrics
+}
+
+// getUserBucket gets or creates a token bucket for the specified user.
+func (r *PerUserRateLimiterDecorator) getUserBucket(userID string) *userBucket {
+	// Check if bucket exists
+	if bucket, ok := r.buckets[userID]; ok {
+		return bucket
+	}
+
+	// Create new bucket
+	bucket := &userBucket{
+		tokens:     float64(r.config.Capacity),
+		lastUpdate: time.Now(),
+	}
+	r.buckets[userID] = bucket
+
+	// Update metrics
+	r.metrics.mu.Lock()
+	r.metrics.ActiveUsers = len(r.buckets)
+	r.metrics.mu.Unlock()
+
+	return bucket
+}
+
+// refillUserTokens adds tokens to a user's bucket based on elapsed time.
+func (r *PerUserRateLimiterDecorator) refillUserTokens(bucket *userBucket) {
+	now := time.Now()
+	elapsed := now.Sub(bucket.lastUpdate).Seconds()
+
+	// Add tokens based on elapsed time
+	tokensToAdd := elapsed * r.config.Rate
+	bucket.tokens = min(bucket.tokens+tokensToAdd, float64(r.config.Capacity))
+	bucket.lastUpdate = now
+}
+
+// acquireUserTokens acquires tokens from a specific user's bucket.
+func (r *PerUserRateLimiterDecorator) acquireUserTokens(ctx context.Context, userID string, tokensNeeded int, wait bool) error {
+	r.mu.Lock()
+
+	bucket := r.getUserBucket(userID)
+	r.refillUserTokens(bucket)
+
+	if bucket.tokens >= float64(tokensNeeded) {
+		// Sufficient tokens available
+		bucket.tokens -= float64(tokensNeeded)
+		r.mu.Unlock()
+		return nil
+	}
+
+	if !wait {
+		// Insufficient tokens and not waiting
+		tokensAvailable := bucket.tokens
+		r.mu.Unlock()
+		return &RateLimitError{
+			TokensNeeded:    tokensNeeded,
+			TokensAvailable: tokensAvailable,
+		}
+	}
+
+	// Calculate wait time for tokens
+	tokensDeficit := float64(tokensNeeded) - bucket.tokens
+	waitDuration := time.Duration(tokensDeficit/r.config.Rate*1000) * time.Millisecond
+
+	// Apply max wait timeout if configured
+	if r.config.MaxWaitTimeout > 0 && waitDuration > r.config.MaxWaitTimeout {
+		tokensAvailable := bucket.tokens
+		r.mu.Unlock()
+		return &RateLimitError{
+			TokensNeeded:    tokensNeeded,
+			TokensAvailable: tokensAvailable,
+		}
+	}
+
+	r.mu.Unlock()
+
+	// Wait outside the lock to allow other operations
+	waitStart := time.Now()
+	select {
+	case <-time.After(waitDuration):
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+	actualWaitDuration := time.Since(waitStart)
+
+	// Re-acquire lock and try again
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Refill tokens based on actual elapsed time
+	r.refillUserTokens(bucket)
+
+	// Use small epsilon for floating point comparison
+	const epsilon = 0.01
+	if bucket.tokens >= float64(tokensNeeded)-epsilon {
+		bucket.tokens -= float64(tokensNeeded)
+		r.metrics.mu.Lock()
+		r.metrics.TotalWaitTime += actualWaitDuration
+		r.metrics.mu.Unlock()
+		return nil
+	}
+
+	// Should not happen, but handle defensively
+	return &RateLimitError{
+		TokensNeeded:    tokensNeeded,
+		TokensAvailable: bucket.tokens,
+	}
+}
+
+// Process implements the Agent interface with per-user rate limiting.
+func (r *PerUserRateLimiterDecorator) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	r.metrics.mu.Lock()
+	r.metrics.TotalRequests++
+	r.metrics.mu.Unlock()
+
+	// Extract user ID
+	userID := r.config.UserIDExtractor(message)
+	if userID == "" {
+		// Fallback to anonymous user
+		userID = "anonymous"
+	}
+
+	// Acquire tokens for this user
+	err := r.acquireUserTokens(ctx, userID, r.config.TokensPerRequest, true)
+	if err != nil {
+		r.metrics.mu.Lock()
+		r.metrics.RejectedRequests++
+		r.metrics.mu.Unlock()
+		return nil, err
+	}
+
+	r.metrics.mu.Lock()
+	r.metrics.AllowedRequests++
+	r.metrics.mu.Unlock()
+
+	// Process request
+	return r.agent.Process(ctx, message)
+}
+
+// Stream implements the StreamingAgent interface by passing through to the underlying agent.
+// If the underlying agent doesn't support streaming, it returns an error.
+// Note: Rate limiting is applied per Stream() call per user, not per chunk.
+func (r *PerUserRateLimiterDecorator) Stream(ctx context.Context, message *agenkit.Message) (<-chan *agenkit.Message, <-chan error) {
+	// Check if underlying agent supports streaming
+	streamingAgent, ok := r.agent.(agenkit.StreamingAgent)
+	if !ok {
+		// Return channels with error
+		messageChan := make(chan *agenkit.Message)
+		errorChan := make(chan error, 1)
+		close(messageChan)
+		errorChan <- fmt.Errorf("underlying agent does not support streaming")
+		close(errorChan)
+		return messageChan, errorChan
+	}
+
+	// Extract user ID
+	userID := r.config.UserIDExtractor(message)
+	if userID == "" {
+		userID = "anonymous"
+	}
+
+	// Acquire tokens for this user before streaming
+	tokensNeeded := r.config.TokensPerRequest
+	if err := r.acquireUserTokens(ctx, userID, tokensNeeded, true); err != nil {
+		// Return channels with error
+		messageChan := make(chan *agenkit.Message)
+		errorChan := make(chan error, 1)
+		close(messageChan)
+		errorChan <- err
+		close(errorChan)
+
+		r.metrics.mu.Lock()
+		r.metrics.RejectedRequests++
+		r.metrics.mu.Unlock()
+		return messageChan, errorChan
+	}
+
+	r.metrics.mu.Lock()
+	r.metrics.AllowedRequests++
+	r.metrics.mu.Unlock()
+
+	// Pass through to underlying streaming agent
+	return streamingAgent.Stream(ctx, message)
 }

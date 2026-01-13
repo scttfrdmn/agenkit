@@ -30,6 +30,9 @@ export interface CircuitBreakerConfig {
   /** Timeout in ms before attempting recovery (default: 60000) */
   timeout?: number;
 
+  /** Optional per-request timeout in ms (default: none) */
+  requestTimeout?: number;
+
   /** Optional name for logging */
   name?: string;
 }
@@ -41,6 +44,16 @@ export class CircuitBreakerError extends Error {
   constructor(agentName: string) {
     super(`Circuit breaker OPEN for agent: ${agentName}`);
     this.name = 'CircuitBreakerError';
+  }
+}
+
+/**
+ * Request timeout error.
+ */
+export class RequestTimeoutError extends Error {
+  constructor(timeout: number) {
+    super(`Request timeout after ${timeout}ms`);
+    this.name = 'RequestTimeoutError';
   }
 }
 
@@ -95,6 +108,7 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
   private failureThreshold: number;
   private successThreshold: number;
   private timeout: number;
+  private requestTimeout?: number;
   private cbName: string;
   private _metrics: CircuitBreakerMetrics;
 
@@ -103,6 +117,7 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
     this.failureThreshold = config.failureThreshold || 5;
     this.successThreshold = config.successThreshold || 2;
     this.timeout = config.timeout || 60000;
+    this.requestTimeout = config.requestTimeout;
     this.cbName = config.name || `circuit-breaker-${agent.name}`;
     this._metrics = {
       totalRequests: 0,
@@ -132,6 +147,23 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
     this._metrics.currentState = to;
   }
 
+  /**
+   * Wrap a promise with a timeout.
+   * Returns the promise as-is if no requestTimeout is configured.
+   */
+  private async withTimeout<T>(promise: Promise<T>): Promise<T> {
+    if (!this.requestTimeout) {
+      return promise;
+    }
+
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new RequestTimeoutError(this.requestTimeout!)), this.requestTimeout)
+      ),
+    ]);
+  }
+
   async process(message: Message): Promise<Message> {
     this._metrics.totalRequests++;
 
@@ -150,7 +182,7 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
     }
 
     try {
-      const response = await this.agent.process(message);
+      const response = await this.withTimeout(this.agent.process(message));
 
       // Record success
       this._metrics.successfulRequests++;

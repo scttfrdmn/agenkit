@@ -28,6 +28,12 @@ export interface RateLimiterConfig {
 
   /** Tokens consumed per request (default: 1) */
   tokensPerRequest?: number;
+
+  /**
+   * Maximum time in ms to wait for tokens (default: 0, meaning wait indefinitely).
+   * If set and wait time exceeds this value, immediately reject with RateLimitError.
+   */
+  maxWaitTimeout?: number;
 }
 
 /**
@@ -84,6 +90,7 @@ export class RateLimiterDecorator implements Agent {
       rate: config?.rate ?? 10.0,
       capacity: config?.capacity ?? 10,
       tokensPerRequest: config?.tokensPerRequest ?? 1,
+      maxWaitTimeout: config?.maxWaitTimeout ?? 0,
     };
 
     // Validate configuration
@@ -167,6 +174,14 @@ export class RateLimiterDecorator implements Agent {
       // Calculate wait time for tokens
       const tokensDeficit = tokensNeeded - this.tokens;
       const waitTime = (tokensDeficit / this.config.rate) * 1000; // Convert to milliseconds
+
+      // Check if wait time exceeds max wait timeout
+      if (this.config.maxWaitTimeout > 0 && waitTime > this.config.maxWaitTimeout) {
+        throw new RateLimitError(
+          `Rate limit exceeded: would need to wait ${waitTime.toFixed(0)}ms, ` +
+            `but max wait timeout is ${this.config.maxWaitTimeout}ms`,
+        );
+      }
 
       // Wait for tokens (outside the lock would be better, but keep simple for now)
       await new Promise((resolve) => setTimeout(resolve, waitTime));

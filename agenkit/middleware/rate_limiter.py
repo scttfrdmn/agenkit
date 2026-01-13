@@ -15,6 +15,7 @@ class RateLimiterConfig:
     rate: float = 10.0  # Tokens per second
     capacity: int = 10  # Maximum burst capacity
     tokens_per_request: int = 1  # Tokens consumed per request
+    max_wait_timeout: float | None = None  # Maximum seconds to wait for tokens (None = wait indefinitely)
 
     def __post_init__(self):
         """Validate configuration."""
@@ -26,6 +27,8 @@ class RateLimiterConfig:
             raise ValueError("tokens_per_request must be at least 1")
         if self.tokens_per_request > self.capacity:
             raise ValueError("tokens_per_request cannot exceed capacity")
+        if self.max_wait_timeout is not None and self.max_wait_timeout <= 0:
+            raise ValueError("max_wait_timeout must be positive")
 
 
 class RateLimitError(Exception):
@@ -135,6 +138,14 @@ class RateLimiterDecorator(Agent):
             # Calculate wait time for tokens
             tokens_deficit = tokens_needed - self._tokens
             wait_time = tokens_deficit / self._config.rate
+
+            # Check if wait time exceeds max_wait_timeout
+            if self._config.max_wait_timeout is not None and wait_time > self._config.max_wait_timeout:
+                raise RateLimitError(
+                    f"Rate limit exceeded: would need to wait {wait_time:.2f}s "
+                    f"for {tokens_needed} tokens, but max_wait_timeout is "
+                    f"{self._config.max_wait_timeout:.2f}s"
+                )
 
         # Wait outside the lock to allow other operations
         await asyncio.sleep(wait_time)

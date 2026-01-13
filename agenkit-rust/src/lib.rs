@@ -103,6 +103,7 @@ pub mod safety;
 pub mod checkpointing;
 pub mod budget;
 pub mod memory;
+pub mod optimizations;
 
 // Re-export commonly used types
 pub use core::{

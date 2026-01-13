@@ -1,16 +1,16 @@
 {
-  "generated_at": "2025-12-31T04:23:26Z",
+  "generated_at": "2026-01-12T21:31:27Z",
   "languages": {
     "python": {
-      "total": 1789,
+      "total": 1792,
       "categories": {
         "patterns": 439,
         "techniques": 240,
         "safety": 162,
-        "adapters": 159,
+        "adapters": 141,
         "evaluation": 116,
         "middleware": 92,
-        "memory": 80,
+        "memory": 101,
         "routing": 34,
         "chaos": 53,
         "property": 37,
@@ -22,15 +22,15 @@
       }
     },
     "go": {
-      "total": 926,
+      "total": 588,
       "categories": {
-        "patterns": 362,
+        "patterns": 0,
         "techniques": 37,
         "safety": 94,
         "adapters": 54,
         "evaluation": 127,
-        "middleware": 79,
-        "memory": 6,
+        "middleware": 91,
+        "memory": 18,
         "routing": 0,
         "chaos": 0,
         "property": 0,
@@ -49,38 +49,6 @@
         "integration": 6,
         "safety": 0,
         "adapters": 8,
-        "routing": 0,
-        "chaos": 0,
-        "property": 0
-      }
-    },
-    "rust": {
-      "total": 277,
-      "categories": {
-        "patterns": 133,
-        "techniques": 0,
-        "adapters": 31,
-        "evaluation": 73,
-        "safety": 0,
-        "routing": 0,
-        "chaos": 0,
-        "property": 0
-      }
-    },
-    "zig": {
-      "total": 214,
-      "note": "Zig uses in-code tests with no clear category separation",
-      "categories": {}
-    },
-    "typescript": {
-      "total": 328,
-      "test_files": 41,
-      "note": "Counts may be estimated from test files",
-      "categories": {
-        "patterns": 7,
-        "techniques": 0,
-        "safety": 0,
-        "adapters": 0,
         "routing": 0,
         "chaos": 0,
         "property": 0

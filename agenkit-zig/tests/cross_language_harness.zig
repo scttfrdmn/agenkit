@@ -1703,6 +1703,8 @@ fn executeTest(
     // For Parallel pattern, extract from config.agents
     // Compare case-insensitively
     const is_parallel = std.ascii.eqlIgnoreCase(pattern, "parallel");
+    const is_sequential = std.ascii.eqlIgnoreCase(pattern, "sequential");
+
     if (is_parallel) {
         if (config.object.get("agents")) |agents_value| {
             const agents = agents_value.array.items;
@@ -1726,6 +1728,15 @@ fn executeTest(
                 }
 
                 try sub_agents.append(.{ .string = agent_name });
+            }
+        }
+    } else if (is_sequential) {
+        // For Sequential pattern, extract from execution_order
+        if (output_message.object.get("metadata")) |metadata| {
+            if (metadata.object.get("execution_order")) |execution_order_field| {
+                if (execution_order_field == .array) {
+                    sub_agents = execution_order_field.array;
+                }
             }
         }
     } else if (output_message.object.get("metadata")) |metadata| {

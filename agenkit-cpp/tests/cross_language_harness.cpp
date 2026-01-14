@@ -1398,6 +1398,11 @@ json execute_test(const json& payload) {
                 sub_agents.push_back(agent_name);
             }
         }
+    } else if (pattern_lower == "sequential" && output_message.contains("metadata")) {
+        // For Sequential pattern, extract from execution_order
+        if (output_message["metadata"].contains("execution_order")) {
+            sub_agents = output_message["metadata"]["execution_order"];
+        }
     } else if (output_message.contains("metadata")) {
         // Extract sub_agents field directly (for AgentsAsTools pattern)
         // Don't extract execution_order - that's pattern-specific metadata for Supervisor

@@ -204,6 +204,12 @@ function executeTest(payload) {
             subAgents.push(agentName);
         }
     }
+    else if (patternLower === 'sequential' && outputMessage.metadata) {
+        // For Sequential pattern, extract from execution_order
+        if (Array.isArray(outputMessage.metadata.execution_order)) {
+            subAgents = outputMessage.metadata.execution_order;
+        }
+    }
     else if (outputMessage.metadata) {
         // Extract sub_agents field directly (for AgentsAsTools pattern)
         // Don't extract execution_order - that's pattern-specific metadata for Supervisor

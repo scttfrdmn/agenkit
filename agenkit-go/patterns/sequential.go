@@ -95,6 +95,7 @@ func (s *SequentialAgent) Process(ctx context.Context, message *agenkit.Message)
 
 	// Track pipeline stages for observability
 	stages := make([]map[string]interface{}, 0, len(s.agents))
+	executionOrder := make([]string, 0, len(s.agents))
 
 	// Pass message through each agent
 	current := message
@@ -112,15 +113,13 @@ func (s *SequentialAgent) Process(ctx context.Context, message *agenkit.Message)
 			return nil, fmt.Errorf("agent %d (%s) failed: %w", i, agent.Name(), err)
 		}
 
-		// Record stage metadata
+		// Record stage metadata (without circular references)
 		stageInfo := map[string]interface{}{
 			"agent": agent.Name(),
 			"stage": i,
 		}
-		if result.Metadata != nil {
-			stageInfo["metadata"] = result.Metadata
-		}
 		stages = append(stages, stageInfo)
+		executionOrder = append(executionOrder, agent.Name())
 
 		// Use result as input for next agent
 		current = result
@@ -130,8 +129,18 @@ func (s *SequentialAgent) Process(ctx context.Context, message *agenkit.Message)
 	if current.Metadata == nil {
 		current.Metadata = make(map[string]interface{})
 	}
-	current.Metadata["pipeline_stages"] = stages
+
+	// Convert stages to []interface{} for JSON marshaling
+	stagesInterface := make([]interface{}, len(stages))
+	for i, stage := range stages {
+		stagesInterface[i] = stage
+	}
+
+	current.Metadata["pipeline_stages"] = stagesInterface
 	current.Metadata["pipeline_length"] = len(s.agents)
+	current.Metadata["execution_order"] = executionOrder
+	current.Metadata["agent_count"] = len(s.agents)
+	current.Metadata["sub_agents"] = executionOrder // For test harness compatibility
 
 	return current, nil
 }

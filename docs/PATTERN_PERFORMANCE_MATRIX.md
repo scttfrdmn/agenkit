@@ -6,6 +6,24 @@
 
 ---
 
+## ⚠️ CRITICAL: Cross-Language Comparisons Are Invalid
+
+**Issue**: GitHub #459 - Benchmark Methodology Flaw
+
+The current Python and TypeScript benchmarks **do not test actual patterns**. They only measure mock agent echo latency, while Go, C++, and Zig benchmarks correctly test pattern implementations.
+
+**What this means**:
+- ❌ Python benchmarks measure `MockAgent.process()` echo only (1.5-3.5 μs)
+- ❌ TypeScript benchmarks have the same issue
+- ✅ Go, C++, Zig benchmarks measure actual pattern overhead (1-185 μs)
+- ❌ **All cross-language comparisons below are meaningless**
+
+**Status**: Python and TypeScript benchmarks must be rewritten to test actual patterns before any performance claims can be made. See `BENCHMARK_METHODOLOGY_ISSUE.md` for full analysis.
+
+**Use Case**: Each language's internal benchmarks are still valid for tracking regressions within that language.
+
+---
+
 ## Executive Summary
 
 This document provides a comprehensive performance comparison of all agent patterns across Agenkit's 6 language implementations. Performance benchmarks measure **framework overhead only** using mock agents to isolate pattern logic from LLM latency.
@@ -22,18 +40,22 @@ This document provides a comprehensive performance comparison of all agent patte
 
 ## Performance Comparison (Python vs Go)
 
+⚠️ **WARNING: These comparisons are invalid - see issue #459**
+
 ### Core Patterns
 
-| Pattern | Python (μs) | Go (μs) | Go Speedup | Python Ops/sec | Go Ops/sec |
+| Pattern | Python (μs) | Go (μs) | Comparison | Python Ops/sec | Go Ops/sec |
 |---------|-------------|---------|------------|----------------|------------|
-| **Reflection** | 1.59 | 185.2 | **0.009x slower** ⚠️ | 627,336 | 5,399 |
-| **ReAct** | 2.36 | 1.93 | **1.22x faster** | 423,139 | 518,135 |
-| **Sequential** | 1.79 | 1.25 | **1.43x faster** | 558,724 | 800,000 |
-| **Parallel** | 1.88 | 5.21 | **0.36x slower** | 533,097 | 191,938 |
+| **Reflection** | 1.59 ❌ | 185.2 ✅ | ❌ **Invalid** (Python tests echo only) | 627,336 | 5,399 |
+| **ReAct** | 2.36 ❌ | 1.93 ✅ | ❌ **Invalid** (Python tests echo only) | 423,139 | 518,135 |
+| **Sequential** | 1.79 ❌ | 1.25 ✅ | ❌ **Invalid** (Python tests echo only) | 558,724 | 800,000 |
+| **Parallel** | 1.88 ❌ | 5.21 ✅ | ❌ **Invalid** (Python tests echo only) | 533,097 | 191,938 |
 
-**Note**: Go Reflection is slower due to pattern complexity (2 iterations with critique parsing using regex). See "Go Reflection Performance Fix" section below for analysis.
+**Note**: Python numbers are NOT pattern overhead - they measure `MockAgent.process()` echo latency only. Go numbers correctly measure actual pattern implementations. These cannot be compared.
 
 ### All Python Patterns (Sorted by Performance)
+
+⚠️ **WARNING: These are MockAgent echo latencies, NOT pattern overhead**
 
 | Rank | Pattern | Avg Time (μs) | Ops/sec | Category |
 |------|---------|---------------|---------|----------|
@@ -65,9 +87,13 @@ This document provides a comprehensive performance comparison of all agent patte
 
 ## Key Findings
 
+⚠️ **Most findings below are based on invalid comparisons - see issue #459**
+
 ### 1. Go Reflection Performance Fix ✅
 
-**Issue** (Resolved): Go Reflection was **156x slower** than Python (247.8 μs vs 1.59 μs)
+**Issue** (Resolved): Go Reflection was initially slow (247.8 μs)
+
+**Note**: The "156x slower than Python" comparison was invalid because Python was only testing echo latency, not the Reflection pattern.
 
 **Root Cause**: `regexp.MustCompile()` called in hot loop (90,432 times per benchmark run)
 
@@ -78,7 +104,7 @@ This document provides a comprehensive performance comparison of all agent patte
 - Memory: **80% reduction** (35 KB → 7 KB per operation)
 - Allocations: **85% fewer** (298 → 46 allocs/op)
 
-**Current Status**: Go Reflection is now **116x slower** than Python (185.2 μs vs 1.59 μs), but this is due to pattern complexity, not a bug:
+**Current Status**: Go Reflection runs at 185.2 μs for the actual pattern implementation:
 - Reflection runs 2 full iterations (generate + critique + parse + refine)
 - Each critique requires regex matching (40-50 μs per parse due to backtracking)
 - String formatting for prompts adds overhead (15-20 μs per prompt)
@@ -88,39 +114,30 @@ This document provides a comprehensive performance comparison of all agent patte
 
 **See**: `GO_REFLECTION_FIX_SUMMARY.md` and `PERFORMANCE_ANALYSIS_GO_REFLECTION.md` for full analysis
 
-### 2. Python Consistency
+### 2. Python Consistency ❌ INVALID
 
 **Finding**: All Python patterns execute in **1.5-3.6 μs range** (2.4x spread)
 
-**Analysis**: Extremely consistent performance across diverse pattern types demonstrates:
-- Well-optimized core abstractions
-- Minimal pattern-specific overhead
-- Efficient async/await implementation
+**❌ RETRACTED**: This finding is invalid - Python benchmarks only test `MockAgent.process()` echo latency, NOT actual patterns. The consistency simply reflects that echo operations have similar performance.
 
-**Slowest patterns** (3-3.6 μs) are composition-heavy:
-- Task (3.59 μs) - One-shot with full lifecycle
-- Multiagent (3.02 μs) - Coordination overhead
-- Fallback (3.00 μs) - Sequential attempt logic
+**Actual Pattern Overhead**: Unknown - benchmarks need to be rewritten.
 
-### 3. Go Sequential Pattern Excellence
+### 3. Go Sequential Pattern Excellence ❌ INVALID COMPARISON
 
 **Finding**: Go Sequential is **2.01x faster** than Python (0.89 μs vs 1.79 μs)
 
-**Analysis**:
-- Go's goroutines excel at simple sequential coordination
-- Low allocation overhead (1,848 B/op, 21 allocs/op)
-- Compiled code advantage for straightforward control flow
+**❌ RETRACTED**: This comparison is meaningless - Python benchmark tests echo latency only, not the Sequential pattern.
 
-### 4. Throughput Comparison
+**Go Sequential** (valid): 1.25 μs for actual pattern with low allocation overhead (1,848 B/op, 21 allocs/op)
+
+### 4. Throughput Comparison ❌ INVALID
 
 | Language | Min Ops/sec | Max Ops/sec | Average |
 |----------|-------------|-------------|---------|
-| Python | 278,678 | 659,359 | 471,872 |
-| Go (measured) | 4,035 | 1,122,334 | 477,219 |
+| Python ❌ | 278,678 | 659,359 | 471,872 |
+| Go (measured) ✅ | 4,035 | 1,122,334 | 477,219 |
 
-**Note**: Go's average is skewed by Reflection outlier. Excluding Reflection:
-- Go Average: **635,280 ops/sec**
-- **1.35x faster than Python** on average
+**❌ RETRACTED**: Python numbers are echo latencies only, not pattern throughput. These cannot be compared to Go's actual pattern measurements.
 
 ---
 

@@ -494,33 +494,33 @@ spec:
             cpu: "500m"
 ```
 
-## Migration from Python
+## Migration Guides
 
-Go follows Python's API closely. Most Python code translates directly:
+### Migrating to Go
 
-**Python**:
-```python
-from agenkit.patterns import SequentialAgent
+Choose your source language for detailed migration guide:
 
-agent = SequentialAgent([agent1, agent2, agent3])
-result = await agent.process(message)
-```
+| From | Guide | Key Benefits |
+|------|-------|-------------|
+| **Python** | [MIGRATE_PYTHON_TO_GO.md](../docs/MIGRATE_PYTHON_TO_GO.md) | 5-20x faster, true parallelism, single binary |
+| **TypeScript** | [MIGRATE_TYPESCRIPT_TO_GO.md](../docs/MIGRATE_TYPESCRIPT_TO_GO.md) | Multi-threaded, better concurrency, backend services |
+| **Rust** | [MIGRATE_RUST_TO_GO.md](../docs/MIGRATE_RUST_TO_GO.md) | Simpler deployment, faster iteration, GC simplification |
+| **C++** | [MIGRATE_CPP_TO_GO.md](../docs/MIGRATE_CPP_TO_GO.md) | Simpler memory, better concurrency, faster compilation |
+| **Zig** | [MIGRATE_ZIG_TO_GO.md](../docs/MIGRATE_ZIG_TO_GO.md) | GC simplification, goroutines, better concurrency |
 
-**Go**:
-```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
+### Migrating from Go
 
-agent := patterns.NewSequentialAgent([]agenkit.Agent{agent1, agent2, agent3})
-result, err := agent.Process(ctx, message)
-```
+| To | Guide | Primary Use Case |
+|----|-------|-----------------|
+| **Python** | [MIGRATE_GO_TO_PYTHON.md](../docs/MIGRATE_GO_TO_PYTHON.md) | Prototyping, ML integration, rapid development |
+| **TypeScript** | [MIGRATE_GO_TO_TYPESCRIPT.md](../docs/MIGRATE_GO_TO_TYPESCRIPT.md) | Web frontend, universal deployment, browser support |
+| **Rust** | [MIGRATE_GO_TO_RUST.md](../docs/MIGRATE_GO_TO_RUST.md) | Memory safety, WASM, zero-cost abstractions |
+| **C++** | [MIGRATE_GO_TO_CPP.md](../docs/MIGRATE_GO_TO_CPP.md) | Performance tuning, legacy integration, C ABI |
+| **Zig** | [MIGRATE_GO_TO_ZIG.md](../docs/MIGRATE_GO_TO_ZIG.md) | Embedded systems, minimal runtime, explicit control |
 
-Key differences:
-- Go uses explicit error handling (`err`)
-- Go requires `context.Context` for cancellation
-- Go uses constructors (`New*`) instead of class initialization
-- Go uses struct methods instead of class methods
-
-See [../docs/MIGRATION.md](../docs/MIGRATION.md#python-to-go) for complete migration guide.
+**See also:**
+- [Language Profile: Go](../docs/LANGUAGE_PROFILE_GO.md) - Deep dive into Go idioms and patterns
+- [Migration Index](../docs/MIGRATION_INDEX.md) - Complete migration documentation hub
 
 ## Development
 

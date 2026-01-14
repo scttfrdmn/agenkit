@@ -236,6 +236,36 @@ Run specific test:
 
 ---
 
+## Migration Guides
+
+### Migrating to C++
+
+Choose your source language for detailed migration guide:
+
+| From | Guide | Key Benefits |
+|------|-------|-------------|
+| **Python** | [MIGRATION.md](../docs/MIGRATION.md#python--c) | 20-100x faster, native performance, direct hardware access |
+| **Go** | [MIGRATE_GO_TO_CPP.md](../docs/MIGRATE_GO_TO_CPP.md) | Fine-grained control, performance tuning, legacy integration |
+| **TypeScript** | [MIGRATE_TYPESCRIPT_TO_CPP.md](../docs/MIGRATE_TYPESCRIPT_TO_CPP.md) | Native performance, 10-20x faster, systems programming |
+| **Rust** | [MIGRATE_RUST_TO_CPP.md](../docs/MIGRATE_RUST_TO_CPP.md) | Legacy integration, C ABI, existing C++ codebases |
+| **Zig** | [MIGRATE_ZIG_TO_CPP.md](../docs/MIGRATE_ZIG_TO_CPP.md) | Larger ecosystem, mature tooling, RAII patterns |
+
+### Migrating from C++
+
+| To | Guide | Primary Use Case |
+|----|-------|-----------------|
+| **Python** | [MIGRATE_CPP_TO_PYTHON.md](../docs/MIGRATE_CPP_TO_PYTHON.md) | Easier maintenance, prototyping, ML integration |
+| **Go** | [MIGRATE_CPP_TO_GO.md](../docs/MIGRATE_CPP_TO_GO.md) | Simpler memory, better concurrency, faster compilation |
+| **TypeScript** | [MIGRATE_CPP_TO_TYPESCRIPT.md](../docs/MIGRATE_CPP_TO_TYPESCRIPT.md) | Web deployment, cross-platform, universal code |
+| **Rust** | [MIGRATE_CPP_TO_RUST.md](../docs/MIGRATE_CPP_TO_RUST.md) | Memory safety, modern async, prevents data races |
+| **Zig** | [MIGRATE_CPP_TO_ZIG.md](../docs/MIGRATE_CPP_TO_ZIG.md) | Simpler language, explicit control, faster compilation |
+
+**See also:**
+- [Language Profile: C++](../docs/LANGUAGE_PROFILE_CPP.md) - Deep dive into C++ idioms and patterns
+- [Migration Index](../docs/MIGRATION_INDEX.md) - Complete migration documentation hub
+
+---
+
 ## Architecture
 
 Agenkit C++ follows a layered architecture:

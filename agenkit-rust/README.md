@@ -151,6 +151,34 @@ cargo run --example memory_hierarchy_pattern      # Three-tier memory
 cargo run --example reasoning_with_tools_pattern  # Interleaved reasoning
 ```
 
+## Migration Guides
+
+### Migrating to Rust
+
+Choose your source language for detailed migration guide:
+
+| From | Guide | Key Benefits |
+|------|-------|-------------|
+| **Python** | [MIGRATE_PYTHON_TO_RUST.md](../docs/MIGRATE_PYTHON_TO_RUST.md) | 20-100x faster, memory safety, WASM support |
+| **Go** | [MIGRATE_GO_TO_RUST.md](../docs/MIGRATE_GO_TO_RUST.md) | Memory safety, WASM, zero-cost abstractions |
+| **TypeScript** | [MIGRATE_TYPESCRIPT_TO_RUST.md](../docs/MIGRATE_TYPESCRIPT_TO_RUST.md) | 10-20x faster, systems programming, compile-time safety |
+| **C++** | [MIGRATE_CPP_TO_RUST.md](../docs/MIGRATE_CPP_TO_RUST.md) | Memory safety, modern async, prevents data races |
+| **Zig** | [MIGRATE_ZIG_TO_RUST.md](../docs/MIGRATE_ZIG_TO_RUST.md) | Async ecosystem, ownership system, borrow checker |
+
+### Migrating from Rust
+
+| To | Guide | Primary Use Case |
+|----|-------|-----------------|
+| **Python** | [MIGRATE_RUST_TO_PYTHON.md](../docs/MIGRATE_RUST_TO_PYTHON.md) | Prototyping, ML integration, rapid development |
+| **Go** | [MIGRATE_RUST_TO_GO.md](../docs/MIGRATE_RUST_TO_GO.md) | Simpler deployment, faster iteration, GC simplification |
+| **TypeScript** | [MIGRATE_RUST_TO_TYPESCRIPT.md](../docs/MIGRATE_RUST_TO_TYPESCRIPT.md) | Web deployment, universal code, easier maintenance |
+| **C++** | [MIGRATE_RUST_TO_CPP.md](../docs/MIGRATE_RUST_TO_CPP.md) | Legacy integration, C ABI compatibility, existing codebases |
+| **Zig** | [MIGRATE_RUST_TO_ZIG.md](../docs/MIGRATE_RUST_TO_ZIG.md) | Embedded systems, simpler async model, explicit control |
+
+**See also:**
+- [Language Profile: Rust](../docs/LANGUAGE_PROFILE_RUST.md) - Deep dive into Rust idioms and patterns
+- [Migration Index](../docs/MIGRATION_INDEX.md) - Complete migration documentation hub
+
 ## Testing
 
 Run all tests:

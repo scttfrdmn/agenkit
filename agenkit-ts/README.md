@@ -256,6 +256,34 @@ Full TypeScript support with comprehensive type definitions.
 
 Built-in resilience patterns and LLM integrations.
 
+## Migration Guides
+
+### Migrating to TypeScript
+
+Choose your source language for detailed migration guide:
+
+| From | Guide | Key Benefits |
+|------|-------|-------------|
+| **Python** | [MIGRATE_PYTHON_TO_TYPESCRIPT.md](../docs/MIGRATE_PYTHON_TO_TYPESCRIPT.md) | Similar async/await, ~2x faster, universal deployment |
+| **Go** | [MIGRATE_GO_TO_TYPESCRIPT.md](../docs/MIGRATE_GO_TO_TYPESCRIPT.md) | Web/browser support, NPM ecosystem, universal code |
+| **Rust** | [MIGRATE_RUST_TO_TYPESCRIPT.md](../docs/MIGRATE_RUST_TO_TYPESCRIPT.md) | Web deployment, easier maintenance, universal code |
+| **C++** | [MIGRATE_CPP_TO_TYPESCRIPT.md](../docs/MIGRATE_CPP_TO_TYPESCRIPT.md) | Web deployment, cross-platform, simpler memory |
+| **Zig** | [MIGRATE_ZIG_TO_TYPESCRIPT.md](../docs/MIGRATE_ZIG_TO_TYPESCRIPT.md) | Web deployment, GC simplification, universal code |
+
+### Migrating from TypeScript
+
+| To | Guide | Primary Use Case |
+|----|-------|-----------------|
+| **Python** | [MIGRATE_TYPESCRIPT_TO_PYTHON.md](../docs/MIGRATE_TYPESCRIPT_TO_PYTHON.md) | Data science, ML integration, rapid prototyping |
+| **Go** | [MIGRATE_TYPESCRIPT_TO_GO.md](../docs/MIGRATE_TYPESCRIPT_TO_GO.md) | Backend services, true parallelism, better performance |
+| **Rust** | [MIGRATE_TYPESCRIPT_TO_RUST.md](../docs/MIGRATE_TYPESCRIPT_TO_RUST.md) | Systems programming, WASM, 10-20x performance |
+| **C++** | [MIGRATE_TYPESCRIPT_TO_CPP.md](../docs/MIGRATE_TYPESCRIPT_TO_CPP.md) | Native performance, legacy integration, 10-20x faster |
+| **Zig** | [MIGRATE_TYPESCRIPT_TO_ZIG.md](../docs/MIGRATE_TYPESCRIPT_TO_ZIG.md) | Embedded systems, explicit control, no GC |
+
+**See also:**
+- [Language Profile: TypeScript](../docs/LANGUAGE_PROFILE_TYPESCRIPT.md) - Deep dive into TypeScript idioms and patterns
+- [Migration Index](../docs/MIGRATION_INDEX.md) - Complete migration documentation hub
+
 ## Examples
 
 See `examples/` directory for complete, runnable examples:

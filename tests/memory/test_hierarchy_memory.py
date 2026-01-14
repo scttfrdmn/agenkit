@@ -177,7 +177,9 @@ async def test_message_metadata_preserved():
     memory = HierarchyMemory()
 
     msg = Message(
-        role="user", content="Test message", metadata={"custom_field": "custom_value", "tags": ["important"]}
+        role="user",
+        content="Test message",
+        metadata={"custom_field": "custom_value", "tags": ["important"]},
     )
 
     await memory.store("session-1", msg)

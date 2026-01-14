@@ -15,7 +15,9 @@ class RateLimiterConfig:
     rate: float = 10.0  # Tokens per second
     capacity: int = 10  # Maximum burst capacity
     tokens_per_request: int = 1  # Tokens consumed per request
-    max_wait_timeout: float | None = None  # Maximum seconds to wait for tokens (None = wait indefinitely)
+    max_wait_timeout: float | None = (
+        None  # Maximum seconds to wait for tokens (None = wait indefinitely)
+    )
 
     def __post_init__(self):
         """Validate configuration."""
@@ -140,7 +142,10 @@ class RateLimiterDecorator(Agent):
             wait_time = tokens_deficit / self._config.rate
 
             # Check if wait time exceeds max_wait_timeout
-            if self._config.max_wait_timeout is not None and wait_time > self._config.max_wait_timeout:
+            if (
+                self._config.max_wait_timeout is not None
+                and wait_time > self._config.max_wait_timeout
+            ):
                 raise RateLimitError(
                     f"Rate limit exceeded: would need to wait {wait_time:.2f}s "
                     f"for {tokens_needed} tokens, but max_wait_timeout is "

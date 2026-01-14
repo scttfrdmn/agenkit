@@ -661,18 +661,40 @@ Production-ready Kubernetes manifests.
 **Why**: Ensure identical behavior across all implementations to give users confidence in cross-language portability.
 
 #### Performance Benchmarks (Jan 6 - Jan 20, 2026)
-**Status**: 🚧 Planned
+**Status**: 🚧 Partial - Python & Go Complete | **Last Updated**: January 14, 2026
 
-**Goal**: Benchmark all 18 patterns across all 6 languages
+**Goal**: Benchmark all 21 patterns across all 6 languages
 
-**Scope**:
-- Create comprehensive benchmark suite
-- Run benchmarks on all languages
-- Create performance comparison matrix
-- Identify optimization opportunities
-- Document performance characteristics
+**Current Progress**:
+- ✅ Python: 17/21 patterns benchmarked (81% complete)
+- ✅ Go: 4/21 core patterns benchmarked (19% complete)
+- ✅ Performance comparison matrix created (`docs/PATTERN_PERFORMANCE_MATRIX.md`)
+- ⚠️ TypeScript: Implementation exists, needs dependency fixes
+- ⚠️ Rust: Benchmark suite not implemented
+- ⚠️ C++: Benchmarks exist but not accessible/built
+- ⚠️ Zig: Benchmark command not configured
+
+**Deliverables**:
+- ✅ Python pattern benchmarks (`benchmarks/python_pattern_benchmarks.py`)
+- ✅ Go pattern benchmarks (`agenkit-go/benchmarks/pattern_benchmarks_test.go`)
+- ✅ Performance matrix documentation (`docs/PATTERN_PERFORMANCE_MATRIX.md`)
+- ✅ Baseline performance data (Python: 1.52-3.59 μs, Go: 0.89-247.8 μs)
+- 🔲 Complete remaining language benchmarks (TypeScript, Rust, C++, Zig)
+
+**Key Findings**:
+- Python: Consistent 1.5-3.6 μs across all patterns (avg: 2.12 μs)
+- Go: 0.89-2.67 μs for core patterns (2x faster than Python for Sequential)
+- Go Reflection anomaly: 156x slower than Python (needs investigation)
+- Pattern overhead negligible: <0.2% of typical LLM call latency
 
 **Why**: Provide users with data-driven language selection guidance and establish performance baselines.
+
+**Next Steps**:
+1. Fix TypeScript benchmark dependencies
+2. Implement Rust pattern benchmark suite
+3. Build and run C++ benchmarks
+4. Configure Zig benchmark command
+5. Investigate Go Reflection performance issue
 
 #### [#216](https://github.com/scttfrdmn/agenkit/issues/216) Comprehensive User Documentation (Jan 20 - Feb 3, 2026)
 **Status**: 🚧 Planned | **Priority**: 🔴 Critical (Moved to Pre-v1.0)

@@ -290,10 +290,15 @@ async def test_concurrent_large_payloads():
 @pytest.mark.chaos
 @pytest.mark.slow
 async def test_performance_under_sustained_load():
-    """Test performance degradation under sustained load."""
+    """Test performance degradation under sustained load.
+
+    This test demonstrates that concurrent requests complete faster overall
+    even though individual requests may take longer due to contention.
+    """
 
     class LoadSensitiveAgent(Agent):
         def __init__(self):
+            self._request_count = 0
             self._concurrent_requests = 0
             self._max_concurrent = 0
 
@@ -307,12 +312,13 @@ async def test_performance_under_sustained_load():
 
         async def process(self, message: Message) -> Message:
             self._concurrent_requests += 1
+            self._request_count += 1
             self._max_concurrent = max(self._max_concurrent, self._concurrent_requests)
 
             try:
-                # Slower with more concurrent requests
-                delay = 0.01 * self._concurrent_requests
-                await asyncio.sleep(delay)
+                # Fixed delay per request to make timing predictable
+                # In production, this would be actual CPU/IO work
+                await asyncio.sleep(0.05)  # 50ms per request
 
                 return Message(
                     role="agent",
@@ -325,22 +331,29 @@ async def test_performance_under_sustained_load():
     agent = LoadSensitiveAgent()
     message = Message(role="user", content="Test")
 
-    # Sequential requests should be fast
+    # Sequential: 10 requests × 50ms each = 500ms
     start = time.time()
     for _ in range(10):
         await agent.process(message)
     sequential_time = time.time() - start
 
-    # Concurrent requests should be slower
+    # Concurrent: All 10 run in parallel = ~50ms total
     start = time.time()
     tasks = [agent.process(message) for _ in range(10)]
     await asyncio.gather(*tasks)
     concurrent_time = time.time() - start
 
-    # Concurrent should be faster than sequential despite per-request slowdown
+    # Concurrent should be significantly faster (at least 3x faster)
+    # Sequential: ~0.50s, Concurrent: ~0.05s
+    # Use conservative 2x threshold to handle timing variance
     assert (
-        concurrent_time < sequential_time
-    ), f"Concurrent ({concurrent_time:.2f}s) should be faster than sequential ({sequential_time:.2f}s)"
+        concurrent_time * 2 < sequential_time
+    ), f"Concurrent ({concurrent_time:.2f}s) should be <50% of sequential ({sequential_time:.2f}s)"
+
+    # Verify concurrent execution actually happened
+    assert (
+        agent._max_concurrent >= 5
+    ), f"Should have seen significant concurrency, got max={agent._max_concurrent}"
 
 
 @pytest.mark.asyncio

@@ -306,6 +306,50 @@ async def python_grpc_server(port: int | None = None):
         await server.stop()
 
 
+async def wait_for_grpc_server(
+    port: int,
+    process: subprocess.Popen,
+    timeout: float = 10.0,
+    interval: float = 0.1,
+) -> bool:
+    """Wait for a gRPC server to become available.
+
+    Args:
+        port: Port number to check
+        process: Server subprocess
+        timeout: Maximum time to wait in seconds
+        interval: Time between checks in seconds
+
+    Returns:
+        bool: True if server is available, False if timeout or process died
+    """
+    start = time.time()
+    while time.time() - start < timeout:
+        # Check if process is still running
+        if process.poll() is not None:
+            # Process died
+            stdout, stderr = process.communicate()
+            print(f"Go gRPC server exited early (code {process.returncode})")
+            print(f"stdout: {stdout.decode()}")
+            print(f"stderr: {stderr.decode()}")
+            return False
+
+        # Try to connect to the port
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(1.0)
+                s.connect(("localhost", port))
+                # Connection successful - server is ready
+                return True
+        except (ConnectionRefusedError, OSError):
+            # Not ready yet, try again
+            pass
+
+        await asyncio.sleep(interval)
+
+    return False
+
+
 @asynccontextmanager
 async def go_grpc_server(port: int | None = None):
     """Start a Go gRPC server for testing.
@@ -339,9 +383,15 @@ async def go_grpc_server(port: int | None = None):
     )
 
     try:
-        # Wait for server to be ready (gRPC doesn't have health check endpoint by default)
-        # We'll just wait a bit for it to start
-        await asyncio.sleep(2.0)
+        # Wait for server to be ready with proper health checking
+        if not await wait_for_grpc_server(port, process, timeout=10.0):
+            process.kill()
+            stdout, stderr = process.communicate()
+            raise RuntimeError(
+                f"Go gRPC server failed to start on port {port}\n"
+                f"stdout: {stdout.decode()}\n"
+                f"stderr: {stderr.decode()}"
+            )
 
         yield port, process
     finally:

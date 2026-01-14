@@ -279,6 +279,34 @@ pub const MyAgent = struct {
 };
 ```
 
+## Migration Guides
+
+### Migrating to Zig
+
+Choose your source language for detailed migration guide:
+
+| From | Guide | Key Benefits |
+|------|-------|-------------|
+| **Python** | [MIGRATION.md](../docs/MIGRATION.md#python--zig) | 20-100x faster, no GC, explicit control, embedded systems |
+| **Go** | [MIGRATE_GO_TO_ZIG.md](../docs/MIGRATE_GO_TO_ZIG.md) | No GC, explicit allocators, minimal runtime |
+| **TypeScript** | [MIGRATE_TYPESCRIPT_TO_ZIG.md](../docs/MIGRATE_TYPESCRIPT_TO_ZIG.md) | No GC, 10-20x faster, explicit control |
+| **Rust** | [MIGRATE_RUST_TO_ZIG.md](../docs/MIGRATE_RUST_TO_ZIG.md) | Simpler async model, explicit allocators, comptime |
+| **C++** | [MIGRATE_CPP_TO_ZIG.md](../docs/MIGRATE_CPP_TO_ZIG.md) | Simpler language, explicit defer, faster compilation |
+
+### Migrating from Zig
+
+| To | Guide | Primary Use Case |
+|----|-------|-----------------|
+| **Python** | [MIGRATE_ZIG_TO_PYTHON.md](../docs/MIGRATE_ZIG_TO_PYTHON.md) | High-level APIs, ML integration, rapid prototyping |
+| **Go** | [MIGRATE_ZIG_TO_GO.md](../docs/MIGRATE_ZIG_TO_GO.md) | Better concurrency, GC simplification, simpler deployment |
+| **TypeScript** | [MIGRATE_ZIG_TO_TYPESCRIPT.md](../docs/MIGRATE_ZIG_TO_TYPESCRIPT.md) | Web deployment, universal code, GC simplification |
+| **Rust** | [MIGRATE_ZIG_TO_RUST.md](../docs/MIGRATE_ZIG_TO_RUST.md) | Async ecosystem, ownership system, memory safety |
+| **C++** | [MIGRATE_ZIG_TO_CPP.md](../docs/MIGRATE_ZIG_TO_CPP.md) | Larger ecosystem, mature tooling, legacy integration |
+
+**See also:**
+- [Language Profile: Zig](../docs/LANGUAGE_PROFILE_ZIG.md) - Deep dive into Zig idioms and patterns
+- [Migration Index](../docs/MIGRATION_INDEX.md) - Complete migration documentation hub
+
 ## Memory Management
 
 Zig requires explicit memory management. Follow these patterns:

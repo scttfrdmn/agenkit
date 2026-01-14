@@ -463,7 +463,7 @@ func TestMemoryHierarchy_ClearWorking(t *testing.T) {
 
 	hierarchy.ClearWorking()
 
-	if len(hierarchy.GetWorking()) != 0 {
+	if hierarchy.GetWorking().Length() != 0 {
 		t.Error("expected working memory to be cleared")
 	}
 }

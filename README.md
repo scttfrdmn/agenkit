@@ -398,13 +398,15 @@ See [benchmarks/BASELINES.md](benchmarks/BASELINES.md) for detailed performance 
 2. **[Core Concepts](GETTING_STARTED.md#core-concepts)** (30 min) - Understand the fundamentals
 3. **[Examples](examples/)** (1 hour) - Learn by doing with 27+ examples
 4. **[Architecture](ARCHITECTURE.md)** (30 min) - Understand design principles
-5. **[Production Deployment](deploy/README.md)** (1 hour) - Docker + Kubernetes
+5. **[Migration Guides](docs/MIGRATION_INDEX.md)** (30 min per language) - Migrate between Python, Go, TypeScript, Rust, C++, Zig
+6. **[Production Deployment](deploy/README.md)** (1 hour) - Docker + Kubernetes
 
-**Total time investment:** 3 hours from zero to production deployment.
+**Total time investment:** 3.5 hours from zero to production deployment.
 
 ## Documentation
 
 - **[Getting Started Guide](GETTING_STARTED.md)** - Step-by-step tutorial
+- **[Migration Guide Index](docs/MIGRATION_INDEX.md)** - Complete migration documentation for all 6 languages
 - **[Architecture Principles](ARCHITECTURE.md)** - Design philosophy
 - **[API Reference](docs/API.md)** - Complete API documentation
 - **[Deployment Guide](deploy/README.md)** - Docker and Kubernetes

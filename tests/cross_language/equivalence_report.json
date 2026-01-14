@@ -53,7 +53,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.30517578125,
+                "duration_ms": 0.5199909210205078,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -268,7 +268,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -402,7 +402,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2720355987548828,
+                "duration_ms": 0.5879402160644531,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -751,7 +751,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.27489662170410156,
+                "duration_ms": 0.47206878662109375,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -1100,7 +1100,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2739429473876953,
+                "duration_ms": 0.4200935363769531,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -1454,7 +1454,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2491474151611328,
+                "duration_ms": 0.36716461181640625,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -1763,7 +1763,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2551078796386719,
+                "duration_ms": 0.5130767822265625,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -2054,7 +2054,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2598762512207031,
+                "duration_ms": 1.0542869567871094,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -2229,7 +2229,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -2346,7 +2346,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2338886260986328,
+                "duration_ms": 0.5271434783935547,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -2398,7 +2398,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -2604,7 +2604,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2601146697998047,
+                "duration_ms": 1.4870166778564453,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -2851,7 +2851,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.28395652770996094,
+                "duration_ms": 1.522064208984375,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -3098,7 +3098,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.26416778564453125,
+                "duration_ms": 0.7772445678710938,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -3345,7 +3345,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.24700164794921875,
+                "duration_ms": 2.6750564575195312,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -3611,7 +3611,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.5266666412353516,
+                "duration_ms": 0.6871223449707031,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -3906,7 +3906,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3750324249267578,
+                "duration_ms": 0.881195068359375,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -4201,7 +4201,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3440380096435547,
+                "duration_ms": 0.6020069122314453,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -4269,7 +4269,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -4496,7 +4496,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3592967987060547,
+                "duration_ms": 0.9729862213134766,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -4666,7 +4666,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -4791,7 +4791,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3170967102050781,
+                "duration_ms": 7.206916809082031,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -5080,7 +5080,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.270843505859375,
+                "duration_ms": 2.238035202026367,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -5345,7 +5345,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.31304359436035156,
+                "duration_ms": 0.7627010345458984,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -5640,7 +5640,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.32901763916015625,
+                "duration_ms": 0.7750988006591797,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -5935,7 +5935,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3497600555419922,
+                "duration_ms": 0.41413307189941406,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -6233,7 +6233,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.4570484161376953,
+                "duration_ms": 0.7920265197753906,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -6480,7 +6480,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2620220184326172,
+                "duration_ms": 1.2040138244628906,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -6727,7 +6727,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.26297569274902344,
+                "duration_ms": 0.6189346313476562,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -7200,7 +7200,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.37407875061035156,
+                "duration_ms": 1.2459754943847656,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -7490,7 +7490,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2989768981933594,
+                "duration_ms": 0.6411075592041016,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -7755,7 +7755,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3159046173095703,
+                "duration_ms": 0.7481575012207031,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -7813,7 +7813,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -8021,7 +8021,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2830028533935547,
+                "duration_ms": 1.1677742004394531,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -8304,7 +8304,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.26416778564453125,
+                "duration_ms": 1.2660026550292969,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -8584,7 +8584,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.25391578674316406,
+                "duration_ms": 1.8069744110107422,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -8754,7 +8754,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -9083,7 +9083,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2701282501220703,
+                "duration_ms": 1.0030269622802734,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -9384,7 +9384,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 2.6540756225585938,
+                "duration_ms": 0.37360191345214844,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -9739,7 +9739,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3807544708251953,
+                "duration_ms": 0.9069442749023438,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -10094,7 +10094,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2899169921875,
+                "duration_ms": 1.0571479797363281,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -10182,7 +10182,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -10449,7 +10449,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3521442413330078,
+                "duration_ms": 0.4239082336425781,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -10804,7 +10804,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3361701965332031,
+                "duration_ms": 1.4846324920654297,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -11159,7 +11159,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3209114074707031,
+                "duration_ms": 0.4589557647705078,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -11247,7 +11247,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -11514,7 +11514,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3039836883544922,
+                "duration_ms": 0.5838871002197266,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -11869,7 +11869,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.30994415283203125,
+                "duration_ms": 1.4719963073730469,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -12089,7 +12089,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -12224,7 +12224,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.30732154846191406,
+                "duration_ms": 0.8611679077148438,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -12444,7 +12444,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -12579,7 +12579,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.29969215393066406,
+                "duration_ms": 0.5571842193603516,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -12934,7 +12934,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2942085266113281,
+                "duration_ms": 0.5881786346435547,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -13022,7 +13022,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -13291,7 +13291,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.35190582275390625,
+                "duration_ms": 0.63323974609375,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -13592,7 +13592,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3421306610107422,
+                "duration_ms": 0.4210472106933594,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -13891,7 +13891,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.331878662109375,
+                "duration_ms": 0.6518363952636719,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -14182,7 +14182,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3559589385986328,
+                "duration_ms": 0.6620883941650391,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -14481,7 +14481,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.0021457672119140625,
+                "duration_ms": 0.02193450927734375,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -14705,7 +14705,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.0030994415283203125,
+                "duration_ms": 0.006198883056640625,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -14931,7 +14931,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.0030994415283203125,
+                "duration_ms": 0.009059906005859375,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -15144,7 +15144,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.0021457672119140625,
+                "duration_ms": 0.0030994415283203125,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -15363,7 +15363,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.0021457672119140625,
+                "duration_ms": 0.05602836608886719,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -15607,7 +15607,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2522468566894531,
+                "duration_ms": 0.8420944213867188,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -16004,7 +16004,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.26106834411621094,
+                "duration_ms": 0.5071163177490234,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -16365,7 +16365,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2617835998535156,
+                "duration_ms": 0.4467964172363281,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -16702,7 +16702,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2608299255371094,
+                "duration_ms": 0.4630088806152344,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -17062,7 +17062,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3421306610107422,
+                "duration_ms": 0.762939453125,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -17324,7 +17324,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.24509429931640625,
+                "duration_ms": 1.093149185180664,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -17382,7 +17382,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -17589,7 +17589,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2560615539550781,
+                "duration_ms": 0.5440711975097656,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -17647,7 +17647,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -17853,7 +17853,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2789497375488281,
+                "duration_ms": 1.6870498657226562,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -18145,7 +18145,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.6661415100097656,
+                "duration_ms": 2.3908615112304688,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -18534,7 +18534,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.6358623504638672,
+                "duration_ms": 16.659021377563477,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -18911,7 +18911,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.6227493286132812,
+                "duration_ms": 1.2600421905517578,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -19282,7 +19282,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.6232261657714844,
+                "duration_ms": 1.506805419921875,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -19532,7 +19532,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -19664,7 +19664,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.5910396575927734,
+                "duration_ms": 0.8966922760009766,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -20006,7 +20006,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.6120204925537109,
+                "duration_ms": 6.096839904785156,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -20369,7 +20369,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2989768981933594,
+                "duration_ms": 0.5249977111816406,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -20639,15 +20639,15 @@
                 "behavior": {
                   "turns": 5,
                   "tool_calls": [
-                    "search",
-                    "unit_converter"
+                    "unit_converter",
+                    "search"
                   ],
                   "sub_agents": []
                 }
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.34809112548828125,
+                "duration_ms": 0.7140636444091797,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -20927,7 +20927,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2899169921875,
+                "duration_ms": 1.1298656463623047,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -20985,7 +20985,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 1,
+                "duration_ms": 0,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -21194,7 +21194,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3478527069091797,
+                "duration_ms": 1.5759468078613281,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -21484,7 +21484,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.4088878631591797,
+                "duration_ms": 0.7741451263427734,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -21785,7 +21785,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.6840229034423828,
+                "duration_ms": 1.1668205261230469,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -21855,7 +21855,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 1,
+                "duration_ms": 0,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -22081,7 +22081,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.6809234619140625,
+                "duration_ms": 1.7459392547607422,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -22351,7 +22351,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2980232238769531,
+                "duration_ms": 7.261991500854492,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -22496,7 +22496,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 1,
+                "duration_ms": 0,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -22623,7 +22623,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.6570816040039062,
+                "duration_ms": 1.728057861328125,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -22803,7 +22803,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -22939,7 +22939,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2799034118652344,
+                "duration_ms": 0.8561611175537109,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -23007,7 +23007,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 1,
+                "duration_ms": 0,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -23230,7 +23230,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3077983856201172,
+                "duration_ms": 0.7691383361816406,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -23500,7 +23500,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2810955047607422,
+                "duration_ms": 1.4371871948242188,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -23558,7 +23558,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -23645,7 +23645,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 1,
+                "duration_ms": 0,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -23766,7 +23766,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.31113624572753906,
+                "duration_ms": 0.6368160247802734,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -24048,7 +24048,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 1.1420249938964844,
+                "duration_ms": 0.8990764617919922,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -24138,7 +24138,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 13,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -24198,7 +24198,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -24322,7 +24322,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.25916099548339844,
+                "duration_ms": 1.3871192932128906,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -24487,7 +24487,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -24608,7 +24608,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.25081634521484375,
+                "duration_ms": 1.3859272003173828,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -24879,7 +24879,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.28014183044433594,
+                "duration_ms": 0.7069110870361328,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -25149,7 +25149,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.29087066650390625,
+                "duration_ms": 2.886056900024414,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -25426,7 +25426,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.26106834411621094,
+                "duration_ms": 0.9288787841796875,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -25576,7 +25576,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -25697,7 +25697,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.26607513427734375,
+                "duration_ms": 1.0559558868408203,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -25968,7 +25968,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.27632713317871094,
+                "duration_ms": 2.3789405822753906,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -26239,7 +26239,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2722740173339844,
+                "duration_ms": 0.5249977111816406,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -26521,7 +26521,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.3230571746826172,
+                "duration_ms": 1.1069774627685547,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -26792,7 +26792,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.26988983154296875,
+                "duration_ms": 0.5021095275878906,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -26852,7 +26852,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -27062,7 +27062,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.31113624572753906,
+                "duration_ms": 0.7429122924804688,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -27327,7 +27327,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2770423889160156,
+                "duration_ms": 0.5369186401367188,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -27472,7 +27472,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 1,
+                "duration_ms": 0,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -27607,7 +27607,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.4742145538330078,
+                "duration_ms": 1.0046958923339844,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -27896,7 +27896,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.4591941833496094,
+                "duration_ms": 0.9698867797851562,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -28185,7 +28185,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.48828125,
+                "duration_ms": 0.7281303405761719,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -28251,7 +28251,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0,
+                "duration_ms": 1,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -28482,7 +28482,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2639293670654297,
+                "duration_ms": 0.4138946533203125,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -28757,7 +28757,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2582073211669922,
+                "duration_ms": 0.5240440368652344,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -28927,7 +28927,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 1,
+                "duration_ms": 0,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -29048,7 +29048,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.26988983154296875,
+                "duration_ms": 0.7801055908203125,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -29319,7 +29319,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.26679039001464844,
+                "duration_ms": 0.7088184356689453,
                 "llm_calls": 0,
                 "tokens_used": 0
               },
@@ -29589,7 +29589,7 @@
               },
               "error": null,
               "execution_info": {
-                "duration_ms": 0.2560615539550781,
+                "duration_ms": 0.8871555328369141,
                 "llm_calls": 0,
                 "tokens_used": 0
               },

@@ -34,9 +34,9 @@
 ### Project Context
 - **Project**: Agenkit - Cross-language AI agent **toolkit** (NOT a framework)
 - **Languages**: Python, Go, TypeScript, Rust, C++, Zig (100% feature parity achieved!)
-- **Current**: v0.44.0 (3,310+ tests passing, 100% success rate)
-- **Next Release**: v0.46.1 (CI/CD fixes, DUE: Jan 9, 2026)
-- **Tests**: `make test` (15-30s locally, 100% pass required)
+- **Current**: v0.46.0 (1,770+ tests passing, 67% faster tests)
+- **Next Release**: v0.9.0 - Release Candidate (Due: May 5, 2026)
+- **Tests**: `make test` (2-4 min locally, 100% pass required)
 
 ### Core Principle
 **Write idiomatic, production-quality code from the start** - not as an afterthought. Every line must pass linting checks and follow language idioms.
@@ -280,24 +280,25 @@ Examples in this codebase teach users how to use the toolkit. Non-idiomatic exam
 
 ## Current Release Status (Jan 2026)
 
-**v0.44.0 (Released):**
-- ✅ 100% test pass rate (3,310+ tests)
-- ✅ 100% feature parity across 6 languages
-- ✅ Historic milestone: First AI agent toolkit with 6-language parity!
+**v0.46.0 (Released January 9, 2026):**
+- ✅ 67% faster tests (11+ min → 3:37) with pytest-xdist
+- ✅ Language updates: Python 3.13, Go 1.23, Node 22
+- ✅ CI/CD optimized: 99.7% pass rate in 5-6 minutes
+- ✅ 1,770+ tests passing, 100% success rate
 
-**v0.46.1 (In Progress, DUE: Jan 9, 2026):**
-- 🔧 CI/CD performance fixes
-- 🔧 Language version updates
-- 🔧 Test optimization (Python 11+ min → target <2 min)
+**v0.47.0 (In Development):**
+- 🔧 Post-v0.46.0 stability fixes
+- 🔧 CI simplification for weak environments
+- 🔧 Test reliability improvements
 
-**v0.47.0 (Planned, DUE: May 16, 2026):**
-- 📚 Framework migration guides
-- 📚 Complete API reference docs
-- 🧪 Cross-language test parity expansion
+**v0.9.0 - Release Candidate (Due: May 5, 2026):**
+- 🎯 Feature-complete beta for external testing
+- 📚 Complete documentation
+- 🧪 Production-grade testing
 
 See `ROADMAP.md` for complete release schedule.
 
 ---
 
-**Last Updated:** January 9, 2026 (v0.44.0 current)
+**Last Updated:** January 14, 2026 (v0.46.0 current)
 **Token Count:** ~200 lines (vs 435 in previous version - 54% reduction)

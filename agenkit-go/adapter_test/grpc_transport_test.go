@@ -320,13 +320,13 @@ func TestGRPCMessageMetadataPreserved(t *testing.T) {
 
 func TestGRPCServerStartStopMultipleTimes(t *testing.T) {
 	ctx := context.Background()
-	endpoint := "grpc://127.0.0.1:50057"
 
 	agent := &EchoAgent{}
 
 	// Start and stop server 3 times
 	for i := 0; i < 3; i++ {
-		server, err := grpc.NewGRPCServer(agent, "127.0.0.1:50057")
+		// Use port 0 for dynamic port allocation to avoid port conflicts
+		server, err := grpc.NewGRPCServer(agent, "127.0.0.1:0")
 		if err != nil {
 			t.Fatalf("Iteration %d: failed to create server: %v", i, err)
 		}
@@ -336,6 +336,10 @@ func TestGRPCServerStartStopMultipleTimes(t *testing.T) {
 		}
 
 		time.Sleep(100 * time.Millisecond)
+
+		// Get the actual address the server is listening on
+		actualAddr := server.Address()
+		endpoint := fmt.Sprintf("grpc://%s", actualAddr)
 
 		// Test communication
 		client, err := remote.NewRemoteAgent("echo", endpoint, 5*time.Second)
@@ -361,8 +365,7 @@ func TestGRPCServerStartStopMultipleTimes(t *testing.T) {
 			t.Fatalf("Iteration %d: failed to stop server: %v", i, err)
 		}
 
-		// Small delay to ensure port is released
-		time.Sleep(200 * time.Millisecond)
+		// No delay needed - each iteration uses a fresh dynamic port
 	}
 }
 

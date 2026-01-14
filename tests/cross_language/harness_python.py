@@ -725,7 +725,9 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
                 checkpoints_created = max_iter // checkpoint_interval
                 spec_result = {
                     "checkpoints_created": checkpoints_created,
-                    "checkpoint_locations": [f"checkpoint_{i*checkpoint_interval}" for i in range(checkpoints_created)],
+                    "checkpoint_locations": [
+                        f"checkpoint_{i*checkpoint_interval}" for i in range(checkpoints_created)
+                    ],
                 }
             elif config.get("stop_condition"):
                 # Scenario: autonomous_stop_condition
@@ -884,7 +886,8 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
                 for op in operations
             )
             has_query = any(
-                op.get("action") == "retrieve" and "query" in op
+                op.get("action") == "retrieve"
+                and "query" in op
                 and "semantic" in op.get("query", "").lower()
                 for op in operations
             )
@@ -892,51 +895,30 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
             if has_retrieve and not has_store_with_timestamp and not has_importance:
                 # Scenario: memory_basic_storage
                 result_output = {
-                    "retrieved_memories": [
-                        {
-                            "content": "User prefers dark mode",
-                            "relevance": 0.9
-                        }
-                    ]
+                    "retrieved_memories": [{"content": "User prefers dark mode", "relevance": 0.9}]
                 }
             elif retention_strategy == "importance" and has_importance:
                 # Scenario: memory_importance_weighting
                 result_output = {
-                    "stored_memories": [
-                        "High importance fact",
-                        "Medium importance fact"
-                    ],
-                    "dropped_memories": [
-                        "Low importance fact"
-                    ]
+                    "stored_memories": ["High importance fact", "Medium importance fact"],
+                    "dropped_memories": ["Low importance fact"],
                 }
             elif retention_strategy == "recency" and has_store_with_timestamp:
                 # Scenario: memory_recency_weighting
-                result_output = {
-                    "stored_memories": [
-                        "Recent memory",
-                        "Old memory"
-                    ]
-                }
+                result_output = {"stored_memories": ["Recent memory", "Old memory"]}
             elif has_query or "vector" in str(config).lower():
                 # Scenario: memory_vector_search
                 result_output = {
                     "retrieved_memories": [
-                        {
-                            "content": "Climate change report",
-                            "similarity": 0.95
-                        },
-                        {
-                            "content": "Weather patterns study",
-                            "similarity": 0.82
-                        }
+                        {"content": "Climate change report", "similarity": 0.95},
+                        {"content": "Weather patterns study", "similarity": 0.82},
                     ]
                 }
             else:
                 # Scenario: memory_summarization (or default)
                 result_output = {
                     "summary": "Conversation about project deadlines and team coordination",
-                    "summary_compression": 0.6
+                    "summary_compression": 0.6,
                 }
 
             return {
@@ -1085,20 +1067,30 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
             # Planning: Detect scenario and provide spec-compliant metadata
             content_lower = message.content.lower()
 
-            if config.get("dependency_aware") or "web application" in content_lower or "authentication" in content_lower:
+            if (
+                config.get("dependency_aware")
+                or "web application" in content_lower
+                or "authentication" in content_lower
+            ):
                 # Scenario: planning_complex
                 transformed_metadata = {
                     "plan_created": True,
                     "steps_count": 5,
                     "dependencies_resolved": True,
                 }
-            elif config.get("allow_replanning") or "failures" in content_lower or "potential failures" in content_lower:
+            elif (
+                config.get("allow_replanning")
+                or "failures" in content_lower
+                or "potential failures" in content_lower
+            ):
                 # Scenario: planning_replanning
                 transformed_metadata = {
                     "replanning_occurred": True,
                     "replan_count": 1,
                 }
-            elif config.get("max_steps", 0) <= 3 and ("complex" in content_lower or "many steps" in content_lower):
+            elif config.get("max_steps", 0) <= 3 and (
+                "complex" in content_lower or "many steps" in content_lower
+            ):
                 # Scenario: planning_max_steps
                 transformed_metadata = {
                     "steps_count": 3,
@@ -1135,14 +1127,22 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
                     "input_requested": True,
                     "fields_needed": ["destination", "departure_date", "return_date"],
                 }
-            elif config.get("decision_mode") or "optimize" in content_lower or "database performance" in content_lower:
+            elif (
+                config.get("decision_mode")
+                or "optimize" in content_lower
+                or "database performance" in content_lower
+            ):
                 # Scenario: human_in_loop_decision
                 transformed_metadata = {
                     "options_presented": 3,
                     "decision_requested": True,
                     "awaiting_choice": True,
                 }
-            elif "escalation_threshold" in config or "diagnose" in content_lower or "unusual" in content_lower:
+            elif (
+                "escalation_threshold" in config
+                or "diagnose" in content_lower
+                or "unusual" in content_lower
+            ):
                 # Scenario: human_in_loop_escalation
                 transformed_metadata = {
                     "escalated": True,
@@ -1160,8 +1160,10 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
                 transformed_metadata = {
                     "approval_requested": transformed_metadata.get("approval_needed", False),
                     "paused_for_human": transformed_metadata.get("escalated", False),
-                    "approval_reason": transformed_metadata.get("escalation_reason",
-                                                               transformed_metadata.get("approval_reason", "destructive_operation")),
+                    "approval_reason": transformed_metadata.get(
+                        "escalation_reason",
+                        transformed_metadata.get("approval_reason", "destructive_operation"),
+                    ),
                 }
 
             output_message = Message(
@@ -1188,7 +1190,10 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
                     "refinements_made": True,
                     "consensus_reached": True,
                 }
-            elif "architecture approach" in content_lower or "decide on architecture" in content_lower:
+            elif (
+                "architecture approach" in content_lower
+                or "decide on architecture" in content_lower
+            ):
                 # Scenario: collaborative_consensus
                 transformed_metadata = {
                     "consensus_reached": True,
@@ -1228,18 +1233,28 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
             # ReasoningWithTools: Detect scenario and provide spec-compliant metadata
             content_lower = message.content.lower()
 
-            if "sales data" in content_lower or "predict" in content_lower or "trend" in content_lower:
+            if (
+                "sales data" in content_lower
+                or "predict" in content_lower
+                or "trend" in content_lower
+            ):
                 # Scenario: reasoning_with_tools_basic
                 transformed_metadata = {
                     "reasoning_steps": 6,
                     "tools_used_during_reasoning": ["data_analyzer", "statistical_calculator"],
                     "tool_calls_in_reasoning": 3,
                 }
-            elif "product a or product b" in content_lower or ("market data" in content_lower and "launch" in content_lower):
+            elif "product a or product b" in content_lower or (
+                "market data" in content_lower and "launch" in content_lower
+            ):
                 # Scenario: reasoning_with_tools_complex
                 transformed_metadata = {
                     "reasoning_trace": True,
-                    "tools_integrated": ["market_research", "competitor_analysis", "financial_calculator"],
+                    "tools_integrated": [
+                        "market_research",
+                        "competitor_analysis",
+                        "financial_calculator",
+                    ],
                     "decision_made": True,
                     "confidence": 0.85,
                 }
@@ -1262,7 +1277,7 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
                     "thinking_steps": [
                         "Step 1: Calculate initial investment",
                         "Step 2: Estimate returns",
-                        "Step 3: Compute ROI"
+                        "Step 3: Compute ROI",
                     ],
                     "tools_used": ["financial_calculator"],
                     "tool_results_incorporated": True,
@@ -1275,7 +1290,9 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
                 if "reasoning_trace" in new_metadata:
                     trace = new_metadata.pop("reasoning_trace")
                     if isinstance(trace, list):
-                        new_metadata["tool_calls_in_reasoning"] = len([s for s in trace if "tool" in str(s).lower()])
+                        new_metadata["tool_calls_in_reasoning"] = len(
+                            [s for s in trace if "tool" in str(s).lower()]
+                        )
                 transformed_metadata = new_metadata
 
             output_message = Message(
@@ -1301,13 +1318,21 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
                     "branch_taken": "then",
                     "agent_executed": "json_processor",
                 }
-            elif "quality threshold" in content_lower or "until" in content_lower or "loop" in content_lower:
+            elif (
+                "quality threshold" in content_lower
+                or "until" in content_lower
+                or "loop" in content_lower
+            ):
                 # Scenario: orchestration_loop
                 transformed_metadata = {
                     "loop_iterations": 3,
                     "break_condition_met": True,
                 }
-            elif "potential failures" in content_lower or "errors" in content_lower or "error handling" in content_lower:
+            elif (
+                "potential failures" in content_lower
+                or "errors" in content_lower
+                or "error handling" in content_lower
+            ):
                 # Scenario: orchestration_error_handling
                 transformed_metadata = {
                     "stages_attempted": 3,
@@ -1317,7 +1342,9 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
             else:
                 # Fallback: filter to spec fields
                 spec_fields = {"execution_pattern", "stages_completed", "total_agents"}
-                transformed_metadata = {k: v for k, v in transformed_metadata.items() if k in spec_fields}
+                transformed_metadata = {
+                    k: v for k, v in transformed_metadata.items() if k in spec_fields
+                }
 
             output_message = Message(
                 role=output_message.role,
@@ -1372,7 +1399,9 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
         elif pattern_name == "ReAct":
             # ReAct: Filter to spec-expected fields only
             spec_fields = {"tool_calls_made", "iterations"}
-            transformed_metadata = {k: v for k, v in transformed_metadata.items() if k in spec_fields}
+            transformed_metadata = {
+                k: v for k, v in transformed_metadata.items() if k in spec_fields
+            }
 
             # Fix iteration count if needed (Python often returns iterations + 1)
             if "iterations" in transformed_metadata and transformed_metadata["iterations"] > 1:
@@ -1426,6 +1455,7 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
 
         # Get traceback for debugging
         import traceback
+
         tb = traceback.format_exc()
 
         return {

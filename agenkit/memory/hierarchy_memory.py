@@ -338,7 +338,9 @@ class HierarchyMemory(Memory):
             if k not in ["session_id", "role", "message_timestamp"]
         }
 
-        return Message(role=role, content=entry.content, metadata=filtered_metadata, timestamp=timestamp)
+        return Message(
+            role=role, content=entry.content, metadata=filtered_metadata, timestamp=timestamp
+        )
 
     def _matches_filters(self, entry: MemoryEntry, filters: dict[str, Any]) -> bool:
         """
@@ -376,6 +378,7 @@ class HierarchyMemory(Memory):
             # Get message timestamp from metadata (preserved from original Message)
             if "message_timestamp" in entry.metadata:
                 from datetime import datetime
+
                 message_timestamp = datetime.fromisoformat(entry.metadata["message_timestamp"])
                 if not (start_time <= message_timestamp <= end_time):
                     return False

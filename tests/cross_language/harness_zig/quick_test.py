@@ -5,6 +5,7 @@ import json
 import subprocess
 import sys
 
+
 def run_command_test(name, request):
     """Test a single command."""
     print(f"\n{'=' * 60}")
@@ -31,17 +32,18 @@ def run_command_test(name, request):
         print(f"✅ Status: {response['status']}")
         print(f"Request ID: {response['request_id']}")
 
-        if response['status'] == 'success':
+        if response["status"] == "success":
             print(f"Result: {json.dumps(response.get('result', {}), indent=2)[:200]}...")
         else:
             print(f"Error: {response.get('error', {})}")
 
-        return response['status'] == 'success'
+        return response["status"] == "success"
     except json.JSONDecodeError as e:
         print(f"❌ Failed to parse response: {e}")
         print(f"Stdout: {proc.stdout}")
         print(f"Stderr: {proc.stderr}")
         return False
+
 
 def main():
     """Run all tests."""
@@ -170,6 +172,7 @@ def main():
     print(f"Total: {tests_passed + tests_failed}")
 
     return 0 if tests_failed == 0 else 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

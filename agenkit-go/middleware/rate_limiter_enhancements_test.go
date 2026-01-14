@@ -17,10 +17,10 @@ func TestRateLimiterMaxWaitTimeout(t *testing.T) {
 	agent := NewFastAgent(10 * time.Millisecond)
 
 	config := RateLimiterConfig{
-		Rate:             1.0,                      // 1 token per second
-		Capacity:         1,                        // Only 1 token capacity
-		TokensPerRequest: 1,                        // Each request consumes 1 token
-		MaxWaitTimeout:   100 * time.Millisecond,   // Max wait 100ms
+		Rate:             1.0,                    // 1 token per second
+		Capacity:         1,                      // Only 1 token capacity
+		TokensPerRequest: 1,                      // Each request consumes 1 token
+		MaxWaitTimeout:   100 * time.Millisecond, // Max wait 100ms
 	}
 
 	rateLimiter := NewRateLimiterDecorator(agent, config)
@@ -256,10 +256,10 @@ func TestPerUserRateLimiterMaxWaitTimeout(t *testing.T) {
 	agent := NewFastAgent(10 * time.Millisecond)
 
 	config := PerUserRateLimiterConfig{
-		Rate:             1.0,                      // 1 token per second
+		Rate:             1.0, // 1 token per second
 		Capacity:         1,
 		TokensPerRequest: 1,
-		MaxWaitTimeout:   100 * time.Millisecond,   // Max wait 100ms
+		MaxWaitTimeout:   100 * time.Millisecond, // Max wait 100ms
 	}
 
 	perUserLimiter := NewPerUserRateLimiterDecorator(agent, config)

@@ -259,9 +259,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             "statusCode": 500,
             "headers": {"Content-Type": "application/json"},
-            "body": json.dumps(
-                {"error": "Internal server error", "message": str(e)}
-            ),
+            "body": json.dumps({"error": "Internal server error", "message": str(e)}),
         }
 
     finally:

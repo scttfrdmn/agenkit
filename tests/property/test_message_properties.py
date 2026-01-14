@@ -162,8 +162,8 @@ def test_serialized_size_is_reasonable(message):
 
     # Property: Serialized size should be roughly proportional to content size
     # Use UTF-8 byte length instead of character count to handle multi-byte Unicode correctly
-    content_size = len(message.content.encode('utf-8'))
-    metadata_size = len(json.dumps(message.metadata).encode('utf-8')) if message.metadata else 0
+    content_size = len(message.content.encode("utf-8"))
+    metadata_size = len(json.dumps(message.metadata).encode("utf-8")) if message.metadata else 0
     expected_max_size = int((content_size + metadata_size + 100) * 2.0)  # 2.0x overhead
 
     actual_size = len(serialized)

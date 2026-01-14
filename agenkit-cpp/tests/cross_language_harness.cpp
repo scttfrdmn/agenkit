@@ -354,15 +354,21 @@ json execute_fallback(const json& message, const json& config) {
         success_agent = agent_name;
         success_index = static_cast<int>(i);
 
+        json metadata = {
+            {"fallback_attempts", attempts},
+            {"fallback_success_index", success_index},
+            {"fallback_success_agent", success_agent},
+            {"fallback_total_agents", agents.size()}
+        };
+        // Only include failures if there were any
+        if (!failures.empty()) {
+            metadata["failures"] = failures;
+        }
+
         return {
             {"role", "assistant"},
             {"content", message.value("content", std::string(""))},
-            {"metadata", {
-                {"fallback_attempts", attempts},
-                {"fallback_success_index", success_index},
-                {"fallback_success_agent", success_agent},
-                {"fallback_total_agents", agents.size()}
-            }}
+            {"metadata", metadata}
         };
     }
 

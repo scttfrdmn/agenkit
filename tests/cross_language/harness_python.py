@@ -963,6 +963,16 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
                 iterations = output_message.metadata["reflection_iterations"]
                 turns = iterations * 2  # Each iteration = 1 generation + 1 critique
 
+            # Fallback pattern - normalize metadata field names for cross-language consistency
+            if "fallback_failed_attempts" in output_message.metadata:
+                # Extract just agent names from failed attempts for 'failures' field
+                failed_attempts = output_message.metadata["fallback_failed_attempts"]
+                output_message.metadata["failures"] = [
+                    attempt["agent"] for attempt in failed_attempts
+                ]
+                # Remove the detailed fallback_failed_attempts field to match other languages
+                del output_message.metadata["fallback_failed_attempts"]
+
         return {
             "status": "success",
             "result": {
@@ -988,11 +998,23 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
         }
 
     except Exception as e:
+        # Normalize error types for cross-language consistency
+        error_type = type(e).__name__
+        # Map Python exception types to standard error types
+        error_type_mapping = {
+            "RuntimeError": "ExecutionError",
+            "ValueError": "ExecutionError",
+            "TypeError": "ExecutionError",
+            "AttributeError": "ExecutionError",
+            "KeyError": "ExecutionError",
+        }
+        normalized_type = error_type_mapping.get(error_type, error_type)
+
         return {
             "status": "error",
             "result": None,
             "error": {
-                "type": type(e).__name__,
+                "type": normalized_type,
                 "message": str(e),
                 "details": {},
             },

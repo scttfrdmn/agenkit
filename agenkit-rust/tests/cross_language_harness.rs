@@ -333,7 +333,7 @@ fn execute_test(
             return (
                 None,
                 Some(ErrorInfo {
-                    r#type: "PatternExecutionError".to_string(),
+                    r#type: "ExecutionError".to_string(),
                     message: e,
                     details: None,
                     stack_trace: None,
@@ -833,6 +833,18 @@ fn execute_fallback(
                 "fallback_total_agents".to_string(),
                 serde_json::Value::Number(agents.len().into()),
             );
+            // Only include failures if there were any
+            if !failures.is_empty() {
+                metadata.insert(
+                    "failures".to_string(),
+                    serde_json::Value::Array(
+                        failures
+                            .iter()
+                            .map(|f| serde_json::Value::String(f.clone()))
+                            .collect(),
+                    ),
+                );
+            }
 
             return Ok(Message {
                 role: "assistant".to_string(),

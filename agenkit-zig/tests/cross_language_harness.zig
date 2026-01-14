@@ -494,6 +494,8 @@ fn executeFallback(
     var attempts: i64 = 0;
     var success_agent: []const u8 = "";
     var success_index: i64 = -1;
+    var failures: [10][]const u8 = undefined;
+    var failure_count: usize = 0;
 
     // Try each agent in order until one succeeds
     for (agents.items, 0..) |agent, i| {
@@ -514,6 +516,10 @@ fn executeFallback(
 
         // Check if this agent always fails
         if (std.mem.eql(u8, agent_type, "always_fails")) {
+            if (failure_count < failures.len) {
+                failures[failure_count] = agent_name;
+                failure_count += 1;
+            }
             continue;
         }
 
@@ -526,6 +532,15 @@ fn executeFallback(
         try metadata.put("fallback_success_index", .{ .integer = success_index });
         try metadata.put("fallback_success_agent", .{ .string = success_agent });
         try metadata.put("fallback_total_agents", .{ .integer = @as(i64, @intCast(agents.items.len)) });
+
+        // Add failures array only if there were any
+        if (failure_count > 0) {
+            var failures_array = std.json.Array.init(allocator);
+            for (failures[0..failure_count]) |failure_name| {
+                try failures_array.append(.{ .string = failure_name });
+            }
+            try metadata.put("failures", .{ .array = failures_array });
+        }
 
         var result = std.json.ObjectMap.init(allocator);
         try result.put("role", .{ .string = "assistant" });

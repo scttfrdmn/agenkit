@@ -296,6 +296,18 @@ func executeTest(payload map[string]interface{}) (map[string]interface{}, *Error
 				subAgents = append(subAgents, agentName)
 			}
 		}
+	} else if patternLower == "sequential" && result.Metadata != nil {
+		// For Sequential pattern, extract from execution_order
+		if executionOrder, ok := result.Metadata["execution_order"].([]interface{}); ok {
+			subAgents = make([]string, 0, len(executionOrder))
+			for _, v := range executionOrder {
+				if s, ok := v.(string); ok {
+					subAgents = append(subAgents, s)
+				}
+			}
+		} else if executionOrderStrings, ok := result.Metadata["execution_order"].([]string); ok {
+			subAgents = executionOrderStrings
+		}
 	} else if result.Metadata != nil {
 		// Extract sub_agents field directly (for AgentsAsTools pattern)
 		// Don't extract execution_order - that's pattern-specific metadata for Supervisor
@@ -527,7 +539,6 @@ func executeParallel(ctx context.Context, message Message, config map[string]int
 			"parallel_agents":   agentCount,
 			"successful_agents": agentCount,
 			"aggregated":        true,
-			"agents_executed":   agentNames,
 		},
 	}, nil
 }

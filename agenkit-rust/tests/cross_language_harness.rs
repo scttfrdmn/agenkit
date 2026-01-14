@@ -378,6 +378,19 @@ fn execute_test(
                 }).collect()
             })
             .unwrap_or_else(Vec::new)
+    } else if pattern_lower == "sequential" {
+        // For Sequential pattern, extract from execution_order
+        output_message.metadata
+            .as_ref()
+            .and_then(|m| m.get("execution_order"))
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str())
+                    .map(|s| s.to_string())
+                    .collect()
+            })
+            .unwrap_or_else(Vec::new)
     } else {
         // Extract sub_agents field directly (for AgentsAsTools pattern)
         // Don't extract execution_order - that's pattern-specific metadata for Supervisor

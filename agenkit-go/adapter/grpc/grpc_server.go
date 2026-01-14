@@ -151,6 +151,15 @@ func (s *GRPCServer) Stop() error {
 	return nil
 }
 
+// Address returns the actual address the server is listening on.
+// This is useful when using port 0 for dynamic port allocation.
+func (s *GRPCServer) Address() string {
+	if s.listener == nil {
+		return ""
+	}
+	return s.listener.Addr().String()
+}
+
 // Process handles unary Process RPC.
 func (s *GRPCServer) Process(ctx context.Context, req *agentpb.Request) (*agentpb.Response, error) {
 	// Convert protobuf Request to agenkit Message

@@ -1,0 +1,58 @@
+name: CI Smoke Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+# Cancel in-progress runs for the same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Minimal smoke test - local testing is primary validation
+  smoke-test:
+    name: Smoke Test (Python 3.12 + Go 1.23)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Set up Go 1.23
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+          cache-dependency-path: agenkit-go/go.sum
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install Python dependencies
+        run: |
+          uv pip install --system -e ".[test]"
+
+      - name: Run Python smoke tests (quick, no integration)
+        run: |
+          # Quick unit tests only - integration/chaos tests run locally
+          # Using -n auto for parallel execution (much faster)
+          uv run pytest tests/ -n auto -q -m "not integration and not cross_language and not chaos" --maxfail=5
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+
+      - name: Run Go smoke tests
+        working-directory: agenkit-go
+        run: |
+          # Quick tests without race detector for speed
+          go test -short $(go list ./... | grep -v /examples/) -failfast
+

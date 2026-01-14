@@ -113,8 +113,18 @@ function handleRequest(request) {
         }
     }
     catch (e) {
+        // Normalize error types for cross-language consistency
+        let errorType = e instanceof Error ? e.constructor.name : 'Error';
+        const errorTypeMapping = {
+            'Error': 'ExecutionError',
+            'TypeError': 'ExecutionError',
+            'ReferenceError': 'ExecutionError',
+            'RangeError': 'ExecutionError',
+        };
+        errorType = errorTypeMapping[errorType] || errorType;
+
         error = {
-            type: e instanceof Error ? e.constructor.name : 'Error',
+            type: errorType,
             message: e instanceof Error ? e.message : String(e),
             stack_trace: e instanceof Error ? e.stack : undefined,
         };
@@ -530,15 +540,20 @@ function executeFallback(message, config) {
         // Agent succeeded
         successAgent = agentName;
         successIndex = i;
+        const metadata = {
+            fallback_attempts: attempts,
+            fallback_success_index: successIndex,
+            fallback_success_agent: successAgent,
+            fallback_total_agents: agents.length,
+        };
+        // Only include failures if there were any
+        if (failures.length > 0) {
+            metadata.failures = failures;
+        }
         return {
             role: 'assistant',
             content: message.content,
-            metadata: {
-                fallback_attempts: attempts,
-                fallback_success_index: successIndex,
-                fallback_success_agent: successAgent,
-                fallback_total_agents: agents.length,
-            },
+            metadata: metadata,
         };
     }
     // All agents failed

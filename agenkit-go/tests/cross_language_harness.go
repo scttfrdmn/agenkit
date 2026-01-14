@@ -691,8 +691,11 @@ func executeFallback(ctx context.Context, message Message, config map[string]int
 			"fallback_success_index": i,
 			"fallback_success_agent": successAgent,
 			"fallback_total_agents":  len(agents),
-			"fallback_failures":      failures,
-		}
+	}
+	// Only include failures if there were any
+	if len(failures) > 0 {
+		metadata["failures"] = failures
+	}
 
 		return &Message{
 			Role:     "assistant",

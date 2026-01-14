@@ -15,6 +15,22 @@ import (
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
+// Pre-compiled regex patterns for critique parsing (performance optimization).
+// Compiling regexes at package level avoids repeated compilation in hot loops.
+var (
+	scorePatternScore   = regexp.MustCompile(`(?i)score[:\s]+([0-9]*\.?[0-9]+)`)
+	scorePatternRating  = regexp.MustCompile(`(?i)rating[:\s]+([0-9]*\.?[0-9]+)`)
+	scorePatternOutOf10 = regexp.MustCompile(`(?i)([0-9]+)/10`)
+	scorePatternOutOf1  = regexp.MustCompile(`(?i)([0-9]*\.?[0-9]+)/1\.?0`)
+
+	scorePatterns = []*regexp.Regexp{
+		scorePatternScore,
+		scorePatternRating,
+		scorePatternOutOf10,
+		scorePatternOutOf1,
+	}
+)
+
 // StopReason indicates why the reflection loop stopped.
 type StopReason string
 
@@ -368,17 +384,9 @@ func (r *ReflectionAgent) parseStructuredCritique(content string) (float64, stri
 func (r *ReflectionAgent) parseFreeFormCritique(content string) (float64, string, error) {
 	score := 0.5 // Default if no score found
 
-	// Try to find score patterns
-	patterns := []string{
-		`score[:\s]+([0-9]*\.?[0-9]+)`,  // "Score: 0.8"
-		`rating[:\s]+([0-9]*\.?[0-9]+)`, // "Rating: 8"
-		`([0-9]+)/10`,                   // "8/10"
-		`([0-9]*\.?[0-9]+)/1\.?0`,       // "0.8/1.0"
-	}
-
-	for _, pattern := range patterns {
-		re := regexp.MustCompile(`(?i)` + pattern)
-		matches := re.FindStringSubmatch(content)
+	// Use pre-compiled regex patterns (package-level variables)
+	for _, pattern := range scorePatterns {
+		matches := pattern.FindStringSubmatch(content)
 		if len(matches) > 1 {
 			value, err := strconv.ParseFloat(matches[1], 64)
 			if err == nil {

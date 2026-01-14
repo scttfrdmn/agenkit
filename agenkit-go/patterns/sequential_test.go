@@ -136,10 +136,20 @@ func TestSequentialAgent_MetadataPreservation(t *testing.T) {
 		t.Errorf("expected pipeline_length=2, got %v", result.Metadata["pipeline_length"])
 	}
 
-	stages, ok := result.Metadata["pipeline_stages"].([]map[string]interface{})
+	// pipeline_stages is stored as []interface{} for JSON marshaling compatibility
+	stagesInterface, ok := result.Metadata["pipeline_stages"].([]interface{})
 	if !ok {
-		t.Fatal("expected pipeline_stages to be []map[string]interface{}")
+		t.Fatal("expected pipeline_stages to be []interface{}")
 	}
+
+	// Convert to []map[string]interface{} for easier testing
+	stages := make([]map[string]interface{}, 0, len(stagesInterface))
+	for _, s := range stagesInterface {
+		if stage, ok := s.(map[string]interface{}); ok {
+			stages = append(stages, stage)
+		}
+	}
+
 	if len(stages) != 2 {
 		t.Errorf("expected 2 stages, got %d", len(stages))
 	}
@@ -321,9 +331,18 @@ func TestSequentialAgent_StageMetadata(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	stages, ok := result.Metadata["pipeline_stages"].([]map[string]interface{})
+	// pipeline_stages is stored as []interface{} for JSON marshaling compatibility
+	stagesInterface, ok := result.Metadata["pipeline_stages"].([]interface{})
 	if !ok {
 		t.Fatal("expected pipeline_stages metadata")
+	}
+
+	// Convert to []map[string]interface{} for easier testing
+	stages := make([]map[string]interface{}, 0, len(stagesInterface))
+	for _, s := range stagesInterface {
+		if stage, ok := s.(map[string]interface{}); ok {
+			stages = append(stages, stage)
+		}
 	}
 
 	expectedAgents := []string{"extractor", "transformer", "validator"}

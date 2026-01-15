@@ -83,7 +83,7 @@ impl SecureSession {
         let response_text = self.generate_response(message_text, &context);
 
         // Record cost
-        self.cost_tracker.record_cost(&self.session_id, "production", &model, input_tokens, output_tokens, None).await?;
+        self.cost_tracker.record_cost(&self.session_id, "production", &model, input_tokens, output_tokens, 0, None).await?;
 
         // SECURITY: Redact sensitive data from output
         let safe_response = self.output_redactor.redact_text(&response_text);

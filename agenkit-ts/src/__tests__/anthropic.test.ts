@@ -10,7 +10,7 @@ describe('AnthropicAdapter', () => {
   describe('initialization', () => {
     it('should create with default config', () => {
       const adapter = new AnthropicAdapter({ apiKey: 'test-key' });
-      expect(adapter.name()).toBe('anthropic-claude-3-5-sonnet-20241022');
+      expect(adapter.name).toBe('anthropic-claude-3-5-sonnet-20241022');
     });
 
     it('should create with custom model', () => {
@@ -18,12 +18,12 @@ describe('AnthropicAdapter', () => {
         apiKey: 'test-key',
         model: 'claude-3-opus-20240229',
       });
-      expect(adapter.name()).toBe('anthropic-claude-3-opus-20240229');
+      expect(adapter.name).toBe('anthropic-claude-3-opus-20240229');
     });
 
     it('should have correct capabilities', () => {
       const adapter = new AnthropicAdapter({ apiKey: 'test-key' });
-      const caps = adapter.capabilities();
+      const caps = adapter.capabilities;
       expect(caps).toContain('completion');
       expect(caps).toContain('streaming');
       expect(caps).toContain('chat');
@@ -36,7 +36,7 @@ describe('AnthropicAdapter', () => {
         apiKey: 'test-key',
         model: 'claude-3-5-sonnet-20241022',
       });
-      expect(adapter.name()).toBe('anthropic-claude-3-5-sonnet-20241022');
+      expect(adapter.name).toBe('anthropic-claude-3-5-sonnet-20241022');
     });
   });
 
@@ -46,7 +46,7 @@ describe('AnthropicAdapter', () => {
         apiKey: 'test-key',
         temperature: 0.5,
       });
-      expect(adapter.name()).toBe('anthropic-claude-3-5-sonnet-20241022');
+      expect(adapter.name).toBe('anthropic-claude-3-5-sonnet-20241022');
     });
 
     it('should use custom maxTokens', () => {
@@ -54,7 +54,7 @@ describe('AnthropicAdapter', () => {
         apiKey: 'test-key',
         maxTokens: 2048,
       });
-      expect(adapter.name()).toBe('anthropic-claude-3-5-sonnet-20241022');
+      expect(adapter.name).toBe('anthropic-claude-3-5-sonnet-20241022');
     });
 
     it('should use environment variable for API key', () => {
@@ -62,7 +62,7 @@ describe('AnthropicAdapter', () => {
       process.env.ANTHROPIC_API_KEY = 'env-test-key';
 
       const adapter = new AnthropicAdapter();
-      expect(adapter.name()).toBe('anthropic-claude-3-5-sonnet-20241022');
+      expect(adapter.name).toBe('anthropic-claude-3-5-sonnet-20241022');
 
       if (oldKey) {
         process.env.ANTHROPIC_API_KEY = oldKey;

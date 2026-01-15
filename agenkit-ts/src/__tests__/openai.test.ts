@@ -10,7 +10,7 @@ describe('OpenAIAdapter', () => {
   describe('initialization', () => {
     it('should create with default config', () => {
       const adapter = new OpenAIAdapter({ apiKey: 'test-key' });
-      expect(adapter.name()).toBe('openai-gpt-4-turbo');
+      expect(adapter.name).toBe('openai-gpt-4-turbo');
     });
 
     it('should create with custom model', () => {
@@ -18,12 +18,12 @@ describe('OpenAIAdapter', () => {
         apiKey: 'test-key',
         model: 'gpt-4o',
       });
-      expect(adapter.name()).toBe('openai-gpt-4o');
+      expect(adapter.name).toBe('openai-gpt-4o');
     });
 
     it('should have correct capabilities', () => {
       const adapter = new OpenAIAdapter({ apiKey: 'test-key' });
-      const caps = adapter.capabilities();
+      const caps = adapter.capabilities;
       expect(caps).toContain('completion');
       expect(caps).toContain('streaming');
       expect(caps).toContain('chat');
@@ -36,7 +36,7 @@ describe('OpenAIAdapter', () => {
         apiKey: 'test-key',
         model: 'gpt-4-turbo',
       });
-      expect(adapter.name()).toBe('openai-gpt-4-turbo');
+      expect(adapter.name).toBe('openai-gpt-4-turbo');
     });
   });
 
@@ -46,7 +46,7 @@ describe('OpenAIAdapter', () => {
         apiKey: 'test-key',
         temperature: 0.5,
       });
-      expect(adapter.name()).toBe('openai-gpt-4-turbo');
+      expect(adapter.name).toBe('openai-gpt-4-turbo');
     });
 
     it('should use custom maxTokens', () => {
@@ -54,7 +54,7 @@ describe('OpenAIAdapter', () => {
         apiKey: 'test-key',
         maxTokens: 2048,
       });
-      expect(adapter.name()).toBe('openai-gpt-4-turbo');
+      expect(adapter.name).toBe('openai-gpt-4-turbo');
     });
 
     it('should use environment variable for API key', () => {
@@ -62,7 +62,7 @@ describe('OpenAIAdapter', () => {
       process.env.OPENAI_API_KEY = 'env-test-key';
 
       const adapter = new OpenAIAdapter();
-      expect(adapter.name()).toBe('openai-gpt-4-turbo');
+      expect(adapter.name).toBe('openai-gpt-4-turbo');
 
       if (oldKey) {
         process.env.OPENAI_API_KEY = oldKey;

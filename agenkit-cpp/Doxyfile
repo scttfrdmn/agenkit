@@ -2,7 +2,7 @@
 
 # Project information
 PROJECT_NAME           = "Agenkit C++"
-PROJECT_NUMBER         = 0.29.2
+PROJECT_NUMBER         = 0.48.0
 PROJECT_BRIEF          = "Minimal, composable interfaces for AI agents in C++"
 PROJECT_LOGO           =
 

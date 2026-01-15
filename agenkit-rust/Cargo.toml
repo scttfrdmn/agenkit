@@ -1,6 +1,6 @@
 [package]
 name = "agenkit"
-version = "0.46.0"
+version = "0.48.0"
 edition = "2021"
 authors = ["Agenkit Contributors"]
 description = "Minimal, composable interfaces for AI agents in Rust"

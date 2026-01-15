@@ -37,16 +37,42 @@ Interactive dashboard showing:
 
 **View:** [docs/TEST_PARITY.md](docs/TEST_PARITY.md)
 
-### 3. CI Integration (`.github/workflows/test-parity.yml`)
+### 3. Parity Validation Tests (`tests/test_parity_validation.py`)
+
+Automated pytest suite that validates parity thresholds:
+- **Minimum Parity Enforcement:** Fails CI if any language drops below threshold
+- **Category Validation:** Checks category-specific parity (patterns, safety, etc.)
+- **Regression Detection:** Prevents test count decreases
+- **Quality Checks:** Validates report structure and data integrity
+
+**Thresholds:**
+- Go: 50% (currently 53.0%)
+- C++: 40% (currently 44.3%)
+- Rust: 15% (currently 15.4%)
+- TypeScript: 18% (currently 18.3%)
+- Zig: 13% (currently 13.7%)
+
+**Usage:**
+```bash
+# Run validation tests
+uv run pytest tests/test_parity_validation.py -v
+
+# Run just threshold checks
+uv run pytest tests/test_parity_validation.py -k threshold -v
+```
+
+### 4. CI Integration (`.github/workflows/test-parity.yml`)
 
 Automated CI workflow that:
 - Runs on every push to main
 - Runs on every pull request
 - Runs daily at 00:00 UTC
+- Generates parity report with `test-parity.sh`
+- **Validates thresholds with pytest suite** (NEW in v0.48.0)
 - Posts parity report as PR comment
 - Auto-commits updated dashboard to main branch
 - Detects and alerts on parity regressions
-- Generates parity badges
+- **Fails CI if thresholds violated** (NEW in v0.48.0)
 
 ## Parity Goals
 

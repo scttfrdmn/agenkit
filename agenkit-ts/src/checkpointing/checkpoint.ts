@@ -102,7 +102,7 @@ export function checkpointFromDict(data: Record<string, unknown>): Checkpoint {
   }
   dataCopy.messages = deserializedMessages;
 
-  return dataCopy as Checkpoint;
+  return dataCopy as unknown as Checkpoint;
 }
 
 /**

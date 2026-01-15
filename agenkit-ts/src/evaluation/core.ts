@@ -304,7 +304,7 @@ export class Evaluator {
       return true; // No expected output, consider passed
     }
 
-    const actualLower = output.content.toLowerCase();
+    const actualLower = String(output.content).toLowerCase();
     const expectedLower = testCase.expected.toLowerCase();
 
     // Check if expected is contained in actual

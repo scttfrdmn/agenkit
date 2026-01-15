@@ -188,7 +188,7 @@ export class OllamaAdapter implements Agent {
         throw new Error(`Ollama API error (${response.status}): ${errorText}`);
       }
 
-      const data: OllamaChatResponse = await response.json();
+      const data = (await response.json()) as OllamaChatResponse;
 
       // Build metadata
       const metadata: Record<string, any> = {
@@ -269,7 +269,7 @@ export class OllamaAdapter implements Agent {
         throw new Error(`Ollama API error (${response.status}): ${errorText}`);
       }
 
-      const data: OllamaChatResponse = await response.json();
+      const data = (await response.json()) as OllamaChatResponse;
 
       // Build metadata
       const metadata: Record<string, any> = {

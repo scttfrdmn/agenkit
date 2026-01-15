@@ -66,7 +66,7 @@ export interface MessageDict {
 function messageToDict(message: Message): MessageDict {
   return {
     role: message.role,
-    content: message.content,
+    content: String(message.content),
     metadata: message.metadata || {},
   };
 }

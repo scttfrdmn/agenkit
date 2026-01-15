@@ -100,7 +100,7 @@ export class ContextMetrics implements Metric {
     if (ctx.conversationHistory && Array.isArray(ctx.conversationHistory)) {
       const history = ctx.conversationHistory as Message[];
       const totalTokens = history.reduce(
-        (sum, msg) => sum + this.estimateTokens(msg.content),
+        (sum, msg) => sum + this.estimateTokens(String(msg.content)),
         0
       );
       return totalTokens;

@@ -298,9 +298,9 @@ Begin reasoning. Use tools as needed while thinking.`;
               );
               addStepToTrace(
                 trace,
-                createReasoningStep(stepNum, ReasoningStepType.TOOL_RESULT, String(toolResult.data), {
+                createReasoningStep(stepNum, ReasoningStepType.TOOL_RESULT, String(toolResult.output), {
                   toolName,
-                  toolResult: toolResult.data,
+                  toolResult: toolResult.output,
                 })
               );
             }
@@ -309,7 +309,7 @@ Begin reasoning. Use tools as needed while thinking.`;
             currentContext = `Previous reasoning: ${currentContext}
 
 TOOL RESULT from ${toolName}:
-${toolResult.data}
+${toolResult.output}
 
 Continue reasoning with this information.`;
           } catch (error) {

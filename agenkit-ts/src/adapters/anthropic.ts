@@ -90,16 +90,16 @@ export class AnthropicAdapter implements Agent {
   }
 
   /**
-   * Returns the agent name.
+   * Agent name.
    */
-  name(): string {
+  get name(): string {
     return `anthropic-${this.config.model}`;
   }
 
   /**
-   * Returns agent capabilities.
+   * Agent capabilities.
    */
-  capabilities(): string[] {
+  get capabilities(): string[] {
     return ['completion', 'streaming', 'chat'];
   }
 

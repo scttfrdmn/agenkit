@@ -1532,6 +1532,93 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 
 ---
 
+### v0.49.0 - Advanced Features & Observability (Due: Q1 2026 - Feb/Mar) 🔭
+
+**Status**: 🚧 Planned | **Priority**: 🔴 High
+
+**Goal**: Complete observability infrastructure across all 6 languages and advance towards feature completeness
+
+**What Will Be Included**:
+
+1. **Observability Completion (MUST HAVE)** - 20-26 days
+   - **Rust Observability** (8-10 days): OpenTelemetry integration with 40+ tests
+     - Tracing (spans, contexts, baggage), Metrics (counters, gauges, histograms)
+     - Span context propagation across async boundaries
+     - Integration with middleware pipeline
+     - Export to OTLP, Jaeger, Zipkin
+   - **C++ Observability** (6-8 days): OpenTelemetry C++ SDK with 40+ tests
+     - RAII-based span management, thread-safe context propagation
+     - CMake integration for optional OTEL dependency
+   - **Zig Observability** (6-8 days): OpenTelemetry integration with 40+ tests
+     - Allocator-aware spans, build-time configuration with `-Dotel=true`
+     - Zero-cost abstractions where possible
+
+2. **Memory Systems Phase 2 (SHOULD HAVE - Partial)** - 6-8 days
+   - Vector Memory for TypeScript (3-4 days): ChromaDB client, embeddings integration
+   - Vector Memory for Rust (3-4 days): Vector DB clients, async operations
+   - Redis Memory: Deferred to v0.50.0+ (not blocking v1.0)
+
+3. **Advanced Reasoning (SHOULD HAVE - Partial)** - 3-4 days
+   - Graph of Thought for Go (3-4 days): Graph-based reasoning, path evaluation
+
+**Estimated Effort**: 29-38 days (~6-8 weeks)
+
+**Deferred to v0.50.0+**:
+- Vector Memory for C++/Zig
+- Redis Memory for all languages
+- L2M and PaS reasoning techniques
+- Transport layer work (gRPC, WebSocket for remaining languages)
+- Routing enhancements
+- Composition patterns
+
+**Milestone**: [#62 v0.49.0 - Advanced Features & Observability](https://github.com/scttfrdmn/agenkit/milestone/62)
+
+**Planning Document**: `V0.49.0_PLAN.md`
+
+---
+
+### v0.50.0 - Service Connectors & Framework Examples (Due: Q2 2026 - Apr/May) 🌐
+
+**Status**: 🚧 Planned | **Priority**: 🟡 Medium (Expansion, not blocking v1.0)
+
+**Goal**: Support major LLM inference services and demonstrate framework-building patterns
+
+**What Will Be Included**:
+
+1. **Service Connectors** - 13-16 days
+   - **Generic OpenAI-Compatible Adapter**: Single adapter supporting 9 inference services
+     - Implementation across all 6 languages
+     - Provider-specific configuration profiles
+   - **Priority Services** (4 examples):
+     - **vLLM**: Production high-throughput (industry standard)
+     - **llama.cpp**: Local/edge/CPU inference (10x growth trend)
+     - **SGLang**: Multi-turn conversations (29-64% faster than vLLM)
+     - **TensorRT-LLM**: NVIDIA enterprise standard
+   - **Key Insight**: 9 out of 12 requested services offer OpenAI-compatible APIs
+   - Setup documentation for each service
+
+2. **Framework Examples** - 6-8 days
+   - **MiniChain** (~350-400 LOC): LangChain/LangGraph equivalent
+     - Chain interface, LLMChain, ConversationChain, LCEL-style composition
+   - **MiniCrew** (~250-300 LOC): CrewAI equivalent
+     - Role-based agents, task decomposition, crew orchestration
+   - **Philosophy**: Demonstrates how frameworks are built **ON TOP** of Agenkit toolkit
+   - Links to existing migration guides
+
+**Services Covered**:
+- vLLM, llama.cpp, SGLang, TensorRT-LLM (Phase 1)
+- OpenLLM, MLC LLM (Phase 2 - OpenAI-compatible, examples only)
+- Deferred: TGI (deprecated), LMDeploy, Mistral.rs, PowerInfer, Inferflow
+- DeepSpeed: Library only, integration pattern documented
+
+**Estimated Effort**: 18-24 days (3-4 weeks)
+
+**Milestone**: [#63 v0.50.0 - Service Connectors & Framework Examples](https://github.com/scttfrdmn/agenkit/milestone/63)
+
+**Planning Document**: `SERVICE_CONNECTORS_PLAN.md`
+
+---
+
 ### v0.9.0 - Release Candidate (Due: May 5, 2026) 🎯
 
 **Status**: 🚧 Planned | **Priority**: 🔴 Critical
@@ -1681,10 +1768,37 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 
 #### Q1-Q2 2026 (Planned) 🚧
 
-**v0.49.0 (Q1 2026):** Advanced Features - Observability (Rust/C++), Memory Phase 2 (Vector/Redis), Transports, Reasoning
-- API reference auto-generation in CI
-- Interactive tutorials and examples
-- 46 issues tracked in milestone #60
+**v0.49.0 (Feb-Mar 2026):** Advanced Features & Observability 🔭
+- **Observability Completion (MUST HAVE)**: OpenTelemetry for Rust (8-10 days), C++ (6-8 days), Zig (6-8 days)
+  - Full distributed tracing, metrics, structured logging
+  - 40+ tests per language (matching Python/Go)
+  - Span context propagation across async boundaries
+  - Export to OTLP, Jaeger, Zipkin
+- **Memory Systems Phase 2 (SHOULD HAVE)**: Vector & Redis storage
+  - Vector Memory: TypeScript (3-4 days), Rust (3-4 days) - ChromaDB, FAISS, semantic search
+  - Redis Memory: Deferred to v0.50.0+ (distributed agents not blocking v1.0)
+- **Advanced Reasoning (SHOULD HAVE)**: Graph of Thought for Go (3-4 days)
+  - Graph-based reasoning structure with path evaluation
+  - Cycle detection and traversal strategies
+- **Estimated Effort**: 29-38 days (~6-8 weeks)
+- **Priority**: 🔴 High (Observability critical for production)
+- **Milestone**: [#62 v0.49.0 - Advanced Features & Observability](https://github.com/scttfrdmn/agenkit/milestone/62)
+
+**v0.50.0 (Apr-May 2026):** Service Connectors & Framework Examples 🌐
+- **Service Connectors (HIGH PRIORITY)**: 13-16 days
+  - Generic `OpenAICompatibleLLM` adapter supporting 9 inference services
+  - Priority services: vLLM (industry standard), llama.cpp (local/edge), SGLang (performance leader), TensorRT-LLM (NVIDIA enterprise)
+  - Implementation across all 6 languages
+  - 4 priority examples + setup documentation
+  - Key insight: 9/12 services share OpenAI-compatible API → single adapter implementation
+- **Framework Examples (MEDIUM PRIORITY)**: 6-8 days
+  - MiniChain (LangChain equivalent, ~350-400 LOC)
+  - MiniCrew (CrewAI equivalent, ~250-300 LOC)
+  - Demonstrates how frameworks are built **ON TOP** of Agenkit toolkit
+  - Links to existing migration guides
+- **Estimated Effort**: 18-24 days (3-4 weeks)
+- **Priority**: 🟡 Medium (Expansion, not blocking v1.0)
+- **Milestone**: [#63 v0.50.0 - Service Connectors & Framework Examples](https://github.com/scttfrdmn/agenkit/milestone/63)
 
 **v0.9.0 (May 5, 2026):** Release Candidate 🎯
 - Feature-complete beta for external testing
@@ -1726,4 +1840,4 @@ See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for d
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: January 15, 2026 (v0.48.0 COMPLETE: Automated parity enforcement + world-class documentation. Zig infrastructure complete (8,029 LOC). All 6 languages meeting parity thresholds. v0.9.0 Release Candidate next, due May 5. v1.0.0 on track for May 27, 2026.)
+Last updated: January 15, 2026 (v0.48.0 COMPLETE: Automated parity enforcement + world-class documentation. Zig infrastructure complete (8,029 LOC). All 6 languages meeting parity thresholds. v0.49.0 (Observability) and v0.50.0 (Service Connectors) planned. v0.9.0 Release Candidate due May 5. v1.0.0 on track for May 27, 2026.)

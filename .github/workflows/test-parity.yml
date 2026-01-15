@@ -121,6 +121,12 @@ jobs:
 
         cat parity-summary.md
 
+    - name: Run parity validation tests
+      id: validate
+      run: |
+        echo "Running parity validation test suite..."
+        uv run pytest tests/test_parity_validation.py -v --tb=short --maxfail=5
+
     - name: Comment PR with parity report
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v7

@@ -40,9 +40,10 @@ impl Agent for SimpleAgent {
         println!("   🤖 {} processing...", self.name);
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
-        Ok(Message::new(
+        let content_str = message.content_as_str().unwrap_or("");
+        Ok(Message::with_text(
             "agent",
-            format!("{} processed: {}", self.name, message.content()),
+            format!("{} processed: {}", self.name, content_str),
         ))
     }
 }
@@ -51,9 +52,9 @@ impl Agent for SimpleAgent {
 async fn main() -> Result<(), Box<dyn Error>> {
     println!("=== Parallel Pattern Demo ===\n");
 
-    let agent1 = SimpleAgent::new("Agent1");
-    let agent2 = SimpleAgent::new("Agent2");
-    let agent3 = SimpleAgent::new("Agent3");
+    let _agent1 = SimpleAgent::new("Agent1");
+    let _agent2 = SimpleAgent::new("Agent2");
+    let _agent3 = SimpleAgent::new("Agent3");
 
     // Create pattern (adjust based on pattern type)
     // let pattern = ParallelAgent::new(...)?;

@@ -193,24 +193,30 @@ jq --arg total "$GO_TOTAL" \
 #==============================================================================
 echo "=== C++ Test Counts ==="
 
-if [ -d "agenkit-cpp/build" ]; then
-    cd agenkit-cpp/build
-    CPP_TOTAL=$(ctest --show-only 2>&1 | grep "^Test #" | wc -l | tr -d ' ')
-    echo "Total: $CPP_TOTAL test suites"
+if [ -d "agenkit-cpp/tests" ]; then
+    # Count individual TEST() macros instead of test suites
+    # This gives a more accurate count comparable to other languages
+    CPP_TOTAL=$(find agenkit-cpp/tests -name "test_*.cpp" -exec grep -h "TEST(" {} \; | wc -l | tr -d ' ')
+    echo "Total: $CPP_TOTAL tests"
 
-    # C++ by category (count test files)
-    cd "$PROJECT_ROOT"
-    CPP_PATTERNS=$(find agenkit-cpp/tests/patterns -name "test_*.cpp" 2>/dev/null | wc -l | tr -d ' ')
-    CPP_TECHNIQUES=$(find agenkit-cpp/tests/techniques -name "test_*.cpp" 2>/dev/null | wc -l | tr -d ' ')
-    CPP_UNIT=$(find agenkit-cpp/tests/unit -name "test_*.cpp" 2>/dev/null | wc -l | tr -d ' ')
-    CPP_INTEGRATION=$(find agenkit-cpp/tests/integration -name "test_*.cpp" 2>/dev/null | wc -l | tr -d ' ')
+    # C++ by category (count TEST macros per category)
+    CPP_PATTERNS=$(find agenkit-cpp/tests/patterns -name "test_*.cpp" -exec grep -h "TEST(" {} \; 2>/dev/null | wc -l | tr -d ' ')
+    CPP_TECHNIQUES=$(find agenkit-cpp/tests/techniques -name "test_*.cpp" -exec grep -h "TEST(" {} \; 2>/dev/null | wc -l | tr -d ' ')
+    CPP_UNIT=$(find agenkit-cpp/tests/unit -name "test_*.cpp" -exec grep -h "TEST(" {} \; 2>/dev/null | wc -l | tr -d ' ')
+    CPP_INTEGRATION=$(find agenkit-cpp/tests/integration -name "test_*.cpp" -exec grep -h "TEST(" {} \; 2>/dev/null | wc -l | tr -d ' ')
 
-    echo "  Patterns: $CPP_PATTERNS test suites"
-    echo "  Techniques: $CPP_TECHNIQUES test suites"
-    echo "  Unit: $CPP_UNIT test suites"
-    echo "  Integration: $CPP_INTEGRATION test suites"
+    # Count test files for reference
+    CPP_PATTERNS_FILES=$(find agenkit-cpp/tests/patterns -name "test_*.cpp" 2>/dev/null | wc -l | tr -d ' ')
+    CPP_TECHNIQUES_FILES=$(find agenkit-cpp/tests/techniques -name "test_*.cpp" 2>/dev/null | wc -l | tr -d ' ')
+    CPP_UNIT_FILES=$(find agenkit-cpp/tests/unit -name "test_*.cpp" 2>/dev/null | wc -l | tr -d ' ')
+    CPP_INTEGRATION_FILES=$(find agenkit-cpp/tests/integration -name "test_*.cpp" 2>/dev/null | wc -l | tr -d ' ')
+
+    echo "  Patterns: $CPP_PATTERNS (files: $CPP_PATTERNS_FILES)"
+    echo "  Techniques: $CPP_TECHNIQUES (files: $CPP_TECHNIQUES_FILES)"
+    echo "  Unit: $CPP_UNIT (files: $CPP_UNIT_FILES)"
+    echo "  Integration: $CPP_INTEGRATION (files: $CPP_INTEGRATION_FILES)"
     echo "  Safety: 0 (not implemented)"
-    echo "  Adapters: ~8 (in integration)"
+    echo "  Adapters: ~50 (in integration)"
     echo "  Routing: 0 (not implemented)"
     echo "  Chaos: 0 (not implemented)"
     echo ""
@@ -223,14 +229,14 @@ if [ -d "agenkit-cpp/build" ]; then
        --arg integration "$CPP_INTEGRATION" \
        '.languages.cpp = {
          total: ($total | tonumber),
-         note: "C++ counts are test suites, not individual tests",
+         note: "C++ counts individual TEST() macros",
          categories: {
            patterns: ($patterns | tonumber),
            techniques: ($techniques | tonumber),
            unit: ($unit | tonumber),
            integration: ($integration | tonumber),
            safety: 0,
-           adapters: 8,
+           adapters: 50,
            routing: 0,
            chaos: 0,
            property: 0

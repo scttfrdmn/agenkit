@@ -224,6 +224,9 @@ pub const safety = @import("safety.zig");
 // Middleware
 pub const middleware = @import("middleware/mod.zig");
 
+// Infrastructure for production systems
+pub const infrastructure = @import("infrastructure/mod.zig");
+
 // Techniques
 pub const techniques = struct {
     // Reasoning techniques
@@ -288,6 +291,8 @@ test {
     _ = @import("safety.zig");
     // Also test middleware
     _ = @import("middleware/mod.zig");
+    // Also test infrastructure
+    _ = @import("infrastructure/mod.zig");
     // Also test techniques
     _ = @import("techniques/reasoning/self_consistency.zig");
     _ = @import("techniques/reasoning/chain_of_thought.zig");

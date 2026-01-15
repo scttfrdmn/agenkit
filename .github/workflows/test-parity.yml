@@ -206,6 +206,88 @@ jobs:
           fi
         fi
 
+    - name: Check minimum parity thresholds
+      id: check-thresholds
+      run: |
+        # Minimum parity thresholds (percentage of Python tests)
+        THRESHOLD_GO=50
+        THRESHOLD_CPP=40
+        THRESHOLD_RUST=15
+        THRESHOLD_TS=18
+        THRESHOLD_ZIG=13
+
+        PYTHON_TOTAL=$(jq -r '.languages.python.total' test-parity-report.json)
+        GO_TOTAL=$(jq -r '.languages.go.total' test-parity-report.json)
+        CPP_TOTAL=$(jq -r '.languages.cpp.total' test-parity-report.json)
+        RUST_TOTAL=$(jq -r '.languages.rust.total' test-parity-report.json)
+        TS_TOTAL=$(jq -r '.languages.typescript.total' test-parity-report.json)
+        ZIG_TOTAL=$(jq -r '.languages.zig.total' test-parity-report.json)
+
+        # Calculate parity percentages
+        GO_PARITY=$(echo "scale=1; ($GO_TOTAL * 100) / $PYTHON_TOTAL" | bc)
+        CPP_PARITY=$(echo "scale=1; ($CPP_TOTAL * 100) / $PYTHON_TOTAL" | bc)
+        RUST_PARITY=$(echo "scale=1; ($RUST_TOTAL * 100) / $PYTHON_TOTAL" | bc)
+        TS_PARITY=$(echo "scale=1; ($TS_TOTAL * 100) / $PYTHON_TOTAL" | bc)
+        ZIG_PARITY=$(echo "scale=1; ($ZIG_TOTAL * 100) / $PYTHON_TOTAL" | bc)
+
+        THRESHOLD_FAILED=0
+
+        echo "## Parity Threshold Check"
+        echo ""
+        echo "| Language | Tests | Parity | Threshold | Status |"
+        echo "|----------|-------|--------|-----------|--------|"
+
+        # Go
+        if (( $(echo "$GO_PARITY < $THRESHOLD_GO" | bc -l) )); then
+          echo "| Go | $GO_TOTAL | ${GO_PARITY}% | ${THRESHOLD_GO}% | ❌ BELOW THRESHOLD |"
+          THRESHOLD_FAILED=1
+        else
+          echo "| Go | $GO_TOTAL | ${GO_PARITY}% | ${THRESHOLD_GO}% | ✅ |"
+        fi
+
+        # C++
+        if (( $(echo "$CPP_PARITY < $THRESHOLD_CPP" | bc -l) )); then
+          echo "| C++ | $CPP_TOTAL | ${CPP_PARITY}% | ${THRESHOLD_CPP}% | ❌ BELOW THRESHOLD |"
+          THRESHOLD_FAILED=1
+        else
+          echo "| C++ | $CPP_TOTAL | ${CPP_PARITY}% | ${THRESHOLD_CPP}% | ✅ |"
+        fi
+
+        # Rust
+        if (( $(echo "$RUST_PARITY < $THRESHOLD_RUST" | bc -l) )); then
+          echo "| Rust | $RUST_TOTAL | ${RUST_PARITY}% | ${THRESHOLD_RUST}% | ❌ BELOW THRESHOLD |"
+          THRESHOLD_FAILED=1
+        else
+          echo "| Rust | $RUST_TOTAL | ${RUST_PARITY}% | ${THRESHOLD_RUST}% | ✅ |"
+        fi
+
+        # TypeScript
+        if (( $(echo "$TS_PARITY < $THRESHOLD_TS" | bc -l) )); then
+          echo "| TypeScript | $TS_TOTAL | ${TS_PARITY}% | ${THRESHOLD_TS}% | ❌ BELOW THRESHOLD |"
+          THRESHOLD_FAILED=1
+        else
+          echo "| TypeScript | $TS_TOTAL | ${TS_PARITY}% | ${THRESHOLD_TS}% | ✅ |"
+        fi
+
+        # Zig
+        if (( $(echo "$ZIG_PARITY < $THRESHOLD_ZIG" | bc -l) )); then
+          echo "| Zig | $ZIG_TOTAL | ${ZIG_PARITY}% | ${THRESHOLD_ZIG}% | ❌ BELOW THRESHOLD |"
+          THRESHOLD_FAILED=1
+        else
+          echo "| Zig | $ZIG_TOTAL | ${ZIG_PARITY}% | ${THRESHOLD_ZIG}% | ✅ |"
+        fi
+
+        echo ""
+
+        if [ "$THRESHOLD_FAILED" -eq 1 ]; then
+          echo "❌ One or more languages are below minimum parity threshold!"
+          echo "threshold_failed=true" >> $GITHUB_OUTPUT
+          exit 1
+        else
+          echo "✅ All languages meet minimum parity thresholds"
+          echo "threshold_failed=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Generate parity badge
       run: |
         PYTHON_TOTAL=$(jq -r '.languages.python.total' test-parity-report.json)

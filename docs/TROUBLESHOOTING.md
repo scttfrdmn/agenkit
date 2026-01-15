@@ -1208,7 +1208,7 @@ All patterns, features, and APIs work identically in all languages.
 **A:** Yes. Agenkit has:
 - 100% test coverage (3,310+ tests passing)
 - Used in real production systems
-- Framework overhead <0.01% of LLM call time
+- Toolkit overhead <0.01% of LLM call time
 - Comprehensive error handling
 - Performance benchmarks in all languages
 
@@ -1421,7 +1421,7 @@ agent = RetryDecorator(
 
 #### Q: Is agenkit fast?
 
-**A:** Yes. Framework overhead is negligible:
+**A:** Yes. Toolkit overhead is negligible:
 
 - **Python**: 1-7 μs per pattern
 - **Go**: 0.2-0.7 μs per pattern
@@ -1432,7 +1432,7 @@ agent = RetryDecorator(
 
 **LLM calls**: 100,000-500,000 μs
 
-**Conclusion**: Framework overhead is <0.01% of total time.
+**Conclusion**: Toolkit overhead is <0.01% of total time.
 
 See [Performance Benchmarks](PATTERN_BENCHMARK_RESULTS.md).
 

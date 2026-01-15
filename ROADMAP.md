@@ -1356,20 +1356,75 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 
 ---
 
-## Next Steps: Progressive Releases to v1.0.0
+## Recent Releases (Completed)
 
-**v0.40.0 (Complete):** ✅ Zig Pattern Parity + 6-Language Achievement - December 13, 2025
+### v0.40.0 - Zig Pattern Parity + 6-Language Achievement ✅
+**Released:** December 13, 2025
+
 - ✅ All 7 missing Zig patterns implemented (1,445 LOC, 113 tests)
 - ✅ **HISTORIC MILESTONE**: 100% pattern parity across all 6 languages!
 - ✅ First multi-language AI agent toolkit to achieve 6-language parity
 - ✅ 2,101+ tests passing across all languages (100% pass rate)
 - ✅ Documentation updates complete
 
-**v0.41.0 (Complete):** ✅ Zig Examples & Documentation - December 2025
+### v0.41.0 - Zig Examples & Documentation ✅
+**Released:** December 2025
+
 - ✅ 11 examples (8 basic + 3 integration), ~4,000 LOC documentation
 - ✅ Production-ready with comprehensive API, Getting Started, Patterns, Migration guides
 
-**v0.47.0 (Complete):** ✅ Rust Production Stack - Phase 1 - January 10, 2026
+### v0.42.0 - Testing & Documentation ✅
+**Released:** January 14, 2026 (Backfilled)
+
+- ✅ **Cross-Language Equivalence Testing** - 606/606 tests passing, 100% behavioral parity across all 6 languages! 🏆
+  - TypeScript harness complete with ReasoningWithTools implementation
+  - Historic milestone: First AI agent toolkit with 6-language equivalence
+- ✅ **Performance Benchmarks** - All 6 languages benchmarked
+  - TypeScript: 0.2-17 μs/op, Rust: 0.4-6 μs/op, C++: 0.3-525 μs/op
+  - Zig: 143-784 μs/op, Python: 1.5-3.6 μs/op, Go: 0.9-2.7 μs/op
+  - Key insight: Toolkit overhead <1% of LLM calls
+- ✅ **Comprehensive User Documentation** - 12,500+ lines of documentation
+  - Getting Started guides (all 6 languages)
+  - Pattern Guide (3,381 lines), Migration Guides (2,453 lines), Troubleshooting (1,706 lines)
+
+### v0.43.0 - Core Reasoning Complete ✅
+**Released:** December 14, 2025
+
+- ✅ Chain-of-Thought (CoT) prompting
+- ✅ Tree-of-Thought (ToT) reasoning
+- ✅ Self-Consistency decoding
+- ✅ Implementation in all 6 languages
+- ✅ Comprehensive tests and examples
+- ✅ Documentation complete
+
+### v0.43.1 - Documentation Improvements ✅
+**Released:** December 21, 2025
+
+- ✅ API reference updates
+- ✅ Tutorial enhancements
+- ✅ Migration guide improvements
+- ✅ Bug fixes and polish
+
+### v0.44.0 - Test Suite Stability ✅
+**Released:** January 4, 2026
+
+- ✅ Comprehensive test stability improvements
+- ✅ CI/CD pipeline optimizations
+- ✅ Cross-language test harmonization
+- ✅ Performance test reliability
+
+### v0.46.0 - Production Hardening ✅
+**Released:** January 10, 2026
+
+- ✅ **CI/CD Optimization**: 67% faster tests (Python 11+ min → <2 min)
+- ✅ **Language Updates**: Python 3.13, Go 1.23, Node 22, Rust 1.84
+- ✅ **Test Performance**: Smoke tests run in parallel, improved caching
+- ✅ **3,310+ tests passing** across all 6 languages with 100% pass rate
+- ✅ **Production Ready**: Modern language versions with optimized CI/CD
+
+### v0.47.0 - Rust Production Stack - Phase 1 ✅
+**Released:** January 10, 2026 (Backfilled January 15, 2026)
+
 - ✅ Checkpointing System (#381): 1,548 LOC, 14 tests, durable execution with automatic state persistence
 - ✅ Budget Tracking System (#384): 2,242 LOC, 37 tests, intelligent model routing with thinking mode allocation
 - ✅ Memory Systems (#388): 1,247 LOC, 27 tests, three-tier hierarchy (working/short-term/long-term)
@@ -1381,176 +1436,70 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
   - Audit logging (structured security events)
 - ✅ **Production Integration**: 4 examples demonstrating secure, cost-aware, durable agents
   - production_agent.rs (368 lines) - Original integration
-  - production_secure.rs (255 lines) - Complete security integration ✅ RUNNING
+  - production_secure.rs (255 lines) - Complete security integration
   - production_agent_secure.rs (509 lines) - Extended with audit logging
   - Full pipeline: Input validation → Memory → Budget → Processing → Output redaction → Checkpointing
 - ✅ **Total Impact**: 6,400+ LOC production code, 108 comprehensive tests, 429 total tests passing
-- ✅ **Feature Parity**: 100% parity with Python/Go for production infrastructure + security
+- ✅ **Feature Parity**: 100% parity with Python/Go/TypeScript for production infrastructure + security
 - ✅ **Production Ready**: Enables secure, cost-aware, durable 30+ hour autonomous agents
 
 ---
 
-### v0.42.0 - Testing & Documentation (Due: February 3, 2026)
+## Next Steps: Path to v1.0.0
 
-**Goal**: Foundation for external testing with comprehensive validation and documentation
+### v0.48.0 - Documentation & Testing Excellence (Due: May 16, 2026)
 
-**Status**: ✅ **Complete** (3/3 complete) 🎉 | **Completed**: January 14, 2026
+**Status**: 🚧 In Progress | **Priority**: 🔴 Critical (Next Major Milestone)
 
-**Scope**:
-- ✅ **Cross-Language Equivalence Testing** (#270-272) - **COMPLETE**
-  - ✅ Pattern behavior specifications (23 YAML files)
-  - ✅ Test harness for all 6 languages (JSON protocol v1.0)
-  - ✅ Behavioral equivalence verification (606/606 tests passing, 100% success)
-  - ✅ TypeScript harness complete with ReasoningWithTools implementation
-  - ✅ Historic achievement: First AI agent toolkit with 6-language parity
-- ✅ **Performance Benchmarks** (#273-275) - **COMPLETE** 🎉
-  - ✅ All 6 languages benchmarked (TypeScript, Rust, C++, Zig, Python, Go)
-  - ✅ Comprehensive results document with cross-language comparison
-  - ✅ Language selection guide based on benchmark data
-  - ✅ Performance insights: Toolkit overhead <1% of LLM calls
-  - ✅ Key finding: All languages fast enough for production use
-  - ⚠️ Known issues documented (Rust/Go Reflection anomalies)
-- ✅ **Complete Documentation** (#216, #276-278) - **COMPLETE** 🎉
-  - ✅ Getting Started guides for all 6 languages (~5,000 lines)
-  - ✅ Pattern Guide (PATTERN_GUIDE.md) - 3,381 lines covering all 18 patterns
-  - ✅ Cross-Language Migration Guide (CROSS_LANGUAGE_MIGRATION.md) - 1,358 lines
-  - ✅ Framework Migration Guide (FRAMEWORK_MIGRATION.md) - 1,095 lines
-  - ✅ Troubleshooting & FAQ Guide (TROUBLESHOOTING.md) - 1,706 lines
-  - ✅ Total: ~12,500 lines of comprehensive documentation
-  - ✅ Terminology corrections: "toolkit" not "framework" (16 corrections across 3 files)
-
-**Achievement**: 🏆 **Complete documentation package for production-ready AI agent toolkit**
-
-**Milestone**: [#49 v0.42.0 - Testing & Documentation](https://github.com/scttfrdmn/agenkit/milestone/49) (10 issues) - ✅ Complete
-
----
-
-### v0.43.0 - Core Reasoning (Due: February 24, 2026)
-
-**Goal**: Foundational reasoning techniques across all languages + Error tracking foundation
+**Goal**: Achieve 100% feature parity across all 6 languages with world-class documentation
 
 **Scope**:
-- **Chain-of-Thought (CoT)** (#279) - Step-by-step reasoning
-- **Tree-of-Thought (ToT)** (#280) - Multiple reasoning paths
-- **Self-Consistency** (#281) - Multiple sampling and voting
-- **Integration Tests** (#282) - Cross-pattern validation
 
-**Implementation**: All 3 reasoning techniques across all 6 languages (18 implementations)
+1. **Full 6-Language Parity** (46 issues in milestone #60):
+   - Middleware (8 types) - Add to Rust, C++, Zig
+   - Safety (5 components) - Add to Rust, C++, Zig
+   - Checkpointing - Add to C++, Zig (Rust ✅ complete)
+   - Budget Tracking - Add to C++, Zig (Rust ✅ complete)
+   - Memory Systems - Add Vector/Redis to TypeScript, Rust, C++, Zig
+   - Transports (gRPC, WebSocket) - Add to Rust, C++, Zig
+   - Advanced Reasoning (GoT, L2M, PaS) - Add to Go, TypeScript
+   - Routing - Add to Go, TypeScript
 
-**Note**: Evaluation features (#321-323) originally planned for this milestone have been deferred to v1.1+ ("Ideas: Evaluation Framework" milestone).
+2. **Documentation Excellence**:
+   - API reference auto-generation in CI
+   - Interactive tutorials and examples (moved from v0.42.0)
+   - Cross-language test documentation
 
-**Milestone**: [#50 v0.43.0 - Core Reasoning](https://github.com/scttfrdmn/agenkit/milestone/50) (4 issues)
+3. **Testing Excellence**:
+   - Test infrastructure improvements (from v0.42.0 triage)
+   - 6-language integration test suite expansion
 
----
+**This is essentially the v1.0 completion milestone** - getting all 6 languages to 100% feature parity.
 
-### v0.44.0 - WASM Complete (Due: March 31, 2026)
-
-**Goal**: Complete browser story with all 18 patterns in WASM + Error categorization
-
-**Scope**:
-- **Rust WASM** (#283-284)
-  - Fix tokio compatibility (6 broken patterns)
-  - Implement 7 new patterns (WASM-first)
-  - All 18 patterns working in browser
-- **C++ WASM** (#285) - Emscripten compilation for all patterns
-- **Zig WASM** (#286) - Native WASM support (smallest bundle size)
-- **NPM Package** (#287) - @agenkit/wasm with unified API
-- **Browser Examples** (#288) - React, Vue, Svelte integration
-- **Testing & CI/CD** (#289) - Playwright, automated browser tests
-
-**Deliverables**:
-- All 18 patterns × 3 languages in WASM (54 implementations)
-- Browser examples deployable to Vercel/Netlify
-- Conference demo ready
-
-**Note**: Evaluation features (#324-326) originally planned for this milestone have been deferred to v1.1+ ("Ideas: Evaluation Framework" milestone).
-
-**Milestone**: [#51 v0.44.0 - WASM Complete](https://github.com/scttfrdmn/agenkit/milestone/51) (7 issues)
-
----
-
-### v0.45.0 - Core Deployment (Due: April 14, 2026)
-
-**Goal**: Production-ready deployment templates + Failure prediction before deployment
-
-**Scope**:
-- **Cloudflare Workers** (#296) - Edge deployment with WASM, zero cold starts
-- **AWS Lambda** (#297) - Enterprise serverless (Python + Go + Terraform)
-- **Docker Compose** (#298) - Self-hosted production with observability
-- **Vercel Edge Functions** (#299) - Next.js integration for web developers
-- **E2B Sandboxes** (#340) - Secure isolated execution with Fortune 100 infrastructure
-- **Platform Selection Guide** (#300) - Decision matrix, comparison table, production checklist
-
-**Deliverables**:
-- Complete deployment templates with CI/CD pipelines
-- Platform-specific documentation
-- Deploy-in-5-minutes experience for each platform
-- Production best practices and security hardening
-- Cost analysis and scaling guidance
-
-**Strategic Partnership**: E2B integration positions Agenkit + E2B as enterprise stack for production agents (E2B: infrastructure layer, Agenkit: orchestration layer). E2B recently raised $21M Series A with 88% Fortune 100 adoption.
-
-**Demo Value**: "Deploy globally in 30 seconds" ⭐⭐⭐⭐⭐
-
-**Note**: Evaluation features (#327-330) originally planned for this milestone have been deferred to v1.1+ ("Ideas: Evaluation Framework" milestone).
-
-**Milestone**: [#54 v0.45.0 - Core Deployment](https://github.com/scttfrdmn/agenkit/milestone/54) (6 issues)
-
----
-
-### v0.46.0 - Production Hardening (Due: April 21, 2026)
-
-**Goal**: Production hardening and quality assurance
-
-**Scope**:
-- **Production Hardening** - Comprehensive testing under varied conditions
-- **Quality Assurance** - Stress testing, load testing, chaos engineering
-- **Security Hardening** - Penetration testing, security audits
-- **Performance Optimization** - Profiling, bottleneck identification
-
-**Deliverables**:
-- Production-ready stability and performance
-- Comprehensive QA documentation
-- Security audit results
-- Performance benchmarks
-
-**Note**: Evaluation features (#331-335) originally planned for this milestone have been deferred to v1.1+ ("Ideas: Evaluation Framework" milestone).
-
-**Milestone**: [#56 v0.46.0 - Production Hardening](https://github.com/scttfrdmn/agenkit/milestone/56) (TBD issues)
-
----
-
-**Note**: v0.47.0 originally planned for Evaluation & Monitoring has been repurposed for Rust Production Stack - Phase 1 (completed January 10, 2026). Evaluation & Monitoring features (#336-339) deferred to v1.1+ ("Ideas: Evaluation Framework" milestone). Existing evaluation framework sufficient for v1.0.0.
+**Milestone**: [#60 v0.48.0 - Documentation & Testing Excellence](https://github.com/scttfrdmn/agenkit/milestone/60) (46 issues)
 
 ---
 
 ### v0.9.0 - Release Candidate (Due: May 5, 2026) 🎯
 
+**Status**: 🚧 Planned | **Priority**: 🔴 Critical
+
 **Goal**: Feature-complete beta for external testing
 
-**Status**: **Release Candidate** - Feature complete, ready for external validation
+**What Will Be Included**:
+- 100% feature parity across all 6 languages (from v0.48.0)
+- Core Reasoning Techniques (CoT, ToT, Self-Consistency) - Already complete ✅
+- Comprehensive evaluation framework - Already complete ✅
+- Complete documentation with API references
+- Cross-language verified
+- Performance validated
+- All tests passing
 
-**What's Included**:
-- ✅ 18 patterns × 6 languages = 108 implementations
-- ✅ All 18 patterns work in WASM (Rust + C++ + Zig)
-- ✅ Browser examples (React, Vue, Svelte)
-- ✅ Core Reasoning Techniques (CoT, ToT, Self-Consistency)
-- ✅ **Evaluation Framework** - Existing comprehensive evaluation capabilities
-  - Core metrics (accuracy, latency, cost)
-  - Quality metrics and benchmarking
-  - SessionRecorder and RegressionDetector
-  - AB testing and optimization
-- ✅ Complete documentation
-- ✅ Cross-language verified
-- ✅ Performance validated
-- ✅ 2,101+ tests passing
-
-**Release Prep** (#290-292):
+**Release Prep**:
 - Comprehensive release notes and changelog
 - Final end-to-end testing across all platforms
-- Conference demo and presentation
-
-**Conference Demo**: Early April 2026 with v0.9.0
+- API stability review
+- Conference demo preparation
 
 **Milestone**: [#52 v0.9.0 - Release Candidate](https://github.com/scttfrdmn/agenkit/milestone/52) (3 issues)
 
@@ -1579,13 +1528,14 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 
 ### v1.0.0 - Stable Release (Due: May 27, 2026) 🚀
 
+**Status**: 🚧 Planned | **Priority**: 🔴 Critical
+
 **Goal**: Production-ready stable release with API stability guarantee
 
-**Status**: **Production Stable** - Battle-tested and production-ready
-
-**Final Polish** (#293-295):
+**Final Polish**:
 - Incorporate external feedback from v0.9.0 testing
 - Final API stability review and lock
+- Bug fixes and refinements from beta testing
 - Official v1.0.0 release and announcement across all channels
 
 **API Stability Guarantee**:
@@ -1651,109 +1601,64 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 - **Phase 8: Advanced Patterns (v0.10.0)** - ✅ 100% complete (Nov 2025 - safety, patterns, examples, security, performance)
 - **Phase 9: Infrastructure & Quality (v0.36.0-v0.37.0)** - ✅ 100% complete (Dec 2025 - test parity, CI/CD health, evaluation benchmarks, Rust quality)
 
-### 2026 Strategic Priorities
+### 2026 Release Timeline
 
-**Q4 2025 (Complete):** ✅ Memory, Cost Tracking, Long-Running Agents (#67-69)
-**Nov 2025 (Complete):** ✅ TypeScript, Safety, Reasoning, Patterns, Examples, Security (#70-75, #77-78, #81-83, #87, #89)
-**v0.35.0 (Complete):** ✅ 100% Adapter Parity - Go Tests, C++ Adapters, Rust Adapters (#64, #207, #208)
-**v0.36.0 (Complete):** ✅ Test Coverage Parity - TypeScript Tests, C++ Tests (#209, #210, #211)
-**v0.37.0 (Complete):** ✅ CI/CD Infrastructure & Quality - C++ Evaluation Benchmarks, All Workflows Fixed, Rust Zero Warnings (#212, #214)
-**v0.38.0 (Complete):** ✅ C++ Integration Test Coverage - All 5 test suites passing, 22 integration tests (#213)
-**v0.39.0 (Complete):** ✅ Zig Language Foundation - Infrastructure, 4 patterns, 2 advanced examples complete (#148, #149, #222)
-**v0.40.0 (Complete):** ✅ Zig Pattern Parity + 6-Language Achievement - All 18 patterns, 2,101+ tests, historic milestone! (#252)
-**v0.41.0 (Complete):** ✅ Zig Examples & Documentation - 11 examples, ~4,000 LOC documentation, production-ready
-**v0.47.0 (Complete):** ✅ Rust Production Stack - Phase 1 - Checkpointing, budget tracking, memory systems, safety framework (#381, #384, #388, #71)
+#### Q4 2025 (Completed) ✅
 
-**Q1 2026 (Dec-May):** 🚧 Progressive Releases to v1.0.0
+**Nov 2025:** TypeScript, Safety, Reasoning, Patterns, Examples, Security (#70-75, #77-78, #81-83, #87, #89)
+**v0.35.0:** 100% Adapter Parity - Go Tests, C++ Adapters, Rust Adapters (#64, #207, #208)
+**v0.36.0:** Test Coverage Parity - TypeScript Tests, C++ Tests (#209, #210, #211)
+**v0.37.0:** CI/CD Infrastructure & Quality - C++ Evaluation Benchmarks, All Workflows Fixed, Rust Zero Warnings (#212, #214)
+**v0.38.0:** C++ Integration Test Coverage - All 5 test suites passing, 22 integration tests (#213)
+**v0.39.0:** Zig Language Foundation - Infrastructure, 4 patterns, 2 advanced examples complete (#148, #149, #222)
 
-**v0.42.0 (Complete):** ✅ Testing & Documentation (3/3 Complete) - January 14, 2026 🎉
-- ✅ **Cross-Language Equivalence Testing** - 606/606 tests passing, 100% behavioral parity across all 6 languages! 🏆
-  - TypeScript harness complete with ReasoningWithTools implementation
-  - Historic milestone: First AI agent toolkit with 6-language equivalence
-- ✅ **Performance Benchmarks** - All 6 languages benchmarked! 🎉
-  - TypeScript: 0.2-17 μs/op (surprisingly competitive!)
-  - Rust: 0.4-6 μs/op, C++: 0.3-525 μs/op (most comprehensive: 21/21 patterns)
-  - Zig: 143-784 μs/op, Python: 1.5-3.6 μs/op, Go: 0.9-2.7 μs/op
-  - Key insight: Toolkit overhead <1% of LLM calls - all languages fast enough!
-  - Language selection guide: Pick based on ecosystem, not speed
-- ✅ **Comprehensive User Documentation** (#216) - 12,500+ lines of documentation! 📚
-  - Getting Started guides (all 6 languages)
-  - Pattern Guide (3,381 lines), Migration Guides (2,453 lines), Troubleshooting (1,706 lines)
-  - Terminology corrections: "toolkit" not "framework"
-- 10 issues tracked in milestone #49 - ✅ Complete
+#### December 2025 (Completed) ✅
 
-**v0.43.0 (Feb 24, 2026):** Core Reasoning + Error Tracking Foundation 🆕
-- Chain-of-Thought (CoT) prompting
-- Tree-of-Thought (ToT) reasoning
-- Self-Consistency decoding
-- **Evaluation Phase 1:** ErrorTracker API, OpenTelemetry metrics, documentation
-- 7 issues tracked in milestone #50 (4 reasoning + 3 evaluation)
+**v0.40.0:** Zig Pattern Parity + 6-Language Achievement - All 18 patterns, 2,101+ tests, historic milestone! (#252)
+**v0.41.0:** Zig Examples & Documentation - 11 examples, ~4,000 LOC documentation, production-ready
+**v0.43.0 (Dec 14):** Core Reasoning Complete - CoT, ToT, Self-Consistency across all 6 languages
+**v0.43.1 (Dec 21):** Documentation Improvements - API references, tutorials, migration guides
 
-**v0.44.0 (Mar 31, 2026):** WASM Complete + Error Categorization 🆕
-- All 18 patterns in WASM (Rust + C++ + Zig)
-- Browser examples (React, Vue, Svelte)
-- @agenkit/wasm NPM package
-- **Evaluation Phase 2:** Error categorization, breakdown analysis, documentation
-- 10 issues tracked in milestone #51 (7 WASM + 3 evaluation)
+#### January 2026 (Completed) ✅
 
-**v0.45.0 (Apr 14, 2026):** Core Deployment + Failure Prediction 🆕
-- Cloudflare Workers, AWS Lambda, Docker Compose, Vercel Edge Functions
-- Platform selection guide and production checklist
-- CI/CD templates for each platform
-- **Evaluation Phase 3:** FailurePredictor API, historical data, agenkit predict CLI, documentation
-- 9 issues tracked in milestone #54 (5 deployment + 4 evaluation)
+**v0.44.0 (Jan 4):** Test Suite Stability - CI/CD optimizations, cross-language test harmonization
+**v0.46.0 (Jan 10):** Production Hardening - 67% faster tests, Python 3.13, Go 1.23, Node 22, 3,310+ tests passing
+**v0.47.0 (Jan 10):** Rust Production Stack - Checkpointing, budget tracking, memory systems, safety framework (#381, #384, #388, #71)
+**v0.42.0 (Jan 14, backfilled):** Testing & Documentation - 606 equivalence tests (100% pass), 12,500+ lines of documentation
 
-**v0.46.0 (Apr 21, 2026):** Production Hardening + Scenario Testing 🆕
-- Comprehensive testing under varied conditions
-- Automated evaluation with CI/CD integration
-- **Evaluation Phase 4:** ScenarioGenerator, failure injection, agenkit evaluate CLI, CI/CD guide, documentation
-- 5 issues tracked in milestone #56 (5 evaluation)
+#### Q1-Q2 2026 (In Progress / Planned) 🚧
 
-**v0.47.0 (Complete):** ✅ Rust Production Stack - Phase 1 - January 10, 2026 (Backfilled January 15, 2026)
-- ✅ Checkpointing System (#381): 1,548 LOC, 14 tests, durable execution with automatic state persistence
-- ✅ Budget Tracking System (#384): 2,242 LOC, 37 tests, intelligent model routing with thinking mode allocation
-- ✅ Memory Systems (#388): 1,247 LOC, 27 tests, three-tier hierarchy (working/short-term/long-term)
-- ✅ **Production Integration**: Complete example demonstrating secure, cost-aware, durable agents
-- ✅ 399 tests passing, 5,405 LOC, 100% feature parity with Python/TypeScript
-
-**v0.48.0 (May 16, 2026):** Documentation & Testing Excellence 🆕
-- World-class documentation with API reference auto-generation
+**v0.48.0 (May 16, 2026):** Documentation & Testing Excellence 🔴 **NEXT MILESTONE**
+- 100% feature parity across all 6 languages
+- API reference auto-generation in CI
 - Interactive tutorials and examples
-- Complete 6-language parity (middleware, safety, checkpointing, budget across all languages)
 - 46 issues tracked in milestone #60
 
-**v0.9.0 (May 5, 2026):** 🎯 Release Candidate (Conference Demo)
-- Feature-complete beta
-- Conference presentation
-- External testing begins
+**v0.9.0 (May 5, 2026):** Release Candidate 🎯
+- Feature-complete beta for external testing
+- API stability review
+- Conference demo preparation
 - 3 issues tracked in milestone #52
 
 **External Beta Testing (May 6-26, 2026):**
 - 2-3 week public testing period
-- Community feedback collection
-- Bug fixes and API refinement
+- Community feedback and bug fixes
 
-**Q2 2026 (Late May):** 🚀 v1.0.0 Stable Release (May 27, 2026)
-- **Status:** Production-ready stable release
-- **What's Included:**
-  - ✅ 18 patterns × 6 languages = 108 implementations
-  - ✅ All 18 patterns work in WASM (Rust + C++ + Zig)
-  - ✅ Browser examples (React, Vue, Svelte)
-  - ✅ Core Reasoning Techniques (CoT, ToT, Self-Consistency)
-  - ✅ **Evaluation Framework** - Comprehensive evaluation capabilities
-    - Core metrics (accuracy, latency, cost)
-    - Quality metrics and benchmarking
-    - SessionRecorder and RegressionDetector
-    - AB testing and optimization
-    - **Note**: Advanced features (ErrorTracker, FailurePredictor, CLI, dashboards) deferred to v1.1+
-  - ✅ Complete documentation
-  - ✅ Cross-language verified
-  - ✅ Performance validated
-  - ✅ External testing complete
-  - ✅ API stability guarantee
-- **Milestone:** 3 issues tracked in milestone #53
+**v1.0.0 (May 27, 2026):** Stable Release 🚀
+- Production-ready with API stability guarantee
+- 100% feature parity across 6 languages
+- Core Reasoning Techniques complete (CoT, ToT, Self-Consistency)
+- Comprehensive evaluation framework
+- Complete documentation and cross-language verification
+- 3 issues tracked in milestone #53
 
-**Post-v1.0 (Q2-Q4 2026):** Techniques Library expansion, Java/C# ports (based on demand)
+#### Post-v1.0 (Q2-Q4 2026)
+
+**v1.1.0+:** Techniques Library expansion
+- Additional reasoning techniques (Graph-of-Thought, Least-to-Most, Plan-and-Solve)
+- Advanced evaluation features (ErrorTracker, FailurePredictor, CLI tools, dashboards)
+- Java/C# ports (based on demand)
+- WASM optimizations
 
 See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for detailed 2026 strategy.
 
@@ -1769,4 +1674,4 @@ See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for d
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: January 15, 2026 (v0.47.0 released - Rust Production Stack: Checkpointing, Budget Tracking, Memory Systems with 399 tests passing. v0.42.0 complete - Testing & Documentation with 606 equivalence tests and 12,500+ lines of documentation)
+Last updated: January 15, 2026 (Clarified release timeline: v0.42.0-v0.47.0 complete, v0.48.0 next major milestone due May 16. v1.0.0 on track for May 27, 2026.)

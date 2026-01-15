@@ -29,7 +29,7 @@ Agenkit provides a **cross-language, framework-agnostic** approach to building A
 - **Composable patterns** instead of opinionated abstractions
 - **No vendor lock-in** - escape hatches everywhere
 - **Production-ready** - 100% test coverage, used in real systems
-- **Framework overhead <0.01%** of LLM call time
+- **Toolkit overhead <0.01%** of LLM call time
 
 This guide helps you migrate from existing frameworks to agenkit while preserving functionality.
 
@@ -76,7 +76,7 @@ This guide helps you migrate from existing frameworks to agenkit while preservin
 ✅ **Composable**: Mix and match patterns
 ✅ **Escape hatches**: Never locked in
 ✅ **Production-ready**: 100% test coverage
-✅ **Fast**: <0.01% framework overhead
+✅ **Fast**: <0.01% toolkit overhead
 ✅ **18 patterns**: More than any framework
 ✅ **Simple**: Clear, minimal abstractions
 
@@ -1059,7 +1059,7 @@ Migrating to agenkit provides:
 - **Cross-language support** - Same agents work in 6 languages
 - **Better composability** - Mix and match patterns
 - **Production readiness** - 100% test coverage
-- **Performance** - <0.01% framework overhead
+- **Performance** - <0.01% toolkit overhead
 - **Flexibility** - No vendor lock-in
 
 ### Migration Difficulty

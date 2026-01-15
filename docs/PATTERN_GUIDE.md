@@ -47,7 +47,7 @@ Agent patterns are **reusable architectural templates** that solve common proble
 1. **Proven Solutions** - Patterns encode best practices from production systems
 2. **Cross-Language Consistency** - Same patterns work in all 6 languages
 3. **Composability** - Patterns work together seamlessly
-4. **Performance** - Framework overhead <1% of LLM call time
+4. **Performance** - Toolkit overhead <1% of LLM call time
 5. **Production Ready** - 100% test coverage, used in real systems
 
 ### Pattern Philosophy
@@ -294,7 +294,7 @@ fmt.Println(result.Content)
 **Performance Benchmark:**
 ```
 Sequential Pattern (3 agents): ~450 ns/op (Go), ~1.2 μs/op (TypeScript)
-Framework overhead: <0.001% vs LLM call (100,000 μs)
+Toolkit overhead: <0.001% vs LLM call (100,000 μs)
 ```
 
 ---
@@ -2217,7 +2217,7 @@ print(result.content)  # "Bonjour, comment allez-vous?"
 **Performance Benchmark:**
 ```
 Task Pattern: ~100 ns/op (C++), ~1.0 μs/op (TypeScript)
-Fastest pattern - minimal framework overhead
+Fastest pattern - minimal toolkit overhead
 Real-world: 1 LLM call + negligible overhead
 ```
 
@@ -2825,7 +2825,7 @@ safe_autonomous = AutonomousAgent(
 
 **Performance Benchmark:**
 ```
-Autonomous Pattern: ~1.2 μs/op (Python) framework overhead
+Autonomous Pattern: ~1.2 μs/op (Python) toolkit overhead
 Real-world: 10-50 iterations × (1 LLM call + N tool calls)
 Very expensive: 10-50x basic agent cost
 Unpredictable latency: Seconds to hours
@@ -3125,7 +3125,7 @@ agent = SupervisorAgent(
 
 ## Performance Characteristics
 
-### Framework Overhead Benchmarks
+### Toolkit Overhead Benchmarks
 
 Based on real benchmarks from all 6 languages:
 
@@ -3143,7 +3143,7 @@ Based on real benchmarks from all 6 languages:
 
 ### Key Insights
 
-1. **Framework overhead is negligible** - All patterns <10 μs, LLM calls ~100,000 μs
+1. **Toolkit overhead is negligible** - All patterns <10 μs, LLM calls ~100,000 μs
 2. **C++ and Zig fastest** - Compiled languages dominate (150-400 ns/op)
 3. **TypeScript surprisingly competitive** - 1-6 μs/op despite JIT
 4. **Python acceptable** - 1-7 μs/op, still <0.01% of LLM call
@@ -3152,7 +3152,7 @@ Based on real benchmarks from all 6 languages:
 
 ```
 LLM call latency: ~100-500ms (100,000-500,000 μs)
-Framework overhead: <10 μs
+Toolkit overhead: <10 μs
 Percentage: <0.01%
 
 Conclusion: Pattern choice matters for LOGIC, not SPEED
@@ -3160,8 +3160,8 @@ Conclusion: Pattern choice matters for LOGIC, not SPEED
 
 ### Latency Comparison
 
-| Pattern | Framework | LLM Calls | Total Latency |
-|---------|-----------|-----------|---------------|
+| Pattern | Toolkit | LLM Calls | Total Latency |
+|---------|---------|-----------|---------------|
 | Task | <1 μs | 1 | ~100ms |
 | Sequential (3) | <2 μs | 3 | ~300ms |
 | Parallel (3) | <2 μs | 3 | ~100ms (concurrent) |
@@ -3169,7 +3169,7 @@ Conclusion: Pattern choice matters for LOGIC, not SPEED
 | ReAct (5) | <7 μs | 5-10 | ~500-1000ms |
 | Autonomous (20) | <20 μs | 20-100 | ~2-10 seconds |
 
-**Optimization Rule**: Optimize LLM calls (model, caching, batching), not framework overhead.
+**Optimization Rule**: Optimize LLM calls (model, caching, batching), not toolkit overhead.
 
 ---
 
@@ -3335,7 +3335,7 @@ Agenkit's 18 patterns provide a comprehensive toolkit for building production AI
 
 1. **Start simple** - Use Task or Conversational for most applications
 2. **Compose patterns** - Combine 2-3 patterns for sophisticated behaviors
-3. **Framework overhead is negligible** - <0.01% of LLM call time
+3. **Toolkit overhead is negligible** - <0.01% of LLM call time
 4. **Cross-language consistency** - Same patterns work in all 6 languages
 5. **Production-ready** - Used in real systems with 100% test coverage
 

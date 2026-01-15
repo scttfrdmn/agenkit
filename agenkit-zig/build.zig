@@ -820,4 +820,104 @@ pub fn build(b: *std.Build) void {
     const basic_safety_run = b.addRunArtifact(basic_safety_example);
     basic_safety_step.dependOn(&basic_safety_run.step);
     basic_safety_run.step.dependOn(b.getInstallStep());
+
+    // Checkpointing examples
+
+    // Add Durable Agent example
+    const durable_agent_example = b.addExecutable(.{
+        .name = "durable_agent",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/checkpointing/durable_agent.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(durable_agent_example);
+    const durable_agent_step = b.step("run-durable-agent", "Run the durable agent checkpointing example");
+    const durable_agent_run = b.addRunArtifact(durable_agent_example);
+    durable_agent_step.dependOn(&durable_agent_run.step);
+    durable_agent_run.step.dependOn(b.getInstallStep());
+
+    // Add File Storage example
+    const file_storage_example = b.addExecutable(.{
+        .name = "file_storage",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/checkpointing/file_storage.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(file_storage_example);
+    const file_storage_step = b.step("run-file-storage", "Run the file storage checkpointing example");
+    const file_storage_run = b.addRunArtifact(file_storage_example);
+    file_storage_step.dependOn(&file_storage_run.step);
+    file_storage_run.step.dependOn(b.getInstallStep());
+
+    // Memory system examples
+
+    // Add Basic Memory example
+    const basic_memory_example = b.addExecutable(.{
+        .name = "basic_memory",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/infrastructure/basic_memory.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(basic_memory_example);
+    const basic_memory_step = b.step("run-basic-memory", "Run the basic memory system example");
+    const basic_memory_run = b.addRunArtifact(basic_memory_example);
+    basic_memory_step.dependOn(&basic_memory_run.step);
+    basic_memory_run.step.dependOn(b.getInstallStep());
+
+    // Add Hierarchical Memory example
+    const hierarchical_memory_example = b.addExecutable(.{
+        .name = "hierarchical_memory",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/infrastructure/hierarchical_memory.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(hierarchical_memory_example);
+    const hierarchical_memory_step = b.step("run-hierarchical-memory", "Run the hierarchical memory system example");
+    const hierarchical_memory_run = b.addRunArtifact(hierarchical_memory_example);
+    hierarchical_memory_step.dependOn(&hierarchical_memory_run.step);
+    hierarchical_memory_run.step.dependOn(b.getInstallStep());
+
+    // Add Memory Strategies example
+    const memory_strategies_example = b.addExecutable(.{
+        .name = "memory_strategies",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/infrastructure/memory_strategies.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(memory_strategies_example);
+    const memory_strategies_step = b.step("run-memory-strategies", "Run the memory strategies comparison example");
+    const memory_strategies_run = b.addRunArtifact(memory_strategies_example);
+    memory_strategies_step.dependOn(&memory_strategies_run.step);
+    memory_strategies_run.step.dependOn(b.getInstallStep());
+
+    // Add Conversational with Memory example
+    const conversational_memory_example = b.addExecutable(.{
+        .name = "conversational_with_memory",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/infrastructure/conversational_with_memory.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(conversational_memory_example);
+    const conversational_memory_step = b.step("run-conversational-memory", "Run the conversational agent with memory example");
+    const conversational_memory_run = b.addRunArtifact(conversational_memory_example);
+    conversational_memory_step.dependOn(&conversational_memory_run.step);
+    conversational_memory_run.step.dependOn(b.getInstallStep());
 }

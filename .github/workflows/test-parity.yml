@@ -121,6 +121,13 @@ jobs:
 
         cat parity-summary.md
 
+    - name: Generate enhanced parity dashboard
+      id: dashboard
+      run: |
+        echo "Generating enhanced dashboard with visualizations..."
+        chmod +x ./scripts/generate_parity_dashboard.py
+        uv run python ./scripts/generate_parity_dashboard.py
+
     - name: Run parity validation tests
       id: validate
       run: |
@@ -148,7 +155,7 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
 
-        git add docs/TEST_PARITY.md test-parity-report.json
+        git add docs/TEST_PARITY.md test-parity-report.json test-parity-history.json
 
         if git diff --staged --quiet; then
           echo "No changes to commit"
@@ -163,6 +170,7 @@ jobs:
         name: test-parity-report
         path: |
           test-parity-report.json
+          test-parity-history.json
           docs/TEST_PARITY.md
           parity-output.txt
         retention-days: 90

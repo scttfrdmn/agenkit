@@ -4,9 +4,11 @@ Complete API documentation for Agenkit C++ implementation.
 
 ## Official Documentation
 
-The C++ implementation uses Doxygen to generate comprehensive API documentation from inline comments. Documentation can be generated locally or viewed through your IDE's IntelliSense.
+C++ API documentation is generated using Doxygen and published with each release.
 
-**Status**: Doxygen configuration complete - documentation generation available
+[📚 View C++ API Documentation](https://agenkit.dev/cpp-api/){ .md-button .md-button--primary }
+
+**Local Generation**: Documentation can also be generated locally using `doxygen Doxyfile` in the `agenkit-cpp` directory.
 
 ---
 

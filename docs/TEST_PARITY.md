@@ -1,120 +1,248 @@
 # Test Parity Dashboard
 
-**Last Updated:** 2025-12-31 04:23:47 UTC
-**Status:** Tracking test parity across 6 language implementations
-
-## Overview
-
-This dashboard tracks test coverage across all Agenkit language implementations to ensure feature parity and quality consistency.
-
-## Test Count Summary
-
-| Language | Total Tests | vs Python | Parity % | Status |
-|----------|------------|-----------|----------|--------|
-| **Python** | 1789 | — | 100% | ✅ Reference |
-| **Go** | 926 | -863 | 51.7% | 🟡 Fair |
-| **C++** | 0 suites | —¹ | 0% | 🔴 Critical |
-| **Rust** | 277 | -1512 | 15.4% | 🔴 Critical |
-| **Zig** | 214 | -1575 | 11.9% | 🔴 Critical |
-| **TypeScript** | 328² | —² | 18.3% | 🔴 Critical |
-
-¹ C++ reports test suites not individual tests. Estimated ≈15 tests/suite = 0 total tests.
-² TypeScript count may be estimated from test files.
+> Automated test parity tracking across all 6 Agenkit language implementations
 
 
-## Category Breakdown
+### Current Test Parity Summary
 
-### Core Categories (Critical for Production)
+**Generated**: 2026-01-15T20:09:14Z | **Python Baseline**: 1792 tests
 
-| Category | Python | Go | C++ | Rust | Zig | TypeScript |
-|----------|--------|-----|-----|------|-----|------------|
-| **Patterns** | 439 | 362 ✅ | 18 ✅ | 133 ✅ | — | 7 |
-| **Techniques** | 240 | 37 ❌ | 2 ❌ | 0 ❌ | — | 0 ❌ |
-| **Safety** | 162 | 94 ❌ | 0 ❌ | 0 ❌ | — | 0 ❌ |
-| **Adapters** | 159 | 54 ⚠️ | ~8 ❌ | 31 ❌ | — | 0 ❌ |
-| **Evaluation** | 116 | 127 ⚠️ | — | 73 ⚠️ | — | 0 ❌ |
-| **Middleware** | 92 | 79 ⚠️ | — | — | — | — |
+| Language | Tests | Parity | Threshold | Status | Gap to Threshold |
+|----------|-------|--------|-----------|--------|------------------|
+| Python | 1792 | 100.0% | baseline | ✅ | — |
+| GO | 950 | 53.0% | 50.0% | 🟡 ✅ PASS | +3.0% |
+| CPP | 793 | 44.3% | 40.0% | 🟡 ✅ PASS | +4.3% |
+| RUST | N/A | N/A | N/A | ⏸️ | N/A |
+| TYPESCRIPT | N/A | N/A | N/A | ⏸️ | N/A |
+| ZIG | N/A | N/A | N/A | ⏸️ | N/A |
 
-**Legend:** ✅ Good parity (>80%) | ⚠️ Partial (40-80%) | ❌ Missing (<40%) | — Not counted
+### Parity Progress vs Thresholds
 
-### Advanced Categories (Nice to Have)
-
-| Category | Python | Go | C++ | Rust | Zig | TypeScript |
-|----------|--------|-----|-----|------|-----|------------|
-| **Routing** | 34 | 0 | — | — | — | — |
-| **Chaos** | 53 | 0 | — | — | — | — |
-| **Property** | 37 | 0 | 0 | 0 | — | 0 |
-| **Budget** | 51 | ✅ | — | — | — | — |
-| **Memory** | 80 | 6 | — | — | — | — |
+Progress bars show current parity (█) vs minimum threshold (│):
 
 
-## Active Parity Issues
-
-Track progress on test parity implementation:
-
-### High Priority (Critical Path)
-- [#349](https://github.com/scttfrdmn/agenkit/issues/349) - Go: Implement comprehensive techniques module tests
-- [#350](https://github.com/scttfrdmn/agenkit/issues/350) - C++: Implement comprehensive techniques module tests
-- [#351](https://github.com/scttfrdmn/agenkit/issues/351) - Rust: Implement comprehensive techniques module tests
-- [#352](https://github.com/scttfrdmn/agenkit/issues/352) - C++: Implement comprehensive safety module tests
-- [#353](https://github.com/scttfrdmn/agenkit/issues/353) - Rust: Implement comprehensive safety module tests
-- [#354](https://github.com/scttfrdmn/agenkit/issues/354) - TypeScript: Implement comprehensive techniques module tests
-- [#355](https://github.com/scttfrdmn/agenkit/issues/355) - Rust: Implement comprehensive adapter tests
-- [#356](https://github.com/scttfrdmn/agenkit/issues/356) - C++: Implement comprehensive adapter tests
-
-### Medium Priority
-- [#357](https://github.com/scttfrdmn/agenkit/issues/357) - Zig: Implement evaluation framework tests
-- [#358](https://github.com/scttfrdmn/agenkit/issues/358) - Go: Implement routing module tests
-- [#359](https://github.com/scttfrdmn/agenkit/issues/359) - Go: Implement chaos engineering tests
-
-### Cross-Cutting
-- [#360](https://github.com/scttfrdmn/agenkit/issues/360) - Cross-Language: Implement property-based testing framework
-- [#361](https://github.com/scttfrdmn/agenkit/issues/361) - All Languages: Test parity tracking and dashboard ✅
-
-## Parity Goals
-
-Target test counts for "meaningful parity" (85% of Python's comprehensive coverage):
-
-| Language | Current | Target | Gap | Priority Work |
-|----------|---------|--------|-----|---------------|
-| Go | 926 | 1,500 | +574 | Techniques, Safety, Routing, Chaos |
-| C++ | 0 | 1,500 | +1500 | Techniques, Safety, Adapters |
-| Rust | 277 | 1,500 | +1223 | Techniques, Safety, Adapters |
-| Zig | 214 | 1,000 | +786 | Evaluation, Techniques |
-| TypeScript | 328 | 1,200 | +872 | Techniques, Safety, Adapters |
-
-## Methodology
-
-### Test Counting
-
-**Python:** `pytest --collect-only` counts individual test functions
-**Go:** `go test -v` counts test runs (subtests counted separately)
-**C++:** `ctest` counts test suites/executables (each contains multiple tests)
-**Rust:** `cargo test` counts test functions
-**Zig:** `zig build test` counts inline test blocks
-**TypeScript:** `npm test` counts Jest test cases
-
-### Parity Calculation
-
-Parity % = (Language Tests / Python Tests) × 100
-
-For C++, we estimate ~15 tests per suite based on existing pattern tests.
-
-### Update Frequency
-
-This dashboard auto-updates on every commit via CI and can be manually regenerated with:
-
-```bash
-./scripts/test-parity.sh
+**GO** 🟡 ✅ PASS
+```
+[█████████████████████░░░░░░░░░░░░░░░░░░░] 53.0%
+Tests: 950/1792 | Threshold: 50.0% | Gap to 100%: 47.0%
 ```
 
-## Notes
+**CPP** 🟡 ✅ PASS
+```
+[█████████████████░░░░░░░░░░░░░░░░░░░░░░░] 44.3%
+Tests: 793/1792 | Threshold: 40.0% | Gap to 100%: 55.7%
+```
 
-- **Pattern Parity**: All languages have 100% pattern parity (18 patterns implemented)
-- **Core Features**: Focus on techniques, safety, and adapters (highest ROI)
-- **Language-Specific**: Some categories don't apply to all languages (e.g., WASM)
-- **Test Granularity**: Different languages have different test granularities
+**RUST**: Not in report yet
+
+**TYPESCRIPT**: Not in report yet
+
+**ZIG**: Not in report yet
+
+### Category Parity Heatmap
+
+Status: 🟢 Excellent (≥80%) | 🟡 Good (60-80%) | 🟠 Fair (40-60%) | 🔴 Poor (<40%) | — N/A
+
+| Language     | patterns | techniqu | safety   | adapters | evaluati | middlewa | memory   | budget   |
+|--------------|----------|----------|----------|----------|----------|----------|----------|----------|
+| GO           |    🟢     |    🔴     |    🟠     |    🔴     |    🟢     |    🟢     |    🔴     |    🔴     |
+| CPP          |    🟡     |    🔴     |    🔴     |    🔴     |    🔴     |    🔴     |    🔴     |    🔴     |
+| RUST         |    —     |    —     |    —     |    —     |    —     |    —     |    —     |    —     |
+| TYPESCRIPT   |    —     |    —     |    —     |    —     |    —     |    —     |    —     |    —     |
+| ZIG          |    —     |    —     |    —     |    —     |    —     |    —     |    —     |    —     |
+
+
+### Category Breakdown
+
+
+#### Adapters
+
+**Python baseline**: 141 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 54 | 38.3% | 🟠 |
+| CPP | 50 | 35.5% | 🟠 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Budget
+
+**Python baseline**: 51 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 0 | 0.0% | 🔴 |
+| CPP | 0 | 0.0% | 🔴 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Chaos
+
+**Python baseline**: 53 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 0 | 0.0% | 🔴 |
+| CPP | 0 | 0.0% | 🔴 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Composition
+
+**Python baseline**: 40 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 16 | 40.0% | 🟡 |
+| CPP | 0 | 0.0% | 🔴 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Evaluation
+
+**Python baseline**: 116 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 127 | 109.5% | ✅ |
+| CPP | 0 | 0.0% | 🔴 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Integration
+
+**Python baseline**: 90 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 0 | 0.0% | 🔴 |
+| CPP | 65 | 72.2% | 🟢 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Memory
+
+**Python baseline**: 101 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 18 | 17.8% | 🔴 |
+| CPP | 0 | 0.0% | 🔴 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Middleware
+
+**Python baseline**: 92 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 91 | 98.9% | ✅ |
+| CPP | 0 | 0.0% | 🔴 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Observability
+
+**Python baseline**: 41 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 41 | 100.0% | ✅ |
+| CPP | 0 | 0.0% | 🔴 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Patterns
+
+**Python baseline**: 439 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 362 | 82.5% | ✅ |
+| CPP | 310 | 70.6% | 🟢 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Property
+
+**Python baseline**: 37 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 0 | 0.0% | 🔴 |
+| CPP | 0 | 0.0% | 🔴 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Routing
+
+**Python baseline**: 34 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 0 | 0.0% | 🔴 |
+| CPP | 0 | 0.0% | 🔴 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Safety
+
+**Python baseline**: 162 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 94 | 58.0% | 🟡 |
+| CPP | 0 | 0.0% | 🔴 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Techniques
+
+**Python baseline**: 240 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 37 | 15.4% | 🔴 |
+| CPP | 22 | 9.2% | 🔴 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
+
+#### Tools
+
+**Python baseline**: 32 tests
+
+| Language | Tests | Parity | Status |
+|----------|-------|--------|--------|
+| GO | 17 | 53.1% | 🟡 |
+| CPP | 0 | 0.0% | 🔴 |
+| RUST | N/A | N/A | ⏸️ |
+| TYPESCRIPT | N/A | N/A | ⏸️ |
+| ZIG | N/A | N/A | ⏸️ |
 
 ---
 
-**Raw Data:** [`test-parity-report.json`](../test-parity-report.json)
+
+**Documentation**: [README-test-parity.md](../README-test-parity.md)
+
+**Raw Data**: [test-parity-report.json](../test-parity-report.json)
+
+**Validation Tests**: [tests/test_parity_validation.py](../tests/test_parity_validation.py)
+
+
+*Last updated: 2026-01-15 12:36:00 UTC*

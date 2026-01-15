@@ -1709,11 +1709,18 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 - **Evaluation Phase 4:** ScenarioGenerator, failure injection, agenkit evaluate CLI, CI/CD guide, documentation
 - 5 issues tracked in milestone #56 (5 evaluation)
 
-**v0.47.0 (May 18, 2026):** Evaluation & Monitoring 🆕
-- Production monitoring with real-time visibility
-- Alerting for proactive reliability response
-- **Evaluation Phase 5:** Grafana dashboards, Prometheus alerts, Docker Compose monitoring, documentation
-- 4 issues tracked in milestone #57 (4 evaluation)
+**v0.47.0 (Complete):** ✅ Rust Production Stack - Phase 1 - January 10, 2026 (Backfilled January 15, 2026)
+- ✅ Checkpointing System (#381): 1,548 LOC, 14 tests, durable execution with automatic state persistence
+- ✅ Budget Tracking System (#384): 2,242 LOC, 37 tests, intelligent model routing with thinking mode allocation
+- ✅ Memory Systems (#388): 1,247 LOC, 27 tests, three-tier hierarchy (working/short-term/long-term)
+- ✅ **Production Integration**: Complete example demonstrating secure, cost-aware, durable agents
+- ✅ 399 tests passing, 5,405 LOC, 100% feature parity with Python/TypeScript
+
+**v0.48.0 (May 16, 2026):** Documentation & Testing Excellence 🆕
+- World-class documentation with API reference auto-generation
+- Interactive tutorials and examples
+- Complete 6-language parity (middleware, safety, checkpointing, budget across all languages)
+- 46 issues tracked in milestone #60
 
 **v0.9.0 (May 5, 2026):** 🎯 Release Candidate (Conference Demo)
 - Feature-complete beta
@@ -1762,4 +1769,4 @@ See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for d
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: January 14, 2026 (v0.42.0 complete - Testing & Documentation: 606/606 equivalence tests passing, all 6 languages benchmarked, 12,500+ lines of comprehensive documentation including pattern guide, migration guides, and troubleshooting)
+Last updated: January 15, 2026 (v0.47.0 released - Rust Production Stack: Checkpointing, Budget Tracking, Memory Systems with 399 tests passing. v0.42.0 complete - Testing & Documentation with 606 equivalence tests and 12,500+ lines of documentation)

@@ -289,7 +289,7 @@ export function decodeBytes(data: Buffer): ProtocolEnvelope {
   try {
     const envelope = JSON.parse(data.toString('utf-8')) as Record<string, unknown>;
     validateEnvelope(envelope);
-    return envelope as ProtocolEnvelope;
+    return envelope as unknown as ProtocolEnvelope;
   } catch (error) {
     if (error instanceof MalformedPayloadError ||
         error instanceof InvalidMessageError ||

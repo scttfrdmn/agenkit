@@ -147,6 +147,7 @@ interface EvaluationResult {
   expected?: string;
   actual: string;
   error?: string;
+  [key: string]: number | string | undefined;
 }
 
 /**
@@ -234,10 +235,10 @@ export class ABTest {
 
       // Extract metric values
       for (const result of controlResults) {
-        this.control.addSample(result[metric] || 0);
+        this.control.addSample(Number(result[metric] || 0));
       }
       for (const result of treatmentResults) {
-        this.treatment.addSample(result[metric] || 0);
+        this.treatment.addSample(Number(result[metric] || 0));
       }
 
       // Run statistical test

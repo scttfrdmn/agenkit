@@ -382,7 +382,7 @@ export class LiteLLMAdapter implements Agent {
         throw new Error(`LiteLLM API error (${response.status}): ${errorText}`);
       }
 
-      return await response.json();
+      return (await response.json()) as LiteLLMResponse;
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error) {

@@ -243,6 +243,13 @@ add_custom_command(TARGET cross_language_harness POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:cross_language_harness> ${CMAKE_BINARY_DIR}/cross_language_harness
 )
 
+# Observability tests (optional, requires OpenTelemetry)
+if(AGENKIT_WITH_OBSERVABILITY)
+    add_executable(test_observability_tracing observability/test_tracing.cpp)
+    target_link_libraries(test_observability_tracing agenkit gtest_main)
+    add_test(NAME observability_tracing_tests COMMAND test_observability_tracing)
+endif()
+
 # Integration tests (optional, requires -DAGENKIT_BUILD_INTEGRATION_TESTS=ON)
 if(AGENKIT_BUILD_INTEGRATION_TESTS)
     add_subdirectory(integration)

@@ -131,6 +131,20 @@ criterion = { version = "0.5", features = ["async_tokio", "html_reports"] }
 [features]
 default = ["native"]
 
+# OpenTelemetry observability features
+opentelemetry = [
+    "dep:opentelemetry",
+    "dep:opentelemetry_sdk",
+    "dep:tracing-opentelemetry",
+    "dep:opentelemetry-otlp",
+    "dep:opentelemetry-jaeger",
+    "dep:opentelemetry-zipkin",
+    "dep:opentelemetry-prometheus",
+    "dep:opentelemetry-stdout",
+    "dep:prometheus",
+    "dep:once_cell",
+]
+
 # Native (non-WASM) build with full features
 native = [
     "tokio",
@@ -143,15 +157,6 @@ native = [
     "futures-util",
     "tracing-subscriber",
     "opentelemetry",
-    "opentelemetry_sdk",
-    "tracing-opentelemetry",
-    "opentelemetry-otlp",
-    "opentelemetry-jaeger",
-    "opentelemetry-zipkin",
-    "opentelemetry-prometheus",
-    "opentelemetry-stdout",
-    "prometheus",
-    "once_cell",
     "aws-config",
     "aws-sdk-bedrockruntime",
     "aws-credential-types",

@@ -85,74 +85,45 @@ pub fn init_tracing(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let provider = match exporter_type {
         "otlp" => {
-            #[cfg(feature = "opentelemetry-otlp")]
-            {
-                use opentelemetry_otlp::WithExportConfig;
-                let endpoint = endpoint.unwrap_or("http://localhost:4317");
+            use opentelemetry_otlp::WithExportConfig;
+            let endpoint = endpoint.unwrap_or("http://localhost:4317");
 
-                let exporter = opentelemetry_otlp::new_exporter()
-                    .tonic()
-                    .with_endpoint(endpoint)
-                    .build_span_exporter()?;
+            let exporter = opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_endpoint(endpoint)
+                .build_span_exporter()?;
 
-                TracerProvider::builder()
-                    .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
-                    .with_config(Config::default().with_sampler(Sampler::AlwaysOn))
-                    .build()
-            }
-            #[cfg(not(feature = "opentelemetry-otlp"))]
-            {
-                return Err(
-                    "OTLP exporter not enabled. Enable the 'opentelemetry-otlp' feature.".into(),
-                );
-            }
+            TracerProvider::builder()
+                .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
+                .with_config(Config::default().with_sampler(Sampler::AlwaysOn))
+                .build()
         }
         "jaeger" => {
-            #[cfg(feature = "opentelemetry-jaeger")]
-            {
-                let endpoint = endpoint.unwrap_or("127.0.0.1:6831");
+            let endpoint = endpoint.unwrap_or("127.0.0.1:6831");
 
-                #[allow(deprecated)]
-                let exporter = opentelemetry_jaeger::new_agent_pipeline()
-                    .with_endpoint(endpoint)
-                    .build_sync_agent_exporter()?;
+            #[allow(deprecated)]
+            let exporter = opentelemetry_jaeger::new_agent_pipeline()
+                .with_endpoint(endpoint)
+                .build_sync_agent_exporter()?;
 
-                TracerProvider::builder()
-                    .with_simple_exporter(exporter)
-                    .with_config(Config::default().with_sampler(Sampler::AlwaysOn))
-                    .build()
-            }
-            #[cfg(not(feature = "opentelemetry-jaeger"))]
-            {
-                return Err(
-                    "Jaeger exporter not enabled. Enable the 'opentelemetry-jaeger' feature."
-                        .into(),
-                );
-            }
+            TracerProvider::builder()
+                .with_simple_exporter(exporter)
+                .with_config(Config::default().with_sampler(Sampler::AlwaysOn))
+                .build()
         }
         "zipkin" => {
-            #[cfg(feature = "opentelemetry-zipkin")]
-            {
-                use opentelemetry_zipkin::ZipkinPipelineBuilder;
-                let endpoint = endpoint.unwrap_or("http://localhost:9411/api/v2/spans");
+            use opentelemetry_zipkin::ZipkinPipelineBuilder;
+            let endpoint = endpoint.unwrap_or("http://localhost:9411/api/v2/spans");
 
-                let exporter = ZipkinPipelineBuilder::default()
-                    .with_service_name("agenkit")
-                    .with_collector_endpoint(endpoint)
-                    .init_exporter()?;
+            let exporter = ZipkinPipelineBuilder::default()
+                .with_service_name("agenkit")
+                .with_collector_endpoint(endpoint)
+                .init_exporter()?;
 
-                TracerProvider::builder()
-                    .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
-                    .with_config(Config::default().with_sampler(Sampler::AlwaysOn))
-                    .build()
-            }
-            #[cfg(not(feature = "opentelemetry-zipkin"))]
-            {
-                return Err(
-                    "Zipkin exporter not enabled. Enable the 'opentelemetry-zipkin' feature."
-                        .into(),
-                );
-            }
+            TracerProvider::builder()
+                .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
+                .with_config(Config::default().with_sampler(Sampler::AlwaysOn))
+                .build()
         }
         "console" => {
             // Console exporter for development

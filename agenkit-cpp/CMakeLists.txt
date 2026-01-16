@@ -139,6 +139,7 @@ if(AGENKIT_WITH_OBSERVABILITY)
     target_sources(agenkit PRIVATE
         src/observability/tracing.cpp
         src/observability/metrics.cpp
+        src/observability/logging.cpp
     )
 endif()
 

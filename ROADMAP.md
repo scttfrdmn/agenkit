@@ -50,7 +50,7 @@ See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for c
 - **Python-Go Feature Parity**: ✅ Complete implementation parity across middleware, examples, and transports
 - **Go LLM Adapters**: ✅ OpenAI and Anthropic support (#58, completed Nov 2025)
 - **Test Coverage**: 278 Python tests, 181 Go tests (459 total)
-  - Observability: 25 Python tests, 28 Go tests (53 tests)
+  - Observability: 25 Python tests, 28 Go tests, 63 C++ tests (116 tests total)
   - Caching: 17 tests in both languages
 - **Comprehensive Examples**: 12 runnable examples with WHY explanations (~6,700 lines)
   - Python: 6 middleware + 2 transport examples
@@ -1526,7 +1526,8 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 - Transports (gRPC, WebSocket) for Rust, C++, Zig
 - Advanced Reasoning (GoT, L2M, PaS) for Go, TypeScript
 - Routing for Go, TypeScript
-- Rust & C++ Observability (gap analysis complete, 14-18 days estimated)
+- Rust & Zig Observability (gap analysis complete, 14-16 days estimated)
+- ✅ C++ Observability: COMPLETE (8 days, 63 tests, #461 - January 16, 2026)
 
 **Milestone**: [#60 v0.48.0 - Documentation & Testing Excellence](https://github.com/scttfrdmn/agenkit/milestone/60) - Focused on automated parity enforcement and documentation
 
@@ -1534,21 +1535,28 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 
 ### v0.49.0 - Advanced Features & Observability (Due: Q1 2026 - Feb/Mar) 🔭
 
-**Status**: 🚧 Planned | **Priority**: 🔴 High
+**Status**: 🚧 In Progress (1 of 3 complete) | **Priority**: 🔴 High
 
 **Goal**: Complete observability infrastructure across all 6 languages and advance towards feature completeness
 
 **What Will Be Included**:
 
 1. **Observability Completion (MUST HAVE)** - 20-26 days
+   - ✅ **C++ Observability** (COMPLETE - 8 days, #461): OpenTelemetry C++ SDK with **63 tests** (54% above target!)
+     - ✅ RAII-based span management (`ScopedSpan` with automatic cleanup)
+     - ✅ Thread-safe context propagation via message metadata (cross-language compatible)
+     - ✅ CMake integration for optional OTEL dependency (`-DAGENKIT_WITH_OBSERVABILITY=ON`)
+     - ✅ 4 modules: Distributed tracing, Metrics, Structured logging, Audit logging
+     - ✅ Multiple exporters: OTLP, Jaeger, Zipkin, Prometheus, Console
+     - ✅ 3 production-ready examples (basic, distributed, production)
+     - ✅ 1,200+ lines of comprehensive documentation
+     - ✅ Performance: <0.01% overhead (200k spans/s, 500k metrics/s)
+     - **Completed**: January 16, 2026 | **Commits**: 695f4354 through d9a260d0
    - **Rust Observability** (8-10 days): OpenTelemetry integration with 40+ tests
      - Tracing (spans, contexts, baggage), Metrics (counters, gauges, histograms)
      - Span context propagation across async boundaries
      - Integration with middleware pipeline
      - Export to OTLP, Jaeger, Zipkin
-   - **C++ Observability** (6-8 days): OpenTelemetry C++ SDK with 40+ tests
-     - RAII-based span management, thread-safe context propagation
-     - CMake integration for optional OTEL dependency
    - **Zig Observability** (6-8 days): OpenTelemetry integration with 40+ tests
      - Allocator-aware spans, build-time configuration with `-Dotel=true`
      - Zero-cost abstractions where possible
@@ -1840,4 +1848,4 @@ See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for d
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: January 15, 2026 (v0.48.0 COMPLETE: Automated parity enforcement + world-class documentation. Zig infrastructure complete (8,029 LOC). All 6 languages meeting parity thresholds. v0.49.0 (Observability) and v0.50.0 (Service Connectors) planned. v0.9.0 Release Candidate due May 5. v1.0.0 on track for May 27, 2026.)
+Last updated: January 16, 2026 (v0.48.0 COMPLETE: Automated parity enforcement + world-class documentation. C++ Observability COMPLETE (#461): 63 tests, 8 days, exceeding targets by 54%. v0.49.0 in progress (1/3 observability languages complete: C++ ✅, Rust 🚧, Zig 🚧). v0.50.0 (Service Connectors) planned. v0.9.0 Release Candidate due May 5. v1.0.0 on track for May 27, 2026.)

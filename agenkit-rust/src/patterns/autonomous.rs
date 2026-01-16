@@ -44,8 +44,8 @@
 //! - Goal-directed behavior
 //! - Self-organizing agents
 
-use std::sync::Arc;
 use chrono::{DateTime, Utc};
+use std::sync::Arc;
 
 use crate::core::{Agent, AgentError, Message};
 use crate::runtime;

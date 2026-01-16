@@ -89,12 +89,27 @@ impl CostRecord {
         dict.insert("session_id".to_string(), serde_json::json!(self.session_id));
         dict.insert("agent_name".to_string(), serde_json::json!(self.agent_name));
         dict.insert("model".to_string(), serde_json::json!(self.model));
-        dict.insert("timestamp".to_string(), serde_json::json!(self.timestamp.to_rfc3339()));
-        dict.insert("input_tokens".to_string(), serde_json::json!(self.input_tokens));
-        dict.insert("output_tokens".to_string(), serde_json::json!(self.output_tokens));
-        dict.insert("thinking_tokens".to_string(), serde_json::json!(self.thinking_tokens));
+        dict.insert(
+            "timestamp".to_string(),
+            serde_json::json!(self.timestamp.to_rfc3339()),
+        );
+        dict.insert(
+            "input_tokens".to_string(),
+            serde_json::json!(self.input_tokens),
+        );
+        dict.insert(
+            "output_tokens".to_string(),
+            serde_json::json!(self.output_tokens),
+        );
+        dict.insert(
+            "thinking_tokens".to_string(),
+            serde_json::json!(self.thinking_tokens),
+        );
         dict.insert("cost".to_string(), serde_json::json!(self.cost));
-        dict.insert("thinking_cost".to_string(), serde_json::json!(self.thinking_cost));
+        dict.insert(
+            "thinking_cost".to_string(),
+            serde_json::json!(self.thinking_cost),
+        );
 
         if let Some(ref metadata) = self.metadata {
             dict.insert("metadata".to_string(), metadata.clone());
@@ -148,12 +163,17 @@ impl UsageStats {
         self.total_calls += 1;
 
         // Update model stats
-        let model_stats = self.by_model.entry(record.model.clone()).or_insert_with(ModelStats::new);
+        let model_stats = self
+            .by_model
+            .entry(record.model.clone())
+            .or_insert_with(ModelStats::new);
         model_stats.add_record(record);
 
         // Update agent stats if tracking
         if let Some(ref mut by_agent) = self.by_agent {
-            let agent_stats = by_agent.entry(record.agent_name.clone()).or_insert_with(AgentStats::new);
+            let agent_stats = by_agent
+                .entry(record.agent_name.clone())
+                .or_insert_with(AgentStats::new);
             agent_stats.add_record(record);
         }
     }

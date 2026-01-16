@@ -45,8 +45,8 @@
 //! # }
 //! ```
 
-use std::sync::Arc;
 use futures::future::join_all;
+use std::sync::Arc;
 
 use crate::core::{Agent, AgentError, Message};
 use serde_json::json;
@@ -119,7 +119,10 @@ impl ParallelAgent {
     /// # Errors
     ///
     /// Returns an error if the agents list is empty.
-    pub fn new(agents: Vec<Arc<dyn Agent>>, aggregator: AggregatorFunc) -> Result<Self, AgentError> {
+    pub fn new(
+        agents: Vec<Arc<dyn Agent>>,
+        aggregator: AggregatorFunc,
+    ) -> Result<Self, AgentError> {
         if agents.is_empty() {
             return Err(AgentError::InvalidInput(
                 "at least one agent is required".to_string(),
@@ -185,7 +188,8 @@ impl Agent for ParallelAgent {
     /// Returns an error if all agents fail.
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         // Launch all agents concurrently using futures::join_all
-        let futures: Vec<_> = self.agents
+        let futures: Vec<_> = self
+            .agents
             .iter()
             .map(|agent| {
                 let agent_clone = Arc::clone(agent);
@@ -343,10 +347,7 @@ mod tests {
 
         async fn process(&self, _message: Message) -> Result<Message, AgentError> {
             if self.fail {
-                return Err(AgentError::ProcessingError(format!(
-                    "{} failed",
-                    self.name
-                )));
+                return Err(AgentError::ProcessingError(format!("{} failed", self.name)));
             }
 
             Ok(Message::with_text("assistant", &self.response))
@@ -373,9 +374,11 @@ mod tests {
             fail: false,
         });
 
-        let parallel =
-            ParallelAgent::new(vec![agent1, agent2, agent3], DefaultAggregators::concatenate)
-                .unwrap();
+        let parallel = ParallelAgent::new(
+            vec![agent1, agent2, agent3],
+            DefaultAggregators::concatenate,
+        )
+        .unwrap();
 
         let message = Message::with_text("user", "input");
         let result = parallel.process(message).await.unwrap();
@@ -409,9 +412,11 @@ mod tests {
             fail: false,
         });
 
-        let parallel =
-            ParallelAgent::new(vec![agent1, agent2, agent3], DefaultAggregators::concatenate)
-                .unwrap();
+        let parallel = ParallelAgent::new(
+            vec![agent1, agent2, agent3],
+            DefaultAggregators::concatenate,
+        )
+        .unwrap();
 
         let message = Message::with_text("user", "input");
         let result = parallel.process(message).await.unwrap();
@@ -445,7 +450,10 @@ mod tests {
         let result = parallel.process(message).await;
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("all agents failed"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("all agents failed"));
     }
 
     #[tokio::test]
@@ -468,9 +476,11 @@ mod tests {
             fail: false,
         });
 
-        let parallel =
-            ParallelAgent::new(vec![agent1, agent2, agent3], DefaultAggregators::majority_vote)
-                .unwrap();
+        let parallel = ParallelAgent::new(
+            vec![agent1, agent2, agent3],
+            DefaultAggregators::majority_vote,
+        )
+        .unwrap();
 
         let message = Message::with_text("user", "input");
         let result = parallel.process(message).await.unwrap();

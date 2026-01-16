@@ -21,8 +21,8 @@ fn print_separator(title: &str) {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     print_separator("AgentKit Rust - Anthropic Claude Basic Example");
 
-    let api_key = std::env::var("ANTHROPIC_API_KEY")
-        .expect("ANTHROPIC_API_KEY environment variable not set");
+    let api_key =
+        std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY environment variable not set");
 
     // Example 1: Simple completion with Claude Sonnet 4
     print_separator("Example 1: Simple Completion with Claude Sonnet 4");
@@ -37,7 +37,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let agent = AnthropicAgent::new(config);
 
-    let msg = Message::with_text("user", "Explain the concept of ownership in Rust in 2 sentences.");
+    let msg = Message::with_text(
+        "user",
+        "Explain the concept of ownership in Rust in 2 sentences.",
+    );
     println!("Prompt: {}", msg.content_as_str().unwrap_or(""));
 
     match agent.process(msg).await {
@@ -74,7 +77,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "You are a helpful code reviewer. Provide concise, actionable feedback.",
     );
 
-    println!("System Prompt: {}", system_msg.content_as_str().unwrap_or(""));
+    println!(
+        "System Prompt: {}",
+        system_msg.content_as_str().unwrap_or("")
+    );
 
     match agent.process(system_msg).await {
         Ok(response) => {
@@ -153,7 +159,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Example 4: Temperature effects
     print_separator("Example 4: Temperature Effects");
 
-    let creative_prompt = "Generate a creative variable name for a function that calculates fibonacci numbers.";
+    let creative_prompt =
+        "Generate a creative variable name for a function that calculates fibonacci numbers.";
     println!("Prompt: {}\n", creative_prompt);
 
     // Temperature 0.5 (balanced)

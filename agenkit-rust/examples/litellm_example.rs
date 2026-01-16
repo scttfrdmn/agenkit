@@ -22,7 +22,6 @@
 ///!    ```bash
 ///!    cargo run --example litellm_example --features native
 ///!    ```
-
 use agenkit::adapters::litellm::{LiteLLMAdapter, LiteLLMConfig};
 use agenkit::core::{Agent, Message};
 

@@ -81,7 +81,10 @@ async fn test_output_validation_with_redactor() {
     let msg = Message::with_text("user", "test");
 
     let result = safe_agent.process(msg).await;
-    assert!(result.is_ok(), "Redactor middleware should process messages");
+    assert!(
+        result.is_ok(),
+        "Redactor middleware should process messages"
+    );
 
     // Redaction logic is tested in unit tests
     let response = result.unwrap();
@@ -138,7 +141,10 @@ async fn test_full_security_stack() {
     // Test with normal input
     let msg = Message::with_text("user", "Hello, how are you?");
     let result = safe_agent.process(msg).await;
-    assert!(result.is_ok(), "Normal request should pass all security layers");
+    assert!(
+        result.is_ok(),
+        "Normal request should pass all security layers"
+    );
 }
 
 #[tokio::test]
@@ -155,7 +161,10 @@ async fn test_security_stack_with_validation() {
     // Test that all layers work together
     let msg = Message::with_text("user", "Normal test message");
     let result = safe_agent.process(msg).await;
-    assert!(result.is_ok(), "Full security stack should process normal messages");
+    assert!(
+        result.is_ok(),
+        "Full security stack should process normal messages"
+    );
 }
 
 #[tokio::test]
@@ -217,5 +226,8 @@ async fn test_restricted_role_permissions() {
     let msg = Message::with_text("user", "test");
 
     let result = safe_agent.process(msg).await;
-    assert!(result.is_ok(), "Restricted role should allow basic processing");
+    assert!(
+        result.is_ok(),
+        "Restricted role should allow basic processing"
+    );
 }

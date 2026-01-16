@@ -13,14 +13,14 @@
 //! let latency = LatencyMetric::new();
 //! ```
 
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
-use async_trait::async_trait;
 
-use crate::core::{Agent, Message, AgentError};
 use super::core::Metric;
+use crate::core::{Agent, AgentError, Message};
 
 /// Tracks context length and growth over agent lifecycle.
 ///
@@ -112,9 +112,7 @@ impl Metric for ContextMetrics {
         let sum: f64 = measurements.iter().sum();
         let mean = sum / measurements.len() as f64;
 
-        let min = measurements
-            .iter()
-            .fold(f64::INFINITY, |a, &b| a.min(b));
+        let min = measurements.iter().fold(f64::INFINITY, |a, &b| a.min(b));
         let max = measurements
             .iter()
             .fold(f64::NEG_INFINITY, |a, &b| a.max(b));
@@ -159,11 +157,26 @@ impl CompressionStats {
     pub fn to_dict(&self) -> HashMap<String, serde_json::Value> {
         let mut result = HashMap::new();
         result.insert("raw_tokens".to_string(), serde_json::json!(self.raw_tokens));
-        result.insert("compressed_tokens".to_string(), serde_json::json!(self.compressed_tokens));
-        result.insert("compression_ratio".to_string(), serde_json::json!(self.compression_ratio));
-        result.insert("retrieval_accuracy".to_string(), serde_json::json!(self.retrieval_accuracy));
-        result.insert("context_length_tested".to_string(), serde_json::json!(self.context_length_tested));
-        result.insert("timestamp".to_string(), serde_json::json!(self.timestamp.to_rfc3339()));
+        result.insert(
+            "compressed_tokens".to_string(),
+            serde_json::json!(self.compressed_tokens),
+        );
+        result.insert(
+            "compression_ratio".to_string(),
+            serde_json::json!(self.compression_ratio),
+        );
+        result.insert(
+            "retrieval_accuracy".to_string(),
+            serde_json::json!(self.retrieval_accuracy),
+        );
+        result.insert(
+            "context_length_tested".to_string(),
+            serde_json::json!(self.context_length_tested),
+        );
+        result.insert(
+            "timestamp".to_string(),
+            serde_json::json!(self.timestamp.to_rfc3339()),
+        );
         result
     }
 }
@@ -198,11 +211,13 @@ impl CompressionMetrics {
     /// * `test_lengths` - Context lengths to test (defaults to 1M, 10M, 25M)
     /// * `needle_count` - Number of "needle" facts to test retrieval
     pub fn new(test_lengths: Option<Vec<usize>>, needle_count: usize) -> Self {
-        let test_lengths = test_lengths.unwrap_or_else(|| vec![
-            1_000_000,  // 1M tokens
-            10_000_000, // 10M tokens
-            25_000_000, // 25M tokens (endless scale)
-        ]);
+        let test_lengths = test_lengths.unwrap_or_else(|| {
+            vec![
+                1_000_000,  // 1M tokens
+                10_000_000, // 10M tokens
+                25_000_000, // 25M tokens (endless scale)
+            ]
+        });
 
         Self {
             test_lengths,
@@ -213,7 +228,12 @@ impl CompressionMetrics {
     /// Generates default needle facts for testing.
     fn default_needles(&self) -> Vec<String> {
         (0..self.needle_count)
-            .map(|i| format!("NEEDLE FACT {}: The secret code is ALPHA-{:04}-OMEGA.", i, i))
+            .map(|i| {
+                format!(
+                    "NEEDLE FACT {}: The secret code is ALPHA-{:04}-OMEGA.",
+                    i, i
+                )
+            })
             .collect()
     }
 
@@ -393,16 +413,10 @@ impl Metric for CompressionMetrics {
         let count = measurements.len() as f64;
         let mean = sum / count;
 
-        let variance: f64 = measurements
-            .iter()
-            .map(|v| (v - mean).powi(2))
-            .sum::<f64>()
-            / count;
+        let variance: f64 = measurements.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / count;
         let std = variance.sqrt();
 
-        let min = measurements
-            .iter()
-            .fold(f64::INFINITY, |a, &b| a.min(b));
+        let min = measurements.iter().fold(f64::INFINITY, |a, &b| a.min(b));
         let max = measurements
             .iter()
             .fold(f64::NEG_INFINITY, |a, &b| a.max(b));
@@ -522,7 +536,9 @@ mod tests {
         let agent = Arc::new(MockAgent);
 
         let mut input = Message::with_text("user", "test");
-        input.metadata.insert("context_length".to_string(), serde_json::json!(1000));
+        input
+            .metadata
+            .insert("context_length".to_string(), serde_json::json!(1000));
 
         let output = Message::with_text("assistant", "response");
         let ctx = HashMap::new();
@@ -552,7 +568,9 @@ mod tests {
 
         let input = Message::with_text("user", "test");
         let mut output = Message::with_text("assistant", "response");
-        output.metadata.insert("compression_ratio".to_string(), serde_json::json!(100.0));
+        output
+            .metadata
+            .insert("compression_ratio".to_string(), serde_json::json!(100.0));
 
         let ctx = HashMap::new();
         let ratio = metric.measure(agent, &input, &output, &ctx).await.unwrap();
@@ -613,8 +631,17 @@ mod tests {
         let dict = stats.to_dict();
 
         assert_eq!(dict.get("raw_tokens").unwrap(), &serde_json::json!(1000000));
-        assert_eq!(dict.get("compressed_tokens").unwrap(), &serde_json::json!(10000));
-        assert_eq!(dict.get("compression_ratio").unwrap(), &serde_json::json!(100.0));
-        assert_eq!(dict.get("retrieval_accuracy").unwrap(), &serde_json::json!(0.95));
+        assert_eq!(
+            dict.get("compressed_tokens").unwrap(),
+            &serde_json::json!(10000)
+        );
+        assert_eq!(
+            dict.get("compression_ratio").unwrap(),
+            &serde_json::json!(100.0)
+        );
+        assert_eq!(
+            dict.get("retrieval_accuracy").unwrap(),
+            &serde_json::json!(0.95)
+        );
     }
 }

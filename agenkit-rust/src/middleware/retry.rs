@@ -137,8 +137,8 @@ impl RetryConfig {
             return Duration::ZERO;
         }
 
-        let delay_ms = self.initial_delay.as_millis() as f64
-            * self.multiplier.powi((attempt - 1) as i32);
+        let delay_ms =
+            self.initial_delay.as_millis() as f64 * self.multiplier.powi((attempt - 1) as i32);
 
         let delay = Duration::from_millis(delay_ms as u64);
         delay.min(self.max_delay)
@@ -309,9 +309,8 @@ impl<A: Agent> Agent for RetryMiddleware<A> {
             metrics.failed_after_retries += 1;
         }
 
-        Err(last_error.unwrap_or_else(|| {
-            AgentError::Internal("retry failed with no error".to_string())
-        }))
+        Err(last_error
+            .unwrap_or_else(|| AgentError::Internal("retry failed with no error".to_string())))
     }
 }
 
@@ -349,9 +348,7 @@ mod tests {
             let attempt = self.attempts.fetch_add(1, Ordering::SeqCst);
 
             if attempt < self.fail_until {
-                Err(AgentError::ProcessingError(
-                    "transient failure".to_string(),
-                ))
+                Err(AgentError::ProcessingError("transient failure".to_string()))
             } else {
                 Ok(Message::with_text("assistant", "success"))
             }

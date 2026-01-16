@@ -29,7 +29,9 @@ impl Agent for MockLLMAgent {
         let content = message.content_as_str().unwrap_or("");
 
         // Parse conversation history from context
-        let response = if content.contains("My name is Alice") && content.contains("What's my name?") {
+        let response = if content.contains("My name is Alice")
+            && content.contains("What's my name?")
+        {
             "Your name is Alice, as you mentioned earlier!"
         } else if content.contains("My name is Alice") {
             "Nice to meet you, Alice! How can I help you today?"
@@ -93,11 +95,15 @@ async fn example_basic_conversation() -> Result<(), AgentError> {
     })?;
 
     println!("User: My name is Alice");
-    let response1 = agent.process(Message::with_text("user", "My name is Alice")).await?;
+    let response1 = agent
+        .process(Message::with_text("user", "My name is Alice"))
+        .await?;
     println!("Assistant: {}\n", response1.content_as_str().unwrap());
 
     println!("User: What's my name?");
-    let response2 = agent.process(Message::with_text("user", "What's my name?")).await?;
+    let response2 = agent
+        .process(Message::with_text("user", "What's my name?"))
+        .await?;
     println!("Assistant: {}\n", response2.content_as_str().unwrap());
 
     println!("History length: {} messages", agent.history_length());
@@ -162,7 +168,10 @@ async fn example_history_pruning() -> Result<(), AgentError> {
     })?;
 
     println!("Max history: 5 messages");
-    println!("Initial history (with system): {}\n", agent.history_length());
+    println!(
+        "Initial history (with system): {}\n",
+        agent.history_length()
+    );
 
     // Add several messages
     for i in 1..=4 {
@@ -208,7 +217,10 @@ async fn example_export_import() -> Result<(), AgentError> {
         .process(Message::with_text("user", "What's the capital of France?"))
         .await?;
     agent1
-        .process(Message::with_text("user", "Who was the first president of the US?"))
+        .process(Message::with_text(
+            "user",
+            "Who was the first president of the US?",
+        ))
         .await?;
 
     println!("Agent 1: History length: {}", agent1.history_length());
@@ -233,7 +245,10 @@ async fn example_export_import() -> Result<(), AgentError> {
     println!("\nAgent 2: Continuing conversation...");
     println!("User: What was my previous question about France?");
     let response = agent2
-        .process(Message::with_text("user", "What was my previous question about France?"))
+        .process(Message::with_text(
+            "user",
+            "What was my previous question about France?",
+        ))
         .await?;
     println!("Assistant: {}\n", response.content_as_str().unwrap());
 
@@ -266,7 +281,9 @@ async fn example_customer_support() -> Result<(), AgentError> {
 
     for (i, user_input) in conversation.iter().enumerate() {
         println!("User: {}", user_input);
-        let response = agent.process(Message::with_text("user", *user_input)).await?;
+        let response = agent
+            .process(Message::with_text("user", *user_input))
+            .await?;
         println!("Support: {}\n", response.content_as_str().unwrap());
 
         if i == 1 {
@@ -306,11 +323,16 @@ async fn example_clear_history() -> Result<(), AgentError> {
     // Clear history but keep system prompt
     agent.clear_history(true);
     println!("After clear_history(keep_system=true):");
-    println!("History length: {} (system prompt preserved)\n", agent.history_length());
+    println!(
+        "History length: {} (system prompt preserved)\n",
+        agent.history_length()
+    );
 
     // Try asking about previous context
     println!("User: What's my name?");
-    let response = agent.process(Message::with_text("user", "What's my name?")).await?;
+    let response = agent
+        .process(Message::with_text("user", "What's my name?"))
+        .await?;
     println!("Assistant: {}\n", response.content_as_str().unwrap());
     println!("[Agent doesn't remember because history was cleared]");
 

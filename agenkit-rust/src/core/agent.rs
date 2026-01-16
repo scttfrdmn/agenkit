@@ -2,7 +2,6 @@
 ///!
 ///! This module defines the core Agent trait that all agents must implement,
 ///! following the same design as TypeScript and Go implementations.
-
 use super::introspection::IntrospectionResult;
 use super::message::{Message, ToolResult};
 use async_trait::async_trait;
@@ -47,7 +46,9 @@ impl Clone for AgentError {
             AgentError::Timeout(s) => AgentError::Timeout(s.clone()),
             AgentError::NotFound(s) => AgentError::NotFound(s.clone()),
             AgentError::Transport(s) => AgentError::Transport(s.clone()),
-            AgentError::Serialization(e) => AgentError::ProcessingError(format!("serialization error: {}", e)),
+            AgentError::Serialization(e) => {
+                AgentError::ProcessingError(format!("serialization error: {}", e))
+            }
             #[cfg(feature = "native")]
             AgentError::Http(e) => AgentError::Transport(e.to_string()),
             AgentError::Internal(s) => AgentError::Internal(s.clone()),

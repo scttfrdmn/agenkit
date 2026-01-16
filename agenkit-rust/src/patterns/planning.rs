@@ -183,7 +183,9 @@ impl Plan {
 
     /// Check if any steps failed.
     pub fn has_failures(&self) -> bool {
-        self.steps.iter().any(|step| step.status == StepStatus::Failed)
+        self.steps
+            .iter()
+            .any(|step| step.status == StepStatus::Failed)
     }
 
     /// Get completion progress as a percentage.
@@ -238,7 +240,10 @@ impl StepExecutor for DefaultStepExecutor {
         _context: &HashMap<String, serde_json::Value>,
     ) -> Result<serde_json::Value, AgentError> {
         // Mock execution - just return success
-        Ok(serde_json::json!(format!("Completed: {}", step.description)))
+        Ok(serde_json::json!(format!(
+            "Completed: {}",
+            step.description
+        )))
     }
 }
 
@@ -426,7 +431,10 @@ impl PlanningAgent {
                 // Also try "Step N:" format
                 let step_prefix = format!("Step {}:", step_number + 1);
                 if step_text.starts_with(&step_prefix) {
-                    step_text = step_text.trim_start_matches(&step_prefix).trim().to_string();
+                    step_text = step_text
+                        .trim_start_matches(&step_prefix)
+                        .trim()
+                        .to_string();
                 }
 
                 if !step_text.is_empty() && steps.len() < self.max_steps {
@@ -476,11 +484,7 @@ impl PlanningAgent {
 
                         // Add result to context for future steps
                         context.insert(format!("step_{}_result", step_num), result);
-                        results.push(format!(
-                            "Step {}: {} ✓",
-                            step_num + 1,
-                            step.description
-                        ));
+                        results.push(format!("Step {}: {} ✓", step_num + 1, step.description));
                     }
                     Err(e) => {
                         step.error = Some(e.to_string());
@@ -672,7 +676,10 @@ mod tests {
             if self.should_fail {
                 Err(AgentError::ProcessingError("Mock failure".to_string()))
             } else {
-                Ok(serde_json::json!(format!("Completed: {}", step.description)))
+                Ok(serde_json::json!(format!(
+                    "Completed: {}",
+                    step.description
+                )))
             }
         }
     }

@@ -1,0 +1,20 @@
+var searchData=
+[
+  ['p_5fvalue_0',['p_value',['../structagenkit_1_1evaluation_1_1_a_b_result.html#a45098f663c787d548a3ba7272eda4398',1,'agenkit::evaluation::ABResult']]],
+  ['parent_5fcheckpoint_5fid_1',['parent_checkpoint_id',['../structagenkit_1_1infrastructure_1_1checkpointing_1_1_checkpoint.html#aabefc1d12000e7868f672126b34473ee',1,'agenkit::infrastructure::checkpointing::Checkpoint']]],
+  ['parent_5fid_2',['parent_id',['../structagenkit_1_1techniques_1_1reasoning_1_1_reasoning_node.html#abd97ec9304dec0765841804158d548e5',1,'agenkit::techniques::reasoning::ReasoningNode']]],
+  ['parse_5fsteps_3',['parse_steps',['../structagenkit_1_1techniques_1_1reasoning_1_1_chain_of_thought_config.html#a252a7e6015ed48ea0ba7da25b23c9b35',1,'agenkit::techniques::reasoning::ChainOfThoughtConfig']]],
+  ['partial_5fbatches_4',['partial_batches',['../structagenkit_1_1middleware_1_1_batching_metrics.html#ad88831dd119a21498457b8e7dcaba2d3',1,'agenkit::middleware::BatchingMetrics']]],
+  ['patterns_5',['patterns',['../structagenkit_1_1infrastructure_1_1_prompt_injection_detector_1_1_config.html#a5f23002246c92176b7a89c72149e9556',1,'agenkit::infrastructure::PromptInjectionDetector::Config']]],
+  ['phi_5f3_5fmini_6',['PHI_3_MINI',['../namespaceagenkit_1_1adapters_1_1_ollama_models.html#a122d7518f4777333b111b859a493c9c7',1,'agenkit::adapters::OllamaModels']]],
+  ['pool_5fsize_7',['pool_size',['../structagenkit_1_1transports_1_1_http_transport_config.html#a7817a4b529930e86a929a23213f1a962',1,'agenkit::transports::HttpTransportConfig']]],
+  ['presence_5fpenalty_8',['presence_penalty',['../structagenkit_1_1adapters_1_1_open_a_i_config.html#a9de6ebe7904e52aa705a94c6a70110ac',1,'agenkit::adapters::OpenAIConfig']]],
+  ['priority_9',['priority',['../structagenkit_1_1patterns_1_1_goal.html#a0d80a578cda893c0c7fcc779d87a6cce',1,'agenkit::patterns::Goal']]],
+  ['processing_5ftime_5fthreshold_10',['processing_time_threshold',['../structagenkit_1_1infrastructure_1_1_anomaly_detector_1_1_config.html#a2667637b00628ffaa5e3fc017a725226',1,'agenkit::infrastructure::AnomalyDetector::Config']]],
+  ['progress_11',['progress',['../structagenkit_1_1patterns_1_1_goal.html#ad12e07478ecb033d767048b6548a01eb',1,'agenkit::patterns::Goal']]],
+  ['progress_5fper_5fiteration_12',['progress_per_iteration',['../structagenkit_1_1patterns_1_1_autonomous_config.html#a023b3f0bb26b37f957c114bb4bea7eeb',1,'agenkit::patterns::AutonomousConfig']]],
+  ['prompt_5ftemplate_13',['prompt_template',['../structagenkit_1_1techniques_1_1reasoning_1_1_chain_of_thought_config.html#a584445c70f0ccead6e68a2ca5cfa04ae',1,'agenkit::techniques::reasoning::ChainOfThoughtConfig']]],
+  ['propagate_5fmetadata_14',['propagate_metadata',['../structagenkit_1_1patterns_1_1_agent_tool_config.html#a8a6f190715f4cd53bdbdd31ce257f9de',1,'agenkit::patterns::AgentToolConfig']]],
+  ['provider_15',['provider',['../structagenkit_1_1infrastructure_1_1budget_1_1_pricing_info.html#a2fa95439e273f8a3f940f3107db7c6f2',1,'agenkit::infrastructure::budget::PricingInfo']]],
+  ['prune_5fthreshold_16',['prune_threshold',['../structagenkit_1_1techniques_1_1reasoning_1_1_tree_of_thought_config.html#a11eb9bf09410858e8c27c9be51ffd45a',1,'agenkit::techniques::reasoning::TreeOfThoughtConfig']]]
+];

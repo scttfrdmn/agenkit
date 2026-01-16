@@ -136,7 +136,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("📋 Available Specialist Tools:");
     println!("   1. {} - {}", code_tool.name(), code_tool.description());
     println!("   2. {} - {}", data_tool.name(), data_tool.description());
-    println!("   3. {} - {}", writing_tool.name(), writing_tool.description());
+    println!(
+        "   3. {} - {}",
+        writing_tool.name(),
+        writing_tool.description()
+    );
 
     // Example 1: Call code specialist
     println!("\n🔹 Example 1: Code Task");
@@ -178,7 +182,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n   Response:\n{}", result.output.as_str().unwrap_or(""));
 
     println!("\n✨ All specialists executed successfully!");
-    println!("\n💡 In a real supervisor agent, these tools would be registered with a tool registry");
+    println!(
+        "\n💡 In a real supervisor agent, these tools would be registered with a tool registry"
+    );
     println!("   and the supervisor would automatically select the appropriate specialist.");
 
     Ok(())

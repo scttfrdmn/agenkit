@@ -3,7 +3,6 @@
 ///! Provides integration with LiteLLM, a universal LLM gateway that offers
 ///! an OpenAI-compatible API for 100+ LLM providers. Supports both completion
 ///! and streaming modes.
-
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -178,14 +177,14 @@ impl LiteLLMAdapter {
             req = req.header("Authorization", format!("Bearer {}", api_key));
         }
 
-        let response = req
-            .send()
-            .await
-            .map_err(|e| AgentError::Http(e))?;
+        let response = req.send().await.map_err(|e| AgentError::Http(e))?;
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().await.unwrap_or_else(|_| "unknown error".to_string());
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "unknown error".to_string());
             return Err(AgentError::Transport(format!(
                 "LiteLLM API error ({}): {}",
                 status, error_text
@@ -222,13 +221,18 @@ impl LiteLLMAdapter {
         let mut msg = Message::with_text("assistant", &content);
 
         // Add metadata
-        msg.metadata.insert("litellm_message_id".to_string(), json!(response.id));
-        msg.metadata.insert("model".to_string(), json!(response.model));
-        msg.metadata.insert("usage".to_string(), json!({
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-            "total_tokens": response.usage.total_tokens,
-        }));
+        msg.metadata
+            .insert("litellm_message_id".to_string(), json!(response.id));
+        msg.metadata
+            .insert("model".to_string(), json!(response.model));
+        msg.metadata.insert(
+            "usage".to_string(),
+            json!({
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens,
+            }),
+        );
 
         if !response.choices.is_empty() {
             msg.metadata.insert(
@@ -418,7 +422,10 @@ mod tests {
         assert_eq!(models::GPT_4, "gpt-4");
         assert_eq!(models::GPT_4_TURBO, "gpt-4-turbo");
         assert_eq!(models::CLAUDE_3_5_SONNET, "claude-3-5-sonnet-20241022");
-        assert_eq!(models::BEDROCK_CLAUDE_3_5_SONNET, "bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0");
+        assert_eq!(
+            models::BEDROCK_CLAUDE_3_5_SONNET,
+            "bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0"
+        );
         assert_eq!(models::GEMINI_PRO, "gemini/gemini-pro");
         assert_eq!(models::OLLAMA_LLAMA2, "ollama/llama2");
     }

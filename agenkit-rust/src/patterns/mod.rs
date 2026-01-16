@@ -22,40 +22,61 @@
 //! - **Human-in-Loop**: Agent execution with human approval
 //! - **Fallback**: Sequential retry with error recovery
 
-pub mod reflection;
 pub mod agents_as_tools;
-pub mod orchestration;
-pub mod react;
-pub mod conversational;
-pub mod planning;
-pub mod task;
-pub mod multiagent;
 pub mod autonomous;
-pub mod memory;
-pub mod reasoning_with_tools;
-pub mod sequential;
-pub mod parallel;
-pub mod supervisor;
-pub mod router;
 pub mod collaborative;
-pub mod human_in_loop;
+pub mod conversational;
 pub mod fallback;
+pub mod human_in_loop;
+pub mod memory;
+pub mod multiagent;
+pub mod orchestration;
+pub mod parallel;
+pub mod planning;
+pub mod react;
+pub mod reasoning_with_tools;
+pub mod reflection;
+pub mod router;
+pub mod sequential;
+pub mod supervisor;
+pub mod task;
 
-pub use reflection::{ReflectionAgent, ReflectionConfig, ReflectionStep, StopReason, CritiqueFormat};
-pub use agents_as_tools::{AgentTool, agent_as_tool};
-pub use orchestration::{SequentialPattern, ParallelPattern};
-pub use react::{ReActAgent, ReActConfig, ReActStep, StopReason as ReActStopReason};
+pub use agents_as_tools::{agent_as_tool, AgentTool};
+pub use autonomous::{
+    create_goal, AutonomousAgent, AutonomousResult, Goal, GoalStatus, GoalWorker, StopCondition,
+};
+pub use collaborative::{
+    CollaborativeAgent, CollaborativeConfig, ConsensusFunc, DefaultConsensusFunc, DefaultMergeFunc,
+    MergeFunc,
+};
 pub use conversational::{ConversationalAgent, ConversationalConfig};
-pub use planning::{PlanningAgent, PlanningConfig, Plan, PlanStep, StepStatus, StepExecutor, DefaultStepExecutor};
-pub use task::{Task, TaskConfig, execute_task};
-pub use multiagent::{MultiAgentOrchestrator, ConsensusAgent, OrchestrationStrategy, VotingStrategy, AgentTask, TaskStatus};
-pub use autonomous::{AutonomousAgent, AutonomousResult, Goal, GoalStatus, StopCondition, GoalWorker, create_goal};
-pub use memory::{MemoryHierarchy, WorkingMemory, ShortTermMemory, LongTermMemory, MemoryEntry, create_memory_entry};
-pub use reasoning_with_tools::{ReasoningWithToolsAgent, ReasoningWithToolsConfig, ReasoningStep, ReasoningStepType, ReasoningTrace};
+pub use fallback::{DefaultRecovery, FallbackAgent, RecoveryAgent, RecoveryFunc};
+pub use human_in_loop::{
+    confidence_based_approval_func, simple_approval_func, ApprovalFunc, ApprovalRequest,
+    ApprovalResponse, HumanInLoopAgent, HumanInLoopConfig,
+};
+pub use memory::{
+    create_memory_entry, LongTermMemory, MemoryEntry, MemoryHierarchy, ShortTermMemory,
+    WorkingMemory,
+};
+pub use multiagent::{
+    AgentTask, ConsensusAgent, MultiAgentOrchestrator, OrchestrationStrategy, TaskStatus,
+    VotingStrategy,
+};
+pub use orchestration::{ParallelPattern, SequentialPattern};
+pub use parallel::{AggregatorFunc, DefaultAggregators, ParallelAgent};
+pub use planning::{
+    DefaultStepExecutor, Plan, PlanStep, PlanningAgent, PlanningConfig, StepExecutor, StepStatus,
+};
+pub use react::{ReActAgent, ReActConfig, ReActStep, StopReason as ReActStopReason};
+pub use reasoning_with_tools::{
+    ReasoningStep, ReasoningStepType, ReasoningTrace, ReasoningWithToolsAgent,
+    ReasoningWithToolsConfig,
+};
+pub use reflection::{
+    CritiqueFormat, ReflectionAgent, ReflectionConfig, ReflectionStep, StopReason,
+};
+pub use router::{ClassifierAgent, LLMClassifier, RouterAgent, RouterConfig, SimpleClassifier};
 pub use sequential::SequentialAgent;
-pub use parallel::{ParallelAgent, AggregatorFunc, DefaultAggregators};
-pub use supervisor::{SupervisorAgent, PlannerAgent, SimplePlanner, Subtask};
-pub use router::{RouterAgent, RouterConfig, ClassifierAgent, SimpleClassifier, LLMClassifier};
-pub use collaborative::{CollaborativeAgent, CollaborativeConfig, ConsensusFunc, MergeFunc, DefaultConsensusFunc, DefaultMergeFunc};
-pub use human_in_loop::{HumanInLoopAgent, HumanInLoopConfig, ApprovalRequest, ApprovalResponse, ApprovalFunc, simple_approval_func, confidence_based_approval_func};
-pub use fallback::{FallbackAgent, RecoveryAgent, RecoveryFunc, DefaultRecovery};
+pub use supervisor::{PlannerAgent, SimplePlanner, Subtask, SupervisorAgent};
+pub use task::{execute_task, Task, TaskConfig};

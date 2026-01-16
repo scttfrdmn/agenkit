@@ -101,9 +101,9 @@ pub struct SelfConsistencyAgent {
 impl SelfConsistencyAgent {
     /// Create a new Self-Consistency agent.
     pub fn new(agent: Arc<dyn Agent>, config: SelfConsistencyConfig) -> Self {
-        let answer_extractor = config.answer_extractor.unwrap_or_else(|| {
-            Arc::new(default_answer_extractor)
-        });
+        let answer_extractor = config
+            .answer_extractor
+            .unwrap_or_else(|| Arc::new(default_answer_extractor));
 
         Self {
             agent,
@@ -115,7 +115,10 @@ impl SelfConsistencyAgent {
     }
 
     /// Generate multiple samples in parallel (native) or sequentially (WASM).
-    async fn generate_samples(&self, message: &Message) -> Result<(Vec<String>, Vec<String>), AgentError> {
+    async fn generate_samples(
+        &self,
+        message: &Message,
+    ) -> Result<(Vec<String>, Vec<String>), AgentError> {
         let mut full_responses = Vec::new();
         let mut extracted_answers = Vec::new();
 
@@ -131,9 +134,7 @@ impl SelfConsistencyAgent {
 
                 let handle = tokio::spawn(async move {
                     let response = agent.process(msg).await?;
-                    let full_response = response.content_as_str()
-                        .unwrap_or("")
-                        .to_string();
+                    let full_response = response.content_as_str().unwrap_or("").to_string();
                     let extracted_answer = extractor(&full_response);
                     Ok::<(String, String), AgentError>((full_response, extracted_answer))
                 });
@@ -159,9 +160,7 @@ impl SelfConsistencyAgent {
             // Generate samples sequentially in WASM (spawn_local is fire-and-forget)
             for _ in 0..self.num_samples {
                 let response = self.agent.process(message.clone()).await?;
-                let full_response = response.content_as_str()
-                    .unwrap_or("")
-                    .to_string();
+                let full_response = response.content_as_str().unwrap_or("").to_string();
                 let extracted_answer = (self.answer_extractor)(&full_response);
 
                 full_responses.push(full_response);
@@ -185,7 +184,9 @@ impl SelfConsistencyAgent {
         for answer in answers {
             let normalized = answer.to_lowercase().trim().to_string();
             *counts.entry(normalized.clone()).or_insert(0) += 1;
-            original_case.entry(normalized).or_insert_with(|| answer.clone());
+            original_case
+                .entry(normalized)
+                .or_insert_with(|| answer.clone());
         }
 
         // Find most common
@@ -195,7 +196,8 @@ impl SelfConsistencyAgent {
             .map(|(answer, count)| (answer.clone(), *count))
             .unwrap_or((String::new(), 0));
 
-        let winner = original_case.get(&winning_answer)
+        let winner = original_case
+            .get(&winning_answer)
             .cloned()
             .unwrap_or(winning_answer);
         let consistency_score = max_count as f64 / answers.len() as f64;
@@ -214,11 +216,9 @@ impl SelfConsistencyAgent {
 
         for (i, answer) in answers.iter().enumerate() {
             let normalized = answer.to_lowercase().trim().to_string();
-            let entry = groups.entry(normalized.clone()).or_insert((
-                answer.clone(),
-                0,
-                0,
-            ));
+            let entry = groups
+                .entry(normalized.clone())
+                .or_insert((answer.clone(), 0, 0));
             entry.1 += responses[i].len();
             entry.2 += 1;
         }
@@ -294,14 +294,31 @@ impl Agent for SelfConsistencyAgent {
 
         // Build response with metadata
         let mut response = Message::with_text("assistant", consensus_answer);
-        response.metadata.insert("technique".to_string(), json!("self_consistency"));
-        response.metadata.insert("num_samples".to_string(), json!(self.num_samples));
-        response.metadata.insert("voting_strategy".to_string(), json!(format!("{:?}", self.voting_strategy).to_lowercase()));
-        response.metadata.insert("consistency_score".to_string(), json!(consistency_score));
-        response.metadata.insert("samples".to_string(), json!(full_responses));
-        response.metadata.insert("extracted_answers".to_string(), json!(extracted_answers));
-        response.metadata.insert("answer_counts".to_string(), json!(answer_counts));
-        response.metadata.insert("base_agent".to_string(), json!(self.agent.name()));
+        response
+            .metadata
+            .insert("technique".to_string(), json!("self_consistency"));
+        response
+            .metadata
+            .insert("num_samples".to_string(), json!(self.num_samples));
+        response.metadata.insert(
+            "voting_strategy".to_string(),
+            json!(format!("{:?}", self.voting_strategy).to_lowercase()),
+        );
+        response
+            .metadata
+            .insert("consistency_score".to_string(), json!(consistency_score));
+        response
+            .metadata
+            .insert("samples".to_string(), json!(full_responses));
+        response
+            .metadata
+            .insert("extracted_answers".to_string(), json!(extracted_answers));
+        response
+            .metadata
+            .insert("answer_counts".to_string(), json!(answer_counts));
+        response
+            .metadata
+            .insert("base_agent".to_string(), json!(self.agent.name()));
 
         Ok(response)
     }

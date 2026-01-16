@@ -99,7 +99,10 @@ impl SequentialPattern {
     }
 
     /// Creates a new sequential pattern with custom name.
-    pub fn with_name(agents: Vec<Arc<dyn Agent>>, name: impl Into<String>) -> Result<Self, AgentError> {
+    pub fn with_name(
+        agents: Vec<Arc<dyn Agent>>,
+        name: impl Into<String>,
+    ) -> Result<Self, AgentError> {
         if agents.is_empty() {
             return Err(AgentError::InvalidInput(
                 "Sequential pattern requires at least one agent".to_string(),
@@ -203,7 +206,10 @@ impl ParallelPattern {
     }
 
     /// Creates a new parallel pattern with custom name.
-    pub fn with_name(agents: Vec<Arc<dyn Agent>>, name: impl Into<String>) -> Result<Self, AgentError> {
+    pub fn with_name(
+        agents: Vec<Arc<dyn Agent>>,
+        name: impl Into<String>,
+    ) -> Result<Self, AgentError> {
         if agents.is_empty() {
             return Err(AgentError::InvalidInput(
                 "Parallel pattern requires at least one agent".to_string(),

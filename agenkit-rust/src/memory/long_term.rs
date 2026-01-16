@@ -59,7 +59,11 @@ impl LongTermMemory {
     }
 
     /// Retrieve messages with keyword search and relevance scoring.
-    pub async fn retrieve(&self, query: &str, limit: usize) -> LongTermMemoryResult<Vec<MemoryEntry>> {
+    pub async fn retrieve(
+        &self,
+        query: &str,
+        limit: usize,
+    ) -> LongTermMemoryResult<Vec<MemoryEntry>> {
         let mut storage = self.storage.write().await;
 
         // Calculate relevance scores
@@ -163,8 +167,11 @@ mod tests {
         let results = memory.retrieve("programming", 10).await.unwrap();
 
         assert_eq!(results.len(), 3); // All entries returned
-        // First two should have higher scores due to keyword match
-        assert!(results[0].content.contains("programming") || results[1].content.contains("programming"));
+                                      // First two should have higher scores due to keyword match
+        assert!(
+            results[0].content.contains("programming")
+                || results[1].content.contains("programming")
+        );
     }
 
     #[tokio::test]

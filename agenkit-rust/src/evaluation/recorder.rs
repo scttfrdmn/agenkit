@@ -27,16 +27,16 @@
 //! # }
 //! ```
 
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
-use async_trait::async_trait;
 use uuid::Uuid;
 
-use crate::core::{Agent, Message, AgentError};
+use crate::core::{Agent, AgentError, Message};
 
 /// Single agent interaction record.
 ///
@@ -82,11 +82,17 @@ impl InteractionRecord {
     /// Converts record to dictionary.
     pub fn to_dict(&self) -> HashMap<String, serde_json::Value> {
         let mut result = HashMap::new();
-        result.insert("interaction_id".to_string(), serde_json::json!(self.interaction_id));
+        result.insert(
+            "interaction_id".to_string(),
+            serde_json::json!(self.interaction_id),
+        );
         result.insert("session_id".to_string(), serde_json::json!(self.session_id));
         result.insert("input_message".to_string(), self.input_message.clone());
         result.insert("output_message".to_string(), self.output_message.clone());
-        result.insert("timestamp".to_string(), serde_json::json!(self.timestamp.to_rfc3339()));
+        result.insert(
+            "timestamp".to_string(),
+            serde_json::json!(self.timestamp.to_rfc3339()),
+        );
         result.insert("latency_ms".to_string(), serde_json::json!(self.latency_ms));
         result.insert("metadata".to_string(), serde_json::json!(self.metadata));
         result
@@ -128,9 +134,8 @@ impl SessionRecording {
 
     /// Calculates session duration in seconds.
     pub fn duration_seconds(&self) -> Option<f64> {
-        self.end_time.map(|end| {
-            (end - self.start_time).num_milliseconds() as f64 / 1000.0
-        })
+        self.end_time
+            .map(|end| (end - self.start_time).num_milliseconds() as f64 / 1000.0)
     }
 
     /// Gets number of interactions.
@@ -150,7 +155,10 @@ impl SessionRecording {
         let mut result = HashMap::new();
         result.insert("session_id".to_string(), serde_json::json!(self.session_id));
         result.insert("agent_name".to_string(), serde_json::json!(self.agent_name));
-        result.insert("start_time".to_string(), serde_json::json!(self.start_time.to_rfc3339()));
+        result.insert(
+            "start_time".to_string(),
+            serde_json::json!(self.start_time.to_rfc3339()),
+        );
         result.insert("interactions".to_string(), serde_json::json!(interactions));
         result.insert("metadata".to_string(), serde_json::json!(self.metadata));
 
@@ -173,10 +181,17 @@ pub trait RecordingStorage: Send + Sync {
     async fn save_recording(&self, recording: &SessionRecording) -> Result<(), AgentError>;
 
     /// Loads recording by session ID.
-    async fn load_recording(&self, session_id: &str) -> Result<Option<SessionRecording>, AgentError>;
+    async fn load_recording(
+        &self,
+        session_id: &str,
+    ) -> Result<Option<SessionRecording>, AgentError>;
 
     /// Lists recordings with pagination.
-    async fn list_recordings(&self, limit: usize, offset: usize) -> Result<Vec<SessionRecording>, AgentError>;
+    async fn list_recordings(
+        &self,
+        limit: usize,
+        offset: usize,
+    ) -> Result<Vec<SessionRecording>, AgentError>;
 
     /// Deletes recording.
     async fn delete_recording(&self, session_id: &str) -> Result<(), AgentError>;
@@ -216,16 +231,21 @@ impl FileRecordingStorage {
 impl RecordingStorage for FileRecordingStorage {
     async fn save_recording(&self, recording: &SessionRecording) -> Result<(), AgentError> {
         let path = self.file_path(&recording.session_id);
-        let json = serde_json::to_string_pretty(&recording.to_dict())
-            .map_err(|e| AgentError::ProcessingError(format!("Failed to serialize recording: {}", e)))?;
+        let json = serde_json::to_string_pretty(&recording.to_dict()).map_err(|e| {
+            AgentError::ProcessingError(format!("Failed to serialize recording: {}", e))
+        })?;
 
-        fs::write(&path, json)
-            .map_err(|e| AgentError::ProcessingError(format!("Failed to write recording: {}", e)))?;
+        fs::write(&path, json).map_err(|e| {
+            AgentError::ProcessingError(format!("Failed to write recording: {}", e))
+        })?;
 
         Ok(())
     }
 
-    async fn load_recording(&self, session_id: &str) -> Result<Option<SessionRecording>, AgentError> {
+    async fn load_recording(
+        &self,
+        session_id: &str,
+    ) -> Result<Option<SessionRecording>, AgentError> {
         let path = self.file_path(session_id);
 
         if !path.exists() {
@@ -235,25 +255,29 @@ impl RecordingStorage for FileRecordingStorage {
         let json = fs::read_to_string(&path)
             .map_err(|e| AgentError::ProcessingError(format!("Failed to read recording: {}", e)))?;
 
-        let recording: SessionRecording = serde_json::from_str(&json)
-            .map_err(|e| AgentError::ProcessingError(format!("Failed to parse recording: {}", e)))?;
+        let recording: SessionRecording = serde_json::from_str(&json).map_err(|e| {
+            AgentError::ProcessingError(format!("Failed to parse recording: {}", e))
+        })?;
 
         Ok(Some(recording))
     }
 
-    async fn list_recordings(&self, limit: usize, offset: usize) -> Result<Vec<SessionRecording>, AgentError> {
+    async fn list_recordings(
+        &self,
+        limit: usize,
+        offset: usize,
+    ) -> Result<Vec<SessionRecording>, AgentError> {
         let mut recordings = Vec::new();
 
         // Find all JSON files
-        let entries = fs::read_dir(&self.recordings_dir)
-            .map_err(|e| AgentError::ProcessingError(format!("Failed to list recordings: {}", e)))?;
+        let entries = fs::read_dir(&self.recordings_dir).map_err(|e| {
+            AgentError::ProcessingError(format!("Failed to list recordings: {}", e))
+        })?;
 
         // Collect and sort by modification time
         let mut files: Vec<_> = entries
             .filter_map(|entry| entry.ok())
-            .filter(|entry| {
-                entry.path().extension().and_then(|s| s.to_str()) == Some("json")
-            })
+            .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("json"))
             .filter_map(|entry| {
                 let path = entry.path();
                 let metadata = fs::metadata(&path).ok()?;
@@ -288,8 +312,9 @@ impl RecordingStorage for FileRecordingStorage {
         let path = self.file_path(session_id);
 
         if path.exists() {
-            fs::remove_file(&path)
-                .map_err(|e| AgentError::ProcessingError(format!("Failed to delete recording: {}", e)))?;
+            fs::remove_file(&path).map_err(|e| {
+                AgentError::ProcessingError(format!("Failed to delete recording: {}", e))
+            })?;
         }
 
         Ok(())
@@ -326,12 +351,19 @@ impl RecordingStorage for InMemoryRecordingStorage {
         Ok(())
     }
 
-    async fn load_recording(&self, session_id: &str) -> Result<Option<SessionRecording>, AgentError> {
+    async fn load_recording(
+        &self,
+        session_id: &str,
+    ) -> Result<Option<SessionRecording>, AgentError> {
         let recordings = self.recordings.lock().unwrap();
         Ok(recordings.get(session_id).cloned())
     }
 
-    async fn list_recordings(&self, limit: usize, offset: usize) -> Result<Vec<SessionRecording>, AgentError> {
+    async fn list_recordings(
+        &self,
+        limit: usize,
+        offset: usize,
+    ) -> Result<Vec<SessionRecording>, AgentError> {
         let recordings = self.recordings.lock().unwrap();
         let mut list: Vec<_> = recordings.values().cloned().collect();
 
@@ -419,7 +451,8 @@ impl SessionRecorder {
         }
 
         if let Some(session) = sessions.get_mut(session_id) {
-            let record = InteractionRecord::new(session_id, input_message, output_message, latency_ms);
+            let record =
+                InteractionRecord::new(session_id, input_message, output_message, latency_ms);
             session.interactions.push(record);
         }
     }
@@ -469,7 +502,8 @@ impl Agent for RecordingWrapper {
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         // Extract session ID from metadata
-        let session_id = message.metadata
+        let session_id = message
+            .metadata
             .get("session_id")
             .and_then(|v| v.as_str())
             .unwrap_or("default")
@@ -490,10 +524,13 @@ impl Agent for RecordingWrapper {
         let latency_ms = start.elapsed().as_millis() as f64;
 
         // Record interaction (even if error)
-        let output_msg = output.as_ref().ok().cloned().unwrap_or_else(|| {
-            Message::with_text("assistant", "error")
-        });
-        self.recorder.record_interaction(&session_id, &message, &output_msg, latency_ms);
+        let output_msg = output
+            .as_ref()
+            .ok()
+            .cloned()
+            .unwrap_or_else(|| Message::with_text("assistant", "error"));
+        self.recorder
+            .record_interaction(&session_id, &message, &output_msg, latency_ms);
 
         output
     }
@@ -608,7 +645,9 @@ mod tests {
         let wrapped = recorder.wrap(agent);
 
         let mut message = Message::with_text("user", "hello");
-        message.metadata.insert("session_id".to_string(), serde_json::json!("test-123"));
+        message
+            .metadata
+            .insert("session_id".to_string(), serde_json::json!("test-123"));
 
         let _response = wrapped.process(message).await.unwrap();
 

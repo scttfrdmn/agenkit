@@ -1,0 +1,118 @@
+var namespaceagenkit_1_1patterns =
+[
+    [ "default_consensus", "namespaceagenkit_1_1patterns_1_1default__consensus.html", [
+      [ "exact_match", "namespaceagenkit_1_1patterns_1_1default__consensus.html#afd57ffcba661883b786761040966b65f", null ],
+      [ "majority_agreement", "namespaceagenkit_1_1patterns_1_1default__consensus.html#a8ba0c442e1e7191fa798480b560f400f", null ],
+      [ "similarity_threshold", "namespaceagenkit_1_1patterns_1_1default__consensus.html#a42bd90011e5a389c5602c9d20aef6864", null ]
+    ] ],
+    [ "default_merge", "namespaceagenkit_1_1patterns_1_1default__merge.html", [
+      [ "concatenate", "namespaceagenkit_1_1patterns_1_1default__merge.html#aca3c0603bdedea870f827b2f36927975", null ],
+      [ "first", "namespaceagenkit_1_1patterns_1_1default__merge.html#a982e088d4ff7ca5973d6444a46df4570", null ],
+      [ "last", "namespaceagenkit_1_1patterns_1_1default__merge.html#a1e9878579b3c20f05899d6895a2982e1", null ],
+      [ "vote", "namespaceagenkit_1_1patterns_1_1default__merge.html#a7031221401d2bc7648f7b95ecad8c0a9", null ]
+    ] ],
+    [ "default_recovery", "namespaceagenkit_1_1patterns_1_1default__recovery.html", [
+      [ "empty_response", "namespaceagenkit_1_1patterns_1_1default__recovery.html#afbca1b5b9b6ee151033423ea466fc080", null ],
+      [ "static_message", "namespaceagenkit_1_1patterns_1_1default__recovery.html#a3d295c972e2e075da5614038fe610436", null ]
+    ] ],
+    [ "default_aggregators", "namespaceagenkit_1_1patterns_1_1default__aggregators.html", [
+      [ "concatenate", "namespaceagenkit_1_1patterns_1_1default__aggregators.html#a4b14df01bb9de7e5de476bc251f1af83", null ],
+      [ "first", "namespaceagenkit_1_1patterns_1_1default__aggregators.html#af2f9f9c9e78a687171db8880e57776ab", null ],
+      [ "majority_vote", "namespaceagenkit_1_1patterns_1_1default__aggregators.html#a6b3e413be12c47b5f838b78a33136a1d", null ]
+    ] ],
+    [ "AgentToolConfig", "structagenkit_1_1patterns_1_1_agent_tool_config.html", "structagenkit_1_1patterns_1_1_agent_tool_config" ],
+    [ "AgentTool", "classagenkit_1_1patterns_1_1_agent_tool.html", "classagenkit_1_1patterns_1_1_agent_tool" ],
+    [ "AgentToolBuilder", "classagenkit_1_1patterns_1_1_agent_tool_builder.html", "classagenkit_1_1patterns_1_1_agent_tool_builder" ],
+    [ "Goal", "structagenkit_1_1patterns_1_1_goal.html", "structagenkit_1_1patterns_1_1_goal" ],
+    [ "AutonomousConfig", "structagenkit_1_1patterns_1_1_autonomous_config.html", "structagenkit_1_1patterns_1_1_autonomous_config" ],
+    [ "AutonomousResult", "structagenkit_1_1patterns_1_1_autonomous_result.html", "structagenkit_1_1patterns_1_1_autonomous_result" ],
+    [ "AutonomousAgent", "classagenkit_1_1patterns_1_1_autonomous_agent.html", "classagenkit_1_1patterns_1_1_autonomous_agent" ],
+    [ "CollaborativeConfig", "structagenkit_1_1patterns_1_1_collaborative_config.html", "structagenkit_1_1patterns_1_1_collaborative_config" ],
+    [ "CollaborativeAgent", "classagenkit_1_1patterns_1_1_collaborative_agent.html", "classagenkit_1_1patterns_1_1_collaborative_agent" ],
+    [ "ConversationalConfig", "structagenkit_1_1patterns_1_1_conversational_config.html", "structagenkit_1_1patterns_1_1_conversational_config" ],
+    [ "ConversationalAgent", "classagenkit_1_1patterns_1_1_conversational_agent.html", "classagenkit_1_1patterns_1_1_conversational_agent" ],
+    [ "FallbackAgent", "classagenkit_1_1patterns_1_1_fallback_agent.html", "classagenkit_1_1patterns_1_1_fallback_agent" ],
+    [ "RecoveryAgent", "classagenkit_1_1patterns_1_1_recovery_agent.html", "classagenkit_1_1patterns_1_1_recovery_agent" ],
+    [ "ApprovalRequest", "structagenkit_1_1patterns_1_1_approval_request.html", "structagenkit_1_1patterns_1_1_approval_request" ],
+    [ "ApprovalResponse", "structagenkit_1_1patterns_1_1_approval_response.html", "structagenkit_1_1patterns_1_1_approval_response" ],
+    [ "HumanInLoopConfig", "structagenkit_1_1patterns_1_1_human_in_loop_config.html", "structagenkit_1_1patterns_1_1_human_in_loop_config" ],
+    [ "HumanInLoopAgent", "classagenkit_1_1patterns_1_1_human_in_loop_agent.html", "classagenkit_1_1patterns_1_1_human_in_loop_agent" ],
+    [ "MemoryEntry", "structagenkit_1_1patterns_1_1_memory_entry.html", "structagenkit_1_1patterns_1_1_memory_entry" ],
+    [ "MemoryStore", "classagenkit_1_1patterns_1_1_memory_store.html", "classagenkit_1_1patterns_1_1_memory_store" ],
+    [ "WorkingMemory", "classagenkit_1_1patterns_1_1_working_memory.html", "classagenkit_1_1patterns_1_1_working_memory" ],
+    [ "ShortTermMemory", "classagenkit_1_1patterns_1_1_short_term_memory.html", "classagenkit_1_1patterns_1_1_short_term_memory" ],
+    [ "LongTermMemory", "classagenkit_1_1patterns_1_1_long_term_memory.html", "classagenkit_1_1patterns_1_1_long_term_memory" ],
+    [ "MemoryHierarchy", "classagenkit_1_1patterns_1_1_memory_hierarchy.html", "classagenkit_1_1patterns_1_1_memory_hierarchy" ],
+    [ "AgentTask", "structagenkit_1_1patterns_1_1_agent_task.html", "structagenkit_1_1patterns_1_1_agent_task" ],
+    [ "MultiAgentOrchestrator", "classagenkit_1_1patterns_1_1_multi_agent_orchestrator.html", "classagenkit_1_1patterns_1_1_multi_agent_orchestrator" ],
+    [ "ConsensusAgent", "classagenkit_1_1patterns_1_1_consensus_agent.html", "classagenkit_1_1patterns_1_1_consensus_agent" ],
+    [ "OrchestrationStep", "structagenkit_1_1patterns_1_1_orchestration_step.html", "structagenkit_1_1patterns_1_1_orchestration_step" ],
+    [ "OrchestrationConfig", "structagenkit_1_1patterns_1_1_orchestration_config.html", "structagenkit_1_1patterns_1_1_orchestration_config" ],
+    [ "OrchestrationAgent", "classagenkit_1_1patterns_1_1_orchestration_agent.html", "classagenkit_1_1patterns_1_1_orchestration_agent" ],
+    [ "ParallelAgent", "classagenkit_1_1patterns_1_1_parallel_agent.html", "classagenkit_1_1patterns_1_1_parallel_agent" ],
+    [ "PlanStep", "structagenkit_1_1patterns_1_1_plan_step.html", "structagenkit_1_1patterns_1_1_plan_step" ],
+    [ "Plan", "structagenkit_1_1patterns_1_1_plan.html", "structagenkit_1_1patterns_1_1_plan" ],
+    [ "PlanningAgent", "classagenkit_1_1patterns_1_1_planning_agent.html", "classagenkit_1_1patterns_1_1_planning_agent" ],
+    [ "ToolResult", "structagenkit_1_1patterns_1_1_tool_result.html", "structagenkit_1_1patterns_1_1_tool_result" ],
+    [ "Tool", "classagenkit_1_1patterns_1_1_tool.html", "classagenkit_1_1patterns_1_1_tool" ],
+    [ "ReactStep", "structagenkit_1_1patterns_1_1_react_step.html", "structagenkit_1_1patterns_1_1_react_step" ],
+    [ "ReactAgent", "classagenkit_1_1patterns_1_1_react_agent.html", "classagenkit_1_1patterns_1_1_react_agent" ],
+    [ "ReasoningStep", "structagenkit_1_1patterns_1_1_reasoning_step.html", "structagenkit_1_1patterns_1_1_reasoning_step" ],
+    [ "ReasoningConfig", "structagenkit_1_1patterns_1_1_reasoning_config.html", "structagenkit_1_1patterns_1_1_reasoning_config" ],
+    [ "ReasoningAgent", "classagenkit_1_1patterns_1_1_reasoning_agent.html", "classagenkit_1_1patterns_1_1_reasoning_agent" ],
+    [ "ReflectionStep", "structagenkit_1_1patterns_1_1_reflection_step.html", "structagenkit_1_1patterns_1_1_reflection_step" ],
+    [ "ReflectionAgent", "classagenkit_1_1patterns_1_1_reflection_agent.html", "classagenkit_1_1patterns_1_1_reflection_agent" ],
+    [ "ClassifierAgent", "classagenkit_1_1patterns_1_1_classifier_agent.html", "classagenkit_1_1patterns_1_1_classifier_agent" ],
+    [ "RouterConfig", "structagenkit_1_1patterns_1_1_router_config.html", "structagenkit_1_1patterns_1_1_router_config" ],
+    [ "RouterAgent", "classagenkit_1_1patterns_1_1_router_agent.html", "classagenkit_1_1patterns_1_1_router_agent" ],
+    [ "SimpleClassifier", "classagenkit_1_1patterns_1_1_simple_classifier.html", "classagenkit_1_1patterns_1_1_simple_classifier" ],
+    [ "LLMClassifier", "classagenkit_1_1patterns_1_1_l_l_m_classifier.html", "classagenkit_1_1patterns_1_1_l_l_m_classifier" ],
+    [ "SequentialAgent", "classagenkit_1_1patterns_1_1_sequential_agent.html", "classagenkit_1_1patterns_1_1_sequential_agent" ],
+    [ "Subtask", "structagenkit_1_1patterns_1_1_subtask.html", "structagenkit_1_1patterns_1_1_subtask" ],
+    [ "PlannerAgent", "classagenkit_1_1patterns_1_1_planner_agent.html", "classagenkit_1_1patterns_1_1_planner_agent" ],
+    [ "SupervisorAgent", "classagenkit_1_1patterns_1_1_supervisor_agent.html", "classagenkit_1_1patterns_1_1_supervisor_agent" ],
+    [ "SimplePlanner", "classagenkit_1_1patterns_1_1_simple_planner.html", "classagenkit_1_1patterns_1_1_simple_planner" ],
+    [ "TaskConfig", "structagenkit_1_1patterns_1_1_task_config.html", "structagenkit_1_1patterns_1_1_task_config" ],
+    [ "Task", "classagenkit_1_1patterns_1_1_task.html", "classagenkit_1_1patterns_1_1_task" ],
+    [ "AggregatorFunc", "namespaceagenkit_1_1patterns.html#afbe46401725d40caf88e61c437474694", null ],
+    [ "ApprovalFunc", "namespaceagenkit_1_1patterns.html#a0f56d40152354fc954c6b8ecba9f596f", null ],
+    [ "CombinerFunction", "namespaceagenkit_1_1patterns.html#a9c864005a9e5a3f363da1ec6adf49d60", null ],
+    [ "ConfidenceExtractor", "namespaceagenkit_1_1patterns.html#a1ba4b0b90afcf40ce4a6bad64600af94", null ],
+    [ "ConsensusFunc", "namespaceagenkit_1_1patterns.html#a937a81d723d193f775a157c3224cd7ee", null ],
+    [ "MergeFunc", "namespaceagenkit_1_1patterns.html#a3fc180ae0ee3919d84265eb9076a7182", null ],
+    [ "RecoveryFunc", "namespaceagenkit_1_1patterns.html#afdfc9069c656aebf0ae5c74f48ce1429", null ],
+    [ "RoutingFunction", "namespaceagenkit_1_1patterns.html#acc722afcab2fd419011a8682248508ed", null ],
+    [ "StopCondition", "namespaceagenkit_1_1patterns.html#a9381ffcc07f17d6bad6059cca2336474", null ],
+    [ "ToolNeedDetector", "namespaceagenkit_1_1patterns.html#a1d93e96f2f4edd60877943a7613aa73b", null ],
+    [ "GoalStatus", "namespaceagenkit_1_1patterns.html#ac41b3b27a7798d4fae6f57100703dcc3", [
+      [ "Active", "namespaceagenkit_1_1patterns.html#ac41b3b27a7798d4fae6f57100703dcc3a4d3d769b812b6faa6b76e1a8abaece2d", null ],
+      [ "Completed", "namespaceagenkit_1_1patterns.html#ac41b3b27a7798d4fae6f57100703dcc3a07ca5050e697392c9ed47e6453f1453f", null ],
+      [ "Abandoned", "namespaceagenkit_1_1patterns.html#ac41b3b27a7798d4fae6f57100703dcc3a255de8cd6ee11ed4dc01a19844c1271e", null ]
+    ] ],
+    [ "MultiAgentStrategy", "namespaceagenkit_1_1patterns.html#a7c3ffbc571bc694b8f407d225055baa1", [
+      [ "Sequential", "namespaceagenkit_1_1patterns.html#a7c3ffbc571bc694b8f407d225055baa1aa7e82daa7280af25afbaa076ac16eb1e", null ],
+      [ "Parallel", "namespaceagenkit_1_1patterns.html#a7c3ffbc571bc694b8f407d225055baa1a98402eecfbcefc336954458a01752131", null ],
+      [ "Delegate", "namespaceagenkit_1_1patterns.html#a7c3ffbc571bc694b8f407d225055baa1a26545d7107c7489959a37bd671181fca", null ]
+    ] ],
+    [ "OrchestrationStrategy", "namespaceagenkit_1_1patterns.html#ad22058dac23f6090e9efac139c101a24", [
+      [ "Sequential", "namespaceagenkit_1_1patterns.html#ad22058dac23f6090e9efac139c101a24aa7e82daa7280af25afbaa076ac16eb1e", null ],
+      [ "Parallel", "namespaceagenkit_1_1patterns.html#ad22058dac23f6090e9efac139c101a24a98402eecfbcefc336954458a01752131", null ],
+      [ "Conditional", "namespaceagenkit_1_1patterns.html#ad22058dac23f6090e9efac139c101a24a9d3afea73e90192d96dda8d38c87a4fe", null ],
+      [ "Custom", "namespaceagenkit_1_1patterns.html#ad22058dac23f6090e9efac139c101a24a90589c47f06eb971d548591f23c285af", null ]
+    ] ],
+    [ "StepStatus", "namespaceagenkit_1_1patterns.html#a7e3538b2a0bedadaccef697294543463", [
+      [ "Pending", "namespaceagenkit_1_1patterns.html#a7e3538b2a0bedadaccef697294543463a2d13df6f8b5e4c5af9f87e0dc39df69d", null ],
+      [ "InProgress", "namespaceagenkit_1_1patterns.html#a7e3538b2a0bedadaccef697294543463a12d868c18cb29bf58f02b504be9033fd", null ],
+      [ "Completed", "namespaceagenkit_1_1patterns.html#a7e3538b2a0bedadaccef697294543463a07ca5050e697392c9ed47e6453f1453f", null ],
+      [ "Failed", "namespaceagenkit_1_1patterns.html#a7e3538b2a0bedadaccef697294543463ad7c8c85bf79bbe1b7188497c32c3b0ca", null ],
+      [ "Skipped", "namespaceagenkit_1_1patterns.html#a7e3538b2a0bedadaccef697294543463ad9c8f187972e6320a34e9c40b4cba605", null ]
+    ] ],
+    [ "TaskStatus", "namespaceagenkit_1_1patterns.html#a593307de91ae2393ec36ee19e3865908", [
+      [ "Pending", "namespaceagenkit_1_1patterns.html#a593307de91ae2393ec36ee19e3865908a2d13df6f8b5e4c5af9f87e0dc39df69d", null ],
+      [ "InProgress", "namespaceagenkit_1_1patterns.html#a593307de91ae2393ec36ee19e3865908a12d868c18cb29bf58f02b504be9033fd", null ],
+      [ "Completed", "namespaceagenkit_1_1patterns.html#a593307de91ae2393ec36ee19e3865908a07ca5050e697392c9ed47e6453f1453f", null ],
+      [ "Failed", "namespaceagenkit_1_1patterns.html#a593307de91ae2393ec36ee19e3865908ad7c8c85bf79bbe1b7188497c32c3b0ca", null ]
+    ] ],
+    [ "confidence_based_approval_func", "namespaceagenkit_1_1patterns.html#ab8137284dbf73870bd1b3551c0cd3b82", null ],
+    [ "simple_approval_func", "namespaceagenkit_1_1patterns.html#aba7c421266ba02ed6147e2fc4ea848b0", null ]
+];

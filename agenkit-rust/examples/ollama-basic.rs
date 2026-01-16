@@ -57,7 +57,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("\nModel: {}", model);
             }
             if let Some(duration) = response.metadata.get("total_duration_ns") {
-                println!("Duration: {} ms", duration.as_u64().unwrap_or(0) / 1_000_000);
+                println!(
+                    "Duration: {} ms",
+                    duration.as_u64().unwrap_or(0) / 1_000_000
+                );
             }
             if let Some(usage) = response.metadata.get("usage") {
                 println!("Token usage: {}", usage);
@@ -91,7 +94,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(response) => {
             println!("{}", response.content_as_str().unwrap_or(""));
             if let Some(duration) = response.metadata.get("total_duration_ns") {
-                println!("Duration: {} ms", duration.as_u64().unwrap_or(0) / 1_000_000);
+                println!(
+                    "Duration: {} ms",
+                    duration.as_u64().unwrap_or(0) / 1_000_000
+                );
             }
         }
         Err(e) => eprintln!("Error: {}", e),
@@ -113,7 +119,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(response) => {
             println!("{}", response.content_as_str().unwrap_or(""));
             if let Some(duration) = response.metadata.get("total_duration_ns") {
-                println!("Duration: {} ms", duration.as_u64().unwrap_or(0) / 1_000_000);
+                println!(
+                    "Duration: {} ms",
+                    duration.as_u64().unwrap_or(0) / 1_000_000
+                );
             }
         }
         Err(e) => {

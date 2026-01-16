@@ -3,10 +3,10 @@
 //! Provides lock-free data structures and parallel processing helpers
 //! using crossbeam and rayon for high-performance concurrent operations.
 
-use crossbeam::channel::{bounded, unbounded, Sender, Receiver};
+use crossbeam::channel::{bounded, unbounded, Receiver, Sender};
 use crossbeam::queue::SegQueue;
-use std::sync::Arc;
 use rayon::prelude::*;
+use std::sync::Arc;
 
 /// Lock-free concurrent queue for message passing
 ///
@@ -148,9 +148,7 @@ pub mod parallel {
         T: Send + Sync + Clone,
         F: Fn(T, T) -> T + Send + Sync,
     {
-        items
-            .into_par_iter()
-            .reduce(|| identity.clone(), f)
+        items.into_par_iter().reduce(|| identity.clone(), f)
     }
 
     /// Parallel fold with combine
@@ -318,13 +316,7 @@ mod tests {
     #[test]
     fn test_parallel_filter_map() {
         let items = vec![1, 2, 3, 4, 5];
-        let results = parallel::filter_map(items, |x| {
-            if x % 2 == 0 {
-                Some(x * 2)
-            } else {
-                None
-            }
-        });
+        let results = parallel::filter_map(items, |x| if x % 2 == 0 { Some(x * 2) } else { None });
         assert_eq!(results, vec![4, 8]);
     }
 

@@ -53,14 +53,14 @@
 //! # }
 //! ```
 
-use crate::core::{Agent, Message, AgentError};
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::pin::Pin;
-use std::future::Future;
-use serde::{Serialize, Deserialize};
+use crate::core::{Agent, AgentError, Message};
 use chrono::Utc;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
+use std::sync::Arc;
 
 /// Optimization strategy for prompt search.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -126,12 +126,27 @@ impl PromptOptimizationResult {
     /// Converts to dictionary representation.
     pub fn to_dict(&self) -> HashMap<String, serde_json::Value> {
         let mut result = HashMap::new();
-        result.insert("best_prompt".to_string(), serde_json::json!(self.best_prompt));
-        result.insert("best_config".to_string(), serde_json::json!(self.best_config));
-        result.insert("best_scores".to_string(), serde_json::json!(self.best_scores));
-        result.insert("n_evaluated".to_string(), serde_json::json!(self.n_evaluated));
+        result.insert(
+            "best_prompt".to_string(),
+            serde_json::json!(self.best_prompt),
+        );
+        result.insert(
+            "best_config".to_string(),
+            serde_json::json!(self.best_config),
+        );
+        result.insert(
+            "best_scores".to_string(),
+            serde_json::json!(self.best_scores),
+        );
+        result.insert(
+            "n_evaluated".to_string(),
+            serde_json::json!(self.n_evaluated),
+        );
         result.insert("strategy".to_string(), serde_json::json!(self.strategy));
-        result.insert("duration_seconds".to_string(), serde_json::json!(self.duration_seconds()));
+        result.insert(
+            "duration_seconds".to_string(),
+            serde_json::json!(self.duration_seconds()),
+        );
         result.insert("start_time".to_string(), serde_json::json!(self.start_time));
         result.insert("end_time".to_string(), serde_json::json!(self.end_time));
         result
@@ -143,10 +158,13 @@ pub type AgentFactory = Box<dyn Fn(String) -> Arc<dyn Agent> + Send + Sync>;
 
 /// Evaluator function for scoring prompts on test cases.
 pub type PromptEvaluatorFunc = Box<
-    dyn Fn(Arc<dyn Agent>, Vec<HashMap<String, serde_json::Value>>)
-        -> Pin<Box<dyn Future<Output = Result<HashMap<String, f64>, AgentError>> + Send>>
+    dyn Fn(
+            Arc<dyn Agent>,
+            Vec<HashMap<String, serde_json::Value>>,
+        )
+            -> Pin<Box<dyn Future<Output = Result<HashMap<String, f64>, AgentError>> + Send>>
         + Send
-        + Sync
+        + Sync,
 >;
 
 /// Prompt optimizer that systematically varies and tests prompts.
@@ -181,7 +199,10 @@ impl PromptOptimizer {
         objective_metric: Option<String>,
     ) -> Self {
         let objective = objective_metric.unwrap_or_else(|| {
-            metrics.first().cloned().unwrap_or_else(|| "accuracy".to_string())
+            metrics
+                .first()
+                .cloned()
+                .unwrap_or_else(|| "accuracy".to_string())
         });
 
         Self {
@@ -219,9 +240,8 @@ impl PromptOptimizer {
     /// Generates all possible configurations (Cartesian product).
     fn generate_all_configs(&self) -> Vec<HashMap<String, String>> {
         let keys: Vec<String> = self.variations.keys().cloned().collect();
-        let value_lists: Vec<Vec<String>> = keys.iter()
-            .map(|k| self.variations[k].clone())
-            .collect();
+        let value_lists: Vec<Vec<String>> =
+            keys.iter().map(|k| self.variations[k].clone()).collect();
 
         self.cartesian_product(&keys, &value_lists, 0, HashMap::new())
     }
@@ -302,8 +322,14 @@ impl PromptOptimizer {
 
         let mut scores = HashMap::new();
         if !test_cases.is_empty() {
-            scores.insert("accuracy".to_string(), success_count as f64 / test_cases.len() as f64);
-            scores.insert("latency_ms".to_string(), total_latency / test_cases.len() as f64);
+            scores.insert(
+                "accuracy".to_string(),
+                success_count as f64 / test_cases.len() as f64,
+            );
+            scores.insert(
+                "latency_ms".to_string(),
+                total_latency / test_cases.len() as f64,
+            );
         }
 
         Ok(scores)
@@ -434,9 +460,8 @@ impl PromptOptimizer {
         let mut rng = rand::thread_rng();
 
         // Initialize population with random configurations
-        let mut population: Vec<HashMap<String, String>> = (0..population_size)
-            .map(|_| self.sample_config())
-            .collect();
+        let mut population: Vec<HashMap<String, String>> =
+            (0..population_size).map(|_| self.sample_config()).collect();
 
         let mut fitness_scores = vec![0.0; population_size];
 
@@ -544,29 +569,32 @@ impl PromptOptimizer {
         options: HashMap<String, serde_json::Value>,
     ) -> Result<PromptOptimizationResult, AgentError> {
         match strategy {
-            OptimizationStrategy::Grid => {
-                self.optimize_grid(test_cases).await
-            }
+            OptimizationStrategy::Grid => self.optimize_grid(test_cases).await,
 
             OptimizationStrategy::Random => {
-                let n_samples = options.get("n_samples")
+                let n_samples = options
+                    .get("n_samples")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(20) as usize;
                 self.optimize_random(test_cases, n_samples).await
             }
 
             OptimizationStrategy::Genetic => {
-                let population_size = options.get("population_size")
+                let population_size = options
+                    .get("population_size")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(10) as usize;
-                let n_generations = options.get("n_generations")
+                let n_generations = options
+                    .get("n_generations")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(5) as usize;
-                let mutation_rate = options.get("mutation_rate")
+                let mutation_rate = options
+                    .get("mutation_rate")
                     .and_then(|v| v.as_f64())
                     .unwrap_or(0.2);
 
-                self.optimize_genetic(test_cases, population_size, n_generations, mutation_rate).await
+                self.optimize_genetic(test_cases, population_size, n_generations, mutation_rate)
+                    .await
             }
         }
     }
@@ -595,8 +623,14 @@ mod tests {
     fn create_test_optimizer() -> PromptOptimizer {
         let template = "You are a {role}. {instruction}";
         let mut variations = HashMap::new();
-        variations.insert("role".to_string(), vec!["assistant".to_string(), "expert".to_string()]);
-        variations.insert("instruction".to_string(), vec!["Be brief.".to_string(), "Be detailed.".to_string()]);
+        variations.insert(
+            "role".to_string(),
+            vec!["assistant".to_string(), "expert".to_string()],
+        );
+        variations.insert(
+            "instruction".to_string(),
+            vec!["Be brief.".to_string(), "Be detailed.".to_string()],
+        );
 
         let factory = Box::new(|prompt: String| -> Arc<dyn Agent> {
             Arc::new(MockAgent { _prompt: prompt })
@@ -633,7 +667,11 @@ mod tests {
         // Check all combinations are present
         let mut found_combinations = std::collections::HashSet::new();
         for config in &configs {
-            let key = format!("{}:{}", config.get("role").unwrap(), config.get("instruction").unwrap());
+            let key = format!(
+                "{}:{}",
+                config.get("role").unwrap(),
+                config.get("instruction").unwrap()
+            );
             found_combinations.insert(key);
         }
 
@@ -657,13 +695,11 @@ mod tests {
     #[tokio::test]
     async fn test_optimize_grid() {
         let mut optimizer = create_test_optimizer();
-        let test_cases = vec![
-            {
-                let mut tc = HashMap::new();
-                tc.insert("input".to_string(), serde_json::json!("test"));
-                tc
-            }
-        ];
+        let test_cases = vec![{
+            let mut tc = HashMap::new();
+            tc.insert("input".to_string(), serde_json::json!("test"));
+            tc
+        }];
 
         let result = optimizer.optimize_grid(test_cases).await.unwrap();
 
@@ -676,13 +712,11 @@ mod tests {
     #[tokio::test]
     async fn test_optimize_random() {
         let mut optimizer = create_test_optimizer();
-        let test_cases = vec![
-            {
-                let mut tc = HashMap::new();
-                tc.insert("input".to_string(), serde_json::json!("test"));
-                tc
-            }
-        ];
+        let test_cases = vec![{
+            let mut tc = HashMap::new();
+            tc.insert("input".to_string(), serde_json::json!("test"));
+            tc
+        }];
 
         let result = optimizer.optimize_random(test_cases, 10).await.unwrap();
 
@@ -695,15 +729,16 @@ mod tests {
     #[tokio::test]
     async fn test_optimize_genetic() {
         let mut optimizer = create_test_optimizer();
-        let test_cases = vec![
-            {
-                let mut tc = HashMap::new();
-                tc.insert("input".to_string(), serde_json::json!("test"));
-                tc
-            }
-        ];
+        let test_cases = vec![{
+            let mut tc = HashMap::new();
+            tc.insert("input".to_string(), serde_json::json!("test"));
+            tc
+        }];
 
-        let result = optimizer.optimize_genetic(test_cases, 4, 2, 0.2).await.unwrap();
+        let result = optimizer
+            .optimize_genetic(test_cases, 4, 2, 0.2)
+            .await
+            .unwrap();
 
         assert_eq!(result.strategy, "genetic");
         // Initial population (4) + 2 generations × 4 population = 12 total evaluations
@@ -714,16 +749,17 @@ mod tests {
     #[tokio::test]
     async fn test_optimize_with_strategy() {
         let mut optimizer = create_test_optimizer();
-        let test_cases = vec![
-            {
-                let mut tc = HashMap::new();
-                tc.insert("input".to_string(), serde_json::json!("test"));
-                tc
-            }
-        ];
+        let test_cases = vec![{
+            let mut tc = HashMap::new();
+            tc.insert("input".to_string(), serde_json::json!("test"));
+            tc
+        }];
 
         let options = HashMap::new();
-        let result = optimizer.optimize(test_cases, OptimizationStrategy::Grid, options).await.unwrap();
+        let result = optimizer
+            .optimize(test_cases, OptimizationStrategy::Grid, options)
+            .await
+            .unwrap();
 
         assert_eq!(result.strategy, "grid");
         assert_eq!(result.n_evaluated, 4);
@@ -784,7 +820,10 @@ mod tests {
         };
 
         let dict = result.to_dict();
-        assert_eq!(dict.get("best_prompt").unwrap().as_str().unwrap(), "test prompt");
+        assert_eq!(
+            dict.get("best_prompt").unwrap().as_str().unwrap(),
+            "test prompt"
+        );
         assert_eq!(dict.get("n_evaluated").unwrap().as_u64().unwrap(), 10);
         assert_eq!(dict.get("strategy").unwrap().as_str().unwrap(), "random");
     }
@@ -802,7 +841,8 @@ mod tests {
         assert_eq!(configs.len(), 4);
 
         // Verify all combinations present
-        let combos: Vec<String> = configs.iter()
+        let combos: Vec<String> = configs
+            .iter()
             .map(|c| format!("{},{}", c.get("a").unwrap(), c.get("b").unwrap()))
             .collect();
         assert!(combos.contains(&"1,x".to_string()));

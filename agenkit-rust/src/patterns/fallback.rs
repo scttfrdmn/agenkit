@@ -185,9 +185,10 @@ impl Agent for FallbackAgent {
                     result
                         .metadata
                         .insert("fallback_success_agent".to_string(), json!(agent.name()));
-                    result
-                        .metadata
-                        .insert("fallback_total_agents".to_string(), json!(self.agents.len()));
+                    result.metadata.insert(
+                        "fallback_total_agents".to_string(),
+                        json!(self.agents.len()),
+                    );
 
                     // Include failed attempts for observability
                     if !failed_attempts.is_empty() {
@@ -217,8 +218,12 @@ impl Agent for FallbackAgent {
                 error_msg.push_str(&format!(
                     "  [{}] {}: {}\n",
                     obj.get("index").and_then(|v| v.as_i64()).unwrap_or(0),
-                    obj.get("agent").and_then(|v| v.as_str()).unwrap_or("unknown"),
-                    obj.get("error").and_then(|v| v.as_str()).unwrap_or("unknown error")
+                    obj.get("agent")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("unknown"),
+                    obj.get("error")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("unknown error")
                 ));
             }
         }
@@ -231,7 +236,8 @@ impl Agent for FallbackAgent {
 ///
 /// The function receives the original message and error, and should return
 /// a fallback response or propagate the error.
-pub type RecoveryFunc = Box<dyn Fn(Message, AgentError) -> Result<Message, AgentError> + Send + Sync>;
+pub type RecoveryFunc =
+    Box<dyn Fn(Message, AgentError) -> Result<Message, AgentError> + Send + Sync>;
 
 /// Recovery agent that wraps an agent with a recovery function.
 ///
@@ -369,10 +375,7 @@ mod tests {
 
         async fn process(&self, _message: Message) -> Result<Message, AgentError> {
             if self.fail {
-                return Err(AgentError::ProcessingError(format!(
-                    "{} failed",
-                    self.name
-                )));
+                return Err(AgentError::ProcessingError(format!("{} failed", self.name)));
             }
 
             Ok(Message::with_text("assistant", &self.response))
@@ -400,7 +403,10 @@ mod tests {
 
         assert_eq!(result.content_as_str(), Some("Response 1"));
         assert_eq!(result.metadata.get("fallback_attempts"), Some(&json!(1)));
-        assert_eq!(result.metadata.get("fallback_success_index"), Some(&json!(0)));
+        assert_eq!(
+            result.metadata.get("fallback_success_index"),
+            Some(&json!(0))
+        );
     }
 
     #[tokio::test]
@@ -430,7 +436,10 @@ mod tests {
 
         assert_eq!(result.content_as_str(), Some("Response 2"));
         assert_eq!(result.metadata.get("fallback_attempts"), Some(&json!(2)));
-        assert_eq!(result.metadata.get("fallback_success_index"), Some(&json!(1)));
+        assert_eq!(
+            result.metadata.get("fallback_success_index"),
+            Some(&json!(1))
+        );
         assert!(result.metadata.contains_key("fallback_failed_attempts"));
     }
 

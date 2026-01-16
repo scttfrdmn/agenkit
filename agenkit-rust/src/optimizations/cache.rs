@@ -5,8 +5,8 @@
 
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
-use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 #[cfg(feature = "native")]

@@ -356,7 +356,7 @@ Refined Output:"#,
         let patterns = [
             regex::Regex::new(r"(?i)score[:\s]+([0-9]*\.?[0-9]+)").unwrap(), // "Score: 0.8"
             regex::Regex::new(r"(?i)rating[:\s]+([0-9]*\.?[0-9]+)").unwrap(), // "Rating: 8"
-            regex::Regex::new(r"([0-9]+)/10").unwrap(),                       // "8/10"
+            regex::Regex::new(r"([0-9]+)/10").unwrap(),                      // "8/10"
             regex::Regex::new(r"([0-9]*\.?[0-9]+)/1\.?0").unwrap(),          // "0.8/1.0"
         ];
 
@@ -381,7 +381,12 @@ Refined Output:"#,
     }
 
     /// Check if reflection loop should stop.
-    fn check_stop_conditions(&self, score: f64, improvement: f64, history_len: usize) -> (StopReason, bool) {
+    fn check_stop_conditions(
+        &self,
+        score: f64,
+        improvement: f64,
+        history_len: usize,
+    ) -> (StopReason, bool) {
         // Perfect score
         if score >= 1.0 {
             return (StopReason::PerfectScore, true);
@@ -515,7 +520,8 @@ impl Agent for ReflectionAgent {
             history.push(step);
 
             // Check stopping conditions
-            let (stop_reason, should_stop) = self.check_stop_conditions(score, improvement, history.len());
+            let (stop_reason, should_stop) =
+                self.check_stop_conditions(score, improvement, history.len());
 
             if should_stop {
                 // Create a copy of self to set history
@@ -648,10 +654,7 @@ mod tests {
             Some(3)
         );
         assert_eq!(
-            result
-                .metadata
-                .get("stop_reason")
-                .and_then(|v| v.as_str()),
+            result.metadata.get("stop_reason").and_then(|v| v.as_str()),
             Some("quality_threshold_met")
         );
         assert_eq!(
@@ -696,10 +699,7 @@ mod tests {
             Some(3)
         );
         assert_eq!(
-            result
-                .metadata
-                .get("stop_reason")
-                .and_then(|v| v.as_str()),
+            result.metadata.get("stop_reason").and_then(|v| v.as_str()),
             Some("max_iterations")
         );
     }
@@ -737,10 +737,7 @@ mod tests {
             Some(3)
         );
         assert_eq!(
-            result
-                .metadata
-                .get("stop_reason")
-                .and_then(|v| v.as_str()),
+            result.metadata.get("stop_reason").and_then(|v| v.as_str()),
             Some("minimal_improvement")
         );
     }
@@ -778,10 +775,7 @@ mod tests {
             Some(2)
         );
         assert_eq!(
-            result
-                .metadata
-                .get("stop_reason")
-                .and_then(|v| v.as_str()),
+            result.metadata.get("stop_reason").and_then(|v| v.as_str()),
             Some("perfect_score")
         );
         assert_eq!(

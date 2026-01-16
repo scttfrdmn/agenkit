@@ -56,7 +56,12 @@ async fn test_basic_functionality() {
 
     // Check technique metadata
     assert_eq!(
-        response.metadata.get("technique").unwrap().as_str().unwrap(),
+        response
+            .metadata
+            .get("technique")
+            .unwrap()
+            .as_str()
+            .unwrap(),
         "chain_of_thought"
     );
 
@@ -93,9 +98,17 @@ async fn test_numbered_steps_parsing() {
     ]));
 
     let cot = ChainOfThoughtAgent::new(mock, ChainOfThoughtConfig::default());
-    let result = cot.process(Message::with_text("user", "Test")).await.unwrap();
+    let result = cot
+        .process(Message::with_text("user", "Test"))
+        .await
+        .unwrap();
 
-    let steps = result.metadata.get("reasoning_steps").unwrap().as_array().unwrap();
+    let steps = result
+        .metadata
+        .get("reasoning_steps")
+        .unwrap()
+        .as_array()
+        .unwrap();
     assert_eq!(steps.len(), 4);
     assert_eq!(steps[0].as_str().unwrap(), "Identify the problem.");
     assert_eq!(steps[1].as_str().unwrap(), "Gather information.");
@@ -110,9 +123,17 @@ async fn test_numbered_steps_with_parentheses() {
     ]));
 
     let cot = ChainOfThoughtAgent::new(mock, ChainOfThoughtConfig::default());
-    let result = cot.process(Message::with_text("user", "Test")).await.unwrap();
+    let result = cot
+        .process(Message::with_text("user", "Test"))
+        .await
+        .unwrap();
 
-    let steps = result.metadata.get("reasoning_steps").unwrap().as_array().unwrap();
+    let steps = result
+        .metadata
+        .get("reasoning_steps")
+        .unwrap()
+        .as_array()
+        .unwrap();
     assert_eq!(steps.len(), 3);
     assert_eq!(steps[0].as_str().unwrap(), "First step here.");
     assert_eq!(steps[1].as_str().unwrap(), "Second step follows.");
@@ -126,9 +147,17 @@ async fn test_bullet_points_parsing() {
     ]));
 
     let cot = ChainOfThoughtAgent::new(mock, ChainOfThoughtConfig::default());
-    let result = cot.process(Message::with_text("user", "Test")).await.unwrap();
+    let result = cot
+        .process(Message::with_text("user", "Test"))
+        .await
+        .unwrap();
 
-    let steps = result.metadata.get("reasoning_steps").unwrap().as_array().unwrap();
+    let steps = result
+        .metadata
+        .get("reasoning_steps")
+        .unwrap()
+        .as_array()
+        .unwrap();
     assert_eq!(steps.len(), 3);
     assert_eq!(steps[0].as_str().unwrap(), "Consider the context");
     assert_eq!(steps[1].as_str().unwrap(), "Evaluate alternatives");
@@ -152,7 +181,7 @@ async fn test_custom_prompt_template() {
 #[tokio::test]
 async fn test_parse_steps_disabled() {
     let mock = Arc::new(MockAgent::new(vec![
-        "1. Step one.\n2. Step two.".to_string(),
+        "1. Step one.\n2. Step two.".to_string()
     ]));
 
     let config = ChainOfThoughtConfig {
@@ -161,7 +190,10 @@ async fn test_parse_steps_disabled() {
     };
 
     let cot = ChainOfThoughtAgent::new(mock, config);
-    let result = cot.process(Message::with_text("user", "Test")).await.unwrap();
+    let result = cot
+        .process(Message::with_text("user", "Test"))
+        .await
+        .unwrap();
 
     // Should have technique but not reasoning_steps
     assert!(result.metadata.contains_key("technique"));
@@ -181,11 +213,22 @@ async fn test_max_steps_limiting() {
     };
 
     let cot = ChainOfThoughtAgent::new(mock, config);
-    let result = cot.process(Message::with_text("user", "Test")).await.unwrap();
+    let result = cot
+        .process(Message::with_text("user", "Test"))
+        .await
+        .unwrap();
 
-    let steps = result.metadata.get("reasoning_steps").unwrap().as_array().unwrap();
+    let steps = result
+        .metadata
+        .get("reasoning_steps")
+        .unwrap()
+        .as_array()
+        .unwrap();
     assert_eq!(steps.len(), 3);
-    assert_eq!(result.metadata.get("num_steps").unwrap().as_u64().unwrap(), 3);
+    assert_eq!(
+        result.metadata.get("num_steps").unwrap().as_u64().unwrap(),
+        3
+    );
 }
 
 #[tokio::test]
@@ -195,17 +238,23 @@ async fn test_delimiter_based_parsing() {
     ]));
 
     let cot = ChainOfThoughtAgent::new(mock, ChainOfThoughtConfig::default());
-    let result = cot.process(Message::with_text("user", "Test")).await.unwrap();
+    let result = cot
+        .process(Message::with_text("user", "Test"))
+        .await
+        .unwrap();
 
-    let steps = result.metadata.get("reasoning_steps").unwrap().as_array().unwrap();
+    let steps = result
+        .metadata
+        .get("reasoning_steps")
+        .unwrap()
+        .as_array()
+        .unwrap();
     assert!(steps.len() >= 3);
 }
 
 #[tokio::test]
 async fn test_custom_delimiter() {
-    let mock = Arc::new(MockAgent::new(vec![
-        "Step A | Step B | Step C".to_string(),
-    ]));
+    let mock = Arc::new(MockAgent::new(vec!["Step A | Step B | Step C".to_string()]));
 
     let config = ChainOfThoughtConfig {
         step_delimiter: " | ".to_string(),
@@ -213,9 +262,17 @@ async fn test_custom_delimiter() {
     };
 
     let cot = ChainOfThoughtAgent::new(mock, config);
-    let result = cot.process(Message::with_text("user", "Test")).await.unwrap();
+    let result = cot
+        .process(Message::with_text("user", "Test"))
+        .await
+        .unwrap();
 
-    let steps = result.metadata.get("reasoning_steps").unwrap().as_array().unwrap();
+    let steps = result
+        .metadata
+        .get("reasoning_steps")
+        .unwrap()
+        .as_array()
+        .unwrap();
     assert_eq!(steps.len(), 3);
     assert_eq!(steps[0].as_str().unwrap(), "Step A");
     assert_eq!(steps[1].as_str().unwrap(), "Step B");
@@ -253,6 +310,11 @@ async fn test_empty_response() {
     assert!(result.is_ok());
     let response = result.unwrap();
 
-    let steps = response.metadata.get("reasoning_steps").unwrap().as_array().unwrap();
+    let steps = response
+        .metadata
+        .get("reasoning_steps")
+        .unwrap()
+        .as_array()
+        .unwrap();
     assert_eq!(steps.len(), 0);
 }

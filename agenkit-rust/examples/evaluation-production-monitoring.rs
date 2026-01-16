@@ -6,10 +6,10 @@
 //! Run with: cargo run --example evaluation-production-monitoring
 
 use agenkit::core::{Agent, AgentError, Message};
+use agenkit::evaluation::recorder::{FileRecordingStorage, SessionRecorder};
 use agenkit::evaluation::{
-    SessionResult, SessionStatus, MetricsCollector, RegressionDetector, EvaluationResult,
+    EvaluationResult, MetricsCollector, RegressionDetector, SessionResult, SessionStatus,
 };
-use agenkit::evaluation::recorder::{SessionRecorder, FileRecordingStorage};
 use async_trait::async_trait;
 use chrono::Utc;
 use rand::Rng;
@@ -32,7 +32,10 @@ impl Agent for ProductionAgent {
         sleep(Duration::from_millis(50 + rng.gen_range(0..200))).await;
 
         let content = message.content_as_str().unwrap_or("");
-        Ok(Message::with_text("assistant", &format!("Response to: {}", content)))
+        Ok(Message::with_text(
+            "assistant",
+            &format!("Response to: {}", content),
+        ))
     }
 }
 
@@ -49,9 +52,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let collector = MetricsCollector::new();
 
     // Create session recorder with file storage
-    let recorder = SessionRecorder::new(Some(Box::new(
-        FileRecordingStorage::new("./production_recordings")
-    )));
+    let recorder = SessionRecorder::new(Some(Box::new(FileRecordingStorage::new(
+        "./production_recordings",
+    ))));
 
     // Create regression detector with baseline
     let baseline = EvaluationResult {
@@ -120,7 +123,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // Add quality metric
                 let quality_score = 0.85 + rng.gen::<f64>() * 0.15;
                 let mut quality_metadata = HashMap::new();
-                quality_metadata.insert("raw_score".to_string(), serde_json::json!(quality_score * 10.0));
+                quality_metadata.insert(
+                    "raw_score".to_string(),
+                    serde_json::json!(quality_score * 10.0),
+                );
                 quality_metadata.insert("max_score".to_string(), serde_json::json!(10.0));
 
                 let mut quality_measurement = agenkit::evaluation::MetricMeasurement::new(
@@ -133,7 +139,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 // Add duration metric
                 let mut duration_metadata = HashMap::new();
-                duration_metadata.insert("duration_hours".to_string(), serde_json::json!(duration / 3600.0));
+                duration_metadata.insert(
+                    "duration_hours".to_string(),
+                    serde_json::json!(duration / 3600.0),
+                );
 
                 let mut duration_measurement = agenkit::evaluation::MetricMeasurement::new(
                     "duration",
@@ -176,25 +185,92 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stats = collector.get_statistics();
 
     println!("Session Statistics:");
-    println!("  Total Sessions: {}", stats.get("session_count").and_then(|v| v.as_i64()).unwrap_or(0));
-    println!("  Completed: {}", stats.get("completed_count").and_then(|v| v.as_i64()).unwrap_or(0));
-    println!("  Failed: {}", stats.get("failed_count").and_then(|v| v.as_i64()).unwrap_or(0));
-    println!("  Success Rate: {:.1}%", stats.get("success_rate").and_then(|v| v.as_f64()).unwrap_or(0.0) * 100.0);
-    println!("  Avg Duration: {:.3}s", stats.get("avg_duration").and_then(|v| v.as_f64()).unwrap_or(0.0));
-    println!("  Total Errors: {}\n", stats.get("total_errors").and_then(|v| v.as_i64()).unwrap_or(0));
+    println!(
+        "  Total Sessions: {}",
+        stats
+            .get("session_count")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0)
+    );
+    println!(
+        "  Completed: {}",
+        stats
+            .get("completed_count")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0)
+    );
+    println!(
+        "  Failed: {}",
+        stats
+            .get("failed_count")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0)
+    );
+    println!(
+        "  Success Rate: {:.1}%",
+        stats
+            .get("success_rate")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0)
+            * 100.0
+    );
+    println!(
+        "  Avg Duration: {:.3}s",
+        stats
+            .get("avg_duration")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0)
+    );
+    println!(
+        "  Total Errors: {}\n",
+        stats
+            .get("total_errors")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0)
+    );
 
     // Quality metrics
     let quality_stats = collector.get_metric_aggregates("response_quality");
     println!("Quality Metrics:");
-    println!("  Mean: {:.3}", quality_stats.get("mean").and_then(|v| v.as_f64()).unwrap_or(0.0));
-    println!("  Min: {:.3}", quality_stats.get("min").and_then(|v| v.as_f64()).unwrap_or(0.0));
-    println!("  Max: {:.3}\n", quality_stats.get("max").and_then(|v| v.as_f64()).unwrap_or(0.0));
+    println!(
+        "  Mean: {:.3}",
+        quality_stats
+            .get("mean")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0)
+    );
+    println!(
+        "  Min: {:.3}",
+        quality_stats
+            .get("min")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0)
+    );
+    println!(
+        "  Max: {:.3}\n",
+        quality_stats
+            .get("max")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0)
+    );
 
     // Cost metrics
     let cost_stats = collector.get_metric_aggregates("total_cost");
     println!("Cost Metrics:");
-    println!("  Total: ${:.4}", cost_stats.get("sum").and_then(|v| v.as_f64()).unwrap_or(0.0));
-    println!("  Average: ${:.4}\n", cost_stats.get("mean").and_then(|v| v.as_f64()).unwrap_or(0.0));
+    println!(
+        "  Total: ${:.4}",
+        cost_stats
+            .get("sum")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0)
+    );
+    println!(
+        "  Average: ${:.4}\n",
+        cost_stats
+            .get("mean")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0)
+    );
 
     // Step 5: Regression detection
     println!("Step 5: Checking for Regressions");
@@ -205,11 +281,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         agent_name: "production-agent".to_string(),
         timestamp: Utc::now(),
         total_tests: 50,
-        passed_tests: stats.get("completed_count").and_then(|v| v.as_i64()).unwrap_or(0) as usize,
-        failed_tests: stats.get("failed_count").and_then(|v| v.as_i64()).unwrap_or(0) as usize,
-        accuracy: Some(stats.get("success_rate").and_then(|v| v.as_f64()).unwrap_or(0.0)),
-        quality_score: Some(quality_stats.get("mean").and_then(|v| v.as_f64()).unwrap_or(0.0)),
-        avg_latency_ms: Some(stats.get("avg_duration").and_then(|v| v.as_f64()).unwrap_or(0.0) * 1000.0),
+        passed_tests: stats
+            .get("completed_count")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0) as usize,
+        failed_tests: stats
+            .get("failed_count")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0) as usize,
+        accuracy: Some(
+            stats
+                .get("success_rate")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.0),
+        ),
+        quality_score: Some(
+            quality_stats
+                .get("mean")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.0),
+        ),
+        avg_latency_ms: Some(
+            stats
+                .get("avg_duration")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.0)
+                * 1000.0,
+        ),
         context_length: None,
         compression_ratio: None,
         per_test_metrics: vec![],
@@ -223,7 +321,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         println!("⚠ Regressions detected: {}\n", regressions.len());
         for reg in regressions {
-            println!("  {}: {:.1}% degradation ({})", reg.metric_name, reg.degradation_percent, reg.severity);
+            println!(
+                "  {}: {:.1}% degradation ({})",
+                reg.metric_name, reg.degradation_percent, reg.severity
+            );
         }
         println!();
     }

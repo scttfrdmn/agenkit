@@ -71,7 +71,10 @@ where
 #[tokio::main]
 async fn main() {
     println!("=== Agenkit Pattern Benchmarks (Rust) ===\n");
-    println!("{:<30} {:>10}        {:>10}", "Pattern", "Time", "Throughput");
+    println!(
+        "{:<30} {:>10}        {:>10}",
+        "Pattern", "Time", "Throughput"
+    );
     println!("{}", "-".repeat(60));
 
     let iterations = 1000;

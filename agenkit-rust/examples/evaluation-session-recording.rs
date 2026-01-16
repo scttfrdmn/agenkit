@@ -11,7 +11,7 @@
 //! Run with: cargo run --example evaluation-session-recording
 
 use agenkit::core::{Agent, AgentError, Message};
-use agenkit::evaluation::recorder::{SessionRecorder, FileRecordingStorage};
+use agenkit::evaluation::recorder::{FileRecordingStorage, SessionRecorder};
 use async_trait::async_trait;
 use std::collections::HashMap;
 
@@ -83,8 +83,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut metadata = HashMap::new();
         metadata.insert("session_id".to_string(), serde_json::json!(session_id));
 
-        let message = Message::with_text("user", input)
-            .with_metadata_map(metadata);
+        let message = Message::with_text("user", input).with_metadata_map(metadata);
 
         match wrapped_agent.process(message).await {
             Ok(response) => {
@@ -105,7 +104,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("✓ Session recorded: {}", recording.session_id);
     println!("  Interactions: {}", recording.interaction_count());
-    println!("  Duration: {:.2}s", recording.duration_seconds().unwrap_or(0.0));
+    println!(
+        "  Duration: {:.2}s",
+        recording.duration_seconds().unwrap_or(0.0)
+    );
     println!("  Total Latency: {:.0}ms\n", recording.total_latency_ms());
 
     // Step 5: Load and replay session
@@ -124,10 +126,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let results_v1 = recorder.replay(&rec, agent_v1.clone(), None).await?;
 
             println!("✓ Replay complete");
-            println!("  Total Latency: {:.0}ms",
-                results_v1.get("total_latency_ms").and_then(|v| v.as_f64()).unwrap_or(0.0));
-            println!("  Errors: {}\n",
-                results_v1.get("error_count").and_then(|v| v.as_i64()).unwrap_or(0));
+            println!(
+                "  Total Latency: {:.0}ms",
+                results_v1
+                    .get("total_latency_ms")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(0.0)
+            );
+            println!(
+                "  Errors: {}\n",
+                results_v1
+                    .get("error_count")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0)
+            );
 
             // Step 6: Replay with different agent version (A/B testing)
             println!("Step 6: A/B Testing with Different Agent Version");
@@ -138,10 +150,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let results_v2 = recorder.replay(&rec, agent_v2, None).await?;
 
             println!("✓ Replay complete");
-            println!("  Total Latency: {:.0}ms",
-                results_v2.get("total_latency_ms").and_then(|v| v.as_f64()).unwrap_or(0.0));
-            println!("  Errors: {}\n",
-                results_v2.get("error_count").and_then(|v| v.as_i64()).unwrap_or(0));
+            println!(
+                "  Total Latency: {:.0}ms",
+                results_v2
+                    .get("total_latency_ms")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(0.0)
+            );
+            println!(
+                "  Errors: {}\n",
+                results_v2
+                    .get("error_count")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0)
+            );
 
             // Step 7: Compare results
             println!("Step 7: Comparing Results");
@@ -149,15 +171,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let comparison = recorder.compare(&results_v1, &results_v2);
 
             println!("Comparison:");
-            println!("  Interactions: {}",
-                comparison.get("interaction_count").and_then(|v| v.as_i64()).unwrap_or(0));
-            println!("  Latency Difference: {:.0}ms ({:.1}%)",
-                comparison.get("latency_diff_ms").and_then(|v| v.as_f64()).unwrap_or(0.0),
-                comparison.get("latency_diff_percent").and_then(|v| v.as_f64()).unwrap_or(0.0));
-            println!("  Error Difference: {}",
-                comparison.get("error_diff").and_then(|v| v.as_i64()).unwrap_or(0));
+            println!(
+                "  Interactions: {}",
+                comparison
+                    .get("interaction_count")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0)
+            );
+            println!(
+                "  Latency Difference: {:.0}ms ({:.1}%)",
+                comparison
+                    .get("latency_diff_ms")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(0.0),
+                comparison
+                    .get("latency_diff_percent")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(0.0)
+            );
+            println!(
+                "  Error Difference: {}",
+                comparison
+                    .get("error_diff")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0)
+            );
 
-            let output_diffs = comparison.get("output_differences")
+            let output_diffs = comparison
+                .get("output_differences")
                 .and_then(|v| v.as_array())
                 .map(|a| a.len())
                 .unwrap_or(0);
@@ -165,9 +206,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             if output_diffs > 0 {
                 println!("\nDetailed Output Differences:");
-                if let Some(diffs) = comparison.get("output_differences").and_then(|v| v.as_array()) {
+                if let Some(diffs) = comparison
+                    .get("output_differences")
+                    .and_then(|v| v.as_array())
+                {
                     for diff in diffs {
-                        let idx = diff.get("interaction_index").and_then(|v| v.as_i64()).unwrap_or(0);
+                        let idx = diff
+                            .get("interaction_index")
+                            .and_then(|v| v.as_i64())
+                            .unwrap_or(0);
                         let output_a = diff.get("output_a").and_then(|v| v.as_str()).unwrap_or("");
                         let output_b = diff.get("output_b").and_then(|v| v.as_str()).unwrap_or("");
                         println!("  Interaction {}:", idx + 1);
@@ -191,9 +238,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Found {} recordings:", recordings.len());
     for (i, rec) in recordings.iter().enumerate() {
         println!("  {}. {} ({})", i + 1, rec.session_id, rec.agent_name);
-        println!("     Interactions: {}, Duration: {:.2}s",
+        println!(
+            "     Interactions: {}, Duration: {:.2}s",
             rec.interaction_count(),
-            rec.duration_seconds().unwrap_or(0.0));
+            rec.duration_seconds().unwrap_or(0.0)
+        );
     }
     println!();
 

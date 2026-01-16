@@ -2,7 +2,6 @@
 ///!
 ///! Provides integration with Google's Gemini models (Gemini 2.0, Gemini 1.5 Pro, etc.).
 ///! Supports both completion and streaming modes via the Gemini REST API.
-
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -225,7 +224,10 @@ impl GeminiAdapter {
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().await.unwrap_or_else(|_| "unknown error".to_string());
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "unknown error".to_string());
             return Err(AgentError::Transport(format!(
                 "Gemini API error ({}): {}",
                 status, error_text
@@ -280,7 +282,8 @@ impl GeminiAdapter {
         let mut msg = Message::with_text("assistant", &content);
 
         // Add metadata
-        msg.metadata.insert("model".to_string(), json!(self.config.model));
+        msg.metadata
+            .insert("model".to_string(), json!(self.config.model));
 
         if let Some(usage) = response.usage_metadata {
             msg.metadata.insert(
@@ -294,7 +297,8 @@ impl GeminiAdapter {
         }
 
         if let Some(finish_reason) = &candidate.finish_reason {
-            msg.metadata.insert("finish_reason".to_string(), json!(finish_reason));
+            msg.metadata
+                .insert("finish_reason".to_string(), json!(finish_reason));
         }
 
         Ok(msg)

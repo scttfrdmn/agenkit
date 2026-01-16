@@ -20,9 +20,9 @@
 //! // }
 //! ```
 
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use super::core::EvaluationResult;
 
@@ -85,12 +85,30 @@ impl Regression {
     /// Converts regression to dictionary.
     pub fn to_dict(&self) -> HashMap<String, serde_json::Value> {
         let mut result = HashMap::new();
-        result.insert("metric_name".to_string(), serde_json::json!(self.metric_name));
-        result.insert("baseline_value".to_string(), serde_json::json!(self.baseline_value));
-        result.insert("current_value".to_string(), serde_json::json!(self.current_value));
-        result.insert("degradation_percent".to_string(), serde_json::json!(self.degradation_percent));
-        result.insert("severity".to_string(), serde_json::json!(self.severity.to_string()));
-        result.insert("timestamp".to_string(), serde_json::json!(self.timestamp.to_rfc3339()));
+        result.insert(
+            "metric_name".to_string(),
+            serde_json::json!(self.metric_name),
+        );
+        result.insert(
+            "baseline_value".to_string(),
+            serde_json::json!(self.baseline_value),
+        );
+        result.insert(
+            "current_value".to_string(),
+            serde_json::json!(self.current_value),
+        );
+        result.insert(
+            "degradation_percent".to_string(),
+            serde_json::json!(self.degradation_percent),
+        );
+        result.insert(
+            "severity".to_string(),
+            serde_json::json!(self.severity.to_string()),
+        );
+        result.insert(
+            "timestamp".to_string(),
+            serde_json::json!(self.timestamp.to_rfc3339()),
+        );
         result.insert("context".to_string(), serde_json::json!(self.context));
         result
     }
@@ -129,9 +147,9 @@ impl RegressionDetector {
     ) -> Self {
         let thresholds = thresholds.unwrap_or_else(|| {
             let mut t = HashMap::new();
-            t.insert("accuracy".to_string(), 0.10);       // 10% degradation threshold
-            t.insert("quality".to_string(), 0.10);        // 10% degradation threshold
-            t.insert("latency".to_string(), 0.20);        // 20% slower acceptable
+            t.insert("accuracy".to_string(), 0.10); // 10% degradation threshold
+            t.insert("quality".to_string(), 0.10); // 10% degradation threshold
+            t.insert("latency".to_string(), 0.20); // 20% slower acceptable
             t.insert("context_length".to_string(), 0.30); // 30% larger context acceptable
             t
         });
@@ -181,21 +199,27 @@ impl RegressionDetector {
         }
 
         // Check quality_score
-        if let (Some(baseline_qual), Some(current_qual)) = (baseline.quality_score, result.quality_score) {
+        if let (Some(baseline_qual), Some(current_qual)) =
+            (baseline.quality_score, result.quality_score)
+        {
             if let Some(reg) = self.check_metric("quality", baseline_qual, current_qual, true) {
                 regressions.push(reg);
             }
         }
 
         // Check latency (lower is better)
-        if let (Some(baseline_lat), Some(current_lat)) = (baseline.avg_latency_ms, result.avg_latency_ms) {
+        if let (Some(baseline_lat), Some(current_lat)) =
+            (baseline.avg_latency_ms, result.avg_latency_ms)
+        {
             if let Some(reg) = self.check_metric("latency", baseline_lat, current_lat, false) {
                 regressions.push(reg);
             }
         }
 
         // Check context length
-        if let (Some(baseline_ctx), Some(current_ctx)) = (baseline.context_length, result.context_length) {
+        if let (Some(baseline_ctx), Some(current_ctx)) =
+            (baseline.context_length, result.context_length)
+        {
             if let Some(reg) = self.check_metric(
                 "context_length",
                 baseline_ctx as f64,
@@ -207,8 +231,12 @@ impl RegressionDetector {
         }
 
         // Check compression ratio (higher is better)
-        if let (Some(baseline_comp), Some(current_comp)) = (baseline.compression_ratio, result.compression_ratio) {
-            if let Some(reg) = self.check_metric("compression_ratio", baseline_comp, current_comp, true) {
+        if let (Some(baseline_comp), Some(current_comp)) =
+            (baseline.compression_ratio, result.compression_ratio)
+        {
+            if let Some(reg) =
+                self.check_metric("compression_ratio", baseline_comp, current_comp, true)
+            {
                 regressions.push(reg);
             }
         }
@@ -259,8 +287,14 @@ impl RegressionDetector {
         if degradation > threshold {
             let severity = self.calculate_severity(degradation);
             let mut context = HashMap::new();
-            context.insert("threshold_percent".to_string(), serde_json::json!(threshold * 100.0));
-            context.insert("higher_is_better".to_string(), serde_json::json!(higher_is_better));
+            context.insert(
+                "threshold_percent".to_string(),
+                serde_json::json!(threshold * 100.0),
+            );
+            context.insert(
+                "higher_is_better".to_string(),
+                serde_json::json!(higher_is_better),
+            );
 
             Some(Regression {
                 metric_name: name.to_string(),
@@ -307,7 +341,11 @@ impl RegressionDetector {
     /// # Returns
     ///
     /// Trend statistics (slope, direction, variance)
-    pub fn get_trend(&self, metric_name: &str, window: usize) -> Option<HashMap<String, serde_json::Value>> {
+    pub fn get_trend(
+        &self,
+        metric_name: &str,
+        window: usize,
+    ) -> Option<HashMap<String, serde_json::Value>> {
         if self.history.len() < 2 {
             return None;
         }
@@ -354,11 +392,7 @@ impl RegressionDetector {
         };
 
         // Variance
-        let variance: f64 = values
-            .iter()
-            .map(|v| (v - y_mean).powi(2))
-            .sum::<f64>()
-            / n;
+        let variance: f64 = values.iter().map(|v| (v - y_mean).powi(2)).sum::<f64>() / n;
 
         let direction = if slope > 0.0 {
             "improving"
@@ -373,7 +407,10 @@ impl RegressionDetector {
         result.insert("slope".to_string(), serde_json::json!(slope));
         result.insert("direction".to_string(), serde_json::json!(direction));
         result.insert("variance".to_string(), serde_json::json!(variance));
-        result.insert("current".to_string(), serde_json::json!(values[values.len() - 1]));
+        result.insert(
+            "current".to_string(),
+            serde_json::json!(values[values.len() - 1]),
+        );
         result.insert("mean".to_string(), serde_json::json!(y_mean));
         result.insert("window_size".to_string(), serde_json::json!(values.len()));
 
@@ -510,7 +547,10 @@ mod tests {
         let trend = detector.get_trend("accuracy", 4).unwrap();
 
         assert_eq!(trend.get("metric").unwrap(), &serde_json::json!("accuracy"));
-        assert_eq!(trend.get("direction").unwrap(), &serde_json::json!("improving"));
+        assert_eq!(
+            trend.get("direction").unwrap(),
+            &serde_json::json!("improving")
+        );
         assert!(trend.get("slope").unwrap().as_f64().unwrap() > 0.0);
     }
 
@@ -527,7 +567,10 @@ mod tests {
         let trend = detector.get_trend("accuracy", 4).unwrap();
 
         assert_eq!(trend.get("metric").unwrap(), &serde_json::json!("accuracy"));
-        assert_eq!(trend.get("direction").unwrap(), &serde_json::json!("degrading"));
+        assert_eq!(
+            trend.get("direction").unwrap(),
+            &serde_json::json!("degrading")
+        );
         assert!(trend.get("slope").unwrap().as_f64().unwrap() < 0.0);
     }
 }

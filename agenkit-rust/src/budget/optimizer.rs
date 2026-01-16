@@ -93,10 +93,25 @@ impl ModelOptimizer {
 
         // Complexity keywords (0.0 - 0.35)
         let complex_keywords = [
-            "analyze", "explain", "compare", "evaluate", "design",
-            "implement", "optimize", "debug", "refactor", "architect",
-            "algorithm", "system", "complex", "detailed", "comprehensive",
-            "performance", "characteristics", "distributed", "trade-offs",
+            "analyze",
+            "explain",
+            "compare",
+            "evaluate",
+            "design",
+            "implement",
+            "optimize",
+            "debug",
+            "refactor",
+            "architect",
+            "algorithm",
+            "system",
+            "complex",
+            "detailed",
+            "comprehensive",
+            "performance",
+            "characteristics",
+            "distributed",
+            "trade-offs",
         ];
 
         let keyword_count = complex_keywords
@@ -129,11 +144,13 @@ impl ModelOptimizer {
         score += question_score;
 
         // Code presence (0.0 - 0.20)
-        let code_score = if content.contains("```") || content.contains("def ") || content.contains("function ") {
-            0.20
-        } else {
-            0.0
-        };
+        let code_score =
+            if content.contains("```") || content.contains("def ") || content.contains("function ")
+            {
+                0.20
+            } else {
+                0.0
+            };
         score += code_score;
 
         score.min(1.0)
@@ -222,7 +239,11 @@ impl ModelOptimizer {
 
         let expensive_cost = self
             .pricing
-            .calculate(&self.config.complex_model, input_tokens, estimated_output_tokens)
+            .calculate(
+                &self.config.complex_model,
+                input_tokens,
+                estimated_output_tokens,
+            )
             .await?;
 
         Ok(expensive_cost - selected_cost)

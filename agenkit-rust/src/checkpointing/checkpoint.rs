@@ -86,11 +86,20 @@ impl Checkpoint {
     /// Convert to dictionary representation.
     pub fn to_dict(&self) -> HashMap<String, serde_json::Value> {
         let mut dict = HashMap::new();
-        dict.insert("checkpoint_id".to_string(), serde_json::json!(self.checkpoint_id));
+        dict.insert(
+            "checkpoint_id".to_string(),
+            serde_json::json!(self.checkpoint_id),
+        );
         dict.insert("session_id".to_string(), serde_json::json!(self.session_id));
         dict.insert("agent_name".to_string(), serde_json::json!(self.agent_name));
-        dict.insert("timestamp".to_string(), serde_json::json!(self.timestamp.to_rfc3339()));
-        dict.insert("step_number".to_string(), serde_json::json!(self.step_number));
+        dict.insert(
+            "timestamp".to_string(),
+            serde_json::json!(self.timestamp.to_rfc3339()),
+        );
+        dict.insert(
+            "step_number".to_string(),
+            serde_json::json!(self.step_number),
+        );
         dict.insert("state".to_string(), self.state.clone());
         dict.insert("messages".to_string(), serde_json::json!(self.messages));
 
@@ -99,7 +108,10 @@ impl Checkpoint {
         }
 
         if let Some(ref parent_id) = self.parent_checkpoint_id {
-            dict.insert("parent_checkpoint_id".to_string(), serde_json::json!(parent_id));
+            dict.insert(
+                "parent_checkpoint_id".to_string(),
+                serde_json::json!(parent_id),
+            );
         }
 
         dict
@@ -140,7 +152,10 @@ mod tests {
         .with_parent("parent-id".to_string());
 
         assert!(checkpoint.metadata.is_some());
-        assert_eq!(checkpoint.parent_checkpoint_id, Some("parent-id".to_string()));
+        assert_eq!(
+            checkpoint.parent_checkpoint_id,
+            Some("parent-id".to_string())
+        );
     }
 
     #[test]

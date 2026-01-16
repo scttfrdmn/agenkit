@@ -18,7 +18,6 @@
 ///!     });
 ///! }
 ///! ```
-
 use std::future::Future;
 use std::pin::Pin;
 use std::time::Duration;
@@ -36,9 +35,7 @@ where
     F: Future + Send + 'static,
     F::Output: Send + 'static,
 {
-    Box::pin(async move {
-        tokio::spawn(future).await.unwrap()
-    })
+    Box::pin(async move { tokio::spawn(future).await.unwrap() })
 }
 
 #[cfg(feature = "native")]
@@ -183,7 +180,8 @@ mod tests {
         let result = timeout(Duration::from_millis(10), async {
             sleep(Duration::from_secs(1)).await;
             42
-        }).await;
+        })
+        .await;
 
         assert!(result.is_err());
     }

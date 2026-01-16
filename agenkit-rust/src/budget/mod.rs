@@ -45,16 +45,16 @@
 //! # }
 //! ```
 
+pub mod allocator;
+pub mod limiter;
 pub mod models;
+pub mod optimizer;
 pub mod pricing;
 pub mod tracker;
-pub mod limiter;
-pub mod optimizer;
-pub mod allocator;
 
+pub use allocator::{ThinkingBudgetAllocator, ThinkingModeDetector};
+pub use limiter::{BudgetConfig, BudgetConfigBuilder, BudgetLimiter};
 pub use models::{CostRecord, UsageStats};
+pub use optimizer::{ModelOptimizer, OptimizerConfig};
 pub use pricing::ModelPricing;
 pub use tracker::{CostStorage, CostTracker, InMemoryCostStorage};
-pub use limiter::{BudgetConfig, BudgetConfigBuilder, BudgetLimiter};
-pub use optimizer::{ModelOptimizer, OptimizerConfig};
-pub use allocator::{ThinkingBudgetAllocator, ThinkingModeDetector};

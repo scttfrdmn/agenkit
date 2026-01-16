@@ -157,13 +157,7 @@ pub fn create_default_introspection_result(
     name: String,
     capabilities: Vec<String>,
 ) -> IntrospectionResult {
-    IntrospectionResult::new(
-        name,
-        capabilities,
-        None,
-        HashMap::new(),
-        HashMap::new(),
-    )
+    IntrospectionResult::new(name, capabilities, None, HashMap::new(), HashMap::new())
 }
 
 #[cfg(test)]
@@ -232,13 +226,8 @@ mod tests {
         metadata.insert("version".to_string(), json!("1.0"));
         metadata.insert("custom".to_string(), json!("data"));
 
-        let result = IntrospectionResult::new(
-            "test".to_string(),
-            vec![],
-            None,
-            HashMap::new(),
-            metadata,
-        );
+        let result =
+            IntrospectionResult::new("test".to_string(), vec![], None, HashMap::new(), metadata);
 
         assert_eq!(result.metadata.get("version"), Some(&json!("1.0")));
         assert_eq!(result.metadata.get("custom"), Some(&json!("data")));
@@ -247,13 +236,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "agent_name cannot be empty")]
     fn test_introspection_result_empty_name() {
-        IntrospectionResult::new(
-            "".to_string(),
-            vec![],
-            None,
-            HashMap::new(),
-            HashMap::new(),
-        );
+        IntrospectionResult::new("".to_string(), vec![], None, HashMap::new(), HashMap::new());
     }
 
     #[test]

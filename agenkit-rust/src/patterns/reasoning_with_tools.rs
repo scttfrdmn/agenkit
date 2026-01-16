@@ -40,10 +40,10 @@
 //! # }
 //! ```
 
+use chrono::Utc;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use chrono::Utc;
-use serde::{Serialize, Deserialize};
 
 use crate::core::{Agent, AgentError, Message, Tool};
 
@@ -224,7 +224,14 @@ impl ReasoningWithToolsAgent {
     }
 
     /// Parse tool call from text.
-    fn parse_tool_call(&self, text: &str) -> (Option<String>, Option<HashMap<String, serde_json::Value>>, String) {
+    fn parse_tool_call(
+        &self,
+        text: &str,
+    ) -> (
+        Option<String>,
+        Option<HashMap<String, serde_json::Value>>,
+        String,
+    ) {
         if !text.contains("TOOL_CALL:") {
             return (None, None, text.to_string());
         }
@@ -246,7 +253,9 @@ impl ReasoningWithToolsAgent {
                 if let Some(start) = param_text.find('{') {
                     if let Some(end) = param_text.rfind('}') {
                         let json_str = &param_text[start..=end];
-                        if let Ok(parsed) = serde_json::from_str::<HashMap<String, serde_json::Value>>(json_str) {
+                        if let Ok(parsed) =
+                            serde_json::from_str::<HashMap<String, serde_json::Value>>(json_str)
+                        {
                             parameters = parsed;
                         }
                     }
@@ -340,7 +349,8 @@ impl Agent for ReasoningWithToolsAgent {
             let response_text = response.content_as_str().unwrap_or("");
 
             // Check if this is a tool call
-            let (tool_name_opt, parameters_opt, remaining_text) = self.parse_tool_call(response_text);
+            let (tool_name_opt, parameters_opt, remaining_text) =
+                self.parse_tool_call(response_text);
 
             if let Some(tool_name) = tool_name_opt {
                 if let Some(tool) = self.tools.get(&tool_name) {
@@ -526,7 +536,10 @@ mod tests {
 
         async fn process(&self, _message: Message) -> Result<Message, AgentError> {
             let mut count = self.call_count.lock().unwrap();
-            let response = self.responses.get(*count).unwrap_or(&self.responses[self.responses.len() - 1]);
+            let response = self
+                .responses
+                .get(*count)
+                .unwrap_or(&self.responses[self.responses.len() - 1]);
             *count += 1;
 
             Ok(Message::with_text("assistant", response))
@@ -564,11 +577,7 @@ mod tests {
             call_count: Arc::new(std::sync::Mutex::new(0)),
         });
 
-        let agent = ReasoningWithToolsAgent::new(
-            llm,
-            vec![],
-            ReasoningWithToolsConfig::default(),
-        );
+        let agent = ReasoningWithToolsAgent::new(llm, vec![], ReasoningWithToolsConfig::default());
 
         let message = Message::with_text("user", "What is the answer?");
         let result = agent.process(message).await.unwrap();

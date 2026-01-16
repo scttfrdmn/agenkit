@@ -234,7 +234,8 @@ impl FileCheckpointStorage {
 
     /// Get checkpoint file path.
     fn checkpoint_path(&self, session_id: &str, checkpoint_id: &str) -> PathBuf {
-        self.session_dir(session_id).join(format!("{}.json", checkpoint_id))
+        self.session_dir(session_id)
+            .join(format!("{}.json", checkpoint_id))
     }
 
     /// Get storage statistics.
@@ -257,7 +258,8 @@ impl FileCheckpointStorage {
                 let mut session_entries = session_entries;
 
                 while let Some(checkpoint_entry) = session_entries.next_entry().await? {
-                    if checkpoint_entry.path().extension().and_then(|s| s.to_str()) == Some("json") {
+                    if checkpoint_entry.path().extension().and_then(|s| s.to_str()) == Some("json")
+                    {
                         total_checkpoints += 1;
                         let metadata = checkpoint_entry.metadata().await?;
                         total_size += metadata.len() as usize;
@@ -282,7 +284,8 @@ impl CheckpointStorage for FileCheckpointStorage {
         tokio::fs::create_dir_all(&session_dir).await?;
 
         // Write checkpoint file
-        let checkpoint_path = self.checkpoint_path(&checkpoint.session_id, &checkpoint.checkpoint_id);
+        let checkpoint_path =
+            self.checkpoint_path(&checkpoint.session_id, &checkpoint.checkpoint_id);
         let json = checkpoint.to_json()?;
         tokio::fs::write(checkpoint_path, json).await?;
 

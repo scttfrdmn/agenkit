@@ -1,3 +1,4 @@
+pub mod adapters;
 ///! Agenkit - Minimal, composable interfaces for AI agents in Rust.
 ///!
 ///! Agenkit provides foundational building blocks for creating AI agent systems
@@ -87,23 +88,24 @@
 ///! 3. **Transports**: HTTP, WebSocket, gRPC
 ///! 4. **Patterns**: Reflection, Agents-as-Tools, Orchestration
 ///! 5. **Evaluation**: Benchmarking and testing (future)
-
 pub mod core;
-pub mod adapters;
 pub mod runtime;
 
 #[cfg(feature = "native")]
 pub mod transports;
 
-pub mod patterns;
-pub mod evaluation;
-pub mod techniques;
-pub mod middleware;
-pub mod safety;
-pub mod checkpointing;
 pub mod budget;
+pub mod checkpointing;
+pub mod evaluation;
 pub mod memory;
+pub mod middleware;
 pub mod optimizations;
+pub mod patterns;
+pub mod safety;
+pub mod techniques;
+
+#[cfg(feature = "opentelemetry")]
+pub mod observability;
 
 // Re-export commonly used types
 pub use core::{
@@ -115,11 +117,10 @@ pub use core::{
 pub use transports::{HttpAgent, HttpServer, HttpTransportConfig};
 
 pub use middleware::{
-    BatchingConfig, BatchingConfigBuilder, BatchingMiddleware, CachingConfig,
-    CachingConfigBuilder, CachingMiddleware, CircuitBreakerConfig, CircuitBreakerConfigBuilder,
-    CircuitBreakerMiddleware, CircuitState, RateLimiterConfig, RateLimiterConfigBuilder,
-    RateLimiterMiddleware, RetryConfig, RetryConfigBuilder, RetryMiddleware, TimeoutConfig,
-    TimeoutConfigBuilder, TimeoutMiddleware,
+    BatchingConfig, BatchingConfigBuilder, BatchingMiddleware, CachingConfig, CachingConfigBuilder,
+    CachingMiddleware, CircuitBreakerConfig, CircuitBreakerConfigBuilder, CircuitBreakerMiddleware,
+    CircuitState, RateLimiterConfig, RateLimiterConfigBuilder, RateLimiterMiddleware, RetryConfig,
+    RetryConfigBuilder, RetryMiddleware, TimeoutConfig, TimeoutConfigBuilder, TimeoutMiddleware,
 };
 
 pub use budget::{
@@ -127,9 +128,7 @@ pub use budget::{
     ModelPricing, OptimizerConfig, ThinkingBudgetAllocator, ThinkingModeDetector, UsageStats,
 };
 
-pub use memory::{
-    LongTermMemory, MemoryEntry, MemoryHierarchy, ShortTermMemory, WorkingMemory,
-};
+pub use memory::{LongTermMemory, MemoryEntry, MemoryHierarchy, ShortTermMemory, WorkingMemory};
 
 // WASM-specific initialization
 #[cfg(feature = "wasm")]

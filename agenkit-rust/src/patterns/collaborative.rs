@@ -130,7 +130,14 @@ impl std::fmt::Debug for CollaborativeAgent {
         f.debug_struct("CollaborativeAgent")
             .field("agents", &format!("{} agents", self.agents.len()))
             .field("max_rounds", &self.max_rounds)
-            .field("consensus_func", &if self.consensus_func.is_some() { "Some(<function>)" } else { "None" })
+            .field(
+                "consensus_func",
+                &if self.consensus_func.is_some() {
+                    "Some(<function>)"
+                } else {
+                    "None"
+                },
+            )
             .field("merge_func", &"<function>")
             .finish()
     }
@@ -213,7 +220,9 @@ impl CollaborativeAgent {
             }
 
             content.push_str("--- Your Turn ---\n");
-            content.push_str("Please review the above responses and provide your refined contribution.\n");
+            content.push_str(
+                "Please review the above responses and provide your refined contribution.\n",
+            );
         }
 
         Message::with_text("user", content)
@@ -483,7 +492,10 @@ mod tests {
                 .call_count
                 .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             let response_idx = count.min(self.responses.len() - 1);
-            Ok(Message::with_text("assistant", &self.responses[response_idx]))
+            Ok(Message::with_text(
+                "assistant",
+                &self.responses[response_idx],
+            ))
         }
     }
 
@@ -516,14 +528,8 @@ mod tests {
         assert!(content.contains("R1"));
         assert!(content.contains("R2"));
 
-        assert_eq!(
-            result.metadata.get("collaboration_rounds"),
-            Some(&json!(2))
-        );
-        assert_eq!(
-            result.metadata.get("collaboration_agents"),
-            Some(&json!(2))
-        );
+        assert_eq!(result.metadata.get("collaboration_rounds"), Some(&json!(2)));
+        assert_eq!(result.metadata.get("collaboration_agents"), Some(&json!(2)));
         assert_eq!(
             result.metadata.get("stop_reason"),
             Some(&json!("max_rounds"))
@@ -561,10 +567,7 @@ mod tests {
             Some(&json!("consensus"))
         );
         // Should stop early due to consensus
-        assert_eq!(
-            result.metadata.get("collaboration_rounds"),
-            Some(&json!(1))
-        );
+        assert_eq!(result.metadata.get("collaboration_rounds"), Some(&json!(1)));
     }
 
     #[tokio::test]

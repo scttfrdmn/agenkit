@@ -1,0 +1,107 @@
+var namespaceagenkit_1_1evaluation =
+[
+    [ "TestCase", "structagenkit_1_1evaluation_1_1_test_case.html", "structagenkit_1_1evaluation_1_1_test_case" ],
+    [ "ABVariant", "structagenkit_1_1evaluation_1_1_a_b_variant.html", "structagenkit_1_1evaluation_1_1_a_b_variant" ],
+    [ "ABResult", "structagenkit_1_1evaluation_1_1_a_b_result.html", "structagenkit_1_1evaluation_1_1_a_b_result" ],
+    [ "ABTest", "classagenkit_1_1evaluation_1_1_a_b_test.html", "classagenkit_1_1evaluation_1_1_a_b_test" ],
+    [ "BayesianOptimizer", "classagenkit_1_1evaluation_1_1_bayesian_optimizer.html", "classagenkit_1_1evaluation_1_1_bayesian_optimizer" ],
+    [ "Benchmark", "classagenkit_1_1evaluation_1_1_benchmark.html", "classagenkit_1_1evaluation_1_1_benchmark" ],
+    [ "SimpleQABenchmark", "classagenkit_1_1evaluation_1_1_simple_q_a_benchmark.html", "classagenkit_1_1evaluation_1_1_simple_q_a_benchmark" ],
+    [ "NeedleInHaystackBenchmark", "classagenkit_1_1evaluation_1_1_needle_in_haystack_benchmark.html", "classagenkit_1_1evaluation_1_1_needle_in_haystack_benchmark" ],
+    [ "ExtremeScaleBenchmark", "classagenkit_1_1evaluation_1_1_extreme_scale_benchmark.html", "classagenkit_1_1evaluation_1_1_extreme_scale_benchmark" ],
+    [ "InformationRetentionBenchmark", "classagenkit_1_1evaluation_1_1_information_retention_benchmark.html", "classagenkit_1_1evaluation_1_1_information_retention_benchmark" ],
+    [ "BenchmarkSuite", "classagenkit_1_1evaluation_1_1_benchmark_suite.html", "classagenkit_1_1evaluation_1_1_benchmark_suite" ],
+    [ "ContextMetrics", "classagenkit_1_1evaluation_1_1_context_metrics.html", "classagenkit_1_1evaluation_1_1_context_metrics" ],
+    [ "CompressionStats", "structagenkit_1_1evaluation_1_1_compression_stats.html", "structagenkit_1_1evaluation_1_1_compression_stats" ],
+    [ "CompressionMetrics", "classagenkit_1_1evaluation_1_1_compression_metrics.html", "classagenkit_1_1evaluation_1_1_compression_metrics" ],
+    [ "LatencyMetric", "classagenkit_1_1evaluation_1_1_latency_metric.html", "classagenkit_1_1evaluation_1_1_latency_metric" ],
+    [ "MetricMeasurement", "classagenkit_1_1evaluation_1_1_metric_measurement.html", "classagenkit_1_1evaluation_1_1_metric_measurement" ],
+    [ "ErrorRecord", "classagenkit_1_1evaluation_1_1_error_record.html", "classagenkit_1_1evaluation_1_1_error_record" ],
+    [ "SessionResult", "classagenkit_1_1evaluation_1_1_session_result.html", "classagenkit_1_1evaluation_1_1_session_result" ],
+    [ "MetricsCollector", "classagenkit_1_1evaluation_1_1_metrics_collector.html", "classagenkit_1_1evaluation_1_1_metrics_collector" ],
+    [ "ParameterSpec", "structagenkit_1_1evaluation_1_1_parameter_spec.html", "structagenkit_1_1evaluation_1_1_parameter_spec" ],
+    [ "SearchSpace", "classagenkit_1_1evaluation_1_1_search_space.html", "classagenkit_1_1evaluation_1_1_search_space" ],
+    [ "OptimizationStep", "structagenkit_1_1evaluation_1_1_optimization_step.html", "structagenkit_1_1evaluation_1_1_optimization_step" ],
+    [ "OptimizationResult", "structagenkit_1_1evaluation_1_1_optimization_result.html", "structagenkit_1_1evaluation_1_1_optimization_result" ],
+    [ "Optimizer", "classagenkit_1_1evaluation_1_1_optimizer.html", "classagenkit_1_1evaluation_1_1_optimizer" ],
+    [ "RandomSearchOptimizer", "classagenkit_1_1evaluation_1_1_random_search_optimizer.html", "classagenkit_1_1evaluation_1_1_random_search_optimizer" ],
+    [ "PromptOptimizationResult", "structagenkit_1_1evaluation_1_1_prompt_optimization_result.html", "structagenkit_1_1evaluation_1_1_prompt_optimization_result" ],
+    [ "PromptOptimizer", "classagenkit_1_1evaluation_1_1_prompt_optimizer.html", "classagenkit_1_1evaluation_1_1_prompt_optimizer" ],
+    [ "Metric", "classagenkit_1_1evaluation_1_1_metric.html", "classagenkit_1_1evaluation_1_1_metric" ],
+    [ "AccuracyMetric", "classagenkit_1_1evaluation_1_1_accuracy_metric.html", "classagenkit_1_1evaluation_1_1_accuracy_metric" ],
+    [ "QualityMetrics", "classagenkit_1_1evaluation_1_1_quality_metrics.html", "classagenkit_1_1evaluation_1_1_quality_metrics" ],
+    [ "PrecisionRecallStats", "structagenkit_1_1evaluation_1_1_precision_recall_stats.html", "structagenkit_1_1evaluation_1_1_precision_recall_stats" ],
+    [ "PrecisionRecallMetric", "classagenkit_1_1evaluation_1_1_precision_recall_metric.html", "classagenkit_1_1evaluation_1_1_precision_recall_metric" ],
+    [ "InteractionRecord", "classagenkit_1_1evaluation_1_1_interaction_record.html", "classagenkit_1_1evaluation_1_1_interaction_record" ],
+    [ "SessionRecording", "classagenkit_1_1evaluation_1_1_session_recording.html", "classagenkit_1_1evaluation_1_1_session_recording" ],
+    [ "RecordingStorage", "classagenkit_1_1evaluation_1_1_recording_storage.html", "classagenkit_1_1evaluation_1_1_recording_storage" ],
+    [ "FileRecordingStorage", "classagenkit_1_1evaluation_1_1_file_recording_storage.html", "classagenkit_1_1evaluation_1_1_file_recording_storage" ],
+    [ "InMemoryRecordingStorage", "classagenkit_1_1evaluation_1_1_in_memory_recording_storage.html", "classagenkit_1_1evaluation_1_1_in_memory_recording_storage" ],
+    [ "SessionRecorder", "classagenkit_1_1evaluation_1_1_session_recorder.html", "classagenkit_1_1evaluation_1_1_session_recorder" ],
+    [ "SessionReplay", "classagenkit_1_1evaluation_1_1_session_replay.html", "classagenkit_1_1evaluation_1_1_session_replay" ],
+    [ "EvaluationResult", "structagenkit_1_1evaluation_1_1_evaluation_result.html", "structagenkit_1_1evaluation_1_1_evaluation_result" ],
+    [ "Regression", "structagenkit_1_1evaluation_1_1_regression.html", "structagenkit_1_1evaluation_1_1_regression" ],
+    [ "RegressionDetector", "classagenkit_1_1evaluation_1_1_regression_detector.html", "classagenkit_1_1evaluation_1_1_regression_detector" ],
+    [ "ObjectiveFunc", "namespaceagenkit_1_1evaluation.html#a3497a7a4b28867add15c327376612afd", null ],
+    [ "ValidatorFunc", "namespaceagenkit_1_1evaluation.html#a08b8f116af4fbc38ffe60efca7590314", null ],
+    [ "AcquisitionFunction", "namespaceagenkit_1_1evaluation.html#ab5b49300cfcca9345793460313e82ad3", [
+      [ "EI", "namespaceagenkit_1_1evaluation.html#ab5b49300cfcca9345793460313e82ad3a55de946fc316c2255cfc7cd096acebc0", null ],
+      [ "UCB", "namespaceagenkit_1_1evaluation.html#ab5b49300cfcca9345793460313e82ad3a2d09b5708e07ea3054c8fd57499fd599", null ],
+      [ "PI", "namespaceagenkit_1_1evaluation.html#ab5b49300cfcca9345793460313e82ad3a3a372b04b95323b72c2b2f9a5d24e67b", null ]
+    ] ],
+    [ "MetricType", "namespaceagenkit_1_1evaluation.html#a19a8df88c826805af97afb47d897cc1a", [
+      [ "SuccessRate", "namespaceagenkit_1_1evaluation.html#a19a8df88c826805af97afb47d897cc1aac412e988a8fcbdcc9298a58b88d59f0f", null ],
+      [ "QualityScore", "namespaceagenkit_1_1evaluation.html#a19a8df88c826805af97afb47d897cc1aab4d965c7d2e2d0f8f31f77cfc86f6c5e", null ],
+      [ "Cost", "namespaceagenkit_1_1evaluation.html#a19a8df88c826805af97afb47d897cc1aa20b4f77bd00b4f63a49ec8e08f3bf6a6", null ],
+      [ "Duration", "namespaceagenkit_1_1evaluation.html#a19a8df88c826805af97afb47d897cc1aae02d2ae03de9d493df2b6b2d2813d302", null ],
+      [ "ErrorRate", "namespaceagenkit_1_1evaluation.html#a19a8df88c826805af97afb47d897cc1aa03b975bc621352517b9e29f437a3a113", null ],
+      [ "TaskCompletion", "namespaceagenkit_1_1evaluation.html#a19a8df88c826805af97afb47d897cc1aa0efc3a66635fa086dd4c6d1b640bdd2f", null ],
+      [ "Custom", "namespaceagenkit_1_1evaluation.html#a19a8df88c826805af97afb47d897cc1aa90589c47f06eb971d548591f23c285af", null ]
+    ] ],
+    [ "OptimizationStrategy", "namespaceagenkit_1_1evaluation.html#a02019fb134f8792af97cb400a3310017", [
+      [ "GRID", "namespaceagenkit_1_1evaluation.html#a02019fb134f8792af97cb400a3310017abc899ea5d6a94a8e4e60c16244919ba0", null ],
+      [ "RANDOM", "namespaceagenkit_1_1evaluation.html#a02019fb134f8792af97cb400a3310017a170e02e86972c2be8559884cc3c12254", null ],
+      [ "GENETIC", "namespaceagenkit_1_1evaluation.html#a02019fb134f8792af97cb400a3310017aa2abe366b69325fb8b2a7e1cc6126b7d", null ]
+    ] ],
+    [ "ParameterType", "namespaceagenkit_1_1evaluation.html#a14730af1a41ff7481688f2b8dc01c52d", [
+      [ "Continuous", "namespaceagenkit_1_1evaluation.html#a14730af1a41ff7481688f2b8dc01c52da535863a82f163709557e59e2eb8139a7", null ],
+      [ "Discrete", "namespaceagenkit_1_1evaluation.html#a14730af1a41ff7481688f2b8dc01c52da4984667940802dedc139aa7a430a6553", null ],
+      [ "Integer", "namespaceagenkit_1_1evaluation.html#a14730af1a41ff7481688f2b8dc01c52daa0faef0851b4294c06f2b94bb1cb2044", null ],
+      [ "Categorical", "namespaceagenkit_1_1evaluation.html#a14730af1a41ff7481688f2b8dc01c52da397ae2f1915691d54607441f899e100c", null ]
+    ] ],
+    [ "SessionStatus", "namespaceagenkit_1_1evaluation.html#a96761cd249fd905dd941d83bf8ce836d", [
+      [ "Running", "namespaceagenkit_1_1evaluation.html#a96761cd249fd905dd941d83bf8ce836da5bda814c4aedb126839228f1a3d92f09", null ],
+      [ "Completed", "namespaceagenkit_1_1evaluation.html#a96761cd249fd905dd941d83bf8ce836da07ca5050e697392c9ed47e6453f1453f", null ],
+      [ "Failed", "namespaceagenkit_1_1evaluation.html#a96761cd249fd905dd941d83bf8ce836dad7c8c85bf79bbe1b7188497c32c3b0ca", null ],
+      [ "Timeout", "namespaceagenkit_1_1evaluation.html#a96761cd249fd905dd941d83bf8ce836dac85a251cc457840f1e032f1b733e9398", null ],
+      [ "Cancelled", "namespaceagenkit_1_1evaluation.html#a96761cd249fd905dd941d83bf8ce836daa149e85a44aeec9140e92733d9ed694e", null ]
+    ] ],
+    [ "Severity", "namespaceagenkit_1_1evaluation.html#a214da794d3d5f59d16858053fc26680e", [
+      [ "None", "namespaceagenkit_1_1evaluation.html#a214da794d3d5f59d16858053fc26680ea6adf97f83acf6453d4a6a4b1070f3754", null ],
+      [ "Minor", "namespaceagenkit_1_1evaluation.html#a214da794d3d5f59d16858053fc26680ea6fed0c378a4b4e8c1e7dc5c16dabb388", null ],
+      [ "Moderate", "namespaceagenkit_1_1evaluation.html#a214da794d3d5f59d16858053fc26680ea1eb79d43dbb97d5ceb3c157fdb27fa60", null ],
+      [ "Major", "namespaceagenkit_1_1evaluation.html#a214da794d3d5f59d16858053fc26680ea3b329734e45b57e60f3df64c2cf412a9", null ],
+      [ "Critical", "namespaceagenkit_1_1evaluation.html#a214da794d3d5f59d16858053fc26680ea278d01e5af56273bae1bb99a98b370cd", null ]
+    ] ],
+    [ "SignificanceLevel", "namespaceagenkit_1_1evaluation.html#aa91bd86b264f0eac486afa961e69b1ca", [
+      [ "P_0_001", "namespaceagenkit_1_1evaluation.html#aa91bd86b264f0eac486afa961e69b1caae50e27e86de2063516b3a3bde73b9866", null ],
+      [ "P_0_01", "namespaceagenkit_1_1evaluation.html#aa91bd86b264f0eac486afa961e69b1caace6a8c4cc6c703a9cf988cfa9dff6470", null ],
+      [ "P_0_05", "namespaceagenkit_1_1evaluation.html#aa91bd86b264f0eac486afa961e69b1caa4d532e84df2398ddfc4a553b435d1be8", null ],
+      [ "P_0_10", "namespaceagenkit_1_1evaluation.html#aa91bd86b264f0eac486afa961e69b1caaafcadb6a229634c34af81cc440c1b7df", null ]
+    ] ],
+    [ "StatisticalTestType", "namespaceagenkit_1_1evaluation.html#a8b9880ad49de3053ffe0b282455e08c2", [
+      [ "T_TEST", "namespaceagenkit_1_1evaluation.html#a8b9880ad49de3053ffe0b282455e08c2a8491bcb4256d5cc8d1d2624bce04dad8", null ],
+      [ "MANN_WHITNEY", "namespaceagenkit_1_1evaluation.html#a8b9880ad49de3053ffe0b282455e08c2aeeafa9fdc7d5672fe6004e28a028fae9", null ],
+      [ "CHI_SQUARE", "namespaceagenkit_1_1evaluation.html#a8b9880ad49de3053ffe0b282455e08c2a60dff85aae944e1dec79a461caa83b6d", null ],
+      [ "BOOTSTRAP", "namespaceagenkit_1_1evaluation.html#a8b9880ad49de3053ffe0b282455e08c2a82cbe14b76947cbd0fa3e2523c66b267", null ]
+    ] ],
+    [ "create_cost_metric", "namespaceagenkit_1_1evaluation.html#a97413d9b0e9756411039b34d849e447a", null ],
+    [ "create_duration_metric", "namespaceagenkit_1_1evaluation.html#a941ab0b7c87d598302a817b005d30342", null ],
+    [ "create_quality_metric", "namespaceagenkit_1_1evaluation.html#a417d658ff0cf26e0221697024f79f974", null ],
+    [ "metric_type_from_string", "namespaceagenkit_1_1evaluation.html#aeae88e24bee3e8789e1d4ef628dd86e9", null ],
+    [ "metric_type_to_string", "namespaceagenkit_1_1evaluation.html#a8e746706d9ad7616c29240752c14c4fc", null ],
+    [ "session_status_from_string", "namespaceagenkit_1_1evaluation.html#ae8b176e55f11f51be22296747e2b141d", null ],
+    [ "session_status_to_string", "namespaceagenkit_1_1evaluation.html#a380b931c5e9b4a2a21a5209d611cf169", null ],
+    [ "severity_from_string", "namespaceagenkit_1_1evaluation.html#a1c224efaad24fd5f9ce5dad9cd3d8a9b", null ],
+    [ "severity_to_string", "namespaceagenkit_1_1evaluation.html#aa92e7726c89920775c41169e47416c4a", null ]
+];

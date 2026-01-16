@@ -6,9 +6,7 @@
 
 use agenkit::{
     core::{Agent, AgentError, Message},
-    safety::{
-        InputValidationMiddleware, OutputValidationMiddleware, PermissionMiddleware, Role,
-    },
+    safety::{InputValidationMiddleware, OutputValidationMiddleware, PermissionMiddleware, Role},
 };
 use async_trait::async_trait;
 
@@ -24,7 +22,10 @@ impl Agent for EchoAgent {
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         let content = message.content_as_str().unwrap_or("").to_string();
-        Ok(Message::with_text("assistant", &format!("Echo: {}", content)))
+        Ok(Message::with_text(
+            "assistant",
+            &format!("Echo: {}", content),
+        ))
     }
 }
 
@@ -40,8 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_prompt_injection_detector()
         .with_content_filter();
 
-    let safe_agent = OutputValidationMiddleware::new(safe_agent)
-        .with_redactor();
+    let safe_agent = OutputValidationMiddleware::new(safe_agent).with_redactor();
 
     let safe_agent = PermissionMiddleware::new(safe_agent, Role::User);
 

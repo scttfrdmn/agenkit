@@ -77,11 +77,7 @@ impl ApprovalRequest {
     }
 
     /// Add context to the approval request.
-    pub fn with_context(
-        mut self,
-        key: impl Into<String>,
-        value: serde_json::Value,
-    ) -> Self {
+    pub fn with_context(mut self, key: impl Into<String>, value: serde_json::Value) -> Self {
         self.context.insert(key.into(), value);
         self
     }
@@ -126,7 +122,8 @@ impl ApprovalResponse {
 /// The function receives an approval request and should return the human's
 /// decision. This can be synchronous (blocking for user input) or asynchronous
 /// (using a queue/callback system).
-pub type ApprovalFunc = Box<dyn Fn(ApprovalRequest) -> Result<ApprovalResponse, AgentError> + Send + Sync>;
+pub type ApprovalFunc =
+    Box<dyn Fn(ApprovalRequest) -> Result<ApprovalResponse, AgentError> + Send + Sync>;
 
 /// Configuration for HumanInLoopAgent.
 pub struct HumanInLoopConfig {
@@ -292,11 +289,10 @@ impl Agent for HumanInLoopAgent {
     /// Returns an error if agent execution or approval process fails.
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         // Execute underlying agent
-        let mut response = self
-            .agent
-            .process(message.clone())
-            .await
-            .map_err(|e| AgentError::ProcessingError(format!("agent execution failed: {}", e)))?;
+        let mut response =
+            self.agent.process(message.clone()).await.map_err(|e| {
+                AgentError::ProcessingError(format!("agent execution failed: {}", e))
+            })?;
 
         // Extract confidence from metadata
         let confidence = self.extract_confidence(&response);
@@ -311,9 +307,10 @@ impl Agent for HumanInLoopAgent {
         response
             .metadata
             .insert("confidence".to_string(), json!(confidence));
-        response
-            .metadata
-            .insert("approval_threshold".to_string(), json!(self.approval_threshold));
+        response.metadata.insert(
+            "approval_threshold".to_string(),
+            json!(self.approval_threshold),
+        );
 
         // If high confidence, return without approval
         if !needs_approval {
@@ -327,15 +324,17 @@ impl Agent for HumanInLoopAgent {
         let request = ApprovalRequest::new(response.clone(), confidence)
             .with_context("agent", json!(self.agent.name()))
             .with_context("approval_threshold", json!(self.approval_threshold))
-            .with_context("original_message", json!(message.content_as_str().unwrap_or("")))
+            .with_context(
+                "original_message",
+                json!(message.content_as_str().unwrap_or("")),
+            )
             .with_context(
                 "confidence_shortfall",
                 json!(self.approval_threshold - confidence),
             );
 
-        let approval = (self.approval_func)(request).map_err(|e| {
-            AgentError::ProcessingError(format!("approval request failed: {}", e))
-        })?;
+        let approval = (self.approval_func)(request)
+            .map_err(|e| AgentError::ProcessingError(format!("approval request failed: {}", e)))?;
 
         // Handle approval decision
         if !approval.approved {
@@ -377,7 +376,9 @@ impl Agent for HumanInLoopAgent {
             );
             modified
         } else {
-            response.metadata.insert("approval_status".to_string(), json!("approved"));
+            response
+                .metadata
+                .insert("approval_status".to_string(), json!("approved"));
             response
         };
 
@@ -411,10 +412,7 @@ pub fn simple_approval_func(auto_approve: bool) -> ApprovalFunc {
 /// - Very low confidence (< reject_below): always reject
 /// - Low/medium confidence (reject_below to auto_approve_above): require manual approval (reject for safety)
 /// - High confidence (>= auto_approve_above): auto-approve
-pub fn confidence_based_approval_func(
-    reject_below: f64,
-    auto_approve_above: f64,
-) -> ApprovalFunc {
+pub fn confidence_based_approval_func(reject_below: f64, auto_approve_above: f64) -> ApprovalFunc {
     Box::new(move |request: ApprovalRequest| {
         if request.confidence < reject_below {
             return Ok(ApprovalResponse::new(false).with_feedback(format!(

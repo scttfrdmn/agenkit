@@ -12,9 +12,7 @@
 //! Run with: cargo run --example evaluation-ab-testing-statistical
 
 use agenkit::core::{Agent, AgentError, Message};
-use agenkit::evaluation::ab_testing::{
-    ABTest, StatisticalTestType, SignificanceLevel, TestCase,
-};
+use agenkit::evaluation::ab_testing::{ABTest, SignificanceLevel, StatisticalTestType, TestCase};
 use async_trait::async_trait;
 use rand::Rng;
 use std::sync::Arc;
@@ -46,7 +44,10 @@ impl Agent for ControlAgent {
 
         if score < self.accuracy {
             // Correct response
-            Ok(Message::with_text("assistant", format!("Correct answer for: {}", content)))
+            Ok(Message::with_text(
+                "assistant",
+                format!("Correct answer for: {}", content),
+            ))
         } else {
             // Incorrect response
             Ok(Message::with_text("assistant", "Incorrect answer"))
@@ -128,10 +129,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("📊 Sample Size Calculation:");
     println!("   Baseline Accuracy: {:.1}%", baseline_accuracy * 100.0);
-    println!("   Minimum Detectable Effect: {:.1}%", min_detectable_effect * 100.0);
+    println!(
+        "   Minimum Detectable Effect: {:.1}%",
+        min_detectable_effect * 100.0
+    );
     println!("   Confidence Level: {:.0}%", (1.0 - alpha) * 100.0);
     println!("   Statistical Power: {:.0}%", power * 100.0);
-    println!("   ⚡ Required Sample Size: {} test cases per variant", required_samples);
+    println!(
+        "   ⚡ Required Sample Size: {} test cases per variant",
+        required_samples
+    );
 
     // ========================================================================
     // Step 2: Create Agents
@@ -154,7 +161,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let test_cases: Vec<TestCase> = (0..required_samples.min(50))
         .map(|i| {
             TestCase::new(
-                format!("Question {}: What is the capital of country {}?", i + 1, i + 1),
+                format!(
+                    "Question {}: What is the capital of country {}?",
+                    i + 1,
+                    i + 1
+                ),
                 format!("Capital {}", i + 1),
             )
         })
@@ -171,22 +182,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let t_test = ABTest::new(StatisticalTestType::TTest, SignificanceLevel::P005);
     println!("🧪 Running t-test with 95% confidence...\n");
 
-    let result = t_test.run(
-        control.clone(),
-        treatment.clone(),
-        &test_cases,
-        "accuracy",
-    ).await?;
+    let result = t_test
+        .run(control.clone(), treatment.clone(), &test_cases, "accuracy")
+        .await?;
 
     println!("{}", result.summary());
     println!("\n📈 Analysis:");
-    println!("   Is Significant: {}", if result.is_significant { "✓ Yes" } else { "✗ No" });
+    println!(
+        "   Is Significant: {}",
+        if result.is_significant {
+            "✓ Yes"
+        } else {
+            "✗ No"
+        }
+    );
     println!("   Winner: {}", result.winner);
     println!("   P-value: {:.6} (threshold: 0.05)", result.p_value);
     println!("   Effect Size (Cohen's d): {:.3}", result.effect_size);
-    println!("   Confidence Interval: [{:.4}, {:.4}]",
-        result.confidence_interval.0,
-        result.confidence_interval.1
+    println!(
+        "   Confidence Interval: [{:.4}, {:.4}]",
+        result.confidence_interval.0, result.confidence_interval.1
     );
 
     // Interpret effect size
@@ -199,7 +214,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         "Very Large"
     };
-    println!("   Effect Size Interpretation: {} effect", effect_interpretation);
+    println!(
+        "   Effect Size Interpretation: {} effect",
+        effect_interpretation
+    );
 
     // ========================================================================
     // Step 5: Mann-Whitney U Test (Non-Parametric)
@@ -210,16 +228,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mann_whitney = ABTest::new(StatisticalTestType::MannWhitney, SignificanceLevel::P005);
     println!("🧪 Running Mann-Whitney U test (robust to outliers)...\n");
 
-    let result_mw = mann_whitney.run(
-        control.clone(),
-        treatment.clone(),
-        &test_cases,
-        "accuracy",
-    ).await?;
+    let result_mw = mann_whitney
+        .run(control.clone(), treatment.clone(), &test_cases, "accuracy")
+        .await?;
 
     println!("📊 Mann-Whitney Results:");
     println!("   P-value: {:.6}", result_mw.p_value);
-    println!("   Is Significant: {}", if result_mw.is_significant { "✓ Yes" } else { "✗ No" });
+    println!(
+        "   Is Significant: {}",
+        if result_mw.is_significant {
+            "✓ Yes"
+        } else {
+            "✗ No"
+        }
+    );
     println!("   Winner: {}", result_mw.winner);
     println!("\n   Note: Mann-Whitney is more robust when data isn't normally distributed");
 
@@ -232,20 +254,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bootstrap = ABTest::new(StatisticalTestType::Bootstrap, SignificanceLevel::P005);
     println!("🧪 Running bootstrap test with 10,000 resamples...\n");
 
-    let result_boot = bootstrap.run(
-        control.clone(),
-        treatment.clone(),
-        &test_cases,
-        "accuracy",
-    ).await?;
+    let result_boot = bootstrap
+        .run(control.clone(), treatment.clone(), &test_cases, "accuracy")
+        .await?;
 
     println!("📊 Bootstrap Results:");
     println!("   P-value: {:.6}", result_boot.p_value);
-    println!("   Is Significant: {}", if result_boot.is_significant { "✓ Yes" } else { "✗ No" });
+    println!(
+        "   Is Significant: {}",
+        if result_boot.is_significant {
+            "✓ Yes"
+        } else {
+            "✗ No"
+        }
+    );
     println!("   Winner: {}", result_boot.winner);
-    println!("   95% CI: [{:.4}, {:.4}]",
-        result_boot.confidence_interval.0,
-        result_boot.confidence_interval.1
+    println!(
+        "   95% CI: [{:.4}, {:.4}]",
+        result_boot.confidence_interval.0, result_boot.confidence_interval.1
     );
     println!("\n   Note: Bootstrap makes minimal assumptions about data distribution");
 
@@ -258,16 +284,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let chi_square = ABTest::new(StatisticalTestType::ChiSquare, SignificanceLevel::P005);
     println!("🧪 Running chi-square test for categorical outcomes...\n");
 
-    let result_chi = chi_square.run(
-        control.clone(),
-        treatment.clone(),
-        &test_cases,
-        "accuracy",
-    ).await?;
+    let result_chi = chi_square
+        .run(control.clone(), treatment.clone(), &test_cases, "accuracy")
+        .await?;
 
     println!("📊 Chi-Square Results:");
     println!("   P-value: {:.6}", result_chi.p_value);
-    println!("   Is Significant: {}", if result_chi.is_significant { "✓ Yes" } else { "✗ No" });
+    println!(
+        "   Is Significant: {}",
+        if result_chi.is_significant {
+            "✓ Yes"
+        } else {
+            "✗ No"
+        }
+    );
     println!("   Winner: {}", result_chi.winner);
     println!("\n   Note: Chi-square is best for success/failure outcomes");
 
@@ -288,15 +318,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for (level, description) in significance_levels {
         let test = ABTest::new(StatisticalTestType::TTest, level);
-        let result = test.run(
-            control.clone(),
-            treatment.clone(),
-            &test_cases,
-            "accuracy",
-        ).await?;
+        let result = test
+            .run(control.clone(), treatment.clone(), &test_cases, "accuracy")
+            .await?;
 
         let symbol = if result.is_significant { "✓" } else { "✗" };
-        println!("   {} {} - Significant: {}",
+        println!(
+            "   {} {} - Significant: {}",
             symbol,
             description,
             if result.is_significant { "Yes" } else { "No" }
@@ -312,33 +340,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if result.is_significant && result.winner == "treatment" {
         println!("\n✅ RECOMMENDATION: Deploy Treatment Agent");
         println!("\n   Rationale:");
-        println!("   • Statistically significant improvement (p = {:.6})", result.p_value);
-        println!("   • {} effect size (Cohen's d = {:.3})", effect_interpretation, result.effect_size);
-        println!("   • Treatment accuracy: {:.1}%", result.treatment.mean * 100.0);
+        println!(
+            "   • Statistically significant improvement (p = {:.6})",
+            result.p_value
+        );
+        println!(
+            "   • {} effect size (Cohen's d = {:.3})",
+            effect_interpretation, result.effect_size
+        );
+        println!(
+            "   • Treatment accuracy: {:.1}%",
+            result.treatment.mean * 100.0
+        );
         println!("   • Control accuracy: {:.1}%", result.control.mean * 100.0);
-        println!("   • Improvement: {:.1}%",
-            (result.treatment.mean - result.control.mean) * 100.0);
+        println!(
+            "   • Improvement: {:.1}%",
+            (result.treatment.mean - result.control.mean) * 100.0
+        );
 
         println!("\n   Deployment Strategy:");
         println!("   1. Canary deployment (5% of traffic)");
         println!("   2. Monitor for 24-48 hours");
         println!("   3. Gradual rollout: 25% → 50% → 100%");
         println!("   4. Keep control version for rollback");
-
     } else if result.is_significant && result.winner == "control" {
         println!("\n⚠️  RECOMMENDATION: Keep Control Agent");
         println!("\n   Rationale:");
         println!("   • Treatment performed significantly worse");
         println!("   • Control is statistically superior");
         println!("   • Further development needed for treatment");
-
     } else {
         println!("\n⏸️  RECOMMENDATION: Inconclusive - More Testing Needed");
         println!("\n   Rationale:");
         println!("   • No statistically significant difference found");
         println!("   • P-value: {:.4} (not < 0.05)", result.p_value);
         println!("   • Options:");
-        println!("     1. Increase sample size (current: {})", test_cases.len());
+        println!(
+            "     1. Increase sample size (current: {})",
+            test_cases.len()
+        );
         println!("     2. Test with different use cases");
         println!("     3. Analyze specific failure patterns");
         println!("     4. Consider practical significance vs. statistical");

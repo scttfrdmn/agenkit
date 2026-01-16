@@ -2,7 +2,6 @@
 ///!
 ///! This module provides the core Message type for agent communication,
 ///! following the same design as TypeScript and Go implementations.
-
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -237,8 +236,7 @@ mod tests {
 
     #[test]
     fn test_message_serialization() {
-        let msg = Message::with_text("user", "Hello")
-            .with_metadata("key", json!("value"));
+        let msg = Message::with_text("user", "Hello").with_metadata("key", json!("value"));
 
         let json = serde_json::to_string(&msg).unwrap();
         let deserialized: Message = serde_json::from_str(&json).unwrap();
@@ -265,8 +263,7 @@ mod tests {
 
     #[test]
     fn test_tool_result_with_metadata() {
-        let result = ToolResult::success(json!("OK"))
-            .with_metadata("duration_ms", json!(123));
+        let result = ToolResult::success(json!("OK")).with_metadata("duration_ms", json!(123));
 
         assert_eq!(result.metadata.get("duration_ms"), Some(&json!(123)));
     }

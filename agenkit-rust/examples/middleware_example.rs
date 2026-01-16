@@ -241,9 +241,7 @@ async fn example_composition() {
     let agent = RetryMiddleware::new(agent, retry_config);
 
     // Layer 2: Circuit Breaker
-    let cb_config = CircuitBreakerConfig::builder()
-        .failure_threshold(5)
-        .build();
+    let cb_config = CircuitBreakerConfig::builder().failure_threshold(5).build();
     let agent = CircuitBreakerMiddleware::new(agent, cb_config);
 
     // Layer 3: Timeout

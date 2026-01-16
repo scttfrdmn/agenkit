@@ -22,9 +22,9 @@
 //! ```
 
 use crate::core::{Agent, Message};
-use wasm_bindgen::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use wasm_bindgen::prelude::*;
 
 /// Initialize WASM module with panic hook and logging.
 #[wasm_bindgen(start)]
@@ -98,7 +98,11 @@ impl WasmEchoAgent {
         let msg: Message = message.into();
         let response = Message::with_text(
             "assistant",
-            format!("Echo from {}: {}", self.name, msg.content_as_str().unwrap_or("")),
+            format!(
+                "Echo from {}: {}",
+                self.name,
+                msg.content_as_str().unwrap_or("")
+            ),
         );
         Ok(response.into())
     }
@@ -122,7 +126,8 @@ impl WasmAgent {
     /// Process a message through the wrapped agent.
     pub async fn process(&self, message: JsMessage) -> Result<JsMessage, JsValue> {
         let msg: Message = message.into();
-        let response = self.inner
+        let response = self
+            .inner
             .process(msg)
             .await
             .map_err(|e| JsValue::from_str(&format!("Agent error: {}", e)))?;

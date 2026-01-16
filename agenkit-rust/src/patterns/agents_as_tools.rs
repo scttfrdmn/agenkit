@@ -227,10 +227,7 @@ impl Tool for AgentTool {
             })?
             .as_str()
             .ok_or_else(|| {
-                AgentError::InvalidInput(format!(
-                    "Parameter '{}' must be a string",
-                    self.input_key
-                ))
+                AgentError::InvalidInput(format!("Parameter '{}' must be a string", self.input_key))
             })?;
 
         // Create message
@@ -347,17 +344,11 @@ mod tests {
 
         // Execute the tool
         let mut params = HashMap::new();
-        params.insert(
-            "query".to_string(),
-            serde_json::json!("Hello, agent!"),
-        );
+        params.insert("query".to_string(), serde_json::json!("Hello, agent!"));
 
         let result = tool.execute(params).await.unwrap();
         assert!(result.success);
-        assert_eq!(
-            result.output.as_str().unwrap(),
-            "Processed: Hello, agent!"
-        );
+        assert_eq!(result.output.as_str().unwrap(), "Processed: Hello, agent!");
     }
 
     #[tokio::test]
@@ -367,14 +358,8 @@ mod tests {
             call_count: Arc::new(AtomicUsize::new(0)),
         });
 
-        let tool = AgentTool::with_config(
-            agent,
-            "test_tool",
-            "A test tool",
-            "task",
-            false,
-        )
-        .unwrap();
+        let tool =
+            AgentTool::with_config(agent, "test_tool", "A test tool", "task", false).unwrap();
 
         let mut params = HashMap::new();
         params.insert("task".to_string(), serde_json::json!("Custom input"));

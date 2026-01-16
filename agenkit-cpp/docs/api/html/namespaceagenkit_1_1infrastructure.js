@@ -1,0 +1,78 @@
+var namespaceagenkit_1_1infrastructure =
+[
+    [ "budget", "namespaceagenkit_1_1infrastructure_1_1budget.html", "namespaceagenkit_1_1infrastructure_1_1budget" ],
+    [ "checkpointing", "namespaceagenkit_1_1infrastructure_1_1checkpointing.html", "namespaceagenkit_1_1infrastructure_1_1checkpointing" ],
+    [ "memory", "namespaceagenkit_1_1infrastructure_1_1memory.html", "namespaceagenkit_1_1infrastructure_1_1memory" ],
+    [ "AnomalyDetector", "classagenkit_1_1infrastructure_1_1_anomaly_detector.html", "classagenkit_1_1infrastructure_1_1_anomaly_detector" ],
+    [ "AnomalyDetectionMiddleware", "classagenkit_1_1infrastructure_1_1_anomaly_detection_middleware.html", "classagenkit_1_1infrastructure_1_1_anomaly_detection_middleware" ],
+    [ "AuditEvent", "structagenkit_1_1infrastructure_1_1_audit_event.html", "structagenkit_1_1infrastructure_1_1_audit_event" ],
+    [ "SecurityAuditLogger", "classagenkit_1_1infrastructure_1_1_security_audit_logger.html", "classagenkit_1_1infrastructure_1_1_security_audit_logger" ],
+    [ "Sandbox", "classagenkit_1_1infrastructure_1_1_sandbox.html", "classagenkit_1_1infrastructure_1_1_sandbox" ],
+    [ "PermissionMiddleware", "classagenkit_1_1infrastructure_1_1_permission_middleware.html", "classagenkit_1_1infrastructure_1_1_permission_middleware" ],
+    [ "ThreadPool", "classagenkit_1_1infrastructure_1_1_thread_pool.html", "classagenkit_1_1infrastructure_1_1_thread_pool" ],
+    [ "PromptInjectionDetector", "classagenkit_1_1infrastructure_1_1_prompt_injection_detector.html", "classagenkit_1_1infrastructure_1_1_prompt_injection_detector" ],
+    [ "ContentFilter", "classagenkit_1_1infrastructure_1_1_content_filter.html", "classagenkit_1_1infrastructure_1_1_content_filter" ],
+    [ "SensitiveDataRedactor", "classagenkit_1_1infrastructure_1_1_sensitive_data_redactor.html", "classagenkit_1_1infrastructure_1_1_sensitive_data_redactor" ],
+    [ "InputValidationMiddleware", "classagenkit_1_1infrastructure_1_1_input_validation_middleware.html", "classagenkit_1_1infrastructure_1_1_input_validation_middleware" ],
+    [ "OutputValidationMiddleware", "classagenkit_1_1infrastructure_1_1_output_validation_middleware.html", "classagenkit_1_1infrastructure_1_1_output_validation_middleware" ],
+    [ "AuditEventType", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61", [
+      [ "ACCESS_GRANTED", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61a5ee90b44fa6ec6f038c8196e1763521d", null ],
+      [ "ACCESS_DENIED", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61a2eaec33b2d6224f90e7222e4b7a49183", null ],
+      [ "PERMISSION_GRANTED", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61a73a8457acd7bf0fb276f0c662082b37b", null ],
+      [ "PERMISSION_DENIED", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61a255df50c140519133f1489ab44a389d9", null ],
+      [ "INPUT_VALIDATION_FAILED", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61acdd51059c44807c60f0ab26c397d5e14", null ],
+      [ "OUTPUT_VALIDATION_FAILED", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61a5f5facbb50365a88fe41c9ffee590045", null ],
+      [ "PROMPT_INJECTION_DETECTED", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61a636cd01467502b3a9029cfbfce9adc45", null ],
+      [ "SENSITIVE_DATA_DETECTED", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61a689a04373a4e8fad899e7101889cb1ad", null ],
+      [ "ANOMALY_DETECTED", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61a5733624677ab8affe203c9ee3ace4f2d", null ],
+      [ "AGENT_STARTED", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61a6e889bef36292ff533b2c5d8443fb6dd", null ],
+      [ "AGENT_COMPLETED", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61a38b405aa57e5ed8a7f1b9e9fd6022ef7", null ],
+      [ "AGENT_FAILED", "namespaceagenkit_1_1infrastructure.html#adea9d68ce5318f4911584f63e73f7f61ac71601b8a9a964e7a33b51a9908123ed", null ]
+    ] ],
+    [ "AuditSeverity", "namespaceagenkit_1_1infrastructure.html#ae52833f7c2386b036962d7ea02a5b5dd", [
+      [ "INFO", "namespaceagenkit_1_1infrastructure.html#ae52833f7c2386b036962d7ea02a5b5dda551b723eafd6a31d444fcb2f5920fbd3", null ],
+      [ "WARNING", "namespaceagenkit_1_1infrastructure.html#ae52833f7c2386b036962d7ea02a5b5dda059e9861e0400dfbe05c98a841f3f96b", null ],
+      [ "ERROR", "namespaceagenkit_1_1infrastructure.html#ae52833f7c2386b036962d7ea02a5b5ddabb1ca97ec761fc37101737ba0aa2e7c5", null ],
+      [ "CRITICAL", "namespaceagenkit_1_1infrastructure.html#ae52833f7c2386b036962d7ea02a5b5dda99cd1c61610c76a57cb8d10d6df6b870", null ]
+    ] ],
+    [ "Permission", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164", [
+      [ "READ_FILES", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164ad65334f0812edf14c98c6a6072cb7d59", null ],
+      [ "WRITE_FILES", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164a8521ab71315965fceff52b6e9f8e4caa", null ],
+      [ "DELETE_FILES", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164a16add997ec3e156a88e272b3fa4564b3", null ],
+      [ "EXECUTE_COMMANDS", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164a56238ee48caeafd54a61b6d5f6a96ee1", null ],
+      [ "EXECUTE_SHELL", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164a62785ee5c25add11191eaa65d918f799", null ],
+      [ "QUERY_DATABASE", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164a1d2df67c854173e30fac691362010f15", null ],
+      [ "WRITE_DATABASE", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164a44b6a2b7fc3185abb1842f89967c9dba", null ],
+      [ "MAKE_HTTP_REQUESTS", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164a44978275a7c837cfcf881170730d3d7b", null ],
+      [ "MAKE_EXTERNAL_API_CALLS", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164ae5bcac8e5c9b832fd986a1815f14533a", null ],
+      [ "MANAGE_USERS", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164aaed702415722915cdf47597dc68c9a62", null ],
+      [ "MANAGE_AGENTS", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164aa138b60c359873140bf5446f393a472b", null ],
+      [ "ACCESS_SECRETS", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164a55a7520ca3de9e0c12026964816891d1", null ],
+      [ "USE_TOOLS", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164a138bee67b235fb393939fc9a47b94538", null ],
+      [ "USE_DANGEROUS_TOOLS", "namespaceagenkit_1_1infrastructure.html#a4c710915d4f0dbed3faf5b24adb97164a616f63da5ec760a4b9e528a865d5fc2f", null ]
+    ] ],
+    [ "Role", "namespaceagenkit_1_1infrastructure.html#a9451744be6cff25314764b961613f913", [
+      [ "ADMIN", "namespaceagenkit_1_1infrastructure.html#a9451744be6cff25314764b961613f913a73acd9a5972130b75066c82595a1fae3", null ],
+      [ "USER", "namespaceagenkit_1_1infrastructure.html#a9451744be6cff25314764b961613f913a2e40ad879e955201df4dedbf8d479a12", null ],
+      [ "READONLY", "namespaceagenkit_1_1infrastructure.html#a9451744be6cff25314764b961613f913a34db6698cff32ac89724758fdaa5512e", null ],
+      [ "RESTRICTED", "namespaceagenkit_1_1infrastructure.html#a9451744be6cff25314764b961613f913a0c6311db6cc263ccd2de0ea3467577ae", null ]
+    ] ],
+    [ "SecurityEvent", "namespaceagenkit_1_1infrastructure.html#a36bd382ab5646cf4de2d98d2270cc355", [
+      [ "HIGH_REQUEST_RATE", "namespaceagenkit_1_1infrastructure.html#a36bd382ab5646cf4de2d98d2270cc355a30477b61444f8d363d89f7c514f1500e", null ],
+      [ "BURST_DETECTED", "namespaceagenkit_1_1infrastructure.html#a36bd382ab5646cf4de2d98d2270cc355afd003a79484d6066433559aa9ef78a5d", null ],
+      [ "REPEATED_FAILURES", "namespaceagenkit_1_1infrastructure.html#a36bd382ab5646cf4de2d98d2270cc355aafb13955bebb386e63a9d48172ea468a", null ],
+      [ "PERMISSION_DENIED_SPIKE", "namespaceagenkit_1_1infrastructure.html#a36bd382ab5646cf4de2d98d2270cc355a96c5e5c643c85eccf9df6a8ebac30231", null ],
+      [ "VALIDATION_FAILURES", "namespaceagenkit_1_1infrastructure.html#a36bd382ab5646cf4de2d98d2270cc355a2bf4c8bf7bbe191345afd6c407a05ce7", null ],
+      [ "UNUSUAL_INPUT_SIZE", "namespaceagenkit_1_1infrastructure.html#a36bd382ab5646cf4de2d98d2270cc355a5e2c9b786b961846b701784636e6bf12", null ],
+      [ "UNUSUAL_OUTPUT_SIZE", "namespaceagenkit_1_1infrastructure.html#a36bd382ab5646cf4de2d98d2270cc355a02285fd7f9e08149afa13a2237146867", null ],
+      [ "UNUSUAL_PROCESSING_TIME", "namespaceagenkit_1_1infrastructure.html#a36bd382ab5646cf4de2d98d2270cc355a087efcd67cb89053fdc75df008cb2a42", null ],
+      [ "SUSPICIOUS_CONTENT_PATTERN", "namespaceagenkit_1_1infrastructure.html#a36bd382ab5646cf4de2d98d2270cc355aa734aae5e81cfbce01fc30a4b434ba95", null ],
+      [ "REPETITIVE_CONTENT", "namespaceagenkit_1_1infrastructure.html#a36bd382ab5646cf4de2d98d2270cc355ab7fb53cab3acf78865a47aae944b65dc", null ]
+    ] ],
+    [ "audit_event_type_to_string", "namespaceagenkit_1_1infrastructure.html#a09fe0bafcd0353c3d310170d52b7ff36", null ],
+    [ "audit_severity_to_string", "namespaceagenkit_1_1infrastructure.html#aed18de0309be3613328ef6af301af137", null ],
+    [ "get_role_permissions", "namespaceagenkit_1_1infrastructure.html#ae5e52bcb257ab307f9ade5a1215da87a", null ],
+    [ "global_thread_pool", "namespaceagenkit_1_1infrastructure.html#a56c020521893e9c9d0778c42ec528663", null ],
+    [ "security_event_to_string", "namespaceagenkit_1_1infrastructure.html#a1fc3f669d7b349ba7809da048aee64ab", null ],
+    [ "SAFETY_VERSION", "namespaceagenkit_1_1infrastructure.html#a64e4ae3125620b11e063078d59e1798e", null ]
+];

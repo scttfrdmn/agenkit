@@ -20,9 +20,7 @@ struct SimpleAgent {
 
 impl SimpleAgent {
     fn new(name: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-        }
+        Self { name: name.into() }
     }
 }
 

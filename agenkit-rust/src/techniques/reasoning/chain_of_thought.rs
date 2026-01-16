@@ -159,26 +159,34 @@ impl Agent for ChainOfThoughtAgent {
         }
 
         // Apply CoT prompting
-        let query = message.content_as_str()
-            .unwrap_or("")
-            .to_string();
+        let query = message.content_as_str().unwrap_or("").to_string();
         let cot_prompt = self.prompt_template.replace("{query}", &query);
 
         // Get response from agent
         let prompt_message = Message::with_text("user", cot_prompt);
-        let response = self.agent.process(prompt_message).await
-            .map_err(|e| AgentError::Internal(format!("Chain of thought processing failed: {}", e)))?;
+        let response = self.agent.process(prompt_message).await.map_err(|e| {
+            AgentError::Internal(format!("Chain of thought processing failed: {}", e))
+        })?;
 
         // Parse steps if requested
-        let mut result = Message::with_text("assistant", response.content_as_str().unwrap_or("").to_string());
+        let mut result = Message::with_text(
+            "assistant",
+            response.content_as_str().unwrap_or("").to_string(),
+        );
 
         if self.parse_steps {
             let steps = self.extract_steps(result.content_as_str().unwrap_or(""));
-            result.metadata.insert("reasoning_steps".to_string(), json!(steps));
-            result.metadata.insert("num_steps".to_string(), json!(steps.len()));
+            result
+                .metadata
+                .insert("reasoning_steps".to_string(), json!(steps));
+            result
+                .metadata
+                .insert("num_steps".to_string(), json!(steps.len()));
         }
 
-        result.metadata.insert("technique".to_string(), json!("chain_of_thought"));
+        result
+            .metadata
+            .insert("technique".to_string(), json!("chain_of_thought"));
 
         Ok(result)
     }

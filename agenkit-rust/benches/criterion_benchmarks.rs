@@ -225,8 +225,7 @@ fn bench_metadata_operations(c: &mut Criterion) {
 
     group.bench_function("get_metadata", |b| {
         let value = serde_json::Value::String("test_value".to_string());
-        let msg = Message::with_text("user", "test")
-            .with_metadata("key", value);
+        let msg = Message::with_text("user", "test").with_metadata("key", value);
         b.iter(|| {
             let _value = black_box(&msg).metadata.get(black_box("key"));
         });
@@ -357,13 +356,8 @@ fn bench_concurrency_optimizations(c: &mut Criterion) {
         use agenkit::optimizations::parallel;
         b.iter(|| {
             let items: Vec<i32> = (0..1000).collect();
-            let _results = parallel::filter_map(items, |x| {
-                if x % 2 == 0 {
-                    Some(x * 2)
-                } else {
-                    None
-                }
-            });
+            let _results =
+                parallel::filter_map(items, |x| if x % 2 == 0 { Some(x * 2) } else { None });
         });
     });
 

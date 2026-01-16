@@ -21,10 +21,10 @@ pub mod concurrent;
 pub use cache::{CachedAgent, MemoizedAgent};
 
 #[cfg(feature = "native")]
-pub use string_pool::{intern, global_pool, roles, metadata_keys};
+pub use string_pool::{global_pool, intern, metadata_keys, roles};
 
 #[cfg(feature = "native")]
-pub use message_builder::{MessageBuilder, MessageBatch, fast};
+pub use message_builder::{fast, MessageBatch, MessageBuilder};
 
 #[cfg(feature = "native")]
-pub use concurrent::{ConcurrentQueue, BoundedChannel, WorkStealingExecutor, parallel};
+pub use concurrent::{parallel, BoundedChannel, ConcurrentQueue, WorkStealingExecutor};

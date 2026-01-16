@@ -112,9 +112,16 @@ impl ReasoningTree {
     }
 
     /// Add a child node to a parent.
-    pub fn add_child(&mut self, parent_id: usize, content: String, score: f64) -> Result<usize, String> {
+    pub fn add_child(
+        &mut self,
+        parent_id: usize,
+        content: String,
+        score: f64,
+    ) -> Result<usize, String> {
         let parent_depth = {
-            let parent = self.nodes.get(&parent_id)
+            let parent = self
+                .nodes
+                .get(&parent_id)
                 .ok_or_else(|| format!("Parent node {} not found", parent_id))?;
             parent.depth
         };
@@ -189,7 +196,11 @@ impl ReasoningTree {
         self.nodes
             .values()
             .filter(|node| node.is_leaf() && node.state != NodeState::Pruned)
-            .max_by(|a, b| a.score.partial_cmp(&b.score).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|a, b| {
+                a.score
+                    .partial_cmp(&b.score)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
     }
 
     /// Prune a node and all its descendants.

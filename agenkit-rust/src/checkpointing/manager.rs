@@ -39,7 +39,10 @@ impl CheckpointManager {
     }
 
     /// Create a new checkpoint manager with configuration.
-    pub fn with_config(storage: Box<dyn CheckpointStorage>, config: CheckpointManagerConfig) -> Self {
+    pub fn with_config(
+        storage: Box<dyn CheckpointStorage>,
+        config: CheckpointManagerConfig,
+    ) -> Self {
         Self {
             storage,
             config,
@@ -60,12 +63,12 @@ impl CheckpointManager {
         parent_checkpoint_id: Option<String>,
     ) -> Result<String, Box<dyn std::error::Error>> {
         // Determine parent checkpoint ID
-        let parent_id = parent_checkpoint_id.or_else(|| {
-            self.session_last_checkpoint.get(&session_id).cloned()
-        });
+        let parent_id =
+            parent_checkpoint_id.or_else(|| self.session_last_checkpoint.get(&session_id).cloned());
 
         // Create checkpoint
-        let mut checkpoint = Checkpoint::new(session_id.clone(), agent_name, step_number, state, messages);
+        let mut checkpoint =
+            Checkpoint::new(session_id.clone(), agent_name, step_number, state, messages);
 
         if let Some(metadata) = metadata {
             checkpoint = checkpoint.with_metadata(metadata);
@@ -307,7 +310,11 @@ mod tests {
             .await
             .unwrap();
 
-        let checkpoint2 = manager.load_checkpoint(&checkpoint_id2).await.unwrap().unwrap();
+        let checkpoint2 = manager
+            .load_checkpoint(&checkpoint_id2)
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(checkpoint2.parent_checkpoint_id, Some(checkpoint_id1));
     }
 

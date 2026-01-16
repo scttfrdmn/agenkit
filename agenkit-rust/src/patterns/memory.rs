@@ -44,11 +44,11 @@
 //! # }
 //! ```
 
+use chrono::{DateTime, Duration, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use chrono::{DateTime, Utc, Duration};
 use uuid::Uuid;
-use serde::{Serialize, Deserialize};
 
 use crate::core::AgentError;
 
@@ -152,7 +152,11 @@ impl WorkingMemory {
     }
 
     /// Retrieve recent messages from working memory.
-    pub async fn retrieve(&self, _query: &str, limit: usize) -> Result<Vec<MemoryEntry>, AgentError> {
+    pub async fn retrieve(
+        &self,
+        _query: &str,
+        limit: usize,
+    ) -> Result<Vec<MemoryEntry>, AgentError> {
         let messages = self.messages.read().unwrap();
 
         // Working memory returns all recent messages
@@ -254,7 +258,11 @@ impl ShortTermMemory {
     }
 
     /// Retrieve recent messages from short-term memory.
-    pub async fn retrieve(&self, _query: &str, limit: usize) -> Result<Vec<MemoryEntry>, AgentError> {
+    pub async fn retrieve(
+        &self,
+        _query: &str,
+        limit: usize,
+    ) -> Result<Vec<MemoryEntry>, AgentError> {
         let mut messages = self.messages.write().unwrap();
 
         self.clean_expired(&mut messages);
@@ -348,7 +356,11 @@ impl LongTermMemory {
     }
 
     /// Retrieve relevant memories from long-term memory.
-    pub async fn retrieve(&self, query: &str, limit: usize) -> Result<Vec<MemoryEntry>, AgentError> {
+    pub async fn retrieve(
+        &self,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<MemoryEntry>, AgentError> {
         let mut storage = self.storage.write().unwrap();
 
         let all_entries: Vec<MemoryEntry> = storage.values().cloned().collect();

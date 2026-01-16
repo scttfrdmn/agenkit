@@ -168,9 +168,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(parallel_results) = result.metadata.get("parallel_results") {
         if let Some(results_array) = parallel_results.as_array() {
             for (i, result) in results_array.iter().enumerate() {
-                println!("\n   Result {} from {}:",
+                println!(
+                    "\n   Result {} from {}:",
                     i + 1,
-                    result.get("role").and_then(|r| r.as_str()).unwrap_or("unknown")
+                    result
+                        .get("role")
+                        .and_then(|r| r.as_str())
+                        .unwrap_or("unknown")
                 );
                 if let Some(content) = result.get("content") {
                     for line in content.as_str().unwrap_or("").lines() {
@@ -189,10 +193,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // First stage: sequential validation and processing
     let stage1_validator = Arc::new(ValidatorAgent);
     let stage1_processor = Arc::new(ProcessorAgent);
-    let stage1 = SequentialPattern::with_name(
-        vec![stage1_validator, stage1_processor],
-        "stage1_prep",
-    )?;
+    let stage1 =
+        SequentialPattern::with_name(vec![stage1_validator, stage1_processor], "stage1_prep")?;
 
     // Second stage: parallel review
     let stage2_reviewer_a = Arc::new(ReviewerA);

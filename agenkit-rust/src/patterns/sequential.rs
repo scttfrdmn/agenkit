@@ -232,10 +232,7 @@ mod tests {
 
         async fn process(&self, message: Message) -> Result<Message, AgentError> {
             if self.fail {
-                return Err(AgentError::ProcessingError(format!(
-                    "{} failed",
-                    self.name
-                )));
+                return Err(AgentError::ProcessingError(format!("{} failed", self.name)));
             }
 
             let content = message.content_as_str().unwrap_or("");

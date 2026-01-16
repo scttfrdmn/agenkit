@@ -17,7 +17,6 @@
 ///!    ```bash
 ///!    cargo run --example gemini_example --features native
 ///!    ```
-
 use agenkit::adapters::gemini::{GeminiAdapter, GeminiConfig};
 use agenkit::core::{Agent, Message};
 
@@ -106,10 +105,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let message = Message::with_text(
-        "user",
-        "Write a haiku about programming in Rust.",
-    );
+    let message = Message::with_text("user", "Write a haiku about programming in Rust.");
     println!("User: {}", message.content_as_str().unwrap());
 
     match adapter.process(message).await {

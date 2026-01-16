@@ -240,7 +240,11 @@ fn execute_test(
     let pattern_lower = pattern.to_lowercase();
 
     // Check scenario_id
-    if payload.get("scenario_id").and_then(|v| v.as_str()).is_none() {
+    if payload
+        .get("scenario_id")
+        .and_then(|v| v.as_str())
+        .is_none()
+    {
         return (
             None,
             Some(ErrorInfo {
@@ -353,11 +357,7 @@ fn execute_test(
             metadata: message_data
                 .get("metadata")
                 .and_then(|v| v.as_object())
-                .map(|obj| {
-                    obj.iter()
-                        .map(|(k, v)| (k.clone(), v.clone()))
-                        .collect()
-                }),
+                .map(|obj| obj.iter().map(|(k, v)| (k.clone(), v.clone())).collect()),
         };
 
         match execute_pattern(&pattern_lower, &message, &config) {
@@ -380,7 +380,8 @@ fn execute_test(
     // Determine turns based on pattern and metadata
     let turns = if pattern_lower == "reflection" {
         // For reflection pattern, turns = iterations * 2 (each iteration = generation + critique)
-        let iterations = output_message.metadata
+        let iterations = output_message
+            .metadata
             .as_ref()
             .and_then(|m| m.get("iterations"))
             .and_then(|v| v.as_i64())
@@ -390,7 +391,8 @@ fn execute_test(
         // For ReAct pattern, calculate turns based on tool calls
         // Formula from Python: turns = len(react_steps) * 2 + 1
         // where react_steps is the number of tool invocations
-        let tool_calls_made = output_message.metadata
+        let tool_calls_made = output_message
+            .metadata
             .as_ref()
             .and_then(|m| m.get("tool_calls_made"))
             .and_then(|v| v.as_i64())
@@ -419,11 +421,13 @@ fn execute_test(
         } else if content_lower.contains("tool2") {
             vec!["tool2".to_string()]
         } else if let Some(metadata) = &output_message.metadata {
-            if let Some(tool_calls_made) = metadata.get("tool_calls_made").and_then(|v| v.as_i64()) {
+            if let Some(tool_calls_made) = metadata.get("tool_calls_made").and_then(|v| v.as_i64())
+            {
                 if tool_calls_made > 0 {
                     // Extract tool names from config if available
                     if let Some(tools) = config.get("tools").and_then(|v| v.as_array()) {
-                        tools.iter()
+                        tools
+                            .iter()
                             .filter_map(|tool| {
                                 tool.as_object()
                                     .and_then(|obj| obj.get("name"))
@@ -454,23 +458,28 @@ fn execute_test(
             .get("agents")
             .and_then(|v| v.as_array())
             .map(|agents| {
-                agents.iter().enumerate().map(|(i, agent)| {
-                    if let Some(obj) = agent.as_object() {
-                        obj.get("name")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or(&format!("agent{}", i + 1))
-                            .to_string()
-                    } else if let Some(s) = agent.as_str() {
-                        s.to_string()
-                    } else {
-                        format!("agent{}", i + 1)
-                    }
-                }).collect()
+                agents
+                    .iter()
+                    .enumerate()
+                    .map(|(i, agent)| {
+                        if let Some(obj) = agent.as_object() {
+                            obj.get("name")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or(&format!("agent{}", i + 1))
+                                .to_string()
+                        } else if let Some(s) = agent.as_str() {
+                            s.to_string()
+                        } else {
+                            format!("agent{}", i + 1)
+                        }
+                    })
+                    .collect()
             })
             .unwrap_or_else(Vec::new)
     } else if pattern_lower == "sequential" {
         // For Sequential pattern, extract from execution_order
-        output_message.metadata
+        output_message
+            .metadata
             .as_ref()
             .and_then(|m| m.get("execution_order"))
             .and_then(|v| v.as_array())
@@ -484,7 +493,8 @@ fn execute_test(
     } else {
         // Extract sub_agents field directly (for AgentsAsTools pattern)
         // Don't extract execution_order - that's pattern-specific metadata for Supervisor
-        output_message.metadata
+        output_message
+            .metadata
             .as_ref()
             .and_then(|m| m.get("sub_agents"))
             .and_then(|v| v.as_array())
@@ -523,7 +533,7 @@ fn execute_test(
         },
         execution_info: ExecutionInfo {
             duration_ms: duration.as_millis() as u64,
-            llm_calls: 0, // TODO: Track actual LLM calls
+            llm_calls: 0,   // TODO: Track actual LLM calls
             tokens_used: 0, // TODO: Track actual token usage
         },
     };
@@ -564,7 +574,9 @@ fn execute_pattern(
         "memory" => execute_memory(message, config),
         "conversational" => execute_conversational(message, config),
         "react" => execute_react(message, config),
-        "reasoningwithtools" | "reasoning_with_tools" => execute_reasoning_with_tools(message, config),
+        "reasoningwithtools" | "reasoning_with_tools" => {
+            execute_reasoning_with_tools(message, config)
+        }
         "planning" => execute_planning(message, config),
         "collaborative" => execute_collaborative(message, config),
         "humaninloop" | "human_in_loop" => execute_human_in_loop(message, config),
@@ -621,12 +633,30 @@ fn execute_reflection(
         };
 
     let mut metadata = HashMap::new();
-    metadata.insert("iterations".to_string(), serde_json::Value::Number(iterations.into()));
-    metadata.insert("reflection_iterations".to_string(), serde_json::Value::Number(iterations.into()));
-    metadata.insert("final_quality_score".to_string(), serde_json::json!(final_quality_score));
-    metadata.insert("initial_quality_score".to_string(), serde_json::json!(initial_quality_score));
-    metadata.insert("stop_reason".to_string(), serde_json::json!("minimal_improvement"));
-    metadata.insert("total_improvement".to_string(), serde_json::json!(total_improvement));
+    metadata.insert(
+        "iterations".to_string(),
+        serde_json::Value::Number(iterations.into()),
+    );
+    metadata.insert(
+        "reflection_iterations".to_string(),
+        serde_json::Value::Number(iterations.into()),
+    );
+    metadata.insert(
+        "final_quality_score".to_string(),
+        serde_json::json!(final_quality_score),
+    );
+    metadata.insert(
+        "initial_quality_score".to_string(),
+        serde_json::json!(initial_quality_score),
+    );
+    metadata.insert(
+        "stop_reason".to_string(),
+        serde_json::json!("minimal_improvement"),
+    );
+    metadata.insert(
+        "total_improvement".to_string(),
+        serde_json::json!(total_improvement),
+    );
 
     Message {
         role: "assistant".to_string(),
@@ -669,9 +699,7 @@ fn execute_sequential(
         let mut stage = HashMap::new();
         stage.insert("agent".to_string(), serde_json::Value::String(agent_name));
         stage.insert("stage".to_string(), serde_json::Value::Number(i.into()));
-        pipeline_stages.push(serde_json::Value::Object(
-            stage.into_iter().collect()
-        ));
+        pipeline_stages.push(serde_json::Value::Object(stage.into_iter().collect()));
     }
 
     let mut metadata = HashMap::new();
@@ -686,7 +714,10 @@ fn execute_sequential(
     metadata.insert(
         "execution_order".to_string(),
         serde_json::Value::Array(
-            agent_names.iter().map(|s| serde_json::Value::String(s.clone())).collect()
+            agent_names
+                .iter()
+                .map(|s| serde_json::Value::String(s.clone()))
+                .collect(),
         ),
     );
     metadata.insert(
@@ -714,18 +745,22 @@ fn execute_parallel(
     let agent_count = agents.len();
 
     // Extract agent names
-    let agent_names: Vec<String> = agents.iter().enumerate().map(|(i, agent)| {
-        if let Some(obj) = agent.as_object() {
-            obj.get("name")
-                .and_then(|v| v.as_str())
-                .unwrap_or(&format!("agent{}", i + 1))
-                .to_string()
-        } else if let Some(s) = agent.as_str() {
-            s.to_string()
-        } else {
-            format!("agent{}", i + 1)
-        }
-    }).collect();
+    let agent_names: Vec<String> = agents
+        .iter()
+        .enumerate()
+        .map(|(i, agent)| {
+            if let Some(obj) = agent.as_object() {
+                obj.get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(&format!("agent{}", i + 1))
+                    .to_string()
+            } else if let Some(s) = agent.as_str() {
+                s.to_string()
+            } else {
+                format!("agent{}", i + 1)
+            }
+        })
+        .collect();
 
     let mut metadata = HashMap::new();
     metadata.insert(
@@ -740,10 +775,7 @@ fn execute_parallel(
         "successful_agents".to_string(),
         serde_json::Value::Number(agent_count.into()),
     );
-    metadata.insert(
-        "aggregated".to_string(),
-        serde_json::Value::Bool(true),
-    );
+    metadata.insert("aggregated".to_string(), serde_json::Value::Bool(true));
 
     Message {
         role: "assistant".to_string(),
@@ -778,7 +810,9 @@ fn execute_router(
     // 1. Check for metadata-based routing first
     for route in routes.iter() {
         if let Some(route_obj) = route.as_object() {
-            if let Some(metadata_match) = route_obj.get("metadata_match").and_then(|v| v.as_object()) {
+            if let Some(metadata_match) =
+                route_obj.get("metadata_match").and_then(|v| v.as_object())
+            {
                 // Check if message metadata matches
                 let mut matches = true;
                 if let Some(msg_metadata) = &message.metadata {
@@ -793,7 +827,11 @@ fn execute_router(
                 }
 
                 if matches {
-                    routed_agent = route_obj.get("agent").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                    routed_agent = route_obj
+                        .get("agent")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string();
                     category = routed_agent.clone();
                     break;
                 }
@@ -809,7 +847,11 @@ fn execute_router(
             if let Some(route_obj) = route.as_object() {
                 if let Some(route_category) = route_obj.get("category").and_then(|v| v.as_str()) {
                     if content_lower.contains(route_category) {
-                        routed_agent = route_obj.get("agent").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        routed_agent = route_obj
+                            .get("agent")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
                         category = routed_agent.clone();
                         break;
                     }
@@ -836,7 +878,11 @@ fn execute_router(
                     }
 
                     if matched {
-                        routed_agent = route_obj.get("agent").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        routed_agent = route_obj
+                            .get("agent")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
                         category = routed_agent.clone();
                         break;
                     }
@@ -899,14 +945,8 @@ fn execute_fallback(
     // Try each agent in order until one succeeds
     for (i, agent) in agents.iter().enumerate() {
         if let Some(agent_obj) = agent.as_object() {
-            let agent_name = agent_obj
-                .get("name")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
-            let agent_type = agent_obj
-                .get("type")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
+            let agent_name = agent_obj.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            let agent_type = agent_obj.get("type").and_then(|v| v.as_str()).unwrap_or("");
 
             attempts += 1;
 
@@ -1007,10 +1047,22 @@ fn execute_supervisor(
 
     let mut metadata = HashMap::new();
     metadata.insert("synthesized".to_string(), serde_json::Value::Bool(true));
-    metadata.insert("result_count".to_string(), serde_json::Value::Number(2.into()));
-    metadata.insert("supervisor_subtasks".to_string(), serde_json::Value::Number(2.into()));
-    metadata.insert("supervisor_specialists".to_string(), serde_json::Value::Number(1.into()));
-    metadata.insert("execution_order".to_string(), serde_json::Value::Array(execution_order));
+    metadata.insert(
+        "result_count".to_string(),
+        serde_json::Value::Number(2.into()),
+    );
+    metadata.insert(
+        "supervisor_subtasks".to_string(),
+        serde_json::Value::Number(2.into()),
+    );
+    metadata.insert(
+        "supervisor_specialists".to_string(),
+        serde_json::Value::Number(1.into()),
+    );
+    metadata.insert(
+        "execution_order".to_string(),
+        serde_json::Value::Array(execution_order),
+    );
 
     let response_content = "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42 - Alternative method: work backwards.\n- Apply the formula.\n- Answer: 42";
 
@@ -1039,10 +1091,7 @@ fn execute_agents_as_tools(
                 "delegation_chain".to_string(),
                 serde_json::json!(["calculator", "calculator"]),
             );
-            metadata.insert(
-                "sub_agents".to_string(),
-                serde_json::json!(["calculator"]),
-            );
+            metadata.insert("sub_agents".to_string(), serde_json::json!(["calculator"]));
             ("16".to_string(), metadata)
         } else if content.contains("weather") {
             // Scenario 2: Specialized agent selection - weather query
@@ -1111,29 +1160,74 @@ fn execute_orchestration(
     let (response_content, metadata): (String, HashMap<String, serde_json::Value>) =
         if content.contains("workflow with multiple stages") {
             let mut metadata = HashMap::new();
-            metadata.insert("stages_completed".to_string(), serde_json::Value::Number(3.into()));
-            metadata.insert("execution_pattern".to_string(), serde_json::json!(["sequential", "parallel", "sequential"]));
-            metadata.insert("total_agents".to_string(), serde_json::Value::Number(7.into()));
-            ("Workflow completed with sequential, parallel, and sequential stages".to_string(), metadata)
+            metadata.insert(
+                "stages_completed".to_string(),
+                serde_json::Value::Number(3.into()),
+            );
+            metadata.insert(
+                "execution_pattern".to_string(),
+                serde_json::json!(["sequential", "parallel", "sequential"]),
+            );
+            metadata.insert(
+                "total_agents".to_string(),
+                serde_json::Value::Number(7.into()),
+            );
+            (
+                "Workflow completed with sequential, parallel, and sequential stages".to_string(),
+                metadata,
+            )
         } else if content.contains("conditional logic") {
             let mut metadata = HashMap::new();
-            metadata.insert("branch_taken".to_string(), serde_json::Value::String("then".to_string()));
-            metadata.insert("agent_executed".to_string(), serde_json::Value::String("json_processor".to_string()));
-            ("Data processed with json_processor based on condition".to_string(), metadata)
+            metadata.insert(
+                "branch_taken".to_string(),
+                serde_json::Value::String("then".to_string()),
+            );
+            metadata.insert(
+                "agent_executed".to_string(),
+                serde_json::Value::String("json_processor".to_string()),
+            );
+            (
+                "Data processed with json_processor based on condition".to_string(),
+                metadata,
+            )
         } else if content.contains("quality threshold") {
             let mut metadata = HashMap::new();
-            metadata.insert("loop_iterations".to_string(), serde_json::Value::Number(3.into()));
-            metadata.insert("break_condition_met".to_string(), serde_json::Value::Bool(true));
-            ("Quality threshold met after 3 iterations".to_string(), metadata)
+            metadata.insert(
+                "loop_iterations".to_string(),
+                serde_json::Value::Number(3.into()),
+            );
+            metadata.insert(
+                "break_condition_met".to_string(),
+                serde_json::Value::Bool(true),
+            );
+            (
+                "Quality threshold met after 3 iterations".to_string(),
+                metadata,
+            )
         } else if content.contains("potential failures") {
             let mut metadata = HashMap::new();
-            metadata.insert("stages_attempted".to_string(), serde_json::Value::Number(3.into()));
-            metadata.insert("stages_succeeded".to_string(), serde_json::Value::Number(2.into()));
-            metadata.insert("errors_handled".to_string(), serde_json::Value::Number(1.into()));
-            ("Workflow completed with error handling".to_string(), metadata)
+            metadata.insert(
+                "stages_attempted".to_string(),
+                serde_json::Value::Number(3.into()),
+            );
+            metadata.insert(
+                "stages_succeeded".to_string(),
+                serde_json::Value::Number(2.into()),
+            );
+            metadata.insert(
+                "errors_handled".to_string(),
+                serde_json::Value::Number(1.into()),
+            );
+            (
+                "Workflow completed with error handling".to_string(),
+                metadata,
+            )
         } else {
             let mut metadata = HashMap::new();
-            metadata.insert("stages_completed".to_string(), serde_json::Value::Number(1.into()));
+            metadata.insert(
+                "stages_completed".to_string(),
+                serde_json::Value::Number(1.into()),
+            );
             (message.content.clone(), metadata)
         };
 
@@ -1153,35 +1247,68 @@ fn execute_memory(
     let (response_content, metadata): (String, HashMap<String, serde_json::Value>) =
         if content.contains("store") && content.contains("retrieve") {
             let mut metadata = HashMap::new();
-            metadata.insert("retrieved_memories".to_string(), serde_json::json!([
-                {"content": "User prefers dark mode", "relevance": 0.9}
-            ]));
-            ("Memory stored and retrieved successfully".to_string(), metadata)
+            metadata.insert(
+                "retrieved_memories".to_string(),
+                serde_json::json!([
+                    {"content": "User prefers dark mode", "relevance": 0.9}
+                ]),
+            );
+            (
+                "Memory stored and retrieved successfully".to_string(),
+                metadata,
+            )
         } else if content.contains("importance") {
             let mut metadata = HashMap::new();
-            metadata.insert("stored_memories".to_string(), serde_json::json!(["High importance fact", "Medium importance fact"]));
-            metadata.insert("dropped_memories".to_string(), serde_json::json!(["Low importance fact"]));
+            metadata.insert(
+                "stored_memories".to_string(),
+                serde_json::json!(["High importance fact", "Medium importance fact"]),
+            );
+            metadata.insert(
+                "dropped_memories".to_string(),
+                serde_json::json!(["Low importance fact"]),
+            );
             ("Memories prioritized by importance".to_string(), metadata)
         } else if content.contains("recency") {
             let mut metadata = HashMap::new();
-            metadata.insert("stored_memories".to_string(), serde_json::json!(["Recent memory", "Old memory"]));
+            metadata.insert(
+                "stored_memories".to_string(),
+                serde_json::json!(["Recent memory", "Old memory"]),
+            );
             ("Memories prioritized by recency".to_string(), metadata)
         } else if content.contains("semantic") || content.contains("similarity") {
             let mut metadata = HashMap::new();
-            metadata.insert("retrieved_memories".to_string(), serde_json::json!([
-                {"content": "The user likes Python programming", "similarity": 0.85},
-                {"content": "The user enjoys coding", "similarity": 0.72}
-            ]));
-            ("Memories retrieved by semantic similarity".to_string(), metadata)
+            metadata.insert(
+                "retrieved_memories".to_string(),
+                serde_json::json!([
+                    {"content": "The user likes Python programming", "similarity": 0.85},
+                    {"content": "The user enjoys coding", "similarity": 0.72}
+                ]),
+            );
+            (
+                "Memories retrieved by semantic similarity".to_string(),
+                metadata,
+            )
         } else if content.contains("summarization") || content.contains("summarize") {
             let mut metadata = HashMap::new();
-            metadata.insert("stored_memories_count".to_string(), serde_json::Value::Number(5.into()));
-            metadata.insert("summaries_created".to_string(), serde_json::Value::Number(1.into()));
-            metadata.insert("summary_contains".to_string(), serde_json::json!(["mem1", "mem2"]));
+            metadata.insert(
+                "stored_memories_count".to_string(),
+                serde_json::Value::Number(5.into()),
+            );
+            metadata.insert(
+                "summaries_created".to_string(),
+                serde_json::Value::Number(1.into()),
+            );
+            metadata.insert(
+                "summary_contains".to_string(),
+                serde_json::json!(["mem1", "mem2"]),
+            );
             ("Old memories summarized".to_string(), metadata)
         } else {
             let mut metadata = HashMap::new();
-            metadata.insert("memories_stored".to_string(), serde_json::Value::Number(0.into()));
+            metadata.insert(
+                "memories_stored".to_string(),
+                serde_json::Value::Number(0.into()),
+            );
             (message.content.clone(), metadata)
         };
 
@@ -1263,42 +1390,80 @@ fn execute_react(
 ) -> Result<Message, String> {
     let content = message.content.to_lowercase();
 
-    let (response_content, metadata): (String, HashMap<String, serde_json::Value>) =
-        if content.contains("15 * 24") || content.contains("what is 15 * 24") {
-            // Scenario 1: Basic ReAct with tool calls
-            let mut metadata = HashMap::new();
-            metadata.insert("tool_calls_made".to_string(), serde_json::Value::Number(1.into()));
-            metadata.insert("iterations".to_string(), serde_json::Value::Number(1.into()));
-            ("Thought: I need to calculate 15 * 24\nAction: calculator\nObservation: 360\nFinal Answer: 360".to_string(), metadata)
-        } else if content.contains("weather") && content.contains("convert") {
-            // Scenario 2: Multi-step reasoning with multiple tools
-            let mut metadata = HashMap::new();
-            metadata.insert("tool_calls_made".to_string(), serde_json::Value::Number(2.into()));
-            metadata.insert("iterations".to_string(), serde_json::Value::Number(3.into())); // Python returns 3
-            ("Thought: First I need to search for weather\nAction: search\nObservation: Temperature is 20°C\nThought: Now convert to Fahrenheit\nAction: unit_converter\nObservation: 68°F".to_string(), metadata)
-        } else if content.contains("what color is the sky") {
-            // Scenario 3: Direct answer without tools
-            let mut metadata = HashMap::new();
-            metadata.insert("tool_calls_made".to_string(), serde_json::Value::Number(0.into()));
-            metadata.insert("iterations".to_string(), serde_json::Value::Number(1.into()));
-            ("Thought: I can answer this directly\nFinal Answer: The sky is blue".to_string(), metadata)
-        } else if content.contains("complex multi-step") {
-            // Scenario 4: Respects maximum iterations
-            let max_iterations = config
-                .get("max_iterations")
-                .and_then(|v| v.as_i64())
-                .unwrap_or(5);
-            let mut metadata = HashMap::new();
-            metadata.insert("iterations".to_string(), serde_json::Value::Number(max_iterations.into()));
-            metadata.insert("tool_calls_made".to_string(), serde_json::Value::Number(1.into())); // Python returns 1
-            ("Thought: Working on complex task\nAction: tool1\nObservation: Result".to_string(), metadata)
-        } else {
-            // Default behavior
-            let mut metadata = HashMap::new();
-            metadata.insert("iterations".to_string(), serde_json::Value::Number(1.into()));
-            metadata.insert("tool_calls_made".to_string(), serde_json::Value::Number(0.into()));
-            (message.content.clone(), metadata)
-        };
+    let (response_content, metadata): (String, HashMap<String, serde_json::Value>) = if content
+        .contains("15 * 24")
+        || content.contains("what is 15 * 24")
+    {
+        // Scenario 1: Basic ReAct with tool calls
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "tool_calls_made".to_string(),
+            serde_json::Value::Number(1.into()),
+        );
+        metadata.insert(
+            "iterations".to_string(),
+            serde_json::Value::Number(1.into()),
+        );
+        ("Thought: I need to calculate 15 * 24\nAction: calculator\nObservation: 360\nFinal Answer: 360".to_string(), metadata)
+    } else if content.contains("weather") && content.contains("convert") {
+        // Scenario 2: Multi-step reasoning with multiple tools
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "tool_calls_made".to_string(),
+            serde_json::Value::Number(2.into()),
+        );
+        metadata.insert(
+            "iterations".to_string(),
+            serde_json::Value::Number(3.into()),
+        ); // Python returns 3
+        ("Thought: First I need to search for weather\nAction: search\nObservation: Temperature is 20°C\nThought: Now convert to Fahrenheit\nAction: unit_converter\nObservation: 68°F".to_string(), metadata)
+    } else if content.contains("what color is the sky") {
+        // Scenario 3: Direct answer without tools
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "tool_calls_made".to_string(),
+            serde_json::Value::Number(0.into()),
+        );
+        metadata.insert(
+            "iterations".to_string(),
+            serde_json::Value::Number(1.into()),
+        );
+        (
+            "Thought: I can answer this directly\nFinal Answer: The sky is blue".to_string(),
+            metadata,
+        )
+    } else if content.contains("complex multi-step") {
+        // Scenario 4: Respects maximum iterations
+        let max_iterations = config
+            .get("max_iterations")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(5);
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "iterations".to_string(),
+            serde_json::Value::Number(max_iterations.into()),
+        );
+        metadata.insert(
+            "tool_calls_made".to_string(),
+            serde_json::Value::Number(1.into()),
+        ); // Python returns 1
+        (
+            "Thought: Working on complex task\nAction: tool1\nObservation: Result".to_string(),
+            metadata,
+        )
+    } else {
+        // Default behavior
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "iterations".to_string(),
+            serde_json::Value::Number(1.into()),
+        );
+        metadata.insert(
+            "tool_calls_made".to_string(),
+            serde_json::Value::Number(0.into()),
+        );
+        (message.content.clone(), metadata)
+    };
 
     Ok(Message {
         role: "assistant".to_string(),
@@ -1313,49 +1478,107 @@ fn execute_reasoning_with_tools(
 ) -> Result<Message, String> {
     let content = message.content.to_lowercase();
 
-    let (response_content, metadata): (String, HashMap<String, serde_json::Value>) =
-        if content.contains("analyze") && content.contains("sales data") {
-            // Scenario 1: Basic reasoning with tool integration
-            let mut metadata = HashMap::new();
-            metadata.insert("reasoning_steps".to_string(), serde_json::Value::Number(6.into()));
-            metadata.insert("tools_used_during_reasoning".to_string(), serde_json::json!(["data_analyzer", "statistical_calculator"]));
-            metadata.insert("tool_calls_in_reasoning".to_string(), serde_json::Value::Number(3.into()));
-            ("After analyzing the trend using data_analyzer and statistical_calculator, I predict next quarter will show 15% growth".to_string(), metadata)
-        } else if content.contains("launch product") && content.contains("market data") {
-            // Scenario 2: Complex multi-step reasoning with tools
-            let mut metadata = HashMap::new();
-            metadata.insert("reasoning_trace".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("tools_integrated".to_string(), serde_json::json!(["market_research", "competitor_analysis", "financial_calculator"]));
-            metadata.insert("decision_made".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("confidence".to_string(), serde_json::Value::Number(serde_json::Number::from_f64(0.85).unwrap()));
-            ("Based on market research, competitor analysis, and financial calculations, I recommend launching Product A".to_string(), metadata)
-        } else if content.contains("optimize inventory") {
-            // Scenario 3: Iterative reasoning refinement with tools
-            let mut metadata = HashMap::new();
-            metadata.insert("reasoning_iterations".to_string(), serde_json::Value::Number(3.into()));
-            metadata.insert("tool_calls_per_iteration".to_string(), serde_json::Value::Number(2.into()));
-            metadata.insert("refinement_occurred".to_string(), serde_json::Value::Bool(true));
-            ("After 3 iterations of checking inventory and forecasting demand, optimal levels are: 500 units".to_string(), metadata)
-        } else if content.contains("simple question") {
-            // Scenario 4: Conditional tool use in reasoning
-            let mut metadata = HashMap::new();
-            metadata.insert("tools_used".to_string(), serde_json::Value::Number(0.into()));
-            metadata.insert("reasoning_steps".to_string(), serde_json::Value::Number(1.into()));
-            ("This can be answered directly without tools".to_string(), metadata)
-        } else if content.contains("roi") && content.contains("project") {
-            // Scenario 5: Chain-of-thought with tool augmentation
-            let mut metadata = HashMap::new();
-            metadata.insert("thinking_steps".to_string(), serde_json::json!(["Step 1: Calculate initial investment", "Step 2: Estimate returns", "Step 3: Compute ROI"]));
-            metadata.insert("tools_used".to_string(), serde_json::json!(["financial_calculator"]));
-            metadata.insert("tool_results_incorporated".to_string(), serde_json::Value::Bool(true));
-            ("Step 1: Initial investment is $100k\nStep 2: Expected returns $150k\nStep 3: ROI is 50%".to_string(), metadata)
-        } else {
-            // Default behavior
-            let mut metadata = HashMap::new();
-            metadata.insert("reasoning_steps".to_string(), serde_json::Value::Number(1.into()));
-            metadata.insert("tools_used".to_string(), serde_json::Value::Number(0.into()));
-            (message.content.clone(), metadata)
-        };
+    let (response_content, metadata): (String, HashMap<String, serde_json::Value>) = if content
+        .contains("analyze")
+        && content.contains("sales data")
+    {
+        // Scenario 1: Basic reasoning with tool integration
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "reasoning_steps".to_string(),
+            serde_json::Value::Number(6.into()),
+        );
+        metadata.insert(
+            "tools_used_during_reasoning".to_string(),
+            serde_json::json!(["data_analyzer", "statistical_calculator"]),
+        );
+        metadata.insert(
+            "tool_calls_in_reasoning".to_string(),
+            serde_json::Value::Number(3.into()),
+        );
+        ("After analyzing the trend using data_analyzer and statistical_calculator, I predict next quarter will show 15% growth".to_string(), metadata)
+    } else if content.contains("launch product") && content.contains("market data") {
+        // Scenario 2: Complex multi-step reasoning with tools
+        let mut metadata = HashMap::new();
+        metadata.insert("reasoning_trace".to_string(), serde_json::Value::Bool(true));
+        metadata.insert(
+            "tools_integrated".to_string(),
+            serde_json::json!([
+                "market_research",
+                "competitor_analysis",
+                "financial_calculator"
+            ]),
+        );
+        metadata.insert("decision_made".to_string(), serde_json::Value::Bool(true));
+        metadata.insert(
+            "confidence".to_string(),
+            serde_json::Value::Number(serde_json::Number::from_f64(0.85).unwrap()),
+        );
+        ("Based on market research, competitor analysis, and financial calculations, I recommend launching Product A".to_string(), metadata)
+    } else if content.contains("optimize inventory") {
+        // Scenario 3: Iterative reasoning refinement with tools
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "reasoning_iterations".to_string(),
+            serde_json::Value::Number(3.into()),
+        );
+        metadata.insert(
+            "tool_calls_per_iteration".to_string(),
+            serde_json::Value::Number(2.into()),
+        );
+        metadata.insert(
+            "refinement_occurred".to_string(),
+            serde_json::Value::Bool(true),
+        );
+        ("After 3 iterations of checking inventory and forecasting demand, optimal levels are: 500 units".to_string(), metadata)
+    } else if content.contains("simple question") {
+        // Scenario 4: Conditional tool use in reasoning
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "tools_used".to_string(),
+            serde_json::Value::Number(0.into()),
+        );
+        metadata.insert(
+            "reasoning_steps".to_string(),
+            serde_json::Value::Number(1.into()),
+        );
+        (
+            "This can be answered directly without tools".to_string(),
+            metadata,
+        )
+    } else if content.contains("roi") && content.contains("project") {
+        // Scenario 5: Chain-of-thought with tool augmentation
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "thinking_steps".to_string(),
+            serde_json::json!([
+                "Step 1: Calculate initial investment",
+                "Step 2: Estimate returns",
+                "Step 3: Compute ROI"
+            ]),
+        );
+        metadata.insert(
+            "tools_used".to_string(),
+            serde_json::json!(["financial_calculator"]),
+        );
+        metadata.insert(
+            "tool_results_incorporated".to_string(),
+            serde_json::Value::Bool(true),
+        );
+        ("Step 1: Initial investment is $100k\nStep 2: Expected returns $150k\nStep 3: ROI is 50%".to_string(), metadata)
+    } else {
+        // Default behavior
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "reasoning_steps".to_string(),
+            serde_json::Value::Number(1.into()),
+        );
+        metadata.insert(
+            "tools_used".to_string(),
+            serde_json::Value::Number(0.into()),
+        );
+        (message.content.clone(), metadata)
+    };
 
     Ok(Message {
         role: "assistant".to_string(),
@@ -1370,39 +1593,70 @@ fn execute_planning(
 ) -> Result<Message, String> {
     let content = message.content.to_lowercase();
 
-    let (response_content, metadata): (String, HashMap<String, serde_json::Value>) =
-        if content.contains("birthday party") {
-            let mut metadata = HashMap::new();
-            metadata.insert("plan_created".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("steps_count".to_string(), serde_json::Value::Number(3.into()));
-            metadata.insert("all_steps_executed".to_string(), serde_json::Value::Bool(true));
-            ("Plan: 1) Book venue 2) Send invitations 3) Order food".to_string(), metadata)
-        } else if content.contains("web application") && content.contains("authentication") {
-            let mut metadata = HashMap::new();
-            metadata.insert("plan_created".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("steps_count".to_string(), serde_json::Value::Number(5.into()));
-            metadata.insert("dependencies_resolved".to_string(), serde_json::Value::Bool(true));
-            ("Plan: 1) Setup database 2) Create user model 3) Implement auth logic 4) Build frontend 5) Deploy".to_string(), metadata)
-        } else if content.contains("potential failures") {
-            let mut metadata = HashMap::new();
-            metadata.insert("replanning_occurred".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("replan_count".to_string(), serde_json::Value::Number(1.into()));
-            ("Plan failed at step 2, replanned: 1) Retry with alternative approach 2) Continue execution".to_string(), metadata)
-        } else if content.contains("very complex") {
-            let max_steps = config
-                .get("max_steps")
-                .and_then(|v| v.as_i64())
-                .unwrap_or(10);
-            let mut metadata = HashMap::new();
-            metadata.insert("steps_count".to_string(), serde_json::Value::Number(max_steps.into()));
-            metadata.insert("plan_completed".to_string(), serde_json::Value::Bool(false));
-            ("Plan: Created 3 steps (max reached), task not fully completed".to_string(), metadata)
-        } else {
-            let mut metadata = HashMap::new();
-            metadata.insert("plan_created".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("steps_count".to_string(), serde_json::Value::Number(1.into()));
-            (message.content.clone(), metadata)
-        };
+    let (response_content, metadata): (String, HashMap<String, serde_json::Value>) = if content
+        .contains("birthday party")
+    {
+        let mut metadata = HashMap::new();
+        metadata.insert("plan_created".to_string(), serde_json::Value::Bool(true));
+        metadata.insert(
+            "steps_count".to_string(),
+            serde_json::Value::Number(3.into()),
+        );
+        metadata.insert(
+            "all_steps_executed".to_string(),
+            serde_json::Value::Bool(true),
+        );
+        (
+            "Plan: 1) Book venue 2) Send invitations 3) Order food".to_string(),
+            metadata,
+        )
+    } else if content.contains("web application") && content.contains("authentication") {
+        let mut metadata = HashMap::new();
+        metadata.insert("plan_created".to_string(), serde_json::Value::Bool(true));
+        metadata.insert(
+            "steps_count".to_string(),
+            serde_json::Value::Number(5.into()),
+        );
+        metadata.insert(
+            "dependencies_resolved".to_string(),
+            serde_json::Value::Bool(true),
+        );
+        ("Plan: 1) Setup database 2) Create user model 3) Implement auth logic 4) Build frontend 5) Deploy".to_string(), metadata)
+    } else if content.contains("potential failures") {
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "replanning_occurred".to_string(),
+            serde_json::Value::Bool(true),
+        );
+        metadata.insert(
+            "replan_count".to_string(),
+            serde_json::Value::Number(1.into()),
+        );
+        ("Plan failed at step 2, replanned: 1) Retry with alternative approach 2) Continue execution".to_string(), metadata)
+    } else if content.contains("very complex") {
+        let max_steps = config
+            .get("max_steps")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(10);
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "steps_count".to_string(),
+            serde_json::Value::Number(max_steps.into()),
+        );
+        metadata.insert("plan_completed".to_string(), serde_json::Value::Bool(false));
+        (
+            "Plan: Created 3 steps (max reached), task not fully completed".to_string(),
+            metadata,
+        )
+    } else {
+        let mut metadata = HashMap::new();
+        metadata.insert("plan_created".to_string(), serde_json::Value::Bool(true));
+        metadata.insert(
+            "steps_count".to_string(),
+            serde_json::Value::Number(1.into()),
+        );
+        (message.content.clone(), metadata)
+    };
 
     Ok(Message {
         role: "assistant".to_string(),
@@ -1417,41 +1671,84 @@ fn execute_collaborative(
 ) -> Result<Message, String> {
     let content = message.content.to_lowercase();
 
-    let (response_content, metadata): (String, HashMap<String, serde_json::Value>) =
-        if content.contains("business proposal") && content.contains("perspectives") {
-            // Scenario 1: Basic collaboration between agents
-            let mut metadata = HashMap::new();
-            metadata.insert("agents_participated".to_string(), serde_json::Value::Number(3.into()));
-            metadata.insert("perspectives".to_string(), serde_json::json!(["financial", "marketing", "technical"]));
-            metadata.insert("collaboration_rounds".to_string(), serde_json::Value::Number(1.into()));
-            ("Financial: Looks profitable. Marketing: Good market fit. Technical: Feasible to implement.".to_string(), metadata)
-        } else if content.contains("product feature") {
-            // Scenario 2: Iterative collaboration rounds
-            let mut metadata = HashMap::new();
-            metadata.insert("collaboration_rounds".to_string(), serde_json::Value::Number(3.into()));
-            metadata.insert("refinements_made".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("consensus_reached".to_string(), serde_json::Value::Bool(true));
-            ("After 3 rounds of collaboration, agreed on feature design with refinements from all agents".to_string(), metadata)
-        } else if content.contains("architecture approach") {
-            // Scenario 3: Reaching consensus
-            let mut metadata = HashMap::new();
-            metadata.insert("consensus_reached".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("agreement_percentage".to_string(), serde_json::json!(0.66));
-            ("Consensus reached: 2 out of 3 architects agree on microservices architecture".to_string(), metadata)
-        } else if content.contains("technology stack") {
-            // Scenario 4: Handles conflicting opinions
-            let mut metadata = HashMap::new();
-            metadata.insert("conflicts_detected".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("resolution_method".to_string(), serde_json::Value::String("voting".to_string()));
-            metadata.insert("final_decision".to_string(), serde_json::Value::Bool(true));
-            ("Agents had conflicting views, resolved via voting: Go selected as primary language".to_string(), metadata)
-        } else {
-            // Default behavior
-            let mut metadata = HashMap::new();
-            metadata.insert("agents_participated".to_string(), serde_json::Value::Number(1.into()));
-            metadata.insert("collaboration_rounds".to_string(), serde_json::Value::Number(1.into()));
-            (message.content.clone(), metadata)
-        };
+    let (response_content, metadata): (String, HashMap<String, serde_json::Value>) = if content
+        .contains("business proposal")
+        && content.contains("perspectives")
+    {
+        // Scenario 1: Basic collaboration between agents
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "agents_participated".to_string(),
+            serde_json::Value::Number(3.into()),
+        );
+        metadata.insert(
+            "perspectives".to_string(),
+            serde_json::json!(["financial", "marketing", "technical"]),
+        );
+        metadata.insert(
+            "collaboration_rounds".to_string(),
+            serde_json::Value::Number(1.into()),
+        );
+        ("Financial: Looks profitable. Marketing: Good market fit. Technical: Feasible to implement.".to_string(), metadata)
+    } else if content.contains("product feature") {
+        // Scenario 2: Iterative collaboration rounds
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "collaboration_rounds".to_string(),
+            serde_json::Value::Number(3.into()),
+        );
+        metadata.insert(
+            "refinements_made".to_string(),
+            serde_json::Value::Bool(true),
+        );
+        metadata.insert(
+            "consensus_reached".to_string(),
+            serde_json::Value::Bool(true),
+        );
+        ("After 3 rounds of collaboration, agreed on feature design with refinements from all agents".to_string(), metadata)
+    } else if content.contains("architecture approach") {
+        // Scenario 3: Reaching consensus
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "consensus_reached".to_string(),
+            serde_json::Value::Bool(true),
+        );
+        metadata.insert("agreement_percentage".to_string(), serde_json::json!(0.66));
+        (
+            "Consensus reached: 2 out of 3 architects agree on microservices architecture"
+                .to_string(),
+            metadata,
+        )
+    } else if content.contains("technology stack") {
+        // Scenario 4: Handles conflicting opinions
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "conflicts_detected".to_string(),
+            serde_json::Value::Bool(true),
+        );
+        metadata.insert(
+            "resolution_method".to_string(),
+            serde_json::Value::String("voting".to_string()),
+        );
+        metadata.insert("final_decision".to_string(), serde_json::Value::Bool(true));
+        (
+            "Agents had conflicting views, resolved via voting: Go selected as primary language"
+                .to_string(),
+            metadata,
+        )
+    } else {
+        // Default behavior
+        let mut metadata = HashMap::new();
+        metadata.insert(
+            "agents_participated".to_string(),
+            serde_json::Value::Number(1.into()),
+        );
+        metadata.insert(
+            "collaboration_rounds".to_string(),
+            serde_json::Value::Number(1.into()),
+        );
+        (message.content.clone(), metadata)
+    };
 
     Ok(Message {
         role: "assistant".to_string(),
@@ -1470,40 +1767,83 @@ fn execute_human_in_loop(
         if content.contains("delete") && content.contains("user data") {
             // Scenario 1: Requests human approval for destructive operations
             let mut metadata = HashMap::new();
-            metadata.insert("approval_requested".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("approval_reason".to_string(), serde_json::Value::String("destructive_operation".to_string()));
-            metadata.insert("paused_for_human".to_string(), serde_json::Value::Bool(true));
-            ("Waiting for approval to delete user data".to_string(), metadata)
+            metadata.insert(
+                "approval_requested".to_string(),
+                serde_json::Value::Bool(true),
+            );
+            metadata.insert(
+                "approval_reason".to_string(),
+                serde_json::Value::String("destructive_operation".to_string()),
+            );
+            metadata.insert(
+                "paused_for_human".to_string(),
+                serde_json::Value::Bool(true),
+            );
+            (
+                "Waiting for approval to delete user data".to_string(),
+                metadata,
+            )
         } else if content.contains("book") && content.contains("flight") {
             // Scenario 2: Requests human input for missing information
             let mut metadata = HashMap::new();
             metadata.insert("input_requested".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("fields_needed".to_string(), serde_json::json!(["destination", "departure_date", "return_date"]));
-            ("Please provide destination, departure_date, and return_date".to_string(), metadata)
+            metadata.insert(
+                "fields_needed".to_string(),
+                serde_json::json!(["destination", "departure_date", "return_date"]),
+            );
+            (
+                "Please provide destination, departure_date, and return_date".to_string(),
+                metadata,
+            )
         } else if content.contains("optimize") && content.contains("database") {
             // Scenario 3: Human makes decision between options
             let mut metadata = HashMap::new();
-            metadata.insert("options_presented".to_string(), serde_json::Value::Number(3.into()));
-            metadata.insert("decision_requested".to_string(), serde_json::Value::Bool(true));
+            metadata.insert(
+                "options_presented".to_string(),
+                serde_json::Value::Number(3.into()),
+            );
+            metadata.insert(
+                "decision_requested".to_string(),
+                serde_json::Value::Bool(true),
+            );
             metadata.insert("awaiting_choice".to_string(), serde_json::Value::Bool(true));
-            ("Options: 1) Add indexes 2) Partition tables 3) Optimize queries. Please choose.".to_string(), metadata)
+            (
+                "Options: 1) Add indexes 2) Partition tables 3) Optimize queries. Please choose."
+                    .to_string(),
+                metadata,
+            )
         } else if content.contains("diagnose") && content.contains("unusual") {
             // Scenario 4: Escalates on uncertainty
             let mut metadata = HashMap::new();
             metadata.insert("escalated".to_string(), serde_json::Value::Bool(true));
             metadata.insert("confidence".to_string(), serde_json::json!(0.6));
-            metadata.insert("escalation_reason".to_string(), serde_json::Value::String("low_confidence".to_string()));
-            ("Escalating to human expert due to low confidence".to_string(), metadata)
+            metadata.insert(
+                "escalation_reason".to_string(),
+                serde_json::Value::String("low_confidence".to_string()),
+            );
+            (
+                "Escalating to human expert due to low confidence".to_string(),
+                metadata,
+            )
         } else if content.contains("requiring approval") {
             // Scenario 5: Handles human response timeout
             let mut metadata = HashMap::new();
-            metadata.insert("timeout_configured".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("max_wait_time".to_string(), serde_json::Value::Number(300.into()));
+            metadata.insert(
+                "timeout_configured".to_string(),
+                serde_json::Value::Bool(true),
+            );
+            metadata.insert(
+                "max_wait_time".to_string(),
+                serde_json::Value::Number(300.into()),
+            );
             ("Waiting for approval (timeout: 300s)".to_string(), metadata)
         } else {
             // Default behavior
             let mut metadata = HashMap::new();
-            metadata.insert("human_interaction_available".to_string(), serde_json::Value::Bool(true));
+            metadata.insert(
+                "human_interaction_available".to_string(),
+                serde_json::Value::Bool(true),
+            );
             (message.content.clone(), metadata)
         };
 
@@ -1524,39 +1864,88 @@ fn execute_autonomous(
         if content.contains("monitor") && content.contains("health") {
             // Scenario 1: Basic autonomous operation
             let mut metadata = HashMap::new();
-            metadata.insert("autonomous_session_started".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("checkpoint_enabled".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("iterations_completed".to_string(), serde_json::Value::Number(10.into()));
-            ("Autonomous monitoring session completed 10 iterations".to_string(), metadata)
+            metadata.insert(
+                "autonomous_session_started".to_string(),
+                serde_json::Value::Bool(true),
+            );
+            metadata.insert(
+                "checkpoint_enabled".to_string(),
+                serde_json::Value::Bool(true),
+            );
+            metadata.insert(
+                "iterations_completed".to_string(),
+                serde_json::Value::Number(10.into()),
+            );
+            (
+                "Autonomous monitoring session completed 10 iterations".to_string(),
+                metadata,
+            )
         } else if content.contains("long-running") && content.contains("processing") {
             // Scenario 2: Creates checkpoints
             let mut metadata = HashMap::new();
-            metadata.insert("checkpoints_created".to_string(), serde_json::Value::Number(4.into()));
-            metadata.insert("checkpoint_locations".to_string(), serde_json::json!(["checkpoint_0", "checkpoint_5", "checkpoint_10", "checkpoint_15"]));
-            ("Created 4 checkpoints during processing".to_string(), metadata)
+            metadata.insert(
+                "checkpoints_created".to_string(),
+                serde_json::Value::Number(4.into()),
+            );
+            metadata.insert(
+                "checkpoint_locations".to_string(),
+                serde_json::json!([
+                    "checkpoint_0",
+                    "checkpoint_5",
+                    "checkpoint_10",
+                    "checkpoint_15"
+                ]),
+            );
+            (
+                "Created 4 checkpoints during processing".to_string(),
+                metadata,
+            )
         } else if content.contains("resume") && content.contains("checkpoint") {
             // Scenario 3: Resumes from checkpoint
-            let checkpoint_id = message.metadata.as_ref()
+            let checkpoint_id = message
+                .metadata
+                .as_ref()
                 .and_then(|m| m.get("checkpoint_id"))
                 .and_then(|v| v.as_str())
                 .unwrap_or("checkpoint_10");
             let mut metadata = HashMap::new();
-            metadata.insert("resumed_from".to_string(), serde_json::Value::String(checkpoint_id.to_string()));
-            metadata.insert("iterations_remaining".to_string(), serde_json::Value::Number(10.into()));
+            metadata.insert(
+                "resumed_from".to_string(),
+                serde_json::Value::String(checkpoint_id.to_string()),
+            );
+            metadata.insert(
+                "iterations_remaining".to_string(),
+                serde_json::Value::Number(10.into()),
+            );
             metadata.insert("state_restored".to_string(), serde_json::Value::Bool(true));
             (format!("Resumed from {}", checkpoint_id), metadata)
         } else if content.contains("until complete") {
             // Scenario 4: Stops on condition
             let mut metadata = HashMap::new();
             metadata.insert("stopped_early".to_string(), serde_json::Value::Bool(true));
-            metadata.insert("stop_reason".to_string(), serde_json::Value::String("condition_met".to_string()));
-            metadata.insert("iterations_completed".to_string(), serde_json::Value::Number(15.into()));
-            ("Stopped early after 15 iterations when condition met".to_string(), metadata)
+            metadata.insert(
+                "stop_reason".to_string(),
+                serde_json::Value::String("condition_met".to_string()),
+            );
+            metadata.insert(
+                "iterations_completed".to_string(),
+                serde_json::Value::Number(15.into()),
+            );
+            (
+                "Stopped early after 15 iterations when condition met".to_string(),
+                metadata,
+            )
         } else if content.contains("never-ending") {
             // Scenario 5: Respects maximum iterations
             let mut metadata = HashMap::new();
-            metadata.insert("iterations_completed".to_string(), serde_json::Value::Number(50.into()));
-            metadata.insert("reached_max_iterations".to_string(), serde_json::Value::Bool(true));
+            metadata.insert(
+                "iterations_completed".to_string(),
+                serde_json::Value::Number(50.into()),
+            );
+            metadata.insert(
+                "reached_max_iterations".to_string(),
+                serde_json::Value::Bool(true),
+            );
             ("Reached maximum of 50 iterations".to_string(), metadata)
         } else {
             // Default behavior
@@ -1601,7 +1990,8 @@ fn execute_chain_of_thought(
         } else if content_lower.contains("2x") || content_lower.contains("solve") {
             // Equation solving scenario
             (
-                "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42".to_string(),
+                "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    .to_string(),
                 vec![
                     "First approach: analyze directly.",
                     "Calculate step by step.",
@@ -1611,7 +2001,8 @@ fn execute_chain_of_thought(
         } else if content_lower == "test" || message.content.is_empty() {
             // Generic test scenarios - use numbered steps format
             (
-                "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42".to_string(),
+                "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    .to_string(),
                 vec![
                     "First approach: analyze directly.",
                     "Calculate step by step.",
@@ -1621,7 +2012,8 @@ fn execute_chain_of_thought(
         } else {
             // Fallback for other scenarios
             (
-                "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42".to_string(),
+                "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42"
+                    .to_string(),
                 vec![
                     "First approach: analyze directly.",
                     "Calculate step by step.",
@@ -1687,7 +2079,8 @@ fn execute_tree_of_thought(
     }
 
     // Generate mock response that matches Python's MockAgent
-    let mock_response = "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42";
+    let mock_response =
+        "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42";
 
     // Build content: input + newline + mock response (matches Python)
     let content = format!("{}\n{}", message.content, mock_response);
@@ -1952,7 +2345,10 @@ fn execute_memory_with_operations(
 ) -> Result<Message, String> {
     // Memory pattern uses operations[] instead of message
     let empty_vec = vec![];
-    let operations = input.get("operations").and_then(|v| v.as_array()).unwrap_or(&empty_vec);
+    let operations = input
+        .get("operations")
+        .and_then(|v| v.as_array())
+        .unwrap_or(&empty_vec);
     let retention_strategy = config
         .get("retention_strategy")
         .and_then(|v| v.as_str())
@@ -1995,25 +2391,43 @@ fn execute_memory_with_operations(
 
     if has_retrieve && !has_store_with_timestamp && !has_importance && !has_semantic_query {
         // Scenario: memory_basic_storage
-        metadata.insert("retrieved_memories".to_string(), serde_json::json!([
-            {"content": "User prefers dark mode", "relevance": 0.9}
-        ]));
+        metadata.insert(
+            "retrieved_memories".to_string(),
+            serde_json::json!([
+                {"content": "User prefers dark mode", "relevance": 0.9}
+            ]),
+        );
     } else if retention_strategy == "importance" && has_importance {
         // Scenario: memory_importance_weighting
-        metadata.insert("stored_memories".to_string(), serde_json::json!(["High importance fact", "Medium importance fact"]));
-        metadata.insert("dropped_memories".to_string(), serde_json::json!(["Low importance fact"]));
+        metadata.insert(
+            "stored_memories".to_string(),
+            serde_json::json!(["High importance fact", "Medium importance fact"]),
+        );
+        metadata.insert(
+            "dropped_memories".to_string(),
+            serde_json::json!(["Low importance fact"]),
+        );
     } else if retention_strategy == "recency" && has_store_with_timestamp {
         // Scenario: memory_recency_weighting
-        metadata.insert("stored_memories".to_string(), serde_json::json!(["Recent memory", "Old memory"]));
+        metadata.insert(
+            "stored_memories".to_string(),
+            serde_json::json!(["Recent memory", "Old memory"]),
+        );
     } else if has_semantic_query {
         // Scenario: memory_vector_search
-        metadata.insert("retrieved_memories".to_string(), serde_json::json!([
-            {"content": "Climate change report", "similarity": 0.95},
-            {"content": "Weather patterns study", "similarity": 0.82}
-        ]));
+        metadata.insert(
+            "retrieved_memories".to_string(),
+            serde_json::json!([
+                {"content": "Climate change report", "similarity": 0.95},
+                {"content": "Weather patterns study", "similarity": 0.82}
+            ]),
+        );
     } else {
         // Scenario: memory_summarization
-        metadata.insert("summary".to_string(), serde_json::json!("Conversation about project deadlines and team coordination"));
+        metadata.insert(
+            "summary".to_string(),
+            serde_json::json!("Conversation about project deadlines and team coordination"),
+        );
         metadata.insert("summary_compression".to_string(), serde_json::json!(0.6));
     }
 
@@ -2063,7 +2477,10 @@ fn execute_conversational_with_messages(
 
         let mut metadata = HashMap::new();
         metadata.insert("history_length".to_string(), serde_json::json!(max_history));
-        metadata.insert("oldest_message".to_string(), serde_json::json!(oldest_content));
+        metadata.insert(
+            "oldest_message".to_string(),
+            serde_json::json!(oldest_content),
+        );
         (metadata, "Response with limited history".to_string())
     } else if config.get("memory_type").and_then(|v| v.as_str()) == Some("summarization") {
         // Scenario: conversational_summarization
@@ -2079,11 +2496,16 @@ fn execute_conversational_with_messages(
     } else {
         // Scenario: conversational_context (default)
         let mut metadata = HashMap::new();
-        metadata.insert("history_length".to_string(), serde_json::json!(history_length));
+        metadata.insert(
+            "history_length".to_string(),
+            serde_json::json!(history_length),
+        );
 
         // Check if asking for name
         let last_content_lower = last_content.to_lowercase();
-        let response = if last_content_lower.contains("what's my name") || last_content_lower.contains("what is my name") {
+        let response = if last_content_lower.contains("what's my name")
+            || last_content_lower.contains("what is my name")
+        {
             "Your name is Alice".to_string()
         } else {
             format!("Response to: {}", last_content)

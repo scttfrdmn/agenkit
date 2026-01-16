@@ -220,11 +220,17 @@ mod tests {
         let pricing = ModelPricing::new();
 
         // Test GPT-4: $30/1M input, $60/1M output
-        let cost = pricing.calculate("gpt-4", 1_000_000, 500_000).await.unwrap();
+        let cost = pricing
+            .calculate("gpt-4", 1_000_000, 500_000)
+            .await
+            .unwrap();
         assert!((cost - 60.0).abs() < 0.01); // $30 + $30 = $60
 
         // Test GPT-3.5: $0.5/1M input, $1.5/1M output
-        let cost = pricing.calculate("gpt-3.5-turbo", 1_000_000, 1_000_000).await.unwrap();
+        let cost = pricing
+            .calculate("gpt-3.5-turbo", 1_000_000, 1_000_000)
+            .await
+            .unwrap();
         assert!((cost - 2.0).abs() < 0.01); // $0.5 + $1.5 = $2
     }
 
@@ -263,7 +269,10 @@ mod tests {
 
         pricing.update_pricing(custom_info).await;
 
-        let cost = pricing.calculate("custom-model", 1_000_000, 1_000_000).await.unwrap();
+        let cost = pricing
+            .calculate("custom-model", 1_000_000, 1_000_000)
+            .await
+            .unwrap();
         assert!((cost - 15.0).abs() < 0.01);
     }
 

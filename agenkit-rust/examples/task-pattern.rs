@@ -299,7 +299,11 @@ async fn example_batch_processing() -> Result<(), AgentError> {
         let (doc_num, result) = handle.await.unwrap();
         match result {
             Ok(message) => {
-                println!("Document {}: {}", doc_num, message.content_as_str().unwrap());
+                println!(
+                    "Document {}: {}",
+                    doc_num,
+                    message.content_as_str().unwrap()
+                );
             }
             Err(e) => {
                 println!("Document {}: Error - {}", doc_num, e);

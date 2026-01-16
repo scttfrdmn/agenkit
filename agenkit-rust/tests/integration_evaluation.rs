@@ -4,7 +4,7 @@
 //! result analysis, and performance assessment.
 
 use agenkit::core::{Agent, AgentError, Message};
-use agenkit::evaluation::{SessionResult, SessionStatus, MetricsCollector};
+use agenkit::evaluation::{MetricsCollector, SessionResult, SessionStatus};
 use async_trait::async_trait;
 use serde_json::json;
 use std::time::Instant;
@@ -26,7 +26,10 @@ impl Agent for EvalTestAgent {
         tokio::time::sleep(tokio::time::Duration::from_millis(self.latency_ms)).await;
 
         let content = message.content_as_str().unwrap_or("test");
-        Ok(Message::with_text("assistant", format!("Eval: {}", content)))
+        Ok(Message::with_text(
+            "assistant",
+            format!("Eval: {}", content),
+        ))
     }
 
     fn capabilities(&self) -> Vec<String> {

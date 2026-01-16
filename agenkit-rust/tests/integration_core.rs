@@ -47,30 +47,12 @@ async fn test_message_creation() {
 #[tokio::test]
 async fn test_message_serialization() {
     let mut metadata = HashMap::new();
-    metadata.insert(
-        "string".to_string(),
-        json!("value"),
-    );
-    metadata.insert(
-        "number".to_string(),
-        json!(42),
-    );
-    metadata.insert(
-        "float".to_string(),
-        json!(3.14),
-    );
-    metadata.insert(
-        "bool".to_string(),
-        json!(true),
-    );
-    metadata.insert(
-        "nested".to_string(),
-        json!({"key": "value"}),
-    );
-    metadata.insert(
-        "list".to_string(),
-        json!([1, 2, 3]),
-    );
+    metadata.insert("string".to_string(), json!("value"));
+    metadata.insert("number".to_string(), json!(42));
+    metadata.insert("float".to_string(), json!(3.14));
+    metadata.insert("bool".to_string(), json!(true));
+    metadata.insert("nested".to_string(), json!({"key": "value"}));
+    metadata.insert("list".to_string(), json!([1, 2, 3]));
 
     let original = Message {
         role: "user".to_string(),
@@ -84,15 +66,48 @@ async fn test_message_serialization() {
     assert!(!json_str.is_empty());
 
     // Deserialize
-    let deserialized: Message =
-        serde_json::from_str(&json_str).expect("Failed to deserialize");
+    let deserialized: Message = serde_json::from_str(&json_str).expect("Failed to deserialize");
 
     assert_eq!(deserialized.role, "user");
     assert_eq!(deserialized.content_as_str().unwrap(), "Test message");
-    assert_eq!(deserialized.metadata.get("string").unwrap().as_str().unwrap(), "value");
-    assert_eq!(deserialized.metadata.get("number").unwrap().as_i64().unwrap(), 42);
-    assert!((deserialized.metadata.get("float").unwrap().as_f64().unwrap() - 3.14).abs() < 0.01);
-    assert_eq!(deserialized.metadata.get("bool").unwrap().as_bool().unwrap(), true);
+    assert_eq!(
+        deserialized
+            .metadata
+            .get("string")
+            .unwrap()
+            .as_str()
+            .unwrap(),
+        "value"
+    );
+    assert_eq!(
+        deserialized
+            .metadata
+            .get("number")
+            .unwrap()
+            .as_i64()
+            .unwrap(),
+        42
+    );
+    assert!(
+        (deserialized
+            .metadata
+            .get("float")
+            .unwrap()
+            .as_f64()
+            .unwrap()
+            - 3.14)
+            .abs()
+            < 0.01
+    );
+    assert_eq!(
+        deserialized
+            .metadata
+            .get("bool")
+            .unwrap()
+            .as_bool()
+            .unwrap(),
+        true
+    );
 }
 
 /// Test 3: Agent basic processing
@@ -182,8 +197,7 @@ async fn test_agent_with_complex_metadata() {
         "counts": [1, 2, 3, 4, 5]
     });
 
-    let msg = Message::with_text("user", "Complex test")
-        .with_metadata("context", complex_metadata);
+    let msg = Message::with_text("user", "Complex test").with_metadata("context", complex_metadata);
 
     let response = agent.process(msg).await.expect("Process failed");
 
@@ -221,10 +235,7 @@ async fn test_agent_consistency() {
 
     let mut results = Vec::new();
     for _ in 0..3 {
-        let response = agent
-            .process(msg.clone())
-            .await
-            .expect("Process failed");
+        let response = agent.process(msg.clone()).await.expect("Process failed");
         results.push(response.content_as_str().unwrap().to_string());
     }
 

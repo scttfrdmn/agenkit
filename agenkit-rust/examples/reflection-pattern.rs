@@ -25,7 +25,8 @@ impl Agent for SimpleGenerator {
             // This is a refinement request
             format!(
                 "Refined version: improved and enhanced {}",
-                content.split("Previous Output")
+                content
+                    .split("Previous Output")
                     .nth(1)
                     .and_then(|s| s.split("Critique:").next())
                     .unwrap_or("output")
@@ -103,7 +104,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let result = reflection_agent.process(message).await?;
 
     // Display results
-    println!("\n✅ Final output: {}", result.content_as_str().unwrap_or(""));
+    println!(
+        "\n✅ Final output: {}",
+        result.content_as_str().unwrap_or("")
+    );
     println!("\n📊 Reflection Metadata:");
     println!(
         "   Iterations: {}",
@@ -126,10 +130,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("\n📈 Reflection History:");
         if let Some(steps) = history.as_array() {
             for step in steps {
-                println!("   Iteration {}: Score = {}, Improvement = {}",
-                    step["iteration"],
-                    step["quality_score"],
-                    step["improvement"]
+                println!(
+                    "   Iteration {}: Score = {}, Improvement = {}",
+                    step["iteration"], step["quality_score"], step["improvement"]
                 );
             }
         }

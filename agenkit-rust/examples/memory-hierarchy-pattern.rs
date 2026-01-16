@@ -14,8 +14,7 @@
 //! 8. Session Isolation - Multi-user memory management
 
 use agenkit::patterns::{
-    MemoryHierarchy, WorkingMemory, ShortTermMemory, LongTermMemory,
-    create_memory_entry,
+    create_memory_entry, LongTermMemory, MemoryHierarchy, ShortTermMemory, WorkingMemory,
 };
 use std::collections::HashMap;
 
@@ -39,7 +38,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let messages = working.retrieve("Message", 10).await?;
     println!("Working memory (max 5): {} messages stored", messages.len());
-    println!("Messages: {:?}", messages.iter().map(|m| &m.content).collect::<Vec<_>>());
+    println!(
+        "Messages: {:?}",
+        messages.iter().map(|m| &m.content).collect::<Vec<_>>()
+    );
     println!("✓ LRU eviction kept only the last 5 messages\n");
 
     // Scenario 2: Short-Term Memory with TTL
@@ -89,7 +91,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let all_memories = long_term.retrieve("", 10).await?;
     println!("Stored 2 memories (importance 0.5 and 0.9)");
-    println!("Retrieved with min_importance=0.7: {} memories", all_memories.len());
+    println!(
+        "Retrieved with min_importance=0.7: {} memories",
+        all_memories.len()
+    );
     println!("Memory: {}", all_memories[0].content);
     println!("✓ Importance-based filtering kept only high-value memories\n");
 
@@ -102,28 +107,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Store in working memory
-    memory.store(
-        "Current topic: Rust patterns",
-        HashMap::new(),
-        0.7,
-        Some("session-3".to_string()),
-    ).await?;
+    memory
+        .store(
+            "Current topic: Rust patterns",
+            HashMap::new(),
+            0.7,
+            Some("session-3".to_string()),
+        )
+        .await?;
 
     // Store in short-term
-    memory.store(
-        "User asked about memory patterns yesterday",
-        HashMap::new(),
-        0.6,
-        Some("session-2".to_string()),
-    ).await?;
+    memory
+        .store(
+            "User asked about memory patterns yesterday",
+            HashMap::new(),
+            0.6,
+            Some("session-2".to_string()),
+        )
+        .await?;
 
     // Store in long-term
-    memory.store(
-        "User prefers async/await over callbacks",
-        HashMap::new(),
-        0.85,
-        Some("session-1".to_string()),
-    ).await?;
+    memory
+        .store(
+            "User prefers async/await over callbacks",
+            HashMap::new(),
+            0.85,
+            Some("session-1".to_string()),
+        )
+        .await?;
 
     println!("Stored memories across all three tiers");
     println!("Working: current conversation");
@@ -137,32 +148,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Query: 'Rust'");
     println!("Results: {} memories found", results.len());
     for (i, result) in results.iter().enumerate() {
-        println!("  {}. {} (importance: {:.2})", i + 1, result.content, result.importance);
+        println!(
+            "  {}. {} (importance: {:.2})",
+            i + 1,
+            result.content,
+            result.importance
+        );
     }
     println!("✓ Retrieved and ranked results from all tiers\n");
 
     // Scenario 6: Tier-Specific Retrieval
     println!("--- Scenario 6: Tier-Specific Retrieval ---");
 
-    let working_only = memory.retrieve(
-        "topic",
-        5,
-        Some(vec!["working".to_string()]),
-    ).await?;
+    let working_only = memory
+        .retrieve("topic", 5, Some(vec!["working".to_string()]))
+        .await?;
     println!("Working memory only: {} results", working_only.len());
 
-    let long_term_only = memory.retrieve(
-        "User",
-        5,
-        Some(vec!["long_term".to_string()]),
-    ).await?;
+    let long_term_only = memory
+        .retrieve("User", 5, Some(vec!["long_term".to_string()]))
+        .await?;
     println!("Long-term memory only: {} results", long_term_only.len());
 
-    let short_and_long = memory.retrieve(
-        "",
-        10,
-        Some(vec!["short_term".to_string(), "long_term".to_string()]),
-    ).await?;
+    let short_and_long = memory
+        .retrieve(
+            "",
+            10,
+            Some(vec!["short_term".to_string(), "long_term".to_string()]),
+        )
+        .await?;
     println!("Short-term + Long-term: {} results", short_and_long.len());
     println!("✓ Selective tier querying for optimized retrieval\n");
 
@@ -174,12 +188,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     metadata.insert("confidence".to_string(), serde_json::json!(0.95));
     metadata.insert("source".to_string(), serde_json::json!("explicit"));
 
-    memory.store(
-        "User prefers functional programming style",
-        metadata.clone(),
-        0.9,
-        Some("session-4".to_string()),
-    ).await?;
+    memory
+        .store(
+            "User prefers functional programming style",
+            metadata.clone(),
+            0.9,
+            Some("session-4".to_string()),
+        )
+        .await?;
 
     println!("Stored memory with metadata:");
     println!("  Category: preference");
@@ -203,20 +219,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // User 1
-    user1_memory.store(
-        "User 1 prefers Python",
-        HashMap::new(),
-        0.8,
-        Some("user-1-session-1".to_string()),
-    ).await?;
+    user1_memory
+        .store(
+            "User 1 prefers Python",
+            HashMap::new(),
+            0.8,
+            Some("user-1-session-1".to_string()),
+        )
+        .await?;
 
     // User 2
-    user2_memory.store(
-        "User 2 prefers Go",
-        HashMap::new(),
-        0.8,
-        Some("user-2-session-1".to_string()),
-    ).await?;
+    user2_memory
+        .store(
+            "User 2 prefers Go",
+            HashMap::new(),
+            0.8,
+            Some("user-2-session-1".to_string()),
+        )
+        .await?;
 
     let user1_prefs = user1_memory.retrieve("prefers", 5, None).await?;
     let user2_prefs = user2_memory.retrieve("prefers", 5, None).await?;
@@ -235,18 +255,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     for i in 1..=15 {
-        stats_memory.store(
-            format!("Fact number {}", i),
-            HashMap::new(),
-            0.5 + (i as f64 / 30.0), // Varying importance
-            Some("session-5".to_string()),
-        ).await?;
+        stats_memory
+            .store(
+                format!("Fact number {}", i),
+                HashMap::new(),
+                0.5 + (i as f64 / 30.0), // Varying importance
+                Some("session-5".to_string()),
+            )
+            .await?;
     }
 
     let all = stats_memory.retrieve("", 100, None).await?;
-    let working_count = all.iter().filter(|e| {
-        e.timestamp > chrono::Utc::now() - chrono::Duration::seconds(1)
-    }).count();
+    let working_count = all
+        .iter()
+        .filter(|e| e.timestamp > chrono::Utc::now() - chrono::Duration::seconds(1))
+        .count();
 
     println!("Total memories stored: 15");
     println!("Memories retrieved: {}", all.len());
@@ -257,26 +280,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Scenario 10: Importance-Based Ranking
     println!("--- Scenario 10: Importance-Based Ranking ---");
 
-    let ranking_memory = MemoryHierarchy::new(
-        WorkingMemory::new(20)?,
-        None,
-        None,
-    );
+    let ranking_memory = MemoryHierarchy::new(WorkingMemory::new(20)?, None, None);
 
     let importances = vec![0.3, 0.9, 0.5, 0.8, 0.4];
     for (i, importance) in importances.iter().enumerate() {
-        ranking_memory.store(
-            format!("Item {} (importance {:.1})", i + 1, importance),
-            HashMap::new(),
-            *importance,
-            None,
-        ).await?;
+        ranking_memory
+            .store(
+                format!("Item {} (importance {:.1})", i + 1, importance),
+                HashMap::new(),
+                *importance,
+                None,
+            )
+            .await?;
     }
 
     let ranked = ranking_memory.retrieve("Item", 10, None).await?;
     println!("Memories ranked by importance:");
     for (i, memory) in ranked.iter().enumerate() {
-        println!("  {}. {} - importance: {:.1}", i + 1, memory.content, memory.importance);
+        println!(
+            "  {}. {} - importance: {:.1}",
+            i + 1,
+            memory.content,
+            memory.importance
+        );
     }
     println!("✓ Retrieval automatically ranks by importance and recency\n");
 

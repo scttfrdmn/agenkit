@@ -178,7 +178,10 @@ impl TimeoutConfigBuilder {
     ///
     /// Allows different timeout durations for different operations based on
     /// the "method" or "operation" field in message metadata.
-    pub fn method_timeouts(mut self, timeouts: std::collections::HashMap<String, Duration>) -> Self {
+    pub fn method_timeouts(
+        mut self,
+        timeouts: std::collections::HashMap<String, Duration>,
+    ) -> Self {
         self.method_timeouts = Some(timeouts);
         self
     }
@@ -292,8 +295,7 @@ impl<A: Agent> Agent for TimeoutMiddleware<A> {
 
         #[cfg(feature = "native")]
         {
-            let result =
-                tokio::time::timeout(timeout, self.inner.process(message)).await;
+            let result = tokio::time::timeout(timeout, self.inner.process(message)).await;
 
             let duration = start_time.elapsed();
 

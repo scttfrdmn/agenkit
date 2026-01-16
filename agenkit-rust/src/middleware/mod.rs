@@ -45,31 +45,24 @@
 //! }
 //! ```
 
-pub mod retry;
-pub mod circuit_breaker;
-pub mod timeout;
-pub mod rate_limiter;
-pub mod per_user_rate_limiter;
-pub mod caching;
 pub mod batching;
+pub mod caching;
+pub mod circuit_breaker;
+pub mod per_user_rate_limiter;
+pub mod rate_limiter;
+pub mod retry;
+pub mod timeout;
 
-pub use retry::{RetryConfig, RetryConfigBuilder, RetryMiddleware, RetryMetrics};
-pub use circuit_breaker::{
-    CircuitBreakerConfig,
-    CircuitBreakerConfigBuilder,
-    CircuitBreakerMiddleware,
-    CircuitBreakerMetrics,
-    CircuitState,
-};
-pub use timeout::{TimeoutConfig, TimeoutConfigBuilder, TimeoutMiddleware, TimeoutMetrics};
-pub use rate_limiter::{RateLimiterConfig, RateLimiterConfigBuilder, RateLimiterMiddleware};
-pub use per_user_rate_limiter::{
-    PerUserRateLimiterConfig,
-    PerUserRateLimiterConfigBuilder,
-    PerUserRateLimiterMetrics,
-    PerUserRateLimiterMiddleware,
-    PerUserRateLimitError,
-    UserIdExtractor,
-};
-pub use caching::{CachingConfig, CachingConfigBuilder, CachingMiddleware};
 pub use batching::{BatchingConfig, BatchingConfigBuilder, BatchingMiddleware};
+pub use caching::{CachingConfig, CachingConfigBuilder, CachingMiddleware};
+pub use circuit_breaker::{
+    CircuitBreakerConfig, CircuitBreakerConfigBuilder, CircuitBreakerMetrics,
+    CircuitBreakerMiddleware, CircuitState,
+};
+pub use per_user_rate_limiter::{
+    PerUserRateLimitError, PerUserRateLimiterConfig, PerUserRateLimiterConfigBuilder,
+    PerUserRateLimiterMetrics, PerUserRateLimiterMiddleware, UserIdExtractor,
+};
+pub use rate_limiter::{RateLimiterConfig, RateLimiterConfigBuilder, RateLimiterMiddleware};
+pub use retry::{RetryConfig, RetryConfigBuilder, RetryMetrics, RetryMiddleware};
+pub use timeout::{TimeoutConfig, TimeoutConfigBuilder, TimeoutMetrics, TimeoutMiddleware};

@@ -5,7 +5,7 @@
 
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::evaluation::ab_testing::{
-    ABTest, ABVariant, StatisticalTestType, SignificanceLevel, TestCase,
+    ABTest, ABVariant, SignificanceLevel, StatisticalTestType, TestCase,
 };
 use async_trait::async_trait;
 use rand::Rng;

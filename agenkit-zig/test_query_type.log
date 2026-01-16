@@ -1,0 +1,3 @@
+{"event_id":"0000019bc7b72b6a-c7b7-019bªªªªªªªªªª","timestamp":1768582228842,"event_type":"agent_created","agent_name":"agent1","severity":"INFO"}
+{"event_id":"0000019bc7b72b6a-c7b7-019bªªªªªªªªªª","timestamp":1768582228842,"event_type":"message_processed","agent_name":"agent2","severity":"INFO"}
+{"event_id":"0000019bc7b72b6a-c7b7-019bªªªªªªªªªª","timestamp":1768582228842,"event_type":"agent_created","agent_name":"agent3","severity":"INFO"}

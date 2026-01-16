@@ -1,0 +1,38 @@
+var namespaceagenkit_1_1middleware =
+[
+    [ "BatchingMetrics", "structagenkit_1_1middleware_1_1_batching_metrics.html", "structagenkit_1_1middleware_1_1_batching_metrics" ],
+    [ "BatchingConfig", "structagenkit_1_1middleware_1_1_batching_config.html", "structagenkit_1_1middleware_1_1_batching_config" ],
+    [ "BatchingMiddleware", "classagenkit_1_1middleware_1_1_batching_middleware.html", "classagenkit_1_1middleware_1_1_batching_middleware" ],
+    [ "CacheEntry", "structagenkit_1_1middleware_1_1_cache_entry.html", "structagenkit_1_1middleware_1_1_cache_entry" ],
+    [ "CachingConfig", "structagenkit_1_1middleware_1_1_caching_config.html", "structagenkit_1_1middleware_1_1_caching_config" ],
+    [ "CachingMetrics", "structagenkit_1_1middleware_1_1_caching_metrics.html", "structagenkit_1_1middleware_1_1_caching_metrics" ],
+    [ "CachingMiddleware", "classagenkit_1_1middleware_1_1_caching_middleware.html", "classagenkit_1_1middleware_1_1_caching_middleware" ],
+    [ "CircuitBreakerError", "classagenkit_1_1middleware_1_1_circuit_breaker_error.html", "classagenkit_1_1middleware_1_1_circuit_breaker_error" ],
+    [ "CircuitBreakerConfig", "structagenkit_1_1middleware_1_1_circuit_breaker_config.html", "structagenkit_1_1middleware_1_1_circuit_breaker_config" ],
+    [ "CircuitBreakerMetrics", "structagenkit_1_1middleware_1_1_circuit_breaker_metrics.html", "structagenkit_1_1middleware_1_1_circuit_breaker_metrics" ],
+    [ "CircuitBreakerMiddleware", "classagenkit_1_1middleware_1_1_circuit_breaker_middleware.html", "classagenkit_1_1middleware_1_1_circuit_breaker_middleware" ],
+    [ "PerUserRateLimitError", "classagenkit_1_1middleware_1_1_per_user_rate_limit_error.html", "classagenkit_1_1middleware_1_1_per_user_rate_limit_error" ],
+    [ "PerUserRateLimiterConfig", "structagenkit_1_1middleware_1_1_per_user_rate_limiter_config.html", "structagenkit_1_1middleware_1_1_per_user_rate_limiter_config" ],
+    [ "PerUserRateLimiterMetrics", "structagenkit_1_1middleware_1_1_per_user_rate_limiter_metrics.html", "structagenkit_1_1middleware_1_1_per_user_rate_limiter_metrics" ],
+    [ "UserBucket", "structagenkit_1_1middleware_1_1_user_bucket.html", "structagenkit_1_1middleware_1_1_user_bucket" ],
+    [ "PerUserRateLimiterMiddleware", "classagenkit_1_1middleware_1_1_per_user_rate_limiter_middleware.html", "classagenkit_1_1middleware_1_1_per_user_rate_limiter_middleware" ],
+    [ "RateLimitError", "classagenkit_1_1middleware_1_1_rate_limit_error.html", "classagenkit_1_1middleware_1_1_rate_limit_error" ],
+    [ "RateLimiterConfig", "structagenkit_1_1middleware_1_1_rate_limiter_config.html", "structagenkit_1_1middleware_1_1_rate_limiter_config" ],
+    [ "RateLimiterMetrics", "structagenkit_1_1middleware_1_1_rate_limiter_metrics.html", "structagenkit_1_1middleware_1_1_rate_limiter_metrics" ],
+    [ "RateLimiterMiddleware", "classagenkit_1_1middleware_1_1_rate_limiter_middleware.html", "classagenkit_1_1middleware_1_1_rate_limiter_middleware" ],
+    [ "RetryConfig", "structagenkit_1_1middleware_1_1_retry_config.html", "structagenkit_1_1middleware_1_1_retry_config" ],
+    [ "RetryMetrics", "structagenkit_1_1middleware_1_1_retry_metrics.html", "structagenkit_1_1middleware_1_1_retry_metrics" ],
+    [ "RetryMiddleware", "classagenkit_1_1middleware_1_1_retry_middleware.html", "classagenkit_1_1middleware_1_1_retry_middleware" ],
+    [ "TimeoutError", "classagenkit_1_1middleware_1_1_timeout_error.html", "classagenkit_1_1middleware_1_1_timeout_error" ],
+    [ "TimeoutConfig", "structagenkit_1_1middleware_1_1_timeout_config.html", "structagenkit_1_1middleware_1_1_timeout_config" ],
+    [ "TimeoutMetrics", "structagenkit_1_1middleware_1_1_timeout_metrics.html", "structagenkit_1_1middleware_1_1_timeout_metrics" ],
+    [ "TimeoutMiddleware", "classagenkit_1_1middleware_1_1_timeout_middleware.html", "classagenkit_1_1middleware_1_1_timeout_middleware" ],
+    [ "UserIdExtractor", "namespaceagenkit_1_1middleware.html#adaec76fda9990d83bea1d33a1c7010d1", null ],
+    [ "CircuitState", "namespaceagenkit_1_1middleware.html#a3dba184c2290ed4528b3fa0659ee415f", [
+      [ "CLOSED", "namespaceagenkit_1_1middleware.html#a3dba184c2290ed4528b3fa0659ee415fa110ccf2f5d2ff4eda1fd1a494293467d", null ],
+      [ "OPEN", "namespaceagenkit_1_1middleware.html#a3dba184c2290ed4528b3fa0659ee415faa38bd5138bf35514df41a1795ebbf5c3", null ],
+      [ "HALF_OPEN", "namespaceagenkit_1_1middleware.html#a3dba184c2290ed4528b3fa0659ee415fa5c1c0fca237f238d3c656d55a4db3ca4", null ]
+    ] ],
+    [ "default_user_id_extractor", "namespaceagenkit_1_1middleware.html#ab8e7a10c44df1aba23ba100fcf37b669", null ],
+    [ "state_to_string", "namespaceagenkit_1_1middleware.html#a6d0650af5d0599d3cb345c2a79ed1376", null ]
+];

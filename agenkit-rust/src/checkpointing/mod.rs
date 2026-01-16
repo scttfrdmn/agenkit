@@ -45,11 +45,11 @@
 //! ```
 
 pub mod checkpoint;
-pub mod storage;
-pub mod manager;
 pub mod durable_agent;
+pub mod manager;
+pub mod storage;
 
 pub use checkpoint::Checkpoint;
-pub use storage::{CheckpointStorage, FileCheckpointStorage, InMemoryCheckpointStorage};
-pub use manager::CheckpointManager;
 pub use durable_agent::{DurableAgent, DurableAgentConfig};
+pub use manager::CheckpointManager;
+pub use storage::{CheckpointStorage, FileCheckpointStorage, InMemoryCheckpointStorage};

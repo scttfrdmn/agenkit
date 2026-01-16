@@ -67,9 +67,21 @@ impl ThinkingModeDetector {
 
         // Reasoning keywords (0.0 - 0.35)
         let reasoning_keywords = [
-            "why", "how", "explain", "reason", "prove", "derive",
-            "logical", "analyze", "deduce", "infer", "conclude",
-            "theorem", "proof", "chain", "step-by-step",
+            "why",
+            "how",
+            "explain",
+            "reason",
+            "prove",
+            "derive",
+            "logical",
+            "analyze",
+            "deduce",
+            "infer",
+            "conclude",
+            "theorem",
+            "proof",
+            "chain",
+            "step-by-step",
         ];
 
         let reasoning_count = reasoning_keywords
@@ -90,8 +102,15 @@ impl ThinkingModeDetector {
 
         // Multi-step indicators (0.0 - 0.30)
         let multi_step_keywords = [
-            "first", "second", "then", "next", "finally",
-            "step", "process", "workflow", "procedure",
+            "first",
+            "second",
+            "then",
+            "next",
+            "finally",
+            "step",
+            "process",
+            "workflow",
+            "procedure",
         ];
 
         let step_count = multi_step_keywords
@@ -110,11 +129,7 @@ impl ThinkingModeDetector {
 
         // Mathematical/logical content (0.0 - 0.20)
         let has_math = content.contains('=') || content.contains('+') || content.contains('*');
-        let math_score = if has_math {
-            0.20
-        } else {
-            0.0
-        };
+        let math_score = if has_math { 0.20 } else { 0.0 };
         score += math_score;
 
         // Complexity indicators (0.0 - 0.15)
@@ -123,11 +138,7 @@ impl ThinkingModeDetector {
             .iter()
             .any(|&kw| content.to_lowercase().contains(kw));
 
-        let complexity_score = if has_complexity {
-            0.15
-        } else {
-            0.0
-        };
+        let complexity_score = if has_complexity { 0.15 } else { 0.0 };
         score += complexity_score;
 
         score.min(1.0)
@@ -162,12 +173,7 @@ impl ThinkingBudgetAllocator {
     }
 
     /// Create an allocator with custom multipliers.
-    pub fn with_multipliers(
-        base_budget: f64,
-        light: f64,
-        medium: f64,
-        deep: f64,
-    ) -> Self {
+    pub fn with_multipliers(base_budget: f64, light: f64, medium: f64, deep: f64) -> Self {
         Self {
             base_budget,
             light_multiplier: light,
@@ -195,9 +201,18 @@ impl ThinkingBudgetAllocator {
     /// Get budget breakdown for all modes.
     pub fn get_budget_breakdown(&self) -> Vec<(ThinkingMode, f64)> {
         vec![
-            (ThinkingMode::Normal, self.allocate_budget(ThinkingMode::Normal)),
-            (ThinkingMode::Light, self.allocate_budget(ThinkingMode::Light)),
-            (ThinkingMode::Medium, self.allocate_budget(ThinkingMode::Medium)),
+            (
+                ThinkingMode::Normal,
+                self.allocate_budget(ThinkingMode::Normal),
+            ),
+            (
+                ThinkingMode::Light,
+                self.allocate_budget(ThinkingMode::Light),
+            ),
+            (
+                ThinkingMode::Medium,
+                self.allocate_budget(ThinkingMode::Medium),
+            ),
             (ThinkingMode::Deep, self.allocate_budget(ThinkingMode::Deep)),
         ]
     }

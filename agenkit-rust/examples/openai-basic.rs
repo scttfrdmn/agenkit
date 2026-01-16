@@ -21,8 +21,8 @@ fn print_separator(title: &str) {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     print_separator("AgentKit Rust - OpenAI Basic Example");
 
-    let api_key = std::env::var("OPENAI_API_KEY")
-        .expect("OPENAI_API_KEY environment variable not set");
+    let api_key =
+        std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable not set");
 
     // Example 1: Simple completion
     print_separator("Example 1: Simple Completion with GPT-4 Turbo");

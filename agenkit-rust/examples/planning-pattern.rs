@@ -162,7 +162,13 @@ async fn example_simple_planning() -> Result<(), AgentError> {
             println!("Plan Details:");
             println!("  Goal: {}", plan.goal);
             println!("  Total Steps: {}", plan.steps.len());
-            println!("  Completed: {}", plan.steps.iter().filter(|s| s.status == StepStatus::Completed).count());
+            println!(
+                "  Completed: {}",
+                plan.steps
+                    .iter()
+                    .filter(|s| s.status == StepStatus::Completed)
+                    .count()
+            );
         }
     }
 
@@ -239,7 +245,12 @@ async fn example_progress_tracking() -> Result<(), AgentError> {
                     StepStatus::Pending => "○",
                 };
 
-                println!("{} Step {}: {}", status_icon, step.step_number + 1, step.description);
+                println!(
+                    "{} Step {}: {}",
+                    status_icon,
+                    step.step_number + 1,
+                    step.description
+                );
 
                 if let Some(result) = &step.result {
                     if let Some(result_str) = result.as_str() {
@@ -249,7 +260,14 @@ async fn example_progress_tracking() -> Result<(), AgentError> {
             }
 
             println!("\nProgress: {:.1}%", plan.get_progress());
-            println!("Status: {}", if plan.is_complete() { "Complete" } else { "In Progress" });
+            println!(
+                "Status: {}",
+                if plan.is_complete() {
+                    "Complete"
+                } else {
+                    "In Progress"
+                }
+            );
         }
     }
 

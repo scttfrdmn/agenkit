@@ -401,7 +401,8 @@ mod tests {
 
         let storage = Box::new(InMemoryCheckpointStorage::new());
         let manager = CheckpointManager::new(storage);
-        let durable = DurableAgent::with_manager_and_config(agent, "test".to_string(), manager, config);
+        let durable =
+            DurableAgent::with_manager_and_config(agent, "test".to_string(), manager, config);
 
         // Send 4 messages (should create 2 auto-checkpoints at steps 2 and 4)
         for i in 1..=4 {

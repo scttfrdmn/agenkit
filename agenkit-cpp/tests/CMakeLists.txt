@@ -260,6 +260,10 @@ if(AGENKIT_WITH_OBSERVABILITY)
     add_executable(test_observability_audit observability/test_audit.cpp)
     target_link_libraries(test_observability_audit agenkit gtest_main)
     add_test(NAME observability_audit_tests COMMAND test_observability_audit)
+
+    add_executable(test_observability_integration observability/test_integration.cpp)
+    target_link_libraries(test_observability_integration agenkit gtest_main)
+    add_test(NAME observability_integration_tests COMMAND test_observability_integration)
 endif()
 
 # Integration tests (optional, requires -DAGENKIT_BUILD_INTEGRATION_TESTS=ON)

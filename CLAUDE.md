@@ -34,9 +34,25 @@
 ### Project Context
 - **Project**: Agenkit - Cross-language AI agent **toolkit** (NOT a framework)
 - **Languages**: Python, Go, TypeScript, Rust, C++, Zig (100% feature parity achieved!)
-- **Current**: v0.46.0 (1,770+ tests passing, 67% faster tests)
-- **Next Release**: v0.9.0 - Release Candidate (Due: May 5, 2026)
-- **Tests**: `make test` (2-4 min locally, 100% pass required)
+- **Current**: v0.49.0 (66 observability tests, exceeds Python + Go combined)
+- **Tests**: `make test` (15-30s locally, 100% pass required)
+
+### 🚨 Testing Policy
+**USE LOCAL TESTING ONLY - NO CI/CD**
+
+- **Primary validation**: `make test` (fast, reliable, 15-30s)
+- **DO NOT** wait for or rely on GitHub CI/CD
+- **DO NOT** mention CI/CD in commit messages or docs
+- **WHY**: Current CI infrastructure is under-resourced
+- **All validation must pass locally before committing**
+
+Quick commands:
+```bash
+make test         # Fast validation (15-30s)
+make test-quick   # Quick smoke tests (~10s)
+make pre-commit   # Format + test
+make test-lint    # Full lint + test (optional)
+```
 
 ### Core Principle
 **Write idiomatic, production-quality code from the start** - not as an afterthought. Every line must pass linting checks and follow language idioms.
@@ -127,7 +143,7 @@ make test-quick
 ### Before Push (Full Validation)
 
 ```bash
-# Full lint + test (matches CI)
+# Full lint + test (optional, more thorough)
 make test-lint
 
 # Check cross-language parity
@@ -145,7 +161,7 @@ make test-lint
 | C++        | `cd agenkit-cpp/build && ctest`      | 50s   |
 | Zig        | `cd agenkit-zig && zig build test`   | 0.16s |
 
-**Local testing is your primary validation** - CI is slow (15-20 min).
+**Local testing is your ONLY validation** - No CI/CD available currently.
 
 ---
 
@@ -280,21 +296,22 @@ Examples in this codebase teach users how to use the toolkit. Non-idiomatic exam
 
 ## Current Release Status (Jan 2026)
 
+**v0.49.0 (Released January 16, 2026):**
+- ✅ Rust Observability - 66 tests (exceeds Python + Go combined!)
+- ✅ 4 modules: tracing, metrics, logging, audit
+- ✅ W3C Trace Context propagation
+- ✅ Production-ready with comprehensive examples
+- ✅ All tests passing locally (100%)
+
 **v0.46.0 (Released January 9, 2026):**
 - ✅ 67% faster tests (11+ min → 3:37) with pytest-xdist
 - ✅ Language updates: Python 3.13, Go 1.23, Node 22
-- ✅ CI/CD optimized: 99.7% pass rate in 5-6 minutes
 - ✅ 1,770+ tests passing, 100% success rate
 
-**v0.47.0 (In Development):**
-- 🔧 Post-v0.46.0 stability fixes
-- 🔧 CI simplification for weak environments
-- 🔧 Test reliability improvements
-
-**v0.9.0 - Release Candidate (Due: May 5, 2026):**
-- 🎯 Feature-complete beta for external testing
-- 📚 Complete documentation
-- 🧪 Production-grade testing
+**Next Focus:**
+- Maintain 100% local test pass rate
+- Continue feature parity across languages
+- Optimize for fast local development workflow
 
 See `ROADMAP.md` for complete release schedule.
 

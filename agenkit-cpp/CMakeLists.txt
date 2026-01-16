@@ -134,6 +134,13 @@ add_library(agenkit
     src/middleware/batching.cpp
 )
 
+# Add observability sources if enabled
+if(AGENKIT_WITH_OBSERVABILITY)
+    target_sources(agenkit PRIVATE
+        src/observability/tracing.cpp
+    )
+endif()
+
 target_include_directories(agenkit
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -155,6 +162,16 @@ if(AGENKIT_HAS_AWS_SDK)
     target_link_libraries(agenkit
         PRIVATE
             ${AWSSDK_LINK_LIBRARIES}
+    )
+endif()
+
+# Link OpenTelemetry if available
+if(AGENKIT_WITH_OBSERVABILITY)
+    target_link_libraries(agenkit
+        PRIVATE
+            opentelemetry-cpp::trace
+            opentelemetry-cpp::otlp_http_exporter
+            opentelemetry-cpp::ostream_span_exporter
     )
 endif()
 

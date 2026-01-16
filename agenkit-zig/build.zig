@@ -787,6 +787,38 @@ pub fn build(b: *std.Build) void {
     tracing_step.dependOn(&tracing_run.step);
     tracing_run.step.dependOn(b.getInstallStep());
 
+    // Add Observability Metrics example
+    const metrics_example = b.addExecutable(.{
+        .name = "metrics_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/observability/metrics_example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(metrics_example);
+    const metrics_step = b.step("run-metrics-example", "Run the metrics collection example");
+    const metrics_run = b.addRunArtifact(metrics_example);
+    metrics_step.dependOn(&metrics_run.step);
+    metrics_run.step.dependOn(b.getInstallStep());
+
+    // Add Observability Full Stack example
+    const observability_example = b.addExecutable(.{
+        .name = "observability_example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/observability/full_stack_example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{ .{ .name = "agenkit", .module = mod } },
+        }),
+    });
+    b.installArtifact(observability_example);
+    const observability_step = b.step("run-observability-example", "Run the full observability stack example");
+    const observability_run = b.addRunArtifact(observability_example);
+    observability_step.dependOn(&observability_run.step);
+    observability_run.step.dependOn(b.getInstallStep());
+
     // Add Pattern Benchmarks
     const pattern_benchmarks = b.addExecutable(.{
         .name = "pattern_benchmarks",

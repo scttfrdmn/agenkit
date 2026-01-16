@@ -50,6 +50,7 @@ pub fn main() !void {
 fn basicTracing(allocator: std.mem.Allocator) !void {
     // Create a base agent
     var echo = try EchoAgent.init(allocator);
+    defer echo.agent().deinit();
 
     // Wrap with tracing middleware
     var traced = try TracingMiddleware.init(allocator, echo.agent(), "echo-service");
@@ -61,7 +62,15 @@ fn basicTracing(allocator: std.mem.Allocator) !void {
 
     const result = try traced.agent().process(msg);
     var response = try result.unwrap();
-    defer response.deinit();
+    defer {
+        // Free traceparent string before deiniting response
+        if (response.getMetadata("traceparent")) |tp| {
+            if (tp == .string) {
+                allocator.free(tp.string);
+            }
+        }
+        response.deinit();
+    }
 
     std.debug.print("Input: {s}\n", .{msg.content.text});
     std.debug.print("Output: {s}\n", .{response.content.text});
@@ -90,6 +99,7 @@ fn traceContextPropagation(allocator: std.mem.Allocator) !void {
 
     // Setup traced agent
     var echo = try EchoAgent.init(allocator);
+    defer echo.agent().deinit();
     var traced = try TracingMiddleware.init(allocator, echo.agent(), "child-service");
     defer traced.deinit();
 
@@ -104,7 +114,15 @@ fn traceContextPropagation(allocator: std.mem.Allocator) !void {
     // Process - will create child span
     const result = try traced.agent().process(msg);
     var response = try result.unwrap();
-    defer response.deinit();
+    defer {
+        // Free traceparent string before deiniting response
+        if (response.getMetadata("traceparent")) |tp| {
+            if (tp == .string) {
+                allocator.free(tp.string);
+            }
+        }
+        response.deinit();
+    }
 
     // Extract child trace context
     if (response.getMetadata("traceparent")) |child_traceparent| {
@@ -130,14 +148,17 @@ fn traceContextPropagation(allocator: std.mem.Allocator) !void {
 fn multiAgentTracing(allocator: std.mem.Allocator) !void {
     // Create a chain of traced agents
     var echo1 = try EchoAgent.init(allocator);
+    defer echo1.agent().deinit();
     var traced1 = try TracingMiddleware.init(allocator, echo1.agent(), "service-1");
     defer traced1.deinit();
 
     var echo2 = try EchoAgent.init(allocator);
+    defer echo2.agent().deinit();
     var traced2 = try TracingMiddleware.init(allocator, echo2.agent(), "service-2");
     defer traced2.deinit();
 
     var echo3 = try EchoAgent.init(allocator);
+    defer echo3.agent().deinit();
     var traced3 = try TracingMiddleware.init(allocator, echo3.agent(), "service-3");
     defer traced3.deinit();
 
@@ -150,7 +171,12 @@ fn multiAgentTracing(allocator: std.mem.Allocator) !void {
     // Service 1
     const result1 = try traced1.agent().process(msg);
     var response1 = try result1.unwrap();
-    defer response1.deinit();
+    defer {
+        if (response1.getMetadata("traceparent")) |tp| {
+            if (tp == .string) allocator.free(tp.string);
+        }
+        response1.deinit();
+    }
 
     if (response1.getMetadata("traceparent")) |tp1| {
         std.debug.print("Service 1 Traceparent: {s}\n", .{tp1.string});
@@ -162,7 +188,12 @@ fn multiAgentTracing(allocator: std.mem.Allocator) !void {
     // Service 2 (receives trace context from service 1)
     const result2 = try traced2.agent().process(response1);
     var response2 = try result2.unwrap();
-    defer response2.deinit();
+    defer {
+        if (response2.getMetadata("traceparent")) |tp| {
+            if (tp == .string) allocator.free(tp.string);
+        }
+        response2.deinit();
+    }
 
     if (response2.getMetadata("traceparent")) |tp2| {
         std.debug.print("Service 2 Traceparent: {s}\n", .{tp2.string});
@@ -174,7 +205,12 @@ fn multiAgentTracing(allocator: std.mem.Allocator) !void {
     // Service 3 (receives trace context from service 2)
     const result3 = try traced3.agent().process(response2);
     var response3 = try result3.unwrap();
-    defer response3.deinit();
+    defer {
+        if (response3.getMetadata("traceparent")) |tp| {
+            if (tp == .string) allocator.free(tp.string);
+        }
+        response3.deinit();
+    }
 
     if (response3.getMetadata("traceparent")) |tp3| {
         std.debug.print("Service 3 Traceparent: {s}\n", .{tp3.string});

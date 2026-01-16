@@ -140,6 +140,7 @@ if(AGENKIT_WITH_OBSERVABILITY)
         src/observability/tracing.cpp
         src/observability/metrics.cpp
         src/observability/logging.cpp
+        src/observability/audit.cpp
     )
 endif()
 

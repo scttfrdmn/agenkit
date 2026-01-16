@@ -252,7 +252,18 @@ fi
 #==============================================================================
 echo "=== Rust Test Counts ==="
 
-RUST_TOTAL=$(cargo test --manifest-path agenkit-rust/Cargo.toml --lib 2>&1 | grep "^test " | wc -l | tr -d ' ')
+# Count lib tests (basic modules)
+RUST_LIB=$(cargo test --manifest-path agenkit-rust/Cargo.toml --lib 2>&1 | grep "^test " | wc -l | tr -d ' ')
+
+# Count observability tests (lib + integration, requires feature flag)
+RUST_OBSERVABILITY_LIB=$(cargo test --manifest-path agenkit-rust/Cargo.toml --lib --features opentelemetry 2>&1 | grep "^test " | grep -E "observability::" | wc -l | tr -d ' ')
+RUST_OBSERVABILITY_INTEGRATION=$(cargo test --manifest-path agenkit-rust/Cargo.toml --test integration_observability --features opentelemetry 2>&1 | grep -E "running [0-9]+ test" | grep -oE "[0-9]+" || echo "0")
+
+RUST_OBSERVABILITY=$((RUST_OBSERVABILITY_LIB + RUST_OBSERVABILITY_INTEGRATION))
+
+# Total includes all tests
+RUST_TOTAL=$((RUST_LIB + RUST_OBSERVABILITY_INTEGRATION))
+
 echo "Total: $RUST_TOTAL"
 
 # Rust by category (approximate from test names)
@@ -265,6 +276,7 @@ echo "  Patterns: $RUST_PATTERNS"
 echo "  Techniques: $RUST_TECHNIQUES"
 echo "  Adapters: $RUST_ADAPTERS"
 echo "  Evaluation: $RUST_EVALUATION"
+echo "  Observability: $RUST_OBSERVABILITY (lib: $RUST_OBSERVABILITY_LIB + integration: $RUST_OBSERVABILITY_INTEGRATION)"
 echo "  Safety: 0 (not implemented)"
 echo "  Routing: 0 (not implemented)"
 echo "  Chaos: 0 (not implemented)"
@@ -276,6 +288,7 @@ jq --arg total "$RUST_TOTAL" \
    --arg techniques "$RUST_TECHNIQUES" \
    --arg adapters "$RUST_ADAPTERS" \
    --arg evaluation "$RUST_EVALUATION" \
+   --arg observability "$RUST_OBSERVABILITY" \
    '.languages.rust = {
      total: ($total | tonumber),
      categories: {
@@ -283,6 +296,7 @@ jq --arg total "$RUST_TOTAL" \
        techniques: ($techniques | tonumber),
        adapters: ($adapters | tonumber),
        evaluation: ($evaluation | tonumber),
+       observability: ($observability | tonumber),
        safety: 0,
        routing: 0,
        chaos: 0,

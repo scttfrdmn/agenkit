@@ -1,33 +1,50 @@
-//! Production observability example.
+//! Production-ready observability setup with OTLP exporters.
 //!
-//! This example demonstrates a production-ready observability setup:
-//! - OTLP tracing (for Jaeger/Tempo)
-//! - Prometheus metrics
-//! - Structured JSON logging
-//! - Audit logging for compliance
+//! This example demonstrates:
+//! - OTLP exporters for tracing and metrics
+//! - JSON structured logging for production
+//! - Comprehensive audit logging
 //! - Error handling and monitoring
+//! - Production configuration patterns
 //!
-//! Run with: cargo run --example observability_production --features=native
+//! Prerequisites:
+//! 1. Run an OpenTelemetry Collector or Jaeger:
+//!    ```bash
+//!    docker run -d --name jaeger \
+//!      -p 4317:4317 \
+//!      -p 16686:16686 \
+//!      jaegertracing/all-in-one:latest
+//!    ```
+//!
+//! 2. Run this example:
+//!    ```bash
+//!    cargo run --example observability_production
+//!    ```
+//!
+//! 3. View traces at http://localhost:16686
 
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::observability::{
-    audit::{AuditEvent, AuditEventType, AuditLogger, Severity},
-    configure_logging, init_metrics, init_tracing, log_agent_error, log_agent_event,
-    log_agent_warning, MetricsMiddleware, TracingMiddleware,
+    configure_logging, init_metrics, init_tracing, log_agent_error, log_agent_event, AuditEvent,
+    AuditEventType, AuditLogger, AuditSeverity, MetricsMiddleware, TracingMiddleware,
 };
 use async_trait::async_trait;
+use std::collections::HashMap;
+use std::env;
 use std::path::PathBuf;
-use std::sync::Arc;
 
-/// Production agent with comprehensive error handling
+/// Production agent with error handling
 struct ProductionAgent {
     name: String,
-    audit_logger: Arc<AuditLogger>,
+    fail_rate: f64, // Simulate occasional failures
 }
 
 impl ProductionAgent {
-    fn new(name: String, audit_logger: Arc<AuditLogger>) -> Self {
-        Self { name, audit_logger }
+    fn new(name: &str, fail_rate: f64) -> Self {
+        Self {
+            name: name.to_string(),
+            fail_rate,
+        }
     }
 }
 
@@ -37,221 +54,237 @@ impl Agent for ProductionAgent {
         &self.name
     }
 
-    async fn process(&self, mut message: Message) -> Result<Message, AgentError> {
-        // Log message received to audit
-        let _ = self
-            .audit_logger
-            .log(AuditEvent::new(
-                AuditEventType::MessageProcessed,
-                self.name.clone(),
-                message
-                    .metadata
-                    .get("session_id")
-                    .and_then(|v| v.as_str())
-                    .map(|s| s.to_string()),
-            ))
-            .await;
-
-        // Simulate processing with potential errors
-        let content = message.content.as_str().unwrap_or("");
-
-        if content.contains("error") {
-            // Simulate an error condition
-            let error = AgentError::ProcessingError("Simulated error condition".to_string());
-
-            // Log error to audit
-            let _ = self
-                .audit_logger
-                .log(
-                    AuditEvent::new(
-                        AuditEventType::ErrorOccurred,
-                        self.name.clone(),
-                        message
-                            .metadata
-                            .get("session_id")
-                            .and_then(|v| v.as_str())
-                            .map(|s| s.to_string()),
-                    )
-                    .with_severity(Severity::Error)
-                    .with_detail("error_type".to_string(), serde_json::json!("processing")),
-                )
-                .await;
-
-            return Err(error);
-        }
-
-        if content.contains("warn") {
-            // Log warning condition
-            log_agent_warning(
-                "high_processing_time",
-                "Processing time exceeded threshold",
-                &[("threshold_ms", "1000"), ("actual_ms", "1500")],
-            );
-
-            let _ = self
-                .audit_logger
-                .log(
-                    AuditEvent::new(
-                        AuditEventType::SystemEvent,
-                        self.name.clone(),
-                        message
-                            .metadata
-                            .get("session_id")
-                            .and_then(|v| v.as_str())
-                            .map(|s| s.to_string()),
-                    )
-                    .with_severity(Severity::Warning)
-                    .with_detail("event".to_string(), serde_json::json!("high_latency")),
-                )
-                .await;
-        }
-
-        // Simulate processing delay
+    async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        // Simulate work
         tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
-        // Successful processing
-        message.role = "assistant".to_string();
-        Ok(message)
+        // Simulate occasional failures
+        if rand::random::<f64>() < self.fail_rate {
+            return Err(AgentError::ProcessingError(format!(
+                "Simulated failure in {}",
+                self.name
+            )));
+        }
+
+        let response = format!("Processed by {}: {}", self.name, message.content);
+        Ok(Message::with_text("assistant", &response))
+    }
+}
+
+/// Production configuration from environment
+struct Config {
+    otlp_endpoint: String,
+    metrics_endpoint: String,
+    log_level: String,
+    audit_path: PathBuf,
+}
+
+impl Config {
+    fn from_env() -> Self {
+        Self {
+            otlp_endpoint: env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
+                .unwrap_or_else(|_| "http://localhost:4317".to_string()),
+            metrics_endpoint: env::var("OTEL_EXPORTER_METRICS_ENDPOINT")
+                .unwrap_or_else(|_| "http://localhost:4317".to_string()),
+            log_level: env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string()),
+            audit_path: PathBuf::from(
+                env::var("AUDIT_LOG_PATH").unwrap_or_else(|_| "/tmp/agenkit-audit.log".to_string()),
+            ),
+        }
+    }
+
+    fn print(&self) {
+        println!("Configuration:");
+        println!("  OTLP Endpoint: {}", self.otlp_endpoint);
+        println!("  Metrics Endpoint: {}", self.metrics_endpoint);
+        println!("  Log Level: {}", self.log_level);
+        println!("  Audit Path: {:?}", self.audit_path);
+        println!();
     }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("=== Production Observability Example ===\n");
+    println!("=== Agenkit Rust - Production Observability Example ===\n");
 
-    // Step 1: Initialize all observability components
-    println!("Initializing production observability stack...");
+    // Load configuration from environment
+    let config = Config::from_env();
+    config.print();
 
-    // Use OTLP for production (fallback to console if OTLP endpoint not available)
-    match init_tracing("otlp", Some("http://localhost:4317")) {
-        Ok(_) => println!("✓ Tracing: OTLP exporter to http://localhost:4317"),
+    // Initialize observability stack
+    println!("Initializing production observability...");
+
+    // Note: OTLP exporter requires a running collector
+    // Falls back to console if connection fails
+    match init_tracing("otlp", Some(&config.otlp_endpoint)) {
+        Ok(_) => println!("✓ Tracing initialized (OTLP)"),
         Err(_) => {
+            println!("⚠ OTLP unavailable, using console exporter");
             init_tracing("console", None)?;
-            println!("✓ Tracing: Console exporter (OTLP endpoint not available)");
         }
     }
 
-    // Initialize Prometheus metrics
-    init_metrics("prometheus", None)?;
-    println!("✓ Metrics: Prometheus (available at http://localhost:9464/metrics)");
+    match init_metrics("otlp", Some(&config.metrics_endpoint)) {
+        Ok(_) => println!("✓ Metrics initialized (OTLP)"),
+        Err(_) => {
+            println!("⚠ OTLP unavailable, using stdout exporter");
+            init_metrics("stdout", None)?;
+        }
+    }
 
-    // Configure structured JSON logging for production
-    configure_logging("json", "info")?;
-    println!("✓ Logging: JSON format, info level");
+    configure_logging("json", &config.log_level)?;
+    println!("✓ Logging configured (JSON, {})", config.log_level);
 
-    // Initialize audit logging
-    let audit_log_path = PathBuf::from("/tmp/agenkit_audit.log");
-    let audit_logger = Arc::new(AuditLogger::with_buffer_size(audit_log_path.clone(), 50)?);
-    println!(
-        "✓ Audit: Logging to {:?} (buffer size: 50)\n",
-        audit_log_path
+    let audit_logger = AuditLogger::with_buffer_size(config.audit_path.clone(), 50);
+    println!("✓ Audit logger initialized\n");
+
+    // Log system startup
+    let startup_event = AuditEvent::with_severity(
+        AuditEventType::ConfigurationChanged,
+        AuditSeverity::Info,
+        "system".to_string(),
+        None,
+    )
+    .add_detail(
+        "event".to_string(),
+        serde_json::json!("observability_initialized"),
     );
+    audit_logger.log(startup_event).await?;
 
-    // Step 2: Create production agent with full observability
-    println!("Creating production agent with full observability...");
+    // Create production agents
+    println!("Creating production agents...");
+    let agent1 = ProductionAgent::new("worker-1", 0.1); // 10% failure rate
+    let traced1 = TracingMiddleware::new(agent1, Some("worker.process"));
+    let observed1 = MetricsMiddleware::new(traced1);
 
-    let agent = ProductionAgent::new("production_agent".to_string(), Arc::clone(&audit_logger));
+    let agent2 = ProductionAgent::new("worker-2", 0.05); // 5% failure rate
+    let traced2 = TracingMiddleware::new(agent2, Some("worker.process"));
+    let observed2 = MetricsMiddleware::new(traced2);
 
-    // Log agent creation to audit
-    audit_logger
-        .log(AuditEvent::new(
+    println!("✓ Created 2 workers with failure simulation\n");
+
+    // Log agent creation
+    for worker_name in &["worker-1", "worker-2"] {
+        let event = AuditEvent::new(
             AuditEventType::AgentCreated,
-            agent.name().to_string(),
-            None,
-        ))
-        .await?;
-
-    // Wrap with observability middleware
-    let traced_agent = TracingMiddleware::new(agent, Some("production_span".to_string()));
-    let full_agent = MetricsMiddleware::new(traced_agent);
-    println!("✓ Agent created with tracing, metrics, and audit logging\n");
-
-    // Step 3: Simulate production workload
-    println!("Simulating production workload...\n");
-
-    let test_cases = vec![
-        ("session-1", "Normal request"),
-        ("session-2", "Request with warn flag"),
-        ("session-3", "Request with error condition"),
-        ("session-4", "Another normal request"),
-    ];
-
-    for (session_id, content) in test_cases {
-        log_agent_event(
-            "request_received",
-            &format!("Processing request: {}", content),
-            &[("session_id", session_id)],
+            worker_name.to_string(),
+            Some("prod-session-001".to_string()),
         );
+        audit_logger.log(event).await?;
+    }
 
-        // Create message with session context
-        let mut message = Message::new("user", serde_json::json!(content));
-        message
-            .metadata
-            .insert("session_id".to_string(), serde_json::json!(session_id));
+    // Process requests with monitoring
+    println!("Processing production workload...");
+    let mut success_count = 0;
+    let mut error_count = 0;
 
-        // Process message
-        match full_agent.process(message).await {
-            Ok(response) => {
-                log_agent_event(
-                    "request_completed",
-                    "Request processed successfully",
-                    &[("session_id", session_id)],
-                );
-                println!("✓ {} - SUCCESS", session_id);
-                println!("  Content: {}", content);
-                println!("  Response: {}\n", response.role);
+    for i in 0..20 {
+        let message = Message::with_text("user", &format!("Request {}", i + 1))
+            .with_metadata("request_id", serde_json::json!(i + 1));
+
+        // Alternate between agents
+        let agent = if i % 2 == 0 {
+            &observed1
+        } else {
+            &observed2
+        };
+
+        let agent_name = if i % 2 == 0 {
+            "worker-1"
+        } else {
+            "worker-2"
+        };
+
+        // Log processing start
+        let mut details = HashMap::new();
+        details.insert("request_id".to_string(), serde_json::json!(i + 1));
+        details.insert("agent".to_string(), serde_json::json!(agent_name));
+        log_agent_event("request.start", &details);
+
+        // Process with error handling
+        match agent.process(message).await {
+            Ok(_response) => {
+                success_count += 1;
+                print!(".");
+
+                // Log success audit event
+                let event = AuditEvent::new(
+                    AuditEventType::MessageProcessed,
+                    agent_name.to_string(),
+                    Some("prod-session-001".to_string()),
+                )
+                .add_detail("status".to_string(), serde_json::json!("success"))
+                .add_detail("request_id".to_string(), serde_json::json!(i + 1));
+                audit_logger.log(event).await?;
             }
-            Err(e) => {
-                log_agent_error(
-                    "request_failed",
-                    "Request processing failed",
-                    &e.to_string(),
-                );
-                println!("✗ {} - ERROR", session_id);
-                println!("  Content: {}", content);
-                println!("  Error: {}\n", e);
+            Err(error) => {
+                error_count += 1;
+                print!("✗");
+
+                // Log error
+                log_agent_error(&error);
+
+                // Log security event for failures (in production, you'd have smarter detection)
+                let event = AuditEvent::with_severity(
+                    AuditEventType::SecurityViolation,
+                    AuditSeverity::Warning,
+                    agent_name.to_string(),
+                    Some("prod-session-001".to_string()),
+                )
+                .add_detail("error".to_string(), serde_json::json!(error.to_string()))
+                .add_detail("request_id".to_string(), serde_json::json!(i + 1));
+                audit_logger.log(event).await?;
             }
+        }
+
+        if (i + 1) % 10 == 0 {
+            println!();
         }
     }
 
-    // Step 4: Flush audit logs and query
+    println!("\n\nWorkload Summary:");
+    println!("  Requests: 20");
+    println!("  Success: {} ({:.1}%)", success_count, (success_count as f64 / 20.0) * 100.0);
+    println!("  Errors: {} ({:.1}%)", error_count, (error_count as f64 / 20.0) * 100.0);
+    println!();
+
+    // Flush audit logs
     println!("Flushing audit logs...");
     audit_logger.flush().await?;
-    println!("✓ Audit logs flushed to disk\n");
+    println!("✓ Audit logs persisted\n");
 
-    // Query audit logs for analysis
-    println!("Analyzing audit logs...");
+    // Query audit events
     let all_events = audit_logger.query(None).await?;
+    println!("Audit Summary:");
     println!("  Total events: {}", all_events.len());
 
-    let errors = audit_logger
-        .query_by_type(AuditEventType::ErrorOccurred)
+    let session_events = audit_logger
+        .query(Some("prod-session-001".to_string()))
         .await?;
-    println!("  Errors: {}", errors.len());
+    println!(
+        "  Session events: {}",
+        session_events.len()
+    );
 
-    let messages = audit_logger
-        .query_by_type(AuditEventType::MessageProcessed)
-        .await?;
-    println!("  Messages processed: {}", messages.len());
+    let errors = session_events
+        .iter()
+        .filter(|e| matches!(e.event_type, AuditEventType::SecurityViolation))
+        .count();
+    println!("  Security events: {}", errors);
 
-    // Query by session
-    let session_1_events = audit_logger.query_by_session("session-1").await?;
-    println!("  Events for session-1: {}", session_1_events.len());
-
-    println!("\n=== Example Complete ===");
-    println!("\nProduction observability features demonstrated:");
-    println!("- ✓ Distributed tracing with OTLP");
-    println!("- ✓ Prometheus metrics collection");
-    println!("- ✓ Structured JSON logging");
-    println!("- ✓ Audit logging for compliance");
-    println!("- ✓ Error tracking and monitoring");
-    println!("- ✓ Warning detection");
-    println!("- ✓ Session-based tracking");
-    println!("\nData locations:");
-    println!("- Traces: http://localhost:4317 (OTLP) or console");
-    println!("- Metrics: http://localhost:9464/metrics (Prometheus)");
-    println!("- Logs: stdout (JSON format)");
-    println!("- Audit: {:?}", audit_log_path);
+    println!("\n=== Production Example Complete ===");
+    println!("\nProduction Features Demonstrated:");
+    println!("  ✓ OTLP exporters for distributed tracing");
+    println!("  ✓ Structured JSON logging");
+    println!("  ✓ Comprehensive audit trail");
+    println!("  ✓ Error tracking and monitoring");
+    println!("  ✓ Metrics collection (requests, errors, latency)");
+    println!("  ✓ Environment-based configuration");
+    println!("\nNext Steps:");
+    println!("  1. View traces in Jaeger UI: http://localhost:16686");
+    println!("  2. Check audit log: {:?}", config.audit_path);
+    println!("  3. Query metrics from your metrics backend");
+    println!("  4. Set up alerting on error rates and latency");
 
     Ok(())
 }

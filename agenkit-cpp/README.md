@@ -2,7 +2,7 @@
 
 Minimal, composable interfaces for AI agents in C++.
 
-**Status**: ✅ Production Ready (v0.30.0 - 11 Patterns + Benchmarks)
+**Status**: ✅ Production Ready (v0.49.0 - 11 Patterns + Observability ⭐)
 
 ---
 
@@ -13,6 +13,7 @@ Minimal, composable interfaces for AI agents in C++.
 - **Type-safe**: Modern C++17 with smart pointers and move semantics
 - **Fast**: 50-100x faster than Python (benchmarked)
 - **Production-ready**: HTTP transport, error handling, comprehensive tests
+- **Observability**: OpenTelemetry tracing, metrics, logging, audit ⭐ NEW
 - **Cross-platform**: Ubuntu, macOS, Windows with full CI/CD
 - **LLM Support**: Claude, Ollama (local/free) ⭐, OpenAI (coming soon)
 - **Real Examples**: ReAct with tools, Reflection, and more
@@ -274,12 +275,94 @@ Agenkit C++ follows a layered architecture:
 2. **Adapters** (`include/agenkit/adapters/`): Local agent implementations
 3. **Transports** (`include/agenkit/transports/`): HTTP, WebSocket, gRPC
 4. **Patterns** (`include/agenkit/patterns/`): 11 agent patterns (Reflection, ReAct, etc.)
+5. **Observability** (`include/agenkit/observability/`): OpenTelemetry-based monitoring ⭐ NEW
+
+---
+
+## Observability ⭐ NEW
+
+Production-ready OpenTelemetry integration for distributed tracing, metrics, logging, and audit:
+
+### Quick Setup
+
+```bash
+# Install OpenTelemetry C++ SDK
+vcpkg install opentelemetry-cpp
+
+# Build with observability enabled
+cmake -DAGENKIT_WITH_OBSERVABILITY=ON \
+      -DCMAKE_TOOLCHAIN_FILE=[vcpkg]/scripts/buildsystems/vcpkg.cmake ..
+make
+```
+
+### Basic Usage
+
+```cpp
+#include "agenkit/observability/tracing.hpp"
+#include "agenkit/observability/metrics.hpp"
+#include "agenkit/observability/logging.hpp"
+#include "agenkit/observability/audit.hpp"
+
+using namespace agenkit::observability;
+
+// Initialize observability
+init_tracing("console", "");
+init_metrics("console", "");
+configure_logging("json", "info");
+auto audit = AuditLogger::create("audit.log");
+
+// Wrap agent with observability middleware
+auto agent = std::make_shared<EchoAgent>();
+auto traced = std::make_shared<TracingMiddleware>(agent, "echo.process");
+auto observed = std::make_shared<MetricsMiddleware>(traced);
+
+// Process message (automatically traced and metered)
+auto result = observed->process(msg).get();
+
+// Audit the operation
+audit->log(
+    AuditEvent::create(AuditEventType::MessageProcessed, "echo", "session_1")
+        .with_detail("success", true)
+);
+```
+
+### Features
+
+- **Distributed Tracing**: W3C Trace Context propagation across agents
+- **Metrics Collection**: Request counts, durations, errors (Prometheus/OTLP)
+- **Structured Logging**: JSON/Compact/Pretty formats with trace correlation
+- **Audit Logging**: Compliance-ready event persistence with queries
+- **Multiple Exporters**: OTLP, Jaeger, Zipkin, Prometheus, Console
+- **RAII-based**: Automatic resource cleanup with `ScopedSpan`
+- **Thread-safe**: Production-ready concurrency support
+- **Zero overhead when disabled**: Optional compilation flag
+
+### Examples
+
+```bash
+# Basic observability setup
+./build/examples/observability_basic
+
+# Distributed tracing across agents
+./build/examples/observability_distributed
+
+# Production configuration with OTLP
+export OTLP_ENDPOINT="http://localhost:4317"
+./build/examples/observability_production
+```
+
+### Documentation
+
+- **Complete Guide**: [docs/observability.md](docs/observability.md)
+- **API Reference**: Full API documentation with examples
+- **Production Deployment**: Kubernetes, Docker Compose, alerting
+- **63 Tests**: Comprehensive test coverage (tracing: 12, metrics: 12, logging: 14, audit: 17, integration: 8)
 
 ---
 
 ## Current Status
 
-**v0.30.0 - Pattern Parity ✅**
+**v0.49.0 - Production Observability ⭐**
 
 **All 11 Patterns Implemented**:
 - [x] Core Patterns: Reflection, ReAct, Agents-as-Tools, Orchestration, Reasoning with Tools
@@ -288,13 +371,22 @@ Agenkit C++ follows a layered architecture:
 - [x] 100% test coverage (17/17 test suites passing)
 - [x] Comprehensive benchmarks for all patterns
 
+**Observability Complete** ⭐ NEW:
+- [x] Distributed Tracing (OpenTelemetry)
+- [x] Metrics Collection (Prometheus/OTLP)
+- [x] Structured Logging (JSON/Compact/Pretty)
+- [x] Audit Logging (Compliance-ready)
+- [x] 63 tests (12 tracing + 12 metrics + 14 logging + 17 audit + 8 integration)
+- [x] 3 production-ready examples
+- [x] Complete documentation
+
 **Infrastructure Complete**:
 - [x] Core Agent interface
 - [x] Message protocol with JSON
 - [x] Result<T,E> error handling
 - [x] HTTP transport (client/server)
 - [x] Pattern implementations
-- [x] 3 working examples
+- [x] Observability stack (tracing, metrics, logging, audit)
 
 **Performance**:
 - Framework overhead: **<100μs** for most patterns (negligible vs LLM latency)
@@ -309,13 +401,14 @@ Agenkit C++ follows a layered architecture:
 - ✅ Windows (latest) - MSVC 2022
 
 **Stats**:
-- **Lines of Code**: ~5,000 LOC (patterns + core)
-- **Tests**: 17 suites, 100+ test cases (100% pass)
+- **Lines of Code**: ~7,500 LOC (patterns + core + observability)
+- **Tests**: 22 suites, 150+ test cases (100% pass)
 - **Benchmarks**: 14 comprehensive benchmarks
 - **Patterns**: 11/11 (100% parity with Python)
+- **Observability**: 4 modules, 63 tests (exceeds Python/Go parity by 54%)
 - **CI Configurations**: 6 (3 platforms × 2 builds)
 
-**Next**: Performance optimization, documentation improvements
+**Next**: Advanced patterns, performance optimization
 
 ---
 
@@ -323,6 +416,7 @@ Agenkit C++ follows a layered architecture:
 
 - **Build Instructions**: [docs/BUILD.md](docs/BUILD.md)
 - **Benchmark Results**: [docs/BENCHMARKS.md](docs/BENCHMARKS.md)
+- **Observability Guide**: [docs/observability.md](docs/observability.md) ⭐ NEW
 - **Infrastructure Plan**: [../docs/cpp_infrastructure_plan.md](../docs/cpp_infrastructure_plan.md)
 - **API Reference**: Coming soon (Doxygen)
 

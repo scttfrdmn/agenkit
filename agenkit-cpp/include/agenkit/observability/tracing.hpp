@@ -49,23 +49,20 @@ std::shared_ptr<opentelemetry::trace::Tracer> get_tracer(
     const std::string& name = "agenkit-cpp");
 
 /**
- * @brief Extract W3C Trace Context from message metadata
+ * @brief Extract W3C Trace Context from message
  *
- * @param metadata Message metadata containing "traceparent" and optional "tracestate"
+ * @param message Message containing "traceparent" and optional "tracestate" in metadata
  * @return OpenTelemetry context with extracted trace information
  */
-opentelemetry::context::Context extract_trace_context(
-    const std::unordered_map<std::string, nlohmann::json>& metadata);
+opentelemetry::context::Context extract_trace_context(const Message& message);
 
 /**
- * @brief Inject W3C Trace Context into message metadata
+ * @brief Inject W3C Trace Context into message
  *
- * @param metadata Message metadata to inject trace context into
+ * @param message Message to inject trace context into
  * @param context OpenTelemetry context containing trace information
  */
-void inject_trace_context(
-    std::unordered_map<std::string, nlohmann::json>& metadata,
-    const opentelemetry::context::Context& context);
+void inject_trace_context(Message& message, const opentelemetry::context::Context& context);
 
 /**
  * @brief RAII wrapper for OpenTelemetry span lifecycle

@@ -116,8 +116,22 @@ target_link_libraries(middleware_example agenkit)
 add_executable(batching_example infrastructure/batching_example.cpp)
 target_link_libraries(batching_example agenkit)
 
+# Observability examples (optional, requires OpenTelemetry)
+if(AGENKIT_WITH_OBSERVABILITY)
+    add_executable(observability_basic observability_basic.cpp)
+    target_link_libraries(observability_basic agenkit)
+
+    add_executable(observability_distributed observability_distributed.cpp)
+    target_link_libraries(observability_distributed agenkit)
+
+    add_executable(observability_production observability_production.cpp)
+    target_link_libraries(observability_production agenkit)
+
+    message(STATUS "Observability examples enabled")
+endif()
+
 # Set output directory for all example executables
-set_target_properties(
+set(EXAMPLE_TARGETS
     litellm_basic gemini_basic bedrock_basic
     reflection_pattern react_pattern agents_as_tools_pattern
     orchestration_pattern reasoning_with_tools_pattern
@@ -130,6 +144,19 @@ set_target_properties(
     prompt_optimizer_example
     safety_simple_example safety_framework_example production_secure_example
     basic_checkpointing basic_budget middleware_example batching_example
+)
+
+# Add observability examples if enabled
+if(AGENKIT_WITH_OBSERVABILITY)
+    list(APPEND EXAMPLE_TARGETS
+        observability_basic
+        observability_distributed
+        observability_production
+    )
+endif()
+
+set_target_properties(
+    ${EXAMPLE_TARGETS}
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
 )

@@ -70,50 +70,34 @@ pub fn init_metrics(
     exporter_type: &str,
     endpoint: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let provider = match exporter_type {
+    let provider: SdkMeterProvider = match exporter_type {
         "prometheus" => {
-            #[cfg(feature = "opentelemetry-prometheus")]
-            {
-                let exporter = opentelemetry_prometheus::exporter()
-                    .with_registry(prometheus::Registry::new())
-                    .build()?;
+            let exporter = opentelemetry_prometheus::exporter()
+                .with_registry(prometheus::Registry::new())
+                .build()?;
 
-                SdkMeterProvider::builder().with_reader(exporter).build()
-            }
-            #[cfg(not(feature = "opentelemetry-prometheus"))]
-            {
-                return Err("Prometheus exporter not enabled. Enable the 'opentelemetry-prometheus' feature.".into());
-            }
+            SdkMeterProvider::builder().with_reader(exporter).build()
         }
         "otlp" => {
-            #[cfg(feature = "opentelemetry-otlp")]
-            {
-                use opentelemetry_otlp::WithExportConfig;
-                let endpoint = endpoint.unwrap_or("http://localhost:4317");
+            use opentelemetry_otlp::WithExportConfig;
+            let endpoint = endpoint.unwrap_or("http://localhost:4317");
 
-                let exporter = opentelemetry_otlp::new_exporter()
-                    .tonic()
-                    .with_endpoint(endpoint)
-                    .build_metrics_exporter(
-                        Box::new(
-                            opentelemetry_sdk::metrics::reader::DefaultAggregationSelector::new(),
-                        ),
-                        Box::new(
-                            opentelemetry_sdk::metrics::reader::DefaultTemporalitySelector::new(),
-                        ),
-                    )?;
+            let exporter = opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_endpoint(endpoint)
+                .build_metrics_exporter(
+                    Box::new(
+                        opentelemetry_sdk::metrics::reader::DefaultAggregationSelector::new(),
+                    ),
+                    Box::new(
+                        opentelemetry_sdk::metrics::reader::DefaultTemporalitySelector::new(),
+                    ),
+                )?;
 
-                let reader =
-                    PeriodicReader::builder(exporter, opentelemetry_sdk::runtime::Tokio).build();
+            let reader =
+                PeriodicReader::builder(exporter, opentelemetry_sdk::runtime::Tokio).build();
 
-                SdkMeterProvider::builder().with_reader(reader).build()
-            }
-            #[cfg(not(feature = "opentelemetry-otlp"))]
-            {
-                return Err(
-                    "OTLP exporter not enabled. Enable the 'opentelemetry-otlp' feature.".into(),
-                );
-            }
+            SdkMeterProvider::builder().with_reader(reader).build()
         }
         _ => {
             return Err(format!("Unknown exporter type: {}", exporter_type).into());

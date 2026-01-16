@@ -17,22 +17,34 @@ import * as path from 'path';
 import {
   Agent,
   Message,
+  getLoggerWithTrace,
+} from '../src';
+
+import {
   initTracing,
+  shutdownTracing,
+  TracingMiddleware,
+} from '../src/observability/tracing';
+
+import {
   initMetrics,
+  shutdownMetrics,
+  MetricsMiddleware,
+} from '../src/observability/metrics';
+
+import {
   configureLogging,
   LogLevel,
-  TracingMiddleware,
-  MetricsMiddleware,
+} from '../src/observability/logging';
+
+import {
   AuditLogger,
   FileAuditAdapter,
   ConsoleAuditAdapter,
   AuditEventType,
   AuditSeverity,
   createAuditEvent,
-  getLoggerWithTrace,
-  shutdownTracing,
-  shutdownMetrics,
-} from '../src';
+} from '../src/observability/audit';
 
 /**
  * Production-ready agent with full observability.

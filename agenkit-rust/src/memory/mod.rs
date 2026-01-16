@@ -55,13 +55,18 @@
 //! ```
 
 pub mod entry;
-pub mod working;
-pub mod short_term;
-pub mod long_term;
 pub mod hierarchy;
+pub mod long_term;
+pub mod short_term;
+pub mod vector_memory;
+pub mod working;
 
 pub use entry::MemoryEntry;
-pub use working::WorkingMemory;
-pub use short_term::ShortTermMemory;
-pub use long_term::LongTermMemory;
 pub use hierarchy::MemoryHierarchy;
+pub use long_term::LongTermMemory;
+pub use short_term::ShortTermMemory;
+pub use vector_memory::{
+    EmbeddingProvider, InMemoryVectorStore, MessageSearchResult, MessageWithMetadata,
+    SearchOptions, VectorMemory, VectorStore,
+};
+pub use working::WorkingMemory;

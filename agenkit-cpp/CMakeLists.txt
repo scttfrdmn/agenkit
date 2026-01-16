@@ -13,6 +13,7 @@ option(AGENKIT_BUILD_INTEGRATION_TESTS "Build integration tests" OFF)
 option(AGENKIT_BUILD_BENCHMARKS "Build benchmarks" ON)
 option(AGENKIT_BUILD_SHARED "Build shared library" ON)
 option(AGENKIT_HAS_AWS_SDK "Build with AWS SDK support for Bedrock adapter" OFF)
+option(AGENKIT_WITH_OBSERVABILITY "Build with OpenTelemetry observability support" ON)
 
 # Dependencies
 find_package(nlohmann_json 3.11.0 QUIET)
@@ -47,6 +48,20 @@ if(AGENKIT_HAS_AWS_SDK)
     message(STATUS "AWS SDK found - Bedrock adapter enabled")
 else()
     message(STATUS "AWS SDK not found - Bedrock adapter will be stubbed")
+endif()
+
+# Optional: OpenTelemetry for observability
+if(AGENKIT_WITH_OBSERVABILITY)
+    find_package(opentelemetry-cpp CONFIG)
+    if(opentelemetry-cpp_FOUND)
+        add_definitions(-DAGENKIT_WITH_OBSERVABILITY)
+        message(STATUS "OpenTelemetry C++ SDK found - Observability enabled")
+    else()
+        message(WARNING "OpenTelemetry C++ SDK not found - Observability will be disabled. Install with: vcpkg install opentelemetry-cpp")
+        set(AGENKIT_WITH_OBSERVABILITY OFF)
+    endif()
+else()
+    message(STATUS "Observability disabled - enable with -DAGENKIT_WITH_OBSERVABILITY=ON")
 endif()
 
 # Library target

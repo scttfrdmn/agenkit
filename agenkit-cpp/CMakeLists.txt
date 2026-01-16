@@ -138,6 +138,7 @@ add_library(agenkit
 if(AGENKIT_WITH_OBSERVABILITY)
     target_sources(agenkit PRIVATE
         src/observability/tracing.cpp
+        src/observability/metrics.cpp
     )
 endif()
 
@@ -170,6 +171,7 @@ if(AGENKIT_WITH_OBSERVABILITY)
     target_link_libraries(agenkit
         PRIVATE
             opentelemetry-cpp::trace
+            opentelemetry-cpp::metrics
             opentelemetry-cpp::otlp_http_exporter
             opentelemetry-cpp::ostream_span_exporter
     )

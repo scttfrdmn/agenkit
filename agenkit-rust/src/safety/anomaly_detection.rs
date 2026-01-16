@@ -117,19 +117,23 @@ impl AnomalyDetector {
             return 0.0;
         }
         let mean = Self::mean(values);
-        let variance = values.iter()
+        let variance = values
+            .iter()
             .map(|&x| {
                 let diff = x as f64 - mean;
                 diff * diff
             })
-            .sum::<f64>() / (values.len() - 1) as f64;
+            .sum::<f64>()
+            / (values.len() - 1) as f64;
         variance.sqrt()
     }
 
     /// Detect rate anomaly.
     pub async fn detect_rate_anomaly(&self, user_id: &str) -> Option<(SecurityEvent, String)> {
         let mut activities = self.user_activity.lock().await;
-        let activity = activities.entry(user_id.to_string()).or_insert_with(UserActivity::new);
+        let activity = activities
+            .entry(user_id.to_string())
+            .or_insert_with(UserActivity::new);
 
         let now = Instant::now();
         let one_minute_ago = now - Duration::from_secs(60);
@@ -161,7 +165,9 @@ impl AnomalyDetector {
         }
 
         // Check burst (requests in last second)
-        let recent_count = activity.request_timestamps.iter()
+        let recent_count = activity
+            .request_timestamps
+            .iter()
             .filter(|t| **t > one_second_ago)
             .count();
 
@@ -176,9 +182,15 @@ impl AnomalyDetector {
     }
 
     /// Detect failure anomaly.
-    pub async fn detect_failure_anomaly(&self, user_id: &str, is_success: bool) -> Option<(SecurityEvent, String)> {
+    pub async fn detect_failure_anomaly(
+        &self,
+        user_id: &str,
+        is_success: bool,
+    ) -> Option<(SecurityEvent, String)> {
         let mut activities = self.user_activity.lock().await;
-        let activity = activities.entry(user_id.to_string()).or_insert_with(UserActivity::new);
+        let activity = activities
+            .entry(user_id.to_string())
+            .or_insert_with(UserActivity::new);
 
         if is_success {
             activity.success_count += 1;
@@ -201,9 +213,16 @@ impl AnomalyDetector {
     }
 
     /// Detect size anomaly using z-score.
-    pub async fn detect_size_anomaly(&self, user_id: &str, input_size: usize, output_size: usize) -> Option<(SecurityEvent, String)> {
+    pub async fn detect_size_anomaly(
+        &self,
+        user_id: &str,
+        input_size: usize,
+        output_size: usize,
+    ) -> Option<(SecurityEvent, String)> {
         let mut activities = self.user_activity.lock().await;
-        let activity = activities.entry(user_id.to_string()).or_insert_with(UserActivity::new);
+        let activity = activities
+            .entry(user_id.to_string())
+            .or_insert_with(UserActivity::new);
 
         activity.input_sizes.push_back(input_size);
         activity.output_sizes.push_back(output_size);
@@ -229,7 +248,10 @@ impl AnomalyDetector {
             if z_score > self.config.size_threshold {
                 return Some((
                     SecurityEvent::UnusualInputSize,
-                    format!("Unusual input size: {} bytes (z-score: {:.2})", input_size, z_score),
+                    format!(
+                        "Unusual input size: {} bytes (z-score: {:.2})",
+                        input_size, z_score
+                    ),
                 ));
             }
         }
@@ -242,7 +264,10 @@ impl AnomalyDetector {
             if z_score > self.config.size_threshold {
                 return Some((
                     SecurityEvent::UnusualOutputSize,
-                    format!("Unusual output size: {} bytes (z-score: {:.2})", output_size, z_score),
+                    format!(
+                        "Unusual output size: {} bytes (z-score: {:.2})",
+                        output_size, z_score
+                    ),
                 ));
             }
         }
@@ -251,9 +276,15 @@ impl AnomalyDetector {
     }
 
     /// Detect content anomaly (repetitive content).
-    pub async fn detect_content_anomaly(&self, user_id: &str, content: &str) -> Option<(SecurityEvent, String)> {
+    pub async fn detect_content_anomaly(
+        &self,
+        user_id: &str,
+        content: &str,
+    ) -> Option<(SecurityEvent, String)> {
         let mut activities = self.user_activity.lock().await;
-        let activity = activities.entry(user_id.to_string()).or_insert_with(UserActivity::new);
+        let activity = activities
+            .entry(user_id.to_string())
+            .or_insert_with(UserActivity::new);
 
         let hash = Self::simple_hash(content);
         activity.recent_content_hashes.push_back(hash);
@@ -265,7 +296,12 @@ impl AnomalyDetector {
 
         // Check for repetition (same content 5 times in a row)
         if activity.recent_content_hashes.len() >= 5 {
-            let last_5: Vec<_> = activity.recent_content_hashes.iter().rev().take(5).collect();
+            let last_5: Vec<_> = activity
+                .recent_content_hashes
+                .iter()
+                .rev()
+                .take(5)
+                .collect();
             if last_5.iter().all(|&h| *h == hash) {
                 return Some((
                     SecurityEvent::RepetitiveContent,
@@ -278,9 +314,15 @@ impl AnomalyDetector {
     }
 
     /// Record processing time.
-    pub async fn record_processing_time(&self, user_id: &str, duration: Duration) -> Option<(SecurityEvent, String)> {
+    pub async fn record_processing_time(
+        &self,
+        user_id: &str,
+        duration: Duration,
+    ) -> Option<(SecurityEvent, String)> {
         let mut activities = self.user_activity.lock().await;
-        let activity = activities.entry(user_id.to_string()).or_insert_with(UserActivity::new);
+        let activity = activities
+            .entry(user_id.to_string())
+            .or_insert_with(UserActivity::new);
 
         activity.processing_times.push_back(duration);
 
@@ -363,7 +405,11 @@ impl<A: Agent> Agent for AnomalyDetectionMiddleware<A> {
         }
 
         // Check content anomaly
-        if let Some((event, details)) = self.detector.detect_content_anomaly(&self.user_id, input_content).await {
+        if let Some((event, details)) = self
+            .detector
+            .detect_content_anomaly(&self.user_id, input_content)
+            .await
+        {
             eprintln!("Anomaly detected: {:?} - {}", event, details);
         }
 
@@ -373,20 +419,32 @@ impl<A: Agent> Agent for AnomalyDetectionMiddleware<A> {
         let duration = start.elapsed();
 
         // Record processing time
-        if let Some((event, details)) = self.detector.record_processing_time(&self.user_id, duration).await {
+        if let Some((event, details)) = self
+            .detector
+            .record_processing_time(&self.user_id, duration)
+            .await
+        {
             eprintln!("Anomaly detected: {:?} - {}", event, details);
         }
 
         // Check failure anomaly
         let is_success = result.is_ok();
-        if let Some((event, details)) = self.detector.detect_failure_anomaly(&self.user_id, is_success).await {
+        if let Some((event, details)) = self
+            .detector
+            .detect_failure_anomaly(&self.user_id, is_success)
+            .await
+        {
             eprintln!("Anomaly detected: {:?} - {}", event, details);
         }
 
         // Check size anomaly
         if let Ok(ref response) = result {
             let output_size = response.content_as_str().unwrap_or("").len();
-            if let Some((event, details)) = self.detector.detect_size_anomaly(&self.user_id, input_size, output_size).await {
+            if let Some((event, details)) = self
+                .detector
+                .detect_size_anomaly(&self.user_id, input_size, output_size)
+                .await
+            {
                 eprintln!("Anomaly detected: {:?} - {}", event, details);
             }
         }

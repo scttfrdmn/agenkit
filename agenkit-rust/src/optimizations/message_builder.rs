@@ -108,7 +108,11 @@ pub mod fast {
 
     /// Create a message with pre-allocated metadata capacity
     #[inline]
-    pub fn with_metadata(role: &str, content: impl Into<String>, metadata_count: usize) -> MessageBuilder {
+    pub fn with_metadata(
+        role: &str,
+        content: impl Into<String>,
+        metadata_count: usize,
+    ) -> MessageBuilder {
         MessageBuilder::new(role)
             .text(content)
             .with_metadata_capacity(metadata_count)
@@ -175,9 +179,7 @@ mod tests {
 
     #[test]
     fn test_message_builder_basic() {
-        let msg = MessageBuilder::user()
-            .text("Hello")
-            .build();
+        let msg = MessageBuilder::user().text("Hello").build();
 
         assert_eq!(msg.role, "user");
         assert_eq!(msg.content_as_str().unwrap(), "Hello");

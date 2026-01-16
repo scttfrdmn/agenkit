@@ -9,14 +9,14 @@
 //!
 //! Run with: cargo run --example evaluation-bayesian-optimizer
 
-use agenkit::evaluation::optimizer::{
-    BayesianOptimizer, SearchSpace, AcquisitionFunction,
-};
+use agenkit::evaluation::optimizer::{AcquisitionFunction, BayesianOptimizer, SearchSpace};
 use std::collections::HashMap;
 
 /// Expensive objective function to minimize
 /// Simulates an agent evaluation that takes time
-async fn expensive_objective(config: HashMap<String, serde_json::Value>) -> Result<f64, agenkit::core::AgentError> {
+async fn expensive_objective(
+    config: HashMap<String, serde_json::Value>,
+) -> Result<f64, agenkit::core::AgentError> {
     let temperature = config.get("temperature").unwrap().as_f64().unwrap();
     let max_tokens = config.get("max_tokens").unwrap().as_i64().unwrap() as f64;
     let top_p = config.get("top_p").unwrap().as_f64().unwrap();
@@ -41,7 +41,9 @@ async fn expensive_objective(config: HashMap<String, serde_json::Value>) -> Resu
 }
 
 /// Simple quadratic function for demonstration
-async fn quadratic_objective(config: HashMap<String, serde_json::Value>) -> Result<f64, agenkit::core::AgentError> {
+async fn quadratic_objective(
+    config: HashMap<String, serde_json::Value>,
+) -> Result<f64, agenkit::core::AgentError> {
     let x = config.get("x").unwrap().as_f64().unwrap();
     let y = config.get("y").unwrap().as_f64().unwrap();
 
@@ -72,7 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         space,
         false, // minimize
         AcquisitionFunction::EI,
-        5,     // 5 random initialization samples
+        5, // 5 random initialization samples
     );
 
     println!("🔧 Configuration:");
@@ -84,8 +86,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\n📊 Results:");
     println!("   Best Score: {:.6}", result.best_score);
-    println!("   Best x: {:.4}", result.best_config.get("x").unwrap().as_f64().unwrap());
-    println!("   Best y: {:.4}", result.best_config.get("y").unwrap().as_f64().unwrap());
+    println!(
+        "   Best x: {:.4}",
+        result.best_config.get("x").unwrap().as_f64().unwrap()
+    );
+    println!(
+        "   Best y: {:.4}",
+        result.best_config.get("y").unwrap().as_f64().unwrap()
+    );
     println!("   Iterations: {}", result.n_iterations);
     println!("   Duration: {:.2}s", result.duration_secs());
 
@@ -134,11 +142,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n📊 Results:");
     println!("   Best Score: {:.6}", result2.best_score);
     println!("   Best Configuration:");
-    println!("     - temperature: {:.4}", result2.best_config.get("temperature").unwrap().as_f64().unwrap());
-    println!("     - max_tokens: {}", result2.best_config.get("max_tokens").unwrap().as_i64().unwrap());
-    println!("     - top_p: {:.4}", result2.best_config.get("top_p").unwrap().as_f64().unwrap());
+    println!(
+        "     - temperature: {:.4}",
+        result2
+            .best_config
+            .get("temperature")
+            .unwrap()
+            .as_f64()
+            .unwrap()
+    );
+    println!(
+        "     - max_tokens: {}",
+        result2
+            .best_config
+            .get("max_tokens")
+            .unwrap()
+            .as_i64()
+            .unwrap()
+    );
+    println!(
+        "     - top_p: {:.4}",
+        result2.best_config.get("top_p").unwrap().as_f64().unwrap()
+    );
     println!("   Total Duration: {:.2}s", result2.duration_secs());
-    println!("   Avg Time/Iteration: {:.2}s", result2.duration_secs() / result2.n_iterations as f64);
+    println!(
+        "   Avg Time/Iteration: {:.2}s",
+        result2.duration_secs() / result2.n_iterations as f64
+    );
 
     // ========================================================================
     // Example 3: Comparing Acquisition Functions
@@ -148,9 +178,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Testing EI, UCB, and PI on same objective\n");
 
     let acquisition_functions = vec![
-        (AcquisitionFunction::EI, "Expected Improvement (EI)", "Balanced exploration/exploitation"),
-        (AcquisitionFunction::UCB, "Upper Confidence Bound (UCB)", "More exploratory"),
-        (AcquisitionFunction::PI, "Probability of Improvement (PI)", "More exploitative"),
+        (
+            AcquisitionFunction::EI,
+            "Expected Improvement (EI)",
+            "Balanced exploration/exploitation",
+        ),
+        (
+            AcquisitionFunction::UCB,
+            "Upper Confidence Bound (UCB)",
+            "More exploratory",
+        ),
+        (
+            AcquisitionFunction::PI,
+            "Probability of Improvement (PI)",
+            "More exploitative",
+        ),
     ];
 
     for (acq_func, name, description) in acquisition_functions {
@@ -167,17 +209,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             })
         };
 
-        let mut optimizer = BayesianOptimizer::new(
-            objective,
-            space,
-            false,
-            acq_func,
-            3,
-        );
+        let mut optimizer = BayesianOptimizer::new(objective, space, false, acq_func, 3);
 
         let result = optimizer.optimize(15).await?;
 
-        println!("   Best x: {:.4}, Best Score: {:.6}",
+        println!(
+            "   Best x: {:.4}, Best Score: {:.6}",
             result.best_config.get("x").unwrap().as_f64().unwrap(),
             result.best_score
         );
@@ -210,8 +247,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let result_min = opt_min.optimize(15).await?;
 
     println!("🔽 Minimization:");
-    println!("   Best x: {:.4}", result_min.best_config.get("x").unwrap().as_f64().unwrap());
-    println!("   Best Score: {:.6} (should be close to 0)", result_min.best_score);
+    println!(
+        "   Best x: {:.4}",
+        result_min.best_config.get("x").unwrap().as_f64().unwrap()
+    );
+    println!(
+        "   Best Score: {:.6} (should be close to 0)",
+        result_min.best_score
+    );
 
     // Maximization (find x at boundaries)
     let mut space_max = SearchSpace::new();
@@ -232,8 +275,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let result_max = opt_max.optimize(15).await?;
 
     println!("\n🔼 Maximization:");
-    println!("   Best x: {:.4}", result_max.best_config.get("x").unwrap().as_f64().unwrap());
-    println!("   Best Score: {:.6} (should be close to 16 at boundaries)", result_max.best_score);
+    println!(
+        "   Best x: {:.4}",
+        result_max.best_config.get("x").unwrap().as_f64().unwrap()
+    );
+    println!(
+        "   Best Score: {:.6} (should be close to 16 at boundaries)",
+        result_max.best_score
+    );
 
     // ========================================================================
     // Summary

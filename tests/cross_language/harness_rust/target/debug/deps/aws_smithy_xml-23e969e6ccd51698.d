@@ -1,0 +1,9 @@
+/Users/scttfrdmn/src/agenkit/tests/cross_language/harness_rust/target/debug/deps/aws_smithy_xml-23e969e6ccd51698.d: /Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/lib.rs /Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/decode.rs /Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/encode.rs /Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/escape.rs /Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/unescape.rs
+
+/Users/scttfrdmn/src/agenkit/tests/cross_language/harness_rust/target/debug/deps/libaws_smithy_xml-23e969e6ccd51698.rmeta: /Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/lib.rs /Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/decode.rs /Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/encode.rs /Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/escape.rs /Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/unescape.rs
+
+/Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/lib.rs:
+/Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/decode.rs:
+/Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/encode.rs:
+/Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/escape.rs:
+/Users/scttfrdmn/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aws-smithy-xml-0.60.13/src/unescape.rs:

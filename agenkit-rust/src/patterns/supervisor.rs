@@ -77,11 +77,7 @@ impl Subtask {
     }
 
     /// Add metadata to the subtask.
-    pub fn with_metadata(
-        mut self,
-        key: impl Into<String>,
-        value: serde_json::Value,
-    ) -> Self {
+    pub fn with_metadata(mut self, key: impl Into<String>, value: serde_json::Value) -> Self {
         self.metadata.insert(key.into(), value);
         self
     }
@@ -164,7 +160,10 @@ impl std::fmt::Debug for SupervisorAgent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SupervisorAgent")
             .field("planner", &"<dyn PlannerAgent>")
-            .field("specialists", &format!("{} specialists", self.specialists.len()))
+            .field(
+                "specialists",
+                &format!("{} specialists", self.specialists.len()),
+            )
             .finish()
     }
 }
@@ -266,9 +265,11 @@ impl Agent for SupervisorAgent {
     /// or synthesis fails.
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         // Step 1: Plan - decompose task into subtasks
-        let subtasks = self.planner.plan(&message).await.map_err(|e| {
-            AgentError::ProcessingError(format!("planning failed: {}", e))
-        })?;
+        let subtasks = self
+            .planner
+            .plan(&message)
+            .await
+            .map_err(|e| AgentError::ProcessingError(format!("planning failed: {}", e)))?;
 
         if subtasks.is_empty() {
             // No subtasks - let planner handle directly
@@ -476,7 +477,11 @@ mod tests {
                 if !combined.is_empty() {
                     combined.push_str(" | ");
                 }
-                combined.push_str(&format!("{}={}", key, result.content_as_str().unwrap_or("")));
+                combined.push_str(&format!(
+                    "{}={}",
+                    key,
+                    result.content_as_str().unwrap_or("")
+                ));
             }
             Ok(Message::with_text("assistant", combined))
         }

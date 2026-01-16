@@ -89,7 +89,9 @@ impl MemoryEntry {
 
     /// Get age in seconds.
     pub fn age_seconds(&self) -> i64 {
-        Utc::now().signed_duration_since(self.timestamp).num_seconds()
+        Utc::now()
+            .signed_duration_since(self.timestamp)
+            .num_seconds()
     }
 }
 

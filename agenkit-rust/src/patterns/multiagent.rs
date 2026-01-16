@@ -428,10 +428,7 @@ mod tests {
             let _ = self.call_count.fetch_add(1, Ordering::SeqCst);
 
             if self.fail {
-                return Err(AgentError::ProcessingError(format!(
-                    "{} failed",
-                    self.name
-                )));
+                return Err(AgentError::ProcessingError(format!("{} failed", self.name)));
             }
 
             Ok(Message::with_text("assistant", &self.response))
@@ -673,6 +670,9 @@ mod tests {
         let message = Message::with_text("user", "Test");
         let result = consensus.process(message).await.unwrap();
 
-        assert!(result.content_as_str().unwrap().contains("Consensus from 0 agents"));
+        assert!(result
+            .content_as_str()
+            .unwrap()
+            .contains("Consensus from 0 agents"));
     }
 }

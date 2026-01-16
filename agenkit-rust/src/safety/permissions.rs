@@ -67,10 +67,7 @@ impl Role {
                 Permission::QueryDatabase,
                 Permission::UseTools,
             ]),
-            Role::Restricted => HashSet::from([
-                Permission::ReadFiles,
-                Permission::UseTools,
-            ]),
+            Role::Restricted => HashSet::from([Permission::ReadFiles, Permission::UseTools]),
         }
     }
 }
@@ -122,10 +119,7 @@ impl Default for Sandbox {
                 "chmod".to_string(),
                 "chown".to_string(),
             ]),
-            allowed_sql_operations: HashSet::from([
-                "SELECT".to_string(),
-                "EXPLAIN".to_string(),
-            ]),
+            allowed_sql_operations: HashSet::from(["SELECT".to_string(), "EXPLAIN".to_string()]),
             allowed_domains: HashSet::new(), // Empty = allow all
             denied_domains: HashSet::from([
                 "localhost".to_string(),
@@ -241,10 +235,9 @@ impl<A: Agent> Agent for PermissionMiddleware<A> {
 
     fn introspect(&self) -> IntrospectionResult {
         let mut result = self.inner.introspect();
-        result.metadata.insert(
-            "middleware".to_string(),
-            serde_json::json!("permissions"),
-        );
+        result
+            .metadata
+            .insert("middleware".to_string(), serde_json::json!("permissions"));
         result.metadata.insert(
             "role".to_string(),
             serde_json::json!(format!("{:?}", self.role)),
@@ -305,8 +298,12 @@ mod tests {
         assert!(!Role::User.permissions().contains(&Permission::ManageUsers));
 
         // ReadOnly has minimal permissions
-        assert!(Role::ReadOnly.permissions().contains(&Permission::ReadFiles));
-        assert!(!Role::ReadOnly.permissions().contains(&Permission::WriteFiles));
+        assert!(Role::ReadOnly
+            .permissions()
+            .contains(&Permission::ReadFiles));
+        assert!(!Role::ReadOnly
+            .permissions()
+            .contains(&Permission::WriteFiles));
     }
 
     #[test]

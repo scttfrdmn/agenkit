@@ -8,7 +8,12 @@
 use agenkit::evaluation::{EvaluationResult, RegressionDetector, Severity};
 use chrono::Utc;
 
-fn create_evaluation_result(id: &str, accuracy: f64, quality: f64, latency: f64) -> EvaluationResult {
+fn create_evaluation_result(
+    id: &str,
+    accuracy: f64,
+    quality: f64,
+    latency: f64,
+) -> EvaluationResult {
     EvaluationResult {
         evaluation_id: id.to_string(),
         agent_name: "production-agent".to_string(),
@@ -36,9 +41,15 @@ fn main() {
     let baseline = create_evaluation_result("baseline-001", 0.95, 0.92, 150.0);
 
     println!("Baseline Metrics:");
-    println!("  Accuracy: {:.1}%", baseline.accuracy.unwrap_or(0.0) * 100.0);
+    println!(
+        "  Accuracy: {:.1}%",
+        baseline.accuracy.unwrap_or(0.0) * 100.0
+    );
     println!("  Quality: {:.3}", baseline.quality_score.unwrap_or(0.0));
-    println!("  Latency: {:.0}ms\n", baseline.avg_latency_ms.unwrap_or(0.0));
+    println!(
+        "  Latency: {:.0}ms\n",
+        baseline.avg_latency_ms.unwrap_or(0.0)
+    );
 
     // Step 2: Create detector
     println!("Step 2: Creating Regression Detector");
@@ -57,9 +68,15 @@ fn main() {
     let regressions = detector.detect(&good_result, true);
 
     println!("Current Performance:");
-    println!("  Accuracy: {:.1}%", good_result.accuracy.unwrap_or(0.0) * 100.0);
+    println!(
+        "  Accuracy: {:.1}%",
+        good_result.accuracy.unwrap_or(0.0) * 100.0
+    );
     println!("  Quality: {:.3}", good_result.quality_score.unwrap_or(0.0));
-    println!("  Latency: {:.0}ms", good_result.avg_latency_ms.unwrap_or(0.0));
+    println!(
+        "  Latency: {:.0}ms",
+        good_result.avg_latency_ms.unwrap_or(0.0)
+    );
     println!("\nRegressions Detected: {}", regressions.len());
     if regressions.is_empty() {
         println!("✓ Performance within acceptable range\n");
@@ -72,9 +89,18 @@ fn main() {
     let regressions = detector.detect(&moderate_result, true);
 
     println!("Current Performance:");
-    println!("  Accuracy: {:.1}%", moderate_result.accuracy.unwrap_or(0.0) * 100.0);
-    println!("  Quality: {:.3}", moderate_result.quality_score.unwrap_or(0.0));
-    println!("  Latency: {:.0}ms", moderate_result.avg_latency_ms.unwrap_or(0.0));
+    println!(
+        "  Accuracy: {:.1}%",
+        moderate_result.accuracy.unwrap_or(0.0) * 100.0
+    );
+    println!(
+        "  Quality: {:.3}",
+        moderate_result.quality_score.unwrap_or(0.0)
+    );
+    println!(
+        "  Latency: {:.0}ms",
+        moderate_result.avg_latency_ms.unwrap_or(0.0)
+    );
     println!("\n⚠ Regressions Detected: {}\n", regressions.len());
 
     for reg in &regressions {
@@ -92,9 +118,18 @@ fn main() {
     let regressions = detector.detect(&critical_result, true);
 
     println!("Current Performance:");
-    println!("  Accuracy: {:.1}%", critical_result.accuracy.unwrap_or(0.0) * 100.0);
-    println!("  Quality: {:.3}", critical_result.quality_score.unwrap_or(0.0));
-    println!("  Latency: {:.0}ms", critical_result.avg_latency_ms.unwrap_or(0.0));
+    println!(
+        "  Accuracy: {:.1}%",
+        critical_result.accuracy.unwrap_or(0.0) * 100.0
+    );
+    println!(
+        "  Quality: {:.3}",
+        critical_result.quality_score.unwrap_or(0.0)
+    );
+    println!(
+        "  Latency: {:.0}ms",
+        critical_result.avg_latency_ms.unwrap_or(0.0)
+    );
     println!("\n✗ CRITICAL Regressions Detected: {}\n", regressions.len());
 
     for reg in &regressions {
@@ -115,17 +150,39 @@ fn main() {
         let quality = 0.92 - (i as f64) * 0.025;
         let latency = 150.0 + (i as f64) * 15.0;
 
-        let result = create_evaluation_result(&format!("eval-{:03}", i + 5), accuracy, quality, latency);
+        let result =
+            create_evaluation_result(&format!("eval-{:03}", i + 5), accuracy, quality, latency);
         let _ = detector.detect(&result, true);
     }
 
     if let Some(trend) = detector.get_trend("accuracy", 10) {
         println!("Accuracy Trend (last 10 evaluations):");
-        println!("  Direction: {}", trend.get("direction").and_then(|v| v.as_str()).unwrap_or("unknown"));
-        println!("  Slope: {:.6}", trend.get("slope").and_then(|v| v.as_f64()).unwrap_or(0.0));
-        println!("  Current: {:.3}", trend.get("current").and_then(|v| v.as_f64()).unwrap_or(0.0));
-        println!("  Mean: {:.3}", trend.get("mean").and_then(|v| v.as_f64()).unwrap_or(0.0));
-        println!("  Variance: {:.6}\n", trend.get("variance").and_then(|v| v.as_f64()).unwrap_or(0.0));
+        println!(
+            "  Direction: {}",
+            trend
+                .get("direction")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown")
+        );
+        println!(
+            "  Slope: {:.6}",
+            trend.get("slope").and_then(|v| v.as_f64()).unwrap_or(0.0)
+        );
+        println!(
+            "  Current: {:.3}",
+            trend.get("current").and_then(|v| v.as_f64()).unwrap_or(0.0)
+        );
+        println!(
+            "  Mean: {:.3}",
+            trend.get("mean").and_then(|v| v.as_f64()).unwrap_or(0.0)
+        );
+        println!(
+            "  Variance: {:.6}\n",
+            trend
+                .get("variance")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.0)
+        );
 
         if trend.get("direction").and_then(|v| v.as_str()) == Some("degrading") {
             println!("⚠ Warning: Accuracy is trending downward");

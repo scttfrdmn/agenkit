@@ -26,10 +26,7 @@ impl Tool for CalculatorTool {
         &self,
         params: HashMap<String, serde_json::Value>,
     ) -> Result<ToolResult, AgentError> {
-        let input = params
-            .get("input")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let input = params.get("input").and_then(|v| v.as_str()).unwrap_or("");
 
         println!("   🧮 Calculator executing: {}", input);
 
@@ -97,10 +94,7 @@ impl Tool for SearchTool {
         &self,
         params: HashMap<String, serde_json::Value>,
     ) -> Result<ToolResult, AgentError> {
-        let query = params
-            .get("input")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let query = params.get("input").and_then(|v| v.as_str()).unwrap_or("");
 
         println!("   🔍 Search executing: {}", query);
 

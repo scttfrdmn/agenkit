@@ -2,7 +2,6 @@
 ///!
 ///! This module provides an adapter for calling Ollama's local LLM API.
 ///! Supports all Ollama models including Llama, Mistral, and others.
-
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -160,7 +159,10 @@ impl OllamaAgent {
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             return Err(AgentError::Transport(format!(
                 "Ollama API error ({}): {}",
                 status, error_text
@@ -183,25 +185,28 @@ impl OllamaAgent {
 
     /// Convert Ollama response to Agent message.
     fn response_to_message(&self, response: ChatResponse) -> Message {
-        let mut msg = Message::with_text(
-            &response.message.role,
-            &response.message.content,
-        );
+        let mut msg = Message::with_text(&response.message.role, &response.message.content);
 
         // Add metadata
-        msg.metadata.insert("model".to_string(), json!(response.model));
+        msg.metadata
+            .insert("model".to_string(), json!(response.model));
 
         if let Some(duration) = response.total_duration {
-            msg.metadata.insert("total_duration_ns".to_string(), json!(duration));
+            msg.metadata
+                .insert("total_duration_ns".to_string(), json!(duration));
         }
 
         if let (Some(prompt_tokens), Some(completion_tokens)) =
-            (response.prompt_eval_count, response.eval_count) {
-            msg.metadata.insert("usage".to_string(), json!({
-                "prompt_tokens": prompt_tokens,
-                "completion_tokens": completion_tokens,
-                "total_tokens": prompt_tokens + completion_tokens,
-            }));
+            (response.prompt_eval_count, response.eval_count)
+        {
+            msg.metadata.insert(
+                "usage".to_string(),
+                json!({
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "total_tokens": prompt_tokens + completion_tokens,
+                }),
+            );
         }
 
         msg

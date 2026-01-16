@@ -3,7 +3,6 @@
 ///! This example demonstrates how to:
 ///! 1. Create an agent server that exposes an agent over HTTP
 ///! 2. Create an HTTP client that communicates with the remote agent
-
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::transports::{HttpAgent, HttpServer, HttpTransportConfig};
 use async_trait::async_trait;
@@ -32,10 +31,7 @@ impl Agent for CounterAgent {
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         // Increment counter
-        let count = self
-            .count
-            .fetch_add(1, std::sync::atomic::Ordering::SeqCst)
-            + 1;
+        let count = self.count.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
 
         // Return message with count
         let content = format!(

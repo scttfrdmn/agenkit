@@ -546,10 +546,7 @@ mod tests {
         let result = batch_agent.process(msg).await;
 
         assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap().content_as_str(),
-            Some("echo: test")
-        );
+        assert_eq!(result.unwrap().content_as_str(), Some("echo: test"));
     }
 
     #[tokio::test]

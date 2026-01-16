@@ -5,11 +5,11 @@
 //!
 //! Inspired by Claude 4 and o3's extended thinking capabilities.
 
-use agenkit::core::{Agent, Message, Tool, ToolResult, AgentError};
+use agenkit::core::{Agent, AgentError, Message, Tool, ToolResult};
 use agenkit::patterns::{ReasoningWithToolsAgent, ReasoningWithToolsConfig};
+use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;
-use async_trait::async_trait;
 
 /// Mock LLM that simulates reasoning and tool calls
 struct MockReasoningLLM {
@@ -58,8 +58,12 @@ impl Tool for CalculatorTool {
         "Performs mathematical calculations"
     }
 
-    async fn execute(&self, parameters: HashMap<String, serde_json::Value>) -> Result<ToolResult, AgentError> {
-        let expression = parameters.get("expression")
+    async fn execute(
+        &self,
+        parameters: HashMap<String, serde_json::Value>,
+    ) -> Result<ToolResult, AgentError> {
+        let expression = parameters
+            .get("expression")
             .and_then(|v| v.as_str())
             .ok_or_else(|| AgentError::InvalidInput("Missing expression".to_string()))?;
 
@@ -89,8 +93,12 @@ impl Tool for SearchTool {
         "Searches for information"
     }
 
-    async fn execute(&self, parameters: HashMap<String, serde_json::Value>) -> Result<ToolResult, AgentError> {
-        let query = parameters.get("query")
+    async fn execute(
+        &self,
+        parameters: HashMap<String, serde_json::Value>,
+    ) -> Result<ToolResult, AgentError> {
+        let query = parameters
+            .get("query")
             .and_then(|v| v.as_str())
             .ok_or_else(|| AgentError::InvalidInput("Missing query".to_string()))?;
 
@@ -138,10 +146,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "CONCLUSION: Search found info, calculation gives 45".to_string(),
     ]));
 
-    let tools: Vec<Arc<dyn Tool>> = vec![
-        Arc::new(CalculatorTool),
-        Arc::new(SearchTool),
-    ];
+    let tools: Vec<Arc<dyn Tool>> = vec![Arc::new(CalculatorTool), Arc::new(SearchTool)];
     let config = ReasoningWithToolsConfig {
         max_reasoning_steps: 10,
         enable_trace: true,
@@ -206,10 +211,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "CONCLUSION: Population is 50 million".to_string(),
     ]));
 
-    let tools: Vec<Arc<dyn Tool>> = vec![
-        Arc::new(CalculatorTool),
-        Arc::new(SearchTool),
-    ];
+    let tools: Vec<Arc<dyn Tool>> = vec![Arc::new(CalculatorTool), Arc::new(SearchTool)];
     let config = ReasoningWithToolsConfig {
         max_reasoning_steps: 10,
         enable_trace: true,

@@ -106,11 +106,13 @@ impl MemoryHierarchy {
         let mut seen_ids = HashSet::new();
 
         let search_all = search_tiers.is_none();
-        let tiers = search_tiers.unwrap_or_else(|| vec![
-            "working".to_string(),
-            "short_term".to_string(),
-            "long_term".to_string(),
-        ]);
+        let tiers = search_tiers.unwrap_or_else(|| {
+            vec![
+                "working".to_string(),
+                "short_term".to_string(),
+                "long_term".to_string(),
+            ]
+        });
 
         // Query working memory
         if search_all || tiers.contains(&"working".to_string()) {
@@ -162,11 +164,9 @@ impl MemoryHierarchy {
         }
 
         // Rank by importance (descending), then timestamp (descending)
-        all_entries.sort_by(|a, b| {
-            match b.importance.partial_cmp(&a.importance) {
-                Some(std::cmp::Ordering::Equal) | None => b.timestamp.cmp(&a.timestamp),
-                Some(ordering) => ordering,
-            }
+        all_entries.sort_by(|a, b| match b.importance.partial_cmp(&a.importance) {
+            Some(std::cmp::Ordering::Equal) | None => b.timestamp.cmp(&a.timestamp),
+            Some(ordering) => ordering,
         });
 
         // Return top N

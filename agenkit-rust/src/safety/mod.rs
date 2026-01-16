@@ -41,26 +41,16 @@
 //! # }
 //! ```
 
+pub mod anomaly_detection;
+pub mod audit;
 pub mod errors;
 pub mod input_validation;
 pub mod output_validation;
 pub mod permissions;
-pub mod anomaly_detection;
-pub mod audit;
 
+pub use anomaly_detection::{AnomalyDetectionMiddleware, AnomalyDetector, SecurityEvent};
+pub use audit::{AuditEvent, AuditEventType, AuditSeverity, SecurityAuditLogger};
 pub use errors::{PermissionDeniedError, SecurityError, ValidationError};
-pub use input_validation::{
-    ContentFilter, InputValidationMiddleware, PromptInjectionDetector,
-};
-pub use output_validation::{
-    OutputValidationMiddleware, SchemaValidator, SensitiveDataRedactor,
-};
-pub use permissions::{
-    Permission, PermissionMiddleware, Role, Sandbox,
-};
-pub use anomaly_detection::{
-    AnomalyDetectionMiddleware, AnomalyDetector, SecurityEvent,
-};
-pub use audit::{
-    AuditEvent, AuditEventType, AuditSeverity, SecurityAuditLogger,
-};
+pub use input_validation::{ContentFilter, InputValidationMiddleware, PromptInjectionDetector};
+pub use output_validation::{OutputValidationMiddleware, SchemaValidator, SensitiveDataRedactor};
+pub use permissions::{Permission, PermissionMiddleware, Role, Sandbox};

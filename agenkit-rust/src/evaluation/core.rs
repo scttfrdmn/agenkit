@@ -27,15 +27,15 @@
 //! # }
 //! ```
 
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
-use serde::{Serialize, Deserialize};
-use async_trait::async_trait;
 
-use crate::core::{Agent, Message, AgentError};
+use crate::core::{Agent, AgentError, Message};
 
 /// Metric trait for evaluation metrics.
 ///
@@ -133,15 +133,36 @@ impl EvaluationResult {
     pub fn to_dict(&self) -> HashMap<String, serde_json::Value> {
         let mut result = HashMap::new();
 
-        result.insert("evaluation_id".to_string(), serde_json::json!(self.evaluation_id));
+        result.insert(
+            "evaluation_id".to_string(),
+            serde_json::json!(self.evaluation_id),
+        );
         result.insert("agent_name".to_string(), serde_json::json!(self.agent_name));
-        result.insert("timestamp".to_string(), serde_json::json!(self.timestamp.to_rfc3339()));
+        result.insert(
+            "timestamp".to_string(),
+            serde_json::json!(self.timestamp.to_rfc3339()),
+        );
         result.insert("metrics".to_string(), serde_json::json!(self.metrics));
-        result.insert("aggregated_metrics".to_string(), serde_json::json!(self.aggregated_metrics));
-        result.insert("total_tests".to_string(), serde_json::json!(self.total_tests));
-        result.insert("passed_tests".to_string(), serde_json::json!(self.passed_tests));
-        result.insert("failed_tests".to_string(), serde_json::json!(self.failed_tests));
-        result.insert("success_rate".to_string(), serde_json::json!(self.success_rate()));
+        result.insert(
+            "aggregated_metrics".to_string(),
+            serde_json::json!(self.aggregated_metrics),
+        );
+        result.insert(
+            "total_tests".to_string(),
+            serde_json::json!(self.total_tests),
+        );
+        result.insert(
+            "passed_tests".to_string(),
+            serde_json::json!(self.passed_tests),
+        );
+        result.insert(
+            "failed_tests".to_string(),
+            serde_json::json!(self.failed_tests),
+        );
+        result.insert(
+            "success_rate".to_string(),
+            serde_json::json!(self.success_rate()),
+        );
         result.insert("metadata".to_string(), serde_json::json!(self.metadata));
 
         if let Some(val) = self.context_length {
@@ -224,9 +245,7 @@ impl Evaluator {
         metrics: Vec<Arc<dyn Metric>>,
         session_id: Option<String>,
     ) -> Self {
-        let session_id = session_id.unwrap_or_else(|| {
-            format!("eval-{}", Utc::now().timestamp())
-        });
+        let session_id = session_id.unwrap_or_else(|| format!("eval-{}", Utc::now().timestamp()));
 
         Self {
             agent,
@@ -302,10 +321,9 @@ impl Evaluator {
             };
 
             let mut input_msg = Message::with_text("user", &input_content);
-            input_msg.metadata.insert(
-                "session_id".to_string(),
-                serde_json::json!(self.session_id),
-            );
+            input_msg
+                .metadata
+                .insert("session_id".to_string(), serde_json::json!(self.session_id));
 
             // Run agent with timing
             let start = Instant::now();
@@ -320,14 +338,17 @@ impl Evaluator {
                     // Collect metrics
                     let ctx = test_case.clone();
                     for metric in &self.metrics {
-                        let value = metric.measure(
-                            self.agent.clone(),
-                            &Message::with_text("user", &input_content),
-                            &msg,
-                            &ctx,
-                        ).await?;
+                        let value = metric
+                            .measure(
+                                self.agent.clone(),
+                                &Message::with_text("user", &input_content),
+                                &msg,
+                                &ctx,
+                            )
+                            .await?;
 
-                        result.metrics
+                        result
+                            .metrics
                             .entry(metric.name().to_string())
                             .or_insert_with(Vec::new)
                             .push(value);
@@ -348,20 +369,25 @@ impl Evaluator {
             let mut sorted_latencies = latencies.clone();
             sorted_latencies.sort_by(|a, b| a.partial_cmp(b).unwrap());
             let p95_index = (sorted_latencies.len() as f64 * 0.95) as usize;
-            result.p95_latency_ms = Some(sorted_latencies[p95_index.min(sorted_latencies.len() - 1)]);
+            result.p95_latency_ms =
+                Some(sorted_latencies[p95_index.min(sorted_latencies.len() - 1)]);
         }
 
         // Aggregate metrics
         for (metric_name, measurements) in &result.metrics {
             if let Some(metric) = self.metrics.iter().find(|m| m.name() == metric_name) {
                 let aggregated = metric.aggregate(measurements);
-                result.aggregated_metrics.insert(metric_name.clone(), aggregated);
+                result
+                    .aggregated_metrics
+                    .insert(metric_name.clone(), aggregated);
             }
         }
 
         // Store errors if any
         if !errors.is_empty() {
-            result.metadata.insert("errors".to_string(), serde_json::json!(errors));
+            result
+                .metadata
+                .insert("errors".to_string(), serde_json::json!(errors));
         }
 
         Ok(result)
@@ -450,11 +476,20 @@ mod tests {
 
         let dict = result.to_dict();
 
-        assert_eq!(dict.get("evaluation_id").unwrap(), &serde_json::json!("test-123"));
-        assert_eq!(dict.get("agent_name").unwrap(), &serde_json::json!("test-agent"));
+        assert_eq!(
+            dict.get("evaluation_id").unwrap(),
+            &serde_json::json!("test-123")
+        );
+        assert_eq!(
+            dict.get("agent_name").unwrap(),
+            &serde_json::json!("test-agent")
+        );
         assert_eq!(dict.get("total_tests").unwrap(), &serde_json::json!(5));
         assert_eq!(dict.get("success_rate").unwrap(), &serde_json::json!(1.0));
-        assert_eq!(dict.get("context_length").unwrap(), &serde_json::json!(1000));
+        assert_eq!(
+            dict.get("context_length").unwrap(),
+            &serde_json::json!(1000)
+        );
         assert_eq!(dict.get("accuracy").unwrap(), &serde_json::json!(0.95));
     }
 }

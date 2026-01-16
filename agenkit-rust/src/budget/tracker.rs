@@ -126,10 +126,7 @@ impl CostTracker {
     }
 
     /// Create a new cost tracker with custom storage and pricing.
-    pub fn with_storage_and_pricing(
-        storage: Arc<dyn CostStorage>,
-        pricing: ModelPricing,
-    ) -> Self {
+    pub fn with_storage_and_pricing(storage: Arc<dyn CostStorage>, pricing: ModelPricing) -> Self {
         Self { storage, pricing }
     }
 
@@ -152,9 +149,7 @@ impl CostTracker {
 
         // Calculate thinking cost (typically uses output token pricing)
         let thinking_cost = if thinking_tokens > 0 {
-            self.pricing
-                .calculate(model, 0, thinking_tokens)
-                .await?
+            self.pricing.calculate(model, 0, thinking_tokens).await?
         } else {
             0.0
         };
@@ -313,7 +308,9 @@ impl CostTracker {
 
         let mut session_costs = HashMap::new();
         for record in records {
-            *session_costs.entry(record.session_id.clone()).or_insert(0.0) += record.cost;
+            *session_costs
+                .entry(record.session_id.clone())
+                .or_insert(0.0) += record.cost;
         }
 
         Ok(session_costs)

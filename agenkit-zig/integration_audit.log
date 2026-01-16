@@ -1,0 +1,2 @@
+{"event_id":"0000019bc7b72b86-c7b7-019bªªªªªªªªªª","timestamp":1768582228870,"event_type":"agent_created","agent_name":"full_stack_test","severity":"INFO","session_id":"integration_session"}
+{"event_id":"0000019bc7b72b89-c7b7-019bªªªªªªªªªª","timestamp":1768582228873,"event_type":"message_processed","agent_name":"full_stack_test","severity":"INFO","session_id":"integration_session","details":{"success":"true"}}

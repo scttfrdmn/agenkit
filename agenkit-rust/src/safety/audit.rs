@@ -48,11 +48,7 @@ pub struct AuditEvent {
 
 impl AuditEvent {
     /// Create a new audit event.
-    pub fn new(
-        event_type: AuditEventType,
-        severity: AuditSeverity,
-        message: String,
-    ) -> Self {
+    pub fn new(event_type: AuditEventType, severity: AuditSeverity, message: String) -> Self {
         Self {
             event_type,
             severity,
@@ -137,7 +133,8 @@ impl SecurityAuditLogger {
         }
 
         // Format event as JSON
-        let json = event.to_json()
+        let json = event
+            .to_json()
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
         // Write to file
@@ -151,7 +148,10 @@ impl SecurityAuditLogger {
         if self.config.console_logging {
             println!(
                 "[{:?}] [{:?}] {} - {}",
-                event.severity, event.event_type, event.timestamp.format("%Y-%m-%d %H:%M:%S"), event.message
+                event.severity,
+                event.event_type,
+                event.timestamp.format("%Y-%m-%d %H:%M:%S"),
+                event.message
             );
         }
 
@@ -159,7 +159,12 @@ impl SecurityAuditLogger {
     }
 
     /// Log access attempt.
-    pub fn log_access(&self, granted: bool, user_id: &str, resource: &str) -> Result<(), std::io::Error> {
+    pub fn log_access(
+        &self,
+        granted: bool,
+        user_id: &str,
+        resource: &str,
+    ) -> Result<(), std::io::Error> {
         let event = if granted {
             AuditEvent::new(
                 AuditEventType::AccessGranted,
@@ -287,7 +292,11 @@ impl SecurityAuditLogger {
         let event = AuditEvent::new(
             event_type,
             severity,
-            format!("Agent {} in {}ms", if success { "completed" } else { "failed" }, duration_ms),
+            format!(
+                "Agent {} in {}ms",
+                if success { "completed" } else { "failed" },
+                duration_ms
+            ),
         )
         .with_agent(agent_name.to_string())
         .with_detail("duration_ms".to_string(), serde_json::json!(duration_ms));

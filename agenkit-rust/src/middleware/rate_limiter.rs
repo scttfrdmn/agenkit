@@ -148,7 +148,9 @@ impl RateLimiterConfigBuilder {
             tokens_per_second,
             capacity: self.capacity.unwrap_or(tokens_per_second), // Default capacity = rate
             max_wait_time: self.max_wait_time.unwrap_or(default.max_wait_time),
-            tokens_per_request: self.tokens_per_request.unwrap_or(default.tokens_per_request),
+            tokens_per_request: self
+                .tokens_per_request
+                .unwrap_or(default.tokens_per_request),
         }
     }
 }
@@ -301,10 +303,9 @@ impl<A: Agent> Agent for RateLimiterMiddleware<A> {
 
     fn introspect(&self) -> IntrospectionResult {
         let mut result = self.inner.introspect();
-        result.metadata.insert(
-            "middleware".to_string(),
-            serde_json::json!("rate_limiter"),
-        );
+        result
+            .metadata
+            .insert("middleware".to_string(), serde_json::json!("rate_limiter"));
         result.metadata.insert(
             "rate_limiter_config".to_string(),
             serde_json::json!({
@@ -373,8 +374,7 @@ impl<A: Agent> Agent for RateLimiterMiddleware<A> {
                 }
 
                 // Calculate wait time
-                let wait_time =
-                    state.time_until_token(self.config.tokens_per_second, token_count);
+                let wait_time = state.time_until_token(self.config.tokens_per_second, token_count);
                 let remaining_time = self
                     .config
                     .max_wait_time

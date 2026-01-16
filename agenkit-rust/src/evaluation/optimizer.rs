@@ -23,19 +23,25 @@
 //! # }
 //! ```
 
+use chrono::{DateTime, Utc};
+use rand::Rng;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
-use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
-use rand::Rng;
 
 use crate::core::AgentError;
 
 /// Objective function type.
 ///
 /// Takes a configuration and returns a score to optimize.
-pub type ObjectiveFunc = Box<dyn Fn(HashMap<String, serde_json::Value>) -> Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>> + Send + Sync>;
+pub type ObjectiveFunc = Box<
+    dyn Fn(
+            HashMap<String, serde_json::Value>,
+        ) -> Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
+        + Send
+        + Sync,
+>;
 
 /// Parameter type for search space.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -249,7 +255,12 @@ impl RandomSearchOptimizer {
     /// * `search_space` - Search space defining parameter space
     /// * `maximize` - Whether to maximize (true) or minimize (false)
     pub fn new(
-        objective: impl Fn(HashMap<String, serde_json::Value>) -> Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>> + Send + Sync + 'static,
+        objective: impl Fn(
+                HashMap<String, serde_json::Value>,
+            ) -> Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
+            + Send
+            + Sync
+            + 'static,
         search_space: SearchSpace,
         maximize: bool,
     ) -> Self {
@@ -270,7 +281,10 @@ impl RandomSearchOptimizer {
     /// # Returns
     ///
     /// OptimizationResult with best config and history
-    pub async fn optimize(&mut self, n_iterations: usize) -> Result<OptimizationResult, AgentError> {
+    pub async fn optimize(
+        &mut self,
+        n_iterations: usize,
+    ) -> Result<OptimizationResult, AgentError> {
         let start_time = Utc::now();
         self.history = Vec::with_capacity(n_iterations);
 
@@ -344,7 +358,10 @@ mod tests {
         space.add_integer("count", 1, 10);
 
         assert_eq!(space.parameters.len(), 2);
-        assert_eq!(space.parameters.get("temp").unwrap().param_type, ParameterType::Continuous);
+        assert_eq!(
+            space.parameters.get("temp").unwrap().param_type,
+            ParameterType::Continuous
+        );
     }
 
     #[test]
@@ -366,10 +383,10 @@ mod tests {
     #[test]
     fn test_discrete_parameter() {
         let mut space = SearchSpace::new();
-        space.add_discrete("model", vec![
-            serde_json::json!("gpt-4"),
-            serde_json::json!("claude"),
-        ]);
+        space.add_discrete(
+            "model",
+            vec![serde_json::json!("gpt-4"), serde_json::json!("claude")],
+        );
 
         let config = space.sample();
         let model = config.get("model").unwrap().as_str().unwrap();
@@ -468,13 +485,8 @@ mod tests {
             }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
         };
 
-        let mut optimizer = BayesianOptimizer::new(
-            objective,
-            space,
-            true,
-            AcquisitionFunction::UCB,
-            5,
-        );
+        let mut optimizer =
+            BayesianOptimizer::new(objective, space, true, AcquisitionFunction::UCB, 5);
 
         let result = optimizer.optimize(20).await.unwrap();
 
@@ -500,13 +512,8 @@ mod tests {
             }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
         };
 
-        let mut optimizer = BayesianOptimizer::new(
-            objective,
-            space,
-            true,
-            AcquisitionFunction::EI,
-            5,
-        );
+        let mut optimizer =
+            BayesianOptimizer::new(objective, space, true, AcquisitionFunction::EI, 5);
 
         let result = optimizer.optimize(20).await.unwrap();
 
@@ -527,13 +534,8 @@ mod tests {
             }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
         };
 
-        let mut optimizer = BayesianOptimizer::new(
-            objective,
-            space,
-            true,
-            AcquisitionFunction::PI,
-            5,
-        );
+        let mut optimizer =
+            BayesianOptimizer::new(objective, space, true, AcquisitionFunction::PI, 5);
 
         let result = optimizer.optimize(20).await.unwrap();
 
@@ -583,13 +585,8 @@ mod tests {
             }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
         };
 
-        let mut optimizer = BayesianOptimizer::new(
-            objective,
-            space,
-            false,
-            AcquisitionFunction::EI,
-            10,
-        );
+        let mut optimizer =
+            BayesianOptimizer::new(objective, space, false, AcquisitionFunction::EI, 10);
 
         let result = optimizer.optimize(30).await.unwrap();
 
@@ -614,18 +611,18 @@ mod tests {
             Box::pin(async move {
                 let count = config.get("count").unwrap().as_i64().unwrap() as f64;
                 let scale = config.get("scale").unwrap().as_f64().unwrap();
-                let score = count * scale - if count > 10.0 { (count - 10.0) * 2.0 } else { 0.0 };
+                let score = count * scale
+                    - if count > 10.0 {
+                        (count - 10.0) * 2.0
+                    } else {
+                        0.0
+                    };
                 Ok(score)
             }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
         };
 
-        let mut optimizer = BayesianOptimizer::new(
-            objective,
-            space,
-            true,
-            AcquisitionFunction::UCB,
-            5,
-        );
+        let mut optimizer =
+            BayesianOptimizer::new(objective, space, true, AcquisitionFunction::UCB, 5);
 
         let result = optimizer.optimize(20).await.unwrap();
 
@@ -646,13 +643,8 @@ mod tests {
             }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
         };
 
-        let mut optimizer = BayesianOptimizer::new(
-            objective,
-            space,
-            true,
-            AcquisitionFunction::EI,
-            5,
-        );
+        let mut optimizer =
+            BayesianOptimizer::new(objective, space, true, AcquisitionFunction::EI, 5);
 
         let result = optimizer.optimize(30).await.unwrap();
 
@@ -673,13 +665,8 @@ mod tests {
             }) as Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
         };
 
-        let mut optimizer = BayesianOptimizer::new(
-            objective,
-            space,
-            true,
-            AcquisitionFunction::UCB,
-            3,
-        );
+        let mut optimizer =
+            BayesianOptimizer::new(objective, space, true, AcquisitionFunction::UCB, 3);
 
         let result = optimizer.optimize(10).await.unwrap();
 
@@ -771,7 +758,12 @@ impl BayesianOptimizer {
     /// * `acquisition` - Acquisition function to use
     /// * `n_initial` - Number of random samples for initialization
     pub fn new(
-        objective: impl Fn(HashMap<String, serde_json::Value>) -> Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>> + Send + Sync + 'static,
+        objective: impl Fn(
+                HashMap<String, serde_json::Value>,
+            ) -> Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>
+            + Send
+            + Sync
+            + 'static,
         search_space: SearchSpace,
         maximize: bool,
         acquisition: AcquisitionFunction,
@@ -796,7 +788,10 @@ impl BayesianOptimizer {
     }
 
     /// Runs Bayesian optimization.
-    pub async fn optimize(&mut self, n_iterations: usize) -> Result<OptimizationResult, AgentError> {
+    pub async fn optimize(
+        &mut self,
+        n_iterations: usize,
+    ) -> Result<OptimizationResult, AgentError> {
         let start_time = Utc::now();
 
         // Phase 1: Random initialization
@@ -815,11 +810,20 @@ impl BayesianOptimizer {
 
         let end_time = Utc::now();
 
-        let best_config = self.best_config.clone().unwrap_or_else(|| self.search_space.sample());
+        let best_config = self
+            .best_config
+            .clone()
+            .unwrap_or_else(|| self.search_space.sample());
 
         let mut metadata = HashMap::new();
-        metadata.insert("algorithm".to_string(), serde_json::json!("bayesian_optimization"));
-        metadata.insert("acquisition".to_string(), serde_json::json!(format!("{:?}", self.acquisition)));
+        metadata.insert(
+            "algorithm".to_string(),
+            serde_json::json!("bayesian_optimization"),
+        );
+        metadata.insert(
+            "acquisition".to_string(),
+            serde_json::json!(format!("{:?}", self.acquisition)),
+        );
         metadata.insert("n_initial".to_string(), serde_json::json!(self.n_initial));
         metadata.insert("maximize".to_string(), serde_json::json!(self.maximize));
 
@@ -880,7 +884,8 @@ impl BayesianOptimizer {
 
         // Simplified acquisition: use mean and std of nearby points
         let mean = self.history.iter().map(|s| s.score).sum::<f64>() / self.history.len() as f64;
-        let variance: f64 = self.history
+        let variance: f64 = self
+            .history
             .iter()
             .map(|s| (s.score - mean).powi(2))
             .sum::<f64>()

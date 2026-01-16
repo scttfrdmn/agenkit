@@ -133,7 +133,9 @@ impl PerUserRateLimiterConfigBuilder {
         PerUserRateLimiterConfig {
             rate: self.rate.unwrap_or(default.rate),
             capacity: self.capacity.unwrap_or(default.capacity),
-            tokens_per_request: self.tokens_per_request.unwrap_or(default.tokens_per_request),
+            tokens_per_request: self
+                .tokens_per_request
+                .unwrap_or(default.tokens_per_request),
             max_wait_timeout: self.max_wait_timeout.or(default.max_wait_timeout),
             user_id_extractor: self.user_id_extractor.unwrap_or(default.user_id_extractor),
         }

@@ -216,7 +216,11 @@ async fn test_tree_statistics() {
 
     let response = result.unwrap();
     let metadata = &response.metadata;
-    let stats = metadata.get("reasoning_tree_stats").unwrap().as_object().unwrap();
+    let stats = metadata
+        .get("reasoning_tree_stats")
+        .unwrap()
+        .as_object()
+        .unwrap();
 
     assert!(stats.get("total_nodes").unwrap().as_u64().unwrap() >= 1);
     assert!(stats.get("max_depth").unwrap().as_u64().unwrap() <= 2);
@@ -296,7 +300,11 @@ async fn test_pruning() {
 
     let response = result.unwrap();
     let metadata = &response.metadata;
-    let stats = metadata.get("reasoning_tree_stats").unwrap().as_object().unwrap();
+    let stats = metadata
+        .get("reasoning_tree_stats")
+        .unwrap()
+        .as_object()
+        .unwrap();
 
     // With selective pruning, we should have both pruned and non-pruned nodes
     assert!(stats.get("total_nodes").unwrap().as_u64().unwrap() > 0);
@@ -468,7 +476,8 @@ fn test_reasoning_tree_max_depth() {
     let mut tree = ReasoningTree::new();
     let root_id = tree.create_root("Root".to_string());
     let child1 = tree.add_child(root_id, "Child 1".to_string(), 0.8).unwrap();
-    tree.add_child(child1, "Grandchild".to_string(), 0.9).unwrap();
+    tree.add_child(child1, "Grandchild".to_string(), 0.9)
+        .unwrap();
 
     assert_eq!(tree.max_depth(), 2);
 }

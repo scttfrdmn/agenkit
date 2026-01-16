@@ -572,9 +572,7 @@ mod tests {
     #[tokio::test]
     async fn test_circuit_breaker_resets_failure_count_on_success() {
         let agent = FailingAgent::new(false);
-        let config = CircuitBreakerConfig::builder()
-            .failure_threshold(3)
-            .build();
+        let config = CircuitBreakerConfig::builder().failure_threshold(3).build();
 
         let cb_agent = CircuitBreakerMiddleware::new(agent, config);
 

@@ -16,8 +16,8 @@ use agenkit::{
     core::Message,
     memory::{LongTermMemory, MemoryHierarchy, ShortTermMemory, WorkingMemory},
     safety::{
-        PromptInjectionDetector, SecurityAuditLogger, SecurityAuditLoggerConfig,
-        SensitiveDataRedactor, AuditSeverity,
+        AuditSeverity, PromptInjectionDetector, SecurityAuditLogger, SecurityAuditLoggerConfig,
+        SensitiveDataRedactor,
     },
 };
 use std::collections::HashMap;
@@ -74,15 +74,21 @@ impl SecureProductionSession {
 
         if !is_safe {
             // Log security event
-            self.audit_logger.log_prompt_injection(&self.user_id, score, &details)
+            self.audit_logger
+                .log_prompt_injection(&self.user_id, score, &details)
                 .unwrap_or_else(|e| eprintln!("Audit log error: {}", e));
 
             println!("🛡️  SECURITY: Blocked prompt injection (score: {})", score);
-            return Err(format!("Security violation: Prompt injection detected (score: {})", score).into());
+            return Err(format!(
+                "Security violation: Prompt injection detected (score: {})",
+                score
+            )
+            .into());
         }
 
         // Log successful access
-        self.audit_logger.log_access(true, &self.user_id, "message_processing")
+        self.audit_logger
+            .log_access(true, &self.user_id, "message_processing")
             .unwrap_or_else(|e| eprintln!("Audit log error: {}", e));
 
         // ====================================================================
@@ -130,7 +136,8 @@ impl SecureProductionSession {
 
         if session_cost + estimated_cost > 1.0 {
             // Log budget exceeded
-            self.audit_logger.log_access(false, &self.user_id, "budget_check")
+            self.audit_logger
+                .log_access(false, &self.user_id, "budget_check")
                 .unwrap_or_else(|e| eprintln!("Audit log error: {}", e));
 
             return Err(format!(
@@ -170,7 +177,8 @@ impl SecureProductionSession {
 
         if has_sensitive {
             // Log sensitive data detection
-            self.audit_logger.log_sensitive_data_redaction(&self.user_id, "output", "Redacted")
+            self.audit_logger
+                .log_sensitive_data_redaction(&self.user_id, "output", "Redacted")
                 .unwrap_or_else(|e| eprintln!("Audit log error: {}", e));
 
             println!("🔒 SECURITY: Sensitive data detected and redacted");
@@ -208,7 +216,10 @@ impl SecureProductionSession {
                     "production-agent".to_string(),
                     self.step,
                     state,
-                    messages.iter().map(|e| Message::with_text("", &e.content)).collect(),
+                    messages
+                        .iter()
+                        .map(|e| Message::with_text("", &e.content))
+                        .collect(),
                     None,
                     None,
                 )
@@ -217,7 +228,8 @@ impl SecureProductionSession {
             println!("💾 Checkpoint created: {}", checkpoint_id);
 
             // Log checkpoint creation
-            self.audit_logger.log_agent_execution("production-agent", true, "Checkpoint created")
+            self.audit_logger
+                .log_agent_execution("production-agent", true, "Checkpoint created")
                 .unwrap_or_else(|e| eprintln!("Audit log error: {}", e));
         }
 
@@ -369,7 +381,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     println!("  ✅ Checkpoint manager initialized");
-    println!("  ✅ Checkpoint interval: {} messages\n", config.checkpoint_interval);
+    println!(
+        "  ✅ Checkpoint interval: {} messages\n",
+        config.checkpoint_interval
+    );
 
     // ========================================================================
     // STEP 5: Setup Security Features
@@ -451,7 +466,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Memory stats
     let memory_stats = session.memory.get_stats().await;
     println!("\n💾 Memory:");
-    println!("  • Working memory: {} messages", memory_stats["working_count"]);
+    println!(
+        "  • Working memory: {} messages",
+        memory_stats["working_count"]
+    );
     if let Some(&count) = memory_stats.get("short_term_count") {
         println!("  • Short-term memory: {} messages", count);
     }
@@ -467,7 +485,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  • Total calls: {}", usage_stats.total_calls);
     println!("  • Input tokens: {}", usage_stats.total_input_tokens);
     println!("  • Output tokens: {}", usage_stats.total_output_tokens);
-    println!("  • Budget utilization: {:.1}%", (session_cost / 1.0) * 100.0);
+    println!(
+        "  • Budget utilization: {:.1}%",
+        (session_cost / 1.0) * 100.0
+    );
 
     // Checkpoint stats
     let checkpoints = session
@@ -479,12 +500,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !checkpoints.is_empty() {
         println!("  • Latest: {}", checkpoints[0].checkpoint_id);
         println!("  • Step: {}", checkpoints[0].step_number);
-        println!("  • Messages at checkpoint: {}", checkpoints[0].messages.len());
+        println!(
+            "  • Messages at checkpoint: {}",
+            checkpoints[0].messages.len()
+        );
     }
 
     // Security stats
     println!("\n🛡️  Security:");
-    println!("  • Prompt injection checks: {} messages processed", session.step);
+    println!(
+        "  • Prompt injection checks: {} messages processed",
+        session.step
+    );
     println!("  • Sensitive data redaction: Active");
     println!("  • Audit trail: Complete (see ./logs/secure_agent_audit.log)");
     println!("  • Security violations: Check audit log for details");

@@ -1,0 +1,20 @@
+var searchData=
+[
+  ['echoagent_0',['EchoAgent',['../classagenkit_1_1adapters_1_1_echo_agent.html#a342907a35ab4217d5ca6b01ef146743e',1,'agenkit::adapters::EchoAgent']]],
+  ['empty_5fresponse_1',['empty_response',['../namespaceagenkit_1_1patterns_1_1default__recovery.html#afbca1b5b9b6ee151033423ea466fc080',1,'agenkit::patterns::default_recovery']]],
+  ['enable_5fjitter_2',['enable_jitter',['../classagenkit_1_1middleware_1_1_retry_config_1_1_builder.html#a69c829cf57dba2dc263c85b2e4a214d2',1,'agenkit::middleware::RetryConfig::Builder']]],
+  ['end_5ftime_3',['end_time',['../classagenkit_1_1evaluation_1_1_session_result.html#a1d1a3ef84d246aa600b2de9e56ebb44d',1,'agenkit::evaluation::SessionResult::end_time()'],['../classagenkit_1_1evaluation_1_1_session_recording.html#a802d6f013bed3edaaf50b30ba35b6492',1,'agenkit::evaluation::SessionRecording::end_time()']]],
+  ['enqueue_4',['enqueue',['../classagenkit_1_1infrastructure_1_1_thread_pool.html#ae33ceba900204fb04b9934f3da0462d2',1,'agenkit::infrastructure::ThreadPool']]],
+  ['err_5',['err',['../classagenkit_1_1core_1_1_result.html#a8c754e17d1afdffe0b347208ef98b6f1',1,'agenkit::core::Result']]],
+  ['error_6',['error',['../structagenkit_1_1patterns_1_1_tool_result.html#a895863d1d83ca15228f102bc3a1917d4',1,'agenkit::patterns::ToolResult']]],
+  ['errorrecord_7',['ErrorRecord',['../classagenkit_1_1evaluation_1_1_error_record.html#a8beb0b3493fe5214db910ae7552e5b1f',1,'agenkit::evaluation::ErrorRecord']]],
+  ['errors_8',['errors',['../classagenkit_1_1evaluation_1_1_session_result.html#a3ae1dfc7f1ac3026526013dc829de11e',1,'agenkit::evaluation::SessionResult']]],
+  ['estimate_5fconversation_5fcost_9',['estimate_conversation_cost',['../classagenkit_1_1infrastructure_1_1budget_1_1_model_pricing.html#aa353c4ebac43785564776806ac9aa6d1',1,'agenkit::infrastructure::budget::ModelPricing']]],
+  ['evaluate_5fat_5flengths_10',['evaluate_at_lengths',['../classagenkit_1_1evaluation_1_1_compression_metrics.html#a9a2364ca49762c3caaf59f8c74537dd3',1,'agenkit::evaluation::CompressionMetrics']]],
+  ['evaluate_5fconfig_11',['evaluate_config',['../classagenkit_1_1evaluation_1_1_optimizer.html#a8ad0334985ec1ca8f06a6827bf8188f5',1,'agenkit::evaluation::Optimizer']]],
+  ['exact_5fmatch_12',['exact_match',['../namespaceagenkit_1_1patterns_1_1default__consensus.html#afd57ffcba661883b786761040966b65f',1,'agenkit::patterns::default_consensus']]],
+  ['execute_13',['execute',['../classagenkit_1_1patterns_1_1_agent_tool.html#aa2936e3c90fa962baf834734ec980d37',1,'agenkit::patterns::AgentTool::execute()'],['../classagenkit_1_1patterns_1_1_tool.html#ac5bee8255fed7607464798a47e8ef875',1,'agenkit::patterns::Tool::execute()'],['../classagenkit_1_1patterns_1_1_task.html#a7b0bfd910d89bc46315bf5c9609ce547',1,'agenkit::patterns::Task::execute()']]],
+  ['export_5fhistory_14',['export_history',['../classagenkit_1_1patterns_1_1_conversational_agent.html#a9e71d2823cc7713666081f7be5f0b2cc',1,'agenkit::patterns::ConversationalAgent']]],
+  ['extreme_5fscale_15',['extreme_scale',['../classagenkit_1_1evaluation_1_1_benchmark_suite.html#a2e1a14dbafc6f923b0106631d6ab019d',1,'agenkit::evaluation::BenchmarkSuite']]],
+  ['extremescalebenchmark_16',['ExtremeScaleBenchmark',['../classagenkit_1_1evaluation_1_1_extreme_scale_benchmark.html#a1dd633e0362d3273f63651b27f10c478',1,'agenkit::evaluation::ExtremeScaleBenchmark']]]
+];

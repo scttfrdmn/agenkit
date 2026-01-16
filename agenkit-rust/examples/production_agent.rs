@@ -130,7 +130,10 @@ impl ProductionSession {
                     "production-agent".to_string(),
                     self.step,
                     state,
-                    messages.iter().map(|e| Message::with_text("", &e.content)).collect(),
+                    messages
+                        .iter()
+                        .map(|e| Message::with_text("", &e.content))
+                        .collect(),
                     None,
                     None,
                 )
@@ -266,7 +269,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("  ✅ Checkpoint manager initialized");
     println!("  ✅ In-memory storage backend");
-    println!("  ✅ Checkpoint interval: {} messages\n", config.checkpoint_interval);
+    println!(
+        "  ✅ Checkpoint interval: {} messages\n",
+        config.checkpoint_interval
+    );
 
     // ========================================================================
     // STEP 4: Create Production Session
@@ -329,7 +335,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Memory stats
     let memory_stats = session.memory.get_stats().await;
     println!("\n💾 Memory:");
-    println!("  • Working memory: {} messages", memory_stats["working_count"]);
+    println!(
+        "  • Working memory: {} messages",
+        memory_stats["working_count"]
+    );
     if let Some(&count) = memory_stats.get("short_term_count") {
         println!("  • Short-term memory: {} messages", count);
     }
@@ -345,7 +354,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  • Total calls: {}", usage_stats.total_calls);
     println!("  • Input tokens: {}", usage_stats.total_input_tokens);
     println!("  • Output tokens: {}", usage_stats.total_output_tokens);
-    println!("  • Budget utilization: {:.1}%", (session_cost / 1.0) * 100.0);
+    println!(
+        "  • Budget utilization: {:.1}%",
+        (session_cost / 1.0) * 100.0
+    );
 
     // Checkpoint stats
     let checkpoints = session
@@ -357,7 +369,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !checkpoints.is_empty() {
         println!("  • Latest: {}", checkpoints[0].checkpoint_id);
         println!("  • Step: {}", checkpoints[0].step_number);
-        println!("  • Messages at checkpoint: {}", checkpoints[0].messages.len());
+        println!(
+            "  • Messages at checkpoint: {}",
+            checkpoints[0].messages.len()
+        );
     }
 
     println!("\n✨ Production agent example completed successfully!");

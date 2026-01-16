@@ -15,8 +15,8 @@
 //! println!("{} test cases generated", test_cases.len());
 //! ```
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
 
 /// Single test case for evaluation.
 ///
@@ -131,9 +131,12 @@ impl Benchmark for SimpleQABenchmark {
             TestCase::new("What is the largest planet in our solar system?", "Jupiter")
                 .with_tag("knowledge")
                 .with_tag("easy"),
-            TestCase::new("If a train leaves at 2pm and travels for 3 hours, when does it arrive?", "5")
-                .with_tag("reasoning")
-                .with_tag("easy"),
+            TestCase::new(
+                "If a train leaves at 2pm and travels for 3 hours, when does it arrive?",
+                "5",
+            )
+            .with_tag("reasoning")
+            .with_tag("easy"),
             TestCase::new("What comes next in the sequence: 2, 4, 6, 8, ?", "10")
                 .with_tag("reasoning")
                 .with_tag("easy"),
@@ -189,7 +192,10 @@ impl NeedleInHaystackBenchmark {
         ];
 
         // Estimate tokens per paragraph
-        let tokens_per_paragraph: usize = paragraphs.iter().map(|p| p.split_whitespace().count()).sum();
+        let tokens_per_paragraph: usize = paragraphs
+            .iter()
+            .map(|p| p.split_whitespace().count())
+            .sum();
 
         let repetitions = (target_tokens / tokens_per_paragraph) + 1;
 
@@ -250,11 +256,17 @@ impl Benchmark for NeedleInHaystackBenchmark {
             .iter()
             .enumerate()
             .map(|(i, _)| {
-                let input = format!("Context: {}\n\nQuestion: What is the secret code for vault {}?", context, i);
+                let input = format!(
+                    "Context: {}\n\nQuestion: What is the secret code for vault {}?",
+                    context, i
+                );
                 let expected = format!("ALPHA-{:04}-OMEGA", i);
 
                 TestCase::new(input, expected)
-                    .with_metadata("context_length", serde_json::json!(context.split_whitespace().count() / 4))
+                    .with_metadata(
+                        "context_length",
+                        serde_json::json!(context.split_whitespace().count() / 4),
+                    )
                     .with_metadata("needle_position", serde_json::json!(i))
                     .with_metadata("total_needles", serde_json::json!(self.needle_count))
                     .with_tag("retrieval")
@@ -292,11 +304,13 @@ impl ExtremeScaleBenchmark {
     /// * `test_lengths` - Context lengths to test (defaults to 1M, 10M, 25M)
     /// * `needles_per_length` - Number of needles per context length
     pub fn new(test_lengths: Option<Vec<usize>>, needles_per_length: usize) -> Self {
-        let test_lengths = test_lengths.unwrap_or_else(|| vec![
-            1_000_000,  // 1M tokens
-            10_000_000, // 10M tokens
-            25_000_000, // 25M tokens
-        ]);
+        let test_lengths = test_lengths.unwrap_or_else(|| {
+            vec![
+                1_000_000,  // 1M tokens
+                10_000_000, // 10M tokens
+                25_000_000, // 25M tokens
+            ]
+        });
 
         Self {
             test_lengths,
@@ -326,7 +340,8 @@ impl Benchmark for ExtremeScaleBenchmark {
             for case in &mut cases {
                 case.tags.push("extreme_scale".to_string());
                 case.tags.push(format!("scale_{}M", length / 1_000_000));
-                case.metadata.insert("benchmark".to_string(), serde_json::json!("extreme_scale"));
+                case.metadata
+                    .insert("benchmark".to_string(), serde_json::json!("extreme_scale"));
             }
 
             test_cases.extend(cases);

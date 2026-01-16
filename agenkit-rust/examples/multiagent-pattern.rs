@@ -304,7 +304,10 @@ async fn example_dynamic_registration() -> Result<(), AgentError> {
     // Process with current agents
     let message = Message::with_text("user", "test topic");
     let result = orchestrator.process(message).await?;
-    println!("\nResult with 2 agents:\n{}\n", result.content_as_str().unwrap());
+    println!(
+        "\nResult with 2 agents:\n{}\n",
+        result.content_as_str().unwrap()
+    );
 
     // Remove an agent
     println!("Removing researcher...");

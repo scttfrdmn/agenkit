@@ -100,8 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut metadata = HashMap::new();
         metadata.insert("session_id".to_string(), serde_json::json!(session_id));
 
-        let message = Message::with_text("user", input)
-            .with_metadata_map(metadata);
+        let message = Message::with_text("user", input).with_metadata_map(metadata);
 
         let response = wrapped_v1.process(message).await?;
         println!("  {}. Input: {}", i + 1, input);
@@ -109,36 +108,48 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let recording_v1 = recorder_v1.finalize_session(session_id).await?;
-    println!("\n✓ Baseline recorded: {} interactions\n", recording_v1.interactions.len());
+    println!(
+        "\n✓ Baseline recorded: {} interactions\n",
+        recording_v1.interactions.len()
+    );
 
     // Step 3: Replay with both versions
     println!("Step 3: Replaying with Both Versions");
     println!("-------------------------------------");
 
-    let results_v1 = recorder_v1.replay(&recording_v1, agent_v1.clone(), None).await?;
-    let results_v2 = recorder_v1.replay(&recording_v1, agent_v2.clone(), None).await?;
+    let results_v1 = recorder_v1
+        .replay(&recording_v1, agent_v1.clone(), None)
+        .await?;
+    let results_v2 = recorder_v1
+        .replay(&recording_v1, agent_v2.clone(), None)
+        .await?;
 
     println!("Comparing outputs:\n");
 
     // Extract interactions
-    let interactions_v1 = results_v1.get("interactions")
+    let interactions_v1 = results_v1
+        .get("interactions")
         .and_then(|v| v.as_array())
         .unwrap();
-    let interactions_v2 = results_v2.get("interactions")
+    let interactions_v2 = results_v2
+        .get("interactions")
         .and_then(|v| v.as_array())
         .unwrap();
 
     for i in 0..interactions_v1.len() {
-        let output_v1 = interactions_v1[i].get("replay_output")
+        let output_v1 = interactions_v1[i]
+            .get("replay_output")
             .and_then(|v| v.get("content"))
             .and_then(|v| v.as_str())
             .unwrap_or("");
-        let output_v2 = interactions_v2[i].get("replay_output")
+        let output_v2 = interactions_v2[i]
+            .get("replay_output")
             .and_then(|v| v.get("content"))
             .and_then(|v| v.as_str())
             .unwrap_or("");
 
-        let input = interactions_v1[i].get("input")
+        let input = interactions_v1[i]
+            .get("input")
             .and_then(|v| v.get("content"))
             .and_then(|v| v.as_str())
             .unwrap_or("");
@@ -148,7 +159,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("     V2: {}", output_v2);
 
         if output_v2.len() > output_v1.len() {
-            let improvement = (output_v2.len() - output_v1.len()) as f64 / output_v1.len() as f64 * 100.0;
+            let improvement =
+                (output_v2.len() - output_v1.len()) as f64 / output_v1.len() as f64 * 100.0;
             println!("     📈 V2 is {:.0}% longer (more detailed)", improvement);
         }
         println!();
@@ -161,21 +173,42 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let comparison = recorder_v1.compare(&results_v1, &results_v2);
 
     println!("Performance Comparison:");
-    println!("  Latency V1: {:.0}ms",
-        results_v1.get("total_latency_ms").and_then(|v| v.as_f64()).unwrap_or(0.0));
-    println!("  Latency V2: {:.0}ms",
-        results_v2.get("total_latency_ms").and_then(|v| v.as_f64()).unwrap_or(0.0));
-    println!("  Difference: {:.0}ms ({:.1}%)",
-        comparison.get("latency_diff_ms").and_then(|v| v.as_f64()).unwrap_or(0.0),
-        comparison.get("latency_diff_percent").and_then(|v| v.as_f64()).unwrap_or(0.0));
+    println!(
+        "  Latency V1: {:.0}ms",
+        results_v1
+            .get("total_latency_ms")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0)
+    );
+    println!(
+        "  Latency V2: {:.0}ms",
+        results_v2
+            .get("total_latency_ms")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0)
+    );
+    println!(
+        "  Difference: {:.0}ms ({:.1}%)",
+        comparison
+            .get("latency_diff_ms")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0),
+        comparison
+            .get("latency_diff_percent")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0)
+    );
 
-    let output_diffs = comparison.get("output_differences")
+    let output_diffs = comparison
+        .get("output_differences")
         .and_then(|v| v.as_array())
         .map(|a| a.len())
         .unwrap_or(0);
-    println!("\n  Output Differences: {}/{}",
+    println!(
+        "\n  Output Differences: {}/{}",
         output_diffs,
-        test_inputs.len());
+        test_inputs.len()
+    );
 
     // Step 5: Statistical analysis
     println!("\nStep 5: Statistical Analysis");
@@ -186,14 +219,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut v2_lengths = Vec::new();
 
     for i in 0..interactions_v1.len() {
-        if let Some(output) = interactions_v1[i].get("replay_output")
+        if let Some(output) = interactions_v1[i]
+            .get("replay_output")
             .and_then(|v| v.get("content"))
-            .and_then(|v| v.as_str()) {
+            .and_then(|v| v.as_str())
+        {
             v1_lengths.push(output.len());
         }
-        if let Some(output) = interactions_v2[i].get("replay_output")
+        if let Some(output) = interactions_v2[i]
+            .get("replay_output")
             .and_then(|v| v.get("content"))
-            .and_then(|v| v.as_str()) {
+            .and_then(|v| v.as_str())
+        {
             v2_lengths.push(output.len());
         }
     }
@@ -204,15 +241,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Response Length Analysis:");
     println!("  V1 Average: {:.0} characters", v1_avg_length);
     println!("  V2 Average: {:.0} characters", v2_avg_length);
-    println!("  V2 is {:.0}% {} verbose",
+    println!(
+        "  V2 is {:.0}% {} verbose",
         ((v2_avg_length - v1_avg_length).abs() / v1_avg_length * 100.0),
-        if v2_avg_length > v1_avg_length { "more" } else { "less" });
+        if v2_avg_length > v1_avg_length {
+            "more"
+        } else {
+            "less"
+        }
+    );
 
     // Step 6: Recommendation
     println!("\nStep 6: Recommendation");
     println!("----------------------");
 
-    let latency_increase = comparison.get("latency_diff_percent")
+    let latency_increase = comparison
+        .get("latency_diff_percent")
         .and_then(|v| v.as_f64())
         .unwrap_or(0.0);
 

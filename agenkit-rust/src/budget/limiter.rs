@@ -167,16 +167,17 @@ impl<A: Agent + 'static> BudgetLimiter<A> {
                 .map_err(|e| BudgetError::TrackingError(e))?;
 
             if session_cost >= session_limit {
-                return Err(BudgetError::SessionLimitExceeded(session_cost, session_limit));
+                return Err(BudgetError::SessionLimitExceeded(
+                    session_cost,
+                    session_limit,
+                ));
             }
 
             // Check warning threshold
             if session_cost >= session_limit * self.config.warning_threshold {
                 warn!(
                     "Session {} approaching budget limit: ${:.4} / ${:.4}",
-                    session_id,
-                    session_cost,
-                    session_limit
+                    session_id, session_cost, session_limit
                 );
             }
         }
@@ -197,9 +198,7 @@ impl<A: Agent + 'static> BudgetLimiter<A> {
             if agent_cost >= agent_limit * self.config.warning_threshold {
                 warn!(
                     "Agent {} approaching budget limit: ${:.4} / ${:.4}",
-                    self.agent_name,
-                    agent_cost,
-                    agent_limit
+                    self.agent_name, agent_cost, agent_limit
                 );
             }
         }
@@ -220,8 +219,7 @@ impl<A: Agent + 'static> BudgetLimiter<A> {
             if global_cost >= global_limit * self.config.warning_threshold {
                 warn!(
                     "Global budget approaching limit: ${:.4} / ${:.4}",
-                    global_cost,
-                    global_limit
+                    global_cost, global_limit
                 );
             }
         }
@@ -232,9 +230,10 @@ impl<A: Agent + 'static> BudgetLimiter<A> {
     /// Handle budget exceeded based on action.
     fn handle_budget_exceeded(&self, error: BudgetError) -> Result<(), AgentError> {
         match self.config.action {
-            BudgetAction::Error => {
-                Err(AgentError::ProcessingError(format!("Budget limit exceeded: {}", error)))
-            }
+            BudgetAction::Error => Err(AgentError::ProcessingError(format!(
+                "Budget limit exceeded: {}",
+                error
+            ))),
             BudgetAction::Warning => {
                 warn!("Budget limit exceeded: {}", error);
                 Ok(())
@@ -346,7 +345,17 @@ mod tests {
 
         // Record a large cost that exceeds session limit
         tracker
-            .record_cost_explicit("session-1", "agent-1", "gpt-4", 100000, 50000, 0, 15.0, 0.0, None)
+            .record_cost_explicit(
+                "session-1",
+                "agent-1",
+                "gpt-4",
+                100000,
+                50000,
+                0,
+                15.0,
+                0.0,
+                None,
+            )
             .await
             .unwrap();
 
@@ -373,7 +382,17 @@ mod tests {
 
         // Record a large cost
         tracker
-            .record_cost_explicit("session-1", "agent-1", "gpt-4", 100000, 50000, 0, 15.0, 0.0, None)
+            .record_cost_explicit(
+                "session-1",
+                "agent-1",
+                "gpt-4",
+                100000,
+                50000,
+                0,
+                15.0,
+                0.0,
+                None,
+            )
             .await
             .unwrap();
 

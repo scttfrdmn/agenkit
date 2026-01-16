@@ -36,44 +36,39 @@
 //! # }
 //! ```
 
+pub mod ab_testing;
+pub mod benchmarks;
+pub mod context_metrics;
 pub mod core;
 pub mod metrics;
-pub mod quality_metrics;
-pub mod context_metrics;
-pub mod recorder;
-pub mod regression;
-pub mod benchmarks;
 pub mod optimizer;
 pub mod prompt_optimizer;
-pub mod ab_testing;
+pub mod quality_metrics;
+pub mod recorder;
+pub mod regression;
 
-pub use core::{Metric, EvaluationResult, Evaluator};
-pub use metrics::{
-    SessionStatus, MetricType, MetricMeasurement, ErrorRecord,
-    SessionResult, MetricsCollector,
+pub use ab_testing::{
+    ABResult, ABTest, ABVariant, SignificanceLevel, StatisticalTestType, TestCase as ABTestCase,
 };
-pub use quality_metrics::{AccuracyMetric, QualityMetrics, ValidatorFunc};
-pub use context_metrics::{
-    ContextMetrics, CompressionMetrics, CompressionStats, LatencyMetric,
-};
-pub use recorder::{
-    InteractionRecord, SessionRecording, RecordingStorage,
-    FileRecordingStorage, InMemoryRecordingStorage, SessionRecorder,
-};
-pub use regression::{Severity, Regression, RegressionDetector};
 pub use benchmarks::{
-    TestCase, Benchmark, SimpleQABenchmark, NeedleInHaystackBenchmark, ExtremeScaleBenchmark,
+    Benchmark, ExtremeScaleBenchmark, NeedleInHaystackBenchmark, SimpleQABenchmark, TestCase,
+};
+pub use context_metrics::{CompressionMetrics, CompressionStats, ContextMetrics, LatencyMetric};
+pub use core::{EvaluationResult, Evaluator, Metric};
+pub use metrics::{
+    ErrorRecord, MetricMeasurement, MetricType, MetricsCollector, SessionResult, SessionStatus,
 };
 pub use optimizer::{
-    ObjectiveFunc, ParameterType, ParameterSpec, SearchSpace,
-    OptimizationStep, OptimizationResult, RandomSearchOptimizer,
-    AcquisitionFunction, BayesianOptimizer,
+    AcquisitionFunction, BayesianOptimizer, ObjectiveFunc, OptimizationResult, OptimizationStep,
+    ParameterSpec, ParameterType, RandomSearchOptimizer, SearchSpace,
 };
 pub use prompt_optimizer::{
-    OptimizationStrategy, PromptEvaluation, PromptOptimizationResult,
-    AgentFactory, PromptEvaluatorFunc, PromptOptimizer,
+    AgentFactory, OptimizationStrategy, PromptEvaluation, PromptEvaluatorFunc,
+    PromptOptimizationResult, PromptOptimizer,
 };
-pub use ab_testing::{
-    ABTest, ABResult, ABVariant, StatisticalTestType, SignificanceLevel,
-    TestCase as ABTestCase,
+pub use quality_metrics::{AccuracyMetric, QualityMetrics, ValidatorFunc};
+pub use recorder::{
+    FileRecordingStorage, InMemoryRecordingStorage, InteractionRecord, RecordingStorage,
+    SessionRecorder, SessionRecording,
 };
+pub use regression::{Regression, RegressionDetector, Severity};

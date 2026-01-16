@@ -2,7 +2,6 @@
 ///!
 ///! This example demonstrates a simple echo agent that returns
 ///! the input message back to the sender.
-
 use agenkit::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 

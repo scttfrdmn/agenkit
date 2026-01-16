@@ -2,7 +2,6 @@
 ///!
 ///! This module provides HTTP client and server implementations for
 ///! communicating with remote agents over HTTP.
-
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use axum::{
@@ -106,7 +105,10 @@ impl Agent for HttpAgent {
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().await.unwrap_or_else(|_| "unknown error".to_string());
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "unknown error".to_string());
             error!("HTTP error {}: {}", status, error_text);
             return Err(AgentError::Transport(format!(
                 "HTTP error {}: {}",
@@ -237,7 +239,10 @@ mod tests {
         async fn process(&self, message: Message) -> Result<Message, AgentError> {
             // Echo back with "processed: " prefix
             let content = message.content_as_str().unwrap_or("");
-            Ok(Message::with_text("assistant", format!("processed: {}", content)))
+            Ok(Message::with_text(
+                "assistant",
+                format!("processed: {}", content),
+            ))
         }
     }
 

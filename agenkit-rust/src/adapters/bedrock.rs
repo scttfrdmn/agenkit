@@ -2,7 +2,6 @@
 ///!
 ///! Provides integration with Amazon Bedrock's foundation models including
 ///! Claude, Llama, Mistral, and Titan. Supports both completion and streaming modes.
-
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use serde_json::json;
@@ -190,7 +189,8 @@ impl BedrockAdapter {
         }
 
         if !self.config.stop_sequences.is_empty() {
-            inference_config = inference_config.set_stop_sequences(Some(self.config.stop_sequences.clone()));
+            inference_config =
+                inference_config.set_stop_sequences(Some(self.config.stop_sequences.clone()));
         }
 
         request = request.inference_config(inference_config.build());
@@ -220,9 +220,9 @@ impl BedrockAdapter {
 
             if msg.role == "system" {
                 // System messages go into separate system blocks
-                system_blocks.push(
-                    aws_sdk_bedrockruntime::types::SystemContentBlock::Text(content_str),
-                );
+                system_blocks.push(aws_sdk_bedrockruntime::types::SystemContentBlock::Text(
+                    content_str,
+                ));
                 continue;
             }
 
@@ -270,7 +270,8 @@ impl BedrockAdapter {
         let mut msg = Message::with_text("assistant", &content);
 
         // Add metadata
-        msg.metadata.insert("model".to_string(), json!(self.config.model));
+        msg.metadata
+            .insert("model".to_string(), json!(self.config.model));
 
         if let Some(usage) = output.usage {
             msg.metadata.insert(
@@ -283,7 +284,10 @@ impl BedrockAdapter {
             );
         }
 
-        msg.metadata.insert("stop_reason".to_string(), json!(output.stop_reason.as_str()));
+        msg.metadata.insert(
+            "stop_reason".to_string(),
+            json!(output.stop_reason.as_str()),
+        );
 
         Ok(msg)
     }
@@ -409,9 +413,18 @@ mod tests {
 
     #[test]
     fn test_model_constants() {
-        assert_eq!(models::CLAUDE_3_5_SONNET, "anthropic.claude-3-5-sonnet-20241022-v2:0");
-        assert_eq!(models::CLAUDE_3_OPUS, "anthropic.claude-3-opus-20240229-v1:0");
-        assert_eq!(models::CLAUDE_3_HAIKU, "anthropic.claude-3-haiku-20240307-v1:0");
+        assert_eq!(
+            models::CLAUDE_3_5_SONNET,
+            "anthropic.claude-3-5-sonnet-20241022-v2:0"
+        );
+        assert_eq!(
+            models::CLAUDE_3_OPUS,
+            "anthropic.claude-3-opus-20240229-v1:0"
+        );
+        assert_eq!(
+            models::CLAUDE_3_HAIKU,
+            "anthropic.claude-3-haiku-20240307-v1:0"
+        );
         assert_eq!(models::LLAMA_3_70B, "meta.llama3-70b-instruct-v1:0");
         assert_eq!(models::MISTRAL_LARGE, "mistral.mistral-large-2402-v1:0");
         assert_eq!(models::TITAN_PREMIER, "amazon.titan-text-premier-v1:0");

@@ -1,0 +1,422 @@
+{
+  "summary": {
+    "total_patterns": 2,
+    "passed_patterns": 2,
+    "total_scenarios": 7,
+    "languages_tested": [
+      "python"
+    ]
+  },
+  "patterns": {
+    "Sequential": {
+      "pattern": "Sequential",
+      "scenarios": {
+        "sequential_basic": {
+          "scenario_id": "sequential_basic",
+          "scenario_name": "Basic sequential execution",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Process this text",
+                  "metadata": {
+                    "pipeline_stages": [
+                      {
+                        "agent": "agent1",
+                        "stage": 0
+                      },
+                      {
+                        "agent": "agent2",
+                        "stage": 1
+                      },
+                      {
+                        "agent": "agent3",
+                        "stage": 2
+                      }
+                    ],
+                    "pipeline_length": 3,
+                    "execution_order": [
+                      "agent1",
+                      "agent2",
+                      "agent3"
+                    ],
+                    "agent_count": 3
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": [
+                    "agent1",
+                    "agent2",
+                    "agent3"
+                  ]
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.8933544158935547,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {},
+          "equivalence": {
+            "total_comparisons": 0,
+            "equivalent_count": 0,
+            "different_count": 0,
+            "equivalence_rate": 0.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "sequential_transformation": {
+          "scenario_id": "sequential_transformation",
+          "scenario_name": "Sequential transformation pipeline",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "hello world",
+                  "metadata": {
+                    "pipeline_stages": [
+                      {
+                        "agent": "uppercase",
+                        "stage": 0
+                      },
+                      {
+                        "agent": "reverse",
+                        "stage": 1
+                      }
+                    ],
+                    "pipeline_length": 2,
+                    "execution_order": [
+                      "uppercase",
+                      "reverse"
+                    ],
+                    "agent_count": 2
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": [
+                    "uppercase",
+                    "reverse"
+                  ]
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 1.219034194946289,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {},
+          "equivalence": {
+            "total_comparisons": 0,
+            "equivalent_count": 0,
+            "different_count": 0,
+            "equivalence_rate": 0.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "sequential_single_agent": {
+          "scenario_id": "sequential_single_agent",
+          "scenario_name": "Single agent execution",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "test",
+                  "metadata": {
+                    "pipeline_stages": [
+                      {
+                        "agent": "agent1",
+                        "stage": 0
+                      }
+                    ],
+                    "pipeline_length": 1,
+                    "execution_order": [
+                      "agent1"
+                    ],
+                    "agent_count": 1
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": [
+                    "agent1"
+                  ]
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 1.1990070343017578,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {},
+          "equivalence": {
+            "total_comparisons": 0,
+            "equivalent_count": 0,
+            "different_count": 0,
+            "equivalence_rate": 0.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "sequential_metadata_propagation": {
+          "scenario_id": "sequential_metadata_propagation",
+          "scenario_name": "Metadata propagation through chain",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "test",
+                  "metadata": {
+                    "pipeline_stages": [
+                      {
+                        "agent": "agent1",
+                        "stage": 0
+                      },
+                      {
+                        "agent": "agent2",
+                        "stage": 1
+                      }
+                    ],
+                    "pipeline_length": 2,
+                    "execution_order": [
+                      "agent1",
+                      "agent2"
+                    ],
+                    "agent_count": 2
+                  }
+                },
+                "behavior": {
+                  "turns": 1,
+                  "tool_calls": [],
+                  "sub_agents": [
+                    "agent1",
+                    "agent2"
+                  ]
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.8609294891357422,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {},
+          "equivalence": {
+            "total_comparisons": 0,
+            "equivalent_count": 0,
+            "different_count": 0,
+            "equivalence_rate": 0.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        }
+      },
+      "summary": {
+        "total_scenarios": 4,
+        "passed_scenarios": 4,
+        "failed_scenarios": 0,
+        "pass_rate": 1.0
+      }
+    },
+    "Reflection": {
+      "pattern": "Reflection",
+      "scenarios": {
+        "reflection_basic": {
+          "scenario_id": "reflection_basic",
+          "scenario_name": "Basic reflection with improvement",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Here's a poem about technology:\n\nCircuits hum with electric dreams,\nConnecting worlds through digital streams.\nInnovation's spark lights up the night,\nTechnology guides us to new height.",
+                  "metadata": {
+                    "reflection_iterations": 2,
+                    "iterations": 2,
+                    "final_quality_score": 0.5,
+                    "stop_reason": "minimal_improvement",
+                    "initial_quality_score": 0.5,
+                    "total_improvement": 0.0
+                  }
+                },
+                "behavior": {
+                  "turns": 4,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 2.128124237060547,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {},
+          "equivalence": {
+            "total_comparisons": 0,
+            "equivalent_count": 0,
+            "different_count": 0,
+            "equivalence_rate": 0.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "reflection_convergence": {
+          "scenario_id": "reflection_convergence",
+          "scenario_name": "Early convergence when satisfied",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Here's a poem about technology:\n\nCircuits hum with electric dreams,\nConnecting worlds through digital streams.\nInnovation's spark lights up the night,\nTechnology guides us to new height.",
+                  "metadata": {
+                    "reflection_iterations": 2,
+                    "iterations": 2,
+                    "final_quality_score": 0.5,
+                    "stop_reason": "minimal_improvement",
+                    "initial_quality_score": 0.7,
+                    "total_improvement": -0.19999999999999996
+                  }
+                },
+                "behavior": {
+                  "turns": 4,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 0.6430149078369141,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {},
+          "equivalence": {
+            "total_comparisons": 0,
+            "equivalent_count": 0,
+            "different_count": 0,
+            "equivalence_rate": 0.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        },
+        "reflection_max_iterations": {
+          "scenario_id": "reflection_max_iterations",
+          "scenario_name": "Respects maximum iterations limit",
+          "language_results": {
+            "python": {
+              "status": "success",
+              "output": {
+                "message": {
+                  "role": "assistant",
+                  "content": "Here's a poem about technology:\n\nCircuits hum with electric dreams,\nConnecting worlds through digital streams.\nInnovation's spark lights up the night,\nTechnology guides us to new height.",
+                  "metadata": {
+                    "reflection_iterations": 2,
+                    "iterations": 2,
+                    "final_quality_score": 0.5,
+                    "stop_reason": "minimal_improvement",
+                    "initial_quality_score": 0.7,
+                    "total_improvement": -0.19999999999999996
+                  }
+                },
+                "behavior": {
+                  "turns": 4,
+                  "tool_calls": [],
+                  "sub_agents": []
+                }
+              },
+              "error": null,
+              "execution_info": {
+                "duration_ms": 2.1543502807617188,
+                "llm_calls": 0,
+                "tokens_used": 0
+              },
+              "validation": {
+                "valid": true,
+                "errors": [],
+                "warnings": []
+              }
+            }
+          },
+          "comparisons": {},
+          "equivalence": {
+            "total_comparisons": 0,
+            "equivalent_count": 0,
+            "different_count": 0,
+            "equivalence_rate": 0.0,
+            "all_differences": [],
+            "all_warnings": []
+          }
+        }
+      },
+      "summary": {
+        "total_scenarios": 3,
+        "passed_scenarios": 3,
+        "failed_scenarios": 0,
+        "pass_rate": 1.0
+      }
+    }
+  }
+}

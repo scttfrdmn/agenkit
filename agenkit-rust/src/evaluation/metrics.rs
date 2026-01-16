@@ -24,9 +24,9 @@
 //! result.set_status(SessionStatus::Completed);
 //! ```
 
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Status of an evaluation session.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -264,9 +264,8 @@ impl SessionResult {
 
     /// Calculates duration in seconds.
     pub fn duration_secs(&self) -> Option<f64> {
-        self.end_time.map(|end| {
-            (end - self.start_time).num_milliseconds() as f64 / 1000.0
-        })
+        self.end_time
+            .map(|end| (end - self.start_time).num_milliseconds() as f64 / 1000.0)
     }
 
     /// Checks if session succeeded.
@@ -351,9 +350,7 @@ impl MetricsCollector {
             stats.insert("max".to_string(), max);
 
             // Calculate standard deviation
-            let variance = values.iter()
-                .map(|v| (v - mean).powi(2))
-                .sum::<f64>() / count;
+            let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / count;
             stats.insert("std".to_string(), variance.sqrt());
         }
 

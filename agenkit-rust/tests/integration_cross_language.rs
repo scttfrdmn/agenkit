@@ -58,12 +58,18 @@ mod cross_language_tests {
         let metadata = json.get("metadata").unwrap().as_object().unwrap();
 
         // Verify all types are serializable
-        assert_eq!(metadata.get("string_key").unwrap().as_str().unwrap(), "string_value");
+        assert_eq!(
+            metadata.get("string_key").unwrap().as_str().unwrap(),
+            "string_value"
+        );
         assert_eq!(metadata.get("number_key").unwrap().as_i64().unwrap(), 42);
         assert!((metadata.get("float_key").unwrap().as_f64().unwrap() - 3.14).abs() < 0.01);
         assert_eq!(metadata.get("bool_key").unwrap().as_bool().unwrap(), true);
         assert!(metadata.get("null_key").unwrap().is_null());
-        assert_eq!(metadata.get("array_key").unwrap().as_array().unwrap().len(), 3);
+        assert_eq!(
+            metadata.get("array_key").unwrap().as_array().unwrap().len(),
+            3
+        );
         assert!(metadata.get("object_key").unwrap().is_object());
     }
 
@@ -84,7 +90,10 @@ mod cross_language_tests {
         let msg: Message = serde_json::from_value(external_json).expect("Deserialization failed");
 
         assert_eq!(msg.role, "assistant");
-        assert_eq!(msg.content_as_str().unwrap(), "Response from external service");
+        assert_eq!(
+            msg.content_as_str().unwrap(),
+            "Response from external service"
+        );
         assert_eq!(
             msg.metadata.get("source").unwrap().as_str().unwrap(),
             "python"
@@ -105,7 +114,11 @@ mod cross_language_tests {
 
         // Timestamp should be RFC3339 format (compatible with ISO 8601)
         assert!(timestamp_str.contains('T'));
-        assert!(timestamp_str.contains('Z') || timestamp_str.contains('+') || timestamp_str.contains('-'));
+        assert!(
+            timestamp_str.contains('Z')
+                || timestamp_str.contains('+')
+                || timestamp_str.contains('-')
+        );
 
         // Should be parseable as chrono DateTime
         let parsed = chrono::DateTime::parse_from_rfc3339(timestamp_str);
@@ -146,8 +159,7 @@ mod cross_language_tests {
             }
         });
 
-        let msg =
-            Message::with_text("user", "Test").with_metadata("deep", deep_metadata);
+        let msg = Message::with_text("user", "Test").with_metadata("deep", deep_metadata);
 
         let json = serde_json::to_value(&msg).unwrap();
         let found = json
@@ -193,16 +205,11 @@ mod cross_language_tests {
 
         // Create a large metadata object with many fields
         for i in 0..100 {
-            metadata.insert(
-                format!("field_{}", i),
-                json!(format!("value_{}", i)),
-            );
+            metadata.insert(format!("field_{}", i), json!(format!("value_{}", i)));
         }
 
-        let msg = Message::with_text("user", "Test").with_metadata(
-            "large_payload",
-            serde_json::Value::Object(metadata),
-        );
+        let msg = Message::with_text("user", "Test")
+            .with_metadata("large_payload", serde_json::Value::Object(metadata));
 
         // Should serialize without issues
         let json_str = serde_json::to_string(&msg).expect("Serialization failed");
@@ -308,9 +315,18 @@ mod cross_language_tests {
 
         // Required fields for protocol compatibility
         assert!(json.get("role").is_some(), "Missing required 'role' field");
-        assert!(json.get("content").is_some(), "Missing required 'content' field");
-        assert!(json.get("timestamp").is_some(), "Missing required 'timestamp' field");
-        assert!(json.get("metadata").is_some(), "Missing required 'metadata' field");
+        assert!(
+            json.get("content").is_some(),
+            "Missing required 'content' field"
+        );
+        assert!(
+            json.get("timestamp").is_some(),
+            "Missing required 'timestamp' field"
+        );
+        assert!(
+            json.get("metadata").is_some(),
+            "Missing required 'metadata' field"
+        );
 
         // Fields should have correct types
         assert!(

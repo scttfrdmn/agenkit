@@ -20,12 +20,12 @@
 //! let quality = QualityMetrics::new(false, None, None);
 //! ```
 
+use async_trait::async_trait;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use async_trait::async_trait;
 
-use crate::core::{Agent, Message, AgentError};
 use super::core::Metric;
+use crate::core::{Agent, AgentError, Message};
 
 /// Custom validation function type.
 pub type ValidatorFunc = Arc<dyn Fn(&str, &str) -> bool + Send + Sync>;
@@ -213,13 +213,9 @@ impl QualityMetrics {
         let mut scores = HashMap::new();
 
         // Relevance: Does response mention query terms?
-        let query_terms: HashSet<_> = input_text
-            .split_whitespace()
-            .collect();
+        let query_terms: HashSet<_> = input_text.split_whitespace().collect();
 
-        let output_terms: HashSet<_> = output_text
-            .split_whitespace()
-            .collect();
+        let output_terms: HashSet<_> = output_text.split_whitespace().collect();
 
         let overlap = query_terms
             .iter()
@@ -330,16 +326,10 @@ impl Metric for QualityMetrics {
         let count = measurements.len() as f64;
         let mean = sum / count;
 
-        let variance: f64 = measurements
-            .iter()
-            .map(|v| (v - mean).powi(2))
-            .sum::<f64>()
-            / count;
+        let variance: f64 = measurements.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / count;
         let std = variance.sqrt();
 
-        let min = measurements
-            .iter()
-            .fold(f64::INFINITY, |a, &b| a.min(b));
+        let min = measurements.iter().fold(f64::INFINITY, |a, &b| a.min(b));
         let max = measurements
             .iter()
             .fold(f64::NEG_INFINITY, |a, &b| a.max(b));
@@ -474,7 +464,9 @@ mod tests {
         assert!(!metric.has_repetition("This is a normal sentence without any repetition at all"));
 
         // With repetition (needs 10+ words)
-        assert!(metric.has_repetition("This is a test phrase this is a test phrase again and again"));
+        assert!(
+            metric.has_repetition("This is a test phrase this is a test phrase again and again")
+        );
 
         // Short text (no repetition check)
         assert!(!metric.has_repetition("Short"));

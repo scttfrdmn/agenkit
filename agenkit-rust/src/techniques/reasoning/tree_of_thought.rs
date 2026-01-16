@@ -140,9 +140,9 @@ pub struct TreeOfThoughtAgent {
 impl TreeOfThoughtAgent {
     /// Create a new Tree-of-Thought agent.
     pub fn new(agent: Arc<dyn Agent>, config: TreeOfThoughtConfig) -> Self {
-        let evaluator = config.evaluator.unwrap_or_else(|| {
-            Arc::new(default_evaluator)
-        });
+        let evaluator = config
+            .evaluator
+            .unwrap_or_else(|| Arc::new(default_evaluator));
 
         Self {
             agent,
@@ -181,7 +181,12 @@ impl TreeOfThoughtAgent {
                 match handle.await {
                     Ok(Ok(branch)) => branches.push(branch),
                     Ok(Err(e)) => return Err(e),
-                    Err(e) => return Err(AgentError::Internal(format!("Branch generation failed: {}", e))),
+                    Err(e) => {
+                        return Err(AgentError::Internal(format!(
+                            "Branch generation failed: {}",
+                            e
+                        )))
+                    }
                 }
             }
         }
@@ -201,8 +206,13 @@ impl TreeOfThoughtAgent {
     }
 
     /// Expand a tree node by generating and adding children.
-    async fn expand_node(&self, tree: &mut ReasoningTree, node_id: usize) -> Result<Vec<usize>, AgentError> {
-        let node = tree.get_node(node_id)
+    async fn expand_node(
+        &self,
+        tree: &mut ReasoningTree,
+        node_id: usize,
+    ) -> Result<Vec<usize>, AgentError> {
+        let node = tree
+            .get_node(node_id)
             .ok_or_else(|| AgentError::Internal(format!("Node {} not found", node_id)))?;
 
         // Don't expand pruned nodes
@@ -217,7 +227,9 @@ impl TreeOfThoughtAgent {
 
         // Generate branches
         let prompt = tree.get_path_text(node_id, "\n");
-        let branches = self.generate_branches(&prompt, self.branching_factor).await?;
+        let branches = self
+            .generate_branches(&prompt, self.branching_factor)
+            .await?;
 
         let mut child_ids = Vec::new();
 
@@ -231,7 +243,8 @@ impl TreeOfThoughtAgent {
             }
 
             // Add child to tree
-            let child_id = tree.add_child(node_id, branch, score)
+            let child_id = tree
+                .add_child(node_id, branch, score)
                 .map_err(|e| AgentError::Internal(e))?;
             child_ids.push(child_id);
 
@@ -254,7 +267,8 @@ impl TreeOfThoughtAgent {
         queue.push_back(root_id);
 
         while let Some(node_id) = queue.pop_front() {
-            let node = tree.get_node(node_id)
+            let node = tree
+                .get_node(node_id)
                 .ok_or_else(|| AgentError::Internal(format!("Node {} not found", node_id)))?;
 
             // Stop at max depth
@@ -282,7 +296,8 @@ impl TreeOfThoughtAgent {
         let mut stack = vec![root_id];
 
         while let Some(node_id) = stack.pop() {
-            let node = tree.get_node(node_id)
+            let node = tree
+                .get_node(node_id)
                 .ok_or_else(|| AgentError::Internal(format!("Node {} not found", node_id)))?;
 
             // Stop at max depth
@@ -306,7 +321,11 @@ impl TreeOfThoughtAgent {
     }
 
     /// Perform best-first search on the tree.
-    async fn search_best_first(&self, tree: &mut ReasoningTree, root_id: usize) -> Result<(), AgentError> {
+    async fn search_best_first(
+        &self,
+        tree: &mut ReasoningTree,
+        root_id: usize,
+    ) -> Result<(), AgentError> {
         let mut pq = BinaryHeap::new();
         pq.push(ScoredNode {
             node_id: root_id,
@@ -314,8 +333,9 @@ impl TreeOfThoughtAgent {
         });
 
         while let Some(scored) = pq.pop() {
-            let node = tree.get_node(scored.node_id)
-                .ok_or_else(|| AgentError::Internal(format!("Node {} not found", scored.node_id)))?;
+            let node = tree.get_node(scored.node_id).ok_or_else(|| {
+                AgentError::Internal(format!("Node {} not found", scored.node_id))
+            })?;
 
             // Stop at max depth
             if node.depth >= self.max_depth {
@@ -384,26 +404,38 @@ impl Agent for TreeOfThoughtAgent {
         }
 
         // Get best leaf node
-        let best_leaf = tree.get_best_leaf()
+        let best_leaf = tree
+            .get_best_leaf()
             .ok_or_else(|| AgentError::Internal("No valid reasoning paths found".to_string()))?;
 
         // Build response with best path
         let path = tree.get_path(best_leaf.id);
-        let path_steps: Vec<String> = path.iter()
-            .map(|node| node.content.clone())
-            .collect();
+        let path_steps: Vec<String> = path.iter().map(|node| node.content.clone()).collect();
 
         let best_path_text = tree.get_path_text(best_leaf.id, "\n");
         let stats = tree.get_statistics();
 
         // Create response message
         let mut response = Message::with_text("assistant", best_path_text);
-        response.metadata.insert("technique".to_string(), json!("tree_of_thought"));
-        response.metadata.insert("search_strategy".to_string(), json!(self.strategy_to_string()));
-        response.metadata.insert("reasoning_path".to_string(), json!(path_steps));
-        response.metadata.insert("num_steps".to_string(), json!(path_steps.len()));
-        response.metadata.insert("best_score".to_string(), json!(best_leaf.score));
-        response.metadata.insert("reasoning_tree_stats".to_string(), json!(stats));
+        response
+            .metadata
+            .insert("technique".to_string(), json!("tree_of_thought"));
+        response.metadata.insert(
+            "search_strategy".to_string(),
+            json!(self.strategy_to_string()),
+        );
+        response
+            .metadata
+            .insert("reasoning_path".to_string(), json!(path_steps));
+        response
+            .metadata
+            .insert("num_steps".to_string(), json!(path_steps.len()));
+        response
+            .metadata
+            .insert("best_score".to_string(), json!(best_leaf.score));
+        response
+            .metadata
+            .insert("reasoning_tree_stats".to_string(), json!(stats));
 
         Ok(response)
     }

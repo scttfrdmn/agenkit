@@ -3,10 +3,10 @@
 //! Reduces allocations for frequently used strings like message roles,
 //! metadata keys, and other common identifiers.
 
-use std::borrow::Cow;
-use std::sync::Arc;
 use parking_lot::RwLock;
+use std::borrow::Cow;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 lazy_static::lazy_static! {
     /// Global string pool for interned strings
@@ -149,7 +149,10 @@ pub fn role(role: &str) -> Cow<'static, str> {
 
 /// Check if a role is one of the common roles
 pub fn is_common_role(role: &str) -> bool {
-    matches!(role, roles::USER | roles::ASSISTANT | roles::SYSTEM | roles::TOOL)
+    matches!(
+        role,
+        roles::USER | roles::ASSISTANT | roles::SYSTEM | roles::TOOL
+    )
 }
 
 #[cfg(test)]

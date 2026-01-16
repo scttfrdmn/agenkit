@@ -22,7 +22,6 @@
 ///!    ```bash
 ///!    cargo run --example bedrock_example --features native
 ///!    ```
-
 use agenkit::adapters::bedrock::{BedrockAdapter, BedrockConfig};
 use agenkit::core::{Agent, Message};
 
@@ -92,10 +91,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     if let Ok(adapter) = BedrockAdapter::new(config).await {
-        let message = Message::with_text(
-            "user",
-            "Write a haiku about cloud computing.",
-        );
+        let message = Message::with_text("user", "Write a haiku about cloud computing.");
         println!("User: {}", message.content_as_str().unwrap());
 
         match adapter.process(message).await {

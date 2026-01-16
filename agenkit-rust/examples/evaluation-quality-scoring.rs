@@ -12,7 +12,7 @@
 //! Run with: cargo run --example evaluation-quality-scoring
 
 use agenkit::core::{Agent, AgentError, Message};
-use agenkit::evaluation::{Evaluator, AccuracyMetric, QualityMetrics};
+use agenkit::evaluation::{AccuracyMetric, Evaluator, QualityMetrics};
 use async_trait::async_trait;
 use std::collections::HashMap;
 
@@ -75,7 +75,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let test_cases = vec![
         {
             let mut tc = HashMap::new();
-            tc.insert("input".to_string(), serde_json::json!("What is the capital of France?"));
+            tc.insert(
+                "input".to_string(),
+                serde_json::json!("What is the capital of France?"),
+            );
             tc.insert("expected".to_string(), serde_json::json!("Paris"));
             tc
         },
@@ -87,25 +90,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         {
             let mut tc = HashMap::new();
-            tc.insert("input".to_string(), serde_json::json!("What is the largest ocean?"));
+            tc.insert(
+                "input".to_string(),
+                serde_json::json!("What is the largest ocean?"),
+            );
             tc.insert("expected".to_string(), serde_json::json!("Pacific"));
             tc
         },
         {
             let mut tc = HashMap::new();
-            tc.insert("input".to_string(), serde_json::json!("Tell me about the Python programming language"));
+            tc.insert(
+                "input".to_string(),
+                serde_json::json!("Tell me about the Python programming language"),
+            );
             tc.insert("expected".to_string(), serde_json::json!("Python"));
             tc
         },
         {
             let mut tc = HashMap::new();
-            tc.insert("input".to_string(), serde_json::json!("Explain photosynthesis"));
+            tc.insert(
+                "input".to_string(),
+                serde_json::json!("Explain photosynthesis"),
+            );
             tc.insert("expected".to_string(), serde_json::json!("photosynthesis"));
             tc
         },
         {
             let mut tc = HashMap::new();
-            tc.insert("input".to_string(), serde_json::json!("What is the meaning of life?"));
+            tc.insert(
+                "input".to_string(),
+                serde_json::json!("What is the meaning of life?"),
+            );
             tc.insert("expected".to_string(), serde_json::json!("42")); // Agent will fail this
             tc
         },
@@ -116,7 +131,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Step 3: Run evaluation
     println!("Step 3: Running Evaluation");
     println!("---------------------------");
-    let result = evaluator.evaluate(test_cases, Some("quality-eval-001".to_string())).await?;
+    let result = evaluator
+        .evaluate(test_cases, Some("quality-eval-001".to_string()))
+        .await?;
 
     println!("✓ Evaluation complete");
     println!("  Tests Run: {}", result.total_tests);

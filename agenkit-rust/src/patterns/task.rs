@@ -186,7 +186,8 @@ impl Task {
         for attempt in 0..attempts {
             // Execute with optional timeout
             let result = if let Some(timeout_duration) = self.timeout_duration {
-                match runtime::timeout(timeout_duration, self.agent.process(message.clone())).await {
+                match runtime::timeout(timeout_duration, self.agent.process(message.clone())).await
+                {
                     Ok(Ok(response)) => Ok(response),
                     Ok(Err(e)) => Err(e),
                     Err(_) => Err(AgentError::Timeout(format!(

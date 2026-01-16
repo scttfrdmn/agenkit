@@ -5,7 +5,7 @@
 
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::patterns::{
-    ReflectionAgent, ReflectionConfig, ReflectionStep, StopReason, CritiqueFormat,
+    CritiqueFormat, ReflectionAgent, ReflectionConfig, ReflectionStep, StopReason,
 };
 use async_trait::async_trait;
 use serde_json::json;
@@ -24,7 +24,10 @@ impl Agent for TestAgent {
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         let content = message.content_as_str().unwrap_or("");
-        Ok(Message::with_text("assistant", format!("Response from {}: {}", self.name, content)))
+        Ok(Message::with_text(
+            "assistant",
+            format!("Response from {}: {}", self.name, content),
+        ))
     }
 
     fn capabilities(&self) -> Vec<String> {
@@ -164,10 +167,7 @@ async fn test_stop_reason_values() {
 /// Test 6: Critique format enum
 #[tokio::test]
 async fn test_critique_format_values() {
-    let formats = vec![
-        CritiqueFormat::Structured,
-        CritiqueFormat::FreeForm,
-    ];
+    let formats = vec![CritiqueFormat::Structured, CritiqueFormat::FreeForm];
 
     assert_eq!(formats.len(), 2);
 }
@@ -247,7 +247,9 @@ async fn test_pattern_error_handling() {
         }
 
         async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-            Err(AgentError::ProcessingError("Pattern test error".to_string()))
+            Err(AgentError::ProcessingError(
+                "Pattern test error".to_string(),
+            ))
         }
     }
 

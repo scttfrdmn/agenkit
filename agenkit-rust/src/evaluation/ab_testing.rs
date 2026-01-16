@@ -40,13 +40,13 @@
 //! # }
 //! ```
 
-use crate::core::{Agent, Message, AgentError};
-use crate::evaluation::{TestCase as EvalTestCase};
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use crate::core::{Agent, AgentError, Message};
+use crate::evaluation::TestCase as EvalTestCase;
 use rand::{thread_rng, Rng};
-use statrs::distribution::{ContinuousCDF, StudentsT, Normal};
-use statrs::statistics::{Statistics, OrderStatistics};
+use serde::{Deserialize, Serialize};
+use statrs::distribution::{ContinuousCDF, Normal, StudentsT};
+use statrs::statistics::{OrderStatistics, Statistics};
+use std::sync::Arc;
 
 /// Statistical test types for A/B testing
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -224,7 +224,9 @@ impl ABTest {
         metric_name: &str,
     ) -> Result<ABResult, AgentError> {
         if test_cases.is_empty() {
-            return Err(AgentError::InvalidInput("No test cases provided".to_string()));
+            return Err(AgentError::InvalidInput(
+                "No test cases provided".to_string(),
+            ));
         }
 
         // Collect samples for both variants
@@ -233,13 +235,17 @@ impl ABTest {
 
         // Evaluate control
         for test_case in test_cases {
-            let score = self.evaluate_agent(control.clone(), test_case, metric_name).await?;
+            let score = self
+                .evaluate_agent(control.clone(), test_case, metric_name)
+                .await?;
             control_variant.add_sample(score);
         }
 
         // Evaluate treatment
         for test_case in test_cases {
-            let score = self.evaluate_agent(treatment.clone(), test_case, metric_name).await?;
+            let score = self
+                .evaluate_agent(treatment.clone(), test_case, metric_name)
+                .await?;
             treatment_variant.add_sample(score);
         }
 
@@ -248,17 +254,15 @@ impl ABTest {
         treatment_variant.calculate_statistics();
 
         // Run statistical test
-        let p_value = self.run_statistical_test(&control_variant.samples, &treatment_variant.samples)?;
+        let p_value =
+            self.run_statistical_test(&control_variant.samples, &treatment_variant.samples)?;
 
         // Calculate effect size
         let effect_size = self.cohens_d(&control_variant, &treatment_variant);
 
         // Calculate confidence interval
-        let confidence_interval = self.bootstrap_ci(
-            &control_variant.samples,
-            &treatment_variant.samples,
-            0.95,
-        )?;
+        let confidence_interval =
+            self.bootstrap_ci(&control_variant.samples, &treatment_variant.samples, 0.95)?;
 
         // Determine significance and winner
         let is_significant = p_value < self.alpha.alpha();
@@ -324,9 +328,7 @@ impl ABTest {
         let response = agent.process(message).await?;
 
         // Simple accuracy: 1.0 if matches expected, 0.0 otherwise
-        let response_content = response.content.as_str()
-            .unwrap_or("")
-            .trim();
+        let response_content = response.content.as_str().unwrap_or("").trim();
         let expected_content = test_case.expected.trim();
 
         let score = if response_content == expected_content {
@@ -368,8 +370,9 @@ impl ABTest {
             / ((var1 / n1).powi(2) / (n1 - 1.0) + (var2 / n2).powi(2) / (n2 - 1.0));
 
         // Two-tailed p-value
-        let t_dist = StudentsT::new(0.0, 1.0, df)
-            .map_err(|e| AgentError::ProcessingError(format!("Failed to create t-distribution: {}", e)))?;
+        let t_dist = StudentsT::new(0.0, 1.0, df).map_err(|e| {
+            AgentError::ProcessingError(format!("Failed to create t-distribution: {}", e))
+        })?;
 
         let p_value = 2.0 * (1.0 - t_dist.cdf(t_stat.abs()));
 
@@ -423,8 +426,9 @@ impl ABTest {
         let sigma_u = ((n1 * n2 * (n1 + n2 + 1)) as f64 / 12.0).sqrt();
         let z = (u - mu_u) / sigma_u;
 
-        let normal = Normal::new(0.0, 1.0)
-            .map_err(|e| AgentError::ProcessingError(format!("Failed to create normal distribution: {}", e)))?;
+        let normal = Normal::new(0.0, 1.0).map_err(|e| {
+            AgentError::ProcessingError(format!("Failed to create normal distribution: {}", e))
+        })?;
 
         let p_value = 2.0 * (1.0 - normal.cdf(z.abs()));
 

@@ -241,9 +241,10 @@ impl Agent for RouterAgent {
     /// Returns an error if classification fails or no matching agent found.
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         // Step 1: Classify the message
-        let mut category = self.classifier.classify(&message).await.map_err(|e| {
-            AgentError::ProcessingError(format!("classification failed: {}", e))
-        })?;
+        let mut category =
+            self.classifier.classify(&message).await.map_err(|e| {
+                AgentError::ProcessingError(format!("classification failed: {}", e))
+            })?;
 
         // Step 2: Select agent based on category
         let agent = if let Some(agent) = self.agents.get(&category) {
@@ -342,7 +343,9 @@ impl ClassifierAgent for SimpleClassifier {
     async fn classify(&self, message: &Message) -> Result<String, AgentError> {
         let content = message
             .content_as_str()
-            .ok_or_else(|| AgentError::InvalidInput("message content must be a string".to_string()))?
+            .ok_or_else(|| {
+                AgentError::InvalidInput("message content must be a string".to_string())
+            })?
             .to_lowercase();
 
         // Check each category's keywords
@@ -440,12 +443,13 @@ impl Agent for LLMClassifier {
 impl ClassifierAgent for LLMClassifier {
     /// Classify uses LLM to determine category.
     async fn classify(&self, message: &Message) -> Result<String, AgentError> {
-        let content = message
-            .content_as_str()
-            .ok_or_else(|| AgentError::InvalidInput("message content must be a string".to_string()))?;
+        let content = message.content_as_str().ok_or_else(|| {
+            AgentError::InvalidInput("message content must be a string".to_string())
+        })?;
 
         // Build classification prompt
-        let classification_msg = Message::with_text("user", format!("{}{}", self.prompt_template, content));
+        let classification_msg =
+            Message::with_text("user", format!("{}{}", self.prompt_template, content));
 
         // Get LLM classification
         let result = self.agent.process(classification_msg).await.map_err(|e| {
@@ -454,7 +458,9 @@ impl ClassifierAgent for LLMClassifier {
 
         let category = result
             .content_as_str()
-            .ok_or_else(|| AgentError::ProcessingError("llm returned non-string content".to_string()))?
+            .ok_or_else(|| {
+                AgentError::ProcessingError("llm returned non-string content".to_string())
+            })?
             .trim();
 
         // Validate category is in allowed list

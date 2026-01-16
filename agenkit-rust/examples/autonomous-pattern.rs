@@ -6,8 +6,8 @@
 //! Run with: cargo run --example autonomous_pattern
 
 use agenkit::patterns::{AutonomousAgent, GoalStatus};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 /// Example 1: Basic autonomous agent
 async fn example_basic() -> Result<(), Box<dyn std::error::Error>> {
@@ -34,7 +34,11 @@ async fn example_basic() -> Result<(), Box<dyn std::error::Error>> {
     println!("Result:");
     println!("  Objective: {}", result.objective);
     println!("  Iterations: {}", result.iterations);
-    println!("  Goals completed: {}/{}", result.goals_completed, agent.goals().len());
+    println!(
+        "  Goals completed: {}/{}",
+        result.goals_completed,
+        agent.goals().len()
+    );
     println!("\nProgress: {:.1}%", agent.get_progress());
 
     Ok(())
@@ -87,7 +91,7 @@ async fn example_priority() -> Result<(), Box<dyn std::error::Error>> {
 
     agent.add_goal("Document findings", 2);
     agent.add_goal("Notify stakeholders", 5);
-    agent.add_goal("Fix critical bug", 10);  // Highest priority
+    agent.add_goal("Fix critical bug", 10); // Highest priority
     agent.add_goal("Write post-mortem", 1);
 
     println!("Goals (with priorities):");
@@ -135,7 +139,10 @@ async fn example_stop_condition() -> Result<(), Box<dyn std::error::Error>> {
 
     let result = agent.run().await?;
 
-    println!("Stopped after {} iterations (target reached)", result.iterations);
+    println!(
+        "Stopped after {} iterations (target reached)",
+        result.iterations
+    );
     println!("Well before max_iterations=100!\n");
 
     Ok(())
@@ -145,9 +152,10 @@ async fn example_stop_condition() -> Result<(), Box<dyn std::error::Error>> {
 async fn example_manual_stop() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n=== Example 5: Manual Stop ===\n");
 
-    let agent_arc = Arc::new(tokio::sync::Mutex::new(
-        AutonomousAgent::new("Continuous monitoring", 1000)
-    ));
+    let agent_arc = Arc::new(tokio::sync::Mutex::new(AutonomousAgent::new(
+        "Continuous monitoring",
+        1000,
+    )));
 
     let mut agent = agent_arc.lock().await;
     agent.add_goal("Monitor system health", 10);
@@ -203,7 +211,11 @@ async fn example_progress_tracking() -> Result<(), Box<dyn std::error::Error>> {
         // Agent runs to completion, so just report final state
         println!("Phase {}: {:.1}% complete", phase, agent.get_progress());
         println!("  Iterations: {}", result.iterations);
-        println!("  Goals completed: {}/{}", result.goals_completed, agent.goals().len());
+        println!(
+            "  Goals completed: {}/{}",
+            result.goals_completed,
+            agent.goals().len()
+        );
         break;
     }
 
@@ -267,10 +279,12 @@ async fn example_goal_completion_times() -> Result<(), Box<dyn std::error::Error
             GoalStatus::Active => "○",
             GoalStatus::Abandoned => "✗",
         };
-        println!("  {} {} - {:.0}% complete",
-                 status_icon,
-                 goal.description,
-                 goal.progress * 100.0);
+        println!(
+            "  {} {} - {:.0}% complete",
+            status_icon,
+            goal.description,
+            goal.progress * 100.0
+        );
     }
 
     Ok(())

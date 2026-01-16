@@ -12,7 +12,7 @@
 //! Run with: cargo run --example evaluation-basic-metrics
 
 use agenkit::evaluation::{
-    SessionResult, MetricMeasurement, MetricType, SessionStatus, MetricsCollector, ErrorRecord,
+    ErrorRecord, MetricMeasurement, MetricType, MetricsCollector, SessionResult, SessionStatus,
 };
 use rand::Rng;
 use std::collections::HashMap;
@@ -31,14 +31,14 @@ fn simulate_agent_session(session_id: &str, agent_name: &str) -> SessionResult {
     let quality_score = 0.7 + rng.gen::<f64>() * 0.3; // 0.7-1.0
     let mut metadata = HashMap::new();
     metadata.insert("evaluator".to_string(), serde_json::json!("rule_based"));
-    metadata.insert("raw_score".to_string(), serde_json::json!(quality_score * 10.0));
+    metadata.insert(
+        "raw_score".to_string(),
+        serde_json::json!(quality_score * 10.0),
+    );
     metadata.insert("max_score".to_string(), serde_json::json!(10.0));
 
-    let mut quality_metric = MetricMeasurement::new(
-        "response_quality",
-        quality_score,
-        MetricType::QualityScore,
-    );
+    let mut quality_metric =
+        MetricMeasurement::new("response_quality", quality_score, MetricType::QualityScore);
     quality_metric.metadata = metadata;
     result.add_metric_measurement(quality_metric);
 
@@ -50,24 +50,20 @@ fn simulate_agent_session(session_id: &str, agent_name: &str) -> SessionResult {
     cost_metadata.insert("currency".to_string(), serde_json::json!("USD"));
     cost_metadata.insert("tokens".to_string(), serde_json::json!(tokens_used));
 
-    let mut cost_metric = MetricMeasurement::new(
-        "total_cost",
-        total_cost,
-        MetricType::Cost,
-    );
+    let mut cost_metric = MetricMeasurement::new("total_cost", total_cost, MetricType::Cost);
     cost_metric.metadata = cost_metadata;
     result.add_metric_measurement(cost_metric);
 
     // Add duration metrics
     let duration_seconds = 0.5 + rng.gen::<f64>() * 2.0; // 0.5-2.5 seconds
     let mut duration_metadata = HashMap::new();
-    duration_metadata.insert("duration_hours".to_string(), serde_json::json!(duration_seconds / 3600.0));
-
-    let mut duration_metric = MetricMeasurement::new(
-        "duration",
-        duration_seconds,
-        MetricType::Duration,
+    duration_metadata.insert(
+        "duration_hours".to_string(),
+        serde_json::json!(duration_seconds / 3600.0),
     );
+
+    let mut duration_metric =
+        MetricMeasurement::new("duration", duration_seconds, MetricType::Duration);
     duration_metric.metadata = duration_metadata;
     result.add_metric_measurement(duration_metric);
 
@@ -81,7 +77,11 @@ fn simulate_agent_session(session_id: &str, agent_name: &str) -> SessionResult {
         result.set_status(SessionStatus::Failed);
         let mut details = HashMap::new();
         details.insert("reason".to_string(), serde_json::json!("timeout"));
-        result.add_error(ErrorRecord::with_details("processing_error", "Failed to complete task", details));
+        result.add_error(ErrorRecord::with_details(
+            "processing_error",
+            "Failed to complete task",
+            details,
+        ));
     }
 
     result.add_metric_measurement(MetricMeasurement::new(
@@ -132,8 +132,16 @@ fn main() {
     println!("---------------------------------------");
 
     let total_sessions = collector.sessions.len();
-    let completed_count = collector.sessions.iter().filter(|s| s.status == SessionStatus::Completed).count();
-    let failed_count = collector.sessions.iter().filter(|s| s.status == SessionStatus::Failed).count();
+    let completed_count = collector
+        .sessions
+        .iter()
+        .filter(|s| s.status == SessionStatus::Completed)
+        .count();
+    let failed_count = collector
+        .sessions
+        .iter()
+        .filter(|s| s.status == SessionStatus::Failed)
+        .count();
     let success_rate = collector.overall_success_rate();
     let total_errors = collector.total_errors();
 
@@ -142,7 +150,10 @@ fn main() {
     println!("Failed: {}", failed_count);
     println!("Success Rate: {:.1}%", success_rate * 100.0);
     println!("Total Errors: {}", total_errors);
-    println!("Avg Errors/Session: {:.2}\n", total_errors as f64 / total_sessions as f64);
+    println!(
+        "Avg Errors/Session: {:.2}\n",
+        total_errors as f64 / total_sessions as f64
+    );
 
     // Step 4: Analyze specific metrics
     println!("Step 4: Analyzing Specific Metrics");
@@ -152,40 +163,88 @@ fn main() {
     let quality_stats = collector.aggregate_by_name("response_quality");
     if quality_stats.get("count").copied().unwrap_or(0.0) > 0.0 {
         println!("\nQuality Metrics:");
-        println!("  Count: {:.0}", quality_stats.get("count").copied().unwrap_or(0.0));
-        println!("  Mean: {:.3}", quality_stats.get("mean").copied().unwrap_or(0.0));
-        println!("  Min: {:.3}", quality_stats.get("min").copied().unwrap_or(0.0));
-        println!("  Max: {:.3}", quality_stats.get("max").copied().unwrap_or(0.0));
+        println!(
+            "  Count: {:.0}",
+            quality_stats.get("count").copied().unwrap_or(0.0)
+        );
+        println!(
+            "  Mean: {:.3}",
+            quality_stats.get("mean").copied().unwrap_or(0.0)
+        );
+        println!(
+            "  Min: {:.3}",
+            quality_stats.get("min").copied().unwrap_or(0.0)
+        );
+        println!(
+            "  Max: {:.3}",
+            quality_stats.get("max").copied().unwrap_or(0.0)
+        );
     }
 
     // Cost metrics
     let cost_stats = collector.aggregate_by_name("total_cost");
     if cost_stats.get("count").copied().unwrap_or(0.0) > 0.0 {
         println!("\nCost Metrics:");
-        println!("  Count: {:.0}", cost_stats.get("count").copied().unwrap_or(0.0));
-        println!("  Total Cost: ${:.4}", cost_stats.get("sum").copied().unwrap_or(0.0));
-        println!("  Average Cost/Session: ${:.4}", cost_stats.get("mean").copied().unwrap_or(0.0));
-        println!("  Min Cost: ${:.4}", cost_stats.get("min").copied().unwrap_or(0.0));
-        println!("  Max Cost: ${:.4}", cost_stats.get("max").copied().unwrap_or(0.0));
+        println!(
+            "  Count: {:.0}",
+            cost_stats.get("count").copied().unwrap_or(0.0)
+        );
+        println!(
+            "  Total Cost: ${:.4}",
+            cost_stats.get("sum").copied().unwrap_or(0.0)
+        );
+        println!(
+            "  Average Cost/Session: ${:.4}",
+            cost_stats.get("mean").copied().unwrap_or(0.0)
+        );
+        println!(
+            "  Min Cost: ${:.4}",
+            cost_stats.get("min").copied().unwrap_or(0.0)
+        );
+        println!(
+            "  Max Cost: ${:.4}",
+            cost_stats.get("max").copied().unwrap_or(0.0)
+        );
     }
 
     // Duration metrics
     let duration_stats = collector.aggregate_by_name("duration");
     if duration_stats.get("count").copied().unwrap_or(0.0) > 0.0 {
         println!("\nDuration Metrics:");
-        println!("  Count: {:.0}", duration_stats.get("count").copied().unwrap_or(0.0));
-        println!("  Total Duration: {:.2}s", duration_stats.get("sum").copied().unwrap_or(0.0));
-        println!("  Average Duration: {:.2}s", duration_stats.get("mean").copied().unwrap_or(0.0));
-        println!("  Min Duration: {:.2}s", duration_stats.get("min").copied().unwrap_or(0.0));
-        println!("  Max Duration: {:.2}s", duration_stats.get("max").copied().unwrap_or(0.0));
+        println!(
+            "  Count: {:.0}",
+            duration_stats.get("count").copied().unwrap_or(0.0)
+        );
+        println!(
+            "  Total Duration: {:.2}s",
+            duration_stats.get("sum").copied().unwrap_or(0.0)
+        );
+        println!(
+            "  Average Duration: {:.2}s",
+            duration_stats.get("mean").copied().unwrap_or(0.0)
+        );
+        println!(
+            "  Min Duration: {:.2}s",
+            duration_stats.get("min").copied().unwrap_or(0.0)
+        );
+        println!(
+            "  Max Duration: {:.2}s",
+            duration_stats.get("max").copied().unwrap_or(0.0)
+        );
     }
 
     // Success rate metrics
     let success_stats = collector.aggregate_by_name("success");
     if success_stats.get("count").copied().unwrap_or(0.0) > 0.0 {
         println!("\nSuccess Rate Metrics:");
-        println!("  Count: {:.0}", success_stats.get("count").copied().unwrap_or(0.0));
-        println!("  Success Rate: {:.1}%", success_stats.get("mean").copied().unwrap_or(0.0) * 100.0);
+        println!(
+            "  Count: {:.0}",
+            success_stats.get("count").copied().unwrap_or(0.0)
+        );
+        println!(
+            "  Success Rate: {:.1}%",
+            success_stats.get("mean").copied().unwrap_or(0.0) * 100.0
+        );
     }
 
     // Step 5: Examine individual session results
@@ -196,9 +255,12 @@ fn main() {
     println!("{}", "-".repeat(70));
 
     // Sort by quality
-    let mut sessions_with_quality: Vec<_> = collector.sessions.iter()
+    let mut sessions_with_quality: Vec<_> = collector
+        .sessions
+        .iter()
         .filter_map(|result| {
-            result.get_measurements_by_name("response_quality")
+            result
+                .get_measurements_by_name("response_quality")
                 .first()
                 .map(|metric| (result, metric.value))
         })

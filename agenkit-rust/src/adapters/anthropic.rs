@@ -2,7 +2,6 @@
 ///!
 ///! This module provides an adapter for calling Anthropic's Claude API via HTTP.
 ///! Supports Claude 3 Opus, Sonnet, and Haiku models.
-
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -173,7 +172,11 @@ impl AnthropicAgent {
 
     /// Call Anthropic API with messages.
     #[cfg(feature = "native")]
-    async fn call_api(&self, messages: Vec<ClaudeMessage>, system: Option<String>) -> Result<MessagesResponse, AgentError> {
+    async fn call_api(
+        &self,
+        messages: Vec<ClaudeMessage>,
+        system: Option<String>,
+    ) -> Result<MessagesResponse, AgentError> {
         let mut request = MessagesRequest {
             model: self.config.model.clone(),
             max_tokens: self.config.max_tokens,
@@ -210,7 +213,10 @@ impl AnthropicAgent {
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             return Err(AgentError::Transport(format!(
                 "Anthropic API error ({}): {}",
                 status, error_text
@@ -251,16 +257,22 @@ impl AnthropicAgent {
         let mut msg = Message::with_text(&response.role, &content);
 
         // Add metadata
-        msg.metadata.insert("claude_message_id".to_string(), json!(response.id));
-        msg.metadata.insert("model".to_string(), json!(response.model));
-        msg.metadata.insert("usage".to_string(), json!({
-            "input_tokens": response.usage.input_tokens,
-            "output_tokens": response.usage.output_tokens,
-            "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
-        }));
+        msg.metadata
+            .insert("claude_message_id".to_string(), json!(response.id));
+        msg.metadata
+            .insert("model".to_string(), json!(response.model));
+        msg.metadata.insert(
+            "usage".to_string(),
+            json!({
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens,
+                "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
+            }),
+        );
 
         if let Some(stop_reason) = response.stop_reason {
-            msg.metadata.insert("stop_reason".to_string(), json!(stop_reason));
+            msg.metadata
+                .insert("stop_reason".to_string(), json!(stop_reason));
         }
 
         msg

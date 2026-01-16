@@ -1,5 +1,3 @@
-
-
 //! ReAct (Reasoning + Acting) Agent Pattern
 //!
 //! Implements the ReAct pattern where agents reason about actions and execute tools
@@ -68,9 +66,9 @@
 //! # }
 //! ```
 
-use crate::core::{Agent, AgentError, Message, Tool};
 #[cfg(test)]
 use crate::core::ToolResult;
+use crate::core::{Agent, AgentError, Message, Tool};
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -211,12 +209,11 @@ impl ReActAgent {
     /// Get the reasoning steps from the last execution.
     ///
     /// This is stored in the response metadata under the "steps" key.
-    pub fn get_steps_from_metadata(
-        message: &Message,
-    ) -> Option<Vec<ReActStep>> {
-        message.metadata.get("reasoning").and_then(|v| {
-            serde_json::from_value(v.clone()).ok()
-        })
+    pub fn get_steps_from_metadata(message: &Message) -> Option<Vec<ReActStep>> {
+        message
+            .metadata
+            .get("reasoning")
+            .and_then(|v| serde_json::from_value(v.clone()).ok())
     }
 
     /// Parse agent response into a ReActStep.
@@ -309,9 +306,15 @@ impl ReActAgent {
         }
 
         let mut metadata = HashMap::new();
-        metadata.insert("stop_reason".to_string(), serde_json::json!(stop_reason.to_string()));
+        metadata.insert(
+            "stop_reason".to_string(),
+            serde_json::json!(stop_reason.to_string()),
+        );
         metadata.insert("steps".to_string(), serde_json::json!(steps.len()));
-        metadata.insert("reasoning".to_string(), serde_json::to_value(steps).unwrap_or(serde_json::json!([])));
+        metadata.insert(
+            "reasoning".to_string(),
+            serde_json::to_value(steps).unwrap_or(serde_json::json!([])),
+        );
 
         let mut message = Message::with_text("assistant", content);
         message.metadata = metadata;
@@ -375,10 +378,7 @@ impl Agent for ReActAgent {
 
             // Execute tool
             let mut params = HashMap::new();
-            params.insert(
-                "input".to_string(),
-                serde_json::json!(parsed.action_input),
-            );
+            params.insert("input".to_string(), serde_json::json!(parsed.action_input));
 
             match tool.execute(params).await {
                 Ok(tool_result) => {
@@ -477,10 +477,7 @@ mod tests {
             &self,
             params: HashMap<String, serde_json::Value>,
         ) -> Result<ToolResult, AgentError> {
-            let input = params
-                .get("input")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
+            let input = params.get("input").and_then(|v| v.as_str()).unwrap_or("");
 
             // Simple evaluation - just return a mock result
             let result = if input.contains("2+2") {
@@ -532,17 +529,16 @@ mod tests {
             metadata.get("stop_reason").and_then(|v| v.as_str()),
             Some("final_answer")
         );
-        assert_eq!(
-            metadata.get("steps").and_then(|v| v.as_u64()),
-            Some(2)
-        );
+        assert_eq!(metadata.get("steps").and_then(|v| v.as_u64()), Some(2));
     }
 
     #[tokio::test]
     async fn test_react_agent_tool_not_found() {
         let responses = vec![
-            "Thought: I should use a tool\nAction: nonexistent_tool\nAction Input: test".to_string(),
-            "Thought: The tool wasn't found, I'll give up\nFinal Answer: Unable to complete task".to_string(),
+            "Thought: I should use a tool\nAction: nonexistent_tool\nAction Input: test"
+                .to_string(),
+            "Thought: The tool wasn't found, I'll give up\nFinal Answer: Unable to complete task"
+                .to_string(),
         ];
 
         let mock_agent = Arc::new(MockAgent {
@@ -555,7 +551,7 @@ mod tests {
             agent: mock_agent,
             tools: vec![calculator],
             max_steps: 5,
-            verbose: true,  // Enable verbose to see the error in the trace
+            verbose: true, // Enable verbose to see the error in the trace
             prompt_template: None,
         };
 
@@ -598,10 +594,7 @@ mod tests {
             metadata.get("stop_reason").and_then(|v| v.as_str()),
             Some("max_steps")
         );
-        assert_eq!(
-            metadata.get("steps").and_then(|v| v.as_u64()),
-            Some(3)
-        );
+        assert_eq!(metadata.get("steps").and_then(|v| v.as_u64()), Some(3));
     }
 
     #[tokio::test]

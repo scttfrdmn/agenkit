@@ -2,7 +2,6 @@
 ///!
 ///! This module provides an adapter for calling OpenAI's GPT API via HTTP.
 ///! Supports GPT-4, GPT-4 Turbo, GPT-3.5 Turbo, and other OpenAI models.
-
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -176,7 +175,10 @@ impl OpenAIAgent {
 
     /// Call OpenAI API with messages.
     #[cfg(feature = "native")]
-    async fn call_api(&self, messages: Vec<ChatMessage>) -> Result<ChatCompletionResponse, AgentError> {
+    async fn call_api(
+        &self,
+        messages: Vec<ChatMessage>,
+    ) -> Result<ChatCompletionResponse, AgentError> {
         let mut request = ChatCompletionRequest {
             model: self.config.model.clone(),
             messages,
@@ -215,7 +217,10 @@ impl OpenAIAgent {
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             return Err(AgentError::Transport(format!(
                 "OpenAI API error ({}): {}",
                 status, error_text
@@ -253,13 +258,18 @@ impl OpenAIAgent {
         let mut msg = Message::with_text(&role, &content);
 
         // Add metadata
-        msg.metadata.insert("openai_message_id".to_string(), json!(response.id));
-        msg.metadata.insert("model".to_string(), json!(response.model));
-        msg.metadata.insert("usage".to_string(), json!({
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-            "total_tokens": response.usage.total_tokens,
-        }));
+        msg.metadata
+            .insert("openai_message_id".to_string(), json!(response.id));
+        msg.metadata
+            .insert("model".to_string(), json!(response.model));
+        msg.metadata.insert(
+            "usage".to_string(),
+            json!({
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens,
+            }),
+        );
 
         if !response.choices.is_empty() {
             msg.metadata.insert(

@@ -83,7 +83,27 @@ parking_lot = { version = "0.12", optional = true }
 
 # Tracing and logging
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"], optional = true }
+
+# OpenTelemetry Core
+opentelemetry = { version = "0.23", features = ["trace", "metrics", "logs"], optional = true }
+opentelemetry_sdk = { version = "0.23", features = ["trace", "metrics", "logs", "rt-tokio"], optional = true }
+
+# OpenTelemetry Tracing Integration
+tracing-opentelemetry = { version = "0.23", optional = true }
+opentelemetry-otlp = { version = "0.16", features = ["trace", "metrics", "logs", "grpc-tonic"], optional = true }
+
+# OpenTelemetry Exporters
+opentelemetry-jaeger = { version = "0.22", features = ["rt-tokio"], optional = true }
+opentelemetry-zipkin = { version = "0.21", features = ["reqwest-client"], optional = true }
+opentelemetry-prometheus = { version = "0.16", optional = true }
+opentelemetry-stdout = { version = "0.4", optional = true }
+
+# Prometheus client for metrics registry
+prometheus = { version = "0.13", optional = true }
+
+# Global state management
+once_cell = { version = "1.19", optional = true }
 
 # WASM bindings
 wasm-bindgen = { version = "0.2", optional = true }
@@ -103,6 +123,7 @@ aws-credential-types = { version = "1.2", optional = true }
 # Testing
 tokio-test = "0.4"
 mockito = "1.2"
+tempfile = "3.8"
 
 # Benchmarking
 criterion = { version = "0.5", features = ["async_tokio", "html_reports"] }
@@ -121,6 +142,16 @@ native = [
     "tokio-tungstenite",
     "futures-util",
     "tracing-subscriber",
+    "opentelemetry",
+    "opentelemetry_sdk",
+    "tracing-opentelemetry",
+    "opentelemetry-otlp",
+    "opentelemetry-jaeger",
+    "opentelemetry-zipkin",
+    "opentelemetry-prometheus",
+    "opentelemetry-stdout",
+    "prometheus",
+    "once_cell",
     "aws-config",
     "aws-sdk-bedrockruntime",
     "aws-credential-types",
@@ -219,6 +250,18 @@ path = "examples/bedrock_example.rs"
 [[example]]
 name = "middleware_example"
 path = "examples/middleware_example.rs"
+
+[[example]]
+name = "observability_basic"
+path = "examples/observability_basic.rs"
+
+[[example]]
+name = "observability_distributed"
+path = "examples/observability_distributed.rs"
+
+[[example]]
+name = "observability_production"
+path = "examples/observability_production.rs"
 
 [[bench]]
 name = "pattern_benchmarks"

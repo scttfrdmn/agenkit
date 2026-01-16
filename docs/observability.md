@@ -1,769 +1,721 @@
-# Observability Guide
+# Observability Guide for Agenkit Rust
 
-Agenkit provides comprehensive observability features built on [OpenTelemetry](https://opentelemetry.io/), enabling distributed tracing, metrics collection, and structured logging for your AI agent applications.
+Comprehensive guide to distributed tracing, metrics, logging, and audit logging in Agenkit Rust.
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Quick Start](#quick-start)
-  - [Python](#python-quick-start)
-  - [Go](#go-quick-start)
-  - [TypeScript](#typescript-quick-start)
-- [Distributed Tracing](#distributed-tracing)
-- [Metrics Collection](#metrics-collection)
-- [Structured Logging](#structured-logging)
-- [Cross-Language Compatibility](#cross-language-compatibility)
-- [Configuration](#configuration)
-- [Best Practices](#best-practices)
-- [Troubleshooting](#troubleshooting)
+1. [Overview](#overview)
+2. [Installation](#installation)
+3. [Quick Start](#quick-start)
+4. [Modules](#modules)
+5. [Production Setup](#production-setup)
+6. [Best Practices](#best-practices)
+7. [Troubleshooting](#troubleshooting)
+8. [Examples](#examples)
 
 ## Overview
 
-Agenkit's observability features help you:
+The Agenkit Rust observability module provides four integrated components for production agent monitoring:
 
-- **Trace agent interactions** across your application with distributed tracing
-- **Monitor performance** with Prometheus-compatible metrics
-- **Debug issues** with structured, trace-correlated logs
-- **Understand behavior** across polyglot (Python/Go) agent systems
+- **Distributed Tracing**: W3C Trace Context propagation across agents with OpenTelemetry
+- **Metrics Collection**: Counters, histograms, and gauges for monitoring with Prometheus/OTLP
+- **Structured Logging**: JSON logging with trace correlation
+- **Audit Logging**: Compliance-friendly event logging with querying
 
-All observability features use OpenTelemetry, the industry-standard observability framework, ensuring compatibility with popular backends like Jaeger, Zipkin, Prometheus, and Grafana.
+### Key Features
 
-## Features
+✅ **Cross-Language Compatible**: Uses message metadata for trace propagation (not thread-local storage)
+✅ **Multiple Exporters**: OTLP, Jaeger, Zipkin, Console, Prometheus
+✅ **Zero-Config Middleware**: Automatic span creation and metric recording
+✅ **Production-Ready**: Buffered audit logging, graceful degradation, thread-safe
 
-### Distributed Tracing
-- Automatic span creation for agent processing
-- W3C Trace Context propagation across agents and languages
-- Parent-child span relationships
-- Error recording and status tracking
-- Custom span names and attributes
+## Installation
 
-### Metrics Collection
-- Request counters (total requests, success/error)
-- Latency histograms (processing time distribution)
-- Message size tracking
-- Error rates by agent and error type
-- Prometheus-compatible export
+Add the following to your `Cargo.toml`:
 
-### Structured Logging
-- JSON structured logging format
-- Automatic trace context injection (trace_id, span_id)
-- Configurable log levels
-- Compatible formats across Python and Go
+```toml
+[dependencies]
+agenkit = { version = "0.48.0", features = ["native"] }
+```
+
+The `native` feature includes all OpenTelemetry dependencies.
 
 ## Quick Start
 
-### Python Quick Start
+### Minimal Setup (Development)
 
-```python
-import asyncio
-from agenkit.observability import (
-    init_tracing,
-    init_metrics,
-    configure_logging,
-    TracingMiddleware,
-    MetricsMiddleware,
-)
-from agenkit.interfaces import Agent, Message
-import logging
+```rust
+use agenkit::observability::{init_tracing, init_metrics, configure_logging};
+use agenkit::observability::{TracingMiddleware, MetricsMiddleware};
+use agenkit::core::Agent;
 
-# 1. Initialize observability
-init_tracing(
-    service_name="my-agent-service",
-    console_export=True,  # For development
-    # otlp_endpoint="localhost:4317",  # For production
-)
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize observability
+    init_tracing("console", None)?;
+    init_metrics("prometheus", None)?;
+    configure_logging("json", "info")?;
 
-init_metrics(
-    service_name="my-agent-service",
-    port=8001,  # Prometheus metrics endpoint
-)
+    // Wrap your agent with middleware
+    let agent = MyAgent::new();
+    let traced_agent = TracingMiddleware::new(agent, None);
+    let full_agent = MetricsMiddleware::new(traced_agent);
 
-configure_logging(
-    level=logging.INFO,
-    structured=True,
-    include_trace_context=True,
-)
+    // Process messages (observability automatic)
+    let msg = Message::new("user", serde_json::json!("Hello!"));
+    let response = full_agent.process(msg).await?;
 
-# 2. Wrap your agent with observability middleware
-class MyAgent(Agent):
-    @property
-    def name(self) -> str:
-        return "my-agent"
-
-    @property
-    def capabilities(self) -> list[str]:
-        return ["process"]
-
-    async def process(self, message: Message) -> Message:
-        return Message(role="agent", content=f"Processed: {message.content}")
-
-# Create agent with observability
-base_agent = MyAgent()
-traced_agent = TracingMiddleware(base_agent)
-monitored_agent = MetricsMiddleware(traced_agent)
-
-# 3. Process messages - observability happens automatically!
-async def main():
-    message = Message(role="user", content="Hello!")
-    response = await monitored_agent.process(message)
-    print(response.content)
-
-asyncio.run(main())
-```
-
-View metrics at: `http://localhost:8001/metrics`
-
-### Go Quick Start
-
-```go
-package main
-
-import (
-    "context"
-    "fmt"
-    "log/slog"
-
-    "github.com/agenkit/agenkit-go/observability"
-)
-
-func main() {
-    // 1. Initialize observability
-    tp, err := observability.InitTracing(
-        "my-agent-service",
-        "",    // No OTLP endpoint for dev
-        true,  // Console export for dev
-    )
-    if err != nil {
-        panic(err)
-    }
-    defer observability.Shutdown(context.Background())
-
-    mp, err := observability.InitMetrics(
-        "my-agent-service",
-        8002,  // Prometheus metrics endpoint
-    )
-    if err != nil {
-        panic(err)
-    }
-    defer observability.ShutdownMetrics(context.Background())
-
-    observability.ConfigureLogging(
-        slog.LevelInfo,
-        true,  // Structured JSON
-        true,  // Include trace context
-    )
-
-    // 2. Wrap your agent with observability middleware
-    baseAgent := &MyAgent{}
-    tracedAgent := observability.NewTracingMiddleware(baseAgent, "")
-    monitoredAgent, err := observability.NewMetricsMiddleware(tracedAgent)
-    if err != nil {
-        panic(err)
-    }
-
-    // 3. Process messages - observability happens automatically!
-    ctx := context.Background()
-    message := &observability.Message{
-        Role:    "user",
-        Content: "Hello!",
-    }
-
-    response, err := monitoredAgent.Process(ctx, message)
-    if err != nil {
-        panic(err)
-    }
-
-    fmt.Println(response.Content)
+    Ok(())
 }
 ```
 
-View metrics at: `http://localhost:8002/metrics`
+### Production Setup
 
-### TypeScript Quick Start
+```rust
+use agenkit::observability::{init_tracing, init_metrics, configure_logging};
+use agenkit::observability::audit::{AuditLogger, AuditEvent, AuditEventType};
+use std::sync::Arc;
+use std::path::PathBuf;
 
-```typescript
-import {
-  initTracing,
-  initMetrics,
-  configureLogging,
-  LogLevel,
-  TracingMiddleware,
-  MetricsMiddleware,
-  getLoggerWithTrace,
-} from '@agenkit/core/observability';
-import { Agent, Message } from '@agenkit/core';
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // OTLP for distributed tracing
+    init_tracing("otlp", Some("http://localhost:4317"))?;
 
-// 1. Initialize observability
-initTracing({
-  serviceName: 'my-agent-service',
-  consoleExport: true,  // For development
-  // otlpEndpoint: 'http://localhost:4318/v1/traces',  // For production
-});
+    // Prometheus metrics on port 9464
+    init_metrics("prometheus", None)?;
 
-await initMetrics({
-  serviceName: 'my-agent-service',
-  port: 8003,  // Prometheus metrics endpoint
-});
+    // JSON logging for production
+    configure_logging("json", "info")?;
 
-configureLogging({
-  level: LogLevel.INFO,
-  structured: true,
-  includeTraceContext: true,
-});
+    // Audit logging for compliance
+    let audit_logger = Arc::new(
+        AuditLogger::with_buffer_size(
+            PathBuf::from("/var/log/agenkit/audit.log"),
+            50
+        )?
+    );
 
-// 2. Wrap your agent with observability middleware
-class MyAgent implements Agent {
-  readonly name = 'my-agent';
-  readonly capabilities = ['process'];
+    // Log agent creation
+    audit_logger.log(AuditEvent::new(
+        AuditEventType::AgentCreated,
+        "production_agent".to_string(),
+        None
+    )).await?;
 
-  async process(message: Message): Promise<Message> {
-    return {
-      role: 'assistant',
-      content: `Processed: ${message.content}`,
-    };
-  }
+    // Your application code...
+
+    // Flush audit logs before exit
+    audit_logger.flush().await?;
+
+    Ok(())
 }
-
-// Create agent with observability
-const baseAgent = new MyAgent();
-const tracedAgent = new TracingMiddleware(baseAgent);
-const monitoredAgent = new MetricsMiddleware(tracedAgent);
-
-// 3. Process messages - observability happens automatically!
-async function main() {
-  const message: Message = {
-    role: 'user',
-    content: 'Hello!',
-  };
-  const response = await monitoredAgent.process(message);
-  console.log(response.content);
-}
-
-main();
 ```
 
-View metrics at: `http://localhost:8003/metrics`
+## Modules
 
-## Distributed Tracing
 
-### How It Works
+### 1. Tracing Module
 
-Tracing creates a hierarchical view of your agent's execution:
+Distributed tracing with W3C Trace Context propagation.
 
-```
-Request
-└── agent.agent1.process (span)
-    ├── agent.agent2.process (child span)
-    └── agent.agent3.process (child span)
-```
+#### Initialization
 
-Each span records:
-- **Duration**: How long the operation took
-- **Attributes**: Agent name, message role, content length, metadata
-- **Status**: Success or error
-- **Events**: Exceptions and other notable events
+```rust
+use agenkit::observability::init_tracing;
 
-### Trace Context Propagation
+// OTLP (best for production)
+init_tracing("otlp", Some("http://localhost:4317"))?;
 
-Agenkit automatically propagates trace context across agents using W3C Trace Context:
+// Console (best for development)
+init_tracing("console", None)?;
 
-```python
-# Python example
-response1 = await agent1.process(message)
-# Trace context automatically included in response1.metadata
+// Jaeger (deprecated, use OTLP instead)
+init_tracing("jaeger", Some("http://localhost:14250"))?;
 
-response2 = await agent2.process(response1)
-# agent2's span is a child of agent1's span
+// Zipkin
+init_tracing("zipkin", Some("http://localhost:9411"))?;
 ```
 
-This works **across languages** - Python agents can call Go agents and maintain trace continuity.
+#### TracingMiddleware
 
-### Custom Span Names
+Automatically creates spans for agent calls and propagates trace context:
 
-```python
-# Python
-traced_agent = TracingMiddleware(agent, span_name="custom.operation")
+```rust
+use agenkit::observability::TracingMiddleware;
+
+// Default span name (uses agent name)
+let traced_agent = TracingMiddleware::new(agent, None);
+
+// Custom span name
+let traced_agent = TracingMiddleware::new(agent, Some("my_span".to_string()));
 ```
 
-```go
-// Go
-tracedAgent := observability.NewTracingMiddleware(agent, "custom.operation")
+#### Trace Context Propagation
+
+Trace context is automatically propagated via message metadata:
+
+```rust
+use agenkit::observability::{extract_trace_context, inject_trace_context};
+use agenkit::core::Message;
+
+// Extract parent context from incoming message
+let parent_context = extract_trace_context(&message.metadata);
+
+// Inject context into outgoing message
+let mut response = Message::new("assistant", serde_json::json!("Hi!"));
+inject_trace_context(&mut response.metadata, &context);
 ```
 
-```typescript
-// TypeScript
-const tracedAgent = new TracingMiddleware(agent, "custom.operation");
+#### Key Concepts
+
+- **Trace ID**: Unique identifier for entire request flow across all agents
+- **Span ID**: Unique identifier for single agent operation
+- **Parent Span ID**: Links spans into a tree structure
+- **W3C Trace Context**: Standard format (`traceparent` header) for cross-language compatibility
+
+### 2. Metrics Module
+
+Metrics collection with automatic counters and histograms.
+
+#### Initialization
+
+```rust
+use agenkit::observability::init_metrics;
+
+// Prometheus (pull-based on port 9464)
+init_metrics("prometheus", None)?;
+
+// Prometheus on custom port
+init_metrics("prometheus", Some("0.0.0.0:8080"))?;
+
+// OTLP (push-based)
+init_metrics("otlp", Some("http://localhost:4317"))?;
 ```
 
-### Exporting Traces
+#### MetricsMiddleware
 
-#### Development: Console Export
+Automatically records request counts and duration:
 
-```python
-init_tracing(service_name="my-service", console_export=True)
+```rust
+use agenkit::observability::MetricsMiddleware;
+
+let metrics_agent = MetricsMiddleware::new(agent);
 ```
 
-```go
-observability.InitTracing("my-service", "", true)
+**Recorded Metrics:**
+
+- `agent_requests_total` (counter) - Total requests with labels:
+  - `agent.name`: Name of the agent
+  - `status`: "success" or "error"
+
+- `agent_request_duration_seconds` (histogram) - Request duration with labels:
+  - `agent.name`: Name of the agent
+
+#### Custom Metrics
+
+```rust
+use agenkit::observability::get_meter;
+use opentelemetry::KeyValue;
+
+let meter = get_meter("my_app");
+
+// Counter
+let counter = meter.u64_counter("my_counter").init();
+counter.add(1, &[KeyValue::new("key", "value")]);
+
+// Histogram
+let histogram = meter.f64_histogram("my_histogram").init();
+histogram.record(1.5, &[KeyValue::new("key", "value")]);
 ```
 
-```typescript
-initTracing({ serviceName: "my-service", consoleExport: true });
-```
-
-#### Production: OTLP Export
-
-```python
-init_tracing(
-    service_name="my-service",
-    otlp_endpoint="localhost:4317",  # Jaeger, Tempo, etc.
-)
-```
-
-```go
-observability.InitTracing("my-service", "localhost:4317", false)
-```
-
-```typescript
-initTracing({
-  serviceName: "my-service",
-  otlpEndpoint: "http://localhost:4318/v1/traces",  // Jaeger, Tempo, etc.
-});
-```
-
-## Metrics Collection
-
-### Available Metrics
-
-Agenkit automatically collects these metrics:
-
-| Metric | Type | Description | Labels |
-|--------|------|-------------|--------|
-| `agenkit.agent.requests` | Counter | Total requests processed | `agent.name`, `message.role`, `status` |
-| `agenkit.agent.errors` | Counter | Total errors encountered | `agent.name`, `status`, `error.type` |
-| `agenkit.agent.latency` | Histogram | Processing latency in ms | `agent.name`, `message.role`, `status` |
-| `agenkit.agent.message_size` | Histogram | Message content size in bytes | `agent.name`, `message.role` |
-
-### Viewing Metrics
-
-Metrics are exposed in Prometheus format:
+#### Accessing Prometheus Metrics
 
 ```bash
-# Python (port 8001 by default)
-curl http://localhost:8001/metrics
-
-# Go (port 8002 by default)
-curl http://localhost:8002/metrics
-
-# TypeScript (port 8003 by default)
-curl http://localhost:8003/metrics
+curl http://localhost:9464/metrics
 ```
 
-### Example Prometheus Queries
+### 3. Logging Module
 
-```promql
-# Request rate by agent
-rate(agenkit_agent_requests_total[5m])
+Structured logging with trace correlation.
 
-# Error rate
-rate(agenkit_agent_errors_total[5m])
+#### Initialization
 
-# 95th percentile latency
-histogram_quantile(0.95, rate(agenkit_agent_latency_bucket[5m]))
+```rust
+use agenkit::observability::configure_logging;
 
-# Average message size
-rate(agenkit_agent_message_size_sum[5m]) / rate(agenkit_agent_message_size_count[5m])
+// JSON format (best for production)
+configure_logging("json", "info")?;
+
+// Pretty format (best for development)
+configure_logging("pretty", "debug")?;
+
+// Compact format
+configure_logging("compact", "warn")?;
 ```
 
-### Prometheus Configuration
+**Log Levels:** `trace`, `debug`, `info`, `warn`, `error`
+
+#### Logging Functions
+
+```rust
+use agenkit::observability::{log_agent_event, log_agent_error, log_agent_warning};
+
+// Log an event
+log_agent_event(
+    "message_processed",
+    "Successfully processed user message",
+    &[("agent_name", "ChatAgent"), ("duration_ms", "150")]
+);
+
+// Log an error
+log_agent_error(
+    "processing_failed",
+    "Failed to process message",
+    "Connection timeout after 30s"
+);
+
+// Log a warning
+log_agent_warning(
+    "high_latency",
+    "Agent response time exceeding threshold",
+    &[("latency_ms", "2500"), ("threshold_ms", "1000")]
+);
+```
+
+#### Trace Correlation
+
+When tracing is initialized, logs automatically include trace context for correlation between logs and traces.
+
+### 4. Audit Module
+
+Compliance-friendly event logging with querying.
+
+#### Initialization
+
+```rust
+use agenkit::observability::audit::AuditLogger;
+use std::path::PathBuf;
+
+// Default buffer size (100)
+let logger = AuditLogger::new(PathBuf::from("/var/log/audit.log"))?;
+
+// Custom buffer size
+let logger = AuditLogger::with_buffer_size(
+    PathBuf::from("/var/log/audit.log"),
+    50
+)?;
+```
+
+#### Event Types
+
+```rust
+use agenkit::observability::audit::AuditEventType;
+
+pub enum AuditEventType {
+    AgentCreated,
+    MessageProcessed,
+    SecurityViolation,
+    ConfigurationChanged,
+    ErrorOccurred,
+    UserAction,
+    SystemEvent,
+}
+```
+
+#### Severity Levels
+
+```rust
+use agenkit::observability::audit::Severity;
+
+pub enum Severity {
+    Info,
+    Warning,
+    Error,
+    Critical,
+}
+```
+
+#### Logging Events
+
+```rust
+use agenkit::observability::audit::{AuditEvent, AuditEventType, Severity};
+
+// Basic event
+let event = AuditEvent::new(
+    AuditEventType::MessageProcessed,
+    "ChatAgent".to_string(),
+    Some("session-123".to_string())
+);
+logger.log(event).await?;
+
+// Event with details and severity
+let event = AuditEvent::new(
+    AuditEventType::SecurityViolation,
+    "AuthAgent".to_string(),
+    Some("session-456".to_string())
+)
+.with_detail("reason".to_string(), serde_json::json!("Invalid token"))
+.with_severity(Severity::Critical);
+logger.log(event).await?;
+
+// Flush to disk (automatic when buffer is full)
+logger.flush().await?;
+```
+
+#### Querying Events
+
+```rust
+// Query all events
+let all_events = logger.query(None).await?;
+
+// Query with custom filter
+let filtered = logger.query(Some(Box::new(|event| {
+    event.agent_name == "ChatAgent"
+}))).await?;
+
+// Query by session ID
+let session_events = logger.query_by_session("session-123").await?;
+
+// Query by agent name
+let agent_events = logger.query_by_agent("AuthAgent").await?;
+
+// Query by event type
+let errors = logger.query_by_type(AuditEventType::ErrorOccurred).await?;
+```
+
+
+## Production Setup
+
+### Complete Production Configuration
+
+```rust
+use agenkit::observability::{init_tracing, init_metrics, configure_logging, shutdown_observability};
+use agenkit::observability::audit::{AuditLogger, AuditEvent, AuditEventType};
+use std::sync::Arc;
+use std::path::PathBuf;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 1. Initialize tracing with OTLP
+    match init_tracing("otlp", Some("http://localhost:4317")) {
+        Ok(_) => println!("Tracing initialized"),
+        Err(e) => eprintln!("Failed to initialize tracing: {}", e),
+    }
+
+    // 2. Initialize metrics with Prometheus
+    match init_metrics("prometheus", None) {
+        Ok(_) => println!("Metrics initialized"),
+        Err(e) => eprintln!("Failed to initialize metrics: {}", e),
+    }
+
+    // 3. Configure JSON logging
+    match configure_logging("json", "info") {
+        Ok(_) => println!("Logging configured"),
+        Err(e) => eprintln!("Failed to configure logging: {}", e),
+    }
+
+    // 4. Setup audit logging
+    let audit_logger = Arc::new(AuditLogger::with_buffer_size(
+        PathBuf::from("/var/log/agenkit/audit.log"),
+        50
+    )?);
+
+    // Your application...
+
+    // 5. Cleanup on shutdown
+    audit_logger.flush().await?;
+    shutdown_observability().await?;
+
+    Ok(())
+}
+```
+
+### Docker Compose for Observability Stack
 
 ```yaml
-# prometheus.yml
-scrape_configs:
-  - job_name: 'agenkit-python'
-    static_configs:
-      - targets: ['localhost:8001']
+version: '3.8'
 
-  - job_name: 'agenkit-go'
-    static_configs:
-      - targets: ['localhost:8002']
+services:
+  # OpenTelemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
 
-  - job_name: 'agenkit-typescript'
-    static_configs:
-      - targets: ['localhost:8003']
+  # Jaeger for trace visualization
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"  # UI
+      - "14250:14250"  # gRPC
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
 ```
 
-## Structured Logging
+### Kubernetes Deployment
 
-### Basic Usage
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: observability-config
+data:
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  RUST_LOG: "info"
 
-```python
-# Python
-from agenkit.observability import configure_logging, get_logger_with_trace
-
-configure_logging(
-    level=logging.INFO,
-    structured=True,
-    include_trace_context=True,
-)
-
-logger = get_logger_with_trace(__name__)
-logger.info("Processing message", extra={"user_id": "123"})
-```
-
-```go
-// Go
-observability.ConfigureLogging(slog.LevelInfo, true, true)
-
-logger := observability.GetLoggerWithTrace()
-logger.Info("Processing message", slog.String("user_id", "123"))
-```
-
-```typescript
-// TypeScript
-import { configureLogging, LogLevel, getLoggerWithTrace } from '@agenkit/core/observability';
-
-configureLogging({
-  level: LogLevel.INFO,
-  structured: true,
-  includeTraceContext: true,
-});
-
-const logger = getLoggerWithTrace('MyAgent');
-logger.info("Processing message", { user_id: "123" });
-```
-
-### Log Format
-
-Structured logs are output in JSON format:
-
-```json
-{
-  "timestamp": "2025-11-12T20:00:00Z",
-  "level": "INFO",
-  "message": "Processing message",
-  "trace_id": "8a89f6ecb04b04d023cc690961850547",
-  "span_id": "5782371d5170d9e5",
-  "user_id": "123"
-}
-```
-
-### Correlating Logs with Traces
-
-The automatic inclusion of `trace_id` and `span_id` allows you to:
-
-1. **Find logs for a specific trace**: Search logs by `trace_id`
-2. **Jump from logs to traces**: Click trace_id to view the full trace
-3. **Debug issues**: See exactly what happened during a failed span
-
-## Cross-Language Compatibility
-
-Agenkit's observability features are designed for polyglot systems with full support across Python, Go, and TypeScript:
-
-### Trace Propagation
-
-```python
-# Python agent
-response = await python_agent.process(message)
-# Trace context in response.metadata["trace_context"]
-```
-
-```go
-// Go agent receives the same message
-response, err := goAgent.Process(ctx, message)
-// Continues the same trace!
-```
-
-### Compatible Formats
-
-- **Trace Context**: W3C Trace Context standard
-- **Metrics**: Prometheus exposition format
-- **Logs**: JSON structured logging
-
-### Example: Python → Go Chain
-
-```python
-# agent1 (Python)
-traced_agent1 = TracingMiddleware(PythonAgent())
-
-# agent2 (Go)
-traced_agent2 = observability.NewTracingMiddleware(GoAgent(), "")
-
-# Process through chain
-response1 = await traced_agent1.process(message)
-response2 = traced_agent2.Process(ctx, response1)
-
-# Both spans share the same trace_id!
-```
-
-## Configuration
-
-### Environment Variables
-
-You can configure observability using environment variables:
-
-```bash
-# Service name
-export OTEL_SERVICE_NAME=my-agent-service
-
-# OTLP endpoint
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
-
-# Log level
-export LOG_LEVEL=INFO
-```
-
-### Python Configuration
-
-```python
-# Detailed tracing configuration
-init_tracing(
-    service_name="my-service",
-    otlp_endpoint="localhost:4317",  # Optional: OTLP collector
-    console_export=False,            # Optional: Console output
-)
-
-# Detailed metrics configuration
-init_metrics(
-    service_name="my-service",
-    port=8001,  # Prometheus port
-)
-
-# Detailed logging configuration
-configure_logging(
-    level=logging.INFO,      # Log level
-    structured=True,         # JSON format
-    include_trace_context=True,  # Add trace IDs
-)
-```
-
-### Go Configuration
-
-```go
-// Detailed tracing configuration
-tp, err := observability.InitTracing(
-    "my-service",          // Service name
-    "localhost:4317",      // OTLP endpoint (empty for none)
-    false,                 // Console export
-)
-
-// Detailed metrics configuration
-mp, err := observability.InitMetrics(
-    "my-service",  // Service name
-    8002,          // Prometheus port
-)
-
-// Detailed logging configuration
-observability.ConfigureLogging(
-    slog.LevelInfo,  // Log level
-    true,            // Structured (JSON)
-    true,            // Include trace context
-)
-```
-
-### TypeScript Configuration
-
-```typescript
-// Detailed tracing configuration
-initTracing({
-  serviceName: "my-service",
-  otlpEndpoint: "http://localhost:4318/v1/traces",  // Optional: OTLP collector
-  consoleExport: false,  // Optional: Console output
-});
-
-// Detailed metrics configuration
-await initMetrics({
-  serviceName: "my-service",
-  port: 8003,  // Prometheus port
-  host: "0.0.0.0",  // Optional: hostname
-});
-
-// Detailed logging configuration
-configureLogging({
-  level: LogLevel.INFO,      // Log level
-  structured: true,          // JSON format
-  includeTraceContext: true, // Add trace IDs
-});
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agenkit-app
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+      - name: app
+        image: my-agenkit-app:latest
+        envFrom:
+        - configMapRef:
+            name: observability-config
+        ports:
+        - containerPort: 9464  # Prometheus metrics
 ```
 
 ## Best Practices
 
-### 1. Initialize Early
+### 1. Initialization Order
 
-Initialize observability at application startup, before creating agents:
+Always initialize in this order:
 
-```python
-# ✅ Good
-init_tracing(...)
-init_metrics(...)
-configure_logging(...)
+1. Tracing
+2. Metrics
+3. Logging
+4. Audit (if needed)
 
-agent = create_agent()
+### 2. Middleware Composition
+
+Apply middleware in this order for best results:
+
+```rust
+let agent = MyAgent::new();
+let traced = TracingMiddleware::new(agent, None);       // 1. Tracing
+let metered = MetricsMiddleware::new(traced);           // 2. Metrics
+// 3. Logging happens automatically via log_agent_* functions
 ```
 
-```python
-# ❌ Bad
-agent = create_agent()
-init_tracing(...)  # Too late!
+### 3. Error Handling
+
+Handle initialization errors gracefully:
+
+```rust
+// Production: Degrade gracefully if observability fails
+match init_tracing("otlp", Some("http://localhost:4317")) {
+    Ok(_) => {},
+    Err(e) => {
+        eprintln!("Failed to initialize tracing: {}", e);
+        // Application continues without tracing
+    }
+}
+
+// Development: Fail fast to catch configuration issues
+init_tracing("otlp", Some("http://localhost:4317"))?;
 ```
 
-### 2. Layer Middleware Correctly
+### 4. Audit Log Management
 
-Apply middleware in this order:
+- **Buffer Size**: Balance memory usage vs flush frequency (50-100 is typical)
+- **Retention**: Implement log rotation (use `logrotate` or similar)
+- **Queries**: Flush before querying to ensure consistency
 
-```python
-# ✅ Correct order
-base_agent = MyAgent()
-traced_agent = TracingMiddleware(base_agent)     # Tracing first
-monitored_agent = MetricsMiddleware(traced_agent) # Metrics second
+```rust
+// Flush before querying
+logger.flush().await?;
+let events = logger.query_by_session("session-123").await?;
 ```
 
-### 3. Use Meaningful Service Names
+### 5. Resource Management
 
-```python
-# ✅ Good
-init_tracing(service_name="recommendation-agent")
-init_tracing(service_name="search-agent")
-
-# ❌ Bad
-init_tracing(service_name="service")
-init_tracing(service_name="agent1")
+```rust
+// Always flush and shutdown on application exit
+audit_logger.flush().await?;
+shutdown_observability().await?;
 ```
 
-### 4. Include Context in Logs
+### 6. Testing
 
-```python
-# ✅ Good
-logger.info("Processing request", extra={
-    "user_id": user_id,
-    "request_id": request_id,
-    "agent": agent.name,
-})
+In tests, handle already-initialized state:
 
-# ❌ Bad
-logger.info(f"Processing request for {user_id}")
-```
+```rust
+#[tokio::test]
+async fn test_my_feature() {
+    // Ignore errors if already initialized
+    let _ = init_tracing("console", None);
 
-### 5. Handle Shutdown Gracefully
-
-```python
-# Python
-import atexit
-from opentelemetry.sdk.trace import TracerProvider
-
-def shutdown():
-    # Flush any pending traces/metrics
-    pass
-
-atexit.register(shutdown)
-```
-
-```go
-// Go
-defer observability.Shutdown(context.Background())
-defer observability.ShutdownMetrics(context.Background())
-```
-
-```typescript
-// TypeScript
-process.on('SIGTERM', async () => {
-  await shutdownTracing();
-  await shutdownMetrics();
-  process.exit(0);
-});
-```
-
-### 6. Don't Log Sensitive Data
-
-```python
-# ✅ Good
-logger.info("User authenticated", extra={"user_id": user.id})
-
-# ❌ Bad
-logger.info("User authenticated", extra={"password": password})
+    // Test code...
+}
 ```
 
 ## Troubleshooting
 
-### No Traces Appearing
+### Issue: "Tracer provider already initialized"
 
-**Problem**: Traces are not being exported.
+**Cause:** `init_tracing()` called multiple times.
 
-**Solutions**:
-1. Check that `init_tracing()` was called before processing messages
-2. Verify OTLP endpoint is reachable: `telnet localhost 4317`
-3. Enable console export for debugging: `init_tracing(..., console_export=True)`
-4. Check for errors in application logs
+**Solution:** Initialize once at application startup, or check if already initialized:
 
-### Metrics Not Updating
+```rust
+use agenkit::observability::tracing::get_tracer_if_initialized;
 
-**Problem**: Prometheus metrics show no data.
+if get_tracer_if_initialized().is_none() {
+    init_tracing("console", None)?;
+}
+```
 
-**Solutions**:
-1. Verify metrics endpoint is accessible: `curl http://localhost:8001/metrics`
-2. Check that middleware is applied: `MetricsMiddleware(agent)`
-3. Confirm messages are being processed
-4. Check Prometheus scrape config
+### Issue: Traces not appearing in Jaeger
 
-### Trace IDs Not in Logs
+**Checklist:**
 
-**Problem**: Logs don't contain trace_id/span_id.
+1. ✅ Is OTLP collector running? `curl http://localhost:4317`
+2. ✅ Is endpoint correct in `init_tracing()`?
+3. ✅ Are spans being created? (Check logs for span output)
+4. ✅ Is sampling enabled? (We use `Sampler::AlwaysOn`)
 
-**Solutions**:
-1. Ensure `configure_logging(include_trace_context=True)`
-2. Use context-aware logging: `logger.InfoContext(ctx, ...)` (Go) or ensure spans are active (Python)
-3. Verify logger was created after configuration
+**Debug:**
 
-### Broken Trace Chains
+```bash
+# Check OTLP collector logs
+docker logs otel-collector
 
-**Problem**: Spans are not connected in the trace.
+# Use console exporter for debugging
+init_tracing("console", None)?;
+```
 
-**Solutions**:
-1. Check that trace context is being passed between agents
-2. Verify message metadata contains `trace_context`
-3. Ensure W3C propagator is set (should be automatic)
-4. Check that the same context is used throughout the chain
+### Issue: Prometheus metrics not scraping
 
-### Performance Impact
+**Checklist:**
 
-**Problem**: Observability causing performance issues.
+1. ✅ Is metrics endpoint accessible? `curl http://localhost:9464/metrics`
+2. ✅ Is Prometheus configured to scrape? Check `prometheus.yml`
+3. ✅ Are metrics being recorded? (Check logs)
 
-**Solutions**:
-1. Use sampling for high-volume traces:
-   ```python
-   from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
-   # Sample 10% of traces
-   sampler = TraceIdRatioBased(0.1)
-   ```
-2. Use batch span processors instead of simple (automatic)
-3. Reduce log verbosity in production
-4. Consider async metric recording
+**Prometheus configuration:**
 
-### Cross-Language Issues
+```yaml
+scrape_configs:
+  - job_name: 'agenkit'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['localhost:9464']
+```
 
-**Problem**: Traces break when crossing Python/Go boundary.
+### Issue: Audit log file not created
 
-**Solutions**:
-1. Verify both sides are using W3C Trace Context (automatic in Agenkit)
-2. Check that metadata is preserved when passing messages
-3. Ensure both languages have tracing initialized
-4. Verify trace context is in the expected format
+**Cause:** Parent directory doesn't exist or lacks permissions.
+
+**Solution:**
+
+```bash
+# Create directory with correct permissions
+mkdir -p /var/log/agenkit
+chmod 755 /var/log/agenkit
+```
+
+### Issue: Trace context not propagating across agents
+
+**Cause:** Message metadata not being passed through.
+
+**Solution:** Ensure you're passing the response metadata to the next agent:
+
+```rust
+// Correct
+let response1 = agent1.process(msg).await?;
+let response2 = agent2.process(response1).await?;  // Metadata propagates
+
+// Incorrect
+let response1 = agent1.process(msg).await?;
+let new_msg = Message::new("user", response1.content);  // Metadata lost!
+let response2 = agent2.process(new_msg).await?;
+```
+
+## Examples
+
+The `examples/` directory contains complete working examples:
+
+### Basic Example
+
+```bash
+cargo run --example observability_basic --features=native
+```
+
+Demonstrates:
+- Console tracing
+- Prometheus metrics
+- JSON logging
+- Simple agent with middleware
+
+### Distributed Example
+
+```bash
+cargo run --example observability_distributed --features=native
+```
+
+Demonstrates:
+- Trace context propagation through Router → Processor → Aggregator pipeline
+- Parent-child span relationships
+- Per-agent metrics
+- End-to-end request tracing
+
+### Production Example
+
+```bash
+cargo run --example observability_production --features=native
+```
+
+Demonstrates:
+- OTLP tracing (with fallback to console)
+- Prometheus metrics
+- Structured JSON logging
+- Audit logging with session tracking
+- Error handling and warning detection
+- Query API usage
 
 ## Additional Resources
 
 - [OpenTelemetry Documentation](https://opentelemetry.io/docs/)
 - [Prometheus Documentation](https://prometheus.io/docs/)
 - [W3C Trace Context Specification](https://www.w3.org/TR/trace-context/)
-- [Python API Reference](./observability-python-api.md)
-- [Go API Reference](./observability-go-api.md)
-- [TypeScript API Reference](./observability-typescript-api.md)
-- [Python Examples](../examples/observability/)
-- [Go Examples](../agenkit-go/examples/observability/)
-- [TypeScript Example](../agenkit-ts/examples/observability-example.ts)
+- [Jaeger UI Guide](https://www.jaegertracing.io/docs/latest/frontend-ui/)
+- [Grafana Dashboards](https://grafana.com/grafana/dashboards/)
 
-## Support
+## API Reference
 
-For issues or questions:
-- GitHub Issues: https://github.com/agenkit/agenkit/issues
-- Documentation: https://docs.agenkit.dev
+For detailed API documentation, run:
+
+```bash
+cargo doc --no-deps --open
+```
+
+This will generate and open the full rustdoc documentation for all modules.
+
+---
+
+**Last Updated:** January 2026
+**Version:** 0.48.0

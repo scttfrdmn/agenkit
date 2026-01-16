@@ -252,6 +252,10 @@ if(AGENKIT_WITH_OBSERVABILITY)
     add_executable(test_observability_metrics observability/test_metrics.cpp)
     target_link_libraries(test_observability_metrics agenkit gtest_main)
     add_test(NAME observability_metrics_tests COMMAND test_observability_metrics)
+
+    add_executable(test_observability_logging observability/test_logging.cpp)
+    target_link_libraries(test_observability_logging agenkit gtest_main)
+    add_test(NAME observability_logging_tests COMMAND test_observability_logging)
 endif()
 
 # Integration tests (optional, requires -DAGENKIT_BUILD_INTEGRATION_TESTS=ON)

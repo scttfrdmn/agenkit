@@ -309,13 +309,16 @@ pub const TracingMiddleware = struct {
         var response = result.unwrap() catch {
             return AgentError.ProcessingFailed;
         };
-        const traceparent = span.context.toTraceparent(self.allocator) catch {
+        const traceparent = span.context.toTraceparent(response.allocator) catch {
             return Result{ .ok = response };
         };
-        errdefer self.allocator.free(traceparent);
+        errdefer response.allocator.free(traceparent);
 
         const traceparent_value = std.json.Value{ .string = traceparent };
-        response.setMetadata("traceparent", traceparent_value) catch {};
+        response.setMetadata("traceparent", traceparent_value) catch {
+            response.allocator.free(traceparent);
+            return Result{ .ok = response };
+        };
 
         // Add span duration
         if (span.durationMs()) |duration| {
@@ -342,7 +345,8 @@ pub const TracingMiddleware = struct {
 
     /// Public deinit
     pub fn deinit(self: *TracingMiddleware) void {
-        self.inner.deinit();
+        // Only clean up our own resources, not the inner agent
+        // The inner agent's lifecycle is managed by the caller
         self.allocator.free(self.service_name);
         self.allocator.destroy(self);
     }

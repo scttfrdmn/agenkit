@@ -13,6 +13,7 @@ Agenkit-Zig is a systems-level implementation of the Agenkit framework, bringing
 - **Comprehensive Error Handling**: Error union types (`!`) for safe, explicit error propagation
 - **Cross-Language Compatible**: API parity with Python, Go, TypeScript, C++, and Rust implementations
 - **Built-in Testing**: Integrated test framework with memory leak detection
+- **Production Observability**: OpenTelemetry tracing, metrics collection, structured logging, and audit logging
 
 ## Installation
 
@@ -222,6 +223,23 @@ zig build run-long-running
 # Performance evaluation pipeline (Metrics + Benchmarking)
 zig build run-evaluation
 ```
+
+### Observability Examples
+
+Production-ready monitoring and tracing:
+
+```bash
+# OpenTelemetry distributed tracing with W3C Trace Context
+zig build run-tracing-example
+
+# Metrics collection (counters, histograms, labels)
+zig build run-metrics-example
+
+# Full observability stack (tracing + metrics + logging + audit)
+zig build run-observability-example
+```
+
+See [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) for comprehensive observability documentation.
 
 ### Example: Echo Agent
 
@@ -477,6 +495,7 @@ Comprehensive documentation is available in the `docs/` directory:
 - **[Getting Started](docs/GETTING_STARTED.md)** - Installation, first agent, tutorials
 - **[API Reference](docs/API.md)** - Complete API documentation
 - **[Patterns Guide](docs/PATTERNS.md)** - Deep dive into 11 agent patterns
+- **[Observability Guide](docs/OBSERVABILITY.md)** - Tracing, metrics, logging, and audit
 - **[Migration Guide](docs/MIGRATION.md)** - Port from Python/Go/Rust/C++
 
 ## Version

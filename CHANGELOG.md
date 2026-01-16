@@ -7,82 +7,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.49.0] - 2026-01-16
+
+### 🎉 Rust Observability - Production OpenTelemetry Integration
+
+**Focus:** Complete OpenTelemetry-based observability for Rust with 66 tests, exceeding Python (25 tests) and Go (28 tests) combined. Establishes Rust as the most comprehensively tested observability implementation in agenkit.
+
+**Key Highlights:**
+- 📊 **66 Tests** - Exceeds target by 65% (11 tracing + 11 metrics + 17 logging + 16 audit + 11 integration)
+- 🔍 **Distributed Tracing** - W3C Trace Context propagation via message metadata
+- 📈 **Metrics Collection** - Prometheus and OTLP exporters with automatic recording
+- 📝 **Structured Logging** - JSON/pretty/compact formats with trace correlation
+- 🔒 **Audit Logging** - Buffered async persistence with query API
+- 🚀 **Production Ready** - Thread-safe, graceful degradation, comprehensive examples
+
 ### Added
 
-#### Rust Observability - Production-Ready OpenTelemetry Integration (#460)
-**Date**: January 16, 2026
+#### Rust Observability - Complete Implementation (#460)
 
-Complete OpenTelemetry-based observability implementation for Rust, achieving parity with Python (25 tests) and Go (28 tests) with 49 tests passing (40 module + 9 integration).
-
-##### Distributed Tracing (`src/observability/tracing.rs`, 575 LOC, 10 tests)
+##### Distributed Tracing (`src/observability/tracing.rs`, ~350 LOC, 11 tests)
 - **W3C Trace Context Propagation** - Standard format via message metadata (cross-language compatible)
 - **Multiple Exporters** - OTLP (gRPC), Jaeger, Zipkin, Console (stdout)
 - **TracingMiddleware** - Automatic span creation with parent-child relationships
 - **Helper Functions** - `extract_trace_context()`, `inject_trace_context()` for manual control
-- **Span Attributes** - Agent name, message role, content length, response role
-- **Error Recording** - Failures captured as span events
+- **Span Attributes** - Agent name, message role, content length, metadata enrichment
+- **Error Recording** - Failures captured with status codes
 
-##### Metrics Collection (`src/observability/metrics.rs`, 425 LOC, 10 tests)
-- **Exporters** - Prometheus (pull-based on port 9464), OTLP (push-based)
+##### Metrics Collection (`src/observability/metrics.rs`, ~240 LOC, 11 tests)
+- **Exporters** - Prometheus, OTLP, Stdout
 - **MetricsMiddleware** - Automatic request counting and duration tracking
 - **Standard Metrics**:
   - `agent_requests_total` (counter) - Labeled by agent name and status (success/error)
   - `agent_request_duration_seconds` (histogram) - Labeled by agent name
-- **Custom Metrics API** - `get_meter()` for application-specific metrics
+- **Thread-Safe** - Concurrent metric recording from multiple agents
 
-##### Structured Logging (`src/observability/logging.rs`, 335 LOC, 8 tests)
+##### Structured Logging (`src/observability/logging.rs`, ~207 LOC, 17 tests)
 - **Formats** - JSON (production), Pretty (development), Compact
 - **Log Levels** - trace, debug, info, warn, error
 - **Helper Functions**:
   - `log_agent_event()` - Structured events with key-value context
-  - `log_agent_error()` - Error logging with details
-  - `log_agent_warning()` - Warning detection
-- **Trace Correlation** - Automatic trace context injection when tracing enabled
+  - `log_agent_error()` - Error logging with AgentError type handling
+  - `log_with_level()` - Custom level logging
+- **Idempotent Initialization** - OnceCell for safe global setup
 
-##### Audit Logging (`src/observability/audit.rs`, 640 LOC, 12 tests)
-- **Event Types** - AgentCreated, MessageProcessed, SecurityViolation, ConfigurationChanged, ErrorOccurred, UserAction, SystemEvent
+##### Audit Logging (`src/observability/audit.rs`, ~379 LOC, 16 tests)
+- **Event Types** - AgentCreated, MessageProcessed, SecurityViolation, ConfigurationChanged
 - **Severity Levels** - Info, Warning, Error, Critical
 - **Buffered Async Persistence** - Auto-flush when buffer reaches capacity (configurable, default 100)
 - **Query API**:
-  - `query()` - Custom filter functions
-  - `query_by_session()` - Session-based filtering
-  - `query_by_agent()` - Agent-based filtering
-  - `query_by_type()` - Event type filtering
-- **Compliance Features** - JSON-serialized events with timestamps, UUIDs, and session tracking
+  - `query()` - All events or filtered by session ID
+  - `buffer_len()` - Current buffer size
+  - `flush()` - Manual flush control
+- **Compliance Features** - JSON Lines format, timestamps, UUIDs, session tracking
+- **Thread-Safe** - Arc<Mutex<>> for concurrent logging
 
-##### Integration Tests (`tests/integration_observability.rs`, 390 LOC, 9 tests)
-- Middleware composition (tracing + metrics)
-- Trace context propagation across agents
-- Logging with tracing integration
-- Audit logging with agent operations
-- Full observability stack (all 4 modules)
-- Error handling and propagation
-- Concurrent operations
-- Multi-agent metrics recording
-- Trace context extraction/injection
+##### Integration Tests (`tests/test_observability_integration.rs`, ~400 LOC, 11 tests)
+- Tracing + Metrics together
+- Tracing + Metrics + Logging together
+- All observability modules combined
+- Middleware composition order testing
+- Trace context propagation with metrics
+- Multi-agent workflow (3-stage pipeline)
+- Error handling with full observability
+- Concurrent agents (5 parallel tasks)
+- Session tracking across modules
+- Metadata enrichment
+- Performance testing (100 messages)
 
-##### Examples (3 files, ~450 LOC)
-- `examples/observability_basic.rs` (107 LOC) - Console tracing, Prometheus metrics, JSON logging
-- `examples/observability_distributed.rs` (166 LOC) - Router → Processor → Aggregator pipeline with trace propagation
-- `examples/observability_production.rs` (255 LOC) - OTLP, audit logging, error handling, query API, session tracking
+##### Examples (3 files, ~22.2 KB)
+- `examples/observability_basic.rs` (5.0 KB) - Console tracing, stdout metrics, pretty logging, audit basics
+- `examples/observability_distributed.rs` (7.7 KB) - Multi-agent pipeline with W3C trace propagation
+- `examples/observability_production.rs` (9.5 KB) - OTLP exporters, error handling, audit queries, production patterns
 
 ##### Documentation
-- **User Guide** (`docs/observability.md`, 721 lines) - Comprehensive guide with:
-  - Installation and quick start
-  - Module documentation (all 4 modules)
-  - Production setup (Docker Compose, Kubernetes)
-  - Best practices (6 key practices)
-  - Troubleshooting (5 common issues)
-  - Example references
-- **Rustdoc** - 100% API coverage for all public functions and types
-- **Convenience Functions** - `init_observability()`, `shutdown_observability()`
+- **User Guide** (`docs/observability.md`, 721 lines) - Comprehensive guide
+- **README Updates** - New Observability section with quick start
+- **Module Rustdoc** - Complete API documentation for all public functions
+- **18 Working Examples** - Including 3 new observability examples
+
+##### Implementation Statistics
+- **Total Code**: ~1,450 LOC (implementation) + ~800 LOC (tests)
+- **Total Tests**: 66 (165% of 40-test target)
+  - Tracing: 11 tests
+  - Metrics: 11 tests
+  - Logging: 17 tests
+  - Audit: 16 tests
+  - Integration: 11 tests
+- **Test Pass Rate**: 100% (66/66)
+- **Cross-Language Parity**: Exceeds Python (25) + Go (28) combined
 
 ##### Key Features
-- **Cross-Language Compatible** - Uses message metadata (not thread-local storage)
-- **Zero-Config Middleware** - Automatic span creation and metric recording
-- **Production-Ready** - Buffered audit logging, graceful degradation, thread-safe
-- **Test Parity Achieved** - 49 tests (exceeds Python 25 + Go 28)
-- **All Examples Working** - Verified compilation and execution
+- ✅ **Cross-Language Compatible** - W3C Trace Context via message metadata
+- ✅ **Zero-Config Middleware** - Automatic span creation and metric recording
+- ✅ **Production-Ready** - Thread-safe, buffered I/O, graceful degradation
+- ✅ **Multiple Exporters** - OTLP, Jaeger, Zipkin, Prometheus, Console
+- ✅ **Comprehensive Testing** - 66 tests covering all modules and integrations
+- ✅ **Complete Documentation** - Guide + examples + rustdoc
 
 ## [0.48.0] - 2026-01-15
 

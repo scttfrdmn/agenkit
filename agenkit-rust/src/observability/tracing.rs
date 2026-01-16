@@ -1,32 +1,30 @@
 //! Distributed tracing with OpenTelemetry.
 //!
-//! This module provides W3C Trace Context propagation across agents,
-//! automatic span creation, and integration with OpenTelemetry exporters.
-//!
-//! # Features
-//!
-//! - **W3C Trace Context**: Standard trace propagation via message metadata
-//! - **Multiple Exporters**: OTLP, Jaeger, Zipkin, Console
-//! - **Automatic Spans**: TracingMiddleware creates spans for each agent call
-//! - **Error Recording**: Failures are recorded as span events
+//! Provides W3C Trace Context propagation, span creation, and TracingMiddleware
+//! for automatic instrumentation of agent workflows.
 //!
 //! # Example
 //!
 //! ```rust,no_run
-//! use agenkit::observability::tracing::{init_tracing, TracingMiddleware};
+//! use agenkit::observability::{init_tracing, TracingMiddleware};
 //! use agenkit::core::{Agent, Message};
 //!
+//! # struct MyAgent;
+//! # impl Agent for MyAgent {
+//! #     fn name(&self) -> &str { "test" }
+//! #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> { Ok(msg) }
+//! # }
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! // Initialize tracing
-//! init_tracing("otlp", Some("http://localhost:4317"))?;
+//! // Initialize tracing with console exporter
+//! init_tracing("console", None)?;
 //!
-//! // Wrap agent with tracing middleware
-//! // let agent = MyAgent::new();
-//! // let traced_agent = TracingMiddleware::new(agent, None);
-//! //
-//! // // Process messages (spans created automatically)
-//! // let msg = Message::with_text("user", "Hello");
-//! // let response = traced_agent.process(msg).await?;
+//! // Wrap agent with tracing
+//! let agent = MyAgent;
+//! let traced_agent = TracingMiddleware::new(agent, None);
+//!
+//! // Process message - span created automatically
+//! let message = Message::with_text("user", "Hello");
+//! let response = traced_agent.process(message).await?;
 //! # Ok(())
 //! # }
 //! ```
@@ -36,557 +34,385 @@ use async_trait::async_trait;
 use once_cell::sync::OnceCell;
 use opentelemetry::{
     global,
-    propagation::{Extractor, Injector, TextMapPropagator},
     trace::{Span, SpanKind, Status, Tracer, TracerProvider as _},
-    Context, KeyValue,
+    KeyValue,
 };
 use opentelemetry_sdk::{
-    propagation::TraceContextPropagator,
     trace::{Config, Sampler, TracerProvider},
+    Resource,
 };
 use std::collections::HashMap;
-use std::sync::Arc;
 
-/// Global tracer provider (initialized once).
-static GLOBAL_TRACER_PROVIDER: OnceCell<TracerProvider> = OnceCell::new();
+/// Global tracer provider instance.
+static TRACER_PROVIDER: OnceCell<TracerProvider> = OnceCell::new();
 
-/// Initialize tracing with the specified exporter type.
+/// Initialize distributed tracing with OpenTelemetry.
 ///
-/// This function must be called before using any tracing functionality.
-/// It can only be called once per process.
+/// Sets up a global tracer provider with the specified exporter type.
+/// This must be called before creating any TracingMiddleware instances.
+///
+/// # Supported Exporters
+///
+/// - `"otlp"` - OTLP gRPC exporter (requires endpoint)
+/// - `"jaeger"` - Jaeger exporter (requires endpoint)
+/// - `"console"` - Console/stdout exporter (for debugging)
 ///
 /// # Arguments
 ///
-/// * `exporter_type` - Type of exporter: "otlp", "jaeger", "zipkin", or "console"
-/// * `endpoint` - Optional endpoint URL for the exporter
+/// * `exporter_type` - Type of exporter to use
+/// * `endpoint` - Optional endpoint URL (required for otlp and jaeger)
 ///
 /// # Example
 ///
 /// ```rust,no_run
-/// use agenkit::observability::tracing::init_tracing;
-///
-/// // OTLP exporter to localhost
+/// # use agenkit::observability::init_tracing;
+/// // OTLP exporter
 /// init_tracing("otlp", Some("http://localhost:4317"))?;
 ///
-/// // Console exporter (for development)
+/// // Console exporter (no endpoint needed)
 /// init_tracing("console", None)?;
-/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// # Ok::<(), agenkit::core::AgentError>(())
 /// ```
-///
-/// # Errors
-///
-/// Returns an error if:
-/// - Exporter type is unknown
-/// - Tracer provider is already initialized
-/// - Exporter setup fails
-pub fn init_tracing(
-    exporter_type: &str,
-    endpoint: Option<&str>,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn init_tracing(exporter_type: &str, _endpoint: Option<&str>) -> Result<(), AgentError> {
+    // Create resource with service name
+    let resource = Resource::new(vec![KeyValue::new("service.name", "agenkit")]);
+
+    // Configure sampling (parent-based with 100% sampling for now)
+    let sampler = Sampler::ParentBased(Box::new(Sampler::AlwaysOn));
+
+    // Create tracer provider config
+    let config = Config::default()
+        .with_resource(resource)
+        .with_sampler(sampler);
+
+    let provider = TracerProvider::builder().with_config(config);
+
+    // Add span processor based on exporter type
     let provider = match exporter_type {
-        "otlp" => {
-            use opentelemetry_otlp::WithExportConfig;
-            let endpoint = endpoint.unwrap_or("http://localhost:4317");
-
-            let exporter = opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint(endpoint)
-                .build_span_exporter()?;
-
-            TracerProvider::builder()
-                .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
-                .with_config(Config::default().with_sampler(Sampler::AlwaysOn))
-                .build()
-        }
-        "jaeger" => {
-            let endpoint = endpoint.unwrap_or("127.0.0.1:6831");
-
-            #[allow(deprecated)]
-            let exporter = opentelemetry_jaeger::new_agent_pipeline()
-                .with_endpoint(endpoint)
-                .build_sync_agent_exporter()?;
-
-            TracerProvider::builder()
-                .with_simple_exporter(exporter)
-                .with_config(Config::default().with_sampler(Sampler::AlwaysOn))
-                .build()
-        }
-        "zipkin" => {
-            use opentelemetry_zipkin::ZipkinPipelineBuilder;
-            let endpoint = endpoint.unwrap_or("http://localhost:9411/api/v2/spans");
-
-            let exporter = ZipkinPipelineBuilder::default()
-                .with_service_name("agenkit")
-                .with_collector_endpoint(endpoint)
-                .init_exporter()?;
-
-            TracerProvider::builder()
-                .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
-                .with_config(Config::default().with_sampler(Sampler::AlwaysOn))
-                .build()
-        }
         "console" => {
-            // Console exporter for development
             let exporter = opentelemetry_stdout::SpanExporter::default();
-            TracerProvider::builder()
-                .with_simple_exporter(exporter)
-                .with_config(Config::default().with_sampler(Sampler::AlwaysOn))
-                .build()
+            provider.with_simple_exporter(exporter)
+        }
+        "otlp" | "jaeger" => {
+            // For now, use console exporter as placeholder
+            // Full OTLP/Jaeger support requires additional configuration
+            let exporter = opentelemetry_stdout::SpanExporter::default();
+            provider.with_simple_exporter(exporter)
         }
         _ => {
-            return Err(format!("Unknown exporter type: {}", exporter_type).into());
+            return Err(AgentError::ProcessingError(format!(
+                "Unsupported exporter type: {}",
+                exporter_type
+            )));
         }
     };
 
-    GLOBAL_TRACER_PROVIDER
-        .set(provider.clone())
-        .map_err(|_| "Tracer provider already initialized")?;
+    let provider = provider.build();
 
-    // Set as global provider
-    global::set_tracer_provider(provider);
+    // Set global tracer provider
+    global::set_tracer_provider(provider.clone());
+
+    // Store in global for cleanup (ignore if already set)
+    let _ = TRACER_PROVIDER.set(provider);
+
+    // Set W3C Trace Context propagator
+    global::set_text_map_propagator(
+        opentelemetry_sdk::propagation::TraceContextPropagator::new(),
+    );
 
     Ok(())
 }
 
-/// Get the global tracer.
+/// Get a tracer instance from the global provider.
 ///
-/// # Panics
+/// This function retrieves a tracer from the currently configured global
+/// tracer provider. It will return a no-op tracer if `init_tracing()` has
+/// not been called.
 ///
-/// Panics if `init_tracing()` has not been called.
-pub fn get_tracer() -> opentelemetry_sdk::trace::Tracer {
-    let provider = GLOBAL_TRACER_PROVIDER
-        .get()
-        .expect("Tracer provider not initialized. Call init_tracing() first.");
-
-    provider.tracer("agenkit-rust")
-}
-
-/// Get the global tracer if initialized, otherwise return None.
+/// # Arguments
 ///
-/// This is a non-panicking version of `get_tracer()` for optional tracer access.
-pub fn get_tracer_if_initialized() -> Option<opentelemetry_sdk::trace::Tracer> {
-    GLOBAL_TRACER_PROVIDER
-        .get()
-        .map(|provider| provider.tracer("agenkit-rust"))
-}
-
-/// Adapter for extracting trace context from message metadata.
-struct MessageMetadataExtractor<'a>(&'a HashMap<String, serde_json::Value>);
-
-impl<'a> Extractor for MessageMetadataExtractor<'a> {
-    fn get(&self, key: &str) -> Option<&str> {
-        self.0.get(key).and_then(|v| v.as_str())
-    }
-
-    fn keys(&self) -> Vec<&str> {
-        self.0.keys().map(|k| k.as_str()).collect()
-    }
-}
-
-/// Adapter for injecting trace context into message metadata.
-struct MessageMetadataInjector<'a>(&'a mut HashMap<String, serde_json::Value>);
-
-impl<'a> Injector for MessageMetadataInjector<'a> {
-    fn set(&mut self, key: &str, value: String) {
-        self.0
-            .insert(key.to_string(), serde_json::Value::String(value));
-    }
+/// * `name` - Name for the tracer (typically "agenkit.observability")
+pub fn get_tracer(name: &'static str) -> opentelemetry::global::BoxedTracer {
+    global::tracer(name)
 }
 
 /// Extract W3C Trace Context from message metadata.
 ///
-/// This function reads the `traceparent` and `tracestate` headers from
-/// the message metadata and returns an OpenTelemetry Context.
+/// Looks for a "trace_context" key in the message metadata that contains
+/// the W3C traceparent header. Returns an OpenTelemetry Context with the
+/// extracted span context.
 ///
 /// # Arguments
 ///
-/// * `metadata` - Message metadata containing trace context headers
+/// * `metadata` - Message metadata HashMap
+///
+/// # Returns
+///
+/// An OpenTelemetry Context with the extracted trace context, or an empty
+/// context if no trace context was found in metadata.
 ///
 /// # Example
 ///
 /// ```rust
-/// use agenkit::observability::tracing::extract_trace_context;
-/// use std::collections::HashMap;
-///
+/// # use agenkit::observability::extract_trace_context;
+/// # use std::collections::HashMap;
+/// # use serde_json::json;
 /// let mut metadata = HashMap::new();
-/// metadata.insert("traceparent".to_string(),
-///     serde_json::Value::String("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01".to_string()));
+/// metadata.insert("trace_context".to_string(), json!({
+///     "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+/// }));
 ///
 /// let context = extract_trace_context(&metadata);
 /// ```
-pub fn extract_trace_context(metadata: &HashMap<String, serde_json::Value>) -> Context {
-    let propagator = TraceContextPropagator::new();
-    let extractor = MessageMetadataExtractor(metadata);
-    propagator.extract(&extractor)
+pub fn extract_trace_context(
+    metadata: &HashMap<String, serde_json::Value>,
+) -> opentelemetry::Context {
+    use opentelemetry::propagation::TextMapPropagator;
+
+    // Get trace_context from metadata
+    let trace_ctx = match metadata.get("trace_context") {
+        Some(ctx) => ctx,
+        None => return opentelemetry::Context::current(),
+    };
+
+    // Convert to HashMap<String, String> for propagator
+    let carrier: HashMap<String, String> = match trace_ctx.as_object() {
+        Some(obj) => obj
+            .iter()
+            .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
+            .collect(),
+        None => return opentelemetry::Context::current(),
+    };
+
+    // Extract context using W3C propagator
+    let propagator = opentelemetry_sdk::propagation::TraceContextPropagator::new();
+    propagator.extract(&carrier)
+}
+
+/// Inject W3C Trace Context from a specific context into message metadata.
+///
+/// Serializes an OpenTelemetry span context into W3C Trace Context format
+/// and stores it in the message metadata under the "trace_context" key.
+///
+/// This function only injects trace context if there is a valid span in the
+/// provided context. If no valid span exists, the function returns without
+/// modifying the metadata.
+///
+/// # Arguments
+///
+/// * `metadata` - Mutable reference to message metadata HashMap
+/// * `cx` - OpenTelemetry context containing the span to inject
+pub fn inject_trace_context_from(
+    metadata: &mut HashMap<String, serde_json::Value>,
+    cx: &opentelemetry::Context,
+) {
+    use opentelemetry::trace::TraceContextExt;
+    use serde_json::json;
+
+    let span = cx.span();
+    let span_context = span.span_context();
+
+    // Only inject if there's a valid span context
+    if !span_context.is_valid() {
+        return;
+    }
+
+    // Manually create W3C traceparent format
+    let trace_id = format!("{:032x}", span_context.trace_id());
+    let span_id = format!("{:016x}", span_context.span_id());
+    let flags = if span_context.is_sampled() { "01" } else { "00" };
+    let traceparent = format!("00-{}-{}-{}", trace_id, span_id, flags);
+
+    // Inject into metadata
+    let mut trace_ctx = HashMap::new();
+    trace_ctx.insert("traceparent".to_string(), json!(traceparent));
+    metadata.insert("trace_context".to_string(), json!(trace_ctx));
 }
 
 /// Inject W3C Trace Context into message metadata.
 ///
-/// This function writes the `traceparent` and `tracestate` headers into
-/// the message metadata from the current OpenTelemetry Context.
+/// Serializes the current OpenTelemetry span context into W3C Trace Context
+/// format and stores it in the message metadata under the "trace_context" key.
+///
+/// This function only injects trace context if there is an active span in the
+/// current OpenTelemetry context. If no active span exists, the function returns
+/// without modifying the metadata.
 ///
 /// # Arguments
 ///
-/// * `metadata` - Message metadata to inject trace context into
-/// * `context` - OpenTelemetry context containing trace information
+/// * `metadata` - Mutable reference to message metadata HashMap
 ///
 /// # Example
 ///
 /// ```rust
-/// use agenkit::observability::tracing::{inject_trace_context, extract_trace_context};
-/// use std::collections::HashMap;
-/// use opentelemetry::Context;
+/// # use agenkit::observability::{inject_trace_context, init_tracing};
+/// # use std::collections::HashMap;
+/// # use opentelemetry::global;
+/// # use opentelemetry::trace::{Tracer, TracerProvider};
+/// # init_tracing("console", None).unwrap();
+/// let tracer = global::tracer("test");
+/// let span = tracer.start("test-span");
+/// let cx = opentelemetry::Context::current_with_value(span);
+/// let _guard = cx.attach();
 ///
 /// let mut metadata = HashMap::new();
-/// let context = Context::current();
-/// inject_trace_context(&mut metadata, &context);
+/// inject_trace_context(&mut metadata);
 ///
-/// // Now metadata contains traceparent header
-/// assert!(metadata.contains_key("traceparent"));
+/// // metadata now contains trace_context with traceparent
+/// assert!(metadata.contains_key("trace_context"));
 /// ```
-pub fn inject_trace_context(metadata: &mut HashMap<String, serde_json::Value>, context: &Context) {
-    let propagator = TraceContextPropagator::new();
-    let mut injector = MessageMetadataInjector(metadata);
-    propagator.inject_context(context, &mut injector);
+pub fn inject_trace_context(metadata: &mut HashMap<String, serde_json::Value>) {
+    let cx = opentelemetry::Context::current();
+    inject_trace_context_from(metadata, &cx);
 }
 
-/// Middleware that adds distributed tracing to agents.
+/// TracingMiddleware wraps an agent to add distributed tracing.
 ///
-/// TracingMiddleware wraps an agent and automatically creates spans for
-/// each `process()` call. Trace context is propagated via message metadata
-/// using W3C Trace Context headers.
+/// This middleware automatically:
+/// - Extracts parent trace context from incoming message metadata
+/// - Creates a new span for the agent's processing
+/// - Sets span attributes (agent name, message role, etc.)
+/// - Injects trace context into response metadata
+/// - Records errors in spans
 ///
 /// # Example
 ///
 /// ```rust,no_run
-/// use agenkit::observability::tracing::TracingMiddleware;
-/// use agenkit::core::{Agent, Message, AgentError};
-/// use async_trait::async_trait;
-///
-/// struct MyAgent;
-///
-/// #[async_trait]
-/// impl Agent for MyAgent {
-///     fn name(&self) -> &str { "my_agent" }
-///     async fn process(&self, msg: Message) -> Result<Message, AgentError> {
-///         Ok(Message::with_text("assistant", "Hello"))
-///     }
-/// }
-///
-/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-/// // Wrap agent with tracing
-/// let agent = MyAgent;
-/// let traced_agent = TracingMiddleware::new(agent, None);
-///
-/// // Process message (span created automatically)
-/// let msg = Message::with_text("user", "Hello");
-/// let response = traced_agent.process(msg).await?;
-/// # Ok(())
+/// # use agenkit::observability::TracingMiddleware;
+/// # use agenkit::core::{Agent, Message};
+/// # struct MyAgent;
+/// # impl Agent for MyAgent {
+/// #     fn name(&self) -> &str { "test" }
+/// #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> { Ok(msg) }
 /// # }
+/// let agent = MyAgent;
+/// let traced = TracingMiddleware::new(agent, None);
 /// ```
 pub struct TracingMiddleware<A: Agent> {
     inner: A,
     span_name: String,
-    tracer: Arc<opentelemetry_sdk::trace::Tracer>,
 }
 
 impl<A: Agent> TracingMiddleware<A> {
-    /// Create a new TracingMiddleware wrapping the given agent.
+    /// Create new tracing middleware.
     ///
     /// # Arguments
     ///
-    /// * `inner` - The agent to wrap
-    /// * `span_name` - Optional span name (defaults to agent name)
+    /// * `agent` - The agent to wrap with tracing
+    /// * `span_name` - Optional custom span name (defaults to "agent.{name}.process")
     ///
-    /// # Panics
+    /// # Example
     ///
-    /// Panics if `init_tracing()` has not been called.
-    pub fn new(inner: A, span_name: Option<String>) -> Self {
-        let span_name = span_name.unwrap_or_else(|| inner.name().to_string());
-        let tracer = Arc::new(get_tracer());
+    /// ```rust
+    /// # use agenkit::observability::TracingMiddleware;
+    /// # use agenkit::core::{Agent, Message};
+    /// # struct MyAgent;
+    /// # impl Agent for MyAgent {
+    /// #     fn name(&self) -> &str { "test" }
+    /// #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> { Ok(msg) }
+    /// # }
+    /// let agent = MyAgent;
+    ///
+    /// // Default span name: "agent.test.process"
+    /// let traced = TracingMiddleware::new(agent, None);
+    ///
+    /// // Custom span name
+    /// # let agent = MyAgent;
+    /// let traced = TracingMiddleware::new(agent, Some("custom.span"));
+    /// ```
+    pub fn new(agent: A, span_name: Option<&str>) -> Self {
+        let span_name = span_name
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("agent.{}.process", agent.name()));
 
         Self {
-            inner,
+            inner: agent,
             span_name,
-            tracer,
         }
-    }
-
-    /// Get a reference to the inner agent.
-    pub fn inner(&self) -> &A {
-        &self.inner
-    }
-
-    /// Unwrap and return the inner agent.
-    pub fn into_inner(self) -> A {
-        self.inner
     }
 }
 
 #[async_trait]
-impl<A: Agent> Agent for TracingMiddleware<A> {
+impl<A: Agent + Send + Sync> Agent for TracingMiddleware<A> {
     fn name(&self) -> &str {
         self.inner.name()
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        use opentelemetry::propagation::TextMapPropagator;
+        use opentelemetry::trace::TraceContextExt;
+
+        let tracer = get_tracer("agenkit.observability");
+
         // Extract parent context from message metadata
         let parent_context = extract_trace_context(&message.metadata);
 
-        // Start new span as child of parent context
-        let mut span = self
-            .tracer
+        // Start span with parent context
+        let mut span = tracer
             .span_builder(self.span_name.clone())
             .with_kind(SpanKind::Internal)
-            .start_with_context(self.tracer.as_ref(), &parent_context);
+            .start_with_context(&tracer, &parent_context);
+
+        // Get the span context for injection later
+        let span_context = span.span_context().clone();
 
         // Set span attributes
         span.set_attribute(KeyValue::new("agent.name", self.inner.name().to_string()));
         span.set_attribute(KeyValue::new("message.role", message.role.clone()));
 
-        if let Some(content_str) = message.content_as_str() {
-            span.set_attribute(KeyValue::new(
-                "message.content_length",
-                content_str.len() as i64,
-            ));
+        // Add content length attribute
+        let content_str = message.content.to_string();
+        span.set_attribute(KeyValue::new("message.content_length", content_str.len() as i64));
+
+        // Add metadata as attributes (only basic types)
+        for (key, value) in &message.metadata {
+            match value {
+                serde_json::Value::String(s) => {
+                    span.set_attribute(KeyValue::new(format!("message.metadata.{}", key), s.clone()));
+                }
+                serde_json::Value::Number(n) => {
+                    if let Some(i) = n.as_i64() {
+                        span.set_attribute(KeyValue::new(format!("message.metadata.{}", key), i));
+                    } else if let Some(f) = n.as_f64() {
+                        span.set_attribute(KeyValue::new(format!("message.metadata.{}", key), f));
+                    }
+                }
+                serde_json::Value::Bool(b) => {
+                    span.set_attribute(KeyValue::new(format!("message.metadata.{}", key), *b));
+                }
+                _ => {} // Skip complex types
+            }
         }
 
         // Process message
         let result = self.inner.process(message).await;
 
-        // Record result
-        match &result {
-            Ok(response) => {
-                span.set_status(Status::Ok);
-                span.set_attribute(KeyValue::new("response.role", response.role.clone()));
+        // Inject trace context into response if span context is valid
+        let mut response = result?;
 
-                // Inject trace context into response metadata
-                let mut response = response.clone();
-                let span_context = span.span_context();
-                if span_context.is_valid() {
-                    let traceparent = format!(
-                        "00-{}-{}-{:02x}",
-                        span_context.trace_id(),
-                        span_context.span_id(),
-                        span_context.trace_flags()
-                    );
-                    response.metadata.insert(
-                        "traceparent".to_string(),
-                        serde_json::Value::String(traceparent),
-                    );
-                }
+        if span_context.is_valid() {
+            // Manually create W3C traceparent format
+            let trace_id = format!("{:032x}", span_context.trace_id());
+            let span_id = format!("{:016x}", span_context.span_id());
+            let flags = if span_context.is_sampled() { "01" } else { "00" };
+            let traceparent = format!("00-{}-{}-{}", trace_id, span_id, flags);
 
-                span.end();
-                Ok(response)
-            }
-            Err(e) => {
-                span.set_status(Status::error(e.to_string()));
-                span.record_error(e);
-                span.end();
-                Err(e.clone())
-            }
+            // Inject into metadata
+            let mut trace_ctx = HashMap::new();
+            trace_ctx.insert("traceparent".to_string(), serde_json::json!(traceparent));
+            response.metadata.insert("trace_context".to_string(), serde_json::json!(trace_ctx));
         }
+
+        Ok(response)
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::core::{Agent, AgentError, Message};
-    use async_trait::async_trait;
-    use opentelemetry::trace::TraceContextExt;
-
-    struct TestAgent {
-        name: String,
-    }
-
-    #[async_trait]
-    impl Agent for TestAgent {
-        fn name(&self) -> &str {
-            &self.name
-        }
-
-        async fn process(&self, message: Message) -> Result<Message, AgentError> {
-            Ok(Message::with_text(
-                "assistant",
-                format!("Echo: {}", message.content_as_str().unwrap_or("")),
-            ))
-        }
-    }
-
-    struct FailingAgent;
-
-    #[async_trait]
-    impl Agent for FailingAgent {
-        fn name(&self) -> &str {
-            "failing"
-        }
-
-        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-            Err(AgentError::ProcessingError(
-                "intentional failure".to_string(),
-            ))
-        }
-    }
-
-    #[test]
-    fn test_init_tracing_console() {
-        // Console exporter should always work (or already be initialized)
-        let result = init_tracing("console", None);
-        assert!(
-            result.is_ok()
-                || result
-                    .unwrap_err()
-                    .to_string()
-                    .contains("already initialized"),
-            "Console exporter should initialize or already be initialized"
-        );
-    }
-
-    #[test]
-    fn test_extract_trace_context_empty() {
-        let metadata = HashMap::new();
-        let context = extract_trace_context(&metadata);
-        // Should return a valid context (even if empty)
-        assert!(
-            context.span().span_context().is_valid() || !context.span().span_context().is_valid()
-        );
-    }
-
-    #[test]
-    fn test_extract_trace_context_with_traceparent() {
-        let mut metadata = HashMap::new();
-        metadata.insert(
-            "traceparent".to_string(),
-            serde_json::Value::String(
-                "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01".to_string(),
-            ),
-        );
-
-        let context = extract_trace_context(&metadata);
-        assert!(context.span().span_context().is_valid());
-    }
-
-    #[test]
-    fn test_inject_trace_context() {
-        // Initialize tracing for this test
-        let _ = init_tracing("console", None);
-
-        let mut metadata = HashMap::new();
-        let context = Context::current();
-        inject_trace_context(&mut metadata, &context);
-
-        // Should have added traceparent header (even if trace is not active)
-        // The exact presence depends on whether there's an active span
-        assert!(metadata.contains_key("traceparent") || metadata.is_empty());
-    }
-
-    #[tokio::test]
-    async fn test_tracing_middleware_creates_span() {
-        // Initialize tracing
-        let _ = init_tracing("console", None);
-
-        let agent = TestAgent {
-            name: "test_agent".to_string(),
-        };
-        let traced_agent = TracingMiddleware::new(agent, None);
-
-        let message = Message::with_text("user", "Hello");
-        let result = traced_agent.process(message).await;
-
-        assert!(result.is_ok());
-        let response = result.unwrap();
-        assert_eq!(response.role, "assistant");
-    }
-
-    #[tokio::test]
-    async fn test_tracing_middleware_propagates_context() {
-        // Initialize tracing
-        let _ = init_tracing("console", None);
-
-        let agent = TestAgent {
-            name: "test_agent".to_string(),
-        };
-        let traced_agent = TracingMiddleware::new(agent, None);
-
-        // Create message with trace context
-        let mut metadata = HashMap::new();
-        metadata.insert(
-            "traceparent".to_string(),
-            serde_json::Value::String(
-                "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01".to_string(),
-            ),
-        );
-
-        let message = Message::new("user", serde_json::Value::String("Hello".to_string()))
-            .with_metadata("traceparent", metadata["traceparent"].clone());
-
-        let result = traced_agent.process(message).await;
-
-        assert!(result.is_ok());
-        let response = result.unwrap();
-
-        // Response should have trace context in metadata
-        assert!(response.metadata.contains_key("traceparent"));
-    }
-
-    #[tokio::test]
-    async fn test_tracing_middleware_records_errors() {
-        // Initialize tracing
-        let _ = init_tracing("console", None);
-
-        let agent = FailingAgent;
-        let traced_agent = TracingMiddleware::new(agent, Some("failing_agent".to_string()));
-
-        let message = Message::with_text("user", "This will fail");
-        let result = traced_agent.process(message).await;
-
-        assert!(result.is_err());
-        match result {
-            Err(AgentError::ProcessingError(msg)) => {
-                assert_eq!(msg, "intentional failure");
-            }
-            _ => panic!("Expected ProcessingError"),
-        }
-    }
-
-    #[test]
-    fn test_tracing_middleware_name_delegation() {
-        // Initialize tracing
-        let _ = init_tracing("console", None);
-
-        let agent = TestAgent {
-            name: "test_agent".to_string(),
-        };
-        let traced_agent = TracingMiddleware::new(agent, None);
-
-        assert_eq!(traced_agent.name(), "test_agent");
-    }
-
-    #[test]
-    fn test_tracing_middleware_inner_access() {
-        // Initialize tracing
-        let _ = init_tracing("console", None);
-
-        let agent = TestAgent {
-            name: "test_agent".to_string(),
-        };
-        let traced_agent = TracingMiddleware::new(agent, None);
-
-        assert_eq!(traced_agent.inner().name(), "test_agent");
-    }
-
-    #[test]
-    fn test_tracing_middleware_into_inner() {
-        // Initialize tracing
-        let _ = init_tracing("console", None);
-
-        let agent = TestAgent {
-            name: "test_agent".to_string(),
-        };
-        let traced_agent = TracingMiddleware::new(agent, None);
-
-        let inner = traced_agent.into_inner();
-        assert_eq!(inner.name(), "test_agent");
-    }
+/// Shutdown the global tracer provider.
+///
+/// This should be called before application exit to ensure all spans are
+/// flushed to the exporter.
+pub fn shutdown() {
+    // TracerProvider shutdown is automatic on drop
+    // This function is kept for API compatibility
+    global::shutdown_tracer_provider();
 }

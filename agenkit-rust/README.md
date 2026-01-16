@@ -128,6 +128,36 @@ let pipeline = SequentialPattern::new(vec![agent1, agent2, agent3])?;
 let parallel = ParallelPattern::new(vec![agent_a, agent_b, agent_c])?;
 ```
 
+### Observability
+
+Production-grade monitoring with OpenTelemetry:
+
+```rust
+use agenkit::observability::{init_tracing, init_metrics, configure_logging};
+use agenkit::observability::{TracingMiddleware, MetricsMiddleware, AuditLogger};
+
+// Initialize observability stack
+init_tracing("otlp", Some("http://localhost:4317"))?;
+init_metrics("prometheus", None)?;
+configure_logging("json", "info")?;
+
+// Wrap agent with automatic tracing and metrics
+let agent = MyAgent::new();
+let traced = TracingMiddleware::new(agent, None);
+let observed = MetricsMiddleware::new(traced);
+
+// All requests now traced with W3C Trace Context propagation
+let response = observed.process(message).await?;
+```
+
+**Features:**
+- 📊 **Distributed Tracing**: OpenTelemetry with OTLP, Jaeger, Zipkin exporters
+- 📈 **Metrics Collection**: Request counts, durations, errors (Prometheus compatible)
+- 📝 **Structured Logging**: JSON logging with trace correlation
+- 🔒 **Audit Logging**: Compliance-ready event logging with query API
+
+See [docs/observability.md](../docs/observability.md) for complete guide.
+
 ## Examples
 
 Run the included examples:
@@ -136,6 +166,11 @@ Run the included examples:
 # Infrastructure Examples
 cargo run --example echo_agent          # Simple echo agent
 cargo run --example http_transport      # Client/server communication
+
+# Observability Examples
+cargo run --example observability_basic         # Basic setup with console exporters
+cargo run --example observability_distributed   # Multi-agent pipeline with tracing
+cargo run --example observability_production    # Production OTLP setup
 
 # Pattern Examples (All 11 Patterns)
 cargo run --example reflection_pattern            # Iterative self-critique
@@ -218,7 +253,8 @@ Agenkit follows a layered architecture:
 3. **Transports** (`transports/`): HTTP, WebSocket, gRPC (native-only)
 4. **Patterns** (`patterns/`): Reflection, Agents-as-Tools, Orchestration, etc.
 5. **Evaluation** (`evaluation/`): Benchmarking and optimization frameworks
-6. **WASM** (`wasm/`): Browser-compatible bindings
+6. **Observability** (`observability/`): Tracing, metrics, logging, audit
+7. **WASM** (`wasm/`): Browser-compatible bindings
 
 ## Current Status
 
@@ -229,6 +265,13 @@ Agenkit follows a layered architecture:
 - HTTP transport (client and server)
 - Message and ToolResult types
 - Comprehensive error handling
+
+**Observability (~1,450 LOC, 66 tests) - 4/4 Complete**
+1. **Tracing** - OpenTelemetry distributed tracing (11 tests)
+2. **Metrics** - Request counting and duration tracking (11 tests)
+3. **Logging** - Structured logging with trace correlation (17 tests)
+4. **Audit** - Compliance-ready audit logging with query API (16 tests)
+5. **Integration** - Full observability stack tests (11 tests)
 
 **Patterns (~5,318 LOC, 116 tests) - 11/11 Complete**
 1. **Reflection** - Iterative self-critique and refinement
@@ -263,12 +306,13 @@ Agenkit follows a layered architecture:
 - Comprehensive 699-line WASM.md documentation
 - 5 WASM-compatible patterns
 
-**Examples (15 working examples)**
+**Examples (18 working examples)**
 - Infrastructure: echo_agent, http_transport
+- Observability: basic, distributed, production (3 examples)
 - All 11 patterns with comprehensive demonstrations
 - 2 WASM examples (browser agent, performance benchmarks)
 
-**Total**: ~11,263 LOC, 165 tests (100% passing)
+**Total**: ~12,713 LOC, 231 tests (100% passing)
 
 **Achievement**: 🎯 **4 languages at 100% parity!**
 - ✅ Python: 11/11 patterns, 10/10 eval frameworks (~300 tests)

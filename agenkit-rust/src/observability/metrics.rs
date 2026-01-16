@@ -241,6 +241,7 @@ mod tests {
     use super::*;
     use crate::core::{Agent, AgentError, Message};
     use async_trait::async_trait;
+    use std::sync::Arc;
 
     struct TestAgent {
         name: String,
@@ -405,7 +406,7 @@ mod tests {
         // Process multiple requests
         for i in 0..5 {
             let message = Message::new("user", serde_json::json!(format!("test {}", i)));
-            let result = metrics_agent.process(message).await;
+            let result: Result<Message, AgentError> = metrics_agent.process(message).await;
             assert!(result.is_ok());
         }
     }

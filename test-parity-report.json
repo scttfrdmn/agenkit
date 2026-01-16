@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-01-12T21:31:27Z",
+  "generated_at": "2026-01-16T02:12:00Z",
   "languages": {
     "python": {
-      "total": 1792,
+      "total": 1826,
       "categories": {
         "patterns": 439,
         "techniques": 240,
@@ -22,9 +22,9 @@
       }
     },
     "go": {
-      "total": 588,
+      "total": 950,
       "categories": {
-        "patterns": 0,
+        "patterns": 362,
         "techniques": 37,
         "safety": 94,
         "adapters": 54,
@@ -40,15 +40,29 @@
       }
     },
     "cpp": {
-      "total": 0,
-      "note": "C++ counts are test suites, not individual tests",
+      "total": 793,
+      "note": "C++ counts individual TEST() macros",
       "categories": {
-        "patterns": 18,
-        "techniques": 2,
-        "unit": 5,
-        "integration": 6,
+        "patterns": 310,
+        "techniques": 22,
+        "unit": 112,
+        "integration": 65,
         "safety": 0,
-        "adapters": 8,
+        "adapters": 50,
+        "routing": 0,
+        "chaos": 0,
+        "property": 0
+      }
+    },
+    "rust": {
+      "total": 49,
+      "categories": {
+        "patterns": 0,
+        "techniques": 0,
+        "adapters": 0,
+        "evaluation": 0,
+        "observability": 49,
+        "safety": 0,
         "routing": 0,
         "chaos": 0,
         "property": 0

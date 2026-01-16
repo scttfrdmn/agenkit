@@ -8,6 +8,7 @@
  *   Memory: Abstract base interface for memory systems
  *   InMemoryMemory: Simple in-memory storage with LRU eviction
  *   HierarchyMemory: 3-tier hierarchy adapter (backward compatible)
+ *   VectorMemory: Semantic retrieval using embeddings and vector similarity
  *
  * Example:
  *   import { InMemoryMemory } from 'agenkit';
@@ -20,3 +21,12 @@
 export { Memory } from './base';
 export { InMemoryMemory } from './in-memory';
 export { HierarchyMemory, HierarchyConfig } from './hierarchyMemory';
+export {
+  VectorMemory,
+  InMemoryVectorStore,
+  EmbeddingProvider,
+  VectorStore,
+  MessageSearchResult,
+  MessageWithMetadata,
+} from './vector-memory';
+export { OpenAIEmbeddings, ChromaDBVectorStore } from './integrations';

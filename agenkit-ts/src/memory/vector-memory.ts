@@ -411,6 +411,7 @@ export class VectorMemory implements Memory {
   private embeddings: EmbeddingProvider;
   private vectorStore: VectorStore;
   private idCounter = 0;
+  private lastTimestamp = 0;
 
   /**
    * Initialize vector memory.
@@ -435,9 +436,13 @@ export class VectorMemory implements Memory {
     // Generate embedding
     const embedding = await this.embeddings.embed(message.content);
 
-    // Store
-    const timestamp = Date.now();
+    // Store with unique timestamp (ensure strictly increasing)
     const messageId = this.generateId();
+    let timestamp = Date.now();
+    if (timestamp <= this.lastTimestamp) {
+      timestamp = this.lastTimestamp + 0.001; // Ensure strictly increasing
+    }
+    this.lastTimestamp = timestamp;
 
     await this.vectorStore.add(sessionId, messageId, embedding, message, metadata ?? {}, timestamp);
   }
@@ -459,11 +464,11 @@ export class VectorMemory implements Memory {
       // Semantic search
       const queryEmbedding = await this.embeddings.embed(options.query);
       const results = await this.vectorStore.search(sessionId, queryEmbedding, limit, options);
-      return results.map((r) => r.message);
+      return results.map((r) => ({ ...r.message, metadata: r.metadata }));
     } else {
       // Recent messages (no search)
       const results = await this.vectorStore.getRecent(sessionId, limit, options);
-      return results.map((r) => r.message);
+      return results.map((r) => ({ ...r.message, metadata: r.metadata }));
     }
   }
 

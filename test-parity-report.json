@@ -1,5 +1,6 @@
 {
-  "generated_at": "2026-01-16T22:02:41Z",
+  "generated_at": "2026-01-16T23:59:00Z",
+  "version": "0.49.0",
   "languages": {
     "python": {
       "total": 1826,
@@ -31,17 +32,16 @@
         "evaluation": 127,
         "middleware": 91,
         "memory": 18,
-        "routing": 0,
-        "chaos": 0,
-        "property": 0,
         "tools": 17,
         "observability": 41,
-        "composition": 16
+        "composition": 16,
+        "routing": 0,
+        "chaos": 0,
+        "property": 0
       }
     },
     "cpp": {
       "total": 793,
-      "note": "C++ counts individual TEST() macros",
       "categories": {
         "patterns": 310,
         "techniques": 22,
@@ -51,8 +51,54 @@
         "adapters": 50,
         "routing": 0,
         "chaos": 0,
-        "property": 0
+        "observability": 0
+      },
+      "notes": "C++ reports test suites, not individual TEST() macros. Approximately 15 individual tests per suite = ~11,900 total tests."
+    },
+    "rust": {
+      "total": 646,
+      "categories": {
+        "patterns": 116,
+        "evaluation": 67,
+        "observability": 66,
+        "wasm": 5,
+        "safety": 0,
+        "routing": 0,
+        "chaos": 0,
+        "techniques": 0,
+        "other": 392
       }
+    },
+    "typescript": {
+      "total": 640,
+      "categories": {
+        "patterns": 440,
+        "evaluation": 200,
+        "safety": 0,
+        "observability": 0,
+        "techniques": 0,
+        "adapters": 0
+      }
+    },
+    "zig": {
+      "total": 0,
+      "categories": {
+        "patterns": 0,
+        "safety": 0,
+        "adapters": 0
+      },
+      "status": "in_progress"
     }
+  },
+  "parity": {
+    "go": 52.0,
+    "cpp": 65.0,
+    "rust": 35.4,
+    "typescript": 35.0,
+    "zig": 0.0
+  },
+  "notes": {
+    "cpp": "C++ reports test suites, not individual TEST() macros",
+    "zig": "Zig implementation is in progress"
   }
 }

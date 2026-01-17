@@ -370,13 +370,14 @@ cd "$PROJECT_ROOT"
 TS_PATTERNS=$(find agenkit-ts/src/__tests__/patterns -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
 TS_CORE=$(find agenkit-ts/src -maxdepth 3 -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
 
-# Count tests in chaos, property, integration, safety, techniques, and adapters directories
+# Count tests in chaos, property, integration, safety, techniques, adapters, and evaluation directories
 TS_CHAOS=$(grep -r "it(" agenkit-ts/src/__tests__/chaos/ 2>/dev/null | wc -l | tr -d ' ')
 TS_PROPERTY=$(grep -r "it(" agenkit-ts/src/__tests__/property/ 2>/dev/null | wc -l | tr -d ' ')
 TS_INTEGRATION=$(grep -r "it(" agenkit-ts/src/__tests__/integration/ 2>/dev/null | wc -l | tr -d ' ')
 TS_SAFETY=$(grep -r "it(" agenkit-ts/src/__tests__/safety/ 2>/dev/null | wc -l | tr -d ' ')
 TS_TECHNIQUES=$(grep -r "it(" agenkit-ts/src/techniques/ 2>/dev/null | wc -l | tr -d ' ')
 TS_ADAPTERS=$(grep -r "it(" agenkit-ts/src/__tests__/adapters/ 2>/dev/null | wc -l | tr -d ' ')
+TS_EVALUATION=$(grep -r "it(" agenkit-ts/src/__tests__/evaluation/ 2>/dev/null | wc -l | tr -d ' ')
 
 echo "  Pattern tests: $TS_PATTERNS files"
 echo "  Core tests: $TS_CORE files"
@@ -386,6 +387,7 @@ echo "  Integration tests: $TS_INTEGRATION"
 echo "  Safety tests: $TS_SAFETY"
 echo "  Techniques tests: $TS_TECHNIQUES"
 echo "  Adapters tests: $TS_ADAPTERS"
+echo "  Evaluation tests: $TS_EVALUATION"
 echo ""
 
 # Add TypeScript to JSON
@@ -398,6 +400,7 @@ jq --arg total "$TS_TOTAL" \
    --arg safety "$TS_SAFETY" \
    --arg techniques "$TS_TECHNIQUES" \
    --arg adapters "$TS_ADAPTERS" \
+   --arg evaluation "$TS_EVALUATION" \
    '.languages.typescript = {
      total: ($total | tonumber),
      test_files: ($files | tonumber),
@@ -407,6 +410,7 @@ jq --arg total "$TS_TOTAL" \
        techniques: ($techniques | tonumber),
        safety: ($safety | tonumber),
        adapters: ($adapters | tonumber),
+       evaluation: ($evaluation | tonumber),
        routing: 0,
        chaos: ($chaos | tonumber),
        property: ($property | tonumber),

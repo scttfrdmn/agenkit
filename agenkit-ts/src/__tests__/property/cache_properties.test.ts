@@ -228,6 +228,7 @@ describe('Cache Properties: LRU Ordering', () => {
 describe('Cache Properties: TTL Expiration', () => {
   it(
     'should never return expired entries',
+    { timeout: 10000 },
     async () => {
       await fc.assert(
         fc.asyncProperty(
@@ -252,8 +253,7 @@ describe('Cache Properties: TTL Expiration', () => {
         ),
         { numRuns: 20 }
       );
-    },
-    { timeout: 10000 }
+    }
   ); // 10 second timeout
 });
 

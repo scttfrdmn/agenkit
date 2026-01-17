@@ -84,9 +84,10 @@
         "routing": 0,
         "chaos": 61,
         "property": 8,
-        "integration": 45
+        "integration": 45,
+        "memory": 64
       },
-      "total": 782,
+      "total": 846,
       "note": "Counts may be estimated from test files"
     }
   }

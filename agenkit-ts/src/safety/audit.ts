@@ -463,12 +463,19 @@ export class SecurityAuditLogger {
 
   /**
    * Close the logger and flush logs.
+   * Returns a Promise that resolves when the stream is fully closed.
    */
-  close(): void {
-    if (this.writeStream) {
-      this.writeStream.end();
-      this.writeStream = null;
-    }
+  close(): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.writeStream) {
+        this.writeStream.end(() => {
+          this.writeStream = null;
+          resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
   }
 }
 
@@ -488,9 +495,9 @@ export function getAuditLogger(): SecurityAuditLogger {
 /**
  * Configure global audit logger.
  */
-export function configureAuditLogger(config: SecurityAuditLoggerConfig): void {
+export async function configureAuditLogger(config: SecurityAuditLoggerConfig): Promise<void> {
   if (globalAuditLogger) {
-    globalAuditLogger.close();
+    await globalAuditLogger.close();
   }
   globalAuditLogger = new SecurityAuditLogger(config);
 }

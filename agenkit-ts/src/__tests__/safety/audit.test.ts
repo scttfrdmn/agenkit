@@ -149,24 +149,24 @@ describe('Safety: SecurityAuditLogger', () => {
     }
   });
 
-  it('should create log file', () => {
+  it('should create log file', async () => {
     logFile = createTempLogFile();
     const logger = new SecurityAuditLogger({ logFile, alsoLogToConsole: false });
 
     logger.logAccessGranted('user_123', 'file.txt', 'read:files');
-    logger.close(); // Flush and close before reading
+    await logger.close(); // Flush and close before reading
 
     // Check that log file was created and has content
     expect(fs.existsSync(logFile)).toBe(true);
     expect(fs.statSync(logFile).size).toBeGreaterThan(0);
   });
 
-  it('should log in JSON format', () => {
+  it('should log in JSON format', async () => {
     logFile = createTempLogFile();
     const logger = new SecurityAuditLogger({ logFile, alsoLogToConsole: false });
 
     logger.logPromptInjection('user_123', 15, ['ignore instructions']);
-    logger.close();
+    await logger.close();
 
     // Read log file
     const logLine = fs.readFileSync(logFile, 'utf-8').trim();
@@ -177,12 +177,12 @@ describe('Safety: SecurityAuditLogger', () => {
     expect(parsed.severity).toBe('error');
   });
 
-  it('should log access granted events', () => {
+  it('should log access granted events', async () => {
     logFile = createTempLogFile();
     const logger = new SecurityAuditLogger({ logFile, alsoLogToConsole: false });
 
     logger.logAccessGranted('user_123', 'file.txt', 'read:files');
-    logger.close();
+    await logger.close();
 
     // Verify log
     const logLine = fs.readFileSync(logFile, 'utf-8').trim();
@@ -193,12 +193,12 @@ describe('Safety: SecurityAuditLogger', () => {
     expect(parsed.details.resource).toBe('file.txt');
   });
 
-  it('should log access denied events', () => {
+  it('should log access denied events', async () => {
     logFile = createTempLogFile();
     const logger = new SecurityAuditLogger({ logFile, alsoLogToConsole: false });
 
     logger.logAccessDenied('user_123', 'secrets.txt', 'access:secrets', 'insufficient permissions');
-    logger.close();
+    await logger.close();
 
     // Verify log
     const logLine = fs.readFileSync(logFile, 'utf-8').trim();
@@ -209,7 +209,7 @@ describe('Safety: SecurityAuditLogger', () => {
     expect(parsed.details.reason).toBe('insufficient permissions');
   });
 
-  it('should log prompt injection detection', () => {
+  it('should log prompt injection detection', async () => {
     logFile = createTempLogFile();
     const logger = new SecurityAuditLogger({ logFile, alsoLogToConsole: false });
 
@@ -219,7 +219,7 @@ describe('Safety: SecurityAuditLogger', () => {
       ['ignore instructions', 'system mode'],
       'Ignore previous instructions...'
     );
-    logger.close();
+    await logger.close();
 
     // Verify log
     const logLine = fs.readFileSync(logFile, 'utf-8').trim();
@@ -231,12 +231,12 @@ describe('Safety: SecurityAuditLogger', () => {
     expect(parsed.details.matched_patterns).toContain('ignore instructions');
   });
 
-  it('should log sensitive data redaction', () => {
+  it('should log sensitive data redaction', async () => {
     logFile = createTempLogFile();
     const logger = new SecurityAuditLogger({ logFile, alsoLogToConsole: false });
 
     logger.logSensitiveDataRedaction('user_123', ['password', 'api_key'], '{"result": "success", ...}');
-    logger.close();
+    await logger.close();
 
     // Verify log
     const logLine = fs.readFileSync(logFile, 'utf-8').trim();
@@ -247,12 +247,12 @@ describe('Safety: SecurityAuditLogger', () => {
     expect(parsed.details.fields_redacted).toContain('password');
   });
 
-  it('should log validation failures', () => {
+  it('should log validation failures', async () => {
     logFile = createTempLogFile();
     const logger = new SecurityAuditLogger({ logFile, alsoLogToConsole: false });
 
     logger.logValidationFailure('user_123', 'output', 'Missing required field: result', '{"data": "test"}');
-    logger.close();
+    await logger.close();
 
     // Verify log
     const logLine = fs.readFileSync(logFile, 'utf-8').trim();
@@ -263,12 +263,12 @@ describe('Safety: SecurityAuditLogger', () => {
     expect(parsed.details.validation_type).toBe('output');
   });
 
-  it('should log anomaly detection', () => {
+  it('should log anomaly detection', async () => {
     logFile = createTempLogFile();
     const logger = new SecurityAuditLogger({ logFile, alsoLogToConsole: false });
 
     logger.logAnomaly('user_123', 'high_request_rate', { requests_per_minute: 150, threshold: 100 });
-    logger.close();
+    await logger.close();
 
     // Verify log
     const logLine = fs.readFileSync(logFile, 'utf-8').trim();
@@ -279,7 +279,7 @@ describe('Safety: SecurityAuditLogger', () => {
     expect(parsed.details.anomaly_type).toBe('high_request_rate');
   });
 
-  it('should handle multiple log entries', () => {
+  it('should handle multiple log entries', async () => {
     logFile = createTempLogFile();
     const logger = new SecurityAuditLogger({ logFile, alsoLogToConsole: false });
 
@@ -287,7 +287,7 @@ describe('Safety: SecurityAuditLogger', () => {
     logger.logAccessGranted('user_1', 'file1.txt', 'read:files');
     logger.logAccessGranted('user_2', 'file2.txt', 'read:files');
     logger.logAccessDenied('user_3', 'secrets.txt', 'access:secrets', 'denied');
-    logger.close();
+    await logger.close();
 
     // Verify multiple entries
     const lines = fs.readFileSync(logFile, 'utf-8').trim().split('\n');
@@ -301,12 +301,12 @@ describe('Safety: SecurityAuditLogger', () => {
     }
   });
 
-  it('should include agent name when provided', () => {
+  it('should include agent name when provided', async () => {
     logFile = createTempLogFile();
     const logger = new SecurityAuditLogger({ logFile, alsoLogToConsole: false });
 
     logger.logAccessGranted('user_123', 'file.txt', 'read:files', 'test_agent');
-    logger.close();
+    await logger.close();
 
     // Verify agent name in log
     const logLine = fs.readFileSync(logFile, 'utf-8').trim();
@@ -315,13 +315,13 @@ describe('Safety: SecurityAuditLogger', () => {
     expect(parsed.agentName).toBe('test_agent');
   });
 
-  it('should truncate long content previews', () => {
+  it('should truncate long content previews', async () => {
     logFile = createTempLogFile();
     const logger = new SecurityAuditLogger({ logFile, alsoLogToConsole: false });
 
     const longContent = 'x'.repeat(500);
     logger.logValidationFailure('user_123', 'input', 'Too large', longContent);
-    logger.close();
+    await logger.close();
 
     // Verify truncation
     const logLine = fs.readFileSync(logFile, 'utf-8').trim();
@@ -333,12 +333,12 @@ describe('Safety: SecurityAuditLogger', () => {
     expect(contentPreview).toContain('...');
   });
 
-  it('should handle missing optional fields', () => {
+  it('should handle missing optional fields', async () => {
     logFile = createTempLogFile();
     const logger = new SecurityAuditLogger({ logFile, alsoLogToConsole: false });
 
     logger.logAccessGranted('user_123', 'file.txt', 'read:files');
-    logger.close();
+    await logger.close();
 
     // Should log successfully without agent_name
     const logLine = fs.readFileSync(logFile, 'utf-8').trim();

@@ -1,6 +1,6 @@
 # Test Parity Dashboard
 
-**Last Updated:** 2026-01-16 01:56:14 UTC
+**Last Updated:** 2026-01-17 19:34:08 UTC
 **Status:** Tracking test parity across 6 language implementations
 
 ## Overview
@@ -11,12 +11,12 @@ This dashboard tracks test coverage across all Agenkit language implementations 
 
 | Language | Total Tests | vs Python | Parity % | Status |
 |----------|------------|-----------|----------|--------|
-| **Python** | 1826 | — | 100% | ✅ Reference |
-| **Go** | 950 | -876 | 52.0% | 🟡 Fair |
-| **C++** | 793 suites | —¹ | 651.4% | ✅ Excellent |
-| **Rust** | 0 | -1826 | 0% | 🔴 Critical |
-| **Zig** | 214 | -1612 | 11.7% | 🔴 Critical |
-| **TypeScript** | 352² | —² | 19.2% | 🔴 Critical |
+| **Python** | 1836 | — | 100% | ✅ Reference |
+| **Go** | 950 | -886 | 51.7% | 🟡 Fair |
+| **C++** | 793 suites | —¹ | 647.8% | ✅ Excellent |
+| **Rust** | 681 | -1155 | 37.0% | 🟠 Poor |
+| **Zig** | 214 | -1622 | 11.6% | 🔴 Critical |
+| **TypeScript** | 392² | —² | 21.3% | 🟠 Poor |
 
 ¹ C++ reports test suites not individual tests. Estimated ≈15 tests/suite = 11895 total tests.
 ² TypeScript count may be estimated from test files.
@@ -28,11 +28,11 @@ This dashboard tracks test coverage across all Agenkit language implementations 
 
 | Category | Python | Go | C++ | Rust | Zig | TypeScript |
 |----------|--------|-----|-----|------|-----|------------|
-| **Patterns** | 439 | 362 ✅ | 310 ✅ | 0 ✅ | — | 7 |
+| **Patterns** | 439 | 362 ✅ | 310 ✅ | 133 ✅ | — | 7 |
 | **Techniques** | 240 | 37 ❌ | 22 ❌ | 0 ❌ | — | 0 ❌ |
-| **Safety** | 162 | 94 ❌ | 0 ❌ | 0 ❌ | — | 0 ❌ |
-| **Adapters** | 141 | 54 ⚠️ | ~8 ❌ | 0 ❌ | — | 0 ❌ |
-| **Evaluation** | 116 | 127 ⚠️ | — | 0 ⚠️ | — | 0 ❌ |
+| **Safety** | 162 | 94 ❌ | 0 ❌ | 52 ❌ | — | 0 ❌ |
+| **Adapters** | 151 | 54 ⚠️ | ~8 ❌ | 31 ❌ | — | 0 ❌ |
+| **Evaluation** | 116 | 127 ⚠️ | — | 73 ⚠️ | — | 0 ❌ |
 | **Middleware** | 92 | 91 ⚠️ | — | — | — | — |
 
 **Legend:** ✅ Good parity (>80%) | ⚠️ Partial (40-80%) | ❌ Missing (<40%) | — Not counted
@@ -79,9 +79,9 @@ Target test counts for "meaningful parity" (85% of Python's comprehensive covera
 |----------|---------|--------|-----|---------------|
 | Go | 950 | 1,500 | +550 | Techniques, Safety, Routing, Chaos |
 | C++ | 793 | 1,500 | +-10395 | Techniques, Safety, Adapters |
-| Rust | 0 | 1,500 | +1500 | Techniques, Safety, Adapters |
+| Rust | 681 | 1,500 | +819 | Techniques, Safety, Adapters |
 | Zig | 214 | 1,000 | +786 | Evaluation, Techniques |
-| TypeScript | 352 | 1,200 | +848 | Techniques, Safety, Adapters |
+| TypeScript | 392 | 1,200 | +808 | Techniques, Safety, Adapters |
 
 ## Methodology
 

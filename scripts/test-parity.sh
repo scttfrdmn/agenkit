@@ -275,6 +275,7 @@ RUST_EVALUATION=$(grep -rh "#\[test\]\|#\[tokio::test\]" src/evaluation/ 2>/dev/
 RUST_OBSERVABILITY=$(grep -rh "#\[test\]\|#\[tokio::test\]" tests/test_observability_*.rs 2>/dev/null | wc -l | tr -d ' ')
 RUST_TECHNIQUES=$(grep -rh "#\[test\]\|#\[tokio::test\]" src/techniques/ 2>/dev/null | wc -l | tr -d ' ')
 RUST_ADAPTERS=$(grep -rh "#\[test\]\|#\[tokio::test\]" src/adapters/ 2>/dev/null | wc -l | tr -d ' ')
+RUST_SAFETY=$(grep -rh "#\[test\]\|#\[tokio::test\]" src/safety/ 2>/dev/null | wc -l | tr -d ' ')
 cd ..
 
 echo "  Patterns: $RUST_PATTERNS"
@@ -282,7 +283,7 @@ echo "  Techniques: $RUST_TECHNIQUES"
 echo "  Adapters: $RUST_ADAPTERS"
 echo "  Evaluation: $RUST_EVALUATION"
 echo "  Observability: $RUST_OBSERVABILITY"
-echo "  Safety: 0 (not implemented)"
+echo "  Safety: $RUST_SAFETY"
 echo "  Routing: 0 (not implemented)"
 echo "  Chaos: 0 (not implemented)"
 echo ""
@@ -294,6 +295,7 @@ jq --arg total "$RUST_TOTAL" \
    --arg adapters "$RUST_ADAPTERS" \
    --arg evaluation "$RUST_EVALUATION" \
    --arg observability "$RUST_OBSERVABILITY" \
+   --arg safety "$RUST_SAFETY" \
    '.languages.rust = {
      total: ($total | tonumber),
      categories: {
@@ -302,7 +304,7 @@ jq --arg total "$RUST_TOTAL" \
        adapters: ($adapters | tonumber),
        evaluation: ($evaluation | tonumber),
        observability: ($observability | tonumber),
-       safety: 0,
+       safety: ($safety | tonumber),
        routing: 0,
        chaos: 0,
        property: 0

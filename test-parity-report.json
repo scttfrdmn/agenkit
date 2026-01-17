@@ -1,14 +1,13 @@
 {
-  "generated_at": "2026-01-16T23:59:00Z",
-  "version": "0.49.0",
+  "generated_at": "2026-01-17T19:33:16Z",
   "languages": {
     "python": {
-      "total": 1826,
+      "total": 1836,
       "categories": {
         "patterns": 439,
         "techniques": 240,
         "safety": 162,
-        "adapters": 141,
+        "adapters": 151,
         "evaluation": 116,
         "middleware": 92,
         "memory": 101,
@@ -32,16 +31,17 @@
         "evaluation": 127,
         "middleware": 91,
         "memory": 18,
-        "tools": 17,
-        "observability": 41,
-        "composition": 16,
         "routing": 0,
         "chaos": 0,
-        "property": 0
+        "property": 0,
+        "tools": 17,
+        "observability": 41,
+        "composition": 16
       }
     },
     "cpp": {
       "total": 793,
+      "note": "C++ counts individual TEST() macros",
       "categories": {
         "patterns": 310,
         "techniques": 22,
@@ -51,54 +51,41 @@
         "adapters": 50,
         "routing": 0,
         "chaos": 0,
-        "observability": 0
-      },
-      "notes": "C++ reports test suites, not individual TEST() macros. Approximately 15 individual tests per suite = ~11,900 total tests."
-    },
-    "rust": {
-      "total": 646,
-      "categories": {
-        "patterns": 116,
-        "evaluation": 67,
-        "observability": 66,
-        "wasm": 5,
-        "safety": 0,
-        "routing": 0,
-        "chaos": 0,
-        "techniques": 0,
-        "other": 392
+        "property": 0
       }
     },
-    "typescript": {
-      "total": 640,
+    "rust": {
+      "total": 681,
       "categories": {
-        "patterns": 440,
-        "evaluation": 200,
-        "safety": 0,
-        "observability": 0,
+        "patterns": 133,
         "techniques": 0,
-        "adapters": 0
+        "adapters": 31,
+        "evaluation": 73,
+        "observability": 66,
+        "safety": 52,
+        "routing": 0,
+        "chaos": 0,
+        "property": 0
       }
     },
     "zig": {
-      "total": 0,
+      "total": 214,
+      "note": "Zig uses in-code tests with no clear category separation",
+      "categories": {}
+    },
+    "typescript": {
+      "total": 392,
+      "test_files": 49,
+      "note": "Counts may be estimated from test files",
       "categories": {
-        "patterns": 0,
+        "patterns": 7,
+        "techniques": 0,
         "safety": 0,
-        "adapters": 0
-      },
-      "status": "in_progress"
+        "adapters": 0,
+        "routing": 0,
+        "chaos": 0,
+        "property": 0
+      }
     }
-  },
-  "parity": {
-    "go": 52.0,
-    "cpp": 65.0,
-    "rust": 35.4,
-    "typescript": 35.0,
-    "zig": 0.0
-  },
-  "notes": {
-    "cpp": "C++ reports test suites, not individual TEST() macros",
-    "zig": "Zig implementation is in progress"
   }
 }

@@ -45,12 +45,23 @@ pub mod anomaly_detection;
 pub mod audit;
 pub mod errors;
 pub mod input_validation;
+pub mod integration_tests;
 pub mod output_validation;
 pub mod permissions;
 
-pub use anomaly_detection::{AnomalyDetectionMiddleware, AnomalyDetector, SecurityEvent};
-pub use audit::{AuditEvent, AuditEventType, AuditSeverity, SecurityAuditLogger};
+pub use anomaly_detection::{
+    AnomalyDetectionMiddleware, AnomalyDetector, AnomalyDetectorConfig, SecurityEvent,
+};
+pub use audit::{
+    AuditEvent, AuditEventType, AuditSeverity, SecurityAuditLogger, SecurityAuditLoggerConfig,
+};
 pub use errors::{PermissionDeniedError, SecurityError, ValidationError};
-pub use input_validation::{ContentFilter, InputValidationMiddleware, PromptInjectionDetector};
-pub use output_validation::{OutputValidationMiddleware, SchemaValidator, SensitiveDataRedactor};
+pub use input_validation::{
+    ContentFilter, ContentFilterConfig, InputValidationMiddleware, PromptInjectionConfig,
+    PromptInjectionDetector,
+};
+pub use output_validation::{
+    OutputValidationMiddleware, SchemaValidator, SchemaValidatorConfig, SensitiveDataRedactor,
+    SensitiveDataRedactorConfig,
+};
 pub use permissions::{Permission, PermissionMiddleware, Role, Sandbox};

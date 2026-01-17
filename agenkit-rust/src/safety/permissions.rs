@@ -344,4 +344,57 @@ mod tests {
         assert!(sandbox.is_domain_allowed("api.example.com"));
         assert!(sandbox.is_domain_allowed("github.com"));
     }
+
+    #[test]
+    fn test_role_restricted_permissions() {
+        let restricted = Role::Restricted.permissions();
+
+        // Should have minimal permissions
+        assert!(restricted.contains(&Permission::ReadFiles));
+        assert!(!restricted.contains(&Permission::WriteFiles));
+        assert!(!restricted.contains(&Permission::ExecuteCommands));
+        assert!(!restricted.contains(&Permission::ManageUsers));
+    }
+
+    #[test]
+    fn test_permission_hierarchy() {
+        // Admin should have more permissions than User
+        let admin_perms = Role::Admin.permissions();
+        let user_perms = Role::User.permissions();
+
+        assert!(admin_perms.len() > user_perms.len());
+
+        // All user permissions should be in admin permissions
+        for perm in user_perms {
+            assert!(admin_perms.contains(&perm), "Admin should have all User permissions");
+        }
+    }
+
+    #[test]
+    fn test_sandbox_custom_allowed_paths() {
+        let mut sandbox = Sandbox::default();
+        sandbox.allowed_paths.insert("/custom/path".to_string());
+
+        assert!(sandbox.is_path_allowed("/custom/path/file.txt"));
+    }
+
+    #[test]
+    fn test_all_permission_types() {
+        // Verify all permission types are defined
+        let perms = vec![
+            Permission::ReadFiles,
+            Permission::WriteFiles,
+            Permission::DeleteFiles,
+            Permission::ExecuteCommands,
+            Permission::QueryDatabase,
+            Permission::MakeHttpRequests,
+            Permission::UseTools,
+            Permission::ManageUsers,
+        ];
+
+        for perm in perms {
+            // Just checking they exist and can be created
+            assert!(format!("{:?}", perm).len() > 0);
+        }
+    }
 }

@@ -12,10 +12,9 @@
 use agenkit::{
     core::{Agent, AgentError, Message},
     safety::{
-        AnomalyDetectionMiddleware, AnomalyDetector, AuditEventType, AuditSeverity, ContentFilter,
-        InputValidationMiddleware, OutputValidationMiddleware, Permission, PermissionMiddleware,
-        PromptInjectionDetector, Role, Sandbox, SchemaValidator, SecurityAuditLogger,
-        SensitiveDataRedactor,
+        AnomalyDetectionMiddleware, AuditEvent, AuditEventType, AuditSeverity,
+        InputValidationMiddleware, OutputValidationMiddleware, PermissionMiddleware, Role,
+        Sandbox, SchemaValidator, SecurityAuditLogger, SecurityAuditLoggerConfig,
     },
 };
 use async_trait::async_trait;
@@ -69,19 +68,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ========================================================================
     println!("📝 Step 1: Setting up security audit logging...");
 
-    let audit_logger = SecurityAuditLogger::new("./logs/security_audit.log")?
-        .with_console_output(true)
-        .with_max_file_size(10 * 1024 * 1024) // 10MB
-        .with_max_backups(5);
+    let mut audit_config = SecurityAuditLoggerConfig::default();
+    audit_config.log_file = std::path::PathBuf::from("./logs/security_audit.log");
+    audit_config.console_logging = true;
 
-    audit_logger.log_event(
+    let audit_logger = SecurityAuditLogger::new(audit_config)?;
+
+    let mut event = AuditEvent::new(
         AuditEventType::AgentStarted,
         AuditSeverity::Info,
-        Some("demo-user"),
-        Some("safety-demo"),
-        Some("Safety framework demonstration started"),
-        HashMap::new(),
+        "Safety framework demonstration started".to_string(),
     );
+    event.user_id = Some("demo-user".to_string());
+    event.agent_name = Some("safety-demo".to_string());
+
+    audit_logger.log(&event)?;
 
     println!("  ✅ Audit logger initialized");
     println!("  ✅ Logging to: ./logs/security_audit.log\n");
@@ -100,16 +101,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ========================================================================
     println!("📝 Step 3: Adding input validation layer...");
 
-    let prompt_detector = PromptInjectionDetector::new();
-    let content_filter = ContentFilter::new()
-        .with_banned_words(vec!["malware", "hack", "exploit"])
-        .with_max_size(10000)
-        .with_min_size(1);
+    use agenkit::safety::{ContentFilterConfig, PromptInjectionConfig};
+    use std::collections::HashSet;
+
+    // Configure content filter
+    let mut content_config = ContentFilterConfig::default();
+    content_config.banned_words = HashSet::from([
+        "malware".to_string(),
+        "hack".to_string(),
+        "exploit".to_string(),
+    ]);
+    content_config.max_size = 10000;
+    content_config.min_size = 1;
 
     let input_validated_agent = InputValidationMiddleware::new(base_agent)
-        .with_prompt_injection_detector(prompt_detector)
-        .with_content_filter(content_filter)
-        .strict_mode(true);
+        .with_prompt_injection_detector()
+        .with_content_filter_config(content_config)
+        .strict(true);
 
     println!("  ✅ Prompt injection detector enabled (threshold: 8)");
     println!("  ✅ Content filter enabled (banned words, size limits, PII)");
@@ -120,24 +128,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ========================================================================
     println!("📝 Step 4: Adding output validation layer...");
 
-    let schema = SchemaValidator::new()
-        .with_field("original", "string")
-        .with_field("processed", "string")
-        .with_field("agent", "string")
-        .required("original")
-        .required("processed");
+    use agenkit::safety::SchemaValidatorConfig;
 
-    let redactor = SensitiveDataRedactor::new();
+    // Configure schema validator
+    let mut schema_config = SchemaValidatorConfig::default();
+    schema_config.expected_fields.insert("original".to_string(), "string".to_string());
+    schema_config.expected_fields.insert("processed".to_string(), "string".to_string());
+    schema_config.expected_fields.insert("agent".to_string(), "string".to_string());
+    schema_config.required_fields.insert("original".to_string());
+    schema_config.required_fields.insert("processed".to_string());
+
+    let schema = SchemaValidator::new(schema_config);
 
     let validated_agent = OutputValidationMiddleware::new(input_validated_agent)
         .with_schema_validator(schema)
-        .with_sensitive_data_redactor(redactor)
-        .auto_redact(true)
+        .with_redactor()
         .with_max_size(100_000);
 
     println!("  ✅ Schema validator enabled (validates response structure)");
     println!("  ✅ Sensitive data redactor enabled (API keys, passwords, etc.)");
-    println!("  ✅ Auto-redact: sensitive data automatically removed\n");
+    println!("  ✅ Max output size: 100KB\n");
 
     // ========================================================================
     // STEP 5: Add Permission Layer
@@ -148,7 +158,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     sandbox.allowed_paths = HashSet::from(["/tmp".to_string(), "/home/user/safe".to_string()]);
     sandbox.denied_commands =
         HashSet::from(["rm".to_string(), "sudo".to_string(), "chmod".to_string()]);
-    sandbox.max_file_size = Some(10 * 1024 * 1024); // 10MB
+    sandbox.max_file_size = 10 * 1024 * 1024; // 10MB
 
     let permission_agent =
         PermissionMiddleware::new(validated_agent, Role::User).with_sandbox(sandbox);
@@ -181,7 +191,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match safe_agent.process(msg1).await {
         Ok(response) => {
             println!("✅ Request succeeded");
-            let content = response.content_as_str().unwrap_or("");
+            let content: &str = response.content_as_str().unwrap_or("");
             let preview = if content.len() > 80 {
                 &content[..80]
             } else {
@@ -281,14 +291,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  • Complete audit trail");
 
     // Log completion
-    audit_logger.log_event(
+    let mut completion_event = AuditEvent::new(
         AuditEventType::AgentCompleted,
         AuditSeverity::Info,
-        Some("demo-user"),
-        Some("safety-demo"),
-        Some("Safety framework demonstration completed successfully"),
-        HashMap::new(),
+        "Safety framework demonstration completed successfully".to_string(),
     );
+    completion_event.user_id = Some("demo-user".to_string());
+    completion_event.agent_name = Some("safety-demo".to_string());
+
+    audit_logger.log(&completion_event)?;
 
     println!("\n✨ Safety framework demonstration completed!");
     println!("{}", "=".repeat(60));

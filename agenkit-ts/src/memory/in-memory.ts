@@ -129,7 +129,8 @@ export class InMemoryMemory implements Memory {
         }
       }
 
-      filtered.push(message);
+      // Merge metadata back into message
+      filtered.push({ ...message, metadata });
 
       // Stop if we have enough
       if (filtered.length >= limit) {

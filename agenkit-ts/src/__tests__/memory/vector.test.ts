@@ -343,13 +343,17 @@ describe('VectorMemory', () => {
       const summary = await memory.summarize(sessionId);
 
       expect(summary).toBeDefined();
-      expect(summary.length).toBeGreaterThan(0);
+      expect(summary.role).toBe('system');
+      expect(summary.content).toBeDefined();
+      expect(summary.content.length).toBeGreaterThan(0);
     });
 
     it('should handle empty session summarization', async () => {
       const summary = await memory.summarize('empty-session');
 
       expect(summary).toBeDefined();
+      expect(summary.role).toBe('system');
+      expect(summary.content).toContain('No messages');
     });
   });
 
@@ -395,7 +399,7 @@ describe('InMemoryVectorStore', () => {
       expect(results.length).toBe(2);
       // Identical vectors should have similarity ~1.0
       results.forEach((result) => {
-        expect(result.similarity).toBeCloseTo(1.0, 1);
+        expect(result.score).toBeCloseTo(1.0, 1);
       });
     });
 
@@ -423,11 +427,11 @@ describe('InMemoryVectorStore', () => {
 
       const results = await store.search(sessionId, vector1, 2);
 
-      // Find the orthogonal vector result
-      const orthogonalResult = results.find((r) => r.messageId === 'msg-2');
+      // Find the orthogonal vector result by message content
+      const orthogonalResult = results.find((r) => r.message.content === 'Test 2');
       expect(orthogonalResult).toBeDefined();
       // Orthogonal vectors should have similarity ~0.0
-      expect(Math.abs(orthogonalResult!.similarity)).toBeLessThan(0.1);
+      expect(Math.abs(orthogonalResult!.score)).toBeLessThan(0.1);
     });
 
     it('should handle zero-magnitude vectors', async () => {
@@ -456,8 +460,8 @@ describe('InMemoryVectorStore', () => {
 
       expect(results).toHaveLength(2);
       // Zero vector should have similarity 0.0
-      const zeroResult = results.find((r) => r.messageId === 'msg-1');
-      expect(zeroResult?.similarity).toBe(0.0);
+      const zeroResult = results.find((r) => r.message.content === 'Zero');
+      expect(zeroResult?.score).toBe(0.0);
     });
   });
 
@@ -487,8 +491,8 @@ describe('InMemoryVectorStore', () => {
 
       const results = await store.search(sessionId, queryVector, 2);
 
-      expect(results[0].messageId).toBe('msg-2'); // Most similar first
-      expect(results[0].similarity).toBeGreaterThan(results[1].similarity);
+      expect(results[0].message.content).toBe('Similar'); // Most similar first
+      expect(results[0].score).toBeGreaterThan(results[1].score);
     });
 
     it('should filter by minimum similarity', async () => {
@@ -515,8 +519,8 @@ describe('InMemoryVectorStore', () => {
       const results = await store.search(sessionId, queryVector, 10, { minSimilarity: 0.5 });
 
       expect(results).toHaveLength(1);
-      expect(results[0].messageId).toBe('msg-1');
-      expect(results[0].similarity).toBeGreaterThanOrEqual(0.5);
+      expect(results[0].message.content).toBe('High similarity');
+      expect(results[0].score).toBeGreaterThanOrEqual(0.5);
     });
   });
 

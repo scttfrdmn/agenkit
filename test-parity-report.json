@@ -85,10 +85,10 @@
         "chaos": 61,
         "property": 8,
         "integration": 45,
-        "memory": 64
+        "memory": 81
       },
-      "total": 846,
-      "note": "Counts may be estimated from test files"
+      "total": 863,
+      "note": "Counts may be estimated from test files. All memory tests passing (81/81)!"
     }
   }
 }

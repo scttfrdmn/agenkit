@@ -341,7 +341,9 @@ describe('HierarchyMemory', () => {
       const summary = await memory.summarize(sessionId);
 
       expect(summary).toBeDefined();
-      expect(summary.length).toBeGreaterThan(0);
+      expect(summary.role).toBe('system');
+      expect(summary.content).toBeDefined();
+      expect(typeof summary.content === 'string' && summary.content.length).toBeGreaterThan(0);
     });
 
     it('should handle empty session summarization', async () => {

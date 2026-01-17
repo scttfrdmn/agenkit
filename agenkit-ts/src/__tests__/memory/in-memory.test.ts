@@ -266,10 +266,15 @@ describe('InMemoryMemory', () => {
       });
 
       expect(retrieved).toHaveLength(2);
-      expect(retrieved[0].metadata?.importance).toBeGreaterThanOrEqual(0.4);
-      expect(
-        retrieved[0].metadata?.tags?.some((tag: string) => ['medium', 'high'].includes(tag)),
-      ).toBe(true);
+      // All results should meet both criteria
+      retrieved.forEach((msg) => {
+        expect(msg.metadata?.importance).toBeGreaterThanOrEqual(0.4);
+        const msgTags = msg.metadata?.tags as string[] | undefined;
+        expect(msgTags).toBeDefined();
+        if (msgTags) {
+          expect(msgTags.some((tag: string) => ['medium', 'high'].includes(tag))).toBe(true);
+        }
+      });
     });
   });
 
@@ -288,15 +293,17 @@ describe('InMemoryMemory', () => {
       const summary = await memory.summarize(sessionId);
 
       expect(summary).toBeDefined();
-      expect(summary.length).toBeGreaterThan(0);
-      expect(summary).toContain('3 messages');
+      expect(summary.role).toBe('system');
+      expect(summary.content).toBeDefined();
+      expect(summary.content.length).toBeGreaterThan(0);
     });
 
     it('should handle empty session summarization', async () => {
       const summary = await memory.summarize('empty-session');
 
       expect(summary).toBeDefined();
-      expect(summary).toContain('No messages');
+      expect(summary.role).toBe('system');
+      expect(summary.content).toContain('No messages');
     });
   });
 

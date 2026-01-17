@@ -58,6 +58,7 @@ export interface HierarchyConfig {
 export class HierarchyMemory implements Memory {
   private hierarchy: MemoryHierarchy;
   private config: Required<HierarchyConfig>;
+  private counter: number = 0;
 
   constructor(config: HierarchyConfig = {}) {
     // Apply defaults
@@ -113,11 +114,16 @@ export class HierarchyMemory implements Memory {
     message: Message,
     metadata?: Record<string, unknown>
   ): Promise<void> {
+    // Generate unique timestamp using counter for proper LIFO ordering
+    this.counter++;
+    const uniqueTimestamp = new Date(Date.now() + this.counter).toISOString();
+
     // Merge message metadata with provided metadata
     const combinedMetadata: Record<string, unknown> = {
       session_id: sessionId,
       role: message.role,
-      message_timestamp: message.timestamp || new Date().toISOString(), // Preserve original timestamp
+      original_timestamp: message.timestamp, // Preserve original timestamp
+      message_timestamp: uniqueTimestamp, // Always use unique timestamp for ordering
       ...(message.metadata || {}),
       ...(metadata || {}),
     };
@@ -166,8 +172,8 @@ export class HierarchyMemory implements Memory {
     // - Better to over-retrieve than under-retrieve
     const entries = await this.hierarchy.retrieve(query, limit * 3);
 
-    // Filter by session and convert to Messages
-    const messages: Message[] = [];
+    // Filter by session and convert to Messages (collect all, don't limit yet)
+    const messages: Array<{ message: Message; timestamp: string }> = [];
     for (const entry of entries) {
       if (entry.metadata.session_id === sessionId) {
         // Apply additional filters
@@ -175,15 +181,25 @@ export class HierarchyMemory implements Memory {
           continue;
         }
 
-        messages.push(this.entryToMessage(entry));
+        // Use message_timestamp from metadata for accurate ordering
+        const messageTimestamp =
+          typeof entry.metadata.message_timestamp === 'string'
+            ? entry.metadata.message_timestamp
+            : entry.timestamp.toISOString();
 
-        if (messages.length >= limit) {
-          break;
-        }
+        messages.push({
+          message: this.entryToMessage(entry),
+          timestamp: messageTimestamp,
+        });
       }
     }
 
-    return messages;
+    // Sort by timestamp descending (LIFO - most recent first)
+    // ISO string timestamps can be compared lexicographically
+    messages.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+    // Apply limit after sorting
+    return messages.slice(0, limit).map((m) => m.message);
   }
 
   /**
@@ -282,6 +298,24 @@ export class HierarchyMemory implements Memory {
    */
   getStats(): Record<string, unknown> {
     return this.hierarchy.getStats();
+  }
+
+  /**
+   * Get all session IDs currently stored in hierarchy.
+   */
+  async getAllSessions(): Promise<string[]> {
+    // Retrieve all entries from hierarchy
+    const entries = await this.hierarchy.retrieve('', 9999);
+
+    // Extract unique session IDs
+    const sessionIds = new Set<string>();
+    for (const entry of entries) {
+      if (entry.metadata.session_id && typeof entry.metadata.session_id === 'string') {
+        sessionIds.add(entry.metadata.session_id);
+      }
+    }
+
+    return Array.from(sessionIds);
   }
 
   /**

@@ -370,17 +370,18 @@ cd "$PROJECT_ROOT"
 TS_PATTERNS=$(find agenkit-ts/src/__tests__/patterns -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
 TS_CORE=$(find agenkit-ts/src -maxdepth 3 -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
 
-# Count tests in chaos, property, and integration directories
+# Count tests in chaos, property, integration, and safety directories
 TS_CHAOS=$(grep -r "it(" agenkit-ts/src/__tests__/chaos/ 2>/dev/null | wc -l | tr -d ' ')
 TS_PROPERTY=$(grep -r "it(" agenkit-ts/src/__tests__/property/ 2>/dev/null | wc -l | tr -d ' ')
 TS_INTEGRATION=$(grep -r "it(" agenkit-ts/src/__tests__/integration/ 2>/dev/null | wc -l | tr -d ' ')
+TS_SAFETY=$(grep -r "it(" agenkit-ts/src/__tests__/safety/ 2>/dev/null | wc -l | tr -d ' ')
 
 echo "  Pattern tests: $TS_PATTERNS files"
 echo "  Core tests: $TS_CORE files"
 echo "  Chaos tests: $TS_CHAOS"
 echo "  Property tests: $TS_PROPERTY"
 echo "  Integration tests: $TS_INTEGRATION"
-echo "  Safety: 0 (not implemented)"
+echo "  Safety tests: $TS_SAFETY"
 echo "  Techniques: 0 (not implemented)"
 echo ""
 
@@ -391,6 +392,7 @@ jq --arg total "$TS_TOTAL" \
    --arg chaos "$TS_CHAOS" \
    --arg property "$TS_PROPERTY" \
    --arg integration "$TS_INTEGRATION" \
+   --arg safety "$TS_SAFETY" \
    '.languages.typescript = {
      total: ($total | tonumber),
      test_files: ($files | tonumber),
@@ -398,7 +400,7 @@ jq --arg total "$TS_TOTAL" \
      categories: {
        patterns: ($patterns | tonumber),
        techniques: 0,
-       safety: 0,
+       safety: ($safety | tonumber),
        adapters: 0,
        routing: 0,
        chaos: ($chaos | tonumber),

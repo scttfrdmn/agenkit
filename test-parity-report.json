@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-17T22:11:59Z",
+  "generated_at": "2026-01-17T22:40:29Z",
   "languages": {
     "python": {
       "total": 1836,
@@ -74,20 +74,20 @@
       "categories": {}
     },
     "typescript": {
-      "total": 691,
-      "test_files": 69,
-      "note": "Counts may be estimated from test files",
       "categories": {
         "patterns": 7,
         "techniques": 108,
         "safety": 135,
         "adapters": 79,
         "evaluation": 108,
+        "middleware": 91,
         "routing": 0,
         "chaos": 61,
         "property": 8,
         "integration": 45
-      }
+      },
+      "total": 782,
+      "note": "Counts may be estimated from test files"
     }
   }
 }

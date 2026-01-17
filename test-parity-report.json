@@ -74,14 +74,15 @@
       "categories": {}
     },
     "typescript": {
-      "total": 583,
-      "test_files": 63,
+      "total": 691,
+      "test_files": 69,
       "note": "Counts may be estimated from test files",
       "categories": {
         "patterns": 7,
         "techniques": 108,
         "safety": 135,
         "adapters": 79,
+        "evaluation": 108,
         "routing": 0,
         "chaos": 61,
         "property": 8,

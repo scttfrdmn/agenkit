@@ -1,6 +1,6 @@
 # Agenkit Examples
 
-Comprehensive collection of **280 examples** across **6 languages** (including WASM!) demonstrating all Agenkit features, patterns, and integrations.
+Comprehensive collection of **285 examples** across **6 languages** (including WASM!) demonstrating all Agenkit features, patterns, and integrations.
 
 ## 🎯 Start Here
 
@@ -19,13 +19,13 @@ Comprehensive collection of **280 examples** across **6 languages** (including W
 
 | Language | Examples | Status |
 |----------|----------|--------|
-| **Python** | 151 | ✅ Complete |
+| **Python** | 156 | ✅ Complete |
 | **Rust** | 35 | ✅ Complete (+ WASM!) |
 | **C++** | 42 | ✅ Complete |
 | **Zig** | 37 | ✅ Complete |
 | **Go** | 7 | ⚠️ Growing |
 | **TypeScript** | 8 | ⚠️ Growing |
-| **Total** | **280** | |
+| **Total** | **285** | |
 
 ---
 
@@ -302,6 +302,55 @@ Real-world pattern usage.
 - `supervisor-usage.py` - Supervised agents
 - `collaborative-usage.py` - Agent collaboration
 - `human-in-loop-usage.py` - Human feedback
+
+---
+
+### 🧪 Experimental Patterns (1 example)
+
+Cutting-edge research implementations for validation and experimentation.
+
+**Location**: [`experimental/`](experimental/)
+
+#### Recursive Language Models (RLM)
+
+**Directory**: [`experimental/long_context_rlm/`](experimental/long_context_rlm/)
+
+**Status**: ⚠️ **EXPERIMENTAL** - Research validation, not production ready
+
+Novel inference strategy from Zhang et al. (2025) that treats long contexts as external environment variables accessed programmatically via REPL.
+
+**Key Features**:
+- **Code Execution**: Python REPL for context manipulation
+- **Recursive Sub-calls**: `llm_query()` function for delegating to sub-agents
+- **Budget Protection**: CostTracker + BudgetLimiter integration (high cost variance!)
+- **Pattern Composition**: Combines ReasoningWithTools, AgentTool, ReAct, BudgetLimiter
+
+**Paper Results**:
+- BrowseComp+: 0% → 91% success rate
+- OOLONG: 0.04% → 58% success rate
+- Cost: Median comparable to baselines, 95th percentile 3-10x higher
+
+**Files**:
+- `basic_rlm.py` - Core RecursiveREPLAgent implementation (364 LOC)
+- `document_qa.py` - Multi-document QA example (180 LOC)
+- `test_with_api.py` - Real API testing with budget protection
+- `test_with_api_simple.py` - Minimal test for debugging
+- `API_TEST_RESULTS.md` - Validation results with Anthropic Claude
+- `ANALYSIS.md` - Gap analysis and design decisions
+- `tests/test_rlm_basic.py` - 9 unit tests (all passing ✅)
+
+**Real API Test Results**:
+- ✅ Code execution works
+- ✅ Recursive sub-calls work (llm_query())
+- ✅ Budget protection works
+- ⚠️ Prompt engineering needed (models not trained for RLM pattern)
+
+**Future Work**: See [Issue #473](https://github.com/scttfrdmn/agenkit/issues/473) for prompt engineering roadmap
+
+**Learn More**:
+- [RLM README](experimental/long_context_rlm/README.md)
+- [API Test Results](experimental/long_context_rlm/API_TEST_RESULTS.md)
+- [Research Paper](https://arxiv.org/abs/2512.24601) - Zhang et al., 2025
 
 ---
 

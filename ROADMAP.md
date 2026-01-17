@@ -1563,17 +1563,19 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
      - ✅ Performance: <0.01ms overhead per request
      - ✅ Cross-language compatible via message metadata propagation
      - **Completed**: January 16, 2026 | **Commit**: c538542a
-   - ✅ **Rust Observability** (COMPLETE - 2 days, #460): OpenTelemetry SDK with **49 tests** (22.5% above target!)
+   - ✅ **Rust Observability** (COMPLETE - 2 days, #460): OpenTelemetry SDK with **66 tests** (65% above target!)
      - ✅ OpenTelemetry SDK 0.23 with full async/await support
      - ✅ Unified `opentelemetry` feature flag for clean dependency management
-     - ✅ 4 modules: Distributed tracing, Metrics, Structured logging, Audit logging
+     - ✅ 4 modules: Distributed tracing (11 tests), Metrics (11 tests), Structured logging (17 tests), Audit logging (16 tests)
+     - ✅ Integration tests: 11 full-stack tests across all modules
      - ✅ Multiple exporters: OTLP, Jaeger, Zipkin, Prometheus, Console
      - ✅ TracingMiddleware and MetricsMiddleware for automatic instrumentation
      - ✅ 3 production-ready examples (basic, distributed, production)
-     - ✅ 850 lines of comprehensive documentation (docs + implementation summary)
+     - ✅ 1,450 lines of comprehensive implementation (~2,250 LOC total with tests)
      - ✅ W3C Trace Context propagation via message metadata (cross-language compatible)
      - ✅ Thread-safe async operations with tokio runtime
-     - **Completed**: January 16, 2026 | **Commit**: 7f7d6ee7
+     - ✅ Performance script optimization: 600x faster test counting (0.1s vs 10min)
+     - **Completed**: January 16, 2026 | **Commits**: 50153239 (implementation), 3c3b4eed (script optimization), 805c9689 (docs)
    - ✅ **TypeScript Observability** (COMPLETE - 1 day, #460): OpenTelemetry SDK with **76 tests** (highest coverage!)
      - ✅ OpenTelemetry SDK for Node.js with full async/await support
      - ✅ 4 modules: Distributed tracing, Metrics, Structured logging, Audit logging
@@ -1801,20 +1803,23 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 
 #### Q1-Q2 2026 (Planned) 🚧
 
-**v0.49.0 (Feb-Mar 2026):** Advanced Features & Observability 🔭
-- **Observability Completion (MUST HAVE)**: OpenTelemetry for Rust (8-10 days), C++ (6-8 days), Zig (6-8 days)
-  - Full distributed tracing, metrics, structured logging
-  - 40+ tests per language (matching Python/Go)
-  - Span context propagation across async boundaries
-  - Export to OTLP, Jaeger, Zipkin
-- **Memory Systems Phase 2 (SHOULD HAVE)**: Vector & Redis storage
+**v0.49.0 (Jan-Feb 2026):** Advanced Features & Observability 🔭
+- ✅ **Observability Completion (MUST HAVE)**: **COMPLETE** (Jan 16, 2026)
+  - ✅ Rust: 66 tests (65% above target) - OpenTelemetry SDK 0.23
+  - ✅ C++: 63 tests (54% above target) - OpenTelemetry C++ SDK
+  - ✅ Zig: 66 tests (65% above target) - Zero-dependency W3C Trace Context
+  - ✅ TypeScript: 76 tests (highest coverage) - OpenTelemetry Node.js SDK
+  - ✅ **268 total observability tests** across 4 languages (exceeds Python 41 + Go 41 combined)
+  - ✅ Full distributed tracing, metrics, structured logging, audit logging
+  - ✅ W3C Trace Context propagation via message metadata (cross-language compatible)
+  - ✅ Export to OTLP, Jaeger, Zipkin, Prometheus, Console
+- 🚧 **Memory Systems Phase 2 (SHOULD HAVE)**: In Progress
   - Vector Memory: TypeScript (3-4 days), Rust (3-4 days) - ChromaDB, FAISS, semantic search
   - Redis Memory: Deferred to v0.50.0+ (distributed agents not blocking v1.0)
-- **Advanced Reasoning (SHOULD HAVE)**: Graph of Thought for Go (3-4 days)
-  - Graph-based reasoning structure with path evaluation
-  - Cycle detection and traversal strategies
-- **Estimated Effort**: 29-38 days (~6-8 weeks)
-- **Priority**: 🔴 High (Observability critical for production)
+- 🚧 **Advanced Reasoning (SHOULD HAVE)**: Planned
+  - Graph of Thought for Go (3-4 days) - Graph-based reasoning structure with path evaluation
+- **Status**: ✅ Observability Complete | 🚧 In Progress (Memory & Reasoning)
+- **Priority**: 🔴 High (Observability critical for production - NOW COMPLETE)
 - **Milestone**: [#62 v0.49.0 - Advanced Features & Observability](https://github.com/scttfrdmn/agenkit/milestone/62)
 
 **v0.50.0 (Apr-May 2026):** Service Connectors & Framework Examples 🌐
@@ -1873,4 +1878,4 @@ See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for d
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: January 16, 2026 (v0.48.0 COMPLETE: Automated parity enforcement + world-class documentation. C++ Observability COMPLETE (#461): 63 tests, 8 days, exceeding targets by 54%. v0.49.0 in progress (1/3 observability languages complete: C++ ✅, Rust 🚧, Zig 🚧). v0.50.0 (Service Connectors) planned. v0.9.0 Release Candidate due May 5. v1.0.0 on track for May 27, 2026.)
+Last updated: January 16, 2026 (v0.49.0 Observability COMPLETE: All 4 languages ✅ - Rust (66 tests), C++ (63 tests), Zig (66 tests), TypeScript (76 tests) = 268 total observability tests! 🎉 Exceeds Python + Go combined. Performance optimization: 600x faster test counting. v0.49.0 remaining: Memory Systems Phase 2 + Advanced Reasoning (in progress). v0.50.0 (Service Connectors) planned Q2. v1.0.0 on track for May 27, 2026.)

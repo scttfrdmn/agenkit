@@ -1,6 +1,6 @@
 # Test Parity Dashboard
 
-**Last Updated:** 2026-01-17 20:20:14 UTC
+**Last Updated:** 2026-01-17 20:37:43 UTC
 **Status:** Tracking test parity across 6 language implementations
 
 ## Overview
@@ -16,7 +16,7 @@ This dashboard tracks test coverage across all Agenkit language implementations 
 | **C++** | 793 suites | —¹ | 647.8% | ✅ Excellent |
 | **Rust** | 681 | -1155 | 37.0% | 🟠 Poor |
 | **Zig** | 214 | -1622 | 11.6% | 🔴 Critical |
-| **TypeScript** | 464² | —² | 25.2% | 🟠 Poor |
+| **TypeScript** | 496² | —² | 27.0% | 🟠 Poor |
 
 ¹ C++ reports test suites not individual tests. Estimated ≈15 tests/suite = 11895 total tests.
 ² TypeScript count may be estimated from test files.
@@ -81,7 +81,7 @@ Target test counts for "meaningful parity" (85% of Python's comprehensive covera
 | C++ | 793 | 1,500 | +-10395 | Techniques, Safety, Adapters |
 | Rust | 681 | 1,500 | +819 | Techniques, Safety, Adapters |
 | Zig | 214 | 1,000 | +786 | Evaluation, Techniques |
-| TypeScript | 464 | 1,200 | +736 | Techniques, Safety, Adapters |
+| TypeScript | 496 | 1,200 | +704 | Techniques, Safety, Adapters |
 
 ## Methodology
 

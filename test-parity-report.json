@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-17T19:33:16Z",
+  "generated_at": "2026-01-17T20:09:49Z",
   "languages": {
     "python": {
       "total": 1836,
@@ -74,8 +74,8 @@
       "categories": {}
     },
     "typescript": {
-      "total": 392,
-      "test_files": 49,
+      "total": 440,
+      "test_files": 55,
       "note": "Counts may be estimated from test files",
       "categories": {
         "patterns": 7,
@@ -83,8 +83,8 @@
         "safety": 0,
         "adapters": 0,
         "routing": 0,
-        "chaos": 0,
-        "property": 0
+        "chaos": 61,
+        "property": 8
       }
     }
   }

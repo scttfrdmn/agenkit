@@ -20,7 +20,7 @@ TOTAL_PARITY_THRESHOLDS = {
     "go": 50.0,  # Currently 51.7% (950/1836)
     "cpp": 40.0,  # Currently 43.2% (793/1836)
     "rust": 35.0,  # Currently 37.1% (681/1836)
-    "typescript": 18.0,  # Currently 21.4% (392/1836)
+    "typescript": 24.0,  # Currently 24.0% (440/1836)
     "zig": 11.0,  # Currently 11.7% (214/1836)
 }
 
@@ -49,6 +49,8 @@ CATEGORY_THRESHOLDS = {
         "patterns": 1.5,  # 1.6% (7/439) - early stage
         "techniques": 0.0,  # 0% (0/240) - not implemented
         "adapters": 0.0,  # 0% (0/151) - not implemented
+        "chaos": 115.0,  # 115.1% (61/53) - comprehensive chaos testing!
+        "property": 21.0,  # 21.6% (8/37) - property-based testing started
     },
     "zig": {
         "patterns": 0.0,  # Zig has no category breakdown - can't enforce

@@ -366,12 +366,18 @@ fi
 
 cd "$PROJECT_ROOT"
 
-# TypeScript by category (from file locations)
+# TypeScript by category (from file locations and test counts)
 TS_PATTERNS=$(find agenkit-ts/src/__tests__/patterns -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
 TS_CORE=$(find agenkit-ts/src -maxdepth 3 -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
 
+# Count tests in chaos and property directories
+TS_CHAOS=$(grep -r "it(" agenkit-ts/src/__tests__/chaos/ 2>/dev/null | wc -l | tr -d ' ')
+TS_PROPERTY=$(grep -r "it(" agenkit-ts/src/__tests__/property/ 2>/dev/null | wc -l | tr -d ' ')
+
 echo "  Pattern tests: $TS_PATTERNS files"
 echo "  Core tests: $TS_CORE files"
+echo "  Chaos tests: $TS_CHAOS"
+echo "  Property tests: $TS_PROPERTY"
 echo "  Safety: 0 (not implemented)"
 echo "  Techniques: 0 (not implemented)"
 echo ""
@@ -380,6 +386,8 @@ echo ""
 jq --arg total "$TS_TOTAL" \
    --arg files "$TS_FILES" \
    --arg patterns "$TS_PATTERNS" \
+   --arg chaos "$TS_CHAOS" \
+   --arg property "$TS_PROPERTY" \
    '.languages.typescript = {
      total: ($total | tonumber),
      test_files: ($files | tonumber),
@@ -390,8 +398,8 @@ jq --arg total "$TS_TOTAL" \
        safety: 0,
        adapters: 0,
        routing: 0,
-       chaos: 0,
-       property: 0
+       chaos: ($chaos | tonumber),
+       property: ($property | tonumber)
      }
    }' "$REPORT_JSON" > "$REPORT_JSON.tmp" && mv "$REPORT_JSON.tmp" "$REPORT_JSON"
 

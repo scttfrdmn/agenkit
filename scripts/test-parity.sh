@@ -370,11 +370,12 @@ cd "$PROJECT_ROOT"
 TS_PATTERNS=$(find agenkit-ts/src/__tests__/patterns -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
 TS_CORE=$(find agenkit-ts/src -maxdepth 3 -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
 
-# Count tests in chaos, property, integration, and safety directories
+# Count tests in chaos, property, integration, safety, and techniques directories
 TS_CHAOS=$(grep -r "it(" agenkit-ts/src/__tests__/chaos/ 2>/dev/null | wc -l | tr -d ' ')
 TS_PROPERTY=$(grep -r "it(" agenkit-ts/src/__tests__/property/ 2>/dev/null | wc -l | tr -d ' ')
 TS_INTEGRATION=$(grep -r "it(" agenkit-ts/src/__tests__/integration/ 2>/dev/null | wc -l | tr -d ' ')
 TS_SAFETY=$(grep -r "it(" agenkit-ts/src/__tests__/safety/ 2>/dev/null | wc -l | tr -d ' ')
+TS_TECHNIQUES=$(grep -r "it(" agenkit-ts/src/techniques/ 2>/dev/null | wc -l | tr -d ' ')
 
 echo "  Pattern tests: $TS_PATTERNS files"
 echo "  Core tests: $TS_CORE files"
@@ -382,7 +383,7 @@ echo "  Chaos tests: $TS_CHAOS"
 echo "  Property tests: $TS_PROPERTY"
 echo "  Integration tests: $TS_INTEGRATION"
 echo "  Safety tests: $TS_SAFETY"
-echo "  Techniques: 0 (not implemented)"
+echo "  Techniques tests: $TS_TECHNIQUES"
 echo ""
 
 # Add TypeScript to JSON
@@ -393,13 +394,14 @@ jq --arg total "$TS_TOTAL" \
    --arg property "$TS_PROPERTY" \
    --arg integration "$TS_INTEGRATION" \
    --arg safety "$TS_SAFETY" \
+   --arg techniques "$TS_TECHNIQUES" \
    '.languages.typescript = {
      total: ($total | tonumber),
      test_files: ($files | tonumber),
      note: "Counts may be estimated from test files",
      categories: {
        patterns: ($patterns | tonumber),
-       techniques: 0,
+       techniques: ($techniques | tonumber),
        safety: ($safety | tonumber),
        adapters: 0,
        routing: 0,
@@ -508,10 +510,12 @@ PYTHON_TECHNIQUES=$(jq -r '.languages.python.categories.techniques' "$REPORT_JSO
 GO_TECHNIQUES=$(jq -r '.languages.go.categories.techniques' "$REPORT_JSON")
 CPP_TECHNIQUES=$(jq -r '.languages.cpp.categories.techniques' "$REPORT_JSON")
 RUST_TECHNIQUES=$(jq -r '.languages.rust.categories.techniques' "$REPORT_JSON")
+TS_TECHNIQUES_VAL=$(jq -r '.languages.typescript.categories.techniques' "$REPORT_JSON")
 
 PYTHON_SAFETY=$(jq -r '.languages.python.categories.safety' "$REPORT_JSON")
 GO_SAFETY=$(jq -r '.languages.go.categories.safety' "$REPORT_JSON")
 RUST_SAFETY=$(jq -r '.languages.rust.categories.safety' "$REPORT_JSON")
+TS_SAFETY_VAL=$(jq -r '.languages.typescript.categories.safety' "$REPORT_JSON")
 
 PYTHON_ADAPTERS=$(jq -r '.languages.python.categories.adapters' "$REPORT_JSON")
 GO_ADAPTERS=$(jq -r '.languages.go.categories.adapters' "$REPORT_JSON")
@@ -526,8 +530,8 @@ GO_MIDDLEWARE=$(jq -r '.languages.go.categories.middleware' "$REPORT_JSON")
 
 cat >> "$REPORT_MD" << MDCATDATA
 | **Patterns** | $PYTHON_PATTERNS | $GO_PATTERNS ✅ | $CPP_PATTERNS ✅ | $RUST_PATTERNS ✅ | — | $TS_PATTERNS |
-| **Techniques** | $PYTHON_TECHNIQUES | $GO_TECHNIQUES ❌ | $CPP_TECHNIQUES ❌ | $RUST_TECHNIQUES ❌ | — | 0 ❌ |
-| **Safety** | $PYTHON_SAFETY | $GO_SAFETY ❌ | 0 ❌ | $RUST_SAFETY ❌ | — | 0 ❌ |
+| **Techniques** | $PYTHON_TECHNIQUES | $GO_TECHNIQUES ❌ | $CPP_TECHNIQUES ❌ | $RUST_TECHNIQUES ❌ | — | $TS_TECHNIQUES_VAL ❌ |
+| **Safety** | $PYTHON_SAFETY | $GO_SAFETY ❌ | 0 ❌ | $RUST_SAFETY ❌ | — | $TS_SAFETY_VAL ⚠️ |
 | **Adapters** | $PYTHON_ADAPTERS | $GO_ADAPTERS ⚠️ | ~8 ❌ | $RUST_ADAPTERS ❌ | — | 0 ❌ |
 | **Evaluation** | $PYTHON_EVALUATION | $GO_EVALUATION ⚠️ | — | $RUST_EVALUATION ⚠️ | — | 0 ❌ |
 | **Middleware** | $PYTHON_MIDDLEWARE | $GO_MIDDLEWARE ⚠️ | — | — | — | — |

@@ -1,6 +1,6 @@
 # Test Parity Dashboard
 
-**Last Updated:** 2026-01-17 20:37:43 UTC
+**Last Updated:** 2026-01-17 20:56:49 UTC
 **Status:** Tracking test parity across 6 language implementations
 
 ## Overview
@@ -29,8 +29,8 @@ This dashboard tracks test coverage across all Agenkit language implementations 
 | Category | Python | Go | C++ | Rust | Zig | TypeScript |
 |----------|--------|-----|-----|------|-----|------------|
 | **Patterns** | 439 | 362 ✅ | 310 ✅ | 133 ✅ | — | 7 |
-| **Techniques** | 240 | 37 ❌ | 22 ❌ | 0 ❌ | — | 0 ❌ |
-| **Safety** | 162 | 94 ❌ | 0 ❌ | 52 ❌ | — | 0 ❌ |
+| **Techniques** | 240 | 37 ❌ | 22 ❌ | 0 ❌ | — | 62 ❌ |
+| **Safety** | 162 | 94 ❌ | 0 ❌ | 52 ❌ | — | 135 ⚠️ |
 | **Adapters** | 151 | 54 ⚠️ | ~8 ❌ | 31 ❌ | — | 0 ❌ |
 | **Evaluation** | 116 | 127 ⚠️ | — | 73 ⚠️ | — | 0 ❌ |
 | **Middleware** | 92 | 91 ⚠️ | — | — | — | — |

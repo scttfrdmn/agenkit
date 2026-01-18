@@ -129,29 +129,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Extract interactions
     let interactions_v1 = results_v1
         .get("interactions")
-        .and_then(|v| v.as_array())
+        .and_then(|v: &serde_json::Value| v.as_array())
         .unwrap();
     let interactions_v2 = results_v2
         .get("interactions")
-        .and_then(|v| v.as_array())
+        .and_then(|v: &serde_json::Value| v.as_array())
         .unwrap();
 
     for i in 0..interactions_v1.len() {
         let output_v1 = interactions_v1[i]
             .get("replay_output")
-            .and_then(|v| v.get("content"))
-            .and_then(|v| v.as_str())
+            .and_then(|v: &serde_json::Value| v.get("content"))
+            .and_then(|v: &serde_json::Value| v.as_str())
             .unwrap_or("");
         let output_v2 = interactions_v2[i]
             .get("replay_output")
-            .and_then(|v| v.get("content"))
-            .and_then(|v| v.as_str())
+            .and_then(|v: &serde_json::Value| v.get("content"))
+            .and_then(|v: &serde_json::Value| v.as_str())
             .unwrap_or("");
 
         let input = interactions_v1[i]
             .get("input")
-            .and_then(|v| v.get("content"))
-            .and_then(|v| v.as_str())
+            .and_then(|v: &serde_json::Value| v.get("content"))
+            .and_then(|v: &serde_json::Value| v.as_str())
             .unwrap_or("");
 
         println!("  {}. Input: {}", i + 1, input);
@@ -177,31 +177,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "  Latency V1: {:.0}ms",
         results_v1
             .get("total_latency_ms")
-            .and_then(|v| v.as_f64())
+            .and_then(|v: &serde_json::Value| v.as_f64())
             .unwrap_or(0.0)
     );
     println!(
         "  Latency V2: {:.0}ms",
         results_v2
             .get("total_latency_ms")
-            .and_then(|v| v.as_f64())
+            .and_then(|v: &serde_json::Value| v.as_f64())
             .unwrap_or(0.0)
     );
     println!(
         "  Difference: {:.0}ms ({:.1}%)",
         comparison
             .get("latency_diff_ms")
-            .and_then(|v| v.as_f64())
+            .and_then(|v: &serde_json::Value| v.as_f64())
             .unwrap_or(0.0),
         comparison
             .get("latency_diff_percent")
-            .and_then(|v| v.as_f64())
+            .and_then(|v: &serde_json::Value| v.as_f64())
             .unwrap_or(0.0)
     );
 
     let output_diffs = comparison
         .get("output_differences")
-        .and_then(|v| v.as_array())
+        .and_then(|v: &serde_json::Value| v.as_array())
         .map(|a| a.len())
         .unwrap_or(0);
     println!(
@@ -221,15 +221,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for i in 0..interactions_v1.len() {
         if let Some(output) = interactions_v1[i]
             .get("replay_output")
-            .and_then(|v| v.get("content"))
-            .and_then(|v| v.as_str())
+            .and_then(|v: &serde_json::Value| v.get("content"))
+            .and_then(|v: &serde_json::Value| v.as_str())
         {
             v1_lengths.push(output.len());
         }
         if let Some(output) = interactions_v2[i]
             .get("replay_output")
-            .and_then(|v| v.get("content"))
-            .and_then(|v| v.as_str())
+            .and_then(|v: &serde_json::Value| v.get("content"))
+            .and_then(|v: &serde_json::Value| v.as_str())
         {
             v2_lengths.push(output.len());
         }
@@ -257,7 +257,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let latency_increase = comparison
         .get("latency_diff_percent")
-        .and_then(|v| v.as_f64())
+        .and_then(|v: &serde_json::Value| v.as_f64())
         .unwrap_or(0.0);
 
     if v2_avg_length > v1_avg_length * 1.2 && latency_increase < 20.0 {

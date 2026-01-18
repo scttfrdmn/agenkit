@@ -1,2 +1,0 @@
-{"event_id":"0000019bc7b799d3-c7b7-019bªªªªªªªªªª","timestamp":1768582257107,"event_type":"agent_created","agent_name":"example-service","severity":"INFO","session_id":"example-session"}
-{"event_id":"0000019bc7b799d6-c7b7-019bªªªªªªªªªª","timestamp":1768582257110,"event_type":"message_processed","agent_name":"example-service","severity":"INFO","session_id":"example-session","details":{"success":"true"}}

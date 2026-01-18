@@ -1,3 +1,0 @@
-{"event_id":"0000019bc7b72b6b-c7b7-019bªªªªªªªªªª","timestamp":1768582228843,"event_type":"message_processed","agent_name":"agent","severity":"INFO"}
-{"event_id":"0000019bc7b72b6c-c7b7-019bªªªªªªªªªª","timestamp":1768582228843,"event_type":"security_violation","agent_name":"agent","severity":"CRITICAL"}
-{"event_id":"0000019bc7b72b6c-c7b7-019bªªªªªªªªªª","timestamp":1768582228843,"event_type":"message_failed","agent_name":"agent","severity":"ERROR"}

@@ -12,10 +12,17 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 
 from agenkit.observability import configure_logging, get_logger_with_trace
 
+# Mark all tests in this module to run on the same xdist worker to avoid
+# OpenTelemetry global state conflicts between parallel workers
+pytestmark = pytest.mark.xdist_group(name="observability_logging")
 
-@pytest.fixture(scope="module")
+
+@pytest.fixture
 def tracer_provider():
-    """Create a tracer provider for testing (module-scoped)."""
+    """Create a tracer provider for testing (function-scoped for test isolation)."""
+    # Save the current tracer provider to restore later
+    original_provider = trace.get_tracer_provider()
+
     exporter = InMemorySpanExporter()
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(exporter))
@@ -23,8 +30,12 @@ def tracer_provider():
 
     yield provider
 
+    # Clean up
     provider.force_flush()
     provider.shutdown()
+
+    # Restore original provider to avoid polluting other tests
+    trace.set_tracer_provider(original_provider)
 
 
 @pytest.fixture

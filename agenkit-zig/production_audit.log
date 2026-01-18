@@ -1,4 +1,0 @@
-{"event_id":"0000019bc7b799dd-c7b7-019bªªªªªªªªªª","timestamp":1768582257117,"event_type":"agent_created","agent_name":"prod-ai-agent","severity":"INFO","session_id":"prod-session-001","details":{"environment":"production","version":"1.0.0"}}
-{"event_id":"0000019bc7b799de-c7b7-019bªªªªªªªªªª","timestamp":1768582257118,"event_type":"message_processed","agent_name":"prod-ai-agent","severity":"INFO","session_id":"prod-session-001","details":{"request_id":"1"}}
-{"event_id":"0000019bc7b799e1-c7b7-019bªªªªªªªªªª","timestamp":1768582257121,"event_type":"message_processed","agent_name":"prod-ai-agent","severity":"INFO","session_id":"prod-session-001","details":{"request_id":"2"}}
-{"event_id":"0000019bc7b799e2-c7b7-019bªªªªªªªªªª","timestamp":1768582257122,"event_type":"message_processed","agent_name":"prod-ai-agent","severity":"INFO","session_id":"prod-session-001","details":{"request_id":"3"}}

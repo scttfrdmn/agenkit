@@ -405,8 +405,8 @@ export class HierarchyMemory implements Memory {
 
       // Get message timestamp from metadata (preserved from original Message)
       let messageTimestamp = entry.timestamp;
-      if (typeof entry.metadata.message_timestamp === 'string') {
-        messageTimestamp = new Date(entry.metadata.message_timestamp);
+      if (typeof entry.metadata.original_timestamp === 'string') {
+        messageTimestamp = new Date(entry.metadata.original_timestamp);
       }
 
       if (messageTimestamp < startTime || messageTimestamp > endTime) {

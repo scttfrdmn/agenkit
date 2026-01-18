@@ -66,7 +66,7 @@ pub use hierarchy::MemoryHierarchy;
 pub use long_term::LongTermMemory;
 pub use short_term::ShortTermMemory;
 pub use vector_memory::{
-    EmbeddingProvider, InMemoryVectorStore, MessageSearchResult, MessageWithMetadata,
-    SearchOptions, VectorMemory, VectorStore,
+    DistanceMetric, EmbeddingProvider, InMemoryVectorStore, MessageSearchResult,
+    MessageWithMetadata, SearchOptions, StoreBatchItem, VectorMemory, VectorStore, VectorStoreItem,
 };
 pub use working::WorkingMemory;

@@ -207,15 +207,38 @@ Think step-by-step and use code to solve the problem systematically.
     def _make_llm_query_func(self):
         """Create llm_query() function for REPL namespace."""
 
-        async def llm_query(prompt: str) -> str:
+        async def llm_query_async(prompt: str) -> str:
             """Recursively query sub-agent."""
             response = await self.sub_agent.process(Message(role="user", content=prompt))
             return response.content
 
         # Wrap async function for sync REPL context
         def llm_query_sync(prompt: str) -> str:
-            loop = asyncio.get_event_loop()
-            return loop.run_until_complete(llm_query(prompt))
+            """
+            Synchronous wrapper for async llm_query.
+
+            Creates new event loop if needed to properly handle async calls
+            from the synchronous REPL environment.
+            """
+            try:
+                # Try to get existing loop
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Loop is already running, we're inside an async context
+                    # This shouldn't happen in REPL, but handle it
+                    import nest_asyncio
+                    nest_asyncio.apply()
+                    return loop.run_until_complete(llm_query_async(prompt))
+            except RuntimeError:
+                # No event loop, create a new one
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+            try:
+                return loop.run_until_complete(llm_query_async(prompt))
+            finally:
+                # Don't close the loop as we might reuse it
+                pass
 
         return llm_query_sync
 

@@ -1,0 +1,7 @@
+# Zig build artifacts
+zig-out/
+zig-cache/
+.zig-cache/
+
+# Test artifacts
+*.log

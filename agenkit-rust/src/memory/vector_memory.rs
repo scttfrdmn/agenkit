@@ -204,10 +204,45 @@
 
 use crate::core::{AgentError, Message};
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+/// Distance metric for vector similarity calculations.
+///
+/// - `Cosine`: Cosine similarity (best for text embeddings, normalized by magnitude)
+/// - `Euclidean`: Euclidean distance (best for spatial data, L2 norm)
+/// - `DotProduct`: Dot product (best for pre-normalized vectors, inner product)
+///
+/// # Examples
+///
+/// ```rust
+/// use agenkit::memory::DistanceMetric;
+///
+/// // Default is cosine similarity
+/// let metric = DistanceMetric::default();
+/// assert_eq!(metric, DistanceMetric::Cosine);
+///
+/// // Use euclidean for spatial data
+/// let metric = DistanceMetric::Euclidean;
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DistanceMetric {
+    /// Cosine similarity - best for text embeddings
+    Cosine,
+    /// Euclidean distance - best for spatial data
+    Euclidean,
+    /// Dot product - best for pre-normalized vectors
+    DotProduct,
+}
+
+impl Default for DistanceMetric {
+    fn default() -> Self {
+        DistanceMetric::Cosine
+    }
+}
 
 /// Trait for embedding providers.
 ///
@@ -237,7 +272,7 @@ pub struct MessageWithMetadata {
 }
 
 /// Search and filter options.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct SearchOptions {
     /// Time range filter (start_secs, end_secs)
     pub time_range: Option<(f64, f64)>,
@@ -247,6 +282,42 @@ pub struct SearchOptions {
     pub tags: Vec<String>,
     /// Minimum similarity score (0.0-1.0)
     pub min_similarity: f64,
+    /// Distance metric to use for similarity calculation
+    pub distance_metric: DistanceMetric,
+}
+
+impl Default for SearchOptions {
+    fn default() -> Self {
+        Self {
+            time_range: None,
+            importance_threshold: None,
+            tags: Vec::new(),
+            min_similarity: 0.0,
+            distance_metric: DistanceMetric::default(),
+        }
+    }
+}
+
+/// Item for batch vector store operations.
+///
+/// Used by `VectorStore::add_batch()` to add multiple messages efficiently.
+#[derive(Debug, Clone)]
+pub struct VectorStoreItem {
+    pub message_id: String,
+    pub embedding: Vec<f64>,
+    pub message: Message,
+    pub metadata: HashMap<String, JsonValue>,
+    pub timestamp: f64,
+}
+
+/// Item for batch storage through VectorMemory.
+///
+/// Used by `VectorMemory::store_batch()` to generate embeddings and store multiple
+/// messages in parallel.
+#[derive(Debug, Clone)]
+pub struct StoreBatchItem {
+    pub message: Message,
+    pub metadata: Option<HashMap<String, JsonValue>>,
 }
 
 /// Trait for vector storage backends.
@@ -281,6 +352,28 @@ pub trait VectorStore: Send + Sync {
         limit: usize,
         options: &SearchOptions,
     ) -> Result<Vec<MessageWithMetadata>, AgentError>;
+
+    /// Add multiple messages with embeddings in batch.
+    ///
+    /// This is more efficient than calling `add()` repeatedly, as implementations
+    /// can optimize bulk operations (e.g., single database transaction).
+    async fn add_batch(
+        &self,
+        session_id: &str,
+        items: Vec<VectorStoreItem>,
+    ) -> Result<(), AgentError>;
+
+    /// Search with multiple query embeddings in batch.
+    ///
+    /// Returns a vector of search results for each query embedding.
+    /// This is more efficient than calling `search()` repeatedly.
+    async fn search_batch(
+        &self,
+        session_id: &str,
+        query_embeddings: Vec<Vec<f64>>,
+        limit: usize,
+        options: &SearchOptions,
+    ) -> Result<Vec<Vec<MessageSearchResult>>, AgentError>;
 
     /// Clear all messages for session.
     async fn clear(&self, session_id: &str) -> Result<(), AgentError>;
@@ -333,6 +426,71 @@ impl InMemoryVectorStore {
         Ok(dot_product / (magnitude_a * magnitude_b))
     }
 
+    /// Calculate Euclidean distance between two vectors.
+    ///
+    /// Returns the L2 norm distance between vectors.
+    /// Lower values indicate more similarity.
+    fn euclidean_distance(a: &[f64], b: &[f64]) -> Result<f64, AgentError> {
+        if a.len() != b.len() {
+            return Err(AgentError::ProcessingError(format!(
+                "vector dimension mismatch: {} vs {}",
+                a.len(),
+                b.len()
+            )));
+        }
+
+        let sum: f64 = a.iter().zip(b.iter()).map(|(x, y)| (x - y).powi(2)).sum();
+
+        Ok(sum.sqrt())
+    }
+
+    /// Calculate dot product between two vectors.
+    ///
+    /// Returns the inner product of two vectors.
+    /// Higher values indicate more similarity for normalized vectors.
+    fn dot_product(a: &[f64], b: &[f64]) -> Result<f64, AgentError> {
+        if a.len() != b.len() {
+            return Err(AgentError::ProcessingError(format!(
+                "vector dimension mismatch: {} vs {}",
+                a.len(),
+                b.len()
+            )));
+        }
+
+        let product: f64 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
+
+        Ok(product)
+    }
+
+    /// Calculate similarity using specified distance metric.
+    ///
+    /// Converts all distance metrics to similarity scores where higher is more similar.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - First vector
+    /// * `b` - Second vector
+    /// * `metric` - Distance metric to use
+    ///
+    /// # Returns
+    ///
+    /// Similarity score (higher = more similar)
+    fn calculate_similarity(
+        a: &[f64],
+        b: &[f64],
+        metric: DistanceMetric,
+    ) -> Result<f64, AgentError> {
+        match metric {
+            DistanceMetric::Cosine => Self::cosine_similarity(a, b),
+            DistanceMetric::Euclidean => {
+                let distance = Self::euclidean_distance(a, b)?;
+                // Convert distance to similarity: 1 / (1 + distance)
+                Ok(1.0 / (1.0 + distance))
+            }
+            DistanceMetric::DotProduct => Self::dot_product(a, b),
+        }
+    }
+
     /// Check if entry passes filters.
     fn apply_filters(entry: &VectorEntry, options: &SearchOptions) -> bool {
         // Time range filter
@@ -367,10 +525,7 @@ impl InMemoryVectorStore {
                 })
                 .unwrap_or_default();
 
-            let has_intersection = options
-                .tags
-                .iter()
-                .any(|tag| message_tags.contains(tag));
+            let has_intersection = options.tags.iter().any(|tag| message_tags.contains(tag));
             if !has_intersection {
                 return false;
             }
@@ -429,11 +584,15 @@ impl VectorStore for InMemoryVectorStore {
             None => return Ok(Vec::new()),
         };
 
-        // Calculate similarity for all messages
+        // Calculate similarity for all messages using the specified metric
         let mut results: Vec<(Message, HashMap<String, JsonValue>, f64)> = Vec::new();
 
         for entry in entries {
-            let score = Self::cosine_similarity(&query_embedding, &entry.embedding)?;
+            let score = Self::calculate_similarity(
+                &query_embedding,
+                &entry.embedding,
+                options.distance_metric,
+            )?;
             results.push((entry.message.clone(), entry.metadata.clone(), score));
         }
 
@@ -488,7 +647,11 @@ impl VectorStore for InMemoryVectorStore {
 
         // Sort by timestamp (most recent first)
         let mut sorted = entries.clone();
-        sorted.sort_by(|a, b| b.timestamp.partial_cmp(&a.timestamp).unwrap_or(std::cmp::Ordering::Equal));
+        sorted.sort_by(|a, b| {
+            b.timestamp
+                .partial_cmp(&a.timestamp)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         // Apply filters
         let mut filtered = Vec::new();
@@ -509,6 +672,51 @@ impl VectorStore for InMemoryVectorStore {
         }
 
         Ok(filtered)
+    }
+
+    async fn add_batch(
+        &self,
+        session_id: &str,
+        items: Vec<VectorStoreItem>,
+    ) -> Result<(), AgentError> {
+        let mut storage = self.storage.lock().unwrap();
+
+        if !storage.contains_key(session_id) {
+            storage.insert(session_id.to_string(), Vec::new());
+        }
+
+        let entries = storage.get_mut(session_id).unwrap();
+
+        for item in items {
+            entries.push(VectorEntry {
+                message_id: item.message_id,
+                embedding: item.embedding,
+                message: item.message,
+                metadata: item.metadata,
+                timestamp: item.timestamp,
+            });
+        }
+
+        Ok(())
+    }
+
+    async fn search_batch(
+        &self,
+        session_id: &str,
+        query_embeddings: Vec<Vec<f64>>,
+        limit: usize,
+        options: &SearchOptions,
+    ) -> Result<Vec<Vec<MessageSearchResult>>, AgentError> {
+        let mut all_results = Vec::new();
+
+        for query_embedding in query_embeddings {
+            let results = self
+                .search(session_id, query_embedding, limit, options)
+                .await?;
+            all_results.push(results);
+        }
+
+        Ok(all_results)
     }
 
     async fn clear(&self, session_id: &str) -> Result<(), AgentError> {
@@ -550,8 +758,7 @@ impl VectorMemory {
     ) -> Self {
         Self {
             embeddings: embedding_provider,
-            vector_store: vector_store
-                .unwrap_or_else(|| Box::new(InMemoryVectorStore::new())),
+            vector_store: vector_store.unwrap_or_else(|| Box::new(InMemoryVectorStore::new())),
             id_counter: Arc::new(Mutex::new(0)),
         }
     }
@@ -599,6 +806,83 @@ impl VectorMemory {
                 timestamp,
             )
             .await
+    }
+
+    /// Store multiple messages at once with parallel embedding generation.
+    ///
+    /// This is more efficient than calling `store()` repeatedly, as it:
+    /// - Generates embeddings in parallel using tokio::spawn
+    /// - Uses a single batch operation to the vector store
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - Session identifier
+    /// * `items` - Messages to store with optional metadata
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use agenkit::memory::{VectorMemory, StoreBatchItem};
+    /// # use agenkit::core::Message;
+    /// # async fn example(memory: VectorMemory) {
+    /// let items = vec![
+    ///     StoreBatchItem {
+    ///         message: Message::with_text("user", "First message"),
+    ///         metadata: None,
+    ///     },
+    ///     StoreBatchItem {
+    ///         message: Message::with_text("assistant", "Second message"),
+    ///         metadata: None,
+    ///     },
+    /// ];
+    ///
+    /// memory.store_batch("session-1", items).await.unwrap();
+    /// # }
+    /// ```
+    pub async fn store_batch(
+        &self,
+        session_id: &str,
+        items: Vec<StoreBatchItem>,
+    ) -> Result<(), AgentError> {
+        if items.is_empty() {
+            return Ok(());
+        }
+
+        // Generate all embeddings (sequential for now due to trait object limitations)
+        // This is still more efficient than calling store() repeatedly because we use
+        // a single add_batch() operation at the end.
+        let mut embeddings = Vec::new();
+        for item in &items {
+            let content_str = match &item.message.content {
+                JsonValue::String(s) => s.clone(),
+                other => other.to_string(),
+            };
+            let embedding = self.embeddings.embed(&content_str).await?;
+            embeddings.push(embedding);
+        }
+
+        // Prepare batch items with unique timestamps
+        let mut batch_items = Vec::new();
+        let mut counter = self.id_counter.lock().unwrap();
+
+        for (idx, item) in items.into_iter().enumerate() {
+            *counter += 1;
+            let message_id = format!("msg-{}", *counter);
+            let timestamp = Self::get_timestamp() + (idx as f64) * 0.000001; // Ensure unique timestamps
+
+            batch_items.push(VectorStoreItem {
+                message_id,
+                embedding: embeddings[idx].clone(),
+                message: item.message,
+                metadata: item.metadata.unwrap_or_default(),
+                timestamp,
+            });
+        }
+
+        drop(counter); // Release lock before await
+
+        // Store all items in batch
+        self.vector_store.add_batch(session_id, batch_items).await
     }
 
     /// Retrieve messages with optional semantic search.

@@ -11,6 +11,7 @@ import {
   SessionRecorder,
   InMemoryRecordingStorage,
   SessionReplay,
+  getTotalLatency,
 } from '../../evaluation/recorder';
 
 // Mock agent for testing
@@ -51,7 +52,7 @@ describe('SessionRecorder: Basic Functionality', () => {
 
     expect(recording.sessionId).toBe('test-session');
     expect(recording.agentName).toBe('test_agent');
-    expect(recording.interactionCount).toBe(0);
+    expect(recording.interactions.length).toBe(0);
   });
 
   it('should record interaction', async () => {
@@ -64,7 +65,7 @@ describe('SessionRecorder: Basic Functionality', () => {
 
     const recording = await recorder.finalizeSession('test-session');
 
-    expect(recording.interactionCount).toBe(1);
+    expect(recording.interactions.length).toBe(1);
     expect(recording.interactions[0].latencyMs).toBe(10.5);
   });
 
@@ -79,8 +80,8 @@ describe('SessionRecorder: Basic Functionality', () => {
 
     const recording = await recorder.finalizeSession('test-session');
 
-    expect(recording.interactionCount).toBe(5);
-    expect(recording.totalLatencyMs).toBe(60); // 10+11+12+13+14
+    expect(recording.interactions.length).toBe(5);
+    expect(getTotalLatency(recording)).toBe(60); // 10+11+12+13+14
   });
 
   it('should calculate average latency', async () => {
@@ -95,7 +96,9 @@ describe('SessionRecorder: Basic Functionality', () => {
 
     const recording = await recorder.finalizeSession('test-session');
 
-    expect(recording.averageLatencyMs).toBe(20);
+    const totalLatency = getTotalLatency(recording);
+    const avgLatency = totalLatency / recording.interactions.length;
+    expect(avgLatency).toBe(20);
   });
 });
 
@@ -109,16 +112,19 @@ describe('SessionRecorder: Agent Wrapping', () => {
     const recorder = new SessionRecorder(storage);
     const baseAgent = new MockAgent();
 
-    const wrappedAgent = recorder.wrap(baseAgent, { autoStart: true });
+    const wrappedAgent = recorder.wrap(baseAgent);
 
     const input = createMessage('user', 'Test');
     const output = await wrappedAgent.process(input);
 
     expect(output.content).toBe('Response');
 
-    // Recording should have been created automatically
-    const sessions = await storage.listSessions();
-    expect(sessions.length).toBe(1);
+    // Finalize session to save to storage
+    await recorder.finalizeSession('default');
+
+    // Recording should have been created and saved
+    const recordings = await storage.listRecordings();
+    expect(recordings.length).toBe(1);
   });
 
   it('should use specified session ID', async () => {
@@ -126,12 +132,15 @@ describe('SessionRecorder: Agent Wrapping', () => {
     const recorder = new SessionRecorder(storage);
     const baseAgent = new MockAgent();
 
-    const wrappedAgent = recorder.wrap(baseAgent, { sessionId: 'custom-session' });
+    const wrappedAgent = recorder.wrap(baseAgent, 'custom-session');
 
     const input = createMessage('user', 'Test');
     await wrappedAgent.process(input);
 
-    const recording = await storage.get('custom-session');
+    // Finalize session to save to storage
+    await recorder.finalizeSession('custom-session');
+
+    const recording = await storage.loadRecording('custom-session');
     expect(recording?.sessionId).toBe('custom-session');
   });
 });
@@ -151,13 +160,13 @@ describe('SessionReplay', () => {
     await recorder.recordInteraction('test-session', input, output, 10);
     const recording = await recorder.finalizeSession('test-session');
 
-    const replay = new SessionReplay(recording);
+    const replay = new SessionReplay();
     const agent = new MockAgent();
 
-    const results = await replay.replay(agent);
+    const results = await replay.replay(recording, agent);
 
-    expect(results.length).toBe(1);
-    expect(results[0].input.content).toBe('Hello');
+    expect(results.interactions.length).toBe(1);
+    expect(results.interactions[0].input.content).toBe('Hello');
   });
 
   it('should compare replay with original', async () => {
@@ -170,14 +179,16 @@ describe('SessionReplay', () => {
     await recorder.recordInteraction('test-session', input, output, 10);
     const recording = await recorder.finalizeSession('test-session');
 
-    const replay = new SessionReplay(recording);
-    const agent = new MockAgent(['Response']); // Same response
+    const replay = new SessionReplay();
+    const agentA = new MockAgent(['Response']); // Same response
+    const agentB = new MockAgent(['Response']); // Same response
 
-    const comparison = await replay.compare(agent);
+    const resultsA = await replay.replay(recording, agentA);
+    const resultsB = await replay.replay(recording, agentB);
+    const comparison = replay.compare(resultsA, resultsB);
 
-    expect(comparison.totalInteractions).toBe(1);
-    expect(comparison.matchingOutputs).toBe(1);
-    expect(comparison.matchRate).toBe(1.0);
+    expect(comparison.interactionCount).toBe(1);
+    expect(comparison.outputDifferences.length).toBe(0);
   });
 
   it('should detect differences in replay', async () => {
@@ -190,13 +201,15 @@ describe('SessionReplay', () => {
     await recorder.recordInteraction('test-session', input, output, 10);
     const recording = await recorder.finalizeSession('test-session');
 
-    const replay = new SessionReplay(recording);
-    const agent = new MockAgent(['Different']); // Different response
+    const replay = new SessionReplay();
+    const agentA = new MockAgent(['Response A']); // First response
+    const agentB = new MockAgent(['Response B']); // Different response
 
-    const comparison = await replay.compare(agent);
+    const resultsA = await replay.replay(recording, agentA);
+    const resultsB = await replay.replay(recording, agentB);
+    const comparison = replay.compare(resultsA, resultsB);
 
-    expect(comparison.matchingOutputs).toBe(0);
-    expect(comparison.matchRate).toBe(0.0);
+    expect(comparison.outputDifferences.length).toBe(1);
   });
 });
 
@@ -212,12 +225,12 @@ describe('InMemoryRecordingStorage', () => {
     await recorder.startSession('test-123', 'agent');
     const recording = await recorder.finalizeSession('test-123');
 
-    const retrieved = await storage.get('test-123');
+    const retrieved = await storage.loadRecording('test-123');
 
     expect(retrieved).toEqual(recording);
   });
 
-  it('should list all sessions', async () => {
+  it('should list all recordings', async () => {
     const storage = new InMemoryRecordingStorage();
     const recorder = new SessionRecorder(storage);
 
@@ -227,11 +240,12 @@ describe('InMemoryRecordingStorage', () => {
     await recorder.startSession('session-2', 'agent');
     await recorder.finalizeSession('session-2');
 
-    const sessions = await storage.listSessions();
+    const recordings = await storage.listRecordings();
 
-    expect(sessions).toHaveLength(2);
-    expect(sessions).toContain('session-1');
-    expect(sessions).toContain('session-2');
+    expect(recordings).toHaveLength(2);
+    const sessionIds = recordings.map((r) => r.sessionId);
+    expect(sessionIds).toContain('session-1');
+    expect(sessionIds).toContain('session-2');
   });
 
   it('should delete recordings', async () => {
@@ -241,9 +255,9 @@ describe('InMemoryRecordingStorage', () => {
     await recorder.startSession('test-123', 'agent');
     await recorder.finalizeSession('test-123');
 
-    await storage.delete('test-123');
+    await storage.deleteRecording('test-123');
 
-    const retrieved = await storage.get('test-123');
+    const retrieved = await storage.loadRecording('test-123');
     expect(retrieved).toBeNull();
   });
 });

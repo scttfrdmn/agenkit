@@ -55,6 +55,7 @@
     "@opentelemetry/sdk-metrics": "^1.29.0",
     "@opentelemetry/sdk-trace-node": "^1.29.0",
     "@opentelemetry/semantic-conventions": "^1.29.0",
+    "chromadb": "^1.8.0",
     "js-yaml": "^4.1.0",
     "openai": "^4.67.0",
     "uuid": "^13.0.0",

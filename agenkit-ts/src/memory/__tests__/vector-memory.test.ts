@@ -358,6 +358,190 @@ describe('VectorMemory', () => {
     });
   });
 
+  describe('Distance Metrics', () => {
+    let vectorStore: VectorStore;
+
+    beforeEach(() => {
+      vectorStore = new InMemoryVectorStore();
+    });
+
+    it('should calculate euclidean distance correctly', async () => {
+      // Vectors at known distances
+      const embedding1 = [1, 0, 0];
+      const embedding2 = [1, 1, 0]; // Distance = 1
+      const embedding3 = [1, 2, 0]; // Distance = 2
+
+      await vectorStore.add('session-1', 'msg-1', embedding1, { role: 'user', content: 'Msg 1' }, {}, Date.now());
+      await vectorStore.add('session-1', 'msg-2', embedding2, { role: 'user', content: 'Msg 2' }, {}, Date.now());
+      await vectorStore.add('session-1', 'msg-3', embedding3, { role: 'user', content: 'Msg 3' }, {}, Date.now());
+
+      const results = await vectorStore.search('session-1', embedding1, 3, {
+        distanceMetric: 'euclidean',
+      });
+
+      expect(results).toHaveLength(3);
+      // Closest should be embedding1 itself (distance = 0, similarity = 1.0)
+      expect(results[0].message.content).toBe('Msg 1');
+      expect(results[0].score).toBeCloseTo(1.0, 2);
+      // embedding2 is closer than embedding3
+      expect(results[1].message.content).toBe('Msg 2');
+      expect(results[2].message.content).toBe('Msg 3');
+    });
+
+    it('should calculate dot product correctly', async () => {
+      // Normalized vectors
+      const embedding1 = [1, 0, 0];
+      const embedding2 = [0, 1, 0]; // Orthogonal, dot product = 0
+      const embedding3 = [1, 0, 0]; // Same direction, dot product = 1
+
+      await vectorStore.add('session-1', 'msg-1', embedding1, { role: 'user', content: 'Msg 1' }, {}, Date.now());
+      await vectorStore.add('session-1', 'msg-2', embedding2, { role: 'user', content: 'Msg 2' }, {}, Date.now());
+      await vectorStore.add('session-1', 'msg-3', embedding3, { role: 'user', content: 'Msg 3' }, {}, Date.now());
+
+      const results = await vectorStore.search('session-1', embedding1, 3, {
+        distanceMetric: 'dot_product',
+      });
+
+      expect(results).toHaveLength(3);
+      // Highest dot product with itself and embedding3
+      expect(results[0].score).toBeCloseTo(1.0, 2);
+      expect(results[1].score).toBeCloseTo(1.0, 2);
+      // Lowest with orthogonal vector
+      expect(results[2].score).toBeCloseTo(0.0, 2);
+    });
+
+    it('should default to cosine similarity', async () => {
+      const embedding1 = [1, 0, 0];
+      const embedding2 = [1, 0, 0];
+
+      await vectorStore.add('session-1', 'msg-1', embedding1, { role: 'user', content: 'Msg 1' }, {}, Date.now());
+      await vectorStore.add('session-1', 'msg-2', embedding2, { role: 'user', content: 'Msg 2' }, {}, Date.now());
+
+      // No distanceMetric specified, should use cosine
+      const results = await vectorStore.search('session-1', embedding1, 2);
+
+      expect(results).toHaveLength(2);
+      expect(results[0].score).toBeCloseTo(1.0, 2);
+    });
+
+    it('should support distance metric in VectorMemory', async () => {
+      await vectorMemory.store('session-1', { role: 'user', content: 'Test message' });
+
+      const results = await vectorMemory.retrieveWithScores('session-1', 'Test message', 1, {
+        distanceMetric: 'euclidean',
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0][1]).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Batch Operations', () => {
+    let vectorStore: VectorStore;
+
+    beforeEach(() => {
+      vectorStore = new InMemoryVectorStore();
+    });
+
+    it('should add multiple items in batch', async () => {
+      const items = [
+        {
+          messageId: 'msg-1',
+          embedding: [1, 0, 0],
+          message: { role: 'user' as const, content: 'Message 1' },
+          metadata: {},
+          timestamp: Date.now(),
+        },
+        {
+          messageId: 'msg-2',
+          embedding: [0, 1, 0],
+          message: { role: 'user' as const, content: 'Message 2' },
+          metadata: {},
+          timestamp: Date.now() + 1,
+        },
+        {
+          messageId: 'msg-3',
+          embedding: [0, 0, 1],
+          message: { role: 'user' as const, content: 'Message 3' },
+          metadata: {},
+          timestamp: Date.now() + 2,
+        },
+      ];
+
+      await vectorStore.addBatch('session-1', items);
+
+      const results = await vectorStore.search('session-1', [1, 0, 0], 10);
+      expect(results).toHaveLength(3);
+    });
+
+    it('should search with multiple queries in batch', async () => {
+      await vectorStore.add('session-1', 'msg-1', [1, 0, 0], { role: 'user', content: 'X-axis' }, {}, Date.now());
+      await vectorStore.add('session-1', 'msg-2', [0, 1, 0], { role: 'user', content: 'Y-axis' }, {}, Date.now());
+      await vectorStore.add('session-1', 'msg-3', [0, 0, 1], { role: 'user', content: 'Z-axis' }, {}, Date.now());
+
+      const queryEmbeddings = [
+        [1, 0, 0], // Should match msg-1 best
+        [0, 1, 0], // Should match msg-2 best
+      ];
+
+      const batchResults = await vectorStore.searchBatch('session-1', queryEmbeddings, 1);
+
+      expect(batchResults).toHaveLength(2);
+      expect(batchResults[0]).toHaveLength(1);
+      expect(batchResults[0][0].message.content).toBe('X-axis');
+      expect(batchResults[1]).toHaveLength(1);
+      expect(batchResults[1][0].message.content).toBe('Y-axis');
+    });
+
+    it('should batch store messages in VectorMemory', async () => {
+      const items = [
+        { message: { role: 'user' as const, content: 'First message' } },
+        { message: { role: 'assistant' as const, content: 'Second message' } },
+        { message: { role: 'user' as const, content: 'Third message' }, metadata: { importance: 0.8 } },
+      ];
+
+      await vectorMemory.storeBatch('session-1', items);
+
+      const messages = await vectorMemory.retrieve('session-1', { limit: 10 });
+      expect(messages).toHaveLength(3);
+      expect(messages.map((m) => m.content)).toContain('First message');
+      expect(messages.map((m) => m.content)).toContain('Second message');
+      expect(messages.map((m) => m.content)).toContain('Third message');
+    });
+
+    it('should handle empty batch operations', async () => {
+      await vectorStore.addBatch('session-1', []);
+      const results = await vectorStore.search('session-1', [1, 0, 0], 10);
+      expect(results).toHaveLength(0);
+
+      const batchResults = await vectorStore.searchBatch('session-1', [], 10);
+      expect(batchResults).toHaveLength(0);
+    });
+
+    it('should preserve metadata in batch operations', async () => {
+      const items = [
+        {
+          message: { role: 'user' as const, content: 'Important message' },
+          metadata: { importance: 0.9, tags: ['critical'] },
+        },
+        {
+          message: { role: 'user' as const, content: 'Normal message' },
+          metadata: { importance: 0.5 },
+        },
+      ];
+
+      await vectorMemory.storeBatch('session-1', items);
+
+      const highImportance = await vectorMemory.retrieve('session-1', {
+        importanceThreshold: 0.8,
+        limit: 10,
+      });
+
+      expect(highImportance).toHaveLength(1);
+      expect(highImportance[0].content).toBe('Important message');
+    });
+  });
+
   describe('Limit Parameter', () => {
     beforeEach(async () => {
       for (let i = 1; i <= 20; i++) {

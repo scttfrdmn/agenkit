@@ -12,6 +12,7 @@ import {
   VectorStore,
   MessageSearchResult,
   MessageWithMetadata,
+  DistanceMetric,
 } from './vector-memory';
 
 /**
@@ -91,42 +92,60 @@ interface VectorEntry {
 }
 
 /**
- * ChromaDB vector store implementation.
+ * ChromaDB vector store implementation with persistent storage.
  *
  * Requires: npm install chromadb
  *
  * ChromaDB is an open-source vector database designed for AI applications.
+ * Provides efficient vector similarity search with HNSW indexing and supports
+ * multiple distance metrics.
  *
- * Example:
+ * @example
  * ```typescript
  * import { ChromaClient } from 'chromadb';
  * import { ChromaDBVectorStore } from './integrations';
  *
  * const client = new ChromaClient();
  * const vectorStore = new ChromaDBVectorStore(client, {
- *   collectionName: 'agent-memory'
+ *   collectionName: 'agent-memory',
+ *   distanceMetric: 'cosine'  // or 'euclidean', 'dot_product'
  * });
+ *
+ * // Use with VectorMemory
+ * const memory = new VectorMemory(embeddings, vectorStore);
+ * await memory.store(sessionId, message, metadata);
+ *
+ * // Search with semantic similarity
+ * const results = await memory.retrieve(sessionId, { query: 'search term' });
  * ```
  */
 export class ChromaDBVectorStore implements VectorStore {
   private client: any; // ChromaDB client
   private collectionName: string;
   private collection: any = null;
+  private distanceMetric: DistanceMetric;
 
   /**
    * Initialize ChromaDB vector store.
    *
    * @param client - ChromaDB client instance
-   * @param options - Configuration options
+   * @param options - Configuration options:
+   *   - collectionName: Name of the ChromaDB collection (default: 'agenkit-memory')
+   *   - distanceMetric: Distance metric for similarity search (default: 'cosine')
+   *     - 'cosine': Best for text embeddings (normalized)
+   *     - 'euclidean': Best for spatial data, L2 distance
+   *     - 'dot_product': Best for pre-normalized vectors, inner product
    */
   constructor(
     client: any,
     options: {
       collectionName?: string;
+      distanceMetric?: DistanceMetric;
     } = {},
   ) {
     this.client = client;
     this.collectionName = options.collectionName ?? 'agenkit-memory';
+    this.distanceMetric = options.distanceMetric ?? 'cosine';
   }
 
   /**
@@ -140,6 +159,9 @@ export class ChromaDBVectorStore implements VectorStore {
     try {
       this.collection = await this.client.getOrCreateCollection({
         name: this.collectionName,
+        metadata: {
+          'hnsw:space': this.toChromaDistance(this.distanceMetric),
+        },
       });
       return this.collection;
     } catch (error) {
@@ -201,6 +223,25 @@ export class ChromaDBVectorStore implements VectorStore {
     return [...requiredTags].some((tag) => messageTags.has(tag));
   }
 
+  /**
+   * Convert DistanceMetric to ChromaDB distance function.
+   *
+   * @param metric - Our distance metric
+   * @returns ChromaDB distance function name
+   */
+  private toChromaDistance(metric: DistanceMetric = 'cosine'): string {
+    switch (metric) {
+      case 'cosine':
+        return 'cosine';
+      case 'euclidean':
+        return 'l2'; // L2 distance in ChromaDB
+      case 'dot_product':
+        return 'ip'; // Inner product in ChromaDB
+      default:
+        return 'cosine';
+    }
+  }
+
   async add(
     sessionId: string,
     messageId: string,
@@ -245,9 +286,13 @@ export class ChromaDBVectorStore implements VectorStore {
       importanceThreshold?: number;
       tags?: string[];
       minSimilarity?: number;
+      distanceMetric?: DistanceMetric;
       [key: string]: unknown;
     },
   ): Promise<MessageSearchResult[]> {
+    // Note: ChromaDB uses the distance metric set at collection creation time.
+    // The distanceMetric option is accepted for interface compliance but uses
+    // the metric configured in the constructor.
     const collection = await this.ensureCollection();
 
     const where = this.buildWhereClause(sessionId, options);
@@ -370,6 +415,128 @@ export class ChromaDBVectorStore implements VectorStore {
       }));
     } catch (error) {
       throw new Error(`ChromaDB getRecent failed: ${error}`);
+    }
+  }
+
+  async addBatch(
+    sessionId: string,
+    items: Array<{
+      messageId: string;
+      embedding: number[];
+      message: Message;
+      metadata: Record<string, unknown>;
+      timestamp: number;
+    }>,
+  ): Promise<void> {
+    const collection = await this.ensureCollection();
+
+    // Prepare batch data
+    const ids: string[] = [];
+    const embeddings: number[][] = [];
+    const documents: string[] = [];
+    const metadatas: any[] = [];
+
+    for (const item of items) {
+      const docId = this.generateDocId(sessionId, item.messageId);
+      ids.push(docId);
+      embeddings.push(item.embedding);
+      documents.push(item.message.content);
+
+      const chromaMetadata = {
+        session_id: sessionId,
+        message_id: item.messageId,
+        role: item.message.role,
+        timestamp: item.timestamp,
+        importance: (item.metadata.importance as number) ?? 0.0,
+        tags_json: JSON.stringify(item.metadata.tags ?? []),
+        metadata_json: JSON.stringify(item.metadata),
+      };
+      metadatas.push(chromaMetadata);
+    }
+
+    try {
+      await collection.add({
+        ids,
+        embeddings,
+        documents,
+        metadatas,
+      });
+    } catch (error) {
+      throw new Error(`Failed to batch add to ChromaDB: ${error}`);
+    }
+  }
+
+  async searchBatch(
+    sessionId: string,
+    queryEmbeddings: number[][],
+    limit: number,
+    options?: {
+      timeRange?: [Date, Date];
+      importanceThreshold?: number;
+      tags?: string[];
+      minSimilarity?: number;
+      distanceMetric?: DistanceMetric;
+      [key: string]: unknown;
+    },
+  ): Promise<MessageSearchResult[][]> {
+    const collection = await this.ensureCollection();
+
+    const where = this.buildWhereClause(sessionId, options);
+
+    try {
+      const results = await collection.query({
+        queryEmbeddings,
+        nResults: limit * 2, // Fetch extra for tag filtering
+        where,
+      });
+
+      const allResults: MessageSearchResult[][] = [];
+
+      for (let q = 0; q < queryEmbeddings.length; q++) {
+        const searchResults: MessageSearchResult[] = [];
+
+        if (!results.ids || !results.ids[q] || results.ids[q].length === 0) {
+          allResults.push([]);
+          continue;
+        }
+
+        for (let i = 0; i < results.ids[q].length; i++) {
+          const chromaMetadata = results.metadatas?.[q]?.[i];
+          if (!chromaMetadata) continue;
+
+          const metadata = JSON.parse((chromaMetadata.metadata_json as string) ?? '{}');
+
+          // Apply tag filtering
+          if (!this.matchesTags(metadata, options?.tags)) {
+            continue;
+          }
+
+          const message: Message = {
+            role: chromaMetadata.role as 'user' | 'assistant' | 'system',
+            content: results.documents?.[q]?.[i] ?? '',
+          };
+
+          const distance = results.distances?.[q]?.[i] ?? 1.0;
+          const score = 1.0 - distance;
+
+          // Apply similarity threshold
+          if (options?.minSimilarity !== undefined && score < options.minSimilarity) {
+            continue;
+          }
+
+          searchResults.push({ message, metadata, score });
+
+          if (searchResults.length >= limit) {
+            break;
+          }
+        }
+
+        allResults.push(searchResults);
+      }
+
+      return allResults;
+    } catch (error) {
+      throw new Error(`ChromaDB batch search failed: ${error}`);
     }
   }
 

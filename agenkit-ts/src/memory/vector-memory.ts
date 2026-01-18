@@ -36,6 +36,15 @@ export interface EmbeddingProvider {
 }
 
 /**
+ * Distance metric for vector similarity.
+ *
+ * - cosine: Cosine similarity (best for text embeddings)
+ * - euclidean: Euclidean distance (best for spatial data)
+ * - dot_product: Dot product (best for pre-normalized vectors)
+ */
+export type DistanceMetric = 'cosine' | 'euclidean' | 'dot_product';
+
+/**
  * Search result with similarity score.
  */
 export interface MessageSearchResult {
@@ -100,6 +109,7 @@ export interface VectorStore {
       importanceThreshold?: number;
       tags?: string[];
       minSimilarity?: number;
+      distanceMetric?: DistanceMetric;
       [key: string]: unknown;
     },
   ): Promise<MessageSearchResult[]>;
@@ -124,6 +134,47 @@ export interface VectorStore {
   ): Promise<MessageWithMetadata[]>;
 
   /**
+   * Batch add messages with embeddings to store.
+   *
+   * @param sessionId - Session identifier
+   * @param items - Array of items to add
+   * @returns Promise that resolves when all items are added
+   */
+  addBatch(
+    sessionId: string,
+    items: Array<{
+      messageId: string;
+      embedding: number[];
+      message: Message;
+      metadata: Record<string, unknown>;
+      timestamp: number;
+    }>,
+  ): Promise<void>;
+
+  /**
+   * Batch search for similar messages using multiple query embeddings.
+   *
+   * @param sessionId - Session identifier
+   * @param queryEmbeddings - Array of query vectors
+   * @param limit - Maximum results per query
+   * @param options - Additional search options
+   * @returns Promise resolving to array of search results (one array per query)
+   */
+  searchBatch(
+    sessionId: string,
+    queryEmbeddings: number[][],
+    limit: number,
+    options?: {
+      timeRange?: [Date, Date];
+      importanceThreshold?: number;
+      tags?: string[];
+      minSimilarity?: number;
+      distanceMetric?: DistanceMetric;
+      [key: string]: unknown;
+    },
+  ): Promise<MessageSearchResult[][]>;
+
+  /**
    * Clear all messages for session.
    *
    * @param sessionId - Session identifier
@@ -143,10 +194,29 @@ interface VectorEntry {
 }
 
 /**
- * Simple in-memory vector store using cosine similarity.
+ * Simple in-memory vector store with multiple distance metrics.
  *
+ * Supports cosine similarity, Euclidean distance, and dot product.
  * Good for testing and small datasets. For production, use
  * specialized vector databases (ChromaDB, Pinecone, Weaviate, Qdrant, etc.).
+ *
+ * @example
+ * ```typescript
+ * const vectorStore = new InMemoryVectorStore();
+ * const memory = new VectorMemory(embeddings, vectorStore);
+ *
+ * // Store messages
+ * await memory.store(sessionId, message, metadata);
+ *
+ * // Search with different distance metrics
+ * const cosineResults = await vectorStore.search(sessionId, embedding, 5, {
+ *   distanceMetric: 'cosine'  // default
+ * });
+ *
+ * const euclideanResults = await vectorStore.search(sessionId, embedding, 5, {
+ *   distanceMetric: 'euclidean'
+ * });
+ * ```
  */
 export class InMemoryVectorStore implements VectorStore {
   private storage: Map<string, VectorEntry[]> = new Map();
@@ -181,6 +251,71 @@ export class InMemoryVectorStore implements VectorStore {
     }
 
     return dotProduct / (magnitudeA * magnitudeB);
+  }
+
+  /**
+   * Calculate Euclidean distance between two vectors.
+   *
+   * @param a - First vector
+   * @param b - Second vector
+   * @returns Distance (0 to ∞, lower is more similar)
+   */
+  private euclideanDistance(a: number[], b: number[]): number {
+    if (a.length !== b.length) {
+      throw new Error(`Vector dimension mismatch: ${a.length} vs ${b.length}`);
+    }
+
+    let sum = 0;
+    for (let i = 0; i < a.length; i++) {
+      const diff = a[i] - b[i];
+      sum += diff * diff;
+    }
+
+    return Math.sqrt(sum);
+  }
+
+  /**
+   * Calculate dot product between two vectors.
+   *
+   * @param a - First vector
+   * @param b - Second vector
+   * @returns Dot product (-∞ to ∞, higher is more similar for normalized vectors)
+   */
+  private dotProduct(a: number[], b: number[]): number {
+    if (a.length !== b.length) {
+      throw new Error(`Vector dimension mismatch: ${a.length} vs ${b.length}`);
+    }
+
+    let product = 0;
+    for (let i = 0; i < a.length; i++) {
+      product += a[i] * b[i];
+    }
+
+    return product;
+  }
+
+  /**
+   * Calculate similarity score using specified distance metric.
+   *
+   * @param a - First vector
+   * @param b - Second vector
+   * @param metric - Distance metric to use
+   * @returns Similarity score (higher is more similar)
+   */
+  private calculateSimilarity(a: number[], b: number[], metric: DistanceMetric = 'cosine'): number {
+    switch (metric) {
+      case 'cosine':
+        return this.cosineSimilarity(a, b);
+      case 'euclidean': {
+        // Convert distance to similarity: 1 / (1 + distance)
+        const distance = this.euclideanDistance(a, b);
+        return 1.0 / (1.0 + distance);
+      }
+      case 'dot_product':
+        return this.dotProduct(a, b);
+      default:
+        throw new Error(`Unsupported distance metric: ${metric}`);
+    }
   }
 
   /**
@@ -263,6 +398,7 @@ export class InMemoryVectorStore implements VectorStore {
       importanceThreshold?: number;
       tags?: string[];
       minSimilarity?: number;
+      distanceMetric?: DistanceMetric;
       [key: string]: unknown;
     },
   ): Promise<MessageSearchResult[]> {
@@ -270,6 +406,8 @@ export class InMemoryVectorStore implements VectorStore {
     if (!entries) {
       return [];
     }
+
+    const distanceMetric = options?.distanceMetric ?? 'cosine';
 
     // Calculate similarity for all messages
     const results: Array<{
@@ -279,7 +417,7 @@ export class InMemoryVectorStore implements VectorStore {
     }> = [];
 
     for (const entry of entries) {
-      const score = this.cosineSimilarity(queryEmbedding, entry.embedding);
+      const score = this.calculateSimilarity(queryEmbedding, entry.embedding, distanceMetric);
       results.push({
         message: entry.message,
         metadata: entry.metadata,
@@ -353,6 +491,53 @@ export class InMemoryVectorStore implements VectorStore {
     }
 
     return filtered.slice(0, limit);
+  }
+
+  async addBatch(
+    sessionId: string,
+    items: Array<{
+      messageId: string;
+      embedding: number[];
+      message: Message;
+      metadata: Record<string, unknown>;
+      timestamp: number;
+    }>,
+  ): Promise<void> {
+    if (!this.storage.has(sessionId)) {
+      this.storage.set(sessionId, []);
+    }
+
+    const entries = this.storage.get(sessionId)!;
+    for (const item of items) {
+      entries.push({
+        messageId: item.messageId,
+        embedding: item.embedding,
+        message: item.message,
+        metadata: item.metadata,
+        timestamp: item.timestamp,
+      });
+    }
+  }
+
+  async searchBatch(
+    sessionId: string,
+    queryEmbeddings: number[][],
+    limit: number,
+    options?: {
+      timeRange?: [Date, Date];
+      importanceThreshold?: number;
+      tags?: string[];
+      minSimilarity?: number;
+      distanceMetric?: DistanceMetric;
+      [key: string]: unknown;
+    },
+  ): Promise<MessageSearchResult[][]> {
+    const results: MessageSearchResult[][] = [];
+    for (const queryEmbedding of queryEmbeddings) {
+      const searchResults = await this.search(sessionId, queryEmbedding, limit, options);
+      results.push(searchResults);
+    }
+    return results;
   }
 
   async clear(sessionId: string): Promise<void> {
@@ -447,6 +632,71 @@ export class VectorMemory implements Memory {
     await this.vectorStore.add(sessionId, messageId, embedding, message, metadata ?? {}, timestamp);
   }
 
+  /**
+   * Store multiple messages at once (batch operation).
+   *
+   * Generates embeddings for all messages in parallel, significantly improving
+   * performance compared to individual store() calls.
+   *
+   * @param sessionId - Session identifier
+   * @param items - Array of messages with optional metadata (importance, tags, etc.)
+   * @returns Promise that resolves when all messages are stored
+   *
+   * @example
+   * ```typescript
+   * const messages = [
+   *   {
+   *     message: { role: 'user', content: 'First message' },
+   *     metadata: { importance: 0.8, tags: ['important'] }
+   *   },
+   *   {
+   *     message: { role: 'assistant', content: 'Second message' },
+   *     metadata: { importance: 0.5, tags: ['general'] }
+   *   },
+   *   // ... more messages
+   * ];
+   *
+   * // Store all messages efficiently in one batch
+   * await memory.storeBatch(sessionId, messages);
+   *
+   * // Much faster than:
+   * // for (const item of messages) {
+   * //   await memory.store(sessionId, item.message, item.metadata);
+   * // }
+   * ```
+   */
+  async storeBatch(
+    sessionId: string,
+    items: Array<{
+      message: Message;
+      metadata?: Record<string, unknown>;
+    }>,
+  ): Promise<void> {
+    // Generate all embeddings in parallel
+    const embeddings = await Promise.all(items.map((item) => this.embeddings.embed(item.message.content)));
+
+    // Prepare batch items
+    const batchItems = items.map((item, index) => {
+      const messageId = this.generateId();
+      let timestamp = Date.now();
+      if (timestamp <= this.lastTimestamp) {
+        timestamp = this.lastTimestamp + 0.001;
+      }
+      this.lastTimestamp = timestamp;
+
+      return {
+        messageId,
+        embedding: embeddings[index],
+        message: item.message,
+        metadata: item.metadata ?? {},
+        timestamp,
+      };
+    });
+
+    // Store all items in batch
+    await this.vectorStore.addBatch(sessionId, batchItems);
+  }
+
   async retrieve(
     sessionId: string,
     options?: {
@@ -478,8 +728,31 @@ export class VectorMemory implements Memory {
    * @param sessionId - Session identifier
    * @param query - Semantic query
    * @param limit - Maximum results (default: 10)
-   * @param options - Additional search options
+   * @param options - Additional search options:
+   *   - timeRange: Filter by message timestamp range [startDate, endDate]
+   *   - importanceThreshold: Minimum importance score (0.0 to 1.0)
+   *   - tags: Filter by tags (messages must have at least one matching tag)
+   *   - minSimilarity: Minimum similarity score threshold
+   *   - distanceMetric: Distance metric to use ('cosine', 'euclidean', 'dot_product')
    * @returns Promise resolving to array of [message, score] tuples
+   *
+   * @example
+   * ```typescript
+   * // Semantic search with cosine similarity (default)
+   * const results = await memory.retrieveWithScores(sessionId, 'machine learning', 5);
+   *
+   * // Use euclidean distance metric
+   * const results = await memory.retrieveWithScores(sessionId, 'neural networks', 5, {
+   *   distanceMetric: 'euclidean'
+   * });
+   *
+   * // Combine semantic search with filtering
+   * const results = await memory.retrieveWithScores(sessionId, 'production deployment', 10, {
+   *   importanceThreshold: 0.8,
+   *   tags: ['critical', 'production'],
+   *   distanceMetric: 'cosine'
+   * });
+   * ```
    */
   async retrieveWithScores(
     sessionId: string,
@@ -490,6 +763,7 @@ export class VectorMemory implements Memory {
       importanceThreshold?: number;
       tags?: string[];
       minSimilarity?: number;
+      distanceMetric?: DistanceMetric;
       [key: string]: unknown;
     },
   ): Promise<Array<[Message, number]>> {

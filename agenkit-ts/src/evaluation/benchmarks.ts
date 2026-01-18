@@ -121,13 +121,13 @@ export class ReasoningBenchmark implements Benchmark {
         input:
           'If all roses are flowers and all flowers need water, do roses need water?',
         expected: 'yes',
-        tags: ['logic', 'syllogism', 'medium'],
+        tags: ['reasoning', 'logic', 'syllogism', 'medium'],
       },
       {
         input:
           'A bat and ball cost $1.10. The bat costs $1 more than the ball. How much does the ball cost?',
         expected: '0.05',
-        tags: ['math', 'reasoning', 'medium'],
+        tags: ['reasoning', 'math', 'medium'],
       },
       {
         input:
@@ -139,7 +139,7 @@ export class ReasoningBenchmark implements Benchmark {
         input:
           'John is taller than Mary. Mary is taller than Sue. Who is the shortest?',
         expected: 'Sue',
-        tags: ['logic', 'comparison', 'easy'],
+        tags: ['reasoning', 'logic', 'comparison', 'easy'],
       },
       {
         input:
@@ -305,6 +305,247 @@ export class CodeGenerationBenchmark implements Benchmark {
       },
     ];
   }
+}
+
+/**
+ * Extreme-scale context retrieval benchmark.
+ *
+ * Tests agent's ability to retrieve information from extremely long contexts
+ * (10K-100K+ tokens).
+ */
+export class ExtremeScaleBenchmark implements Benchmark {
+  readonly name = 'extreme_scale';
+  readonly description: string;
+  private contextLengths: number[];
+  private needleCount: number;
+
+  /**
+   * Create extreme-scale benchmark.
+   *
+   * @param contextLengths Array of context lengths to test
+   * @param needleCount Number of needles to hide per context length
+   */
+  constructor(contextLengths: number[], needleCount: number = 1) {
+    this.contextLengths = contextLengths;
+    this.needleCount = needleCount;
+    this.description = `Extreme-scale retrieval with contexts up to ${Math.max(...contextLengths)} tokens`;
+  }
+
+  async generateTestCases(): Promise<TestCase[]> {
+    const testCases: TestCase[] = [];
+
+    for (const contextLength of this.contextLengths) {
+      for (let i = 0; i < this.needleCount; i++) {
+        const needle = `IMPORTANT_FACT_${i + 1}: The secret code is ${Math.random().toString(36).substring(7)}`;
+        const haystack = this.generateHaystack(contextLength);
+
+        // Insert needle at random position
+        const insertPos = Math.floor(Math.random() * haystack.length);
+        const input = haystack.substring(0, insertPos) + ' ' + needle + ' ' + haystack.substring(insertPos);
+
+        testCases.push({
+          input: `${input}\n\nQuestion: What is the secret code mentioned in IMPORTANT_FACT_${i + 1}?`,
+          expected: needle.split('is ')[1],
+          tags: ['extreme_scale', 'retrieval', 'context'],
+          metadata: {
+            contextLength,
+            needleIndex: i,
+          },
+        });
+      }
+    }
+
+    return testCases;
+  }
+
+  private generateHaystack(targetLength: number): string {
+    const filler = 'The quick brown fox jumps over the lazy dog. ';
+    const repeatCount = Math.ceil(targetLength / filler.length);
+    return filler.repeat(repeatCount).substring(0, targetLength);
+  }
+}
+
+/**
+ * Information retention benchmark.
+ *
+ * Tests agent's ability to remember information over a long conversation.
+ */
+export class InformationRetentionBenchmark implements Benchmark {
+  readonly name = 'information_retention';
+  readonly description: string;
+  private conversationLength: number;
+  private recallPoints: number[];
+
+  /**
+   * Create information retention benchmark.
+   *
+   * @param conversationLength Total length of conversation (number of turns)
+   * @param recallPoints Array of turn indices where recall should be tested
+   */
+  constructor(conversationLength: number, recallPoints: number[]) {
+    this.conversationLength = conversationLength;
+    this.recallPoints = recallPoints;
+    this.description = `Test information recall over ${conversationLength} conversation turns`;
+  }
+
+  async generateTestCases(): Promise<TestCase[]> {
+    const testCases: TestCase[] = [];
+    const facts: Array<{ turn: number; fact: string; key: string }> = [];
+
+    // Generate fact-planting test cases
+    for (let turn = 0; turn < this.conversationLength; turn++) {
+      if (Math.random() < 0.1) {
+        // Plant a fact
+        const key = `fact_${facts.length + 1}`;
+        const value = `value_${Math.random().toString(36).substring(7)}`;
+        const fact = `Remember this: ${key} = ${value}`;
+
+        facts.push({ turn, fact, key });
+
+        testCases.push({
+          input: fact,
+          expected: 'acknowledged',
+          tags: ['retention', 'plant'],
+          metadata: {
+            type: 'fact_plant',
+            turn,
+            key,
+          },
+        });
+      } else {
+        // Filler conversation
+        testCases.push({
+          input: `Turn ${turn}: What's the weather like?`,
+          expected: 'weather',
+          tags: ['retention', 'filler'],
+          metadata: {
+            type: 'filler',
+            turn,
+          },
+        });
+      }
+    }
+
+    // Generate recall test cases at specified points
+    for (const recallPoint of this.recallPoints) {
+      if (recallPoint < this.conversationLength && facts.length > 0) {
+        // Pick a random fact to recall
+        const fact = facts[Math.floor(Math.random() * facts.length)];
+        const expectedValue = fact.fact.split('= ')[1];
+
+        testCases.push({
+          input: `What was the value of ${fact.key} that I told you earlier?`,
+          expected: expectedValue,
+          tags: ['retention', 'recall'],
+          metadata: {
+            type: 'recall_test',
+            turn: recallPoint,
+            key: fact.key,
+            plantedAtTurn: fact.turn,
+          },
+        });
+      }
+    }
+
+    return testCases;
+  }
+}
+
+/**
+ * Suite of multiple benchmarks.
+ *
+ * Allows running multiple benchmarks together and aggregating results.
+ */
+export class BenchmarkSuite {
+  readonly name: string;
+  readonly benchmarks: Benchmark[];
+
+  /**
+   * Create benchmark suite.
+   *
+   * @param name Suite name
+   * @param benchmarks Array of benchmarks to include
+   */
+  constructor(name: string, benchmarks: Benchmark[]) {
+    this.name = name;
+    this.benchmarks = benchmarks;
+  }
+
+  /**
+   * Generate test cases from all benchmarks.
+   *
+   * @returns Combined array of test cases from all benchmarks
+   */
+  async generateTestCases(): Promise<TestCase[]> {
+    const allTestCases: TestCase[] = [];
+
+    for (const benchmark of this.benchmarks) {
+      const testCases = await benchmark.generateTestCases();
+      allTestCases.push(...testCases);
+    }
+
+    return allTestCases;
+  }
+
+  /**
+   * Run all benchmarks in the suite.
+   *
+   * @param evaluateFn Function to evaluate each test case
+   * @returns Suite results with aggregated scores
+   */
+  async run(
+    evaluateFn: (testCase: TestCase) => Promise<{
+      input: string;
+      expected: string;
+      actual: string;
+      score: number;
+    }>
+  ): Promise<SuiteResult> {
+    const benchmarkResults: Array<{ benchmark: string; score: number; count: number }> = [];
+
+    for (const benchmark of this.benchmarks) {
+      const testCases = await benchmark.generateTestCases();
+      let totalScore = 0;
+
+      for (const testCase of testCases) {
+        const result = await evaluateFn(testCase);
+        totalScore += result.score;
+      }
+
+      const avgScore = testCases.length > 0 ? totalScore / testCases.length : 0;
+
+      benchmarkResults.push({
+        benchmark: benchmark.name,
+        score: avgScore,
+        count: testCases.length,
+      });
+    }
+
+    // Calculate overall score
+    const totalTests = benchmarkResults.reduce((sum, r) => sum + r.count, 0);
+    const weightedScore = benchmarkResults.reduce(
+      (sum, r) => sum + r.score * r.count,
+      0
+    );
+    const overallScore = totalTests > 0 ? weightedScore / totalTests : 0;
+
+    return {
+      suiteName: this.name,
+      benchmarks: benchmarkResults,
+      overallScore,
+      totalTests,
+    };
+  }
+}
+
+/**
+ * Results from running a benchmark suite.
+ */
+export interface SuiteResult {
+  suiteName: string;
+  benchmarks: Array<{ benchmark: string; score: number; count: number }>;
+  overallScore: number;
+  totalTests: number;
 }
 
 /**

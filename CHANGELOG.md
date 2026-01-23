@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.49.2] - 2026-01-23
+
+### 🎉 Graph-of-Thought Reasoning - Go Implementation
+
+**Focus:** Complete v0.49.0 milestone with Graph-of-Thought (GoT) reasoning technique for Go, enabling complex multi-hop reasoning with arbitrary graph structures.
+
+**Key Highlights:**
+- 🧠 **Graph-Based Reasoning** - Directed graphs with premises, intermediate thoughts, and conclusions
+- 🔗 **Logical Connections** - Four edge types (supports, depends_on, contradicts, refines)
+- 🛤️ **Multiple Paths** - Find and aggregate reasoning paths from premises to conclusions
+- 🔄 **Cycle Detection** - Optional cycle detection for reasoning loops
+- 📊 **Two Aggregation Strategies** - Path-based and node-based result synthesis
+- ✅ **12 Comprehensive Tests** - All tests passing, production-ready
+
+### Added
+
+#### Go Graph-of-Thought Implementation (#465)
+
+**Core Data Structure** (`techniques/reasoning/reasoning_graph.go`, 530 LOC)
+- **ReasoningGraph** - Directed graph for reasoning structures
+  - NodeType enum (Premise, Intermediate, Conclusion)
+  - EdgeType enum (Supports, DependsOn, Contradicts, Refines)
+  - ThoughtNode and LogicalEdge structs
+  - Graph algorithms: path finding, cycle detection, topological sort
+  - Path scoring combining node confidence and edge strength
+  - Statistics and analysis methods
+
+**Graph-of-Thought Agent** (`techniques/reasoning/graph_of_thought.go`, 551 LOC)
+- **GraphOfThought** - LLM-driven reasoning agent
+  - Premise generation from problems
+  - Intermediate thought generation
+  - Connection identification between thoughts
+  - Reasoning graph construction
+  - Path finding from premises to conclusions
+  - Two aggregation strategies:
+    - Path-based: Select best complete reasoning path
+    - Node-based: Weight nodes by appearance frequency
+  - Configurable graph size (max nodes, max edges)
+  - Optional cycle handling
+
+**Testing** (`techniques/reasoning/graph_of_thought_test.go`, 12 tests)
+- Creation and configuration tests
+- Premise and thought generation tests
+- Connection identification tests (all 4 edge types)
+- Graph building and path finding tests
+- Aggregation strategy tests (path-based, node-based)
+- Cycle detection and handling tests
+- Empty graph edge case tests
+- Complete Process method integration tests
+
+**Example** (`examples/techniques/graph_of_thought/`, 374 LOC)
+- 4 comprehensive scenarios:
+  1. Basic GoT with path-based aggregation
+  2. Node-based aggregation comparison
+  3. Cycle handling demonstration
+  4. Graph structure inspection
+- Production-ready mock LLM
+- Key takeaways and best practices
+- Comparison with Tree-of-Thought
+
+**Features:**
+- ✓ Arbitrary graph structures (beyond trees)
+- ✓ Multiple reasoning paths can converge/diverge
+- ✓ Thoughts can support, contradict, or refine each other
+- ✓ Complex multi-hop reasoning support
+- ✓ Configurable graph size and behavior
+- ✓ Cycle detection for reasoning loops
+- ✓ Two aggregation strategies for different use cases
+
+**Use Cases:**
+- Multi-hop reasoning problems
+- Problems with multiple interconnected concepts
+- Situations requiring synthesis of multiple reasoning chains
+- Complex knowledge integration tasks
+- Problems where thoughts may contradict or refine each other
+
+**Reference:** "Graph of Thoughts: Solving Elaborate Problems with Large Language Models"
+https://arxiv.org/abs/2308.09687
+
+### Milestone Complete
+
+**v0.49.0 - Advanced Features & Observability** is now 100% complete:
+- ✅ Rust Observability (66 tests) - Released in v0.49.0
+- ✅ Vector Memory (Rust + TypeScript) - Released in v0.49.1
+- ✅ Graph-of-Thought (Go) - Released in v0.49.2
+
 ## [0.49.1] - 2026-01-23
 
 ### 🎉 Vector Memory Enhancements - Distance Metrics & Batch Operations

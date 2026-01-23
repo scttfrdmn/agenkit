@@ -7,6 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.49.1] - 2026-01-23
+
+### 🎉 Vector Memory Enhancements - Distance Metrics & Batch Operations
+
+**Focus:** Add advanced vector memory capabilities to Rust and TypeScript with feature parity: multiple distance metrics and efficient batch operations for production RAG patterns.
+
+**Key Highlights:**
+- 📊 **54 Total Tests** - 26 Rust tests (17 original + 9 new) + 28 TypeScript tests (19 original + 9 new)
+- 🔍 **Distance Metrics** - Cosine (default), Euclidean, Dot Product for different semantic search use cases
+- 📦 **Batch Operations** - `store_batch()`, `add_batch()`, `search_batch()` for efficient bulk processing
+- 🚀 **Production Ready** - Comprehensive examples with performance analysis and integration guidance
+- ✅ **Feature Parity** - TypeScript and Rust implementations fully aligned
+
+### Added
+
+#### Rust Vector Memory - Distance Metrics & Batch Operations (#464)
+
+**Distance Metrics** (`src/memory/vector_memory.rs`, +304 LOC, 4 tests)
+- **DistanceMetric Enum** - Cosine (default, best for text), Euclidean (spatial data), DotProduct (pre-normalized)
+- **Flexible Search** - `SearchOptions.distance_metric` field for per-query metric selection
+- **Automatic Conversion** - Euclidean distance → similarity via `1/(1+distance)` formula
+- **Type-Safe** - Serde serializable enum with Default trait
+- **Cross-Language Compatible** - Matches TypeScript implementation
+
+**Batch Operations** (`src/memory/vector_memory.rs`, +90 LOC, 5 tests)
+- **`VectorStoreItem`** - Struct for bulk vector store operations
+- **`StoreBatchItem`** - Struct for bulk storage with embedding generation
+- **`add_batch()`** - Efficient bulk insert to vector store
+- **`search_batch()`** - Multiple queries in single call
+- **`store_batch()`** - Sequential embedding generation + bulk storage
+- **Performance** - Single operation overhead vs N individual calls
+
+**Testing** (`tests/test_vector_memory.rs`, +565 LOC, 9 tests)
+- `test_euclidean_distance()` - Validates L2 distance calculations
+- `test_dot_product()` - Validates inner product calculations
+- `test_distance_metric_selection()` - Tests all 3 metrics with epsilon tolerance
+- `test_default_cosine_metric()` - Validates default behavior
+- `test_add_batch()` - Bulk vector store insertion
+- `test_search_batch()` - Multi-query batch search
+- `test_store_batch()` - Bulk storage with embeddings
+- `test_empty_batch()` - Edge case handling
+- `test_batch_metadata_preservation()` - Metadata filtering with batches
+
+**Examples** (`examples/vector_memory_production.rs`, +363 LOC)
+- Production-ready example demonstrating:
+  - Distance metric comparison (cosine vs euclidean vs dot product)
+  - Batch operations with 8 messages
+  - Advanced filtering (importance + tags + semantic)
+  - Performance analysis and timing
+  - Integration guidance for OpenAI, ChromaDB, Pinecone, Qdrant
+
+**Exports** (`src/memory/mod.rs`)
+- Added `DistanceMetric`, `VectorStoreItem`, `StoreBatchItem` to public API
+
+#### TypeScript Vector Memory - Distance Metrics & Batch Operations (#463)
+
+**Distance Metrics** (`src/memory/vector-memory.ts`, +280 LOC, 3 tests)
+- **DistanceMetric Type** - 'cosine' | 'euclidean' | 'dotProduct'
+- **Flexible Search** - `SearchOptions.distanceMetric` field
+- **Implementations** - All three distance calculations with proper normalization
+- **ChromaDB Integration** - Distance metric mapping (cosine, l2, inner product)
+
+**Batch Operations** (`src/memory/vector-memory.ts`, +100 LOC, 6 tests)
+- **`VectorStoreItem`** - Interface for bulk operations
+- **`StoreBatchItem`** - Interface for bulk storage
+- **`addBatch()`** - Bulk vector store insertion
+- **`searchBatch()`** - Multi-query batch search
+- **`storeBatch()`** - Bulk storage with parallel embedding generation using Promise.all()
+
+**ChromaDB Integration** (`src/memory/integrations.ts`, +175 LOC)
+- Enhanced ChromaDB client with distance metric support
+- Proper mapping: cosine → 'cosine', euclidean → 'l2', dotProduct → 'ip'
+- Batch operations support
+
+**Examples** (`examples/vector-memory-production.ts`, +308 LOC)
+- Production-ready example with OpenAI embeddings
+- Distance metric comparison and performance analysis
+- ChromaDB integration patterns
+- Best practices for production deployment
+
+### Fixed
+
+- **pyproject.toml** - Updated version from 0.48.0 to 0.49.0 (sync with release)
+- **Rust Tests** - Fixed floating-point precision in distance metric tests with epsilon tolerance
+- **TypeScript Tests** - Improved test isolation for OpenTelemetry logging tests
+
+### Changed
+
+- **Test Performance** - Improved test counting performance by caching results
+
 ## [0.49.0] - 2026-01-16
 
 ### 🎉 Rust Observability - Production OpenTelemetry Integration

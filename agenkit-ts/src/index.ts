@@ -115,6 +115,7 @@ export {
 // LLM Adapters
 export { OpenAIAgent, OpenAIConfig } from './llm/openai';
 export { AnthropicAgent, AnthropicConfig } from './llm/anthropic';
+export { OpenAICompatibleAgent, OpenAICompatibleConfig } from './llm/openai-compatible';
 
 // Patterns
 export {

@@ -10,6 +10,9 @@ target_link_libraries(gemini_basic agenkit)
 add_executable(bedrock_basic adapters/bedrock-basic.cpp)
 target_link_libraries(bedrock_basic agenkit)
 
+add_executable(openai_compatible_basic adapters/openai-compatible-basic.cpp)
+target_link_libraries(openai_compatible_basic agenkit)
+
 # Pattern examples - Reflection
 add_executable(reflection_pattern patterns/reflection-pattern.cpp)
 target_link_libraries(reflection_pattern agenkit)

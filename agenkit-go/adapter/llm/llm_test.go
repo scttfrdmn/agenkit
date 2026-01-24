@@ -190,5 +190,6 @@ func TestLLMInterface(t *testing.T) {
 	// This test ensures that our types implement the LLM interface
 	var _ LLM = &MockLLM{}
 	var _ LLM = &OpenAILLM{}
+	var _ LLM = &OpenAICompatibleLLM{}
 	var _ LLM = &AnthropicLLM{}
 }

@@ -336,6 +336,7 @@ agenkit-go/
 ├── adapter/                 # LLM adapters
 │   ├── anthropic.go         # Claude API
 │   ├── openai.go            # OpenAI API
+│   ├── openai_compatible.go # OpenAI-compatible services (vLLM, llama.cpp, etc.)
 │   ├── bedrock.go           # AWS Bedrock
 │   └── gemini.go            # Google Gemini
 ├── transport/               # Communication protocols

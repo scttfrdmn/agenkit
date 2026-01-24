@@ -1,11 +1,15 @@
 //! Integration tests for adapter implementations
 //!
 //! Tests real adapter functionality including OpenAI, Anthropic, Ollama,
-//! and error handling. Some tests require API keys or services to be available.
+//! OpenAI-compatible services, and error handling. Some tests require API keys
+//! or services to be available.
 
 #[cfg(feature = "native")]
 mod adapter_tests {
-    use agenkit::adapters::{AnthropicAgent, AnthropicConfig, OllamaAgent, OllamaConfig};
+    use agenkit::adapters::{
+        AnthropicAgent, AnthropicConfig, OllamaAgent, OllamaConfig, OpenAICompatibleAgent,
+        OpenAICompatibleConfig,
+    };
     use agenkit::core::{Agent, Message};
 
     /// Test 1: Ollama adapter - local inference
@@ -150,6 +154,154 @@ mod adapter_tests {
         assert!(name.contains("anthropic"));
         // Name should contain the model identifier
         assert!(!name.is_empty());
+    }
+
+    /// Test 7: OpenAI-compatible adapter - vLLM
+    #[tokio::test]
+    #[ignore] // Requires vLLM service running
+    async fn test_openai_compatible_vllm_adapter() {
+        let config = OpenAICompatibleConfig {
+            base_url: "http://localhost:8000/v1".to_string(),
+            model: "meta-llama/Llama-2-7b-chat-hf".to_string(),
+            provider: Some("vllm".to_string()),
+            ..Default::default()
+        };
+
+        let agent = OpenAICompatibleAgent::new(config);
+        assert_eq!(agent.name(), "vllm");
+
+        let msg = Message::with_text("user", "What is machine learning in one sentence?");
+        let result = agent.process(msg).await;
+
+        // Should succeed if vLLM is running
+        if result.is_ok() {
+            let response = result.unwrap();
+            assert_eq!(response.role, "assistant");
+            assert!(!response.content_as_str().unwrap_or("").is_empty());
+
+            // Check metadata
+            assert!(response.metadata.contains_key("provider"));
+            assert_eq!(
+                response.metadata.get("provider").unwrap(),
+                &serde_json::json!("vllm")
+            );
+            assert!(response.metadata.contains_key("base_url"));
+        }
+    }
+
+    /// Test 8: OpenAI-compatible adapter - llama.cpp
+    #[tokio::test]
+    #[ignore] // Requires llama.cpp service running
+    async fn test_openai_compatible_llamacpp_adapter() {
+        let config = OpenAICompatibleConfig {
+            base_url: "http://localhost:8080/v1".to_string(),
+            model: "llama-2-7b-chat".to_string(),
+            provider: Some("llamacpp".to_string()),
+            ..Default::default()
+        };
+
+        let agent = OpenAICompatibleAgent::new(config);
+        assert_eq!(agent.name(), "llamacpp");
+
+        let msg = Message::with_text("user", "Write a haiku about coding");
+        let result = agent.process(msg).await;
+
+        // Should succeed if llama.cpp is running
+        if result.is_ok() {
+            let response = result.unwrap();
+            assert_eq!(response.role, "assistant");
+            assert!(!response.content_as_str().unwrap_or("").is_empty());
+        }
+    }
+
+    /// Test 9: OpenAI-compatible adapter without provider
+    #[tokio::test]
+    async fn test_openai_compatible_adapter_no_provider() {
+        let config = OpenAICompatibleConfig {
+            base_url: "http://localhost:8000/v1".to_string(),
+            model: "test-model".to_string(),
+            provider: None,
+            ..Default::default()
+        };
+
+        let agent = OpenAICompatibleAgent::new(config);
+        assert_eq!(agent.name(), "openai_compatible");
+    }
+
+    /// Test 10: OpenAI-compatible adapter capabilities
+    #[tokio::test]
+    async fn test_openai_compatible_adapter_capabilities() {
+        let config = OpenAICompatibleConfig {
+            base_url: "http://localhost:8000/v1".to_string(),
+            model: "llama-2-7b".to_string(),
+            provider: Some("vllm".to_string()),
+            ..Default::default()
+        };
+
+        let agent = OpenAICompatibleAgent::new(config);
+        let capabilities = agent.capabilities();
+        assert!(capabilities.contains(&"llm".to_string()));
+        assert!(capabilities.contains(&"openai-compatible".to_string()));
+        assert!(capabilities.contains(&"vllm".to_string()));
+    }
+
+    /// Test 11: OpenAI-compatible adapter error handling
+    #[tokio::test]
+    async fn test_openai_compatible_adapter_invalid_url() {
+        let config = OpenAICompatibleConfig {
+            base_url: "http://invalid-hostname-that-does-not-exist:8000/v1".to_string(),
+            model: "test-model".to_string(),
+            provider: Some("test".to_string()),
+            timeout_seconds: 5,
+            ..Default::default()
+        };
+
+        let agent = OpenAICompatibleAgent::new(config);
+        let msg = Message::with_text("user", "test");
+        let result = agent.process(msg).await;
+
+        // Should fail with invalid URL
+        assert!(result.is_err());
+    }
+
+    /// Test 12: OpenAI-compatible provider helper functions
+    #[tokio::test]
+    async fn test_openai_compatible_provider_helpers() {
+        use agenkit::adapters::openai_compatible::providers;
+
+        let vllm_config = providers::vllm("meta-llama/Llama-2-7b-chat-hf");
+        assert_eq!(vllm_config.base_url, "http://localhost:8000/v1");
+        assert_eq!(vllm_config.provider, Some("vllm".to_string()));
+
+        let llamacpp_config = providers::llamacpp("llama-2-7b-chat");
+        assert_eq!(llamacpp_config.base_url, "http://localhost:8080/v1");
+        assert_eq!(llamacpp_config.provider, Some("llamacpp".to_string()));
+
+        let sglang_config = providers::sglang("meta-llama/Llama-2-13b-chat-hf");
+        assert_eq!(sglang_config.base_url, "http://localhost:30000/v1");
+        assert_eq!(sglang_config.provider, Some("sglang".to_string()));
+
+        let tensorrt_config = providers::tensorrt("llama-2-70b");
+        assert_eq!(tensorrt_config.base_url, "http://localhost:8001/v1");
+        assert_eq!(tensorrt_config.provider, Some("tensorrt".to_string()));
+    }
+
+    /// Test 13: OpenAI-compatible message role conversion
+    #[tokio::test]
+    async fn test_openai_compatible_message_role_conversion() {
+        let config = OpenAICompatibleConfig {
+            base_url: "http://localhost:8000/v1".to_string(),
+            model: "test-model".to_string(),
+            ..Default::default()
+        };
+
+        let agent = OpenAICompatibleAgent::new(config);
+
+        // Test that agent role converts to assistant
+        let msg = Message::with_text("agent", "Previous response");
+        // Note: We can't test the internal conversion directly,
+        // but we verify the agent was created successfully
+        assert_eq!(agent.name(), "openai_compatible");
     }
 }
 

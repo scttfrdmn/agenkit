@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HITL Approval Workflow - Agenkit</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 10px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.agent {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .message.system {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .interrupt-dialog {
+            background: #fff;
+            border: 2px solid #ff6b6b;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .interrupt-dialog h3 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+
+        .interrupt-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .interrupt-actions button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-approve {
+            background: #4ecdc4;
+            color: white;
+        }
+
+        .btn-approve:hover {
+            background: #45b7af;
+        }
+
+        .btn-reject {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #ff5252;
+        }
+
+        .btn-edit {
+            background: #f7b731;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #e0a421;
+        }
+
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .input-group button {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .input-group button:hover {
+            background: #5568d3;
+        }
+
+        .input-group button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 10px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .status.connected {
+            color: #4ecdc4;
+        }
+
+        .status.disconnected {
+            color: #ff6b6b;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .quick-actions button {
+            flex: 1;
+            padding: 8px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .quick-actions button:hover {
+            background: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤝 Human-in-the-Loop Trading Agent</h1>
+            <p>Financial trading agent with bidirectional approval workflow using AG-UI protocol</p>
+        </div>
+
+        <div class="chat-container">
+            <div class="messages" id="messages">
+                <!-- Messages will be appended here -->
+            </div>
+
+            <div class="status" id="status">Connecting...</div>
+
+            <div class="input-area">
+                <div class="quick-actions">
+                    <button onclick="sendQuickMessage('conservative')">Conservative Trade</button>
+                    <button onclick="sendQuickMessage('moderate')">Moderate Trade</button>
+                    <button onclick="sendQuickMessage('aggressive')">Aggressive Trade</button>
+                </div>
+                <div class="input-group">
+                    <input
+                        type="text"
+                        id="messageInput"
+                        placeholder="Type your trading request..."
+                        onkeypress="if(event.key==='Enter') sendMessage()"
+                    >
+                    <button onclick="sendMessage()" id="sendButton">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="client.js"></script>
+</body>
+</html>

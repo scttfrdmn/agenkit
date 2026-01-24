@@ -31,29 +31,69 @@ go run 01_basic_hitl.go
 - Metadata includes approval_status, confidence, threshold
 - Interrupts can be disabled while maintaining approval logic
 
-### 2. SSE Transport HITL (Coming Soon)
+### 2. SSE Transport HITL (`02_sse_transport_hitl.go`)
 
 HTTP Server-Sent Events transport with HITL support:
 - AGUISSEHandler for HTTP/SSE streaming
 - Browser-friendly unidirectional streaming
 - CORS support for web frontends
 - Interrupt events over SSE
+- Real-world deployment patterns
 
-### 3. WebSocket HITL (Coming Soon)
+**Run:**
+```bash
+cd agenkit-go/examples/protocols/agui
+go run 02_sse_transport_hitl.go
+```
+
+**Test:**
+```bash
+curl -X POST http://localhost:8080/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Should I proceed?"}' \
+  -N
+```
+
+### 3. WebSocket HITL (`03_websocket_hitl.go`)
 
 WebSocket transport with bidirectional HITL:
 - AGUIWebSocketHandler for WebSocket connections
 - Bidirectional message flow
 - Real-time approval requests and responses
 - Heartbeat support
+- Custom HITL adapter integration
 
-### 4. Advanced Approval (Coming Soon)
+**Run:**
+```bash
+cd agenkit-go/examples/protocols/agui
+go run 03_websocket_hitl.go
+```
+
+**Test with websocat:**
+```bash
+echo '{"type": "message", "content": "Make a critical decision"}' | websocat ws://localhost:8765
+```
+
+### 4. Advanced Approval (`04_advanced_approval.go`)
 
 Advanced approval workflows:
-- Custom approval functions
-- Confidence-based rules
-- Approval timeout handling
-- Modified response approval
+- Tiered approval (4 levels based on amount)
+- Contextual approval (risk, timing, transaction type)
+- Approval with modifications
+- Audit trail and statistics
+- Multi-stage approval workflow
+
+**Run:**
+```bash
+cd agenkit-go/examples/protocols/agui
+go run 04_advanced_approval.go
+```
+
+**Features:**
+- Tier 0: < $1,000 (Auto-approve)
+- Tier 1: $1K-$10K (Manager)
+- Tier 2: $10K-$50K (Director)
+- Tier 3: > $50K (Executive + modifications)
 
 ## Quick Start
 

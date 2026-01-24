@@ -40,6 +40,7 @@ from agenkit.protocols.agui.transports.http import (
     create_sse_handler,
     create_sse_response_iterator,
 )
+from agenkit.protocols.agui.hitl import AGUIHumanInLoopAdapter
 from agenkit.protocols.agui.transports.websocket import (
     AGUIWebSocketHandler,
     AGUIWebSocketStream,
@@ -50,6 +51,7 @@ from agenkit.protocols.agui.transports.websocket import (
 __all__ = [
     "AGUIAdapter",
     "AGUIEvent",
+    "AGUIHumanInLoopAdapter",
     "AGUISSEEndpoint",
     "AGUISSEStream",
     "AGUIWebSocketHandler",

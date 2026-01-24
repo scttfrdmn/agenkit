@@ -121,8 +121,8 @@ export abstract class AGUIEvent implements BaseEvent {
       event_type: this.event_type,
       timestamp: this.timestamp,
       event_id: this.event_id,
-      metadata: this.metadata,
       ...this.getEventData(),
+      ...this.metadata, // Spread metadata at top level
     };
   }
 

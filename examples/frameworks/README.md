@@ -310,6 +310,80 @@ uv run python examples/frameworks/miniautogen.py
 
 ---
 
+### MiniHaystack - Haystack Equivalent
+
+**File**: [`minihaystack.py`](minihaystack.py) (361 LOC)
+
+Demonstrates how Haystack's pipeline-based RAG architecture maps to Agenkit.
+
+#### Pattern Mappings
+
+| Haystack Pattern | Agenkit Primitive | Why It's Better |
+|------------------|-------------------|-----------------|
+| `Pipeline` | `SequentialAgent` | Simpler API, no graph DSL |
+| `Component` | Custom `Agent` | Same concept, cleaner interface |
+| `PromptBuilder` | Template interpolation | No Jinja2 dependency |
+| `Generator` | LLM adapter | Explicit LLM calls |
+| `Retriever` | Search + `Agent` | More flexible integration |
+| `DocumentStore` | External storage | Framework-agnostic |
+| `Pipeline.run()` | `agent.process()` | Async-first, simpler |
+| `@component` | `Agent` interface | More explicit, no magic |
+
+#### What You Get
+
+```python
+from minihaystack import Pipeline, PromptBuilder, Generator, Retriever, InMemoryDocumentStore
+
+# Haystack-style pipeline construction
+document_store = InMemoryDocumentStore()
+document_store.write_documents([...])
+
+pipeline = Pipeline()
+pipeline.add_component("retriever", Retriever(document_store))
+pipeline.add_component("prompt_builder", PromptBuilder(
+    template="Context: {{input}}\n\nAnswer the question."
+))
+pipeline.add_component("generator", Generator(llm=llm))
+
+# Run RAG pipeline
+result = await pipeline.run({"input": "What is the capital of France?"})
+```
+
+#### What's Different from Haystack
+
+**Explicit vs Graph-Based:**
+- Haystack: `pipeline.connect("retriever", "prompt_builder.documents")` (graph connections)
+- MiniHaystack: Sequential component execution (simpler data flow)
+
+**Why explicit is better:**
+- Easier to understand (linear flow, not graph)
+- Easier to debug (step through components)
+- Easier to test (mock individual components)
+- No hidden type conversions between components
+
+#### When to Use
+
+✅ **Good fit:**
+- Migrating from Haystack
+- RAG pipeline patterns
+- Document processing workflows
+- Sequential component composition
+
+❌ **Not ideal:**
+- Complex graph-based pipelines (use Orchestration directly)
+- Production RAG (use dedicated RAG libraries like LlamaIndex)
+- Heavy document processing (use specialized libraries)
+- Haystack Hub components (integrate manually)
+
+**Usage:**
+```bash
+uv run python examples/frameworks/minihaystack.py
+```
+
+**Migration Guide**: [Haystack → Agenkit](../../docs/migrations/haystack-to-agenkit.md)
+
+---
+
 ## Why Build Your Own Framework?
 
 ### The Framework Problem

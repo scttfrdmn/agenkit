@@ -262,7 +262,7 @@ export class AGUIHumanInLoopAdapter extends AGUIAdapter {
 
     // Add agent capabilities if available
     if (agent.capabilities) {
-      metadata.agent_capabilities = agent.capabilities();
+      metadata.agent_capabilities = agent.capabilities;
     }
 
     return new MetadataEvent(metadata);
@@ -305,29 +305,6 @@ export class AGUIHumanInLoopAdapter extends AGUIAdapter {
     );
   }
 
-  /**
-   * Generate a unique message ID
-   */
-  private generateMessageId(): string {
-    return `msg_${randomUUID()}`;
-  }
-
-  /**
-   * Create an error event from an exception
-   */
-  private createErrorEvent(messageId: string, error: Error): any {
-    const ErrorEventClass = require('./events.js').ErrorEvent;
-    return new ErrorEventClass(
-      'agent_error',
-      error.message || 'Unknown error',
-      true,
-      {
-        message_id: messageId,
-        error_type: error.name,
-        stack: error.stack,
-      },
-    );
-  }
 }
 
 /**

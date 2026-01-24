@@ -217,7 +217,7 @@ export class AGUIAdapter {
   /**
    * Generate a unique message ID
    */
-  private generateMessageId(): string {
+  protected generateMessageId(): string {
     return `msg_${randomUUID()}`;
   }
 
@@ -239,7 +239,7 @@ export class AGUIAdapter {
 
     // Add agent capabilities if available
     if (this.agent.capabilities) {
-      metadata.agent_capabilities = this.agent.capabilities();
+      metadata.agent_capabilities = this.agent.capabilities;
     }
 
     return new MetadataEvent(metadata);
@@ -248,7 +248,7 @@ export class AGUIAdapter {
   /**
    * Create an error event from an exception
    */
-  private createErrorEvent(messageId: string, error: Error): ErrorEvent {
+  protected createErrorEvent(messageId: string, error: Error): ErrorEvent {
     return new ErrorEvent(
       'agent_error',
       error.message || 'Unknown error',

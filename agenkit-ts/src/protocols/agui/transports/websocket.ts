@@ -304,7 +304,7 @@ export class AGUIWebSocketHandler {
 
     // Add agent capabilities if available
     if (this.agent.capabilities) {
-      metadata.agent_capabilities = this.agent.capabilities();
+      metadata.agent_capabilities = this.agent.capabilities;
     }
 
     return new MetadataEvent(metadata);

@@ -250,7 +250,7 @@ def test_human_in_loop_capabilities():
     config = HumanInLoopConfig(agent=agent, approval_func=always_approve)
 
     hil = HumanInLoopAgent(config)
-    caps = hil.capabilities()
+    caps = hil.capabilities  # capabilities is now a property
 
     # Should have agent capabilities plus human-in-loop specific
     assert "reasoning" in caps
@@ -337,7 +337,6 @@ async def test_below_threshold_approved():
     assert result.metadata["confidence"] == 0.7
 
 
-@pytest.mark.skip(reason="Implementation bug: tries to assign to frozen Message.metadata field")
 @pytest.mark.asyncio
 async def test_below_threshold_rejected():
     """Test rejection for low confidence response."""
@@ -637,7 +636,6 @@ async def test_full_workflow_low_confidence_approved():
     assert "Auto-approved" in result.metadata["approval_feedback"]
 
 
-@pytest.mark.skip(reason="Implementation bug: tries to assign to frozen Message.metadata field")
 @pytest.mark.asyncio
 async def test_full_workflow_confidence_based():
     """Test complete workflow with confidence-based approval function."""
@@ -673,3 +671,105 @@ async def test_reuse():
 
     # Agent should have been called twice
     assert agent.call_count == 2
+
+
+# ============================================================================
+# Async Approval Function Tests
+# ============================================================================
+
+
+async def async_always_approve(request: ApprovalRequest) -> ApprovalResponse:
+    """Async version that always approves."""
+    return ApprovalResponse(approved=True, feedback="Async approved")
+
+
+async def async_always_reject(request: ApprovalRequest) -> ApprovalResponse:
+    """Async version that always rejects."""
+    return ApprovalResponse(approved=False, feedback="Async rejected")
+
+
+async def async_modify_response(request: ApprovalRequest) -> ApprovalResponse:
+    """Async version that approves with modifications."""
+    modified = Message(role="assistant", content="Async modified response")
+    return ApprovalResponse(approved=True, modified_message=modified, feedback="Modified async")
+
+
+@pytest.mark.asyncio
+async def test_async_approval_func_approve():
+    """Test with async approval function that approves."""
+    agent = MockAgent("agent", confidence=0.5)
+    config = HumanInLoopConfig(
+        agent=agent, approval_func=async_always_approve, approval_threshold=0.8
+    )
+
+    hil = HumanInLoopAgent(config)
+
+    message = Message(role="user", content="Execute task")
+    result = await hil.process(message)
+
+    assert result.content == "Success"
+    assert result.metadata["approval_status"] == "approved"
+    assert result.metadata["approval_feedback"] == "Async approved"
+
+
+@pytest.mark.asyncio
+async def test_async_approval_func_reject():
+    """Test with async approval function that rejects."""
+    agent = MockAgent("agent", confidence=0.5)
+    config = HumanInLoopConfig(
+        agent=agent, approval_func=async_always_reject, approval_threshold=0.8
+    )
+
+    hil = HumanInLoopAgent(config)
+
+    message = Message(role="user", content="Execute task")
+    result = await hil.process(message)
+
+    assert result.content == "Action rejected by human reviewer"
+    assert result.metadata["approval_status"] == "rejected"
+    assert result.metadata["rejection_reason"] == "Async rejected"
+
+
+@pytest.mark.asyncio
+async def test_async_approval_func_modify():
+    """Test with async approval function that modifies response."""
+    agent = MockAgent("agent", confidence=0.5)
+    config = HumanInLoopConfig(
+        agent=agent, approval_func=async_modify_response, approval_threshold=0.8
+    )
+
+    hil = HumanInLoopAgent(config)
+
+    message = Message(role="user", content="Execute task")
+    result = await hil.process(message)
+
+    assert result.content == "Async modified response"
+    assert result.metadata["approval_status"] == "approved_with_modifications"
+    assert result.metadata["approval_feedback"] == "Modified async"
+    assert result.metadata["original_response"] == "Success"
+
+
+@pytest.mark.asyncio
+async def test_mixed_sync_and_async_approval():
+    """Test that both sync and async approval functions work."""
+    agent_sync = MockAgent("sync_agent", confidence=0.5)
+    agent_async = MockAgent("async_agent", confidence=0.5)
+
+    config_sync = HumanInLoopConfig(
+        agent=agent_sync, approval_func=always_approve, approval_threshold=0.8
+    )
+    config_async = HumanInLoopConfig(
+        agent=agent_async, approval_func=async_always_approve, approval_threshold=0.8
+    )
+
+    hil_sync = HumanInLoopAgent(config_sync)
+    hil_async = HumanInLoopAgent(config_async)
+
+    message = Message(role="user", content="Execute task")
+
+    result_sync = await hil_sync.process(message)
+    result_async = await hil_async.process(message)
+
+    # Both should approve
+    assert result_sync.metadata["approval_status"] == "approved"
+    assert result_async.metadata["approval_status"] == "approved"

@@ -24,7 +24,7 @@ from agenkit.interfaces import Message
 # Connect to local vLLM server
 llm = OpenAICompatibleLLM(
     base_url="http://localhost:8000/v1",
-    model="meta-llama/Llama-2-7b-chat-hf",
+    model="meta-llama/Llama-3.3-8B-Instruct",
     provider="vllm"
 )
 
@@ -36,10 +36,14 @@ print(response.content)
 
 ## Examples
 
-### 1. vLLM Integration ([vllm_example.py](vllm_example.py))
+### Service-Specific Examples
 
-Comprehensive example showing:
-- Basic completions
+#### 1. vLLM - High-Throughput Production ([vllm_example.py](vllm_example.py))
+
+**Focus:** Production-scale batch inference with PagedAttention
+
+Demonstrates:
+- Basic completions with high throughput
 - Streaming responses
 - Multi-turn conversations
 - Custom parameters (temperature, max_tokens)
@@ -49,17 +53,132 @@ Comprehensive example showing:
 ```bash
 # Start vLLM with Docker
 docker run --gpus all -p 8000:8000 vllm/vllm-openai \
-    --model meta-llama/Llama-2-7b-chat-hf
+    --model meta-llama/Llama-3.3-8B-Instruct
 
 # Run example
 uv run python examples/adapters/openai_compatible/vllm_example.py
 ```
 
-**Requirements:**
-- GPU with CUDA support
-- ~14GB VRAM for Llama-2-7b
+**Requirements:** GPU with CUDA, ~16GB VRAM
 
-### 2. Service Comparison ([service_comparison.py](service_comparison.py))
+**Best for:** Serving many concurrent requests, production APIs
+
+---
+
+#### 2. llama.cpp - Edge & CPU Deployment ([llamacpp_example.py](llamacpp_example.py))
+
+**Focus:** Local/edge deployment, CPU-friendly inference
+
+Demonstrates:
+- CPU-only inference
+- Quantization comparison (Q2_K, Q4_K_M, Q5_K_M, Q8_0)
+- Local code generation
+- Edge chatbot implementation
+- Performance tuning (threads, GPU layers)
+- Offline/air-gapped deployment
+
+**Setup:**
+```bash
+# Build llama.cpp
+git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp && make server
+
+# Download model (GGUF format)
+wget https://huggingface.co/.../llama-3.3-8b-instruct.Q4_K_M.gguf -P models/
+
+# Start server
+./server -m models/llama-3.3-8b-instruct.Q4_K_M.gguf --port 8080
+
+# Run example
+uv run python examples/adapters/openai_compatible/llamacpp_example.py
+```
+
+**Requirements:** CPU (GPU optional), ~4-8GB RAM for Q4 quantized models
+
+**Best for:** Edge devices, CPU-only environments, offline deployments
+
+---
+
+#### 3. SGLang - Multi-Turn Conversations ([sglang_example.py](sglang_example.py))
+
+**Focus:** Conversational AI with RadixAttention for KV cache reuse
+
+Demonstrates:
+- RadixAttention efficiency (automatic prefix caching)
+- Multi-turn conversations with memory
+- Chatbot with consistent system prompts
+- Prefix caching demonstration (2-10x speedup)
+- Structured generation
+- Performance comparison
+
+**Setup:**
+```bash
+# Install SGLang
+pip install "sglang[all]"
+
+# Start server
+python -m sglang.launch_server \
+    --model-path meta-llama/Llama-3.3-70B-Instruct \
+    --port 30000
+
+# Or use Docker
+docker run --gpus all -p 30000:30000 lmsysorg/sglang:latest \
+    python -m sglang.launch_server \
+    --model-path meta-llama/Llama-3.3-70B-Instruct --port 30000
+
+# Run example
+uv run python examples/adapters/openai_compatible/sglang_example.py
+```
+
+**Requirements:** GPU with CUDA, ~140GB VRAM for 70B (or use 8B: ~16GB VRAM)
+
+**Best for:** Chatbots, conversational agents, RAG applications with repeated context
+
+---
+
+#### 4. TensorRT-LLM - Enterprise GPU ([tensorrt_example.py](tensorrt_example.py))
+
+**Focus:** Maximum performance on NVIDIA datacenter GPUs
+
+Demonstrates:
+- Low-latency inference (<100ms P95)
+- High-throughput batch processing
+- Multi-GPU deployment (tensor parallelism)
+- Quantization options (FP16, INT8, FP8, INT4)
+- Production monitoring and metrics
+- Deployment best practices
+
+**Setup:**
+```bash
+# Clone TensorRT-LLM
+git clone https://github.com/NVIDIA/TensorRT-LLM.git
+cd TensorRT-LLM
+
+# Build engine (one-time)
+python examples/llama/build.py \
+    --model_dir meta-llama/Llama-3.3-70B-Instruct \
+    --output_dir ./engines/llama-70b \
+    --dtype float16 \
+    --use_gpt_attention_plugin float16
+
+# Start server
+python examples/server/launch_server.py \
+    --engine_dir ./engines/llama-70b \
+    --port 8001
+
+# Run example
+uv run python examples/adapters/openai_compatible/tensorrt_example.py
+```
+
+**Requirements:** NVIDIA A100/H100, CUDA 12.0+, TensorRT 9.0+
+
+**Best for:** Production at scale, low-latency requirements, high-throughput workloads
+
+---
+
+### Integration Examples
+
+#### 5. Service Comparison ([service_comparison.py](service_comparison.py))
 
 Compare performance across different inference engines:
 - vLLM vs llama.cpp vs SGLang vs TensorRT-LLM
@@ -72,7 +191,7 @@ Compare performance across different inference engines:
 uv run python examples/adapters/openai_compatible/service_comparison.py
 ```
 
-### 3. Production Deployment ([production_setup.py](production_setup.py))
+#### 6. Production Deployment ([production_setup.py](production_setup.py))
 
 Production-ready patterns:
 - Health checks and connection validation
@@ -94,7 +213,7 @@ uv run python examples/adapters/openai_compatible/production_setup.py
 **Docker (Recommended):**
 ```bash
 docker run --gpus all -p 8000:8000 vllm/vllm-openai \
-    --model meta-llama/Llama-2-7b-chat-hf \
+    --model meta-llama/Llama-3.3-8B-Instruct \
     --dtype float16
 ```
 
@@ -102,7 +221,7 @@ docker run --gpus all -p 8000:8000 vllm/vllm-openai \
 ```bash
 pip install vllm
 python -m vllm.entrypoints.openai.api_server \
-    --model meta-llama/Llama-2-7b-chat-hf
+    --model meta-llama/Llama-3.3-8B-Instruct
 ```
 
 **Documentation:** https://docs.vllm.ai/
@@ -113,15 +232,15 @@ python -m vllm.entrypoints.openai.api_server \
 ```bash
 git clone https://github.com/ggerganov/llama.cpp
 cd llama.cpp
-make
-./server -m models/llama-2-7b-chat.gguf -c 2048 --port 8080
+make server
+./server -m models/llama-3.3-8b-instruct.Q4_K_M.gguf -c 2048 --port 8080
 ```
 
 **Docker:**
 ```bash
 docker run -p 8080:8080 -v /path/to/models:/models \
     ghcr.io/ggerganov/llama.cpp:server \
-    --model /models/llama-2-7b-chat.gguf --port 8080
+    --model /models/llama-3.3-8b-instruct.Q4_K_M.gguf --port 8080
 ```
 
 **Documentation:** https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md
@@ -130,9 +249,9 @@ docker run -p 8080:8080 -v /path/to/models:/models \
 
 **Install & Run:**
 ```bash
-pip install sglang
+pip install "sglang[all]"
 python -m sglang.launch_server \
-    --model-path meta-llama/Llama-2-7b-chat-hf \
+    --model-path meta-llama/Llama-3.3-70B-Instruct \
     --port 30000
 ```
 
@@ -159,14 +278,14 @@ The same Agenkit code works with all OpenAI-compatible services:
 # Works with vLLM
 llm = OpenAICompatibleLLM(
     base_url="http://localhost:8000/v1",
-    model="llama-2-7b",
+    model="meta-llama/Llama-3.3-8B-Instruct",
     provider="vllm"
 )
 
 # Works with llama.cpp (just change URL!)
 llm = OpenAICompatibleLLM(
     base_url="http://localhost:8080/v1",
-    model="llama-2-7b",
+    model="llama-3.3-8b-instruct",
     provider="llamacpp"
 )
 
@@ -187,7 +306,7 @@ llm = OpenAILLM(api_key="sk-...", model="gpt-4")
 from agenkit.adapters.llm import OpenAICompatibleLLM
 llm = OpenAICompatibleLLM(
     base_url="http://localhost:8000/v1",
-    model="meta-llama/Llama-2-7b-chat-hf",
+    model="meta-llama/Llama-3.3-8B-Instruct",
     provider="vllm"
 )
 
@@ -264,9 +383,9 @@ curl http://localhost:8080/health  # llama.cpp
 
 ### 2. Optimize Model Selection
 
-- **7B models**: Fast, good for most tasks, ~14GB VRAM
+- **7-8B models**: Fast, good for most tasks, ~16GB VRAM
 - **13B models**: Better quality, slower, ~26GB VRAM
-- **70B models**: Best quality, very slow, requires multiple GPUs
+- **70B models**: Best quality, requires multiple GPUs, ~140GB VRAM
 
 ### 3. Use Quantization
 

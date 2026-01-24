@@ -40,12 +40,20 @@ from agenkit.protocols.agui.transports.http import (
     create_sse_handler,
     create_sse_response_iterator,
 )
+from agenkit.protocols.agui.transports.websocket import (
+    AGUIWebSocketHandler,
+    AGUIWebSocketStream,
+    WebSocketMessageFormat,
+    create_websocket_handler,
+)
 
 __all__ = [
     "AGUIAdapter",
     "AGUIEvent",
     "AGUISSEEndpoint",
     "AGUISSEStream",
+    "AGUIWebSocketHandler",
+    "AGUIWebSocketStream",
     "Attachment",
     "AttachmentType",
     "BaseEvent",
@@ -66,8 +74,10 @@ __all__ = [
     "ToolCallChunk",
     "ToolCallComplete",
     "ToolCallStart",
+    "WebSocketMessageFormat",
     "create_sse_handler",
     "create_sse_response_iterator",
+    "create_websocket_handler",
     "parse_event",
     "wrap_agent_as_agui",
 ]

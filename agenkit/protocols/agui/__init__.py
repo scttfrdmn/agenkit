@@ -6,6 +6,11 @@ Provides streaming agent-to-frontend communication using the AG-UI protocol.
 Reference: https://docs.ag-ui.com
 """
 
+from agenkit.protocols.agui.adapter import (
+    AGUIAdapter,
+    StreamingAGUIAdapter,
+    wrap_agent_as_agui,
+)
 from agenkit.protocols.agui.events import (
     AGUIEvent,
     Attachment,
@@ -30,6 +35,7 @@ from agenkit.protocols.agui.events import (
 )
 
 __all__ = [
+    "AGUIAdapter",
     "AGUIEvent",
     "Attachment",
     "AttachmentType",
@@ -43,6 +49,7 @@ __all__ = [
     "InterruptResponse",
     "MetadataEvent",
     "StateDelta",
+    "StreamingAGUIAdapter",
     "TextMessageChunk",
     "TextMessageComplete",
     "TextMessageStart",
@@ -50,4 +57,5 @@ __all__ = [
     "ToolCallComplete",
     "ToolCallStart",
     "parse_event",
+    "wrap_agent_as_agui",
 ]

@@ -101,6 +101,7 @@ pub mod memory;
 pub mod middleware;
 pub mod optimizations;
 pub mod patterns;
+pub mod protocols;
 pub mod safety;
 pub mod techniques;
 

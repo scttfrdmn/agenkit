@@ -384,6 +384,154 @@ uv run python examples/frameworks/minihaystack.py
 
 ---
 
+### MiniSmolagents - Smolagents Equivalent
+
+**File**: [`minismolagents.py`](minismolagents.py) (367 LOC)
+
+Demonstrates how HuggingFace Smolagents' lightweight tool-using patterns map to Agenkit.
+
+#### Pattern Mappings
+
+| Smolagents Pattern | Agenkit Primitive | Why It's Better |
+|--------------------|-------------------|-----------------|
+| `ToolCallingAgent` | `ReActAgent` | More patterns, production-ready |
+| `CodeAgent` | Code execution agent | Explicit sandboxing |
+| `@tool` | `Tool` class | Type-safe, async-first |
+| `ToolBox` | `List[Tool]` | Simpler, composable |
+| `run()` | `agent.process()` | Standard interface |
+
+#### What You Get
+
+```python
+from minismolagents import ToolCallingAgent, CodeAgent, tool
+
+# Tool-calling agent (like Smolagents)
+agent = ToolCallingAgent(
+    llm=llm,
+    tools=[search_tool, calculator_tool],
+    max_iterations=5
+)
+
+# Code generation agent
+code_agent = CodeAgent(
+    llm=llm,
+    tools=[...]  # Converted to code functions
+)
+
+# @tool decorator (same as Smolagents!)
+@tool
+def my_tool(query: str) -> str:
+    """Tool description."""
+    return results
+```
+
+#### What's Different from Smolagents
+
+**Explicit vs Implicit:**
+- Smolagents: Built-in sandboxing (limited options)
+- MiniSmolagents: Explicit sandboxing strategy (Docker, E2B, Modal, etc.)
+
+**Why explicit is better:**
+- Security control (choose your sandbox)
+- Works with any LLM (not just HuggingFace)
+- Production middleware (retry, timeout, circuit breaker)
+- 18x faster in Go
+
+#### When to Use
+
+✅ **Good fit:**
+- Migrating from Smolagents
+- Lightweight tool-using agents
+- Code-first agent patterns
+- Simple task automation
+
+❌ **Not ideal:**
+- Complex multi-agent orchestration (use other patterns)
+- Production without sandboxing (security risk)
+- Heavy tool usage (use ReActAgent directly)
+
+**Usage:**
+```bash
+uv run python examples/frameworks/minismolagents.py
+```
+
+**Migration Guide**: [Smolagents → Agenkit](../../docs/migrations/smolagents-to-agenkit.md)
+
+---
+
+### MiniStrands - Strands Equivalent
+
+**File**: [`ministrands.py`](ministrands.py) (392 LOC)
+
+Demonstrates how AWS Strands' graph-based orchestration patterns map to Agenkit.
+
+#### Pattern Mappings
+
+| Strands Pattern | Agenkit Primitive | Why It's Better |
+|----------------|-------------------|-----------------|
+| `Graph` | Custom orchestration | Platform-independent |
+| `Node` | Agent wrapper | More flexible |
+| `Edge` | Conditional routing | Explicit logic |
+| `A2A Protocol` | `Agents-as-Tools` | Direct mapping! |
+| `Workflows` | Orchestration + Memory | More patterns |
+
+#### What You Get
+
+```python
+from ministrands import Graph, Node, Edge, StrandAgent, GraphExecutor
+
+# Create graph-based workflow
+graph = Graph(name="research_pipeline")
+
+# Add nodes (agents)
+graph.add_node(Node("research", researcher))
+graph.add_node(Node("analyze", analyst))
+graph.add_node(Node("write", writer))
+
+# Add edges (routing)
+graph.add_edge(Edge("research", "analyze"))
+graph.add_edge(Edge("analyze", "write", condition="approved"))
+
+# Execute graph
+executor = GraphExecutor(graph)
+result = await executor.execute(message)
+```
+
+#### What's Different from Strands
+
+**Platform Independence vs AWS Lock-in:**
+- Strands: AWS-only (Bedrock, CloudWatch, Lambda)
+- MiniStrands: Deploy anywhere, use any LLM
+
+**Why platform-independent is better:**
+- No AWS lock-in
+- Any LLM provider (OpenAI, Anthropic, local)
+- Cross-cloud deployment
+- OpenTelemetry instead of CloudWatch
+- 18x faster in Go
+
+#### When to Use
+
+✅ **Good fit:**
+- Migrating from AWS Strands
+- Graph-based workflows
+- Conditional routing between agents
+- A2A (Agents-as-Tools) pattern
+
+❌ **Not ideal:**
+- Simple sequential tasks (use SequentialAgent)
+- Dynamic routing (use RouterAgent)
+- AWS-specific features needed
+
+**Usage:**
+```bash
+uv run python examples/frameworks/ministrands.py
+```
+
+**Migration Guide**: [Strands → Agenkit](../../docs/migrations/strands-to-agenkit.md)
+
+---
+
 ## Why Build Your Own Framework?
 
 ### The Framework Problem

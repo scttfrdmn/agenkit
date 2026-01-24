@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    ports: ["8000:8000"]
+    environment: [PYTHONUNBUFFERED=1]
+    volumes: [./backend:/app, ../../../../agenkit:/agenkit]
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+  frontend:
+    image: nginx:alpine
+    ports: ["3000:80"]
+    volumes: [./frontend:/usr/share/nginx/html:ro]
+    depends_on: [backend]

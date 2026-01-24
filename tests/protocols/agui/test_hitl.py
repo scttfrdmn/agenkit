@@ -259,3 +259,377 @@ class TestAGUIHumanInLoopAdapter:
         assert len(interrupts1) == 1
         assert len(interrupts2) == 1
         assert interrupts1[0].interrupt_id != interrupts2[0].interrupt_id
+
+
+class TestBidirectionalHITL:
+    """Test bidirectional HITL functionality."""
+
+    @pytest.mark.asyncio
+    async def test_bidirectional_high_confidence_no_interrupt(self):
+        """Test that high confidence bypasses approval in bidirectional mode."""
+        agent = MockAgent(response="Success", confidence=0.95)
+        adapter = AGUIHumanInLoopAdapter(
+            agent,
+            bidirectional=True,
+            approval_threshold=0.8,
+        )
+
+        message = Message(role="user", content="Test")
+        events = []
+        async for event in adapter.stream_events(message):
+            events.append(event)
+
+        # High confidence should skip approval
+        event_types = [e.__class__.__name__ for e in events]
+        assert "Interrupt" not in event_types
+        assert "TextMessageComplete" in event_types
+
+    @pytest.mark.asyncio
+    async def test_bidirectional_low_confidence_emits_interrupt(self):
+        """Test that low confidence emits Interrupt with available actions."""
+        from agenkit.protocols.agui.events import InterruptAction, InterruptResponse
+
+        agent = MockAgent(response="Uncertain response", confidence=0.5)
+        adapter = AGUIHumanInLoopAdapter(
+            agent,
+            bidirectional=True,
+            approval_threshold=0.8,
+        )
+
+        message = Message(role="user", content="Test")
+
+        # Collect events asynchronously
+        import asyncio
+
+        events = []
+        event_task = None
+
+        async def collect_events():
+            async for event in adapter.stream_events(message):
+                events.append(event)
+
+        # Start streaming
+        event_task = asyncio.create_task(collect_events())
+
+        # Wait for Interrupt event
+        await asyncio.sleep(0.1)
+
+        # Should have interrupt with actions
+        interrupts = [e for e in events if isinstance(e, Interrupt)]
+        assert len(interrupts) == 1
+
+        interrupt = interrupts[0]
+        assert interrupt.reason == InterruptReason.APPROVAL_REQUIRED
+        assert InterruptAction.APPROVE in interrupt.actions
+        assert InterruptAction.REJECT in interrupt.actions
+        assert InterruptAction.EDIT in interrupt.actions
+        assert interrupt.timeout_seconds == 300.0
+        assert interrupt.context["confidence"] == 0.5
+
+        # Respond with approval
+        response = InterruptResponse(
+            interrupt_id=interrupt.interrupt_id,
+            action=InterruptAction.APPROVE,
+        )
+        await adapter.handle_interrupt_response(response)
+
+        # Wait for streaming to complete
+        await event_task
+
+        # Should complete successfully
+        text_events = [e for e in events if e.__class__.__name__ == "TextMessageComplete"]
+        assert len(text_events) == 1
+        assert text_events[0].metadata["approval_status"] == "approved"
+
+    @pytest.mark.asyncio
+    async def test_bidirectional_approve_action(self):
+        """Test APPROVE action in bidirectional mode."""
+        from agenkit.protocols.agui.events import InterruptAction, InterruptResponse
+
+        agent = MockAgent(response="Proceed", confidence=0.6)
+        adapter = AGUIHumanInLoopAdapter(
+            agent,
+            bidirectional=True,
+            approval_threshold=0.8,
+        )
+
+        message = Message(role="user", content="Test")
+
+        import asyncio
+
+        events = []
+
+        async def collect_events():
+            async for event in adapter.stream_events(message):
+                events.append(event)
+
+        event_task = asyncio.create_task(collect_events())
+        await asyncio.sleep(0.1)
+
+        interrupts = [e for e in events if isinstance(e, Interrupt)]
+        assert len(interrupts) == 1
+
+        # Approve with feedback
+        response = InterruptResponse(
+            interrupt_id=interrupts[0].interrupt_id,
+            action=InterruptAction.APPROVE,
+            context={"feedback": "Looks good"},
+        )
+        await adapter.handle_interrupt_response(response)
+        await event_task
+
+        # Check approved response
+        complete_events = [e for e in events if e.__class__.__name__ == "TextMessageComplete"]
+        assert len(complete_events) == 1
+        assert complete_events[0].metadata["approval_status"] == "approved"
+        assert complete_events[0].metadata["approval_feedback"] == "Looks good"
+        assert complete_events[0].content == "Proceed"
+
+    @pytest.mark.asyncio
+    async def test_bidirectional_reject_action(self):
+        """Test REJECT action in bidirectional mode."""
+        from agenkit.protocols.agui.events import InterruptAction, InterruptResponse
+
+        agent = MockAgent(response="Risky action", confidence=0.4)
+        adapter = AGUIHumanInLoopAdapter(
+            agent,
+            bidirectional=True,
+            approval_threshold=0.8,
+        )
+
+        message = Message(role="user", content="Test")
+
+        import asyncio
+
+        events = []
+
+        async def collect_events():
+            async for event in adapter.stream_events(message):
+                events.append(event)
+
+        event_task = asyncio.create_task(collect_events())
+        await asyncio.sleep(0.1)
+
+        interrupts = [e for e in events if isinstance(e, Interrupt)]
+        assert len(interrupts) == 1
+
+        # Reject with reason
+        response = InterruptResponse(
+            interrupt_id=interrupts[0].interrupt_id,
+            action=InterruptAction.REJECT,
+            context={"reason": "Too risky to proceed"},
+        )
+        await adapter.handle_interrupt_response(response)
+        await event_task
+
+        # Check rejection response
+        complete_events = [e for e in events if e.__class__.__name__ == "TextMessageComplete"]
+        assert len(complete_events) == 1
+        assert complete_events[0].metadata["approval_status"] == "rejected"
+        assert complete_events[0].content == "Too risky to proceed"
+
+    @pytest.mark.asyncio
+    async def test_bidirectional_edit_action(self):
+        """Test EDIT action in bidirectional mode."""
+        from agenkit.protocols.agui.events import InterruptAction, InterruptResponse
+
+        agent = MockAgent(response="Original response", confidence=0.5)
+        adapter = AGUIHumanInLoopAdapter(
+            agent,
+            bidirectional=True,
+            approval_threshold=0.8,
+        )
+
+        message = Message(role="user", content="Test")
+
+        import asyncio
+
+        events = []
+
+        async def collect_events():
+            async for event in adapter.stream_events(message):
+                events.append(event)
+
+        event_task = asyncio.create_task(collect_events())
+        await asyncio.sleep(0.1)
+
+        interrupts = [e for e in events if isinstance(e, Interrupt)]
+        assert len(interrupts) == 1
+
+        # Edit with modified content
+        response = InterruptResponse(
+            interrupt_id=interrupts[0].interrupt_id,
+            action=InterruptAction.EDIT,
+            context={"modified_content": "Modified response"},
+        )
+        await adapter.handle_interrupt_response(response)
+        await event_task
+
+        # Check edited response
+        complete_events = [e for e in events if e.__class__.__name__ == "TextMessageComplete"]
+        assert len(complete_events) == 1
+        assert complete_events[0].metadata["approval_status"] == "approved_with_modifications"
+        assert complete_events[0].metadata["original_response"] == "Original response"
+        assert complete_events[0].content == "Modified response"
+
+    @pytest.mark.asyncio
+    async def test_bidirectional_timeout(self):
+        """Test timeout handling in bidirectional mode."""
+        agent = MockAgent(response="Waiting", confidence=0.3)
+        adapter = AGUIHumanInLoopAdapter(
+            agent,
+            bidirectional=True,
+            approval_threshold=0.8,
+            timeout=0.2,  # Short timeout for testing
+        )
+
+        message = Message(role="user", content="Test")
+
+        # Don't respond - let it timeout
+        events = []
+        async for event in adapter.stream_events(message):
+            events.append(event)
+
+        # Should have interrupt and timeout rejection
+        interrupts = [e for e in events if isinstance(e, Interrupt)]
+        assert len(interrupts) == 1
+        assert interrupts[0].timeout_seconds == 0.2
+
+        # Should have timeout rejection message
+        complete_events = [e for e in events if e.__class__.__name__ == "TextMessageComplete"]
+        assert len(complete_events) == 1
+        assert complete_events[0].metadata["approval_status"] == "timeout"
+        assert "timed out" in complete_events[0].content.lower()
+
+    @pytest.mark.asyncio
+    async def test_bidirectional_unknown_action(self):
+        """Test handling of unknown interrupt action."""
+        from agenkit.protocols.agui.events import InterruptResponse
+
+        agent = MockAgent(response="Test", confidence=0.5)
+        adapter = AGUIHumanInLoopAdapter(
+            agent,
+            bidirectional=True,
+            approval_threshold=0.8,
+        )
+
+        message = Message(role="user", content="Test")
+
+        import asyncio
+
+        events = []
+
+        async def collect_events():
+            async for event in adapter.stream_events(message):
+                events.append(event)
+
+        event_task = asyncio.create_task(collect_events())
+        await asyncio.sleep(0.1)
+
+        interrupts = [e for e in events if isinstance(e, Interrupt)]
+        assert len(interrupts) == 1
+
+        # Respond with unknown action
+        response = InterruptResponse(
+            interrupt_id=interrupts[0].interrupt_id,
+            action="UNKNOWN_ACTION",  # Invalid action
+        )
+        await adapter.handle_interrupt_response(response)
+        await event_task
+
+        # Should reject with error message
+        complete_events = [e for e in events if e.__class__.__name__ == "TextMessageComplete"]
+        assert len(complete_events) == 1
+        assert complete_events[0].metadata["approval_status"] == "rejected"
+        assert "unknown" in complete_events[0].content.lower()
+
+    @pytest.mark.asyncio
+    async def test_bidirectional_metadata_capabilities(self):
+        """Test that bidirectional mode adds correct metadata."""
+        agent = MockAgent()
+        adapter = AGUIHumanInLoopAdapter(
+            agent,
+            bidirectional=True,
+            approval_threshold=0.75,
+            timeout=600.0,
+        )
+
+        message = Message(role="user", content="Test")
+        events = []
+        async for event in adapter.stream_events(message, emit_metadata=True):
+            events.append(event)
+            if isinstance(event, MetadataEvent):
+                break
+
+        metadata_events = [e for e in events if isinstance(e, MetadataEvent)]
+        assert len(metadata_events) == 1
+
+        metadata = metadata_events[0]
+        assert "bidirectional-hitl" in metadata.data.get("capabilities", [])
+        assert metadata.data.get("supports_hitl") is True
+        assert metadata.data.get("hitl_mode") == "bidirectional"
+        assert metadata.data.get("approval_threshold") == 0.75
+        assert metadata.data.get("approval_timeout") == 600.0
+
+    @pytest.mark.asyncio
+    async def test_bidirectional_edit_without_content(self):
+        """Test that EDIT action without modified_content is rejected."""
+        from agenkit.protocols.agui.events import InterruptAction, InterruptResponse
+
+        agent = MockAgent(response="Original", confidence=0.5)
+        adapter = AGUIHumanInLoopAdapter(
+            agent,
+            bidirectional=True,
+            approval_threshold=0.8,
+        )
+
+        message = Message(role="user", content="Test")
+
+        import asyncio
+
+        events = []
+
+        async def collect_events():
+            async for event in adapter.stream_events(message):
+                events.append(event)
+
+        event_task = asyncio.create_task(collect_events())
+        await asyncio.sleep(0.1)
+
+        interrupts = [e for e in events if isinstance(e, Interrupt)]
+        assert len(interrupts) == 1
+
+        # Edit without modified content
+        response = InterruptResponse(
+            interrupt_id=interrupts[0].interrupt_id,
+            action=InterruptAction.EDIT,
+            context={},  # No modified_content
+        )
+        await adapter.handle_interrupt_response(response)
+        await event_task
+
+        # Should reject
+        complete_events = [e for e in events if e.__class__.__name__ == "TextMessageComplete"]
+        assert len(complete_events) == 1
+        assert complete_events[0].metadata["approval_status"] == "rejected"
+        assert "modified_content" in complete_events[0].content.lower()
+
+    @pytest.mark.asyncio
+    async def test_bidirectional_invalid_interrupt_id(self):
+        """Test error handling for invalid interrupt ID."""
+        from agenkit.protocols.agui.events import InterruptAction, InterruptResponse
+
+        agent = MockAgent()
+        adapter = AGUIHumanInLoopAdapter(
+            agent,
+            bidirectional=True,
+        )
+
+        # Try to respond to non-existent interrupt
+        response = InterruptResponse(
+            interrupt_id="invalid-id",
+            action=InterruptAction.APPROVE,
+        )
+
+        with pytest.raises(ValueError, match="Unknown interrupt_id"):
+            await adapter.handle_interrupt_response(response)

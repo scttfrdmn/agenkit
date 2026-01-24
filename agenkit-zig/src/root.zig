@@ -210,6 +210,9 @@ pub const adapter = struct {
 
     // AWS Bedrock adapter
     pub const BedrockLLM = @import("adapter/bedrock.zig").BedrockLLM;
+
+    // OpenAI-compatible adapter (vLLM, llama.cpp, SGLang, etc.)
+    pub const OpenAICompatibleLLM = @import("adapter/openai_compatible.zig").OpenAICompatibleLLM;
 };
 
 // Evaluation framework
@@ -285,6 +288,7 @@ test {
     _ = @import("adapter/anthropic.zig");
     _ = @import("adapter/litellm.zig");
     _ = @import("adapter/bedrock.zig");
+    _ = @import("adapter/openai_compatible.zig");
     // Also test observability
     _ = @import("observability/mod.zig");
     // Also test safety

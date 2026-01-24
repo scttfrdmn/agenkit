@@ -8,7 +8,7 @@ Minimal, composable interfaces for AI agents in TypeScript.
 - **Type Safe**: Full TypeScript support with comprehensive type definitions
 - **Composable**: Easy middleware pattern for retry, timeout, caching, etc.
 - **Transport Agnostic**: HTTP, WebSocket, gRPC support
-- **LLM Ready**: Built-in adapters for OpenAI, Anthropic (Claude)
+- **LLM Ready**: Built-in adapters for OpenAI, Anthropic (Claude), and OpenAI-compatible services (vLLM, llama.cpp, SGLang, etc.)
 - **Production Ready**: Middleware for resilience, observability, and control
 
 ## Installation
@@ -71,6 +71,35 @@ const response = await agent.process({
 
 console.log(response.content);
 ```
+
+### OpenAI-Compatible Services (vLLM, llama.cpp, etc.)
+
+```typescript
+import { OpenAICompatibleAgent } from '@agenkit/core';
+
+// vLLM local deployment
+const agent = new OpenAICompatibleAgent({
+  baseURL: 'http://localhost:8000/v1',
+  model: 'meta-llama/Llama-2-7b-chat-hf',
+  provider: 'vllm',
+});
+
+// llama.cpp server
+const agent2 = new OpenAICompatibleAgent({
+  baseURL: 'http://localhost:8080/v1',
+  model: 'llama-2-7b-chat',
+  provider: 'llamacpp',
+});
+
+const response = await agent.process({
+  role: 'user',
+  content: 'What is machine learning?',
+});
+
+console.log(response.content);
+```
+
+Supports: vLLM, llama.cpp, SGLang, TensorRT-LLM, OpenLLM, MLC LLM, TGI, Inferflow
 
 ### HTTP Transport
 

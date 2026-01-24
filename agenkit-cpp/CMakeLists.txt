@@ -72,6 +72,7 @@ add_library(agenkit
     src/adapters/claude_agent.cpp
     src/adapters/ollama_agent.cpp
     src/adapters/openai_agent.cpp
+    src/adapters/openai_compatible_agent.cpp
     src/adapters/litellm_agent.cpp
     src/adapters/gemini_agent.cpp
     src/adapters/bedrock_agent.cpp

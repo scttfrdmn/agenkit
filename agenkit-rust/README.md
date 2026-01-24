@@ -78,6 +78,40 @@ let config = HttpTransportConfig {
 let client = HttpAgent::new("remote", config);
 ```
 
+### LLM Adapters
+
+Connect to various LLM providers or OpenAI-compatible services:
+
+**OpenAI-Compatible Services** (vLLM, llama.cpp, SGLang, etc.):
+
+```rust
+use agenkit::adapters::openai_compatible::{providers, OpenAICompatibleAgent};
+use agenkit::core::{Agent, Message};
+
+// vLLM local deployment
+let config = providers::vllm("meta-llama/Llama-2-7b-chat-hf");
+let agent = OpenAICompatibleAgent::new(config);
+
+// llama.cpp server
+let config = providers::llamacpp("llama-2-7b-chat");
+let agent = OpenAICompatibleAgent::new(config);
+
+let msg = Message::with_text("user", "What is machine learning?");
+let response = agent.process(msg).await?;
+```
+
+Supports: vLLM, llama.cpp, SGLang, TensorRT-LLM, OpenLLM, MLC LLM, TGI, Inferflow
+
+**Other LLM Providers**:
+- `OpenAIAgent` - GPT-4, GPT-4 Turbo, GPT-3.5 Turbo
+- `AnthropicAgent` - Claude 3.5 Sonnet, Claude 3 Opus
+- `OllamaAgent` - Local Ollama models
+- `LiteLLMAdapter` - Unified interface to 100+ models
+- `GeminiAdapter` - Google Gemini models
+- `BedrockAdapter` - AWS Bedrock models
+
+See `examples/openai_compatible_example.rs` for detailed setup instructions.
+
 ### Agent Patterns
 
 Reusable patterns for composing and orchestrating agents:
@@ -249,7 +283,7 @@ See `examples/wasm_browser_agent.html` for a complete browser example.
 Agenkit follows a layered architecture:
 
 1. **Core** (`core/`): Message types and Agent trait
-2. **Adapters** (`adapters/`): Local agent implementations
+2. **Adapters** (`adapters/`): LLM adapters (OpenAI, Anthropic, Ollama, LiteLLM, Gemini, Bedrock, OpenAI-compatible)
 3. **Transports** (`transports/`): HTTP, WebSocket, gRPC (native-only)
 4. **Patterns** (`patterns/`): Reflection, Agents-as-Tools, Orchestration, etc.
 5. **Evaluation** (`evaluation/`): Benchmarking and optimization frameworks

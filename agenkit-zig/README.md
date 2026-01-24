@@ -175,6 +175,81 @@ pub const Result = union(enum) {
 };
 ```
 
+## LLM Adapters
+
+Agenkit-Zig provides adapters for connecting to various LLM providers and OpenAI-compatible services.
+
+### OpenAI-Compatible Services
+
+Use the `OpenAICompatibleLLM` adapter to connect to any OpenAI-compatible inference service (vLLM, llama.cpp, SGLang, TensorRT-LLM, etc.):
+
+```zig
+const std = @import("std");
+const agenkit = @import("agenkit");
+
+// vLLM example using provider helper
+var llm_impl = try agenkit.adapter.OpenAICompatibleLLM.vllm(
+    allocator,
+    "meta-llama/Llama-3.3-8B-Instruct"
+);
+defer llm_impl.deinit();
+const llm = llm_impl.asLLM();
+
+// Or configure manually
+var llm_impl = try agenkit.adapter.OpenAICompatibleLLM.init(
+    allocator,
+    "http://localhost:8000/v1",  // base_url
+    "meta-llama/Llama-3.3-8B-Instruct",  // model
+    null,  // api_key (optional for local services)
+    "vllm"  // provider name
+);
+defer llm_impl.deinit();
+const llm = llm_impl.asLLM();
+
+// Use the LLM
+const messages = [_]*agenkit.Message{ user_msg };
+var options = agenkit.adapter.CallOptions.init(allocator);
+defer options.deinit();
+options.temperature = 0.7;
+
+const response = try llm.complete(allocator, &messages, &options);
+defer response.deinit();
+```
+
+**Supported Services:**
+- **vLLM** - High-throughput batch inference (default port: 8000)
+- **llama.cpp** - Lightweight C++ implementation, CPU-friendly (default port: 8080)
+- **SGLang** - Optimized for complex prompts (default port: 30000)
+- **TensorRT-LLM** - NVIDIA GPU optimized (default port: 8001)
+- **OpenLLM** - Multi-model serving platform
+- **MLC LLM** - Mobile and edge deployment
+- **Text Generation Inference (TGI)** - HuggingFace inference server
+- **Inferflow** - High-performance inference
+
+**Provider Helpers:**
+```zig
+// vLLM (port 8000)
+var llm = try agenkit.adapter.OpenAICompatibleLLM.vllm(allocator, "model-name");
+
+// llama.cpp (port 8080)
+var llm = try agenkit.adapter.OpenAICompatibleLLM.llamacpp(allocator, "model-name");
+
+// SGLang (port 30000)
+var llm = try agenkit.adapter.OpenAICompatibleLLM.sglang(allocator, "model-name");
+
+// TensorRT-LLM (port 8001)
+var llm = try agenkit.adapter.OpenAICompatibleLLM.tensorrt(allocator, "model-name");
+```
+
+### Other LLM Providers
+
+- **OpenAILLM** - GPT-4, GPT-4 Turbo, GPT-3.5 Turbo
+- **AnthropicLLM** - Claude 3.5 Sonnet, Claude 3 Opus
+- **OllamaLLM** - Local Ollama models
+- **GeminiLLM** - Google Gemini models
+- **LiteLLMLLM** - Unified interface to 100+ models
+- **BedrockLLM** - AWS Bedrock models
+
 ## Examples
 
 Agenkit-Zig includes 11 comprehensive examples demonstrating various agent patterns and use cases.

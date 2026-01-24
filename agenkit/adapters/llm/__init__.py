@@ -84,3 +84,11 @@ try:
     __all__.append("OllamaLLM")
 except ImportError:
     pass
+
+# OpenAI-compatible adapter (optional dependency)
+try:
+    from agenkit.adapters.llm.openai_compatible import OpenAICompatibleLLM
+
+    __all__.append("OpenAICompatibleLLM")
+except ImportError:
+    pass

@@ -1,7 +1,8 @@
 ///! Agent adapters for LLM providers.
 ///!
 ///! This module provides adapters for connecting to various LLM providers
-///! including OpenAI, Anthropic, Ollama, LiteLLM, Gemini, and Bedrock.
+///! including OpenAI, Anthropic, Ollama, LiteLLM, Gemini, Bedrock, and
+///! OpenAI-compatible services (vLLM, llama.cpp, SGLang, etc.).
 
 #[cfg(feature = "native")]
 pub mod openai;
@@ -22,6 +23,9 @@ pub mod gemini;
 pub mod bedrock;
 
 #[cfg(feature = "native")]
+pub mod openai_compatible;
+
+#[cfg(feature = "native")]
 pub use openai::{OpenAIAgent, OpenAIConfig};
 
 #[cfg(feature = "native")]
@@ -38,3 +42,6 @@ pub use gemini::{GeminiAdapter, GeminiConfig};
 
 #[cfg(feature = "native")]
 pub use bedrock::{BedrockAdapter, BedrockConfig};
+
+#[cfg(feature = "native")]
+pub use openai_compatible::{OpenAICompatibleAgent, OpenAICompatibleConfig};

@@ -132,6 +132,39 @@ HttpAgent client("remote", config);
 auto result = client.process(message).get();
 ```
 
+### LLM Adapters
+
+Connect to various LLM providers or OpenAI-compatible services:
+
+**OpenAI-Compatible Services** (vLLM, llama.cpp, SGLang, etc.):
+
+```cpp
+#include <agenkit/adapters/openai_compatible_agent.hpp>
+
+using namespace agenkit::adapters;
+
+// vLLM local deployment
+auto config = OpenAICompatibleProviders::vllm("meta-llama/Llama-2-7b-chat-hf");
+OpenAICompatibleAgent agent(config);
+
+// llama.cpp server
+auto config = OpenAICompatibleProviders::llamacpp("llama-2-7b-chat");
+OpenAICompatibleAgent agent(config);
+
+auto msg = Message::with_text("user", "What is machine learning?");
+auto result = agent.process(std::move(msg)).get();
+```
+
+Supports: vLLM, llama.cpp, SGLang, TensorRT-LLM, OpenLLM, MLC LLM, TGI, Inferflow
+
+**Other LLM Providers**:
+- `ClaudeAgent` - Claude 3.5 Sonnet, Claude 3 Opus
+- `OpenAIAgent` - GPT-4, GPT-4 Turbo, GPT-3.5 Turbo
+- `OllamaAgent` - Local Ollama models
+- `LiteLLMAgent` - Unified interface to 100+ models
+- `GeminiAgent` - Google Gemini models
+- `BedrockAgent` - AWS Bedrock models
+
 ---
 
 ## Examples

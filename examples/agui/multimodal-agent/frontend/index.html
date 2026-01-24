@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multimodal Agent - AG-UI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 25px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header h1 { color: #333; font-size: 28px; margin-bottom: 5px; }
+        .header p { color: #666; font-size: 14px; }
+        .main-layout { display: grid; grid-template-columns: 500px 1fr; gap: 20px; }
+        .upload-panel, .results-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .panel-header { font-size: 20px; color: #333; margin-bottom: 20px; }
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        .upload-area:hover { border-color: #667eea; background: #f7fafc; }
+        .upload-area.drag-over { border-color: #667eea; background: #eef2ff; }
+        .upload-icon { font-size: 48px; margin-bottom: 15px; }
+        .preview-area {
+            margin-bottom: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            display: block;
+            margin: 0 auto;
+        }
+        .file-info {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .file-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .file-info-label { color: #666; }
+        .file-info-value { color: #333; font-weight: 600; }
+        .query-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .query-input:focus { outline: none; border-color: #667eea; }
+        .action-buttons { display: flex; gap: 10px; }
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-secondary { background: #e2e8f0; color: #333; }
+        .btn-secondary:hover { background: #cbd5e0; }
+        .btn:disabled { background: #e2e8f0; color: #a0aec0; cursor: not-allowed; }
+        .results-content { max-height: 700px; overflow-y: auto; }
+        .result-card {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result-card.processing { border-left-color: #f59e0b; }
+        .result-card h3 { color: #333; margin-bottom: 15px; font-size: 18px; }
+        .result-content {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-connected { background: #10b981; }
+        .status-disconnected { background: #ef4444; }
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Multimodal Agent</h1>
+            <p>Upload images and files for AI-powered analysis
+                <span class="status-indicator" id="status-indicator"></span>
+                <span id="status-text">Connecting...</span>
+            </p>
+        </div>
+
+        <div class="main-layout">
+            <div class="upload-panel">
+                <h2 class="panel-header">Upload Content</h2>
+
+                <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                    <div class="upload-icon">📁</div>
+                    <div><strong>Click to upload</strong> or drag and drop</div>
+                    <div style="color: #999; font-size: 12px; margin-top: 8px;">
+                        Images, documents, code, data files
+                    </div>
+                </div>
+
+                <input type="file" id="file-input" accept="*/*">
+
+                <div id="preview-container" style="display: none;">
+                    <div class="preview-area" id="preview-area"></div>
+                    <div class="file-info" id="file-info"></div>
+                </div>
+
+                <textarea
+                    id="query-input"
+                    class="query-input"
+                    placeholder="What would you like to know about this content?"
+                    rows="3"
+                ></textarea>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="analyze-btn" onclick="analyzeContent()" disabled>
+                        🔍 Analyze
+                    </button>
+                    <button class="btn btn-secondary" id="clear-btn" onclick="clearContent()" disabled>
+                        🗑️ Clear
+                    </button>
+                </div>
+            </div>
+
+            <div class="results-panel">
+                <h2 class="panel-header">Analysis Results</h2>
+                <div class="results-content" id="results-content">
+                    <div class="empty-state">
+                        No analysis yet.<br><br>
+                        Upload an image or file to get started!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="client.js"></script>
+</body>
+</html>

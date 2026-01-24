@@ -31,16 +31,29 @@ uv run python examples/frameworks/minichain.py
 - Shows pattern mappings
 - Production-ready code (232 LOC)
 
-### [MiniCrew](minicrew.py) - CrewAI Equivalent *(Coming Soon)*
+### [MiniCrew](minicrew.py) - CrewAI Equivalent
 
 Demonstrates how CrewAI-style multi-agent collaboration maps to Agenkit:
 
-| CrewAI Pattern | Agenkit Primitive |
-|----------------|-------------------|
-| Crew | Supervisor + Orchestration |
-| Agent | Agent interface |
-| Task | Task pattern |
-| Process | Orchestration pattern |
+| CrewAI Pattern | Agenkit Primitive | Complexity |
+|----------------|-------------------|------------|
+| Agent (with role) | Agent + role metadata | Explicit |
+| Task | Task dataclass | Simple |
+| Crew | Orchestration | Direct mapping |
+| Process.sequential | SequentialAgent | Built-in |
+| Process.parallel | ParallelAgent | Built-in |
+
+**Usage:**
+```bash
+uv run python examples/frameworks/minicrew.py
+```
+
+**Key Features:**
+- Role-based agent definitions
+- Task assignment and orchestration
+- Sequential and parallel execution
+- Context passing between tasks
+- Production-ready code (347 LOC)
 
 ## Why Build on Agenkit?
 
@@ -125,4 +138,4 @@ Have a framework you'd like to see demonstrated? Check out the patterns in exist
 
 ---
 
-**Status**: MiniChain ✅ | MiniCrew 🔜 | More frameworks TBD
+**Status**: MiniChain ✅ | MiniCrew ✅ | More frameworks TBD

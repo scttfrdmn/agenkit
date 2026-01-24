@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Coordination - AG-UI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 25px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header h1 { color: #333; font-size: 28px; margin-bottom: 5px; }
+        .header p { color: #666; font-size: 14px; }
+        .main-layout { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
+        .agents-panel, .results-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .panel-header { font-size: 20px; color: #333; margin-bottom: 20px; }
+        .agent-card {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 4px solid #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .agent-card.active {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .agent-card.completed {
+            border-left-color: #10b981;
+            background: #ecfdf5;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .agent-name { font-weight: 600; color: #333; margin-bottom: 5px; }
+        .agent-capabilities {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 8px;
+        }
+        .capability-tag {
+            background: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .agent-status {
+            font-size: 12px;
+            margin-top: 8px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .status-idle { background: #e2e8f0; color: #666; }
+        .status-working { background: #fef3c7; color: #92400e; }
+        .status-done { background: #d1fae5; color: #065f46; }
+        .query-section { margin-bottom: 20px; }
+        .query-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+        .query-input:focus { outline: none; border-color: #667eea; }
+        .quick-prompts {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .quick-prompt {
+            padding: 8px 12px;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .quick-prompt:hover { background: #667eea; color: white; border-color: #667eea; }
+        .send-btn {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .send-btn:hover { background: #5568d3; }
+        .send-btn:disabled { background: #cbd5e0; cursor: not-allowed; }
+        .results-content { max-height: 700px; overflow-y: auto; }
+        .result-card {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result-card.processing { border-left-color: #f59e0b; }
+        .result-header {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-content {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+        .coordination-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            background: #f7fafc;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-value { font-size: 24px; font-weight: 700; color: #667eea; }
+        .stat-label { font-size: 11px; color: #666; text-transform: uppercase; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤝 Multi-Agent Coordination</h1>
+            <p>Specialized agents working together to solve complex tasks</p>
+        </div>
+
+        <div class="coordination-stats">
+            <div class="stat-box">
+                <div class="stat-value" id="stat-coordinations">0</div>
+                <div class="stat-label">Coordinations</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="stat-agents">4</div>
+                <div class="stat-label">Agents Active</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="stat-success">100%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <div class="agents-panel">
+                <h2 class="panel-header">Specialized Agents</h2>
+                <div id="agents-list">
+                    <div class="empty-state">Loading agents...</div>
+                </div>
+            </div>
+
+            <div class="results-panel">
+                <h2 class="panel-header">Coordination Results</h2>
+
+                <div class="query-section">
+                    <div class="quick-prompts">
+                        <div class="quick-prompt" onclick="sendQuickQuery('Research AI agent frameworks')">
+                            🔬 Research Query
+                        </div>
+                        <div class="quick-prompt" onclick="sendQuickQuery('Calculate 156 + 234 and analyze')">
+                            🔢 Math + Analysis
+                        </div>
+                        <div class="quick-prompt" onclick="sendQuickQuery('Write a report about multi-agent systems')">
+                            ✍️ Write Report
+                        </div>
+                        <div class="quick-prompt" onclick="sendQuickQuery('Analyze and recommend strategy for deployment')">
+                            📊 Full Analysis
+                        </div>
+                    </div>
+
+                    <input
+                        type="text"
+                        id="query-input"
+                        class="query-input"
+                        placeholder="Ask a complex question that requires multiple agents..."
+                        onkeypress="if(event.key==='Enter') sendQuery()"
+                    />
+
+                    <button class="send-btn" id="send-btn" onclick="sendQuery()">
+                        Send Query
+                    </button>
+                </div>
+
+                <div class="results-content" id="results-content">
+                    <div class="empty-state">
+                        No coordination yet.<br><br>
+                        Try a complex query that requires research, calculations, writing, or analysis!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="client.js"></script>
+</body>
+</html>

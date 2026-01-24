@@ -46,6 +46,23 @@ export {
   wrapHITLAgentAsAGUI,
 } from './hitl.js';
 
-// Transports will be added when implemented
-// export * from './transports/http.js';
-// export * from './transports/websocket.js';
+// HTTP/SSE transport
+export {
+  SSEFormatter,
+  AGUISSEStream,
+  SSEStreamConfig,
+  SSEHandlerConfig,
+  createSSEHandler,
+  createSSEResponseIterator,
+  sseKeepAlive,
+} from './transports/http.js';
+
+// WebSocket transport
+export {
+  WebSocket,
+  WebSocketMessageFormat,
+  WebSocketHandlerConfig,
+  AGUIWebSocketStream,
+  AGUIWebSocketHandler,
+  createWebSocketHandler,
+} from './transports/websocket.js';

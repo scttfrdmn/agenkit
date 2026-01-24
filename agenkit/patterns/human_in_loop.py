@@ -17,9 +17,10 @@ Performance characteristics:
 - Blocking on human input when required
 """
 
-from collections.abc import Callable
+import inspect
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from agenkit import Agent, Message
@@ -40,7 +41,7 @@ class ApprovalRequest:
     message: Message
     confidence: float
     context: dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=lambda: datetime.utcnow())
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass
@@ -59,8 +60,9 @@ class ApprovalResponse:
     modified_message: Message | None = None
 
 
-# Type alias for approval callback function
+# Type aliases for approval callback functions (sync or async)
 ApprovalFunc = Callable[[ApprovalRequest], ApprovalResponse]
+AsyncApprovalFunc = Callable[[ApprovalRequest], Awaitable[ApprovalResponse]]
 
 
 @dataclass
@@ -72,12 +74,12 @@ class HumanInLoopConfig:
         agent: Agent to wrap with human approval
         approval_threshold: Threshold for requiring approval (0.0 to 1.0, default: 0.8)
                            Responses with confidence below this require approval
-        approval_func: Called when approval is needed
+        approval_func: Called when approval is needed (sync or async)
         confidence_key: Metadata key for confidence (default: "confidence")
     """
 
     agent: Agent
-    approval_func: ApprovalFunc
+    approval_func: ApprovalFunc | AsyncApprovalFunc
     approval_threshold: float = 0.8
     confidence_key: str = "confidence"
 
@@ -162,9 +164,15 @@ class HumanInLoopAgent(Agent):
         """Return the agent's identifier."""
         return "HumanInLoopAgent"
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the agent's capabilities plus human-in-loop."""
-        caps = self._agent.capabilities()
+        # Handle both property and method forms for backward compat
+        agent_caps = self._agent.capabilities
+        if callable(agent_caps):
+            caps = agent_caps()
+        else:
+            caps = agent_caps
         return [*caps, "human-in-loop", "approval", "oversight"]
 
     async def process(self, message: Message) -> Message:
@@ -207,9 +215,10 @@ class HumanInLoopAgent(Agent):
         # Check if approval needed
         needs_approval = confidence < self._approval_threshold
 
-        # Add approval metadata
+        # Add approval metadata (metadata must not be None for approval to work)
         if response.metadata is None:
-            response.metadata = {}
+            raise RuntimeError("agent response metadata is None - cannot add approval metadata")
+
         response.metadata["approval_needed"] = needs_approval
         response.metadata["confidence"] = confidence
         response.metadata["approval_threshold"] = self._approval_threshold
@@ -237,26 +246,31 @@ class HumanInLoopAgent(Agent):
         )
 
         try:
-            approval = self._approval_func(request)
+            # Support both sync and async approval functions
+            if inspect.iscoroutinefunction(self._approval_func):
+                approval = await self._approval_func(request)
+            else:
+                approval = self._approval_func(request)
         except Exception as e:
             raise RuntimeError(f"approval request failed: {e}") from e
 
         # Handle approval decision
         if not approval.approved:
             # Request denied
+            rejection_metadata = {
+                "approval_status": "rejected",
+                "original_response": response.content,
+                "confidence": confidence,
+            }
+
+            if approval.feedback:
+                rejection_metadata["rejection_reason"] = approval.feedback
+
             rejection_msg = Message(
                 role="agent",
                 content="Action rejected by human reviewer",
+                metadata=rejection_metadata,
             )
-
-            if approval.feedback:
-                rejection_msg.metadata = {"rejection_reason": approval.feedback}
-            else:
-                rejection_msg.metadata = {}
-
-            rejection_msg.metadata["approval_status"] = "rejected"
-            rejection_msg.metadata["original_response"] = response.content
-            rejection_msg.metadata["confidence"] = confidence
 
             return rejection_msg
 
@@ -287,6 +301,7 @@ class HumanInLoopAgent(Agent):
             return 0.0
 
         # Try to convert to float
+        # (mypy false positive on unreachable code below)
         try:
             return float(confidence_val)
         except (ValueError, TypeError):

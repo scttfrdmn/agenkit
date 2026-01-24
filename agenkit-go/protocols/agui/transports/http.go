@@ -16,6 +16,13 @@ import (
 	"github.com/scttfrdmn/agenkit/agenkit-go/protocols/agui"
 )
 
+// AGUIEventStreamer is an interface for streaming AG-UI events.
+// Both AGUIAdapter and AGUIHumanInLoopAdapter implement this interface.
+type AGUIEventStreamer interface {
+	StreamEventsWithConfig(ctx context.Context, message *agenkit.Message, config agui.StreamEventsConfig) <-chan agui.AGUIEvent
+	AgentName() string
+}
+
 // SSEFormatter formats AG-UI events as Server-Sent Events (SSE).
 //
 // SSE format:
@@ -64,6 +71,11 @@ type AGUISSEHandlerConfig struct {
 	// Optional agent name override
 	AgentName string
 
+	// Optional pre-created adapter (for HITL support)
+	// If provided, Agent parameter to NewAGUISSEHandler is ignored
+	// Can be *agui.AGUIAdapter or *agui.AGUIHumanInLoopAdapter
+	Adapter AGUIEventStreamer
+
 	// Include "event:" lines in SSE output
 	IncludeEventNames bool
 
@@ -103,7 +115,7 @@ type AGUISSEHandlerConfig struct {
 //
 //	...
 type AGUISSEHandler struct {
-	adapter           *agui.AGUIAdapter
+	adapter           AGUIEventStreamer
 	includeEventNames bool
 	corsOrigins       []string
 	timeout           time.Duration
@@ -112,11 +124,22 @@ type AGUISSEHandler struct {
 }
 
 // NewAGUISSEHandler creates a new SSE handler for an agent.
+//
+// If config.Adapter is provided, it will be used instead of creating a new one.
+// This allows using AGUIHumanInLoopAdapter for HITL support.
 func NewAGUISSEHandler(agent agenkit.Agent, config AGUISSEHandlerConfig) *AGUISSEHandler {
-	adapterConfig := agui.AGUIAdapterConfig{
-		AgentName: config.AgentName,
+	var adapter AGUIEventStreamer
+
+	if config.Adapter != nil {
+		// Use provided adapter (e.g., AGUIHumanInLoopAdapter)
+		adapter = config.Adapter
+	} else {
+		// Create standard adapter
+		adapterConfig := agui.AGUIAdapterConfig{
+			AgentName: config.AgentName,
+		}
+		adapter = agui.NewAGUIAdapterWithConfig(agent, adapterConfig)
 	}
-	adapter := agui.NewAGUIAdapterWithConfig(agent, adapterConfig)
 
 	return &AGUISSEHandler{
 		adapter:           adapter,

@@ -33,10 +33,19 @@ from agenkit.protocols.agui.events import (
     ToolCallStart,
     parse_event,
 )
+from agenkit.protocols.agui.transports.http import (
+    AGUISSEEndpoint,
+    AGUISSEStream,
+    SSEFormatter,
+    create_sse_handler,
+    create_sse_response_iterator,
+)
 
 __all__ = [
     "AGUIAdapter",
     "AGUIEvent",
+    "AGUISSEEndpoint",
+    "AGUISSEStream",
     "Attachment",
     "AttachmentType",
     "BaseEvent",
@@ -48,6 +57,7 @@ __all__ = [
     "InterruptReason",
     "InterruptResponse",
     "MetadataEvent",
+    "SSEFormatter",
     "StateDelta",
     "StreamingAGUIAdapter",
     "TextMessageChunk",
@@ -56,6 +66,8 @@ __all__ = [
     "ToolCallChunk",
     "ToolCallComplete",
     "ToolCallStart",
+    "create_sse_handler",
+    "create_sse_response_iterator",
     "parse_event",
     "wrap_agent_as_agui",
 ]

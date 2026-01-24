@@ -150,6 +150,8 @@ uv run python examples/frameworks/minichain.py
 
 Demonstrates how CrewAI's role-based multi-agent collaboration maps to Agenkit.
 
+Demonstrates how CrewAI's role-based multi-agent collaboration maps to Agenkit.
+
 #### Pattern Mappings
 
 | CrewAI Pattern | Agenkit Primitive | Why It's Better |
@@ -222,6 +224,89 @@ uv run python examples/frameworks/minicrew.py
 ```
 
 **Migration Guide**: [CrewAI → Agenkit](../../docs/migrations/crewai-to-agenkit.md)
+
+---
+
+### MiniAutoGen - AutoGen Equivalent
+
+**File**: [`miniautogen.py`](miniautogen.py) (350 LOC)
+
+Demonstrates how AutoGen's conversational multi-agent patterns map to Agenkit.
+
+#### Pattern Mappings
+
+| AutoGen Pattern | Agenkit Primitive | Why It's Better |
+|----------------|-------------------|-----------------|
+| `ConversableAgent` | `ConversationalAgent` | Explicit interface, no hidden state |
+| `AssistantAgent` | Custom `Agent` + LLM | More flexible agent implementation |
+| `UserProxyAgent` | Custom `Agent` (human input) | Explicit human interaction |
+| `GroupChat` | Multi-agent orchestration | More structured coordination |
+| `GroupChatManager` | Custom orchestration | Explicit speaker selection |
+| `register_reply()` | Override `process()` | Cleaner API, easier testing |
+| `initiate_chat()` | `agent.process(message)` | Standard interface |
+
+#### What You Get
+
+```python
+from miniautogen import ConversableAgent, AssistantAgent, GroupChat, GroupChatManager
+
+# AutoGen-style conversational agents
+assistant = AssistantAgent(
+    name="assistant",
+    llm=llm
+)
+
+# AutoGen-style group chat
+researcher = AssistantAgent(name="researcher", llm=llm,
+                           system_message="You are a researcher.")
+analyst = AssistantAgent(name="analyst", llm=llm,
+                        system_message="You are an analyst.")
+
+group_chat = GroupChat(
+    agents=[researcher, analyst],
+    max_round=10
+)
+
+manager = GroupChatManager(
+    groupchat=group_chat,
+    selector="round_robin"  # or "auto"
+)
+
+result = await manager.process(message)
+```
+
+#### What's Different from AutoGen
+
+**Explicit vs Implicit:**
+- AutoGen: `groupchat.speaker_selection_method` (hidden orchestration)
+- MiniAutoGen: `GroupChatManager(selector="round_robin")` (explicit selection)
+
+**Why explicit is better:**
+- Easier to debug (see exact speaker selection logic)
+- Easier to test (mock speaker selection)
+- Easier to customize (extend _select_speaker method)
+- No hidden GroupChatManager behavior
+
+#### When to Use
+
+✅ **Good fit:**
+- Migrating from AutoGen
+- Conversational multi-agent systems
+- Group discussions between agents
+- Turn-based agent coordination
+
+❌ **Not ideal:**
+- High-performance production (use Go/Rust)
+- Complex tool usage (use ReActAgent directly)
+- Dynamic routing (use RouterAgent)
+- State machines (use Orchestration pattern)
+
+**Usage:**
+```bash
+uv run python examples/frameworks/miniautogen.py
+```
+
+**Migration Guide**: [AutoGen → Agenkit](../../docs/migrations/autogen-to-agenkit.md)
 
 ---
 

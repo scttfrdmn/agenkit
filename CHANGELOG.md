@@ -9,6 +9,105 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.53.0] - 2026-01-27
 
+**Note**: This release includes both v0.52.0 Framework Integrations work and v0.53.0 Enhanced AG-UI Features.
+
+## [0.52.0] - 2026-01-27 (included in v0.53.0)
+
+### 🌐 Framework Integrations
+
+**Focus:** Framework reimagination examples showing how to implement popular framework patterns using Agenkit primitives.
+
+**Key Highlights:**
+- 🎯 **MiniPydantic** - Pydantic AI patterns on Agenkit
+- 🖥️ **Custom Frontends** - React/Vue/Svelte/Astro examples
+- 🤖 **MiniCopilotKit** - CopilotKit patterns on Agenkit
+- 📚 **3 Framework Examples** (~2,300 LOC)
+- 🎨 **4 Frontend Examples** (~1,400 LOC)
+
+### Added
+
+#### MiniPydantic Framework (#494)
+
+**Framework Example** (`examples/frameworks/minipydantic/`, ~650 LOC)
+
+Demonstrates how to implement Pydantic AI patterns using Agenkit:
+- **TypeSafeTool** - Tool with Pydantic input/output validation
+- **@tool decorator** - Function-to-tool conversion
+- **TypeSafeAgent** - Agent with tool registration
+- **Dependency Injection** - Shared resources across tools
+
+**Examples:**
+1. Basic type-safe tools (~200 LOC)
+2. Decorator pattern (~180 LOC)
+3. Dependency injection (~200 LOC)
+
+**Key Insight**: Pydantic AI's features can be built on Agenkit's Tool/Agent abstractions.
+
+#### Custom Frontend Examples (#495)
+
+**4 Frontend Implementations** (`examples/integrations/custom-frontends/`)
+
+Shows how to consume AG-UI Standard events directly:
+- **React** (~300 LOC) - Hooks pattern with useRef
+- **Vue** (~300 LOC) - Composition API with ref()
+- **Svelte** (~280 LOC) - Reactive declarations with $:
+- **Astro** (~280 LOC) - Islands architecture with vanilla JS
+
+**Shared Backend** (~150 LOC):
+- FastAPI server with AG-UI endpoint
+- CORS enabled for all frontends
+- Single adapter serves 4 frontends
+
+**Features Demonstrated:**
+- SSE event parsing
+- Message streaming
+- Real-time UI updates
+- Framework-specific patterns
+
+#### MiniCopilotKit Framework (#493)
+
+**Framework Example** (`examples/frameworks/minicopilotkit/`, ~1,800 LOC)
+
+Demonstrates how to implement CopilotKit patterns using Agenkit:
+- **CopilotAgent** - Wraps agents with CopilotKit features
+- **StateHook** - Bidirectional state sync (like useCopilotReadable/useCopilotAction)
+- **ToolCard** - Tool visualization (like CopilotKit's tool cards)
+- **ApprovalDialog** - HITL confirmations (like useConfirmation)
+- **ChatUI** - Streaming chat (like <CopilotChat>)
+
+**Examples:**
+1. example_chat_ui.py - Streaming chat interface (~350 LOC)
+2. example_tools_ui.py - Tool visualization with progress (~400 LOC)
+3. example_state_sharing.py - Bidirectional state hooks (~350 LOC)
+
+**Architecture Comparison:**
+```
+CopilotKit:          MiniCopilotKit:
+<CopilotChat>    →   ChatUI
+useCopilotReadable → StateHook
+useCopilotAction  →  StateHook.update()
+Tool Cards        →  ToolCard
+useConfirmation   →  ApprovalDialog
+```
+
+**Key Insight**: CopilotKit's React features share the same AG-UI Standard protocol that Agenkit provides.
+
+### Documentation
+
+**3 Comprehensive READMEs:**
+1. `minipydantic/README.md` (~500 lines) - Pydantic AI comparison
+2. `custom-frontends/README.md` (~600 lines) - Framework patterns
+3. `minicopilotkit/README.md` (~800 lines) - CopilotKit comparison
+
+### Statistics
+
+- **3 framework examples** (~2,300 LOC)
+- **4 frontend examples** (~1,400 LOC)
+- **3 comprehensive READMEs** (1,900+ lines)
+- **All examples tested** and working
+
+## [0.53.0] - 2026-01-27
+
 ### 🎨 Enhanced AG-UI Features
 
 **Focus:** Advanced AG-UI Standard capabilities including state management, tool call streaming with progress tracking, and comprehensive multimodal content support (images, files, audio).

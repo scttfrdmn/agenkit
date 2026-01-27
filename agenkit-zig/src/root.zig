@@ -242,6 +242,11 @@ pub const techniques = struct {
         pub const ChainOfThoughtAgent = @import("techniques/reasoning/chain_of_thought.zig").ChainOfThoughtAgent;
         pub const ChainOfThoughtConfig = @import("techniques/reasoning/chain_of_thought.zig").ChainOfThoughtConfig;
 
+        pub const LeastToMostAgent = @import("techniques/reasoning/least_to_most.zig").LeastToMostAgent;
+        pub const LeastToMostConfig = @import("techniques/reasoning/least_to_most.zig").LeastToMostConfig;
+        pub const Subproblem = @import("techniques/reasoning/least_to_most.zig").Subproblem;
+        pub const DecomposerFunc = @import("techniques/reasoning/least_to_most.zig").DecomposerFunc;
+
         pub const TreeOfThoughtAgent = @import("techniques/reasoning/tree_of_thought.zig").TreeOfThoughtAgent;
         pub const TreeOfThoughtConfig = @import("techniques/reasoning/tree_of_thought.zig").TreeOfThoughtConfig;
         pub const SearchStrategy = @import("techniques/reasoning/tree_of_thought.zig").SearchStrategy;
@@ -300,6 +305,7 @@ test {
     // Also test techniques
     _ = @import("techniques/reasoning/self_consistency.zig");
     _ = @import("techniques/reasoning/chain_of_thought.zig");
+    _ = @import("techniques/reasoning/least_to_most.zig");
     _ = @import("techniques/reasoning/reasoning_tree.zig");
     _ = @import("techniques/reasoning/tree_of_thought.zig");
 }

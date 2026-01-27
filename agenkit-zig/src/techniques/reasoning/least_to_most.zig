@@ -156,6 +156,66 @@ pub const LeastToMostAgent = struct {
             return Result{ .err = AgentError.ProcessingFailed };
         };
 
+        // Add subproblems array
+        var subproblems_array = std.ArrayListUnmanaged(std.json.Value){};
+        for (subproblems) |sub| {
+            const dupe_content = self.allocator.dupe(u8, sub.content) catch {
+                // Clean up any already added items
+                for (subproblems_array.items) |item| {
+                    self.allocator.free(item.string);
+                }
+                subproblems_array.deinit(self.allocator);
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            subproblems_array.append(self.allocator, .{ .string = dupe_content }) catch {
+                self.allocator.free(dupe_content);
+                // Clean up any already added items
+                for (subproblems_array.items) |item| {
+                    self.allocator.free(item.string);
+                }
+                subproblems_array.deinit(self.allocator);
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+        }
+        response.setMetadata("subproblems", .{ .array = subproblems_array.toManaged(self.allocator) }) catch {
+            // Clean up strings
+            for (subproblems_array.items) |item| {
+                self.allocator.free(item.string);
+            }
+            subproblems_array.deinit(self.allocator);
+            return Result{ .err = AgentError.ProcessingFailed };
+        };
+
+        // Add solutions array
+        var solutions_array = std.ArrayListUnmanaged(std.json.Value){};
+        for (solutions.items) |sol| {
+            const dupe_sol = self.allocator.dupe(u8, sol) catch {
+                // Clean up any already added items
+                for (solutions_array.items) |item| {
+                    self.allocator.free(item.string);
+                }
+                solutions_array.deinit(self.allocator);
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            solutions_array.append(self.allocator, .{ .string = dupe_sol }) catch {
+                self.allocator.free(dupe_sol);
+                // Clean up any already added items
+                for (solutions_array.items) |item| {
+                    self.allocator.free(item.string);
+                }
+                solutions_array.deinit(self.allocator);
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+        }
+        response.setMetadata("subproblem_solutions", .{ .array = solutions_array.toManaged(self.allocator) }) catch {
+            // Clean up strings
+            for (solutions_array.items) |item| {
+                self.allocator.free(item.string);
+            }
+            solutions_array.deinit(self.allocator);
+            return Result{ .err = AgentError.ProcessingFailed };
+        };
+
         return Result{ .ok = response };
     }
 
@@ -523,4 +583,1270 @@ test "LeastToMostAgent - name and capabilities" {
     try testing.expectEqualStrings("compositional_reasoning", caps[2]);
     try testing.expectEqualStrings("least_to_most", caps[3]);
     try testing.expectEqualStrings("sequential_solving", caps[4]);
+}
+
+test "LeastToMostAgent - decomposition verification" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const responses = [_][]const u8{
+        "1. First subproblem\n2. Second subproblem\n3. Third subproblem",
+        "Solution 1",
+        "Solution 2",
+        "Solution 3",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{});
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Complex problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    // Verify subproblems in metadata
+    const subproblems_value = response.metadata.object.get("subproblems").?;
+    const subproblems = subproblems_value.array.items;
+
+    try testing.expectEqual(@as(usize, 3), subproblems.len);
+    try testing.expectEqualStrings("First subproblem", subproblems[0].string);
+    try testing.expectEqualStrings("Second subproblem", subproblems[1].string);
+    try testing.expectEqualStrings("Third subproblem", subproblems[2].string);
+}
+
+test "LeastToMostAgent - sequential solving" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const responses = [_][]const u8{
+        "1. Step A\n2. Step B",
+        "Answer A",
+        "Answer B",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{});
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    // Verify solutions in metadata
+    const solutions_value = response.metadata.object.get("subproblem_solutions").?;
+    const solutions = solutions_value.array.items;
+
+    try testing.expectEqual(@as(usize, 2), solutions.len);
+    try testing.expectEqualStrings("Answer A", solutions[0].string);
+    try testing.expectEqualStrings("Answer B", solutions[1].string);
+}
+
+test "LeastToMostAgent - final solution is last" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const responses = [_][]const u8{
+        "1. Easy\n2. Medium\n3. Hard",
+        "Easy solution",
+        "Medium solution",
+        "Hard solution - final",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{});
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    // Final solution should be the last one
+    const content = try response.contentAsText();
+    try testing.expectEqualStrings("Hard solution - final", content);
+}
+
+test "LeastToMostAgent - max subproblems limit" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const responses = [_][]const u8{
+        "1. Sub 1\n2. Sub 2\n3. Sub 3\n4. Sub 4\n5. Sub 5\n6. Sub 6",
+        "S1",
+        "S2",
+        "S3",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{ .max_subproblems = 3 });
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    // Should only have 3 subproblems due to limit
+    const num_subproblems = response.metadata.object.get("num_subproblems").?;
+    try testing.expectEqual(@as(i64, 3), num_subproblems.integer);
+
+    const subproblems_value = response.metadata.object.get("subproblems").?;
+    try testing.expectEqual(@as(usize, 3), subproblems_value.array.items.len);
+}
+
+test "LeastToMostAgent - custom decomposer" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const customDecomposer: DecomposerFunc = struct {
+        fn decompose(alloc: Allocator, problem: []const u8) anyerror![][]const u8 {
+            _ = problem;
+            const parts = try alloc.alloc([]const u8, 2);
+            parts[0] = try alloc.dupe(u8, "Custom A");
+            parts[1] = try alloc.dupe(u8, "Custom B");
+            return parts;
+        }
+    }.decompose;
+
+    const responses = [_][]const u8{
+        "Solution A",
+        "Solution B",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{ .decomposer = customDecomposer });
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    // Should use custom decomposer
+    const subproblems_value = response.metadata.object.get("subproblems").?;
+    const subproblems = subproblems_value.array.items;
+
+    try testing.expectEqual(@as(usize, 2), subproblems.len);
+    try testing.expectEqualStrings("Custom A", subproblems[0].string);
+    try testing.expectEqualStrings("Custom B", subproblems[1].string);
+}
+
+test "LeastToMostAgent - compose solutions enabled" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const responses = [_][]const u8{
+        "1. Step 1\n2. Step 2",
+        "Result 1",
+        "Result 2",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{ .compose_solutions = true });
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    // Verify compose_solutions in metadata
+    const compose = response.metadata.object.get("compose_solutions").?;
+    try testing.expect(compose.bool);
+}
+
+test "LeastToMostAgent - compose solutions disabled" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const responses = [_][]const u8{
+        "1. Step 1\n2. Step 2",
+        "Result 1",
+        "Result 2",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{ .compose_solutions = false });
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    // Verify compose_solutions in metadata
+    const compose = response.metadata.object.get("compose_solutions").?;
+    try testing.expect(!compose.bool);
+}
+
+test "LeastToMostAgent - parse numbered steps with periods" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const responses = [_][]const u8{
+        "1. First task\n2. Second task\n3. Third task",
+        "S1",
+        "S2",
+        "S3",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{});
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    const subproblems_value = response.metadata.object.get("subproblems").?;
+    const subproblems = subproblems_value.array.items;
+
+    try testing.expectEqual(@as(usize, 3), subproblems.len);
+    try testing.expectEqualStrings("First task", subproblems[0].string);
+    try testing.expectEqualStrings("Second task", subproblems[1].string);
+    try testing.expectEqualStrings("Third task", subproblems[2].string);
+}
+
+test "LeastToMostAgent - parse numbered steps with parentheses" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const responses = [_][]const u8{
+        "1) Alpha\n2) Beta\n3) Gamma",
+        "S1",
+        "S2",
+        "S3",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{});
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    const subproblems_value = response.metadata.object.get("subproblems").?;
+    const subproblems = subproblems_value.array.items;
+
+    try testing.expectEqual(@as(usize, 3), subproblems.len);
+    try testing.expectEqualStrings("Alpha", subproblems[0].string);
+    try testing.expectEqualStrings("Beta", subproblems[1].string);
+    try testing.expectEqualStrings("Gamma", subproblems[2].string);
+}
+
+test "LeastToMostAgent - skip empty lines" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const responses = [_][]const u8{
+        "1. Valid\n\n2. Also valid\n\n\n3. Still valid",
+        "S1",
+        "S2",
+        "S3",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{});
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    const subproblems_value = response.metadata.object.get("subproblems").?;
+    const subproblems = subproblems_value.array.items;
+
+    try testing.expectEqual(@as(usize, 3), subproblems.len);
+}
+
+test "LeastToMostAgent - atomic problem fallback" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const responses = [_][]const u8{
+        "This is not a numbered list",
+        "Direct solution",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{});
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Simple problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    // Should treat as atomic problem (1 subproblem)
+    const num_subproblems = response.metadata.object.get("num_subproblems").?;
+    try testing.expectEqual(@as(i64, 1), num_subproblems.integer);
+}
+
+test "LeastToMostAgent - whitespace trimming" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const responses = [_][]const u8{
+        "  1. Task with spaces  \n  2. Another task  ",
+        "  Solution  ",
+        "  Another solution  ",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{});
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    const subproblems_value = response.metadata.object.get("subproblems").?;
+    const subproblems = subproblems_value.array.items;
+
+    // Whitespace should be trimmed
+    try testing.expectEqualStrings("Task with spaces", subproblems[0].string);
+    try testing.expectEqualStrings("Another task", subproblems[1].string);
+}
+
+test "LeastToMostAgent - metadata includes all fields" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const MockAgent = struct {
+        allocator: Allocator,
+        responses: []const []const u8,
+        call_count: usize,
+
+        pub fn init(alloc: Allocator, responses: []const []const u8) @This() {
+            return .{ .allocator = alloc, .responses = responses, .call_count = 0 };
+        }
+
+        pub fn agent(self: *@This()) Agent {
+            return Agent{
+                .ptr = self,
+                .vtable = &.{
+                    .name = nameImpl,
+                    .capabilities = capabilitiesImpl,
+                    .process = processImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
+                    .deinit = deinitImpl,
+                },
+            };
+        }
+
+        fn nameImpl(ptr: *anyopaque) []const u8 {
+            _ = ptr;
+            return "mock_agent";
+        }
+
+        fn capabilitiesImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error![]const []const u8 {
+            _ = ptr;
+            const caps = try alloc.alloc([]const u8, 1);
+            caps[0] = "mock";
+            return caps;
+        }
+
+        fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+            _ = message;
+            const self: *@This() = @ptrCast(@alignCast(ptr));
+            const idx = self.call_count % self.responses.len;
+            self.call_count += 1;
+
+            const response = Message.withText(self.allocator, .assistant, self.responses[idx]) catch {
+                return Result{ .err = AgentError.ProcessingFailed };
+            };
+            return Result{ .ok = response };
+        }
+
+        fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+            _ = ptr;
+            _ = message;
+            _ = callbacks;
+            return AgentError.NotImplemented;
+        }
+
+        fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+            _ = ptr;
+            _ = alloc;
+            return error.OutOfMemory;
+        }
+
+        fn deinitImpl(ptr: *anyopaque) void {
+            _ = ptr;
+        }
+    };
+
+    const responses = [_][]const u8{
+        "1. Step A",
+        "Solution A",
+    };
+
+    var mock = MockAgent.init(allocator, &responses);
+    const mock_agent = mock.agent();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock_agent, .{});
+    defer ltm.agent().deinit();
+
+    var message = try Message.withText(allocator, .user, "Problem");
+    defer message.deinit();
+    const result = try ltm.agent().process(message);
+    var response = try result.unwrap();
+    defer response.deinit();
+
+    // Check all expected metadata fields
+    try testing.expect(response.metadata.object.contains("technique"));
+    try testing.expect(response.metadata.object.contains("num_subproblems"));
+    try testing.expect(response.metadata.object.contains("subproblems"));
+    try testing.expect(response.metadata.object.contains("subproblem_solutions"));
+    try testing.expect(response.metadata.object.contains("compose_solutions"));
 }

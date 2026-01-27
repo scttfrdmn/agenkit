@@ -41,3 +41,4 @@
 #include "agenkit/infrastructure/memory/short_term.hpp"
 #include "agenkit/infrastructure/memory/long_term.hpp"
 #include "agenkit/infrastructure/memory/hierarchy.hpp"
+#include "agenkit/infrastructure/memory/redis_memory.hpp"

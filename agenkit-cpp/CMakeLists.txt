@@ -121,6 +121,7 @@ add_library(agenkit
     src/infrastructure/memory/short_term.cpp
     src/infrastructure/memory/long_term.cpp
     src/infrastructure/memory/hierarchy.cpp
+    src/infrastructure/memory/redis_memory.cpp
     src/infrastructure/checkpointing/checkpoint.cpp
     src/infrastructure/checkpointing/storage.cpp
     src/infrastructure/checkpointing/manager.cpp

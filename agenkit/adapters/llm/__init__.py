@@ -45,7 +45,8 @@ try:
 except ImportError:
     pass
 
-# OpenAI adapter (optional dependency)
+# OpenAI adapter - For official OpenAI API (api.openai.com)
+# Use this for: GPT-4, GPT-3.5, o1, o3, official OpenAI models
 try:
     from agenkit.adapters.llm.openai import OpenAILLM
 
@@ -85,7 +86,9 @@ try:
 except ImportError:
     pass
 
-# OpenAI-compatible adapter (optional dependency)
+# OpenAI-compatible adapter - For self-hosted/local inference services
+# Use this for: vLLM, llama.cpp, SGLang, TensorRT-LLM, Ollama, LocalAI, etc.
+# Any service implementing the OpenAI Chat Completions API
 try:
     from agenkit.adapters.llm.openai_compatible import OpenAICompatibleLLM
 

@@ -16,10 +16,13 @@ from agenkit.protocols.agui.events import (
     RunErrorEvent,
     RunFinishedEvent,
     RunStartedEvent,
+    StateDeltaEvent,
+    StateSnapshotEvent,
     TextMessageContentEvent,
     TextMessageEndEvent,
     TextMessageStartEvent,
 )
+from agenkit.protocols.agui.state import StateManager
 
 
 class AGUIAdapter:
@@ -55,6 +58,8 @@ class AGUIAdapter:
         agent: Agent,
         chunk_size: int = 20,
         agent_name: Optional[str] = None,
+        state_manager: Optional[StateManager] = None,
+        emit_state_snapshots: bool = False,
     ):
         """Initialize the AG-UI adapter.
 
@@ -62,10 +67,14 @@ class AGUIAdapter:
             agent: The agent to wrap
             chunk_size: Characters per content event
             agent_name: Optional agent name
+            state_manager: Optional StateManager for state synchronization
+            emit_state_snapshots: Whether to emit initial state snapshots
         """
         self.agent = agent
         self.chunk_size = chunk_size
         self.agent_name = agent_name or agent.__class__.__name__
+        self.state_manager = state_manager
+        self.emit_state_snapshots = emit_state_snapshots
 
     async def stream_events(
         self,
@@ -112,6 +121,10 @@ class AGUIAdapter:
             input=input_data or {"message": message.content},
         )
 
+        # Emit initial state snapshot if enabled
+        if self.state_manager and self.emit_state_snapshots:
+            yield self.state_manager.get_snapshot_event()
+
         try:
             # Process message through agent
             response = await self.agent.process(message)
@@ -142,6 +155,12 @@ class AGUIAdapter:
                 message_id=message_id,
                 metadata=response.metadata if hasattr(response, "metadata") else None,
             )
+
+            # Emit state delta if there are pending changes
+            if self.state_manager:
+                delta_event = self.state_manager.get_delta_event()
+                if delta_event:
+                    yield delta_event
 
             # Emit RunFinished
             yield RunFinishedEvent(

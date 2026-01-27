@@ -8,8 +8,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from agenkit import Message
-from agenkit.protocols.agui import AGUIAdapter
-from agenkit.protocols.agui.transports import WebSocketMessageFormat
+from agenkit.protocols.agui_simple import AGUIAdapter
+from agenkit.protocols.agui_simple.transports import WebSocketMessageFormat
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

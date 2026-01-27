@@ -14,8 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from agenkit import Message
-from agenkit.protocols.agui.adapter import AGUIAdapter
-from agenkit.protocols.agui.transports.websocket import WebSocketMessageFormat
+from agenkit.protocols.agui_simple.adapter import AGUIAdapter
+from agenkit.protocols.agui_simple.transports.websocket import WebSocketMessageFormat
 
 # Configure logging
 logging.basicConfig(

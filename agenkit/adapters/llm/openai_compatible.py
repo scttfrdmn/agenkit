@@ -1,39 +1,97 @@
 """
-OpenAI-compatible LLM adapter for Agenkit.
+OpenAI-Compatible adapter for self-hosted and local inference services.
 
-This module provides a generic adapter for any inference service that implements
-the OpenAI Chat Completions API. This includes popular local/self-hosted engines:
+⚠️ IMPORTANT: When to use OpenAILLM vs OpenAICompatibleLLM ⚠️
 
-Supported services:
-- vLLM: High-throughput inference engine
-- llama.cpp server: Lightweight C++ implementation
-- SGLang: Optimized for complex prompts
-- TensorRT-LLM: NVIDIA GPU-optimized inference
-- OpenLLM: Multi-model serving platform
-- MLC LLM: Mobile and edge deployment
-- Text Generation Inference (TGI): HuggingFace inference server
-- Inferflow: High-performance inference
+USE OpenAILLM (agenkit.adapters.llm.openai) WHEN:
+  ✅ Using the official OpenAI API (api.openai.com)
+  ✅ You want GPT-4, GPT-4 Turbo, GPT-3.5, o1, o3, etc.
+  ✅ You need premium features (vision, function calling, JSON mode, embeddings)
+  ✅ You want official OpenAI support and SLAs
+  ✅ Pay-per-token pricing is acceptable
 
-Key benefits:
-- Single adapter works with 8+ inference engines
-- Zero additional dependencies (uses existing openai SDK)
-- Consistent API across local and cloud deployments
-- Easy migration from OpenAI to self-hosted
+USE OpenAICompatibleLLM (THIS MODULE) WHEN:
+  ✅ Running self-hosted/local inference (vLLM, llama.cpp, SGLang, etc.)
+  ✅ You want to use open models (Llama, Mistral, Qwen, Yi, etc.)
+  ✅ Cost reduction is important (local inference = no API costs)
+  ✅ Data privacy is required (on-premises deployment)
+  ✅ You need low latency (local = no network round-trip to OpenAI)
+  ✅ You want to experiment with different models easily
 
-Example:
+📖 KEY DIFFERENCE:
+  - OpenAILLM: Uses https://api.openai.com/v1 (hardcoded, official OpenAI)
+  - OpenAICompatibleLLM: Uses YOUR base_url (configurable, self-hosted)
+
+  Both use the same OpenAI SDK internally, so the API is IDENTICAL.
+
+🔧 COMPARISON EXAMPLE:
+
+    # Official OpenAI API - for production cloud deployments
+    from agenkit.adapters.llm import OpenAILLM
+    openai = OpenAILLM(
+        api_key="sk-...",              # Your OpenAI API key
+        model="gpt-4-turbo"             # Official OpenAI model
+    )
+    response = await openai.complete(messages)  # Charges your OpenAI account
+
+    # Self-hosted vLLM - for cost-effective local inference
+    from agenkit.adapters.llm import OpenAICompatibleLLM
+    vllm = OpenAICompatibleLLM(
+        base_url="http://localhost:8000/v1",    # Your local server
+        model="meta-llama/Llama-2-70b-chat-hf", # Open source model
+        provider="vllm"                          # Optional metadata
+    )
+    response = await vllm.complete(messages)     # Free (runs on your hardware)
+
+    # BOTH have identical APIs - just swap the import!
+
+📚 SUPPORTED SERVICES (All OpenAI-compatible):
+
+1. vLLM - Production-grade serving (https://docs.vllm.ai)
+   Best for: High throughput, production deployments, GPU clusters
+
+2. llama.cpp - Efficient CPU/GPU inference (https://github.com/ggerganov/llama.cpp)
+   Best for: Local development, edge deployment, CPU inference, GGUF models
+
+3. SGLang - Fast multi-turn conversations (https://sgl-project.github.io)
+   Best for: Complex workflows, 29-64% faster than vLLM for some cases
+
+4. TensorRT-LLM - NVIDIA GPU optimization (https://github.com/NVIDIA/TensorRT-LLM)
+   Best for: Maximum GPU performance on NVIDIA hardware
+
+5. Ollama - Simple local model management (https://ollama.ai)
+   Best for: Quick local experimentation, one-command model downloads
+
+6. Text Generation Inference (TGI) - Hugging Face (https://github.com/huggingface/text-generation-inference)
+   Best for: Production serving with Hugging Face models
+
+7. LM Studio - Desktop GUI for local models (https://lmstudio.ai)
+   Best for: Non-technical users, visual model management
+
+8. LocalAI - Drop-in OpenAI replacement (https://localai.io)
+   Best for: OpenAI API compatibility testing, multi-backend support
+
+9. OpenLLM - LLM serving framework (https://github.com/bentoml/OpenLLM)
+   Best for: Production serving with BentoML ecosystem
+
+EXAMPLE - vLLM local server:
     >>> from agenkit.adapters.llm import OpenAICompatibleLLM
-    >>> from agenkit import Message
-    >>>
-    >>> # Connect to local vLLM server
     >>> llm = OpenAICompatibleLLM(
     ...     base_url="http://localhost:8000/v1",
     ...     model="meta-llama/Llama-2-7b-chat-hf",
     ...     provider="vllm"
     ... )
-    >>>
     >>> messages = [Message(role="user", content="Hello!")]
     >>> response = await llm.complete(messages)
-    >>> print(response.content)
+
+EXAMPLE - llama.cpp server:
+    >>> llm = OpenAICompatibleLLM(
+    ...     base_url="http://localhost:8080/v1",
+    ...     model="llama-2-7b-chat.Q4_K_M.gguf",
+    ...     provider="llamacpp"
+    ... )
+
+See examples/adapters/openai_compatible/ for setup guides for each service.
 """
 
 from collections.abc import AsyncIterator

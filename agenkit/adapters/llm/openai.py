@@ -1,8 +1,42 @@
 """
-OpenAI GPT adapter for Agenkit.
+Official OpenAI API adapter for Agenkit.
 
-This module provides an adapter for OpenAI's GPT models using the
-official openai Python SDK.
+⚠️ IMPORTANT: When to use OpenAILLM vs OpenAICompatibleLLM ⚠️
+
+USE THIS MODULE (OpenAILLM) WHEN:
+  ✅ Using the official OpenAI API (api.openai.com)
+  ✅ You want GPT-4, GPT-4 Turbo, GPT-3.5, o1, o3, etc.
+  ✅ You need premium features (vision, function calling, JSON mode, embeddings)
+  ✅ You want official OpenAI support and SLAs
+  ✅ Pay-per-token pricing is acceptable
+
+USE OpenAICompatibleLLM (agenkit.adapters.llm.openai_compatible) WHEN:
+  ✅ Running self-hosted/local inference (vLLM, llama.cpp, SGLang, etc.)
+  ✅ You want to use open models (Llama, Mistral, Qwen, Yi, etc.)
+  ✅ Cost reduction is important (local inference = no API costs)
+  ✅ Data privacy is required (on-premises deployment)
+  ✅ You need low latency (local = no network round-trip)
+  ✅ You want to experiment with different models easily
+
+📖 KEY DIFFERENCE:
+  - OpenAILLM (this module): Uses https://api.openai.com/v1 (official OpenAI API)
+  - OpenAICompatibleLLM: Uses YOUR base_url (self-hosted services like vLLM)
+
+  Both use the same OpenAI SDK, so the API is IDENTICAL.
+
+EXAMPLE - Official OpenAI API (this module):
+    >>> from agenkit.adapters.llm import OpenAILLM
+    >>> llm = OpenAILLM(api_key="sk-...", model="gpt-4-turbo")
+    >>> response = await llm.complete(messages)  # Charges your OpenAI account
+
+EXAMPLE - Self-hosted vLLM (use OpenAICompatibleLLM instead):
+    >>> from agenkit.adapters.llm import OpenAICompatibleLLM
+    >>> llm = OpenAICompatibleLLM(
+    ...     base_url="http://localhost:8000/v1",
+    ...     model="meta-llama/Llama-2-70b-chat-hf",
+    ...     provider="vllm"
+    ... )
+    >>> response = await llm.complete(messages)  # Free (runs on your hardware)
 """
 
 from collections.abc import AsyncIterator

@@ -82,8 +82,43 @@ pub const Message = struct {
     }
 
     /// Free all resources associated with this message
+    fn freeJsonValue(allocator: Allocator, value: json.Value) void {
+        switch (value) {
+            .array => |arr| {
+                // Free all items in the array (including strings)
+                for (arr.items) |item| {
+                    switch (item) {
+                        .string => |s| allocator.free(s),
+                        .array => freeJsonValue(allocator, item),
+                        .object => freeJsonValue(allocator, item),
+                        .number_string => |s| allocator.free(s),
+                        else => {},
+                    }
+                }
+                var mut_arr = arr;
+                mut_arr.deinit();
+            },
+            .object => |obj| {
+                var it = obj.iterator();
+                while (it.next()) |entry| {
+                    freeJsonValue(allocator, entry.value_ptr.*);
+                }
+                var mut_obj = obj;
+                mut_obj.deinit();
+            },
+            else => {
+                // Don't free top-level strings - they might be static literals
+            },
+        }
+    }
+
     pub fn deinit(self: *Message) void {
         self.content.deinit(self.allocator);
+        // Free all metadata values recursively
+        var it = self.metadata.object.iterator();
+        while (it.next()) |entry| {
+            freeJsonValue(self.allocator, entry.value_ptr.*);
+        }
         // Free the ObjectMap internal storage
         self.metadata.object.deinit();
     }

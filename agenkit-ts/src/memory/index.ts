@@ -8,6 +8,7 @@
  *   Memory: Abstract base interface for memory systems
  *   InMemoryMemory: Simple in-memory storage with LRU eviction
  *   HierarchyMemory: 3-tier hierarchy adapter (backward compatible)
+ *   RedisMemory: Redis-backed persistent memory with TTL support
  *   VectorMemory: Semantic retrieval using embeddings and vector similarity
  *
  * Example:
@@ -21,6 +22,7 @@
 export { Memory } from './base';
 export { InMemoryMemory } from './in-memory';
 export { HierarchyMemory, HierarchyConfig } from './hierarchyMemory';
+export { RedisMemory, RedisMemoryOptions } from './redisMemory';
 export {
   VectorMemory,
   InMemoryVectorStore,

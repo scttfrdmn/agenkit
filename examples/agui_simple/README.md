@@ -1,6 +1,10 @@
-# AG-UI Example Gallery
+# AG-UI Simple Example Gallery
 
-Production-ready examples demonstrating Agenkit agents with AG-UI protocol for real-time streaming to frontends.
+Production-ready examples demonstrating Agenkit agents with **AG-UI Simple** - a lightweight, educational protocol for real-time streaming to frontends.
+
+> **📘 About AG-UI Simple**: This is Agenkit's simplified AG-UI implementation, perfect for learning, prototyping, and internal tools. It uses 5 core event types and WebSocket transport for maximum simplicity.
+>
+> **For production deployments with CopilotKit integration**, see [AG-UI Standard](../integrations/copilotkit/) which implements the full AG-UI specification.
 
 ## 📚 Examples
 

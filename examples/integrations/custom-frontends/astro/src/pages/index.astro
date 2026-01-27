@@ -1,0 +1,313 @@
+---
+const title = 'AG-UI + Astro (Custom)';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        background: linear-gradient(135deg, #bc52ee 0%, #8f6ed5 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 800px;
+      }
+
+      .chat-container {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: column;
+        height: 80vh;
+        max-height: 700px;
+      }
+
+      .header {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #bc52ee 0%, #8f6ed5 100%);
+        color: white;
+        text-align: center;
+        border-radius: 16px 16px 0 0;
+      }
+
+      .header h1 {
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .header p {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      .messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        background: #f8f9fa;
+      }
+
+      .welcome {
+        text-align: center;
+        padding: 2rem;
+        color: #64748b;
+      }
+
+      .welcome h2 {
+        color: #bc52ee;
+        margin-bottom: 1rem;
+      }
+
+      .message {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        animation: fadeIn 0.3s;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .message .role {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .message .content {
+        background: white;
+        padding: 1rem;
+        border-radius: 12px;
+        flex: 1;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        white-space: pre-wrap;
+      }
+
+      .message.user .content {
+        background: linear-gradient(135deg, #bc52ee 0%, #8f6ed5 100%);
+        color: white;
+      }
+
+      .typing {
+        color: #bc52ee;
+        font-weight: 600;
+      }
+
+      .input-area {
+        padding: 1.5rem;
+        background: white;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        gap: 1rem;
+        border-radius: 0 0 16px 16px;
+      }
+
+      input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-family: inherit;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #bc52ee;
+      }
+
+      button {
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #bc52ee 0%, #8f6ed5 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: transform 0.2s;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-2px);
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .footer {
+        padding: 0.75rem;
+        background: #f8f9fa;
+        text-align: center;
+        font-size: 0.85rem;
+        color: #64748b;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="chat-container">
+        <div class="header">
+          <h1>🚀 Astro + AG-UI</h1>
+          <p>Custom SSE Integration (~300 LOC)</p>
+        </div>
+
+        <div class="messages" id="messages">
+          <div class="welcome">
+            <h2>Welcome!</h2>
+            <p>This is a custom Astro frontend consuming AG-UI Standard protocol via SSE.</p>
+            <p>Try: "Hello" or "Help"</p>
+          </div>
+        </div>
+
+        <div class="input-area">
+          <input
+            type="text"
+            id="input"
+            placeholder="Type a message..."
+          />
+          <button id="send">📤</button>
+        </div>
+
+        <div class="footer">
+          <span>Powered by Agenkit AG-UI Standard</span>
+          <span>•</span>
+          <span>Astro 4</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let isStreaming = false;
+      let streamBuffer = '';
+
+      const messagesEl = document.getElementById('messages');
+      const inputEl = document.getElementById('input');
+      const sendBtn = document.getElementById('send');
+
+      function scrollToBottom() {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      function addMessage(role, content) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${role}`;
+        msgDiv.innerHTML = `
+          <div class="role">${role === 'user' ? '👤' : '🤖'}</div>
+          <div class="content">${content}</div>
+        `;
+        messagesEl.appendChild(msgDiv);
+        scrollToBottom();
+        return msgDiv;
+      }
+
+      function updateLastMessage(content) {
+        const messages = messagesEl.querySelectorAll('.message');
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg && lastMsg.classList.contains('assistant')) {
+          lastMsg.querySelector('.content').textContent = content;
+        } else {
+          addMessage('assistant', content);
+        }
+        scrollToBottom();
+      }
+
+      async function sendMessage() {
+        const text = inputEl.value.trim();
+        if (!text || isStreaming) return;
+
+        // Remove welcome message if present
+        const welcome = messagesEl.querySelector('.welcome');
+        if (welcome) welcome.remove();
+
+        addMessage('user', text);
+        inputEl.value = '';
+        isStreaming = true;
+        sendBtn.disabled = true;
+        sendBtn.textContent = '⏳';
+        streamBuffer = '';
+
+        try {
+          const response = await fetch('/agui', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              thread_id: 'astro-' + Date.now(),
+              message: text,
+            }),
+          });
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const event = JSON.parse(line.slice(6));
+
+                  if (event.type === 'text_message_content') {
+                    streamBuffer += event.delta;
+                    updateLastMessage(streamBuffer);
+                  }
+                } catch (e) {
+                  console.error('Parse error:', e);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          addMessage('assistant', '❌ Error occurred');
+        } finally {
+          isStreaming = false;
+          sendBtn.disabled = false;
+          sendBtn.textContent = '📤';
+          streamBuffer = '';
+        }
+      }
+
+      sendBtn.addEventListener('click', sendMessage);
+      inputEl.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+      });
+    </script>
+  </body>
+</html>

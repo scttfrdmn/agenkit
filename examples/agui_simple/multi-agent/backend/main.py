@@ -1,20 +1,20 @@
 """
-Tool Dashboard Backend Server
+Multi-Agent Coordination Backend
 
-FastAPI application that serves the ResearchAgent with tool execution
-visualization through AG-UI protocol.
+FastAPI application that coordinates multiple specialized agents
+through the CoordinatorAgent with AG-UI protocol.
 """
 
 import logging
 from contextlib import asynccontextmanager
 
-from agent import ResearchAgent
+from agent import CoordinatorAgent
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from agenkit import Message
-from agenkit.protocols.agui import AGUIAdapter
-from agenkit.protocols.agui.transports import WebSocketMessageFormat
+from agenkit.protocols.agui_simple import AGUIAdapter
+from agenkit.protocols.agui_simple.transports import WebSocketMessageFormat
 
 # Configure logging
 logging.basicConfig(
@@ -22,39 +22,40 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Global agent and adapter
-research_agent = None
+# Global coordinator and adapter
+coordinator = None
 adapter = None
 formatter = WebSocketMessageFormat()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize agent and adapter on startup."""
-    global research_agent, adapter  # noqa: PLW0603
+    """Initialize coordinator and adapter on startup."""
+    global coordinator, adapter  # noqa: PLW0603
 
-    logger.info("Starting Tool Dashboard backend...")
+    logger.info("Starting Multi-Agent Coordination backend...")
 
-    # Create agent
-    research_agent = ResearchAgent(name="ResearchAssistant")
+    # Create coordinator agent
+    coordinator = CoordinatorAgent(name="TaskCoordinator")
 
-    # Create AG-UI adapter with small chunks for smooth streaming
+    # Create AG-UI adapter
     adapter = AGUIAdapter(
-        research_agent,
-        agent_name="ResearchAssistant",
-        chunk_size=15,  # Slightly larger chunks than chat for faster tool results
+        coordinator,
+        agent_name="TaskCoordinator",
+        chunk_size=20,
     )
 
-    logger.info("Tool Dashboard backend ready!")
+    logger.info("Multi-Agent Coordination backend ready!")
+    logger.info(f"Available specialized agents: " f"{', '.join(coordinator._agents.keys())}")
     yield
 
-    logger.info("Shutting down Tool Dashboard backend...")
+    logger.info("Shutting down Multi-Agent Coordination backend...")
 
 
 # Create FastAPI app
 app = FastAPI(
-    title="Tool Dashboard Backend",
-    description="AG-UI backend for tool execution visualization",
+    title="Multi-Agent Coordination Backend",
+    description="AG-UI backend for multi-agent task coordination",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -74,21 +75,38 @@ async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "agent": research_agent.name if research_agent else None,
-        "capabilities": research_agent.capabilities if research_agent else [],
+        "coordinator": coordinator.name if coordinator else None,
+        "specialized_agents": (list(coordinator._agents.keys()) if coordinator else []),
+        "capabilities": coordinator.capabilities if coordinator else [],
     }
+
+
+@app.get("/agents")
+async def list_agents():
+    """List available specialized agents."""
+    if not coordinator:
+        return {"agents": []}
+
+    agents_info = []
+    for agent_name, agent in coordinator._agents.items():
+        agents_info.append(
+            {
+                "name": agent_name,
+                "full_name": agent.name,
+                "capabilities": agent.capabilities,
+            }
+        )
+
+    return {"coordinator": coordinator.name, "specialized_agents": agents_info}
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """
-    WebSocket endpoint for AG-UI communication.
+    WebSocket endpoint for multi-agent coordination.
 
-    Streams tool execution events in real-time:
-    - metadata: Agent capabilities and info
-    - text_message_start: Begin response
-    - text_message_chunk: Stream response chunks
-    - text_message_complete: Complete response with tool metadata
+    Receives user queries, coordinates specialized agents,
+    and streams aggregated results via AG-UI protocol.
     """
     await websocket.accept()
     client_id = id(websocket)
@@ -99,26 +117,16 @@ async def websocket_endpoint(websocket: WebSocket):
         metadata_event = {
             "event_type": "metadata",
             "data": {
-                "agent_name": "ResearchAssistant",
-                "capabilities": research_agent.capabilities,
-                "available_tools": [
+                "agent_name": "TaskCoordinator",
+                "capabilities": coordinator.capabilities,
+                "specialized_agents": [
                     {
-                        "name": "web_search",
-                        "description": "Search the web for information",
-                    },
-                    {
-                        "name": "calculator",
-                        "description": "Perform mathematical calculations",
-                    },
-                    {
-                        "name": "get_weather",
-                        "description": "Get weather information",
-                    },
-                    {
-                        "name": "query_database",
-                        "description": "Query database records",
-                    },
+                        "name": agent_name,
+                        "capabilities": agent.capabilities,
+                    }
+                    for agent_name, agent in coordinator._agents.items()
                 ],
+                "coordination_strategy": "parallel_execution",
                 "protocol": "AG-UI",
                 "version": "1.0",
             },
@@ -141,12 +149,12 @@ async def websocket_endpoint(websocket: WebSocket):
                     metadata={"client_id": str(client_id)},
                 )
 
-                # Stream response with tool execution
+                # Stream coordinated response
                 async for event in adapter.stream_events(user_message, emit_metadata=False):
                     formatted = formatter.format_event(event)
                     await websocket.send_text(formatted)
 
-                logger.info(f"Response streamed to client {client_id}")
+                logger.info(f"Coordination complete for client {client_id}")
 
             elif message_type == "ping":
                 await websocket.send_json({"type": "pong"})

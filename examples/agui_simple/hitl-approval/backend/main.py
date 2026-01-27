@@ -13,9 +13,9 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from agenkit.protocols.agui.events import InterruptResponse
-from agenkit.protocols.agui.hitl import AGUIHumanInLoopAdapter
-from agenkit.protocols.agui.transports.websocket import WebSocketMessageFormat
+from agenkit.protocols.agui_simple.events import InterruptResponse
+from agenkit.protocols.agui_simple.hitl import AGUIHumanInLoopAdapter
+from agenkit.protocols.agui_simple.transports.websocket import WebSocketMessageFormat
 
 # Configure logging
 logging.basicConfig(

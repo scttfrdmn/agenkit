@@ -1,6 +1,6 @@
 {
   "name": "@agenkit/core",
-  "version": "0.48.0",
+  "version": "0.48.1",
   "description": "Minimal, composable interfaces for AI agents - TypeScript implementation",
   "keywords": [
     "ai",

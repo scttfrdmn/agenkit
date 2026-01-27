@@ -45,6 +45,7 @@ class EventType(str, Enum):
     TOOL_CALL_ARGS = "tool_call_args"
     TOOL_CALL_END = "tool_call_end"
     TOOL_CALL_RESULT = "tool_call_result"
+    TOOL_CALL_PROGRESS = "tool_call_progress"
     TOOL_CALL_CHUNK = "tool_call_chunk"  # Convenience wrapper
 
     # State management events
@@ -212,6 +213,22 @@ class ToolCallEndEvent(BaseEvent):
     tool_call_id: str = Field(description="Tool call identifier")
 
 
+class ToolCallProgressEvent(BaseEvent):
+    """Reports progress during tool execution."""
+
+    type: Literal[EventType.TOOL_CALL_PROGRESS] = EventType.TOOL_CALL_PROGRESS
+    tool_call_id: str = Field(description="Tool call identifier")
+    progress: float = Field(
+        description="Progress percentage (0.0 to 1.0)", ge=0.0, le=1.0
+    )
+    status: Optional[str] = Field(
+        default=None, description="Human-readable status message"
+    )
+    metadata: Optional[dict[str, Any]] = Field(
+        default=None, description="Additional progress metadata"
+    )
+
+
 class ToolCallResultEvent(BaseEvent):
     """Provides tool execution output."""
 
@@ -328,6 +345,7 @@ Event = Union[
     ToolCallStartEvent,
     ToolCallArgsEvent,
     ToolCallEndEvent,
+    ToolCallProgressEvent,
     ToolCallResultEvent,
     ToolCallChunkEvent,
     # State Management
@@ -362,6 +380,7 @@ __all__ = [
     "ToolCallStartEvent",
     "ToolCallArgsEvent",
     "ToolCallEndEvent",
+    "ToolCallProgressEvent",
     "ToolCallResultEvent",
     "ToolCallChunkEvent",
     # State Management

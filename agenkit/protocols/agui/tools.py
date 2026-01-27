@@ -7,16 +7,55 @@ in the AG-UI protocol.
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncIterator, Optional
+from typing import Any, AsyncIterator, Callable, Optional
 from uuid import uuid4
 
 from agenkit import Tool, ToolResult
 from agenkit.protocols.agui.events import (
     ToolCallArgsEvent,
     ToolCallEndEvent,
+    ToolCallProgressEvent,
     ToolCallResultEvent,
     ToolCallStartEvent,
 )
+
+
+class ProgressReporter:
+    """Helper for tools to report progress during execution.
+
+    Example:
+        ```python
+        async def long_running_tool(reporter: ProgressReporter):
+            for i in range(100):
+                await process_item(i)
+                reporter.report(i / 100, f"Processing item {i+1}/100")
+        ```
+    """
+
+    def __init__(self, tool_call_id: str, callback: Callable):
+        """Initialize progress reporter.
+
+        Args:
+            tool_call_id: The tool call ID
+            callback: Callback to emit progress events
+        """
+        self._tool_call_id = tool_call_id
+        self._callback = callback
+
+    def report(
+        self,
+        progress: float,
+        status: Optional[str] = None,
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> None:
+        """Report progress.
+
+        Args:
+            progress: Progress percentage (0.0 to 1.0)
+            status: Optional status message
+            metadata: Optional additional metadata
+        """
+        self._callback(self._tool_call_id, progress, status, metadata)
 
 
 class ToolCallTracker:
@@ -53,6 +92,7 @@ class ToolCallTracker:
         parent_message_id: Optional[str] = None,
         stream_args: bool = True,
         arg_chunk_size: int = 100,
+        on_progress: Optional[Callable[[str, float, Optional[str]], None]] = None,
     ) -> AsyncIterator:
         """Track a tool call and emit events.
 
@@ -62,6 +102,7 @@ class ToolCallTracker:
             parent_message_id: Optional parent message ID
             stream_args: Whether to stream arguments in chunks
             arg_chunk_size: Characters per arg chunk
+            on_progress: Optional callback for progress updates (tool_call_id, progress, status)
 
         Yields:
             AG-UI tool call events
@@ -97,9 +138,41 @@ class ToolCallTracker:
         # Emit ToolCallEnd
         yield ToolCallEndEvent(tool_call_id=tool_call_id)
 
-        # Execute tool
+        # Execute tool with optional progress tracking
         try:
+            # If progress callback provided, create progress reporter
+            if on_progress:
+                # Create progress event emitter
+                progress_events = []
+
+                def emit_progress(
+                    tid: str,
+                    progress: float,
+                    status: Optional[str] = None,
+                    metadata: Optional[dict[str, Any]] = None,
+                ) -> None:
+                    progress_events.append(
+                        ToolCallProgressEvent(
+                            tool_call_id=tid,
+                            progress=progress,
+                            status=status,
+                            metadata=metadata,
+                        )
+                    )
+
+                # Create reporter for tool to use
+                reporter = ProgressReporter(tool_call_id, emit_progress)
+
+                # Add reporter to args if tool accepts it
+                if "progress_reporter" in tool.execute.__code__.co_varnames:
+                    args["progress_reporter"] = reporter
+
             result = await tool.execute(**args)
+
+            # Emit any buffered progress events
+            if on_progress and progress_events:
+                for event in progress_events:
+                    yield event
 
             # Generate message ID for result
             result_message_id = f"msg-{uuid4()}"
@@ -188,4 +261,4 @@ class ToolRegistry:
         ]
 
 
-__all__ = ["ToolCallTracker", "ToolRegistry"]
+__all__ = ["ProgressReporter", "ToolCallTracker", "ToolRegistry"]

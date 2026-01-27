@@ -67,16 +67,18 @@ from agenkit.protocols.agui.events import (
     ToolCallArgsEvent,
     ToolCallChunkEvent,
     ToolCallEndEvent,
+    ToolCallProgressEvent,
     ToolCallResultEvent,
     ToolCallStartEvent,
 )
 from agenkit.protocols.agui.state import StateManager
-from agenkit.protocols.agui.tools import ToolCallTracker, ToolRegistry
+from agenkit.protocols.agui.tools import ProgressReporter, ToolCallTracker, ToolRegistry
 
 __all__ = [
     "AGUIAdapter",
     # State & Tools
     "StateManager",
+    "ProgressReporter",
     "ToolCallTracker",
     "ToolRegistry",
     # Event types
@@ -98,6 +100,7 @@ __all__ = [
     "ToolCallStartEvent",
     "ToolCallArgsEvent",
     "ToolCallEndEvent",
+    "ToolCallProgressEvent",
     "ToolCallResultEvent",
     "ToolCallChunkEvent",
     # State Management

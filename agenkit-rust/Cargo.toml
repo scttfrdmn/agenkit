@@ -120,6 +120,9 @@ aws-config = { version = "1.5", optional = true }
 aws-sdk-bedrockruntime = { version = "1.56", optional = true }
 aws-credential-types = { version = "1.2", optional = true }
 
+# Redis for persistent memory
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"], optional = true }
+
 [dev-dependencies]
 # Testing
 tokio-test = "0.4"
@@ -167,6 +170,7 @@ native = [
     "rayon",
     "lazy_static",
     "parking_lot",
+    "redis",
 ]
 
 # WASM build with browser-compatible features
@@ -268,6 +272,10 @@ path = "examples/observability_distributed.rs"
 [[example]]
 name = "observability_production"
 path = "examples/observability_production.rs"
+
+[[example]]
+name = "redis_memory_example"
+path = "examples/redis_memory_example.rs"
 
 [[bench]]
 name = "pattern_benchmarks"

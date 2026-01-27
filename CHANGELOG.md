@@ -7,6 +7,164 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.54.0] - 2026-01-27
+
+### 🧠 Complete Reasoning Technique Cross-Language Parity
+
+**Focus:** Achieve 100% reasoning technique parity across all 6 languages with LeastToMost, GraphOfThought, and PlanAndSolve implementations.
+
+**Key Highlights:**
+- 🎯 **3 Reasoning Techniques** - L2M, GoT, PaS now available in all 6 languages
+- ✅ **100% Cross-Language Parity** - Python, Go, TypeScript, Rust, C++, Zig
+- 📚 **6 Complete Techniques** - CoT, SC, ToT, L2M, GoT, PaS (all with full parity)
+- 💡 **Enhanced Documentation** - Clear guidance on OpenAI vs OpenAI-compatible adapters
+- 🚀 **Production Ready** - Comprehensive tests and examples across all languages
+
+### Added
+
+#### LeastToMost (L2M) - Cross-Language Implementation
+
+**Problem Decomposition & Sequential Solving:** Break complex problems into simpler subproblems, solve sequentially with context from previous solutions.
+
+**Implementations:**
+- **TypeScript** (`agenkit-ts/src/techniques/reasoning/least-to-most.ts`, ~280 LOC)
+  - Async decomposer and solver functions
+  - Subproblem chaining with context
+  - Full metadata tracking
+
+- **Go** (`agenkit-go/techniques/reasoning/least_to_most.go`, ~310 LOC)
+  - Context-aware decomposition
+  - Sequential solving with dependencies
+  - Error handling and metadata
+
+- **Rust** (`agenkit-rust/src/techniques/reasoning/least_to_most.rs`, ~320 LOC)
+  - Arc-wrapped function types
+  - Async/await with Result error handling
+  - Comprehensive documentation
+
+- **C++** (`agenkit-cpp/src/techniques/reasoning/least_to_most.cpp`, ~400 LOC)
+  - std::future async pattern
+  - Function pointer callbacks
+  - Result<T> error propagation
+
+- **Zig** (`agenkit-zig/src/techniques/reasoning/least_to_most.zig`, ~480 LOC)
+  - Vtable agent pattern
+  - ArrayList for dynamic subproblems
+  - 15 comprehensive unit tests
+
+**Reference:** "Least-to-Most Prompting Enables Complex Reasoning in Large Language Models" (Zhou et al., 2022)
+
+#### GraphOfThought (GoT) - Cross-Language Implementation
+
+**Graph-Based Multi-Hop Reasoning:** Represent reasoning as directed graph with nodes (thoughts) and edges (logical connections). More flexible than tree-based approaches.
+
+**Implementations:**
+- **TypeScript** (`agenkit-ts/src/techniques/reasoning/graph-of-thought.ts`, ~500 LOC)
+  - ReasoningGraph with DFS path finding
+  - 4 edge types: supports, depends_on, contradicts, refines
+  - Path-based and node-based aggregation
+  - 25 comprehensive tests
+
+- **Rust** (`agenkit-rust/src/techniques/reasoning/graph_of_thought.rs`, ~630 LOC)
+  - HashMap-based adjacency lists
+  - Cycle detection
+  - Async thought generation
+  - Full Result error handling
+
+- **C++** (`agenkit-cpp/src/techniques/reasoning/graph_of_thought.cpp`, ~460 LOC)
+  - std::async for parallel operations
+  - Vector-based graph storage
+  - DFS and cycle detection algorithms
+
+- **Zig** (`agenkit-zig/src/techniques/reasoning/graph_of_thought.zig`, ~490 LOC)
+  - Manual memory management with allocators
+  - ArrayList for dynamic graph storage
+  - 5 integrated tests
+
+**Reference:** "Graph of Thoughts: Solving Elaborate Problems with Large Language Models" (Besta et al., 2023)
+
+#### PlanAndSolve (PaS) - Cross-Language Implementation
+
+**Two-Phase Reasoning:** Explicitly separate planning (devise strategy) from solving (execute strategy). More structured than pure Chain-of-Thought.
+
+**Implementations:**
+- **Go** (`agenkit-go/techniques/reasoning/plan_and_solve.go`, 329 LOC)
+  - Context-aware planning and execution
+  - Optional plan validation with replanning
+  - Custom planner/solver function support
+
+- **TypeScript** (`agenkit-ts/src/techniques/reasoning/plan-and-solve.ts`, 230 LOC)
+  - Async plan creation and validation
+  - Sequential step execution
+  - Aliased exports to avoid naming conflicts
+
+- **Rust** (`agenkit-rust/src/techniques/reasoning/plan_and_solve.rs`, 310 LOC)
+  - Arc-wrapped planner/solver functions
+  - Full async/await with Result handling
+  - Comprehensive metadata tracking
+
+- **C++** (`agenkit-cpp/src/techniques/reasoning/plan_and_solve.cpp`, 430 LOC)
+  - std::future async pattern
+  - std::optional for custom functions
+  - Regex-based plan parsing
+
+- **Zig** (`agenkit-zig/src/techniques/reasoning/plan_and_solve.zig`, 450 LOC)
+  - PlanStep and Plan with proper memory management
+  - Vtable agent pattern
+  - 3 unit tests included
+
+**Reference:** "Plan-and-Solve Prompting: Improving Zero-Shot Chain-of-Thought Reasoning" (Wang et al., 2023)
+
+### Improved
+
+#### OpenAI-Compatible Adapter Documentation
+
+**Enhanced Clarity** - Added comprehensive documentation explaining when to use OpenAILLM vs OpenAICompatibleLLM:
+
+**OpenAILLM** (for official OpenAI API):
+- GPT-4, GPT-3.5, o1, o3, etc.
+- Premium features (vision, function calling, JSON mode)
+- Official support and SLAs
+- Pay-per-token pricing
+
+**OpenAICompatibleLLM** (for self-hosted services):
+- vLLM, llama.cpp, SGLang, TensorRT-LLM, Ollama, etc.
+- Open models (Llama, Mistral, Qwen, Yi)
+- Cost reduction (no API fees)
+- Data privacy (on-premises)
+- Low latency (no network round-trip)
+
+**Key Distinction:** Same OpenAI SDK, different base_url
+- OpenAILLM: `https://api.openai.com/v1` (hardcoded)
+- OpenAICompatibleLLM: YOUR `base_url` (configurable)
+
+**Updates:**
+- Module docstrings with side-by-side comparison
+- `__init__.py` comments explaining use cases
+- Clear decision criteria at every import point
+- List of 9 supported OpenAI-compatible services
+
+### Statistics
+
+**Reasoning Technique Parity:**
+- 6 techniques with 100% cross-language parity
+- ~12,000 LOC across all implementations
+- All 6 languages: Python, Go, TypeScript, Rust, C++, Zig
+
+**Technique Summary:**
+1. ✅ Chain-of-Thought (CoT) - Step-by-step reasoning
+2. ✅ Self-Consistency (SC) - Multiple paths with voting
+3. ✅ Tree-of-Thought (ToT) - Branching exploration with backtracking
+4. ✅ Least-to-Most (L2M) - Problem decomposition and sequential solving
+5. ✅ Graph-of-Thought (GoT) - Graph-based multi-hop reasoning
+6. ✅ Plan-and-Solve (PaS) - Explicit planning before execution
+
+**Total Lines of Code (This Release):**
+- LeastToMost: ~1,990 LOC (6 languages)
+- GraphOfThought: ~2,570 LOC (6 languages, excluding Go which was in v0.49.2)
+- PlanAndSolve: ~1,749 LOC (6 languages, excluding Python reference)
+- **Total New Code**: ~6,309 LOC
+
 ## [0.53.0] - 2026-01-27
 
 **Note**: This release includes both v0.52.0 Framework Integrations work and v0.53.0 Enhanced AG-UI Features.

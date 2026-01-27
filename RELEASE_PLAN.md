@@ -230,10 +230,15 @@ Redis Memory (persistent, distributed, cross-session)
 - Semantic deduplication
 - Adaptive context window management
 
-**Implementation:**
-- Python Redis memory (~400 LOC)
-- Cross-language parity (6 languages × ~400 LOC)
-- **Total:** ~2,400 LOC + tests + examples
+**Implementation Status (January 27, 2026):**
+- ✅ Python: redis_memory.py (269 LOC) - Released v0.49.0
+- ✅ Go: redis_memory.go (386 LOC) - Released v0.49.0
+- ✅ TypeScript: redisMemory.ts (373 LOC + tests + example) - Implemented
+- ✅ Rust: redis_memory.rs (580 LOC + example) - Implemented
+- ❌ C++: Not yet implemented (~500 LOC estimated)
+- ❌ Zig: Not yet implemented (~450 LOC estimated)
+- **Total implemented:** ~1,608 LOC across 4 languages
+- **Remaining:** ~950 LOC across 2 languages
 
 #### 3. Additional Transport Layers
 **Problem:** Need production-grade transports across all languages

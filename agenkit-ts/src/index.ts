@@ -359,6 +359,25 @@ export {
   NodeState,
   TreeStatistics,
 } from './techniques/reasoning/reasoning-tree';
+export {
+  LeastToMost,
+  LeastToMostConfig,
+  Subproblem,
+  DecomposerFunction,
+} from './techniques/reasoning/least-to-most';
+export {
+  GraphOfThought,
+  GraphOfThoughtConfig,
+  AggregatorType,
+} from './techniques/reasoning/graph-of-thought';
+export {
+  ReasoningGraph,
+  ThoughtNode,
+  LogicalEdge,
+  NodeType,
+  EdgeType,
+  GraphStatistics,
+} from './techniques/reasoning/reasoning-graph';
 
 // Observability
 export {

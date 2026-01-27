@@ -57,6 +57,7 @@
 pub mod entry;
 pub mod hierarchy;
 pub mod long_term;
+pub mod redis_memory;
 pub mod short_term;
 pub mod vector_memory;
 pub mod working;
@@ -64,6 +65,7 @@ pub mod working;
 pub use entry::MemoryEntry;
 pub use hierarchy::MemoryHierarchy;
 pub use long_term::LongTermMemory;
+pub use redis_memory::{Message as RedisMessage, RedisMemory};
 pub use short_term::ShortTermMemory;
 pub use vector_memory::{
     DistanceMetric, EmbeddingProvider, InMemoryVectorStore, MessageSearchResult,

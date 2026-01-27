@@ -190,6 +190,11 @@ add_executable(test_chain_of_thought techniques/reasoning/test_chain_of_thought.
 target_link_libraries(test_chain_of_thought agenkit gtest_main)
 add_test(NAME chain_of_thought_tests COMMAND test_chain_of_thought)
 
+# Technique tests - Least-to-Most
+add_executable(test_least_to_most techniques/reasoning/test_least_to_most.cpp)
+target_link_libraries(test_least_to_most agenkit gtest_main)
+add_test(NAME least_to_most_tests COMMAND test_least_to_most)
+
 # Technique tests - Tree-of-Thought
 add_executable(test_tree_of_thought techniques/reasoning/test_tree_of_thought.cpp)
 target_link_libraries(test_tree_of_thought agenkit gtest_main)

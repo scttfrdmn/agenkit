@@ -378,6 +378,14 @@ export {
   EdgeType,
   GraphStatistics,
 } from './techniques/reasoning/reasoning-graph';
+export {
+  PlanAndSolve,
+  PlanAndSolveConfig,
+  Plan as PaSPlan,
+  PlanStep as PaSPlanStep,
+  PlannerFunc as PaSPlannerFunc,
+  SolverFunc as PaSSolverFunc,
+} from './techniques/reasoning/plan-and-solve';
 
 // Observability
 export {

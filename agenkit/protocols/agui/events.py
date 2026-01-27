@@ -17,7 +17,7 @@ Event Categories:
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Literal, Optional, Union
 
@@ -68,7 +68,7 @@ class BaseEvent(BaseModel):
 
     type: EventType
     timestamp: Optional[int] = Field(
-        default_factory=lambda: int(datetime.utcnow().timestamp() * 1000),
+        default_factory=lambda: int(datetime.now(UTC).timestamp() * 1000),
         description="Unix timestamp in milliseconds",
     )
 

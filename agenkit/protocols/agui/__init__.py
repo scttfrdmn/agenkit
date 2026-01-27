@@ -71,6 +71,24 @@ from agenkit.protocols.agui.events import (
     ToolCallResultEvent,
     ToolCallStartEvent,
 )
+from agenkit.protocols.agui.multimodal import (
+    AudioBase64ContentPart,
+    AudioURLContentPart,
+    ContentPart,
+    FileBase64ContentPart,
+    FileURLContentPart,
+    ImageBase64ContentPart,
+    ImageURLContentPart,
+    MultimodalContent,
+    TextContentPart,
+    audio_file,
+    audio_url,
+    file,
+    file_url,
+    image_file,
+    image_url,
+    text,
+)
 from agenkit.protocols.agui.state import StateManager
 from agenkit.protocols.agui.tools import ProgressReporter, ToolCallTracker, ToolRegistry
 
@@ -81,6 +99,23 @@ __all__ = [
     "ProgressReporter",
     "ToolCallTracker",
     "ToolRegistry",
+    # Multimodal
+    "TextContentPart",
+    "ImageURLContentPart",
+    "ImageBase64ContentPart",
+    "FileURLContentPart",
+    "FileBase64ContentPart",
+    "AudioURLContentPart",
+    "AudioBase64ContentPart",
+    "ContentPart",
+    "MultimodalContent",
+    "text",
+    "image_url",
+    "image_file",
+    "file_url",
+    "file",
+    "audio_url",
+    "audio_file",
     # Event types
     "EventType",
     "BaseEvent",

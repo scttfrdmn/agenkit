@@ -1,0 +1,11 @@
+Sample Document for Testing
+
+This is a sample text document used in the multimodal examples.
+It demonstrates file attachment capabilities in AG-UI Standard.
+
+Key features:
+- Text files can be attached to messages
+- Base64 encoding for transmission
+- MIME type detection
+
+For more information, see the multimodal examples.

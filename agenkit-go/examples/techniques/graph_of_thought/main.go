@@ -111,7 +111,7 @@ Success depends on the interplay of these factors.`), nil
 }
 
 func main() {
-	fmt.Println("=== Graph-of-Thought Reasoning Example ===\n")
+	fmt.Println("=== Graph-of-Thought Reasoning Example ===")
 
 	ctx := context.Background()
 
@@ -121,7 +121,7 @@ func main() {
 	// ====================================================================
 	// Example 1: Basic Graph-of-Thought with Path-Based Aggregation
 	// ====================================================================
-	fmt.Println("1. Basic Graph-of-Thought (Path-Based Aggregation)\n")
+	fmt.Println("1. Basic Graph-of-Thought (Path-Based Aggregation)")
 
 	got := reasoning.NewGraphOfThought(
 		llm,
@@ -162,7 +162,7 @@ func main() {
 	// ====================================================================
 	// Example 2: Node-Based Aggregation
 	// ====================================================================
-	fmt.Println("2. Graph-of-Thought with Node-Based Aggregation\n")
+	fmt.Println("2. Graph-of-Thought with Node-Based Aggregation")
 
 	llm2 := NewMockGraphLLM()
 	got2 := reasoning.NewGraphOfThought(
@@ -186,7 +186,7 @@ func main() {
 	// ====================================================================
 	// Example 3: Allowing Cycles in Reasoning
 	// ====================================================================
-	fmt.Println("3. Graph-of-Thought with Cycles Allowed\n")
+	fmt.Println("3. Graph-of-Thought with Cycles Allowed")
 
 	llm3 := NewMockGraphLLM()
 	got3 := reasoning.NewGraphOfThought(
@@ -210,7 +210,7 @@ func main() {
 	// ====================================================================
 	// Example 4: Inspecting the Reasoning Graph
 	// ====================================================================
-	fmt.Println("4. Inspecting the Reasoning Graph Structure\n")
+	fmt.Println("4. Inspecting the Reasoning Graph Structure")
 
 	llm4 := NewMockGraphLLM()
 	got4 := reasoning.NewGraphOfThought(
@@ -259,7 +259,7 @@ func main() {
 	// ====================================================================
 	// Key Takeaways
 	// ====================================================================
-	fmt.Println("=== Key Takeaways ===\n")
+	fmt.Println("=== Key Takeaways ===")
 	fmt.Println("Graph-of-Thought (GoT) vs Tree-of-Thought (ToT):")
 	fmt.Println("  ✓ GoT allows arbitrary graph structures (not just trees)")
 	fmt.Println("  ✓ GoT supports multiple reasoning paths converging/diverging")

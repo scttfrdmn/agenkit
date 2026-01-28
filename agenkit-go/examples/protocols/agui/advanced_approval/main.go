@@ -349,7 +349,7 @@ func contextualApprovalFunc(ctx context.Context, request *patterns.ApprovalReque
 func exampleTieredApproval() {
 	fmt.Println("==============================================================")
 	fmt.Println("Example 1: Tiered Approval Workflow")
-	fmt.Println("==============================================================\n")
+	fmt.Println("==============================================================")
 
 	agent := NewFinancialAgent("FinancialAgent")
 
@@ -404,7 +404,7 @@ func exampleTieredApproval() {
 func exampleContextualApproval() {
 	fmt.Println("\n\n==============================================================")
 	fmt.Println("Example 2: Contextual Approval (Risk & Timing)")
-	fmt.Println("==============================================================\n")
+	fmt.Println("==============================================================")
 
 	agent := NewFinancialAgent("FinancialAgent")
 
@@ -444,7 +444,7 @@ func exampleContextualApproval() {
 func exampleAuditTrail() {
 	fmt.Println("\n\n==============================================================")
 	fmt.Println("Example 3: Approval Audit Trail")
-	fmt.Println("==============================================================\n")
+	fmt.Println("==============================================================")
 
 	if len(approvalLog) == 0 {
 		fmt.Println("No approvals logged yet")

@@ -4,15 +4,18 @@
 ///! Claude, Llama, Mistral, and Titan. Supports both completion and streaming modes.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
+use futures::stream::Stream;
 use serde_json::json;
+use std::pin::Pin;
 
 #[cfg(feature = "native")]
 use {
     aws_config::{BehaviorVersion, Region},
     aws_sdk_bedrockruntime::{
-        types::{ContentBlock, ConversationRole, ConverseOutput, Message as BedrockMessage},
+        types::{ContentBlock, ConversationRole, ConverseOutput, ConverseStreamOutput, Message as BedrockMessage},
         Client as BedrockClient,
     },
+    futures::stream::StreamExt,
 };
 
 /// Configuration for Bedrock adapter.
@@ -290,6 +293,155 @@ impl BedrockAdapter {
         );
 
         Ok(msg)
+    }
+
+    /// Stream completion from Bedrock Converse Stream API.
+    ///
+    /// Returns chunks as they arrive from the API.
+    /// Note: Currently collects full response before streaming for simplicity.
+    ///
+    /// # Arguments
+    /// * `bedrock_messages` - Bedrock-formatted messages
+    /// * `system` - Optional system content blocks
+    ///
+    /// # Returns
+    /// Vector of Message chunks containing incremental text
+    #[cfg(feature = "native")]
+    async fn stream_api_impl(
+        &self,
+        bedrock_messages: Vec<BedrockMessage>,
+        system: Option<Vec<aws_sdk_bedrockruntime::types::SystemContentBlock>>,
+    ) -> Result<Vec<Message>, AgentError> {
+        let mut request = self
+            .client
+            .converse_stream()
+            .model_id(&self.config.model)
+            .set_messages(Some(bedrock_messages));
+
+        // Add system messages if provided
+        if let Some(system_blocks) = system {
+            request = request.set_system(Some(system_blocks));
+        }
+
+        // Add inference configuration
+        let mut inference_config = aws_sdk_bedrockruntime::types::InferenceConfiguration::builder();
+
+        if let Some(temperature) = self.config.temperature {
+            inference_config = inference_config.temperature(temperature);
+        }
+
+        if let Some(max_tokens) = self.config.max_tokens {
+            inference_config = inference_config.max_tokens(max_tokens as i32);
+        }
+
+        if let Some(top_p) = self.config.top_p {
+            inference_config = inference_config.top_p(top_p);
+        }
+
+        if !self.config.stop_sequences.is_empty() {
+            inference_config =
+                inference_config.set_stop_sequences(Some(self.config.stop_sequences.clone()));
+        }
+
+        request = request.inference_config(inference_config.build());
+
+        let response = request
+            .send()
+            .await
+            .map_err(|e| AgentError::Transport(format!("Bedrock streaming error: {}", e)))?;
+
+        let mut chunks = Vec::new();
+        let mut stream = response.stream;
+
+        // Process streaming events
+        while let Some(event) = stream.next().await {
+            match event {
+                Ok(output) => {
+                    match output {
+                        ConverseStreamOutput::ContentBlockDelta(delta) => {
+                            // Extract text from delta
+                            if let Some(aws_sdk_bedrockruntime::types::ContentBlockDelta::Text(text)) = delta.delta {
+                                if !text.is_empty() {
+                                    let mut msg = Message::with_text("assistant", &text);
+                                    msg.metadata.insert("streaming".to_string(), json!(true));
+                                    msg.metadata.insert("model".to_string(), json!(self.config.model));
+                                    chunks.push(msg);
+                                }
+                            }
+                        }
+                        _ => {
+                            // Ignore other event types (metadata, start, stop, etc.)
+                        }
+                    }
+                }
+                Err(e) => {
+                    return Err(AgentError::Transport(format!("Streaming error: {}", e)));
+                }
+            }
+        }
+
+        Ok(chunks)
+    }
+
+    /// Stream completion chunks from Bedrock.
+    ///
+    /// Returns a stream of Message chunks as text arrives from the API.
+    /// Note: Currently collects full response before streaming for simplicity.
+    ///
+    /// # Arguments
+    /// * `messages` - Input messages to process
+    ///
+    /// # Returns
+    /// Stream of Message chunks containing incremental text
+    ///
+    /// # Example
+    /// ```no_run
+    /// use agenkit::adapters::bedrock::{BedrockAdapter, BedrockConfig};
+    /// use agenkit::core::Message;
+    /// use futures::stream::StreamExt;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let config = BedrockConfig {
+    ///         region: "us-east-1".to_string(),
+    ///         model: "anthropic.claude-3-5-sonnet-20241022-v2:0".to_string(),
+    ///         ..Default::default()
+    ///     };
+    ///
+    ///     let adapter = BedrockAdapter::new(config).await?;
+    ///     let msgs = vec![Message::with_text("user", "Count to 5")];
+    ///
+    ///     let mut stream = adapter.stream(msgs).await;
+    ///     while let Some(chunk) = stream.next().await {
+    ///         let chunk = chunk?;
+    ///         print!("{}", chunk.content_as_str().unwrap_or(""));
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ```
+    #[cfg(feature = "native")]
+    pub async fn stream(
+        &self,
+        messages: Vec<Message>,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        let (bedrock_messages, system) = self.messages_to_bedrock_format(&messages);
+
+        match self.stream_api_impl(bedrock_messages, system).await {
+            Ok(chunks) => Box::pin(futures::stream::iter(chunks.into_iter().map(Ok))),
+            Err(e) => Box::pin(futures::stream::once(async move { Err(e) })),
+        }
+    }
+
+    #[cfg(not(feature = "native"))]
+    pub async fn stream(
+        &self,
+        _messages: Vec<Message>,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        Box::pin(futures::stream::once(async {
+            Err(AgentError::Transport(
+                "Bedrock adapter requires 'native' feature for streaming".to_string(),
+            ))
+        }))
     }
 }
 

@@ -204,8 +204,8 @@ func (r *ReflectionAgent) Capabilities() []string {
 //   - initial_quality_score: Quality score of first output
 //   - total_improvement: Improvement from first to final
 func (r *ReflectionAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	// Reset history for new task
-	r.history = make([]ReflectionStep, 0)
+	// Reset history for new task (pre-allocate with capacity to avoid reallocations)
+	r.history = make([]ReflectionStep, 0, r.maxIterations)
 
 	// Initial generation
 	output, err := r.generator.Process(ctx, message)
@@ -239,14 +239,16 @@ func (r *ReflectionAgent) Process(ctx context.Context, message *agenkit.Message)
 
 		improvement := score - previousScore
 
-		// Record step
+		// Record step (skip timestamp if not verbose to avoid syscall)
 		step := ReflectionStep{
 			Iteration:    iteration,
 			Output:       output.Content,
 			Critique:     feedback,
 			QualityScore: score,
 			Improvement:  improvement,
-			Timestamp:    time.Now().UTC(),
+		}
+		if r.verbose {
+			step.Timestamp = time.Now().UTC()
 		}
 		r.history = append(r.history, step)
 
@@ -272,66 +274,45 @@ func (r *ReflectionAgent) Process(ctx context.Context, message *agenkit.Message)
 }
 
 // buildCritiquePrompt creates a prompt for the critic agent.
+// Optimized to use strings.Builder instead of fmt.Sprintf to reduce allocations.
 func (r *ReflectionAgent) buildCritiquePrompt(originalQuery, currentOutput string) *agenkit.Message {
-	var prompt string
+	var b strings.Builder
+	b.Grow(256 + len(originalQuery) + len(currentOutput)) // Pre-allocate reasonable size
 
 	if r.critiqueFormat == CritiqueStructured {
-		prompt = fmt.Sprintf(`Please evaluate the following output and provide structured feedback.
-
-Original Request:
-%s
-
-Current Output:
-%s
-
-Provide your evaluation in this JSON format:
-{
-  "score": <float between 0.0 and 1.0>,
-  "feedback": "<specific feedback on what could be improved>"
-}
-
-Focus on:
-- Correctness: Does it solve the problem?
-- Quality: Is it well-structured and clear?
-- Completeness: Does it address all aspects?
-- Potential Issues: Are there bugs or edge cases?`, originalQuery, currentOutput)
+		b.WriteString("Please evaluate the following output and provide structured feedback.\n\nOriginal Request:\n")
+		b.WriteString(originalQuery)
+		b.WriteString("\n\nCurrent Output:\n")
+		b.WriteString(currentOutput)
+		b.WriteString("\n\nProvide your evaluation in this JSON format:\n{\n  \"score\": <float between 0.0 and 1.0>,\n  \"feedback\": \"<specific feedback on what could be improved>\"\n}\n\nFocus on:\n- Correctness: Does it solve the problem?\n- Quality: Is it well-structured and clear?\n- Completeness: Does it address all aspects?\n- Potential Issues: Are there bugs or edge cases?")
 	} else {
-		prompt = fmt.Sprintf(`Please evaluate the following output on a scale of 0.0 to 1.0.
-
-Original Request:
-%s
-
-Current Output:
-%s
-
-Provide:
-1. A score (0.0-1.0) indicating quality
-2. Specific feedback on what could be improved
-
-Your evaluation:`, originalQuery, currentOutput)
+		b.WriteString("Please evaluate the following output on a scale of 0.0 to 1.0.\n\nOriginal Request:\n")
+		b.WriteString(originalQuery)
+		b.WriteString("\n\nCurrent Output:\n")
+		b.WriteString(currentOutput)
+		b.WriteString("\n\nProvide:\n1. A score (0.0-1.0) indicating quality\n2. Specific feedback on what could be improved\n\nYour evaluation:")
 	}
 
-	return agenkit.NewMessage("user", prompt)
+	return agenkit.NewMessage("user", b.String())
 }
 
 // buildRefinementPrompt creates a prompt for the generator to refine output.
+// Optimized to use strings.Builder instead of fmt.Sprintf to reduce allocations.
 func (r *ReflectionAgent) buildRefinementPrompt(originalQuery, currentOutput, critique string, iteration int) *agenkit.Message {
-	prompt := fmt.Sprintf(`Please refine your previous output based on the following critique.
+	var b strings.Builder
+	b.Grow(256 + len(originalQuery) + len(currentOutput) + len(critique))
 
-Original Request:
-%s
+	b.WriteString("Please refine your previous output based on the following critique.\n\nOriginal Request:\n")
+	b.WriteString(originalQuery)
+	b.WriteString("\n\nYour Previous Output (Iteration ")
+	b.WriteString(strconv.Itoa(iteration))
+	b.WriteString("):\n")
+	b.WriteString(currentOutput)
+	b.WriteString("\n\nCritique:\n")
+	b.WriteString(critique)
+	b.WriteString("\n\nPlease provide an improved version that addresses the critique while maintaining what was already good.\n\nRefined Output:")
 
-Your Previous Output (Iteration %d):
-%s
-
-Critique:
-%s
-
-Please provide an improved version that addresses the critique while maintaining what was already good.
-
-Refined Output:`, originalQuery, iteration, currentOutput, critique)
-
-	return agenkit.NewMessage("user", prompt)
+	return agenkit.NewMessage("user", b.String())
 }
 
 // parseCritique parses the critic's response into score and feedback.
@@ -432,10 +413,17 @@ func (r *ReflectionAgent) checkStopConditions(score, improvement float64) (StopR
 
 // formatResult formats the final result with metadata.
 func (r *ReflectionAgent) formatResult(output *agenkit.Message, stopReason StopReason) *agenkit.Message {
-	// Gather metadata
-	metadata := make(map[string]interface{})
-	for k, v := range output.Metadata {
-		metadata[k] = v
+	// Reuse or create metadata map (optimization: avoid copying if possible)
+	metadata := output.Metadata
+	if metadata == nil {
+		metadata = make(map[string]interface{}, 8)
+	} else {
+		// Make a copy if metadata exists to avoid modifying original
+		newMetadata := make(map[string]interface{}, len(metadata)+8)
+		for k, v := range metadata {
+			newMetadata[k] = v
+		}
+		metadata = newMetadata
 	}
 
 	metadata["reflection_iterations"] = len(r.history)
@@ -473,5 +461,5 @@ func (r *ReflectionAgent) GetHistory() []ReflectionStep {
 
 // ClearHistory clears the reflection history.
 func (r *ReflectionAgent) ClearHistory() {
-	r.history = make([]ReflectionStep, 0)
+	r.history = make([]ReflectionStep, 0, r.maxIterations)
 }

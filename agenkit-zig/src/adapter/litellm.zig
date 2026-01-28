@@ -181,11 +181,28 @@ pub const LiteLLMLLM = struct {
         messages: []const *Message,
         options: *const llm.CallOptions,
     ) !llm.StreamIterator {
-        _ = ptr;
-        _ = allocator;
-        _ = messages;
-        _ = options;
-        return error.StreamingNotSupported;
+        const self: *LiteLLMLLM = @ptrCast(@alignCast(ptr));
+        const request_body = try self.buildRequestBody(allocator, messages, options, true);
+        defer allocator.free(request_body);
+
+        const stream_impl = try allocator.create(LiteLLMStream);
+        errdefer allocator.destroy(stream_impl);
+        stream_impl.* = LiteLLMStream{
+            .allocator = allocator,
+            .self = self,
+            .chunks = std.ArrayList([]const u8).init(allocator),
+            .current_index = 0,
+        };
+
+        try stream_impl.makeStreamRequest(request_body);
+
+        return llm.StreamIterator{
+            .ptr = stream_impl,
+            .vtable = &.{
+                .next = litellmStreamNext,
+                .deinit = litellmStreamDeinit,
+            },
+        };
     }
 
     /// Model implementation

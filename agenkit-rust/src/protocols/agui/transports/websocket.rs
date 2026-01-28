@@ -439,7 +439,7 @@ mod tests {
         let heartbeat = handler.create_heartbeat_event();
 
         let json = heartbeat.to_json();
-        assert!(json.contains_key("interval_ms"));
+        assert!(json.get("interval_ms").is_some());
     }
 
     #[tokio::test]
@@ -479,7 +479,7 @@ mod tests {
         // Should be a pong response
         let parsed: serde_json::Value = serde_json::from_str(&responses[0]).unwrap();
         assert_eq!(parsed.get("type").and_then(|v| v.as_str()), Some("pong"));
-        assert!(parsed.contains_key("timestamp"));
+        assert!(parsed.get("timestamp").is_some());
     }
 
     #[tokio::test]

@@ -84,6 +84,7 @@ pub struct BackendStats {
 
 /// Load balancer distributes requests across multiple agents.
 pub struct LoadBalancer {
+    name: String,
     backends: Arc<RwLock<Vec<AgentBackend>>>,
     config: LoadBalancerConfig,
     metrics: Arc<RwLock<LoadBalancerMetrics>>,
@@ -130,7 +131,9 @@ impl LoadBalancer {
             })
             .collect();
 
+        let backend_count = backends.len();
         Ok(Self {
+            name: format!("load-balancer-{}-backends", backend_count),
             backends: Arc::new(RwLock::new(backends)),
             config,
             metrics: Arc::new(RwLock::new(LoadBalancerMetrics::default())),
@@ -144,7 +147,7 @@ impl LoadBalancer {
         backends
             .iter()
             .map(|backend| BackendStats {
-                name: backend.agent.name(),
+                name: backend.agent.name().to_string(),
                 healthy: backend.healthy,
                 weight: backend.weight,
                 active_connections: backend.active_connections,
@@ -185,11 +188,7 @@ impl LoadBalancer {
 
         for backend in backends_write.iter_mut() {
             // Simple health check: test if agent responds
-            let test_msg = Message {
-                role: "system".to_string(),
-                content: "health_check".to_string(),
-                metadata: None,
-            };
+            let test_msg = Message::with_text("system", "health_check");
 
             let result = tokio::time::timeout(timeout, backend.agent.process(test_msg)).await;
 
@@ -326,8 +325,8 @@ impl LoadBalancer {
 
 #[async_trait]
 impl Agent for LoadBalancer {
-    fn name(&self) -> String {
-        format!("LoadBalancer({} backends)", self.backends.try_read().map(|b| b.len()).unwrap_or(0))
+    fn name(&self) -> &str {
+        &self.name
     }
 
     fn capabilities(&self) -> Vec<String> {
@@ -350,7 +349,7 @@ impl Agent for LoadBalancer {
             // Get backend name for tracking
             let backend_name = {
                 let backends = self.backends.read().await;
-                backends[backend_index].agent.name()
+                backends[backend_index].agent.name().to_string()
             };
 
             // Avoid retrying same backend

@@ -343,7 +343,7 @@ impl EnhancedRetryDecorator {
 
 #[async_trait]
 impl Agent for EnhancedRetryDecorator {
-    fn name(&self) -> String {
+    fn name(&self) -> &str {
         self.agent.name()
     }
 

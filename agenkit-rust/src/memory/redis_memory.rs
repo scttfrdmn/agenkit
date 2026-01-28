@@ -200,13 +200,13 @@ impl RedisMemory {
 
         // Store in sorted set (score = timestamp)
         let key = self.session_key(session_id);
-        conn.zadd(&key, value, timestamp)
+        conn.zadd::<_, _, _, ()>(&key, value, timestamp)
             .await
             .context("Failed to store message")?;
 
         // Set TTL if configured
         if self.ttl > 0 {
-            conn.expire(&key, self.ttl as usize)
+            conn.expire::<_, ()>(&key, self.ttl as i64)
                 .await
                 .context("Failed to set TTL")?;
         }
@@ -385,7 +385,7 @@ impl RedisMemory {
     pub async fn clear(&self, session_id: &str) -> Result<()> {
         let mut conn = self.get_connection().await?;
         let key = self.session_key(session_id);
-        conn.del(&key)
+        conn.del::<_, ()>(&key)
             .await
             .context("Failed to clear session")?;
         Ok(())

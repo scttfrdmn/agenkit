@@ -244,18 +244,14 @@ impl HealthChecker {
         }
 
         // Test with a simple request
-        let test_msg = Message {
-            role: "system".to_string(),
-            content: "readiness_check".to_string(),
-            metadata: None,
-        };
+        let test_msg = Message::with_text("system", "readiness_check");
 
         let result =
             time::timeout(self.config.readiness_timeout, self.agent.process(test_msg)).await;
         let duration = start_time.elapsed().as_secs_f64() * 1000.0;
 
         match result {
-            Ok(Ok(response)) if !response.content.is_empty() => {
+            Ok(Ok(response)) if response.content_as_str().map_or(false, |s| !s.is_empty()) => {
                 // Success
                 self.track_check_success(probe_type, duration).await;
 

@@ -295,11 +295,14 @@ impl LiteLLMAdapter {
             "stream": true,
         });
 
-        if self.config.temperature != 1.0 {
-            request_body["temperature"] = json!(self.config.temperature);
+        if let Some(temperature) = self.config.temperature {
+            request_body["temperature"] = json!(temperature);
         }
         if let Some(max_tokens) = self.config.max_tokens {
             request_body["max_tokens"] = json!(max_tokens);
+        }
+        if let Some(top_p) = self.config.top_p {
+            request_body["top_p"] = json!(top_p);
         }
 
         let mut request = client
@@ -308,8 +311,8 @@ impl LiteLLMAdapter {
             .json(&request_body);
 
         // Add API key if provided
-        if !self.config.api_key.is_empty() {
-            request = request.header("Authorization", format!("Bearer {}", self.config.api_key));
+        if let Some(api_key) = &self.config.api_key {
+            request = request.header("Authorization", format!("Bearer {}", api_key));
         }
 
         let response = request
@@ -320,7 +323,7 @@ impl LiteLLMAdapter {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            return Err(AgentError::Http(format!(
+            return Err(AgentError::Transport(format!(
                 "LiteLLM API error ({}): {}",
                 status, body
             )));
@@ -346,7 +349,7 @@ impl LiteLLMAdapter {
             }
 
             let chunk_json: serde_json::Value = serde_json::from_str(json_str)
-                .map_err(|e| AgentError::Serialization(e.to_string()))?;
+                ?;
 
             // Extract text from choices[0].delta.content
             if let Some(choices) = chunk_json["choices"].as_array() {
@@ -355,7 +358,7 @@ impl LiteLLMAdapter {
                         if let Some(content) = delta.get("content") {
                             if let Some(text) = content.as_str() {
                                 let mut msg = Message::with_text("assistant", text);
-                                msg.with_metadata("streaming", json!(true));
+                                msg.metadata.insert("streaming".to_string(), json!(true));
                                 chunks.push(msg);
                             }
                         }

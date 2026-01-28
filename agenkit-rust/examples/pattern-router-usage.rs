@@ -34,7 +34,7 @@ impl Agent for SimpleAgent {
         vec!["demo".to_string()]
     }
 
-    async fn process(&self, message: Message) -> Result<Message, Box<dyn Error>> {
+    async fn process(&self, message: Message) -> Result<Message, AgentError> {
         println!("   🤖 {} processing...", self.name);
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 

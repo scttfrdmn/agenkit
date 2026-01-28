@@ -385,9 +385,9 @@ mod tests {
         let adapter = AGUIAdapter::new(agent, AGUIAdapterConfig::default());
         let message = Message::with_text("user", "test");
 
-        let mut stream = AGUISSEStream::new(adapter, message);
+        let mut stream = AGUISSEStream::new(adapter, message).await;
 
-        let mut chunks = Vec::new();
+        let mut chunks: Vec<String> = Vec::new();
         while let Some(chunk) = stream.next().await {
             chunks.push(chunk);
         }

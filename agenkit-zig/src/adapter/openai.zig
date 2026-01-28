@@ -24,6 +24,124 @@ const Message = @import("../message.zig").Message;
 const Role = @import("../message.zig").Role;
 const Allocator = std.mem.Allocator;
 
+/// OpenAI streaming iterator implementation
+const OpenAIStream = struct {
+    allocator: Allocator,
+    self: *OpenAILLM,
+    chunks: std.ArrayList([]const u8),
+    current_index: usize,
+
+    fn makeStreamRequest(self: *OpenAIStream, body: []const u8) !void {
+        var client = std.http.Client{ .allocator = self.allocator };
+        defer client.deinit();
+
+        const uri_str = try std.fmt.allocPrint(
+            self.allocator,
+            "{s}/chat/completions",
+            .{self.self.base_url},
+        );
+        defer self.allocator.free(uri_str);
+
+        const auth_value = try std.fmt.allocPrint(
+            self.allocator,
+            "Bearer {s}",
+            .{self.self.api_key},
+        );
+        defer self.allocator.free(auth_value);
+
+        const headers = [_]std.http.Header{
+            .{ .name = "Content-Type", .value = "application/json" },
+            .{ .name = "Authorization", .value = auth_value },
+        };
+
+        var response_buffer = std.ArrayList(u8).init(self.allocator);
+        defer response_buffer.deinit();
+
+        const result = try client.fetch(.{
+            .location = .{ .url = uri_str },
+            .method = .POST,
+            .payload = body,
+            .extra_headers = &headers,
+            .response_storage = .{ .dynamic = &response_buffer },
+        });
+
+        if (result.status != .ok) {
+            return error.ServerError;
+        }
+
+        try self.parseSSEStream(response_buffer.items);
+    }
+
+    fn parseSSEStream(self: *OpenAIStream, data: []const u8) !void {
+        var lines = std.mem.split(u8, data, "\n");
+
+        while (lines.next()) |line| {
+            if (line.len == 0) continue;
+
+            if (std.mem.startsWith(u8, line, "data: ")) {
+                const json_str = line[6..];
+
+                if (std.mem.eql(u8, json_str, "[DONE]")) {
+                    continue;
+                }
+
+                const parsed = std.json.parseFromSlice(
+                    std.json.Value,
+                    self.allocator,
+                    json_str,
+                    .{},
+                ) catch continue;
+                defer parsed.deinit();
+
+                const event = parsed.value.object;
+
+                // Extract text from choices[0].delta.content
+                if (event.get("choices")) |choices| {
+                    if (choices.array.items.len > 0) {
+                        const choice = choices.array.items[0].object;
+                        if (choice.get("delta")) |delta| {
+                            if (delta.object.get("content")) |content| {
+                                const chunk = try self.allocator.dupe(u8, content.string);
+                                try self.chunks.append(chunk);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn deinit(self: *OpenAIStream) void {
+        for (self.chunks.items) |chunk| {
+            self.allocator.free(chunk);
+        }
+        self.chunks.deinit();
+        self.allocator.destroy(self);
+    }
+};
+
+fn openaiStreamNext(ptr: *anyopaque, allocator: Allocator) !?*Message {
+    const self: *OpenAIStream = @ptrCast(@alignCast(ptr));
+
+    if (self.current_index >= self.chunks.items.len) {
+        return null;
+    }
+
+    const text = self.chunks.items[self.current_index];
+    self.current_index += 1;
+
+    const msg = try allocator.create(Message);
+    msg.* = try Message.withText(allocator, .assistant, text);
+    try msg.setMetadata("streaming", std.json.Value{ .bool = true });
+
+    return msg;
+}
+
+fn openaiStreamDeinit(ptr: *anyopaque) void {
+    const self: *OpenAIStream = @ptrCast(@alignCast(ptr));
+    self.deinit();
+}
+
 /// OpenAI LLM adapter
 pub const OpenAILLM = struct {
     allocator: Allocator,
@@ -122,13 +240,33 @@ pub const OpenAILLM = struct {
         messages: []const *Message,
         options: *const llm.CallOptions,
     ) !llm.StreamIterator {
-        _ = ptr;
-        _ = allocator;
-        _ = messages;
-        _ = options;
-        // Streaming implementation would go here
-        // For now, return error as streaming is complex
-        return error.StreamingNotSupported;
+        const self: *OpenAILLM = @ptrCast(@alignCast(ptr));
+
+        // Build request body with stream=true
+        const request_body = try self.buildRequestBody(allocator, messages, options, true);
+        defer allocator.free(request_body);
+
+        // Create stream iterator
+        const stream_impl = try allocator.create(OpenAIStream);
+        errdefer allocator.destroy(stream_impl);
+
+        stream_impl.* = OpenAIStream{
+            .allocator = allocator,
+            .self = self,
+            .chunks = std.ArrayList([]const u8).init(allocator),
+            .current_index = 0,
+        };
+
+        // Make streaming request
+        try stream_impl.makeStreamRequest(request_body);
+
+        return llm.StreamIterator{
+            .ptr = stream_impl,
+            .vtable = &.{
+                .next = openaiStreamNext,
+                .deinit = openaiStreamDeinit,
+            },
+        };
     }
 
     /// Model implementation

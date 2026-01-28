@@ -4,8 +4,10 @@
 ///! Supports both completion and streaming modes via the Gemini REST API.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
+use futures::stream::Stream;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::pin::Pin;
 
 #[cfg(feature = "native")]
 use reqwest::Client;
@@ -302,6 +304,166 @@ impl GeminiAdapter {
         }
 
         Ok(msg)
+    }
+
+    /// Stream completion from Gemini API.
+    ///
+    /// Returns chunks as they arrive from the API.
+    /// Note: Currently collects full response before streaming for simplicity.
+    ///
+    /// # Arguments
+    /// * `contents` - Gemini-formatted contents
+    ///
+    /// # Returns
+    /// Vector of Message chunks containing incremental text
+    #[cfg(feature = "native")]
+    async fn stream_api_impl(
+        &self,
+        contents: Vec<GeminiContent>,
+    ) -> Result<Vec<Message>, AgentError> {
+        let generation_config = GeminiGenerationConfig {
+            temperature: self.config.temperature,
+            max_output_tokens: self.config.max_tokens,
+            top_p: self.config.top_p,
+            top_k: self.config.top_k,
+            stop_sequences: if self.config.stop_sequences.is_empty() {
+                None
+            } else {
+                Some(self.config.stop_sequences.clone())
+            },
+        };
+
+        let request = GeminiRequest {
+            contents,
+            generation_config: Some(generation_config),
+        };
+
+        // Use streamGenerateContent endpoint for streaming
+        let url = format!(
+            "https://generativelanguage.googleapis.com/v1beta/models/{}:streamGenerateContent?key={}",
+            self.config.model, self.config.api_key
+        );
+
+        let response = self
+            .client
+            .post(&url)
+            .header("Content-Type", "application/json")
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| AgentError::Http(e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "unknown error".to_string());
+            return Err(AgentError::Transport(format!(
+                "Gemini API error ({}): {}",
+                status, error_text
+            )));
+        }
+
+        // Parse newline-delimited JSON chunks
+        let bytes = response.bytes().await.map_err(|e| AgentError::Http(e))?;
+        let text = String::from_utf8_lossy(&bytes);
+
+        let mut chunks = Vec::new();
+
+        // Each line is a separate JSON object
+        for line in text.lines() {
+            let line = line.trim();
+            if line.is_empty() {
+                continue;
+            }
+
+            // Parse JSON chunk
+            match serde_json::from_str::<GeminiResponse>(line) {
+                Ok(chunk_response) => {
+                    // Extract text from candidates
+                    if let Some(candidates) = chunk_response.candidates {
+                        for candidate in candidates {
+                            for part in candidate.content.parts {
+                                if !part.text.is_empty() {
+                                    let mut msg = Message::with_text("assistant", &part.text);
+                                    msg.metadata.insert("streaming".to_string(), json!(true));
+                                    msg.metadata
+                                        .insert("model".to_string(), json!(self.config.model));
+                                    chunks.push(msg);
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(_) => {
+                    // Skip malformed chunks
+                    continue;
+                }
+            }
+        }
+
+        Ok(chunks)
+    }
+
+    /// Stream completion chunks from Gemini.
+    ///
+    /// Returns a stream of Message chunks as text arrives from the API.
+    /// Note: Currently collects full response before streaming for simplicity.
+    ///
+    /// # Arguments
+    /// * `messages` - Input messages to process
+    ///
+    /// # Returns
+    /// Stream of Message chunks containing incremental text
+    ///
+    /// # Example
+    /// ```no_run
+    /// use agenkit::adapters::gemini::{GeminiAdapter, GeminiConfig};
+    /// use agenkit::core::Message;
+    /// use futures::stream::StreamExt;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let config = GeminiConfig {
+    ///         api_key: std::env::var("GEMINI_API_KEY")?,
+    ///         ..Default::default()
+    ///     };
+    ///
+    ///     let adapter = GeminiAdapter::new(config)?;
+    ///     let msgs = vec![Message::with_text("user", "Count to 5")];
+    ///
+    ///     let mut stream = adapter.stream(msgs).await;
+    ///     while let Some(chunk) = stream.next().await {
+    ///         let chunk = chunk?;
+    ///         print!("{}", chunk.content_as_str().unwrap_or(""));
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ```
+    #[cfg(feature = "native")]
+    pub async fn stream(
+        &self,
+        messages: Vec<Message>,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        let contents = self.messages_to_gemini_contents(&messages);
+
+        match self.stream_api_impl(contents).await {
+            Ok(chunks) => Box::pin(futures::stream::iter(chunks.into_iter().map(Ok))),
+            Err(e) => Box::pin(futures::stream::once(async move { Err(e) })),
+        }
+    }
+
+    #[cfg(not(feature = "native"))]
+    pub async fn stream(
+        &self,
+        _messages: Vec<Message>,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        Box::pin(futures::stream::once(async {
+            Err(AgentError::Transport(
+                "Gemini adapter requires 'native' feature for streaming".to_string(),
+            ))
+        }))
     }
 }
 

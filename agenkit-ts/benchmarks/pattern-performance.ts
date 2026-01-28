@@ -11,7 +11,7 @@
  * incorrectly measured only mock echo latency, not pattern overhead.
  */
 
-import type { Agent, Message, Tool } from '../src/index';
+import type { Agent, Message, Tool, ToolResult } from '../src/index';
 import {
   ReflectionAgent,
   ReActAgent,
@@ -44,9 +44,10 @@ class MockAgent implements Agent {
   }
 
   async process(message: Message): Promise<Message> {
+    const content = typeof message.content === 'string' ? message.content : String(message.content);
     return {
       role: 'assistant',
-      content: `Processed: ${message.content.toString().substring(0, 20)}...`,
+      content: `Processed: ${content.substring(0, 20)}...`,
       metadata: { mock: true },
     };
   }
@@ -64,8 +65,8 @@ class MockTool implements Tool {
     this.description = 'A test tool';
   }
 
-  async execute(..._args: unknown[]): Promise<Record<string, unknown>> {
-    return { result: 'tool executed' };
+  async execute(_params: Record<string, unknown>): Promise<ToolResult> {
+    return { output: 'tool executed', success: true };
   }
 }
 
@@ -91,11 +92,15 @@ class MockClassifier {
  * Mock planner for Supervisor pattern.
  */
 class MockPlanner {
-  async plan(_message: Message): Promise<Array<{ agent: string; task: string }>> {
+  async plan(_message: Message): Promise<Array<{ type: string; message: Message }>> {
     return [
-      { agent: 'agent1', task: 'subtask1' },
-      { agent: 'agent2', task: 'subtask2' },
+      { type: 'agent1', message: { role: 'user', content: 'subtask1', metadata: {} } },
+      { type: 'agent2', message: { role: 'user', content: 'subtask2', metadata: {} } },
     ];
+  }
+
+  async synthesize(_original: Message, _results: Message[]): Promise<Message> {
+    return { role: 'assistant', content: 'Synthesized result', metadata: {} };
   }
 }
 
@@ -221,11 +226,11 @@ async function benchmarkReasoningWithTools(
   const agent = new MockAgent();
   const tool = new MockTool();
 
-  const reasoningAgent = new ReasoningWithToolsAgent({
+  const reasoningAgent = new ReasoningWithToolsAgent(
     agent,
-    tools: [tool],
-    maxReasoningSteps: 5,
-  });
+    [tool],
+    { maxReasoningSteps: 5 }
+  );
 
   const msg: Message = { role: 'user', content: 'test input', metadata: {} };
 
@@ -290,7 +295,7 @@ async function benchmarkConversational(iterations: number = 1000): Promise<Bench
 async function benchmarkSequential(iterations: number = 1000): Promise<BenchmarkResult> {
   const agents = [new MockAgent('agent0'), new MockAgent('agent1'), new MockAgent('agent2')];
 
-  const seqAgent = new SequentialAgent({ agents });
+  const seqAgent = new SequentialAgent(agents);
 
   const msg: Message = { role: 'user', content: 'test input', metadata: {} };
 
@@ -321,7 +326,10 @@ async function benchmarkSequential(iterations: number = 1000): Promise<Benchmark
 async function benchmarkParallel(iterations: number = 1000): Promise<BenchmarkResult> {
   const agents = [new MockAgent('agent0'), new MockAgent('agent1'), new MockAgent('agent2')];
 
-  const parAgent = new ParallelAgent({ agents });
+  const parAgent = new ParallelAgent(agents, (results: Message[]) => {
+    const content = results.map((r) => String(r.content)).join(' ');
+    return { role: 'assistant', content, metadata: {} };
+  });
 
   const msg: Message = { role: 'user', content: 'test input', metadata: {} };
 
@@ -353,7 +361,10 @@ async function benchmarkRouter(iterations: number = 1000): Promise<BenchmarkResu
   const agents = { agent1: new MockAgent('agent1'), agent2: new MockAgent('agent2') };
   const classifier = new MockClassifier();
 
-  const routerAgent = new RouterAgent({ agents, classifier: classifier as any });
+  const routerAgent = new RouterAgent({
+    agents,
+    classifier: classifier as any,
+  });
 
   const msg: Message = { role: 'user', content: 'test input', metadata: {} };
 
@@ -384,7 +395,7 @@ async function benchmarkRouter(iterations: number = 1000): Promise<BenchmarkResu
 async function benchmarkFallback(iterations: number = 1000): Promise<BenchmarkResult> {
   const agents = [new MockAgent('agent0'), new MockAgent('agent1'), new MockAgent('agent2')];
 
-  const fallbackAgent = new FallbackAgent({ agents });
+  const fallbackAgent = new FallbackAgent(agents);
 
   const msg: Message = { role: 'user', content: 'test input', metadata: {} };
 
@@ -416,7 +427,7 @@ async function benchmarkSupervisor(iterations: number = 1000): Promise<Benchmark
   const agents = { agent1: new MockAgent('agent1'), agent2: new MockAgent('agent2') };
   const planner = new MockPlanner();
 
-  const supervisorAgent = new SupervisorAgent({ agents, planner: planner as any });
+  const supervisorAgent = new SupervisorAgent(planner as any, agents);
 
   const msg: Message = { role: 'user', content: 'test input', metadata: {} };
 
@@ -452,7 +463,7 @@ async function main(): Promise<void> {
   console.log();
 
   // Pattern benchmarks in order
-  const benchmarks: [string, () => Promise<BenchmarkResult>][] = [
+  const benchmarks: [string, (iterations?: number) => Promise<BenchmarkResult>][] = [
     ['reflection', benchmarkReflection],
     ['react', benchmarkReAct],
     ['agents_as_tools', benchmarkAgentsAsTools],

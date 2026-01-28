@@ -7,6 +7,7 @@
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
+#include <sstream>
 
 namespace agenkit {
 namespace adapters {
@@ -224,6 +225,127 @@ core::Message OllamaAgent::json_to_message(const json& response) {
     }
 
     return msg;
+}
+
+core::Result<void, core::AgentError>
+OllamaAgent::stream(core::Message message, std::function<bool(const std::string&)> callback) {
+    try {
+        // Convert message to Ollama API format
+        json messages = json::array();
+        messages.push_back(message_to_json(message));
+
+        // Parse host URL
+        httplib::Client client(config_.host);
+        client.set_read_timeout(config_.timeout_seconds, 0);
+
+        // Build request body with stream=true
+        json request_body = {
+            {"model", config_.model},
+            {"messages", messages},
+            {"stream", true}
+        };
+
+        // Add optional parameters
+        if (config_.temperature >= 0.0) {
+            request_body["options"] = {
+                {"temperature", config_.temperature}
+            };
+        }
+
+        if (!config_.system.empty()) {
+            request_body["system"] = config_.system;
+        }
+
+        // Set headers
+        httplib::Headers headers = {
+            {"Content-Type", "application/json"}
+        };
+
+        // Make streaming request
+        std::string buffer;
+        auto response = client.Post(
+            "/api/chat",
+            headers,
+            request_body.dump(),
+            "application/json",
+            [&](const char* data, size_t data_length) {
+                // Append to buffer
+                buffer.append(data, data_length);
+
+                // Process complete lines (Ollama uses newline-delimited JSON)
+                size_t pos;
+                while ((pos = buffer.find('\n')) != std::string::npos) {
+                    std::string line = buffer.substr(0, pos);
+                    buffer = buffer.substr(pos + 1);
+
+                    // Skip empty lines
+                    if (line.empty()) {
+                        continue;
+                    }
+
+                    try {
+                        json chunk_json = json::parse(line);
+
+                        // Check if done
+                        if (chunk_json.contains("done") &&
+                            chunk_json["done"].is_boolean() &&
+                            chunk_json["done"].get<bool>()) {
+                            // Final chunk, no more content
+                            continue;
+                        }
+
+                        // Extract text from message.content
+                        if (chunk_json.contains("message") &&
+                            chunk_json["message"].is_object()) {
+                            const auto& msg = chunk_json["message"];
+                            if (msg.contains("content") && msg["content"].is_string()) {
+                                std::string text = msg["content"].get<std::string>();
+
+                                // Invoke callback with text chunk
+                                if (!text.empty() && !callback(text)) {
+                                    return false;  // Stop streaming
+                                }
+                            }
+                        }
+                    } catch (const json::exception&) {
+                        // Skip malformed JSON
+                    }
+                }
+                return true;  // Continue receiving
+            }
+        );
+
+        if (!response) {
+            return core::Result<void, core::AgentError>::err(
+                core::AgentError(
+                    core::AgentErrorType::Transport,
+                    "Failed to connect to Ollama for streaming at " + config_.host
+                )
+            );
+        }
+
+        if (response->status != 200) {
+            std::string error_msg = "Ollama streaming error (" +
+                                   std::to_string(response->status) + "): " +
+                                   response->body;
+            return core::Result<void, core::AgentError>::err(
+                core::AgentError(
+                    core::AgentErrorType::Http,
+                    error_msg
+                )
+            );
+        }
+
+        return core::Result<void, core::AgentError>::ok();
+
+    } catch (const std::exception& e) {
+        return core::Result<void, core::AgentError>::err(
+            core::AgentError(
+                core::AgentErrorType::Internal,
+                std::string("Streaming error: ") + e.what()
+            )
+        );
+    }
 }
 
 } // namespace adapters

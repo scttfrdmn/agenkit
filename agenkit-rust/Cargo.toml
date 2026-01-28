@@ -291,6 +291,10 @@ path = "examples/anthropic_streaming.rs"
 name = "gemini_streaming"
 path = "examples/gemini_streaming.rs"
 
+[[example]]
+name = "bedrock_streaming"
+path = "examples/bedrock_streaming.rs"
+
 [[bench]]
 name = "pattern_benchmarks"
 path = "benches/pattern_benchmarks.rs"

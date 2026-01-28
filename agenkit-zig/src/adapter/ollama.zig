@@ -23,6 +23,77 @@ const Message = @import("../message.zig").Message;
 const Role = @import("../message.zig").Role;
 const Allocator = std.mem.Allocator;
 
+/// Ollama streaming iterator
+const OllamaStream = struct {
+    allocator: Allocator,
+    self: *OllamaLLM,
+    chunks: std.ArrayList([]const u8),
+    current_index: usize,
+
+    fn makeStreamRequest(self: *OllamaStream, body: []const u8) !void {
+        var client = std.http.Client{ .allocator = self.allocator };
+        defer client.deinit();
+
+        const uri_str = try std.fmt.allocPrint(self.allocator, "{s}/api/chat", .{self.self.base_url});
+        defer self.allocator.free(uri_str);
+
+        const headers = [_]std.http.Header{.{ .name = "Content-Type", .value = "application/json" }};
+
+        var response_buffer = std.ArrayList(u8).init(self.allocator);
+        defer response_buffer.deinit();
+
+        const result = try client.fetch(.{
+            .location = .{ .url = uri_str },
+            .method = .POST,
+            .payload = body,
+            .extra_headers = &headers,
+            .response_storage = .{ .dynamic = &response_buffer },
+        });
+
+        if (result.status != .ok) return error.ServerError;
+
+        try self.parseNewlineJSON(response_buffer.items);
+    }
+
+    fn parseNewlineJSON(self: *OllamaStream, data: []const u8) !void {
+        var lines = std.mem.split(u8, data, "\n");
+        while (lines.next()) |line| {
+            if (line.len == 0) continue;
+            const parsed = std.json.parseFromSlice(std.json.Value, self.allocator, line, .{}) catch continue;
+            defer parsed.deinit();
+
+            if (parsed.value.object.get("message")) |msg| {
+                if (msg.object.get("content")) |content| {
+                    const chunk = try self.allocator.dupe(u8, content.string);
+                    try self.chunks.append(chunk);
+                }
+            }
+        }
+    }
+
+    fn deinit(self: *OllamaStream) void {
+        for (self.chunks.items) |chunk| self.allocator.free(chunk);
+        self.chunks.deinit();
+        self.allocator.destroy(self);
+    }
+};
+
+fn ollamaStreamNext(ptr: *anyopaque, allocator: Allocator) !?*Message {
+    const self: *OllamaStream = @ptrCast(@alignCast(ptr));
+    if (self.current_index >= self.chunks.items.len) return null;
+    const text = self.chunks.items[self.current_index];
+    self.current_index += 1;
+    const msg = try allocator.create(Message);
+    msg.* = try Message.withText(allocator, .assistant, text);
+    try msg.setMetadata("streaming", std.json.Value{ .bool = true });
+    return msg;
+}
+
+fn ollamaStreamDeinit(ptr: *anyopaque) void {
+    const self: *OllamaStream = @ptrCast(@alignCast(ptr));
+    self.deinit();
+}
+
 /// Ollama LLM adapter
 pub const OllamaLLM = struct {
     allocator: Allocator,
@@ -113,11 +184,28 @@ pub const OllamaLLM = struct {
         messages: []const *Message,
         options: *const llm.CallOptions,
     ) !llm.StreamIterator {
-        _ = ptr;
-        _ = allocator;
-        _ = messages;
-        _ = options;
-        return error.StreamingNotSupported;
+        const self: *OllamaLLM = @ptrCast(@alignCast(ptr));
+        const request_body = try self.buildRequestBody(allocator, messages, options, true);
+        defer allocator.free(request_body);
+
+        const stream_impl = try allocator.create(OllamaStream);
+        errdefer allocator.destroy(stream_impl);
+        stream_impl.* = OllamaStream{
+            .allocator = allocator,
+            .self = self,
+            .chunks = std.ArrayList([]const u8).init(allocator),
+            .current_index = 0,
+        };
+
+        try stream_impl.makeStreamRequest(request_body);
+
+        return llm.StreamIterator{
+            .ptr = stream_impl,
+            .vtable = &.{
+                .next = ollamaStreamNext,
+                .deinit = ollamaStreamDeinit,
+            },
+        };
     }
 
     /// Model implementation

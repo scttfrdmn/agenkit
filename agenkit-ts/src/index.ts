@@ -450,3 +450,29 @@ export { Memory, InMemoryMemory } from './memory';
 
 // Budget Management
 export { ModelPricing, Cost, costToDict, Storage, InMemoryStorage, CostTracker } from './budget';
+
+// Infrastructure
+export {
+  LoadBalancer,
+  LoadBalancingStrategy,
+  LoadBalancerConfig,
+  LoadBalancerMetrics,
+  AgentBackend,
+  BackendStats,
+  defaultLoadBalancerConfig,
+  HealthChecker,
+  HealthStatus,
+  ProbeType,
+  HealthCheckResult,
+  HealthCheckConfig,
+  HealthMetrics,
+  defaultHealthCheckConfig,
+  EnhancedRetryDecorator,
+  JitterType,
+  ErrorClass,
+  ErrorStrategy,
+  RetryBudget,
+  EnhancedRetryConfig,
+  EnhancedRetryMetrics,
+  defaultEnhancedRetryConfig,
+} from './infrastructure';

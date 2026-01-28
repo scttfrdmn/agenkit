@@ -105,6 +105,7 @@ agenkit-rust/Cargo.lock
 # Zig build artifacts
 agenkit-zig/zig-cache/
 agenkit-zig/zig-out/
+agenkit-zig/test_arraylist*
 
 # C++ build artifacts
 agenkit-cpp/build/

@@ -351,8 +351,9 @@ func (s *InMemoryVectorStore) Clear(ctx context.Context, sessionID string) error
 //	embeddings := NewOpenAIEmbeddings(client)
 //	memory := NewVectorMemory(embeddings, nil)
 //	err := memory.Store(ctx, "session-123", message, nil)
+//	limit := 5
 //	messages, err := memory.Retrieve(ctx, "session-123",
-//	    RetrieveOptions{Query: "What did we discuss about pricing?", Limit: 5})
+//	    RetrieveOptions{Query: "What did we discuss about pricing?", Limit: &limit})
 type VectorMemory struct {
 	embeddings  EmbeddingProvider
 	vectorStore VectorStore
@@ -421,9 +422,9 @@ func (v *VectorMemory) Store(ctx context.Context, sessionID string, message agen
 //   - Tags: Filter by tags
 func (v *VectorMemory) Retrieve(ctx context.Context, sessionID string, opts RetrieveOptions) ([]agenkit.Message, error) {
 	// Set default limit
-	limit := opts.Limit
-	if limit <= 0 {
-		limit = 10
+	limit := 10
+	if opts.Limit != nil {
+		limit = *opts.Limit
 	}
 
 	if opts.Query != "" {
@@ -461,12 +462,20 @@ func (v *VectorMemory) Retrieve(ctx context.Context, sessionID string, opts Retr
 
 // RetrieveWithScores retrieves messages with similarity scores.
 //
+// Args:
+//
+//	ctx: Context
+//	sessionID: Session identifier
+//	query: Search query
+//	limit: Maximum results to return (nil = default of 10)
+//
 // Returns:
 //
 //	List of (message, score) tuples
-func (v *VectorMemory) RetrieveWithScores(ctx context.Context, sessionID string, query string, limit int) ([]MessageSearchResult, error) {
-	if limit <= 0 {
-		limit = 10
+func (v *VectorMemory) RetrieveWithScores(ctx context.Context, sessionID string, query string, limit *int) ([]MessageSearchResult, error) {
+	actualLimit := 10
+	if limit != nil {
+		actualLimit = *limit
 	}
 
 	queryEmbedding, err := v.embeddings.Embed(ctx, query)
@@ -474,7 +483,7 @@ func (v *VectorMemory) RetrieveWithScores(ctx context.Context, sessionID string,
 		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
 	}
 
-	return v.vectorStore.Search(ctx, sessionID, queryEmbedding, limit, RetrieveOptions{})
+	return v.vectorStore.Search(ctx, sessionID, queryEmbedding, actualLimit, RetrieveOptions{})
 }
 
 // Summarize creates a summary of conversation history.
@@ -482,7 +491,8 @@ func (v *VectorMemory) RetrieveWithScores(ctx context.Context, sessionID string,
 // For vector memory, we can use semantic search to find
 // key messages and summarize those.
 func (v *VectorMemory) Summarize(ctx context.Context, sessionID string, opts SummarizeOptions) (agenkit.Message, error) {
-	messages, err := v.Retrieve(ctx, sessionID, RetrieveOptions{Limit: 100})
+	limit := 100
+	messages, err := v.Retrieve(ctx, sessionID, RetrieveOptions{Limit: &limit})
 	if err != nil {
 		return agenkit.Message{}, err
 	}

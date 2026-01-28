@@ -27,7 +27,8 @@ func TestInMemoryMemory(t *testing.T) {
 	}
 
 	// Test Retrieve
-	messages, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: 10})
+	limit := 10
+	messages, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: &limit})
 	if err != nil {
 		t.Fatalf("Retrieve failed: %v", err)
 	}
@@ -53,7 +54,8 @@ func TestInMemoryMemory(t *testing.T) {
 		t.Fatalf("Clear failed: %v", err)
 	}
 
-	messages, err = memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: 10})
+	limit = 10
+	messages, err = memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: &limit})
 	if err != nil {
 		t.Fatalf("Retrieve failed: %v", err)
 	}
@@ -82,8 +84,9 @@ func TestInMemoryMemoryFiltering(t *testing.T) {
 
 	// Test importance threshold filter
 	threshold := 0.5
+	limit := 10
 	messages, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{
-		Limit:               10,
+		Limit:               &limit,
 		ImportanceThreshold: &threshold,
 	})
 	if err != nil {
@@ -118,7 +121,8 @@ func TestInMemoryMemoryLRU(t *testing.T) {
 		t.Errorf("Expected count 3 after LRU eviction, got %d", count)
 	}
 
-	messages, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: 10})
+	limit := 10
+	messages, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: &limit})
 	if err != nil {
 		t.Fatalf("Retrieve failed: %v", err)
 	}

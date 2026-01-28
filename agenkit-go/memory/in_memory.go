@@ -33,7 +33,8 @@ import (
 //
 //	memory := NewInMemoryMemory(1000)
 //	err := memory.Store(ctx, "session-123", message, nil)
-//	messages, err := memory.Retrieve(ctx, "session-123", RetrieveOptions{Limit: 10})
+//	limit := 10
+//	messages, err := memory.Retrieve(ctx, "session-123", RetrieveOptions{Limit: &limit})
 type InMemoryMemory struct {
 	maxSize int
 	mu      sync.RWMutex
@@ -110,9 +111,9 @@ func (m *InMemoryMemory) Retrieve(ctx context.Context, sessionID string, opts Re
 	}
 
 	// Set default limit
-	limit := opts.Limit
-	if limit <= 0 {
-		limit = 10
+	limit := 10
+	if opts.Limit != nil {
+		limit = *opts.Limit
 	}
 
 	// Get all messages (most recent first)
@@ -204,7 +205,8 @@ func (m *InMemoryMemory) Retrieve(ctx context.Context, sessionID string, opts Re
 // Simple implementation: Returns a message with concatenated content.
 // Production use should use LLM-based summarization.
 func (m *InMemoryMemory) Summarize(ctx context.Context, sessionID string, opts SummarizeOptions) (agenkit.Message, error) {
-	messages, err := m.Retrieve(ctx, sessionID, RetrieveOptions{Limit: 100})
+	limit := 100
+	messages, err := m.Retrieve(ctx, sessionID, RetrieveOptions{Limit: &limit})
 	if err != nil {
 		return agenkit.Message{}, err
 	}

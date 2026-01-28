@@ -30,7 +30,8 @@ func TestHierarchyMemoryBasic(t *testing.T) {
 	}
 
 	// Test Retrieve
-	messages, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: 10})
+	limit := 10
+	messages, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: &limit})
 	if err != nil {
 		t.Fatalf("Retrieve failed: %v", err)
 	}
@@ -77,7 +78,8 @@ func TestHierarchyMemorySessionIsolation(t *testing.T) {
 	}
 
 	// Retrieve session 1
-	messages1, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: 10})
+	limit := 10
+	messages1, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: &limit})
 	if err != nil {
 		t.Fatalf("Retrieve failed: %v", err)
 	}
@@ -91,7 +93,8 @@ func TestHierarchyMemorySessionIsolation(t *testing.T) {
 	}
 
 	// Retrieve session 2
-	messages2, err := memory.Retrieve(ctx, "session-2", RetrieveOptions{Limit: 10})
+	limit = 10
+	messages2, err := memory.Retrieve(ctx, "session-2", RetrieveOptions{Limit: &limit})
 	if err != nil {
 		t.Fatalf("Retrieve failed: %v", err)
 	}
@@ -141,7 +144,8 @@ func TestHierarchyMemoryImportanceRouting(t *testing.T) {
 	}
 
 	// All should be retrievable
-	messages, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: 10})
+	limit := 10
+	messages, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: &limit})
 	if err != nil {
 		t.Fatalf("Retrieve failed: %v", err)
 	}
@@ -246,7 +250,8 @@ func TestHierarchyMemoryClear(t *testing.T) {
 	}
 
 	// Session 1 should be empty
-	messages1, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: 10})
+	limit := 10
+	messages1, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{Limit: &limit})
 	if err != nil {
 		t.Fatalf("Retrieve failed: %v", err)
 	}
@@ -256,7 +261,8 @@ func TestHierarchyMemoryClear(t *testing.T) {
 	}
 
 	// Session 2 should still have messages
-	messages2, err := memory.Retrieve(ctx, "session-2", RetrieveOptions{Limit: 10})
+	limit = 10
+	messages2, err := memory.Retrieve(ctx, "session-2", RetrieveOptions{Limit: &limit})
 	if err != nil {
 		t.Fatalf("Retrieve failed: %v", err)
 	}
@@ -288,8 +294,9 @@ func TestHierarchyMemoryImportanceFilter(t *testing.T) {
 
 	// Filter by importance
 	threshold := 0.5
+	limit := 10
 	messages, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{
-		Limit:               10,
+		Limit:               &limit,
 		ImportanceThreshold: &threshold,
 	})
 	if err != nil {
@@ -328,8 +335,9 @@ func TestHierarchyMemoryTagsFilter(t *testing.T) {
 	}
 
 	// Filter by tags
+	limit := 10
 	messages, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{
-		Limit: 10,
+		Limit: &limit,
 		Tags:  []string{"important"},
 	})
 	if err != nil {
@@ -372,8 +380,9 @@ func TestHierarchyMemoryTimeRangeFilter(t *testing.T) {
 	startTime := now.Add(-1 * time.Hour).Unix()
 	endTime := now.Add(1 * time.Hour).Unix()
 
+	limit := 10
 	messages, err := memory.Retrieve(ctx, "session-1", RetrieveOptions{
-		Limit: 10,
+		Limit: &limit,
 		TimeRange: &TimeRange{
 			Start: startTime,
 			End:   endTime,

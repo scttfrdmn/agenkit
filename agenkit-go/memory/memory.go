@@ -61,15 +61,22 @@ type Memory interface {
 	//
 	// Example:
 	//   // Basic retrieval (most recent)
-	//   messages, err := memory.Retrieve(ctx, "session-123", RetrieveOptions{Limit: 10})
+	//   // Basic retrieval with limit
+	//   limit := 10
+	//   messages, err := memory.Retrieve(ctx, "session-123", RetrieveOptions{Limit: &limit})
+	//
+	//   // Use default limit (10) by passing nil
+	//   messages, err := memory.Retrieve(ctx, "session-123", RetrieveOptions{})
 	//
 	//   // Semantic retrieval (if supported)
+	//   limit = 5
 	//   messages, err := memory.Retrieve(ctx, "session-123",
-	//       RetrieveOptions{Query: "What did we discuss about pricing?", Limit: 5})
+	//       RetrieveOptions{Query: "What did we discuss about pricing?", Limit: &limit})
 	//
 	//   // Time-filtered retrieval
+	//   limit = 20
 	//   messages, err := memory.Retrieve(ctx, "session-123",
-	//       RetrieveOptions{TimeRange: &TimeRange{Start: start, End: end}, Limit: 20})
+	//       RetrieveOptions{TimeRange: &TimeRange{Start: start, End: end}, Limit: &limit})
 	Retrieve(ctx context.Context, sessionID string, opts RetrieveOptions) ([]agenkit.Message, error)
 
 	// Summarize creates a summary of conversation history.
@@ -119,8 +126,8 @@ type RetrieveOptions struct {
 	// Query is an optional semantic query for retrieval (if supported)
 	Query string
 
-	// Limit is the maximum number of messages to return (default: 10)
-	Limit int
+	// Limit is the maximum number of messages to return (nil = default of 10)
+	Limit *int
 
 	// TimeRange filters messages by time (optional)
 	TimeRange *TimeRange

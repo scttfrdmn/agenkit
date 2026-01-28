@@ -35,7 +35,8 @@ import (
 //	    LongTermMinImportance:  0.7,
 //	})
 //	err = memory.Store(ctx, "session-123", message, nil)
-//	messages, err := memory.Retrieve(ctx, "session-123", RetrieveOptions{Limit: 10})
+//	limit := 10
+//	messages, err := memory.Retrieve(ctx, "session-123", RetrieveOptions{Limit: &limit})
 type HierarchyMemory struct {
 	hierarchy *patterns.MemoryHierarchy
 	config    HierarchyConfig
@@ -203,9 +204,9 @@ func (h *HierarchyMemory) Retrieve(
 	opts RetrieveOptions,
 ) ([]agenkit.Message, error) {
 	// Set default limit
-	limit := opts.Limit
-	if limit == 0 {
-		limit = 10
+	limit := 10
+	if opts.Limit != nil {
+		limit = *opts.Limit
 	}
 
 	// Retrieve from hierarchy (get extra to account for filtering)
@@ -249,7 +250,8 @@ func (h *HierarchyMemory) Summarize(
 	opts SummarizeOptions,
 ) (agenkit.Message, error) {
 	// Retrieve all messages for session (up to reasonable limit)
-	messages, err := h.Retrieve(ctx, sessionID, RetrieveOptions{Limit: 1000})
+	limit := 1000
+	messages, err := h.Retrieve(ctx, sessionID, RetrieveOptions{Limit: &limit})
 	if err != nil {
 		return agenkit.Message{}, fmt.Errorf("failed to retrieve messages: %w", err)
 	}

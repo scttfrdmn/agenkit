@@ -64,5 +64,5 @@ func (s *SlidingWindowStrategy) Select(ctx context.Context, mem memory.Memory, s
 		limit = s.windowSize
 	}
 
-	return mem.Retrieve(ctx, sessionID, memory.RetrieveOptions{Limit: limit})
+	return mem.Retrieve(ctx, sessionID, memory.RetrieveOptions{Limit: &limit})
 }

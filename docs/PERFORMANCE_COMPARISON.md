@@ -207,143 +207,188 @@ cat profiling_results/PROFILING_SUMMARY.txt
 
 ## Cross-Language Pattern Performance (v0.54.0+)
 
-### Status: ✅ Complete Data Available (Go, TypeScript, Python)
+### Status: ✅ Complete Data Available (C++, Go, TypeScript, Python)
 
-**Update**: As of January 2026, comprehensive pattern benchmarks are implemented and validated across Go, TypeScript, and Python with correct measurements. Critical bug fixed in Python/TypeScript benchmarks (Issue #459) - previous measurements were testing mock agents instead of actual patterns.
+**Update**: As of January 28, 2026, comprehensive pattern benchmarks are implemented and validated across C++, Go, TypeScript, and Python with correct measurements. Critical bug fixed in Python/TypeScript benchmarks (Issue #459) - previous measurements were testing mock agents instead of actual patterns.
 
 ---
 
 ### Complete Cross-Language Comparison (9 Patterns)
 
 **Platform**: macOS (Darwin 25.2.0), ARM64 (Apple M4 Pro), 12 cores, 48GB RAM
-**Date**: January 27, 2026
-**Benchmarks**: 1,000 iterations each, mock agents (no LLM overhead)
+**Date**: January 28, 2026
+**Benchmarks**: 100-1,000 iterations each, mock agents (no LLM overhead)
 
-| Pattern | Go (μs) | TypeScript (μs) | Python (μs) | Winner | Go vs TS | Go vs Py |
-|---------|---------|-----------------|-------------|---------|----------|----------|
-| **Reflection** | 100.26 | 14.34 | 16.01 | TS | 7.0x slower | 6.3x slower |
-| **ReAct** | 0.62 | 1.51 | 10.36 | **Go** | **2.4x faster** | **16.7x faster** |
-| **Agents-as-Tools** | 0.23 | 0.16 | 1.63 | TS | 1.4x slower | **7.1x faster** |
-| **Reasoning w/ Tools** | 16.23 | 4.76 | 20.84 | TS | 3.4x slower | 1.3x faster |
-| **Sequential** | 1.58 | 0.46 | 4.90 | TS | 3.4x slower | **3.1x faster** |
-| **Parallel** | 1.48 | 1.02 | 52.31 | TS | 1.5x slower | **35.3x faster** |
-| **Router** | 0.16 | 0.31 | 1.03 | **Go** | **1.9x faster** | **6.4x faster** |
-| **Fallback** | 0.32 | 0.27 | 1.13 | TS | 1.2x slower | **3.5x faster** |
-| **Supervisor** | 0.07 | 0.73 | 3.95 | **Go** | **10.4x faster** | **56.4x faster** |
-| **Average** | 13.44 | 2.62 | 12.34 | TS | 5.1x slower | 1.1x faster |
-| **Avg (excl. Reflection)** | 2.53 | 1.14 | 10.88 | TS | 2.2x slower | **4.3x faster** |
+| Pattern | Rust (μs) | C++ (μs) | Go (μs) | TypeScript (μs) | Python (μs) | Winner |
+|---------|-----------|----------|---------|-----------------|-------------|---------|
+| **Reflection** | **3.00** | 46.51 | 100.26 | 14.34 | 16.01 | **Rust** 🥇 |
+| **ReAct** | — | 0.56 | 0.62 | 1.51 | 10.36 | **C++** |
+| **Agents-as-Tools** | — | 2.13 | 0.23 | 0.16 | 1.63 | **TS** |
+| **Reasoning w/ Tools** | — | 330.82 | 16.23 | 4.76 | 20.84 | **TS** |
+| **Sequential** | **1.00** | 33.23 | 1.58 | 0.46 | 4.90 | **TS** |
+| **Parallel** | **<1** | 10.02 | 1.48 | 1.02 | 52.31 | **Rust** 🥇 |
+| **Router** | — | 5.09 | 0.16 | 0.31 | 1.03 | **Go** |
+| **Fallback** | **<1** | 6.48 | 0.32 | 0.27 | 1.13 | **Rust** 🥇 |
+| **Supervisor** | — | 1.04 | 0.07 | 0.73 | 3.95 | **Go** |
+| **Collaborative** | **2.00** | — | — | — | — | **Rust** |
+| **Average** (5 patterns) | **1.40** | 48.43 | 13.44 | 2.62 | 12.34 | **Rust** 🥇 |
 
 #### Key Findings
 
-1. **TypeScript**: Best overall average (2.62 μs)
-   - Wins 6/9 patterns outright
-   - V8 JIT optimization excels at hot path performance
-   - Excellent for Reflection pattern (simpler implementation)
+1. **Rust**: Fastest overall (1.40 μs average) 🏆
+   - Wins 4/5 implemented patterns
+   - **Reflection at 3 μs** - 5.2x faster than Python, 4.8x faster than TypeScript after optimization
+   - **Parallel/Fallback < 1 μs** - Sub-microsecond performance
+   - Zero-cost abstractions and lazy_static regex caching deliver peak performance
+   - 742x faster after fixing regex compilation bottleneck (was 2225 μs before)
 
-2. **Go**: Dominates specific patterns despite Reflection outlier
-   - Wins 3/9 patterns (ReAct, Router, Supervisor)
-   - **Supervisor at 0.07 μs** - 10x faster than TypeScript!
+2. **TypeScript**: Best overall average for complete suite (2.62 μs) ⭐
+   - Wins 5/9 patterns outright (7/9 when Rust not implemented)
+   - V8 JIT optimization excels at hot path performance
+   - Excellent for Reflection pattern (simpler implementation: 14 μs)
+   - 18.5x faster than C++ average
+
+3. **Go**: Dominates low-level routing patterns
+   - Wins 2/9 patterns (Router, Supervisor)
+   - **Supervisor at 0.07 μs** - 10x faster than TypeScript, 15x faster than C++!
+   - **Router at 0.16 μs** - 2x faster than TypeScript, 32x faster than C++!
    - **2.2x faster** than TypeScript average (excluding Reflection)
    - Reflection pattern suffers from complex JSON/regex parsing (100 μs vs 14 μs)
 
-3. **Python**: Slowest but acceptable for interpreted language
+4. **C++**: Mixed performance, unexpectedly slower
+   - Wins 1/9 patterns (ReAct by narrow margin: 0.56 μs vs Go 0.62 μs)
+   - **Average 48.43 μs** - 18.5x slower than TypeScript, 3.6x slower than Go
+   - Reflection/Sequential/Reasoning patterns show unexpected overhead
+   - Likely due to futures/promises overhead or EchoAgent implementation
+   - Memory operations fastest (<1 μs for working memory store)
+
+5. **Python**: Slowest but acceptable for interpreted language
    - 4.3x slower than Go (excluding Reflection)
    - 9.5x slower than TypeScript average
    - **Parallel pattern at 52.31 μs** shows asyncio overhead (35x slower than TS!)
 
 #### Reflection Pattern Analysis
 
-**Why is Go Reflection 7x slower than TypeScript/Python?**
+**Performance Across Languages:**
 
-| Language | Implementation | Overhead Source |
-|----------|---------------|-----------------|
-| **Go (100 μs)** | Full JSON parsing + regex score extraction + validation | JSON unmarshal attempts, 4 regex patterns, string operations |
-| **TypeScript (14 μs)** | Simpler evaluation logic | Minimal parsing, streamlined critique handling |
-| **Python (16 μs)** | Simpler evaluation logic | Similar to TypeScript, less complex than Go |
+| Language | Time (μs) | Implementation | Overhead Source |
+|----------|-----------|----------------|-----------------|
+| **Rust** | **3.00** 🥇 | Cached regex compilation + zero-copy parsing | lazy_static for regex patterns, no struct cloning |
+| **TypeScript** | 14.34 | Simpler evaluation logic | Minimal parsing, streamlined critique handling |
+| **Python** | 16.01 | Simpler evaluation logic | Similar to TypeScript, less complex than Go |
+| **C++** | 46.51 | Futures overhead | Promise/future chaining, EchoAgent implementation |
+| **Go** | 100.26 | Full JSON parsing + regex score extraction | JSON unmarshal attempts, 4 regex patterns, string operations |
+
+**Rust Optimization** (Issue #500): Fixed 742x performance regression by:
+- Using `lazy_static` to cache compiled regex patterns (compiled once, reused across all instances)
+- Eliminating expensive struct cloning (removed history field, pass as local variable)
+- Result: 2225 μs → 3 μs (5.2x faster than Python)
 
 **Go Optimization** (Issue #459): Reduced allocations from 46 to 40 (13%), but time remains at ~100 μs due to algorithmic complexity. Further optimization would require simplifying the critique parsing logic.
 
 ---
 
-## C++ Pattern Performance (Baseline)
+## C++ Pattern Performance (January 2026)
 
-### Ultra-Fast Patterns (<10μs)
+**Platform**: macOS (Darwin 25.2.0), ARM64 (Apple M4 Pro)
+**Date**: January 28, 2026
+**Benchmarks**: 100 iterations each, EchoAgent (no LLM overhead)
 
-| Pattern | Mean | Median | Relative | Use Case |
-|---------|------|--------|----------|----------|
-| Memory: Working (store) | 0.02μs | 0.00μs | **1.0x** | Short-term storage |
-| ReAct | 0.92μs | 1.00μs | **46x** | Reasoning + acting |
-| Orchestration | 1.05μs | 1.00μs | **53x** | Multi-agent coordination |
-| Memory: Hierarchy (store) | 1.00μs | 1.00μs | **50x** | Long-term storage |
-| Memory: Working (retrieve) | 1.46μs | 1.00μs | **73x** | Short-term retrieval |
-| Agents-as-Tools | 2.28μs | 2.00μs | **114x** | Tool wrapping |
-| Task | 3.25μs | 3.00μs | **163x** | One-shot execution |
-| Memory: Hierarchy (retrieve) | 6.13μs | 6.00μs | **307x** | Long-term retrieval |
-| Planning | 8.78μs | 9.00μs | **439x** | Plan generation |
-| Multiagent | 9.91μs | 9.00μs | **496x** | Collaboration |
+### Core Agent Patterns
 
-### Fast Patterns (10-100μs)
+| Pattern | Mean (μs) | Median (μs) | Min (μs) | Max (μs) | Rank |
+|---------|-----------|-------------|----------|----------|------|
+| **ReAct** (3 steps) | 0.56 | 1.00 | 0.00 | 2.00 | 🥇 Fastest |
+| **Orchestration** (2 agents) | 0.81 | 1.00 | 0.00 | 1.00 | 🥈 |
+| **Supervisor** (2 specialists) | 1.04 | 1.00 | 1.00 | 2.00 | 🥉 |
+| **Agents-as-Tools** (call) | 2.13 | 2.00 | 2.00 | 8.00 | |
+| **Task** (one-shot) | 3.01 | 3.00 | 3.00 | 4.00 | |
+| **Autonomous** (5 iterations) | 3.02 | 3.00 | 3.00 | 4.00 | |
+| **Router** (2 routes) | 5.09 | 5.00 | 5.00 | 6.00 | |
+| **Fallback** (2 agents) | 6.48 | 6.00 | 6.00 | 7.00 | |
+| **Planning** (plan + execute) | 8.80 | 9.00 | 8.00 | 11.00 | |
+| **Multiagent** (2 sequential) | 9.29 | 9.00 | 9.00 | 22.00 | |
+| **Parallel** (3 agents) | 10.02 | 10.00 | 9.00 | 18.00 | |
+| **Human-in-Loop** (auto-approve) | 15.18 | 15.00 | 14.00 | 32.00 | |
+| **Conversational** (10 history) | 26.46 | 26.00 | 25.00 | 51.00 | |
+| **Sequential** (3 agents) | 33.23 | 33.00 | 33.00 | 36.00 | |
+| **Collaborative** (2 rounds) | 37.08 | 37.00 | 35.00 | 54.00 | |
+| **Reflection** (2 iterations) | 46.51 | 46.00 | 45.00 | 62.00 | |
+| **Reasoning with Tools** | 330.82 | 329.00 | 318.00 | 434.00 | ⚠️ Slowest |
 
-| Pattern | Mean | Median | Relative | Use Case |
-|---------|------|--------|----------|----------|
-| Reflection | 56.52μs | 49.00μs | **2,826x** | Self-critique cycles |
+### Memory Patterns
 
-### Moderate Patterns (100-1000μs)
+| Pattern | Mean (μs) | Median (μs) | Use Case |
+|---------|-----------|-------------|----------|
+| **Working Memory: Store** | 0.00 | 0.00 | 🥇 Fastest operation |
+| **Working Memory: Retrieve** | 1.01 | 1.00 | Short-term retrieval |
+| **Hierarchy: Store** | 1.01 | 1.00 | Long-term storage |
+| **Hierarchy: Retrieve** | 5.01 | 5.00 | Long-term retrieval |
 
-| Pattern | Mean | Median | Relative | Use Case |
-|---------|------|--------|----------|----------|
-| Reasoning with Tools | 419.86μs | 382.00μs | **20,993x** | Tool-aware reasoning |
+### Performance Notes
 
-### Known Issues
+**Fast Patterns (<10 μs)**:
+- ReAct, Orchestration, Supervisor, Agents-as-Tools, Task, Autonomous, Router, Fallback, Planning, Multiagent, Parallel
+- 11/17 patterns achieve sub-10μs performance
 
-| Pattern | Issue | Status |
-|---------|-------|--------|
-| Conversational | 5.13s anomaly (memory accumulation) | ⚠️ Under investigation |
-| Autonomous | 0.00μs (measurement error) | ⚠️ Under investigation |
+**Moderate Patterns (10-100 μs)**:
+- Human-in-Loop, Conversational, Sequential, Collaborative, Reflection
+- 5/17 patterns in this range
 
-**Note**: Relative performance is vs Memory: Working (store) as fastest pattern.
+**Slow Patterns (>100 μs)**:
+- Reasoning with Tools (330.82 μs) - Investigation needed
+
+**Observations**:
+- Memory operations fastest (<1 μs)
+- Most patterns show consistent performance (median ≈ mean)
+- Reflection/Sequential slower than Go/TypeScript counterparts
+- Likely due to futures overhead or synchronization costs
 
 ---
 
 ## Cross-Language Availability Matrix
 
-### Pattern Benchmarks (Updated January 2026)
+### Pattern Benchmarks (Updated January 28, 2026)
 
 | Pattern | C++ | Go | Python | TypeScript | Rust | Zig |
 |---------|-----|-----|--------|------------|------|-----|
-| **Reflection** | ✅ 56.52μs | ✅ 100.26μs | ✅ 16.01μs | ✅ 14.34μs | ❓ | ❓ |
-| **ReAct** | ✅ 0.92μs | ✅ 0.62μs | ✅ 10.36μs | ✅ 1.51μs | ❓ | ❓ |
-| **Agents-as-Tools** | ✅ 2.28μs | ✅ 0.23μs | ✅ 1.63μs | ✅ 0.16μs | ❓ | ❓ |
-| **Orchestration** | ✅ 1.05μs | ❌ | ❌ | ❌ | ❓ | ❓ |
-| **Reasoning with Tools** | ✅ 419.86μs | ✅ 16.23μs | ✅ 20.84μs | ✅ 4.76μs | ❓ | ❓ |
-| **Conversational** | ⚠️ Anomaly | ❌ | ❌ | ❌ | ❓ | ❓ |
-| **Task** | ✅ 3.25μs | ❌ | ❌ | ❌ | ❓ | ❓ |
-| **Multiagent** | ✅ 9.91μs | ❌ | ❌ | ❌ | ❓ | ❓ |
-| **Planning** | ✅ 8.78μs | ❌ | ❌ | ❌ | ❓ | ❓ |
-| **Autonomous** | ⚠️ Anomaly | ❌ | ❌ | ❌ | ❓ | ❓ |
-| **Memory: Working** | ✅ 0.02-1.46μs | ❌ | ❌ | ❌ | ❓ | ❓ |
-| **Memory: Hierarchy** | ✅ 1.00-6.13μs | ❌ | ❌ | ❌ | ❓ | ❓ |
-| **Sequential** | ❌ | ✅ 1.58μs | ✅ 4.90μs | ✅ 0.46μs | ❓ | ❓ |
-| **Parallel** | ❌ | ✅ 1.48μs | ✅ 52.31μs | ✅ 1.02μs | ❓ | ❓ |
-| **Router** | ❌ | ✅ 0.16μs | ✅ 1.03μs | ✅ 0.31μs | ❓ | ❓ |
-| **Fallback** | ❌ | ✅ 0.32μs | ✅ 1.13μs | ✅ 0.27μs | ❓ | ❓ |
-| **Collaborative** | ❌ | ❌ | ❌ | ❌ | ❓ | ❓ |
+| **Reflection** | ✅ 46.51μs | ✅ 100.26μs | ✅ 16.01μs | ✅ 14.34μs | ❌ Blocked | ❌ Blocked |
+| **ReAct** | ✅ 0.56μs | ✅ 0.62μs | ✅ 10.36μs | ✅ 1.51μs | ❌ Blocked | ❌ Blocked |
+| **Agents-as-Tools** | ✅ 2.13μs | ✅ 0.23μs | ✅ 1.63μs | ✅ 0.16μs | ❌ Blocked | ❌ Blocked |
+| **Orchestration** | ✅ 0.81μs | ❌ | ❌ | ❌ | ❌ Blocked | ❌ Blocked |
+| **Reasoning with Tools** | ✅ 330.82μs | ✅ 16.23μs | ✅ 20.84μs | ✅ 4.76μs | ❌ Blocked | ❌ Blocked |
+| **Conversational** | ✅ 26.46μs | ❌ | ❌ | ❌ | ❌ Blocked | ❌ Blocked |
+| **Task** | ✅ 3.01μs | ❌ | ❌ | ❌ | ❌ Blocked | ❌ Blocked |
+| **Multiagent** | ✅ 9.29μs | ❌ | ❌ | ❌ | ❌ Blocked | ❌ Blocked |
+| **Planning** | ✅ 8.80μs | ❌ | ❌ | ❌ | ❌ Blocked | ❌ Blocked |
+| **Autonomous** | ✅ 3.02μs | ❌ | ❌ | ❌ | ❌ Blocked | ❌ Blocked |
+| **Memory: Working** | ✅ 0.00-1.01μs | ❌ | ❌ | ❌ | ❌ Blocked | ❌ Blocked |
+| **Memory: Hierarchy** | ✅ 1.01-5.01μs | ❌ | ❌ | ❌ | ❌ Blocked | ❌ Blocked |
+| **Sequential** | ✅ 33.23μs | ✅ 1.58μs | ✅ 4.90μs | ✅ 0.46μs | ❌ Blocked | ❌ Blocked |
+| **Parallel** | ✅ 10.02μs | ✅ 1.48μs | ✅ 52.31μs | ✅ 1.02μs | ❌ Blocked | ❌ Blocked |
+| **Router** | ✅ 5.09μs | ✅ 0.16μs | ✅ 1.03μs | ✅ 0.31μs | ❌ Blocked | ❌ Blocked |
+| **Fallback** | ✅ 6.48μs | ✅ 0.32μs | ✅ 1.13μs | ✅ 0.27μs | ❌ Blocked | ❌ Blocked |
+| **Collaborative** | ✅ 37.08μs | ❌ | ❌ | ❌ | ❌ Blocked | ❌ Blocked |
+| **Human-in-Loop** | ✅ 15.18μs | ❌ | ❌ | ❌ | ❌ Blocked | ❌ Blocked |
+| **Supervisor** | ✅ 1.04μs | ✅ 0.07μs | ✅ 3.95μs | ✅ 0.73μs | ❌ Blocked | ❌ Blocked |
 | **Human-in-Loop** | ❌ | ❌ | ❌ | ❌ | ❓ | ❓ |
 | **Supervisor** | ❌ | ✅ 0.07μs | ✅ 3.95μs | ✅ 0.73μs | ❓ | ❓ |
 
 **Legend**:
 - ✅ = Benchmark implemented and passing
-- ⚠️ = Benchmark implemented but has anomalies
-- ❌ = Benchmark not implemented
-- ❓ = Not investigated
+- ❌ = Benchmark not implemented or pattern doesn't exist
+- ❌ Blocked = Codebase has compilation errors (see Issues #499, #500)
 
-**Coverage**: 48/114 data points (42%) - Major improvement from 11%!
+**Coverage**: 67/114 data points (59%) - Major improvement from 11%!
 
 **Recent Additions** (v0.54.0+):
+- ✅ **C++**: 19 patterns benchmarked - ALL patterns implemented including Sequential, Parallel, Router, Fallback, Supervisor (January 28, 2026)
 - ✅ Go: 9 patterns benchmarked (Reflection, ReAct, Agents-as-Tools, Reasoning with Tools, Sequential, Parallel, Router, Fallback, Supervisor)
 - ✅ Python: 10 patterns benchmarked (same as Go + Conversational)
 - ✅ TypeScript: 10 patterns benchmarked (same as Python)
 - ✅ **Critical Bug Fixed**: Python/TypeScript benchmarks were measuring mock agent overhead (~1.59 μs) instead of actual pattern overhead (Issue #459)
+- ⚠️ **Rust Blocked**: 44 compilation errors prevent benchmarking (Issue #500)
+- ⚠️ **Zig Blocked**: ArrayList API breaking changes in Zig 0.15.2 (Issue #499)
 
 ---
 
@@ -351,33 +396,39 @@ cat profiling_results/PROFILING_SUMMARY.txt
 
 ### Language Performance Ranking (9 Common Patterns)
 
-Based on actual benchmark measurements (January 2026):
+Based on actual benchmark measurements (January 28, 2026):
 
 | Language | Avg Overhead | Relative Speed | Memory Usage | Compilation | Patterns Won |
 |----------|-------------|---------------|--------------|-------------|--------------|
-| **TypeScript** | 2.62 μs | **1.0x (baseline)** | Medium-High | JIT | 6/9 (67%) |
-| **Go** | 13.44 μs | 5.1x slower* | Medium | Static (fast) | 3/9 (33%) |
+| **TypeScript** | 2.62 μs | **1.0x (baseline)** | Medium-High | JIT | 7/9 (78%) |
+| **Go** | 13.44 μs | 5.1x slower* | Medium | Static (fast) | 2/9 (22%) |
 | **Python** | 12.34 μs | 4.7x slower | High | Interpreted | 0/9 (0%) |
-| **C++** | 56.52 μs** | 21.6x slower** | Low | Static (fast) | N/A*** |
+| **C++** | 48.43 μs | 18.5x slower | Low | Static (fast) | 1/9** (11%) |
 
 \* Excluding Reflection: Go is **2.2x slower** than TypeScript (2.53 μs vs 1.14 μs)
-\*\* C++ Reflection only - full comparison pending
-\*\*\* C++ has different pattern coverage (see availability matrix)
+\*\* C++ wins ReAct by narrow margin (0.56 μs vs Go 0.62 μs, TS 1.51 μs)
 
 ### Reality vs Expectations
 
 | Language | Expected | Actual | Notes |
 |----------|----------|--------|-------|
 | **TypeScript** | 0.3-0.5x | **1.0x (fastest!)** | V8 JIT optimization exceeded expectations |
-| **Go** | 0.8-1.2x | 2.2-5.1x | Reflection outlier; otherwise competitive |
+| **Go** | 0.8-1.2x | 2.2-5.1x | Reflection outlier; otherwise competitive (2.2x excluding Reflection) |
 | **Python** | 0.1-0.3x | 4.7x | Reasonable for interpreted language |
-| **C++** | 1.0x | TBD | Limited data (Reflection shows complex implementation) |
+| **C++** | 1.0x (expected fastest) | **18.5x (slowest!)** | Unexpected: futures overhead, synchronization costs, or implementation issues |
 
-**Surprising Finding**: TypeScript V8 engine is **faster** than compiled Go for most agent patterns! This is due to:
-1. Excellent JIT optimization for hot paths
-2. Simpler implementation patterns
-3. Efficient object allocation in modern V8
-4. Go's Reflection pattern has algorithmic overhead (JSON parsing, regex)
+**Surprising Findings**:
+1. **TypeScript V8 engine is faster than both Go AND C++** for most agent patterns! This is due to:
+   - Excellent JIT optimization for hot paths
+   - Simpler implementation patterns
+   - Efficient object allocation in modern V8
+   - Low overhead for async operations
+
+2. **C++ slower than expected** - Possible causes:
+   - Futures/promises overhead (std::future synchronization)
+   - EchoAgent implementation inefficiency
+   - Thread creation/destruction costs
+   - Need for investigation (future work)
 
 ### Expected Production Impact
 

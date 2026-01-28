@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/core"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // JitterType defines types of jitter for retry backoff.
@@ -99,7 +99,7 @@ type EnhancedRetryConfig struct {
 
 	// Budget settings
 	EnableBudget       bool
-	CostTracker        func(core.Message) float64
+	CostTracker        func(agenkit.Message) float64
 	MaxCostPerHour     float64
 	MaxRetriesPerHour  int64
 
@@ -190,14 +190,14 @@ type EnhancedRetryMetrics struct {
 
 // EnhancedRetryDecorator wraps an agent with enhanced retry logic.
 type EnhancedRetryDecorator struct {
-	agent   core.Agent
+	agent   agenkit.Agent
 	config  EnhancedRetryConfig
 	metrics *EnhancedRetryMetrics
 	budget  *RetryBudget
 }
 
 // NewEnhancedRetryDecorator creates a new enhanced retry decorator.
-func NewEnhancedRetryDecorator(agent core.Agent, config EnhancedRetryConfig) *EnhancedRetryDecorator {
+func NewEnhancedRetryDecorator(agent agenkit.Agent, config EnhancedRetryConfig) *EnhancedRetryDecorator {
 	return &EnhancedRetryDecorator{
 		agent:   agent,
 		config:  config,
@@ -221,6 +221,11 @@ func (erd *EnhancedRetryDecorator) Name() string {
 // Capabilities returns the underlying agent capabilities.
 func (erd *EnhancedRetryDecorator) Capabilities() []string {
 	return erd.agent.Capabilities()
+}
+
+// Introspect returns introspection data from the wrapped agent.
+func (erd *EnhancedRetryDecorator) Introspect() *agenkit.IntrospectionResult {
+	return erd.agent.Introspect()
 }
 
 func (erd *EnhancedRetryDecorator) classifyError(err error) ErrorClass {
@@ -362,7 +367,7 @@ func (erd *EnhancedRetryDecorator) checkBackpressure() bool {
 }
 
 // Process processes a message with enhanced retry logic.
-func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message core.Message) (core.Message, error) {
+func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	var lastError error
 	var errorClass ErrorClass
 	var strategy ErrorStrategy
@@ -374,9 +379,9 @@ func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message core.Mes
 
 		// Check budget before attempt
 		if erd.config.EnableBudget && erd.config.CostTracker != nil {
-			estimatedCost := erd.config.CostTracker(message)
+			estimatedCost := erd.config.CostTracker(*message)
 			if !erd.checkBudget(estimatedCost) {
-				return core.Message{}, fmt.Errorf("retry budget exceeded")
+				return nil, fmt.Errorf("retry budget exceeded")
 			}
 		}
 
@@ -404,7 +409,7 @@ func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message core.Mes
 
 			// Track cost
 			if erd.config.EnableBudget && erd.config.CostTracker != nil {
-				cost := erd.config.CostTracker(message)
+				cost := erd.config.CostTracker(*message)
 				erd.budget.mu.Lock()
 				erd.budget.CurrentCost += cost
 				erd.budget.mu.Unlock()
@@ -438,7 +443,7 @@ func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message core.Mes
 			erd.metrics.mu.Lock()
 			erd.metrics.FailedAfterRetries++
 			erd.metrics.mu.Unlock()
-			return core.Message{}, fmt.Errorf("non-retryable error (%s): %w", errorClass, err)
+			return nil,fmt.Errorf("non-retryable error (%s): %w", errorClass, err)
 		}
 
 		// Check if exceeded max attempts for this error class
@@ -465,7 +470,7 @@ func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message core.Mes
 		// Sleep with backoff
 		select {
 		case <-ctx.Done():
-			return core.Message{}, ctx.Err()
+			return nil,ctx.Err()
 		case <-time.After(backoff):
 		}
 	}
@@ -475,7 +480,7 @@ func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message core.Mes
 	erd.metrics.FailedAfterRetries++
 	erd.metrics.mu.Unlock()
 
-	return core.Message{}, fmt.Errorf("max retry attempts (%d) exceeded for %s: %w", strategy.MaxAttempts, errorClass, lastError)
+	return nil,fmt.Errorf("max retry attempts (%d) exceeded for %s: %w", strategy.MaxAttempts, errorClass, lastError)
 }
 
 // Metrics returns current metrics.

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/core"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // HealthStatus represents health check status.
@@ -66,7 +66,7 @@ type HealthCheckConfig struct {
 	StartupFailureThreshold int
 
 	// Custom health check function
-	CustomCheck func(core.Agent) bool
+	CustomCheck func(agenkit.Agent) bool
 }
 
 // DefaultHealthCheckConfig returns default configuration.
@@ -118,7 +118,7 @@ func (hm *HealthMetrics) GetUptime() float64 {
 
 // HealthChecker monitors agent health.
 type HealthChecker struct {
-	agent            core.Agent
+	agent            agenkit.Agent
 	config           HealthCheckConfig
 	metrics          *HealthMetrics
 	isAlive          bool
@@ -131,7 +131,7 @@ type HealthChecker struct {
 }
 
 // NewHealthChecker creates a new health checker.
-func NewHealthChecker(agent core.Agent, config HealthCheckConfig) *HealthChecker {
+func NewHealthChecker(agent agenkit.Agent, config HealthCheckConfig) *HealthChecker {
 	return &HealthChecker{
 		agent:           agent,
 		config:          config,
@@ -237,7 +237,7 @@ func (hc *HealthChecker) CheckReadiness(ctx context.Context) HealthCheckResult {
 	checkCtx, cancel := context.WithTimeout(ctx, hc.config.ReadinessTimeout)
 	defer cancel()
 
-	testMsg := core.Message{
+	testMsg := &agenkit.Message{
 		Role:    "system",
 		Content: "readiness_check",
 	}

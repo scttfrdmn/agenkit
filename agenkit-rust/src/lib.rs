@@ -97,6 +97,7 @@ pub mod transports;
 pub mod budget;
 pub mod checkpointing;
 pub mod evaluation;
+pub mod infrastructure;
 pub mod memory;
 pub mod middleware;
 pub mod optimizations;
@@ -130,6 +131,13 @@ pub use budget::{
 };
 
 pub use memory::{LongTermMemory, MemoryEntry, MemoryHierarchy, ShortTermMemory, WorkingMemory};
+
+pub use infrastructure::{
+    AgentBackend, BackendStats, EnhancedRetryConfig, EnhancedRetryDecorator, EnhancedRetryMetrics,
+    ErrorClass, ErrorStrategy, HealthCheckConfig, HealthCheckResult, HealthChecker, HealthMetrics,
+    HealthStatus, JitterType, LoadBalancer, LoadBalancerConfig, LoadBalancerMetrics,
+    LoadBalancingStrategy, ProbeType, RetryBudget,
+};
 
 // WASM-specific initialization
 #[cfg(feature = "wasm")]

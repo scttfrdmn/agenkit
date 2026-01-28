@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/core"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // LoadBalancingStrategy defines the load balancing algorithm.
@@ -34,7 +34,7 @@ const (
 
 // AgentBackend represents a backend agent with metadata.
 type AgentBackend struct {
-	Agent              core.Agent
+	Agent              agenkit.Agent
 	Weight             int
 	Healthy            bool
 	ActiveConnections  int
@@ -88,7 +88,7 @@ type LoadBalancer struct {
 }
 
 // NewLoadBalancer creates a new load balancer.
-func NewLoadBalancer(agents []core.Agent, config LoadBalancerConfig, weights []int) (*LoadBalancer, error) {
+func NewLoadBalancer(agents []agenkit.Agent, config LoadBalancerConfig, weights []int) (*LoadBalancer, error) {
 	if len(agents) == 0 {
 		return nil, fmt.Errorf("at least one agent required")
 	}
@@ -148,6 +148,14 @@ func (lb *LoadBalancer) Capabilities() []string {
 	return caps
 }
 
+// Introspect returns introspection data about the load balancer.
+func (lb *LoadBalancer) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    lb.Name(),
+		Capabilities: lb.Capabilities(),
+	}
+}
+
 // GetBackendStats returns statistics for all backends.
 func (lb *LoadBalancer) GetBackendStats() []map[string]interface{} {
 	lb.mu.Lock()
@@ -204,7 +212,7 @@ func (lb *LoadBalancer) performHealthChecks(ctx context.Context) {
 		checkCtx, cancel := context.WithTimeout(ctx, lb.config.HealthCheckTimeout)
 
 		// Simple health check: test if agent responds
-		testMsg := core.Message{
+		testMsg := &agenkit.Message{
 			Role:    "system",
 			Content: "health_check",
 		}
@@ -318,7 +326,7 @@ func (lb *LoadBalancer) selectWeightedRoundRobin(backends []*AgentBackend) *Agen
 }
 
 // Process processes a message using load-balanced backend.
-func (lb *LoadBalancer) Process(ctx context.Context, message core.Message) (core.Message, error) {
+func (lb *LoadBalancer) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	lb.metrics.mu.Lock()
 	lb.metrics.TotalRequests++
 	lb.metrics.mu.Unlock()
@@ -328,13 +336,13 @@ func (lb *LoadBalancer) Process(ctx context.Context, message core.Message) (core
 	for {
 		backend := lb.selectBackend()
 		if backend == nil {
-			return core.Message{}, fmt.Errorf("all backends unhealthy")
+			return nil, fmt.Errorf("all backends unhealthy")
 		}
 
 		// Avoid retrying same backend
 		if attempted[backend.Agent.Name()] {
 			if !lb.config.EnableFailover || len(attempted) >= len(lb.backends) {
-				return core.Message{}, fmt.Errorf("all backends attempted")
+				return nil, fmt.Errorf("all backends attempted")
 			}
 			continue
 		}
@@ -378,7 +386,7 @@ func (lb *LoadBalancer) Process(ctx context.Context, message core.Message) (core
 		}
 
 		// No more failover
-		return core.Message{}, fmt.Errorf("backend %s failed: %w", backend.Agent.Name(), err)
+		return nil,fmt.Errorf("backend %s failed: %w", backend.Agent.Name(), err)
 	}
 }
 

@@ -15,19 +15,49 @@ import (
 	"sync"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/adapters"
-	"github.com/scttfrdmn/agenkit/core"
-	"github.com/scttfrdmn/agenkit/infrastructure"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/infrastructure"
 )
 
+// SimpleEchoAgent is a simple echo agent for testing.
+type SimpleEchoAgent struct {
+	name string
+}
+
+func NewEchoAgent(name string) *SimpleEchoAgent {
+	return &SimpleEchoAgent{name: name}
+}
+
+func (a *SimpleEchoAgent) Name() string {
+	return a.name
+}
+
+func (a *SimpleEchoAgent) Capabilities() []string {
+	return []string{"echo"}
+}
+
+func (a *SimpleEchoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	return &agenkit.Message{
+		Role:    "assistant",
+		Content: fmt.Sprintf("[%s] Echo: %s", a.name, message.Content),
+	}, nil
+}
+
+func (a *SimpleEchoAgent) Introspect() *agenkit.IntrospectionResult {
+	return &agenkit.IntrospectionResult{
+		AgentName:    a.Name(),
+		Capabilities: a.Capabilities(),
+	}
+}
+
 func basicLoadBalancingExample() {
-	fmt.Println("\n=== Basic Load Balancing Example ===\n")
+	fmt.Println("\n=== Basic Load Balancing Example ===")
 
 	// Create multiple agent backends
-	agents := []core.Agent{
-		adapters.NewEchoAgent("backend-1"),
-		adapters.NewEchoAgent("backend-2"),
-		adapters.NewEchoAgent("backend-3"),
+	agents := []agenkit.Agent{
+		NewEchoAgent("backend-1"),
+		NewEchoAgent("backend-2"),
+		NewEchoAgent("backend-3"),
 	}
 
 	// Create load balancer with round-robin strategy
@@ -43,7 +73,7 @@ func basicLoadBalancingExample() {
 	// Process messages - they'll be distributed across backends
 	ctx := context.Background()
 	for i := 0; i < 6; i++ {
-		message := core.Message{
+		message := &agenkit.Message{
 			Role:    "user",
 			Content: fmt.Sprintf("Request %d", i+1),
 		}
@@ -67,12 +97,12 @@ func basicLoadBalancingExample() {
 }
 
 func weightedLoadBalancingExample() {
-	fmt.Println("\n=== Weighted Load Balancing Example ===\n")
+	fmt.Println("\n=== Weighted Load Balancing Example ===")
 
-	agents := []core.Agent{
-		adapters.NewEchoAgent("high-capacity"),
-		adapters.NewEchoAgent("medium-capacity"),
-		adapters.NewEchoAgent("low-capacity"),
+	agents := []agenkit.Agent{
+		NewEchoAgent("high-capacity"),
+		NewEchoAgent("medium-capacity"),
+		NewEchoAgent("low-capacity"),
 	}
 
 	// Weight 3:2:1 means high-capacity gets 50% of traffic
@@ -89,7 +119,7 @@ func weightedLoadBalancingExample() {
 	// Send 12 requests to see distribution
 	ctx := context.Background()
 	for i := 0; i < 12; i++ {
-		message := core.Message{
+		message := &agenkit.Message{
 			Role:    "user",
 			Content: fmt.Sprintf("Request %d", i+1),
 		}
@@ -106,12 +136,12 @@ func weightedLoadBalancingExample() {
 }
 
 func leastConnectionsExample() {
-	fmt.Println("\n=== Least Connections Strategy Example ===\n")
+	fmt.Println("\n=== Least Connections Strategy Example ===")
 
-	agents := []core.Agent{
-		adapters.NewEchoAgent("agent-1"),
-		adapters.NewEchoAgent("agent-2"),
-		adapters.NewEchoAgent("agent-3"),
+	agents := []agenkit.Agent{
+		NewEchoAgent("agent-1"),
+		NewEchoAgent("agent-2"),
+		NewEchoAgent("agent-3"),
 	}
 
 	config := infrastructure.DefaultLoadBalancerConfig()
@@ -130,7 +160,7 @@ func leastConnectionsExample() {
 		wg.Add(1)
 		go func(num int) {
 			defer wg.Done()
-			message := core.Message{
+			message := &agenkit.Message{
 				Role:    "user",
 				Content: fmt.Sprintf("Concurrent request %d", num),
 			}
@@ -150,9 +180,9 @@ func leastConnectionsExample() {
 }
 
 func healthCheckExample() {
-	fmt.Println("\n=== Health Check Example ===\n")
+	fmt.Println("\n=== Health Check Example ===")
 
-	agent := adapters.NewEchoAgent("monitored-agent")
+	agent := NewEchoAgent("monitored-agent")
 
 	// Configure health checks
 	config := infrastructure.DefaultHealthCheckConfig()
@@ -191,9 +221,9 @@ func healthCheckExample() {
 }
 
 func enhancedRetryExample() {
-	fmt.Println("\n=== Enhanced Retry Example ===\n")
+	fmt.Println("\n=== Enhanced Retry Example ===")
 
-	agent := adapters.NewEchoAgent("unreliable-agent")
+	agent := NewEchoAgent("unreliable-agent")
 
 	// Configure enhanced retry
 	config := infrastructure.DefaultEnhancedRetryConfig()
@@ -206,7 +236,7 @@ func enhancedRetryExample() {
 
 	// Process messages with automatic retry
 	ctx := context.Background()
-	message := core.Message{
+	message := &agenkit.Message{
 		Role:    "user",
 		Content: "Test with retry",
 	}
@@ -227,9 +257,9 @@ func enhancedRetryExample() {
 }
 
 func errorClassificationExample() {
-	fmt.Println("\n=== Error Classification Example ===\n")
+	fmt.Println("\n=== Error Classification Example ===")
 
-	agent := adapters.NewEchoAgent("agent-with-errors")
+	agent := NewEchoAgent("agent-with-errors")
 
 	// Custom error classifier
 	errorClassifier := func(err error) infrastructure.ErrorClass {
@@ -252,7 +282,7 @@ func errorClassificationExample() {
 
 	// The agent will use different retry strategies based on error type
 	ctx := context.Background()
-	message := core.Message{
+	message := &agenkit.Message{
 		Role:    "user",
 		Content: "Test error classification",
 	}
@@ -270,13 +300,13 @@ func errorClassificationExample() {
 }
 
 func productionDeploymentExample() {
-	fmt.Println("\n=== Production Deployment Example ===\n")
+	fmt.Println("\n=== Production Deployment Example ===")
 
 	// Step 1: Create backend agents
-	backends := []core.Agent{
-		adapters.NewEchoAgent("prod-backend-1"),
-		adapters.NewEchoAgent("prod-backend-2"),
-		adapters.NewEchoAgent("prod-backend-3"),
+	backends := []agenkit.Agent{
+		NewEchoAgent("prod-backend-1"),
+		NewEchoAgent("prod-backend-2"),
+		NewEchoAgent("prod-backend-3"),
 	}
 
 	// Step 2: Wrap each backend with enhanced retry
@@ -285,7 +315,7 @@ func productionDeploymentExample() {
 	retryConfig.JitterType = infrastructure.FullJitter
 	retryConfig.EnableBackpressure = true
 
-	retryBackends := make([]core.Agent, len(backends))
+	retryBackends := make([]agenkit.Agent, len(backends))
 	for i, backend := range backends {
 		retryBackends[i] = infrastructure.NewEnhancedRetryDecorator(backend, retryConfig)
 	}
@@ -320,7 +350,7 @@ func productionDeploymentExample() {
 		wg.Add(1)
 		go func(num int) {
 			defer wg.Done()
-			message := core.Message{
+			message := &agenkit.Message{
 				Role:    "user",
 				Content: fmt.Sprintf("Production request %d", num+1),
 			}

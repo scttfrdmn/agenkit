@@ -14,6 +14,8 @@ option(AGENKIT_BUILD_BENCHMARKS "Build benchmarks" ON)
 option(AGENKIT_BUILD_SHARED "Build shared library" ON)
 option(AGENKIT_HAS_AWS_SDK "Build with AWS SDK support for Bedrock adapter" OFF)
 option(AGENKIT_WITH_OBSERVABILITY "Build with OpenTelemetry observability support" ON)
+option(AGENKIT_WITH_GRPC "Build with gRPC transport support" OFF)
+option(AGENKIT_WITH_WEBSOCKET "Build with WebSocket transport support" OFF)
 
 # Dependencies
 find_package(nlohmann_json 3.11.0 QUIET)
@@ -64,6 +66,42 @@ else()
     message(STATUS "Observability disabled - enable with -DAGENKIT_WITH_OBSERVABILITY=ON")
 endif()
 
+# Optional: gRPC for gRPC transport
+if(AGENKIT_WITH_GRPC)
+    find_package(gRPC CONFIG)
+    find_package(Protobuf CONFIG)
+    if(gRPC_FOUND AND Protobuf_FOUND)
+        add_definitions(-DAGENKIT_WITH_GRPC)
+        message(STATUS "gRPC C++ library found - gRPC transport enabled")
+    else()
+        message(WARNING "gRPC or Protobuf not found - gRPC transport will be disabled. Install with: vcpkg install grpc")
+        set(AGENKIT_WITH_GRPC OFF)
+    endif()
+else()
+    message(STATUS "gRPC transport disabled - enable with -DAGENKIT_WITH_GRPC=ON")
+endif()
+
+# Optional: WebSocket for WebSocket transport
+if(AGENKIT_WITH_WEBSOCKET)
+    # Try to find websocketpp or ixwebsocket
+    find_package(websocketpp CONFIG QUIET)
+    find_package(ixwebsocket CONFIG QUIET)
+
+    if(websocketpp_FOUND OR ixwebsocket_FOUND)
+        add_definitions(-DAGENKIT_WITH_WEBSOCKET)
+        if(websocketpp_FOUND)
+            message(STATUS "websocketpp found - WebSocket transport enabled")
+        else()
+            message(STATUS "ixwebsocket found - WebSocket transport enabled")
+        endif()
+    else()
+        message(WARNING "WebSocket library not found - WebSocket transport will be disabled. Install with: vcpkg install websocketpp or vcpkg install ixwebsocket")
+        set(AGENKIT_WITH_WEBSOCKET OFF)
+    endif()
+else()
+    message(STATUS "WebSocket transport disabled - enable with -DAGENKIT_WITH_WEBSOCKET=ON")
+endif()
+
 # Library target
 add_library(agenkit
     src/core/message.cpp
@@ -78,6 +116,8 @@ add_library(agenkit
     src/adapters/bedrock_agent.cpp
     src/transports/http_agent.cpp
     src/transports/http_server.cpp
+    src/transports/grpc_agent.cpp
+    src/transports/websocket_agent.cpp
     src/patterns/reflection.cpp
     src/patterns/react.cpp
     src/patterns/agents_as_tools.cpp
@@ -180,6 +220,37 @@ if(AGENKIT_WITH_OBSERVABILITY)
             opentelemetry-cpp::otlp_http_exporter
             opentelemetry-cpp::ostream_span_exporter
     )
+endif()
+
+# Link gRPC if available
+if(AGENKIT_WITH_GRPC)
+    target_link_libraries(agenkit
+        PRIVATE
+            gRPC::grpc++
+            gRPC::grpc++_reflection
+            protobuf::libprotobuf
+    )
+endif()
+
+# Link WebSocket if available
+if(AGENKIT_WITH_WEBSOCKET)
+    if(websocketpp_FOUND)
+        target_link_libraries(agenkit
+            PRIVATE
+                websocketpp::websocketpp
+        )
+        # websocketpp needs Boost.Asio
+        find_package(Boost REQUIRED COMPONENTS system)
+        target_link_libraries(agenkit
+            PRIVATE
+                Boost::system
+        )
+    elseif(ixwebsocket_FOUND)
+        target_link_libraries(agenkit
+            PRIVATE
+                ixwebsocket::ixwebsocket
+        )
+    endif()
 endif()
 
 # Compiler warnings

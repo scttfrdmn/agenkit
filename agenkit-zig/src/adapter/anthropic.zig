@@ -51,7 +51,7 @@ const AnthropicStream = struct {
             .{ .name = "anthropic-version", .value = self.self.api_version },
         };
 
-        var response_buffer = std.ArrayList(u8).init(self.allocator);
+        var response_buffer: std.io.Writer.Allocating = .init(self.allocator);
         defer response_buffer.deinit();
 
         const result = try client.fetch(.{
@@ -59,20 +59,21 @@ const AnthropicStream = struct {
             .method = .POST,
             .payload = body,
             .extra_headers = &headers,
-            .response_storage = .{ .dynamic = &response_buffer },
+            .response_writer = &response_buffer.writer,
         });
 
         if (result.status != .ok) {
             return error.ServerError;
         }
 
-        // Parse SSE stream response and collect text chunks
-        try self.parseSSEStream(response_buffer.items);
+        const data = try response_buffer.toOwnedSlice();
+        defer self.allocator.free(data);
+        try self.parseSSEStream(data);
     }
 
     /// Parse SSE stream and extract text chunks
     fn parseSSEStream(self: *AnthropicStream, data: []const u8) !void {
-        var lines = std.mem.split(u8, data, "\n");
+        var lines = std.mem.splitSequence(u8, data, "\n");
 
         while (lines.next()) |line| {
             // Skip empty lines
@@ -107,7 +108,7 @@ const AnthropicStream = struct {
                                     if (delta.object.get("text")) |text| {
                                         // Store text chunk
                                         const chunk = try self.allocator.dupe(u8, text.string);
-                                        try self.chunks.append(chunk);
+                                        try self.chunks.append(self.allocator, chunk);
                                     }
                                 }
                             }
@@ -123,8 +124,8 @@ const AnthropicStream = struct {
         for (self.chunks.items) |chunk| {
             self.allocator.free(chunk);
         }
-        self.chunks.deinit();
-        self.buffer.deinit();
+        self.chunks.deinit(self.allocator);
+        self.buffer.deinit(self.allocator);
         self.allocator.destroy(self);
     }
 };
@@ -264,8 +265,8 @@ pub const AnthropicLLM = struct {
         stream_impl.* = AnthropicStream{
             .allocator = allocator,
             .self = self,
-            .buffer = std.ArrayList(u8).init(allocator),
-            .chunks = std.ArrayList([]const u8).init(allocator),
+            .buffer = std.ArrayList(u8){},
+            .chunks = std.ArrayList([]const u8){},
             .current_index = 0,
             .completed = false,
         };
@@ -301,12 +302,12 @@ pub const AnthropicLLM = struct {
         messages: []const *Message,
         options: *const llm.CallOptions,
     ) ![]const u8 {
-        var json = std.ArrayList(u8).init(allocator);
-        defer json.deinit();
+        var json = std.ArrayList(u8){};
+        defer json.deinit(allocator);
 
-        try json.appendSlice("{\"model\":\"");
-        try json.appendSlice(self.model_name);
-        try json.appendSlice("\",\"stream\":true,\"messages\":[");
+        try json.appendSlice(allocator, "{\"model\":\"");
+        try json.appendSlice(allocator, self.model_name);
+        try json.appendSlice(allocator, "\",\"stream\":true,\"messages\":[");
 
         // Separate system message (same logic as buildRequestBody)
         var has_system = false;
@@ -327,18 +328,18 @@ pub const AnthropicLLM = struct {
         for (messages) |msg| {
             if (msg.role == .system) continue;
 
-            if (!first) try json.append(',');
+            if (!first) try json.append(allocator, ',');
             first = false;
 
-            try json.appendSlice("{\"role\":\"");
+            try json.appendSlice(allocator, "{\"role\":\"");
             const role_str = switch (msg.role) {
                 .user => "user",
                 .assistant => "assistant",
                 .system => "user",
                 .tool => "user",
             };
-            try json.appendSlice(role_str);
-            try json.appendSlice("\",\"content\":\"");
+            try json.appendSlice(allocator, role_str);
+            try json.appendSlice(allocator, "\",\"content\":\"");
 
             const content = switch (msg.content) {
                 .text => |t| t,
@@ -347,65 +348,65 @@ pub const AnthropicLLM = struct {
 
             for (content) |c| {
                 if (c == '"') {
-                    try json.appendSlice("\\\"");
+                    try json.appendSlice(allocator, "\\\"");
                 } else if (c == '\\') {
-                    try json.appendSlice("\\\\");
+                    try json.appendSlice(allocator, "\\\\");
                 } else if (c == '\n') {
-                    try json.appendSlice("\\n");
+                    try json.appendSlice(allocator, "\\n");
                 } else if (c == '\r') {
-                    try json.appendSlice("\\r");
+                    try json.appendSlice(allocator, "\\r");
                 } else if (c == '\t') {
-                    try json.appendSlice("\\t");
+                    try json.appendSlice(allocator, "\\t");
                 } else {
-                    try json.append(c);
+                    try json.append(allocator, c);
                 }
             }
 
-            try json.appendSlice("\"}");
+            try json.appendSlice(allocator, "\"}");
         }
 
-        try json.append(']');
+        try json.append(allocator, ']');
 
         if (has_system) {
-            try json.appendSlice(",\"system\":\"");
+            try json.appendSlice(allocator, ",\"system\":\"");
             for (system_content) |c| {
                 if (c == '"') {
-                    try json.appendSlice("\\\"");
+                    try json.appendSlice(allocator, "\\\"");
                 } else if (c == '\\') {
-                    try json.appendSlice("\\\\");
+                    try json.appendSlice(allocator, "\\\\");
                 } else if (c == '\n') {
-                    try json.appendSlice("\\n");
+                    try json.appendSlice(allocator, "\\n");
                 } else if (c == '\r') {
-                    try json.appendSlice("\\r");
+                    try json.appendSlice(allocator, "\\r");
                 } else if (c == '\t') {
-                    try json.appendSlice("\\t");
+                    try json.appendSlice(allocator, "\\t");
                 } else {
-                    try json.append(c);
+                    try json.append(allocator, c);
                 }
             }
-            try json.append('"');
+            try json.append(allocator, '"');
         }
 
         const max_tokens = options.max_tokens orelse 1024;
         const max_tokens_str = try std.fmt.allocPrint(allocator, ",\"max_tokens\":{d}", .{max_tokens});
         defer allocator.free(max_tokens_str);
-        try json.appendSlice(max_tokens_str);
+        try json.appendSlice(allocator, max_tokens_str);
 
         if (options.temperature) |temp| {
             const temp_str = try std.fmt.allocPrint(allocator, ",\"temperature\":{d}", .{temp});
             defer allocator.free(temp_str);
-            try json.appendSlice(temp_str);
+            try json.appendSlice(allocator, temp_str);
         }
 
         if (options.top_p) |top_p_val| {
             const top_p_str = try std.fmt.allocPrint(allocator, ",\"top_p\":{d}", .{top_p_val});
             defer allocator.free(top_p_str);
-            try json.appendSlice(top_p_str);
+            try json.appendSlice(allocator, top_p_str);
         }
 
-        try json.append('}');
+        try json.append(allocator, '}');
 
-        return try json.toOwnedSlice();
+        return try json.toOwnedSlice(allocator);
     }
 
     /// Build Anthropic API request body

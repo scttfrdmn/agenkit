@@ -39,7 +39,7 @@ const OllamaStream = struct {
 
         const headers = [_]std.http.Header{.{ .name = "Content-Type", .value = "application/json" }};
 
-        var response_buffer = std.ArrayList(u8).init(self.allocator);
+        var response_buffer: std.io.Writer.Allocating = .init(self.allocator);
         defer response_buffer.deinit();
 
         const result = try client.fetch(.{
@@ -47,16 +47,18 @@ const OllamaStream = struct {
             .method = .POST,
             .payload = body,
             .extra_headers = &headers,
-            .response_storage = .{ .dynamic = &response_buffer },
+            .response_writer = &response_buffer.writer,
         });
 
         if (result.status != .ok) return error.ServerError;
 
-        try self.parseNewlineJSON(response_buffer.items);
+        const data = try response_buffer.toOwnedSlice();
+        defer self.allocator.free(data);
+        try self.parseNewlineJSON(data);
     }
 
     fn parseNewlineJSON(self: *OllamaStream, data: []const u8) !void {
-        var lines = std.mem.split(u8, data, "\n");
+        var lines = std.mem.splitSequence(u8, data, "\n");
         while (lines.next()) |line| {
             if (line.len == 0) continue;
             const parsed = std.json.parseFromSlice(std.json.Value, self.allocator, line, .{}) catch continue;
@@ -65,7 +67,7 @@ const OllamaStream = struct {
             if (parsed.value.object.get("message")) |msg| {
                 if (msg.object.get("content")) |content| {
                     const chunk = try self.allocator.dupe(u8, content.string);
-                    try self.chunks.append(chunk);
+                    try self.chunks.append(self.allocator, chunk);
                 }
             }
         }
@@ -73,7 +75,7 @@ const OllamaStream = struct {
 
     fn deinit(self: *OllamaStream) void {
         for (self.chunks.items) |chunk| self.allocator.free(chunk);
-        self.chunks.deinit();
+        self.chunks.deinit(self.allocator);
         self.allocator.destroy(self);
     }
 };
@@ -193,7 +195,7 @@ pub const OllamaLLM = struct {
         stream_impl.* = OllamaStream{
             .allocator = allocator,
             .self = self,
-            .chunks = std.ArrayList([]const u8).init(allocator),
+            .chunks = std.ArrayList([]const u8){},
             .current_index = 0,
         };
 

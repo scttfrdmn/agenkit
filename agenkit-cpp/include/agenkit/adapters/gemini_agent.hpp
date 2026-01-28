@@ -136,6 +136,29 @@ public:
      */
     void set_config(const GeminiConfig& config);
 
+    /**
+     * @brief Stream completion chunks from Gemini API
+     *
+     * Streams response text as it arrives from the API using newline-delimited JSON.
+     * The callback function is invoked for each text chunk received.
+     *
+     * @param message Input message (role and content)
+     * @param callback Function called for each chunk: (const std::string& text) -> bool
+     *                 Returns false to stop streaming early, true to continue
+     * @return Result indicating success or error
+     *
+     * @par Example
+     * @code
+     * auto msg = Message::with_text("user", "Count to 10");
+     * auto result = gemini.stream(std::move(msg), [](const std::string& chunk) {
+     *     std::cout << chunk << std::flush;
+     *     return true;  // Continue streaming
+     * });
+     * @endcode
+     */
+    core::Result<void, core::AgentError>
+    stream(core::Message message, std::function<bool(const std::string&)> callback);
+
 private:
     GeminiConfig config_;
 

@@ -15,6 +15,7 @@
 #include "agenkit/core/message.hpp"
 #include <string>
 #include <memory>
+#include <functional>
 
 namespace agenkit {
 namespace adapters {
@@ -106,6 +107,19 @@ public:
      */
     std::future<core::Result<core::Message, core::AgentError>>
     process(core::Message message) override;
+
+    /**
+     * @brief Stream response from OpenAI API
+     *
+     * Makes a streaming request to OpenAI and invokes callback for each text chunk.
+     * Callback can return false to stop streaming early.
+     *
+     * @param message Input message (role and content)
+     * @param callback Function called with each text chunk (return false to stop)
+     * @return Result indicating success or error
+     */
+    core::Result<void, core::AgentError>
+    stream(core::Message message, std::function<bool(const std::string&)> callback);
 
     /**
      * @brief Get agent capabilities

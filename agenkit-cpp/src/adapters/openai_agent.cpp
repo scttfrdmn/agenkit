@@ -7,6 +7,7 @@
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
+#include <sstream>
 
 namespace agenkit {
 namespace adapters {
@@ -193,6 +194,137 @@ core::Message OpenAIAgent::json_to_message(const json& response) {
     }
 
     return msg;
+}
+
+core::Result<void, core::AgentError>
+OpenAIAgent::stream(core::Message message, std::function<bool(const std::string&)> callback) {
+    try {
+        // Convert message to OpenAI API format
+        json messages = json::array();
+        messages.push_back(message_to_json(message));
+
+        // Parse API base URL
+        httplib::Client client(config_.api_base);
+        client.set_read_timeout(config_.timeout_seconds, 0);
+
+        // Build request body with stream=true
+        json request_body = {
+            {"model", config_.model},
+            {"messages", messages},
+            {"max_tokens", config_.max_tokens},
+            {"stream", true}
+        };
+
+        // Add optional parameters if not default
+        if (config_.temperature != 0.7) {
+            request_body["temperature"] = config_.temperature;
+        }
+        if (config_.top_p != 1.0) {
+            request_body["top_p"] = config_.top_p;
+        }
+        if (config_.frequency_penalty != 0.0) {
+            request_body["frequency_penalty"] = config_.frequency_penalty;
+        }
+        if (config_.presence_penalty != 0.0) {
+            request_body["presence_penalty"] = config_.presence_penalty;
+        }
+
+        // Set headers
+        httplib::Headers headers = {
+            {"Authorization", "Bearer " + config_.api_key},
+            {"Content-Type", "application/json"}
+        };
+
+        // Make streaming request
+        std::string buffer;
+        auto response = client.Post(
+            "/v1/chat/completions",
+            headers,
+            request_body.dump(),
+            "application/json",
+            [&](const char* data, size_t data_length) {
+                // Append to buffer
+                buffer.append(data, data_length);
+
+                // Process complete SSE events (delimited by \n\n)
+                size_t pos;
+                while ((pos = buffer.find("\n\n")) != std::string::npos) {
+                    std::string event_data = buffer.substr(0, pos);
+                    buffer = buffer.substr(pos + 2);
+
+                    // Parse SSE event
+                    std::istringstream stream(event_data);
+                    std::string line;
+                    while (std::getline(stream, line)) {
+                        if (line.rfind("data: ", 0) == 0) {
+                            std::string json_str = line.substr(6);  // Skip "data: "
+
+                            // Skip [DONE] marker
+                            if (json_str == "[DONE]") {
+                                continue;
+                            }
+
+                            try {
+                                json event_json = json::parse(json_str);
+
+                                // Look for choices[0].delta.content
+                                if (event_json.contains("choices") &&
+                                    event_json["choices"].is_array() &&
+                                    !event_json["choices"].empty()) {
+
+                                    const auto& choice = event_json["choices"][0];
+                                    if (choice.contains("delta") &&
+                                        choice["delta"].contains("content")) {
+
+                                        std::string text = choice["delta"]["content"].get<std::string>();
+
+                                        // Invoke callback with text chunk
+                                        if (!callback(text)) {
+                                            return false;  // Stop streaming
+                                        }
+                                    }
+                                }
+                            } catch (const json::exception&) {
+                                // Skip malformed JSON
+                            }
+                        }
+                    }
+                }
+                return true;  // Continue receiving
+            }
+        );
+
+        if (!response) {
+            return core::Result<void, core::AgentError>::err(
+                core::AgentError(
+                    core::AgentErrorType::Transport,
+                    "Failed to connect to OpenAI API for streaming"
+                )
+            );
+        }
+
+        if (response->status != 200) {
+            std::string error_msg = "OpenAI streaming error (" +
+                                   std::to_string(response->status) + "): " +
+                                   response->body;
+            return core::Result<void, core::AgentError>::err(
+                core::AgentError(
+                    core::AgentErrorType::Http,
+                    error_msg
+                )
+            );
+        }
+
+        return core::Result<void, core::AgentError>::ok();
+
+    } catch (const std::exception& e) {
+        return core::Result<void, core::AgentError>::err(
+            core::AgentError(
+                core::AgentErrorType::Internal,
+                std::string("Streaming error: ") + e.what()
+            )
+        );
+    }
 }
 
 } // namespace adapters

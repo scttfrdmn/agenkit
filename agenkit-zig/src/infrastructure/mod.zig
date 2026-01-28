@@ -4,6 +4,9 @@
 /// - Checkpointing: Durable execution with state persistence
 /// - Budget tracking: Cost monitoring and limits (coming soon)
 /// - Memory systems: Hierarchical conversation memory ✅
+/// - Load balancing: Distribute requests across multiple agents ✅
+/// - Health checks: Kubernetes-style probes with monitoring ✅
+/// - Enhanced retry: Jitter, error classification, budget awareness ✅
 
 pub const checkpointing = struct {
     pub const Checkpoint = @import("checkpointing/checkpoint.zig").Checkpoint;
@@ -30,3 +33,26 @@ pub const memory = struct {
     // Strategies
     pub const strategies = @import("memory/strategies/mod.zig");
 };
+
+// Production Infrastructure Components
+pub const LoadBalancer = @import("load_balancer.zig").LoadBalancer;
+pub const LoadBalancingStrategy = @import("load_balancer.zig").LoadBalancingStrategy;
+pub const LoadBalancerConfig = @import("load_balancer.zig").LoadBalancerConfig;
+pub const LoadBalancerMetrics = @import("load_balancer.zig").LoadBalancerMetrics;
+pub const AgentBackend = @import("load_balancer.zig").AgentBackend;
+pub const BackendStats = @import("load_balancer.zig").BackendStats;
+
+pub const HealthChecker = @import("health.zig").HealthChecker;
+pub const HealthStatus = @import("health.zig").HealthStatus;
+pub const ProbeType = @import("health.zig").ProbeType;
+pub const HealthCheckResult = @import("health.zig").HealthCheckResult;
+pub const HealthCheckConfig = @import("health.zig").HealthCheckConfig;
+pub const HealthMetrics = @import("health.zig").HealthMetrics;
+
+pub const EnhancedRetryDecorator = @import("retry_enhanced.zig").EnhancedRetryDecorator;
+pub const JitterType = @import("retry_enhanced.zig").JitterType;
+pub const ErrorClass = @import("retry_enhanced.zig").ErrorClass;
+pub const ErrorStrategy = @import("retry_enhanced.zig").ErrorStrategy;
+pub const RetryBudget = @import("retry_enhanced.zig").RetryBudget;
+pub const EnhancedRetryConfig = @import("retry_enhanced.zig").EnhancedRetryConfig;
+pub const EnhancedRetryMetrics = @import("retry_enhanced.zig").EnhancedRetryMetrics;

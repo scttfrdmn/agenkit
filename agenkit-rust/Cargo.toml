@@ -283,6 +283,10 @@ path = "examples/observability_production.rs"
 name = "redis_memory_example"
 path = "examples/redis_memory_example.rs"
 
+[[example]]
+name = "anthropic_streaming"
+path = "examples/anthropic_streaming.rs"
+
 [[bench]]
 name = "pattern_benchmarks"
 path = "benches/pattern_benchmarks.rs"

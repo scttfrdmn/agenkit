@@ -46,7 +46,7 @@ const GeminiStream = struct {
             .{ .name = "Content-Type", .value = "application/json" },
         };
 
-        var response_buffer = std.ArrayList(u8).init(self.allocator);
+        var response_buffer: std.io.Writer.Allocating = .init(self.allocator);
         defer response_buffer.deinit();
 
         const result = try client.fetch(.{
@@ -54,18 +54,20 @@ const GeminiStream = struct {
             .method = .POST,
             .payload = body,
             .extra_headers = &headers,
-            .response_storage = .{ .dynamic = &response_buffer },
+            .response_writer = &response_buffer.writer,
         });
 
         if (result.status != .ok) {
             return error.ServerError;
         }
 
-        try self.parseNewlineDelimitedJSON(response_buffer.items);
+        const data = try response_buffer.toOwnedSlice();
+        defer self.allocator.free(data);
+        try self.parseNewlineDelimitedJSON(data);
     }
 
     fn parseNewlineDelimitedJSON(self: *GeminiStream, data: []const u8) !void {
-        var lines = std.mem.split(u8, data, "\n");
+        var lines = std.mem.splitSequence(u8, data, "\n");
 
         while (lines.next()) |line| {
             if (line.len == 0) continue;
@@ -90,7 +92,7 @@ const GeminiStream = struct {
                                 const part = parts.array.items[0].object;
                                 if (part.get("text")) |text| {
                                     const chunk = try self.allocator.dupe(u8, text.string);
-                                    try self.chunks.append(chunk);
+                                    try self.chunks.append(self.allocator, chunk);
                                 }
                             }
                         }
@@ -104,7 +106,7 @@ const GeminiStream = struct {
         for (self.chunks.items) |chunk| {
             self.allocator.free(chunk);
         }
-        self.chunks.deinit();
+        self.chunks.deinit(self.allocator);
         self.allocator.destroy(self);
     }
 };
@@ -238,7 +240,7 @@ pub const GeminiLLM = struct {
         stream_impl.* = GeminiStream{
             .allocator = allocator,
             .self = self,
-            .chunks = std.ArrayList([]const u8).init(allocator),
+            .chunks = std.ArrayList([]const u8){},
             .current_index = 0,
         };
 

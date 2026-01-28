@@ -5,8 +5,10 @@
 ///! and streaming modes.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
+use futures::Stream;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::pin::Pin;
 
 #[cfg(feature = "native")]
 use reqwest::Client;
@@ -242,6 +244,127 @@ impl LiteLLMAdapter {
         }
 
         msg
+    }
+
+    /// Stream completion from LiteLLM proxy.
+    ///
+    /// Returns a stream of Message chunks as they arrive from the API.
+    #[cfg(feature = "native")]
+    pub async fn stream(
+        &self,
+        message: Message,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        let litellm_message = self.message_to_litellm_message(&message);
+
+        match self.stream_api_impl(vec![litellm_message]).await {
+            Ok(chunks) => {
+                Box::pin(futures::stream::iter(chunks.into_iter().map(Ok)))
+            }
+            Err(e) => {
+                Box::pin(futures::stream::once(async move { Err(e) }))
+            }
+        }
+    }
+
+    #[cfg(not(feature = "native"))]
+    pub async fn stream(
+        &self,
+        _message: Message,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        Box::pin(futures::stream::once(async {
+            Err(AgentError::Transport(
+                "LiteLLM adapter requires 'native' feature for streaming".to_string(),
+            ))
+        }))
+    }
+
+    /// Internal streaming implementation.
+    #[cfg(feature = "native")]
+    async fn stream_api_impl(
+        &self,
+        messages: Vec<LiteLLMMessage>,
+    ) -> Result<Vec<Message>, AgentError> {
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(self.config.timeout_seconds))
+            .build()
+            .map_err(|e| AgentError::Transport(e.to_string()))?;
+
+        let mut request_body = json!({
+            "model": self.config.model,
+            "messages": messages,
+            "stream": true,
+        });
+
+        if self.config.temperature != 1.0 {
+            request_body["temperature"] = json!(self.config.temperature);
+        }
+        if let Some(max_tokens) = self.config.max_tokens {
+            request_body["max_tokens"] = json!(max_tokens);
+        }
+
+        let mut request = client
+            .post(format!("{}/chat/completions", self.config.base_url))
+            .header("Content-Type", "application/json")
+            .json(&request_body);
+
+        // Add API key if provided
+        if !self.config.api_key.is_empty() {
+            request = request.header("Authorization", format!("Bearer {}", self.config.api_key));
+        }
+
+        let response = request
+            .send()
+            .await
+            .map_err(|e| AgentError::Transport(e.to_string()))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(AgentError::Http(format!(
+                "LiteLLM API error ({}): {}",
+                status, body
+            )));
+        }
+
+        // Collect full response body (pseudo-streaming)
+        let body = response
+            .text()
+            .await
+            .map_err(|e| AgentError::Transport(e.to_string()))?;
+
+        // Parse SSE stream (OpenAI-compatible format)
+        let mut chunks = Vec::new();
+        for line in body.lines() {
+            if line.is_empty() || !line.starts_with("data: ") {
+                continue;
+            }
+
+            let json_str = &line[6..]; // Skip "data: "
+
+            if json_str == "[DONE]" {
+                break;
+            }
+
+            let chunk_json: serde_json::Value = serde_json::from_str(json_str)
+                .map_err(|e| AgentError::Serialization(e.to_string()))?;
+
+            // Extract text from choices[0].delta.content
+            if let Some(choices) = chunk_json["choices"].as_array() {
+                if let Some(choice) = choices.first() {
+                    if let Some(delta) = choice["delta"].as_object() {
+                        if let Some(content) = delta.get("content") {
+                            if let Some(text) = content.as_str() {
+                                let mut msg = Message::with_text("assistant", text);
+                                msg.with_metadata("streaming", json!(true));
+                                chunks.push(msg);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(chunks)
     }
 }
 

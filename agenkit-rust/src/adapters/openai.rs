@@ -4,8 +4,10 @@
 ///! Supports GPT-4, GPT-4 Turbo, GPT-3.5 Turbo, and other OpenAI models.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
+use futures::Stream;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::pin::Pin;
 
 #[cfg(feature = "native")]
 use reqwest::Client;
@@ -279,6 +281,122 @@ impl OpenAIAgent {
         }
 
         msg
+    }
+
+    /// Stream completion from OpenAI API.
+    ///
+    /// Returns a stream of Message chunks as they arrive from the API.
+    #[cfg(feature = "native")]
+    pub async fn stream(
+        &self,
+        message: Message,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        let chat_message = self.message_to_chat_message(&message);
+
+        match self.stream_api_impl(vec![chat_message]).await {
+            Ok(chunks) => {
+                Box::pin(futures::stream::iter(chunks.into_iter().map(Ok)))
+            }
+            Err(e) => {
+                Box::pin(futures::stream::once(async move { Err(e) }))
+            }
+        }
+    }
+
+    #[cfg(not(feature = "native"))]
+    pub async fn stream(
+        &self,
+        _message: Message,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        Box::pin(futures::stream::once(async {
+            Err(AgentError::Transport(
+                "OpenAI adapter requires 'native' feature for streaming".to_string(),
+            ))
+        }))
+    }
+
+    /// Internal streaming implementation.
+    #[cfg(feature = "native")]
+    async fn stream_api_impl(
+        &self,
+        messages: Vec<ChatMessage>,
+    ) -> Result<Vec<Message>, AgentError> {
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(self.config.timeout_seconds))
+            .build()
+            .map_err(|e| AgentError::Transport(e.to_string()))?;
+
+        let mut request_body = serde_json::to_value(&ChatCompletionRequest {
+            model: self.config.model.clone(),
+            messages,
+            max_tokens: Some(self.config.max_tokens),
+            temperature: Some(self.config.temperature),
+            top_p: Some(self.config.top_p),
+            frequency_penalty: Some(self.config.frequency_penalty),
+            presence_penalty: Some(self.config.presence_penalty),
+        })
+        .map_err(|e| AgentError::Serialization(e.to_string()))?;
+
+        // Add stream parameter
+        request_body["stream"] = json!(true);
+
+        let response = client
+            .post(format!("{}/v1/chat/completions", self.config.api_base))
+            .header("Authorization", format!("Bearer {}", self.config.api_key))
+            .header("Content-Type", "application/json")
+            .json(&request_body)
+            .send()
+            .await
+            .map_err(|e| AgentError::Transport(e.to_string()))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(AgentError::Http(format!(
+                "OpenAI API error ({}): {}",
+                status, body
+            )));
+        }
+
+        // Collect full response body first (pseudo-streaming)
+        let body = response
+            .text()
+            .await
+            .map_err(|e| AgentError::Transport(e.to_string()))?;
+
+        // Parse SSE stream
+        let mut chunks = Vec::new();
+        for line in body.lines() {
+            if line.is_empty() || !line.starts_with("data: ") {
+                continue;
+            }
+
+            let json_str = &line[6..]; // Skip "data: "
+
+            if json_str == "[DONE]" {
+                break;
+            }
+
+            let chunk_json: Value = serde_json::from_str(json_str)
+                .map_err(|e| AgentError::Serialization(e.to_string()))?;
+
+            // Extract text from choices[0].delta.content
+            if let Some(choices) = chunk_json["choices"].as_array() {
+                if let Some(choice) = choices.first() {
+                    if let Some(delta) = choice["delta"].as_object() {
+                        if let Some(content) = delta.get("content") {
+                            if let Some(text) = content.as_str() {
+                                let mut msg = Message::with_text("assistant", text);
+                                msg.with_metadata("streaming", json!(true));
+                                chunks.push(msg);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(chunks)
     }
 }
 

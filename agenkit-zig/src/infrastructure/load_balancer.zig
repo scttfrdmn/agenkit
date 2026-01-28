@@ -6,8 +6,8 @@
 // - Thread-safe for concurrent requests
 
 const std = @import("std");
-const Agent = @import("../core/agent.zig").Agent;
-const Message = @import("../core/message.zig").Message;
+const Agent = @import("../agent.zig").Agent;
+const Message = @import("../message.zig").Message;
 
 /// Load balancing strategy.
 pub const LoadBalancingStrategy = enum {

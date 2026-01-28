@@ -6,8 +6,8 @@
 // - Detailed metrics
 
 const std = @import("std");
-const Agent = @import("../core/agent.zig").Agent;
-const Message = @import("../core/message.zig").Message;
+const Agent = @import("../agent.zig").Agent;
+const Message = @import("../message.zig").Message;
 
 /// Jitter types for retry backoff.
 pub const JitterType = enum {
@@ -166,7 +166,7 @@ pub const EnhancedRetryMetrics = struct {
     error_class_counts: std.AutoHashMap(ErrorClass, u64),
     recent_results: std.ArrayList(bool),
 
-    pub fn init(allocator: std.mem.Allocator, window_size: usize) EnhancedRetryMetrics {
+    pub fn init(allocator: std.mem.Allocator, _: usize) EnhancedRetryMetrics {
         return .{
             .allocator = allocator,
             .total_attempts = 0,

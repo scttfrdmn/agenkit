@@ -5,8 +5,8 @@
 // - Prometheus metrics export
 
 const std = @import("std");
-const Agent = @import("../core/agent.zig").Agent;
-const Message = @import("../core/message.zig").Message;
+const Agent = @import("../agent.zig").Agent;
+const Message = @import("../message.zig").Message;
 
 /// Health status values.
 pub const HealthStatus = enum {
@@ -206,7 +206,7 @@ pub const HealthChecker = struct {
         }
 
         // Test with a simple request
-        var test_msg = Message{
+        const test_msg = Message{
             .role = "system",
             .content = "readiness_check",
             .metadata = null,

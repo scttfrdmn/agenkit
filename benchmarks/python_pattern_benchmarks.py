@@ -31,8 +31,11 @@ from agenkit.patterns import (
     ReasoningWithToolsAgent,
     ReflectionAgent,
     RouterAgent,
+    RouterConfig,
     SequentialAgent,
     SupervisorAgent,
+    SupervisorConfig,
+    default_aggregators,
 )
 
 
@@ -84,14 +87,26 @@ class MockClassifier:
         return "agent1"
 
 
+class MockSubtask:
+    """Mock subtask for Supervisor pattern."""
+
+    def __init__(self, agent_type: str, task_message: Message):
+        self.type = agent_type
+        self.message = task_message
+        self.metadata = {}
+
+
 class MockPlanner:
     """Mock planner for Supervisor pattern."""
 
-    async def plan(self, message: Message) -> list[dict[str, Any]]:
+    async def plan(self, message: Message) -> list[MockSubtask]:
         return [
-            {"agent": "agent1", "task": "subtask1"},
-            {"agent": "agent2", "task": "subtask2"},
+            MockSubtask(agent_type="agent1", task_message=Message(role="user", content="subtask1")),
+            MockSubtask(agent_type="agent2", task_message=Message(role="user", content="subtask2")),
         ]
+
+    async def synthesize(self, original: Message, results: list[Message]) -> Message:
+        return Message(role="assistant", content="Synthesized result", metadata={})
 
 
 class MockApprovalFunc:
@@ -109,7 +124,7 @@ async def benchmark_reflection(iterations: int = 1000) -> dict[str, Any]:
     agent = ReflectionAgent(
         generator=generator,
         critic=critic,
-        max_iterations=2,
+        max_reflections=2,
     )
 
     msg = Message(role="user", content="test input")
@@ -177,12 +192,12 @@ async def benchmark_agents_as_tools(iterations: int = 1000) -> dict[str, Any]:
 
     # Warmup
     for _ in range(10):
-        await tool.execute(input="test")
+        await tool.execute(query="test")
 
     # Benchmark
     start = time.perf_counter()
     for _ in range(iterations):
-        await tool.execute(input="test")
+        await tool.execute(query="test")
     elapsed = time.perf_counter() - start
 
     return {
@@ -200,7 +215,7 @@ async def benchmark_reasoning_with_tools(iterations: int = 1000) -> dict[str, An
     tool = MockTool()
 
     reasoning_agent = ReasoningWithToolsAgent(
-        agent=agent,
+        llm=agent,
         tools=[tool],
         max_reasoning_steps=5,
     )
@@ -287,7 +302,7 @@ async def benchmark_parallel(iterations: int = 1000) -> dict[str, Any]:
     """Benchmark Parallel pattern (3 agents)."""
     agents = [MockAgent(f"agent{i}") for i in range(3)]
 
-    par_agent = ParallelAgent(agents=agents)
+    par_agent = ParallelAgent(agents=agents, aggregator=default_aggregators.concatenate)
 
     msg = Message(role="user", content="test input")
 
@@ -315,7 +330,7 @@ async def benchmark_router(iterations: int = 1000) -> dict[str, Any]:
     agents = {"agent1": MockAgent("agent1"), "agent2": MockAgent("agent2")}
     classifier = MockClassifier()
 
-    router_agent = RouterAgent(agents=agents, classifier=classifier)
+    router_agent = RouterAgent(RouterConfig(agents=agents, classifier=classifier))
 
     msg = Message(role="user", content="test input")
 
@@ -370,7 +385,7 @@ async def benchmark_supervisor(iterations: int = 1000) -> dict[str, Any]:
     agents = {"agent1": MockAgent("agent1"), "agent2": MockAgent("agent2")}
     planner = MockPlanner()
 
-    supervisor_agent = SupervisorAgent(agents=agents, planner=planner)
+    supervisor_agent = SupervisorAgent(planner=planner, specialists=agents)
 
     msg = Message(role="user", content="test input")
 

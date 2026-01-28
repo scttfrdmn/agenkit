@@ -164,6 +164,7 @@ pub fn log_agent_event(event: &str, details: &HashMap<String, serde_json::Value>
 pub fn log_agent_error(error: &AgentError) {
     let error_type = match error {
         AgentError::ProcessingError(_) => "ProcessingError",
+        AgentError::ExecutionError(_) => "ExecutionError",
         AgentError::Timeout(_) => "Timeout",
         AgentError::NotFound(_) => "NotFound",
         AgentError::Transport(_) => "Transport",
@@ -172,6 +173,7 @@ pub fn log_agent_error(error: &AgentError) {
         AgentError::Http(_) => "Http",
         AgentError::Internal(_) => "Internal",
         AgentError::InvalidInput(_) => "InvalidInput",
+        AgentError::ConfigurationError(_) => "ConfigurationError",
     };
 
     tracing::error!(

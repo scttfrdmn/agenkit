@@ -1,4 +1,4 @@
-##! LLM Integration Example - OpenAI, Anthropic, and Ollama
+//! LLM Integration Example - OpenAI, Anthropic, and Ollama
 //!
 //! Demonstrates how to integrate real LLM providers:
 //! - OpenAI (GPT-4, GPT-3.5)

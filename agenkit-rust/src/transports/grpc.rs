@@ -79,7 +79,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use std::pin::Pin;
 
-use crate::core::{Agent, Message};
+use crate::core::{Agent, AgentError, Message};
 
 /// gRPC transport configuration.
 #[derive(Debug, Clone)]
@@ -133,6 +133,7 @@ impl Default for GrpcConfig {
 /// Implements the Agent interface using gRPC protocol for
 /// efficient binary communication with Protocol Buffers.
 pub struct GrpcAgent {
+    name: String,
     config: GrpcConfig,
     // In full implementation:
     // client: AgentServiceClient<tonic::transport::Channel>,
@@ -204,7 +205,10 @@ impl GrpcAgent {
         // let channel = endpoint.connect().await?;
         // let client = AgentServiceClient::new(channel);
 
-        Ok(Self { config })
+        Ok(Self {
+            name: format!("grpc-agent-{}", config.url),
+            config,
+        })
     }
 
     /// Process a streaming request and receive chunks.
@@ -249,7 +253,11 @@ impl GrpcAgent {
 
 #[async_trait]
 impl Agent for GrpcAgent {
-    async fn process(&self, _messages: Vec<Message>) -> Result<Message> {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    async fn process(&self, _message: Message) -> Result<Message, AgentError> {
         // Full implementation would:
         // 1. Convert messages to proto Request
         // 2. Set request ID, timestamp, metadata
@@ -279,8 +287,8 @@ impl Agent for GrpcAgent {
         //     content: msg.content,
         // })
 
-        Err(anyhow::anyhow!(
-            "gRPC transport not fully implemented. See implementation notes in source."
+        Err(AgentError::Internal(
+            "gRPC transport not fully implemented. See implementation notes in source.".to_string()
         ))
     }
 

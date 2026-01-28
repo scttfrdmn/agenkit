@@ -335,7 +335,7 @@ impl OpenAIAgent {
             frequency_penalty: Some(self.config.frequency_penalty),
             presence_penalty: Some(self.config.presence_penalty),
         })
-        .map_err(|e| AgentError::Serialization(e.to_string()))?;
+        ?;
 
         // Add stream parameter
         request_body["stream"] = json!(true);
@@ -352,7 +352,7 @@ impl OpenAIAgent {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            return Err(AgentError::Http(format!(
+            return Err(AgentError::Transport(format!(
                 "OpenAI API error ({}): {}",
                 status, body
             )));
@@ -378,7 +378,7 @@ impl OpenAIAgent {
             }
 
             let chunk_json: Value = serde_json::from_str(json_str)
-                .map_err(|e| AgentError::Serialization(e.to_string()))?;
+                ?;
 
             // Extract text from choices[0].delta.content
             if let Some(choices) = chunk_json["choices"].as_array() {
@@ -387,7 +387,7 @@ impl OpenAIAgent {
                         if let Some(content) = delta.get("content") {
                             if let Some(text) = content.as_str() {
                                 let mut msg = Message::with_text("assistant", text);
-                                msg.with_metadata("streaming", json!(true));
+                                msg.metadata.insert("streaming".to_string(), json!(true));
                                 chunks.push(msg);
                             }
                         }

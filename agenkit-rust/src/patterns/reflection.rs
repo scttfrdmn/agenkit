@@ -62,6 +62,19 @@ use std::sync::Arc;
 
 use crate::core::{Agent, AgentError, Message};
 
+#[cfg(feature = "native")]
+use lazy_static::lazy_static;
+
+#[cfg(feature = "native")]
+lazy_static! {
+    /// Pre-compiled regex patterns for parsing free-form critiques.
+    /// These are compiled once and reused across all ReflectionAgent instances.
+    static ref SCORE_PATTERN: regex::Regex = regex::Regex::new(r"(?i)score[:\s]+([0-9]*\.?[0-9]+)").unwrap();
+    static ref RATING_PATTERN: regex::Regex = regex::Regex::new(r"(?i)rating[:\s]+([0-9]*\.?[0-9]+)").unwrap();
+    static ref SLASH_10_PATTERN: regex::Regex = regex::Regex::new(r"([0-9]+)/10").unwrap();
+    static ref SLASH_1_PATTERN: regex::Regex = regex::Regex::new(r"([0-9]*\.?[0-9]+)/1\.?0").unwrap();
+}
+
 /// Reason why reflection loop stopped.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -168,7 +181,6 @@ pub struct ReflectionAgent {
     improvement_threshold: f64,
     critique_format: CritiqueFormat,
     verbose: bool,
-    history: Vec<ReflectionStep>,
 }
 
 impl ReflectionAgent {
@@ -209,18 +221,7 @@ impl ReflectionAgent {
             improvement_threshold: config.improvement_threshold,
             critique_format: config.critique_format,
             verbose: config.verbose,
-            history: Vec::new(),
         })
-    }
-
-    /// Get reflection history from last execution.
-    pub fn get_history(&self) -> Vec<ReflectionStep> {
-        self.history.clone()
-    }
-
-    /// Clear reflection history.
-    pub fn clear_history(&mut self) {
-        self.history.clear();
     }
 
     /// Build prompt for critic agent.
@@ -349,15 +350,44 @@ Refined Output:"#,
     /// - "Score: 0.8"
     /// - "8/10"
     /// - "Rating: 7.5"
+    #[cfg(feature = "native")]
     fn parse_free_form_critique(&self, content: &str) -> (f64, String) {
         let mut score = 0.5; // Default if no score found
 
-        // Try to find score patterns
+        // Use pre-compiled regex patterns for performance
+        let patterns = [&*SCORE_PATTERN, &*RATING_PATTERN, &*SLASH_10_PATTERN, &*SLASH_1_PATTERN];
+
+        for pattern in &patterns {
+            if let Some(captures) = pattern.captures(content) {
+                if let Some(matched) = captures.get(1) {
+                    if let Ok(value) = matched.as_str().parse::<f64>() {
+                        // Normalize to 0.0-1.0 range
+                        let normalized = if value > 1.0 {
+                            value / 10.0 // Assume 0-10 scale
+                        } else {
+                            value
+                        };
+                        score = normalized.clamp(0.0, 1.0);
+                        break;
+                    }
+                }
+            }
+        }
+
+        (score, content.to_string())
+    }
+
+    /// Parse free-form critique text (WASM fallback without regex caching).
+    #[cfg(not(feature = "native"))]
+    fn parse_free_form_critique(&self, content: &str) -> (f64, String) {
+        let mut score = 0.5; // Default if no score found
+
+        // Try to find score patterns - compile on-demand for WASM
         let patterns = [
-            regex::Regex::new(r"(?i)score[:\s]+([0-9]*\.?[0-9]+)").unwrap(), // "Score: 0.8"
-            regex::Regex::new(r"(?i)rating[:\s]+([0-9]*\.?[0-9]+)").unwrap(), // "Rating: 8"
-            regex::Regex::new(r"([0-9]+)/10").unwrap(),                      // "8/10"
-            regex::Regex::new(r"([0-9]*\.?[0-9]+)/1\.?0").unwrap(),          // "0.8/1.0"
+            regex::Regex::new(r"(?i)score[:\s]+([0-9]*\.?[0-9]+)").unwrap(),
+            regex::Regex::new(r"(?i)rating[:\s]+([0-9]*\.?[0-9]+)").unwrap(),
+            regex::Regex::new(r"([0-9]+)/10").unwrap(),
+            regex::Regex::new(r"([0-9]*\.?[0-9]+)/1\.?0").unwrap(),
         ];
 
         for pattern in &patterns {
@@ -407,32 +437,32 @@ Refined Output:"#,
     }
 
     /// Format final result with metadata.
-    fn format_result(&self, output: Message, stop_reason: StopReason) -> Message {
+    fn format_result(&self, output: Message, stop_reason: StopReason, history: &[ReflectionStep]) -> Message {
         let mut metadata = output.metadata.clone();
 
         // Add reflection metadata
         metadata.insert(
             "reflection_iterations".to_string(),
-            serde_json::json!(self.history.len()),
+            serde_json::json!(history.len()),
         );
         metadata.insert(
             "stop_reason".to_string(),
             serde_json::json!(stop_reason.as_str()),
         );
 
-        if let Some(last_step) = self.history.last() {
+        if let Some(last_step) = history.last() {
             metadata.insert(
                 "final_quality_score".to_string(),
                 serde_json::json!(last_step.quality_score),
             );
         }
 
-        if let Some(first_step) = self.history.first() {
+        if let Some(first_step) = history.first() {
             metadata.insert(
                 "initial_quality_score".to_string(),
                 serde_json::json!(first_step.quality_score),
             );
-            if let Some(last_step) = self.history.last() {
+            if let Some(last_step) = history.last() {
                 metadata.insert(
                     "total_improvement".to_string(),
                     serde_json::json!(last_step.quality_score - first_step.quality_score),
@@ -444,7 +474,7 @@ Refined Output:"#,
         if self.verbose {
             metadata.insert(
                 "reflection_history".to_string(),
-                serde_json::to_value(&self.history).unwrap_or(serde_json::Value::Null),
+                serde_json::to_value(history).unwrap_or(serde_json::Value::Null),
             );
         }
 
@@ -484,10 +514,6 @@ impl Agent for ReflectionAgent {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        // Reset history for new task (we need mutable self, so use interior mutability workaround)
-        // For now, we'll accept that history isn't cleared automatically
-        // This matches the immutable nature of Rust's Agent trait
-
         let original_query = message.content_as_str().unwrap_or("");
 
         // Initial generation
@@ -524,18 +550,7 @@ impl Agent for ReflectionAgent {
                 self.check_stop_conditions(score, improvement, history.len());
 
             if should_stop {
-                // Create a copy of self to set history
-                let agent_with_history = Self {
-                    generator: self.generator.clone(),
-                    critic: self.critic.clone(),
-                    max_iterations: self.max_iterations,
-                    quality_threshold: self.quality_threshold,
-                    improvement_threshold: self.improvement_threshold,
-                    critique_format: self.critique_format,
-                    verbose: self.verbose,
-                    history,
-                };
-                return Ok(agent_with_history.format_result(output, stop_reason));
+                return Ok(self.format_result(output, stop_reason, &history));
             }
 
             // Refine based on critique
@@ -546,17 +561,7 @@ impl Agent for ReflectionAgent {
         }
 
         // Max iterations reached
-        let agent_with_history = Self {
-            generator: self.generator.clone(),
-            critic: self.critic.clone(),
-            max_iterations: self.max_iterations,
-            quality_threshold: self.quality_threshold,
-            improvement_threshold: self.improvement_threshold,
-            critique_format: self.critique_format,
-            verbose: self.verbose,
-            history,
-        };
-        Ok(agent_with_history.format_result(output, StopReason::MaxIterations))
+        Ok(self.format_result(output, StopReason::MaxIterations, &history))
     }
 }
 

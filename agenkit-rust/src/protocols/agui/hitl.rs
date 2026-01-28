@@ -509,7 +509,7 @@ mod tests {
         // Check that metadata includes HITL capabilities
         let json = first_event.to_json();
         assert_eq!(json.get("protocol"), Some(&serde_json::json!("ag-ui")));
-        assert!(json.contains_key("hitl"));
+        assert!(json.get("hitl").is_some());
     }
 
     #[tokio::test]

@@ -268,7 +268,7 @@ impl OllamaAgent {
         }
 
         let response = client
-            .post(format!("{}/api/chat", self.config.base_url))
+            .post(format!("{}/api/chat", self.config.api_base))
             .json(&request_body)
             .send()
             .await
@@ -277,7 +277,7 @@ impl OllamaAgent {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            return Err(AgentError::Http(format!(
+            return Err(AgentError::Transport(format!(
                 "Ollama API error ({}): {}",
                 status, body
             )));
@@ -297,14 +297,14 @@ impl OllamaAgent {
             }
 
             let chunk_json: serde_json::Value = serde_json::from_str(line)
-                .map_err(|e| AgentError::Serialization(e.to_string()))?;
+                ?;
 
             // Extract text from message.content
             if let Some(message) = chunk_json["message"].as_object() {
                 if let Some(content) = message.get("content") {
                     if let Some(text) = content.as_str() {
                         let mut msg = Message::with_text("assistant", text);
-                        msg.with_metadata("streaming", json!(true));
+                        msg.metadata.insert("streaming".to_string(), json!(true));
                         chunks.push(msg);
                     }
                 }

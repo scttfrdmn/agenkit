@@ -354,9 +354,9 @@ impl BedrockAdapter {
         let mut stream = response.stream;
 
         // Process streaming events
-        while let Some(event) = stream.next().await {
-            match event {
-                Ok(output) => {
+        loop {
+            match stream.recv().await {
+                Ok(Some(output)) => {
                     match output {
                         ConverseStreamOutput::ContentBlockDelta(delta) => {
                             // Extract text from delta
@@ -374,6 +374,7 @@ impl BedrockAdapter {
                         }
                     }
                 }
+                Ok(None) => break,
                 Err(e) => {
                     return Err(AgentError::Transport(format!("Streaming error: {}", e)));
                 }

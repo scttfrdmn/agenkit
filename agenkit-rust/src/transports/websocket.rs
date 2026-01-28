@@ -85,7 +85,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use crate::core::{Agent, Message};
+use crate::core::{Agent, AgentError, Message};
 
 /// WebSocket transport configuration.
 #[derive(Debug, Clone)]
@@ -139,6 +139,7 @@ impl Default for WebSocketConfig {
 /// Implements the Agent interface using WebSocket protocol for
 /// bidirectional real-time communication.
 pub struct WebSocketAgent {
+    name: String,
     config: WebSocketConfig,
     connected: Arc<RwLock<bool>>,
     // In full implementation:
@@ -218,6 +219,7 @@ impl WebSocketAgent {
         // ));
 
         Ok(Self {
+            name: format!("websocket-agent-{}", config.url),
             config,
             connected: Arc::new(RwLock::new(false)),
         })
@@ -282,7 +284,11 @@ impl WebSocketAgent {
 
 #[async_trait]
 impl Agent for WebSocketAgent {
-    async fn process(&self, _messages: Vec<Message>) -> Result<Message> {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    async fn process(&self, _message: Message) -> Result<Message, AgentError> {
         // Full implementation would:
         // 1. Generate request ID
         // 2. Create JSON request with messages
@@ -316,8 +322,8 @@ impl Agent for WebSocketAgent {
         //
         // Ok(response)
 
-        Err(anyhow::anyhow!(
-            "WebSocket transport not fully implemented. See implementation notes in source."
+        Err(AgentError::Internal(
+            "WebSocket transport not fully implemented. See implementation notes in source.".to_string()
         ))
     }
 

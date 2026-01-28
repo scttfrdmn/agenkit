@@ -31,6 +31,11 @@ panic = "abort"     # Smaller binary, no unwinding
 [profile.release.package."*"]
 opt-level = "z"     # Optimize dependencies for size too
 
+[profile.bench]
+# Benchmarks need panic = "unwind" for proper unwinding
+panic = "unwind"
+opt-level = 3
+
 [dependencies]
 # Async runtime
 tokio = { version = "1.35", features = ["full"], optional = true }

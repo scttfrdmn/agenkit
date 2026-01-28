@@ -166,6 +166,29 @@ public:
      */
     void set_config(const BedrockConfig& config);
 
+    /**
+     * @brief Stream completion chunks from Bedrock API
+     *
+     * Streams response text as it arrives from the API using the ConverseStream API.
+     * The callback function is invoked for each text chunk received.
+     *
+     * @param message Input message (role and content)
+     * @param callback Function called for each chunk: (const std::string& text) -> bool
+     *                 Returns false to stop streaming early, true to continue
+     * @return Result indicating success or error
+     *
+     * @par Example
+     * @code
+     * auto msg = Message::with_text("user", "Count to 10");
+     * auto result = bedrock.stream(std::move(msg), [](const std::string& chunk) {
+     *     std::cout << chunk << std::flush;
+     *     return true;  // Continue streaming
+     * });
+     * @endcode
+     */
+    core::Result<void, core::AgentError>
+    stream(core::Message message, std::function<bool(const std::string&)> callback);
+
 private:
     BedrockConfig config_;
 #ifdef AGENKIT_HAS_AWS_SDK

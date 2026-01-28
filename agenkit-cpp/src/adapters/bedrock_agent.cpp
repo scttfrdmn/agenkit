@@ -22,10 +22,15 @@
 #include <aws/bedrock-runtime/BedrockRuntimeClient.h>
 #include <aws/bedrock-runtime/model/ConverseRequest.h>
 #include <aws/bedrock-runtime/model/ConverseResult.h>
+#include <aws/bedrock-runtime/model/ConverseStreamRequest.h>
+#include <aws/bedrock-runtime/model/ConverseStreamHandler.h>
 #include <aws/bedrock-runtime/model/Message.h>
 #include <aws/bedrock-runtime/model/ContentBlock.h>
 #include <aws/bedrock-runtime/model/InferenceConfiguration.h>
 #include <aws/bedrock-runtime/model/SystemContentBlock.h>
+#include <functional>
+#include <condition_variable>
+#include <mutex>
 #endif
 
 namespace agenkit {
@@ -217,6 +222,141 @@ BedrockAgent::call_converse_api(const core::Message& message) {
             core::AgentError(
                 core::AgentErrorType::Internal,
                 std::string("unexpected error: ") + e.what()
+            )
+        );
+    }
+}
+
+core::Result<void, core::AgentError>
+BedrockAgent::stream(core::Message message, std::function<bool(const std::string&)> callback) {
+    try {
+        // Create streaming request
+        Aws::BedrockRuntime::Model::ConverseStreamRequest request;
+        request.SetModelId(config_.model);
+
+        // Convert message to Bedrock format
+        Aws::BedrockRuntime::Model::Message bedrock_message;
+
+        // Map role
+        std::string role = message.role();
+        if (role == "user") {
+            bedrock_message.SetRole(Aws::BedrockRuntime::Model::ConversationRole::user);
+        } else if (role == "assistant" || role == "agent") {
+            bedrock_message.SetRole(Aws::BedrockRuntime::Model::ConversationRole::assistant);
+        } else {
+            // Default to user for system messages
+            bedrock_message.SetRole(Aws::BedrockRuntime::Model::ConversationRole::user);
+        }
+
+        // Add content
+        Aws::BedrockRuntime::Model::ContentBlock content_block;
+        content_block.SetText(message.content_as_str());
+        bedrock_message.AddContent(content_block);
+
+        // Add message to request
+        request.AddMessages(bedrock_message);
+
+        // Set inference configuration
+        Aws::BedrockRuntime::Model::InferenceConfiguration inference_config;
+
+        if (config_.temperature.has_value()) {
+            inference_config.SetTemperature(static_cast<float>(config_.temperature.value()));
+        }
+        if (config_.max_tokens.has_value()) {
+            inference_config.SetMaxTokens(config_.max_tokens.value());
+        }
+        if (config_.top_p.has_value()) {
+            inference_config.SetTopP(static_cast<float>(config_.top_p.value()));
+        }
+        if (!config_.stop_sequences.empty()) {
+            for (const auto& seq : config_.stop_sequences) {
+                inference_config.AddStopSequences(seq);
+            }
+        }
+
+        request.SetInferenceConfig(inference_config);
+
+        // Set up stream handler
+        bool should_stop = false;
+        bool has_error = false;
+        std::string error_message;
+        std::mutex mtx;
+        std::condition_variable cv;
+        bool stream_complete = false;
+
+        Aws::BedrockRuntime::Model::ConverseStreamHandler handler;
+
+        // Handle content block delta events
+        handler.SetContentBlockDeltaCallback(
+            [&](const Aws::BedrockRuntime::Model::ContentBlockDelta& delta) {
+                if (should_stop) return;
+
+                if (delta.GetDelta().GetText().size() > 0) {
+                    std::string text = delta.GetDelta().GetText();
+
+                    // Invoke callback with text chunk
+                    if (!callback(text)) {
+                        std::lock_guard<std::mutex> lock(mtx);
+                        should_stop = true;
+                    }
+                }
+            }
+        );
+
+        // Handle errors
+        handler.SetOnErrorCallback(
+            [&](const Aws::Client::AWSError<Aws::BedrockRuntime::BedrockRuntimeErrors>& error) {
+                std::lock_guard<std::mutex> lock(mtx);
+                has_error = true;
+                error_message = error.GetMessage();
+                stream_complete = true;
+                cv.notify_one();
+            }
+        );
+
+        // Handle completion
+        handler.SetOnCompleteCallback(
+            [&]() {
+                std::lock_guard<std::mutex> lock(mtx);
+                stream_complete = true;
+                cv.notify_one();
+            }
+        );
+
+        // Make streaming API call
+        auto outcome = client_->ConverseStream(request, handler);
+
+        if (!outcome.IsSuccess()) {
+            const auto& error = outcome.GetError();
+            std::string error_msg = "Bedrock streaming error: " + error.GetMessage();
+            return core::Result<void, core::AgentError>::err(
+                core::AgentError(
+                    core::AgentErrorType::Http,
+                    error_msg
+                )
+            );
+        }
+
+        // Wait for stream to complete
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [&] { return stream_complete; });
+
+        if (has_error) {
+            return core::Result<void, core::AgentError>::err(
+                core::AgentError(
+                    core::AgentErrorType::Http,
+                    "Bedrock streaming error: " + error_message
+                )
+            );
+        }
+
+        return core::Result<void, core::AgentError>::ok();
+
+    } catch (const std::exception& e) {
+        return core::Result<void, core::AgentError>::err(
+            core::AgentError(
+                core::AgentErrorType::Internal,
+                std::string("streaming error: ") + e.what()
             )
         );
     }

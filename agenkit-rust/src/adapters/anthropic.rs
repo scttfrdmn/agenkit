@@ -1,11 +1,13 @@
 ///! Anthropic Claude API adapter.
 ///!
 ///! This module provides an adapter for calling Anthropic's Claude API via HTTP.
-///! Supports Claude 3 Opus, Sonnet, and Haiku models.
+///! Supports Claude 3 Opus, Sonnet, and Haiku models with both completion and streaming.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
+use futures::stream::Stream;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::pin::Pin;
 
 #[cfg(feature = "native")]
 use reqwest::Client;
@@ -78,6 +80,8 @@ struct MessagesRequest {
     top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     top_k: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stream: Option<bool>,
 }
 
 /// Anthropic messages response.
@@ -104,6 +108,58 @@ struct ContentBlock {
 struct Usage {
     input_tokens: i32,
     output_tokens: i32,
+}
+
+/// Streaming event from Anthropic API.
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+#[allow(dead_code)]
+enum StreamEvent {
+    #[serde(rename = "message_start")]
+    MessageStart { message: MessageStart },
+    #[serde(rename = "content_block_start")]
+    ContentBlockStart { index: i32, content_block: ContentBlockStart },
+    #[serde(rename = "content_block_delta")]
+    ContentBlockDelta { index: i32, delta: Delta },
+    #[serde(rename = "content_block_stop")]
+    ContentBlockStop { index: i32 },
+    #[serde(rename = "message_delta")]
+    MessageDelta { delta: MessageDeltaData },
+    #[serde(rename = "message_stop")]
+    MessageStop,
+    #[serde(rename = "ping")]
+    Ping,
+}
+
+#[derive(Debug, Deserialize)]
+struct MessageStart {
+    id: String,
+    #[serde(rename = "type")]
+    message_type: String,
+    role: String,
+    content: Vec<Value>,
+    model: String,
+    usage: Usage,
+}
+
+#[derive(Debug, Deserialize)]
+struct ContentBlockStart {
+    #[serde(rename = "type")]
+    block_type: String,
+    text: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+enum Delta {
+    #[serde(rename = "text_delta")]
+    TextDelta { text: String },
+}
+
+#[derive(Debug, Deserialize)]
+struct MessageDeltaData {
+    stop_reason: Option<String>,
+    usage: Option<Usage>,
 }
 
 /// Agent adapter for Anthropic Claude API.
@@ -170,6 +226,70 @@ impl AnthropicAgent {
         }
     }
 
+    /// Stream completion chunks from Claude.
+    ///
+    /// Returns a stream of Message chunks as text arrives from the API.
+    /// Note: Currently collects full response before streaming for simplicity.
+    ///
+    /// # Arguments
+    /// * `message` - Input message to process
+    ///
+    /// # Returns
+    /// Stream of Message chunks containing incremental text
+    ///
+    /// # Example
+    /// ```no_run
+    /// use agenkit::adapters::anthropic::{AnthropicAgent, AnthropicConfig};
+    /// use agenkit::core::{Agent, Message};
+    /// use futures::stream::StreamExt;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let config = AnthropicConfig {
+    ///         api_key: std::env::var("ANTHROPIC_API_KEY")?,
+    ///         ..Default::default()
+    ///     };
+    ///
+    ///     let agent = AnthropicAgent::new(config);
+    ///     let msg = Message::with_text("user", "Count to 5");
+    ///
+    ///     let mut stream = agent.stream(msg).await;
+    ///     while let Some(chunk) = stream.next().await {
+    ///         let chunk = chunk?;
+    ///         print!("{}", chunk.content_as_str().unwrap_or(""));
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ```
+    #[cfg(feature = "native")]
+    pub async fn stream(
+        &self,
+        message: Message,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        let (system, messages) = self.message_to_claude_message(&message);
+
+        match self.stream_api_impl(messages, system).await {
+            Ok(chunks) => {
+                Box::pin(futures::stream::iter(chunks.into_iter().map(Ok)))
+            }
+            Err(e) => {
+                Box::pin(futures::stream::once(async move { Err(e) }))
+            }
+        }
+    }
+
+    #[cfg(not(feature = "native"))]
+    pub async fn stream(
+        &self,
+        _message: Message,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        Box::pin(futures::stream::once(async {
+            Err(AgentError::Transport(
+                "Anthropic adapter requires 'native' feature for streaming".to_string(),
+            ))
+        }))
+    }
+
     /// Call Anthropic API with messages.
     #[cfg(feature = "native")]
     async fn call_api(
@@ -185,6 +305,7 @@ impl AnthropicAgent {
             temperature: None,
             top_p: None,
             top_k: None,
+            stream: None,
         };
 
         // Only include optional parameters if not default
@@ -227,6 +348,104 @@ impl AnthropicAgent {
             .json::<MessagesResponse>()
             .await
             .map_err(|e| AgentError::Http(e))
+    }
+
+    /// Stream completion from Anthropic API.
+    ///
+    /// Returns a stream of Message chunks as they arrive from Claude.
+    /// Note: Currently collects full response before streaming for simplicity.
+    /// Future versions may implement true chunk-by-chunk streaming.
+    ///
+    /// # Arguments
+    /// * `messages` - Claude-formatted messages
+    /// * `system` - Optional system message
+    ///
+    /// # Returns
+    /// Stream of Message chunks containing incremental text
+    #[cfg(feature = "native")]
+    async fn stream_api_impl(
+        &self,
+        messages: Vec<ClaudeMessage>,
+        system: Option<String>,
+    ) -> Result<Vec<Message>, AgentError> {
+        let mut request = MessagesRequest {
+            model: self.config.model.clone(),
+            max_tokens: self.config.max_tokens,
+            messages,
+            system,
+            temperature: None,
+            top_p: None,
+            top_k: None,
+            stream: Some(true),
+        };
+
+        // Only include optional parameters if not default
+        if (self.config.temperature - 1.0).abs() > f64::EPSILON {
+            request.temperature = Some(self.config.temperature);
+        }
+        if (self.config.top_p - 1.0).abs() > f64::EPSILON {
+            request.top_p = Some(self.config.top_p);
+        }
+        if self.config.top_k != 5 {
+            request.top_k = Some(self.config.top_k);
+        }
+
+        let url = format!("{}/v1/messages", self.config.api_base);
+
+        let response = self
+            .client
+            .post(&url)
+            .header("x-api-key", &self.config.api_key)
+            .header("anthropic-version", &self.config.api_version)
+            .header("Content-Type", "application/json")
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| AgentError::Http(e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(AgentError::Transport(format!(
+                "Anthropic API error ({}): {}",
+                status, error_text
+            )));
+        }
+
+        // Parse Server-Sent Events (SSE)
+        let bytes = response.bytes().await.map_err(|e| AgentError::Http(e))?;
+        let text = String::from_utf8_lossy(&bytes);
+
+        let mut chunks = Vec::new();
+
+        // Parse SSE format
+        for line in text.lines() {
+            if let Some(data) = line.strip_prefix("data: ") {
+                // Skip [DONE] marker
+                if data == "[DONE]" {
+                    continue;
+                }
+
+                // Parse JSON event
+                if let Ok(StreamEvent::ContentBlockDelta { delta, .. }) =
+                    serde_json::from_str::<StreamEvent>(data)
+                {
+                    if let Delta::TextDelta { text } = delta {
+                        let mut msg = Message::with_text("agent", &text);
+                        msg.metadata
+                            .insert("streaming".to_string(), json!(true));
+                        msg.metadata
+                            .insert("model".to_string(), json!(self.config.model));
+                        chunks.push(msg);
+                    }
+                }
+            }
+        }
+
+        Ok(chunks)
     }
 
     /// Convert Agent message to Claude format, extracting system prompt if present.

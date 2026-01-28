@@ -31,6 +31,52 @@ const std = @import("std");
 const llm = @import("llm.zig");
 const Message = @import("../message.zig").Message;
 const Role = @import("../message.zig").Role;
+/// LiteLLM streaming iterator
+const LiteLLMStream = struct {
+    allocator: Allocator,
+    self: *LiteLLMLLM,
+    chunks: std.ArrayList([]const u8),
+    current_index: usize,
+    fn makeStreamRequest(self: *LiteLLMStream, body: []const u8) !void {
+        var client = std.http.Client{ .allocator = self.allocator };
+        defer client.deinit();
+        const uri_str = try std.fmt.allocPrint(self.allocator, "{s}/chat/completions", .{self.self.base_url});
+        defer self.allocator.free(uri_str);
+        const auth_value = if (self.self.api_key.len > 0) try std.fmt.allocPrint(self.allocator, "Bearer {s}", .{self.self.api_key}) else try self.allocator.dupe(u8, "");
+        defer self.allocator.free(auth_value);
+        const headers = if (self.self.api_key.len > 0) [_]std.http.Header{.{ .name = "Content-Type", .value = "application/json" }, .{ .name = "Authorization", .value = auth_value }} else [_]std.http.Header{.{ .name = "Content-Type", .value = "application/json" }};
+        var response_buffer = std.ArrayList(u8).init(self.allocator);
+        defer response_buffer.deinit();
+        const result = try client.fetch(.{ .location = .{ .url = uri_str }, .method = .POST, .payload = body, .extra_headers = &headers, .response_storage = .{ .dynamic = &response_buffer } });
+        if (result.status != .ok) return error.ServerError;
+        try self.parseSSEStream(response_buffer.items);
+    }
+    fn parseSSEStream(self: *LiteLLMStream, data: []const u8) !void {
+        var lines = std.mem.split(u8, data, "\n");
+        while (lines.next()) |line| {
+            if (line.len == 0 or !std.mem.startsWith(u8, line, "data: ")) continue;
+            const json_str = line[6..];
+            if (std.mem.eql(u8, json_str, "[DONE]")) continue;
+            const parsed = std.json.parseFromSlice(std.json.Value, self.allocator, json_str, .{}) catch continue;
+            defer parsed.deinit();
+            if (parsed.value.object.get("choices")) |choices| {
+                if (choices.array.items.len > 0) {
+                    const choice = choices.array.items[0].object;
+                    if (choice.get("delta")) |delta| {
+                        if (delta.object.get("content")) |content| {
+                            const chunk = try self.allocator.dupe(u8, content.string);
+                            try self.chunks.append(chunk);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    fn deinit(self: *LiteLLMStream) void { for (self.chunks.items) |chunk| self.allocator.free(chunk); self.chunks.deinit(); self.allocator.destroy(self); }
+};
+fn litellmStreamNext(ptr: *anyopaque, allocator: Allocator) !?*Message { const self: *LiteLLMStream = @ptrCast(@alignCast(ptr)); if (self.current_index >= self.chunks.items.len) return null; const text = self.chunks.items[self.current_index]; self.current_index += 1; const msg = try allocator.create(Message); msg.* = try Message.withText(allocator, .assistant, text); try msg.setMetadata("streaming", std.json.Value{ .bool = true }); return msg; }
+fn litellmStreamDeinit(ptr: *anyopaque) void { const self: *LiteLLMStream = @ptrCast(@alignCast(ptr)); self.deinit(); }
+
 const Allocator = std.mem.Allocator;
 
 /// LiteLLM adapter

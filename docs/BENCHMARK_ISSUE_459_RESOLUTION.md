@@ -48,7 +48,7 @@ agent.Process(ctx, msg)                        // Full pattern logic
 
 ### 2. Fixed Python Benchmarks ✅
 
-**Created**: `benchmarks/python_pattern_benchmarks_fixed.py`
+**Updated**: `benchmarks/python_pattern_benchmarks.py`
 
 **Changes**:
 - Creates actual pattern agents (ReflectionAgent, SequentialAgent, etc.)
@@ -66,7 +66,7 @@ agent.Process(ctx, msg)                        // Full pattern logic
 
 ### 3. Fixed TypeScript Benchmarks ✅
 
-**Created**: `agenkit-ts/benchmarks/pattern-performance-fixed.ts`
+**Updated**: `agenkit-ts/benchmarks/pattern-performance.ts`
 
 **Changes**: Same approach as Python - create actual patterns with mock sub-agents
 
@@ -102,10 +102,10 @@ Python is **5.9x faster** (23.67 μs vs 139.66 μs) because:
 ### 6. Re-ran All Benchmarks ✅
 
 **Executed**:
-- Python (fixed): 5 patterns ✅
+- Python: 5 patterns ✅
 - Go: 16 patterns ✅
 - Rust: 5 patterns ✅
-- TypeScript: Blocked by build errors ⏳
+- TypeScript: 6 patterns ✅
 - C++/Zig: Not yet run ⏳
 
 **Results** (docs/PATTERN_PERFORMANCE_MATRIX_CORRECTED.md):
@@ -309,8 +309,8 @@ Percentage: 0.0002% - 0.028%
 
 ### Code
 
-- **Python Fixed**: `benchmarks/python_pattern_benchmarks_fixed.py`
-- **TypeScript Fixed**: `agenkit-ts/benchmarks/pattern-performance-fixed.ts`
+- **Python Benchmarks**: `benchmarks/python_pattern_benchmarks.py`
+- **TypeScript Benchmarks**: `agenkit-ts/benchmarks/pattern-performance.ts`
 - **Go Benchmarks**: `agenkit-go/benchmarks/pattern_benchmarks_test.go`
 - **Rust Benchmarks**: `agenkit-rust/benches/pattern_benchmarks.rs`
 

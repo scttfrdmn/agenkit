@@ -202,12 +202,12 @@ func (m *CheckpointManager) LoadCheckpoint(ctx context.Context, checkpointID str
 //
 //	ctx: Context
 //	sessionID: Session identifier
-//	limit: Optional limit on number of checkpoints (0 = no limit)
+//	limit: Optional limit on number of checkpoints (nil = no limit)
 //
 // Returns:
 //
 //	List of checkpoints (most recent first)
-func (m *CheckpointManager) ListCheckpoints(ctx context.Context, sessionID string, limit int) ([]*Checkpoint, error) {
+func (m *CheckpointManager) ListCheckpoints(ctx context.Context, sessionID string, limit *int) ([]*Checkpoint, error) {
 	return m.storage.ListCheckpoints(ctx, sessionID, limit)
 }
 
@@ -258,7 +258,7 @@ type ReplayFunc func(ctx context.Context, checkpoint *Checkpoint, state map[stri
 //	ctx: Context
 //	checkpointID: Starting checkpoint
 //	replayFn: Function to execute for each step
-//	upToStep: Optional step number to replay up to (0 = all)
+//	upToStep: Optional step number to replay up to (nil = all steps)
 //
 // Returns:
 //
@@ -272,13 +272,13 @@ type ReplayFunc func(ctx context.Context, checkpoint *Checkpoint, state map[stri
 //	        fmt.Printf("Replaying step %d\n", checkpoint.StepNumber)
 //	        return processMessages(checkpoint.Messages), nil
 //	    },
-//	    0,
+//	    nil,
 //	)
 func (m *CheckpointManager) ReplayFromCheckpoint(
 	ctx context.Context,
 	checkpointID string,
 	replayFn ReplayFunc,
-	upToStep int,
+	upToStep *int,
 ) ([]interface{}, error) {
 	// Get checkpoint history
 	history, err := m.GetCheckpointHistory(ctx, checkpointID, 100)
@@ -295,7 +295,7 @@ func (m *CheckpointManager) ReplayFromCheckpoint(
 
 	for _, checkpoint := range history {
 		// Stop if we've reached the target step
-		if upToStep > 0 && checkpoint.StepNumber > upToStep {
+		if upToStep != nil && checkpoint.StepNumber > *upToStep {
 			break
 		}
 
@@ -361,7 +361,7 @@ func (m *CheckpointManager) DeleteSession(ctx context.Context, sessionID string)
 //
 //	Map with statistics
 func (m *CheckpointManager) GetSessionStats(ctx context.Context, sessionID string) (map[string]interface{}, error) {
-	checkpoints, err := m.ListCheckpoints(ctx, sessionID, 0)
+	checkpoints, err := m.ListCheckpoints(ctx, sessionID, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -407,7 +407,7 @@ func (m *CheckpointManager) GetSessionStats(ctx context.Context, sessionID strin
 //	deleted, _ := manager.PruneOldCheckpoints(ctx, "session-1", 10)
 //	fmt.Printf("Deleted %d old checkpoints\n", deleted)
 func (m *CheckpointManager) PruneOldCheckpoints(ctx context.Context, sessionID string, keepLast int) (int, error) {
-	checkpoints, err := m.ListCheckpoints(ctx, sessionID, 0)
+	checkpoints, err := m.ListCheckpoints(ctx, sessionID, nil)
 	if err != nil {
 		return 0, err
 	}

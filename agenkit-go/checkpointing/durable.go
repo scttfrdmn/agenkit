@@ -348,12 +348,12 @@ func (d *DurableAgent) updateState(sessionID string, inputMessage, outputMessage
 //
 //	ctx: Context
 //	sessionID: Session identifier
-//	limit: Optional limit on number of checkpoints (0 = no limit)
+//	limit: Optional limit on number of checkpoints (nil = no limit)
 //
 // Returns:
 //
 //	List of checkpoints
-func (d *DurableAgent) ListCheckpoints(ctx context.Context, sessionID string, limit int) ([]*Checkpoint, error) {
+func (d *DurableAgent) ListCheckpoints(ctx context.Context, sessionID string, limit *int) ([]*Checkpoint, error) {
 	return d.manager.ListCheckpoints(ctx, sessionID, limit)
 }
 

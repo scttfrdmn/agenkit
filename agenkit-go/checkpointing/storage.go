@@ -82,7 +82,7 @@ func (s *InMemoryStorage) Load(ctx context.Context, checkpointID string) (*Check
 }
 
 // ListCheckpoints lists checkpoints for session.
-func (s *InMemoryStorage) ListCheckpoints(ctx context.Context, sessionID string, limit int) ([]*Checkpoint, error) {
+func (s *InMemoryStorage) ListCheckpoints(ctx context.Context, sessionID string, limit *int) ([]*Checkpoint, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -91,8 +91,8 @@ func (s *InMemoryStorage) ListCheckpoints(ctx context.Context, sessionID string,
 		return []*Checkpoint{}, nil
 	}
 
-	if limit > 0 && len(checkpointIDs) > limit {
-		checkpointIDs = checkpointIDs[:limit]
+	if limit != nil && len(checkpointIDs) > *limit {
+		checkpointIDs = checkpointIDs[:*limit]
 	}
 
 	checkpoints := make([]*Checkpoint, 0, len(checkpointIDs))
@@ -107,7 +107,8 @@ func (s *InMemoryStorage) ListCheckpoints(ctx context.Context, sessionID string,
 
 // GetLatest gets latest checkpoint for session.
 func (s *InMemoryStorage) GetLatest(ctx context.Context, sessionID string) (*Checkpoint, error) {
-	checkpoints, err := s.ListCheckpoints(ctx, sessionID, 1)
+	one := 1
+	checkpoints, err := s.ListCheckpoints(ctx, sessionID, &one)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +325,7 @@ func (s *FileStorage) Load(ctx context.Context, checkpointID string) (*Checkpoin
 }
 
 // ListCheckpoints lists checkpoints for session.
-func (s *FileStorage) ListCheckpoints(ctx context.Context, sessionID string, limit int) ([]*Checkpoint, error) {
+func (s *FileStorage) ListCheckpoints(ctx context.Context, sessionID string, limit *int) ([]*Checkpoint, error) {
 	sessionDir := s.getSessionDir(sessionID)
 
 	entries, err := os.ReadDir(sessionDir)
@@ -362,8 +363,8 @@ func (s *FileStorage) ListCheckpoints(ctx context.Context, sessionID string, lim
 	})
 
 	// Apply limit
-	if limit > 0 && len(checkpoints) > limit {
-		checkpoints = checkpoints[:limit]
+	if limit != nil && len(checkpoints) > *limit {
+		checkpoints = checkpoints[:*limit]
 	}
 
 	return checkpoints, nil
@@ -371,7 +372,8 @@ func (s *FileStorage) ListCheckpoints(ctx context.Context, sessionID string, lim
 
 // GetLatest gets latest checkpoint for session.
 func (s *FileStorage) GetLatest(ctx context.Context, sessionID string) (*Checkpoint, error) {
-	checkpoints, err := s.ListCheckpoints(ctx, sessionID, 1)
+	one := 1
+	checkpoints, err := s.ListCheckpoints(ctx, sessionID, &one)
 	if err != nil {
 		return nil, err
 	}

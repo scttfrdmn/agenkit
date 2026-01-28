@@ -76,7 +76,8 @@ type scoredMessage struct {
 //	Messages sorted by importance (most important first)
 func (s *ImportanceWeightingStrategy) Select(ctx context.Context, mem memory.Memory, sessionID string, contextLimit int) ([]agenkit.Message, error) {
 	// Get more messages than needed for scoring
-	allMessages, err := mem.Retrieve(ctx, sessionID, memory.RetrieveOptions{Limit: contextLimit * 3})
+	retrieveLimit := contextLimit * 3
+	allMessages, err := mem.Retrieve(ctx, sessionID, memory.RetrieveOptions{Limit: &retrieveLimit})
 	if err != nil {
 		return nil, err
 	}

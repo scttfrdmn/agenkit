@@ -166,11 +166,11 @@ type CheckpointStorage interface {
 	// Args:
 	//   ctx: Context
 	//   sessionID: Session identifier
-	//   limit: Optional limit on number of checkpoints (0 = no limit)
+	//   limit: Optional limit on number of checkpoints (nil = no limit)
 	//
 	// Returns:
 	//   List of checkpoints (most recent first)
-	ListCheckpoints(ctx context.Context, sessionID string, limit int) ([]*Checkpoint, error)
+	ListCheckpoints(ctx context.Context, sessionID string, limit *int) ([]*Checkpoint, error)
 
 	// GetLatest gets latest checkpoint for session.
 	//

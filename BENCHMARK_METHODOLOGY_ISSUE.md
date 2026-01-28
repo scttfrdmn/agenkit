@@ -140,7 +140,7 @@ Python's `PatternBenchmarkSuite` is designed for **functional testing** (generat
 Create proper pattern instances for each benchmark:
 
 ```python
-# benchmarks/python_pattern_benchmarks_fixed.py
+# benchmarks/python_pattern_benchmarks.py
 
 from agenkit.patterns import ReflectionAgent, ReActAgent, SequentialAgent, ParallelAgent
 

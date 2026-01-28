@@ -213,8 +213,8 @@ This matches:
 - ✅ Go benchmarks (`benchmarks/pattern_benchmarks_test.go`)
 - ✅ C++ benchmarks (`benchmarks/bench_patterns.cpp`)
 - ✅ Zig benchmarks (`benchmarks/patterns.zig`)
-- ✅ Python (fixed) benchmarks (`benchmarks/python_pattern_benchmarks_fixed.py`)
-- ✅ TypeScript (fixed) benchmarks (`benchmarks/pattern-performance-fixed.ts`)
+- ✅ Python benchmarks (`benchmarks/python_pattern_benchmarks.py`)
+- ✅ TypeScript benchmarks (`agenkit-ts/benchmarks/pattern-performance.ts`)
 
 ### Why Python/TypeScript Were Wrong
 
@@ -267,12 +267,12 @@ Unlike Python and TypeScript, Rust benchmarks do **NOT** need to be rewritten. T
 
 | Language | Benchmark Status | Can Compare To |
 |----------|------------------|----------------|
-| Python | ✅ Fixed (corrected version exists) | Go, Rust, C++, Zig |
-| TypeScript | ✅ Fixed (blocked by build issues) | Go, Rust, C++, Zig |
-| **Rust** | **✅ Correct** | **Go, Python (fixed), C++, Zig** |
-| Go | ✅ Correct | Rust, Python (fixed), C++, Zig |
-| C++ | ✅ Correct | Rust, Go, Python (fixed), Zig |
-| Zig | ✅ Correct | Rust, Go, Python (fixed), C++ |
+| Python | ✅ Corrected | Go, Rust, C++, Zig |
+| TypeScript | ✅ Corrected | Go, Rust, C++, Zig |
+| **Rust** | **✅ Correct** | **Go, Python, C++, Zig** |
+| Go | ✅ Correct | Rust, Python, C++, Zig |
+| C++ | ✅ Correct | Rust, Go, Python, Zig |
+| Zig | ✅ Correct | Rust, Go, Python, C++ |
 
 ---
 

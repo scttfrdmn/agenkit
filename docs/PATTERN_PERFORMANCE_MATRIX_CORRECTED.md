@@ -301,9 +301,9 @@ Python Reflection beats Go by 5.9x due to **parsing strategy** (JSON first), not
 
 ### Running Benchmarks
 
-**Python (fixed)**:
+**Python**:
 ```bash
-uv run python benchmarks/python_pattern_benchmarks_fixed.py
+uv run python benchmarks/python_pattern_benchmarks.py
 ```
 
 **Go**:
@@ -318,10 +318,10 @@ cd agenkit-rust
 ./target/release/deps/pattern_benchmarks-*
 ```
 
-**TypeScript** (pending build fixes):
+**TypeScript**:
 ```bash
 cd agenkit-ts
-npx ts-node benchmarks/pattern-performance-fixed.ts
+npx ts-node benchmarks/pattern-performance.ts
 ```
 
 ---
@@ -361,9 +361,10 @@ npx ts-node benchmarks/pattern-performance-fixed.ts
   - `PYTHON_REFLECTION_SPEED_ANALYSIS.md` - Why Python is 5.9x faster
   - `RUST_BENCHMARK_VERIFICATION.md` - Verification report
 - **Benchmark Sources**:
-  - Python: `benchmarks/python_pattern_benchmarks_fixed.py`
+  - Python: `benchmarks/python_pattern_benchmarks.py`
   - Go: `agenkit-go/benchmarks/pattern_benchmarks_test.go`
   - Rust: `agenkit-rust/benches/pattern_benchmarks.rs`
+  - TypeScript: `agenkit-ts/benchmarks/pattern-performance.ts`
 
 ---
 

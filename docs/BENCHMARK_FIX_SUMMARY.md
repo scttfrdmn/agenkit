@@ -250,7 +250,7 @@ await agent.process(message)  # Runs full reflection loop
 
 - **Issue**: #459 - Benchmark Methodology Flaw
 - **Problem Doc**: `BENCHMARK_METHODOLOGY_ISSUE.md`
-- **Fixed Benchmarks**: `benchmarks/python_pattern_benchmarks_fixed.py`
+- **Fixed Benchmarks**: `benchmarks/python_pattern_benchmarks.py`
 - **Performance Matrix**: `docs/PATTERN_PERFORMANCE_MATRIX.md` (updated with warnings)
 - **Commit**: 6db10f6b - "fix(benchmarks): Add corrected Python benchmarks"
 

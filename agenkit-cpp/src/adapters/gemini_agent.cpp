@@ -8,6 +8,7 @@
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <cstdlib>
+#include <sstream>
 
 namespace agenkit {
 namespace adapters {
@@ -275,6 +276,151 @@ core::Message GeminiAgent::json_to_message(const json& response) {
     }
 
     return msg;
+}
+
+core::Result<void, core::AgentError>
+GeminiAgent::stream(core::Message message, std::function<bool(const std::string&)> callback) {
+    try {
+        // Convert message to Gemini API format
+        json contents = json::array();
+        contents.push_back(message_to_json(message));
+
+        // Build streaming API endpoint URL
+        // Format: /v1beta/models/{model}:streamGenerateContent?key={api_key}
+        std::string path = "/v1beta/models/" + config_.model + ":streamGenerateContent";
+        std::string query = "?key=" + config_.api_key.value();
+        std::string endpoint = path + query;
+
+        // Parse base URL for http client
+        httplib::Client client(config_.api_base);
+        client.set_read_timeout(config_.timeout_seconds, 0);
+
+        // Build request body
+        json request_body = {
+            {"contents", contents}
+        };
+
+        // Add generation config if any parameters are set
+        json generation_config;
+        bool has_config = false;
+
+        if (config_.temperature.has_value()) {
+            generation_config["temperature"] = config_.temperature.value();
+            has_config = true;
+        }
+        if (config_.max_tokens.has_value()) {
+            generation_config["maxOutputTokens"] = config_.max_tokens.value();
+            has_config = true;
+        }
+        if (config_.top_p.has_value()) {
+            generation_config["topP"] = config_.top_p.value();
+            has_config = true;
+        }
+        if (config_.top_k.has_value()) {
+            generation_config["topK"] = config_.top_k.value();
+            has_config = true;
+        }
+        if (!config_.stop_sequences.empty()) {
+            generation_config["stopSequences"] = config_.stop_sequences;
+            has_config = true;
+        }
+
+        if (has_config) {
+            request_body["generationConfig"] = generation_config;
+        }
+
+        // Set headers
+        httplib::Headers headers = {
+            {"Content-Type", "application/json"}
+        };
+
+        // Make streaming request
+        std::string buffer;
+        auto response = client.Post(
+            endpoint.c_str(),
+            headers,
+            request_body.dump(),
+            "application/json",
+            [&](const char* data, size_t data_length) {
+                // Append to buffer
+                buffer.append(data, data_length);
+
+                // Process complete lines (delimited by \n)
+                size_t pos;
+                while ((pos = buffer.find('\n')) != std::string::npos) {
+                    std::string line = buffer.substr(0, pos);
+                    buffer = buffer.substr(pos + 1);
+
+                    // Skip empty lines
+                    if (line.empty()) {
+                        continue;
+                    }
+
+                    try {
+                        // Parse JSON line
+                        json chunk_json = json::parse(line);
+
+                        // Extract text from candidates[0].content.parts[0].text
+                        if (chunk_json.contains("candidates") &&
+                            chunk_json["candidates"].is_array() &&
+                            !chunk_json["candidates"].empty()) {
+
+                            const auto& candidate = chunk_json["candidates"][0];
+                            if (candidate.contains("content")) {
+                                const auto& content = candidate["content"];
+                                if (content.contains("parts") && content["parts"].is_array()) {
+                                    for (const auto& part : content["parts"]) {
+                                        if (part.contains("text")) {
+                                            std::string text = part["text"].get<std::string>();
+
+                                            // Invoke callback with text chunk
+                                            if (!callback(text)) {
+                                                return false;  // Stop streaming
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (const json::exception&) {
+                        // Skip malformed JSON lines
+                    }
+                }
+                return true;  // Continue receiving
+            }
+        );
+
+        if (!response) {
+            return core::Result<void, core::AgentError>::err(
+                core::AgentError(
+                    core::AgentErrorType::Transport,
+                    "failed to connect to Gemini API for streaming"
+                )
+            );
+        }
+
+        if (response->status != 200) {
+            std::string error_msg = "Gemini streaming error (" +
+                                   std::to_string(response->status) + "): " +
+                                   response->body;
+            return core::Result<void, core::AgentError>::err(
+                core::AgentError(
+                    core::AgentErrorType::Http,
+                    error_msg
+                )
+            );
+        }
+
+        return core::Result<void, core::AgentError>::ok();
+
+    } catch (const std::exception& e) {
+        return core::Result<void, core::AgentError>::err(
+            core::AgentError(
+                core::AgentErrorType::Internal,
+                std::string("streaming error: ") + e.what()
+            )
+        );
+    }
 }
 
 } // namespace adapters

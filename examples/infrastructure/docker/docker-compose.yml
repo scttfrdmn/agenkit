@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  # Production agent with full infrastructure
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agenkit/production-agent:latest
+    container_name: agenkit-production
+    ports:
+      - "8080:8080"  # HTTP API
+      - "9090:9090"  # Metrics
+    environment:
+      - LOG_LEVEL=info
+      - LOAD_BALANCER_STRATEGY=least_connections
+      - HEALTH_CHECK_INTERVAL=5s
+      - RETRY_MAX_ATTEMPTS=3
+      - BACKPRESSURE_THRESHOLD=0.3
+      - PROMETHEUS_ENABLED=true
+    volumes:
+      - agent-state:/var/lib/agenkit
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - agenkit
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: agenkit-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - agenkit
+    depends_on:
+      - agent
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: agenkit-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
+    networks:
+      - agenkit
+    depends_on:
+      - prometheus
+
+  # Redis for state persistence (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: agenkit-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - agenkit
+
+  # Load generator for testing
+  load-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.loadgen
+    image: agenkit/load-generator:latest
+    container_name: agenkit-loadgen
+    environment:
+      - TARGET_URL=http://agent:8080
+      - REQUEST_RATE=10
+      - DURATION=300
+    networks:
+      - agenkit
+    depends_on:
+      - agent
+    profiles:
+      - testing
+
+volumes:
+  agent-state:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  agenkit:
+    driver: bridge

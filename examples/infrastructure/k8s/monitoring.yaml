@@ -1,0 +1,288 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agenkit-prometheus-config
+  labels:
+    app: agenkit
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+    - job_name: 'agenkit-production'
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: replace
+        target_label: app
+      - source_labels: [__meta_kubernetes_pod_label_component]
+        action: replace
+        target_label: component
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: kubernetes_pod_name
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: agenkit-production
+  labels:
+    app: agenkit
+    component: production-agent
+spec:
+  selector:
+    matchLabels:
+      app: agenkit
+      component: production-agent
+  endpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics
+    scheme: http
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: agenkit-production-alerts
+  labels:
+    app: agenkit
+spec:
+  groups:
+  - name: agenkit.production
+    interval: 30s
+    rules:
+    # Health check alerts
+    - alert: AgentUnhealthy
+      expr: agenkit_agent_healthy == 0
+      for: 2m
+      labels:
+        severity: critical
+        component: health
+      annotations:
+        summary: "Agent {{ $labels.kubernetes_pod_name }} is unhealthy"
+        description: "Agent has failed health checks for 2 minutes"
+
+    - alert: HighHealthCheckFailureRate
+      expr: |
+        (
+          rate(agenkit_health_check_failures_total[5m])
+          /
+          rate(agenkit_health_checks_total[5m])
+        ) > 0.1
+      for: 5m
+      labels:
+        severity: warning
+        component: health
+      annotations:
+        summary: "High health check failure rate on {{ $labels.kubernetes_pod_name }}"
+        description: "{{ $labels.probe }} health checks failing at {{ $value | humanizePercentage }}"
+
+    # Retry alerts
+    - alert: HighRetryRate
+      expr: |
+        (
+          rate(agenkit_retry_total[5m])
+          /
+          rate(agenkit_attempts_total[5m])
+        ) > 0.3
+      for: 5m
+      labels:
+        severity: warning
+        component: retry
+      annotations:
+        summary: "High retry rate on {{ $labels.kubernetes_pod_name }}"
+        description: "Retry rate is {{ $value | humanizePercentage }}"
+
+    - alert: BackpressureDetected
+      expr: rate(agenkit_backpressure_detected_total[5m]) > 0
+      for: 2m
+      labels:
+        severity: warning
+        component: retry
+      annotations:
+        summary: "Backpressure detected on {{ $labels.kubernetes_pod_name }}"
+        description: "System is experiencing backpressure, throttling requests"
+
+    - alert: BudgetExceeded
+      expr: rate(agenkit_budget_exceeded_total[5m]) > 0
+      for: 1m
+      labels:
+        severity: critical
+        component: retry
+      annotations:
+        summary: "Retry budget exceeded on {{ $labels.kubernetes_pod_name }}"
+        description: "Agent has exceeded retry budget limits"
+
+    # Load balancer alerts
+    - alert: HighFailureRate
+      expr: |
+        (
+          rate(agenkit_loadbalancer_failed_requests_total[5m])
+          /
+          rate(agenkit_loadbalancer_total_requests_total[5m])
+        ) > 0.05
+      for: 5m
+      labels:
+        severity: warning
+        component: loadbalancer
+      annotations:
+        summary: "High failure rate on {{ $labels.kubernetes_pod_name }}"
+        description: "Failure rate is {{ $value | humanizePercentage }}"
+
+    - alert: UnhealthyBackends
+      expr: agenkit_loadbalancer_healthy_backends < 2
+      for: 2m
+      labels:
+        severity: critical
+        component: loadbalancer
+      annotations:
+        summary: "Insufficient healthy backends on {{ $labels.kubernetes_pod_name }}"
+        description: "Only {{ $value }} healthy backends available"
+
+    - alert: ImbalancedLoadDistribution
+      expr: |
+        stddev(agenkit_loadbalancer_backend_requests_total) >
+        avg(agenkit_loadbalancer_backend_requests_total) * 0.5
+      for: 10m
+      labels:
+        severity: info
+        component: loadbalancer
+      annotations:
+        summary: "Imbalanced load distribution on {{ $labels.kubernetes_pod_name }}"
+        description: "Load is not evenly distributed across backends"
+
+    # Performance alerts
+    - alert: HighLatency
+      expr: |
+        histogram_quantile(0.95,
+          rate(agenkit_health_check_duration_ms_bucket[5m])
+        ) > 5000
+      for: 5m
+      labels:
+        severity: warning
+        component: performance
+      annotations:
+        summary: "High latency on {{ $labels.kubernetes_pod_name }}"
+        description: "P95 latency is {{ $value }}ms"
+
+    - alert: HighMemoryUsage
+      expr: |
+        container_memory_working_set_bytes{pod=~"agenkit-production-.*"}
+        /
+        container_spec_memory_limit_bytes{pod=~"agenkit-production-.*"}
+        > 0.9
+      for: 5m
+      labels:
+        severity: warning
+        component: resources
+      annotations:
+        summary: "High memory usage on {{ $labels.kubernetes_pod_name }}"
+        description: "Memory usage is {{ $value | humanizePercentage }}"
+
+    - alert: HighCPUUsage
+      expr: |
+        rate(container_cpu_usage_seconds_total{pod=~"agenkit-production-.*"}[5m])
+        /
+        container_spec_cpu_quota{pod=~"agenkit-production-.*"}
+        > 0.9
+      for: 5m
+      labels:
+        severity: warning
+        component: resources
+      annotations:
+        summary: "High CPU usage on {{ $labels.kubernetes_pod_name }}"
+        description: "CPU usage is {{ $value | humanizePercentage }}"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agenkit-grafana-dashboard
+  labels:
+    app: agenkit
+    grafana_dashboard: "1"
+data:
+  agenkit-production.json: |
+    {
+      "dashboard": {
+        "title": "Agenkit Production Dashboard",
+        "tags": ["agenkit", "production"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "title": "Request Rate",
+            "targets": [
+              {
+                "expr": "rate(agenkit_loadbalancer_total_requests_total[5m])",
+                "legendFormat": "{{kubernetes_pod_name}}"
+              }
+            ]
+          },
+          {
+            "title": "Success Rate",
+            "targets": [
+              {
+                "expr": "rate(agenkit_loadbalancer_successful_requests_total[5m]) / rate(agenkit_loadbalancer_total_requests_total[5m])",
+                "legendFormat": "{{kubernetes_pod_name}}"
+              }
+            ]
+          },
+          {
+            "title": "Health Status",
+            "targets": [
+              {
+                "expr": "agenkit_agent_healthy",
+                "legendFormat": "{{kubernetes_pod_name}}"
+              }
+            ]
+          },
+          {
+            "title": "Retry Rate",
+            "targets": [
+              {
+                "expr": "rate(agenkit_retry_total[5m])",
+                "legendFormat": "{{kubernetes_pod_name}}"
+              }
+            ]
+          },
+          {
+            "title": "Backend Distribution",
+            "targets": [
+              {
+                "expr": "agenkit_loadbalancer_backend_requests_total",
+                "legendFormat": "{{backend_id}}"
+              }
+            ]
+          },
+          {
+            "title": "Health Check Duration",
+            "targets": [
+              {
+                "expr": "agenkit_health_check_duration_ms",
+                "legendFormat": "{{probe}} - {{kubernetes_pod_name}}"
+              }
+            ]
+          }
+        ]
+      }
+    }

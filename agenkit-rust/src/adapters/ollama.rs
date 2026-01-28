@@ -4,8 +4,10 @@
 ///! Supports all Ollama models including Llama, Mistral, and others.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
+use futures::Stream;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::pin::Pin;
 
 #[cfg(feature = "native")]
 use reqwest::Client;
@@ -210,6 +212,106 @@ impl OllamaAgent {
         }
 
         msg
+    }
+
+    /// Stream completion from Ollama API.
+    ///
+    /// Returns a stream of Message chunks as they arrive from the API.
+    #[cfg(feature = "native")]
+    pub async fn stream(
+        &self,
+        message: Message,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        let ollama_message = self.message_to_ollama_message(&message);
+
+        match self.stream_api_impl(vec![ollama_message]).await {
+            Ok(chunks) => {
+                Box::pin(futures::stream::iter(chunks.into_iter().map(Ok)))
+            }
+            Err(e) => {
+                Box::pin(futures::stream::once(async move { Err(e) }))
+            }
+        }
+    }
+
+    #[cfg(not(feature = "native"))]
+    pub async fn stream(
+        &self,
+        _message: Message,
+    ) -> Pin<Box<dyn Stream<Item = Result<Message, AgentError>> + Send>> {
+        Box::pin(futures::stream::once(async {
+            Err(AgentError::Transport(
+                "Ollama adapter requires 'native' feature for streaming".to_string(),
+            ))
+        }))
+    }
+
+    /// Internal streaming implementation.
+    #[cfg(feature = "native")]
+    async fn stream_api_impl(
+        &self,
+        messages: Vec<OllamaMessage>,
+    ) -> Result<Vec<Message>, AgentError> {
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(self.config.timeout_seconds))
+            .build()
+            .map_err(|e| AgentError::Transport(e.to_string()))?;
+
+        let mut request_body = json!({
+            "model": self.config.model,
+            "messages": messages,
+            "stream": true,
+        });
+
+        if self.config.temperature != 0.7 {
+            request_body["temperature"] = json!(self.config.temperature);
+        }
+
+        let response = client
+            .post(format!("{}/api/chat", self.config.base_url))
+            .json(&request_body)
+            .send()
+            .await
+            .map_err(|e| AgentError::Transport(e.to_string()))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(AgentError::Http(format!(
+                "Ollama API error ({}): {}",
+                status, body
+            )));
+        }
+
+        // Collect full response body (pseudo-streaming)
+        let body = response
+            .text()
+            .await
+            .map_err(|e| AgentError::Transport(e.to_string()))?;
+
+        // Parse newline-delimited JSON
+        let mut chunks = Vec::new();
+        for line in body.lines() {
+            if line.is_empty() {
+                continue;
+            }
+
+            let chunk_json: serde_json::Value = serde_json::from_str(line)
+                .map_err(|e| AgentError::Serialization(e.to_string()))?;
+
+            // Extract text from message.content
+            if let Some(message) = chunk_json["message"].as_object() {
+                if let Some(content) = message.get("content") {
+                    if let Some(text) = content.as_str() {
+                        let mut msg = Message::with_text("assistant", text);
+                        msg.with_metadata("streaming", json!(true));
+                        chunks.push(msg);
+                    }
+                }
+            }
+        }
+
+        Ok(chunks)
     }
 }
 

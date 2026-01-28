@@ -325,8 +325,14 @@ func (r *ReflectionAgent) parseCritique(critiqueContent string) (float64, string
 
 // parseStructuredCritique parses JSON-formatted critique.
 func (r *ReflectionAgent) parseStructuredCritique(content string) (float64, string, error) {
-	// Handle markdown code blocks
 	content = strings.TrimSpace(content)
+
+	// Fast path: if content doesn't look like JSON, skip expensive parsing
+	if !strings.Contains(content, "{") || !strings.Contains(content, "}") {
+		return r.parseFreeFormCritique(content)
+	}
+
+	// Handle markdown code blocks only if present
 	if strings.HasPrefix(content, "```") {
 		lines := strings.Split(content, "\n")
 		var jsonLines []string

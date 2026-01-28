@@ -254,7 +254,7 @@ pub const AnthropicLLM = struct {
         const self: *AnthropicLLM = @ptrCast(@alignCast(ptr));
 
         // Build request body with stream=true
-        var request_body = try self.buildStreamRequestBody(allocator, messages, options);
+        const request_body = try self.buildStreamRequestBody(allocator, messages, options);
         defer allocator.free(request_body);
 
         // Create stream iterator

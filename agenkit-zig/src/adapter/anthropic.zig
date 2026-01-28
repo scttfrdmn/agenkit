@@ -24,6 +24,136 @@ const Message = @import("../message.zig").Message;
 const Role = @import("../message.zig").Role;
 const Allocator = std.mem.Allocator;
 
+/// Anthropic streaming iterator implementation
+const AnthropicStream = struct {
+    allocator: Allocator,
+    self: *AnthropicLLM,
+    buffer: std.ArrayList(u8),
+    chunks: std.ArrayList([]const u8),
+    current_index: usize,
+    completed: bool,
+
+    /// Make streaming HTTP request to Anthropic API
+    fn makeStreamRequest(self: *AnthropicStream, body: []const u8) !void {
+        var client = std.http.Client{ .allocator = self.allocator };
+        defer client.deinit();
+
+        const uri_str = try std.fmt.allocPrint(
+            self.allocator,
+            "{s}/v1/messages",
+            .{self.self.base_url},
+        );
+        defer self.allocator.free(uri_str);
+
+        const headers = [_]std.http.Header{
+            .{ .name = "Content-Type", .value = "application/json" },
+            .{ .name = "x-api-key", .value = self.self.api_key },
+            .{ .name = "anthropic-version", .value = self.self.api_version },
+        };
+
+        var response_buffer = std.ArrayList(u8).init(self.allocator);
+        defer response_buffer.deinit();
+
+        const result = try client.fetch(.{
+            .location = .{ .url = uri_str },
+            .method = .POST,
+            .payload = body,
+            .extra_headers = &headers,
+            .response_storage = .{ .dynamic = &response_buffer },
+        });
+
+        if (result.status != .ok) {
+            return error.ServerError;
+        }
+
+        // Parse SSE stream response and collect text chunks
+        try self.parseSSEStream(response_buffer.items);
+    }
+
+    /// Parse SSE stream and extract text chunks
+    fn parseSSEStream(self: *AnthropicStream, data: []const u8) !void {
+        var lines = std.mem.split(u8, data, "\n");
+
+        while (lines.next()) |line| {
+            // Skip empty lines
+            if (line.len == 0) continue;
+
+            // Look for "data: " prefix
+            if (std.mem.startsWith(u8, line, "data: ")) {
+                const json_str = line[6..]; // Skip "data: " prefix
+
+                // Skip [DONE] marker
+                if (std.mem.eql(u8, json_str, "[DONE]")) {
+                    continue;
+                }
+
+                // Parse JSON event
+                const parsed = std.json.parseFromSlice(
+                    std.json.Value,
+                    self.allocator,
+                    json_str,
+                    .{},
+                ) catch continue;
+                defer parsed.deinit();
+
+                const event = parsed.value.object;
+
+                // Look for content_block_delta events
+                if (event.get("type")) |event_type| {
+                    if (std.mem.eql(u8, event_type.string, "content_block_delta")) {
+                        if (event.get("delta")) |delta| {
+                            if (delta.object.get("type")) |delta_type| {
+                                if (std.mem.eql(u8, delta_type.string, "text_delta")) {
+                                    if (delta.object.get("text")) |text| {
+                                        // Store text chunk
+                                        const chunk = try self.allocator.dupe(u8, text.string);
+                                        try self.chunks.append(chunk);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn deinit(self: *AnthropicStream) void {
+        // Free all chunks
+        for (self.chunks.items) |chunk| {
+            self.allocator.free(chunk);
+        }
+        self.chunks.deinit();
+        self.buffer.deinit();
+        self.allocator.destroy(self);
+    }
+};
+
+/// Stream next implementation
+fn streamNext(ptr: *anyopaque, allocator: Allocator) !?*Message {
+    const self: *AnthropicStream = @ptrCast(@alignCast(ptr));
+
+    if (self.current_index >= self.chunks.items.len) {
+        return null; // Stream complete
+    }
+
+    const text = self.chunks.items[self.current_index];
+    self.current_index += 1;
+
+    // Create message chunk
+    const msg = try allocator.create(Message);
+    msg.* = try Message.withText(allocator, .assistant, text);
+    try msg.setMetadata("streaming", std.json.Value{ .bool = true });
+
+    return msg;
+}
+
+/// Stream deinit implementation
+fn streamDeinit(ptr: *anyopaque) void {
+    const self: *AnthropicStream = @ptrCast(@alignCast(ptr));
+    self.deinit();
+}
+
 /// Anthropic LLM adapter
 pub const AnthropicLLM = struct {
     allocator: Allocator,
@@ -121,11 +251,35 @@ pub const AnthropicLLM = struct {
         messages: []const *Message,
         options: *const llm.CallOptions,
     ) !llm.StreamIterator {
-        _ = ptr;
-        _ = allocator;
-        _ = messages;
-        _ = options;
-        return error.StreamingNotSupported;
+        const self: *AnthropicLLM = @ptrCast(@alignCast(ptr));
+
+        // Build request body with stream=true
+        var request_body = try self.buildStreamRequestBody(allocator, messages, options);
+        defer allocator.free(request_body);
+
+        // Create stream iterator
+        const stream_impl = try allocator.create(AnthropicStream);
+        errdefer allocator.destroy(stream_impl);
+
+        stream_impl.* = AnthropicStream{
+            .allocator = allocator,
+            .self = self,
+            .buffer = std.ArrayList(u8).init(allocator),
+            .chunks = std.ArrayList([]const u8).init(allocator),
+            .current_index = 0,
+            .completed = false,
+        };
+
+        // Make streaming request
+        try stream_impl.makeStreamRequest(request_body);
+
+        return llm.StreamIterator{
+            .ptr = stream_impl,
+            .vtable = &.{
+                .next = streamNext,
+                .deinit = streamDeinit,
+            },
+        };
     }
 
     /// Model implementation
@@ -138,6 +292,120 @@ pub const AnthropicLLM = struct {
     fn deinitVTable(ptr: *anyopaque) void {
         const self: *AnthropicLLM = @ptrCast(@alignCast(ptr));
         self.deinit();
+    }
+
+    /// Build Anthropic API streaming request body
+    fn buildStreamRequestBody(
+        self: *AnthropicLLM,
+        allocator: Allocator,
+        messages: []const *Message,
+        options: *const llm.CallOptions,
+    ) ![]const u8 {
+        var json = std.ArrayList(u8).init(allocator);
+        defer json.deinit();
+
+        try json.appendSlice("{\"model\":\"");
+        try json.appendSlice(self.model_name);
+        try json.appendSlice("\",\"stream\":true,\"messages\":[");
+
+        // Separate system message (same logic as buildRequestBody)
+        var has_system = false;
+        var system_content: []const u8 = "";
+
+        for (messages) |msg| {
+            if (msg.role == .system) {
+                system_content = switch (msg.content) {
+                    .text => |t| t,
+                    .structured => "",
+                };
+                has_system = true;
+                break;
+            }
+        }
+
+        var first = true;
+        for (messages) |msg| {
+            if (msg.role == .system) continue;
+
+            if (!first) try json.append(',');
+            first = false;
+
+            try json.appendSlice("{\"role\":\"");
+            const role_str = switch (msg.role) {
+                .user => "user",
+                .assistant => "assistant",
+                .system => "user",
+                .tool => "user",
+            };
+            try json.appendSlice(role_str);
+            try json.appendSlice("\",\"content\":\"");
+
+            const content = switch (msg.content) {
+                .text => |t| t,
+                .structured => "",
+            };
+
+            for (content) |c| {
+                if (c == '"') {
+                    try json.appendSlice("\\\"");
+                } else if (c == '\\') {
+                    try json.appendSlice("\\\\");
+                } else if (c == '\n') {
+                    try json.appendSlice("\\n");
+                } else if (c == '\r') {
+                    try json.appendSlice("\\r");
+                } else if (c == '\t') {
+                    try json.appendSlice("\\t");
+                } else {
+                    try json.append(c);
+                }
+            }
+
+            try json.appendSlice("\"}");
+        }
+
+        try json.append(']');
+
+        if (has_system) {
+            try json.appendSlice(",\"system\":\"");
+            for (system_content) |c| {
+                if (c == '"') {
+                    try json.appendSlice("\\\"");
+                } else if (c == '\\') {
+                    try json.appendSlice("\\\\");
+                } else if (c == '\n') {
+                    try json.appendSlice("\\n");
+                } else if (c == '\r') {
+                    try json.appendSlice("\\r");
+                } else if (c == '\t') {
+                    try json.appendSlice("\\t");
+                } else {
+                    try json.append(c);
+                }
+            }
+            try json.append('"');
+        }
+
+        const max_tokens = options.max_tokens orelse 1024;
+        const max_tokens_str = try std.fmt.allocPrint(allocator, ",\"max_tokens\":{d}", .{max_tokens});
+        defer allocator.free(max_tokens_str);
+        try json.appendSlice(max_tokens_str);
+
+        if (options.temperature) |temp| {
+            const temp_str = try std.fmt.allocPrint(allocator, ",\"temperature\":{d}", .{temp});
+            defer allocator.free(temp_str);
+            try json.appendSlice(temp_str);
+        }
+
+        if (options.top_p) |top_p_val| {
+            const top_p_str = try std.fmt.allocPrint(allocator, ",\"top_p\":{d}", .{top_p_val});
+            defer allocator.free(top_p_str);
+            try json.appendSlice(top_p_str);
+        }
+
+        try json.append('}');
+
+        return try json.toOwnedSlice();
     }
 
     /// Build Anthropic API request body

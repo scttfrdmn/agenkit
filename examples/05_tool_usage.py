@@ -32,8 +32,11 @@ class SearchTool(Tool):
             "required": ["query"],
         }
 
-    async def execute(self, query: str, limit: int = 5) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
         """Execute search (simulated)."""
+        query = params.get("query", "")
+        limit = params.get("limit", 5)
+
         # In reality, this would call a search API
         results = [f"Result {i + 1} for '{query}'" for i in range(limit)]
 
@@ -53,9 +56,13 @@ class CalculatorTool(Tool):
     def description(self) -> str:
         return "Perform basic arithmetic operations"
 
-    async def execute(self, operation: str, a: float, b: float) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
         """Execute calculation."""
         try:
+            operation = params.get("operation", "")
+            a = params.get("a", 0.0)
+            b = params.get("b", 0.0)
+
             operations = {
                 "add": lambda x, y: x + y,
                 "subtract": lambda x, y: x - y,
@@ -64,17 +71,17 @@ class CalculatorTool(Tool):
             }
 
             if operation not in operations:
-                return ToolResult(success=False, error=f"Unknown operation: {operation}")
+                return ToolResult(success=False, data=None, error=f"Unknown operation: {operation}")
 
             result = operations[operation](a, b)
 
             if result is None:
-                return ToolResult(success=False, error="Division by zero")
+                return ToolResult(success=False, data=None, error="Division by zero")
 
             return ToolResult(success=True, data={"operation": operation, "result": result})
 
         except Exception as e:
-            return ToolResult(success=False, error=str(e))
+            return ToolResult(success=False, data=None, error=str(e))
 
 
 class ToolUsingAgent(Agent):
@@ -99,7 +106,7 @@ class ToolUsingAgent(Agent):
         # Route to appropriate tool
         if "search" in content:
             query = content.replace("search", "").strip()
-            result = await self.search_tool.execute(query=query, limit=3)
+            result = await self.search_tool.execute({"query": query, "limit": 3})
 
             if result.success:
                 response = f"Search results for '{query}':\n"
@@ -116,7 +123,7 @@ class ToolUsingAgent(Agent):
                 a = float(words[1])
                 b = float(words[3])  # Skip "and"
 
-                result = await self.calc_tool.execute(operation=operation, a=a, b=b)
+                result = await self.calc_tool.execute({"operation": operation, "a": a, "b": b})
 
                 if result.success:
                     response = f"{a} {operation} {b} = {result.data['result']}"

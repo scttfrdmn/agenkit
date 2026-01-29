@@ -70,9 +70,10 @@ class AdditionTool(Tool):
             "required": ["numbers"],
         }
 
-    async def execute(self, numbers: list[float]) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
         """Execute addition."""
         try:
+            numbers = params.get("numbers", [])
             result = sum(numbers)
             return ToolResult(
                 success=True, data={"operation": "addition", "inputs": numbers, "result": result}
@@ -106,9 +107,10 @@ class MultiplicationTool(Tool):
             "required": ["numbers"],
         }
 
-    async def execute(self, numbers: list[float]) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
         """Execute multiplication."""
         try:
+            numbers = params.get("numbers", [])
             result = 1
             for n in numbers:
                 result *= n
@@ -151,9 +153,11 @@ class StatisticsTool(Tool):
             "required": ["numbers", "measures"],
         }
 
-    async def execute(self, numbers: list[float], measures: list[str]) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
         """Execute statistical analysis."""
         try:
+            numbers = params.get("numbers", [])
+            measures = params.get("measures", [])
             results = {}
 
             if "mean" in measures:
@@ -204,9 +208,10 @@ class ExpressionEvaluatorTool(Tool):
             "required": ["expression"],
         }
 
-    async def execute(self, expression: str) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
         """Safely evaluate expression."""
         try:
+            expression = params.get("expression", "")
             # Safe AST-based evaluation with whitelisted functions
             import ast
             import operator
@@ -310,9 +315,12 @@ class UnitConverterTool(Tool):
             "required": ["value", "from_unit", "to_unit"],
         }
 
-    async def execute(self, value: float, from_unit: str, to_unit: str) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
         """Execute unit conversion."""
         try:
+            value = params.get("value", 0.0)
+            from_unit = params.get("from_unit", "")
+            to_unit = params.get("to_unit", "")
             # Conversion factors (to base unit)
             conversions = {
                 # Length (to meters)
@@ -403,7 +411,7 @@ class CalculatorAgent(Agent):
                 float(w) for w in content.split() if w.replace(".", "").replace("-", "").isdigit()
             ]
             if numbers:
-                result = await self.tools["add"].execute(numbers=numbers)
+                result = await self.tools["add"].execute({"numbers": numbers})
                 result_data = result.data if result.success else {"error": result.error}
 
         elif "multiply" in content or "product" in content:
@@ -411,7 +419,7 @@ class CalculatorAgent(Agent):
                 float(w) for w in content.split() if w.replace(".", "").replace("-", "").isdigit()
             ]
             if numbers:
-                result = await self.tools["multiply"].execute(numbers=numbers)
+                result = await self.tools["multiply"].execute({"numbers": numbers})
                 result_data = result.data if result.success else {"error": result.error}
 
         elif "statistics" in content or "stats" in content:
@@ -420,7 +428,7 @@ class CalculatorAgent(Agent):
             ]
             if numbers:
                 result = await self.tools["statistics"].execute(
-                    numbers=numbers, measures=["mean", "median", "stdev"]
+                    {"numbers": numbers, "measures": ["mean", "median", "stdev"]}
                 )
                 result_data = result.data if result.success else {"error": result.error}
 
@@ -432,7 +440,7 @@ class CalculatorAgent(Agent):
                 from_unit = parts[2]
                 to_unit = parts[4]  # assumes "convert X from to Y"
                 result = await self.tools["convert"].execute(
-                    value=value, from_unit=from_unit, to_unit=to_unit
+                    {"value": value, "from_unit": from_unit, "to_unit": to_unit}
                 )
                 result_data = result.data if result.success else {"error": result.error}
             except (IndexError, ValueError):
@@ -442,7 +450,7 @@ class CalculatorAgent(Agent):
             # Try expression evaluation
             # Extract expression (everything after command words)
             try:
-                result = await self.tools["eval"].execute(expression=content)
+                result = await self.tools["eval"].execute({"expression": content})
                 result_data = result.data if result.success else {"error": result.error}
             except Exception as e:
                 result_data = {"error": str(e)}

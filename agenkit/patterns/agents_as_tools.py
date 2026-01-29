@@ -125,12 +125,12 @@ class AgentTool:
         self.output_format = output_format
         self.include_metadata = include_metadata
 
-    async def execute(self, **kwargs: Any) -> Any:
+    async def execute(self, params: dict[str, Any]) -> Any:
         """
         Execute the wrapped agent.
 
         Args:
-            **kwargs: Parameters passed to the tool. Must include self.input_key.
+            params: Parameters passed to the tool. Must include self.input_key.
 
         Returns:
             Agent output, formatted according to output_format
@@ -139,11 +139,11 @@ class AgentTool:
             ValueError: If required input_key parameter is missing
         """
         # Extract input
-        query = kwargs.get(self.input_key)
+        query = params.get(self.input_key)
         if query is None:
             raise ValueError(
                 f"Missing required parameter '{self.input_key}'. "
-                f"Available parameters: {list(kwargs.keys())}"
+                f"Available parameters: {list(params.keys())}"
             )
 
         # Create message

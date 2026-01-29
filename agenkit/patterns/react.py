@@ -28,7 +28,7 @@ class Tool(Protocol):
     name: str
     description: str
 
-    async def execute(self, **kwargs) -> Any:
+    async def execute(self, params: dict[str, Any]) -> Any:
         """Execute the tool with given parameters."""
         ...
 
@@ -293,13 +293,13 @@ Begin!"""
             lines.append(f"- {tool.name}: {tool.description}")
         return "\n".join(lines)
 
-    async def _execute_tool(self, tool_name: str, **kwargs) -> ToolResult:
+    async def _execute_tool(self, tool_name: str, params: dict[str, Any]) -> ToolResult:
         """
         Execute a tool by name.
 
         Args:
             tool_name: Name of the tool to execute
-            **kwargs: Parameters to pass to the tool
+            params: Parameters to pass to the tool
 
         Returns:
             ToolResult containing the execution result or error
@@ -316,7 +316,7 @@ Begin!"""
 
         start_time = asyncio.get_event_loop().time()
         try:
-            result = await tool.execute(**kwargs)
+            result = await tool.execute(params)
             execution_time = asyncio.get_event_loop().time() - start_time
             return ToolResult(tool_name=tool_name, result=result, execution_time=execution_time)
         except Exception as e:
@@ -354,7 +354,7 @@ Begin!"""
                 return self._format_final_response(step.action_input)
 
             # Execute the action (tool)
-            tool_result = await self._execute_tool(step.action, **step.action_input)
+            tool_result = await self._execute_tool(step.action, step.action_input)
 
             if tool_result.success:
                 step.observation = str(tool_result.result)

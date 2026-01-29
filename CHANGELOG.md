@@ -7,6 +7,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✅ API Alignment Phase 2B/2C Complete (January 28, 2026)
+
+**Focus:** Complete cross-language API consistency with Tool interfaces, validation, and naming clarity.
+
+**Key Highlights:**
+- 🎯 **6/6 Issues Closed** - All API alignment work complete
+- ✅ **Tool Interfaces** - C++ and Zig now have standardized Tool APIs
+- 🔍 **Complete Validation** - All 6 languages validate LLM parameters
+- 📝 **Clear Naming** - TypeScript timeout parameters now explicit (timeoutMs)
+- 🚀 **Zero Breaking Changes** - All improvements backward compatible
+
+### Added
+
+#### C++ LLM Parameter Validation (Issue #507)
+- **New**: `validation.hpp` with LLMParameterValidator class
+- Validates temperature (0-2), max_tokens (>0), top_p (0-1)
+- Added to 7 adapters: OpenAI, Claude, LiteLLM, Bedrock, Gemini, Ollama, OpenAI-compatible
+- 8/8 validation tests passing
+- Fixed 3 pre-existing bugs (Result<void>, NotImplemented, httplib streaming)
+- **Commit**: cf7e6aa8
+
+#### C++ Tool Interface (Issue #504)
+- **New**: `agenkit/core/tool.hpp` - Abstract base class for tools
+- Methods: name(), description(), parameters_schema(), execute()
+- Returns `std::future<Result<ToolResult, AgentError>>` for async execution
+- JSON parameters via nlohmann::json
+- Comprehensive documentation with SearchTool example
+- **Commit**: c7951b6b
+
+#### Zig Tool Interface (Issue #504)
+- **New**: `agenkit-zig/src/tool.zig` - VTable-based Tool interface
+- ToolError enum with 6 error types
+- ToolResult struct with proper memory management
+- EchoTool example implementation
+- 2/2 tests passing with zero memory leaks
+- Exported in root.zig
+- **Commit**: c7951b6b
+
+#### TypeScript Naming Improvements (Issues #502, #503, #504)
+- **Changed**: `TimeoutConfig.timeout` → `timeoutMs` (deprecated, not breaking)
+- **Changed**: `RateLimiterConfig.maxWaitTimeout` → `maxWaitTimeoutMs` (deprecated, not breaking)
+- **Added**: `Tool.execute()` now accepts optional `AbortSignal` for cancellation
+- Console warnings guide migration to new names
+- 35/35 middleware tests passing (21 timeout + 14 rate limiter)
+- **Commit**: 5581405d
+
+### Fixed
+
+#### C++ Build Issues
+- Fixed Result<void, E> template specialization
+- Added NotImplemented to AgentErrorType enum
+- Fixed httplib streaming API incompatibility
+- Fixed unused parameter warnings in redis_memory
+
+### Documentation
+
+#### Streaming Patterns (Issue #505)
+- **Confirmed**: `docs/STREAMING_PATTERNS.md` (236 lines) already complete
+- Explains idiomatic patterns for each language
+- No code changes needed - documentation sufficient
+
+#### Go Nullable Patterns (Issue #506)
+- **Confirmed**: Go already uses correct `*string` pattern for nullable returns
+- Audit found no sentinel values in codebase
+- UserIDExtractor correctly returns `*string` with nil for "no value"
+
+### Migration Guide
+
+#### TypeScript Users
+```typescript
+// OLD (still works, but deprecated)
+const middleware = new TimeoutMiddleware(agent, {
+  timeout: 30000,
+  maxWaitTimeout: 5000
+});
+
+// NEW (recommended)
+const middleware = new TimeoutMiddleware(agent, {
+  timeoutMs: 30000,
+  maxWaitTimeoutMs: 5000
+});
+```
+
+Deprecated fields will be removed in v0.51.0. Console warnings guide migration.
+
+#### Tool Cancellation (New Feature)
+```typescript
+const controller = new AbortController();
+const result = await tool.execute(params, controller.signal);
+
+// Cancel if needed
+controller.abort();
+```
+
+### Related Issues
+- Closes #502 - Timeout units standardized
+- Closes #503 - Parameter naming consistent
+- Closes #504 - Tool signatures unified
+- Closes #505 - Streaming patterns documented
+- Closes #506 - Go nullable patterns confirmed
+- Closes #507 - Type validation complete
+- Part of epic #445 - API Alignment Phase 2
+
 ## [0.54.0] - 2026-01-27
 
 ### 🧠 Complete Reasoning Technique Cross-Language Parity

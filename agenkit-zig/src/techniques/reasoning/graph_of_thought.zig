@@ -509,3 +509,271 @@ pub const GraphOfThoughtAgent = struct {
         }
     }
 };
+
+// ============================================================================
+// Tests
+// ============================================================================
+
+test "GraphOfThought name and capabilities" {
+    const testing = std.testing;
+    const MockAgent = @import("../../test_utils.zig").MockAgent;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"response"});
+    defer mock.deinit();
+
+    const config = GraphOfThoughtConfig{};
+    var agent = try GraphOfThoughtAgent.init(allocator, mock.agent(), config);
+    defer agent.allocator.destroy(agent);
+
+    const got_agent = agent.agent();
+    try testing.expectEqualStrings("graph_of_thought", got_agent.name());
+
+    const caps = try got_agent.capabilities(allocator);
+    defer allocator.free(caps);
+    try testing.expect(caps.len == 5);
+    try testing.expectEqualStrings("reasoning", caps[0]);
+    try testing.expectEqualStrings("graph_reasoning", caps[1]);
+    try testing.expectEqualStrings("multi_hop", caps[2]);
+}
+
+test "GraphOfThought custom config" {
+    const testing = std.testing;
+    const MockAgent = @import("../../test_utils.zig").MockAgent;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"response"});
+    defer mock.deinit();
+
+    const config = GraphOfThoughtConfig{
+        .max_nodes = 15,
+        .max_edges = 30,
+        .aggregator = .node_based,
+        .allow_cycles = true,
+    };
+    var agent = try GraphOfThoughtAgent.init(allocator, mock.agent(), config);
+    defer agent.allocator.destroy(agent);
+
+    try testing.expectEqual(@as(usize, 15), agent.config.max_nodes);
+    try testing.expectEqual(@as(usize, 30), agent.config.max_edges);
+    try testing.expectEqual(AggregatorType.node_based, agent.config.aggregator);
+    try testing.expectEqual(true, agent.config.allow_cycles);
+}
+
+test "GraphOfThought default config" {
+    const testing = std.testing;
+
+    const config = GraphOfThoughtConfig{};
+    try testing.expectEqual(@as(usize, 20), config.max_nodes);
+    try testing.expectEqual(@as(usize, 40), config.max_edges);
+    try testing.expectEqual(AggregatorType.path_based, config.aggregator);
+    try testing.expectEqual(false, config.allow_cycles);
+}
+
+test "GraphOfThought basic functionality" {
+    const testing = std.testing;
+    const MockAgent = @import("../../test_utils.zig").MockAgent;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Premise A\n2. Premise B",
+        "1. Thought 1",
+        "",
+        "SUPPORT",
+        "Final conclusion",
+    });
+    defer mock.deinit();
+
+    const config = GraphOfThoughtConfig{};
+    var agent = try GraphOfThoughtAgent.init(allocator, mock.agent(), config);
+    defer agent.allocator.destroy(agent);
+
+    const msg = try Message.withText(allocator, .user, "Test problem");
+    defer msg.deinit();
+
+    const got_agent = agent.agent();
+    const result = try got_agent.process(msg);
+    defer result.ok.deinit();
+
+    try testing.expect(result.ok.content.string.len > 0);
+    try testing.expect(result.ok.metadata.contains("technique"));
+    try testing.expectEqualStrings("graph_of_thought", result.ok.metadata.get("technique").?.string);
+}
+
+test "GraphOfThought max_nodes enforcement" {
+    const testing = std.testing;
+    const MockAgent = @import("../../test_utils.zig").MockAgent;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Premise A\n2. Premise B",
+        "1. Thought 1",
+        "",
+        "SUPPORT",
+        "Final conclusion",
+    });
+    defer mock.deinit();
+
+    const config = GraphOfThoughtConfig{ .max_nodes = 3 };
+    var agent = try GraphOfThoughtAgent.init(allocator, mock.agent(), config);
+    defer agent.allocator.destroy(agent);
+
+    const msg = try Message.withText(allocator, .user, "Test");
+    defer msg.deinit();
+
+    const got_agent = agent.agent();
+    const result = try got_agent.process(msg);
+    defer result.ok.deinit();
+
+    const num_nodes = result.ok.metadata.get("num_nodes").?.integer;
+    try testing.expect(num_nodes <= 3);
+}
+
+test "GraphOfThought path_based aggregation" {
+    const testing = std.testing;
+    const MockAgent = @import("../../test_utils.zig").MockAgent;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Premise A",
+        "1. Thought 1",
+        "",
+        "SUPPORT",
+        "Final conclusion",
+    });
+    defer mock.deinit();
+
+    const config = GraphOfThoughtConfig{ .aggregator = .path_based };
+    var agent = try GraphOfThoughtAgent.init(allocator, mock.agent(), config);
+    defer agent.allocator.destroy(agent);
+
+    const msg = try Message.withText(allocator, .user, "Test");
+    defer msg.deinit();
+
+    const got_agent = agent.agent();
+    const result = try got_agent.process(msg);
+    defer result.ok.deinit();
+
+    try testing.expect(result.ok.content.string.len > 0);
+}
+
+test "GraphOfThought node_based aggregation" {
+    const testing = std.testing;
+    const MockAgent = @import("../../test_utils.zig").MockAgent;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Premise A",
+        "1. Thought 1",
+        "",
+        "SUPPORT",
+        "Final conclusion",
+    });
+    defer mock.deinit();
+
+    const config = GraphOfThoughtConfig{ .aggregator = .node_based };
+    var agent = try GraphOfThoughtAgent.init(allocator, mock.agent(), config);
+    defer agent.allocator.destroy(agent);
+
+    const msg = try Message.withText(allocator, .user, "Test");
+    defer msg.deinit();
+
+    const got_agent = agent.agent();
+    const result = try got_agent.process(msg);
+    defer result.ok.deinit();
+
+    try testing.expect(result.ok.content.string.len > 0);
+}
+
+test "GraphOfThought metadata completeness" {
+    const testing = std.testing;
+    const MockAgent = @import("../../test_utils.zig").MockAgent;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Premise A",
+        "1. Thought 1",
+        "",
+        "SUPPORT",
+        "Final conclusion",
+    });
+    defer mock.deinit();
+
+    const config = GraphOfThoughtConfig{};
+    var agent = try GraphOfThoughtAgent.init(allocator, mock.agent(), config);
+    defer agent.allocator.destroy(agent);
+
+    const msg = try Message.withText(allocator, .user, "Test");
+    defer msg.deinit();
+
+    const got_agent = agent.agent();
+    const result = try got_agent.process(msg);
+    defer result.ok.deinit();
+
+    // Check all required metadata fields
+    try testing.expect(result.ok.metadata.contains("technique"));
+    try testing.expect(result.ok.metadata.contains("num_nodes"));
+    try testing.expect(result.ok.metadata.contains("num_edges"));
+    try testing.expect(result.ok.metadata.contains("num_paths"));
+}
+
+test "AggregatorType enum values" {
+    const testing = std.testing;
+
+    try testing.expectEqual(AggregatorType.path_based, AggregatorType.path_based);
+    try testing.expectEqual(AggregatorType.node_based, AggregatorType.node_based);
+    try testing.expect(AggregatorType.path_based != AggregatorType.node_based);
+}
+
+test "GraphOfThought response role" {
+    const testing = std.testing;
+    const MockAgent = @import("../../test_utils.zig").MockAgent;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Premise A",
+        "1. Thought 1",
+        "",
+        "SUPPORT",
+        "Final conclusion",
+    });
+    defer mock.deinit();
+
+    const config = GraphOfThoughtConfig{};
+    var agent = try GraphOfThoughtAgent.init(allocator, mock.agent(), config);
+    defer agent.allocator.destroy(agent);
+
+    const msg = try Message.withText(allocator, .user, "Test");
+    defer msg.deinit();
+
+    const got_agent = agent.agent();
+    const result = try got_agent.process(msg);
+    defer result.ok.deinit();
+
+    try testing.expectEqual(Message.Role.assistant, result.ok.role);
+}
+

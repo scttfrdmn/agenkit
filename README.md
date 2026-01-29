@@ -5,11 +5,13 @@
 Agenkit is a lightweight, cross-language toolkit for building distributed AI agents that scale from prototype to production without rewriting your code.
 
 [![Website](https://img.shields.io/badge/website-agenkit.dev-blue)](https://agenkit.dev)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![TypeScript 5.0+](https://img.shields.io/badge/typescript-5.0+-3178C6.svg)](https://www.typescriptlang.org/)
-[![Go 1.21+](https://img.shields.io/badge/go-1.21+-00ADD8.svg)](https://golang.org/)
+[![Go 1.23+](https://img.shields.io/badge/go-1.23+-00ADD8.svg)](https://golang.org/)
+[![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org/)
+[![Zig 0.15.2+](https://img.shields.io/badge/zig-0.15.2+-F7A41D.svg)](https://ziglang.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Tests: 1500+ tests](https://img.shields.io/badge/tests-1500+%20passing-brightgreen.svg)](tests/)
+[![Tests: 2100+ tests](https://img.shields.io/badge/tests-2100+%20passing-brightgreen.svg)](tests/)
 [![6 Languages at 100%](https://img.shields.io/badge/languages-6%20at%20100%25%20parity-success.svg)](README.md#status)
 
 ## Why Agenkit?
@@ -75,11 +77,12 @@ response = await agent.process(Message(role="user", content="Hello!"))
 ### Add Production Features in 3 Lines
 
 ```python
-from agenkit.middleware import RetryMiddleware, CircuitBreakerMiddleware
+from agenkit.middleware import RetryDecorator, CircuitBreakerDecorator
 
-# Wrap with resilience
-production_agent = RetryMiddleware(
-    CircuitBreakerMiddleware(agent)
+# Wrap with resilience (v0.50.0)
+production_agent = RetryDecorator(
+    CircuitBreakerDecorator(agent),
+    max_attempts=3
 )
 
 # Now handles failures automatically
@@ -118,13 +121,13 @@ class Agent:
 agent = MyAgent()
 
 # Add retry logic
-agent = RetryMiddleware(agent, max_attempts=3)
+agent = RetryDecorator(agent, max_attempts=3)
 
 # Add circuit breaker
-agent = CircuitBreakerMiddleware(agent)
+agent = CircuitBreakerDecorator(agent, failure_threshold=5)
 
-# Add timeouts
-agent = TimeoutMiddleware(agent, timeout=30.0)
+# Add timeouts (v0.50.0: timeout_ms for clarity)
+agent = TimeoutDecorator(agent, timeout_ms=30000)
 
 # Stack as many as you need
 ```
@@ -394,25 +397,44 @@ See [benchmarks/BASELINES.md](benchmarks/BASELINES.md) for detailed performance 
 
 ## Learning Path
 
-1. **[Getting Started](GETTING_STARTED.md)** (15 min) - Create your first agent
-2. **[Core Concepts](GETTING_STARTED.md#core-concepts)** (30 min) - Understand the fundamentals
-3. **[Examples](examples/)** (1 hour) - Learn by doing with 27+ examples
-4. **[Architecture](ARCHITECTURE.md)** (30 min) - Understand design principles
-5. **[Migration Guides](docs/MIGRATION_INDEX.md)** (30 min per language) - Migrate between Python, Go, TypeScript, Rust, C++, Zig
-6. **[Production Deployment](deploy/README.md)** (1 hour) - Docker + Kubernetes
+1. **[Getting Started](GETTING_STARTED.md)** (15 min) - Choose your language and create your first agent
+   - [Python Guide](docs/getting-started/python.md) | [Go Guide](docs/getting-started/go.md) | [TypeScript Guide](docs/getting-started/typescript.md)
+   - [Rust Guide](docs/getting-started/rust.md) | [C++ Guide](docs/getting-started/cpp.md) | [Zig Guide](docs/getting-started/zig.md)
+2. **[Agent Patterns Book](../agent-patterns-book)** (2-3 hours) - Master the 18 core patterns and advanced architectures
+3. **[Advanced Architectures](docs/ADVANCED_ARCHITECTURES.md)** (1 hour) - Pattern compositions and multi-agent systems
+4. **[Examples](examples/)** (1 hour) - Learn by doing with 27+ examples
+5. **[Architecture](ARCHITECTURE.md)** (30 min) - Understand design principles
+6. **[Migration Guides](docs/MIGRATION_INDEX.md)** (30 min per language) - Migrate between languages
+7. **[Production Deployment](deploy/README.md)** (1 hour) - Docker + Kubernetes
 
-**Total time investment:** 3.5 hours from zero to production deployment.
+**Total time investment:** ~6 hours from zero to production deployment with pattern mastery.
 
 ## Documentation
 
-- **[Getting Started Guide](GETTING_STARTED.md)** - Step-by-step tutorial
-- **[Migration Guide Index](docs/MIGRATION_INDEX.md)** - Complete migration documentation for all 6 languages
+### Getting Started (Language-Specific)
+- **[Python Guide](docs/getting-started/python.md)** - 15-30 min to first agent
+- **[Go Guide](docs/getting-started/go.md)** - Idiomatic Go patterns
+- **[TypeScript Guide](docs/getting-started/typescript.md)** - Modern JavaScript/TypeScript
+- **[Rust Guide](docs/getting-started/rust.md)** - Memory-safe agents
+- **[C++ Guide](docs/getting-started/cpp.md)** - High-performance systems
+- **[Zig Guide](docs/getting-started/zig.md)** - Systems programming with safety
+
+### Patterns & Architecture
+- **[Agent Patterns Book](../agent-patterns-book)** - Comprehensive guide to 18 core patterns
+- **[Advanced Architectures](docs/ADVANCED_ARCHITECTURES.md)** - Pattern compositions and multi-agent systems
 - **[Architecture Principles](ARCHITECTURE.md)** - Design philosophy
+- **[Streaming Patterns](docs/STREAMING_PATTERNS.md)** - Language-specific streaming approaches
+
+### Migration & Reference
+- **[Migration Guide Index](docs/MIGRATION_INDEX.md)** - Complete migration documentation for all 6 languages
 - **[API Reference](docs/API.md)** - Complete API documentation
 - **[Deployment Guide](deploy/README.md)** - Docker and Kubernetes
 - **[Examples](examples/README.md)** - 27+ comprehensive examples
+
+### Operations & Security
 - **[Security Policy](SECURITY.md)** - Vulnerability reporting and best practices
 - **[Compatibility Matrix](COMPATIBILITY.md)** - Language, platform, and version support
+- **[Testing Strategy](TESTING.md)** - Test philosophy and coverage
 
 ### Package-Specific Docs
 - [Memory Management](agenkit/memory/README.md) - Context retention strategies
@@ -476,35 +498,60 @@ Apache License 2.0 - See [LICENSE](LICENSE) for details.
 
 ## Status
 
-**v0.40.0 - Six-Language Parity Achieved! 🎉🎉🎉**
+**v0.50.0 - Production Ready! 🚀**
 
 ### Language Support
 
-| Language | Patterns | Adapters | Evaluation | Tests | Status | Performance |
-|----------|----------|----------|------------|-------|--------|-------------|
-| **Python** | 18/18 (100%) | 6/6 (100%) | 6/6 (100%) | 451 | ✅ Complete | Reference |
-| **TypeScript** | 18/18 (100%) | 6/6 (100%) | 6/6 (100%) | 643 | ✅ Complete | Node.js speed |
-| **Go** | 18/18 (100%) | 6/6 (100%) | 6/6 (100%) | 410 | ✅ Complete | 18x Python |
-| **C++** | 18/18 (100%) | 6/6 (100%) | 6/6 (100%) | 242 | ✅ Complete | 25x Python |
-| **Rust** | 18/18 (100%) | 6/6 (100%) | 6/6 (100%) | 242 | ✅ Complete | 20x Python |
-| **Zig** | 18/18 (100%) | - | - | 113 | ✅ Complete | 22x Python |
+| Language | Patterns | Adapters | Observability | Tests | Status | Performance |
+|----------|----------|----------|---------------|-------|--------|-------------|
+| **Python** | 18/18 (100%) | 6/6 (100%) | ✅ Full | 470+ | ✅ Complete | Reference |
+| **TypeScript** | 18/18 (100%) | 6/6 (100%) | ✅ Full | 650+ | ✅ Complete | Node.js speed |
+| **Go** | 18/18 (100%) | 6/6 (100%) | ✅ Full | 420+ | ✅ Complete | 18x Python |
+| **Rust** | 18/18 (100%) | 6/6 (100%) | ✅ Full | 335+ | ✅ Complete | 20x Python |
+| **C++** | 18/18 (100%) | 6/6 (100%) | ✅ Full | 250+ | ✅ Complete | 25x Python |
+| **Zig** | 18/18 (100%) | 6/6 (100%) | ✅ Full | 335+ | ✅ Complete | 22x Python |
+
+**18 Core Patterns** documented in the [Agent Patterns Book](../agent-patterns-book): Task, Conversational, ReAct, Planning, Reflection, ReasoningWithTools, AgentsAsTools, Memory, Sequential, Parallel, Router, Fallback, Orchestration, Supervisor, Collaborative, HumanInLoop, MultiAgent, Autonomous
 
 **Historic Milestone:** First AI agent toolkit to achieve 100% feature parity across 6 languages!
+
+### v0.50.0 Release Highlights
+
+- ✅ **API Alignment Complete** - Consistent parameter naming and validation across all languages
+- ✅ **Parameter Validation** - LLM parameters validated at construction (temperature 0-2, max_tokens >0, top_p 0-1)
+- ✅ **Timeout Standardization** - Clear millisecond units (timeout_ms) in Python, TypeScript, C++, Zig
+- ✅ **Go Nullable Patterns** - Proper pointer types instead of sentinel values
+- ✅ **Observability Parity** - Full OpenTelemetry integration across all 6 languages
+- ✅ **Language-Specific Guides** - Comprehensive getting started documentation for each language
+- ✅ **Advanced Architecture Docs** - Pattern compositions and multi-agent system guidance
 
 ### Project Status
 
 - ✅ Core toolkit complete across 6 languages
-- ✅ **100% Pattern Parity** - All 18 patterns in all 6 languages
+- ✅ **100% Pattern Parity** - All 18 patterns in all 6 languages ([see book](../agent-patterns-book))
 - ✅ **100% Adapter Parity** - All 6 LLM adapters (OpenAI, Anthropic, Ollama, Bedrock, Gemini, LiteLLM)
-- ✅ **100% Evaluation Parity** - Complete evaluation system + benchmarks
-- ✅ **100% CI/CD Health** - All GitHub Actions workflows passing
-- ✅ 2,101+ tests passing (100% success rate across all 6 languages)
+- ✅ **100% Observability Parity** - OpenTelemetry, W3C Trace Context, distributed tracing
+- ✅ 2,100+ tests passing (100% success rate across all 6 languages)
 - ✅ Production middleware ready (retry, circuit breaker, timeout, rate limiting, caching, batching)
-- ✅ Full observability (OpenTelemetry integration with distributed tracing)
 - ✅ Multiple transports (HTTP/1.1, HTTP/2, HTTP/3, gRPC, WebSocket)
 - ✅ Deployment manifests (Docker + Kubernetes with HPA)
-- ✅ Comprehensive documentation and examples
-- 🚀 **Next:** Cross-language equivalence tests, Performance benchmarks, v1.0.0 release (Q1 2026)
+- ✅ Comprehensive documentation: 6 language guides + pattern book + advanced architectures
+- 🚀 **Next:** v1.0.0 release (Q1 2026)
+
+---
+
+### v0.50.0 Breaking Changes
+
+**Python:**
+- `timeout` (seconds) → `timeout_ms` (milliseconds) - Update all timeout parameters
+- LLM parameter validation now enforced at construction
+
+**Go:**
+- `UserIDExtractor` signature changed from `func(*Message) string` to `func(*Message) *string`
+
+**All other languages**: No breaking changes
+
+See language-specific getting started guides for migration examples.
 
 ---
 

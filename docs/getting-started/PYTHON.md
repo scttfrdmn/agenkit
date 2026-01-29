@@ -1,58 +1,62 @@
-# Getting Started with Agenkit - Python
+# Getting Started with Agenkit (Python)
 
-**Complete guide to building AI agents with Agenkit in Python**
-
-## Table of Contents
-
-1. [Installation](#installation)
-2. [Your First Agent](#your-first-agent)
-3. [Core Concepts](#core-concepts)
-4. [Using Patterns](#using-patterns)
-5. [Adding Middleware](#adding-middleware)
-6. [Working with LLMs](#working-with-llms)
-7. [Testing Your Agents](#testing-your-agents)
-8. [Next Steps](#next-steps)
+**Target audience**: Python developers new to Agenkit
+**Time to first agent**: 15-30 minutes
+**Prerequisites**: Python 3.10+
 
 ---
 
 ## Installation
 
-### Prerequisites
-
-- Python 3.10 or higher
-- pip or uv package manager
-
-### Install with pip
+### Option 1: Using uv (Recommended)
 
 ```bash
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create a new project
+uv init my-agent-project
+cd my-agent-project
+
+# Add agenkit
+uv add agenkit
+
+# Install LLM providers (optional)
+uv add anthropic openai
+```
+
+### Option 2: Using pip
+
+```bash
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install agenkit
 pip install agenkit
+
+# Install LLM providers (optional)
+pip install anthropic openai
 ```
 
-### Install with uv (Recommended)
+### Option 3: From Source
 
 ```bash
-uv pip install agenkit
-```
-
-### Verify Installation
-
-```bash
-python -c "import agenkit; print(agenkit.__version__)"
-# Should print: 0.46.0
+git clone https://github.com/yourusername/agenkit.git
+cd agenkit
+uv pip install -e .
 ```
 
 ---
 
 ## Your First Agent
 
-Let's create a simple agent that processes messages:
-
-### Step 1: Create Your Agent
-
-Create a file `my_agent.py`:
+Let's create a simple greeting agent that processes messages:
 
 ```python
+import asyncio
 from agenkit import Agent, Message
+
 
 class GreetingAgent(Agent):
     """A simple agent that greets users."""
@@ -62,622 +66,435 @@ class GreetingAgent(Agent):
         return "greeting-agent"
 
     async def process(self, message: Message) -> Message:
-        """Process a message and return a greeting."""
-        user_message = message.content
+        """Process a user message and return a greeting."""
+        user_content = message.content
+        greeting = f"Hello! You said: {user_content}"
 
         return Message(
             role="assistant",
-            content=f"Hello! You said: '{user_message}'. How can I help you today?"
+            content=greeting,
+            metadata={"processed_by": self.name}
         )
-```
 
-### Step 2: Use Your Agent
-
-```python
-import asyncio
-from my_agent import GreetingAgent
 
 async def main():
-    # Create agent instance
+    # Create the agent
     agent = GreetingAgent()
 
     # Create a user message
-    user_msg = Message(role="user", content="Hi there!")
+    user_message = Message(role="user", content="Hi there!")
 
     # Process the message
-    response = await agent.process(user_msg)
+    response = await agent.process(user_message)
 
-    # Print the response
-    print(f"{agent.name}: {response.content}")
+    print(f"Agent: {response.content}")
+    # Output: Agent: Hello! You said: Hi there!
 
-# Run the agent
+
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### Step 3: Run It
-
+Run it:
 ```bash
-python my_agent.py
-# Output: greeting-agent: Hello! You said: 'Hi there!'. How can I help you today?
+uv run python greeting_agent.py
 ```
-
-**🎉 Congratulations!** You've created your first Agenkit agent.
 
 ---
 
-## Core Concepts
+## Production-Ready Agent with Middleware
 
-### The Agent Interface
-
-Every agent in Agenkit implements two things:
-
-1. **`name`** - A unique identifier (property)
-2. **`process(message) -> Message`** - Processes messages (async method)
+Add resilience with retry, circuit breaker, and timeout middleware:
 
 ```python
+import asyncio
 from agenkit import Agent, Message
-
-class Agent:
-    @property
-    def name(self) -> str:
-        """Return the agent's unique identifier."""
-        ...
-
-    async def process(self, message: Message) -> Message:
-        """Process a message and return a response."""
-        ...
-```
-
-**That's the entire interface.** Everything else is optional.
-
-### Messages
-
-Messages are the unit of communication:
-
-```python
-from agenkit import Message, createMessage
-
-# Create a message
-msg = Message(
-    role="user",              # Who sent it: "user", "assistant", "system"
-    content="Hello!",         # The message content (string or dict)
-    metadata={"source": "web"}  # Optional metadata
+from agenkit.middleware import (
+    RetryDecorator,
+    CircuitBreakerDecorator,
+    TimeoutDecorator,
 )
 
-# Or use the helper
-msg = createMessage("user", "Hello!", metadata={"source": "web"})
 
-# Access message properties
-print(msg.role)      # "user"
-print(msg.content)   # "Hello!"
-print(msg.metadata)  # {"source": "web"}
-```
-
-### Tools
-
-Tools let agents take actions:
-
-```python
-from agenkit import Tool, ToolResult
-
-class CalculatorTool(Tool):
+class ProductionAgent(Agent):
     @property
     def name(self) -> str:
-        return "calculator"
+        return "production-agent"
+
+    async def process(self, message: Message) -> Message:
+        # Simulate some processing
+        await asyncio.sleep(0.1)
+        return Message(
+            role="assistant",
+            content=f"Processed: {message.content}",
+            metadata={"agent": self.name}
+        )
+
+
+async def main():
+    # Create base agent
+    base_agent = ProductionAgent()
+
+    # Wrap with middleware (v0.50.0 parameter names)
+    agent = RetryDecorator(
+        agent=base_agent,
+        max_attempts=3,  # Retry up to 3 times
+        initial_delay_ms=100,  # Start with 100ms delay
+    )
+
+    agent = CircuitBreakerDecorator(
+        agent=agent,
+        failure_threshold=5,  # Open after 5 failures
+        recovery_timeout_ms=30000,  # 30 seconds
+    )
+
+    agent = TimeoutDecorator(
+        agent=agent,
+        timeout_ms=5000,  # 5 second timeout
+    )
+
+    # Use the wrapped agent
+    message = Message(role="user", content="Hello production!")
+    response = await agent.process(message)
+    print(response.content)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+**Note**: v0.50.0 uses milliseconds for all timeout parameters (`timeout_ms`, not `timeout`).
+
+---
+
+## Using LLM Adapters
+
+### OpenAI Example
+
+```python
+import asyncio
+from agenkit import Message
+from agenkit.adapters.llm import OpenAILLM
+
+
+async def main():
+    # Initialize LLM (validates parameters at construction)
+    llm = OpenAILLM(
+        api_key="your-api-key",  # Or set OPENAI_API_KEY env var
+        model="gpt-4-turbo",
+        temperature=0.7,  # Validated: must be 0-2
+        max_tokens=1024,  # Validated: must be > 0
+    )
+
+    # Create conversation
+    messages = [
+        Message(role="system", content="You are a helpful assistant."),
+        Message(role="user", content="What is Agenkit?"),
+    ]
+
+    # Get completion
+    response = await llm.complete(messages)
+    print(response.content)
+
+    # Stream response
+    async for chunk in llm.stream(messages):
+        print(chunk.content, end="", flush=True)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### Anthropic Example
+
+```python
+from agenkit.adapters.llm import AnthropicLLM
+
+llm = AnthropicLLM(
+    api_key="your-api-key",  # Or set ANTHROPIC_API_KEY env var
+    model="claude-3-5-sonnet-20241022",
+    temperature=1.0,
+    max_tokens=4096,
+)
+```
+
+**Parameter Validation** (v0.50.0):
+- `temperature`: 0.0 - 2.0 (validated at construction)
+- `max_tokens`: > 0 (validated at construction)
+- `top_p`: 0.0 - 1.0 (validated at construction)
+
+Invalid values raise `ValueError` immediately.
+
+---
+
+## Common Patterns
+
+Agenkit provides 18 core patterns for building AI agents. Here are three essential ones to get started:
+
+### 1. Reflection Pattern
+
+Agent reviews and improves its own output:
+
+```python
+from agenkit.patterns import ReflectionAgent
+from agenkit.adapters.llm import OpenAILLM
+
+async def main():
+    llm = OpenAILLM(model="gpt-4-turbo")
+
+    agent = ReflectionAgent(
+        llm=llm,
+        max_iterations=3,
+        reflection_prompt="Review and improve this response:"
+    )
+
+    message = Message(role="user", content="Explain async/await")
+    response = await agent.process(message)
+    print(response.content)
+```
+
+### 2. ReAct Pattern
+
+Agent reasons and acts iteratively:
+
+```python
+from agenkit.patterns import ReActAgent
+from agenkit.tools import Tool, ToolResult
+
+class SearchTool(Tool):
+    @property
+    def name(self) -> str:
+        return "search"
 
     @property
     def description(self) -> str:
-        return "Performs basic arithmetic operations"
-
-    async def execute(self, **params) -> ToolResult:
-        """Execute the calculation."""
-        operation = params.get("operation")
-        a = params.get("a")
-        b = params.get("b")
-
-        if operation == "add":
-            result = a + b
-        elif operation == "multiply":
-            result = a * b
-        else:
-            return ToolResult(
-                output=None,
-                error=f"Unknown operation: {operation}"
-            )
-
-        return ToolResult(output=result)
-```
-
----
-
-## Using Patterns
-
-Agenkit includes 18 pre-built patterns for common agent architectures.
-
-### Reflection Pattern
-
-Iteratively improve outputs through self-critique:
-
-```python
-from agenkit.patterns import ReflectionAgent, ReflectionConfig
-from my_agents import Generator, Critic  # Your custom agents
-
-# Configure reflection
-config = ReflectionConfig(
-    max_iterations=3,           # Maximum improvement cycles
-    quality_threshold=0.8,      # Stop when quality is good enough
-    stop_on_repeat=True        # Stop if output doesn't change
-)
-
-# Create reflection agent
-agent = ReflectionAgent(
-    generator=Generator(),      # Generates initial output
-    critic=Critic(),           # Critiques and suggests improvements
-    config=config
-)
-
-# Use it
-response = await agent.process(Message(
-    role="user",
-    content="Write a haiku about coding"
-))
-
-# Response includes iteration metadata
-print(response.metadata["iterations"])  # Number of improvement cycles
-print(response.metadata["final_quality_score"])  # Quality of final output
-```
-
-### Sequential Pattern
-
-Chain multiple agents in sequence:
-
-```python
-from agenkit.patterns import SequentialPattern
-
-# Create a pipeline: research → summarize → format
-pipeline = SequentialPattern([
-    ResearchAgent(),      # Gathers information
-    SummaryAgent(),       # Summarizes findings
-    FormatterAgent()      # Formats final output
-])
-
-# Input flows through each agent in order
-response = await pipeline.process(Message(
-    role="user",
-    content="Research quantum computing"
-))
-```
-
-### Parallel Pattern
-
-Run multiple agents concurrently and aggregate results:
-
-```python
-from agenkit.patterns import ParallelPattern
-
-# Run multiple specialized agents in parallel
-parallel = ParallelPattern(
-    agents=[
-        TechnicalAgent(),     # Technical perspective
-        BusinessAgent(),      # Business perspective
-        UserAgent()          # User perspective
-    ],
-    aggregation="merge"      # How to combine results: "merge", "vote", "first"
-)
-
-# All agents process simultaneously
-response = await parallel.process(Message(
-    role="user",
-    content="Analyze this product idea"
-))
-```
-
-### ReAct Pattern
-
-Reasoning + Acting with tool use:
-
-```python
-from agenkit.patterns import ReActAgent, ReActConfig
-from my_agents import ReasoningAgent
-from my_tools import SearchTool, CalculatorTool
-
-# Configure ReAct
-config = ReActConfig(
-    max_steps=5,              # Maximum reasoning steps
-    tools=[
-        SearchTool(),         # Web search capability
-        CalculatorTool()      # Math calculations
-    ]
-)
-
-# Create ReAct agent
-agent = ReActAgent(
-    agent=ReasoningAgent(),   # Your reasoning agent
-    config=config
-)
-
-# Agent will alternate between thinking and acting
-response = await agent.process(Message(
-    role="user",
-    content="What's the population of Tokyo divided by the population of NYC?"
-))
-
-# Response includes reasoning trace
-print(response.metadata["steps"])          # List of reasoning steps
-print(response.metadata["tool_calls"])     # Tools used
-```
-
-### More Patterns
-
-Agenkit includes 18 patterns total. See the [Pattern Guide](../patterns/README.md) for:
-
-- **Conversational** - Multi-turn conversations with history
-- **Task** - Goal-oriented task execution
-- **Multiagent** - Coordinate multiple agents
-- **Planning** - Plan-then-execute workflows
-- **Autonomous** - Self-directed agent behavior
-- **Memory** - Working, short-term, and long-term memory
-- **Router** - Route messages to specialized agents
-- **Fallback** - Try alternatives when agents fail
-- **Collaborative** - Agents work together on complex tasks
-- **Human-in-Loop** - Request human approval/input
-- **Supervisor** - Manage and coordinate specialist agents
-
----
-
-## Adding Middleware
-
-Middleware adds production features without changing your agent code.
-
-### Retry Logic
-
-Automatically retry failed operations:
-
-```python
-from agenkit.middleware import RetryMiddleware, RetryConfig
-
-# Configure retries
-config = RetryConfig(
-    max_attempts=3,              # Try up to 3 times
-    backoff_factor=2.0,          # Exponential backoff
-    initial_delay=1.0,           # Start with 1 second
-    max_delay=30.0               # Cap at 30 seconds
-)
-
-# Wrap your agent
-resilient_agent = RetryMiddleware(my_agent, config)
-
-# Now handles transient failures automatically
-response = await resilient_agent.process(message)
-```
-
-### Circuit Breaker
-
-Prevent cascading failures:
-
-```python
-from agenkit.middleware import CircuitBreakerMiddleware, CircuitBreakerConfig
-
-# Configure circuit breaker
-config = CircuitBreakerConfig(
-    failure_threshold=5,          # Open after 5 failures
-    timeout=60.0,                # Stay open for 60 seconds
-    success_threshold=2          # Close after 2 successes
-)
-
-# Wrap your agent
-protected_agent = CircuitBreakerMiddleware(my_agent, config)
-
-# Fails fast when circuit is open (avoids overwhelming failing service)
-try:
-    response = await protected_agent.process(message)
-except CircuitBreakerError:
-    print("Circuit is open - service unavailable")
-```
-
-### Timeout
-
-Set maximum execution time:
-
-```python
-from agenkit.middleware import TimeoutMiddleware, TimeoutConfig
-
-# Configure timeout
-config = TimeoutConfig(
-    timeout=30.0,                # 30 second timeout
-    grace_period=5.0            # 5 second grace for cleanup
-)
-
-# Wrap your agent
-timed_agent = TimeoutMiddleware(my_agent, config)
-
-# Will cancel after 30 seconds
-try:
-    response = await timed_agent.process(message)
-except TimeoutError:
-    print("Agent took too long to respond")
-```
-
-### Rate Limiting
-
-Control request rate:
-
-```python
-from agenkit.middleware import RateLimiterMiddleware, RateLimiterConfig
-
-# Configure rate limiter
-config = RateLimiterConfig(
-    max_requests=100,            # 100 requests
-    window_seconds=60.0,         # Per minute
-    strategy="sliding_window"    # Fair distribution
-)
-
-# Wrap your agent
-limited_agent = RateLimiterMiddleware(my_agent, config)
-
-# Will block if rate limit exceeded
-response = await limited_agent.process(message)
-```
-
-### Stacking Middleware
-
-Combine multiple middleware layers:
-
-```python
-from agenkit.middleware import (
-    RetryMiddleware,
-    CircuitBreakerMiddleware,
-    TimeoutMiddleware,
-    RateLimiterMiddleware
-)
-
-# Stack middleware (innermost to outermost)
-agent = my_agent
-agent = TimeoutMiddleware(agent)        # 1. Enforce timeout
-agent = CircuitBreakerMiddleware(agent) # 2. Prevent cascading failures
-agent = RetryMiddleware(agent)          # 3. Retry on failure
-agent = RateLimiterMiddleware(agent)    # 4. Control rate
-
-# Now has full production resilience
-response = await agent.process(message)
-```
-
----
-
-## Working with LLMs
-
-### OpenAI Integration
-
-```python
-from agenkit.adapters import OpenAIAdapter
-
-# Create OpenAI agent
-agent = OpenAIAdapter(
-    model="gpt-4",
-    api_key="your-api-key"  # Or set OPENAI_API_KEY env var
-)
-
-# Use it like any agent
-response = await agent.process(Message(
-    role="user",
-    content="Explain quantum computing"
-))
-```
-
-### Anthropic (Claude) Integration
-
-```python
-from agenkit.adapters import AnthropicAdapter
-
-# Create Claude agent
-agent = AnthropicAdapter(
-    model="claude-3-opus-20240229",
-    api_key="your-api-key"  # Or set ANTHROPIC_API_KEY env var
-)
-
-response = await agent.process(Message(
-    role="user",
-    content="Write a function to calculate Fibonacci numbers"
-))
-```
-
-### Custom LLM Integration
-
-```python
-from agenkit import Agent, Message
-import httpx
-
-class CustomLLMAgent(Agent):
-    def __init__(self, api_url: str, api_key: str):
-        self._api_url = api_url
-        self._api_key = api_key
-        self._client = httpx.AsyncClient()
+        return "Search for information"
 
     @property
-    def name(self) -> str:
-        return "custom-llm"
+    def parameters(self) -> dict:
+        return {
+            "query": {"type": "string", "description": "Search query"}
+        }
 
-    async def process(self, message: Message) -> Message:
-        # Call your LLM API
-        response = await self._client.post(
-            self._api_url,
-            headers={"Authorization": f"Bearer {self._api_key}"},
-            json={"prompt": message.content}
+    async def execute(self, params: dict) -> ToolResult:  # v0.50.0: explicit params dict
+        query = params["query"]
+        # Simulate search
+        return ToolResult(
+            success=True,
+            result=f"Search results for: {query}"
         )
 
-        result = response.json()
+async def main():
+    llm = OpenAILLM(model="gpt-4-turbo")
+    tools = [SearchTool()]
 
-        return Message(
-            role="assistant",
-            content=result["completion"]
-        )
+    agent = ReActAgent(llm=llm, tools=tools, max_iterations=5)
+
+    message = Message(role="user", content="What's the weather in Paris?")
+    response = await agent.process(message)
+    print(response.content)
 ```
 
----
+**Breaking Change (v0.50.0)**: `Tool.execute()` now takes explicit `params: dict` instead of `**kwargs`.
 
-## Testing Your Agents
+### 3. Sequential Pattern
 
-### Unit Testing
-
-```python
-import pytest
-from agenkit import Message
-from my_agent import GreetingAgent
-
-@pytest.mark.asyncio
-async def test_greeting_agent():
-    """Test that GreetingAgent responds correctly."""
-    agent = GreetingAgent()
-
-    # Test basic greeting
-    response = await agent.process(Message(
-        role="user",
-        content="Hello"
-    ))
-
-    assert response.role == "assistant"
-    assert "Hello" in response.content
-
-@pytest.mark.asyncio
-async def test_agent_name():
-    """Test that agent has correct name."""
-    agent = GreetingAgent()
-    assert agent.name == "greeting-agent"
-```
-
-### Integration Testing with Mock Agents
+Chain multiple agents:
 
 ```python
-from agenkit import Agent, Message
-from agenkit.patterns import SequentialPattern
+from agenkit.patterns import SequentialAgent
 
-class MockAgent(Agent):
-    """Mock agent for testing."""
-
-    def __init__(self, response: str):
-        self._response = response
-
-    @property
-    def name(self) -> str:
-        return "mock-agent"
-
-    async def process(self, message: Message) -> Message:
-        return Message(role="assistant", content=self._response)
-
-@pytest.mark.asyncio
-async def test_sequential_pattern():
-    """Test sequential pattern with mocks."""
-    pipeline = SequentialPattern([
-        MockAgent("Step 1 complete"),
-        MockAgent("Step 2 complete"),
-        MockAgent("Step 3 complete")
+async def main():
+    # Create agent pipeline
+    agent = SequentialAgent(agents=[
+        ResearchAgent(),
+        SummarizerAgent(),
+        EditorAgent(),
     ])
 
-    response = await pipeline.process(Message(
-        role="user",
-        content="Start pipeline"
-    ))
-
-    assert "Step 3 complete" in response.content
+    message = Message(role="user", content="Research AI safety")
+    final_response = await agent.process(message)
+    print(final_response.content)
 ```
 
-### Performance Testing
+**See all 18 patterns**: Refer to the accompanying book and `docs/PATTERNS.md`
+
+---
+
+## Observability
+
+### Basic Tracing with OpenTelemetry
 
 ```python
-import time
-from agenkit.evaluation import Benchmark
+from agenkit.observability import configure_observability
 
-# Create benchmark suite
-benchmark = Benchmark(
-    agent=my_agent,
-    test_cases=[
-        {"input": "Test 1", "expected": "Response 1"},
-        {"input": "Test 2", "expected": "Response 2"},
-    ]
+# Configure OpenTelemetry
+configure_observability(
+    service_name="my-agent-service",
+    exporter_type="jaeger",
+    jaeger_endpoint="http://localhost:14268/api/traces",
 )
 
-# Run benchmarks
-results = await benchmark.run()
+# Your agent automatically gets:
+# - Span creation for each process() call
+# - W3C Trace Context propagation
+# - LLM call tracing
+# - Error tracking
+```
 
-print(f"Average latency: {results.avg_latency_ms}ms")
-print(f"Success rate: {results.success_rate * 100}%")
+### View Traces in Jaeger
+
+```bash
+# Start Jaeger (Docker)
+docker run -d --name jaeger \
+  -p 16686:16686 \
+  -p 14268:14268 \
+  jaegertracing/all-in-one:latest
+
+# Open UI
+open http://localhost:16686
+```
+
+---
+
+## Advanced Features
+
+### 1. Memory Hierarchy
+
+```python
+from agenkit.memory import MemoryHierarchy, WorkingMemory, LongTermMemory
+
+memory = MemoryHierarchy(
+    working=WorkingMemory(capacity=10),
+    long_term=LongTermMemory(storage_path="./memory.db"),
+)
+
+agent = ConversationalAgent(memory=memory)
+```
+
+### 2. Budget Tracking
+
+```python
+from agenkit.budget import BudgetTracker
+
+tracker = BudgetTracker(max_cost_usd=10.0)
+
+agent = BudgetAwareAgent(llm=llm, budget=tracker)
+```
+
+### 3. Safety Framework
+
+```python
+from agenkit.safety import ContentFilter, RateLimiter
+
+agent = SafeAgent(
+    llm=llm,
+    content_filter=ContentFilter(block_pii=True),
+    rate_limiter=RateLimiter(rate=10, max_wait_ms=30000),
+)
+```
+
+---
+
+## Common Pitfalls
+
+### 1. Timeout Units (v0.50.0 Breaking Change)
+
+```python
+# WRONG (v0.49.0):
+TimeoutDecorator(agent=agent, timeout=30.0)  # seconds
+
+# CORRECT (v0.50.0):
+TimeoutDecorator(agent=agent, timeout_ms=30000)  # milliseconds
+```
+
+### 2. Tool Execution Signature (v0.50.0 Breaking Change)
+
+```python
+# WRONG (v0.49.0):
+async def execute(self, **kwargs) -> ToolResult:
+    query = kwargs.get("query")
+
+# CORRECT (v0.50.0):
+async def execute(self, params: dict) -> ToolResult:
+    query = params["query"]
+```
+
+### 3. Parameter Validation
+
+```python
+# This raises ValueError immediately (v0.50.0):
+llm = OpenAILLM(temperature=3.0)  # ❌ ValueError: temperature must be 0-2
+
+# Valid range:
+llm = OpenAILLM(temperature=0.7)  # ✅ OK
+```
+
+### 4. Using uv for All Operations
+
+```bash
+# WRONG:
+python script.py
+pytest tests/
+
+# CORRECT:
+uv run python script.py
+uv run pytest tests/
 ```
 
 ---
 
 ## Next Steps
 
-### Learn More
-
-- **[Pattern Guide](../patterns/README.md)** - Detailed guide to all 18 patterns
-- **[API Reference](../api/python/README.md)** - Complete API documentation
-- **[Best Practices](../best-practices/PYTHON.md)** - Production deployment tips
-- **[Examples](../../examples/python/)** - 50+ working examples
-
-### Deploy to Production
-
-- **[Docker Deployment](../deployment/DOCKER.md)** - Containerize your agents
-- **[Kubernetes Guide](../deployment/KUBERNETES.md)** - Scale with K8s
-- **[Monitoring & Observability](../observability/README.md)** - Track agent performance
-
-### Migrate to Other Languages
-
-Need better performance? Migrate to compiled languages:
-
-- **[Python → Go Migration](../migration/PYTHON_TO_GO.md)** - 18x faster
-- **[Python → TypeScript Migration](../migration/PYTHON_TO_TYPESCRIPT.md)** - Browser support
-- **[Python → Rust Migration](../migration/PYTHON_TO_RUST.md)** - Maximum performance
-
-### Join the Community
-
-- **[GitHub Discussions](https://github.com/scttfrdmn/agenkit/discussions)** - Ask questions
-- **[Discord](https://discord.gg/agenkit)** - Chat with other developers
-- **[Contributing Guide](../../CONTRIBUTING.md)** - Help improve Agenkit
+1. **Explore Patterns**: See the accompanying book and `docs/PATTERNS.md` for all 18 patterns
+2. **Read Architecture**: `ARCHITECTURE.md` explains design principles
+3. **Check Examples**: `examples/python/` has 27+ production examples
+4. **API Reference**: Coming soon in `docs/api-reference/python/`
+5. **Migration Guide**: See `docs/MIGRATION_v0.50.0.md` for breaking changes
 
 ---
 
 ## Quick Reference
 
-### Installation
-```bash
-pip install agenkit
-```
-
-### Minimal Agent
 ```python
+# Core imports
 from agenkit import Agent, Message
-
-class MyAgent(Agent):
-    @property
-    def name(self) -> str:
-        return "my-agent"
-
-    async def process(self, message: Message) -> Message:
-        return Message(role="assistant", content="Response")
-```
-
-### Common Imports
-```python
-# Core
-from agenkit import Agent, Message, Tool, ToolResult
-
-# Patterns
-from agenkit.patterns import (
-    ReflectionAgent, ReActAgent, SequentialPattern,
-    ParallelPattern, ConversationalAgent
-)
 
 # Middleware
 from agenkit.middleware import (
-    RetryMiddleware, CircuitBreakerMiddleware,
-    TimeoutMiddleware, RateLimiterMiddleware
+    RetryDecorator,
+    TimeoutDecorator,
+    CircuitBreakerDecorator,
+    RateLimiterDecorator,
 )
 
-# Adapters
-from agenkit.adapters import OpenAIAdapter, AnthropicAdapter
+# LLM adapters
+from agenkit.adapters.llm import OpenAILLM, AnthropicLLM, OllamaLLM
+
+# Patterns
+from agenkit.patterns import (
+    ReflectionAgent,
+    ReActAgent,
+    SequentialAgent,
+    ParallelAgent,
+)
+
+# Tools
+from agenkit.tools import Tool, ToolResult
+
+# Observability
+from agenkit.observability import configure_observability
+
+# Memory
+from agenkit.memory import MemoryHierarchy, WorkingMemory
+
+# Safety
+from agenkit.safety import ContentFilter, RateLimiter
 ```
 
 ---
 
-**Ready to build?** Check out the [examples](../../examples/python/) for working code you can run right now.
+**Version**: v0.50.0
+**Last Updated**: January 28, 2026
+
+For help: Open an issue at https://github.com/yourusername/agenkit/issues

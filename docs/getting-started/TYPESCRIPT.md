@@ -1,848 +1,483 @@
-# Getting Started with Agenkit - TypeScript
+# Getting Started with Agenkit (TypeScript)
 
-**Complete guide to building type-safe AI agents with Agenkit in TypeScript**
-
-## Table of Contents
-
-1. [Installation](#installation)
-2. [Your First Agent](#your-first-agent)
-3. [Core Concepts](#core-concepts)
-4. [Using Patterns](#using-patterns)
-5. [Adding Middleware](#adding-middleware)
-6. [Working with LLMs](#working-with-llms)
-7. [Browser Support](#browser-support)
-8. [Testing Your Agents](#testing-your-agents)
-9. [Next Steps](#next-steps)
+**Target audience**: TypeScript/JavaScript developers new to Agenkit
+**Time to first agent**: 15-30 minutes
+**Prerequisites**: Node.js 22+, TypeScript 5+
 
 ---
 
 ## Installation
 
-### Prerequisites
-
-- Node.js 18+ or Bun
-- npm, yarn, or pnpm package manager
-- TypeScript 5.0+
-
-### Install with npm
-
 ```bash
+# Using npm
 npm install agenkit
-npm install --save-dev typescript @types/node
-```
 
-### Install with yarn
-
-```bash
+# Using yarn
 yarn add agenkit
-yarn add --dev typescript @types/node
-```
 
-### Install with pnpm
-
-```bash
+# Using pnpm
 pnpm add agenkit
-pnpm add -D typescript @types/node
-```
 
-### Verify Installation
-
-Create `test.ts`:
-```typescript
-import { Agent, Message } from 'agenkit';
-
-console.log('Agenkit loaded successfully!');
-```
-
-```bash
-npx ts-node test.ts
-# Output: Agenkit loaded successfully!
+# Install optional LLM providers
+npm install openai @anthropic-ai/sdk
 ```
 
 ---
 
 ## Your First Agent
 
-Let's create a simple agent that processes messages:
-
-### Step 1: Create Your Agent
-
-Create a file `agent.ts`:
+Let's create a simple greeting agent:
 
 ```typescript
 import { Agent, Message } from 'agenkit';
 
-/**
- * A simple agent that greets users
- */
-export class GreetingAgent implements Agent {
-    get name(): string {
-        return 'greeting-agent';
-    }
+class GreetingAgent implements Agent {
+  get name(): string {
+    return 'greeting-agent';
+  }
 
-    async process(message: Message): Promise<Message> {
-        const userMessage = String(message.content);
+  async process(message: Message): Promise<Message> {
+    const userContent = message.content;
+    const greeting = `Hello! You said: ${userContent}`;
 
-        return {
-            role: 'assistant',
-            content: `Hello! You said: '${userMessage}'. How can I help you today?`,
-        };
-    }
+    return {
+      role: 'assistant',
+      content: greeting,
+      metadata: { processed_by: this.name }
+    };
+  }
 }
-```
-
-### Step 2: Use Your Agent
-
-Create `index.ts`:
-
-```typescript
-import { Message } from 'agenkit';
-import { GreetingAgent } from './agent';
 
 async function main() {
-    // Create agent instance
-    const agent = new GreetingAgent();
+  const agent = new GreetingAgent();
 
-    // Create a user message
-    const userMsg: Message = {
-        role: 'user',
-        content: 'Hi there!',
-    };
+  const message: Message = {
+    role: 'user',
+    content: 'Hi there!'
+  };
 
-    // Process the message
-    const response = await agent.process(userMsg);
-
-    // Print the response
-    console.log(`${agent.name}: ${response.content}`);
+  const response = await agent.process(message);
+  console.log(`Agent: ${response.content}`);
+  // Output: Agent: Hello! You said: Hi there!
 }
 
-main().catch(console.error);
+main();
 ```
 
-### Step 3: Run It
+Run it:
+```bash
+npx tsx main.ts  # or: node main.js if compiled
+```
+
+---
+
+## Production-Ready Agent with Middleware
+
+Add resilience with retry, circuit breaker, and timeout middleware:
+
+```typescript
+import { Agent, Message } from 'agenkit';
+import {
+  RetryDecorator,
+  CircuitBreakerDecorator,
+  TimeoutDecorator
+} from 'agenkit/middleware';
+
+class ProductionAgent implements Agent {
+  get name(): string {
+    return 'production-agent';
+  }
+
+  async process(message: Message): Promise<Message> {
+    // Simulate some processing
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    return {
+      role: 'assistant',
+      content: `Processed: ${message.content}`,
+      metadata: { agent: this.name }
+    };
+  }
+}
+
+async function main() {
+  const baseAgent = new ProductionAgent();
+
+  // Wrap with middleware (v0.50.0 uses milliseconds)
+  let agent: Agent = new RetryDecorator(baseAgent, {
+    maxAttempts: 3,
+    initialDelayMs: 100
+  });
+
+  agent = new CircuitBreakerDecorator(agent, {
+    failureThreshold: 5,
+    recoveryTimeoutMs: 30000
+  });
+
+  agent = new TimeoutDecorator(agent, {
+    timeoutMs: 5000
+  });
+
+  const message: Message = {
+    role: 'user',
+    content: 'Hello production!'
+  };
+
+  const response = await agent.process(message);
+  console.log(response.content);
+}
+
+main();
+```
+
+**Note**: TypeScript uses milliseconds for all timeout parameters (v0.50.0).
+
+---
+
+## Using LLM Adapters
+
+### OpenAI Example
+
+```typescript
+import { Message } from 'agenkit';
+import { OpenAILLM } from 'agenkit/llm';
+
+async function main() {
+  // Initialize LLM (validates parameters at construction)
+  const llm = new OpenAILLM({
+    apiKey: process.env.OPENAI_API_KEY!,
+    model: 'gpt-4-turbo',
+    temperature: 0.7,   // Validated: 0-2
+    maxTokens: 1024     // Validated: >0
+  });
+
+  // Create conversation
+  const messages: Message[] = [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: 'What is Agenkit?' }
+  ];
+
+  // Get completion
+  const response = await llm.complete(messages);
+  console.log(response.content);
+
+  // Stream response
+  for await (const chunk of llm.stream(messages)) {
+    process.stdout.write(chunk.content);
+  }
+}
+
+main();
+```
+
+### Anthropic Example
+
+```typescript
+import { AnthropicLLM } from 'agenkit/llm';
+
+const llm = new AnthropicLLM({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+  model: 'claude-3-5-sonnet-20241022',
+  temperature: 1.0,
+  maxTokens: 4096
+});
+```
+
+**Parameter Validation** (v0.50.0):
+- `temperature`: 0.0 - 2.0 (validated at construction)
+- `maxTokens`: > 0 (validated at construction)
+- `topP`: 0.0 - 1.0 (validated at construction)
+
+Invalid values throw `Error` immediately.
+
+---
+
+## Common Patterns
+
+Agenkit provides **18 core patterns** for building AI agents (see the [Agent Patterns Book](../../agent-patterns-book) for comprehensive details). Here are three essential patterns to get started:
+
+### 1. Reflection Pattern
+
+**One-line**: Iterative self-improvement through draft-critique-refine loop
+
+```typescript
+import { Message } from 'agenkit';
+import { ReflectionAgent } from 'agenkit/patterns';
+import { OpenAILLM } from 'agenkit/llm';
+
+async function main() {
+  const llm = new OpenAILLM({ model: 'gpt-4-turbo' });
+
+  const agent = new ReflectionAgent(llm, {
+    maxIterations: 3,
+    reflectionPrompt: 'Review and improve this response:'
+  });
+
+  const message: Message = {
+    role: 'user',
+    content: 'Explain async/await in TypeScript'
+  };
+
+  const response = await agent.process(message);
+  console.log(response.content);
+}
+
+main();
+```
+
+### 2. ReAct Pattern
+
+**One-line**: Reasoning + Acting with explicit thought-action-observation loop
+
+```typescript
+import { Message, Tool, ToolResult } from 'agenkit';
+import { ReActAgent } from 'agenkit/patterns';
+import { OpenAILLM } from 'agenkit/llm';
+
+class SearchTool implements Tool {
+  get name(): string {
+    return 'search';
+  }
+
+  get description(): string {
+    return 'Search for information';
+  }
+
+  get parameters(): Record<string, unknown> {
+    return {
+      query: {
+        type: 'string',
+        description: 'Search query'
+      }
+    };
+  }
+
+  async execute(params: Record<string, unknown>): Promise<ToolResult> {
+    const query = params.query as string;
+    // Simulate search
+    return {
+      success: true,
+      result: `Search results for: ${query}`
+    };
+  }
+}
+
+async function main() {
+  const llm = new OpenAILLM({ model: 'gpt-4-turbo' });
+  const tools = [new SearchTool()];
+
+  const agent = new ReActAgent(llm, tools, {
+    maxIterations: 5
+  });
+
+  const message: Message = {
+    role: 'user',
+    content: "What's the weather in Paris?"
+  };
+
+  const response = await agent.process(message);
+  console.log(response.content);
+}
+
+main();
+```
+
+**Note**: Tool signatures use explicit `params: Record<string, unknown>` (v0.50.0+).
+
+### 3. Sequential Pattern
+
+**One-line**: Execute agents in order, passing outputs between stages
+
+```typescript
+import { Message } from 'agenkit';
+import { SequentialAgent } from 'agenkit/patterns';
+
+async function main() {
+  // Create agent pipeline
+  const agent = new SequentialAgent([
+    new ResearchAgent(),
+    new SummarizerAgent(),
+    new EditorAgent()
+  ]);
+
+  const message: Message = {
+    role: 'user',
+    content: 'Research AI safety'
+  };
+
+  const finalResponse = await agent.process(message);
+  console.log(finalResponse.content);
+}
+
+main();
+```
+
+**See all 18 patterns**: Refer to the [Agent Patterns Book](../../agent-patterns-book) for complete pattern descriptions, trade-offs, and when to use each pattern.
+
+---
+
+## Observability
+
+### Basic Tracing with OpenTelemetry
+
+```typescript
+import { configureObservability } from 'agenkit/observability';
+
+// Configure OpenTelemetry
+configureObservability({
+  serviceName: 'my-agent-service',
+  exporterType: 'jaeger',
+  jaegerEndpoint: 'http://localhost:14268/api/traces'
+});
+
+// Your agent automatically gets:
+// - Span creation for each process() call
+// - W3C Trace Context propagation
+// - LLM call tracing
+// - Error tracking
+```
+
+### View Traces in Jaeger
 
 ```bash
-npx ts-node index.ts
-# Output: greeting-agent: Hello! You said: 'Hi there!'. How can I help you today?
-```
+# Start Jaeger (Docker)
+docker run -d --name jaeger \
+  -p 16686:16686 \
+  -p 14268:14268 \
+  jaegertracing/all-in-one:latest
 
-**🎉 Congratulations!** You've created your first Agenkit agent in TypeScript.
-
----
-
-## Core Concepts
-
-### The Agent Interface
-
-Every agent in Agenkit implements the `Agent` interface:
-
-```typescript
-interface Agent {
-    readonly name: string;
-    process(message: Message): Promise<Message>;
-}
-```
-
-**That's the entire interface.** Everything else is optional.
-
-**Important:** Use `get name()` getter syntax, not a method:
-
-```typescript
-// ✅ CORRECT
-class MyAgent implements Agent {
-    get name(): string {
-        return 'my-agent';
-    }
-}
-
-// ❌ WRONG
-class MyAgent implements Agent {
-    name(): string {  // This is a method, not a getter!
-        return 'my-agent';
-    }
-}
-```
-
-### Messages
-
-Messages are the unit of communication:
-
-```typescript
-import { Message, createMessage } from 'agenkit';
-
-// Create a message
-const msg: Message = {
-    role: 'user',           // Who sent it: "user", "assistant", "system"
-    content: 'Hello!',      // The message content (string or object)
-    metadata: {             // Optional metadata
-        source: 'web',
-    },
-};
-
-// Or use the helper
-const msg2 = createMessage('user', 'Hello!', { source: 'web' });
-
-// Access message properties (with type safety)
-console.log(msg.role);      // "user"
-console.log(msg.content);   // "Hello!"
-console.log(msg.metadata);  // { source: "web" }
-```
-
-### Type Safety
-
-TypeScript provides compile-time type checking:
-
-```typescript
-import { Agent, Message } from 'agenkit';
-
-class TypeSafeAgent implements Agent {
-    get name(): string {
-        return 'type-safe-agent';
-    }
-
-    async process(message: Message): Promise<Message> {
-        // TypeScript knows message is a Message type
-        const content = message.content;  // Type: unknown
-
-        // Type guard for safety
-        if (typeof content !== 'string') {
-            throw new Error('Expected string content');
-        }
-
-        // Now TypeScript knows content is a string
-        const upperContent = content.toUpperCase();
-
-        return {
-            role: 'assistant',
-            content: upperContent,
-        };
-    }
-}
-```
-
-### Tools
-
-Tools let agents take actions:
-
-```typescript
-import { Tool, ToolResult } from 'agenkit';
-
-export class CalculatorTool implements Tool {
-    get name(): string {
-        return 'calculator';
-    }
-
-    get description(): string {
-        return 'Performs basic arithmetic operations';
-    }
-
-    async execute(params: Record<string, unknown>): Promise<ToolResult> {
-        const operation = params.operation as string;
-        const a = params.a as number;
-        const b = params.b as number;
-
-        let result: number;
-        switch (operation) {
-            case 'add':
-                result = a + b;
-                break;
-            case 'multiply':
-                result = a * b;
-                break;
-            default:
-                return {
-                    output: null,
-                    error: `Unknown operation: ${operation}`,
-                };
-        }
-
-        return { output: result };
-    }
-}
+# Open UI
+open http://localhost:16686
 ```
 
 ---
 
-## Using Patterns
+## Advanced Features
 
-Agenkit includes 18 pre-built patterns for common agent architectures.
-
-### Reflection Pattern
-
-Iteratively improve outputs through self-critique:
+### 1. Memory Hierarchy
 
 ```typescript
-import { ReflectionAgent, ReflectionConfig } from 'agenkit';
-import { Generator, Critic } from './my-agents';  // Your custom agents
+import { MemoryHierarchy, WorkingMemory, LongTermMemory } from 'agenkit/memory';
 
-// Configure reflection
-const config: ReflectionConfig = {
-    maxIterations: 3,        // Maximum improvement cycles
-    qualityThreshold: 0.8,   // Stop when quality is good enough
-    stopOnRepeat: true,      // Stop if output doesn't change
-};
-
-// Create reflection agent
-const agent = new ReflectionAgent({
-    generator: new Generator(),    // Generates initial output
-    critic: new Critic(),         // Critiques and suggests improvements
-    ...config,
+const memory = new MemoryHierarchy({
+  working: new WorkingMemory({ capacity: 10 }),
+  longTerm: new LongTermMemory({ storagePath: './memory.db' })
 });
 
-// Use it
-const response = await agent.process({
-    role: 'user',
-    content: 'Write a haiku about coding',
-});
-
-// Response includes iteration metadata
-console.log(response.metadata?.iterations);          // Number of cycles
-console.log(response.metadata?.final_quality_score); // Quality of output
+const agent = new ConversationalAgent({ memory });
 ```
 
-### Sequential Pattern
-
-Chain multiple agents in sequence:
+### 2. Budget Tracking
 
 ```typescript
-import { SequentialPattern } from 'agenkit';
-import { ResearchAgent, SummaryAgent, FormatterAgent } from './agents';
+import { BudgetTracker } from 'agenkit/budget';
 
-// Create a pipeline: research → summarize → format
-const pipeline = new SequentialPattern([
-    new ResearchAgent(),      // Gathers information
-    new SummaryAgent(),       // Summarizes findings
-    new FormatterAgent(),     // Formats final output
-]);
-
-// Input flows through each agent in order
-const response = await pipeline.process({
-    role: 'user',
-    content: 'Research quantum computing',
-});
+const tracker = new BudgetTracker({ maxCostUSD: 10.0 });
+const agent = new BudgetAwareAgent(llm, { budget: tracker });
 ```
 
-### Parallel Pattern
-
-Run multiple agents concurrently and aggregate results:
+### 3. Safety Framework
 
 ```typescript
-import { ParallelPattern } from 'agenkit';
-import { TechnicalAgent, BusinessAgent, UserAgent } from './agents';
+import { ContentFilter, RateLimiter } from 'agenkit/safety';
 
-// Run multiple specialized agents in parallel
-const parallel = new ParallelPattern([
-    new TechnicalAgent(),     // Technical perspective
-    new BusinessAgent(),      // Business perspective
-    new UserAgent(),         // User perspective
-]);
-
-// All agents process simultaneously (Promise.all)
-const response = await parallel.process({
-    role: 'user',
-    content: 'Analyze this product idea',
+const agent = new SafeAgent(llm, {
+  contentFilter: new ContentFilter({ blockPII: true }),
+  rateLimiter: new RateLimiter({ rate: 10, maxWaitMs: 30000 })
 });
-```
-
-### ReAct Pattern
-
-Reasoning + Acting with tool use:
-
-```typescript
-import { ReActAgent, ReActConfig } from 'agenkit';
-import { ReasoningAgent } from './agents';
-import { SearchTool, CalculatorTool } from './tools';
-
-// Configure ReAct
-const config: ReActConfig = {
-    maxSteps: 5,              // Maximum reasoning steps
-    tools: [
-        new SearchTool(),     // Web search capability
-        new CalculatorTool(), // Math calculations
-    ],
-};
-
-// Create ReAct agent
-const agent = new ReActAgent(new ReasoningAgent(), config);
-
-// Agent will alternate between thinking and acting
-const response = await agent.process({
-    role: 'user',
-    content: "What's the population of Tokyo divided by the population of NYC?",
-});
-
-// Response includes reasoning trace
-console.log(response.metadata?.steps);       // Reasoning steps
-console.log(response.metadata?.tool_calls);  // Tools used
 ```
 
 ---
 
-## Adding Middleware
+## Common Pitfalls
 
-Middleware adds production features without changing your agent code.
-
-### Retry Logic
-
-Automatically retry failed operations:
+### 1. Timeout Parameter Naming (v0.50.0)
 
 ```typescript
-import { RetryMiddleware, RetryConfig } from 'agenkit';
+// OLD (v0.49.0):
+new TimeoutDecorator(agent, { timeout: 30000 });
 
-// Configure retries
-const config: RetryConfig = {
-    maxAttempts: 3,              // Try up to 3 times
-    backoffFactor: 2.0,          // Exponential backoff
-    initialDelay: 1000,          // Start with 1 second
-    maxDelay: 30000,             // Cap at 30 seconds
-};
-
-// Wrap your agent
-const resilientAgent = new RetryMiddleware(myAgent, config);
-
-// Now handles transient failures automatically
-const response = await resilientAgent.process(message);
+// NEW (v0.50.0):
+new TimeoutDecorator(agent, { timeoutMs: 30000 });
 ```
 
-### Circuit Breaker
-
-Prevent cascading failures:
+### 2. Tool Execution Signature (v0.50.0)
 
 ```typescript
-import { CircuitBreakerMiddleware, CircuitBreakerConfig } from 'agenkit';
+// OLD (v0.49.0):
+async execute(...args: unknown[]): Promise<ToolResult>
 
-// Configure circuit breaker
-const config: CircuitBreakerConfig = {
-    failureThreshold: 5,          // Open after 5 failures
-    timeout: 60000,              // Stay open for 60 seconds
-    successThreshold: 2,         // Close after 2 successes
-};
+// NEW (v0.50.0):
+async execute(params: Record<string, unknown>): Promise<ToolResult>
+```
 
-// Wrap your agent
-const protectedAgent = new CircuitBreakerMiddleware(myAgent, config);
+### 3. Parameter Validation
 
-// Fails fast when circuit is open
-try {
-    const response = await protectedAgent.process(message);
-} catch (error) {
-    if (error.name === 'CircuitBreakerError') {
-        console.log('Circuit is open - service unavailable');
-    }
+```typescript
+// This throws Error immediately (v0.50.0):
+const llm = new OpenAILLM({ temperature: 3.0 }); // ❌ Error: temperature must be 0-2
+
+// Valid range:
+const llm = new OpenAILLM({ temperature: 0.7 }); // ✅ OK
+```
+
+### 4. Streaming Pattern
+
+```typescript
+// TypeScript uses AsyncGenerator (idiomatic):
+for await (const chunk of llm.stream(messages)) {
+  process.stdout.write(chunk.content);
 }
-```
-
-### Timeout
-
-Set maximum execution time:
-
-```typescript
-import { TimeoutMiddleware, TimeoutConfig } from 'agenkit';
-
-// Configure timeout
-const config: TimeoutConfig = {
-    timeout: 30000,              // 30 second timeout
-    gracePeriod: 5000,          // 5 second grace for cleanup
-};
-
-// Wrap your agent
-const timedAgent = new TimeoutMiddleware(myAgent, config);
-
-// Will cancel after 30 seconds
-try {
-    const response = await timedAgent.process(message);
-} catch (error) {
-    if (error.name === 'TimeoutError') {
-        console.log('Agent took too long to respond');
-    }
-}
-```
-
-### Stacking Middleware
-
-Combine multiple middleware layers:
-
-```typescript
-import {
-    RetryMiddleware,
-    CircuitBreakerMiddleware,
-    TimeoutMiddleware,
-    RateLimiterMiddleware,
-    Agent,
-} from 'agenkit';
-
-// Stack middleware (innermost to outermost)
-let agent: Agent = myAgent;
-agent = new TimeoutMiddleware(agent, timeoutConfig);
-agent = new CircuitBreakerMiddleware(agent, circuitConfig);
-agent = new RetryMiddleware(agent, retryConfig);
-agent = new RateLimiterMiddleware(agent, rateConfig);
-
-// Now has full production resilience
-const response = await agent.process(message);
-```
-
----
-
-## Working with LLMs
-
-### OpenAI Integration
-
-```typescript
-import { OpenAIAgent, OpenAIConfig } from 'agenkit';
-
-// Create OpenAI agent
-const config: OpenAIConfig = {
-    model: 'gpt-4',
-    apiKey: process.env.OPENAI_API_KEY!,
-};
-
-const agent = new OpenAIAgent(config);
-
-// Use it like any agent
-const response = await agent.process({
-    role: 'user',
-    content: 'Explain quantum computing',
-});
-```
-
-### Anthropic (Claude) Integration
-
-```typescript
-import { AnthropicAgent, AnthropicConfig } from 'agenkit';
-
-// Create Claude agent
-const config: AnthropicConfig = {
-    model: 'claude-3-opus-20240229',
-    apiKey: process.env.ANTHROPIC_API_KEY!,
-};
-
-const agent = new AnthropicAgent(config);
-
-const response = await agent.process({
-    role: 'user',
-    content: 'Write a function to calculate Fibonacci numbers',
-});
-```
-
-### Custom LLM Integration
-
-```typescript
-import { Agent, Message } from 'agenkit';
-
-export class CustomLLMAgent implements Agent {
-    private apiUrl: string;
-    private apiKey: string;
-
-    constructor(apiUrl: string, apiKey: string) {
-        this.apiUrl = apiUrl;
-        this.apiKey = apiKey;
-    }
-
-    get name(): string {
-        return 'custom-llm';
-    }
-
-    async process(message: Message): Promise<Message> {
-        // Call your LLM API
-        const response = await fetch(this.apiUrl, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${this.apiKey}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                prompt: message.content,
-            }),
-        });
-
-        const result = await response.json();
-
-        return {
-            role: 'assistant',
-            content: result.completion,
-        };
-    }
-}
-```
-
----
-
-## Browser Support
-
-Agenkit works in browsers! Perfect for client-side AI applications.
-
-### Browser Setup
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Agenkit in Browser</title>
-</head>
-<body>
-    <script type="module">
-        import { Agent, Message } from 'https://esm.sh/agenkit';
-
-        class BrowserAgent {
-            get name() {
-                return 'browser-agent';
-            }
-
-            async process(message) {
-                return {
-                    role: 'assistant',
-                    content: `Browser processed: ${message.content}`,
-                };
-            }
-        }
-
-        // Use the agent
-        const agent = new BrowserAgent();
-        const response = await agent.process({
-            role: 'user',
-            content: 'Hello from browser!',
-        });
-
-        console.log(response.content);
-    </script>
-</body>
-</html>
-```
-
-### Browser-Safe LLM Calls
-
-**⚠️ Security Warning:** Never expose API keys in browser code!
-
-Use a backend proxy:
-
-```typescript
-// frontend/agent.ts
-export class ProxiedLLMAgent implements Agent {
-    private backendUrl: string;
-
-    constructor(backendUrl: string) {
-        this.backendUrl = backendUrl;
-    }
-
-    get name(): string {
-        return 'proxied-llm';
-    }
-
-    async process(message: Message): Promise<Message> {
-        // Call your backend (which has the API key)
-        const response = await fetch(`${this.backendUrl}/api/agent`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message }),
-            credentials: 'include',  // Include cookies for auth
-        });
-
-        if (!response.ok) {
-            throw new Error('Backend request failed');
-        }
-
-        return await response.json();
-    }
-}
-```
-
-```typescript
-// backend/server.ts (Node.js)
-import express from 'express';
-import { OpenAIAgent } from 'agenkit';
-
-const app = express();
-app.use(express.json());
-
-const llmAgent = new OpenAIAgent({
-    model: 'gpt-4',
-    apiKey: process.env.OPENAI_API_KEY!,  // Safe on server
-});
-
-app.post('/api/agent', async (req, res) => {
-    try {
-        const { message } = req.body;
-        const response = await llmAgent.process(message);
-        res.json(response);
-    } catch (error) {
-        res.status(500).json({ error: 'Processing failed' });
-    }
-});
-
-app.listen(3000);
-```
-
----
-
-## Testing Your Agents
-
-### Unit Testing with Vitest
-
-```typescript
-import { describe, it, expect } from 'vitest';
-import { Message } from 'agenkit';
-import { GreetingAgent } from './agent';
-
-describe('GreetingAgent', () => {
-    it('should respond with a greeting', async () => {
-        const agent = new GreetingAgent();
-
-        const response = await agent.process({
-            role: 'user',
-            content: 'Hello',
-        });
-
-        expect(response.role).toBe('assistant');
-        expect(response.content).toContain('Hello');
-    });
-
-    it('should have correct name', () => {
-        const agent = new GreetingAgent();
-        expect(agent.name).toBe('greeting-agent');
-    });
-});
-```
-
-### Integration Testing with Jest
-
-```typescript
-import { SequentialPattern, Agent, Message } from 'agenkit';
-
-class MockAgent implements Agent {
-    constructor(private response: string) {}
-
-    get name(): string {
-        return 'mock-agent';
-    }
-
-    async process(message: Message): Promise<Message> {
-        return {
-            role: 'assistant',
-            content: this.response,
-        };
-    }
-}
-
-describe('SequentialPattern', () => {
-    it('should process through all agents', async () => {
-        const pipeline = new SequentialPattern([
-            new MockAgent('Step 1 complete'),
-            new MockAgent('Step 2 complete'),
-            new MockAgent('Step 3 complete'),
-        ]);
-
-        const response = await pipeline.process({
-            role: 'user',
-            content: 'Start pipeline',
-        });
-
-        expect(response.content).toContain('Step 3 complete');
-    });
-});
-```
-
-### Type Testing
-
-```typescript
-import { Agent, Message } from 'agenkit';
-import { expectType, expectError } from 'tsd';
-
-// Verify interface compliance
-class TestAgent implements Agent {
-    get name(): string {
-        return 'test';
-    }
-
-    async process(message: Message): Promise<Message> {
-        return message;
-    }
-}
-
-// Type checks
-expectType<Agent>(new TestAgent());
-expectError<Agent>({ name: 'wrong' });  // Missing process method
 ```
 
 ---
 
 ## Next Steps
 
-### Learn More
-
-- **[Pattern Guide](../patterns/README.md)** - Detailed guide to all 18 patterns
-- **[API Reference](../api/typescript/README.md)** - Complete API documentation
-- **[Best Practices](../best-practices/TYPESCRIPT.md)** - Production deployment tips
-- **[Examples](../../agenkit-ts/examples/)** - Working examples
-
-### Full-Stack Development
-
-- **[Next.js Integration](../frameworks/NEXTJS.md)** - Build AI-powered web apps
-- **[Express.js Integration](../frameworks/EXPRESS.md)** - Backend API servers
-- **[React Integration](../frameworks/REACT.md)** - Client-side AI agents
-
-### Deploy to Production
-
-- **[Docker Deployment](../deployment/DOCKER.md)** - Containerize your agents
-- **[Vercel/Netlify](../deployment/SERVERLESS.md)** - Serverless deployment
-- **[Monitoring & Observability](../observability/README.md)** - Track agent performance
-
-### Migrate from Other Languages
-
-Coming from Python or another language?
-
-- **[Python → TypeScript Migration](../migration/PYTHON_TO_TYPESCRIPT.md)** - Migrate from Python
-- **[Go → TypeScript Migration](../migration/GO_TO_TYPESCRIPT.md)** - Migrate from Go
+1. **Explore Patterns**: See the [Agent Patterns Book](../../agent-patterns-book) for all 18 patterns
+2. **Read Architecture**: `ARCHITECTURE.md` explains design principles
+3. **Check Examples**: `examples/typescript/` has production examples
+4. **API Reference**: Coming soon in `docs/api-reference/typescript/`
+5. **Migration Guide**: See `docs/MIGRATION_v0.50.0.md` for breaking changes
 
 ---
 
 ## Quick Reference
 
-### Installation
-```bash
-npm install agenkit
-```
-
-### Minimal Agent
 ```typescript
-import { Agent, Message } from 'agenkit';
-
-class MyAgent implements Agent {
-    get name(): string {
-        return 'my-agent';
-    }
-
-    async process(message: Message): Promise<Message> {
-        return {
-            role: 'assistant',
-            content: 'Response',
-        };
-    }
-}
-```
-
-### Common Imports
-```typescript
-// Core
-import { Agent, Message, Tool, ToolResult, createMessage } from 'agenkit';
-
-// Patterns
-import {
-    ReflectionAgent, ReActAgent, SequentialPattern,
-    ParallelPattern, ConversationalAgent
-} from 'agenkit';
+// Core imports
+import { Agent, Message, Tool, ToolResult } from 'agenkit';
 
 // Middleware
 import {
-    RetryMiddleware, CircuitBreakerMiddleware,
-    TimeoutMiddleware, RateLimiterMiddleware
-} from 'agenkit';
+  RetryDecorator,
+  TimeoutDecorator,
+  CircuitBreakerDecorator,
+  RateLimiterDecorator
+} from 'agenkit/middleware';
 
-// Adapters
-import { OpenAIAgent, AnthropicAgent } from 'agenkit';
+// LLM adapters
+import { OpenAILLM, AnthropicLLM, OllamaLLM } from 'agenkit/llm';
+
+// Patterns
+import {
+  ReflectionAgent,
+  ReActAgent,
+  SequentialAgent,
+  ParallelAgent
+} from 'agenkit/patterns';
+
+// Observability
+import { configureObservability } from 'agenkit/observability';
+
+// Memory & Safety
+import { MemoryHierarchy } from 'agenkit/memory';
+import { ContentFilter, RateLimiter } from 'agenkit/safety';
 ```
 
 ---
 
-**Ready to build?** Check out the [examples](../../agenkit-ts/examples/) for working code you can run right now.
+**Version**: v0.50.0
+**Last Updated**: January 28, 2026
 
-**Browser tip:** Agenkit works in all modern browsers - build client-side AI experiences!
+For help: Open an issue at https://github.com/yourusername/agenkit/issues

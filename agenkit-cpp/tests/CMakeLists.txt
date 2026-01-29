@@ -160,6 +160,11 @@ add_executable(test_openai_compatible_adapter test_openai_compatible_adapter.cpp
 target_link_libraries(test_openai_compatible_adapter agenkit gtest_main)
 add_test(NAME openai_compatible_adapter_tests COMMAND test_openai_compatible_adapter)
 
+# Validation tests - LLM parameter validation
+add_executable(test_validation test_validation.cpp)
+target_link_libraries(test_validation agenkit gtest_main)
+add_test(NAME validation_tests COMMAND test_validation)
+
 # Evaluation tests - Optimizer
 add_executable(test_optimizer unit/test_optimizer.cpp)
 target_link_libraries(test_optimizer agenkit gtest_main)

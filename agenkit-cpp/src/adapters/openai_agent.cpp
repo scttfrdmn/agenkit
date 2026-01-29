@@ -20,6 +20,46 @@ OpenAIAgent::OpenAIAgent(OpenAIConfig config)
     if (config_.api_key.empty()) {
         throw std::invalid_argument("OpenAI API key cannot be empty");
     }
+
+    // Validate temperature (0-2)
+    if (config_.temperature < 0.0 || config_.temperature > 2.0) {
+        throw std::invalid_argument(
+            "temperature must be between 0 and 2, got " +
+            std::to_string(config_.temperature)
+        );
+    }
+
+    // Validate max_tokens (must be positive)
+    if (config_.max_tokens <= 0) {
+        throw std::invalid_argument(
+            "max_tokens must be positive, got " +
+            std::to_string(config_.max_tokens)
+        );
+    }
+
+    // Validate top_p (0-1)
+    if (config_.top_p < 0.0 || config_.top_p > 1.0) {
+        throw std::invalid_argument(
+            "top_p must be between 0 and 1, got " +
+            std::to_string(config_.top_p)
+        );
+    }
+
+    // Validate frequency_penalty (-2 to 2)
+    if (config_.frequency_penalty < -2.0 || config_.frequency_penalty > 2.0) {
+        throw std::invalid_argument(
+            "frequency_penalty must be between -2 and 2, got " +
+            std::to_string(config_.frequency_penalty)
+        );
+    }
+
+    // Validate presence_penalty (-2 to 2)
+    if (config_.presence_penalty < -2.0 || config_.presence_penalty > 2.0) {
+        throw std::invalid_argument(
+            "presence_penalty must be between -2 and 2, got " +
+            std::to_string(config_.presence_penalty)
+        );
+    }
 }
 
 std::string OpenAIAgent::name() const {
@@ -62,6 +102,47 @@ void OpenAIAgent::set_config(const OpenAIConfig& config) {
     if (config.api_key.empty()) {
         throw std::invalid_argument("OpenAI API key cannot be empty");
     }
+
+    // Validate temperature (0-2)
+    if (config.temperature < 0.0 || config.temperature > 2.0) {
+        throw std::invalid_argument(
+            "temperature must be between 0 and 2, got " +
+            std::to_string(config.temperature)
+        );
+    }
+
+    // Validate max_tokens (must be positive)
+    if (config.max_tokens <= 0) {
+        throw std::invalid_argument(
+            "max_tokens must be positive, got " +
+            std::to_string(config.max_tokens)
+        );
+    }
+
+    // Validate top_p (0-1)
+    if (config.top_p < 0.0 || config.top_p > 1.0) {
+        throw std::invalid_argument(
+            "top_p must be between 0 and 1, got " +
+            std::to_string(config.top_p)
+        );
+    }
+
+    // Validate frequency_penalty (-2 to 2)
+    if (config.frequency_penalty < -2.0 || config.frequency_penalty > 2.0) {
+        throw std::invalid_argument(
+            "frequency_penalty must be between -2 and 2, got " +
+            std::to_string(config.frequency_penalty)
+        );
+    }
+
+    // Validate presence_penalty (-2 to 2)
+    if (config.presence_penalty < -2.0 || config.presence_penalty > 2.0) {
+        throw std::invalid_argument(
+            "presence_penalty must be between -2 and 2, got " +
+            std::to_string(config.presence_penalty)
+        );
+    }
+
     config_ = config;
 }
 

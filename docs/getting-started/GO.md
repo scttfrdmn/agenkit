@@ -1,103 +1,26 @@
-# Getting Started with Agenkit - Go
+# Getting Started with Agenkit (Go)
 
-**Complete guide to building high-performance AI agents with Agenkit in Go**
-
-## Table of Contents
-
-1. [Installation](#installation)
-2. [Your First Agent](#your-first-agent)
-3. [Core Concepts](#core-concepts)
-4. [Using Patterns](#using-patterns)
-5. [Adding Middleware](#adding-middleware)
-6. [Working with LLMs](#working-with-llms)
-7. [Testing Your Agents](#testing-your-agents)
-8. [Next Steps](#next-steps)
+**Target audience**: Go developers new to Agenkit
+**Time to first agent**: 15-30 minutes
+**Prerequisites**: Go 1.23+
 
 ---
 
 ## Installation
 
-### Prerequisites
-
-- Go 1.21 or higher
-- go mod for dependency management
-
-### Install Package
-
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
-```
+# Add agenkit to your project
+go get github.com/yourusername/agenkit-go
 
-### Initialize Your Project
-
-```bash
-mkdir my-agent
-cd my-agent
-go mod init my-agent
-go get github.com/scttfrdmn/agenkit/agenkit-go
-```
-
-### Verify Installation
-
-```go
-package main
-
-import (
-    "fmt"
-    "github.com/scttfrdmn/agenkit/agenkit-go"
-)
-
-func main() {
-    fmt.Println("Agenkit version:", agenkit.Version)
-}
-```
-
-```bash
-go run main.go
-# Output: Agenkit version: 0.46.0
+# Install optional LLM providers
+go get github.com/sashabaranov/go-openai
 ```
 
 ---
 
 ## Your First Agent
 
-Let's create a simple agent that processes messages:
-
-### Step 1: Create Your Agent
-
-Create a file `agent.go`:
-
-```go
-package main
-
-import (
-    "context"
-    "fmt"
-    "github.com/scttfrdmn/agenkit/agenkit-go/core"
-)
-
-// GreetingAgent responds with a friendly greeting
-type GreetingAgent struct{}
-
-// Name returns the agent's unique identifier
-func (a *GreetingAgent) Name() string {
-    return "greeting-agent"
-}
-
-// Process handles incoming messages
-func (a *GreetingAgent) Process(ctx context.Context, message core.Message) (core.Message, error) {
-    userMessage := message.Content
-
-    return core.Message{
-        Role:    "assistant",
-        Content: fmt.Sprintf("Hello! You said: '%s'. How can I help you today?", userMessage),
-    }, nil
-}
-```
-
-### Step 2: Use Your Agent
-
-Create `main.go`:
+Let's create a simple greeting agent:
 
 ```go
 package main
@@ -106,125 +29,119 @@ import (
     "context"
     "fmt"
     "log"
-    "github.com/scttfrdmn/agenkit/agenkit-go/core"
+
+    "github.com/yourusername/agenkit-go/agenkit"
 )
 
+type GreetingAgent struct{}
+
+func (a *GreetingAgent) Name() string {
+    return "greeting-agent"
+}
+
+func (a *GreetingAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+    userContent := message.Content
+    greeting := fmt.Sprintf("Hello! You said: %s", userContent)
+
+    return &agenkit.Message{
+        Role:    "assistant",
+        Content: greeting,
+        Metadata: map[string]interface{}{
+            "processed_by": a.Name(),
+        },
+    }, nil
+}
+
 func main() {
-    // Create agent instance
+    ctx := context.Background()
     agent := &GreetingAgent{}
 
-    // Create a user message
-    userMsg := core.Message{
+    message := &agenkit.Message{
         Role:    "user",
         Content: "Hi there!",
     }
 
-    // Process the message
-    response, err := agent.Process(context.Background(), userMsg)
+    response, err := agent.Process(ctx, message)
     if err != nil {
         log.Fatal(err)
     }
 
-    // Print the response
-    fmt.Printf("%s: %s\n", agent.Name(), response.Content)
+    fmt.Printf("Agent: %s\n", response.Content)
+    // Output: Agent: Hello! You said: Hi there!
 }
 ```
 
-### Step 3: Run It
-
+Run it:
 ```bash
-go run .
-# Output: greeting-agent: Hello! You said: 'Hi there!'. How can I help you today?
+go run main.go
 ```
-
-**🎉 Congratulations!** You've created your first Agenkit agent in Go.
 
 ---
 
-## Core Concepts
+## Production-Ready Agent with Middleware
 
-### The Agent Interface
-
-Every agent in Agenkit implements the `Agent` interface:
+Add resilience with retry, circuit breaker, and timeout middleware:
 
 ```go
-type Agent interface {
-    Name() string
-    Process(ctx context.Context, message Message) (Message, error)
-}
-```
+package main
 
-**That's the entire interface.** Everything else is optional.
-
-### Messages
-
-Messages are the unit of communication:
-
-```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/core"
-
-// Create a message
-msg := core.Message{
-    Role:    "user",             // Who sent it: "user", "assistant", "system"
-    Content: "Hello!",           // The message content (string or any)
-    Metadata: map[string]interface{}{  // Optional metadata
-        "source": "web",
-    },
-}
-
-// Access message properties
-fmt.Println(msg.Role)      // "user"
-fmt.Println(msg.Content)   // "Hello!"
-fmt.Println(msg.Metadata)  // map[source:web]
-```
-
-### Error Handling
-
-Go agents return errors explicitly:
-
-```go
-func (a *MyAgent) Process(ctx context.Context, message core.Message) (core.Message, error) {
-    // Check context
-    if err := ctx.Err(); err != nil {
-        return core.Message{}, err
-    }
-
-    // Validate input
-    if message.Content == "" {
-        return core.Message{}, fmt.Errorf("empty message content")
-    }
-
-    // Process message
-    result, err := a.processInternal(message)
-    if err != nil {
-        return core.Message{}, fmt.Errorf("processing failed: %w", err)
-    }
-
-    return result, nil
-}
-```
-
-### Context Usage
-
-Use `context.Context` for cancellation and timeouts:
-
-```go
 import (
     "context"
+    "fmt"
+    "log"
     "time"
+
+    "github.com/yourusername/agenkit-go/agenkit"
+    "github.com/yourusername/agenkit-go/middleware"
 )
 
-func main() {
-    // Create context with timeout
-    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-    defer cancel()
+type ProductionAgent struct{}
 
-    // Process with timeout
-    response, err := agent.Process(ctx, message)
-    if err == context.DeadlineExceeded {
-        log.Println("Agent timed out")
-        return
+func (a *ProductionAgent) Name() string {
+    return "production-agent"
+}
+
+func (a *ProductionAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+    // Simulate some processing
+    time.Sleep(100 * time.Millisecond)
+
+    return &agenkit.Message{
+        Role:    "assistant",
+        Content: fmt.Sprintf("Processed: %s", message.Content),
+        Metadata: map[string]interface{}{
+            "agent": a.Name(),
+        },
+    }, nil
+}
+
+func main() {
+    ctx := context.Background()
+    baseAgent := &ProductionAgent{}
+
+    // Wrap with middleware (v0.50.0 uses time.Duration - idiomatic Go)
+    agent := middleware.NewRetryDecorator(
+        baseAgent,
+        middleware.WithMaxAttempts(3),
+        middleware.WithInitialDelay(100*time.Millisecond),
+    )
+
+    agent = middleware.NewCircuitBreakerDecorator(
+        agent,
+        middleware.WithFailureThreshold(5),
+        middleware.WithRecoveryTimeout(30*time.Second),
+    )
+
+    agent = middleware.NewTimeoutDecorator(
+        agent,
+        middleware.WithTimeout(5*time.Second),
+    )
+
+    message := &agenkit.Message{
+        Role:    "user",
+        Content: "Hello production!",
     }
+
+    response, err := agent.Process(ctx, message)
     if err != nil {
         log.Fatal(err)
     }
@@ -233,572 +150,440 @@ func main() {
 }
 ```
 
-### Tools
-
-Tools let agents take actions:
-
-```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/core"
-
-type CalculatorTool struct{}
-
-func (t *CalculatorTool) Name() string {
-    return "calculator"
-}
-
-func (t *CalculatorTool) Description() string {
-    return "Performs basic arithmetic operations"
-}
-
-func (t *CalculatorTool) Execute(ctx context.Context, params map[string]interface{}) (core.ToolResult, error) {
-    operation, _ := params["operation"].(string)
-    a, _ := params["a"].(float64)
-    b, _ := params["b"].(float64)
-
-    var result float64
-    switch operation {
-    case "add":
-        result = a + b
-    case "multiply":
-        result = a * b
-    default:
-        return core.ToolResult{}, fmt.Errorf("unknown operation: %s", operation)
-    }
-
-    return core.ToolResult{
-        Output: result,
-    }, nil
-}
-```
+**Note**: Go uses `time.Duration` (idiomatic) instead of milliseconds.
 
 ---
 
-## Using Patterns
+## Using LLM Adapters
 
-Agenkit includes 18 pre-built patterns for common agent architectures.
-
-### Reflection Pattern
-
-Iteratively improve outputs through self-critique:
-
-```go
-import (
-    "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
-    "github.com/scttfrdmn/agenkit/agenkit-go/core"
-)
-
-// Configure reflection
-config := patterns.ReflectionConfig{
-    MaxIterations:     3,      // Maximum improvement cycles
-    QualityThreshold:  0.8,    // Stop when quality is good enough
-    StopOnRepeat:      true,   // Stop if output doesn't change
-}
-
-// Create reflection agent
-agent, err := patterns.NewReflectionAgent(
-    &GeneratorAgent{},  // Generates initial output
-    &CriticAgent{},     // Critiques and suggests improvements
-    config,
-)
-if err != nil {
-    log.Fatal(err)
-}
-
-// Use it
-response, err := agent.Process(ctx, core.Message{
-    Role:    "user",
-    Content: "Write a haiku about coding",
-})
-if err != nil {
-    log.Fatal(err)
-}
-
-// Response includes iteration metadata
-fmt.Printf("Iterations: %v\n", response.Metadata["iterations"])
-fmt.Printf("Quality: %v\n", response.Metadata["final_quality_score"])
-```
-
-### Sequential Pattern
-
-Chain multiple agents in sequence:
-
-```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
-
-// Create a pipeline: research → summarize → format
-pipeline := patterns.NewSequentialPattern([]core.Agent{
-    &ResearchAgent{},    // Gathers information
-    &SummaryAgent{},     // Summarizes findings
-    &FormatterAgent{},   // Formats final output
-})
-
-// Input flows through each agent in order
-response, err := pipeline.Process(ctx, core.Message{
-    Role:    "user",
-    Content: "Research quantum computing",
-})
-```
-
-### Parallel Pattern
-
-Run multiple agents concurrently and aggregate results:
-
-```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
-
-// Configure parallel execution
-config := patterns.ParallelConfig{
-    Agents: []core.Agent{
-        &TechnicalAgent{},   // Technical perspective
-        &BusinessAgent{},    // Business perspective
-        &UserAgent{},        // User perspective
-    },
-    Aggregation: patterns.AggregationMerge,  // Combine results
-}
-
-// Create parallel pattern
-parallel, err := patterns.NewParallelPattern(config)
-if err != nil {
-    log.Fatal(err)
-}
-
-// All agents process simultaneously
-response, err := parallel.Process(ctx, core.Message{
-    Role:    "user",
-    Content: "Analyze this product idea",
-})
-```
-
-### ReAct Pattern
-
-Reasoning + Acting with tool use:
-
-```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
-
-// Configure ReAct
-config := patterns.ReActConfig{
-    MaxSteps: 5,         // Maximum reasoning steps
-    Tools: []core.Tool{
-        &SearchTool{},      // Web search capability
-        &CalculatorTool{},  // Math calculations
-    },
-}
-
-// Create ReAct agent
-agent, err := patterns.NewReActAgent(&ReasoningAgent{}, config)
-if err != nil {
-    log.Fatal(err)
-}
-
-// Agent will alternate between thinking and acting
-response, err := agent.Process(ctx, core.Message{
-    Role:    "user",
-    Content: "What's the population of Tokyo divided by the population of NYC?",
-})
-
-// Response includes reasoning trace
-fmt.Printf("Steps: %v\n", response.Metadata["steps"])
-fmt.Printf("Tool calls: %v\n", response.Metadata["tool_calls"])
-```
-
----
-
-## Adding Middleware
-
-Middleware adds production features without changing your agent code.
-
-### Retry Logic
-
-Automatically retry failed operations:
-
-```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/middleware"
-
-// Configure retries
-config := middleware.RetryConfig{
-    MaxAttempts:    3,       // Try up to 3 times
-    BackoffFactor:  2.0,     // Exponential backoff
-    InitialDelay:   time.Second,    // Start with 1 second
-    MaxDelay:       30 * time.Second, // Cap at 30 seconds
-}
-
-// Wrap your agent
-resilientAgent := middleware.NewRetryMiddleware(myAgent, config)
-
-// Now handles transient failures automatically
-response, err := resilientAgent.Process(ctx, message)
-```
-
-### Circuit Breaker
-
-Prevent cascading failures:
-
-```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/middleware"
-
-// Configure circuit breaker
-config := middleware.CircuitBreakerConfig{
-    FailureThreshold:  5,     // Open after 5 failures
-    Timeout:           60 * time.Second,  // Stay open for 60 seconds
-    SuccessThreshold:  2,     // Close after 2 successes
-}
-
-// Wrap your agent
-protectedAgent := middleware.NewCircuitBreakerMiddleware(myAgent, config)
-
-// Fails fast when circuit is open
-response, err := protectedAgent.Process(ctx, message)
-if err == middleware.ErrCircuitOpen {
-    log.Println("Circuit is open - service unavailable")
-}
-```
-
-### Timeout
-
-Set maximum execution time:
-
-```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/middleware"
-
-// Configure timeout
-config := middleware.TimeoutConfig{
-    Timeout:      30 * time.Second,  // 30 second timeout
-    GracePeriod:  5 * time.Second,   // 5 second grace for cleanup
-}
-
-// Wrap your agent
-timedAgent := middleware.NewTimeoutMiddleware(myAgent, config)
-
-// Will cancel after 30 seconds
-response, err := timedAgent.Process(ctx, message)
-if err == context.DeadlineExceeded {
-    log.Println("Agent took too long to respond")
-}
-```
-
-### Stacking Middleware
-
-Combine multiple middleware layers:
-
-```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/middleware"
-
-// Stack middleware (innermost to outermost)
-agent := myAgent
-agent = middleware.NewTimeoutMiddleware(agent, timeoutConfig)
-agent = middleware.NewCircuitBreakerMiddleware(agent, circuitConfig)
-agent = middleware.NewRetryMiddleware(agent, retryConfig)
-agent = middleware.NewRateLimiterMiddleware(agent, rateConfig)
-
-// Now has full production resilience
-response, err := agent.Process(ctx, message)
-```
-
----
-
-## Working with LLMs
-
-### OpenAI Integration
-
-```go
-import (
-    "github.com/scttfrdmn/agenkit/agenkit-go/adapters"
-    "os"
-)
-
-// Create OpenAI agent
-config := adapters.OpenAIConfig{
-    Model:  "gpt-4",
-    APIKey: os.Getenv("OPENAI_API_KEY"),
-}
-
-agent, err := adapters.NewOpenAIAdapter(config)
-if err != nil {
-    log.Fatal(err)
-}
-
-// Use it like any agent
-response, err := agent.Process(ctx, core.Message{
-    Role:    "user",
-    Content: "Explain quantum computing",
-})
-```
-
-### Anthropic (Claude) Integration
-
-```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/adapters"
-
-// Create Claude agent
-config := adapters.AnthropicConfig{
-    Model:  "claude-3-opus-20240229",
-    APIKey: os.Getenv("ANTHROPIC_API_KEY"),
-}
-
-agent, err := adapters.NewAnthropicAdapter(config)
-if err != nil {
-    log.Fatal(err)
-}
-
-response, err := agent.Process(ctx, core.Message{
-    Role:    "user",
-    Content: "Write a function to calculate Fibonacci numbers",
-})
-```
-
-### Custom LLM Integration
-
-```go
-import (
-    "net/http"
-    "encoding/json"
-)
-
-type CustomLLMAgent struct {
-    apiURL  string
-    apiKey  string
-    client  *http.Client
-}
-
-func NewCustomLLMAgent(apiURL, apiKey string) *CustomLLMAgent {
-    return &CustomLLMAgent{
-        apiURL: apiURL,
-        apiKey: apiKey,
-        client: &http.Client{Timeout: 30 * time.Second},
-    }
-}
-
-func (a *CustomLLMAgent) Name() string {
-    return "custom-llm"
-}
-
-func (a *CustomLLMAgent) Process(ctx context.Context, message core.Message) (core.Message, error) {
-    // Build request
-    reqBody := map[string]interface{}{
-        "prompt": message.Content,
-    }
-
-    reqData, err := json.Marshal(reqBody)
-    if err != nil {
-        return core.Message{}, err
-    }
-
-    // Call API
-    req, err := http.NewRequestWithContext(ctx, "POST", a.apiURL, bytes.NewBuffer(reqData))
-    if err != nil {
-        return core.Message{}, err
-    }
-
-    req.Header.Set("Authorization", "Bearer "+a.apiKey)
-    req.Header.Set("Content-Type", "application/json")
-
-    resp, err := a.client.Do(req)
-    if err != nil {
-        return core.Message{}, err
-    }
-    defer resp.Body.Close()
-
-    // Parse response
-    var result struct {
-        Completion string `json:"completion"`
-    }
-    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-        return core.Message{}, err
-    }
-
-    return core.Message{
-        Role:    "assistant",
-        Content: result.Completion,
-    }, nil
-}
-```
-
----
-
-## Testing Your Agents
-
-### Unit Testing
+### OpenAI Example
 
 ```go
 package main
 
 import (
     "context"
-    "testing"
-    "github.com/scttfrdmn/agenkit/agenkit-go/core"
+    "fmt"
+    "log"
+    "os"
+
+    "github.com/yourusername/agenkit-go/adapter/llm"
+    "github.com/yourusername/agenkit-go/agenkit"
 )
 
-func TestGreetingAgent(t *testing.T) {
-    agent := &GreetingAgent{}
-
-    // Test basic greeting
-    response, err := agent.Process(context.Background(), core.Message{
-        Role:    "user",
-        Content: "Hello",
-    })
-
-    if err != nil {
-        t.Fatalf("unexpected error: %v", err)
-    }
-
-    if response.Role != "assistant" {
-        t.Errorf("expected role 'assistant', got '%s'", response.Role)
-    }
-
-    if !strings.Contains(response.Content.(string), "Hello") {
-        t.Errorf("expected response to contain 'Hello'")
-    }
-}
-
-func TestAgentName(t *testing.T) {
-    agent := &GreetingAgent{}
-    if agent.Name() != "greeting-agent" {
-        t.Errorf("expected name 'greeting-agent', got '%s'", agent.Name())
-    }
-}
-```
-
-### Integration Testing with Mocks
-
-```go
-type MockAgent struct {
-    response string
-}
-
-func (a *MockAgent) Name() string {
-    return "mock-agent"
-}
-
-func (a *MockAgent) Process(ctx context.Context, message core.Message) (core.Message, error) {
-    return core.Message{
-        Role:    "assistant",
-        Content: a.response,
-    }, nil
-}
-
-func TestSequentialPattern(t *testing.T) {
-    pipeline := patterns.NewSequentialPattern([]core.Agent{
-        &MockAgent{response: "Step 1 complete"},
-        &MockAgent{response: "Step 2 complete"},
-        &MockAgent{response: "Step 3 complete"},
-    })
-
-    response, err := pipeline.Process(context.Background(), core.Message{
-        Role:    "user",
-        Content: "Start pipeline",
-    })
-
-    if err != nil {
-        t.Fatal(err)
-    }
-
-    if !strings.Contains(response.Content.(string), "Step 3 complete") {
-        t.Error("expected final step in response")
-    }
-}
-```
-
-### Benchmarking
-
-```go
-func BenchmarkAgent(b *testing.B) {
-    agent := &GreetingAgent{}
-    message := core.Message{
-        Role:    "user",
-        Content: "Hello",
-    }
+func main() {
     ctx := context.Background()
 
-    b.ResetTimer()
-    for i := 0; i < b.N; i++ {
-        _, err := agent.Process(ctx, message)
-        if err != nil {
-            b.Fatal(err)
+    // Initialize LLM (validates parameters at construction)
+    openai, err := llm.NewOpenAI(
+        llm.WithAPIKey(os.Getenv("OPENAI_API_KEY")),
+        llm.WithModel("gpt-4-turbo"),
+        llm.WithTemperature(0.7), // Validated: 0-2
+        llm.WithMaxTokens(1024),  // Validated: >0
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Create conversation
+    messages := []*agenkit.Message{
+        {Role: "system", Content: "You are a helpful assistant."},
+        {Role: "user", Content: "What is Agenkit?"},
+    }
+
+    // Get completion
+    response, err := openai.Complete(ctx, messages)
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(response.Content)
+
+    // Stream response
+    messageChan, errorChan := openai.Stream(ctx, messages)
+    for {
+        select {
+        case chunk := <-messageChan:
+            if chunk == nil {
+                return // Done
+            }
+            fmt.Print(chunk.Content)
+        case err := <-errorChan:
+            log.Fatal(err)
+        case <-ctx.Done():
+            log.Fatal(ctx.Err())
         }
     }
 }
 ```
 
-Run benchmarks:
+### Anthropic Example
+
+```go
+anthropic, err := llm.NewAnthropic(
+    llm.WithAPIKey(os.Getenv("ANTHROPIC_API_KEY")),
+    llm.WithModel("claude-3-5-sonnet-20241022"),
+    llm.WithTemperature(1.0),
+    llm.WithMaxTokens(4096),
+)
+```
+
+**Parameter Validation** (v0.50.0):
+- `temperature`: 0.0 - 2.0 (validated via functional options)
+- `max_tokens`: > 0 (validated via functional options)
+- `top_p`: 0.0 - 1.0 (validated via functional options)
+
+Invalid values return errors immediately.
+
+---
+
+## Common Patterns
+
+Agenkit provides **18 core patterns** for building AI agents (see the [Agent Patterns Book](../../agent-patterns-book) for comprehensive details). Here are three essential patterns to get started:
+
+### 1. Reflection Pattern
+
+**One-line**: Iterative self-improvement through draft-critique-refine loop
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    "github.com/yourusername/agenkit-go/patterns"
+    "github.com/yourusername/agenkit-go/adapter/llm"
+)
+
+func main() {
+    ctx := context.Background()
+
+    openaiLLM, _ := llm.NewOpenAI(
+        llm.WithModel("gpt-4-turbo"),
+    )
+
+    agent := patterns.NewReflectionAgent(
+        openaiLLM,
+        patterns.WithMaxIterations(3),
+        patterns.WithReflectionPrompt("Review and improve this response:"),
+    )
+
+    message := &agenkit.Message{
+        Role:    "user",
+        Content: "Explain context management in Go",
+    }
+
+    response, err := agent.Process(ctx, message)
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(response.Content)
+}
+```
+
+### 2. ReAct Pattern
+
+**One-line**: Reasoning + Acting with explicit thought-action-observation loop
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    "github.com/yourusername/agenkit-go/patterns"
+    "github.com/yourusername/agenkit-go/adapter/llm"
+    "github.com/yourusername/agenkit-go/agenkit"
+)
+
+type SearchTool struct{}
+
+func (t *SearchTool) Name() string {
+    return "search"
+}
+
+func (t *SearchTool) Description() string {
+    return "Search for information"
+}
+
+func (t *SearchTool) Parameters() map[string]interface{} {
+    return map[string]interface{}{
+        "query": map[string]string{
+            "type":        "string",
+            "description": "Search query",
+        },
+    }
+}
+
+func (t *SearchTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
+    query := params["query"].(string)
+    // Simulate search
+    return &agenkit.ToolResult{
+        Success: true,
+        Result:  fmt.Sprintf("Search results for: %s", query),
+    }, nil
+}
+
+func main() {
+    ctx := context.Background()
+
+    openaiLLM, _ := llm.NewOpenAI(
+        llm.WithModel("gpt-4-turbo"),
+    )
+
+    tools := []agenkit.Tool{&SearchTool{}}
+
+    agent := patterns.NewReActAgent(
+        openaiLLM,
+        tools,
+        patterns.WithMaxIterations(5),
+    )
+
+    message := &agenkit.Message{
+        Role:    "user",
+        Content: "What's the weather in Paris?",
+    }
+
+    response, err := agent.Process(ctx, message)
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(response.Content)
+}
+```
+
+**Note**: Tool signatures use explicit `params map[string]interface{}` (v0.50.0+).
+
+### 3. Sequential Pattern
+
+**One-line**: Execute agents in order, passing outputs between stages
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    "github.com/yourusername/agenkit-go/patterns"
+)
+
+func main() {
+    ctx := context.Background()
+
+    // Create agent pipeline
+    agent := patterns.NewSequentialAgent(
+        &ResearchAgent{},
+        &SummarizerAgent{},
+        &EditorAgent{},
+    )
+
+    message := &agenkit.Message{
+        Role:    "user",
+        Content: "Research AI safety",
+    }
+
+    finalResponse, err := agent.Process(ctx, message)
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(finalResponse.Content)
+}
+```
+
+**See all 18 patterns**: Refer to the [Agent Patterns Book](../../agent-patterns-book) for complete pattern descriptions, trade-offs, and when to use each pattern.
+
+---
+
+## Observability
+
+### Basic Tracing with OpenTelemetry
+
+```go
+package main
+
+import (
+    "context"
+
+    "github.com/yourusername/agenkit-go/observability"
+    "go.opentelemetry.io/otel/exporters/jaeger"
+)
+
+func main() {
+    // Configure OpenTelemetry
+    shutdown, err := observability.Configure(
+        observability.WithServiceName("my-agent-service"),
+        observability.WithJaegerExporter("http://localhost:14268/api/traces"),
+    )
+    if err != nil {
+        panic(err)
+    }
+    defer shutdown(context.Background())
+
+    // Your agent automatically gets:
+    // - Span creation for each Process() call
+    // - W3C Trace Context propagation
+    // - LLM call tracing
+    // - Error tracking
+}
+```
+
+### View Traces in Jaeger
+
 ```bash
-go test -bench=. -benchmem
+# Start Jaeger (Docker)
+docker run -d --name jaeger \
+  -p 16686:16686 \
+  -p 14268:14268 \
+  jaegertracing/all-in-one:latest
+
+# Open UI
+open http://localhost:16686
+```
+
+---
+
+## Advanced Features
+
+### 1. Memory Hierarchy
+
+```go
+import "github.com/yourusername/agenkit-go/memory"
+
+mem := memory.NewHierarchy(
+    memory.WithWorkingMemory(10),
+    memory.WithLongTermMemory("./memory.db"),
+)
+
+agent := NewConversationalAgent(
+    memory.WithMemory(mem),
+)
+```
+
+### 2. Budget Tracking
+
+```go
+import "github.com/yourusername/agenkit-go/budget"
+
+tracker := budget.NewTracker(
+    budget.WithMaxCostUSD(10.0),
+)
+
+agent := NewBudgetAwareAgent(
+    llm,
+    budget.WithTracker(tracker),
+)
+```
+
+### 3. Safety Framework
+
+```go
+import "github.com/yourusername/agenkit-go/safety"
+
+agent := NewSafeAgent(
+    llm,
+    safety.WithContentFilter(safety.BlockPII),
+    safety.WithRateLimiter(10, 30*time.Second),
+)
+```
+
+---
+
+## Common Pitfalls
+
+### 1. Not Checking Errors
+
+```go
+// WRONG:
+defer file.Close()
+
+// CORRECT:
+defer func() { _ = file.Close() }()
+
+// WRONG:
+w.Write(data)
+
+// CORRECT:
+if _, err := w.Write(data); err != nil {
+    log.Printf("Failed: %v", err)
+}
+```
+
+### 2. Nullable Return Patterns (v0.50.0 Fixed)
+
+```go
+// OLD (v0.49.0 - BAD):
+type UserIDExtractor func(*Message) string // Empty string as sentinel
+
+// NEW (v0.50.0 - GOOD):
+type UserIDExtractor func(*Message) *string // Proper nil for "no value"
+
+// Usage:
+userID := userIDExtractor(message)
+if userID == nil {
+    return anonymousID, nil
+}
+return *userID, nil
+```
+
+### 3. Printf Format Strings
+
+```go
+// WRONG:
+log.Printf("timeout=%.1fs", timeoutConfig.Timeout) // Timeout is time.Duration!
+
+// CORRECT:
+log.Printf("timeout=%.1fs", timeoutConfig.Timeout.Seconds())
 ```
 
 ---
 
 ## Next Steps
 
-### Learn More
-
-- **[Pattern Guide](../patterns/README.md)** - Detailed guide to all 18 patterns
-- **[API Reference](../api/go/README.md)** - Complete API documentation
-- **[Best Practices](../best-practices/GO.md)** - Production deployment tips
-- **[Examples](../../agenkit-go/examples/)** - Working examples
-
-### Performance Optimization
-
-- **[Goroutine Best Practices](../performance/GO_GOROUTINES.md)** - Efficient concurrency
-- **[Memory Management](../performance/GO_MEMORY.md)** - Reduce allocations
-- **[Profiling Guide](../performance/GO_PROFILING.md)** - Profile your agents
-
-### Deploy to Production
-
-- **[Docker Deployment](../deployment/DOCKER.md)** - Containerize your agents
-- **[Kubernetes Guide](../deployment/KUBERNETES.md)** - Scale with K8s
-- **[Monitoring & Observability](../observability/README.md)** - Track agent performance
-
-### Migrate from Other Languages
-
-Coming from Python or TypeScript?
-
-- **[Python → Go Migration](../migration/PYTHON_TO_GO.md)** - Migrate from Python
-- **[TypeScript → Go Migration](../migration/TYPESCRIPT_TO_GO.md)** - Migrate from TS
+1. **Explore Patterns**: See the [Agent Patterns Book](../../agent-patterns-book) for all 18 patterns
+2. **Read Architecture**: `ARCHITECTURE.md` explains design principles
+3. **Check Examples**: `examples/go/` has production examples
+4. **API Reference**: Coming soon in `docs/api-reference/go/`
+5. **Migration Guide**: See `docs/MIGRATION_v0.50.0.md` for breaking changes
 
 ---
 
 ## Quick Reference
 
-### Installation
-```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
-```
-
-### Minimal Agent
 ```go
-type MyAgent struct{}
-
-func (a *MyAgent) Name() string {
-    return "my-agent"
-}
-
-func (a *MyAgent) Process(ctx context.Context, message core.Message) (core.Message, error) {
-    return core.Message{
-        Role:    "assistant",
-        Content: "Response",
-    }, nil
-}
-```
-
-### Common Imports
-```go
+// Core imports
 import (
-    // Core
-    "github.com/scttfrdmn/agenkit/agenkit-go/core"
-
-    // Patterns
-    "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
-
-    // Middleware
-    "github.com/scttfrdmn/agenkit/agenkit-go/middleware"
-
-    // Adapters
-    "github.com/scttfrdmn/agenkit/agenkit-go/adapters"
+    "github.com/yourusername/agenkit-go/agenkit"
+    "github.com/yourusername/agenkit-go/middleware"
+    "github.com/yourusername/agenkit-go/adapter/llm"
+    "github.com/yourusername/agenkit-go/patterns"
 )
+
+// Middleware
+middleware.NewRetryDecorator(agent, ...)
+middleware.NewTimeoutDecorator(agent, ...)
+middleware.NewCircuitBreakerDecorator(agent, ...)
+middleware.NewRateLimiterDecorator(agent, ...)
+
+// LLM adapters
+llm.NewOpenAI(...)
+llm.NewAnthropic(...)
+llm.NewOllama(...)
+
+// Patterns
+patterns.NewReflectionAgent(llm, ...)
+patterns.NewReActAgent(llm, tools, ...)
+patterns.NewSequentialAgent(agents...)
+patterns.NewParallelAgent(agents...)
 ```
 
 ---
 
-**Ready to build?** Check out the [examples](../../agenkit-go/examples/) for working code you can run right now.
+**Version**: v0.50.0
+**Last Updated**: January 28, 2026
 
-**Performance tip:** Go's goroutines make Agenkit agents 18x faster than Python for CPU-bound workloads!
+For help: Open an issue at https://github.com/yourusername/agenkit/issues

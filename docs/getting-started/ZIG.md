@@ -1,1019 +1,619 @@
-# Getting Started with Agenkit - Zig
+# Getting Started with Agenkit (Zig)
 
-**Complete guide to building zero-dependency AI agents with Agenkit in Zig**
-
-## Table of Contents
-
-1. [Installation](#installation)
-2. [Your First Agent](#your-first-agent)
-3. [Core Concepts](#core-concepts)
-4. [Using Patterns](#using-patterns)
-5. [Adding Middleware](#adding-middleware)
-6. [Working with LLMs](#working-with-llms)
-7. [Testing Your Agents](#testing-your-agents)
-8. [Next Steps](#next-steps)
+**Target audience**: Zig developers new to Agenkit
+**Time to first agent**: 15-30 minutes
+**Prerequisites**: Zig 0.15.2+
 
 ---
 
 ## Installation
 
-### Prerequisites
-
-- Zig 0.11 or higher (install from [ziglang.org](https://ziglang.org/download/))
-
-### Create New Project
-
-```bash
-mkdir my-agent
-cd my-agent
-zig init-exe
-```
-
-### Add Agenkit Dependency
-
-Edit `build.zig`:
-
-```zig
-const std = @import("std");
-
-pub fn build(b: *std.Build) void {
-    const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
-
-    // Add agenkit dependency
-    const agenkit = b.dependency("agenkit", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const exe = b.addExecutable(.{
-        .name = "my-agent",
-        .root_source_file = .{ .path = "src/main.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // Link agenkit
-    exe.addModule("agenkit", agenkit.module("agenkit"));
-
-    b.installArtifact(exe);
-}
-```
-
-Create `build.zig.zon`:
+Add to your `build.zig.zon`:
 
 ```zig
 .{
-    .name = "my-agent",
+    .name = "your-project",
     .version = "0.1.0",
     .dependencies = .{
         .agenkit = .{
-            .url = "https://github.com/scttfrdmn/agenkit/releases/download/v0.46.0/agenkit-zig.tar.gz",
-            .hash = "1220...",  // Use actual hash from release
+            .url = "https://github.com/yourusername/agenkit-zig/archive/v0.50.0.tar.gz",
+            .hash = "...",
         },
     },
 }
 ```
 
-### Verify Installation
+And in your `build.zig`:
 
-```bash
-zig build
-# Should compile successfully
+```zig
+const agenkit = b.dependency("agenkit", .{});
+exe.root_module.addImport("agenkit", agenkit.module("agenkit"));
 ```
 
 ---
 
 ## Your First Agent
 
-Let's create a simple agent that processes messages:
-
-### Step 1: Create Your Agent
-
-Create `src/agent.zig`:
+Let's create a simple greeting agent:
 
 ```zig
 const std = @import("std");
 const agenkit = @import("agenkit");
+const Agent = agenkit.Agent;
+const Message = agenkit.Message;
+const Allocator = std.mem.Allocator;
 
-/// A simple agent that greets users
-pub const GreetingAgent = struct {
-    allocator: std.mem.Allocator,
+const GreetingAgent = struct {
+    allocator: Allocator,
 
-    const Self = @This();
+    pub fn init(allocator: Allocator) *GreetingAgent {
+        const self = allocator.create(GreetingAgent) catch unreachable;
+        self.* = GreetingAgent{ .allocator = allocator };
+        return self;
+    }
 
-    pub fn init(allocator: std.mem.Allocator) Self {
-        return Self{
-            .allocator = allocator,
+    pub fn deinit(self: *GreetingAgent) void {
+        self.allocator.destroy(self);
+    }
+
+    pub fn asAgent(self: *GreetingAgent) Agent {
+        return Agent{
+            .ptr = self,
+            .vtable = &.{
+                .name = name,
+                .process = process,
+                .deinit = deinitVTable,
+            },
         };
     }
 
-    pub fn deinit(self: *Self) void {
-        _ = self;
-        // Cleanup if needed
-    }
-
-    pub fn name(self: *const Self) []const u8 {
-        _ = self;
+    fn name(ptr: *anyopaque) []const u8 {
+        _ = ptr;
         return "greeting-agent";
     }
 
-    pub fn process(self: *Self, message: agenkit.Message) !agenkit.Message {
-        // Get user message content
-        const user_message = message.content;
+    fn process(
+        ptr: *anyopaque,
+        allocator: Allocator,
+        message: *Message,
+    ) !*Message {
+        const self: *GreetingAgent = @ptrCast(@alignCast(ptr));
 
-        // Create response
-        const response_content = try std.fmt.allocPrint(
-            self.allocator,
-            "Hello! You said: '{s}'. How can I help you today?",
-            .{user_message},
+        const greeting = try std.fmt.allocPrint(
+            allocator,
+            "Hello! You said: {s}",
+            .{message.content.text},
         );
 
-        return agenkit.Message{
-            .role = .assistant,
-            .content = response_content,
-            .metadata = null,
-            .allocator = self.allocator,
-        };
+        const response = try allocator.create(Message);
+        response.* = try Message.withText(allocator, .assistant, greeting);
+        try response.setMetadata("processed_by", std.json.Value{ .string = "greeting-agent" });
+
+        return response;
+    }
+
+    fn deinitVTable(ptr: *anyopaque) void {
+        const self: *GreetingAgent = @ptrCast(@alignCast(ptr));
+        self.deinit();
     }
 };
-```
-
-### Step 2: Use Your Agent
-
-Edit `src/main.zig`:
-
-```zig
-const std = @import("std");
-const agent_mod = @import("agent.zig");
 
 pub fn main() !void {
-    // Setup allocator
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    // Create agent instance
-    var agent = agent_mod.GreetingAgent.init(allocator);
-    defer agent.deinit();
+    var greeting_agent = GreetingAgent.init(allocator);
+    defer greeting_agent.deinit();
+    const agent = greeting_agent.asAgent();
 
-    // Create a user message
-    const user_msg = agenkit.Message{
-        .role = .user,
-        .content = "Hi there!",
-        .metadata = null,
-        .allocator = allocator,
-    };
+    var message = try Message.withText(allocator, .user, "Hi there!");
+    defer message.deinit();
 
-    // Process the message
-    const response = try agent.process(user_msg);
-    defer allocator.free(response.content);
+    const response = try agent.process(allocator, &message);
+    defer response.deinit();
 
-    // Print the response
-    const stdout = std.io.getStdOut().writer();
-    try stdout.print("{s}: {s}\n", .{ agent.name(), response.content });
+    std.debug.print("Agent: {s}\n", .{response.content.text});
+    // Output: Agent: Hello! You said: Hi there!
 }
 ```
 
-### Step 3: Run It
-
+Run it:
 ```bash
 zig build run
-# Output: greeting-agent: Hello! You said: 'Hi there!'. How can I help you today?
 ```
-
-**🎉 Congratulations!** You've created your first Agenkit agent in Zig.
 
 ---
 
-## Core Concepts
+## Production-Ready Agent with Middleware
 
-### The Agent Interface
-
-Every agent in Agenkit implements these methods:
-
-```zig
-pub const Agent = struct {
-    allocator: std.mem.Allocator,
-
-    pub fn name(self: *const Self) []const u8 {
-        // Return agent name
-    }
-
-    pub fn process(self: *Self, message: Message) !Message {
-        // Process message and return response
-        // ! indicates this can return an error
-    }
-
-    pub fn deinit(self: *Self) void {
-        // Clean up resources
-    }
-};
-```
-
-**Key points**:
-- Explicit allocator passed to all agents
-- Error union `!` for functions that can fail
-- Manual resource cleanup with `deinit`
-
-### Messages
-
-Messages are the unit of communication:
-
-```zig
-const agenkit = @import("agenkit");
-
-// Create a message
-const msg = agenkit.Message{
-    .role = .user,           // Role: .user, .assistant, .system
-    .content = "Hello!",     // Content as string
-    .metadata = null,        // Optional metadata (JSON)
-    .allocator = allocator,  // Explicit allocator
-};
-
-// Access message properties
-std.debug.print("Role: {}\n", .{msg.role});
-std.debug.print("Content: {s}\n", .{msg.content});
-```
-
-### Memory Management
-
-Zig requires explicit memory management:
+Add resilience with retry, circuit breaker, and timeout middleware:
 
 ```zig
 const std = @import("std");
+const agenkit = @import("agenkit");
+const Agent = agenkit.Agent;
+const Message = agenkit.Message;
+const middleware = agenkit.middleware;
+const Allocator = std.mem.Allocator;
 
-pub const MyAgent = struct {
-    allocator: std.mem.Allocator,
-    cached_data: ?[]u8,
+const ProductionAgent = struct {
+    allocator: Allocator,
 
-    pub fn init(allocator: std.mem.Allocator) MyAgent {
-        return MyAgent{
-            .allocator = allocator,
-            .cached_data = null,
+    pub fn asAgent(self: *ProductionAgent) Agent {
+        return Agent{
+            .ptr = self,
+            .vtable = &.{
+                .name = name,
+                .process = process,
+                .deinit = deinitVTable,
+            },
         };
     }
 
-    pub fn deinit(self: *MyAgent) void {
-        // Free any allocated memory
-        if (self.cached_data) |data| {
-            self.allocator.free(data);
-        }
+    fn name(ptr: *anyopaque) []const u8 {
+        _ = ptr;
+        return "production-agent";
     }
 
-    pub fn process(self: *MyAgent, message: agenkit.Message) !agenkit.Message {
-        // Allocate response content
-        const response_content = try std.fmt.allocPrint(
-            self.allocator,
+    fn process(
+        ptr: *anyopaque,
+        allocator: Allocator,
+        message: *Message,
+    ) !*Message {
+        _ = ptr;
+
+        // Simulate some processing
+        std.time.sleep(100 * std.time.ns_per_ms);
+
+        const content = try std.fmt.allocPrint(
+            allocator,
             "Processed: {s}",
-            .{message.content},
+            .{message.content.text},
         );
-        // Caller must free response_content!
 
-        return agenkit.Message{
-            .role = .assistant,
-            .content = response_content,
-            .metadata = null,
-            .allocator = self.allocator,
-        };
+        const response = try allocator.create(Message);
+        response.* = try Message.withText(allocator, .assistant, content);
+        try response.setMetadata("agent", std.json.Value{ .string = "production-agent" });
+
+        return response;
+    }
+
+    fn deinitVTable(ptr: *anyopaque) void {
+        _ = ptr;
     }
 };
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var base_agent = ProductionAgent{ .allocator = allocator };
+
+    // Wrap with middleware (v0.50.0 uses milliseconds with _ms suffix)
+    var retry_decorator = try middleware.RetryDecorator.init(
+        allocator,
+        base_agent.asAgent(),
+        .{
+            .max_attempts = 3,
+            .initial_delay_ms = 100,
+        },
+    );
+    defer retry_decorator.deinit();
+
+    var circuit_breaker = try middleware.CircuitBreakerDecorator.init(
+        allocator,
+        retry_decorator.asAgent(),
+        .{
+            .failure_threshold = 5,
+            .recovery_timeout_ms = 30000,
+        },
+    );
+    defer circuit_breaker.deinit();
+
+    var timeout_decorator = try middleware.TimeoutDecorator.init(
+        allocator,
+        circuit_breaker.asAgent(),
+        .{ .timeout_ms = 5000 },
+    );
+    defer timeout_decorator.deinit();
+
+    const agent = timeout_decorator.asAgent();
+
+    var message = try Message.withText(allocator, .user, "Hello production!");
+    defer message.deinit();
+
+    const response = try agent.process(allocator, &message);
+    defer response.deinit();
+
+    std.debug.print("{s}\n", .{response.content.text});
+}
+```
+
+**Note**: Zig uses milliseconds with `_ms` suffix for clarity (v0.50.0).
+
+---
+
+## Using LLM Adapters
+
+### OpenAI Example
+
+```zig
+const std = @import("std");
+const agenkit = @import("agenkit");
+const OpenAILLM = agenkit.adapters.OpenAILLM;
+const Message = agenkit.Message;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    // Initialize LLM (validates parameters at construction)
+    var llm_impl = try OpenAILLM.init(
+        allocator,
+        std.process.getEnvVarOwned(allocator, "OPENAI_API_KEY") catch unreachable,
+        "gpt-4-turbo",
+    );
+    defer llm_impl.deinit();
+    const llm = llm_impl.asLLM();
+
+    // Create conversation
+    var system_msg = try Message.withText(allocator, .system, "You are a helpful assistant.");
+    defer system_msg.deinit();
+
+    var user_msg = try Message.withText(allocator, .user, "What is Agenkit?");
+    defer user_msg.deinit();
+
+    const messages = [_]*Message{ &system_msg, &user_msg };
+
+    // Configure options with validation
+    var options = agenkit.CallOptions.init(allocator);
+    defer options.deinit();
+    try options.withTemperature(0.7);  // Validated: 0-2
+    try options.withMaxTokens(1024);   // Validated: >0
+
+    // Get completion
+    const response = try llm.complete(allocator, &messages, &options);
+    defer response.deinit();
+    std.debug.print("{s}\n", .{response.content.text});
+
+    // Stream response
+    var stream = try llm.stream(allocator, &messages, &options);
+    defer stream.deinit();
+
+    while (try stream.next(allocator)) |chunk| {
+        defer chunk.deinit();
+        std.debug.print("{s}", .{chunk.content.text});
+    }
+}
+```
+
+### Anthropic Example
+
+```zig
+var llm_impl = try agenkit.adapters.AnthropicLLM.init(
+    allocator,
+    std.process.getEnvVarOwned(allocator, "ANTHROPIC_API_KEY") catch unreachable,
+    "claude-3-5-sonnet-20241022",
+);
+defer llm_impl.deinit();
+
+var options = agenkit.CallOptions.init(allocator);
+try options.withTemperature(1.0);
+try options.withMaxTokens(4096);
+```
+
+**Parameter Validation** (v0.50.0):
+- `temperature`: 0.0 - 2.0 (validated via `withTemperature()`)
+- `max_tokens`: > 0 (validated via `withMaxTokens()`)
+- `top_p`: 0.0 - 1.0 (validated via `withTopP()`)
+
+Invalid values return errors immediately.
+
+---
+
+## Common Patterns
+
+Agenkit provides **18 core patterns** for building AI agents (see the [Agent Patterns Book](../../agent-patterns-book) for comprehensive details). Here are three essential patterns to get started:
+
+### 1. Reflection Pattern
+
+**One-line**: Iterative self-improvement through draft-critique-refine loop
+
+```zig
+const std = @import("std");
+const agenkit = @import("agenkit");
+const ReflectionAgent = agenkit.patterns.ReflectionAgent;
+const OpenAILLM = agenkit.adapters.OpenAILLM;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var llm_impl = try OpenAILLM.init(
+        allocator,
+        std.process.getEnvVarOwned(allocator, "OPENAI_API_KEY") catch unreachable,
+        "gpt-4-turbo",
+    );
+    defer llm_impl.deinit();
+    const llm = llm_impl.asLLM();
+
+    var agent = try ReflectionAgent.init(allocator, llm, .{
+        .max_iterations = 3,
+        .reflection_prompt = "Review and improve this response:",
+    });
+    defer agent.deinit();
+
+    var message = try agenkit.Message.withText(allocator, .user, "Explain comptime in Zig");
+    defer message.deinit();
+
+    const response = try agent.process(allocator, &message);
+    defer response.deinit();
+
+    std.debug.print("{s}\n", .{response.content.text});
+}
+```
+
+### 2. ReAct Pattern
+
+**One-line**: Reasoning + Acting with explicit thought-action-observation loop
+
+```zig
+const std = @import("std");
+const agenkit = @import("agenkit");
+const Tool = agenkit.Tool;
+const ToolResult = agenkit.ToolResult;
+const ReActAgent = agenkit.patterns.ReActAgent;
+
+const SearchTool = struct {
+    allocator: std.mem.Allocator,
+
+    pub fn asTool(self: *SearchTool) Tool {
+        return Tool{
+            .ptr = self,
+            .vtable = &.{
+                .name = name,
+                .description = description,
+                .parameters = parameters,
+                .execute = execute,
+                .deinit = deinitVTable,
+            },
+        };
+    }
+
+    fn name(ptr: *anyopaque) []const u8 {
+        _ = ptr;
+        return "search";
+    }
+
+    fn description(ptr: *anyopaque) []const u8 {
+        _ = ptr;
+        return "Search for information";
+    }
+
+    fn parameters(ptr: *anyopaque, allocator: std.mem.Allocator) !std.json.Value {
+        _ = ptr;
+        return std.json.parseFromSlice(
+            std.json.Value,
+            allocator,
+            \\{"query": {"type": "string", "description": "Search query"}}
+        ,
+            .{},
+        );
+    }
+
+    fn execute(
+        ptr: *anyopaque,
+        allocator: std.mem.Allocator,
+        params: std.json.Value,
+    ) !ToolResult {
+        _ = ptr;
+        const query = params.object.get("query").?.string;
+
+        const result = try std.fmt.allocPrint(
+            allocator,
+            "Search results for: {s}",
+            .{query},
+        );
+
+        return ToolResult{
+            .success = true,
+            .result = result,
+        };
+    }
+
+    fn deinitVTable(ptr: *anyopaque) void {
+        _ = ptr;
+    }
+};
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var llm_impl = try agenkit.adapters.OpenAILLM.init(
+        allocator,
+        std.process.getEnvVarOwned(allocator, "OPENAI_API_KEY") catch unreachable,
+        "gpt-4-turbo",
+    );
+    defer llm_impl.deinit();
+
+    var search_tool = SearchTool{ .allocator = allocator };
+    const tools = [_]Tool{search_tool.asTool()};
+
+    var agent = try ReActAgent.init(allocator, llm_impl.asLLM(), &tools, .{
+        .max_iterations = 5,
+    });
+    defer agent.deinit();
+
+    var message = try agenkit.Message.withText(allocator, .user, "What's the weather in Paris?");
+    defer message.deinit();
+
+    const response = try agent.process(allocator, &message);
+    defer response.deinit();
+
+    std.debug.print("{s}\n", .{response.content.text});
+}
+```
+
+### 3. Sequential Pattern
+
+**One-line**: Execute agents in order, passing outputs between stages
+
+```zig
+const std = @import("std");
+const agenkit = @import("agenkit");
+const SequentialAgent = agenkit.patterns.SequentialAgent;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    // Create agent pipeline
+    const agents = [_]agenkit.Agent{
+        research_agent.asAgent(),
+        summarizer_agent.asAgent(),
+        editor_agent.asAgent(),
+    };
+
+    var agent = try SequentialAgent.init(allocator, &agents);
+    defer agent.deinit();
+
+    var message = try agenkit.Message.withText(allocator, .user, "Research AI safety");
+    defer message.deinit();
+
+    const final_response = try agent.process(allocator, &message);
+    defer final_response.deinit();
+
+    std.debug.print("{s}\n", .{final_response.content.text});
+}
+```
+
+**See all 18 patterns**: Refer to the [Agent Patterns Book](../../agent-patterns-book) for complete pattern descriptions, trade-offs, and when to use each pattern.
+
+---
+
+## Memory Management
+
+### Allocators
+
+```zig
+// Always pass allocator explicitly
+pub fn init(allocator: Allocator) !*Self {
+    const self = try allocator.create(Self);
+    return self;
+}
+
+pub fn deinit(self: *Self) void {
+    self.allocator.destroy(self);
+}
 ```
 
 ### Error Handling
 
-Zig uses error sets and error unions:
-
 ```zig
-const ProcessingError = error{
-    EmptyContent,
-    InvalidFormat,
-    AllocationFailed,
-};
-
-pub fn process(self: *MyAgent, message: agenkit.Message) !agenkit.Message {
-    // Validate input
-    if (message.content.len == 0) {
-        return ProcessingError.EmptyContent;
-    }
-
-    // Try to process - propagate errors with try
-    const result = try self.processInternal(message);
-
-    // Or catch and handle errors
-    const data = self.fetchData() catch |err| switch (err) {
-        error.NetworkFailure => {
-            std.log.warn("Network failed, using cached data", .{});
-            return self.cachedData;
-        },
-        else => return err,
-    };
-
-    return result;
+// Use error unions for fallible operations
+fn process(message: *Message) !*Message {
+    const response = try createResponse();
+    return response;
 }
-```
 
-### Tools
+// Check errors with try
+const result = try agent.process(&message);
 
-Tools let agents take actions:
-
-```zig
-const std = @import("std");
-const agenkit = @import("agenkit");
-
-pub const CalculatorTool = struct {
-    allocator: std.mem.Allocator,
-
-    pub fn init(allocator: std.mem.Allocator) CalculatorTool {
-        return CalculatorTool{ .allocator = allocator };
-    }
-
-    pub fn name(self: *const CalculatorTool) []const u8 {
-        _ = self;
-        return "calculator";
-    }
-
-    pub fn description(self: *const CalculatorTool) []const u8 {
-        _ = self;
-        return "Performs basic arithmetic operations";
-    }
-
-    pub fn execute(self: *CalculatorTool, params: std.json.Value) !agenkit.ToolResult {
-        const operation = params.object.get("operation").?.string;
-        const a = params.object.get("a").?.float;
-        const b = params.object.get("b").?.float;
-
-        const result = if (std.mem.eql(u8, operation, "add"))
-            a + b
-        else if (std.mem.eql(u8, operation, "multiply"))
-            a * b
-        else
-            return error.UnknownOperation;
-
-        // Format result
-        const output = try std.fmt.allocPrint(
-            self.allocator,
-            "{d}",
-            .{result},
-        );
-
-        return agenkit.ToolResult{
-            .output = output,
-            .error_msg = null,
-            .allocator = self.allocator,
-        };
-    }
-};
-```
-
----
-
-## Using Patterns
-
-Agenkit includes 18 pre-built patterns for common agent architectures.
-
-### Reflection Pattern
-
-Iteratively improve outputs through self-critique:
-
-```zig
-const agenkit = @import("agenkit");
-
-// Configure reflection
-const config = agenkit.ReflectionConfig{
-    .max_iterations = 3,
-    .quality_threshold = 0.8,
-    .stop_on_repeat = true,
-};
-
-// Create reflection agent
-var generator = GeneratorAgent.init(allocator);
-var critic = CriticAgent.init(allocator);
-
-var agent = try agenkit.ReflectionAgent.init(
-    allocator,
-    &generator.agent,
-    &critic.agent,
-    config,
-);
-defer agent.deinit();
-
-// Use it
-const msg = agenkit.Message{
-    .role = .user,
-    .content = "Write a haiku about coding",
-    .metadata = null,
-    .allocator = allocator,
-};
-
-const response = try agent.process(msg);
-defer allocator.free(response.content);
-
-// Response includes iteration metadata
-if (response.metadata) |metadata| {
-    std.debug.print("Iterations: {}\n", .{metadata.get("iterations")});
-    std.debug.print("Quality: {d}\n", .{metadata.get("final_quality_score")});
-}
-```
-
-### Sequential Pattern
-
-Chain multiple agents in sequence:
-
-```zig
-// Create a pipeline: research → summarize → format
-var research = ResearchAgent.init(allocator);
-var summary = SummaryAgent.init(allocator);
-var formatter = FormatterAgent.init(allocator);
-
-const agents = [_]*agenkit.Agent{
-    &research.agent,
-    &summary.agent,
-    &formatter.agent,
-};
-
-var pipeline = try agenkit.SequentialPattern.init(allocator, &agents);
-defer pipeline.deinit();
-
-// Input flows through each agent in order
-const msg = agenkit.Message{
-    .role = .user,
-    .content = "Research quantum computing",
-    .metadata = null,
-    .allocator = allocator,
-};
-
-const response = try pipeline.process(msg);
-defer allocator.free(response.content);
-```
-
-### Parallel Pattern
-
-Run multiple agents concurrently and aggregate results:
-
-```zig
-// Configure parallel execution
-var technical = TechnicalAgent.init(allocator);
-var business = BusinessAgent.init(allocator);
-var user_agent = UserAgent.init(allocator);
-
-const agents = [_]*agenkit.Agent{
-    &technical.agent,
-    &business.agent,
-    &user_agent.agent,
-};
-
-const config = agenkit.ParallelConfig{
-    .agents = &agents,
-    .aggregation = .merge,
-};
-
-var parallel = try agenkit.ParallelPattern.init(allocator, config);
-defer parallel.deinit();
-
-// All agents process simultaneously
-const msg = agenkit.Message{
-    .role = .user,
-    .content = "Analyze this product idea",
-    .metadata = null,
-    .allocator = allocator,
-};
-
-const response = try parallel.process(msg);
-defer allocator.free(response.content);
-```
-
-### ReAct Pattern
-
-Reasoning + Acting with tool use:
-
-```zig
-// Configure ReAct
-var search_tool = SearchTool.init(allocator);
-var calc_tool = CalculatorTool.init(allocator);
-
-const tools = [_]*agenkit.Tool{
-    &search_tool.tool,
-    &calc_tool.tool,
-};
-
-const config = agenkit.ReActConfig{
-    .max_steps = 5,
-    .tools = &tools,
-};
-
-var reasoning = ReasoningAgent.init(allocator);
-
-var agent = try agenkit.ReActAgent.init(
-    allocator,
-    &reasoning.agent,
-    config,
-);
-defer agent.deinit();
-
-// Agent will alternate between thinking and acting
-const msg = agenkit.Message{
-    .role = .user,
-    .content = "What's the population of Tokyo divided by the population of NYC?",
-    .metadata = null,
-    .allocator = allocator,
-};
-
-const response = try agent.process(msg);
-defer allocator.free(response.content);
-
-// Response includes reasoning trace
-if (response.metadata) |metadata| {
-    std.debug.print("Steps: {}\n", .{metadata.get("steps")});
-    std.debug.print("Tool calls: {}\n", .{metadata.get("tool_calls")});
-}
-```
-
----
-
-## Adding Middleware
-
-Middleware adds production features without changing your agent code.
-
-### Retry Logic
-
-Automatically retry failed operations:
-
-```zig
-const agenkit = @import("agenkit");
-const std = @import("std");
-
-// Configure retries
-const config = agenkit.RetryConfig{
-    .max_attempts = 3,
-    .backoff_factor = 2.0,
-    .initial_delay_ms = 1000,
-    .max_delay_ms = 30000,
-};
-
-// Wrap your agent
-var base_agent = MyAgent.init(allocator);
-var resilient_agent = try agenkit.RetryMiddleware.init(
-    allocator,
-    &base_agent.agent,
-    config,
-);
-defer resilient_agent.deinit();
-
-// Now handles transient failures automatically
-const response = try resilient_agent.process(message);
-defer allocator.free(response.content);
-```
-
-### Circuit Breaker
-
-Prevent cascading failures:
-
-```zig
-// Configure circuit breaker
-const config = agenkit.CircuitBreakerConfig{
-    .failure_threshold = 5,
-    .timeout_ms = 60000,
-    .success_threshold = 2,
-};
-
-// Wrap your agent
-var base_agent = MyAgent.init(allocator);
-var protected_agent = try agenkit.CircuitBreakerMiddleware.init(
-    allocator,
-    &base_agent.agent,
-    config,
-);
-defer protected_agent.deinit();
-
-// Fails fast when circuit is open
-const response = protected_agent.process(message) catch |err| {
-    if (err == error.CircuitOpen) {
-        std.log.warn("Circuit is open - service unavailable", .{});
-        return err;
-    }
+// Or handle explicitly
+const result = agent.process(&message) catch |err| {
+    std.debug.print("Error: {}\n", .{err});
     return err;
 };
-defer allocator.free(response.content);
-```
-
-### Timeout
-
-Set maximum execution time:
-
-```zig
-// Configure timeout
-const config = agenkit.TimeoutConfig{
-    .timeout_ms = 30000,
-    .grace_period_ms = 5000,
-};
-
-// Wrap your agent
-var base_agent = MyAgent.init(allocator);
-var timed_agent = try agenkit.TimeoutMiddleware.init(
-    allocator,
-    &base_agent.agent,
-    config,
-);
-defer timed_agent.deinit();
-
-// Will cancel after 30 seconds
-const response = timed_agent.process(message) catch |err| {
-    if (err == error.Timeout) {
-        std.log.warn("Agent took too long to respond", .{});
-        return err;
-    }
-    return err;
-};
-defer allocator.free(response.content);
-```
-
-### Stacking Middleware
-
-Combine multiple middleware layers:
-
-```zig
-// Stack middleware (innermost to outermost)
-var base = MyAgent.init(allocator);
-
-var with_timeout = try agenkit.TimeoutMiddleware.init(
-    allocator,
-    &base.agent,
-    timeout_config,
-);
-defer with_timeout.deinit();
-
-var with_circuit = try agenkit.CircuitBreakerMiddleware.init(
-    allocator,
-    &with_timeout.agent,
-    circuit_config,
-);
-defer with_circuit.deinit();
-
-var with_retry = try agenkit.RetryMiddleware.init(
-    allocator,
-    &with_circuit.agent,
-    retry_config,
-);
-defer with_retry.deinit();
-
-// Now has full production resilience
-const response = try with_retry.process(message);
-defer allocator.free(response.content);
 ```
 
 ---
 
-## Working with LLMs
+## Common Pitfalls
 
-### OpenAI Integration
-
-```zig
-const agenkit = @import("agenkit");
-const std = @import("std");
-
-// Create OpenAI agent
-const config = agenkit.OpenAIConfig{
-    .model = "gpt-4",
-    .api_key = std.os.getenv("OPENAI_API_KEY") orelse return error.MissingApiKey,
-};
-
-var agent = try agenkit.OpenAIAdapter.init(allocator, config);
-defer agent.deinit();
-
-// Use it like any agent
-const msg = agenkit.Message{
-    .role = .user,
-    .content = "Explain quantum computing",
-    .metadata = null,
-    .allocator = allocator,
-};
-
-const response = try agent.process(msg);
-defer allocator.free(response.content);
-
-std.debug.print("{s}\n", .{response.content});
-```
-
-### Anthropic (Claude) Integration
+### 1. Memory Leaks
 
 ```zig
-// Create Claude agent
-const config = agenkit.AnthropicConfig{
-    .model = "claude-3-opus-20240229",
-    .api_key = std.os.getenv("ANTHROPIC_API_KEY") orelse return error.MissingApiKey,
-};
+// WRONG: Forgot to call deinit
+var message = try Message.withText(allocator, .user, "Hello");
+// ... use message ...
+// ❌ Memory leak!
 
-var agent = try agenkit.AnthropicAdapter.init(allocator, config);
-defer agent.deinit();
-
-const msg = agenkit.Message{
-    .role = .user,
-    .content = "Write a function to calculate Fibonacci numbers",
-    .metadata = null,
-    .allocator = allocator,
-};
-
-const response = try agent.process(msg);
-defer allocator.free(response.content);
+// CORRECT: Always defer deinit
+var message = try Message.withText(allocator, .user, "Hello");
+defer message.deinit();
+// ... use message ...
+// ✅ Cleaned up automatically
 ```
 
-### Custom LLM Integration
+### 2. Comptime vs Runtime
 
 ```zig
-const std = @import("std");
-const agenkit = @import("agenkit");
+// Comptime: Known at compile time
+const pattern_count = 18;
 
-pub const CustomLLMAgent = struct {
-    allocator: std.mem.Allocator,
-    api_url: []const u8,
-    api_key: []const u8,
-    client: std.http.Client,
-
-    pub fn init(allocator: std.mem.Allocator, api_url: []const u8, api_key: []const u8) CustomLLMAgent {
-        return CustomLLMAgent{
-            .allocator = allocator,
-            .api_url = api_url,
-            .api_key = api_key,
-            .client = std.http.Client{ .allocator = allocator },
-        };
-    }
-
-    pub fn deinit(self: *CustomLLMAgent) void {
-        self.client.deinit();
-    }
-
-    pub fn name(self: *const CustomLLMAgent) []const u8 {
-        _ = self;
-        return "custom-llm";
-    }
-
-    pub fn process(self: *CustomLLMAgent, message: agenkit.Message) !agenkit.Message {
-        // Build request
-        const request_body = try std.json.stringifyAlloc(
-            self.allocator,
-            .{ .prompt = message.content },
-            .{},
-        );
-        defer self.allocator.free(request_body);
-
-        // Call API
-        var req = try self.client.request(.POST, self.api_url, .{
-            .extra_headers = &.{
-                .{ .name = "Authorization", .value = try std.fmt.allocPrint(self.allocator, "Bearer {s}", .{self.api_key}) },
-                .{ .name = "Content-Type", .value = "application/json" },
-            },
-        }, .{});
-        defer req.deinit();
-
-        try req.writer().writeAll(request_body);
-        try req.finish();
-        try req.wait();
-
-        // Parse response
-        const body = try req.reader().readAllAlloc(self.allocator, 1024 * 1024);
-        defer self.allocator.free(body);
-
-        const parsed = try std.json.parseFromSlice(
-            struct { completion: []const u8 },
-            self.allocator,
-            body,
-            .{},
-        );
-        defer parsed.deinit();
-
-        const response_content = try self.allocator.dupe(u8, parsed.value.completion);
-
-        return agenkit.Message{
-            .role = .assistant,
-            .content = response_content,
-            .metadata = null,
-            .allocator = self.allocator,
-        };
-    }
-};
+// Runtime: Determined at runtime
+var iteration_count: usize = 0;
 ```
 
----
-
-## Testing Your Agents
-
-### Unit Testing
+### 3. Pointer Alignment
 
 ```zig
-const std = @import("std");
-const testing = std.testing;
-const agent_mod = @import("agent.zig");
-
-test "GreetingAgent responds with greeting" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    var agent = agent_mod.GreetingAgent.init(allocator);
-    defer agent.deinit();
-
-    const msg = agenkit.Message{
-        .role = .user,
-        .content = "Hello",
-        .metadata = null,
-        .allocator = allocator,
-    };
-
-    const response = try agent.process(msg);
-    defer allocator.free(response.content);
-
-    try testing.expect(response.role == .assistant);
-    try testing.expect(std.mem.indexOf(u8, response.content, "Hello") != null);
-}
-
-test "GreetingAgent has correct name" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    var agent = agent_mod.GreetingAgent.init(allocator);
-    defer agent.deinit();
-
-    try testing.expectEqualStrings("greeting-agent", agent.name());
-}
-```
-
-Run tests:
-```bash
-zig build test
-```
-
-### Integration Testing with Mocks
-
-```zig
-const MockAgent = struct {
-    allocator: std.mem.Allocator,
-    response: []const u8,
-
-    pub fn init(allocator: std.mem.Allocator, response: []const u8) MockAgent {
-        return MockAgent{
-            .allocator = allocator,
-            .response = response,
-        };
-    }
-
-    pub fn deinit(self: *MockAgent) void {
-        _ = self;
-    }
-
-    pub fn name(self: *const MockAgent) []const u8 {
-        _ = self;
-        return "mock-agent";
-    }
-
-    pub fn process(self: *MockAgent, message: agenkit.Message) !agenkit.Message {
-        _ = message;
-        const content = try self.allocator.dupe(u8, self.response);
-        return agenkit.Message{
-            .role = .assistant,
-            .content = content,
-            .metadata = null,
-            .allocator = self.allocator,
-        };
-    }
-};
-
-test "SequentialPattern processes through all agents" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    var agent1 = MockAgent.init(allocator, "Step 1 complete");
-    var agent2 = MockAgent.init(allocator, "Step 2 complete");
-    var agent3 = MockAgent.init(allocator, "Step 3 complete");
-
-    const agents = [_]*agenkit.Agent{
-        &agent1.agent,
-        &agent2.agent,
-        &agent3.agent,
-    };
-
-    var pipeline = try agenkit.SequentialPattern.init(allocator, &agents);
-    defer pipeline.deinit();
-
-    const msg = agenkit.Message{
-        .role = .user,
-        .content = "Start pipeline",
-        .metadata = null,
-        .allocator = allocator,
-    };
-
-    const response = try pipeline.process(msg);
-    defer allocator.free(response.content);
-
-    try testing.expect(std.mem.indexOf(u8, response.content, "Step 3 complete") != null);
-}
+// Always use @ptrCast with @alignCast for interface patterns
+const self: *MyAgent = @ptrCast(@alignCast(ptr));
 ```
 
 ---
 
 ## Next Steps
 
-### Learn More
-
-- **[Pattern Guide](../patterns/README.md)** - Detailed guide to all 18 patterns
-- **[API Reference](../api/zig/README.md)** - Complete API documentation
-- **[Best Practices](../best-practices/ZIG.md)** - Production deployment tips
-- **[Examples](../../agenkit-zig/examples/)** - Working examples
-
-### Performance Optimization
-
-- **[Memory Management](../performance/ZIG_MEMORY.md)** - Allocators and arenas
-- **[Comptime Features](../performance/ZIG_COMPTIME.md)** - Compile-time optimization
-- **[Zero Dependencies](../philosophy/ZIG_ZERO_DEPS.md)** - Minimal dependency philosophy
-- **[Profiling Guide](../performance/ZIG_PROFILING.md)** - Profile your agents
-
-### Deploy to Production
-
-- **[Docker Deployment](../deployment/DOCKER.md)** - Containerize your agents
-- **[Bare Metal Deployment](../deployment/BARE_METAL.md)** - Direct system deployment
-- **[Monitoring & Observability](../observability/README.md)** - Track agent performance
-
-### Migrate from Other Languages
-
-Coming from another language?
-
-- **[C++ → Zig Migration](../migration/CPP_TO_ZIG.md)** - Migrate from C++
-- **[Rust → Zig Migration](../migration/RUST_TO_ZIG.md)** - Migrate from Rust
+1. **Explore Patterns**: See the [Agent Patterns Book](../../agent-patterns-book) for all 18 patterns
+2. **Read Architecture**: `ARCHITECTURE.md` explains design principles
+3. **Check Examples**: `agenkit-zig/examples/` has production examples
+4. **API Reference**: Coming soon in `docs/api-reference/zig/`
+5. **Zig Language**: https://ziglang.org/documentation/master/
 
 ---
 
 ## Quick Reference
 
-### Installation
-```bash
-# In build.zig.zon
-.dependencies = .{
-    .agenkit = .{ .url = "...", .hash = "..." },
-}
-```
-
-### Minimal Agent
 ```zig
-pub const MyAgent = struct {
-    allocator: std.mem.Allocator,
-
-    pub fn init(allocator: std.mem.Allocator) MyAgent {
-        return MyAgent{ .allocator = allocator };
-    }
-
-    pub fn deinit(self: *MyAgent) void {
-        _ = self;
-    }
-
-    pub fn name(self: *const MyAgent) []const u8 {
-        _ = self;
-        return "my-agent";
-    }
-
-    pub fn process(self: *MyAgent, message: agenkit.Message) !agenkit.Message {
-        const content = try std.fmt.allocPrint(
-            self.allocator,
-            "Response",
-            .{},
-        );
-
-        return agenkit.Message{
-            .role = .assistant,
-            .content = content,
-            .metadata = null,
-            .allocator = self.allocator,
-        };
-    }
-};
-```
-
-### Common Imports
-```zig
-const std = @import("std");
+// Core imports
 const agenkit = @import("agenkit");
-
-// Core
 const Agent = agenkit.Agent;
 const Message = agenkit.Message;
 const Tool = agenkit.Tool;
-const ToolResult = agenkit.ToolResult;
-
-// Patterns
-const ReflectionAgent = agenkit.ReflectionAgent;
-const ReActAgent = agenkit.ReActAgent;
-const SequentialPattern = agenkit.SequentialPattern;
-const ParallelPattern = agenkit.ParallelPattern;
 
 // Middleware
-const RetryMiddleware = agenkit.RetryMiddleware;
-const CircuitBreakerMiddleware = agenkit.CircuitBreakerMiddleware;
-const TimeoutMiddleware = agenkit.TimeoutMiddleware;
+const middleware = agenkit.middleware;
+middleware.RetryDecorator
+middleware.TimeoutDecorator
+middleware.CircuitBreakerDecorator
+
+// LLM adapters
+const OpenAILLM = agenkit.adapters.OpenAILLM;
+const AnthropicLLM = agenkit.adapters.AnthropicLLM;
+
+// Patterns
+const patterns = agenkit.patterns;
+patterns.ReflectionAgent
+patterns.ReActAgent
+patterns.SequentialAgent
+
+// Error handling
+try operation();  // Propagate error
+operation() catch |err| { /* handle */ };
 ```
 
 ---
 
-**Ready to build?** Check out the [examples](../../agenkit-zig/examples/) for working code you can run right now.
+**Version**: v0.50.0
+**Last Updated**: January 28, 2026
 
-**Philosophy tip:** Zig's explicit control and zero-dependency approach make it perfect for embedded systems, edge computing, and environments where you need complete control over every byte!
+For help: Open an issue at https://github.com/yourusername/agenkit/issues

@@ -150,18 +150,27 @@ pub const CallOptions = struct {
         };
     }
 
-    /// Set temperature
-    pub fn withTemperature(self: *CallOptions, temperature: f64) void {
+    /// Set temperature (must be between 0 and 2)
+    pub fn withTemperature(self: *CallOptions, temperature: f64) !void {
+        if (temperature < 0.0 or temperature > 2.0) {
+            return error.InvalidTemperature;
+        }
         self.temperature = temperature;
     }
 
-    /// Set max tokens
-    pub fn withMaxTokens(self: *CallOptions, max_tokens: usize) void {
+    /// Set max tokens (must be positive)
+    pub fn withMaxTokens(self: *CallOptions, max_tokens: usize) !void {
+        if (max_tokens == 0) {
+            return error.InvalidMaxTokens;
+        }
         self.max_tokens = max_tokens;
     }
 
-    /// Set top_p
-    pub fn withTopP(self: *CallOptions, top_p: f64) void {
+    /// Set top_p (must be between 0 and 1)
+    pub fn withTopP(self: *CallOptions, top_p: f64) !void {
+        if (top_p < 0.0 or top_p > 1.0) {
+            return error.InvalidTopP;
+        }
         self.top_p = top_p;
     }
 
@@ -216,6 +225,9 @@ pub const LLMError = error{
     NetworkError,
     StreamingNotSupported,
     InvalidResponse,
+    InvalidTemperature,
+    InvalidMaxTokens,
+    InvalidTopP,
 };
 
 // Tests
@@ -236,9 +248,9 @@ test "CallOptions with values" {
     var options = CallOptions.init(allocator);
     defer options.deinit();
 
-    options.withTemperature(0.7);
-    options.withMaxTokens(1024);
-    options.withTopP(0.9);
+    try options.withTemperature(0.7);
+    try options.withMaxTokens(1024);
+    try options.withTopP(0.9);
 
     try std.testing.expectEqual(@as(f64, 0.7), options.temperature.?);
     try std.testing.expectEqual(@as(usize, 1024), options.max_tokens.?);
@@ -256,4 +268,155 @@ test "CallOptions with extra" {
 
     try std.testing.expect(options.extra.contains("frequency_penalty"));
     try std.testing.expect(options.extra.contains("presence_penalty"));
+}
+
+// ============================================================================
+// Temperature Validation Tests
+// ============================================================================
+
+test "CallOptions valid temperature 0" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    try options.withTemperature(0.0);
+    try std.testing.expectEqual(@as(f64, 0.0), options.temperature.?);
+}
+
+test "CallOptions valid temperature 1" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    try options.withTemperature(1.0);
+    try std.testing.expectEqual(@as(f64, 1.0), options.temperature.?);
+}
+
+test "CallOptions valid temperature 2" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    try options.withTemperature(2.0);
+    try std.testing.expectEqual(@as(f64, 2.0), options.temperature.?);
+}
+
+test "CallOptions invalid temperature negative" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    const result = options.withTemperature(-0.5);
+    try std.testing.expectError(error.InvalidTemperature, result);
+}
+
+test "CallOptions invalid temperature too high" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    const result = options.withTemperature(3.0);
+    try std.testing.expectError(error.InvalidTemperature, result);
+}
+
+// ============================================================================
+// Max Tokens Validation Tests
+// ============================================================================
+
+test "CallOptions valid max_tokens" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    try options.withMaxTokens(1024);
+    try std.testing.expectEqual(@as(usize, 1024), options.max_tokens.?);
+}
+
+test "CallOptions invalid max_tokens zero" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    const result = options.withMaxTokens(0);
+    try std.testing.expectError(error.InvalidMaxTokens, result);
+}
+
+// ============================================================================
+// Top P Validation Tests
+// ============================================================================
+
+test "CallOptions valid top_p" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    try options.withTopP(0.9);
+    try std.testing.expectEqual(@as(f64, 0.9), options.top_p.?);
+}
+
+test "CallOptions invalid top_p negative" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    const result = options.withTopP(-0.1);
+    try std.testing.expectError(error.InvalidTopP, result);
+}
+
+test "CallOptions invalid top_p too high" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    const result = options.withTopP(1.5);
+    try std.testing.expectError(error.InvalidTopP, result);
+}
+
+// ============================================================================
+// Boundary Value Tests
+// ============================================================================
+
+test "CallOptions boundary temperature exactly 0" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    try options.withTemperature(0.0);
+    try std.testing.expectEqual(@as(f64, 0.0), options.temperature.?);
+}
+
+test "CallOptions boundary temperature exactly 2" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    try options.withTemperature(2.0);
+    try std.testing.expectEqual(@as(f64, 2.0), options.temperature.?);
+}
+
+test "CallOptions boundary max_tokens exactly 1" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    try options.withMaxTokens(1);
+    try std.testing.expectEqual(@as(usize, 1), options.max_tokens.?);
+}
+
+test "CallOptions boundary top_p exactly 0" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    try options.withTopP(0.0);
+    try std.testing.expectEqual(@as(f64, 0.0), options.top_p.?);
+}
+
+test "CallOptions boundary top_p exactly 1" {
+    const allocator = std.testing.allocator;
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    try options.withTopP(1.0);
+    try std.testing.expectEqual(@as(f64, 1.0), options.top_p.?);
 }

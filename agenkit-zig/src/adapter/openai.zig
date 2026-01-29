@@ -480,7 +480,7 @@ test "OpenAILLM buildRequestBody" {
 
     var options = llm.CallOptions.init(allocator);
     defer options.deinit();
-    options.temperature = 0.7;
+    try options.withTemperature(0.7);
 
     const body = try llm_impl.buildRequestBody(allocator, &messages, &options, false);
     defer allocator.free(body);

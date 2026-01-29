@@ -212,6 +212,9 @@ pub const PlanAndSolveAgent = struct {
             response.metadata.put("validation_notes", vn) catch {};
         }
         response.metadata.put("allow_replanning", self.config.allow_replanning) catch {};
+        if (plan.strategy) |s| {
+            response.metadata.put("strategy", s) catch {};
+        }
 
         return Result{ .ok = response };
     }
@@ -323,11 +326,15 @@ pub const PlanAndSolveAgent = struct {
         defer self.allocator.free(response);
 
         // Check if response contains "VALID" or "YES" (case insensitive)
+        // But check for INVALID first to avoid matching "VALID" inside "INVALID"
         const response_upper = try std.ascii.allocUpperString(self.allocator, response);
         defer self.allocator.free(response_upper);
 
-        plan.validated = std.mem.indexOf(u8, response_upper, "VALID") != null or
+        const has_invalid = std.mem.indexOf(u8, response_upper, "INVALID") != null;
+        const has_valid = std.mem.indexOf(u8, response_upper, "VALID") != null or
             std.mem.indexOf(u8, response_upper, "YES") != null;
+
+        plan.validated = !has_invalid and has_valid;
 
         const trimmed = std.mem.trim(u8, response, &std.ascii.whitespace);
         plan.validation_notes = try self.allocator.dupe(u8, trimmed);
@@ -411,30 +418,101 @@ pub const PlanAndSolveAgent = struct {
 };
 
 // Tests
+const testing = std.testing;
+
+// Mock agent for testing
+const MockAgent = struct {
+    allocator: Allocator,
+    responses: []const []const u8,
+    index: usize,
+
+    fn init(allocator: Allocator, responses: []const []const u8) !*MockAgent {
+        const self = try allocator.create(MockAgent);
+        self.* = .{
+            .allocator = allocator,
+            .responses = responses,
+            .index = 0,
+        };
+        return self;
+    }
+
+    fn agent(self: *MockAgent) Agent {
+        return Agent{
+            .ptr = self,
+            .vtable = &.{
+                .name = mockName,
+                .capabilities = mockCapabilities,
+                .process = mockProcess,
+                .process_stream = mockProcessStream,
+                .introspect = mockIntrospect,
+                .deinit = mockDeinit,
+            },
+        };
+    }
+
+    fn mockName(ptr: *anyopaque) []const u8 {
+        _ = ptr;
+        return "mock_agent";
+    }
+
+    fn mockCapabilities(ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const []const u8 {
+        _ = ptr;
+        const caps = try allocator.alloc([]const u8, 2);
+        caps[0] = "mock";
+        caps[1] = "testing";
+        return caps;
+    }
+
+    fn mockProcess(ptr: *anyopaque, message: Message) AgentError!Result {
+        const self: *MockAgent = @ptrCast(@alignCast(ptr));
+        const response_text = self.responses[self.index % self.responses.len];
+        self.index += 1;
+
+        const response = Message.init(self.allocator, "assistant", response_text);
+        return Result{ .ok = response };
+    }
+
+    fn mockProcessStream(ptr: *anyopaque, message: Message) AgentError!Result {
+        _ = ptr;
+        _ = message;
+        return Result{ .err = AgentError.NotImplemented };
+    }
+
+    fn mockIntrospect(ptr: *anyopaque, allocator: Allocator) AgentError![]const u8 {
+        _ = ptr;
+        return allocator.dupe(u8, "{}");
+    }
+
+    fn mockDeinit(ptr: *anyopaque) void {
+        const self: *MockAgent = @ptrCast(@alignCast(ptr));
+        self.allocator.destroy(self);
+    }
+};
+
 test "PlanStep initialization" {
-    const allocator = std.testing.allocator;
+    const allocator = testing.allocator;
 
     var step = try PlanStep.init(allocator, "Test step", 0);
     defer step.deinit(allocator);
 
-    try std.testing.expectEqualStrings("Test step", step.description);
-    try std.testing.expectEqual(@as(usize, 0), step.order);
-    try std.testing.expectEqual(false, step.executed);
+    try testing.expectEqualStrings("Test step", step.description);
+    try testing.expectEqual(@as(usize, 0), step.order);
+    try testing.expectEqual(false, step.executed);
 }
 
 test "Plan initialization" {
-    const allocator = std.testing.allocator;
+    const allocator = testing.allocator;
 
     var plan = try Plan.init(allocator, "Test problem");
     defer plan.deinit();
 
-    try std.testing.expectEqualStrings("Test problem", plan.problem);
-    try std.testing.expectEqual(false, plan.validated);
-    try std.testing.expectEqual(@as(usize, 0), plan.steps.items.len);
+    try testing.expectEqualStrings("Test problem", plan.problem);
+    try testing.expectEqual(false, plan.validated);
+    try testing.expectEqual(@as(usize, 0), plan.steps.items.len);
 }
 
 test "Plan with steps" {
-    const allocator = std.testing.allocator;
+    const allocator = testing.allocator;
 
     var plan = try Plan.init(allocator, "Solve equation");
     defer plan.deinit();
@@ -445,7 +523,347 @@ test "Plan with steps" {
     const step2 = try PlanStep.init(allocator, "Simplify right side", 1);
     try plan.steps.append(step2);
 
-    try std.testing.expectEqual(@as(usize, 2), plan.steps.items.len);
-    try std.testing.expectEqualStrings("Simplify left side", plan.steps.items[0].description);
-    try std.testing.expectEqualStrings("Simplify right side", plan.steps.items[1].description);
+    try testing.expectEqual(@as(usize, 2), plan.steps.items.len);
+    try testing.expectEqualStrings("Simplify left side", plan.steps.items[0].description);
+    try testing.expectEqualStrings("Simplify right side", plan.steps.items[1].description);
+}
+
+test "PlanAndSolve name and capabilities" {
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"response"});
+    defer mock.allocator.destroy(mock);
+
+    var agent = try PlanAndSolveAgent.init(allocator, mock.agent(), .{});
+    defer agent.agent().deinit();
+
+    try testing.expectEqualStrings("plan_and_solve", agent.agent().name());
+
+    const caps = try agent.agent().capabilities(allocator);
+    defer allocator.free(caps);
+
+    try testing.expectEqual(@as(usize, 5), caps.len);
+    try testing.expectEqualStrings("reasoning", caps[0]);
+    try testing.expectEqualStrings("planning", caps[1]);
+    try testing.expectEqualStrings("plan_and_solve", caps[2]);
+    try testing.expectEqualStrings("strategic_thinking", caps[3]);
+    try testing.expectEqualStrings("step_by_step_execution", caps[4]);
+}
+
+test "PlanAndSolve basic functionality" {
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Gather ingredients\n2. Preheat oven\n3. Mix ingredients\n4. Bake",
+        "VALID: Plan is complete",
+        "Gathered: flour, sugar, eggs",
+        "Preheated oven to 350°F",
+        "Mixed all ingredients thoroughly",
+        "Baked for 30 minutes",
+    });
+    defer mock.allocator.destroy(mock);
+
+    var agent = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = true });
+    defer agent.agent().deinit();
+
+    const message = Message.init(allocator, "user", "How do I bake a cake?");
+    defer message.deinit();
+
+    const result = try agent.agent().process(message);
+    switch (result) {
+        .ok => |response| {
+            defer response.deinit();
+            const content = try response.contentAsText();
+            try testing.expect(content.len > 0);
+        },
+        .err => try testing.expect(false),
+    }
+}
+
+test "PlanAndSolve skip validation when disabled" {
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Step",
+        "Result",
+    });
+    defer mock.allocator.destroy(mock);
+
+    var agent = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = false });
+    defer agent.agent().deinit();
+
+    const message = Message.init(allocator, "user", "Simple problem");
+    defer message.deinit();
+
+    const result = try agent.agent().process(message);
+    switch (result) {
+        .ok => |response| {
+            defer response.deinit();
+            // With validation disabled, should only call LLM twice (plan + execute)
+            try testing.expectEqual(@as(usize, 2), mock.index);
+        },
+        .err => try testing.expect(false),
+    }
+}
+
+test "PlanAndSolve handle invalid validation" {
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Step 1",
+        "INVALID: Missing important step",
+        "Result 1",
+    });
+    defer mock.allocator.destroy(mock);
+
+    var agent = try PlanAndSolveAgent.init(allocator, mock.agent(), .{
+        .validate_plan = true,
+        .allow_replanning = false,
+    });
+    defer agent.agent().deinit();
+
+    const message = Message.init(allocator, "user", "Problem");
+    defer message.deinit();
+
+    const result = try agent.agent().process(message);
+    switch (result) {
+        .ok => |response| {
+            defer response.deinit();
+            // Should have validated=false in metadata
+            // (can't easily check metadata in Zig tests without more complex setup)
+        },
+        .err => try testing.expect(false),
+    }
+}
+
+test "PlanAndSolve execute steps sequentially" {
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Step A\n2. Step B",
+        "Answer A",
+        "Answer B",
+    });
+    defer mock.allocator.destroy(mock);
+
+    var agent = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = false });
+    defer agent.agent().deinit();
+
+    const message = Message.init(allocator, "user", "Problem");
+    defer message.deinit();
+
+    const result = try agent.agent().process(message);
+    switch (result) {
+        .ok => |response| {
+            defer response.deinit();
+            const content = try response.contentAsText();
+            // Final solution should be the last execution result
+            try testing.expectEqualStrings("Answer B", content);
+        },
+        .err => try testing.expect(false),
+    }
+}
+
+test "PlanAndSolve handle empty plan" {
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{""});
+    defer mock.allocator.destroy(mock);
+
+    var agent = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = false });
+    defer agent.agent().deinit();
+
+    const message = Message.init(allocator, "user", "Problem");
+    defer message.deinit();
+
+    const result = try agent.agent().process(message);
+    switch (result) {
+        .ok => |response| {
+            defer response.deinit();
+            const content = try response.contentAsText();
+            try testing.expectEqualStrings("", content);
+        },
+        .err => try testing.expect(false),
+    }
+}
+
+test "PlanAndSolve handle single step plan" {
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Only step",
+        "Step result",
+    });
+    defer mock.allocator.destroy(mock);
+
+    var agent = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = false });
+    defer agent.agent().deinit();
+
+    const message = Message.init(allocator, "user", "Simple task");
+    defer message.deinit();
+
+    const result = try agent.agent().process(message);
+    switch (result) {
+        .ok => |response| {
+            defer response.deinit();
+            const content = try response.contentAsText();
+            try testing.expectEqualStrings("Step result", content);
+        },
+        .err => try testing.expect(false),
+    }
+}
+
+test "PlanAndSolve parse period numbering" {
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Step one\n2. Step two\n3. Step three",
+    });
+    defer mock.allocator.destroy(mock);
+
+    const agent_struct = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = false });
+    defer agent_struct.allocator.destroy(agent_struct);
+
+    var plan = try agent_struct.createPlan("Problem");
+    defer plan.deinit();
+
+    try testing.expectEqual(@as(usize, 3), plan.steps.items.len);
+    try testing.expectEqualStrings("Step one", plan.steps.items[0].description);
+    try testing.expectEqualStrings("Step two", plan.steps.items[1].description);
+    try testing.expectEqualStrings("Step three", plan.steps.items[2].description);
+}
+
+test "PlanAndSolve parse parenthesis numbering" {
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1) Step one\n2) Step two",
+    });
+    defer mock.allocator.destroy(mock);
+
+    const agent_struct = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = false });
+    defer agent_struct.allocator.destroy(agent_struct);
+
+    var plan = try agent_struct.createPlan("Problem");
+    defer plan.deinit();
+
+    try testing.expectEqual(@as(usize, 2), plan.steps.items.len);
+    try testing.expectEqualStrings("Step one", plan.steps.items[0].description);
+    try testing.expectEqualStrings("Step two", plan.steps.items[1].description);
+}
+
+test "PlanAndSolve skip empty lines" {
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{
+        "1. Step one\n\n2. Step two\n\n",
+    });
+    defer mock.allocator.destroy(mock);
+
+    const agent_struct = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = false });
+    defer agent_struct.allocator.destroy(agent_struct);
+
+    var plan = try agent_struct.createPlan("Problem");
+    defer plan.deinit();
+
+    try testing.expectEqual(@as(usize, 2), plan.steps.items.len);
+}
+
+test "PlanStep track execution state" {
+    const allocator = testing.allocator;
+
+    var step = try PlanStep.init(allocator, "Test step", 0);
+    defer step.deinit(allocator);
+
+    try testing.expectEqual(false, step.executed);
+
+    step.executed = true;
+    step.result = try allocator.dupe(u8, "Test result");
+
+    try testing.expectEqual(true, step.executed);
+    try testing.expectEqualStrings("Test result", step.result.?);
+}
+
+test "Plan track step dependencies" {
+    const allocator = testing.allocator;
+
+    var plan = try Plan.init(allocator, "Test");
+    defer plan.deinit();
+
+    var step1 = try PlanStep.init(allocator, "Step 1", 0);
+    try plan.steps.append(step1);
+
+    var step2 = try PlanStep.init(allocator, "Step 2", 1);
+    step2.dependencies = try allocator.alloc(usize, 1);
+    step2.dependencies[0] = 0;
+    try plan.steps.append(step2);
+
+    var step3 = try PlanStep.init(allocator, "Step 3", 2);
+    step3.dependencies = try allocator.alloc(usize, 2);
+    step3.dependencies[0] = 0;
+    step3.dependencies[1] = 1;
+    step3.estimated_complexity = 2;
+    try plan.steps.append(step3);
+
+    // Verify step 2 depends on step 1
+    try testing.expectEqual(@as(usize, 1), plan.steps.items[1].dependencies.len);
+    try testing.expectEqual(@as(usize, 0), plan.steps.items[1].dependencies[0]);
+
+    // Verify step 3 depends on steps 1 and 2
+    try testing.expectEqual(@as(usize, 2), plan.steps.items[2].dependencies.len);
+    try testing.expectEqual(@as(usize, 0), plan.steps.items[2].dependencies[0]);
+    try testing.expectEqual(@as(usize, 1), plan.steps.items[2].dependencies[1]);
+
+    // Verify complexity tracking
+    try testing.expectEqual(@as(usize, 2), plan.steps.items[2].estimated_complexity);
+}
+
+test "Plan create valid structure" {
+    const allocator = testing.allocator;
+
+    var plan = try Plan.init(allocator, "Test problem");
+    defer plan.deinit();
+
+    try testing.expectEqualStrings("Test problem", plan.problem);
+    try testing.expectEqual(@as(usize, 0), plan.steps.items.len);
+    try testing.expectEqual(false, plan.validated);
+}
+
+test "Plan support optional fields" {
+    const allocator = testing.allocator;
+
+    var plan = try Plan.init(allocator, "Test");
+    defer plan.deinit();
+
+    plan.validated = true;
+    plan.strategy = try allocator.dupe(u8, "Test strategy");
+    plan.validation_notes = try allocator.dupe(u8, "All good");
+
+    try testing.expectEqualStrings("Test strategy", plan.strategy.?);
+    try testing.expectEqualStrings("All good", plan.validation_notes.?);
+}
+
+test "PlanStep create valid structure" {
+    const allocator = testing.allocator;
+
+    var step = try PlanStep.init(allocator, "Test step", 0);
+    defer step.deinit(allocator);
+
+    try testing.expectEqualStrings("Test step", step.description);
+    try testing.expectEqual(@as(usize, 0), step.order);
+    try testing.expectEqual(@as(usize, 0), step.dependencies.len);
+    try testing.expectEqual(@as(usize, 1), step.estimated_complexity);
+    try testing.expectEqual(false, step.executed);
+}
+
+test "PlanStep support optional result field" {
+    const allocator = testing.allocator;
+
+    var step = try PlanStep.init(allocator, "Test step", 0);
+    defer step.deinit(allocator);
+
+    step.executed = true;
+    step.result = try allocator.dupe(u8, "Test result");
+
+    try testing.expectEqualStrings("Test result", step.result.?);
 }

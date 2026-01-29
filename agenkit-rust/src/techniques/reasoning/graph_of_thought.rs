@@ -476,6 +476,7 @@ impl Agent for GraphOfThoughtAgent {
                 AggregatorType::NodeBased => "node_based",
             }),
         );
+        metadata.insert("allow_cycles".to_string(), json!(self.allow_cycles));
 
         let mut message = Message::new("assistant", serde_json::Value::String(final_answer));
         message.metadata = metadata;
@@ -611,4 +612,254 @@ mod tests {
         assert!(!response.metadata.is_empty());
         assert!(response.metadata.contains_key("technique"));
     }
+
+    // Additional comprehensive tests
+
+    #[tokio::test]
+    async fn test_max_nodes_limit() {
+        let mock = Arc::new(MockAgent::new(vec![
+            "1. Premise A\n2. Premise B".to_string(),
+            "1. Thought 1".to_string(),
+            "".to_string(),
+            "SUPPORT".to_string(),
+            "Final conclusion".to_string(),
+        ]));
+        let config = GraphOfThoughtConfig {
+            max_nodes: 3,
+            ..Default::default()
+        };
+        let agent = GraphOfThoughtAgent::new(mock, config);
+
+        let message = Message::new("user", serde_json::Value::String("Test".to_string()));
+        let response = agent.process(message).await.unwrap();
+
+        let num_nodes = response.metadata["num_nodes"].as_u64().unwrap();
+        assert!(num_nodes <= 3);
+    }
+
+    #[tokio::test]
+    async fn test_max_edges_limit() {
+        let mock = Arc::new(MockAgent::new(vec![
+            "1. Premise A".to_string(),
+            "1. Thought 1".to_string(),
+            "".to_string(),
+            "SUPPORT".to_string(),
+            "Final conclusion".to_string(),
+        ]));
+        let config = GraphOfThoughtConfig {
+            max_nodes: 10,
+            max_edges: 2,
+            ..Default::default()
+        };
+        let agent = GraphOfThoughtAgent::new(mock, config);
+
+        let message = Message::new("user", serde_json::Value::String("Test".to_string()));
+        let response = agent.process(message).await.unwrap();
+
+        let num_edges = response.metadata["num_edges"].as_u64().unwrap();
+        assert!(num_edges <= 2);
+    }
+
+    #[tokio::test]
+    async fn test_path_based_aggregation() {
+        let mock = Arc::new(MockAgent::new(vec![
+            "1. Premise A".to_string(),
+            "1. Thought 1".to_string(),
+            "".to_string(),
+            "SUPPORT".to_string(),
+            "Final conclusion".to_string(),
+        ]));
+        let config = GraphOfThoughtConfig {
+            aggregator: AggregatorType::PathBased,
+            ..Default::default()
+        };
+        let agent = GraphOfThoughtAgent::new(mock, config);
+
+        let message = Message::new("user", serde_json::Value::String("Test".to_string()));
+        let response = agent.process(message).await.unwrap();
+
+        assert_eq!(response.metadata["aggregator"].as_str().unwrap(), "path_based");
+        assert!(matches!(response.content, serde_json::Value::String(_)));
+    }
+
+    #[tokio::test]
+    async fn test_node_based_aggregation() {
+        let mock = Arc::new(MockAgent::new(vec![
+            "1. Premise A".to_string(),
+            "1. Thought 1".to_string(),
+            "".to_string(),
+            "SUPPORT".to_string(),
+            "Final conclusion".to_string(),
+        ]));
+        let config = GraphOfThoughtConfig {
+            aggregator: AggregatorType::NodeBased,
+            ..Default::default()
+        };
+        let agent = GraphOfThoughtAgent::new(mock, config);
+
+        let message = Message::new("user", serde_json::Value::String("Test".to_string()));
+        let response = agent.process(message).await.unwrap();
+
+        assert_eq!(response.metadata["aggregator"].as_str().unwrap(), "node_based");
+        assert!(matches!(response.content, serde_json::Value::String(_)));
+    }
+
+    #[tokio::test]
+    async fn test_metadata_completeness() {
+        let mock = Arc::new(MockAgent::new(vec![
+            "1. Premise A".to_string(),
+            "1. Thought 1".to_string(),
+            "".to_string(),
+            "SUPPORT".to_string(),
+            "Final conclusion".to_string(),
+        ]));
+        let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
+
+        let message = Message::new("user", serde_json::Value::String("Test".to_string()));
+        let response = agent.process(message).await.unwrap();
+
+        // Check all required metadata fields
+        assert!(response.metadata.contains_key("technique"));
+        assert_eq!(response.metadata["technique"].as_str().unwrap(), "graph_of_thought");
+        assert!(response.metadata.contains_key("num_nodes"));
+        assert!(response.metadata.contains_key("num_edges"));
+        assert!(response.metadata.contains_key("has_cycles"));
+        assert!(response.metadata.contains_key("aggregator"));
+        assert!(response.metadata.contains_key("allow_cycles"));
+    }
+
+    #[tokio::test]
+    async fn test_allow_cycles_true() {
+        let mock = Arc::new(MockAgent::new(vec![
+            "1. Premise A".to_string(),
+            "1. Thought 1".to_string(),
+            "".to_string(),
+            "SUPPORT".to_string(),
+            "Final conclusion".to_string(),
+        ]));
+        let config = GraphOfThoughtConfig {
+            allow_cycles: true,
+            ..Default::default()
+        };
+        let agent = GraphOfThoughtAgent::new(mock, config);
+
+        let message = Message::new("user", serde_json::Value::String("Test".to_string()));
+        let response = agent.process(message).await.unwrap();
+
+        assert_eq!(response.metadata["allow_cycles"].as_bool().unwrap(), true);
+    }
+
+    #[tokio::test]
+    async fn test_allow_cycles_false() {
+        let mock = Arc::new(MockAgent::new(vec![
+            "1. Premise A".to_string(),
+            "1. Thought 1".to_string(),
+            "".to_string(),
+            "SUPPORT".to_string(),
+            "Final conclusion".to_string(),
+        ]));
+        let config = GraphOfThoughtConfig {
+            allow_cycles: false,
+            ..Default::default()
+        };
+        let agent = GraphOfThoughtAgent::new(mock, config);
+
+        let message = Message::new("user", serde_json::Value::String("Test".to_string()));
+        let response = agent.process(message).await.unwrap();
+
+        assert_eq!(response.metadata["allow_cycles"].as_bool().unwrap(), false);
+    }
+
+    #[tokio::test]
+    async fn test_aggregator_type_equality() {
+        assert_eq!(AggregatorType::PathBased, AggregatorType::PathBased);
+        assert_eq!(AggregatorType::NodeBased, AggregatorType::NodeBased);
+        assert_ne!(AggregatorType::PathBased, AggregatorType::NodeBased);
+    }
+
+    #[tokio::test]
+    async fn test_edge_type_identify_support() {
+        let mock = Arc::new(MockAgent::new(vec!["SUPPORT".to_string()]));
+        let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
+
+        let edge = agent.identify_connection("A", "B").await.unwrap();
+        assert_eq!(edge, Some(EdgeType::Supports));
+    }
+
+    #[tokio::test]
+    async fn test_edge_type_identify_depends() {
+        let mock = Arc::new(MockAgent::new(vec!["DEPEND".to_string()]));
+        let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
+
+        let edge = agent.identify_connection("A", "B").await.unwrap();
+        assert_eq!(edge, Some(EdgeType::DependsOn));
+    }
+
+    #[tokio::test]
+    async fn test_edge_type_identify_contradicts() {
+        let mock = Arc::new(MockAgent::new(vec!["CONTRADICT".to_string()]));
+        let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
+
+        let edge = agent.identify_connection("A", "B").await.unwrap();
+        assert_eq!(edge, Some(EdgeType::Contradicts));
+    }
+
+    #[tokio::test]
+    async fn test_edge_type_identify_refines() {
+        let mock = Arc::new(MockAgent::new(vec!["REFINE".to_string()]));
+        let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
+
+        let edge = agent.identify_connection("A", "B").await.unwrap();
+        assert_eq!(edge, Some(EdgeType::Refines));
+    }
+
+    #[tokio::test]
+    async fn test_edge_type_identify_none() {
+        let mock = Arc::new(MockAgent::new(vec!["UNKNOWN".to_string()]));
+        let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
+
+        let edge = agent.identify_connection("A", "B").await.unwrap();
+        assert_eq!(edge, None);
+    }
+
+    #[tokio::test]
+    async fn test_generate_thoughts_with_limit() {
+        let mock = Arc::new(MockAgent::new(vec![
+            "1. Thought 1\n2. Thought 2\n3. Thought 3\n4. Thought 4".to_string()
+        ]));
+        let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
+
+        let existing = vec!["Premise".to_string()];
+        let thoughts = agent.generate_thoughts("Test", &existing, 2).await.unwrap();
+
+        // Should respect max_new limit
+        assert!(thoughts.len() <= 2);
+    }
+
+    #[tokio::test]
+    async fn test_response_role() {
+        let mock = Arc::new(MockAgent::new(vec![
+            "1. Premise A".to_string(),
+            "1. Thought 1".to_string(),
+            "".to_string(),
+            "SUPPORT".to_string(),
+            "Final conclusion".to_string(),
+        ]));
+        let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
+
+        let message = Message::new("user", serde_json::Value::String("Test".to_string()));
+        let response = agent.process(message).await.unwrap();
+
+        assert_eq!(response.role, "assistant");
+    }
+
+    #[tokio::test]
+    async fn test_default_config_values() {
+        let config = GraphOfThoughtConfig::default();
+        assert_eq!(config.max_nodes, 20);
+        assert_eq!(config.max_edges, 40);
+        assert_eq!(config.aggregator, AggregatorType::PathBased);
+        assert_eq!(config.allow_cycles, false);
+    }
 }
+

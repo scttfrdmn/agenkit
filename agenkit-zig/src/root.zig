@@ -73,6 +73,12 @@ pub const EchoAgent = @import("agent.zig").EchoAgent;
 pub const IntrospectionResult = @import("introspection.zig").IntrospectionResult;
 pub const createDefaultIntrospectionResult = @import("introspection.zig").createDefaultIntrospectionResult;
 
+// Tools
+pub const Tool = @import("tool.zig").Tool;
+pub const ToolError = @import("tool.zig").ToolError;
+pub const ToolResult = @import("tool.zig").ToolResult;
+pub const EchoTool = @import("tool.zig").EchoTool;
+
 // Patterns
 pub const patterns = struct {
     // Sequential pattern

@@ -168,7 +168,8 @@ class Tool(ABC):
         ...     def description(self) -> str:
         ...         return "Search the web"
         ...
-        ...     async def execute(self, query: str) -> ToolResult:
+        ...     async def execute(self, params: dict[str, Any]) -> ToolResult:
+        ...         query = params.get("query", "")
         ...         results = await search_api(query)
         ...         return ToolResult(success=True, data=results)
     """
@@ -196,12 +197,15 @@ class Tool(ABC):
         pass
 
     @abstractmethod
-    async def execute(self, **kwargs: Any) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
         """
         Execute the tool with given parameters.
 
+        As of v0.50.0, tools receive parameters as an explicit dictionary
+        instead of **kwargs. This provides better type safety and clearer APIs.
+
         Args:
-            **kwargs: Tool-specific parameters
+            params: Dictionary of tool-specific parameters
 
         Returns:
             ToolResult with success status and data/error

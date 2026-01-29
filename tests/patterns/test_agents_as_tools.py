@@ -52,7 +52,7 @@ async def test_agent_tool_basic():
         agent=agent, name="code_specialist", description="Expert in programming", input_key="query"
     )
 
-    result = await tool.execute(query="Write a hello function")
+    result = await tool.execute({"query": "Write a hello function"})
 
     assert result == "def hello(): pass"
     assert agent.call_count == 1
@@ -66,7 +66,7 @@ async def test_agent_tool_with_agent_as_tool():
 
     tool = agent_as_tool(agent=agent, name="math_expert", description="Expert in mathematics")
 
-    result = await tool.execute(query="What is 6 * 7?")
+    result = await tool.execute({"query": "What is 6 * 7?"})
 
     assert result == "42"
     assert tool.name == "math_expert"
@@ -85,7 +85,7 @@ async def test_agent_tool_output_format_str():
         output_format="str",
     )
 
-    result = await tool.execute(query="Test")
+    result = await tool.execute({"query": "Test"})
 
     assert isinstance(result, str)
     assert result == "String output"
@@ -104,7 +104,7 @@ async def test_agent_tool_output_format_dict():
         include_metadata=False,
     )
 
-    result = await tool.execute(query="Test")
+    result = await tool.execute({"query": "Test"})
 
     assert isinstance(result, dict)
     assert result["content"] == "Dict output"
@@ -124,7 +124,7 @@ async def test_agent_tool_output_format_dict_with_metadata():
         include_metadata=True,
     )
 
-    result = await tool.execute(query="Test")
+    result = await tool.execute({"query": "Test"})
 
     assert isinstance(result, dict)
     assert result["content"] == "Dict with metadata"
@@ -144,7 +144,7 @@ async def test_agent_tool_output_format_message():
         output_format="message",
     )
 
-    result = await tool.execute(query="Test")
+    result = await tool.execute({"query": "Test"})
 
     assert isinstance(result, Message)
     assert result.content == "Message output"
@@ -163,7 +163,7 @@ async def test_agent_tool_custom_input_key():
         input_key="task",  # Custom key instead of "query"
     )
 
-    result = await tool.execute(task="Do something")
+    result = await tool.execute({"task": "Do something"})
 
     assert result == "Custom key response"
     assert agent.last_message.content == "Do something"
@@ -177,7 +177,7 @@ async def test_agent_tool_missing_input_parameter():
     tool = AgentTool(agent=agent, name="test_tool", description="Test tool", input_key="query")
 
     with pytest.raises(ValueError, match="Missing required parameter 'query'"):
-        await tool.execute(wrong_param="Test")
+        await tool.execute({"wrong_param": "Test"})
 
 
 @pytest.mark.asyncio
@@ -188,17 +188,17 @@ async def test_agent_tool_multiple_calls():
     tool = AgentTool(agent=agent, name="test_tool", description="Test tool")
 
     # Call 1
-    result1 = await tool.execute(query="First call")
+    result1 = await tool.execute({"query": "First call"})
     assert result1 == "Response"
     assert agent.call_count == 1
 
     # Call 2
-    result2 = await tool.execute(query="Second call")
+    result2 = await tool.execute({"query": "Second call"})
     assert result2 == "Response"
     assert agent.call_count == 2
 
     # Call 3
-    result3 = await tool.execute(query="Third call")
+    result3 = await tool.execute({"query": "Third call"})
     assert result3 == "Response"
     assert agent.call_count == 3
 
@@ -257,7 +257,7 @@ async def test_agent_as_tool_all_parameters():
         include_metadata=True,
     )
 
-    result = await tool.execute(task="Do work")
+    result = await tool.execute({"task": "Do work"})
 
     assert isinstance(result, dict)
     assert result["content"] == "Full params response"
@@ -283,12 +283,12 @@ async def test_hierarchical_agent_delegation():
     # (In real usage, supervisor would be a ReActAgent that decides which tool to use)
 
     # Delegate Python task
-    python_result = await python_tool.execute(query="Write Python code")
+    python_result = await python_tool.execute({"query": "Write Python code"})
     assert python_result == "Python code here"
     assert python_agent.call_count == 1
 
     # Delegate Rust task
-    rust_result = await rust_tool.execute(query="Write Rust code")
+    rust_result = await rust_tool.execute({"query": "Write Rust code"})
     assert rust_result == "Rust code here"
     assert rust_agent.call_count == 1
 
@@ -311,7 +311,7 @@ async def test_agent_tool_error_propagation():
     tool = AgentTool(agent=agent, name="error_tool", description="Tool that errors")
 
     with pytest.raises(ValueError, match="Agent error"):
-        await tool.execute(query="Trigger error")
+        await tool.execute({"query": "Trigger error"})
 
 
 @pytest.mark.asyncio
@@ -326,9 +326,9 @@ async def test_agent_tool_different_agents():
     tool3 = agent_as_tool(agent=agent3, name="tool3", description="Tool 3")
 
     # Execute each tool
-    result1 = await tool1.execute(query="Task 1")
-    result2 = await tool2.execute(query="Task 2")
-    result3 = await tool3.execute(query="Task 3")
+    result1 = await tool1.execute({"query": "Task 1"})
+    result2 = await tool2.execute({"query": "Task 2"})
+    result3 = await tool3.execute({"query": "Task 3"})
 
     # Verify correct responses
     assert result1 == "Agent 1 response"
@@ -353,7 +353,7 @@ async def test_agent_tool_unknown_output_format():
         output_format="unknown_format",
     )
 
-    result = await tool.execute(query="Test")
+    result = await tool.execute({"query": "Test"})
 
     # Should default to string
     assert isinstance(result, str)

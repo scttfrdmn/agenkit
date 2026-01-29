@@ -81,7 +81,7 @@ struct GraphOfThoughtConfig {
  * // Access reasoning graph and paths from metadata
  * @endcode
  */
-class GraphOfThoughtAgent : public Agent {
+class GraphOfThoughtAgent : public core::Agent {
 public:
     /**
      * @brief Constructor
@@ -89,34 +89,34 @@ public:
      * @param agent Base agent for generating responses
      * @param config Configuration options
      */
-    GraphOfThoughtAgent(std::shared_ptr<Agent> agent, const GraphOfThoughtConfig& config);
+    GraphOfThoughtAgent(std::shared_ptr<core::Agent> agent, const GraphOfThoughtConfig& config);
 
     std::string name() const override;
     std::vector<std::string> capabilities() const override;
-    std::future<core::Result<core::Message>> process(const core::Message& message) override;
+    std::future<core::Result<core::Message, core::AgentError>> process(core::Message message) override;
 
 private:
-    std::shared_ptr<Agent> agent_;
+    std::shared_ptr<core::Agent> agent_;
     size_t max_nodes_;
     size_t max_edges_;
     AggregatorType aggregator_;
     bool allow_cycles_;
 
     // Helper methods
-    std::future<core::Result<std::string>> llm_call(const std::string& prompt);
+    std::future<core::Result<std::string, core::AgentError>> llm_call(const std::string& prompt);
 
-    std::future<core::Result<std::vector<std::string>>> generate_premises(const std::string& problem);
+    std::future<core::Result<std::vector<std::string>, core::AgentError>> generate_premises(const std::string& problem);
 
-    std::future<core::Result<std::vector<std::string>>> generate_thoughts(
+    std::future<core::Result<std::vector<std::string>, core::AgentError>> generate_thoughts(
         const std::string& problem,
         const std::vector<std::string>& existing_thoughts,
         size_t max_new);
 
-    std::future<core::Result<std::optional<EdgeType>>> identify_connection(
+    std::future<core::Result<std::optional<EdgeType>, core::AgentError>> identify_connection(
         const std::string& thought1,
         const std::string& thought2);
 
-    std::future<core::Result<ReasoningGraph>> build_graph(const std::string& problem);
+    std::future<core::Result<ReasoningGraph, core::AgentError>> build_graph(const std::string& problem);
 
     std::vector<std::vector<size_t>> find_reasoning_paths(const ReasoningGraph& graph);
 

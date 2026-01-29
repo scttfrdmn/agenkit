@@ -155,6 +155,9 @@ add_library(agenkit
     src/techniques/reasoning/least_to_most.cpp
     src/techniques/reasoning/reasoning_tree.cpp
     src/techniques/reasoning/tree_of_thought.cpp
+    src/techniques/reasoning/plan_and_solve.cpp
+    src/techniques/reasoning/reasoning_graph.cpp
+    src/techniques/reasoning/graph_of_thought.cpp
     src/infrastructure/validation.cpp
     src/infrastructure/permissions.cpp
     src/infrastructure/anomaly.cpp

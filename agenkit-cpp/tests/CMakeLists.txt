@@ -205,6 +205,16 @@ add_executable(test_tree_of_thought techniques/reasoning/test_tree_of_thought.cp
 target_link_libraries(test_tree_of_thought agenkit gtest_main)
 add_test(NAME tree_of_thought_tests COMMAND test_tree_of_thought)
 
+# Technique tests - Plan-and-Solve
+add_executable(test_plan_and_solve techniques/reasoning/test_plan_and_solve.cpp)
+target_link_libraries(test_plan_and_solve agenkit gtest_main)
+add_test(NAME plan_and_solve_tests COMMAND test_plan_and_solve)
+
+# Technique tests - Graph-of-Thought
+add_executable(test_graph_of_thought techniques/reasoning/test_graph_of_thought.cpp)
+target_link_libraries(test_graph_of_thought agenkit gtest_main)
+add_test(NAME graph_of_thought_tests COMMAND test_graph_of_thought)
+
 # Infrastructure tests - Safety
 add_executable(test_safety infrastructure/test_safety.cpp)
 target_link_libraries(test_safety agenkit gtest_main)

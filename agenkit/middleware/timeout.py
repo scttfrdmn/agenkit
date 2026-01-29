@@ -2,26 +2,67 @@
 
 import asyncio
 import time
-from dataclasses import dataclass
+import warnings
+from dataclasses import dataclass, field
 
 from agenkit.interfaces import Agent, Message
 
 
 @dataclass
 class TimeoutConfig:
-    """Configuration for timeout behavior."""
+    """Configuration for timeout behavior.
 
-    timeout: float = 30.0  # Default request timeout in seconds
-    method_timeouts: dict[str, float] | None = None  # Method-specific timeouts
+    Note: As of v0.50.0, timeout values are specified in milliseconds using
+    timeout_ms. The old 'timeout' parameter (in seconds) is deprecated and
+    will be removed in v0.51.0.
+    """
+
+    timeout_ms: int = 30000  # Default request timeout in milliseconds
+    method_timeouts_ms: dict[str, int] | None = None  # Method-specific timeouts in milliseconds
+
+    # Deprecated - will be removed in v0.51.0
+    timeout: float | None = field(default=None, repr=False)  # Deprecated: use timeout_ms
+    method_timeouts: dict[str, float] | None = field(default=None, repr=False)  # Deprecated
 
     def __post_init__(self):
-        """Validate configuration."""
-        if self.timeout <= 0:
-            raise ValueError("timeout must be positive")
-        if self.method_timeouts:
-            for method, method_timeout in self.method_timeouts.items():
-                if method_timeout <= 0:
-                    raise ValueError(f"timeout for method '{method}' must be positive")
+        """Validate configuration and handle deprecated parameters."""
+        # Handle deprecated 'timeout' parameter
+        if self.timeout is not None:
+            warnings.warn(
+                "The 'timeout' parameter (in seconds) is deprecated and will be removed in v0.51.0. "
+                "Use 'timeout_ms' (in milliseconds) instead. "
+                f"To migrate: timeout_ms={int(self.timeout * 1000)}",
+                DeprecationWarning,
+                stacklevel=3
+            )
+            # Convert seconds to milliseconds if timeout_ms not explicitly set
+            if self.timeout_ms == 30000:  # Default value
+                self.timeout_ms = int(self.timeout * 1000)
+
+        # Handle deprecated 'method_timeouts' parameter
+        if self.method_timeouts is not None:
+            warnings.warn(
+                "The 'method_timeouts' parameter (in seconds) is deprecated and will be removed in v0.51.0. "
+                "Use 'method_timeouts_ms' (in milliseconds) instead.",
+                DeprecationWarning,
+                stacklevel=3
+            )
+            if self.method_timeouts_ms is None:
+                # Convert all method timeouts from seconds to milliseconds
+                self.method_timeouts_ms = {
+                    method: int(timeout_s * 1000)
+                    for method, timeout_s in self.method_timeouts.items()
+                }
+
+        # Validate timeout_ms
+        if self.timeout_ms <= 0:
+            raise ValueError("timeout_ms must be positive")
+
+        # Validate method_timeouts_ms
+        if self.method_timeouts_ms:
+            for method, method_timeout_ms in self.method_timeouts_ms.items():
+                if method_timeout_ms <= 0:
+                    raise ValueError(f"timeout_ms for method '{method}' must be positive")
 
 
 class TimeoutError(Exception):
@@ -89,17 +130,17 @@ class TimeoutDecorator(Agent):
         ```python
         from agenkit.middleware import TimeoutConfig, TimeoutDecorator, TimeoutError
 
-        # Create agent with 10-second timeout
+        # Create agent with 10-second timeout (10000ms)
         agent = MyAgent()
         timeout_agent = TimeoutDecorator(
             agent,
-            TimeoutConfig(timeout=10.0)
+            TimeoutConfig(timeout_ms=10000)
         )
 
         try:
             result = await timeout_agent.process(message)
         except TimeoutError:
-            print("Request timed out after 10 seconds")
+            print("Request timed out after 10000ms")
         ```
     """
 
@@ -141,16 +182,19 @@ class TimeoutDecorator(Agent):
             message: The message to determine timeout for
 
         Returns:
-            Timeout in seconds
+            Timeout in seconds (for asyncio.wait_for compatibility)
         """
-        if not self._config.method_timeouts:
-            return self._config.timeout
+        # Get timeout in milliseconds
+        timeout_ms = self._config.timeout_ms
 
-        # Try to determine method from message metadata
-        method = message.metadata.get("method") or message.metadata.get("operation", "process")
+        if self._config.method_timeouts_ms:
+            # Try to determine method from message metadata
+            method = message.metadata.get("method") or message.metadata.get("operation", "process")
+            # Return method-specific timeout if configured, otherwise default
+            timeout_ms = self._config.method_timeouts_ms.get(method, timeout_ms)
 
-        # Return method-specific timeout if configured, otherwise default
-        return self._config.method_timeouts.get(method, self._config.timeout)
+        # Convert milliseconds to seconds for asyncio.wait_for
+        return timeout_ms / 1000.0
 
     async def process(self, message: Message) -> Message:
         """Process a message with timeout protection.
@@ -189,7 +233,8 @@ class TimeoutDecorator(Agent):
             async with self._lock:
                 self._metrics.record_timeout(duration)
 
-            raise TimeoutError(f"Request to agent '{self.name}' timed out after {timeout}s")
+            timeout_ms = int(timeout * 1000)
+            raise TimeoutError(f"Request to agent '{self.name}' timed out after {timeout_ms}ms")
 
         except Exception:
             duration = time.time() - start_time
@@ -250,8 +295,9 @@ class TimeoutDecorator(Agent):
                 async with self._lock:
                     self._metrics.record_timeout(duration)
 
+                timeout_ms = int(timeout * 1000)
                 raise TimeoutError(
-                    f"Streaming request to agent '{self.name}' timed out after {timeout}s"
+                    f"Streaming request to agent '{self.name}' timed out after {timeout_ms}ms"
                 )
 
         except TimeoutError:

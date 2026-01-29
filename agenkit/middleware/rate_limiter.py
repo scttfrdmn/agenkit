@@ -2,25 +2,45 @@
 
 import asyncio
 import time
+import warnings
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from agenkit.interfaces import Agent, Message
 
 
 @dataclass
 class RateLimiterConfig:
-    """Configuration for rate limiter behavior."""
+    """Configuration for rate limiter behavior.
+
+    Note: As of v0.50.0, timeout values are specified in milliseconds using
+    max_wait_ms. The old 'max_wait_timeout' parameter (in seconds) is deprecated
+    and will be removed in v0.51.0.
+    """
 
     rate: float = 10.0  # Tokens per second
     capacity: int = 10  # Maximum burst capacity
     tokens_per_request: int = 1  # Tokens consumed per request
-    max_wait_timeout: float | None = (
-        None  # Maximum seconds to wait for tokens (None = wait indefinitely)
-    )
+    max_wait_ms: int | None = None  # Maximum milliseconds to wait for tokens (None = wait indefinitely)
+
+    # Deprecated - will be removed in v0.51.0
+    max_wait_timeout: float | None = field(default=None, repr=False)  # Deprecated: use max_wait_ms
 
     def __post_init__(self):
-        """Validate configuration."""
+        """Validate configuration and handle deprecated parameters."""
+        # Handle deprecated 'max_wait_timeout' parameter
+        if self.max_wait_timeout is not None:
+            warnings.warn(
+                "The 'max_wait_timeout' parameter (in seconds) is deprecated and will be removed in v0.51.0. "
+                "Use 'max_wait_ms' (in milliseconds) instead. "
+                f"To migrate: max_wait_ms={int(self.max_wait_timeout * 1000)}",
+                DeprecationWarning,
+                stacklevel=3
+            )
+            if self.max_wait_ms is None:
+                self.max_wait_ms = int(self.max_wait_timeout * 1000)
+
+        # Validate configuration
         if self.rate <= 0:
             raise ValueError("rate must be positive")
         if self.capacity < 1:
@@ -29,8 +49,8 @@ class RateLimiterConfig:
             raise ValueError("tokens_per_request must be at least 1")
         if self.tokens_per_request > self.capacity:
             raise ValueError("tokens_per_request cannot exceed capacity")
-        if self.max_wait_timeout is not None and self.max_wait_timeout <= 0:
-            raise ValueError("max_wait_timeout must be positive")
+        if self.max_wait_ms is not None and self.max_wait_ms <= 0:
+            raise ValueError("max_wait_ms must be positive")
 
 
 class RateLimitError(Exception):
@@ -137,20 +157,20 @@ class RateLimiterDecorator(Agent):
                     f"only {self._tokens:.2f} available"
                 )
 
-            # Calculate wait time for tokens
+            # Calculate wait time for tokens (in seconds for asyncio.sleep)
             tokens_deficit = tokens_needed - self._tokens
             wait_time = tokens_deficit / self._config.rate
 
-            # Check if wait time exceeds max_wait_timeout
-            if (
-                self._config.max_wait_timeout is not None
-                and wait_time > self._config.max_wait_timeout
-            ):
-                raise RateLimitError(
-                    f"Rate limit exceeded: would need to wait {wait_time:.2f}s "
-                    f"for {tokens_needed} tokens, but max_wait_timeout is "
-                    f"{self._config.max_wait_timeout:.2f}s"
-                )
+            # Check if wait time exceeds max_wait_ms
+            if self._config.max_wait_ms is not None:
+                max_wait_seconds = self._config.max_wait_ms / 1000.0
+                if wait_time > max_wait_seconds:
+                    wait_time_ms = int(wait_time * 1000)
+                    raise RateLimitError(
+                        f"Rate limit exceeded: would need to wait {wait_time_ms}ms "
+                        f"for {tokens_needed} tokens, but max_wait_ms is "
+                        f"{self._config.max_wait_ms}ms"
+                    )
 
         # Wait outside the lock to allow other operations
         await asyncio.sleep(wait_time)

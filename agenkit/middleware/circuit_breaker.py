@@ -2,6 +2,7 @@
 
 import asyncio
 import time
+import warnings
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -18,23 +19,57 @@ class CircuitState(Enum):
 
 @dataclass
 class CircuitBreakerConfig:
-    """Configuration for circuit breaker behavior."""
+    """Configuration for circuit breaker behavior.
+
+    Note: As of v0.50.0, timeout values are specified in milliseconds using
+    recovery_timeout_ms and timeout_ms. The old parameters (in seconds) are
+    deprecated and will be removed in v0.51.0.
+    """
 
     failure_threshold: int = 5  # Number of failures before opening
-    recovery_timeout: float = 60.0  # Seconds before attempting recovery
+    recovery_timeout_ms: int = 60000  # Milliseconds before attempting recovery
     success_threshold: int = 2  # Successful calls in half-open to close
-    timeout: float = 30.0  # Request timeout in seconds
+    timeout_ms: int = 30000  # Request timeout in milliseconds
+
+    # Deprecated - will be removed in v0.51.0
+    recovery_timeout: float | None = field(default=None, repr=False)  # Deprecated: use recovery_timeout_ms
+    timeout: float | None = field(default=None, repr=False)  # Deprecated: use timeout_ms
 
     def __post_init__(self):
-        """Validate configuration."""
+        """Validate configuration and handle deprecated parameters."""
+        # Handle deprecated 'recovery_timeout' parameter
+        if self.recovery_timeout is not None:
+            warnings.warn(
+                "The 'recovery_timeout' parameter (in seconds) is deprecated and will be removed in v0.51.0. "
+                "Use 'recovery_timeout_ms' (in milliseconds) instead. "
+                f"To migrate: recovery_timeout_ms={int(self.recovery_timeout * 1000)}",
+                DeprecationWarning,
+                stacklevel=3
+            )
+            if self.recovery_timeout_ms == 60000:  # Default value
+                self.recovery_timeout_ms = int(self.recovery_timeout * 1000)
+
+        # Handle deprecated 'timeout' parameter
+        if self.timeout is not None:
+            warnings.warn(
+                "The 'timeout' parameter (in seconds) is deprecated and will be removed in v0.51.0. "
+                "Use 'timeout_ms' (in milliseconds) instead. "
+                f"To migrate: timeout_ms={int(self.timeout * 1000)}",
+                DeprecationWarning,
+                stacklevel=3
+            )
+            if self.timeout_ms == 30000:  # Default value
+                self.timeout_ms = int(self.timeout * 1000)
+
+        # Validate configuration
         if self.failure_threshold < 1:
             raise ValueError("failure_threshold must be at least 1")
-        if self.recovery_timeout <= 0:
-            raise ValueError("recovery_timeout must be positive")
+        if self.recovery_timeout_ms <= 0:
+            raise ValueError("recovery_timeout_ms must be positive")
         if self.success_threshold < 1:
             raise ValueError("success_threshold must be at least 1")
-        if self.timeout <= 0:
-            raise ValueError("timeout must be positive")
+        if self.timeout_ms <= 0:
+            raise ValueError("timeout_ms must be positive")
 
 
 class CircuitBreakerError(Exception):
@@ -137,7 +172,8 @@ class CircuitBreakerDecorator(Agent):
             return False
 
         elapsed = time.time() - self._last_failure_time
-        return elapsed >= self._config.recovery_timeout
+        recovery_timeout_seconds = self._config.recovery_timeout_ms / 1000.0
+        return elapsed >= recovery_timeout_seconds
 
     async def _on_success(self) -> None:
         """Handle successful request."""
@@ -201,8 +237,9 @@ class CircuitBreakerDecorator(Agent):
 
         # Attempt request with timeout
         try:
+            timeout_seconds = self._config.timeout_ms / 1000.0
             result = await asyncio.wait_for(
-                self._agent.process(message), timeout=self._config.timeout
+                self._agent.process(message), timeout=timeout_seconds
             )
 
             async with self._lock:
@@ -213,7 +250,7 @@ class CircuitBreakerDecorator(Agent):
         except asyncio.TimeoutError as e:
             async with self._lock:
                 await self._on_failure()
-            raise TimeoutError(f"Request exceeded timeout of {self._config.timeout}s") from e
+            raise TimeoutError(f"Request exceeded timeout of {self._config.timeout_ms}ms") from e
 
         except Exception:
             async with self._lock:

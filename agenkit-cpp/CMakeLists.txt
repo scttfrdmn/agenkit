@@ -114,6 +114,10 @@ add_library(agenkit
     src/adapters/litellm_agent.cpp
     src/adapters/gemini_agent.cpp
     src/adapters/bedrock_agent.cpp
+    src/composition/sequential.cpp
+    src/composition/parallel.cpp
+    src/composition/conditional.cpp
+    src/composition/fallback.cpp
     src/transports/http_agent.cpp
     src/transports/http_server.cpp
     src/transports/grpc_agent.cpp

@@ -30,8 +30,13 @@ export interface RateLimiterConfig {
   tokensPerRequest?: number;
 
   /**
-   * Maximum time in ms to wait for tokens (default: 0, meaning wait indefinitely).
+   * Maximum time in milliseconds to wait for tokens (default: 0, meaning wait indefinitely).
    * If set and wait time exceeds this value, immediately reject with RateLimitError.
+   */
+  maxWaitTimeoutMs?: number;
+
+  /**
+   * @deprecated Use maxWaitTimeoutMs instead. Will be removed in v0.51.0.
    */
   maxWaitTimeout?: number;
 }
@@ -58,6 +63,16 @@ export class RateLimitError extends Error {
 }
 
 /**
+ * Internal configuration after applying defaults (non-deprecated fields only).
+ */
+interface InternalRateLimiterConfig {
+  rate: number;
+  capacity: number;
+  tokensPerRequest: number;
+  maxWaitTimeoutMs: number;
+}
+
+/**
  * Agent decorator that implements rate limiting using token bucket algorithm.
  *
  * Example:
@@ -74,7 +89,7 @@ export class RateLimiterDecorator implements Agent {
   readonly capabilities?: string[];
 
   private agent: Agent;
-  private config: Required<RateLimiterConfig>;
+  private config: InternalRateLimiterConfig;
   private tokens: number;
   private lastUpdate: number;
   private lock = Promise.resolve();
@@ -85,12 +100,22 @@ export class RateLimiterDecorator implements Agent {
     this.name = agent.name;
     this.capabilities = agent.capabilities;
 
+    // Handle deprecated 'maxWaitTimeout' field
+    let maxWaitTimeoutMs = config?.maxWaitTimeoutMs ?? 0;
+    if (config?.maxWaitTimeout !== undefined && config?.maxWaitTimeoutMs === undefined) {
+      console.warn(
+        'RateLimiterConfig.maxWaitTimeout is deprecated. Use maxWaitTimeoutMs instead. ' +
+          'The maxWaitTimeout field will be removed in v0.51.0.',
+      );
+      maxWaitTimeoutMs = config.maxWaitTimeout;
+    }
+
     // Apply defaults
     this.config = {
       rate: config?.rate ?? 10.0,
       capacity: config?.capacity ?? 10,
       tokensPerRequest: config?.tokensPerRequest ?? 1,
-      maxWaitTimeout: config?.maxWaitTimeout ?? 0,
+      maxWaitTimeoutMs,
     };
 
     // Validate configuration
@@ -176,10 +201,10 @@ export class RateLimiterDecorator implements Agent {
       const waitTime = (tokensDeficit / this.config.rate) * 1000; // Convert to milliseconds
 
       // Check if wait time exceeds max wait timeout
-      if (this.config.maxWaitTimeout > 0 && waitTime > this.config.maxWaitTimeout) {
+      if (this.config.maxWaitTimeoutMs > 0 && waitTime > this.config.maxWaitTimeoutMs) {
         throw new RateLimitError(
           `Rate limit exceeded: would need to wait ${waitTime.toFixed(0)}ms, ` +
-            `but max wait timeout is ${this.config.maxWaitTimeout}ms`,
+            `but max wait timeout is ${this.config.maxWaitTimeoutMs}ms`,
         );
       }
 

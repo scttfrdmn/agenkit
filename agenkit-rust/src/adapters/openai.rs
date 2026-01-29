@@ -156,10 +156,45 @@ impl OpenAIAgent {
     /// * `config` - Configuration including API key and model
     ///
     /// # Panics
-    /// Panics if API key is empty
+    /// Panics if API key is empty or if parameters are out of valid range
     pub fn new(config: OpenAIConfig) -> Self {
+        // Validate API key
         if config.api_key.is_empty() {
             panic!("OpenAI API key cannot be empty");
+        }
+
+        // Validate temperature (0-2)
+        if !(0.0..=2.0).contains(&config.temperature) {
+            panic!(
+                "temperature must be between 0 and 2, got {}",
+                config.temperature
+            );
+        }
+
+        // Validate max_tokens (must be positive)
+        if config.max_tokens <= 0 {
+            panic!("max_tokens must be positive, got {}", config.max_tokens);
+        }
+
+        // Validate top_p (0-1)
+        if !(0.0..=1.0).contains(&config.top_p) {
+            panic!("top_p must be between 0 and 1, got {}", config.top_p);
+        }
+
+        // Validate frequency_penalty (-2 to 2)
+        if !(-2.0..=2.0).contains(&config.frequency_penalty) {
+            panic!(
+                "frequency_penalty must be between -2 and 2, got {}",
+                config.frequency_penalty
+            );
+        }
+
+        // Validate presence_penalty (-2 to 2)
+        if !(-2.0..=2.0).contains(&config.presence_penalty) {
+            panic!(
+                "presence_penalty must be between -2 and 2, got {}",
+                config.presence_penalty
+            );
         }
 
         #[cfg(feature = "native")]

@@ -7,6 +7,7 @@ package llm
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
@@ -175,22 +176,34 @@ type CallOptions struct {
 // CallOption is a functional option for configuring LLM calls.
 type CallOption func(*CallOptions)
 
-// WithTemperature sets the sampling temperature (typically 0.0-2.0).
+// WithTemperature sets the sampling temperature (0.0-2.0).
+// Panics if temperature is outside the valid range.
 func WithTemperature(temperature float64) CallOption {
+	if temperature < 0.0 || temperature > 2.0 {
+		panic(fmt.Sprintf("temperature must be between 0 and 2, got %v", temperature))
+	}
 	return func(opts *CallOptions) {
 		opts.Temperature = &temperature
 	}
 }
 
 // WithMaxTokens sets the maximum number of tokens to generate.
+// Panics if maxTokens is not positive.
 func WithMaxTokens(maxTokens int) CallOption {
+	if maxTokens <= 0 {
+		panic(fmt.Sprintf("max_tokens must be positive, got %d", maxTokens))
+	}
 	return func(opts *CallOptions) {
 		opts.MaxTokens = &maxTokens
 	}
 }
 
-// WithTopP sets the nucleus sampling parameter.
+// WithTopP sets the nucleus sampling parameter (0.0-1.0).
+// Panics if topP is outside the valid range.
 func WithTopP(topP float64) CallOption {
+	if topP < 0.0 || topP > 1.0 {
+		panic(fmt.Sprintf("top_p must be between 0 and 1, got %v", topP))
+	}
 	return func(opts *CallOptions) {
 		opts.TopP = &topP
 	}

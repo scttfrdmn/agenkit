@@ -159,6 +159,9 @@ class BedrockLLM(LLM):
             >>> print(response.content)
             >>> print(response.metadata["usage"])
         """
+        # Validate parameters
+        self._validate_llm_params(temperature, max_tokens, **kwargs)
+
         # Convert Agenkit Messages to Bedrock format
         bedrock_messages, system_prompts = self._convert_messages(messages)
 
@@ -256,6 +259,9 @@ class BedrockLLM(LLM):
             >>> async for chunk in llm.stream(messages):
             ...     print(chunk.content, end="", flush=True)
         """
+        # Validate parameters
+        self._validate_llm_params(temperature, max_tokens, **kwargs)
+
         # Convert messages
         bedrock_messages, system_prompts = self._convert_messages(messages)
 

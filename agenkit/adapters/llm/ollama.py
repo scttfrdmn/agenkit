@@ -114,6 +114,9 @@ class OllamaLLM(LLM):
             >>> response = await llm.complete(messages, temperature=0.2)
             >>> print(response.content)
         """
+        # Validate parameters
+        self._validate_llm_params(temperature, max_tokens, **kwargs)
+
         # Convert Agenkit Messages to Ollama format
         ollama_messages = self._convert_messages(messages)
 
@@ -184,6 +187,9 @@ class OllamaLLM(LLM):
             >>> async for chunk in llm.stream(messages):
             ...     print(chunk.content, end="", flush=True)
         """
+        # Validate parameters
+        self._validate_llm_params(temperature, max_tokens, **kwargs)
+
         # Convert messages
         ollama_messages = self._convert_messages(messages)
 

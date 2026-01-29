@@ -123,6 +123,9 @@ class LiteLLMLLM(LLM):
             >>> response = await llm.complete(messages, temperature=0.2)
             >>> print(response.content)
         """
+        # Validate parameters
+        self._validate_llm_params(temperature, max_tokens, **kwargs)
+
         # Convert Agenkit Messages to LiteLLM format
         litellm_messages = self._convert_messages(messages)
 
@@ -183,6 +186,9 @@ class LiteLLMLLM(LLM):
             >>> async for chunk in llm.stream(messages):
             ...     print(chunk.content, end="", flush=True)
         """
+        # Validate parameters
+        self._validate_llm_params(temperature, max_tokens, **kwargs)
+
         # Convert messages
         litellm_messages = self._convert_messages(messages)
 

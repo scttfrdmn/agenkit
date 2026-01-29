@@ -248,6 +248,9 @@ class OpenAICompatibleLLM(LLM):
             >>> async for chunk in llm.stream(messages):
             ...     print(chunk.content, end="", flush=True)
         """
+        # Validate parameters
+        self._validate_llm_params(temperature, max_tokens, **kwargs)
+
         # Convert Agenkit Messages to OpenAI format
         openai_messages = self._convert_messages(messages)
 
@@ -322,6 +325,9 @@ class OpenAICompatibleLLM(LLM):
             Not all OpenAI-compatible services support streaming. If the service
             doesn't support it, you'll get an error from the underlying service.
         """
+        # Validate parameters
+        self._validate_llm_params(temperature, max_tokens, **kwargs)
+
         # Convert messages
         openai_messages = self._convert_messages(messages)
 

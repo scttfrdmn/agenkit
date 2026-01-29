@@ -149,6 +149,10 @@ void RedisMemory::store(
         }
     }
 #else
+    (void)session_id;
+    (void)role;
+    (void)content;
+    (void)metadata;
     throw std::runtime_error("Redis support not enabled");
 #endif
 }
@@ -242,6 +246,11 @@ std::vector<RedisMessage> RedisMemory::retrieve(
     freeReplyObject(reply);
     return filtered;
 #else
+    (void)session_id;
+    (void)limit;
+    (void)time_range;
+    (void)importance_threshold;
+    (void)tags;
     throw std::runtime_error("Redis support not enabled");
 #endif
 }
@@ -283,6 +292,7 @@ void RedisMemory::clear(const std::string& session_id) {
         freeReplyObject(reply);
     }
 #else
+    (void)session_id;
     throw std::runtime_error("Redis support not enabled");
 #endif
 }
@@ -306,6 +316,7 @@ size_t RedisMemory::get_session_count(const std::string& session_id) {
     freeReplyObject(reply);
     return count;
 #else
+    (void)session_id;
     throw std::runtime_error("Redis support not enabled");
 #endif
 }

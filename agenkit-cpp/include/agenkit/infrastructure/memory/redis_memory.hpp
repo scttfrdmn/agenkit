@@ -171,7 +171,7 @@ private:
     static double get_timestamp();
 
     std::string host_;
-    int port_;
+    [[maybe_unused]] int port_;
     int64_t ttl_;
     std::string key_prefix_;
 

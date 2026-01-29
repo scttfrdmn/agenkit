@@ -12,6 +12,7 @@
 #include <variant>
 #include <stdexcept>
 #include <utility>
+#include <optional>
 
 namespace agenkit {
 namespace core {
@@ -151,6 +152,106 @@ private:
 
     Result(E error, bool /* err_marker */)
         : value_(std::move(error))
+    {}
+};
+
+/**
+ * @brief Specialization of Result for void type
+ *
+ * This specialization allows Result<void, E> to represent operations
+ * that don't return a value but may fail.
+ *
+ * @tparam E Error type for failure case
+ *
+ * @example
+ * @code
+ * Result<void, std::string> validate(int value) {
+ *     if (value < 0) {
+ *         return Result<void, std::string>::err("value must be positive");
+ *     }
+ *     return Result<void, std::string>::ok();
+ * }
+ * @endcode
+ */
+template<typename E>
+class Result<void, E> {
+public:
+    /**
+     * @brief Create a successful result (void)
+     * @return Result indicating success
+     */
+    static Result ok() {
+        return Result(true);
+    }
+
+    /**
+     * @brief Create an error result
+     * @param error Error value
+     * @return Result containing the error
+     */
+    static Result err(E error) {
+        return Result(std::move(error));
+    }
+
+    /**
+     * @brief Check if result is ok
+     * @return true if ok, false if error
+     */
+    bool is_ok() const {
+        return !error_.has_value();
+    }
+
+    /**
+     * @brief Check if result is error
+     * @return true if error, false if ok
+     */
+    bool is_err() const {
+        return error_.has_value();
+    }
+
+    /**
+     * @brief Throw if result is error (void version)
+     * @throws std::logic_error if result is error
+     */
+    void unwrap() const {
+        if (is_err()) {
+            throw std::logic_error("called unwrap() on an error Result");
+        }
+    }
+
+    /**
+     * @brief Get error (throws if ok)
+     * @return Reference to contained error
+     * @throws std::logic_error if result is ok
+     */
+    E& unwrap_err() {
+        if (is_ok()) {
+            throw std::logic_error("called unwrap_err() on an ok Result");
+        }
+        return error_.value();
+    }
+
+    /**
+     * @brief Get error (const version)
+     * @return Const reference to contained error
+     * @throws std::logic_error if result is ok
+     */
+    const E& unwrap_err() const {
+        if (is_ok()) {
+            throw std::logic_error("called unwrap_err() on an ok Result");
+        }
+        return error_.value();
+    }
+
+private:
+    std::optional<E> error_;
+
+    explicit Result(bool /* ok_marker */)
+        : error_(std::nullopt)
+    {}
+
+    explicit Result(E error)
+        : error_(std::move(error))
     {}
 };
 

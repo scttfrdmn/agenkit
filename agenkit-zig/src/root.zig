@@ -79,6 +79,12 @@ pub const ToolError = @import("tool.zig").ToolError;
 pub const ToolResult = @import("tool.zig").ToolResult;
 pub const EchoTool = @import("tool.zig").EchoTool;
 
+// Composition (minimal building blocks)
+pub const composition = struct {
+    pub const SequentialAgent = @import("composition.zig").SequentialAgent;
+    pub const FallbackAgent = @import("composition.zig").FallbackAgent;
+};
+
 // Patterns
 pub const patterns = struct {
     // Sequential pattern

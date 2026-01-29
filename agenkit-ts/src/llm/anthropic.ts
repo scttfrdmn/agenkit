@@ -65,8 +65,21 @@ export class AnthropicAgent implements Agent {
     this.name = config.name || 'claude';
     this.client = new Anthropic({ apiKey: config.apiKey });
     this.model = config.model || 'claude-sonnet-4-20250514';
-    this.temperature = config.temperature || 1.0;
-    this.maxTokens = config.maxTokens || 4096;
+
+    // Validate temperature
+    const temperature = config.temperature !== undefined ? config.temperature : 1.0;
+    if (temperature < 0 || temperature > 2) {
+      throw new Error(`temperature must be between 0 and 2, got ${temperature}`);
+    }
+    this.temperature = temperature;
+
+    // Validate maxTokens
+    const maxTokens = config.maxTokens !== undefined ? config.maxTokens : 4096;
+    if (maxTokens <= 0) {
+      throw new Error(`maxTokens must be positive, got ${maxTokens}`);
+    }
+    this.maxTokens = maxTokens;
+
     this.options = config.options || {};
   }
 

@@ -65,8 +65,22 @@ export class OpenAIAgent implements Agent {
     this.name = config.name || 'openai';
     this.client = new OpenAI({ apiKey: config.apiKey });
     this.model = config.model || 'gpt-4o';
-    this.temperature = config.temperature || 0.7;
-    this.maxTokens = config.maxTokens;
+
+    // Validate temperature
+    const temperature = config.temperature !== undefined ? config.temperature : 0.7;
+    if (temperature < 0 || temperature > 2) {
+      throw new Error(`temperature must be between 0 and 2, got ${temperature}`);
+    }
+    this.temperature = temperature;
+
+    // Validate maxTokens if provided
+    if (config.maxTokens !== undefined) {
+      if (config.maxTokens <= 0) {
+        throw new Error(`maxTokens must be positive, got ${config.maxTokens}`);
+      }
+      this.maxTokens = config.maxTokens;
+    }
+
     this.options = config.options || {};
   }
 

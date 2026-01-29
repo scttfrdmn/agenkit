@@ -117,6 +117,23 @@ export { OpenAIAgent, OpenAIConfig } from './llm/openai';
 export { AnthropicAgent, AnthropicConfig } from './llm/anthropic';
 export { OpenAICompatibleAgent, OpenAICompatibleConfig } from './llm/openai-compatible';
 
+// Composition Patterns
+export { SequentialAgent } from './composition/sequential';
+export { ParallelAgent, type AgentResult } from './composition/parallel';
+export {
+  ConditionalAgent,
+  type Condition,
+  type ConditionalRoute,
+  contentContains,
+  roleEquals,
+  metadataHasKey,
+  metadataEquals,
+  andConditions,
+  orConditions,
+  notCondition,
+} from './composition/conditional';
+export { FallbackAgent } from './composition/fallback';
+
 // Patterns
 export {
   ReflectionAgent,

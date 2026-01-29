@@ -327,8 +327,8 @@ type PerUserRateLimiterConfig struct {
 
 	// UserIDExtractor is a function that extracts the user ID from a message.
 	// If not provided, defaults to checking message.Metadata["user_id"].
-	// The function should return an empty string for anonymous/unknown users.
-	UserIDExtractor func(*agenkit.Message) string
+	// The function should return nil for anonymous/unknown users.
+	UserIDExtractor func(*agenkit.Message) *string
 }
 
 // DefaultPerUserRateLimiterConfig returns a per-user rate limiter config with sensible defaults.
@@ -337,14 +337,14 @@ func DefaultPerUserRateLimiterConfig() PerUserRateLimiterConfig {
 		Rate:             10.0,
 		Capacity:         10,
 		TokensPerRequest: 1,
-		UserIDExtractor: func(msg *agenkit.Message) string {
+		UserIDExtractor: func(msg *agenkit.Message) *string {
 			if msg.Metadata == nil {
-				return ""
+				return nil
 			}
 			if userID, ok := msg.Metadata["user_id"].(string); ok {
-				return userID
+				return &userID
 			}
-			return ""
+			return nil
 		},
 	}
 }
@@ -414,14 +414,14 @@ func NewPerUserRateLimiterDecorator(agent agenkit.Agent, config PerUserRateLimit
 		config.TokensPerRequest = 1
 	}
 	if config.UserIDExtractor == nil {
-		config.UserIDExtractor = func(msg *agenkit.Message) string {
+		config.UserIDExtractor = func(msg *agenkit.Message) *string {
 			if msg.Metadata == nil {
-				return ""
+				return nil
 			}
 			if userID, ok := msg.Metadata["user_id"].(string); ok {
-				return userID
+				return &userID
 			}
-			return ""
+			return nil
 		}
 	}
 
@@ -571,10 +571,13 @@ func (r *PerUserRateLimiterDecorator) Process(ctx context.Context, message *agen
 	r.metrics.mu.Unlock()
 
 	// Extract user ID
-	userID := r.config.UserIDExtractor(message)
-	if userID == "" {
+	userIDPtr := r.config.UserIDExtractor(message)
+	var userID string
+	if userIDPtr == nil {
 		// Fallback to anonymous user
 		userID = "anonymous"
+	} else {
+		userID = *userIDPtr
 	}
 
 	// Acquire tokens for this user
@@ -611,9 +614,12 @@ func (r *PerUserRateLimiterDecorator) Stream(ctx context.Context, message *agenk
 	}
 
 	// Extract user ID
-	userID := r.config.UserIDExtractor(message)
-	if userID == "" {
+	userIDPtr := r.config.UserIDExtractor(message)
+	var userID string
+	if userIDPtr == nil {
 		userID = "anonymous"
+	} else {
+		userID = *userIDPtr
 	}
 
 	// Acquire tokens for this user before streaming

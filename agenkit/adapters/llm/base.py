@@ -53,6 +53,62 @@ class LLM(ABC):
         ...     print(chunk.content, end="", flush=True)
     """
 
+    def _validate_llm_params(
+        self,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Validate common LLM parameters.
+
+        This method provides standard validation for common LLM parameters
+        across all providers. Adapters should call this in their complete()
+        and stream() methods to ensure parameter values are within valid ranges.
+
+        Args:
+            temperature: Sampling temperature (should be 0.0-2.0)
+            max_tokens: Maximum tokens to generate (should be positive)
+            **kwargs: Additional parameters (top_p, frequency_penalty, etc.)
+
+        Raises:
+            ValueError: If any parameter is out of valid range
+
+        Note:
+            Some providers may have different valid ranges (e.g., Anthropic
+            temperature is 0-1). Adapters can override this method or perform
+            additional validation if needed.
+        """
+        # Validate temperature (if provided)
+        if temperature is not None:
+            if not isinstance(temperature, (int, float)):
+                raise ValueError(f"temperature must be a number, got {type(temperature).__name__}")
+            if not 0.0 <= temperature <= 2.0:
+                raise ValueError(f"temperature must be between 0 and 2, got {temperature}")
+
+        # Validate max_tokens (if provided)
+        if max_tokens is not None:
+            if not isinstance(max_tokens, int):
+                raise ValueError(f"max_tokens must be an integer, got {type(max_tokens).__name__}")
+            if max_tokens <= 0:
+                raise ValueError(f"max_tokens must be positive, got {max_tokens}")
+
+        # Validate optional parameters from kwargs
+        if "top_p" in kwargs:
+            top_p = kwargs["top_p"]
+            if not isinstance(top_p, (int, float)) or not 0.0 <= top_p <= 1.0:
+                raise ValueError(f"top_p must be between 0 and 1, got {top_p}")
+
+        if "frequency_penalty" in kwargs:
+            freq_pen = kwargs["frequency_penalty"]
+            if not isinstance(freq_pen, (int, float)) or not -2.0 <= freq_pen <= 2.0:
+                raise ValueError(f"frequency_penalty must be between -2 and 2, got {freq_pen}")
+
+        if "presence_penalty" in kwargs:
+            pres_pen = kwargs["presence_penalty"]
+            if not isinstance(pres_pen, (int, float)) or not -2.0 <= pres_pen <= 2.0:
+                raise ValueError(f"presence_penalty must be between -2 and 2, got {pres_pen}")
+
     @abstractmethod
     async def complete(self, messages: list[Message], **kwargs: Any) -> Message:
         """

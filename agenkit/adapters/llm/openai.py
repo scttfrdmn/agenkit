@@ -106,6 +106,7 @@ class OpenAILLM(LLM):
         """Return the model identifier."""
         return self._model
 
+
     async def complete(
         self,
         messages: list[Message],
@@ -138,6 +139,9 @@ class OpenAILLM(LLM):
             >>> print(response.content)
             >>> print(response.metadata["usage"])
         """
+        # Validate parameters
+        self._validate_llm_params(temperature, max_tokens, **kwargs)
+
         # Convert Agenkit Messages to OpenAI format
         openai_messages = self._convert_messages(messages)
 
@@ -179,21 +183,25 @@ class OpenAILLM(LLM):
         Args:
             messages: Conversation history as Agenkit Messages
             temperature: Sampling temperature (0.0-2.0)
-            max_tokens: Maximum tokens to generate
+            max_tokens: Maximum tokens to generate (None for model default)
             **kwargs: Additional OpenAI API options
 
         Yields:
-            Message chunks as they arrive from GPT
+            Message chunks with incremental content
 
         Example:
-            >>> messages = [Message(role="user", content="Count to 10")]
+            >>> messages = [Message(role="user", content="Count to 5")]
             >>> async for chunk in llm.stream(messages):
             ...     print(chunk.content, end="", flush=True)
         """
-        # Convert messages
+        # Validate parameters
+        self._validate_llm_params(temperature, max_tokens, **kwargs)
+
+        # Continue with existing implementation
+        # Convert Agenkit Messages to OpenAI format
         openai_messages = self._convert_messages(messages)
 
-        # Stream from OpenAI API
+        # Stream from OpenAI
         stream = await self._client.chat.completions.create(
             model=self._model,
             messages=openai_messages,
@@ -204,7 +212,6 @@ class OpenAILLM(LLM):
         )
 
         async for chunk in stream:
-            # Extract content from delta
             delta = chunk.choices[0].delta
             if delta.content:
                 yield Message(

@@ -102,6 +102,9 @@ class AnthropicLLM(LLM):
             >>> print(response.content)
             >>> print(response.metadata["usage"])
         """
+        # Validate parameters
+        self._validate_llm_params(temperature, max_tokens, **kwargs)
+
         # Convert Agenkit Messages to Anthropic format
         anthropic_messages = self._convert_messages(messages)
 
@@ -153,10 +156,13 @@ class AnthropicLLM(LLM):
             Message chunks as they arrive from Claude
 
         Example:
-            >>> messages = [Message(role="user", content="Count to 10")]
+            >>> messages = [Message(role="user", content="Count to 5")]
             >>> async for chunk in llm.stream(messages):
             ...     print(chunk.content, end="", flush=True)
         """
+        # Validate parameters
+        self._validate_llm_params(temperature, max_tokens, **kwargs)
+
         # Convert messages
         anthropic_messages = self._convert_messages(messages)
         system_message = self._extract_system_message(messages)

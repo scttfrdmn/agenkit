@@ -213,14 +213,14 @@ func TestPerUserRateLimiterCustomExtractor(t *testing.T) {
 		TokensPerRequest: 1,
 		MaxWaitTimeout:   50 * time.Millisecond,
 		// Custom extractor that uses "client_id" instead of "user_id"
-		UserIDExtractor: func(msg *agenkit.Message) string {
+		UserIDExtractor: func(msg *agenkit.Message) *string {
 			if msg.Metadata == nil {
-				return ""
+				return nil
 			}
 			if clientID, ok := msg.Metadata["client_id"].(string); ok {
-				return clientID
+				return &clientID
 			}
-			return ""
+			return nil
 		},
 	}
 

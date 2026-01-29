@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/adapters/litellm_agent.hpp"
+#include "agenkit/adapters/validation.hpp"
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
@@ -20,6 +21,14 @@ LiteLLMAgent::LiteLLMAgent(LiteLLMConfig config)
     // Model is required for routing
     if (config_.model.empty()) {
         throw std::invalid_argument("LiteLLM model cannot be empty");
+    }
+
+    // Validate LLM parameters (if provided)
+    if (config_.temperature.has_value()) {
+        LLMParameterValidator::validate_temperature(config_.temperature.value());
+    }
+    if (config_.max_tokens.has_value()) {
+        LLMParameterValidator::validate_max_tokens(config_.max_tokens.value());
     }
 }
 
@@ -63,6 +72,15 @@ void LiteLLMAgent::set_config(const LiteLLMConfig& config) {
     if (config.model.empty()) {
         throw std::invalid_argument("LiteLLM model cannot be empty");
     }
+
+    // Validate LLM parameters (if provided)
+    if (config.temperature.has_value()) {
+        LLMParameterValidator::validate_temperature(config.temperature.value());
+    }
+    if (config.max_tokens.has_value()) {
+        LLMParameterValidator::validate_max_tokens(config.max_tokens.value());
+    }
+
     config_ = config;
 }
 

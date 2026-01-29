@@ -24,7 +24,8 @@ enum class AgentErrorType {
     Serialization,    ///< JSON serialization/deserialization error
     Http,             ///< HTTP-specific error
     Internal,         ///< Internal error
-    InvalidInput      ///< Invalid input provided
+    InvalidInput,     ///< Invalid input provided
+    NotImplemented    ///< Feature not yet implemented
 };
 
 /**

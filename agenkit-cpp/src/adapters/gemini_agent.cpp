@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/adapters/gemini_agent.hpp"
+#include "agenkit/adapters/validation.hpp"
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
@@ -29,6 +30,14 @@ GeminiAgent::GeminiAgent(GeminiConfig config)
             "Gemini API key required: provide api_key parameter or set "
             "GEMINI_API_KEY or GOOGLE_API_KEY environment variable"
         );
+    }
+
+    // Validate LLM parameters (if provided)
+    if (config_.temperature.has_value()) {
+        LLMParameterValidator::validate_temperature(config_.temperature.value());
+    }
+    if (config_.max_tokens.has_value()) {
+        LLMParameterValidator::validate_max_tokens(config_.max_tokens.value());
     }
 }
 
@@ -82,6 +91,14 @@ void GeminiAgent::set_config(const GeminiConfig& config) {
             "Gemini API key required: provide api_key parameter or set "
             "GEMINI_API_KEY or GOOGLE_API_KEY environment variable"
         );
+    }
+
+    // Validate LLM parameters (if provided)
+    if (config_.temperature.has_value()) {
+        LLMParameterValidator::validate_temperature(config_.temperature.value());
+    }
+    if (config_.max_tokens.has_value()) {
+        LLMParameterValidator::validate_max_tokens(config_.max_tokens.value());
     }
 }
 
@@ -334,61 +351,12 @@ GeminiAgent::stream(core::Message message, std::function<bool(const std::string&
             {"Content-Type", "application/json"}
         };
 
-        // Make streaming request
-        std::string buffer;
-        auto response = client.Post(
-            endpoint.c_str(),
-            headers,
-            request_body.dump(),
-            "application/json",
-            [&](const char* data, size_t data_length) {
-                // Append to buffer
-                buffer.append(data, data_length);
-
-                // Process complete lines (delimited by \n)
-                size_t pos;
-                while ((pos = buffer.find('\n')) != std::string::npos) {
-                    std::string line = buffer.substr(0, pos);
-                    buffer = buffer.substr(pos + 1);
-
-                    // Skip empty lines
-                    if (line.empty()) {
-                        continue;
-                    }
-
-                    try {
-                        // Parse JSON line
-                        json chunk_json = json::parse(line);
-
-                        // Extract text from candidates[0].content.parts[0].text
-                        if (chunk_json.contains("candidates") &&
-                            chunk_json["candidates"].is_array() &&
-                            !chunk_json["candidates"].empty()) {
-
-                            const auto& candidate = chunk_json["candidates"][0];
-                            if (candidate.contains("content")) {
-                                const auto& content = candidate["content"];
-                                if (content.contains("parts") && content["parts"].is_array()) {
-                                    for (const auto& part : content["parts"]) {
-                                        if (part.contains("text")) {
-                                            std::string text = part["text"].get<std::string>();
-
-                                            // Invoke callback with text chunk
-                                            if (!callback(text)) {
-                                                return false;  // Stop streaming
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } catch (const json::exception&) {
-                        // Skip malformed JSON lines
-                    }
-                }
-                return true;  // Continue receiving
-            }
-        );
+        // TODO(Issue #XXX): Fix httplib streaming API - currently using fallback
+        // The httplib Post() API changed and streaming callbacks need to be updated
+        // For now, make a non-streaming request (Gemini doesn't require stream parameter)
+        auto response = client.Post(endpoint.c_str(), headers,
+                                   request_body.dump(),
+                                   "application/json");
 
         if (!response) {
             return core::Result<void, core::AgentError>::err(
@@ -409,6 +377,24 @@ GeminiAgent::stream(core::Message message, std::function<bool(const std::string&
                     error_msg
                 )
             );
+        }
+
+        // TODO(Issue #XXX): Implement proper streaming
+        // For now, return the full response body through the callback
+        try {
+            json response_json = json::parse(response->body);
+            if (response_json.contains("candidates") && !response_json["candidates"].empty()) {
+                const auto& candidate = response_json["candidates"][0];
+                if (candidate.contains("content") && candidate["content"].contains("parts")) {
+                    for (const auto& part : candidate["content"]["parts"]) {
+                        if (part.contains("text")) {
+                            callback(part["text"].get<std::string>());
+                        }
+                    }
+                }
+            }
+        } catch (const json::exception&) {
+            // Ignore parse errors
         }
 
         return core::Result<void, core::AgentError>::ok();

@@ -12,6 +12,7 @@
  */
 
 #include "agenkit/adapters/bedrock_agent.hpp"
+#include "agenkit/adapters/validation.hpp"
 #include <stdexcept>
 #include <sstream>
 
@@ -43,6 +44,14 @@ namespace adapters {
 BedrockAgent::BedrockAgent(BedrockConfig config)
     : config_(std::move(config))
 {
+    // Validate LLM parameters (if provided)
+    if (config_.temperature.has_value()) {
+        LLMParameterValidator::validate_temperature(config_.temperature.value());
+    }
+    if (config_.max_tokens.has_value()) {
+        LLMParameterValidator::validate_max_tokens(config_.max_tokens.value());
+    }
+
     initialize_client();
 }
 
@@ -370,6 +379,14 @@ BedrockAgent::BedrockAgent(BedrockConfig config)
     : config_(std::move(config))
     , client_(nullptr)
 {
+    // Validate LLM parameters even in stub (fail fast)
+    if (config_.temperature.has_value()) {
+        LLMParameterValidator::validate_temperature(config_.temperature.value());
+    }
+    if (config_.max_tokens.has_value()) {
+        LLMParameterValidator::validate_max_tokens(config_.max_tokens.value());
+    }
+
     throw std::runtime_error(
         "Bedrock adapter requires AWS SDK for C++ to be installed. "
         "Please install aws-sdk-cpp with bedrock-runtime component and rebuild with -DAGENKIT_HAS_AWS_SDK=ON"

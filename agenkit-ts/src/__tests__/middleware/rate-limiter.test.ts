@@ -150,12 +150,12 @@ describe('RateLimiterDecorator: Multi-Token Requests', () => {
 // ============================================
 
 describe('RateLimiterDecorator: Max Wait Timeout', () => {
-  it('should reject if wait time exceeds maxWaitTimeout', async () => {
+  it('should reject if wait time exceeds maxWaitTimeoutMs', async () => {
     const agent = new TestAgent();
     const limiter = new RateLimiterDecorator(agent, {
       rate: 2, // 2 tokens per second
       capacity: 5,
-      maxWaitTimeout: 100, // Only wait 100ms max
+      maxWaitTimeoutMs: 100, // Only wait 100ms max
     });
 
     const input = createMessage('user', 'test');
@@ -166,7 +166,7 @@ describe('RateLimiterDecorator: Max Wait Timeout', () => {
     }
 
     // Next request would need to wait 500ms (for 1 token at 2 tokens/sec)
-    // But maxWaitTimeout is 100ms, so should reject
+    // But maxWaitTimeoutMs is 100ms, so should reject
     await expect(limiter.process(input)).rejects.toThrow(RateLimitError);
     await expect(limiter.process(input)).rejects.toThrow(/max wait timeout/);
     expect(limiter.metrics.rejectedRequests).toBeGreaterThanOrEqual(1);
@@ -222,7 +222,7 @@ describe('RateLimiterDecorator: Metrics', () => {
     const limiter = new RateLimiterDecorator(agent, {
       rate: 2,
       capacity: 2,
-      maxWaitTimeout: 10, // Very short timeout to trigger rejections
+      maxWaitTimeoutMs: 10, // Very short timeout to trigger rejections
     });
 
     const input = createMessage('user', 'test');

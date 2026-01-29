@@ -12,14 +12,14 @@ import { BaseMiddleware } from './base';
  */
 export interface TimeoutConfig {
   /** Default timeout in milliseconds */
-  timeout: number;
+  timeoutMs: number;
 
   /**
-   * Method-specific timeouts (optional).
+   * Method-specific timeouts in milliseconds (optional).
    *
    * Allows configuring different timeouts for different operations.
    * The method is determined from message metadata "method" or "operation" field.
-   * If not specified for a method, defaults to the main timeout value.
+   * If not specified for a method, defaults to the main timeoutMs value.
    *
    * Example:
    *   methodTimeouts: {
@@ -28,6 +28,11 @@ export interface TimeoutConfig {
    *   }
    */
   methodTimeouts?: Record<string, number>;
+
+  /**
+   * @deprecated Use timeoutMs instead. Will be removed in v0.51.0.
+   */
+  timeout?: number;
 }
 
 /**
@@ -88,7 +93,21 @@ export class TimeoutMiddleware extends BaseMiddleware {
 
   constructor(agent: Agent, config: TimeoutConfig) {
     super(agent);
-    this.config = config;
+
+    // Handle deprecated 'timeout' field
+    if (config.timeout !== undefined && config.timeoutMs === undefined) {
+      console.warn(
+        'TimeoutConfig.timeout is deprecated. Use timeoutMs instead. ' +
+          'The timeout field will be removed in v0.51.0.',
+      );
+      this.config = {
+        ...config,
+        timeoutMs: config.timeout,
+      };
+    } else {
+      this.config = config;
+    }
+
     this._metrics = {
       totalRequests: 0,
       successfulRequests: 0,
@@ -131,7 +150,7 @@ export class TimeoutMiddleware extends BaseMiddleware {
    */
   private getTimeoutForMessage(message: Message): number {
     if (!this.config.methodTimeouts) {
-      return this.config.timeout;
+      return this.config.timeoutMs;
     }
 
     // Try to determine method from message metadata
@@ -141,7 +160,7 @@ export class TimeoutMiddleware extends BaseMiddleware {
       return this.config.methodTimeouts[method];
     }
 
-    return this.config.timeout;
+    return this.config.timeoutMs;
   }
 
   async process(message: Message): Promise<Message> {

@@ -73,7 +73,7 @@ class StreamingAgent implements Agent {
 describe('TimeoutMiddleware: Basic Functionality', () => {
   it('should allow fast requests to complete', async () => {
     const agent = new FastAgent(10);
-    const middleware = new TimeoutMiddleware(agent, { timeout: 1000 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 1000 });
 
     const input = createMessage('user', 'test');
     const result = await middleware.process(input);
@@ -86,7 +86,7 @@ describe('TimeoutMiddleware: Basic Functionality', () => {
 
   it('should timeout slow requests', async () => {
     const agent = new SlowAgent(500);
-    const middleware = new TimeoutMiddleware(agent, { timeout: 100 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 100 });
 
     const input = createMessage('user', 'test');
 
@@ -100,7 +100,7 @@ describe('TimeoutMiddleware: Basic Functionality', () => {
 
   it('should handle multiple successful requests', async () => {
     const agent = new FastAgent(10);
-    const middleware = new TimeoutMiddleware(agent, { timeout: 1000 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 1000 });
 
     const input = createMessage('user', 'test');
 
@@ -115,7 +115,7 @@ describe('TimeoutMiddleware: Basic Functionality', () => {
 
   it('should handle boundary case at timeout threshold', async () => {
     const agent = new FastAgent(95); // Just under 100ms
-    const middleware = new TimeoutMiddleware(agent, { timeout: 100 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 100 });
 
     const input = createMessage('user', 'test');
     const result = await middleware.process(input);
@@ -185,7 +185,7 @@ describe('TimeoutMiddleware: Method-Specific Timeouts', () => {
 describe('TimeoutMiddleware: Error Handling', () => {
   it('should preserve non-timeout errors', async () => {
     const agent = new FailingAgent('custom error');
-    const middleware = new TimeoutMiddleware(agent, { timeout: 1000 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 1000 });
 
     const input = createMessage('user', 'test');
 
@@ -196,7 +196,7 @@ describe('TimeoutMiddleware: Error Handling', () => {
 
   it('should track errors separately from timeouts', async () => {
     const agent = new FailingAgent('test error');
-    const middleware = new TimeoutMiddleware(agent, { timeout: 1000 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 1000 });
 
     const input = createMessage('user', 'test');
 
@@ -218,7 +218,7 @@ describe('TimeoutMiddleware: Error Handling', () => {
 describe('TimeoutMiddleware: Streaming', () => {
   it('should handle streaming with chunks within timeout', async () => {
     const agent = new StreamingAgent(10, 3); // 3 chunks, 10ms each
-    const middleware = new TimeoutMiddleware(agent, { timeout: 1000 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 1000 });
 
     const input = createMessage('user', 'test');
     const chunks: Message[] = [];
@@ -235,7 +235,7 @@ describe('TimeoutMiddleware: Streaming', () => {
 
   it('should timeout streaming if deadline exceeded', async () => {
     const agent = new StreamingAgent(150, 4); // 4 chunks * 150ms = 600ms total
-    const middleware = new TimeoutMiddleware(agent, { timeout: 300 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 300 });
 
     const input = createMessage('user', 'test');
 
@@ -250,7 +250,7 @@ describe('TimeoutMiddleware: Streaming', () => {
 
   it('should throw error if agent does not support streaming', async () => {
     const agent = new FastAgent(10); // No processStream method
-    const middleware = new TimeoutMiddleware(agent, { timeout: 1000 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 1000 });
 
     const input = createMessage('user', 'test');
 
@@ -268,7 +268,7 @@ describe('TimeoutMiddleware: Streaming', () => {
 
 describe('TimeoutMiddleware: Metrics', () => {
   it('should track request duration statistics', async () => {
-    const middleware = new TimeoutMiddleware(new FastAgent(50), { timeout: 1000 });
+    const middleware = new TimeoutMiddleware(new FastAgent(50), { timeoutMs: 1000 });
 
     const input = createMessage('user', 'test');
     await middleware.process(input);
@@ -282,7 +282,7 @@ describe('TimeoutMiddleware: Metrics', () => {
   });
 
   it('should track min/max duration across multiple requests', async () => {
-    const middleware = new TimeoutMiddleware(new FastAgent(10), { timeout: 1000 });
+    const middleware = new TimeoutMiddleware(new FastAgent(10), { timeoutMs: 1000 });
 
     const input = createMessage('user', 'test');
 
@@ -300,7 +300,7 @@ describe('TimeoutMiddleware: Metrics', () => {
 
   it('should include timeout duration in metrics', async () => {
     const agent = new SlowAgent(500);
-    const middleware = new TimeoutMiddleware(agent, { timeout: 100 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 100 });
 
     const input = createMessage('user', 'test');
 
@@ -318,7 +318,7 @@ describe('TimeoutMiddleware: Metrics', () => {
   });
 
   it('should calculate average duration correctly', async () => {
-    const middleware = new TimeoutMiddleware(new FastAgent(50), { timeout: 1000 });
+    const middleware = new TimeoutMiddleware(new FastAgent(50), { timeoutMs: 1000 });
 
     const input = createMessage('user', 'test');
 
@@ -331,7 +331,7 @@ describe('TimeoutMiddleware: Metrics', () => {
   });
 
   it('should return metrics copy to prevent mutation', () => {
-    const middleware = new TimeoutMiddleware(new FastAgent(10), { timeout: 1000 });
+    const middleware = new TimeoutMiddleware(new FastAgent(10), { timeoutMs: 1000 });
 
     const metrics1 = middleware.metrics;
     const metrics2 = middleware.metrics;
@@ -351,7 +351,7 @@ describe('TimeoutMiddleware: Agent Interface', () => {
     agent.name = 'custom-agent';
     agent.capabilities = ['chat', 'tools'];
 
-    const middleware = new TimeoutMiddleware(agent, { timeout: 1000 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 1000 });
 
     expect(middleware.name).toBe('custom-agent');
     expect(middleware.capabilities).toEqual(['chat', 'tools']);
@@ -360,7 +360,7 @@ describe('TimeoutMiddleware: Agent Interface', () => {
   it('should preserve streaming capability', () => {
     const agent = new StreamingAgent(10, 3);
 
-    const middleware = new TimeoutMiddleware(agent, { timeout: 1000 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 1000 });
 
     expect(middleware.capabilities).toContain('streaming');
   });
@@ -373,7 +373,7 @@ describe('TimeoutMiddleware: Agent Interface', () => {
 describe('TimeoutMiddleware: Configuration', () => {
   it('should accept timeout configuration', () => {
     const agent = new FastAgent(10);
-    const middleware = new TimeoutMiddleware(agent, { timeout: 5000 });
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 5000 });
 
     expect(middleware).toBeDefined();
   });

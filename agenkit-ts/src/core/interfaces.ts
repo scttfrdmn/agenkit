@@ -95,9 +95,10 @@ export interface Tool {
    * Execute the tool with given parameters.
    *
    * @param params Tool parameters (validated against schema if provided)
+   * @param signal Optional AbortSignal for cancellation support
    * @returns Tool execution result
    */
-  execute(params: Record<string, unknown>): Promise<ToolResult>;
+  execute(params: Record<string, unknown>, signal?: AbortSignal): Promise<ToolResult>;
 }
 
 /**

@@ -116,7 +116,9 @@ Validation (answer "VALID" or describe issues):`;
 
     const response = await this.llmCall(prompt);
     const responseUpper = response.toUpperCase();
-    const isValid = responseUpper.includes('VALID') || responseUpper.includes('YES');
+    // Check for INVALID first to avoid matching "VALID" inside "INVALID"
+    const isValid = !responseUpper.includes('INVALID') &&
+                    (responseUpper.includes('VALID') || responseUpper.includes('YES'));
 
     return {
       ...plan,
@@ -215,6 +217,7 @@ Improved Plan:`;
         validated: plan.validated,
         validation_notes: plan.validationNotes,
         allow_replanning: this.allowReplanning,
+        ...(plan.strategy && { strategy: plan.strategy }),
       },
     };
   }

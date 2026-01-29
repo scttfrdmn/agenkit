@@ -12,7 +12,7 @@ namespace agenkit {
 namespace techniques {
 namespace reasoning {
 
-GraphOfThoughtAgent::GraphOfThoughtAgent(std::shared_ptr<Agent> agent, const GraphOfThoughtConfig& config)
+GraphOfThoughtAgent::GraphOfThoughtAgent(std::shared_ptr<core::Agent> agent, const GraphOfThoughtConfig& config)
     : agent_(agent),
       max_nodes_(config.max_nodes),
       max_edges_(config.max_edges),
@@ -33,8 +33,8 @@ std::vector<std::string> GraphOfThoughtAgent::capabilities() const {
     };
 }
 
-std::future<core::Result<std::string>> GraphOfThoughtAgent::llm_call(const std::string& prompt) {
-    return std::async(std::launch::async, [this, prompt]() -> core::Result<std::string> {
+std::future<core::Result<std::string, core::AgentError>> GraphOfThoughtAgent::llm_call(const std::string& prompt) {
+    return std::async(std::launch::async, [this, prompt]() -> core::Result<std::string, core::AgentError> {
         core::Message message;
         message.role = "user";
         message.content = prompt;
@@ -43,15 +43,15 @@ std::future<core::Result<std::string>> GraphOfThoughtAgent::llm_call(const std::
         auto result = result_future.get();
 
         if (!result.is_ok()) {
-            return core::Result<std::string>::err(result.error());
+            return core::Result<std::string, core::AgentError>::err(result.error());
         }
 
-        return core::Result<std::string>::ok(result.value().content);
+        return core::Result<std::string, core::AgentError>::ok(result.unwrap().content);
     });
 }
 
-std::future<core::Result<std::vector<std::string>>> GraphOfThoughtAgent::generate_premises(const std::string& problem) {
-    return std::async(std::launch::async, [this, problem]() -> core::Result<std::vector<std::string>> {
+std::future<core::Result<std::vector<std::string>, core::AgentError>> GraphOfThoughtAgent::generate_premises(const std::string& problem) {
+    return std::async(std::launch::async, [this, problem]() -> core::Result<std::vector<std::string>, core::AgentError> {
         std::stringstream prompt;
         prompt << "Identify the key facts and premises for this problem.\n"
                << "List 2-4 foundational facts or assumptions, one per line.\n\n"
@@ -62,12 +62,12 @@ std::future<core::Result<std::vector<std::string>>> GraphOfThoughtAgent::generat
         auto result = result_future.get();
 
         if (!result.is_ok()) {
-            return core::Result<std::vector<std::string>>::err(result.error());
+            return core::Result<std::vector<std::string>, core::AgentError>::err(result.error());
         }
 
         // Parse premises
         std::vector<std::string> premises;
-        std::stringstream ss(result.value());
+        std::stringstream ss(result.unwrap());
         std::string line;
 
         while (std::getline(ss, line)) {
@@ -94,17 +94,17 @@ std::future<core::Result<std::vector<std::string>>> GraphOfThoughtAgent::generat
             }
         }
 
-        return core::Result<std::vector<std::string>>::ok(premises);
+        return core::Result<std::vector<std::string>, core::AgentError>::ok(premises);
     });
 }
 
-std::future<core::Result<std::vector<std::string>>> GraphOfThoughtAgent::generate_thoughts(
+std::future<core::Result<std::vector<std::string>, core::AgentError>> GraphOfThoughtAgent::generate_thoughts(
     const std::string& problem,
     const std::vector<std::string>& existing_thoughts,
     size_t max_new) {
 
     return std::async(std::launch::async, [this, problem, existing_thoughts, max_new]()
-                      -> core::Result<std::vector<std::string>> {
+                      -> core::Result<std::vector<std::string>, core::AgentError> {
         std::stringstream prompt;
 
         if (!existing_thoughts.empty()) {
@@ -128,12 +128,12 @@ std::future<core::Result<std::vector<std::string>>> GraphOfThoughtAgent::generat
         auto result = result_future.get();
 
         if (!result.is_ok()) {
-            return core::Result<std::vector<std::string>>::err(result.error());
+            return core::Result<std::vector<std::string>, core::AgentError>::err(result.error());
         }
 
         // Parse thoughts
         std::vector<std::string> thoughts;
-        std::stringstream ss(result.value());
+        std::stringstream ss(result.unwrap());
         std::string line;
 
         while (std::getline(ss, line)) {
@@ -158,16 +158,16 @@ std::future<core::Result<std::vector<std::string>>> GraphOfThoughtAgent::generat
             }
         }
 
-        return core::Result<std::vector<std::string>>::ok(thoughts);
+        return core::Result<std::vector<std::string>, core::AgentError>::ok(thoughts);
     });
 }
 
-std::future<core::Result<std::optional<EdgeType>>> GraphOfThoughtAgent::identify_connection(
+std::future<core::Result<std::optional<EdgeType>, core::AgentError>> GraphOfThoughtAgent::identify_connection(
     const std::string& thought1,
     const std::string& thought2) {
 
     return std::async(std::launch::async, [this, thought1, thought2]()
-                      -> core::Result<std::optional<EdgeType>> {
+                      -> core::Result<std::optional<EdgeType>, core::AgentError> {
         std::stringstream prompt;
         prompt << "Analyze the logical relationship between these two statements.\n\n"
                << "Statement 1: " << thought1 << "\n\n"
@@ -184,28 +184,28 @@ std::future<core::Result<std::optional<EdgeType>>> GraphOfThoughtAgent::identify
         auto result = result_future.get();
 
         if (!result.is_ok()) {
-            return core::Result<std::optional<EdgeType>>::err(result.error());
+            return core::Result<std::optional<EdgeType>, core::AgentError>::err(result.error());
         }
 
-        std::string response = result.value();
+        std::string response = result.unwrap();
         std::transform(response.begin(), response.end(), response.begin(), ::toupper);
 
         if (response.find("SUPPORT") != std::string::npos) {
-            return core::Result<std::optional<EdgeType>>::ok(EdgeType::SUPPORTS);
+            return core::Result<std::optional<EdgeType>, core::AgentError>::ok(EdgeType::SUPPORTS);
         } else if (response.find("DEPEND") != std::string::npos) {
-            return core::Result<std::optional<EdgeType>>::ok(EdgeType::DEPENDS_ON);
+            return core::Result<std::optional<EdgeType>, core::AgentError>::ok(EdgeType::DEPENDS_ON);
         } else if (response.find("CONTRADICT") != std::string::npos) {
-            return core::Result<std::optional<EdgeType>>::ok(EdgeType::CONTRADICTS);
+            return core::Result<std::optional<EdgeType>, core::AgentError>::ok(EdgeType::CONTRADICTS);
         } else if (response.find("REFINE") != std::string::npos) {
-            return core::Result<std::optional<EdgeType>>::ok(EdgeType::REFINES);
+            return core::Result<std::optional<EdgeType>, core::AgentError>::ok(EdgeType::REFINES);
         }
 
-        return core::Result<std::optional<EdgeType>>::ok(std::nullopt);
+        return core::Result<std::optional<EdgeType>, core::AgentError>::ok(std::nullopt);
     });
 }
 
-std::future<core::Result<ReasoningGraph>> GraphOfThoughtAgent::build_graph(const std::string& problem) {
-    return std::async(std::launch::async, [this, problem]() -> core::Result<ReasoningGraph> {
+std::future<core::Result<ReasoningGraph, core::AgentError>> GraphOfThoughtAgent::build_graph(const std::string& problem) {
+    return std::async(std::launch::async, [this, problem]() -> core::Result<ReasoningGraph, core::AgentError> {
         ReasoningGraph graph;
 
         // Step 1: Generate premises
@@ -213,10 +213,10 @@ std::future<core::Result<ReasoningGraph>> GraphOfThoughtAgent::build_graph(const
         auto premises_result = premises_future.get();
 
         if (!premises_result.is_ok()) {
-            return core::Result<ReasoningGraph>::err(premises_result.error());
+            return core::Result<ReasoningGraph, core::AgentError>::err(premises_result.error());
         }
 
-        auto premises = premises_result.value();
+        auto premises = premises_result.unwrap();
         std::vector<size_t> premise_ids;
         for (const auto& premise : premises) {
             size_t node_id = graph.add_node(premise, NodeType::PREMISE, 0.9);
@@ -237,10 +237,10 @@ std::future<core::Result<ReasoningGraph>> GraphOfThoughtAgent::build_graph(const
             auto thoughts_result = thoughts_future.get();
 
             if (!thoughts_result.is_ok()) {
-                return core::Result<ReasoningGraph>::err(thoughts_result.error());
+                return core::Result<ReasoningGraph, core::AgentError>::err(thoughts_result.error());
             }
 
-            auto new_thoughts = thoughts_result.value();
+            auto new_thoughts = thoughts_result.unwrap();
             if (new_thoughts.empty()) {
                 break;
             }
@@ -270,8 +270,8 @@ std::future<core::Result<ReasoningGraph>> GraphOfThoughtAgent::build_graph(const
                     auto connection_future = identify_connection(node1->content, node2->content);
                     auto connection_result = connection_future.get();
 
-                    if (connection_result.is_ok() && connection_result.value().has_value()) {
-                        graph.add_edge(node1_id, node2_id, connection_result.value().value(), 0.8);
+                    if (connection_result.is_ok() && connection_result.unwrap().has_value()) {
+                        graph.add_edge(node1_id, node2_id, connection_result.unwrap().value(), 0.8);
                         edge_count++;
                     }
                 }
@@ -295,7 +295,7 @@ std::future<core::Result<ReasoningGraph>> GraphOfThoughtAgent::build_graph(const
             auto conclusion_result = conclusion_future.get();
 
             if (conclusion_result.is_ok()) {
-                std::string conclusion = conclusion_result.value();
+                std::string conclusion = conclusion_result.unwrap();
                 // Trim whitespace
                 conclusion.erase(0, conclusion.find_first_not_of(" \t\r\n"));
                 conclusion.erase(conclusion.find_last_not_of(" \t\r\n") + 1);
@@ -311,7 +311,7 @@ std::future<core::Result<ReasoningGraph>> GraphOfThoughtAgent::build_graph(const
             }
         }
 
-        return core::Result<ReasoningGraph>::ok(std::move(graph));
+        return core::Result<ReasoningGraph, core::AgentError>::ok(std::move(graph));
     });
 }
 
@@ -393,19 +393,19 @@ std::string GraphOfThoughtAgent::aggregate_paths(const ReasoningGraph& graph,
     }
 }
 
-std::future<core::Result<core::Message>> GraphOfThoughtAgent::process(const core::Message& message) {
-    return std::async(std::launch::async, [this, message]() -> core::Result<core::Message> {
-        const std::string& problem = message.content;
+std::future<core::Result<core::Message, core::AgentError>> GraphOfThoughtAgent::process(core::Message message) {
+    return std::async(std::launch::async, [this, message]() -> core::Result<core::Message, core::AgentError> {
+        std::string problem = message.content_as_str();
 
         // Step 1: Build reasoning graph
         auto graph_future = build_graph(problem);
         auto graph_result = graph_future.get();
 
         if (!graph_result.is_ok()) {
-            return core::Result<core::Message>::err(graph_result.error());
+            return core::Result<core::Message, core::AgentError>::err(graph_result.error());
         }
 
-        auto graph = graph_result.value();
+        auto graph = graph_result.unwrap();
 
         // Step 2: Check for cycles (if not allowed)
         if (!allow_cycles_ && graph.has_cycle()) {
@@ -423,19 +423,18 @@ std::future<core::Result<core::Message>> GraphOfThoughtAgent::process(const core
         auto stats = graph.statistics();
 
         // Build response message
-        core::Message response;
-        response.role = "assistant";
-        response.content = final_answer;
+        auto response = core::Message::with_text("assistant", final_answer);
 
         // Add metadata
-        response.metadata["technique"] = "graph_of_thought";
-        response.metadata["num_nodes"] = std::to_string(stats.num_nodes);
-        response.metadata["num_edges"] = std::to_string(stats.num_edges);
-        response.metadata["has_cycles"] = stats.has_cycles ? "true" : "false";
-        response.metadata["num_reasoning_paths"] = std::to_string(reasoning_paths.size());
-        response.metadata["aggregator"] = (aggregator_ == AggregatorType::PATH_BASED) ? "path_based" : "node_based";
+        response.with_metadata("technique", nlohmann::json("graph_of_thought"))
+                .with_metadata("num_nodes", nlohmann::json(static_cast<int>(stats.num_nodes)))
+                .with_metadata("num_edges", nlohmann::json(static_cast<int>(stats.num_edges)))
+                .with_metadata("has_cycles", nlohmann::json(stats.has_cycles))
+                .with_metadata("num_reasoning_paths", nlohmann::json(static_cast<int>(reasoning_paths.size())))
+                .with_metadata("aggregator", nlohmann::json(aggregator_ == AggregatorType::PATH_BASED ? "path_based" : "node_based"))
+                .with_metadata("allow_cycles", nlohmann::json(allow_cycles_));
 
-        return core::Result<core::Message>::ok(response);
+        return core::Result<core::Message, core::AgentError>::ok(response);
     });
 }
 

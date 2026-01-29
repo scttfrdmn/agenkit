@@ -68,16 +68,20 @@ middleware = TimeoutMiddleware(agent, config)
 - `CircuitBreakerConfig.recovery_timeout` → `CircuitBreakerConfig.recovery_timeout_ms`
 - All LLM adapter `timeout` parameters → `timeout_ms`
 
-### Deprecation Helper (Temporary)
+### Deprecation Warnings (v0.50.0 → v0.51.0)
 
-Version 0.50.0 provides a temporary helper property for backward compatibility:
+Version 0.50.0 accepts both old and new parameters with deprecation warnings:
 
 ```python
-@dataclass
-class TimeoutConfig:
-    timeout_ms: float = 30000  # New parameter (milliseconds)
+# v0.50.0: Both work, but old syntax warns
+config = TimeoutConfig(timeout=30.0)  # ⚠️  DeprecationWarning
+# Warning: The 'timeout' parameter (in seconds) is deprecated and will be removed in v0.51.0.
+# Use 'timeout_ms' (in milliseconds) instead. To migrate: timeout_ms=30000
 
-    @property
+config = TimeoutConfig(timeout_ms=30000)  # ✓ No warning
+
+# v0.51.0: Old syntax removed
+config = TimeoutConfig(timeout=30.0)  # ❌ TypeError: unexpected keyword argument
     @deprecated("Use timeout_ms instead. Will be removed in v0.51.0")
     def timeout(self) -> float:
         """Returns timeout in seconds for backward compatibility."""

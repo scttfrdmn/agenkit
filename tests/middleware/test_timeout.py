@@ -111,16 +111,16 @@ class FailingAgent(Agent):
 def test_timeout_config_validation():
     """Test timeout configuration validation."""
     # Valid config
-    config = TimeoutConfig(timeout=10.0)
-    assert config.timeout == 10.0
+    config = TimeoutConfig(timeout_ms=10000)
+    assert config.timeout_ms == 10000
 
     # Invalid timeout (negative)
-    with pytest.raises(ValueError, match="timeout must be positive"):
-        TimeoutConfig(timeout=-1.0)
+    with pytest.raises(ValueError, match="timeout_ms must be positive"):
+        TimeoutConfig(timeout_ms=-1000)
 
     # Invalid timeout (zero)
-    with pytest.raises(ValueError, match="timeout must be positive"):
-        TimeoutConfig(timeout=0.0)
+    with pytest.raises(ValueError, match="timeout_ms must be positive"):
+        TimeoutConfig(timeout_ms=0)
 
 
 # ============================================
@@ -132,7 +132,7 @@ def test_timeout_config_validation():
 async def test_timeout_allows_fast_agent():
     """Test that fast agents complete successfully within timeout."""
     agent = FastAgent(delay=0.01)  # 10ms delay
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=1.0))  # 1s timeout
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=1000))  # 1s timeout
 
     msg = Message(role="user", content="test")
     response = await timeout_agent.process(msg)
@@ -154,7 +154,7 @@ async def test_timeout_allows_fast_agent():
 async def test_timeout_multiple_successful_requests():
     """Test multiple successful requests update metrics correctly."""
     agent = FastAgent(delay=0.01)
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=1.0))
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=1000))
 
     # Send 5 requests
     for i in range(5):
@@ -179,11 +179,11 @@ async def test_timeout_multiple_successful_requests():
 async def test_timeout_stops_slow_agent():
     """Test that slow agents are timed out."""
     agent = SlowAgent(delay=5.0)  # 5s delay
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=0.1))  # 100ms timeout
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=100))  # 100ms timeout
 
     msg = Message(role="user", content="test")
 
-    with pytest.raises(TimeoutError, match=r"timed out after 0\.1s"):
+    with pytest.raises(TimeoutError, match=r"timed out after 100ms"):
         await timeout_agent.process(msg)
 
     # Check metrics
@@ -198,7 +198,7 @@ async def test_timeout_stops_slow_agent():
 async def test_timeout_reports_agent_name():
     """Test that timeout error includes agent name."""
     agent = SlowAgent(delay=5.0)
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=0.1))
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=100))
 
     msg = Message(role="user", content="test")
 
@@ -211,7 +211,7 @@ async def test_timeout_boundary_case():
     """Test timeout at boundary (agent completes just at timeout)."""
     # Agent takes 0.1s, timeout is 0.15s - should succeed
     agent = FastAgent(delay=0.1)
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=0.15))
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=150))
 
     msg = Message(role="user", content="test")
     response = await timeout_agent.process(msg)
@@ -245,7 +245,7 @@ async def test_timeout_mixed_requests():
             return Message(role="agent", content=f"Response {self.counter}")
 
     agent = VariableAgent()
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=0.1))
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=100))
 
     # Request 1: Fast (succeeds)
     response1 = await timeout_agent.process(Message(role="user", content="1"))
@@ -276,7 +276,7 @@ async def test_timeout_mixed_requests():
 async def test_timeout_preserves_other_errors():
     """Test that non-timeout errors are preserved."""
     agent = FailingAgent()
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=1.0))
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=1000))
 
     msg = Message(role="user", content="test")
 
@@ -295,7 +295,7 @@ async def test_timeout_preserves_other_errors():
 async def test_timeout_with_agent_that_fails_fast():
     """Test timeout with agent that fails quickly (before timeout)."""
     agent = FailingAgent()
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=5.0))
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=5000))
 
     msg = Message(role="user", content="test")
 
@@ -318,7 +318,7 @@ async def test_timeout_with_agent_that_fails_fast():
 async def test_timeout_streaming_success():
     """Test streaming with chunks arriving within timeout."""
     agent = StreamingAgent(chunk_count=3, chunk_delay=0.01)
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=1.0))
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=1000))
 
     msg = Message(role="user", content="test")
 
@@ -341,7 +341,7 @@ async def test_timeout_streaming_success():
 async def test_timeout_streaming_timeout():
     """Test streaming timeout when chunks arrive too slowly."""
     agent = StreamingAgent(chunk_count=5, chunk_delay=0.5)  # 0.5s per chunk
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=1.0))  # 1s total timeout
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=1000))  # 1s total timeout
 
     msg = Message(role="user", content="test")
 
@@ -360,7 +360,7 @@ async def test_timeout_streaming_timeout():
 async def test_timeout_streaming_not_supported():
     """Test streaming with agent that doesn't support it."""
     agent = FastAgent()  # Doesn't have stream method
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=1.0))
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=1000))
 
     msg = Message(role="user", content="test")
 
@@ -378,7 +378,7 @@ async def test_timeout_streaming_not_supported():
 async def test_timeout_metrics_duration_tracking():
     """Test that metrics correctly track request durations."""
     agent = FastAgent(delay=0.05)  # 50ms delay
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=1.0))
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=1000))
 
     # Send 3 requests
     for i in range(3):
@@ -398,7 +398,7 @@ async def test_timeout_metrics_duration_tracking():
 async def test_timeout_metrics_tracks_timeout_duration():
     """Test that timeout duration is recorded even for timed-out requests."""
     agent = SlowAgent(delay=10.0)
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=0.1))
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=100))
 
     msg = Message(role="user", content="test")
 
@@ -420,7 +420,7 @@ async def test_timeout_metrics_tracks_timeout_duration():
 def test_timeout_decorator_preserves_agent_interface():
     """Test that timeout decorator properly implements Agent interface."""
     agent = FastAgent()
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=1.0))
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=1000))
 
     # Should have correct name
     assert timeout_agent.name == "fast-agent"
@@ -432,7 +432,7 @@ def test_timeout_decorator_preserves_agent_interface():
 def test_timeout_decorator_preserves_capabilities():
     """Test that capabilities from underlying agent are preserved."""
     agent = StreamingAgent()
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout=1.0))
+    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=1000))
 
     assert "streaming" in timeout_agent.capabilities
 

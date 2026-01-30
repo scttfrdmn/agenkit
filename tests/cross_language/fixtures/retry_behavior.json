@@ -1,0 +1,175 @@
+{
+  "version": "1.0",
+  "description": "Cross-language retry middleware behavior test fixtures",
+  "test_cases": [
+    {
+      "id": "retry_success_first_attempt",
+      "name": "Successful on first attempt (no retries)",
+      "config": {
+        "max_attempts": 3,
+        "initial_backoff_ms": 100,
+        "max_backoff_ms": 1000,
+        "backoff_multiplier": 2.0
+      },
+      "scenario": {
+        "agent_responses": [
+          {"success": true, "content": "Success on first try"}
+        ]
+      },
+      "expected_behavior": {
+        "total_attempts": 1,
+        "successful": true,
+        "final_response": "Success on first try",
+        "total_delay_ms": 0
+      }
+    },
+    {
+      "id": "retry_success_second_attempt",
+      "name": "Fail once, succeed on retry",
+      "config": {
+        "max_attempts": 3,
+        "initial_backoff_ms": 100,
+        "max_backoff_ms": 1000,
+        "backoff_multiplier": 2.0
+      },
+      "scenario": {
+        "agent_responses": [
+          {"success": false, "error": "TemporaryFailure"},
+          {"success": true, "content": "Success on retry"}
+        ]
+      },
+      "expected_behavior": {
+        "total_attempts": 2,
+        "successful": true,
+        "final_response": "Success on retry",
+        "min_total_delay_ms": 100,
+        "max_total_delay_ms": 150
+      }
+    },
+    {
+      "id": "retry_exhausted",
+      "name": "All retries exhausted",
+      "config": {
+        "max_attempts": 3,
+        "initial_backoff_ms": 100,
+        "max_backoff_ms": 1000,
+        "backoff_multiplier": 2.0
+      },
+      "scenario": {
+        "agent_responses": [
+          {"success": false, "error": "TemporaryFailure"},
+          {"success": false, "error": "TemporaryFailure"},
+          {"success": false, "error": "TemporaryFailure"}
+        ]
+      },
+      "expected_behavior": {
+        "total_attempts": 3,
+        "successful": false,
+        "error_type": "MaxRetriesExceeded",
+        "min_total_delay_ms": 300,
+        "max_total_delay_ms": 400
+      }
+    },
+    {
+      "id": "retry_exponential_backoff",
+      "name": "Verify exponential backoff timing",
+      "config": {
+        "max_attempts": 4,
+        "initial_backoff_ms": 100,
+        "max_backoff_ms": 10000,
+        "backoff_multiplier": 2.0
+      },
+      "scenario": {
+        "agent_responses": [
+          {"success": false, "error": "TemporaryFailure"},
+          {"success": false, "error": "TemporaryFailure"},
+          {"success": false, "error": "TemporaryFailure"},
+          {"success": true, "content": "Finally succeeded"}
+        ]
+      },
+      "expected_behavior": {
+        "total_attempts": 4,
+        "successful": true,
+        "expected_delays_ms": [100, 200, 400],
+        "min_total_delay_ms": 700,
+        "max_total_delay_ms": 800
+      }
+    },
+    {
+      "id": "retry_max_backoff_capped",
+      "name": "Backoff capped at max_backoff_ms",
+      "config": {
+        "max_attempts": 5,
+        "initial_backoff_ms": 100,
+        "max_backoff_ms": 200,
+        "backoff_multiplier": 2.0
+      },
+      "scenario": {
+        "agent_responses": [
+          {"success": false, "error": "TemporaryFailure"},
+          {"success": false, "error": "TemporaryFailure"},
+          {"success": false, "error": "TemporaryFailure"},
+          {"success": false, "error": "TemporaryFailure"},
+          {"success": true, "content": "Success"}
+        ]
+      },
+      "expected_behavior": {
+        "total_attempts": 5,
+        "successful": true,
+        "expected_delays_ms": [100, 200, 200, 200],
+        "delays_capped": true,
+        "min_total_delay_ms": 700,
+        "max_total_delay_ms": 800
+      }
+    },
+    {
+      "id": "retry_non_retryable_error",
+      "name": "Permanent error stops retries",
+      "config": {
+        "max_attempts": 3,
+        "initial_backoff_ms": 100,
+        "max_backoff_ms": 1000,
+        "backoff_multiplier": 2.0
+      },
+      "scenario": {
+        "agent_responses": [
+          {"success": false, "error": "InvalidInput"}
+        ]
+      },
+      "expected_behavior": {
+        "total_attempts": 1,
+        "successful": false,
+        "error_type": "InvalidInput",
+        "should_not_retry": true,
+        "total_delay_ms": 0
+      }
+    },
+    {
+      "id": "retry_metrics_tracking",
+      "name": "Verify retry metrics are tracked",
+      "config": {
+        "max_attempts": 3,
+        "initial_backoff_ms": 100,
+        "max_backoff_ms": 1000,
+        "backoff_multiplier": 2.0
+      },
+      "scenario": {
+        "agent_responses": [
+          {"success": false, "error": "TemporaryFailure"},
+          {"success": true, "content": "Success"}
+        ]
+      },
+      "expected_metrics": {
+        "total_attempts": 2,
+        "successful_first_attempt": 0,
+        "successful_on_retry": 1,
+        "total_failures": 0,
+        "retry_distribution": {
+          "0": 0,
+          "1": 1,
+          "2": 0
+        }
+      }
+    }
+  ]
+}

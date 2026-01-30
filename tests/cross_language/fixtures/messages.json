@@ -1,0 +1,206 @@
+{
+  "version": "1.0",
+  "description": "Cross-language message serialization test fixtures",
+  "test_cases": [
+    {
+      "id": "simple_user_message",
+      "name": "Simple user message with text content",
+      "message": {
+        "role": "user",
+        "content": "Hello, agent!",
+        "metadata": {},
+        "timestamp": "2026-01-30T09:00:00Z"
+      },
+      "validation": {
+        "role_type": "string",
+        "content_type": "string",
+        "metadata_count": 0
+      }
+    },
+    {
+      "id": "assistant_message_with_metadata",
+      "name": "Assistant message with metadata",
+      "message": {
+        "role": "assistant",
+        "content": "I can help you with that!",
+        "metadata": {
+          "model": "gpt-4",
+          "temperature": 0.7,
+          "tokens": 12
+        },
+        "timestamp": "2026-01-30T09:00:01Z"
+      },
+      "validation": {
+        "role_type": "string",
+        "content_type": "string",
+        "metadata_count": 3,
+        "metadata_keys": ["model", "temperature", "tokens"]
+      }
+    },
+    {
+      "id": "system_message",
+      "name": "System message without metadata",
+      "message": {
+        "role": "system",
+        "content": "You are a helpful assistant specialized in programming.",
+        "timestamp": "2026-01-30T09:00:00Z"
+      },
+      "validation": {
+        "role_type": "string",
+        "content_type": "string",
+        "has_metadata": false
+      }
+    },
+    {
+      "id": "tool_message_structured",
+      "name": "Tool message with structured content",
+      "message": {
+        "role": "tool",
+        "content": {
+          "tool_name": "calculator",
+          "operation": "add",
+          "operands": [2, 3],
+          "result": 5,
+          "success": true
+        },
+        "metadata": {
+          "tool_id": "calc_001",
+          "execution_time_ms": 15
+        },
+        "timestamp": "2026-01-30T09:00:02Z"
+      },
+      "validation": {
+        "role_type": "string",
+        "content_type": "object",
+        "content_keys": ["tool_name", "operation", "operands", "result", "success"],
+        "metadata_count": 2
+      }
+    },
+    {
+      "id": "agent_message",
+      "name": "Agent message from internal reasoning",
+      "message": {
+        "role": "agent",
+        "content": "Processing your request through multiple reasoning steps...",
+        "metadata": {
+          "step": 1,
+          "total_steps": 3,
+          "technique": "chain_of_thought"
+        },
+        "timestamp": "2026-01-30T09:00:03Z"
+      },
+      "validation": {
+        "role_type": "string",
+        "content_type": "string",
+        "metadata_count": 3
+      }
+    },
+    {
+      "id": "empty_content",
+      "name": "Message with empty string content",
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "metadata": {},
+        "timestamp": "2026-01-30T09:00:04Z"
+      },
+      "validation": {
+        "role_type": "string",
+        "content_type": "string",
+        "content_length": 0
+      }
+    },
+    {
+      "id": "large_content",
+      "name": "Message with larger text content",
+      "message": {
+        "role": "user",
+        "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+        "metadata": {
+          "source": "long_form_input",
+          "char_count": 445
+        },
+        "timestamp": "2026-01-30T09:00:05Z"
+      },
+      "validation": {
+        "role_type": "string",
+        "content_type": "string",
+        "min_content_length": 400,
+        "metadata_count": 2
+      }
+    },
+    {
+      "id": "unicode_content",
+      "name": "Message with Unicode characters",
+      "message": {
+        "role": "user",
+        "content": "Hello 世界! Bonjour 🌍 Привет мир",
+        "metadata": {
+          "languages": ["en", "zh", "fr", "ru"],
+          "has_emoji": true
+        },
+        "timestamp": "2026-01-30T09:00:06Z"
+      },
+      "validation": {
+        "role_type": "string",
+        "content_type": "string",
+        "contains": ["世界", "🌍", "мир"],
+        "metadata_count": 2
+      }
+    },
+    {
+      "id": "nested_metadata",
+      "name": "Message with nested metadata",
+      "message": {
+        "role": "assistant",
+        "content": "Analysis complete.",
+        "metadata": {
+          "analysis": {
+            "sentiment": "positive",
+            "confidence": 0.95
+          },
+          "processing": {
+            "steps": 3,
+            "duration_ms": 150
+          },
+          "tags": ["complete", "analysis", "sentiment"]
+        },
+        "timestamp": "2026-01-30T09:00:07Z"
+      },
+      "validation": {
+        "role_type": "string",
+        "content_type": "string",
+        "metadata_count": 3,
+        "metadata_keys": ["analysis", "processing", "tags"]
+      }
+    },
+    {
+      "id": "numeric_metadata",
+      "name": "Message with various numeric metadata types",
+      "message": {
+        "role": "assistant",
+        "content": "Here are your results.",
+        "metadata": {
+          "count": 42,
+          "score": 3.14159,
+          "is_final": true,
+          "optional_value": null,
+          "percentage": 0.85
+        },
+        "timestamp": "2026-01-30T09:00:08Z"
+      },
+      "validation": {
+        "role_type": "string",
+        "content_type": "string",
+        "metadata_count": 5,
+        "metadata_types": {
+          "count": "integer",
+          "score": "float",
+          "is_final": "boolean",
+          "optional_value": "null",
+          "percentage": "float"
+        }
+      }
+    }
+  ]
+}

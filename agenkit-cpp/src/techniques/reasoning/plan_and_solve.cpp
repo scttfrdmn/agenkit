@@ -36,27 +36,25 @@ std::vector<std::string> PlanAndSolveAgent::capabilities() const {
     };
 }
 
-std::future<core::Result<std::string>> PlanAndSolveAgent::llm_call(const std::string& prompt) {
-    return std::async(std::launch::async, [this, prompt]() -> core::Result<std::string> {
-        core::Message message;
-        message.role = "user";
-        message.content = prompt;
+std::future<core::Result<std::string, core::AgentError>> PlanAndSolveAgent::llm_call(const std::string& prompt) {
+    return std::async(std::launch::async, [this, prompt]() -> core::Result<std::string, core::AgentError> {
+        auto message = core::Message::with_text("user", prompt);
 
         auto result_future = agent_->process(message);
         auto result = result_future.get();
 
         if (!result.is_ok()) {
-            return core::Result<std::string>::err(result.error());
+            return core::Result<std::string, core::AgentError>::err(result.unwrap_err());
         }
 
-        return core::Result<std::string>::ok(result.value().content);
+        return core::Result<std::string, core::AgentError>::ok(result.unwrap().content_as_str());
     });
 }
 
-std::future<core::Result<Plan>> PlanAndSolveAgent::create_plan(const std::string& problem) {
-    return std::async(std::launch::async, [this, problem]() -> core::Result<Plan> {
+std::future<core::Result<Plan, core::AgentError>> PlanAndSolveAgent::create_plan(const std::string& problem) {
+    return std::async(std::launch::async, [this, problem]() -> core::Result<Plan, core::AgentError> {
         if (planner_) {
-            return core::Result<Plan>::ok((*planner_)(problem));
+            return core::Result<Plan, core::AgentError>::ok((*planner_)(problem));
         }
 
         std::ostringstream prompt;
@@ -70,14 +68,14 @@ std::future<core::Result<Plan>> PlanAndSolveAgent::create_plan(const std::string
         auto result = result_future.get();
 
         if (!result.is_ok()) {
-            return core::Result<Plan>::err(result.error());
+            return core::Result<Plan, core::AgentError>::err(result.unwrap_err());
         }
 
         Plan plan(problem);
 
         // Parse numbered lines
         std::regex number_pattern(R"(^\d+[\.\)]\s*)");
-        std::istringstream stream(result.value());
+        std::istringstream stream(result.unwrap());
         std::string line;
         int order = 0;
 
@@ -97,12 +95,12 @@ std::future<core::Result<Plan>> PlanAndSolveAgent::create_plan(const std::string
             }
         }
 
-        return core::Result<Plan>::ok(plan);
+        return core::Result<Plan, core::AgentError>::ok(plan);
     });
 }
 
-std::future<core::Result<void>> PlanAndSolveAgent::validate(Plan& plan) {
-    return std::async(std::launch::async, [this, &plan]() -> core::Result<void> {
+std::future<core::Result<void, core::AgentError>> PlanAndSolveAgent::validate(Plan& plan) {
+    return std::async(std::launch::async, [this, &plan]() -> core::Result<void, core::AgentError> {
         std::ostringstream prompt;
         prompt << "Review this solution plan for completeness and feasibility.\n"
                << "Is this plan sufficient to solve the problem? Are there any missing steps or issues?\n\n"
@@ -114,10 +112,10 @@ std::future<core::Result<void>> PlanAndSolveAgent::validate(Plan& plan) {
         auto result = result_future.get();
 
         if (!result.is_ok()) {
-            return core::Result<void>::err(result.error());
+            return core::Result<void, core::AgentError>::err(result.unwrap_err());
         }
 
-        std::string response = result.value();
+        std::string response = result.unwrap();
 
         // Convert to uppercase for comparison
         std::string response_upper = response;
@@ -134,7 +132,7 @@ std::future<core::Result<void>> PlanAndSolveAgent::validate(Plan& plan) {
         response.erase(response.find_last_not_of(" \t\n\r\f\v") + 1);
         plan.validation_notes = response;
 
-        return core::Result<void>::ok();
+        return core::Result<void, core::AgentError>::ok();
     });
 }
 
@@ -151,13 +149,13 @@ std::string PlanAndSolveAgent::format_plan(const Plan& plan) {
     return formatted.str();
 }
 
-std::future<core::Result<std::string>> PlanAndSolveAgent::execute_step(
+std::future<core::Result<std::string, core::AgentError>> PlanAndSolveAgent::execute_step(
     const PlanStep& step,
     const std::vector<std::string>& previous_results) {
 
-    return std::async(std::launch::async, [this, step, previous_results]() -> core::Result<std::string> {
+    return std::async(std::launch::async, [this, step, previous_results]() -> core::Result<std::string, core::AgentError> {
         if (solver_) {
-            return core::Result<std::string>::ok((*solver_)(step, previous_results));
+            return core::Result<std::string, core::AgentError>::ok((*solver_)(step, previous_results));
         }
 
         std::ostringstream prompt;
@@ -180,21 +178,21 @@ std::future<core::Result<std::string>> PlanAndSolveAgent::execute_step(
         auto result = result_future.get();
 
         if (!result.is_ok()) {
-            return core::Result<std::string>::err(result.error());
+            return core::Result<std::string, core::AgentError>::err(result.unwrap_err());
         }
 
-        std::string output = result.value();
+        std::string output = result.unwrap();
 
         // Trim result
         output.erase(0, output.find_first_not_of(" \t\n\r\f\v"));
         output.erase(output.find_last_not_of(" \t\n\r\f\v") + 1);
 
-        return core::Result<std::string>::ok(output);
+        return core::Result<std::string, core::AgentError>::ok(output);
     });
 }
 
-std::future<core::Result<std::vector<std::string>>> PlanAndSolveAgent::execute_plan(Plan& plan) {
-    return std::async(std::launch::async, [this, &plan]() -> core::Result<std::vector<std::string>> {
+std::future<core::Result<std::vector<std::string>, core::AgentError>> PlanAndSolveAgent::execute_plan(Plan& plan) {
+    return std::async(std::launch::async, [this, &plan]() -> core::Result<std::vector<std::string>, core::AgentError> {
         std::vector<std::string> results;
 
         for (auto& step : plan.steps) {
@@ -202,32 +200,32 @@ std::future<core::Result<std::vector<std::string>>> PlanAndSolveAgent::execute_p
             auto result = result_future.get();
 
             if (!result.is_ok()) {
-                return core::Result<std::vector<std::string>>::err(result.error());
+                return core::Result<std::vector<std::string>, core::AgentError>::err(result.unwrap_err());
             }
 
-            std::string step_result = result.value();
+            std::string step_result = result.unwrap();
             step.result = step_result;
             step.executed = true;
             results.push_back(step_result);
         }
 
-        return core::Result<std::vector<std::string>>::ok(results);
+        return core::Result<std::vector<std::string>, core::AgentError>::ok(results);
     });
 }
 
-std::future<core::Result<core::Message>> PlanAndSolveAgent::process(core::Message message) {
-    return std::async(std::launch::async, [this, message]() -> core::Result<core::Message> {
-        std::string problem = message.content;
+std::future<core::Result<core::Message, core::AgentError>> PlanAndSolveAgent::process(core::Message message) {
+    return std::async(std::launch::async, [this, message]() -> core::Result<core::Message, core::AgentError> {
+        std::string problem = message.content_as_str();
 
         // Create plan
         auto plan_future = create_plan(problem);
         auto plan_result = plan_future.get();
 
         if (!plan_result.is_ok()) {
-            return core::Result<core::Message>::err(plan_result.error());
+            return core::Result<core::Message, core::AgentError>::err(plan_result.unwrap_err());
         }
 
-        Plan plan = plan_result.value();
+        Plan plan = plan_result.unwrap();
 
         // Validate plan if configured
         if (validate_plan_) {
@@ -235,7 +233,7 @@ std::future<core::Result<core::Message>> PlanAndSolveAgent::process(core::Messag
             auto validate_result = validate_future.get();
 
             if (!validate_result.is_ok()) {
-                return core::Result<core::Message>::err(validate_result.error());
+                return core::Result<core::Message, core::AgentError>::err(validate_result.unwrap_err());
             }
 
             // Replan if validation failed and replanning is allowed
@@ -251,7 +249,7 @@ std::future<core::Result<core::Message>> PlanAndSolveAgent::process(core::Messag
                 auto llm_result = llm_future.get();
 
                 if (!llm_result.is_ok()) {
-                    return core::Result<core::Message>::err(llm_result.error());
+                    return core::Result<core::Message, core::AgentError>::err(llm_result.unwrap_err());
                 }
 
                 // Create new plan
@@ -259,17 +257,17 @@ std::future<core::Result<core::Message>> PlanAndSolveAgent::process(core::Messag
                 plan_result = plan_future.get();
 
                 if (!plan_result.is_ok()) {
-                    return core::Result<core::Message>::err(plan_result.error());
+                    return core::Result<core::Message, core::AgentError>::err(plan_result.unwrap_err());
                 }
 
-                plan = plan_result.value();
+                plan = plan_result.unwrap();
 
                 // Validate new plan
                 validate_future = validate(plan);
                 validate_result = validate_future.get();
 
                 if (!validate_result.is_ok()) {
-                    return core::Result<core::Message>::err(validate_result.error());
+                    return core::Result<core::Message, core::AgentError>::err(validate_result.unwrap_err());
                 }
             }
         }
@@ -279,25 +277,23 @@ std::future<core::Result<core::Message>> PlanAndSolveAgent::process(core::Messag
         auto execution_result = execution_future.get();
 
         if (!execution_result.is_ok()) {
-            return core::Result<core::Message>::err(execution_result.error());
+            return core::Result<core::Message, core::AgentError>::err(execution_result.unwrap_err());
         }
 
-        std::vector<std::string> execution_results = execution_result.value();
+        std::vector<std::string> execution_results = execution_result.unwrap();
         std::string final_solution = execution_results.empty() ? "" : execution_results.back();
 
         // Build response message with metadata
-        core::Message result;
-        result.role = "assistant";
-        result.content = final_solution;
-        result.metadata["technique"] = "plan_and_solve";
-        result.metadata["num_steps"] = static_cast<int>(plan.steps.size());
-        result.metadata["validated"] = plan.validated;
+        auto result = core::Message::with_text("assistant", final_solution);
+        result.with_metadata("technique", "plan_and_solve");
+        result.with_metadata("num_steps", static_cast<int>(plan.steps.size()));
+        result.with_metadata("validated", plan.validated);
         if (plan.validation_notes) {
-            result.metadata["validation_notes"] = *plan.validation_notes;
+            result.with_metadata("validation_notes", *plan.validation_notes);
         }
-        result.metadata["allow_replanning"] = allow_replanning_;
+        result.with_metadata("allow_replanning", allow_replanning_);
 
-        return core::Result<core::Message>::ok(result);
+        return core::Result<core::Message, core::AgentError>::ok(result);
     });
 }
 

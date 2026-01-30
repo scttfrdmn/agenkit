@@ -26,6 +26,11 @@ add_executable(test_message test_message.cpp)
 target_link_libraries(test_message agenkit gtest_main)
 add_test(NAME message_tests COMMAND test_message)
 
+# Cross-language message serialization tests
+add_executable(test_cross_language_message_serialization test_cross_language_message_serialization.cpp)
+target_link_libraries(test_cross_language_message_serialization agenkit gtest_main)
+add_test(NAME cross_language_message_serialization_tests COMMAND test_cross_language_message_serialization)
+
 # Agent tests
 add_executable(test_agent test_agent.cpp)
 target_link_libraries(test_agent agenkit gtest_main)

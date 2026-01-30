@@ -171,9 +171,9 @@ test "assistant message with metadata" {
     const content_text = msg_data.object.get("content").?.string;
 
     var msg = try Message.withText(allocator, role, content_text);
-    defer msg.deinit();
+    // Note: Don't defer msg.deinit() because metadata references fixture data
 
-    // Add metadata
+    // Add metadata (references fixture data - no ownership transfer)
     const metadata_obj = msg_data.object.get("metadata").?.object;
     var it = metadata_obj.iterator();
     while (it.next()) |entry| {
@@ -196,6 +196,10 @@ test "assistant message with metadata" {
         mut_serialized.object.deinit();
     }
     try validateAgainstSchema(serialized, schema.value);
+
+    // Clean up text content and metadata ObjectMap (not the values - owned by fixtures)
+    allocator.free(msg.content.text);
+    msg.metadata.object.deinit();
 }
 
 test "system message" {
@@ -245,9 +249,9 @@ test "tool message structured" {
     const content_structured = msg_data.object.get("content").?;
 
     var msg = Message.withStructured(allocator, role, content_structured);
-    defer msg.deinit();
+    // Note: Don't call deinit() - both content and metadata reference fixture data
 
-    // Add metadata
+    // Add metadata (references fixture data - no ownership transfer)
     const metadata_obj = msg_data.object.get("metadata").?.object;
     var it = metadata_obj.iterator();
     while (it.next()) |entry| {
@@ -270,6 +274,8 @@ test "tool message structured" {
         mut_serialized.object.deinit();
     }
     try validateAgainstSchema(serialized, schema.value);
+    // Clean up metadata ObjectMap (content and values are owned by fixtures)
+    msg.metadata.object.deinit();
 }
 
 test "empty content" {
@@ -318,9 +324,9 @@ test "large content" {
     const content_text = msg_data.object.get("content").?.string;
 
     var msg = try Message.withText(allocator, role, content_text);
-    defer msg.deinit();
+    // Note: Don't defer msg.deinit() because metadata references fixture data
 
-    // Add metadata
+    // Add metadata (references fixture data - no ownership transfer)
     const metadata_obj = msg_data.object.get("metadata").?.object;
     var it = metadata_obj.iterator();
     while (it.next()) |entry| {
@@ -340,6 +346,10 @@ test "large content" {
         mut_serialized.object.deinit();
     }
     try validateAgainstSchema(serialized, schema.value);
+
+    // Clean up text content and metadata ObjectMap (not the values - owned by fixtures)
+    allocator.free(msg.content.text);
+    msg.metadata.object.deinit();
 }
 
 test "unicode content" {
@@ -380,8 +390,9 @@ test "unicode content" {
     }
     try validateAgainstSchema(serialized, schema.value);
 
-    // Clean up only the content, not the metadata (owned by fixtures)
+    // Clean up text content and metadata ObjectMap (not the values - owned by fixtures)
     allocator.free(msg.content.text);
+    msg.metadata.object.deinit();
 }
 
 test "nested metadata" {
@@ -400,9 +411,9 @@ test "nested metadata" {
     const content_text = msg_data.object.get("content").?.string;
 
     var msg = try Message.withText(allocator, role, content_text);
-    defer msg.deinit();
+    // Note: Don't defer msg.deinit() because metadata references fixture data
 
-    // Add metadata
+    // Add metadata (references fixture data - no ownership transfer)
     const metadata_obj = msg_data.object.get("metadata").?.object;
     var it = metadata_obj.iterator();
     while (it.next()) |entry| {
@@ -427,6 +438,10 @@ test "nested metadata" {
         mut_serialized.object.deinit();
     }
     try validateAgainstSchema(serialized, schema.value);
+
+    // Clean up text content and metadata ObjectMap (not the values - owned by fixtures)
+    allocator.free(msg.content.text);
+    msg.metadata.object.deinit();
 }
 
 test "numeric metadata" {
@@ -445,9 +460,9 @@ test "numeric metadata" {
     const content_text = msg_data.object.get("content").?.string;
 
     var msg = try Message.withText(allocator, role, content_text);
-    defer msg.deinit();
+    // Note: Don't defer msg.deinit() because metadata references fixture data
 
-    // Add metadata
+    // Add metadata (references fixture data - no ownership transfer)
     const metadata_obj = msg_data.object.get("metadata").?.object;
     var it = metadata_obj.iterator();
     while (it.next()) |entry| {
@@ -469,6 +484,10 @@ test "numeric metadata" {
         mut_serialized.object.deinit();
     }
     try validateAgainstSchema(serialized, schema.value);
+
+    // Clean up text content and metadata ObjectMap (not the values - owned by fixtures)
+    allocator.free(msg.content.text);
+    msg.metadata.object.deinit();
 }
 
 test "all fixtures roundtrip" {
@@ -492,9 +511,12 @@ test "all fixtures roundtrip" {
             .string => |s| try Message.withText(allocator, role, s),
             else => Message.withStructured(allocator, role, content_val),
         };
-        defer msg.deinit();
+        // Note: Don't call deinit() - metadata and possibly content reference fixture data
 
-        // Add metadata if present
+        // Track if we created text content (needs cleanup) vs structured (owned by fixtures)
+        const has_text_content = content_val == .string;
+
+        // Add metadata if present (references fixture data - no ownership transfer)
         if (msg_data.object.get("metadata")) |metadata_obj| {
             var it = metadata_obj.object.iterator();
             while (it.next()) |entry| {
@@ -513,5 +535,11 @@ test "all fixtures roundtrip" {
         // Verify core properties match
         try testing.expectEqualStrings(msg_data.object.get("role").?.string, serialized.object.get("role").?.string);
         try testing.expect(serialized.object.contains("content"));
+
+        // Clean up text content and metadata ObjectMap (not the values - owned by fixtures)
+        if (has_text_content) {
+            allocator.free(msg.content.text);
+        }
+        msg.metadata.object.deinit();
     }
 }

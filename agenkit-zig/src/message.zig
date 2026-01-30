@@ -18,6 +18,7 @@ pub const Role = enum {
     assistant,
     system,
     tool,
+    agent,
 
     pub fn toString(self: Role) []const u8 {
         return switch (self) {
@@ -25,6 +26,7 @@ pub const Role = enum {
             .assistant => "assistant",
             .system => "system",
             .tool => "tool",
+            .agent => "agent",
         };
     }
 
@@ -33,6 +35,7 @@ pub const Role = enum {
         if (std.mem.eql(u8, s, "assistant")) return .assistant;
         if (std.mem.eql(u8, s, "system")) return .system;
         if (std.mem.eql(u8, s, "tool")) return .tool;
+        if (std.mem.eql(u8, s, "agent")) return .agent;
         return error.InvalidRole;
     }
 };

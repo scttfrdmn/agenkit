@@ -291,6 +291,7 @@ pub const GeminiLLM = struct {
                 .assistant => "model",
                 .system => "user", // Gemini doesn't have system role, use user
                 .tool => "user", // Gemini doesn't have tool role, use user
+                .agent => "model", // Agent messages are similar to assistant
             };
 
             try json.appendSlice(allocator, "{\"role\":\"");

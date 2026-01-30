@@ -337,6 +337,7 @@ pub const AnthropicLLM = struct {
                 .assistant => "assistant",
                 .system => "user",
                 .tool => "user",
+                .agent => "assistant",
             };
             try json.appendSlice(allocator, role_str);
             try json.appendSlice(allocator, "\",\"content\":\"");
@@ -455,6 +456,7 @@ pub const AnthropicLLM = struct {
                 .assistant => "assistant",
                 .system => "user", // Should not happen due to filtering
                 .tool => "user",
+                .agent => "assistant",
             };
 
             try json.appendSlice(allocator, role_str);

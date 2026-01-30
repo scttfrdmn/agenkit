@@ -229,6 +229,7 @@ pub const BedrockLLM = struct {
                 .assistant => "assistant",
                 .system => "user",
                 .tool => "user",
+                .agent => "assistant",
             };
 
             try json.appendSlice(allocator, role_str);

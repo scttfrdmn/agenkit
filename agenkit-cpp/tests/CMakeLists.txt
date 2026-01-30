@@ -16,9 +16,10 @@ FetchContent_MakeAvailable(googletest)
 # Enable testing
 enable_testing()
 
-# Test helper utilities (if needed in future)
-# add_library(test_utils STATIC test_utils.cpp)
-# target_link_libraries(test_utils agenkit gtest)
+# Test utilities tests
+add_executable(test_test_utils test_test_utils.cpp)
+target_link_libraries(test_test_utils agenkit gtest_main)
+add_test(NAME test_utils_tests COMMAND test_test_utils)
 
 # Message tests
 add_executable(test_message test_message.cpp)

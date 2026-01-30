@@ -270,12 +270,51 @@ A language passes cross-language consistency tests if:
 
 | Test Category | Fixtures | Schema | Python | Go | TS | Rust | C++ | Zig |
 |---------------|----------|--------|--------|----|----|------|-----|-----|
-| Message Serialization | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ⚠️ 14* | ✅ 12/12 |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Retry Behavior | ✅ | - | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Timeout Behavior | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Circuit Breaker | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+
+*C++ tests blocked by pre-existing compilation error (issue #508)
+
+### Message Serialization Implementation Details
+
+**Python** (`agenkit/tests/cross_language/test_message_serialization.py`):
+- Framework: pytest with jsonschema
+- 16 tests covering all 10 fixture cases plus schema validation
+- All tests passing ✅
+
+**Go** (`agenkit-go/cross_language_tests/cross_language_test.go`):
+- Framework: testify with gojsonschema
+- 7 tests with 17 subtests total
+- Handles Go's string-only Content field with JSON encoding
+- All tests passing ✅
+
+**TypeScript** (`agenkit-ts/tests/cross-language/message-serialization.test.ts`):
+- Framework: Vitest with Ajv
+- 16 tests covering all scenarios
+- Uses createMessage() helper function
+- All tests passing ✅
+
+**Rust** (`agenkit-rust/tests/cross_language_message_serialization.rs`):
+- Framework: Built-in test with serde_json
+- 13 tests with basic structural schema validation
+- Uses serde_json::Value for flexible content
+- All tests passing ✅
+
+**C++** (`agenkit-cpp/tests/test_cross_language_message_serialization.cpp`):
+- Framework: Google Test (gtest) with nlohmann::json
+- 14 tests created and added to CMakeLists.txt
+- ⚠️ Cannot run due to pre-existing compilation errors (issue #508)
+- Tests ready to run once issue resolved
+
+**Zig** (`agenkit-zig/tests/cross_language/message_serialization_test.zig`):
+- Framework: Built-in test with std.json
+- 12 tests with proper memory management
+- Added "agent" role to Role enum for API parity
+- All tests passing ✅
 
 ## Related Issues
 

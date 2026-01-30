@@ -1,452 +1,293 @@
-# Cross-Language Equivalence Testing
+# Cross-Language API Consistency Tests
 
-This directory contains the cross-language equivalence testing infrastructure for Agenkit. It validates that all 6 language implementations (Python, Go, TypeScript, Rust, C++, Zig) behave identically across all 18 patterns.
+This directory contains cross-language API consistency tests for Agenkit, ensuring that all 6 language implementations (Python, Go, TypeScript, Rust, C++, Zig) behave identically.
 
 ## Overview
 
-The testing infrastructure consists of:
+The cross-language test suite verifies:
+- **Message Serialization**: Consistent JSON representation across languages
+- **Config Consistency**: Same configuration produces same behavior
+- **Error Handling**: Equivalent error scenarios and error types
+- **Middleware Behavior**: Retry, timeout, circuit breaker behave identically
 
-1. **Pattern Specifications** (`specs/`) - YAML definitions of expected behavior
-2. **Test Runner** (`run_equivalence_tests.py`) - Python orchestrator
-3. **Language Harnesses** - Executables implementing the JSON protocol for each language
-4. **Result Comparator** - Validates behavioral equivalence
-5. **Reporting System** - Generates equivalence reports
-
-## Architecture
+## Directory Structure
 
 ```
-┌─────────────────────────────────────────┐
-│  run_equivalence_tests.py              │
-│  (Python Test Runner)                   │
-└─────────┬─────────────────────┬─────────┘
-          │                     │
-          │  JSON Protocol      │
-          │  (stdin/stdout)     │
-          │                     │
-    ┌─────▼─────┐         ┌────▼─────┐
-    │  Python   │         │    Go    │  ... (6 languages)
-    │  Harness  │         │  Harness │
-    └───────────┘         └──────────┘
-          │                     │
-          ▼                     ▼
-    ┌───────────────────────────────┐
-    │  Pattern Implementations      │
-    │  (18 patterns × 6 languages)  │
-    └───────────────────────────────┘
+tests/cross_language/
+├── README.md                    # This file
+├── schemas/                     # JSON Schema definitions
+│   ├── message.schema.json      # Message serialization schema
+│   └── retry_config.schema.json # Retry configuration schema
+├── fixtures/                    # Test data fixtures
+│   ├── messages.json            # Message serialization test cases
+│   └── retry_behavior.json      # Retry behavior test cases
+└── harnesses/                   # Language-specific test harnesses
+    ├── python/
+    ├── go/
+    ├── typescript/
+    ├── rust/
+    ├── cpp/
+    └── zig/
 ```
 
-## Quick Start
+## JSON Schemas
 
-### 1. Build Harnesses
+### Message Schema (`schemas/message.schema.json`)
 
-Build the language-specific harness executables:
-
-```bash
-# Python (no build needed, interpreted)
-chmod +x tests/cross_language/harness_python.py
-
-# Go
-cd agenkit-go/tests
-go build -o cross_language_harness harness.go
-
-# TypeScript
-cd packages/core/tests
-npm run build:harness
-
-# Rust
-cd agenkit-rust
-cargo build --release --bin test_harness
-
-# C++
-cd agenkit-cpp
-mkdir -p build && cd build
-cmake .. && make test_harness
-
-# Zig
-cd agenkit-zig
-zig build test_harness
-```
-
-### 2. Run Tests
-
-Run all equivalence tests:
-
-```bash
-python tests/cross_language/run_equivalence_tests.py
-```
-
-Run specific patterns:
-
-```bash
-python tests/cross_language/run_equivalence_tests.py --patterns reflection sequential
-```
-
-Run specific languages:
-
-```bash
-python tests/cross_language/run_equivalence_tests.py --languages python go rust
-```
-
-### 3. View Report
-
-Test report is saved to `equivalence_report.json`:
-
-```bash
-cat equivalence_report.json | jq '.summary'
-```
-
-## Components
-
-### Specification Loader (`spec_loader.py`)
-
-Loads and validates YAML pattern specifications.
-
-```python
-from spec_loader import SpecificationLoader
-
-loader = SpecificationLoader("specs/")
-spec = loader.load_spec("reflection")
-
-# Validate spec
-errors = loader.validate_spec(spec)
-if errors:
-    print("Validation errors:", errors)
-```
-
-### Harness Manager (`harness_manager.py`)
-
-Manages communication with language harnesses via JSON protocol.
-
-```python
-from harness_manager import HarnessManager, HarnessConfig, TestRequest
-
-# Configure harnesses
-configs = [
-    HarnessConfig(language="python", executable_path=Path("harness_python.py")),
-    HarnessConfig(language="go", executable_path=Path("agenkit-go/tests/cross_language_harness")),
-]
-
-manager = HarnessManager(configs)
-
-# Execute test
-request = TestRequest(
-    pattern="reflection",
-    scenario_id="reflection_basic",
-    input_data={"message": {...}, "config": {...}}
-)
-
-result = manager.execute_test("python", request)
-print(result.status, result.output)
-```
-
-### Result Comparator (`result_comparator.py`)
-
-Compares and validates test results.
-
-```python
-from result_comparator import ResultComparator
-
-comparator = ResultComparator()
-
-# Validate output against expected
-validation = comparator.validate_output(actual_output, expected_output)
-if not validation.valid:
-    print("Validation errors:", validation.errors)
-
-# Compare outputs from two languages
-comparison = comparator.compare_outputs(
-    python_output, go_output, "python", "go"
-)
-if not comparison.equivalent:
-    print("Differences:", comparison.differences)
-```
-
-### Test Runner (`run_equivalence_tests.py`)
-
-Main orchestrator that runs all tests.
-
-```python
-from run_equivalence_tests import EquivalenceTestRunner
-
-runner = EquivalenceTestRunner(
-    specs_dir=Path("specs/"),
-    harness_configs=configs,
-    languages=["python", "go"]
-)
-
-# Run all tests
-results = runner.run_all_tests()
-
-# Generate report
-runner.generate_report(results, Path("report.json"))
-```
-
-## JSON Protocol
-
-See [PROTOCOL.md](PROTOCOL.md) for complete protocol documentation.
-
-### Request Format
+Defines the canonical JSON representation for Agenkit messages:
 
 ```json
 {
-  "protocol_version": "1.0",
-  "request_id": "uuid",
-  "command": "execute_test",
-  "payload": {
-    "pattern": "reflection",
-    "scenario_id": "reflection_basic",
-    "input": {
-      "message": {"role": "user", "content": "..."},
-      "config": {"max_iterations": 3}
+  "role": "user|assistant|system|tool|agent",
+  "content": "string or object",
+  "metadata": {
+    "key": "value"
+  },
+  "timestamp": "ISO 8601 or Unix timestamp"
+}
+```
+
+**Validation Rules:**
+- `role` must be one of 5 valid values
+- `content` can be string or structured object
+- `metadata` limited to 100 keys, key names max 50 chars
+- `timestamp` is optional but should be ISO 8601 format
+
+### Retry Config Schema (`schemas/retry_config.schema.json`)
+
+Defines the canonical JSON representation for retry configuration:
+
+```json
+{
+  "max_attempts": 3,
+  "initial_backoff_ms": 1000,
+  "max_backoff_ms": 30000,
+  "backoff_multiplier": 2.0,
+  "jitter": false
+}
+```
+
+**Validation Rules:**
+- `max_attempts` must be 1-10
+- All timing values in milliseconds
+- `backoff_multiplier` must be >= 1.0
+
+## Test Fixtures
+
+### Message Fixtures (`fixtures/messages.json`)
+
+10 test cases covering:
+- Simple text messages
+- Structured tool results
+- Unicode content
+- Nested metadata
+- Edge cases (empty content, large content)
+
+**Each test case includes:**
+- `id`: Unique test case identifier
+- `name`: Human-readable description
+- `message`: The message object to serialize/deserialize
+- `validation`: Expected properties to verify
+
+### Retry Behavior Fixtures (`fixtures/retry_behavior.json`)
+
+7 test cases covering:
+- Success on first attempt
+- Success after retries
+- Exhausted retries
+- Exponential backoff timing
+- Max backoff capping
+- Non-retryable errors
+- Metrics tracking
+
+**Each test case includes:**
+- `config`: Retry configuration
+- `scenario`: Simulated agent responses
+- `expected_behavior`: Expected retry behavior and metrics
+
+## Running Tests
+
+### Per-Language Test Suites
+
+Each language should have tests that:
+1. Load JSON fixtures
+2. Deserialize into native types
+3. Validate expected properties
+4. Serialize back to JSON
+5. Verify JSON matches expected format
+
+**Python Example:**
+```python
+import json
+from pathlib import Path
+
+def test_message_serialization():
+    fixtures = json.loads(Path("tests/cross_language/fixtures/messages.json").read_text())
+
+    for test_case in fixtures["test_cases"]:
+        # Deserialize
+        msg = Message.from_dict(test_case["message"])
+
+        # Validate
+        assert msg.role == test_case["message"]["role"]
+        assert msg.content == test_case["message"]["content"]
+
+        # Serialize back
+        serialized = msg.to_dict()
+        assert serialized["role"] == test_case["message"]["role"]
+```
+
+**Go Example:**
+```go
+func TestMessageSerialization(t *testing.T) {
+    data, _ := os.ReadFile("tests/cross_language/fixtures/messages.json")
+    var fixtures MessageFixtures
+    json.Unmarshal(data, &fixtures)
+
+    for _, testCase := range fixtures.TestCases {
+        // Deserialize
+        var msg Message
+        json.Unmarshal(testCase.Message, &msg)
+
+        // Validate
+        assert.Equal(t, testCase.Message.Role, msg.Role)
+
+        // Serialize back
+        serialized, _ := json.Marshal(msg)
+        // Verify JSON
     }
+}
+```
+
+### JSON Schema Validation
+
+Each language should validate that serialized output conforms to JSON schemas:
+
+```bash
+# Install JSON Schema validator (Python)
+pip install jsonschema
+
+# Validate message against schema
+jsonschema -i message.json schemas/message.schema.json
+```
+
+## Test Categories
+
+### 1. Message Serialization Tests ✅
+
+**Status:** Fixtures created
+**Coverage:** 10 test cases
+
+Tests that all languages:
+- Serialize/deserialize messages identically
+- Handle all content types (string, structured)
+- Preserve metadata correctly
+- Support Unicode and special characters
+- Match JSON schema
+
+### 2. Config Consistency Tests ⏳
+
+**Status:** Retry config schema created
+**Coverage:** 7 retry behavior test cases
+
+Tests that all languages:
+- Parse config consistently
+- Apply same default values
+- Validate config constraints
+- Match JSON schema
+
+### 3. Error Handling Tests ⏳
+
+**Status:** Planned
+**Coverage:** TBD
+
+Tests that all languages:
+- Return equivalent error types
+- Provide consistent error messages
+- Handle error scenarios identically
+
+### 4. Middleware Behavior Tests ⏳
+
+**Status:** Retry fixtures created
+**Coverage:** 7 retry test cases
+
+Tests that all languages:
+- Retry logic behaves identically
+- Exponential backoff matches
+- Metrics tracking consistent
+- Timeout handling equivalent
+
+## Adding New Test Cases
+
+### 1. Create JSON Schema (if needed)
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Your Schema",
+  "type": "object",
+  "properties": {
+    "field": {"type": "string"}
   }
 }
 ```
 
-### Response Format
+### 2. Create Test Fixtures
 
 ```json
 {
-  "protocol_version": "1.0",
-  "request_id": "uuid",
-  "status": "success",
-  "result": {
-    "output": {
-      "message": {"role": "assistant", "content": "..."},
-      "behavior": {"turns": 4, "tool_calls": []}
-    },
-    "execution_info": {"duration_ms": 1250}
-  },
-  "error": null
+  "version": "1.0",
+  "description": "Test description",
+  "test_cases": [
+    {
+      "id": "unique_id",
+      "name": "Test name",
+      "input": {},
+      "expected": {}
+    }
+  ]
 }
 ```
 
-## Implementing a Language Harness
-
-Each language must implement a harness executable that:
-
-1. Reads JSON request from stdin
-2. Executes the test using language-specific pattern implementations
-3. Writes JSON response to stdout
-4. Exits with appropriate exit code
-
-### Exit Codes
-
-- **0**: Success (valid JSON response)
-- **1**: Error (error JSON response)
-- **2**: Invalid protocol
-- **3**: Timeout
-- **4**: Internal error
-
-### Example Harness (Python)
-
-See [harness_python.py](harness_python.py) for reference implementation.
-
-### Creating a New Harness
-
-1. **Implement Protocol Handler**: Parse JSON requests, dispatch commands
-2. **Implement Pattern Execution**: Execute patterns with configuration
-3. **Implement Response Serialization**: Convert results to JSON
-4. **Add Error Handling**: Catch and report errors
-5. **Test Harness**: Run `health_check` and `get_info` commands
-
-```bash
-# Test harness
-echo '{"protocol_version":"1.0","request_id":"test","command":"health_check","payload":{}}' | ./your_harness
-```
-
-## Pattern Specifications
-
-See [specs/README.md](specs/README.md) for specification format.
-
-Each pattern has:
-- Test scenarios with input/output
-- Expected behavioral characteristics
-- Edge cases
-- Pattern properties (determinism, statefulness, etc.)
-
-## Equivalence Criteria
-
-Two implementations are equivalent if:
-
-1. **Same Status**: Both succeed or fail with same error type
-2. **Content Match**: Output content matches patterns/contains rules
-3. **Metadata Consistency**: Required metadata fields present and match
-4. **Behavior Match**: Behavioral characteristics align (turns, tool calls, etc.)
-5. **Edge Cases**: Same edge case handling
-
-### Tolerance Configuration
-
-Some variance is acceptable:
-
-```python
-tolerance = {
-    "float_epsilon": 1e-6,        # Floating point comparison
-    "timestamp_ignore": True,     # Ignore timestamp differences
-    "llm_content_exact": False,   # Don't require exact LLM output
-    "metadata_strict": False,     # Allow extra metadata fields
-}
-```
-
-## CI Integration
-
-Add to GitHub Actions workflow:
-
-```yaml
-name: Cross-Language Equivalence Tests
-
-on: [push, pull_request]
-
-jobs:
-  equivalence-tests:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-
-      # Set up other languages...
-
-      - name: Build Harnesses
-        run: |
-          # Build all harnesses
-          make build-harnesses
-
-      - name: Run Equivalence Tests
-        run: |
-          python tests/cross_language/run_equivalence_tests.py
-
-      - name: Upload Report
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: equivalence-report
-          path: equivalence_report.json
-```
-
-## Troubleshooting
-
-### Harness Not Found
-
-```
-ERROR: No harnesses found!
-```
-
-Solution: Build the harness executables first (see Quick Start).
-
-### Protocol Version Mismatch
-
-```
-ERROR: Protocol version mismatch
-```
-
-Solution: Update harness to use protocol version 1.0.
-
-### Pattern Not Implemented
-
-```
-status: "not_implemented"
-```
-
-Solution: Implement the pattern in the harness's language implementation.
-
-### Validation Errors
-
-```
-ERROR: Content missing required substring
-```
-
-Solution: Check pattern implementation - output doesn't match specification.
-
-## Development
-
-### Adding New Test Scenarios
-
-1. Edit pattern specification in `specs/{pattern}.yaml`
-2. Add new scenario with id, input, expected output
-3. Run tests to validate
-
-### Updating Protocol
-
-1. Update `PROTOCOL.md` with changes
-2. Increment protocol version (major for breaking changes)
-3. Update all harnesses to support new version
-4. Update `harness_manager.py` protocol version
-
-### Running Single Language
-
-```bash
-# Test only Python implementation
-python tests/cross_language/run_equivalence_tests.py --languages python
-```
-
-### Debugging Harness
-
-```bash
-# Send test request manually
-echo '{"protocol_version":"1.0","request_id":"debug","command":"get_info","payload":{}}' | \
-  ./harness_python.py | jq
-```
-
-## Performance
-
-### Parallel Execution
-
-Tests can run in parallel across languages:
-
-```python
-# Execute test on all languages in parallel
-results = manager.execute_test_parallel(["python", "go", "rust"], request)
-```
-
-### Timeouts
-
-Default timeout: 60 seconds per test
-Configure per-pattern or per-language:
-
-```python
-config = HarnessConfig(
-    language="rust",
-    executable_path=...,
-    timeout=120  # 2 minutes for slow patterns
-)
-```
-
-## Roadmap
-
-### v0.42.0 (Current)
-- ✅ Pattern specifications (#270)
-- 🚧 Test harness infrastructure (#271 - THIS ISSUE)
-- ⏳ Execute equivalence tests (#272)
-
-### Future Enhancements
-- Parallel harness execution (multiprocessing)
-- Streaming test support
-- Performance benchmarking integration
-- Interactive debugging mode
-- Web-based report viewer
-
-## References
-
-- **Issue #270**: Pattern behavior specifications
-- **Issue #271**: Test harness implementation (this)
-- **Issue #272**: Run equivalence tests
-- **PROTOCOL.md**: JSON protocol specification
-- **specs/SCHEMA.md**: Specification schema
-
----
-
-**Created**: December 13, 2025
-**Status**: In Development
-**Protocol Version**: 1.0
-**Patterns**: 18
-**Languages**: 6 (Python, Go, TypeScript, Rust, C++, Zig)
+### 3. Implement Per-Language Tests
+
+Each language should:
+- Load fixture file
+- Iterate through test cases
+- Validate expected behavior
+- Report failures
+
+## Success Criteria
+
+A language passes cross-language consistency tests if:
+- ✅ All message serialization tests pass
+- ✅ All config parsing tests pass
+- ✅ All error handling tests pass
+- ✅ All middleware behavior tests match
+- ✅ JSON output validates against schemas
+
+## Current Status
+
+| Test Category | Fixtures | Schema | Python | Go | TS | Rust | C++ | Zig |
+|---------------|----------|--------|--------|----|----|------|-----|-----|
+| Message Serialization | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| Retry Behavior | ✅ | - | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| Timeout Behavior | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| Circuit Breaker | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+
+## Related Issues
+
+- #438 - Create cross-language API consistency test suite (THIS ISSUE)
+- #436 - Mock LLMs for C++ and Zig (COMPLETE)
+- #437 - Comprehensive Zig testing framework (COMPLETE)
+- #445 - API Alignment Phase 2B/2C
+
+## Next Steps
+
+1. Implement per-language test suites for message serialization
+2. Add timeout and circuit breaker fixtures
+3. Create error handling test cases
+4. Build automated test runner
+5. Generate cross-language compatibility report

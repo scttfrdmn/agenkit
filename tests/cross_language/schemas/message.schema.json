@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/agenkit/agenkit/schemas/message.json",
+  "title": "Agenkit Message",
+  "description": "Cross-language serialization schema for Agenkit messages",
+  "type": "object",
+  "required": ["role", "content"],
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": ["user", "assistant", "system", "tool", "agent"],
+      "description": "The role of the message sender"
+    },
+    "content": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Text content"
+        },
+        {
+          "type": "object",
+          "description": "Structured content (tool results, etc.)"
+        }
+      ]
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Optional metadata key-value pairs",
+      "maxProperties": 100,
+      "patternProperties": {
+        "^[a-zA-Z0-9_-]{1,50}$": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "number" },
+            { "type": "boolean" },
+            { "type": "null" },
+            { "type": "array" },
+            { "type": "object" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "ISO 8601 timestamp or Unix timestamp",
+      "examples": ["2026-01-30T09:00:00Z", "1738230000"]
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "role": "user",
+      "content": "Hello, how can I help you?",
+      "metadata": {
+        "source": "cli",
+        "session_id": "abc123"
+      },
+      "timestamp": "2026-01-30T09:00:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm here to assist you with your questions.",
+      "metadata": {},
+      "timestamp": "2026-01-30T09:00:01Z"
+    },
+    {
+      "role": "tool",
+      "content": {
+        "tool_name": "calculator",
+        "result": 42,
+        "success": true
+      },
+      "metadata": {
+        "tool_id": "calc_001"
+      },
+      "timestamp": "2026-01-30T09:00:02Z"
+    }
+  ]
+}

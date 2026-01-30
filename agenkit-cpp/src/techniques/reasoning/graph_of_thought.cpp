@@ -35,18 +35,16 @@ std::vector<std::string> GraphOfThoughtAgent::capabilities() const {
 
 std::future<core::Result<std::string, core::AgentError>> GraphOfThoughtAgent::llm_call(const std::string& prompt) {
     return std::async(std::launch::async, [this, prompt]() -> core::Result<std::string, core::AgentError> {
-        core::Message message;
-        message.role = "user";
-        message.content = prompt;
+        auto message = core::Message::with_text("user", prompt);
 
         auto result_future = agent_->process(message);
         auto result = result_future.get();
 
         if (!result.is_ok()) {
-            return core::Result<std::string, core::AgentError>::err(result.error());
+            return core::Result<std::string, core::AgentError>::err(result.unwrap_err());
         }
 
-        return core::Result<std::string, core::AgentError>::ok(result.unwrap().content);
+        return core::Result<std::string, core::AgentError>::ok(result.unwrap().content_as_str());
     });
 }
 
@@ -62,7 +60,7 @@ std::future<core::Result<std::vector<std::string>, core::AgentError>> GraphOfTho
         auto result = result_future.get();
 
         if (!result.is_ok()) {
-            return core::Result<std::vector<std::string>, core::AgentError>::err(result.error());
+            return core::Result<std::vector<std::string>, core::AgentError>::err(result.unwrap_err());
         }
 
         // Parse premises
@@ -128,7 +126,7 @@ std::future<core::Result<std::vector<std::string>, core::AgentError>> GraphOfTho
         auto result = result_future.get();
 
         if (!result.is_ok()) {
-            return core::Result<std::vector<std::string>, core::AgentError>::err(result.error());
+            return core::Result<std::vector<std::string>, core::AgentError>::err(result.unwrap_err());
         }
 
         // Parse thoughts
@@ -184,7 +182,7 @@ std::future<core::Result<std::optional<EdgeType>, core::AgentError>> GraphOfThou
         auto result = result_future.get();
 
         if (!result.is_ok()) {
-            return core::Result<std::optional<EdgeType>, core::AgentError>::err(result.error());
+            return core::Result<std::optional<EdgeType>, core::AgentError>::err(result.unwrap_err());
         }
 
         std::string response = result.unwrap();
@@ -213,7 +211,7 @@ std::future<core::Result<ReasoningGraph, core::AgentError>> GraphOfThoughtAgent:
         auto premises_result = premises_future.get();
 
         if (!premises_result.is_ok()) {
-            return core::Result<ReasoningGraph, core::AgentError>::err(premises_result.error());
+            return core::Result<ReasoningGraph, core::AgentError>::err(premises_result.unwrap_err());
         }
 
         auto premises = premises_result.unwrap();
@@ -237,7 +235,7 @@ std::future<core::Result<ReasoningGraph, core::AgentError>> GraphOfThoughtAgent:
             auto thoughts_result = thoughts_future.get();
 
             if (!thoughts_result.is_ok()) {
-                return core::Result<ReasoningGraph, core::AgentError>::err(thoughts_result.error());
+                return core::Result<ReasoningGraph, core::AgentError>::err(thoughts_result.unwrap_err());
             }
 
             auto new_thoughts = thoughts_result.unwrap();
@@ -402,7 +400,7 @@ std::future<core::Result<core::Message, core::AgentError>> GraphOfThoughtAgent::
         auto graph_result = graph_future.get();
 
         if (!graph_result.is_ok()) {
-            return core::Result<core::Message, core::AgentError>::err(graph_result.error());
+            return core::Result<core::Message, core::AgentError>::err(graph_result.unwrap_err());
         }
 
         auto graph = graph_result.unwrap();

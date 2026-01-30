@@ -104,7 +104,7 @@ public:
 
     std::string name() const override;
     std::vector<std::string> capabilities() const override;
-    std::future<core::Result<core::Message>> process(core::Message message) override;
+    std::future<core::Result<core::Message, core::AgentError>> process(core::Message message) override;
 
 private:
     std::shared_ptr<core::Agent> agent_;
@@ -113,14 +113,14 @@ private:
     bool validate_plan_;
     bool allow_replanning_;
 
-    std::future<core::Result<std::string>> llm_call(const std::string& prompt);
-    std::future<core::Result<Plan>> create_plan(const std::string& problem);
-    std::future<core::Result<void>> validate(Plan& plan);
+    std::future<core::Result<std::string, core::AgentError>> llm_call(const std::string& prompt);
+    std::future<core::Result<Plan, core::AgentError>> create_plan(const std::string& problem);
+    std::future<core::Result<void, core::AgentError>> validate(Plan& plan);
     std::string format_plan(const Plan& plan);
-    std::future<core::Result<std::string>> execute_step(
+    std::future<core::Result<std::string, core::AgentError>> execute_step(
         const PlanStep& step,
         const std::vector<std::string>& previous_results);
-    std::future<core::Result<std::vector<std::string>>> execute_plan(Plan& plan);
+    std::future<core::Result<std::vector<std::string>, core::AgentError>> execute_plan(Plan& plan);
 };
 
 } // namespace reasoning

@@ -209,6 +209,34 @@ func WithTopP(topP float64) CallOption {
 	}
 }
 
+// WithFrequencyPenalty sets the frequency penalty (-2.0 to 2.0).
+// Panics if frequencyPenalty is outside the valid range.
+func WithFrequencyPenalty(frequencyPenalty float64) CallOption {
+	if frequencyPenalty < -2.0 || frequencyPenalty > 2.0 {
+		panic(fmt.Sprintf("frequency_penalty must be between -2 and 2, got %v", frequencyPenalty))
+	}
+	return func(opts *CallOptions) {
+		if opts.Extra == nil {
+			opts.Extra = make(map[string]interface{})
+		}
+		opts.Extra["frequency_penalty"] = frequencyPenalty
+	}
+}
+
+// WithPresencePenalty sets the presence penalty (-2.0 to 2.0).
+// Panics if presencePenalty is outside the valid range.
+func WithPresencePenalty(presencePenalty float64) CallOption {
+	if presencePenalty < -2.0 || presencePenalty > 2.0 {
+		panic(fmt.Sprintf("presence_penalty must be between -2 and 2, got %v", presencePenalty))
+	}
+	return func(opts *CallOptions) {
+		if opts.Extra == nil {
+			opts.Extra = make(map[string]interface{})
+		}
+		opts.Extra["presence_penalty"] = presencePenalty
+	}
+}
+
 // WithExtra adds a provider-specific option.
 func WithExtra(key string, value interface{}) CallOption {
 	return func(opts *CallOptions) {

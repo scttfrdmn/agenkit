@@ -26,8 +26,8 @@ std::string GraphOfThoughtAgent::name() const {
 std::vector<std::string> GraphOfThoughtAgent::capabilities() const {
     return {
         "reasoning",
-        "graph_reasoning",
-        "multi_hop",
+        "graph_of_thought",
+        "multi_hop_reasoning",
         "path_aggregation",
         "graph_of_thought"
     };

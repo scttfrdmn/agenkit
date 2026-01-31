@@ -146,13 +146,19 @@ bool ReasoningGraph::has_cycle_dfs(size_t node_id,
 }
 
 double ReasoningGraph::get_path_score(const std::vector<size_t>& path) const {
-    double score = 0.0;
+    if (path.empty()) {
+        return 0.0;
+    }
+
+    double sum = 0.0;
+    size_t count = 0;
 
     // Add confidence scores
     for (size_t node_id : path) {
         auto node = get_node(node_id);
         if (node) {
-            score += node->confidence;
+            sum += node->confidence;
+            count++;
         }
     }
 
@@ -167,11 +173,13 @@ double ReasoningGraph::get_path_score(const std::vector<size_t>& path) const {
                                      });
 
         if (edge_it != edges_.end()) {
-            score += edge_it->strength;
+            sum += edge_it->strength;
+            count++;
         }
     }
 
-    return score;
+    // Return average to keep score in [0, 1] range
+    return count > 0 ? sum / count : 0.0;
 }
 
 GraphStatistics ReasoningGraph::statistics() const {

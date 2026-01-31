@@ -21,7 +21,7 @@
 //! # Algorithm
 //!
 //! Uses exponential backoff with configurable parameters:
-//! - `max_attempts`: Maximum number of retry attempts
+//! - `max_retries`: Maximum number of retry attempts
 //! - `initial_delay`: First retry delay (e.g., 100ms)
 //! - `max_delay`: Maximum delay cap (e.g., 10s)
 //! - `multiplier`: Backoff multiplier (e.g., 2.0 for doubling)
@@ -55,7 +55,7 @@
 //!
 //! // Configure retry behavior
 //! let config = RetryConfig::builder()
-//!     .max_attempts(5)
+//!     .max_retries(5)
 //!     .initial_delay(Duration::from_millis(100))
 //!     .max_delay(Duration::from_secs(2))
 //!     .multiplier(2.0)
@@ -99,7 +99,7 @@ pub struct RetryMetrics {
 pub struct RetryConfig {
     /// Maximum number of attempts (including initial attempt).
     /// Default: 3
-    pub max_attempts: u32,
+    pub max_retries: u32,
 
     /// Initial retry delay.
     /// Default: 100ms
@@ -117,7 +117,7 @@ pub struct RetryConfig {
 impl Default for RetryConfig {
     fn default() -> Self {
         Self {
-            max_attempts: 3,
+            max_retries: 3,
             initial_delay: Duration::from_millis(100),
             max_delay: Duration::from_secs(10),
             multiplier: 2.0,
@@ -148,7 +148,7 @@ impl RetryConfig {
 /// Builder for RetryConfig.
 #[derive(Debug, Default)]
 pub struct RetryConfigBuilder {
-    max_attempts: Option<u32>,
+    max_retries: Option<u32>,
     initial_delay: Option<Duration>,
     max_delay: Option<Duration>,
     multiplier: Option<f64>,
@@ -156,8 +156,8 @@ pub struct RetryConfigBuilder {
 
 impl RetryConfigBuilder {
     /// Set maximum number of attempts.
-    pub fn max_attempts(mut self, attempts: u32) -> Self {
-        self.max_attempts = Some(attempts);
+    pub fn max_retries(mut self, attempts: u32) -> Self {
+        self.max_retries = Some(attempts);
         self
     }
 
@@ -183,7 +183,7 @@ impl RetryConfigBuilder {
     pub fn build(self) -> RetryConfig {
         let default = RetryConfig::default();
         RetryConfig {
-            max_attempts: self.max_attempts.unwrap_or(default.max_attempts),
+            max_retries: self.max_retries.unwrap_or(default.max_retries),
             initial_delay: self.initial_delay.unwrap_or(default.initial_delay),
             max_delay: self.max_delay.unwrap_or(default.max_delay),
             multiplier: self.multiplier.unwrap_or(default.multiplier),
@@ -240,7 +240,7 @@ impl<A: Agent> Agent for RetryMiddleware<A> {
         result.metadata.insert(
             "retry_config".to_string(),
             serde_json::json!({
-                "max_attempts": self.config.max_attempts,
+                "max_retries": self.config.max_retries,
                 "initial_delay_ms": self.config.initial_delay.as_millis(),
                 "max_delay_ms": self.config.max_delay.as_millis(),
                 "multiplier": self.config.multiplier,
@@ -258,7 +258,7 @@ impl<A: Agent> Agent for RetryMiddleware<A> {
             metrics.total_attempts += 1;
         }
 
-        for attempt in 0..self.config.max_attempts {
+        for attempt in 0..self.config.max_retries {
             // Calculate and apply delay (skip on first attempt)
             if attempt > 0 {
                 // Track retry attempts (not counting the initial attempt)
@@ -359,7 +359,7 @@ mod tests {
     async fn test_retry_succeeds_on_second_attempt() {
         let agent = FailingAgent::new(1); // Fail once, then succeed
         let config = RetryConfig::builder()
-            .max_attempts(3)
+            .max_retries(3)
             .initial_delay(Duration::from_millis(10))
             .build();
 
@@ -374,10 +374,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_retry_fails_after_max_attempts() {
+    async fn test_retry_fails_after_max_retries() {
         let agent = FailingAgent::new(10); // Always fails
         let config = RetryConfig::builder()
-            .max_attempts(3)
+            .max_retries(3)
             .initial_delay(Duration::from_millis(10))
             .build();
 
@@ -393,7 +393,7 @@ mod tests {
     #[tokio::test]
     async fn test_retry_succeeds_immediately() {
         let agent = FailingAgent::new(0); // Never fails
-        let config = RetryConfig::builder().max_attempts(3).build();
+        let config = RetryConfig::builder().max_retries(3).build();
 
         let retry_agent = RetryMiddleware::new(agent, config);
 
@@ -438,7 +438,7 @@ mod tests {
     async fn test_introspect_includes_retry_metadata() {
         let agent = FailingAgent::new(0);
         let config = RetryConfig::builder()
-            .max_attempts(5)
+            .max_retries(5)
             .initial_delay(Duration::from_millis(100))
             .max_delay(Duration::from_secs(2))
             .multiplier(2.0)

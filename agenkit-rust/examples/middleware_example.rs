@@ -67,7 +67,7 @@ async fn example_retry() {
     let agent = EchoAgent::new("retry-agent");
 
     let config = RetryConfig::builder()
-        .max_attempts(3)
+        .max_retries(3)
         .initial_delay(Duration::from_millis(100))
         .max_delay(Duration::from_secs(2))
         .multiplier(2.0)
@@ -237,7 +237,7 @@ async fn example_composition() {
     let agent = EchoAgent::new("composed-agent");
 
     // Layer 1: Retry (innermost)
-    let retry_config = RetryConfig::builder().max_attempts(3).build();
+    let retry_config = RetryConfig::builder().max_retries(3).build();
     let agent = RetryMiddleware::new(agent, retry_config);
 
     // Layer 2: Circuit Breaker

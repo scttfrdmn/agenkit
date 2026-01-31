@@ -31,10 +31,10 @@ public:
         return {"mock", "testing"};
     }
 
-    std::future<Result<Message>> process(Message message) override {
+    std::future<Result<Message, AgentError>> process(Message message) override {
         return std::async(std::launch::async, [this, msg = std::move(message)]() {
             size_t idx = call_count_.fetch_add(1) % responses_.size();
-            return Result<Message>::ok(
+            return Result<Message, AgentError>::ok(
                 Message::with_text("assistant", responses_[idx])
             );
         });
@@ -71,7 +71,7 @@ TEST(PlanAndSolveTest, BasicFunctionality) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     EXPECT_FALSE(response.content_as_str().empty());
 
     auto metadata = response.metadata();
@@ -113,7 +113,7 @@ TEST(PlanAndSolveTest, CreatePlan) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     auto plan_steps = metadata["plan_steps"].get<std::vector<std::string>>();
@@ -138,7 +138,7 @@ TEST(PlanAndSolveTest, ParseSteps) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     auto plan_steps = metadata["plan_steps"].get<std::vector<std::string>>();
@@ -167,7 +167,7 @@ TEST(PlanAndSolveTest, ValidateWhenEnabled) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     EXPECT_EQ(metadata["validated"].get<bool>(), true);
@@ -217,7 +217,7 @@ TEST(PlanAndSolveTest, HandleInvalidPlanValidation) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     EXPECT_EQ(metadata["validated"].get<bool>(), false);
@@ -243,7 +243,7 @@ TEST(PlanAndSolveTest, ExecuteStepsSequentially) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     auto execution_steps = metadata["execution_steps"].get<std::vector<std::string>>();
@@ -271,7 +271,7 @@ TEST(PlanAndSolveTest, ReturnFinalSolution) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     EXPECT_EQ(response.content_as_str(), "Final answer");
 }
 
@@ -315,7 +315,7 @@ TEST(PlanAndSolveTest, CustomPlanner) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     auto plan_steps = metadata["plan_steps"].get<std::vector<std::string>>();
@@ -346,7 +346,7 @@ TEST(PlanAndSolveTest, CustomSolver) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     EXPECT_TRUE(response.content_as_str().find("Custom solution") != std::string::npos);
 }
 
@@ -374,7 +374,7 @@ TEST(PlanAndSolveTest, ReplanningWhenValidationFails) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     // Should have replanned and gotten a valid plan
@@ -396,7 +396,7 @@ TEST(PlanAndSolveTest, HandleEmptyPlan) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     EXPECT_EQ(metadata["num_steps"].get<size_t>(), 0);
@@ -420,7 +420,7 @@ TEST(PlanAndSolveTest, HandleSingleStepPlan) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     EXPECT_EQ(metadata["num_steps"].get<size_t>(), 1);
@@ -444,7 +444,7 @@ TEST(PlanAndSolveTest, ParsePeriodNumbering) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     auto plan_steps = metadata["plan_steps"].get<std::vector<std::string>>();
@@ -471,7 +471,7 @@ TEST(PlanAndSolveTest, ParseParenthesisNumbering) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     auto plan_steps = metadata["plan_steps"].get<std::vector<std::string>>();
@@ -497,7 +497,7 @@ TEST(PlanAndSolveTest, SkipEmptyLines) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     EXPECT_EQ(metadata["num_steps"].get<size_t>(), 2);
@@ -523,7 +523,7 @@ TEST(PlanAndSolveTest, IncludeAllRequiredMetadataFields) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     EXPECT_TRUE(metadata.contains("technique"));
@@ -560,7 +560,7 @@ TEST(PlanAndSolveTest, TrackStrategyWhenProvided) {
 
     ASSERT_TRUE(result.is_ok());
 
-    auto response = result.value();
+    auto response = result.unwrap();
     auto metadata = response.metadata();
 
     EXPECT_EQ(metadata["strategy"].get<std::string>(), "Divide and conquer");

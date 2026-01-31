@@ -129,6 +129,14 @@ class ReasoningGraph {
 public:
     ReasoningGraph();
 
+    // Delete copy operations (unique_ptr members are non-copyable)
+    ReasoningGraph(const ReasoningGraph&) = delete;
+    ReasoningGraph& operator=(const ReasoningGraph&) = delete;
+
+    // Keep move operations (default is fine)
+    ReasoningGraph(ReasoningGraph&&) = default;
+    ReasoningGraph& operator=(ReasoningGraph&&) = default;
+
     /**
      * @brief Add a thought node to the graph
      *

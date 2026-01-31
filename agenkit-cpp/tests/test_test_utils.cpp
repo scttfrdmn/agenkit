@@ -24,7 +24,7 @@ TEST(TestUtilsTest, MockAgentBasicFunctionality) {
     auto result1 = mock->process(std::move(msg1)).get();
 
     ASSERT_TRUE(result1.is_ok());
-    EXPECT_EQ(result1.value().content_as_str(), "Response 1");
+    EXPECT_EQ(result1.unwrap().content_as_str(), "Response 1");
     EXPECT_EQ(mock->get_call_count(), 1);
 
     // Test second response
@@ -32,7 +32,7 @@ TEST(TestUtilsTest, MockAgentBasicFunctionality) {
     auto result2 = mock->process(std::move(msg2)).get();
 
     ASSERT_TRUE(result2.is_ok());
-    EXPECT_EQ(result2.value().content_as_str(), "Response 2");
+    EXPECT_EQ(result2.unwrap().content_as_str(), "Response 2");
     EXPECT_EQ(mock->get_call_count(), 2);
 
     // Test cycling back to first response
@@ -40,7 +40,7 @@ TEST(TestUtilsTest, MockAgentBasicFunctionality) {
     auto result3 = mock->process(std::move(msg3)).get();
 
     ASSERT_TRUE(result3.is_ok());
-    EXPECT_EQ(result3.value().content_as_str(), "Response 1");
+    EXPECT_EQ(result3.unwrap().content_as_str(), "Response 1");
     EXPECT_EQ(mock->get_call_count(), 3);
 }
 
@@ -78,7 +78,7 @@ TEST(TestUtilsTest, MockAgentEmptyResponses) {
     auto result = mock->process(std::move(msg)).get();
 
     ASSERT_TRUE(result.is_ok());
-    EXPECT_EQ(result.value().content_as_str(), "default_response");
+    EXPECT_EQ(result.unwrap().content_as_str(), "default_response");
 }
 
 // Test MockAgent with custom name
@@ -104,8 +104,8 @@ TEST(TestUtilsTest, FailingMockAgentReturnsError) {
     auto result = failing->process(std::move(msg)).get();
 
     ASSERT_TRUE(result.is_err());
-    EXPECT_EQ(result.error().type(), AgentErrorType::ProcessingError);
-    EXPECT_EQ(result.error().message(), "Simulated failure");
+    EXPECT_EQ(result.unwrap_err().type(), AgentErrorType::ProcessingError);
+    EXPECT_EQ(result.unwrap_err().message(), "Simulated failure");
 }
 
 // Test FailingMockAgent with different error types
@@ -119,8 +119,8 @@ TEST(TestUtilsTest, FailingMockAgentDifferentErrorTypes) {
     auto result = timeout->process(std::move(msg)).get();
 
     ASSERT_TRUE(result.is_err());
-    EXPECT_EQ(result.error().type(), AgentErrorType::Timeout);
-    EXPECT_EQ(result.error().message(), "Operation timed out");
+    EXPECT_EQ(result.unwrap_err().type(), AgentErrorType::Timeout);
+    EXPECT_EQ(result.unwrap_err().message(), "Operation timed out");
 }
 
 // Test FailingMockAgent capabilities

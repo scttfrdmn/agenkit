@@ -539,7 +539,7 @@ func (t *mockTool) Description() string {
 	return t.description
 }
 
-func (t *mockTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
+func (t *mockTool) Execute(ctx context.Context, params map[string]any) (*agenkit.ToolResult, error) {
 	return &agenkit.ToolResult{
 		Data:    t.response,
 		Success: true,

@@ -60,7 +60,7 @@ func (m *mockReasoningTool) Description() string {
 	return m.description
 }
 
-func (m *mockReasoningTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
+func (m *mockReasoningTool) Execute(ctx context.Context, params map[string]any) (*agenkit.ToolResult, error) {
 	m.callCount++
 
 	if m.shouldFail {

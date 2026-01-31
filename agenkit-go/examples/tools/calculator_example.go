@@ -53,7 +53,7 @@ type AddTool struct{}
 func (t *AddTool) Name() string        { return "add" }
 func (t *AddTool) Description() string { return "Add two or more numbers together" }
 
-func (t *AddTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
+func (t *AddTool) Execute(ctx context.Context, params map[string]any) (*agenkit.ToolResult, error) {
 	numbersIface, ok := params["numbers"]
 	if !ok {
 		return agenkit.NewToolError("missing 'numbers' parameter"), nil
@@ -97,7 +97,7 @@ type MultiplyTool struct{}
 func (t *MultiplyTool) Name() string        { return "multiply" }
 func (t *MultiplyTool) Description() string { return "Multiply two or more numbers together" }
 
-func (t *MultiplyTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
+func (t *MultiplyTool) Execute(ctx context.Context, params map[string]any) (*agenkit.ToolResult, error) {
 	numbersIface, ok := params["numbers"]
 	if !ok {
 		return agenkit.NewToolError("missing 'numbers' parameter"), nil
@@ -136,7 +136,7 @@ type PowerTool struct{}
 func (t *PowerTool) Name() string        { return "power" }
 func (t *PowerTool) Description() string { return "Compute base^exponent" }
 
-func (t *PowerTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
+func (t *PowerTool) Execute(ctx context.Context, params map[string]any) (*agenkit.ToolResult, error) {
 	base, ok := params["base"].(float64)
 	if !ok {
 		if i, ok := params["base"].(int); ok {
@@ -171,7 +171,7 @@ type SqrtTool struct{}
 func (t *SqrtTool) Name() string        { return "sqrt" }
 func (t *SqrtTool) Description() string { return "Compute square root of a number" }
 
-func (t *SqrtTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
+func (t *SqrtTool) Execute(ctx context.Context, params map[string]any) (*agenkit.ToolResult, error) {
 	number, ok := params["number"].(float64)
 	if !ok {
 		if i, ok := params["number"].(int); ok {

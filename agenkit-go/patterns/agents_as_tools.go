@@ -126,7 +126,7 @@ func (t *AgentTool) Description() string {
 //
 // Returns:
 //   - ToolResult containing agent output, formatted according to outputFormat
-func (t *AgentTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
+func (t *AgentTool) Execute(ctx context.Context, params map[string]any) (*agenkit.ToolResult, error) {
 	// Extract input
 	query, ok := params[t.inputKey]
 	if !ok {

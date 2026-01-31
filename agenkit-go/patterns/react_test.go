@@ -60,7 +60,7 @@ func (m *mockTool) Description() string {
 	return m.description
 }
 
-func (m *mockTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
+func (m *mockTool) Execute(ctx context.Context, params map[string]any) (*agenkit.ToolResult, error) {
 	m.callCount++
 
 	if m.shouldFail {

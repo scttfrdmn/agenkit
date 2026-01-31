@@ -205,6 +205,199 @@ pub const FailingMockAgent = struct {
     }
 };
 
+/// Mock LLM agent for testing
+///
+/// Provides a mock LLM implementation with configurable responses,
+/// delays, and failure modes. Useful for testing without external API calls.
+///
+/// Example:
+/// ```zig
+/// var mock_llm = try MockLLM.init(allocator, &[_][]const u8{
+///     "Response 1",
+///     "Response 2",
+/// }, "mock-llm");
+/// defer mock_llm.deinit();
+///
+/// mock_llm.setTemperature(0.7);
+/// mock_llm.setMaxTokens(100);
+///
+/// const agent = mock_llm.agent();
+/// const result = try agent.process(message);
+/// ```
+pub const MockLLM = struct {
+    allocator: Allocator,
+    responses: []const []const u8,
+    call_count: usize,
+    model_name: []const u8,
+
+    // LLM parameters
+    temperature: f64,
+    max_tokens: ?u32,
+    top_p: ?f64,
+
+    // Testing configuration
+    delay_ms: u64,
+    should_fail: bool,
+    failure_error: AgentError,
+
+    pub fn init(allocator: Allocator, responses: []const []const u8, model_name: []const u8) !*MockLLM {
+        const self = try allocator.create(MockLLM);
+        self.* = MockLLM{
+            .allocator = allocator,
+            .responses = responses,
+            .call_count = 0,
+            .model_name = model_name,
+            .temperature = 1.0,
+            .max_tokens = null,
+            .top_p = null,
+            .delay_ms = 0,
+            .should_fail = false,
+            .failure_error = AgentError.ProcessingFailed,
+        };
+        return self;
+    }
+
+    pub fn deinit(self: *MockLLM) void {
+        self.allocator.destroy(self);
+    }
+
+    pub fn agent(self: *MockLLM) Agent {
+        return Agent{
+            .ptr = self,
+            .vtable = &.{
+                .name = nameImpl,
+                .capabilities = capabilitiesImpl,
+                .process = processImpl,
+                .process_stream = processStreamImpl,
+                .introspect = introspectImpl,
+                .deinit = deinitImpl,
+            },
+        };
+    }
+
+    // LLM-specific configuration methods
+
+    pub fn setTemperature(self: *MockLLM, temp: f64) void {
+        self.temperature = temp;
+    }
+
+    pub fn getTemperature(self: *const MockLLM) f64 {
+        return self.temperature;
+    }
+
+    pub fn setMaxTokens(self: *MockLLM, tokens: u32) void {
+        self.max_tokens = tokens;
+    }
+
+    pub fn getMaxTokens(self: *const MockLLM) ?u32 {
+        return self.max_tokens;
+    }
+
+    pub fn setTopP(self: *MockLLM, p: f64) void {
+        self.top_p = p;
+    }
+
+    pub fn getTopP(self: *const MockLLM) ?f64 {
+        return self.top_p;
+    }
+
+    pub fn setDelay(self: *MockLLM, ms: u64) void {
+        self.delay_ms = ms;
+    }
+
+    pub fn setFailureMode(self: *MockLLM, should_fail: bool, error_type: AgentError) void {
+        self.should_fail = should_fail;
+        self.failure_error = error_type;
+    }
+
+    pub fn getCallCount(self: *const MockLLM) usize {
+        return self.call_count;
+    }
+
+    pub fn resetCallCount(self: *MockLLM) void {
+        self.call_count = 0;
+    }
+
+    fn nameImpl(ptr: *anyopaque) []const u8 {
+        const self: *MockLLM = @ptrCast(@alignCast(ptr));
+        return self.model_name;
+    }
+
+    fn capabilitiesImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const []const u8 {
+        _ = ptr;
+        const caps = try allocator.alloc([]const u8, 4);
+        caps[0] = "text-generation";
+        caps[1] = "chat";
+        caps[2] = "mock";
+        caps[3] = "testing";
+        return caps;
+    }
+
+    fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+        const self: *MockLLM = @ptrCast(@alignCast(ptr));
+
+        // Simulate network delay if configured
+        if (self.delay_ms > 0) {
+            std.time.sleep(self.delay_ms * std.time.ns_per_ms);
+        }
+
+        // Simulate failure if configured
+        if (self.should_fail) {
+            return Result{ .err = self.failure_error };
+        }
+
+        // Get response (cycle through responses)
+        const response_text = self.responses[self.call_count % self.responses.len];
+        self.call_count += 1;
+
+        // Create response message
+        var response = Message.withText(self.allocator, .assistant, response_text) catch {
+            return Result{ .err = AgentError.ProcessingFailed };
+        };
+
+        // Add LLM metadata (simplified - would need json module for full metadata)
+        // In production, this would add model, temperature, etc. to metadata
+
+        return Result{ .ok = response };
+    }
+
+    fn processStreamImpl(
+        ptr: *anyopaque,
+        message: Message,
+        stream_callback: *const fn (chunk: []const u8, userdata: ?*anyopaque) void,
+        userdata: ?*anyopaque,
+    ) AgentError!void {
+        _ = ptr;
+        _ = message;
+        _ = stream_callback;
+        _ = userdata;
+        return AgentError.NotImplemented;
+    }
+
+    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const u8 {
+        const self: *MockLLM = @ptrCast(@alignCast(ptr));
+
+        if (self.max_tokens) |tokens| {
+            return std.fmt.allocPrint(
+                allocator,
+                "MockLLM(model={s}, responses={d}, calls={d}, temperature={d:.2}, max_tokens={d})",
+                .{ self.model_name, self.responses.len, self.call_count, self.temperature, tokens },
+            );
+        } else {
+            return std.fmt.allocPrint(
+                allocator,
+                "MockLLM(model={s}, responses={d}, calls={d}, temperature={d:.2})",
+                .{ self.model_name, self.responses.len, self.call_count, self.temperature },
+            );
+        }
+    }
+
+    fn deinitImpl(ptr: *anyopaque) void {
+        _ = ptr;
+        // MockLLM deinit is handled by test cleanup
+    }
+};
+
 // Tests for test utilities
 test "MockAgent basic functionality" {
     const testing = std.testing;
@@ -330,4 +523,94 @@ test "MockAgent introspection" {
 
     try testing.expect(std.mem.indexOf(u8, info, "MockAgent") != null);
     try testing.expect(std.mem.indexOf(u8, info, "responses=2") != null);
+}
+
+test "MockLLM basic functionality" {
+    const testing = std.testing;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock_llm = try MockLLM.init(allocator, &[_][]const u8{ "LLM Response 1", "LLM Response 2" }, "mock-gpt-4");
+    defer mock_llm.deinit();
+
+    const agent_impl = mock_llm.agent();
+    try testing.expectEqualStrings("mock-gpt-4", agent_impl.name());
+
+    // Test first response
+    const msg1 = try Message.withText(allocator, .user, "What is AI?");
+    defer msg1.deinit();
+
+    const result1 = try agent_impl.process(msg1);
+    defer result1.ok.deinit();
+
+    try testing.expectEqualStrings("LLM Response 1", result1.ok.content.string);
+    try testing.expectEqual(@as(usize, 1), mock_llm.getCallCount());
+}
+
+test "MockLLM LLM parameters" {
+    const testing = std.testing;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock_llm = try MockLLM.init(allocator, &[_][]const u8{"Response"}, "mock-llm");
+    defer mock_llm.deinit();
+
+    // Test temperature
+    mock_llm.setTemperature(0.7);
+    try testing.expectEqual(@as(f64, 0.7), mock_llm.getTemperature());
+
+    // Test max_tokens
+    mock_llm.setMaxTokens(100);
+    try testing.expectEqual(@as(?u32, 100), mock_llm.getMaxTokens());
+
+    // Test top_p
+    mock_llm.setTopP(0.9);
+    try testing.expectEqual(@as(?f64, 0.9), mock_llm.getTopP());
+}
+
+test "MockLLM failure mode" {
+    const testing = std.testing;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock_llm = try MockLLM.init(allocator, &[_][]const u8{"Response"}, "mock-llm");
+    defer mock_llm.deinit();
+
+    mock_llm.setFailureMode(true, AgentError.Timeout);
+
+    const agent_impl = mock_llm.agent();
+    const msg = try Message.withText(allocator, .user, "Test");
+    defer msg.deinit();
+
+    const result = try agent_impl.process(msg);
+    try testing.expectEqual(AgentError.Timeout, result.err);
+}
+
+test "MockLLM introspection" {
+    const testing = std.testing;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock_llm = try MockLLM.init(allocator, &[_][]const u8{ "R1", "R2" }, "mock-gpt-4");
+    defer mock_llm.deinit();
+
+    mock_llm.setTemperature(0.8);
+    mock_llm.setMaxTokens(150);
+
+    const agent_impl = mock_llm.agent();
+    const info = try agent_impl.introspect(allocator);
+    defer allocator.free(info);
+
+    try testing.expect(std.mem.indexOf(u8, info, "MockLLM") != null);
+    try testing.expect(std.mem.indexOf(u8, info, "mock-gpt-4") != null);
+    try testing.expect(std.mem.indexOf(u8, info, "temperature=") != null);
+    try testing.expect(std.mem.indexOf(u8, info, "max_tokens=150") != null);
 }

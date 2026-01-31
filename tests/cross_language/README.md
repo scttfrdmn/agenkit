@@ -91,6 +91,8 @@ Defines the canonical JSON representation for retry configuration:
 
 ### Retry Behavior Fixtures (`fixtures/retry_behavior.json`)
 
+**Version**: 1.1 (Updated for max_retries API alignment)
+
 7 test cases covering:
 - Success on first attempt
 - Success after retries
@@ -101,9 +103,35 @@ Defines the canonical JSON representation for retry configuration:
 - Metrics tracking
 
 **Each test case includes:**
-- `config`: Retry configuration
+- `config`: Retry configuration (uses `max_retries` not `max_attempts`)
 - `scenario`: Simulated agent responses
 - `expected_behavior`: Expected retry behavior and metrics
+
+### API Consistency Fixtures (`fixtures/api_consistency.json`)
+
+**Version**: 1.0 (NEW - January 2026)
+
+Comprehensive API consistency tests across 4 categories:
+
+**1. Parameter Naming (2 test cases)**
+- Retry parameter names (max_retries, initial_delay, max_delay)
+- Timeout parameter names (accounting for Duration types)
+
+**2. Default Values (4 test cases)**
+- Timeout defaults (30 seconds)
+- Retry defaults (max_retries=3, initial_delay=100ms, etc.)
+- Rate limiter defaults
+- Circuit breaker defaults
+
+**3. Interface Signatures (2 test cases)**
+- Tool.execute() signature equivalence
+- Agent.process() signature equivalence
+
+**4. Error Types (2 test cases)**
+- TimeoutError structure
+- MaxRetriesExceeded structure
+
+**Validates**: API alignment work from issues #513, #512, #511, #510, #509
 
 ## Running Tests
 
@@ -271,8 +299,9 @@ A language passes cross-language consistency tests if:
 | Test Category | Fixtures | Schema | Python | Go | TS | Rust | C++ | Zig |
 |---------------|----------|--------|--------|----|----|------|-----|-----|
 | Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ✅ 13/13 | ✅ 12/12 |
+| API Consistency (NEW) | ✅ | - | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| Retry Behavior | ✅ | - | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| Retry Behavior | ✅ v1.1 | - | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Timeout Behavior | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Circuit Breaker | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
@@ -323,8 +352,12 @@ A language passes cross-language consistency tests if:
 
 ## Next Steps
 
-1. Implement per-language test suites for message serialization
-2. Add timeout and circuit breaker fixtures
-3. Create error handling test cases
-4. Build automated test runner
-5. Generate cross-language compatibility report
+1. ✅ **DONE**: Message serialization tests (all 6 languages passing)
+2. ✅ **DONE**: API consistency fixtures created (parameter naming, defaults, interfaces, errors)
+3. ✅ **DONE**: Retry behavior fixtures updated (max_retries terminology)
+4. **TODO**: Implement API consistency tests in each language
+5. **TODO**: Implement retry config/behavior tests in each language
+6. **TODO**: Add timeout and circuit breaker behavior tests
+7. **TODO**: Create error handling test cases
+8. **TODO**: Build automated test runner for all categories
+9. **TODO**: Generate comprehensive cross-language compatibility report

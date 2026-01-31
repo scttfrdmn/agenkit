@@ -50,7 +50,7 @@ impl ErrorClass {
 #[derive(Debug, Clone)]
 pub struct ErrorStrategy {
     pub error_class: ErrorClass,
-    pub max_attempts: usize,
+    pub max_retries: usize,
     pub initial_backoff: Duration,
     pub max_backoff: Duration,
     pub backoff_multiplier: f64,
@@ -71,7 +71,7 @@ pub struct RetryBudget {
 #[derive(Debug, Clone)]
 pub struct EnhancedRetryConfig {
     // Basic retry settings
-    pub max_attempts: usize,
+    pub max_retries: usize,
     pub initial_backoff: Duration,
     pub max_backoff: Duration,
     pub backoff_multiplier: f64,
@@ -102,7 +102,7 @@ impl Default for EnhancedRetryConfig {
             ErrorClass::Transient,
             ErrorStrategy {
                 error_class: ErrorClass::Transient,
-                max_attempts: 5,
+                max_retries: 5,
                 initial_backoff: Duration::from_millis(100),
                 max_backoff: Duration::from_secs(5),
                 backoff_multiplier: 2.0,
@@ -114,7 +114,7 @@ impl Default for EnhancedRetryConfig {
             ErrorClass::RateLimit,
             ErrorStrategy {
                 error_class: ErrorClass::RateLimit,
-                max_attempts: 10,
+                max_retries: 10,
                 initial_backoff: Duration::from_secs(60),
                 max_backoff: Duration::from_secs(300),
                 backoff_multiplier: 1.5,
@@ -126,7 +126,7 @@ impl Default for EnhancedRetryConfig {
             ErrorClass::Timeout,
             ErrorStrategy {
                 error_class: ErrorClass::Timeout,
-                max_attempts: 3,
+                max_retries: 3,
                 initial_backoff: Duration::from_secs(2),
                 max_backoff: Duration::from_secs(30),
                 backoff_multiplier: 2.0,
@@ -138,7 +138,7 @@ impl Default for EnhancedRetryConfig {
             ErrorClass::ServerError,
             ErrorStrategy {
                 error_class: ErrorClass::ServerError,
-                max_attempts: 3,
+                max_retries: 3,
                 initial_backoff: Duration::from_secs(5),
                 max_backoff: Duration::from_secs(60),
                 backoff_multiplier: 2.0,
@@ -150,7 +150,7 @@ impl Default for EnhancedRetryConfig {
             ErrorClass::ClientError,
             ErrorStrategy {
                 error_class: ErrorClass::ClientError,
-                max_attempts: 1,
+                max_retries: 1,
                 initial_backoff: Duration::from_secs(0),
                 max_backoff: Duration::from_secs(0),
                 backoff_multiplier: 1.0,
@@ -159,7 +159,7 @@ impl Default for EnhancedRetryConfig {
         );
 
         Self {
-            max_attempts: 3,
+            max_retries: 3,
             initial_backoff: Duration::from_secs(1),
             max_backoff: Duration::from_secs(30),
             backoff_multiplier: 2.0,
@@ -245,7 +245,7 @@ impl EnhancedRetryDecorator {
             .cloned()
             .unwrap_or_else(|| ErrorStrategy {
                 error_class,
-                max_attempts: self.config.max_attempts,
+                max_retries: self.config.max_retries,
                 initial_backoff: self.config.initial_backoff,
                 max_backoff: self.config.max_backoff,
                 backoff_multiplier: self.config.backoff_multiplier,
@@ -356,7 +356,7 @@ impl Agent for EnhancedRetryDecorator {
         let mut error_class = ErrorClass::Unknown;
         let mut strategy = self.get_strategy(error_class);
 
-        for attempt in 1..=self.config.max_attempts {
+        for attempt in 1..=self.config.max_retries {
             {
                 let mut metrics = self.metrics.write().await;
                 metrics.total_attempts += 1;
@@ -428,7 +428,7 @@ impl Agent for EnhancedRetryDecorator {
                     }
 
                     // Check if exceeded max attempts for this error class
-                    if attempt >= strategy.max_attempts {
+                    if attempt >= strategy.max_retries {
                         break;
                     }
 
@@ -466,7 +466,7 @@ impl Agent for EnhancedRetryDecorator {
 
         Err(AgentError::ExecutionError(format!(
             "Max retry attempts ({}) exceeded for {}: {}",
-            strategy.max_attempts,
+            strategy.max_retries,
             error_class.as_str(),
             last_error.unwrap_or_else(|| AgentError::ExecutionError("Unknown error".to_string()))
         )))

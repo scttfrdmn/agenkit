@@ -31,7 +31,7 @@
 //! async fn example(agent: impl Agent) {
 //!     // Wrap agent with retry middleware
 //!     let config = RetryConfig::builder()
-//!         .max_attempts(5)
+//!         .max_retries(5)
 //!         .initial_delay(Duration::from_millis(100))
 //!         .max_delay(Duration::from_secs(2))
 //!         .multiplier(2.0)

@@ -46,6 +46,11 @@ add_executable(test_result test_result.cpp)
 target_link_libraries(test_result agenkit gtest_main)
 add_test(NAME result_tests COMMAND test_result)
 
+# LLM validation tests
+add_executable(test_llm_validation test_llm_validation.cpp)
+target_link_libraries(test_llm_validation agenkit gtest_main)
+add_test(NAME llm_validation_tests COMMAND test_llm_validation)
+
 # HTTP transport tests
 add_executable(test_http_transport test_http_transport.cpp)
 target_link_libraries(test_http_transport agenkit gtest_main)

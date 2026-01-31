@@ -34,7 +34,7 @@ func (c *CalculatorTool) Description() string {
 	return "Performs basic arithmetic calculations. Input should be an expression like '2+2' or '15% of 240'"
 }
 
-func (c *CalculatorTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
+func (c *CalculatorTool) Execute(ctx context.Context, params map[string]any) (*agenkit.ToolResult, error) {
 	input, ok := params["input"].(string)
 	if !ok {
 		return nil, fmt.Errorf("input parameter is required")
@@ -88,7 +88,7 @@ func (s *SearchTool) Description() string {
 	return "Searches for information on a given topic. Input should be a search query."
 }
 
-func (s *SearchTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
+func (s *SearchTool) Execute(ctx context.Context, params map[string]any) (*agenkit.ToolResult, error) {
 	query, ok := params["input"].(string)
 	if !ok {
 		return nil, fmt.Errorf("input parameter is required")

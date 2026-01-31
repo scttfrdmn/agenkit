@@ -218,5 +218,5 @@ type Tool interface {
 	Description() string
 
 	// Execute runs the tool with the given parameters and returns a result.
-	Execute(ctx context.Context, params map[string]interface{}) (*ToolResult, error)
+	Execute(ctx context.Context, params map[string]any) (*ToolResult, error)
 }

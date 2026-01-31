@@ -26,7 +26,7 @@ func (m *MockTool) Description() string {
 	return m.description
 }
 
-func (m *MockTool) Execute(ctx context.Context, params map[string]interface{}) (*agenkit.ToolResult, error) {
+func (m *MockTool) Execute(ctx context.Context, params map[string]any) (*agenkit.ToolResult, error) {
 	m.callCount++
 	m.lastParams = params
 	if m.err != nil {

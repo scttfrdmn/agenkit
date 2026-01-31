@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/adapters/openai_agent.hpp"
+#include "agenkit/adapters/validation.hpp"
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
@@ -21,45 +22,14 @@ OpenAIAgent::OpenAIAgent(OpenAIConfig config)
         throw std::invalid_argument("OpenAI API key cannot be empty");
     }
 
-    // Validate temperature (0-2)
-    if (config_.temperature < 0.0 || config_.temperature > 2.0) {
-        throw std::invalid_argument(
-            "temperature must be between 0 and 2, got " +
-            std::to_string(config_.temperature)
-        );
-    }
-
-    // Validate max_tokens (must be positive)
-    if (config_.max_tokens <= 0) {
-        throw std::invalid_argument(
-            "max_tokens must be positive, got " +
-            std::to_string(config_.max_tokens)
-        );
-    }
-
-    // Validate top_p (0-1)
-    if (config_.top_p < 0.0 || config_.top_p > 1.0) {
-        throw std::invalid_argument(
-            "top_p must be between 0 and 1, got " +
-            std::to_string(config_.top_p)
-        );
-    }
-
-    // Validate frequency_penalty (-2 to 2)
-    if (config_.frequency_penalty < -2.0 || config_.frequency_penalty > 2.0) {
-        throw std::invalid_argument(
-            "frequency_penalty must be between -2 and 2, got " +
-            std::to_string(config_.frequency_penalty)
-        );
-    }
-
-    // Validate presence_penalty (-2 to 2)
-    if (config_.presence_penalty < -2.0 || config_.presence_penalty > 2.0) {
-        throw std::invalid_argument(
-            "presence_penalty must be between -2 and 2, got " +
-            std::to_string(config_.presence_penalty)
-        );
-    }
+    // Validate LLM parameters using shared utility
+    LLMParameterValidator::validate_all(
+        config_.temperature,
+        config_.max_tokens,
+        config_.top_p,
+        config_.frequency_penalty,
+        config_.presence_penalty
+    );
 }
 
 std::string OpenAIAgent::name() const {

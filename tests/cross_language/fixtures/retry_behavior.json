@@ -1,12 +1,12 @@
 {
-  "version": "1.0",
-  "description": "Cross-language retry middleware behavior test fixtures",
+  "version": "1.1",
+  "description": "Cross-language retry middleware behavior test fixtures (updated for max_retries API alignment)",
   "test_cases": [
     {
       "id": "retry_success_first_attempt",
       "name": "Successful on first attempt (no retries)",
       "config": {
-        "max_attempts": 3,
+        "max_retries": 3,
         "initial_backoff_ms": 100,
         "max_backoff_ms": 1000,
         "backoff_multiplier": 2.0
@@ -27,7 +27,7 @@
       "id": "retry_success_second_attempt",
       "name": "Fail once, succeed on retry",
       "config": {
-        "max_attempts": 3,
+        "max_retries": 3,
         "initial_backoff_ms": 100,
         "max_backoff_ms": 1000,
         "backoff_multiplier": 2.0
@@ -50,7 +50,7 @@
       "id": "retry_exhausted",
       "name": "All retries exhausted",
       "config": {
-        "max_attempts": 3,
+        "max_retries": 3,
         "initial_backoff_ms": 100,
         "max_backoff_ms": 1000,
         "backoff_multiplier": 2.0
@@ -74,7 +74,7 @@
       "id": "retry_exponential_backoff",
       "name": "Verify exponential backoff timing",
       "config": {
-        "max_attempts": 4,
+        "max_retries": 4,
         "initial_backoff_ms": 100,
         "max_backoff_ms": 10000,
         "backoff_multiplier": 2.0
@@ -99,7 +99,7 @@
       "id": "retry_max_backoff_capped",
       "name": "Backoff capped at max_backoff_ms",
       "config": {
-        "max_attempts": 5,
+        "max_retries": 5,
         "initial_backoff_ms": 100,
         "max_backoff_ms": 200,
         "backoff_multiplier": 2.0
@@ -126,7 +126,7 @@
       "id": "retry_non_retryable_error",
       "name": "Permanent error stops retries",
       "config": {
-        "max_attempts": 3,
+        "max_retries": 3,
         "initial_backoff_ms": 100,
         "max_backoff_ms": 1000,
         "backoff_multiplier": 2.0
@@ -148,7 +148,7 @@
       "id": "retry_metrics_tracking",
       "name": "Verify retry metrics are tracked",
       "config": {
-        "max_attempts": 3,
+        "max_retries": 3,
         "initial_backoff_ms": 100,
         "max_backoff_ms": 1000,
         "backoff_multiplier": 2.0

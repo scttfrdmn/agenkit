@@ -1,0 +1,242 @@
+{
+  "version": "1.0",
+  "description": "API consistency test fixtures - validates parameter naming and default values across languages",
+  "test_categories": {
+    "parameter_naming": {
+      "description": "Verify parameter names are consistent (accounting for language conventions)",
+      "test_cases": [
+        {
+          "id": "retry_parameter_names",
+          "name": "Retry parameters use consistent terminology",
+          "component": "RetryMiddleware",
+          "parameters": {
+            "max_retries": {
+              "description": "Maximum number of retry attempts",
+              "expected_names": {
+                "python": "max_retries",
+                "go": "MaxRetries",
+                "typescript": "maxRetries",
+                "rust": "max_retries",
+                "cpp": "max_retries",
+                "zig": "max_retries"
+              },
+              "must_not_be_named": ["max_attempts", "maxAttempts", "MaxAttempts"]
+            },
+            "initial_delay": {
+              "description": "Initial retry delay",
+              "expected_names": {
+                "python": "initial_delay",
+                "go": "InitialRetryDelay",
+                "typescript": "initialDelay",
+                "rust": "initial_delay",
+                "cpp": "initial_delay",
+                "zig": "initial_delay"
+              }
+            },
+            "max_delay": {
+              "description": "Maximum retry delay (backoff cap)",
+              "expected_names": {
+                "python": "max_delay",
+                "go": "MaxRetryDelay",
+                "typescript": "maxDelay",
+                "rust": "max_delay",
+                "cpp": "max_delay",
+                "zig": "max_delay"
+              }
+            }
+          }
+        },
+        {
+          "id": "timeout_parameter_names",
+          "name": "Timeout parameters clearly indicate units",
+          "component": "TimeoutMiddleware",
+          "parameters": {
+            "timeout": {
+              "description": "Request timeout",
+              "expected_patterns": {
+                "python": "timeout_ms OR timeout (with timedelta)",
+                "go": "Timeout (with time.Duration)",
+                "typescript": "timeoutMs OR timeout (documented as ms)",
+                "rust": "timeout (with Duration)",
+                "cpp": "timeout_ms OR std::chrono::milliseconds",
+                "zig": "timeout_ms"
+              },
+              "notes": "Go and Rust use native Duration types (self-documenting), others should indicate unit"
+            }
+          }
+        }
+      ]
+    },
+    "default_values": {
+      "description": "Verify default configuration values match across languages",
+      "test_cases": [
+        {
+          "id": "timeout_defaults",
+          "name": "Timeout middleware defaults",
+          "component": "TimeoutMiddleware",
+          "defaults": {
+            "timeout": {
+              "value_ms": 30000,
+              "description": "30 seconds default timeout"
+            }
+          }
+        },
+        {
+          "id": "retry_defaults",
+          "name": "Retry middleware defaults",
+          "component": "RetryMiddleware",
+          "defaults": {
+            "max_retries": {
+              "value": 3,
+              "description": "Maximum 3 retry attempts (4 total including initial)"
+            },
+            "initial_delay": {
+              "value_ms": 100,
+              "description": "100ms initial delay"
+            },
+            "max_delay": {
+              "value_ms": 10000,
+              "description": "10 seconds maximum delay"
+            },
+            "multiplier": {
+              "value": 2.0,
+              "description": "2x backoff multiplier (exponential)"
+            }
+          }
+        },
+        {
+          "id": "rate_limiter_defaults",
+          "name": "Rate limiter middleware defaults",
+          "component": "RateLimiterMiddleware",
+          "defaults": {
+            "rate": {
+              "value": 10,
+              "unit": "requests per second",
+              "description": "10 requests/second default rate"
+            },
+            "capacity": {
+              "value": 10,
+              "description": "Burst capacity matches rate by default"
+            }
+          }
+        },
+        {
+          "id": "circuit_breaker_defaults",
+          "name": "Circuit breaker middleware defaults",
+          "component": "CircuitBreakerMiddleware",
+          "defaults": {
+            "failure_threshold": {
+              "value": 5,
+              "description": "Open after 5 consecutive failures"
+            },
+            "success_threshold": {
+              "value": 2,
+              "description": "Close after 2 consecutive successes in half-open"
+            },
+            "timeout": {
+              "value_ms": 30000,
+              "description": "30 seconds timeout"
+            },
+            "recovery_timeout": {
+              "value_ms": 60000,
+              "description": "60 seconds before attempting recovery"
+            }
+          }
+        }
+      ]
+    },
+    "interface_signatures": {
+      "description": "Verify core interface signatures are equivalent (accounting for language idioms)",
+      "test_cases": [
+        {
+          "id": "tool_execute_signature",
+          "name": "Tool.execute() method signature",
+          "interface": "Tool",
+          "method": "execute",
+          "expected_signatures": {
+            "python": "async def execute(self, params: dict[str, Any]) -> ToolResult",
+            "go": "Execute(ctx context.Context, params map[string]any) (*ToolResult, error)",
+            "typescript": "execute(params: Record<string, unknown>, signal?: AbortSignal): Promise<ToolResult>",
+            "rust": "async fn execute(&self, params: HashMap<String, Value>) -> Result<ToolResult, AgentError>",
+            "cpp": "virtual std::future<Result<ToolResult, AgentError>> execute(const nlohmann::json& params)",
+            "zig": "execute: *const fn (ptr: *anyopaque, params: json.Value, allocator: Allocator) ToolError!ToolResult"
+          },
+          "key_features": {
+            "params_type": "Dictionary/Map of string keys to values",
+            "context_handling": {
+              "go": "Explicit context.Context parameter",
+              "typescript": "Optional AbortSignal parameter",
+              "python": "Uses asyncio context",
+              "rust": "Uses async/await",
+              "cpp": "Future-based",
+              "zig": "Synchronous with error union"
+            },
+            "error_handling": {
+              "python": "Raises exceptions",
+              "go": "Returns error tuple",
+              "typescript": "Promise rejects",
+              "rust": "Result type",
+              "cpp": "Result type",
+              "zig": "Error union"
+            }
+          }
+        },
+        {
+          "id": "agent_process_signature",
+          "name": "Agent.process() method signature",
+          "interface": "Agent",
+          "method": "process",
+          "expected_signatures": {
+            "python": "async def process(self, message: Message) -> Message",
+            "go": "Process(ctx context.Context, message *Message) (*Message, error)",
+            "typescript": "process(message: Message): Promise<Message>",
+            "rust": "async fn process(&self, message: Message) -> Result<Message, AgentError>",
+            "cpp": "virtual std::future<Result<Message, AgentError>> process(Message message)",
+            "zig": "process: *const fn (ptr: *anyopaque, message: Message, allocator: Allocator) AgentError!Message"
+          }
+        }
+      ]
+    },
+    "error_types": {
+      "description": "Verify error types are equivalent across languages",
+      "test_cases": [
+        {
+          "id": "timeout_error",
+          "name": "Timeout error type",
+          "error_type": "TimeoutError",
+          "expected_names": {
+            "python": "TimeoutError",
+            "go": "TimeoutError",
+            "typescript": "TimeoutError",
+            "rust": "AgentError::Timeout",
+            "cpp": "TimeoutError",
+            "zig": "AgentError.Timeout"
+          },
+          "expected_fields": {
+            "message": "Human-readable error message",
+            "duration": "Timeout duration that was exceeded"
+          }
+        },
+        {
+          "id": "max_retries_exceeded",
+          "name": "Max retries exceeded error",
+          "error_type": "MaxRetriesExceeded",
+          "expected_names": {
+            "python": "MaxRetriesExceededError",
+            "go": "MaxRetriesExceededError",
+            "typescript": "MaxRetriesExceededError",
+            "rust": "AgentError::MaxRetriesExceeded",
+            "cpp": "MaxRetriesExceededError",
+            "zig": "AgentError.MaxRetriesExceeded"
+          }
+        }
+      ]
+    }
+  },
+  "validation_notes": {
+    "language_conventions": "Each language follows its own naming convention (snake_case, camelCase, PascalCase)",
+    "type_systems": "Go and Rust use native Duration types (self-documenting), others use primitives with unit indicators",
+    "error_handling": "Each language uses its idiomatic error handling pattern",
+    "optional_parameters": "TypeScript and some others support optional parameters; Go uses pointer types for optional values"
+  }
+}

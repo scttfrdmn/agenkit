@@ -225,6 +225,24 @@ impl OpenAICompatibleAgent {
     /// let agent = OpenAICompatibleAgent::new(config);
     /// ```
     pub fn new(config: OpenAICompatibleConfig) -> Self {
+        // Validate temperature (0-2)
+        if !(0.0..=2.0).contains(&config.temperature) {
+            panic!(
+                "temperature must be between 0 and 2, got {}",
+                config.temperature
+            );
+        }
+
+        // Validate max_tokens (must be positive)
+        if config.max_tokens <= 0 {
+            panic!("max_tokens must be positive, got {}", config.max_tokens);
+        }
+
+        // Validate top_p (0-1)
+        if !(0.0..=1.0).contains(&config.top_p) {
+            panic!("top_p must be between 0 and 1, got {}", config.top_p);
+        }
+
         #[cfg(feature = "native")]
         let client = Client::builder()
             .timeout(std::time::Duration::from_secs(config.timeout_seconds))

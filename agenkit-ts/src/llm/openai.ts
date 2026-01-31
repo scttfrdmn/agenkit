@@ -6,6 +6,7 @@
 
 import OpenAI from 'openai';
 import { Agent, Message, createMessage } from '../core/interfaces';
+import { validateLLMParams } from './validation';
 
 /**
  * OpenAI adapter configuration.
@@ -66,22 +67,35 @@ export class OpenAIAgent implements Agent {
     this.client = new OpenAI({ apiKey: config.apiKey });
     this.model = config.model || 'gpt-4o';
 
-    // Validate temperature
+    // Validate temperature and maxTokens using shared utility
     const temperature = config.temperature !== undefined ? config.temperature : 0.7;
-    if (temperature < 0 || temperature > 2) {
-      throw new Error(`temperature must be between 0 and 2, got ${temperature}`);
-    }
+    validateLLMParams({
+      temperature,
+      max_tokens: config.maxTokens,
+    });
     this.temperature = temperature;
+    this.maxTokens = config.maxTokens;
 
-    // Validate maxTokens if provided
-    if (config.maxTokens !== undefined) {
-      if (config.maxTokens <= 0) {
-        throw new Error(`maxTokens must be positive, got ${config.maxTokens}`);
-      }
-      this.maxTokens = config.maxTokens;
+    // Validate options if provided
+    if (config.options) {
+      this.validateOptions(config.options);
     }
-
     this.options = config.options || {};
+  }
+
+  /**
+   * Validate LLM parameters.
+   */
+  private validateOptions(options: Partial<OpenAI.Chat.ChatCompletionCreateParams>): void {
+    // Use shared validation utility
+    // Note: OpenAI types use `number | null` but we only validate non-null values
+    validateLLMParams({
+      temperature: options.temperature ?? undefined,
+      max_tokens: options.max_tokens ?? undefined,
+      top_p: options.top_p ?? undefined,
+      frequency_penalty: options.frequency_penalty ?? undefined,
+      presence_penalty: options.presence_penalty ?? undefined,
+    });
   }
 
   /**

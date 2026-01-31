@@ -29,7 +29,7 @@ with open(FIXTURES_DIR / "api_consistency.json") as f:
 class TestParameterNaming:
     """Test that parameter names follow cross-language conventions."""
 
-    @pytest.mark.xfail(reason="Python uses max_attempts instead of max_retries - needs API alignment")
+    @pytest.mark.xfail(reason="Python uses max_attempts instead of max_retries - needs API alignment (issue #517)")
     def test_retry_parameter_names(self):
         """Verify RetryDecorator uses consistent parameter names."""
         test_case = next(
@@ -130,7 +130,7 @@ class TestDefaultValues:
         assert actual_ms == expected_ms, \
             f"TimeoutConfig default should be {expected_ms}ms (30 seconds), got {actual_ms}ms"
 
-    @pytest.mark.xfail(reason="Python retry defaults don't match specification - needs API alignment")
+    @pytest.mark.xfail(reason="Python retry defaults don't match specification - needs API alignment (issue #517)")
     def test_retry_defaults(self):
         """Verify RetryMiddleware default configuration values."""
         test_case = next(
@@ -306,7 +306,7 @@ class TestErrorTypes:
         assert str(error) == "Test timeout", \
             "TimeoutError should have message"
 
-    @pytest.mark.xfail(reason="MaxRetriesExceededError doesn't exist yet - needs to be added")
+    @pytest.mark.xfail(reason="MaxRetriesExceededError doesn't exist yet - needs to be added (issue #517)")
     def test_max_retries_exceeded_error_exists(self):
         """Verify MaxRetriesExceeded error type exists."""
         # Check if error type exists

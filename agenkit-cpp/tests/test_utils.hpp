@@ -105,7 +105,7 @@ public:
      * @brief Get introspection information
      * @return JSON string describing the agent
      */
-    std::string introspect() const override {
+    std::string introspect() const {
         std::stringstream ss;
         ss << "MockAgent(name=" << agent_name_
            << ", responses=" << responses_.size()
@@ -173,7 +173,7 @@ public:
      * @brief Get introspection information
      * @return JSON string describing the agent
      */
-    std::string introspect() const override {
+    std::string introspect() const {
         std::stringstream ss;
         ss << "FailingMockAgent(name=" << agent_name_
            << ", error=" << to_string(error_type_)

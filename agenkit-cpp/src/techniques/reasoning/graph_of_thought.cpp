@@ -80,8 +80,12 @@ std::future<core::Result<std::vector<std::string>, core::AgentError>> GraphOfTho
             // Remove numbering and bullets
             size_t start = 0;
             while (start < line.length() && (std::isdigit(line[start]) || line[start] == '.' ||
-                                             line[start] == '-' || line[start] == '*' || line[start] == '•')) {
+                                             line[start] == '-' || line[start] == '*')) {
                 start++;
+            }
+            // Skip UTF-8 bullet if present
+            if (start < line.length() && line.substr(start, 3) == "\xE2\x80\xA2") {  // • in UTF-8
+                start += 3;
             }
 
             std::string cleaned = line.substr(start);
@@ -144,8 +148,12 @@ std::future<core::Result<std::vector<std::string>, core::AgentError>> GraphOfTho
 
             size_t start = 0;
             while (start < line.length() && (std::isdigit(line[start]) || line[start] == '.' ||
-                                             line[start] == '-' || line[start] == '*' || line[start] == '•')) {
+                                             line[start] == '-' || line[start] == '*')) {
                 start++;
+            }
+            // Skip UTF-8 bullet if present
+            if (start < line.length() && line.substr(start, 3) == "\xE2\x80\xA2") {  // • in UTF-8
+                start += 3;
             }
 
             std::string cleaned = line.substr(start);
@@ -403,7 +411,7 @@ std::future<core::Result<core::Message, core::AgentError>> GraphOfThoughtAgent::
             return core::Result<core::Message, core::AgentError>::err(graph_result.unwrap_err());
         }
 
-        auto graph = graph_result.unwrap();
+        auto graph = std::move(graph_result.unwrap());
 
         // Step 2: Check for cycles (if not allowed)
         if (!allow_cycles_ && graph.has_cycle()) {

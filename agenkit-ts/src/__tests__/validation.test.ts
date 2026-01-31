@@ -60,13 +60,13 @@ describe('OpenAIAgent parameter validation', () => {
 
     it('rejects maxTokens 0', () => {
       expect(() => new OpenAIAgent({ ...validConfig, maxTokens: 0 })).toThrow(
-        'maxTokens must be positive, got 0'
+        'max_tokens must be positive, got 0'
       );
     });
 
     it('rejects negative maxTokens', () => {
       expect(() => new OpenAIAgent({ ...validConfig, maxTokens: -10 })).toThrow(
-        'maxTokens must be positive, got -10'
+        'max_tokens must be positive, got -10'
       );
     });
 

@@ -187,6 +187,225 @@ private:
     std::string agent_name_;
 };
 
+/**
+ * @brief Mock LLM agent for testing
+ *
+ * Provides a mock LLM implementation with configurable responses,
+ * delays, and failure modes. Useful for testing without external API calls.
+ *
+ * @example
+ * @code
+ * auto mock_llm = std::make_shared<MockLLM>(std::vector<std::string>{
+ *     "Response 1",
+ *     "Response 2"
+ * });
+ * mock_llm->set_temperature(0.7);
+ * mock_llm->set_max_tokens(100);
+ *
+ * auto message = Message::with_text("user", "test");
+ * auto result = mock_llm->process(std::move(message)).get();
+ * @endcode
+ */
+class MockLLM : public Agent {
+public:
+    /**
+     * @brief Construct a mock LLM with predefined responses
+     * @param responses List of responses to cycle through
+     * @param model_name Optional model name (default: "mock-llm")
+     */
+    explicit MockLLM(
+        const std::vector<std::string>& responses,
+        std::string model_name = "mock-llm"
+    )
+        : responses_(responses),
+          call_count_(0),
+          model_name_(std::move(model_name)),
+          temperature_(1.0),
+          max_tokens_(std::nullopt),
+          top_p_(std::nullopt),
+          delay_ms_(0),
+          should_fail_(false) {
+        if (responses_.empty()) {
+            responses_.push_back("Mock LLM response");
+        }
+    }
+
+    /**
+     * @brief Construct a mock LLM with a single response
+     * @param response Single response to return
+     * @param model_name Optional model name (default: "mock-llm")
+     */
+    explicit MockLLM(
+        std::string response = "Mock LLM response",
+        std::string model_name = "mock-llm"
+    )
+        : MockLLM(std::vector<std::string>{std::move(response)}, std::move(model_name)) {}
+
+    std::string name() const override {
+        return model_name_;
+    }
+
+    std::vector<std::string> capabilities() const override {
+        return {"text-generation", "chat", "mock", "testing"};
+    }
+
+    std::future<Result<Message, AgentError>> process(Message message) override {
+        return std::async(std::launch::async, [this, msg = std::move(message)]() {
+            // Simulate network delay if configured
+            if (delay_ms_ > 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms_));
+            }
+
+            // Simulate failure if configured
+            if (should_fail_) {
+                return Result<Message, AgentError>::err(
+                    AgentError(AgentErrorType::ProcessingError, failure_message_)
+                );
+            }
+
+            // Get response (cycle through responses)
+            size_t idx = call_count_.fetch_add(1) % responses_.size();
+            const std::string& response_text = responses_[idx];
+
+            // Create response message
+            auto response = Message::with_text("assistant", response_text);
+
+            // Add LLM metadata
+            nlohmann::json metadata;
+            metadata["model"] = model_name_;
+            metadata["temperature"] = temperature_;
+            if (max_tokens_.has_value()) {
+                metadata["max_tokens"] = max_tokens_.value();
+            }
+            if (top_p_.has_value()) {
+                metadata["top_p"] = top_p_.value();
+            }
+            metadata["mock"] = true;
+            response.with_metadata("llm", metadata);
+
+            return Result<Message, AgentError>::ok(std::move(response));
+        });
+    }
+
+    // LLM-specific configuration methods
+
+    /**
+     * @brief Set temperature for sampling (0.0 - 2.0)
+     * @param temp Temperature value
+     */
+    void set_temperature(double temp) {
+        temperature_ = temp;
+    }
+
+    /**
+     * @brief Get current temperature setting
+     * @return Temperature value
+     */
+    double get_temperature() const {
+        return temperature_;
+    }
+
+    /**
+     * @brief Set maximum tokens to generate
+     * @param tokens Maximum tokens
+     */
+    void set_max_tokens(int tokens) {
+        max_tokens_ = tokens;
+    }
+
+    /**
+     * @brief Get maximum tokens setting
+     * @return Maximum tokens (if set)
+     */
+    std::optional<int> get_max_tokens() const {
+        return max_tokens_;
+    }
+
+    /**
+     * @brief Set top-p sampling parameter (0.0 - 1.0)
+     * @param p Top-p value
+     */
+    void set_top_p(double p) {
+        top_p_ = p;
+    }
+
+    /**
+     * @brief Get top-p setting
+     * @return Top-p value (if set)
+     */
+    std::optional<double> get_top_p() const {
+        return top_p_;
+    }
+
+    /**
+     * @brief Set delay to simulate network latency
+     * @param ms Delay in milliseconds
+     */
+    void set_delay(int ms) {
+        delay_ms_ = ms;
+    }
+
+    /**
+     * @brief Configure mock to fail on next call(s)
+     * @param should_fail Whether to fail
+     * @param message Error message to return
+     */
+    void set_failure_mode(bool should_fail, std::string message = "Mock LLM failure") {
+        should_fail_ = should_fail;
+        failure_message_ = std::move(message);
+    }
+
+    /**
+     * @brief Get the number of times process() has been called
+     * @return Call count
+     */
+    size_t get_call_count() const {
+        return call_count_.load();
+    }
+
+    /**
+     * @brief Reset the call count to zero
+     */
+    void reset_call_count() {
+        call_count_.store(0);
+    }
+
+    /**
+     * @brief Get introspection information
+     * @return JSON string describing the mock LLM
+     */
+    std::string introspect() const {
+        std::stringstream ss;
+        ss << "MockLLM(model=" << model_name_
+           << ", responses=" << responses_.size()
+           << ", calls=" << call_count_.load()
+           << ", temperature=" << temperature_;
+        if (max_tokens_.has_value()) {
+            ss << ", max_tokens=" << max_tokens_.value();
+        }
+        if (top_p_.has_value()) {
+            ss << ", top_p=" << top_p_.value();
+        }
+        ss << ")";
+        return ss.str();
+    }
+
+private:
+    std::vector<std::string> responses_;
+    std::atomic<size_t> call_count_;
+    std::string model_name_;
+
+    // LLM parameters
+    double temperature_;
+    std::optional<int> max_tokens_;
+    std::optional<double> top_p_;
+
+    // Testing configuration
+    int delay_ms_;
+    bool should_fail_;
+    std::string failure_message_;
+};
+
 } // namespace test
 } // namespace agenkit
 

@@ -224,3 +224,105 @@ func TestBoundaryValues(t *testing.T) {
 		}
 	})
 }
+
+// TestWithFrequencyPenaltyValidation tests frequency_penalty parameter validation
+func TestWithFrequencyPenaltyValidation(t *testing.T) {
+	tests := []struct {
+		name             string
+		frequencyPenalty float64
+		shouldPanic      bool
+		errorMsg         string
+	}{
+		{
+			name:             "valid frequency_penalty -2.0",
+			frequencyPenalty: -2.0,
+			shouldPanic:      false,
+		},
+		{
+			name:             "valid frequency_penalty 0.0",
+			frequencyPenalty: 0.0,
+			shouldPanic:      false,
+		},
+		{
+			name:             "valid frequency_penalty 2.0",
+			frequencyPenalty: 2.0,
+			shouldPanic:      false,
+		},
+		{
+			name:             "invalid frequency_penalty -2.1",
+			frequencyPenalty: -2.1,
+			shouldPanic:      true,
+			errorMsg:         "frequency_penalty must be between -2 and 2",
+		},
+		{
+			name:             "invalid frequency_penalty 2.5",
+			frequencyPenalty: 2.5,
+			shouldPanic:      true,
+			errorMsg:         "frequency_penalty must be between -2 and 2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.shouldPanic {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Errorf("WithFrequencyPenalty(%v) should have panicked", tt.frequencyPenalty)
+					}
+				}()
+			}
+			_ = WithFrequencyPenalty(tt.frequencyPenalty)
+		})
+	}
+}
+
+// TestWithPresencePenaltyValidation tests presence_penalty parameter validation
+func TestWithPresencePenaltyValidation(t *testing.T) {
+	tests := []struct {
+		name            string
+		presencePenalty float64
+		shouldPanic     bool
+		errorMsg        string
+	}{
+		{
+			name:            "valid presence_penalty -2.0",
+			presencePenalty: -2.0,
+			shouldPanic:     false,
+		},
+		{
+			name:            "valid presence_penalty 0.0",
+			presencePenalty: 0.0,
+			shouldPanic:     false,
+		},
+		{
+			name:            "valid presence_penalty 2.0",
+			presencePenalty: 2.0,
+			shouldPanic:     false,
+		},
+		{
+			name:            "invalid presence_penalty -2.1",
+			presencePenalty: -2.1,
+			shouldPanic:     true,
+			errorMsg:        "presence_penalty must be between -2 and 2",
+		},
+		{
+			name:            "invalid presence_penalty 2.5",
+			presencePenalty: 2.5,
+			shouldPanic:     true,
+			errorMsg:        "presence_penalty must be between -2 and 2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.shouldPanic {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Errorf("WithPresencePenalty(%v) should have panicked", tt.presencePenalty)
+					}
+				}()
+			}
+			_ = WithPresencePenalty(tt.presencePenalty)
+		})
+	}
+}

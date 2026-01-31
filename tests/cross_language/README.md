@@ -270,14 +270,12 @@ A language passes cross-language consistency tests if:
 
 | Test Category | Fixtures | Schema | Python | Go | TS | Rust | C++ | Zig |
 |---------------|----------|--------|--------|----|----|------|-----|-----|
-| Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ⚠️ 14* | ✅ 12/12 |
+| Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ✅ 13/13 | ✅ 12/12 |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Retry Behavior | ✅ | - | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Timeout Behavior | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Circuit Breaker | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-
-*C++ tests blocked by pre-existing compilation error (issue #508)
 
 ### Message Serialization Implementation Details
 
@@ -306,9 +304,9 @@ A language passes cross-language consistency tests if:
 
 **C++** (`agenkit-cpp/tests/test_cross_language_message_serialization.cpp`):
 - Framework: Google Test (gtest) with nlohmann::json
-- 14 tests created and added to CMakeLists.txt
-- ⚠️ Cannot run due to pre-existing compilation errors (issue #508)
-- Tests ready to run once issue resolved
+- 13 tests covering all scenarios
+- Fixed compilation errors in issues #508 and #515
+- All tests passing ✅
 
 **Zig** (`agenkit-zig/tests/cross_language/message_serialization_test.zig`):
 - Framework: Built-in test with std.json

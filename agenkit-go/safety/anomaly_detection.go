@@ -107,9 +107,9 @@ func NewAnomalyDetector() *AnomalyDetector {
 //
 // Returns:
 //
-//	event: SecurityEvent if anomaly detected, empty string otherwise
-//	details: Details about the anomaly
-func (d *AnomalyDetector) DetectRateAnomaly(userID string) (SecurityEvent, map[string]interface{}) {
+//	event: SecurityEvent if anomaly detected, nil otherwise
+//	details: Details about the anomaly (nil if no anomaly)
+func (d *AnomalyDetector) DetectRateAnomaly(userID string) (*SecurityEvent, map[string]interface{}) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -139,7 +139,8 @@ func (d *AnomalyDetector) DetectRateAnomaly(userID string) (SecurityEvent, map[s
 	// Check request rate (per minute)
 	requestsPerMinute := len(d.requestTimestamps[userID])
 	if requestsPerMinute > d.MaxRequestsPerMinute {
-		return HighRequestRate, map[string]interface{}{
+		event := HighRequestRate
+		return &event, map[string]interface{}{
 			"user_id":             userID,
 			"requests_per_minute": requestsPerMinute,
 			"threshold":           d.MaxRequestsPerMinute,
@@ -154,14 +155,15 @@ func (d *AnomalyDetector) DetectRateAnomaly(userID string) (SecurityEvent, map[s
 		}
 	}
 	if recent > d.MaxBurstSize {
-		return BurstDetected, map[string]interface{}{
+		event := BurstDetected
+		return &event, map[string]interface{}{
 			"user_id":    userID,
 			"burst_size": recent,
 			"threshold":  d.MaxBurstSize,
 		}
 	}
 
-	return "", nil
+	return nil, nil
 }
 
 // DetectFailureAnomaly detects failure rate anomalies.
@@ -173,9 +175,9 @@ func (d *AnomalyDetector) DetectRateAnomaly(userID string) (SecurityEvent, map[s
 //
 // Returns:
 //
-//	event: SecurityEvent if anomaly detected, empty string otherwise
-//	details: Details about the anomaly
-func (d *AnomalyDetector) DetectFailureAnomaly(userID string, isFailure bool) (SecurityEvent, map[string]interface{}) {
+//	event: SecurityEvent if anomaly detected, nil otherwise
+//	details: Details about the anomaly (nil if no anomaly)
+func (d *AnomalyDetector) DetectFailureAnomaly(userID string, isFailure bool) (*SecurityEvent, map[string]interface{}) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -192,7 +194,8 @@ func (d *AnomalyDetector) DetectFailureAnomaly(userID string, isFailure bool) (S
 		failureRate := float64(d.failureCounts[userID]) / float64(total)
 
 		if failureRate > d.FailureRateThreshold {
-			return RepeatedFailures, map[string]interface{}{
+			event := RepeatedFailures
+			return &event, map[string]interface{}{
 				"user_id":      userID,
 				"failure_rate": failureRate,
 				"failures":     d.failureCounts[userID],
@@ -201,7 +204,7 @@ func (d *AnomalyDetector) DetectFailureAnomaly(userID string, isFailure bool) (S
 		}
 	}
 
-	return "", nil
+	return nil, nil
 }
 
 // DetectSizeAnomaly detects unusual input/output sizes.
@@ -213,9 +216,9 @@ func (d *AnomalyDetector) DetectFailureAnomaly(userID string, isFailure bool) (S
 //
 // Returns:
 //
-//	event: SecurityEvent if anomaly detected, empty string otherwise
-//	details: Details about the anomaly
-func (d *AnomalyDetector) DetectSizeAnomaly(inputSize, outputSize int) (SecurityEvent, map[string]interface{}) {
+//	event: SecurityEvent if anomaly detected, nil otherwise
+//	details: Details about the anomaly (nil if no anomaly)
+func (d *AnomalyDetector) DetectSizeAnomaly(inputSize, outputSize int) (*SecurityEvent, map[string]interface{}) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -233,7 +236,7 @@ func (d *AnomalyDetector) DetectSizeAnomaly(inputSize, outputSize int) (Security
 
 	// Need enough data points for statistics
 	if len(d.inputSizes) < 20 {
-		return "", nil
+		return nil, nil
 	}
 
 	// Calculate mean and std dev for input
@@ -248,7 +251,8 @@ func (d *AnomalyDetector) DetectSizeAnomaly(inputSize, outputSize int) (Security
 	if inputStdev > 0 {
 		inputZScore := math.Abs(float64(inputSize)-inputMean) / inputStdev
 		if inputZScore > d.InputSizeThreshold {
-			return UnusualInputSize, map[string]interface{}{
+			event := UnusualInputSize
+			return &event, map[string]interface{}{
 				"input_size": inputSize,
 				"mean":       inputMean,
 				"stdev":      inputStdev,
@@ -261,7 +265,8 @@ func (d *AnomalyDetector) DetectSizeAnomaly(inputSize, outputSize int) (Security
 	if outputStdev > 0 {
 		outputZScore := math.Abs(float64(outputSize)-outputMean) / outputStdev
 		if outputZScore > d.OutputSizeThreshold {
-			return UnusualOutputSize, map[string]interface{}{
+			event := UnusualOutputSize
+			return &event, map[string]interface{}{
 				"output_size": outputSize,
 				"mean":        outputMean,
 				"stdev":       outputStdev,
@@ -270,7 +275,7 @@ func (d *AnomalyDetector) DetectSizeAnomaly(inputSize, outputSize int) (Security
 		}
 	}
 
-	return "", nil
+	return nil, nil
 }
 
 // DetectContentAnomaly detects content-based anomalies.
@@ -282,9 +287,9 @@ func (d *AnomalyDetector) DetectSizeAnomaly(inputSize, outputSize int) (Security
 //
 // Returns:
 //
-//	event: SecurityEvent if anomaly detected, empty string otherwise
-//	details: Details about the anomaly
-func (d *AnomalyDetector) DetectContentAnomaly(userID string, content string) (SecurityEvent, map[string]interface{}) {
+//	event: SecurityEvent if anomaly detected, nil otherwise
+//	details: Details about the anomaly (nil if no anomaly)
+func (d *AnomalyDetector) DetectContentAnomaly(userID string, content string) (*SecurityEvent, map[string]interface{}) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -321,14 +326,15 @@ func (d *AnomalyDetector) DetectContentAnomaly(userID string, content string) (S
 		}
 
 		if allSame {
-			return RepetitiveContent, map[string]interface{}{
+			event := RepetitiveContent
+			return &event, map[string]interface{}{
 				"user_id":     userID,
 				"repetitions": 5,
 			}
 		}
 	}
 
-	return "", nil
+	return nil, nil
 }
 
 // Helper functions
@@ -367,7 +373,8 @@ func hashString(s string) uint64 {
 }
 
 // AnomalyCallback is the callback function signature for anomaly events.
-type AnomalyCallback func(event SecurityEvent, details map[string]interface{})
+// The event parameter will be non-nil only when an anomaly is detected.
+type AnomalyCallback func(event *SecurityEvent, details map[string]interface{})
 
 // AnomalyDetectionMiddleware provides middleware for anomaly detection.
 //
@@ -439,8 +446,8 @@ func NewAnomalyDetectionMiddleware(
 }
 
 // defaultAnomalyHandler is the default anomaly handler that logs to console.
-func defaultAnomalyHandler(event SecurityEvent, details map[string]interface{}) {
-	log.Printf("SECURITY ANOMALY DETECTED: %s", event)
+func defaultAnomalyHandler(event *SecurityEvent, details map[string]interface{}) {
+	log.Printf("SECURITY ANOMALY DETECTED: %s", *event)
 	log.Printf("Details: %v", details)
 }
 
@@ -459,13 +466,13 @@ func (m *AnomalyDetectionMiddleware) Process(ctx context.Context, message *agenk
 	startTime := time.Now()
 
 	// 1. Check rate anomaly
-	if event, details := m.detector.DetectRateAnomaly(m.userID); event != "" {
+	if event, details := m.detector.DetectRateAnomaly(m.userID); event != nil {
 		m.onAnomaly(event, details)
 	}
 
 	// 2. Check content anomaly
 	contentStr := message.Content
-	if event, details := m.detector.DetectContentAnomaly(m.userID, contentStr); event != "" {
+	if event, details := m.detector.DetectContentAnomaly(m.userID, contentStr); event != nil {
 		m.onAnomaly(event, details)
 	}
 
@@ -480,7 +487,7 @@ func (m *AnomalyDetectionMiddleware) Process(ctx context.Context, message *agenk
 	}
 
 	// 4. Check failure anomaly
-	if event, details := m.detector.DetectFailureAnomaly(m.userID, isFailure); event != "" {
+	if event, details := m.detector.DetectFailureAnomaly(m.userID, isFailure); event != nil {
 		m.onAnomaly(event, details)
 	}
 
@@ -491,13 +498,14 @@ func (m *AnomalyDetectionMiddleware) Process(ctx context.Context, message *agenk
 		outputSize := len(response.Content)
 
 		// Check size anomaly
-		if event, details := m.detector.DetectSizeAnomaly(inputSize, outputSize); event != "" {
+		if event, details := m.detector.DetectSizeAnomaly(inputSize, outputSize); event != nil {
 			m.onAnomaly(event, details)
 		}
 
 		// Check processing time
 		if processingTime > m.detector.ProcessingTimeThreshold {
-			m.onAnomaly(UnusualProcessingTime, map[string]interface{}{
+			event := UnusualProcessingTime
+			m.onAnomaly(&event, map[string]interface{}{
 				"user_id":         m.userID,
 				"processing_time": processingTime,
 				"threshold":       m.detector.ProcessingTimeThreshold,

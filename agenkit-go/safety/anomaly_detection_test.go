@@ -19,7 +19,7 @@ func TestAnomalyDetectorHighRequestRate(t *testing.T) {
 	detected := false
 	for i := 0; i < 15; i++ {
 		event, details := detector.DetectRateAnomaly(userID)
-		if event == HighRequestRate {
+		if event != nil && *event == HighRequestRate {
 			if rate, ok := details["requests_per_minute"].(int); !ok || rate <= 0 {
 				t.Error("Expected requests_per_minute in details")
 			}
@@ -40,7 +40,7 @@ func TestAnomalyDetectorBurstDetected(t *testing.T) {
 	// Simulate burst
 	for i := 0; i < 25; i++ {
 		event, details := detector.DetectRateAnomaly(userID)
-		if event == BurstDetected {
+		if event != nil && *event == BurstDetected {
 			if _, ok := details["burst_size"]; !ok {
 				t.Error("Expected burst_size in details")
 			}
@@ -57,8 +57,8 @@ func TestAnomalyDetectorNormalRequestRate(t *testing.T) {
 	// Simulate normal request rate
 	for i := 0; i < 3; i++ {
 		event, _ := detector.DetectRateAnomaly(userID)
-		if event != "" {
-			t.Errorf("Expected no anomaly for normal request rate, got: %s", event)
+		if event != nil {
+			t.Errorf("Expected no anomaly for normal request rate, got: %s", *event)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -79,8 +79,12 @@ func TestAnomalyDetectorRepeatedFailures(t *testing.T) {
 	}
 	// Now test - should detect repeated failures (60% failure rate)
 	event, details := detector.DetectFailureAnomaly(userID, true)
-	if event != RepeatedFailures {
-		t.Errorf("Expected repeated failures detection, got: %s", event)
+	if event == nil || *event != RepeatedFailures {
+		if event == nil {
+			t.Error("Expected repeated failures detection, got: nil")
+		} else {
+			t.Errorf("Expected repeated failures detection, got: %s", *event)
+		}
 	}
 	if rate, ok := details["failure_rate"].(float64); !ok || rate < 0.5 {
 		t.Errorf("Expected failure rate >= 0.5, got: %v", rate)
@@ -95,7 +99,7 @@ func TestAnomalyDetectorMixedSuccessFailure(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		isFailure := i%3 == 0
 		event, _ := detector.DetectFailureAnomaly(userID, isFailure)
-		if event == RepeatedFailures {
+		if event != nil && *event == RepeatedFailures {
 			t.Error("Expected no anomaly for mixed success/failure pattern")
 		}
 	}
@@ -112,8 +116,12 @@ func TestAnomalyDetectorUnusualInputSize(t *testing.T) {
 	// Then feed an unusually large input
 	event, details := detector.DetectSizeAnomaly(10000, 200)
 
-	if event != UnusualInputSize {
-		t.Errorf("Expected UnusualInputSize, got: %s", event)
+	if event == nil || *event != UnusualInputSize {
+		if event == nil {
+			t.Error("Expected UnusualInputSize, got: nil")
+		} else {
+			t.Errorf("Expected UnusualInputSize, got: %s", *event)
+		}
 	}
 	if _, ok := details["input_size"]; !ok {
 		t.Error("Expected input_size in details")
@@ -131,8 +139,12 @@ func TestAnomalyDetectorUnusualOutputSize(t *testing.T) {
 	// Then feed an unusually large output
 	event, details := detector.DetectSizeAnomaly(100, 10000)
 
-	if event != UnusualOutputSize {
-		t.Errorf("Expected UnusualOutputSize, got: %s", event)
+	if event == nil || *event != UnusualOutputSize {
+		if event == nil {
+			t.Error("Expected UnusualOutputSize, got: nil")
+		} else {
+			t.Errorf("Expected UnusualOutputSize, got: %s", *event)
+		}
 	}
 	if _, ok := details["output_size"]; !ok {
 		t.Error("Expected output_size in details")
@@ -145,8 +157,8 @@ func TestAnomalyDetectorNormalSizes(t *testing.T) {
 	// Feed normal sizes
 	for i := 0; i < 5; i++ {
 		event, _ := detector.DetectSizeAnomaly(100, 200)
-		if event != "" {
-			t.Errorf("Expected no anomaly for normal sizes, got: %s", event)
+		if event != nil {
+			t.Errorf("Expected no anomaly for normal sizes, got: %s", *event)
 		}
 	}
 }
@@ -159,7 +171,7 @@ func TestAnomalyDetectorRepetitiveContent(t *testing.T) {
 	content := "This is the same content"
 	for i := 0; i < 6; i++ {
 		event, details := detector.DetectContentAnomaly(userID, content)
-		if i >= 4 && event == RepetitiveContent {
+		if i >= 4 && event != nil && *event == RepetitiveContent {
 			if reps, ok := details["repetitions"].(int); !ok || reps != 5 {
 				t.Errorf("Expected 5 repetitions, got: %v", reps)
 			}
@@ -177,8 +189,8 @@ func TestAnomalyDetectorVariedContent(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		content := "Content number " + string(rune(i)) + " with some variety"
 		event, _ := detector.DetectContentAnomaly(userID, content)
-		if event != "" {
-			t.Errorf("Expected no anomaly for varied content, got: %s", event)
+		if event != nil {
+			t.Errorf("Expected no anomaly for varied content, got: %s", *event)
 		}
 	}
 }
@@ -189,7 +201,7 @@ func TestAnomalyDetectionMiddlewareBasic(t *testing.T) {
 	agent := &mockAgent{name: "test-agent"}
 	detector := NewAnomalyDetector()
 
-	callback := func(event SecurityEvent, details map[string]interface{}) {
+	callback := func(event *SecurityEvent, details map[string]interface{}) {
 		// Callback for anomalies
 	}
 
@@ -224,8 +236,8 @@ func TestAnomalyDetectionMiddlewareCallbackInvoked(t *testing.T) {
 	detector := NewAnomalyDetector()
 
 	eventCaptured := ""
-	callback := func(event SecurityEvent, details map[string]interface{}) {
-		eventCaptured = string(event)
+	callback := func(event *SecurityEvent, details map[string]interface{}) {
+		eventCaptured = string(*event)
 	}
 
 	middleware := NewAnomalyDetectionMiddleware(agent, detector, "user123", callback)
@@ -305,7 +317,7 @@ func TestAnomalyDetectorMultipleUsers(t *testing.T) {
 
 	// Neither should trigger anomaly yet with moderate rate
 	event, _ := detector.DetectRateAnomaly("user_a")
-	if event != "" {
+	if event != nil {
 		t.Error("Expected no anomaly for user_a with moderate rate")
 	}
 }

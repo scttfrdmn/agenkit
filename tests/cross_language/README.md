@@ -300,7 +300,7 @@ A language passes cross-language consistency tests if:
 |---------------|----------|--------|--------|----|----|------|-----|-----|
 | Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ✅ 13/13 | ✅ 12/12 |
 | API Consistency (NEW) | ✅ | - | ✅ 13/13 | ✅ 9/9 | ✅ 14/14 | ✅ 12/12 | ✅ 13/13 | ⚠️ API |
-| Retry Behavior | ✅ v1.1 | - | ✅ 7/7 | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| Retry Behavior | ✅ v1.1 | - | ✅ 7/7 | ✅ 7/7 | ⏳ | ⏳ | ⏳ | ⏳ |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Timeout Behavior | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
@@ -406,6 +406,13 @@ A language passes cross-language consistency tests if:
 - 7 tests covering all retry behavior scenarios from fixture
 - MockAgent simulates failures/successes from fixture scenarios
 - Tests validate timing, attempts, backoff calculations, and metrics
+- All tests passing ✅
+
+**Go** (`cross_language_tests/retry_behavior_test.go`):
+- Framework: testify with time.Duration for timing
+- 7 tests covering all retry behavior scenarios from fixture
+- MockRetryAgent implements full Agent interface with Introspect()
+- Tests validate exponential backoff, capping, and metrics tracking
 - All tests passing ✅
 
 ## Next Steps

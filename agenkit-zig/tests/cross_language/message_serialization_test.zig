@@ -13,7 +13,7 @@ const Role = agenkit.Role;
 /// Load fixtures from JSON file
 fn loadFixtures(allocator: std.mem.Allocator) !json.Parsed(json.Value) {
     // Path from project root (where zig build is run)
-    const fixtures_path = "tests/cross_language/fixtures/messages.json";
+    const fixtures_path = "../tests/cross_language/fixtures/messages.json";
     const file = try std.fs.cwd().openFile(fixtures_path, .{});
     defer file.close();
 
@@ -26,7 +26,7 @@ fn loadFixtures(allocator: std.mem.Allocator) !json.Parsed(json.Value) {
 /// Load schema from JSON file
 fn loadSchema(allocator: std.mem.Allocator) !json.Parsed(json.Value) {
     // Path from project root (where zig build is run)
-    const schema_path = "tests/cross_language/schemas/message.schema.json";
+    const schema_path = "../tests/cross_language/schemas/message.schema.json";
     const file = try std.fs.cwd().openFile(schema_path, .{});
     defer file.close();
 

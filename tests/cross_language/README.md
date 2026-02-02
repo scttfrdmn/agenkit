@@ -300,7 +300,7 @@ A language passes cross-language consistency tests if:
 |---------------|----------|--------|--------|----|----|------|-----|-----|
 | Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ✅ 13/13 | ✅ 12/12 |
 | API Consistency (NEW) | ✅ | - | ✅ 13/13 | ✅ 9/9 | ✅ 14/14 | ✅ 12/12 | ✅ 13/13 | ⚠️ API |
-| Retry Behavior | ✅ v1.1 | - | ✅ 7/7 | ✅ 7/7 | ⏳ | ⏳ | ⏳ | ⏳ |
+| Retry Behavior | ✅ v1.1 | - | ✅ 7/7 | ✅ 7/7 | ⏳ | ✅ 7/7 | ⏳ | ⏳ |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Timeout Behavior | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
@@ -414,6 +414,17 @@ A language passes cross-language consistency tests if:
 - MockRetryAgent implements full Agent interface with Introspect()
 - Tests validate exponential backoff, capping, and metrics tracking
 - All tests passing ✅
+
+**Rust** (`agenkit-rust/tests/cross_language_retry_behavior.rs`):
+- Framework: tokio::test with async/await
+- 7 tests covering all retry behavior scenarios from fixture
+- MockRetryAgent returns tuple (agent, call_count_ref) for tracking
+- Uses Arc<AtomicUsize> for thread-safe call counting
+- **Note**: Rust counts `total_attempts` differently:
+  - Python/Go: Count agent invocations (2 for 1 failure + 1 success)
+  - Rust: Count process() calls (1 request = 1 attempt)
+  - This semantic difference is documented in test comments
+- All tests passing ✅ (0.71s execution time)
 
 ## Next Steps
 

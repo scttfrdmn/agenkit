@@ -193,7 +193,9 @@ BedrockAgent::call_converse_api(const core::Message& message) {
         response_msg.with_metadata("model", config_.model);
 
         // Add usage metadata
-        if (result.GetUsage().TokenUsageHasBeenSet()) {
+        if (result.GetUsage().InputTokensHasBeenSet() ||
+            result.GetUsage().OutputTokensHasBeenSet() ||
+            result.GetUsage().TotalTokensHasBeenSet()) {
             nlohmann::json usage_metadata;
             usage_metadata["prompt_tokens"] = result.GetUsage().GetInputTokens();
             usage_metadata["completion_tokens"] = result.GetUsage().GetOutputTokens();
@@ -296,12 +298,12 @@ BedrockAgent::stream(core::Message message, std::function<bool(const std::string
         Aws::BedrockRuntime::Model::ConverseStreamHandler handler;
 
         // Handle content block delta events
-        handler.SetContentBlockDeltaCallback(
-            [&](const Aws::BedrockRuntime::Model::ContentBlockDelta& delta) {
+        handler.SetContentBlockDeltaEventCallback(
+            [&](const Aws::BedrockRuntime::Model::ContentBlockDeltaEvent& event) {
                 if (should_stop) return;
 
-                if (delta.GetDelta().GetText().size() > 0) {
-                    std::string text = delta.GetDelta().GetText();
+                if (event.GetDelta().GetText().size() > 0) {
+                    std::string text = event.GetDelta().GetText();
 
                     // Invoke callback with text chunk
                     if (!callback(text)) {
@@ -324,8 +326,8 @@ BedrockAgent::stream(core::Message message, std::function<bool(const std::string
         );
 
         // Handle completion
-        handler.SetOnCompleteCallback(
-            [&]() {
+        handler.SetMessageStopEventCallback(
+            [&](const Aws::BedrockRuntime::Model::MessageStopEvent&) {
                 std::lock_guard<std::mutex> lock(mtx);
                 stream_complete = true;
                 cv.notify_one();
@@ -333,7 +335,8 @@ BedrockAgent::stream(core::Message message, std::function<bool(const std::string
         );
 
         // Make streaming API call
-        auto outcome = client_->ConverseStream(request, handler);
+        request.SetEventStreamHandler(handler);
+        auto outcome = client_->ConverseStream(request);
 
         if (!outcome.IsSuccess()) {
             const auto& error = outcome.GetError();

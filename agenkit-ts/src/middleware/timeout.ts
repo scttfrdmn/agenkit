@@ -28,11 +28,6 @@ export interface TimeoutConfig {
    *   }
    */
   methodTimeouts?: Record<string, number>;
-
-  /**
-   * @deprecated Use timeoutMs instead. Will be removed in v0.51.0.
-   */
-  timeout?: number;
 }
 
 /**
@@ -94,19 +89,7 @@ export class TimeoutMiddleware extends BaseMiddleware {
   constructor(agent: Agent, config: TimeoutConfig) {
     super(agent);
 
-    // Handle deprecated 'timeout' field
-    if (config.timeout !== undefined && config.timeoutMs === undefined) {
-      console.warn(
-        'TimeoutConfig.timeout is deprecated. Use timeoutMs instead. ' +
-          'The timeout field will be removed in v0.51.0.',
-      );
-      this.config = {
-        ...config,
-        timeoutMs: config.timeout,
-      };
-    } else {
-      this.config = config;
-    }
+    this.config = config;
 
     this._metrics = {
       totalRequests: 0,

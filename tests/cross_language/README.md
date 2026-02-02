@@ -299,7 +299,7 @@ A language passes cross-language consistency tests if:
 | Test Category | Fixtures | Schema | Python | Go | TS | Rust | C++ | Zig |
 |---------------|----------|--------|--------|----|----|------|-----|-----|
 | Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ✅ 13/13 | ✅ 12/12 |
-| API Consistency (NEW) | ✅ | - | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| API Consistency (NEW) | ✅ | - | ✅ 13/13 | ✅ 9/9 | ✅ 14/14 | ⚠️ Disk | ⏳ Build | ⚠️ Path |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Retry Behavior | ✅ v1.1 | - | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
@@ -342,6 +342,52 @@ A language passes cross-language consistency tests if:
 - 12 tests with proper memory management
 - Added "agent" role to Role enum for API parity
 - All tests passing ✅
+
+### API Consistency Implementation Details (NEW - January 2026)
+
+**Python** (`tests/cross_language/test_api_consistency.py`):
+- Framework: pytest with inspect module
+- 13 tests covering parameter naming, defaults, interfaces, and error types
+- Validates both new and deprecated parameter names during transition period (v0.50.0)
+- Tests for MaxRetriesExceededError with attempts tracking
+- All tests passing ✅
+
+**Go** (`agenkit-go/cross_language_tests/api_consistency_test.go`):
+- Framework: testify with reflection
+- 9 tests covering parameter naming, defaults, interfaces, and Go idioms
+- Tests load JSON fixtures and validate struct field names
+- Verifies time.Duration usage for timeout/delay parameters (idiomatic Go)
+- Validates interface method signatures using reflection
+- **API aligned with v0.50.0 spec** - uses MaxRetries, InitialRetryDelay, MaxRetryDelay, RetryMultiplier
+- All tests passing ✅
+
+**TypeScript** (`agenkit-ts/src/cross-language/__tests__/api-consistency.test.ts`):
+- Framework: Jest/Vitest with type system validation
+- Tests validate config interfaces accept correct properties
+- Verifies camelCase naming convention for TypeScript
+- Type safety validated at compile time
+- Created, ready to run ✅
+
+**Rust** (`agenkit-rust/tests/cross_language_api_consistency.rs`):
+- Framework: Built-in test with serde_json
+- Tests validate struct field names and Default trait implementations
+- Verifies Duration usage for time-based parameters
+- Uses async_trait for interface signature tests
+- Created, ready to run ✅
+
+**C++** (`agenkit-cpp/tests/cross_language_api_consistency_test.cpp`):
+- Framework: Google Test (gtest) with nlohmann::json
+- Tests validate struct field names match snake_case convention
+- Verifies millisecond units with clear field naming (timeout_ms, etc.)
+- Uses std::future for async method returns
+- Created, ready to run ✅
+
+**Zig** (`agenkit-zig/tests/cross_language_api_consistency.zig`):
+- Framework: Built-in test with std.json
+- Tests validate struct field names match snake_case convention
+- Verifies explicit unit naming (timeout_ms, initial_delay_ms, etc.)
+- Uses error unions for error handling validation
+- Created, ready to run ✅
 
 ## Related Issues
 

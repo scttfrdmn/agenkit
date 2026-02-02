@@ -142,7 +142,7 @@ func exampleProductionMiddleware() {
 				&middleware.RetryConfig{
 					MaxRetries:        3,
 					InitialDelay:      1.0,
-					BackoffMultiplier: 2.0,
+					RetryMultiplier: 2.0,
 				},
 			),
 			&middleware.TimeoutConfig{

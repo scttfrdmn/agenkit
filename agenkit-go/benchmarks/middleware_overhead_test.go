@@ -91,9 +91,9 @@ func BenchmarkRetryMiddleware(b *testing.B) {
 	msg := agenkit.NewMessage("user", "test")
 
 	retryAgent := middleware.NewRetryDecorator(agent, middleware.RetryConfig{
-		MaxAttempts:    3,
-		InitialBackoff: 100 * time.Millisecond,
-		MaxBackoff:     1000 * time.Millisecond,
+		MaxRetries:    3,
+		InitialRetryDelay: 100 * time.Millisecond,
+		MaxRetryDelay:     1000 * time.Millisecond,
 	})
 
 	b.ResetTimer()
@@ -281,9 +281,9 @@ func BenchmarkStackedMiddleware(b *testing.B) {
 
 	// Layer 4: Retry
 	agentWithRetry := middleware.NewRetryDecorator(agentWithTimeout, middleware.RetryConfig{
-		MaxAttempts:    3,
-		InitialBackoff: 100 * time.Millisecond,
-		MaxBackoff:     1000 * time.Millisecond,
+		MaxRetries:    3,
+		InitialRetryDelay: 100 * time.Millisecond,
+		MaxRetryDelay:     1000 * time.Millisecond,
 	})
 
 	// Layer 5: Metrics (outermost)
@@ -313,9 +313,9 @@ func BenchmarkMinimalStack(b *testing.B) {
 
 	// Layer 1: Retry
 	agentWithRetry := middleware.NewRetryDecorator(agent, middleware.RetryConfig{
-		MaxAttempts:    3,
-		InitialBackoff: 100 * time.Millisecond,
-		MaxBackoff:     1000 * time.Millisecond,
+		MaxRetries:    3,
+		InitialRetryDelay: 100 * time.Millisecond,
+		MaxRetryDelay:     1000 * time.Millisecond,
 	})
 
 	// Layer 2: Metrics
@@ -402,9 +402,9 @@ func BenchmarkStackedMiddlewareParallel(b *testing.B) {
 	})
 
 	agentWithRetry := middleware.NewRetryDecorator(agentWithTimeout, middleware.RetryConfig{
-		MaxAttempts:    3,
-		InitialBackoff: 100 * time.Millisecond,
-		MaxBackoff:     1000 * time.Millisecond,
+		MaxRetries:    3,
+		InitialRetryDelay: 100 * time.Millisecond,
+		MaxRetryDelay:     1000 * time.Millisecond,
 	})
 
 	agentWithAll := middleware.NewMetricsDecorator(agentWithRetry)

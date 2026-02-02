@@ -48,9 +48,9 @@ func TestRetrySuccess(t *testing.T) {
 	}
 
 	retry := NewRetryDecorator(agent, RetryConfig{
-		MaxAttempts:       3,
-		InitialBackoff:    10 * time.Millisecond,
-		BackoffMultiplier: 2.0,
+		MaxRetries:       3,
+		InitialRetryDelay:    10 * time.Millisecond,
+		RetryMultiplier: 2.0,
 	})
 
 	msg := agenkit.NewMessage("user", "test")
@@ -69,7 +69,7 @@ func TestRetrySuccess(t *testing.T) {
 	}
 }
 
-func TestRetryMaxAttemptsExceeded(t *testing.T) {
+func TestRetryMaxRetriesExceeded(t *testing.T) {
 	ctx := context.Background()
 
 	// Agent that always fails
@@ -80,9 +80,9 @@ func TestRetryMaxAttemptsExceeded(t *testing.T) {
 	}
 
 	retry := NewRetryDecorator(agent, RetryConfig{
-		MaxAttempts:       3,
-		InitialBackoff:    10 * time.Millisecond,
-		BackoffMultiplier: 2.0,
+		MaxRetries:       3,
+		InitialRetryDelay:    10 * time.Millisecond,
+		RetryMultiplier: 2.0,
 	})
 
 	msg := agenkit.NewMessage("user", "test")
@@ -142,9 +142,9 @@ func TestRetryContextCancellation(t *testing.T) {
 	}
 
 	retry := NewRetryDecorator(agent, RetryConfig{
-		MaxAttempts:       5,
-		InitialBackoff:    50 * time.Millisecond,
-		BackoffMultiplier: 2.0,
+		MaxRetries:       5,
+		InitialRetryDelay:    50 * time.Millisecond,
+		RetryMultiplier: 2.0,
 	})
 
 	// Cancel after first failure
@@ -184,9 +184,9 @@ func TestRetryExponentialBackoff(t *testing.T) {
 	start := time.Now()
 
 	retry := NewRetryDecorator(agent, RetryConfig{
-		MaxAttempts:       3,
-		InitialBackoff:    100 * time.Millisecond,
-		BackoffMultiplier: 2.0,
+		MaxRetries:       3,
+		InitialRetryDelay:    100 * time.Millisecond,
+		RetryMultiplier: 2.0,
 	})
 
 	msg := agenkit.NewMessage("user", "test")
@@ -208,7 +208,7 @@ func TestRetryExponentialBackoff(t *testing.T) {
 	}
 }
 
-func TestRetryMaxBackoff(t *testing.T) {
+func TestRetryMaxRetryDelay(t *testing.T) {
 	ctx := context.Background()
 
 	// Agent that fails 3 times
@@ -219,10 +219,10 @@ func TestRetryMaxBackoff(t *testing.T) {
 	}
 
 	retry := NewRetryDecorator(agent, RetryConfig{
-		MaxAttempts:       4,
-		InitialBackoff:    100 * time.Millisecond,
-		MaxBackoff:        150 * time.Millisecond, // Cap backoff at 150ms
-		BackoffMultiplier: 3.0,                    // Would be 300ms without cap
+		MaxRetries:       4,
+		InitialRetryDelay:    100 * time.Millisecond,
+		MaxRetryDelay:        150 * time.Millisecond, // Cap backoff at 150ms
+		RetryMultiplier: 3.0,                    // Would be 300ms without cap
 	})
 
 	start := time.Now()
@@ -295,8 +295,8 @@ func TestRetryShouldRetryPredicate(t *testing.T) {
 	// Test retriable error
 	retriableAgent := &SelectiveFailingAgent{errorType: "retriable"}
 	retry := NewRetryDecorator(retriableAgent, RetryConfig{
-		MaxAttempts:    3,
-		InitialBackoff: 10 * time.Millisecond,
+		MaxRetries:    3,
+		InitialRetryDelay: 10 * time.Millisecond,
 		ShouldRetry: func(err error) bool {
 			_, ok := err.(*RetriableError)
 			return ok
@@ -317,8 +317,8 @@ func TestRetryShouldRetryPredicate(t *testing.T) {
 	// Test non-retriable error
 	nonRetriableAgent := &SelectiveFailingAgent{errorType: "non-retriable"}
 	retry2 := NewRetryDecorator(nonRetriableAgent, RetryConfig{
-		MaxAttempts:    3,
-		InitialBackoff: 10 * time.Millisecond,
+		MaxRetries:    3,
+		InitialRetryDelay: 10 * time.Millisecond,
 		ShouldRetry: func(err error) bool {
 			_, ok := err.(*RetriableError)
 			return ok
@@ -343,20 +343,20 @@ func TestRetryShouldRetryPredicate(t *testing.T) {
 func TestRetryDefaultConfig(t *testing.T) {
 	config := DefaultRetryConfig()
 
-	if config.MaxAttempts != 3 {
-		t.Errorf("Expected MaxAttempts=3, got %d", config.MaxAttempts)
+	if config.MaxRetries != 3 {
+		t.Errorf("Expected MaxRetries=3, got %d", config.MaxRetries)
 	}
 
-	if config.InitialBackoff != 100*time.Millisecond {
-		t.Errorf("Expected InitialBackoff=100ms, got %v", config.InitialBackoff)
+	if config.InitialRetryDelay != 100*time.Millisecond {
+		t.Errorf("Expected InitialRetryDelay=100ms, got %v", config.InitialRetryDelay)
 	}
 
-	if config.MaxBackoff != 10*time.Second {
-		t.Errorf("Expected MaxBackoff=10s, got %v", config.MaxBackoff)
+	if config.MaxRetryDelay != 10*time.Second {
+		t.Errorf("Expected MaxRetryDelay=10s, got %v", config.MaxRetryDelay)
 	}
 
-	if config.BackoffMultiplier != 2.0 {
-		t.Errorf("Expected BackoffMultiplier=2.0, got %f", config.BackoffMultiplier)
+	if config.RetryMultiplier != 2.0 {
+		t.Errorf("Expected RetryMultiplier=2.0, got %f", config.RetryMultiplier)
 	}
 
 	if config.ShouldRetry != nil {

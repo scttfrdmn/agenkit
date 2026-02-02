@@ -148,6 +148,19 @@ pub fn build(b: *std.Build) void {
     });
     const run_cross_lang_tests = b.addRunArtifact(cross_lang_tests);
 
+    // Cross-language rate limiter behavior tests
+    const rate_limiter_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/cross_language/rate_limiter_behavior_test.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
+        }),
+    });
+    const run_rate_limiter_tests = b.addRunArtifact(rate_limiter_tests);
+
     // Cross-language API consistency tests
     const api_consistency_tests = b.addTest(.{
         .root_module = b.createModule(.{
@@ -183,6 +196,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_cross_lang_tests.step);
     test_step.dependOn(&run_api_consistency_tests.step);
     test_step.dependOn(&run_retry_behavior_tests.step);
+    test_step.dependOn(&run_rate_limiter_tests.step);
 
     // Just like flags, top level steps are also listed in the `--help` menu.
     //

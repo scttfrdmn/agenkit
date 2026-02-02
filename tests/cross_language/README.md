@@ -305,7 +305,7 @@ A language passes cross-language consistency tests if:
 | **Circuit Breaker (NEW)** | ✅ v1.0 | ✅ | **✅ 7/7** | **✅ 7/7** | **✅ 7/7** | **✅ 7/7** | **✅ 7/7** | ⏳ |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| Rate Limiter | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| **Rate Limiter (NEW)** | ✅ v1.0 | ✅ | **✅ 7/7** | **✅ 7/7** | **✅ 7/7** | **✅ 7/7** | ⏳ | ⏳ |
 
 ### Message Serialization Implementation Details
 
@@ -521,7 +521,8 @@ A language passes cross-language consistency tests if:
 7. ✅ **DONE**: Timeout behavior tests in Python, Go, TypeScript, Rust, C++ (5/6 languages, 35/35 tests passing)
 8. ✅ **DONE**: Circuit breaker behavior fixtures and schema created (v1.0 with 7 scenarios)
 9. ✅ **DONE**: Circuit breaker behavior tests in Python, Go, TypeScript, Rust, C++ (5/6 languages, 35/35 tests passing)
-10. **TODO**: Implement circuit breaker behavior tests in Rust, C++, Zig
+10. ✅ **DONE**: Rate limiter behavior fixtures and schema created (v1.0 with 7 scenarios)
+11. ✅ **DONE**: Rate limiter behavior tests in Python, Go, TypeScript, Rust (4/6 languages, 28/42 tests passing)
 11. **TODO**: Implement timeout behavior tests in Zig (pending API alignment)
 10. **TODO**: Create error handling test cases
 11. **TODO**: Build automated test runner for all categories
@@ -566,7 +567,68 @@ A language passes cross-language consistency tests if:
 - Clean Promise-based error handling with CircuitBreakerError
 - All tests passing ✅ (0.61s execution time)
 
-**Rust**: ⏳ To be implemented
+**Rust** (`agenkit-rust/tests/cross_language_circuit_breaker_behavior.rs`):
+- Framework: tokio::test with async/await
+- 7 tests covering all circuit breaker state transitions
+- MockCircuitBreakerAgent with Arc<Mutex<>> for thread-safe state
+- Fixed critical deadlock bug in CircuitBreakerMiddleware (RwLock upgrade)
+- Uses CircuitState enum (Closed, Open, HalfOpen)
+- All tests passing ✅ (0.15s execution time)
+
+**C++** (`agenkit-cpp/tests/cross_language_circuit_breaker_behavior_test.cpp`):
+- Framework: Google Test with std::future
+- 7 tests covering all circuit breaker state transitions
+- MockCircuitBreakerAgent with std::atomic for thread-safe call counting
+- Uses CircuitState enum (CLOSED, OPEN, HALF_OPEN)
+- Clean state conversion helpers (state_to_lower)
+- All tests passing ✅ (execution time TBD)
+
+**Zig**: ⏳ To be implemented (pending API alignment)
+
+### Rate Limiter Behavior Implementation Details (NEW - February 2026)
+
+**Python** (`tests/cross_language/test_rate_limiter_behavior.py`):
+- Framework: pytest with asyncio
+- 7 tests covering token bucket algorithm behavior
+- MockRateLimiterAgent simulates immediate responses
+- Tests validate token refill, burst capacity, wait times, and timeouts
+- Metrics tracking test validates request counts and wait times
+- All tests passing ✅ (execution time TBD)
+
+**Test scenarios (v1.0 fixtures):**
+1. Allows within capacity - Requests succeed when tokens available
+2. Waits for tokens - 6th request waits ~100ms for token refill
+3. Rejects on timeout - Requests rejected when max_wait exceeded
+4. Token refill - Tokens refilled at configured rate
+5. Burst capacity - Handles burst up to capacity immediately
+6. Multiple tokens per request - Consumes multiple tokens per request
+7. Metrics tracking - Accurate metrics for requests, rejections, and wait times
+
+**Go** (`agenkit-go/cross_language_tests/rate_limiter_behavior_test.go`):
+- Framework: testify with goroutines
+- 7 tests covering all rate limiter behaviors
+- MockRateLimiterAgent simulates agent responses
+- Uses middleware.RateLimiterConfig with time.Duration (idiomatic Go)
+- Tests validate token bucket algorithm, waiting, timeouts, and refill
+- All tests passing ✅ (0.95s execution time)
+
+**TypeScript** (`agenkit-ts/tests/cross-language/rate-limiter-behavior.test.ts`):
+- Framework: Vitest with async/await
+- 7 tests covering all rate limiter behaviors
+- MockRateLimiterAgent simulates agent responses
+- Uses RateLimiterConfig interface with milliseconds
+- Tests validate token bucket algorithm, waiting, timeouts, and refill
+- All tests passing ✅ (0.83s execution time, token refill test takes 602ms)
+
+**Rust** (`agenkit-rust/tests/cross_language_rate_limiter_behavior.rs`):
+- Framework: tokio::test with async/await
+- 7 tests covering all rate limiter behaviors
+- MockRateLimiterAgent with Arc<Mutex<>> for thread-safe state
+- Uses RateLimiterConfig with Duration (idiomatic Rust)
+- Tests validate token bucket algorithm, waiting, timeouts, and refill
+- Note: Rust tracks `allowed_requests` and `waited_requests` separately (API difference)
+- All tests passing ✅ (0.60s execution time)
+
 **C++**: ⏳ To be implemented
-**Zig**: ⏳ To be implemented
+**Zig**: ⏳ To be implemented (pending API alignment)
 

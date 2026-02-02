@@ -51,6 +51,11 @@ add_executable(test_cross_language_circuit_breaker_behavior cross_language_circu
 target_link_libraries(test_cross_language_circuit_breaker_behavior agenkit gtest_main)
 add_test(NAME cross_language_circuit_breaker_behavior_tests COMMAND test_cross_language_circuit_breaker_behavior)
 
+# Cross-language rate limiter behavior tests
+add_executable(test_cross_language_rate_limiter_behavior cross_language_rate_limiter_behavior_test.cpp)
+target_link_libraries(test_cross_language_rate_limiter_behavior agenkit gtest_main)
+add_test(NAME cross_language_rate_limiter_behavior_tests COMMAND test_cross_language_rate_limiter_behavior)
+
 # Agent tests
 add_executable(test_agent test_agent.cpp)
 target_link_libraries(test_agent agenkit gtest_main)

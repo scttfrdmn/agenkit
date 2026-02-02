@@ -55,7 +55,8 @@
 //! let config = CircuitBreakerConfig::builder()
 //!     .failure_threshold(5)
 //!     .success_threshold(2)
-//!     .timeout(Duration::from_secs(60))
+//!     .timeout(Duration::from_secs(30))          // Request timeout (optional, defaults to 30s)
+//!     .recovery_timeout(Duration::from_secs(60)) // Recovery timeout (optional, defaults to 60s)
 //!     .build();
 //!
 //! let cb_agent = CircuitBreakerMiddleware::new(agent, config);
@@ -144,9 +145,13 @@ pub struct CircuitBreakerConfig {
     /// Default: 2
     pub success_threshold: u32,
 
+    /// Request timeout (how long to wait for individual requests).
+    /// Default: 30 seconds
+    pub timeout: Duration,
+
     /// Duration to wait in open state before transitioning to half-open.
     /// Default: 60 seconds
-    pub timeout: Duration,
+    pub recovery_timeout: Duration,
 }
 
 impl Default for CircuitBreakerConfig {
@@ -154,7 +159,8 @@ impl Default for CircuitBreakerConfig {
         Self {
             failure_threshold: 5,
             success_threshold: 2,
-            timeout: Duration::from_secs(60),
+            timeout: Duration::from_secs(30),
+            recovery_timeout: Duration::from_secs(60),
         }
     }
 }
@@ -172,6 +178,7 @@ pub struct CircuitBreakerConfigBuilder {
     failure_threshold: Option<u32>,
     success_threshold: Option<u32>,
     timeout: Option<Duration>,
+    recovery_timeout: Option<Duration>,
 }
 
 impl CircuitBreakerConfigBuilder {
@@ -187,9 +194,15 @@ impl CircuitBreakerConfigBuilder {
         self
     }
 
-    /// Set timeout duration.
+    /// Set request timeout duration (how long to wait for individual requests).
     pub fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
+        self
+    }
+
+    /// Set recovery timeout duration (how long to wait before testing recovery).
+    pub fn recovery_timeout(mut self, timeout: Duration) -> Self {
+        self.recovery_timeout = Some(timeout);
         self
     }
 
@@ -200,6 +213,7 @@ impl CircuitBreakerConfigBuilder {
             failure_threshold: self.failure_threshold.unwrap_or(default.failure_threshold),
             success_threshold: self.success_threshold.unwrap_or(default.success_threshold),
             timeout: self.timeout.unwrap_or(default.timeout),
+            recovery_timeout: self.recovery_timeout.unwrap_or(default.recovery_timeout),
         }
     }
 }
@@ -275,7 +289,7 @@ impl<A: Agent> CircuitBreakerMiddleware<A> {
 
         if let Some(last_failure) = state.last_failure_time {
             let elapsed = Instant::now().duration_since(last_failure);
-            elapsed >= self.config.timeout
+            elapsed >= self.config.recovery_timeout
         } else {
             false
         }
@@ -372,6 +386,7 @@ impl<A: Agent> Agent for CircuitBreakerMiddleware<A> {
                 "failure_threshold": self.config.failure_threshold,
                 "success_threshold": self.config.success_threshold,
                 "timeout_ms": self.config.timeout.as_millis(),
+                "recovery_timeout_ms": self.config.recovery_timeout.as_millis(),
             }),
         );
         result
@@ -477,7 +492,7 @@ mod tests {
         let agent = FailingAgent::new(true);
         let config = CircuitBreakerConfig::builder()
             .failure_threshold(3)
-            .timeout(Duration::from_secs(60))
+            .recovery_timeout(Duration::from_secs(60))
             .build();
 
         let cb_agent = CircuitBreakerMiddleware::new(agent, config);
@@ -506,7 +521,7 @@ mod tests {
         let config = CircuitBreakerConfig::builder()
             .failure_threshold(2)
             .success_threshold(2)
-            .timeout(Duration::from_millis(100))
+            .recovery_timeout(Duration::from_millis(100))
             .build();
 
         let cb_agent = CircuitBreakerMiddleware::new(agent, config);
@@ -546,7 +561,7 @@ mod tests {
         let agent = FailingAgent::new(true);
         let config = CircuitBreakerConfig::builder()
             .failure_threshold(2)
-            .timeout(Duration::from_millis(100))
+            .recovery_timeout(Duration::from_millis(100))
             .build();
 
         let cb_agent = CircuitBreakerMiddleware::new(agent, config);

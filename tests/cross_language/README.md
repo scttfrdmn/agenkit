@@ -300,7 +300,7 @@ A language passes cross-language consistency tests if:
 |---------------|----------|--------|--------|----|----|------|-----|-----|
 | Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ✅ 13/13 | ✅ 12/12 |
 | API Consistency (NEW) | ✅ | - | ✅ 13/13 | ✅ 9/9 | ✅ 14/14 | ✅ 12/12 | ✅ 13/13 | ⚠️ API |
-| Retry Behavior | ✅ v1.1 | - | ✅ 7/7 | ✅ 7/7 | ⏳ | ✅ 7/7 | ✅ 7/7 | ⏳ |
+| Retry Behavior | ✅ v1.1 | - | ✅ 7/7 | ✅ 7/7 | ⏳ Blocked | ✅ 7/7 | ✅ 7/7 | ⚠️ API |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Timeout Behavior | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
@@ -436,15 +436,32 @@ A language passes cross-language consistency tests if:
 - Uses std::chrono for timing validation
 - All tests passing ✅ (2.16s execution time)
 
+**TypeScript** (`agenkit-ts/tests/cross-language/retry-behavior.test.ts`):
+- **Status**: ⏳ Blocked - RetryDecorator implementation incomplete
+- Test file created but not yet runnable
+- Needs RetryDecorator implementation to be completed first
+
+**Zig** (`agenkit-zig/tests/cross_language/retry_behavior_test.zig`):
+- **Status**: ⚠️ Work in Progress - API mismatches found
+- Framework: Built-in test with std.json
+- Test file created and added to build.zig
+- **Blockers**: Multiple API differences from specification:
+  - Result type usage (tagged union, not static methods)
+  - Message construction (Content union, no timestamp field)
+  - IntrospectionResult structure differences
+  - Timing types (i128 vs i64 for elapsed time)
+- Needs Zig-specific patterns to match language idioms
+- Tracked for future resolution (similar to C++ API fixes)
+
 ## Next Steps
 
 1. ✅ **DONE**: Message serialization tests (all 6 languages passing)
 2. ✅ **DONE**: API consistency fixtures created (parameter naming, defaults, interfaces, errors)
 3. ✅ **DONE**: Retry behavior fixtures updated (max_retries terminology)
 4. ✅ **DONE**: API consistency tests implemented (5/6 languages: Python, Go, TS, Rust, C++)
-5. ✅ **DONE**: Python retry behavior tests (7/7 passing)
-6. ⚠️ **IN PROGRESS**: Zig API alignment needed before tests can pass
-7. **TODO**: Implement retry behavior tests in Go, TypeScript, Rust, C++, Zig
+5. ✅ **DONE**: Retry behavior tests implemented (4/6 languages: Python, Go, Rust, C++)
+6. ⏳ **BLOCKED**: TypeScript retry behavior tests (needs RetryDecorator implementation)
+7. ⚠️ **IN PROGRESS**: Zig retry behavior tests (needs API alignment work)
 8. **TODO**: Add timeout and circuit breaker behavior tests
 9. **TODO**: Create error handling test cases
 10. **TODO**: Build automated test runner for all categories

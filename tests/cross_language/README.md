@@ -301,7 +301,7 @@ A language passes cross-language consistency tests if:
 | Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ✅ 13/13 | ✅ 12/12 |
 | API Consistency (NEW) | ✅ | - | ✅ 13/13 | ✅ 9/9 | ✅ 14/14 | ✅ 12/12 | ✅ 13/13 | ⚠️ API |
 | Retry Behavior | ✅ v1.1 | - | ✅ 7/7 | ✅ 7/7 | ⏳ Blocked | ✅ 7/7 | ✅ 7/7 | ⚠️ API |
-| **Timeout Behavior (NEW)** | ✅ v1.0 | ✅ | **✅ 7/7** | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| **Timeout Behavior (NEW)** | ✅ v1.0 | ✅ | **✅ 7/7** | **✅ 7/7** | ⏳ | ⏳ | ⏳ | ⏳ |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Circuit Breaker | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
@@ -473,7 +473,14 @@ A language passes cross-language consistency tests if:
 6. Very short timeout (10ms) - Extreme timeout testing
 7. Metrics tracking - Aggregated metrics across multiple requests
 
-**Go**: ⏳ To be implemented
+**Go** (`cross_language_tests/timeout_behavior_test.go`):
+- Framework: testify with context.Context for cancellation
+- 7 tests covering all timeout behavior scenarios from fixture
+- MockTimeoutAgent uses select on ctx.Done() for timeout detection
+- Uses middleware.TimeoutConfig with time.Duration (idiomatic Go)
+- Distinguishes timeout errors from agent errors via context cancellation
+- All tests passing ✅ (0.95s execution time)
+
 **TypeScript**: ⏳ To be implemented
 **Rust**: ⏳ To be implemented
 **C++**: ⏳ To be implemented

@@ -299,7 +299,7 @@ A language passes cross-language consistency tests if:
 | Test Category | Fixtures | Schema | Python | Go | TS | Rust | C++ | Zig |
 |---------------|----------|--------|--------|----|----|------|-----|-----|
 | Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ✅ 13/13 | ✅ 12/12 |
-| API Consistency (NEW) | ✅ | - | ✅ 13/13 | ✅ 9/9 | ✅ 14/14 | ✅ 12/12 | ✅ 13/13 | ⚠️ Path |
+| API Consistency (NEW) | ✅ | - | ✅ 13/13 | ✅ 9/9 | ✅ 14/14 | ✅ 12/12 | ✅ 13/13 | ⚠️ API |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Retry Behavior | ✅ v1.1 | - | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
@@ -384,10 +384,13 @@ A language passes cross-language consistency tests if:
 
 **Zig** (`agenkit-zig/tests/cross_language_api_consistency.zig`):
 - Framework: Built-in test with std.json
-- Tests validate struct field names match snake_case convention
-- Verifies explicit unit naming (timeout_ms, initial_delay_ms, etc.)
-- Uses error unions for error handling validation
-- Created, ready to run ✅
+- Tests created and added to build.zig
+- **Status: ⚠️ API Inconsistencies Found**
+- Zig uses different field names than spec:
+  - RetryConfig: max_attempts (not max_retries), initial_backoff_ms (not initial_delay_ms)
+  - ToolResult structure doesn't match expected fields
+- Needs comprehensive API alignment work (similar to C++ fixes)
+- Tracked in Task #15 for future resolution
 
 ## Related Issues
 
@@ -401,9 +404,10 @@ A language passes cross-language consistency tests if:
 1. ✅ **DONE**: Message serialization tests (all 6 languages passing)
 2. ✅ **DONE**: API consistency fixtures created (parameter naming, defaults, interfaces, errors)
 3. ✅ **DONE**: Retry behavior fixtures updated (max_retries terminology)
-4. **TODO**: Implement API consistency tests in each language
-5. **TODO**: Implement retry config/behavior tests in each language
-6. **TODO**: Add timeout and circuit breaker behavior tests
-7. **TODO**: Create error handling test cases
-8. **TODO**: Build automated test runner for all categories
-9. **TODO**: Generate comprehensive cross-language compatibility report
+4. ✅ **DONE**: API consistency tests implemented (5/6 languages: Python, Go, TS, Rust, C++)
+5. ⚠️ **IN PROGRESS**: Zig API alignment needed before tests can pass
+6. **TODO**: Implement retry config/behavior tests in each language
+7. **TODO**: Add timeout and circuit breaker behavior tests
+8. **TODO**: Create error handling test cases
+9. **TODO**: Build automated test runner for all categories
+10. **TODO**: Generate comprehensive cross-language compatibility report

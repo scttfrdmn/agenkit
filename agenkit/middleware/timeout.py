@@ -2,8 +2,7 @@
 
 import asyncio
 import time
-import warnings
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from agenkit.interfaces import Agent, Message
 
@@ -12,48 +11,14 @@ from agenkit.interfaces import Agent, Message
 class TimeoutConfig:
     """Configuration for timeout behavior.
 
-    Note: As of v0.50.0, timeout values are specified in milliseconds using
-    timeout_ms. The old 'timeout' parameter (in seconds) is deprecated and
-    will be removed in v0.51.0.
+    Timeout values are specified in milliseconds.
     """
 
     timeout_ms: int = 30000  # Default request timeout in milliseconds
     method_timeouts_ms: dict[str, int] | None = None  # Method-specific timeouts in milliseconds
 
-    # Deprecated - will be removed in v0.51.0
-    timeout: float | None = field(default=None, repr=False)  # Deprecated: use timeout_ms
-    method_timeouts: dict[str, float] | None = field(default=None, repr=False)  # Deprecated
-
     def __post_init__(self):
-        """Validate configuration and handle deprecated parameters."""
-        # Handle deprecated 'timeout' parameter
-        if self.timeout is not None:
-            warnings.warn(
-                "The 'timeout' parameter (in seconds) is deprecated and will be removed in v0.51.0. "
-                "Use 'timeout_ms' (in milliseconds) instead. "
-                f"To migrate: timeout_ms={int(self.timeout * 1000)}",
-                DeprecationWarning,
-                stacklevel=3
-            )
-            # Convert seconds to milliseconds if timeout_ms not explicitly set
-            if self.timeout_ms == 30000:  # Default value
-                self.timeout_ms = int(self.timeout * 1000)
-
-        # Handle deprecated 'method_timeouts' parameter
-        if self.method_timeouts is not None:
-            warnings.warn(
-                "The 'method_timeouts' parameter (in seconds) is deprecated and will be removed in v0.51.0. "
-                "Use 'method_timeouts_ms' (in milliseconds) instead.",
-                DeprecationWarning,
-                stacklevel=3
-            )
-            if self.method_timeouts_ms is None:
-                # Convert all method timeouts from seconds to milliseconds
-                self.method_timeouts_ms = {
-                    method: int(timeout_s * 1000)
-                    for method, timeout_s in self.method_timeouts.items()
-                }
-
+        """Validate configuration."""
         # Validate timeout_ms
         if self.timeout_ms <= 0:
             raise ValueError("timeout_ms must be positive")

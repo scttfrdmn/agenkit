@@ -58,9 +58,9 @@ async def test_circuit_breaker_closed():
         agent,
         CircuitBreakerConfig(
             failure_threshold=3,
-            recovery_timeout=0.1,
+            recovery_timeout_ms=100,
             success_threshold=2,
-            timeout=1.0,
+            timeout_ms=1000,
         ),
     )
 
@@ -90,9 +90,9 @@ async def test_circuit_breaker_opens():
         agent,
         CircuitBreakerConfig(
             failure_threshold=3,
-            recovery_timeout=0.1,
+            recovery_timeout_ms=100,
             success_threshold=2,
-            timeout=1.0,
+            timeout_ms=1000,
         ),
     )
 
@@ -121,9 +121,9 @@ async def test_circuit_breaker_rejects_when_open():
         agent,
         CircuitBreakerConfig(
             failure_threshold=2,
-            recovery_timeout=1.0,  # Long timeout
+            recovery_timeout_ms=1000,  # Long timeout
             success_threshold=2,
-            timeout=1.0,
+            timeout_ms=1000,
         ),
     )
 
@@ -159,9 +159,9 @@ async def test_circuit_breaker_half_open():
         agent,
         CircuitBreakerConfig(
             failure_threshold=2,
-            recovery_timeout=0.05,
+            recovery_timeout_ms=50,
             success_threshold=2,
-            timeout=1.0,
+            timeout_ms=1000,
         ),
     )
 
@@ -196,9 +196,9 @@ async def test_circuit_breaker_recovery():
         agent,
         CircuitBreakerConfig(
             failure_threshold=2,
-            recovery_timeout=0.05,
+            recovery_timeout_ms=50,
             success_threshold=2,
-            timeout=1.0,
+            timeout_ms=1000,
         ),
     )
 
@@ -243,9 +243,9 @@ async def test_circuit_breaker_reopens_from_half_open():
         agent,
         CircuitBreakerConfig(
             failure_threshold=2,
-            recovery_timeout=0.05,
+            recovery_timeout_ms=50,
             success_threshold=2,
-            timeout=1.0,
+            timeout_ms=1000,
         ),
     )
 
@@ -289,9 +289,9 @@ async def test_circuit_breaker_timeout():
         agent,
         CircuitBreakerConfig(
             failure_threshold=2,
-            recovery_timeout=0.1,
+            recovery_timeout_ms=100,
             success_threshold=2,
-            timeout=0.05,  # Timeout before agent response
+            timeout_ms=50,  # Timeout before agent response
         ),
     )
 
@@ -322,9 +322,9 @@ async def test_circuit_breaker_metrics():
         agent,
         CircuitBreakerConfig(
             failure_threshold=3,
-            recovery_timeout=0.1,
+            recovery_timeout_ms=100,
             success_threshold=2,
-            timeout=1.0,
+            timeout_ms=1000,
         ),
     )
 

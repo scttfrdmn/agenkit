@@ -21,6 +21,7 @@
 ///     .failure_threshold = 5,
 ///     .success_threshold = 2,
 ///     .recovery_timeout_ms = 60000,  // 1 minute
+///     .request_timeout_ms = 30000,   // 30 seconds (optional, defaults to 30000)
 /// };
 ///
 /// var breaker = try CircuitBreakerDecorator.init(allocator, base_agent, config);
@@ -69,9 +70,9 @@ pub const CircuitBreakerConfig = struct {
     /// Default: 60000ms (1 minute)
     recovery_timeout_ms: u64 = 60000,
 
-    /// Optional per-request timeout in milliseconds
-    /// If null, no timeout is enforced
-    request_timeout_ms: ?u64 = null,
+    /// Per-request timeout in milliseconds
+    /// Default: 30000ms (30 seconds)
+    request_timeout_ms: u64 = 30000,
 
     /// Validate configuration
     pub fn validate(self: CircuitBreakerConfig) !void {
@@ -321,15 +322,10 @@ pub const CircuitBreakerDecorator = struct {
         // Release lock before calling inner agent
         self.mutex.unlock();
 
-        // Execute request (with optional timeout)
-        const result = if (self.config.request_timeout_ms) |timeout_ms| blk: {
-            // TODO: Implement request timeout (similar to TimeoutDecorator)
-            // For now, just call inner agent
-            _ = timeout_ms;
-            break :blk self.inner_agent.process(message);
-        } else blk: {
-            break :blk self.inner_agent.process(message);
-        };
+        // Execute request (with timeout)
+        // TODO: Implement request timeout (similar to TimeoutDecorator)
+        // For now, just call inner agent (timeout_ms = self.config.request_timeout_ms)
+        const result = self.inner_agent.process(message);
 
         // Re-acquire lock to update state
         self.mutex.lock();

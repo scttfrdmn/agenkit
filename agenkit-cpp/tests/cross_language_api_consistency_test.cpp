@@ -166,15 +166,27 @@ TEST_F(APIConsistencyTest, CircuitBreakerDefaults) {
 
     agenkit::middleware::CircuitBreakerConfig config;
 
-    int expected_threshold = test_case["defaults"]["failure_threshold"]["value"];
-    EXPECT_EQ(config.failure_threshold, expected_threshold)
-        << "failure_threshold default should be " << expected_threshold;
+    // Check failure_threshold
+    int expected_failure_threshold = test_case["defaults"]["failure_threshold"]["value"];
+    EXPECT_EQ(config.failure_threshold, expected_failure_threshold)
+        << "failure_threshold default should be " << expected_failure_threshold;
 
-    // NOTE: C++ currently uses 60s timeout, spec says 30s
-    // This is a known API inconsistency tracked in Issue #444
+    // Check success_threshold
+    int expected_success_threshold = test_case["defaults"]["success_threshold"]["value"];
+    EXPECT_EQ(config.success_threshold, expected_success_threshold)
+        << "success_threshold default should be " << expected_success_threshold;
+
+    // Check timeout (request timeout)
+    int expected_timeout_ms = test_case["defaults"]["timeout"]["value_ms"];
+    int actual_timeout_ms = static_cast<int>(config.timeout.count());
+    EXPECT_EQ(actual_timeout_ms, expected_timeout_ms)
+        << "timeout (request timeout) default should be " << expected_timeout_ms << "ms (30 seconds)";
+
+    // Check recovery_timeout
+    int expected_recovery_ms = test_case["defaults"]["recovery_timeout"]["value_ms"];
     int actual_recovery_ms = static_cast<int>(config.recovery_timeout.count());
-    EXPECT_EQ(actual_recovery_ms, 60000)
-        << "C++ CircuitBreaker recovery_timeout is 60000ms (spec says 30000ms - see Issue #444)";
+    EXPECT_EQ(actual_recovery_ms, expected_recovery_ms)
+        << "recovery_timeout default should be " << expected_recovery_ms << "ms (60 seconds)";
 }
 
 // ============================================

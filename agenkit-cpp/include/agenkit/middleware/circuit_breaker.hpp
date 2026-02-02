@@ -19,7 +19,8 @@
  * auto config = CircuitBreakerConfig::builder()
  *     .failure_threshold(5)
  *     .success_threshold(2)
- *     .recovery_timeout(std::chrono::seconds(60))
+ *     .timeout(std::chrono::seconds(30))          // Request timeout (optional, defaults to 30s)
+ *     .recovery_timeout(std::chrono::seconds(60)) // Recovery timeout
  *     .build();
  *
  * auto breaker_agent = std::make_shared<CircuitBreakerMiddleware>(agent, config);
@@ -76,6 +77,9 @@ struct CircuitBreakerConfig {
     /// Number of successes in HALF_OPEN to close circuit
     uint32_t success_threshold = 2;
 
+    /// Request timeout (how long to wait for individual requests)
+    std::chrono::milliseconds timeout{30000};  // 30 seconds
+
     /// How long to wait before transitioning from OPEN to HALF_OPEN
     std::chrono::milliseconds recovery_timeout{60000};  // 60 seconds
 
@@ -86,6 +90,9 @@ struct CircuitBreakerConfig {
         }
         if (success_threshold < 1) {
             throw std::invalid_argument("success_threshold must be >= 1");
+        }
+        if (timeout.count() <= 0) {
+            throw std::invalid_argument("timeout must be positive");
         }
         if (recovery_timeout.count() <= 0) {
             throw std::invalid_argument("recovery_timeout must be positive");
@@ -110,6 +117,11 @@ public:
 
     Builder& success_threshold(uint32_t n) {
         config_.success_threshold = n;
+        return *this;
+    }
+
+    Builder& timeout(std::chrono::milliseconds duration) {
+        config_.timeout = duration;
         return *this;
     }
 

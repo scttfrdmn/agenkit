@@ -2,9 +2,8 @@
 
 import asyncio
 import time
-import warnings
 from collections.abc import AsyncIterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from agenkit.interfaces import Agent, Message
 
@@ -13,9 +12,7 @@ from agenkit.interfaces import Agent, Message
 class RateLimiterConfig:
     """Configuration for rate limiter behavior.
 
-    Note: As of v0.50.0, timeout values are specified in milliseconds using
-    max_wait_ms. The old 'max_wait_timeout' parameter (in seconds) is deprecated
-    and will be removed in v0.51.0.
+    Timeout values are specified in milliseconds.
     """
 
     rate: float = 10.0  # Tokens per second
@@ -23,23 +20,8 @@ class RateLimiterConfig:
     tokens_per_request: int = 1  # Tokens consumed per request
     max_wait_ms: int | None = None  # Maximum milliseconds to wait for tokens (None = wait indefinitely)
 
-    # Deprecated - will be removed in v0.51.0
-    max_wait_timeout: float | None = field(default=None, repr=False)  # Deprecated: use max_wait_ms
-
     def __post_init__(self):
-        """Validate configuration and handle deprecated parameters."""
-        # Handle deprecated 'max_wait_timeout' parameter
-        if self.max_wait_timeout is not None:
-            warnings.warn(
-                "The 'max_wait_timeout' parameter (in seconds) is deprecated and will be removed in v0.51.0. "
-                "Use 'max_wait_ms' (in milliseconds) instead. "
-                f"To migrate: max_wait_ms={int(self.max_wait_timeout * 1000)}",
-                DeprecationWarning,
-                stacklevel=3
-            )
-            if self.max_wait_ms is None:
-                self.max_wait_ms = int(self.max_wait_timeout * 1000)
-
+        """Validate configuration."""
         # Validate configuration
         if self.rate <= 0:
             raise ValueError("rate must be positive")

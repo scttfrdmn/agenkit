@@ -24,7 +24,7 @@ from .rate_limiter import (
     RateLimiterMetrics,
     RateLimitError,
 )
-from .retry import RetryConfig, RetryDecorator
+from .retry import MaxRetriesExceededError, RetryConfig, RetryDecorator
 from .timeout import TimeoutConfig, TimeoutDecorator, TimeoutError, TimeoutMetrics
 
 __all__ = [
@@ -40,6 +40,7 @@ __all__ = [
     "CircuitBreakerMetrics",
     "CircuitState",
     "GlobalRateLimitError",
+    "MaxRetriesExceededError",
     "Metrics",
     "MetricsDecorator",
     "PerUserRateLimitError",

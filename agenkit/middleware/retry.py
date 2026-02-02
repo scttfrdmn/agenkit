@@ -1,10 +1,25 @@
 """Retry middleware with exponential backoff."""
 
 import asyncio
+import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from agenkit.interfaces import Agent, Message
+
+
+class MaxRetriesExceededError(Exception):
+    """Raised when maximum retry attempts are exhausted."""
+
+    def __init__(self, message: str, attempts: int):
+        """Initialize error.
+
+        Args:
+            message: Error message
+            attempts: Number of attempts made
+        """
+        super().__init__(message)
+        self.attempts = attempts
 
 
 @dataclass
@@ -29,24 +44,98 @@ class RetryMetrics:
 
 @dataclass
 class RetryConfig:
-    """Configuration for retry behavior."""
+    """Configuration for retry behavior.
 
-    max_attempts: int = 3
-    initial_backoff: float = 1.0  # seconds
-    max_backoff: float = 30.0  # seconds
-    backoff_multiplier: float = 2.0
+    Args:
+        max_retries: Maximum number of retry attempts (default: 3)
+        initial_delay: Initial delay in seconds (default: 0.1 = 100ms)
+        max_delay: Maximum delay in seconds (default: 10.0)
+        multiplier: Backoff multiplier for exponential backoff (default: 2.0)
+        should_retry: Optional function to determine if error should be retried
+        max_attempts: DEPRECATED - use max_retries instead
+        initial_backoff: DEPRECATED - use initial_delay instead
+        max_backoff: DEPRECATED - use max_delay instead
+        backoff_multiplier: DEPRECATED - use multiplier instead
+    """
+
+    # New parameter names (preferred)
+    max_retries: int | None = None
+    initial_delay: float | None = None
+    max_delay: float | None = None
+    multiplier: float | None = None
     should_retry: Callable[[Exception], bool] | None = None
 
+    # Old parameter names (deprecated)
+    max_attempts: int | None = None
+    initial_backoff: float | None = None
+    max_backoff: float | None = None
+    backoff_multiplier: float | None = None
+
     def __post_init__(self):
-        """Validate configuration."""
-        if self.max_attempts < 1:
-            raise ValueError("max_attempts must be at least 1")
-        if self.initial_backoff <= 0:
-            raise ValueError("initial_backoff must be positive")
-        if self.max_backoff < self.initial_backoff:
-            raise ValueError("max_backoff must be >= initial_backoff")
-        if self.backoff_multiplier <= 1.0:
-            raise ValueError("backoff_multiplier must be > 1.0")
+        """Validate configuration and handle deprecated parameters."""
+        # Handle deprecated parameter: max_attempts -> max_retries
+        if self.max_attempts is not None:
+            warnings.warn(
+                "max_attempts is deprecated and will be removed in v0.51.0. "
+                "Use max_retries instead.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            if self.max_retries is None:
+                self.max_retries = self.max_attempts
+
+        # Handle deprecated parameter: initial_backoff -> initial_delay
+        if self.initial_backoff is not None:
+            warnings.warn(
+                "initial_backoff is deprecated and will be removed in v0.51.0. "
+                "Use initial_delay instead.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            if self.initial_delay is None:
+                self.initial_delay = self.initial_backoff
+
+        # Handle deprecated parameter: max_backoff -> max_delay
+        if self.max_backoff is not None:
+            warnings.warn(
+                "max_backoff is deprecated and will be removed in v0.51.0. "
+                "Use max_delay instead.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            if self.max_delay is None:
+                self.max_delay = self.max_backoff
+
+        # Handle deprecated parameter: backoff_multiplier -> multiplier
+        if self.backoff_multiplier is not None:
+            warnings.warn(
+                "backoff_multiplier is deprecated and will be removed in v0.51.0. "
+                "Use multiplier instead.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            if self.multiplier is None:
+                self.multiplier = self.backoff_multiplier
+
+        # Set defaults for new parameters
+        if self.max_retries is None:
+            self.max_retries = 3
+        if self.initial_delay is None:
+            self.initial_delay = 0.1  # 100ms
+        if self.max_delay is None:
+            self.max_delay = 10.0  # 10 seconds
+        if self.multiplier is None:
+            self.multiplier = 2.0
+
+        # Validate new parameters
+        if self.max_retries < 1:
+            raise ValueError("max_retries must be at least 1")
+        if self.initial_delay <= 0:
+            raise ValueError("initial_delay must be positive")
+        if self.max_delay < self.initial_delay:
+            raise ValueError("max_delay must be >= initial_delay")
+        if self.multiplier <= 1.0:
+            raise ValueError("multiplier must be > 1.0")
 
 
 class RetryDecorator(Agent):
@@ -88,12 +177,13 @@ class RetryDecorator(Agent):
             Response message from agent
 
         Raises:
-            Exception: If all retry attempts fail
+            MaxRetriesExceededError: If all retry attempts fail
+            Exception: For non-retryable errors
         """
         last_error: Exception | None = None
-        backoff = self._config.initial_backoff
+        backoff = self._config.initial_delay
 
-        for attempt in range(1, self._config.max_attempts + 1):
+        for attempt in range(1, self._config.max_retries + 1):
             # Track attempt
             self._metrics.total_attempts += 1
 
@@ -117,7 +207,7 @@ class RetryDecorator(Agent):
                     raise Exception(f"Non-retryable error: {e}") from e
 
                 # Don't sleep after last attempt
-                if attempt == self._config.max_attempts:
+                if attempt == self._config.max_retries:
                     break
 
                 # Track retry
@@ -125,10 +215,11 @@ class RetryDecorator(Agent):
 
                 # Exponential backoff
                 await asyncio.sleep(backoff)
-                backoff = min(backoff * self._config.backoff_multiplier, self._config.max_backoff)
+                backoff = min(backoff * self._config.multiplier, self._config.max_delay)
 
         # All attempts failed
         self._metrics.failed_after_retries += 1
-        raise Exception(
-            f"Max retry attempts ({self._config.max_attempts}) exceeded: {last_error}"
+        raise MaxRetriesExceededError(
+            f"Max retry attempts ({self._config.max_retries}) exceeded: {last_error}",
+            attempts=self._config.max_retries,
         ) from last_error

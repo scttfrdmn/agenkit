@@ -112,9 +112,10 @@ export class RetryMiddleware extends BaseMiddleware {
 
   async process(message: Message): Promise<Message> {
     let lastError: Error | null = null;
-    this._metrics.totalAttempts++;
 
     for (let attempt = 0; attempt < this.maxAttempts; attempt++) {
+      this._metrics.totalAttempts++; // Track each attempt (initial + retries)
+
       try {
         const result = await this.agent.process(message);
 

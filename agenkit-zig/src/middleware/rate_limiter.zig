@@ -27,6 +27,7 @@
 /// const metrics = limiter.metrics();
 /// ```
 const std = @import("std");
+const json = std.json;
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
@@ -227,7 +228,7 @@ pub const RateLimiterDecorator = struct {
         self.mutex.unlock();
 
         // Wait outside the lock to allow other operations
-        std.time.sleep(wait_time_ms * std.time.ns_per_ms);
+        std.Thread.sleep(wait_time_ms * std.time.ns_per_ms);
 
         // Re-acquire lock and try again
         self.mutex.lock();
@@ -293,41 +294,47 @@ pub const RateLimiterDecorator = struct {
         // Add rate limiter metrics to metadata
         const metrics_snapshot = self.metrics();
 
-        var metadata = std.StringHashMap([]const u8).init(allocator);
-        errdefer metadata.deinit();
+        var metadata_map = json.ObjectMap.init(allocator);
+        errdefer metadata_map.deinit();
 
         // Add metrics as metadata
-        try metadata.put("total_requests", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.total_requests}));
-        try metadata.put("allowed_requests", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.allowed_requests}));
-        try metadata.put("rejected_requests", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.rejected_requests}));
-        try metadata.put("total_wait_time_ms", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.total_wait_time_ms}));
-        try metadata.put("current_tokens", try std.fmt.allocPrint(allocator, "{d:.2}", .{metrics_snapshot.current_tokens}));
+        try metadata_map.put("total_requests", json.Value{ .integer = @intCast(metrics_snapshot.total_requests) });
+        try metadata_map.put("allowed_requests", json.Value{ .integer = @intCast(metrics_snapshot.allowed_requests) });
+        try metadata_map.put("rejected_requests", json.Value{ .integer = @intCast(metrics_snapshot.rejected_requests) });
+        try metadata_map.put("total_wait_time_ms", json.Value{ .integer = @intCast(metrics_snapshot.total_wait_time_ms) });
+        try metadata_map.put("current_tokens", json.Value{ .float = metrics_snapshot.current_tokens });
 
         if (metrics_snapshot.avgWaitTime()) |avg| {
-            try metadata.put("avg_wait_time_ms", try std.fmt.allocPrint(allocator, "{d:.2}", .{avg}));
+            try metadata_map.put("avg_wait_time_ms", json.Value{ .float = avg });
         }
         if (metrics_snapshot.rejectionRate()) |rate| {
-            try metadata.put("rejection_rate", try std.fmt.allocPrint(allocator, "{d:.2}%", .{rate}));
+            try metadata_map.put("rejection_rate", json.Value{ .float = rate });
         }
 
         // Add configuration
-        try metadata.put("rate", try std.fmt.allocPrint(allocator, "{d:.1}", .{self.config.rate}));
-        try metadata.put("capacity", try std.fmt.allocPrint(allocator, "{d}", .{self.config.capacity}));
-        try metadata.put("tokens_per_request", try std.fmt.allocPrint(allocator, "{d}", .{self.config.tokens_per_request}));
+        try metadata_map.put("rate", json.Value{ .float = self.config.rate });
+        try metadata_map.put("capacity", json.Value{ .integer = @intCast(self.config.capacity) });
+        try metadata_map.put("tokens_per_request", json.Value{ .integer = @intCast(self.config.tokens_per_request) });
 
-        // Merge with inner metadata
-        var inner_iter = inner_result.metadata.iterator();
-        while (inner_iter.next()) |entry| {
-            if (!std.mem.startsWith(u8, entry.key_ptr.*, "rate_")) {
-                try metadata.put(entry.key_ptr.*, entry.value_ptr.*);
+        // Merge with inner metadata (if it's an object)
+        if (inner_result.metadata == .object) {
+            var inner_iter = inner_result.metadata.object.iterator();
+            while (inner_iter.next()) |entry| {
+                const key = entry.key_ptr.*;
+                if (!std.mem.startsWith(u8, key, "rate_")) {
+                    try metadata_map.put(key, entry.value_ptr.*);
+                }
             }
         }
 
         return IntrospectionResult{
+            .allocator = allocator,
+            .timestamp = std.time.timestamp(),
             .agent_name = inner_result.agent_name,
             .capabilities = inner_result.capabilities,
-            .metadata = metadata,
-            .memory = inner_result.memory,
+            .memory_state = inner_result.memory_state,
+            .internal_state = inner_result.internal_state,
+            .metadata = json.Value{ .object = metadata_map },
         };
     }
 

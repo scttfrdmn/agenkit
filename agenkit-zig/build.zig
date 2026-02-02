@@ -148,6 +148,19 @@ pub fn build(b: *std.Build) void {
     });
     const run_cross_lang_tests = b.addRunArtifact(cross_lang_tests);
 
+    // Cross-language API consistency tests
+    const api_consistency_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/cross_language_api_consistency.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
+        }),
+    });
+    const run_api_consistency_tests = b.addRunArtifact(api_consistency_tests);
+
     // A top level step for running all tests. dependOn can be called multiple
     // times and since the two run steps do not depend on one another, this will
     // make the two of them run in parallel.
@@ -155,6 +168,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_mod_tests.step);
     test_step.dependOn(&run_exe_tests.step);
     test_step.dependOn(&run_cross_lang_tests.step);
+    test_step.dependOn(&run_api_consistency_tests.step);
 
     // Just like flags, top level steps are also listed in the `--help` menu.
     //

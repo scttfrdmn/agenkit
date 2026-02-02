@@ -301,9 +301,9 @@ A language passes cross-language consistency tests if:
 | Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ✅ 13/13 | ✅ 12/12 |
 | API Consistency (NEW) | ✅ | - | ✅ 13/13 | ✅ 9/9 | ✅ 14/14 | ✅ 12/12 | ✅ 13/13 | ⚠️ API |
 | Retry Behavior | ✅ v1.1 | - | ✅ 7/7 | ✅ 7/7 | ⏳ Blocked | ✅ 7/7 | ✅ 7/7 | ⚠️ API |
+| **Timeout Behavior (NEW)** | ✅ v1.0 | ✅ | **✅ 7/7** | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| Timeout Behavior | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Circuit Breaker | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 
 ### Message Serialization Implementation Details
@@ -453,6 +453,32 @@ A language passes cross-language consistency tests if:
 - Needs Zig-specific patterns to match language idioms
 - Tracked for future resolution (similar to C++ API fixes)
 
+### Timeout Behavior Implementation Details (NEW - February 2026)
+
+**Python** (`tests/cross_language/test_timeout_behavior.py`):
+- Framework: pytest with asyncio
+- 7 tests covering all timeout behavior scenarios from fixture
+- MockTimeoutAgent simulates configurable delays for timeout testing
+- Tests validate timing windows with tolerance ranges
+- Distinguishes between timeout errors and agent errors
+- Metrics tracking test validates success/timeout counts across multiple requests
+- All tests passing ✅ (1.74s execution time)
+
+**Test scenarios (v1.0 fixtures):**
+1. Success within timeout limit - Request completes before timeout
+2. Timeout exceeded - Request exceeds timeout and is cancelled
+3. Exactly at timeout boundary - Edge case testing near timeout limit
+4. Zero delay - Immediate completion validation
+5. Agent error propagation - Agent errors surface before timeout
+6. Very short timeout (10ms) - Extreme timeout testing
+7. Metrics tracking - Aggregated metrics across multiple requests
+
+**Go**: ⏳ To be implemented
+**TypeScript**: ⏳ To be implemented
+**Rust**: ⏳ To be implemented
+**C++**: ⏳ To be implemented
+**Zig**: ⏳ To be implemented
+
 ## Next Steps
 
 1. ✅ **DONE**: Message serialization tests (all 6 languages passing)
@@ -460,9 +486,12 @@ A language passes cross-language consistency tests if:
 3. ✅ **DONE**: Retry behavior fixtures updated (max_retries terminology)
 4. ✅ **DONE**: API consistency tests implemented (5/6 languages: Python, Go, TS, Rust, C++)
 5. ✅ **DONE**: Retry behavior tests implemented (4/6 languages: Python, Go, Rust, C++)
-6. ⏳ **BLOCKED**: TypeScript retry behavior tests (needs RetryDecorator implementation)
-7. ⚠️ **IN PROGRESS**: Zig retry behavior tests (needs API alignment work)
-8. **TODO**: Add timeout and circuit breaker behavior tests
-9. **TODO**: Create error handling test cases
-10. **TODO**: Build automated test runner for all categories
+6. ✅ **DONE**: Timeout behavior fixtures and schema created (v1.0 with 7 scenarios)
+7. ✅ **DONE**: Python timeout behavior tests (7/7 passing)
+8. **TODO**: Implement timeout behavior tests in Go, TypeScript, Rust, C++, Zig
+9. **TODO**: Add circuit breaker behavior tests (fixtures + all languages)
+10. **TODO**: Create error handling test cases
+11. **TODO**: Build automated test runner for all categories
+12. ⏳ **BLOCKED**: TypeScript retry behavior tests (needs RetryDecorator implementation)
+13. ⚠️ **IN PROGRESS**: Zig retry/timeout behavior tests (needs API alignment work)
 11. **TODO**: Generate comprehensive cross-language compatibility report

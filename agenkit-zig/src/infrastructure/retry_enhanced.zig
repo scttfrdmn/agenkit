@@ -41,10 +41,10 @@ pub const ErrorClass = enum {
 /// Retry strategy for specific error class.
 pub const ErrorStrategy = struct {
     error_class: ErrorClass,
-    max_attempts: usize,
-    initial_backoff_ms: u64,
-    max_backoff_ms: u64,
-    backoff_multiplier: f64,
+    max_retries: usize,
+    initial_delay_ms: u64,
+    max_delay_ms: u64,
+    multiplier: f64,
     should_retry: bool,
 };
 
@@ -60,10 +60,10 @@ pub const RetryBudget = struct {
 /// Enhanced retry configuration.
 pub const EnhancedRetryConfig = struct {
     // Basic retry settings
-    max_attempts: usize,
-    initial_backoff_ms: u64,
-    max_backoff_ms: u64,
-    backoff_multiplier: f64,
+    max_retries: usize,
+    initial_delay_ms: u64,
+    max_delay_ms: u64,
+    multiplier: f64,
 
     // Jitter settings
     jitter_type: JitterType,
@@ -87,54 +87,54 @@ pub const EnhancedRetryConfig = struct {
 
         try error_strategies.put(.transient, ErrorStrategy{
             .error_class = .transient,
-            .max_attempts = 5,
-            .initial_backoff_ms = 100,
-            .max_backoff_ms = 5000,
-            .backoff_multiplier = 2.0,
+            .max_retries = 5,
+            .initial_delay_ms = 100,
+            .max_delay_ms = 5000,
+            .multiplier = 2.0,
             .should_retry = true,
         });
 
         try error_strategies.put(.rate_limit, ErrorStrategy{
             .error_class = .rate_limit,
-            .max_attempts = 10,
-            .initial_backoff_ms = 60000,
-            .max_backoff_ms = 300000,
-            .backoff_multiplier = 1.5,
+            .max_retries = 10,
+            .initial_delay_ms = 60000,
+            .max_delay_ms = 300000,
+            .multiplier = 1.5,
             .should_retry = true,
         });
 
         try error_strategies.put(.timeout, ErrorStrategy{
             .error_class = .timeout,
-            .max_attempts = 3,
-            .initial_backoff_ms = 2000,
-            .max_backoff_ms = 30000,
-            .backoff_multiplier = 2.0,
+            .max_retries = 3,
+            .initial_delay_ms = 2000,
+            .max_delay_ms = 30000,
+            .multiplier = 2.0,
             .should_retry = true,
         });
 
         try error_strategies.put(.server_error, ErrorStrategy{
             .error_class = .server_error,
-            .max_attempts = 3,
-            .initial_backoff_ms = 5000,
-            .max_backoff_ms = 60000,
-            .backoff_multiplier = 2.0,
+            .max_retries = 3,
+            .initial_delay_ms = 5000,
+            .max_delay_ms = 60000,
+            .multiplier = 2.0,
             .should_retry = true,
         });
 
         try error_strategies.put(.client_error, ErrorStrategy{
             .error_class = .client_error,
-            .max_attempts = 1,
-            .initial_backoff_ms = 0,
-            .max_backoff_ms = 0,
-            .backoff_multiplier = 1.0,
+            .max_retries = 1,
+            .initial_delay_ms = 0,
+            .max_delay_ms = 0,
+            .multiplier = 1.0,
             .should_retry = false,
         });
 
         return EnhancedRetryConfig{
-            .max_attempts = 3,
-            .initial_backoff_ms = 1000,
-            .max_backoff_ms = 30000,
-            .backoff_multiplier = 2.0,
+            .max_retries = 3,
+            .initial_delay_ms = 1000,
+            .max_delay_ms = 30000,
+            .multiplier = 2.0,
             .jitter_type = .full,
             .jitter_min_ratio = 0.5,
             .error_strategies = error_strategies,
@@ -265,10 +265,10 @@ pub const EnhancedRetryDecorator = struct {
 
         return ErrorStrategy{
             .error_class = error_class,
-            .max_attempts = self.config.max_attempts,
-            .initial_backoff_ms = self.config.initial_backoff_ms,
-            .max_backoff_ms = self.config.max_backoff_ms,
-            .backoff_multiplier = self.config.backoff_multiplier,
+            .max_retries = self.config.max_retries,
+            .initial_delay_ms = self.config.initial_delay_ms,
+            .max_delay_ms = self.config.max_delay_ms,
+            .multiplier = self.config.multiplier,
             .should_retry = true,
         };
     }
@@ -292,7 +292,7 @@ pub const EnhancedRetryDecorator = struct {
                 const previous = self.calculateBackoff(base_backoff_ms, attempt - 1);
                 const previous_ms = @as(f64, @floatFromInt(previous));
                 var jittered = rand.float(f64) * previous_ms * 3.0 + base_ms;
-                const max_ms = @as(f64, @floatFromInt(self.config.max_backoff_ms));
+                const max_ms = @as(f64, @floatFromInt(self.config.max_delay_ms));
                 if (jittered > max_ms) {
                     jittered = max_ms;
                 }
@@ -370,7 +370,7 @@ pub const EnhancedRetryDecorator = struct {
         var strategy = self.getStrategy(error_class);
 
         var attempt: usize = 1;
-        while (attempt <= self.config.max_attempts) : (attempt += 1) {
+        while (attempt <= self.config.max_retries) : (attempt += 1) {
             {
                 self.mutex.lock();
                 self.metrics.total_attempts += 1;
@@ -446,7 +446,7 @@ pub const EnhancedRetryDecorator = struct {
                 }
 
                 // Check if exceeded max attempts for this error class
-                if (attempt >= strategy.max_attempts) {
+                if (attempt >= strategy.max_retries) {
                     break;
                 }
 
@@ -460,10 +460,10 @@ pub const EnhancedRetryDecorator = struct {
 
                 // Calculate backoff with jitter
                 const exp = @as(f64, @floatFromInt(attempt - 1));
-                const base_backoff_ms_float = @as(f64, @floatFromInt(strategy.initial_backoff_ms)) * std.math.pow(f64, strategy.backoff_multiplier, exp);
+                const base_backoff_ms_float = @as(f64, @floatFromInt(strategy.initial_delay_ms)) * std.math.pow(f64, strategy.multiplier, exp);
                 var base_backoff_ms = @as(u64, @intFromFloat(base_backoff_ms_float));
-                if (base_backoff_ms > strategy.max_backoff_ms) {
-                    base_backoff_ms = strategy.max_backoff_ms;
+                if (base_backoff_ms > strategy.max_delay_ms) {
+                    base_backoff_ms = strategy.max_delay_ms;
                 }
                 const backoff_ms = self.calculateBackoff(base_backoff_ms, attempt);
 

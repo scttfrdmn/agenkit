@@ -6,10 +6,10 @@
 /// Example:
 /// ```zig
 /// const config = RetryConfig{
-///     .max_attempts = 3,
-///     .initial_backoff_ms = 100,
-///     .max_backoff_ms = 10000,
-///     .backoff_multiplier = 2.0,
+///     .max_retries = 3,
+///     .initial_delay_ms = 100,
+///     .max_delay_ms = 10000,
+///     .multiplier = 2.0,
 ///     .should_retry = null,  // retry all errors
 /// };
 ///
@@ -31,21 +31,21 @@ const Allocator = std.mem.Allocator;
 
 /// Configuration for retry behavior
 pub const RetryConfig = struct {
-    /// Maximum number of attempts (including initial attempt)
+    /// Maximum number of retry attempts (including initial attempt)
     /// Default: 3
-    max_attempts: u32 = 3,
+    max_retries: u32 = 3,
 
-    /// Initial backoff duration in milliseconds
+    /// Initial delay duration in milliseconds
     /// Default: 100ms
-    initial_backoff_ms: u64 = 100,
+    initial_delay_ms: u64 = 100,
 
-    /// Maximum backoff duration in milliseconds
+    /// Maximum delay duration in milliseconds
     /// Default: 10000ms (10 seconds)
-    max_backoff_ms: u64 = 10000,
+    max_delay_ms: u64 = 10000,
 
     /// Multiplier for exponential backoff
     /// Default: 2.0
-    backoff_multiplier: f64 = 2.0,
+    multiplier: f64 = 2.0,
 
     /// Optional predicate to determine if an error should trigger a retry
     /// If null, all errors trigger retries
@@ -53,16 +53,16 @@ pub const RetryConfig = struct {
 
     /// Validate configuration
     pub fn validate(self: RetryConfig) !void {
-        if (self.max_attempts < 1) {
+        if (self.max_retries < 1) {
             return error.InvalidConfig;
         }
-        if (self.initial_backoff_ms == 0) {
+        if (self.initial_delay_ms == 0) {
             return error.InvalidConfig;
         }
-        if (self.max_backoff_ms < self.initial_backoff_ms) {
+        if (self.max_delay_ms < self.initial_delay_ms) {
             return error.InvalidConfig;
         }
-        if (self.backoff_multiplier <= 1.0) {
+        if (self.multiplier <= 1.0) {
             return error.InvalidConfig;
         }
     }
@@ -155,10 +155,10 @@ pub const RetryDecorator = struct {
         const self: *RetryDecorator = @ptrCast(@alignCast(ptr));
 
         var last_error: ?AgentError = null;
-        var backoff_ms = self.config.initial_backoff_ms;
+        var backoff_ms = self.config.initial_delay_ms;
 
         var attempt: u32 = 1;
-        while (attempt <= self.config.max_attempts) : (attempt += 1) {
+        while (attempt <= self.config.max_retries) : (attempt += 1) {
             // Track attempt
             self.mutex.lock();
             self.metrics_data.total_attempts += 1;
@@ -200,7 +200,7 @@ pub const RetryDecorator = struct {
             }
 
             // Don't sleep after the last attempt
-            if (attempt == self.config.max_attempts) {
+            if (attempt == self.config.max_retries) {
                 break;
             }
 
@@ -213,8 +213,8 @@ pub const RetryDecorator = struct {
             std.time.sleep(backoff_ms * std.time.ns_per_ms);
 
             // Calculate next backoff
-            const next_backoff = @as(f64, @floatFromInt(backoff_ms)) * self.config.backoff_multiplier;
-            backoff_ms = @min(@as(u64, @intFromFloat(next_backoff)), self.config.max_backoff_ms);
+            const next_backoff = @as(f64, @floatFromInt(backoff_ms)) * self.config.multiplier;
+            backoff_ms = @min(@as(u64, @intFromFloat(next_backoff)), self.config.max_delay_ms);
         }
 
         // All attempts failed
@@ -243,9 +243,9 @@ pub const RetryDecorator = struct {
         try metadata.put("successful_on_retry", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.successful_on_retry}));
         try metadata.put("failed_after_retries", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.failed_after_retries}));
         try metadata.put("total_retries", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.total_retries}));
-        try metadata.put("max_attempts", try std.fmt.allocPrint(allocator, "{d}", .{self.config.max_attempts}));
-        try metadata.put("initial_backoff_ms", try std.fmt.allocPrint(allocator, "{d}", .{self.config.initial_backoff_ms}));
-        try metadata.put("max_backoff_ms", try std.fmt.allocPrint(allocator, "{d}", .{self.config.max_backoff_ms}));
+        try metadata.put("max_retries", try std.fmt.allocPrint(allocator, "{d}", .{self.config.max_retries}));
+        try metadata.put("initial_delay_ms", try std.fmt.allocPrint(allocator, "{d}", .{self.config.initial_delay_ms}));
+        try metadata.put("max_delay_ms", try std.fmt.allocPrint(allocator, "{d}", .{self.config.max_delay_ms}));
 
         // Merge with inner metadata
         var inner_iter = inner_result.metadata.iterator();
@@ -285,23 +285,23 @@ test "RetryConfig validation" {
     var config = RetryConfig{};
     try config.validate();
 
-    // Invalid: max_attempts = 0
-    config.max_attempts = 0;
+    // Invalid: max_retries = 0
+    config.max_retries = 0;
     try testing.expectError(error.InvalidConfig, config.validate());
-    config.max_attempts = 3;
+    config.max_retries = 3;
 
     // Invalid: initial_backoff = 0
-    config.initial_backoff_ms = 0;
+    config.initial_delay_ms = 0;
     try testing.expectError(error.InvalidConfig, config.validate());
-    config.initial_backoff_ms = 100;
+    config.initial_delay_ms = 100;
 
     // Invalid: max_backoff < initial_backoff
-    config.max_backoff_ms = 50;
+    config.max_delay_ms = 50;
     try testing.expectError(error.InvalidConfig, config.validate());
-    config.max_backoff_ms = 10000;
+    config.max_delay_ms = 10000;
 
-    // Invalid: backoff_multiplier <= 1.0
-    config.backoff_multiplier = 1.0;
+    // Invalid: multiplier <= 1.0
+    config.multiplier = 1.0;
     try testing.expectError(error.InvalidConfig, config.validate());
 }
 

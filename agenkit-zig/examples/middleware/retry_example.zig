@@ -145,10 +145,10 @@ fn customConfigExample(allocator: std.mem.Allocator) !void {
 
     // Custom config: more attempts, faster backoff
     const config = agenkit.middleware.RetryConfig{
-        .max_attempts = 5,
-        .initial_backoff_ms = 10,  // Fast for demo
-        .max_backoff_ms = 100,
-        .backoff_multiplier = 1.5,
+        .max_retries = 5,
+        .initial_delay_ms = 10,  // Fast for demo
+        .max_delay_ms = 100,
+        .multiplier = 1.5,
     };
     var retry = try agenkit.middleware.RetryDecorator.init(allocator, flaky.agent(), config);
     defer retry.agent().deinit();
@@ -175,10 +175,10 @@ fn metricsExample(allocator: std.mem.Allocator) !void {
 
     // Configure retry
     const config = agenkit.middleware.RetryConfig{
-        .max_attempts = 3,
-        .initial_backoff_ms = 10,  // Fast for demo
-        .max_backoff_ms = 100,
-        .backoff_multiplier = 2.0,
+        .max_retries = 3,
+        .initial_delay_ms = 10,  // Fast for demo
+        .max_delay_ms = 100,
+        .multiplier = 2.0,
     };
     var retry = try agenkit.middleware.RetryDecorator.init(allocator, flaky.agent(), config);
     defer retry.agent().deinit();

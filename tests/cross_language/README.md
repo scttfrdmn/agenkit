@@ -300,7 +300,7 @@ A language passes cross-language consistency tests if:
 |---------------|----------|--------|--------|----|----|------|-----|-----|
 | Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ✅ 13/13 | ✅ 12/12 |
 | API Consistency (NEW) | ✅ | - | ✅ 13/13 | ✅ 9/9 | ✅ 14/14 | ✅ 12/12 | ✅ 13/13 | ⚠️ API |
-| Retry Behavior | ✅ v1.1 | - | ✅ 7/7 | ✅ 7/7 | ⏳ | ✅ 7/7 | ⏳ | ⏳ |
+| Retry Behavior | ✅ v1.1 | - | ✅ 7/7 | ✅ 7/7 | ⏳ | ✅ 7/7 | ✅ 7/7 | ⏳ |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Timeout Behavior | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
@@ -425,6 +425,16 @@ A language passes cross-language consistency tests if:
   - Rust: Count process() calls (1 request = 1 attempt)
   - This semantic difference is documented in test comments
 - All tests passing ✅ (0.71s execution time)
+
+**C++** (`agenkit-cpp/tests/cross_language_retry_behavior_test.cpp`):
+- Framework: Google Test (gtest) with std::future for async
+- 7 tests covering all retry behavior scenarios from fixture
+- MockRetryAgent uses Result<Message, AgentError> for returns
+- **Note**: C++ API uses `max_attempts` (not `max_retries`) for config
+  - Test adapts fixture `max_retries` to C++ `max_attempts` parameter
+  - This is a known parameter naming difference
+- Uses std::chrono for timing validation
+- All tests passing ✅ (2.16s execution time)
 
 ## Next Steps
 

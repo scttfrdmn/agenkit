@@ -64,10 +64,10 @@ func (ec ErrorClass) String() string {
 // ErrorStrategy defines retry strategy for specific error class.
 type ErrorStrategy struct {
 	ErrorClass        ErrorClass
-	MaxAttempts       int
-	InitialBackoff    time.Duration
-	MaxBackoff        time.Duration
-	BackoffMultiplier float64
+	MaxRetries       int
+	InitialRetryDelay    time.Duration
+	MaxRetryDelay        time.Duration
+	RetryMultiplier float64
 	ShouldRetry       bool
 }
 
@@ -84,10 +84,10 @@ type RetryBudget struct {
 // EnhancedRetryConfig configures enhanced retry behavior.
 type EnhancedRetryConfig struct {
 	// Basic retry settings
-	MaxAttempts       int
-	InitialBackoff    time.Duration
-	MaxBackoff        time.Duration
-	BackoffMultiplier float64
+	MaxRetries       int
+	InitialRetryDelay    time.Duration
+	MaxRetryDelay        time.Duration
+	RetryMultiplier float64
 
 	// Jitter settings
 	JitterType     JitterType
@@ -112,10 +112,10 @@ type EnhancedRetryConfig struct {
 // DefaultEnhancedRetryConfig returns default configuration with error strategies.
 func DefaultEnhancedRetryConfig() EnhancedRetryConfig {
 	config := EnhancedRetryConfig{
-		MaxAttempts:            3,
-		InitialBackoff:         1 * time.Second,
-		MaxBackoff:             30 * time.Second,
-		BackoffMultiplier:      2.0,
+		MaxRetries:            3,
+		InitialRetryDelay:         1 * time.Second,
+		MaxRetryDelay:             30 * time.Second,
+		RetryMultiplier:      2.0,
 		JitterType:             FullJitter,
 		JitterMinRatio:         0.5,
 		EnableBudget:           false,
@@ -130,42 +130,42 @@ func DefaultEnhancedRetryConfig() EnhancedRetryConfig {
 	config.ErrorStrategies = map[ErrorClass]ErrorStrategy{
 		Transient: {
 			ErrorClass:        Transient,
-			MaxAttempts:       5,
-			InitialBackoff:    100 * time.Millisecond,
-			MaxBackoff:        5 * time.Second,
-			BackoffMultiplier: 2.0,
+			MaxRetries:       5,
+			InitialRetryDelay:    100 * time.Millisecond,
+			MaxRetryDelay:        5 * time.Second,
+			RetryMultiplier: 2.0,
 			ShouldRetry:       true,
 		},
 		RateLimit: {
 			ErrorClass:        RateLimit,
-			MaxAttempts:       10,
-			InitialBackoff:    60 * time.Second,
-			MaxBackoff:        300 * time.Second,
-			BackoffMultiplier: 1.5,
+			MaxRetries:       10,
+			InitialRetryDelay:    60 * time.Second,
+			MaxRetryDelay:        300 * time.Second,
+			RetryMultiplier: 1.5,
 			ShouldRetry:       true,
 		},
 		Timeout: {
 			ErrorClass:        Timeout,
-			MaxAttempts:       3,
-			InitialBackoff:    2 * time.Second,
-			MaxBackoff:        30 * time.Second,
-			BackoffMultiplier: 2.0,
+			MaxRetries:       3,
+			InitialRetryDelay:    2 * time.Second,
+			MaxRetryDelay:        30 * time.Second,
+			RetryMultiplier: 2.0,
 			ShouldRetry:       true,
 		},
 		ServerError: {
 			ErrorClass:        ServerError,
-			MaxAttempts:       3,
-			InitialBackoff:    5 * time.Second,
-			MaxBackoff:        60 * time.Second,
-			BackoffMultiplier: 2.0,
+			MaxRetries:       3,
+			InitialRetryDelay:    5 * time.Second,
+			MaxRetryDelay:        60 * time.Second,
+			RetryMultiplier: 2.0,
 			ShouldRetry:       true,
 		},
 		ClientError: {
 			ErrorClass:        ClientError,
-			MaxAttempts:       1,
-			InitialBackoff:    0,
-			MaxBackoff:        0,
-			BackoffMultiplier: 1.0,
+			MaxRetries:       1,
+			InitialRetryDelay:    0,
+			MaxRetryDelay:        0,
+			RetryMultiplier: 1.0,
 			ShouldRetry:       false,
 		},
 	}
@@ -257,10 +257,10 @@ func (erd *EnhancedRetryDecorator) getStrategy(errorClass ErrorClass) ErrorStrat
 	// Default strategy
 	return ErrorStrategy{
 		ErrorClass:        errorClass,
-		MaxAttempts:       erd.config.MaxAttempts,
-		InitialBackoff:    erd.config.InitialBackoff,
-		MaxBackoff:        erd.config.MaxBackoff,
-		BackoffMultiplier: erd.config.BackoffMultiplier,
+		MaxRetries:       erd.config.MaxRetries,
+		InitialRetryDelay:    erd.config.InitialRetryDelay,
+		MaxRetryDelay:        erd.config.MaxRetryDelay,
+		RetryMultiplier: erd.config.RetryMultiplier,
 		ShouldRetry:       true,
 	}
 }
@@ -291,8 +291,8 @@ func (erd *EnhancedRetryDecorator) calculateBackoff(baseBackoff time.Duration, a
 		}
 		previous := erd.calculateBackoff(baseBackoff, attempt-1)
 		jittered := time.Duration(rand.Float64()*float64(previous)*3 + float64(baseBackoff))
-		if jittered > erd.config.MaxBackoff {
-			return erd.config.MaxBackoff
+		if jittered > erd.config.MaxRetryDelay {
+			return erd.config.MaxRetryDelay
 		}
 		return jittered
 
@@ -372,7 +372,7 @@ func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message *agenkit
 	var errorClass ErrorClass
 	var strategy ErrorStrategy
 
-	for attempt := 1; attempt <= erd.config.MaxAttempts; attempt++ {
+	for attempt := 1; attempt <= erd.config.MaxRetries; attempt++ {
 		erd.metrics.mu.Lock()
 		erd.metrics.TotalAttempts++
 		erd.metrics.mu.Unlock()
@@ -447,7 +447,7 @@ func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message *agenkit
 		}
 
 		// Check if exceeded max attempts for this error class
-		if attempt >= strategy.MaxAttempts {
+		if attempt >= strategy.MaxRetries {
 			break
 		}
 
@@ -461,9 +461,9 @@ func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message *agenkit
 		erd.budget.mu.Unlock()
 
 		// Calculate backoff with jitter
-		baseBackoff := time.Duration(float64(strategy.InitialBackoff) * math.Pow(strategy.BackoffMultiplier, float64(attempt-1)))
-		if baseBackoff > strategy.MaxBackoff {
-			baseBackoff = strategy.MaxBackoff
+		baseBackoff := time.Duration(float64(strategy.InitialRetryDelay) * math.Pow(strategy.RetryMultiplier, float64(attempt-1)))
+		if baseBackoff > strategy.MaxRetryDelay {
+			baseBackoff = strategy.MaxRetryDelay
 		}
 		backoff := erd.calculateBackoff(baseBackoff, attempt)
 
@@ -480,7 +480,7 @@ func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message *agenkit
 	erd.metrics.FailedAfterRetries++
 	erd.metrics.mu.Unlock()
 
-	return nil,fmt.Errorf("max retry attempts (%d) exceeded for %s: %w", strategy.MaxAttempts, errorClass, lastError)
+	return nil,fmt.Errorf("max retry attempts (%d) exceeded for %s: %w", strategy.MaxRetries, errorClass, lastError)
 }
 
 // Metrics returns current metrics.

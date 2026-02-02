@@ -227,7 +227,7 @@ func enhancedRetryExample() {
 
 	// Configure enhanced retry
 	config := infrastructure.DefaultEnhancedRetryConfig()
-	config.MaxAttempts = 5
+	config.MaxRetries = 5
 	config.JitterType = infrastructure.FullJitter
 	config.EnableBackpressure = true
 	config.EnableBudget = false // Disabled for example
@@ -311,7 +311,7 @@ func productionDeploymentExample() {
 
 	// Step 2: Wrap each backend with enhanced retry
 	retryConfig := infrastructure.DefaultEnhancedRetryConfig()
-	retryConfig.MaxAttempts = 3
+	retryConfig.MaxRetries = 3
 	retryConfig.JitterType = infrastructure.FullJitter
 	retryConfig.EnableBackpressure = true
 

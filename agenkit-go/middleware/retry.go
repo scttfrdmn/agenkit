@@ -46,21 +46,21 @@ func (m *RetryMetrics) Snapshot() RetryMetrics {
 
 // RetryConfig configures retry behavior.
 type RetryConfig struct {
-	// MaxAttempts is the maximum number of attempts (including the initial attempt).
+	// MaxRetries is the maximum number of retry attempts.
 	// Default: 3
-	MaxAttempts int
+	MaxRetries int
 
-	// InitialBackoff is the initial backoff duration.
+	// InitialRetryDelay is the initial delay before the first retry.
 	// Default: 100ms
-	InitialBackoff time.Duration
+	InitialRetryDelay time.Duration
 
-	// MaxBackoff is the maximum backoff duration.
+	// MaxRetryDelay is the maximum delay between retries.
 	// Default: 10s
-	MaxBackoff time.Duration
+	MaxRetryDelay time.Duration
 
-	// BackoffMultiplier is the multiplier for exponential backoff.
+	// RetryMultiplier is the multiplier for exponential backoff.
 	// Default: 2.0
-	BackoffMultiplier float64
+	RetryMultiplier float64
 
 	// ShouldRetry determines if an error should trigger a retry.
 	// If nil, all errors trigger retries.
@@ -70,10 +70,10 @@ type RetryConfig struct {
 // DefaultRetryConfig returns a retry config with sensible defaults.
 func DefaultRetryConfig() RetryConfig {
 	return RetryConfig{
-		MaxAttempts:       3,
-		InitialBackoff:    100 * time.Millisecond,
-		MaxBackoff:        10 * time.Second,
-		BackoffMultiplier: 2.0,
+		MaxRetries:        3,
+		InitialRetryDelay: 100 * time.Millisecond,
+		MaxRetryDelay:     10 * time.Second,
+		RetryMultiplier:   2.0,
 		ShouldRetry:       nil, // Retry all errors
 	}
 }
@@ -91,17 +91,17 @@ var _ agenkit.Agent = (*RetryDecorator)(nil)
 // NewRetryDecorator creates a new retry decorator.
 func NewRetryDecorator(agent agenkit.Agent, config RetryConfig) *RetryDecorator {
 	// Apply defaults
-	if config.MaxAttempts <= 0 {
-		config.MaxAttempts = 3
+	if config.MaxRetries <= 0 {
+		config.MaxRetries = 3
 	}
-	if config.InitialBackoff <= 0 {
-		config.InitialBackoff = 100 * time.Millisecond
+	if config.InitialRetryDelay <= 0 {
+		config.InitialRetryDelay = 100 * time.Millisecond
 	}
-	if config.MaxBackoff <= 0 {
-		config.MaxBackoff = 10 * time.Second
+	if config.MaxRetryDelay <= 0 {
+		config.MaxRetryDelay = 10 * time.Second
 	}
-	if config.BackoffMultiplier <= 0 {
-		config.BackoffMultiplier = 2.0
+	if config.RetryMultiplier <= 0 {
+		config.RetryMultiplier = 2.0
 	}
 
 	return &RetryDecorator{
@@ -134,9 +134,9 @@ func (r *RetryDecorator) Metrics() *RetryMetrics {
 // Process implements the Agent interface with retry logic.
 func (r *RetryDecorator) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	var lastErr error
-	backoff := r.config.InitialBackoff
+	backoff := r.config.InitialRetryDelay
 
-	for attempt := 1; attempt <= r.config.MaxAttempts; attempt++ {
+	for attempt := 1; attempt <= r.config.MaxRetries; attempt++ {
 		// Track attempt
 		r.metrics.mu.Lock()
 		r.metrics.TotalAttempts++
@@ -167,11 +167,11 @@ func (r *RetryDecorator) Process(ctx context.Context, message *agenkit.Message) 
 			r.metrics.mu.Lock()
 			r.metrics.FailedAfterRetries++
 			r.metrics.mu.Unlock()
-			return nil, fmt.Errorf("non-retryable error on attempt %d/%d: %w", attempt, r.config.MaxAttempts, err)
+			return nil, fmt.Errorf("non-retryable error on attempt %d/%d: %w", attempt, r.config.MaxRetries, err)
 		}
 
 		// Don't sleep after the last attempt
-		if attempt == r.config.MaxAttempts {
+		if attempt == r.config.MaxRetries {
 			break
 		}
 
@@ -189,9 +189,9 @@ func (r *RetryDecorator) Process(ctx context.Context, message *agenkit.Message) 
 			return nil, fmt.Errorf("retry cancelled after %d attempts: %w", attempt, ctx.Err())
 		case <-time.After(backoff):
 			// Calculate next backoff
-			backoff = time.Duration(float64(backoff) * r.config.BackoffMultiplier)
-			if backoff > r.config.MaxBackoff {
-				backoff = r.config.MaxBackoff
+			backoff = time.Duration(float64(backoff) * r.config.RetryMultiplier)
+			if backoff > r.config.MaxRetryDelay {
+				backoff = r.config.MaxRetryDelay
 			}
 		}
 	}
@@ -201,5 +201,5 @@ func (r *RetryDecorator) Process(ctx context.Context, message *agenkit.Message) 
 	r.metrics.FailedAfterRetries++
 	r.metrics.mu.Unlock()
 
-	return nil, fmt.Errorf("max retry attempts (%d) exceeded: %w", r.config.MaxAttempts, lastErr)
+	return nil, fmt.Errorf("max retry attempts (%d) exceeded: %w", r.config.MaxRetries, lastErr)
 }

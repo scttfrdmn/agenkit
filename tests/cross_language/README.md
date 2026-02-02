@@ -300,8 +300,8 @@ A language passes cross-language consistency tests if:
 |---------------|----------|--------|--------|----|----|------|-----|-----|
 | Message Serialization | ✅ | ✅ | ✅ 16/16 | ✅ 17/17 | ✅ 16/16 | ✅ 13/13 | ✅ 13/13 | ✅ 12/12 |
 | API Consistency (NEW) | ✅ | - | ✅ 13/13 | ✅ 9/9 | ✅ 14/14 | ✅ 12/12 | ✅ 13/13 | ⚠️ API |
+| Retry Behavior | ✅ v1.1 | - | ✅ 7/7 | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Retry Config | ✅ | ✅ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| Retry Behavior | ✅ v1.1 | - | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Error Handling | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Timeout Behavior | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | Circuit Breaker | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
@@ -399,15 +399,25 @@ A language passes cross-language consistency tests if:
 - #437 - Comprehensive Zig testing framework (COMPLETE)
 - #445 - API Alignment Phase 2B/2C
 
+### Retry Behavior Implementation Details (NEW - February 2026)
+
+**Python** (`tests/cross_language/test_retry_behavior.py`):
+- Framework: pytest with asyncio
+- 7 tests covering all retry behavior scenarios from fixture
+- MockAgent simulates failures/successes from fixture scenarios
+- Tests validate timing, attempts, backoff calculations, and metrics
+- All tests passing ✅
+
 ## Next Steps
 
 1. ✅ **DONE**: Message serialization tests (all 6 languages passing)
 2. ✅ **DONE**: API consistency fixtures created (parameter naming, defaults, interfaces, errors)
 3. ✅ **DONE**: Retry behavior fixtures updated (max_retries terminology)
 4. ✅ **DONE**: API consistency tests implemented (5/6 languages: Python, Go, TS, Rust, C++)
-5. ⚠️ **IN PROGRESS**: Zig API alignment needed before tests can pass
-6. **TODO**: Implement retry config/behavior tests in each language
-7. **TODO**: Add timeout and circuit breaker behavior tests
-8. **TODO**: Create error handling test cases
-9. **TODO**: Build automated test runner for all categories
-10. **TODO**: Generate comprehensive cross-language compatibility report
+5. ✅ **DONE**: Python retry behavior tests (7/7 passing)
+6. ⚠️ **IN PROGRESS**: Zig API alignment needed before tests can pass
+7. **TODO**: Implement retry behavior tests in Go, TypeScript, Rust, C++, Zig
+8. **TODO**: Add timeout and circuit breaker behavior tests
+9. **TODO**: Create error handling test cases
+10. **TODO**: Build automated test runner for all categories
+11. **TODO**: Generate comprehensive cross-language compatibility report

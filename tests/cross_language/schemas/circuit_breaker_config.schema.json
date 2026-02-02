@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Circuit Breaker Configuration Schema",
+  "description": "Schema for validating circuit breaker configuration across all Agenkit language implementations",
+  "type": "object",
+  "required": [
+    "failure_threshold",
+    "recovery_timeout_ms",
+    "success_threshold",
+    "timeout_ms"
+  ],
+  "properties": {
+    "failure_threshold": {
+      "type": "integer",
+      "description": "Number of consecutive failures before opening the circuit",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "recovery_timeout_ms": {
+      "type": "integer",
+      "description": "Time in milliseconds to wait before transitioning from OPEN to HALF_OPEN",
+      "minimum": 1,
+      "maximum": 3600000
+    },
+    "success_threshold": {
+      "type": "integer",
+      "description": "Number of consecutive successes in HALF_OPEN state before closing circuit",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "timeout_ms": {
+      "type": "integer",
+      "description": "Request timeout in milliseconds",
+      "minimum": 1,
+      "maximum": 300000
+    }
+  },
+  "additionalProperties": false
+}

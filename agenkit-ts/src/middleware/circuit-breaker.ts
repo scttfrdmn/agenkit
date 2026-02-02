@@ -30,7 +30,7 @@ export interface CircuitBreakerConfig {
   /** Timeout in ms before attempting recovery (default: 60000) */
   timeout?: number;
 
-  /** Optional per-request timeout in ms (default: none) */
+  /** Per-request timeout in ms (default: 30000) */
   requestTimeout?: number;
 
   /** Optional name for logging */
@@ -96,7 +96,8 @@ export interface CircuitBreakerMetrics {
  *   const agent = new CircuitBreakerMiddleware(baseAgent, {
  *     failureThreshold: 5,
  *     successThreshold: 2,
- *     timeout: 60000,
+ *     timeout: 60000,        // Recovery timeout
+ *     requestTimeout: 30000, // Request timeout (optional, defaults to 30000)
  *   });
  */
 export class CircuitBreakerMiddleware extends BaseMiddleware {
@@ -108,7 +109,7 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
   private failureThreshold: number;
   private successThreshold: number;
   private timeout: number;
-  private requestTimeout?: number;
+  private requestTimeout: number;
   private cbName: string;
   private _metrics: CircuitBreakerMetrics;
 
@@ -117,7 +118,7 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
     this.failureThreshold = config.failureThreshold || 5;
     this.successThreshold = config.successThreshold || 2;
     this.timeout = config.timeout || 60000;
-    this.requestTimeout = config.requestTimeout;
+    this.requestTimeout = config.requestTimeout ?? 30000;
     this.cbName = config.name || `circuit-breaker-${agent.name}`;
     this._metrics = {
       totalRequests: 0,
@@ -149,17 +150,13 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
 
   /**
    * Wrap a promise with a timeout.
-   * Returns the promise as-is if no requestTimeout is configured.
+   * Applies the configured requestTimeout (default 30000ms).
    */
   private async withTimeout<T>(promise: Promise<T>): Promise<T> {
-    if (!this.requestTimeout) {
-      return promise;
-    }
-
     return Promise.race([
       promise,
       new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new RequestTimeoutError(this.requestTimeout!)), this.requestTimeout)
+        setTimeout(() => reject(new RequestTimeoutError(this.requestTimeout)), this.requestTimeout)
       ),
     ]);
   }

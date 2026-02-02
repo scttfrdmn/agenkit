@@ -13,6 +13,7 @@ import {
   TimeoutConfig,
   RateLimiterConfig,
   CircuitBreakerConfig,
+  CircuitBreakerMiddleware,
   Agent,
   Tool,
   Message,
@@ -203,9 +204,18 @@ describe('Default Values', () => {
     // Verify expected defaults
     const expectedThreshold = testCase.defaults['failure_threshold'].value;
     const expectedRecoveryMs = testCase.defaults['recovery_timeout'].value_ms;
+    const expectedTimeoutMs = testCase.defaults['timeout'].value_ms;
 
     expect(expectedThreshold).toBe(5);
     expect(expectedRecoveryMs).toBe(60000);
+    expect(expectedTimeoutMs).toBe(30000);
+
+    // Verify TypeScript implementation matches spec
+    const config: CircuitBreakerConfig = {};
+    const middleware = new CircuitBreakerMiddleware({} as Agent, config);
+
+    // Check defaults are applied (TypeScript applies defaults in constructor)
+    expect(middleware['requestTimeout']).toBe(30000);
   });
 });
 

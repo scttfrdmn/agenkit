@@ -36,6 +36,11 @@ add_executable(test_cross_language_api_consistency cross_language_api_consistenc
 target_link_libraries(test_cross_language_api_consistency agenkit gtest_main)
 add_test(NAME cross_language_api_consistency_tests COMMAND test_cross_language_api_consistency)
 
+# Cross-language retry behavior tests
+add_executable(test_cross_language_retry_behavior cross_language_retry_behavior_test.cpp)
+target_link_libraries(test_cross_language_retry_behavior agenkit gtest_main)
+add_test(NAME cross_language_retry_behavior_tests COMMAND test_cross_language_retry_behavior)
+
 # Agent tests
 add_executable(test_agent test_agent.cpp)
 target_link_libraries(test_agent agenkit gtest_main)

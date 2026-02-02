@@ -224,7 +224,7 @@ async def example_circuit_breaker_with_retry():
 
     # Layer 1: Retry for transient failures (inner)
     retry_db = RetryDecorator(
-        db, RetryConfig(max_attempts=2, initial_backoff=0.1, backoff_multiplier=2.0)
+        db, RetryConfig(max_retries=2, initial_delay=0.1, multiplier=2.0)
     )
 
     # Layer 2: Circuit breaker for persistent failures (outer)

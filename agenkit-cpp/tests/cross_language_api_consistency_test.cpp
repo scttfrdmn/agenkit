@@ -155,10 +155,9 @@ TEST_F(APIConsistencyTest, RateLimiterDefaults) {
     EXPECT_DOUBLE_EQ(config.rate_per_second, expected_rate)
         << "rate_per_second default should be " << expected_rate << " requests/second";
 
-    // NOTE: C++ currently uses capacity=20, spec says 10
-    // This is a known API inconsistency tracked in Issue #444
-    EXPECT_EQ(config.capacity, 20)
-        << "C++ RateLimiter capacity is 20 (spec says 10 - see Issue #444)";
+    int expected_capacity = test_case["defaults"]["capacity"]["value"];
+    EXPECT_EQ(config.capacity, expected_capacity)
+        << "capacity default should be " << expected_capacity;
 }
 
 TEST_F(APIConsistencyTest, CircuitBreakerDefaults) {

@@ -62,7 +62,8 @@ struct RateLimiterConfig {
     double rate_per_second = 10.0;
 
     /// Maximum token capacity (burst size)
-    uint32_t capacity = 20;
+    /// Default matches rate (10) for consistent behavior across languages
+    uint32_t capacity = 10;
 
     /// Tokens consumed per request
     uint32_t tokens_per_request = 1;

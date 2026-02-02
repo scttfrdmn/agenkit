@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Timeout Configuration Schema",
+  "description": "JSON Schema for timeout middleware configuration across all Agenkit implementations",
+  "type": "object",
+  "required": ["timeout_ms"],
+  "properties": {
+    "timeout_ms": {
+      "type": "integer",
+      "description": "Timeout duration in milliseconds",
+      "minimum": 1,
+      "maximum": 300000,
+      "examples": [1000, 5000, 30000]
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "timeout_ms": 1000
+    },
+    {
+      "timeout_ms": 30000
+    }
+  ]
+}

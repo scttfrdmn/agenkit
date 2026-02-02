@@ -1,0 +1,163 @@
+{
+  "version": "1.0",
+  "description": "Cross-language timeout behavior test cases",
+  "test_cases": [
+    {
+      "id": "timeout_success_within_limit",
+      "name": "Request completes within timeout",
+      "config": {
+        "timeout_ms": 1000
+      },
+      "scenario": {
+        "agent_delay_ms": 100,
+        "agent_response": {
+          "success": true,
+          "content": "Success"
+        }
+      },
+      "expected_behavior": {
+        "successful": true,
+        "timed_out": false,
+        "final_response": "Success",
+        "min_elapsed_ms": 100,
+        "max_elapsed_ms": 200
+      }
+    },
+    {
+      "id": "timeout_exceeded",
+      "name": "Request exceeds timeout limit",
+      "config": {
+        "timeout_ms": 100
+      },
+      "scenario": {
+        "agent_delay_ms": 500,
+        "agent_response": {
+          "success": true,
+          "content": "Should not see this"
+        }
+      },
+      "expected_behavior": {
+        "successful": false,
+        "timed_out": true,
+        "error_type": "TimeoutError",
+        "error_message_contains": "timed out after",
+        "min_elapsed_ms": 100,
+        "max_elapsed_ms": 150
+      }
+    },
+    {
+      "id": "timeout_exactly_at_limit",
+      "name": "Request completes exactly at timeout boundary",
+      "config": {
+        "timeout_ms": 200
+      },
+      "scenario": {
+        "agent_delay_ms": 190,
+        "agent_response": {
+          "success": true,
+          "content": "Just in time"
+        }
+      },
+      "expected_behavior": {
+        "successful": true,
+        "timed_out": false,
+        "final_response": "Just in time",
+        "min_elapsed_ms": 190,
+        "max_elapsed_ms": 250
+      }
+    },
+    {
+      "id": "timeout_zero_delay",
+      "name": "Request with zero delay completes immediately",
+      "config": {
+        "timeout_ms": 1000
+      },
+      "scenario": {
+        "agent_delay_ms": 0,
+        "agent_response": {
+          "success": true,
+          "content": "Instant"
+        }
+      },
+      "expected_behavior": {
+        "successful": true,
+        "timed_out": false,
+        "final_response": "Instant",
+        "min_elapsed_ms": 0,
+        "max_elapsed_ms": 50
+      }
+    },
+    {
+      "id": "timeout_agent_error",
+      "name": "Agent error propagates before timeout",
+      "config": {
+        "timeout_ms": 1000
+      },
+      "scenario": {
+        "agent_delay_ms": 100,
+        "agent_response": {
+          "success": false,
+          "error": "Agent processing error"
+        }
+      },
+      "expected_behavior": {
+        "successful": false,
+        "timed_out": false,
+        "error_type": "AgentError",
+        "error_message_contains": "Agent processing error",
+        "min_elapsed_ms": 100,
+        "max_elapsed_ms": 200
+      }
+    },
+    {
+      "id": "timeout_very_short",
+      "name": "Very short timeout (10ms)",
+      "config": {
+        "timeout_ms": 10
+      },
+      "scenario": {
+        "agent_delay_ms": 50,
+        "agent_response": {
+          "success": true,
+          "content": "Too slow"
+        }
+      },
+      "expected_behavior": {
+        "successful": false,
+        "timed_out": true,
+        "error_type": "TimeoutError",
+        "min_elapsed_ms": 10,
+        "max_elapsed_ms": 30
+      }
+    },
+    {
+      "id": "timeout_metrics_tracking",
+      "name": "Metrics track timeouts correctly",
+      "config": {
+        "timeout_ms": 100
+      },
+      "scenario": {
+        "requests": [
+          {
+            "agent_delay_ms": 50,
+            "agent_response": {"success": true, "content": "Fast"}
+          },
+          {
+            "agent_delay_ms": 200,
+            "agent_response": {"success": true, "content": "Slow"}
+          },
+          {
+            "agent_delay_ms": 30,
+            "agent_response": {"success": true, "content": "Fast"}
+          }
+        ]
+      },
+      "expected_metrics": {
+        "total_requests": 3,
+        "successful_requests": 2,
+        "timed_out_requests": 1,
+        "success_rate": 0.67
+      }
+    }
+  ]
+}

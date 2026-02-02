@@ -63,21 +63,21 @@ class TestParameterNaming:
             f"RetryConfig should have parameter '{expected_name}'"
 
     def test_retry_parameter_transition(self):
-        """Verify transition period: both old (deprecated) and new parameter names exist."""
+        """Verify new parameter names exist (deprecated names removed in v0.51.0)."""
         sig = inspect.signature(RetryConfig.__init__)
         param_names = set(sig.parameters.keys()) - {"self"}
 
-        # v0.50.0 transition: New parameter names (preferred)
+        # v0.53.0: New parameter names (deprecated names removed in v0.51.0)
         assert "max_retries" in param_names, "New parameter name max_retries should exist"
         assert "initial_delay" in param_names, "New parameter name initial_delay should exist"
         assert "max_delay" in param_names, "New parameter name max_delay should exist"
         assert "multiplier" in param_names, "New parameter name multiplier should exist"
 
-        # v0.50.0 transition: Old parameter names (deprecated, will be removed in v0.51.0)
-        assert "max_attempts" in param_names, "Deprecated max_attempts should still exist during transition"
-        assert "initial_backoff" in param_names, "Deprecated initial_backoff should still exist during transition"
-        assert "max_backoff" in param_names, "Deprecated max_backoff should still exist during transition"
-        assert "backoff_multiplier" in param_names, "Deprecated backoff_multiplier should still exist during transition"
+        # v0.53.0: Old parameter names removed (deprecated in v0.50.0, removed in v0.51.0)
+        assert "max_attempts" not in param_names, "Deprecated max_attempts should be removed"
+        assert "initial_backoff" not in param_names, "Deprecated initial_backoff should be removed"
+        assert "max_backoff" not in param_names, "Deprecated max_backoff should be removed"
+        assert "backoff_multiplier" not in param_names, "Deprecated backoff_multiplier should be removed"
 
     def test_timeout_parameter_names(self):
         """Verify TimeoutMiddleware parameter names clearly indicate units."""
@@ -190,31 +190,9 @@ class TestDefaultValues:
         assert config.max_delay == 20.0, "max_delay should be set correctly"
         assert config.multiplier == 3.0, "multiplier should be set correctly"
 
-    def test_retry_using_deprecated_parameter_names(self):
-        """Verify RetryConfig still accepts deprecated parameter names with warnings."""
-        import warnings
-
-        # Use old parameter names - should trigger deprecation warnings
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
-            config = RetryConfig(
-                max_attempts=5,
-                initial_backoff=0.5,
-                max_backoff=20.0,
-                backoff_multiplier=3.0
-            )
-
-            # Should have triggered 4 deprecation warnings
-            assert len(w) == 4, f"Expected 4 deprecation warnings, got {len(w)}"
-            assert all(issubclass(warning.category, DeprecationWarning) for warning in w), \
-                "All warnings should be DeprecationWarnings"
-
-        # Despite using old names, new names should be set
-        assert config.max_retries == 5, "max_retries should be set from deprecated max_attempts"
-        assert config.initial_delay == 0.5, "initial_delay should be set from deprecated initial_backoff"
-        assert config.max_delay == 20.0, "max_delay should be set from deprecated max_backoff"
-        assert config.multiplier == 3.0, "multiplier should be set from deprecated backoff_multiplier"
+    # test_retry_using_deprecated_parameter_names removed in v0.53.0
+    # Deprecated parameters (max_attempts, initial_backoff, max_backoff, backoff_multiplier)
+    # were removed in v0.51.0 after deprecation period in v0.50.0
 
     def test_rate_limiter_defaults(self):
         """Verify RateLimiterMiddleware default configuration values."""

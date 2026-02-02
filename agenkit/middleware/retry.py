@@ -1,9 +1,8 @@
 """Retry middleware with exponential backoff."""
 
 import asyncio
-import warnings
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from agenkit.interfaces import Agent, Message
 
@@ -52,82 +51,16 @@ class RetryConfig:
         max_delay: Maximum delay in seconds (default: 10.0)
         multiplier: Backoff multiplier for exponential backoff (default: 2.0)
         should_retry: Optional function to determine if error should be retried
-        max_attempts: DEPRECATED - use max_retries instead
-        initial_backoff: DEPRECATED - use initial_delay instead
-        max_backoff: DEPRECATED - use max_delay instead
-        backoff_multiplier: DEPRECATED - use multiplier instead
     """
 
-    # New parameter names (preferred)
-    max_retries: int | None = None
-    initial_delay: float | None = None
-    max_delay: float | None = None
-    multiplier: float | None = None
+    max_retries: int = 3
+    initial_delay: float = 0.1  # 100ms
+    max_delay: float = 10.0  # 10 seconds
+    multiplier: float = 2.0
     should_retry: Callable[[Exception], bool] | None = None
 
-    # Old parameter names (deprecated)
-    max_attempts: int | None = None
-    initial_backoff: float | None = None
-    max_backoff: float | None = None
-    backoff_multiplier: float | None = None
-
     def __post_init__(self):
-        """Validate configuration and handle deprecated parameters."""
-        # Handle deprecated parameter: max_attempts -> max_retries
-        if self.max_attempts is not None:
-            warnings.warn(
-                "max_attempts is deprecated and will be removed in v0.51.0. "
-                "Use max_retries instead.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
-            if self.max_retries is None:
-                self.max_retries = self.max_attempts
-
-        # Handle deprecated parameter: initial_backoff -> initial_delay
-        if self.initial_backoff is not None:
-            warnings.warn(
-                "initial_backoff is deprecated and will be removed in v0.51.0. "
-                "Use initial_delay instead.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
-            if self.initial_delay is None:
-                self.initial_delay = self.initial_backoff
-
-        # Handle deprecated parameter: max_backoff -> max_delay
-        if self.max_backoff is not None:
-            warnings.warn(
-                "max_backoff is deprecated and will be removed in v0.51.0. "
-                "Use max_delay instead.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
-            if self.max_delay is None:
-                self.max_delay = self.max_backoff
-
-        # Handle deprecated parameter: backoff_multiplier -> multiplier
-        if self.backoff_multiplier is not None:
-            warnings.warn(
-                "backoff_multiplier is deprecated and will be removed in v0.51.0. "
-                "Use multiplier instead.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
-            if self.multiplier is None:
-                self.multiplier = self.backoff_multiplier
-
-        # Set defaults for new parameters
-        if self.max_retries is None:
-            self.max_retries = 3
-        if self.initial_delay is None:
-            self.initial_delay = 0.1  # 100ms
-        if self.max_delay is None:
-            self.max_delay = 10.0  # 10 seconds
-        if self.multiplier is None:
-            self.multiplier = 2.0
-
-        # Validate new parameters
+        """Validate configuration."""
         if self.max_retries < 1:
             raise ValueError("max_retries must be at least 1")
         if self.initial_delay <= 0:

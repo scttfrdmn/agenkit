@@ -40,7 +40,7 @@ async def test_retry_success():
     )
 
     retry = RetryDecorator(
-        agent, RetryConfig(max_attempts=3, initial_backoff=0.01, backoff_multiplier=2.0)
+        agent, RetryConfig(max_retries=3, initial_delay=0.01, multiplier=2.0)
     )
 
     msg = Message(role="user", content="test")
@@ -51,14 +51,14 @@ async def test_retry_success():
 
 
 @pytest.mark.asyncio
-async def test_retry_max_attempts_exceeded():
+async def test_retry_max_retries_exceeded():
     """Test failure when max attempts exceeded."""
     agent = FailingAgent(
         fail_count=10, success_msg="should not succeed", failure_msg="persistent failure"
     )
 
     retry = RetryDecorator(
-        agent, RetryConfig(max_attempts=3, initial_backoff=0.01, backoff_multiplier=2.0)
+        agent, RetryConfig(max_retries=3, initial_delay=0.01, multiplier=2.0)
     )
 
     msg = Message(role="user", content="test")
@@ -78,7 +78,7 @@ async def test_retry_immediate_success():
     )
 
     retry = RetryDecorator(
-        agent, RetryConfig(max_attempts=3, initial_backoff=0.01, backoff_multiplier=2.0)
+        agent, RetryConfig(max_retries=3, initial_delay=0.01, multiplier=2.0)
     )
 
     msg = Message(role="user", content="test")
@@ -95,7 +95,7 @@ async def test_retry_backoff_timing():
 
     retry = RetryDecorator(
         agent,
-        RetryConfig(max_attempts=4, initial_backoff=0.1, max_backoff=1.0, backoff_multiplier=2.0),
+        RetryConfig(max_retries=4, initial_delay=0.1, max_delay=1.0, multiplier=2.0),
     )
 
     msg = Message(role="user", content="test")
@@ -109,13 +109,13 @@ async def test_retry_backoff_timing():
 
 
 @pytest.mark.asyncio
-async def test_retry_max_backoff():
+async def test_retry_max_delay():
     """Test that backoff doesn't exceed max."""
     agent = FailingAgent(fail_count=5, success_msg="success", failure_msg="failure")
 
     retry = RetryDecorator(
         agent,
-        RetryConfig(max_attempts=6, initial_backoff=0.1, max_backoff=0.2, backoff_multiplier=3.0),
+        RetryConfig(max_retries=6, initial_delay=0.1, max_delay=0.2, multiplier=3.0),
     )
 
     msg = Message(role="user", content="test")
@@ -123,7 +123,7 @@ async def test_retry_max_backoff():
     response = await retry.process(msg)
     elapsed = asyncio.get_event_loop().time() - start
 
-    # Backoff sequence: 0.1, 0.2, 0.2, 0.2, 0.2 (capped at max_backoff)
+    # Backoff sequence: 0.1, 0.2, 0.2, 0.2, 0.2 (capped at max_delay)
     # Total: ~1.0 seconds
     assert elapsed >= 0.8  # Allow some tolerance
     assert response.content == "success"
@@ -166,7 +166,7 @@ async def test_retry_should_retry_predicate():
 
     agent_custom = ConditionalAgent()
     retry = RetryDecorator(
-        agent_custom, RetryConfig(max_attempts=3, initial_backoff=0.01, should_retry=should_retry)
+        agent_custom, RetryConfig(max_retries=3, initial_delay=0.01, should_retry=should_retry)
     )
 
     # Should succeed after retry
@@ -204,7 +204,7 @@ async def test_retry_non_retryable_error():
 
     agent = NonRetryableAgent()
     retry = RetryDecorator(
-        agent, RetryConfig(max_attempts=3, initial_backoff=0.01, should_retry=should_retry)
+        agent, RetryConfig(max_retries=3, initial_delay=0.01, should_retry=should_retry)
     )
 
     msg = Message(role="user", content="test")
@@ -218,21 +218,21 @@ async def test_retry_non_retryable_error():
 @pytest.mark.asyncio
 async def test_retry_config_validation():
     """Test that RetryConfig validates parameters."""
-    # Test max_attempts < 1
+    # Test max_retries < 1
     with pytest.raises(ValueError):
-        RetryConfig(max_attempts=0)
+        RetryConfig(max_retries=0)
 
     # Test initial_backoff <= 0
     with pytest.raises(ValueError):
-        RetryConfig(initial_backoff=0)
+        RetryConfig(initial_delay=0)
 
-    # Test max_backoff < initial_backoff
+    # Test max_delay < initial_backoff
     with pytest.raises(ValueError):
-        RetryConfig(initial_backoff=10.0, max_backoff=5.0)
+        RetryConfig(initial_delay=10.0, max_delay=5.0)
 
     # Test backoff_multiplier <= 1.0
     with pytest.raises(ValueError):
-        RetryConfig(backoff_multiplier=1.0)
+        RetryConfig(multiplier=1.0)
 
 
 @pytest.mark.asyncio

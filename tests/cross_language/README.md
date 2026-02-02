@@ -629,6 +629,24 @@ A language passes cross-language consistency tests if:
 - Note: Rust tracks `allowed_requests` and `waited_requests` separately (API difference)
 - All tests passing ✅ (0.60s execution time)
 
-**C++**: ⏳ To be implemented
-**Zig**: ⏳ To be implemented (pending API alignment)
+**C++** (`agenkit-cpp/tests/cross_language_rate_limiter_behavior_test.cpp`):
+- Framework: Google Test (gtest) with nlohmann::json
+- 7 tests covering all rate limiter behaviors
+- MockRateLimiterAgent implements full Agent interface
+- Uses RateLimiterConfig with milliseconds
+- Fixed deadlock in wait_for_available_tokens() - now uses periodic wake-up loop instead of single wait_until
+- Tests validate token bucket algorithm with timing tolerance for refill variance
+- Note: C++ tracks `allowed_requests` and `waited_requests` separately like Rust (API difference)
+- All tests passing ✅ (~1s execution time)
+
+**Zig** (`agenkit-zig/tests/cross_language/rate_limiter_behavior_test.zig`):
+- Framework: Built-in test with std.json
+- 7 tests covering all rate limiter behaviors
+- MockRateLimiterAgent implements full Agent VTable
+- Uses RateLimiterConfig with milliseconds
+- Added to build.zig test suite
+- Uses Message.withText() for proper message construction
+- Tests validate token bucket algorithm, waiting, timeouts, and refill
+- **Status**: ✅ Test file compiles successfully
+- **Note**: Rate limiter source has compilation issues (std.time.sleep → std.Thread.sleep, json iterator) that need separate fix
 

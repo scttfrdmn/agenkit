@@ -68,23 +68,47 @@ bool RateLimiterMiddleware::wait_for_available_tokens(uint32_t tokens_needed) {
 
     std::unique_lock<std::mutex> lock(mutex_);
 
-    // Use condition variable to wait efficiently (no polling)
-    bool acquired = token_cv_.wait_until(lock, deadline, [this, tokens_needed] {
-        return try_consume_tokens_unlocked(tokens_needed);
-    });
+    // Loop with periodic refill checks instead of relying on external notifications
+    while (std::chrono::steady_clock::now() < deadline) {
+        // Try to consume tokens (this also refills based on elapsed time)
+        if (try_consume_tokens_unlocked(tokens_needed)) {
+            // Tokens acquired successfully
+            auto end = std::chrono::steady_clock::now();
+            auto wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                end - start
+            );
+            if (wait_time.count() > 0) {
+                metrics_.waited_requests++;
+                metrics_.total_wait_time_ms += wait_time.count();
+            }
+            return true;
+        }
 
-    if (acquired) {
-        auto end = std::chrono::steady_clock::now();
-        auto wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-            end - start
-        );
-        if (wait_time.count() > 0) {
-            metrics_.waited_requests++;
-            metrics_.total_wait_time_ms += wait_time.count();
+        // Calculate optimal wait time: either until we have enough tokens or deadline
+        double tokens_deficit = tokens_needed - tokens_;
+        if (tokens_deficit > 0) {
+            // Time needed for token refill
+            auto time_to_tokens = std::chrono::milliseconds(
+                static_cast<int64_t>((tokens_deficit / config_.rate_per_second) * 1000.0)
+            );
+
+            // Don't wait past deadline
+            auto now = std::chrono::steady_clock::now();
+            auto time_remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+                deadline - now
+            );
+
+            auto wait_duration = std::min(time_to_tokens, time_remaining);
+
+            if (wait_duration.count() > 0) {
+                // Wait for calculated duration or notification (whichever comes first)
+                token_cv_.wait_for(lock, wait_duration);
+            }
         }
     }
 
-    return acquired;
+    // Timeout reached without acquiring tokens
+    return false;
 }
 
 std::future<core::Result<core::Message, core::AgentError>>

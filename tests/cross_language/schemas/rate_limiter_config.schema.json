@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agenkit.ai/schemas/rate_limiter_config.json",
+  "title": "Rate Limiter Configuration",
+  "description": "Configuration for rate limiter middleware across all Agenkit implementations",
+  "type": "object",
+  "properties": {
+    "rate": {
+      "type": "number",
+      "description": "Tokens per second (refill rate)",
+      "minimum": 0.1,
+      "maximum": 10000,
+      "examples": [1.0, 10.0, 100.0]
+    },
+    "capacity": {
+      "type": "integer",
+      "description": "Maximum burst capacity (bucket size)",
+      "minimum": 1,
+      "maximum": 10000,
+      "examples": [5, 10, 100]
+    },
+    "tokens_per_request": {
+      "type": "integer",
+      "description": "Tokens consumed per request",
+      "minimum": 1,
+      "maximum": 1000,
+      "default": 1,
+      "examples": [1, 2, 5]
+    },
+    "max_wait_ms": {
+      "oneOf": [
+        {
+          "type": "null",
+          "description": "Wait indefinitely for tokens"
+        },
+        {
+          "type": "integer",
+          "description": "Maximum milliseconds to wait for tokens",
+          "minimum": 1,
+          "maximum": 300000
+        }
+      ],
+      "examples": [null, 100, 1000, 5000]
+    }
+  },
+  "required": ["rate", "capacity"],
+  "additionalProperties": false
+}

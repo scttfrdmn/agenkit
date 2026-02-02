@@ -1,0 +1,239 @@
+{
+  "version": "1.0",
+  "description": "Cross-language circuit breaker behavior test fixtures",
+  "test_cases": [
+    {
+      "id": "circuit_breaker_closed_success",
+      "name": "Circuit remains closed with successful requests",
+      "config": {
+        "failure_threshold": 3,
+        "recovery_timeout_ms": 1000,
+        "success_threshold": 2,
+        "timeout_ms": 5000
+      },
+      "scenario": {
+        "agent_responses": [
+          {"success": true, "content": "Response 1"},
+          {"success": true, "content": "Response 2"},
+          {"success": true, "content": "Response 3"}
+        ]
+      },
+      "expected_behavior": {
+        "final_state": "closed",
+        "total_requests": 3,
+        "successful_requests": 3,
+        "failed_requests": 0,
+        "rejected_requests": 0,
+        "all_requests_completed": true
+      }
+    },
+    {
+      "id": "circuit_breaker_opens_on_failures",
+      "name": "Circuit opens after failure threshold is reached",
+      "config": {
+        "failure_threshold": 3,
+        "recovery_timeout_ms": 1000,
+        "success_threshold": 2,
+        "timeout_ms": 5000
+      },
+      "scenario": {
+        "agent_responses": [
+          {"success": false, "error": "Error 1"},
+          {"success": false, "error": "Error 2"},
+          {"success": false, "error": "Error 3"},
+          {"success": true, "content": "Should be rejected"}
+        ]
+      },
+      "expected_behavior": {
+        "final_state": "open",
+        "total_requests": 4,
+        "successful_requests": 0,
+        "failed_requests": 3,
+        "rejected_requests": 1,
+        "state_transitions": ["closed", "open"],
+        "fourth_request_rejected": true
+      }
+    },
+    {
+      "id": "circuit_breaker_half_open_transition",
+      "name": "Circuit transitions to half-open after recovery timeout",
+      "config": {
+        "failure_threshold": 2,
+        "recovery_timeout_ms": 100,
+        "success_threshold": 1,
+        "timeout_ms": 5000
+      },
+      "scenario": {
+        "steps": [
+          {
+            "action": "request",
+            "agent_response": {"success": false, "error": "Error 1"}
+          },
+          {
+            "action": "request",
+            "agent_response": {"success": false, "error": "Error 2"}
+          },
+          {
+            "action": "wait",
+            "duration_ms": 150
+          },
+          {
+            "action": "request",
+            "agent_response": {"success": true, "content": "Recovery"}
+          }
+        ]
+      },
+      "expected_behavior": {
+        "final_state": "closed",
+        "state_transitions": ["closed", "open", "half_open", "closed"],
+        "recovery_successful": true,
+        "total_requests": 3,
+        "failed_requests": 2,
+        "rejected_requests": 0
+      }
+    },
+    {
+      "id": "circuit_breaker_half_open_to_closed",
+      "name": "Circuit closes after success threshold in half-open state",
+      "config": {
+        "failure_threshold": 2,
+        "recovery_timeout_ms": 100,
+        "success_threshold": 2,
+        "timeout_ms": 5000
+      },
+      "scenario": {
+        "steps": [
+          {
+            "action": "request",
+            "agent_response": {"success": false, "error": "Error 1"}
+          },
+          {
+            "action": "request",
+            "agent_response": {"success": false, "error": "Error 2"}
+          },
+          {
+            "action": "wait",
+            "duration_ms": 150
+          },
+          {
+            "action": "request",
+            "agent_response": {"success": true, "content": "Recovery 1"}
+          },
+          {
+            "action": "request",
+            "agent_response": {"success": true, "content": "Recovery 2"}
+          }
+        ]
+      },
+      "expected_behavior": {
+        "final_state": "closed",
+        "state_transitions": ["closed", "open", "half_open", "closed"],
+        "total_successful_in_half_open": 2,
+        "circuit_fully_recovered": true
+      }
+    },
+    {
+      "id": "circuit_breaker_half_open_reopens",
+      "name": "Circuit reopens on failure in half-open state",
+      "config": {
+        "failure_threshold": 2,
+        "recovery_timeout_ms": 100,
+        "success_threshold": 2,
+        "timeout_ms": 5000
+      },
+      "scenario": {
+        "steps": [
+          {
+            "action": "request",
+            "agent_response": {"success": false, "error": "Error 1"}
+          },
+          {
+            "action": "request",
+            "agent_response": {"success": false, "error": "Error 2"}
+          },
+          {
+            "action": "wait",
+            "duration_ms": 150
+          },
+          {
+            "action": "request",
+            "agent_response": {"success": true, "content": "Partial recovery"}
+          },
+          {
+            "action": "request",
+            "agent_response": {"success": false, "error": "Still failing"}
+          }
+        ]
+      },
+      "expected_behavior": {
+        "final_state": "open",
+        "state_transitions": ["closed", "open", "half_open", "open"],
+        "reopened_after_partial_recovery": true,
+        "total_requests": 4,
+        "failed_requests": 3
+      }
+    },
+    {
+      "id": "circuit_breaker_rejects_when_open",
+      "name": "Circuit rejects all requests when open",
+      "config": {
+        "failure_threshold": 2,
+        "recovery_timeout_ms": 5000,
+        "success_threshold": 2,
+        "timeout_ms": 5000
+      },
+      "scenario": {
+        "agent_responses": [
+          {"success": false, "error": "Error 1"},
+          {"success": false, "error": "Error 2"},
+          {"success": true, "content": "Should be rejected"},
+          {"success": true, "content": "Should be rejected"},
+          {"success": true, "content": "Should be rejected"}
+        ]
+      },
+      "expected_behavior": {
+        "final_state": "open",
+        "total_requests": 5,
+        "successful_requests": 0,
+        "failed_requests": 2,
+        "rejected_requests": 3,
+        "all_rejected_while_open": true
+      }
+    },
+    {
+      "id": "circuit_breaker_metrics_tracking",
+      "name": "Circuit breaker tracks metrics accurately",
+      "config": {
+        "failure_threshold": 3,
+        "recovery_timeout_ms": 100,
+        "success_threshold": 2,
+        "timeout_ms": 5000
+      },
+      "scenario": {
+        "steps": [
+          {"action": "request", "agent_response": {"success": true, "content": "Success 1"}},
+          {"action": "request", "agent_response": {"success": true, "content": "Success 2"}},
+          {"action": "request", "agent_response": {"success": false, "error": "Error 1"}},
+          {"action": "request", "agent_response": {"success": false, "error": "Error 2"}},
+          {"action": "request", "agent_response": {"success": false, "error": "Error 3"}},
+          {"action": "request", "agent_response": {"success": true, "content": "Rejected"}},
+          {"action": "wait", "duration_ms": 150},
+          {"action": "request", "agent_response": {"success": true, "content": "Recovery 1"}},
+          {"action": "request", "agent_response": {"success": true, "content": "Recovery 2"}}
+        ]
+      },
+      "expected_metrics": {
+        "total_requests": 8,
+        "successful_requests": 4,
+        "failed_requests": 3,
+        "rejected_requests": 1,
+        "state_changes": {
+          "closed_to_open": 1,
+          "open_to_half_open": 1,
+          "half_open_to_closed": 1
+        },
+        "final_state": "closed"
+      }
+    }
+  ]
+}

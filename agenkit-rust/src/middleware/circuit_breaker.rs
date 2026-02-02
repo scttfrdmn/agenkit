@@ -410,8 +410,11 @@ impl<A: Agent> Agent for CircuitBreakerMiddleware<A> {
 
         // Check circuit state
         {
-            let state = self.state.read().await;
-            if state.state == CircuitState::Open {
+            let is_open = {
+                let state = self.state.read().await;
+                state.state == CircuitState::Open
+            };
+            if is_open {
                 let mut state_mut = self.state.write().await;
                 state_mut.metrics.rejected_requests += 1;
                 return Err(AgentError::ProcessingError(

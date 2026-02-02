@@ -396,9 +396,9 @@
 9489 115232204 1768102938073159051 cf43a660c64c0625b4aa595323705038 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/safety/permissions.zig
 9228 115232187 1768102931682679747 be9b0c41943d61f4de9d1596b72a6d82 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/safety/anomaly.zig
 9126 115232022 1768102900349498535 d81fa338206cdf1e19d7aecedcb0bfe1 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/safety/audit.zig
-11565 116265755 1768284763224486559 ee369dc5f6f12aea6d1bfffc1c0296d1 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/middleware/retry.zig
+11475 123795290 1770003424049230015 fdc859caf30b84fa98f9eb17801e7dd7 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/middleware/retry.zig
 19004 116264492 1768284486831082991 3495d81680231914e7ac7107fe922023 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/middleware/timeout.zig
-16931 116265746 1768284763065852230 4660bd64bf525350a6aa86bd9a4fc3fd 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/middleware/circuit_breaker.zig
+16834 123771739 1770001554084301263 d01460068dabd7bb8b7013f5f036d112 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/middleware/circuit_breaker.zig
 14818 116265752 1768284763201872536 bed4a6f04feb4c0a6b6f6b65ebc9e02b 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/middleware/rate_limiter.zig
 16543 116265749 1768284763135030799 567a851380fd501ac34d594eb663211a 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/middleware/per_user_rate_limiter.zig
 15944 116265743 1768284763023199640 08c49e31b6d19c468a99ab53046b4b92 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/middleware/caching.zig
@@ -413,7 +413,7 @@
 1035 117565284 1768498686607510190 a57b12f2bf1eda13ff9f36f9f3222c64 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/infrastructure/memory/strategies/mod.zig
 13040 122152725 1769573009587418238 ce5d76d088428f95dd2808f18084d994 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/infrastructure/load_balancer.zig
 14434 122153186 1769573054405529674 761842d27e3d6a2729ecb939800cbb5f 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/infrastructure/health.zig
-16102 122153262 1769573061767146533 dcc2c124565a0d1f31786f1b08a38959 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/infrastructure/retry_enhanced.zig
+15954 123795330 1770003468062277648 e85c4248d5029d9fb01d703e2947280c 0 /Users/scttfrdmn/src/agenkit/agenkit-zig/src/infrastructure/retry_enhanced.zig
 8052 95861623 1760154801000000000 bbc3cbd53ca9eaab481a4b2874506c59 1 std/Build/Cache/Path.zig
 2142 95861622 1760154801000000000 fe57a392618de045bf46b476d4e9b36f 1 std/Build/Cache/Directory.zig
 37958 95861621 1760154801000000000 09f6c6d5c5a3e85759082f1ad46ebffa 1 std/Build/Cache/DepTokenizer.zig

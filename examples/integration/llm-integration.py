@@ -134,7 +134,7 @@ async def example_production_middleware() -> None:
                 base_llm,
                 max_retries=3,
                 initial_delay=1.0,
-                backoff_multiplier=2.0,
+                multiplier=2.0,
             ),
             timeout_seconds=30.0,
         ),

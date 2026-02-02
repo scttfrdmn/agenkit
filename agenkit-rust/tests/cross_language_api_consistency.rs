@@ -288,24 +288,54 @@ mod default_values_tests {
 
         let config = CircuitBreakerConfig::default();
 
-        let expected_threshold = test_case.defaults["failure_threshold"]
+        // Check failure_threshold
+        let expected_failure_threshold = test_case.defaults["failure_threshold"]
             .value
             .as_ref()
             .unwrap()
             .as_i64()
             .unwrap() as u32;
         assert_eq!(
-            config.failure_threshold, expected_threshold,
+            config.failure_threshold, expected_failure_threshold,
             "failure_threshold default should be {}",
-            expected_threshold
+            expected_failure_threshold
         );
 
-        // NOTE: Rust currently uses 60s timeout, spec says 30s
-        // This is a known API inconsistency tracked in Issue #444
-        let actual_timeout = std::time::Duration::from_secs(60);
+        // Check success_threshold
+        let expected_success_threshold = test_case.defaults["success_threshold"]
+            .value
+            .as_ref()
+            .unwrap()
+            .as_i64()
+            .unwrap() as u32;
         assert_eq!(
-            config.timeout, actual_timeout,
-            "Rust CircuitBreaker timeout is 60s (spec says 30s - see Issue #444)"
+            config.success_threshold, expected_success_threshold,
+            "success_threshold default should be {}",
+            expected_success_threshold
+        );
+
+        // Check timeout (request timeout)
+        let expected_timeout_ms = *test_case.defaults["timeout"]
+            .value_ms
+            .as_ref()
+            .unwrap() as i64;
+        assert_eq!(
+            config.timeout.as_millis() as i64,
+            expected_timeout_ms,
+            "timeout (request timeout) default should be {}ms (30 seconds)",
+            expected_timeout_ms
+        );
+
+        // Check recovery_timeout
+        let expected_recovery_ms = *test_case.defaults["recovery_timeout"]
+            .value_ms
+            .as_ref()
+            .unwrap() as i64;
+        assert_eq!(
+            config.recovery_timeout.as_millis() as i64,
+            expected_recovery_ms,
+            "recovery_timeout default should be {}ms (60 seconds)",
+            expected_recovery_ms
         );
     }
 }

@@ -17,6 +17,7 @@ const CircuitBreakerConfig = agenkit.middleware.CircuitBreakerConfig;
 const Agent = agenkit.Agent;
 const Tool = agenkit.Tool;
 const Message = agenkit.Message;
+const Role = agenkit.Role;
 const ToolResult = agenkit.ToolResult;
 
 const APIFixtures = struct {
@@ -286,10 +287,7 @@ const MockTool = struct {
         _ = self;
         _ = params;
 
-        return ToolResult{
-            .content = "test",
-            .metadata = std.StringHashMap(std.json.Value).init(allocator),
-        };
+        return try ToolResult.init(allocator, "test-tool-use-id", .{ .string = "test" });
     }
 };
 
@@ -313,11 +311,7 @@ const MockAgent = struct {
         _ = self;
         _ = message;
 
-        return Message{
-            .role = "agent",
-            .content = "response",
-            .metadata = std.StringHashMap(std.json.Value).init(allocator),
-        };
+        return try Message.withText(allocator, .agent, "response");
     }
 };
 
@@ -329,9 +323,10 @@ test "tool execute signature" {
     var params = std.StringHashMap(std.json.Value).init(allocator);
     defer params.deinit();
 
-    const result = try tool.execute(allocator, params);
+    var result = try tool.execute(allocator, params);
+    defer result.deinit();
 
-    try testing.expectEqualStrings("test", result.content);
+    try testing.expectEqualStrings("test", result.result.string);
 }
 
 test "agent process signature" {
@@ -339,16 +334,14 @@ test "agent process signature" {
 
     var agent = MockAgent{};
 
-    const message = Message{
-        .role = "user",
-        .content = "test",
-        .metadata = std.StringHashMap(std.json.Value).init(allocator),
-    };
+    var message = try Message.withText(allocator, .user, "test");
+    defer message.deinit();
 
-    const result = try agent.process(allocator, message);
+    var result = try agent.process(allocator, message);
+    defer result.deinit();
 
-    try testing.expectEqualStrings("agent", result.role);
-    try testing.expectEqualStrings("response", result.content);
+    try testing.expectEqual(Role.agent, result.role);
+    try testing.expectEqualStrings("response", result.content.text);
 }
 
 // ============================================

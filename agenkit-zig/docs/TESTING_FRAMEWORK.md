@@ -66,10 +66,10 @@ defer msg.deinit();
 **Current Pattern:**
 ```zig
 var config = RetryConfig{
-    .max_attempts = 3,
-    .initial_backoff_ms = 100,
-    .max_backoff_ms = 10000,
-    .backoff_multiplier = 2.0,
+    .max_retries = 3,
+    .initial_delay_ms = 100,
+    .max_delay_ms = 10000,
+    .multiplier = 2.0,
 };
 var retry = try RetryDecorator.init(allocator, base_agent, config);
 defer retry.deinit();
@@ -188,7 +188,7 @@ pub const MockAgentTracker = struct {
 #### 2.3 Common Error Scenario Builders
 ```zig
 pub fn timeoutScenario(allocator: Allocator, agent: Agent, timeout_ms: u64) !void;
-pub fn retryScenario(allocator: Allocator, agent: Agent, max_attempts: usize) !void;
+pub fn retryScenario(allocator: Allocator, agent: Agent, max_retries: usize) !void;
 pub fn circuitBreakerScenario(allocator: Allocator, agent: Agent, failure_threshold: usize) !void;
 ```
 
@@ -216,8 +216,8 @@ pub fn parameterizedTest(
 
 // Usage:
 try parameterizedTest(testRetryLogic, &[_]Param{
-    .{ .name = "3 attempts", .max_attempts = 3 },
-    .{ .name = "5 attempts", .max_attempts = 5 },
+    .{ .name = "3 retries", .max_retries = 3 },
+    .{ .name = "5 retries", .max_retries = 5 },
 });
 ```
 

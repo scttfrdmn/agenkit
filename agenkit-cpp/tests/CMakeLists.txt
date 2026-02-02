@@ -31,6 +31,11 @@ add_executable(test_cross_language_message_serialization test_cross_language_mes
 target_link_libraries(test_cross_language_message_serialization agenkit gtest_main)
 add_test(NAME cross_language_message_serialization_tests COMMAND test_cross_language_message_serialization)
 
+# Cross-language API consistency tests
+add_executable(test_cross_language_api_consistency cross_language_api_consistency_test.cpp)
+target_link_libraries(test_cross_language_api_consistency agenkit gtest_main)
+add_test(NAME cross_language_api_consistency_tests COMMAND test_cross_language_api_consistency)
+
 # Agent tests
 add_executable(test_agent test_agent.cpp)
 target_link_libraries(test_agent agenkit gtest_main)

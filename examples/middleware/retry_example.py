@@ -75,10 +75,10 @@ async def example_basic_retry():
     retry_agent = RetryDecorator(
         agent,
         RetryConfig(
-            max_attempts=5,
-            initial_backoff=0.5,  # Start with 500ms
-            max_backoff=5.0,  # Cap at 5 seconds
-            backoff_multiplier=2.0,  # Double each time: 500ms, 1s, 2s, 4s, 5s
+            max_retries=5,
+            initial_delay=0.5,  # Start with 500ms
+            max_delay=5.0,  # Cap at 5 seconds
+            multiplier=2.0,  # Double each time: 500ms, 1s, 2s, 4s, 5s
         ),
     )
 
@@ -153,9 +153,9 @@ async def example_custom_retry_logic():
     retry_agent = RetryDecorator(
         agent,
         RetryConfig(
-            max_attempts=3,
-            initial_backoff=0.1,
-            backoff_multiplier=2.0,
+            max_retries=3,
+            initial_delay=0.1,
+            multiplier=2.0,
             should_retry=should_retry_error,
         ),
     )
@@ -190,7 +190,7 @@ async def example_no_retry_on_auth_error():
 
     agent = AuthFailAgent()
     retry_agent = RetryDecorator(
-        agent, RetryConfig(max_attempts=3, initial_backoff=0.1, should_retry=should_retry_error)
+        agent, RetryConfig(max_retries=3, initial_delay=0.1, should_retry=should_retry_error)
     )
 
     message = Message(role="user", content="test")

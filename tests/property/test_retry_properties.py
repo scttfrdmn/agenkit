@@ -25,14 +25,14 @@ class RetryPolicy:
     def __init__(
         self,
         max_retries: int = 3,
-        backoff_base: float = 0.1,
-        backoff_multiplier: float = 2.0,
+        initial_delay: float = 0.1,
+        multiplier: float = 2.0,
         max_delay: float = 10.0,
         retryable_exceptions: tuple = (Exception,),
     ):
         self._max_retries = max_retries
-        self._backoff_base = backoff_base
-        self._backoff_multiplier = backoff_multiplier
+        self._initial_delay = initial_delay
+        self._multiplier = multiplier
         self._max_delay = max_delay
         self._retryable_exceptions = retryable_exceptions
 
@@ -60,7 +60,7 @@ class RetryPolicy:
         """Get delay for next retry."""
         # Exponential backoff with cap
         # Use (retry_count - 1) since retry_count is incremented before calling this
-        delay = self._backoff_base * (self._backoff_multiplier ** (self._retry_count - 1))
+        delay = self._initial_delay * (self._multiplier ** (self._retry_count - 1))
         delay = min(delay, self._max_delay)
         return delay
 
@@ -105,7 +105,7 @@ class RetryPolicy:
 @settings(max_examples=20, deadline=None)
 async def test_retry_count_never_exceeds_max(max_retries):
     """Property: Retry count never exceeds max_retries."""
-    policy = RetryPolicy(max_retries=max_retries, backoff_base=0.01)
+    policy = RetryPolicy(max_retries=max_retries, initial_delay=0.01)
 
     async def always_fails():
         raise RuntimeError("Always fails")
@@ -135,18 +135,18 @@ async def test_retry_count_never_exceeds_max(max_retries):
 @pytest.mark.asyncio
 @given(
     max_retries=st.integers(min_value=2, max_value=5),
-    backoff_base=st.floats(min_value=0.01, max_value=0.1),
-    backoff_multiplier=st.floats(min_value=1.5, max_value=3.0),
+    initial_delay=st.floats(min_value=0.01, max_value=0.1),
+    multiplier=st.floats(min_value=1.5, max_value=3.0),
 )
 @settings(max_examples=20, deadline=None)
-async def test_backoff_delays_are_monotonic(max_retries, backoff_base, backoff_multiplier):
+async def test_backoff_delays_are_monotonic(max_retries, initial_delay, multiplier):
     """Property: Each retry delay >= previous delay (exponential backoff)."""
-    assume(backoff_multiplier > 1.0)  # Ensure exponential growth
+    assume(multiplier > 1.0)  # Ensure exponential growth
 
     policy = RetryPolicy(
         max_retries=max_retries,
-        backoff_base=backoff_base,
-        backoff_multiplier=backoff_multiplier,
+        initial_delay=initial_delay,
+        multiplier=multiplier,
         max_delay=999999.0,  # No cap for this test
     )
 
@@ -182,7 +182,7 @@ async def test_success_propagates_immediately(success_on_attempt, max_retries):
     """Property: Returns immediately on success (no extra retries)."""
     assume(success_on_attempt <= max_retries + 1)
 
-    policy = RetryPolicy(max_retries=max_retries, backoff_base=0.01)
+    policy = RetryPolicy(max_retries=max_retries, initial_delay=0.01)
 
     attempt_counter = 0
 
@@ -215,16 +215,16 @@ async def test_success_propagates_immediately(success_on_attempt, max_retries):
 @pytest.mark.asyncio
 @given(
     max_retries=st.integers(min_value=3, max_value=5),
-    backoff_base=st.floats(min_value=0.1, max_value=1.0),
+    initial_delay=st.floats(min_value=0.1, max_value=1.0),
     max_delay=st.floats(min_value=0.5, max_value=2.0),
 )
 @settings(max_examples=10, deadline=None)  # Reduced to 10 due to long delays
-async def test_max_delay_cap_is_enforced(max_retries, backoff_base, max_delay):
+async def test_max_delay_cap_is_enforced(max_retries, initial_delay, max_delay):
     """Property: Delay never exceeds max_delay."""
     policy = RetryPolicy(
         max_retries=max_retries,
-        backoff_base=backoff_base,
-        backoff_multiplier=2.0,
+        initial_delay=initial_delay,
+        multiplier=2.0,
         max_delay=max_delay,
     )
 
@@ -255,7 +255,7 @@ async def test_max_delay_cap_is_enforced(max_retries, backoff_base, max_delay):
 @settings(max_examples=20, deadline=None)
 async def test_total_attempts_equals_one_plus_retries(max_retries):
     """Property: total_attempts = 1 (initial) + retry_count."""
-    policy = RetryPolicy(max_retries=max_retries, backoff_base=0.01)
+    policy = RetryPolicy(max_retries=max_retries, initial_delay=0.01)
 
     async def always_fails():
         raise RuntimeError("Always fails")
@@ -285,7 +285,7 @@ async def test_only_retries_on_configured_exceptions(max_retries):
     """Property: Only retries on configured exception types."""
     # Configure to only retry on RuntimeError
     policy = RetryPolicy(
-        max_retries=max_retries, backoff_base=0.01, retryable_exceptions=(RuntimeError,)
+        max_retries=max_retries, initial_delay=0.01, retryable_exceptions=(RuntimeError,)
     )
 
     async def raises_value_error():
@@ -312,16 +312,16 @@ async def test_only_retries_on_configured_exceptions(max_retries):
 @pytest.mark.asyncio
 @given(
     max_retries=st.integers(min_value=3, max_value=5),
-    backoff_base=st.floats(min_value=0.01, max_value=0.1),
-    backoff_multiplier=st.floats(min_value=2.0, max_value=3.0),
+    initial_delay=st.floats(min_value=0.01, max_value=0.1),
+    multiplier=st.floats(min_value=2.0, max_value=3.0),
 )
 @settings(max_examples=20, deadline=None)
-async def test_exponential_growth_formula(max_retries, backoff_base, backoff_multiplier):
+async def test_exponential_growth_formula(max_retries, initial_delay, multiplier):
     """Property: Delays follow exponential formula (before cap)."""
     policy = RetryPolicy(
         max_retries=max_retries,
-        backoff_base=backoff_base,
-        backoff_multiplier=backoff_multiplier,
+        initial_delay=initial_delay,
+        multiplier=multiplier,
         max_delay=999999.0,  # No cap
     )
 
@@ -333,9 +333,9 @@ async def test_exponential_growth_formula(max_retries, backoff_base, backoff_mul
 
     delays = policy.get_delays()
 
-    # Property: Each delay follows formula: base * multiplier^retry_number
+    # Property: Each delay follows formula: initial_delay * multiplier^retry_number
     for i, delay in enumerate(delays):
-        expected_delay = backoff_base * (backoff_multiplier**i)
+        expected_delay = initial_delay * (multiplier**i)
 
         # Allow small floating point error
         assert (
@@ -353,7 +353,7 @@ async def test_exponential_growth_formula(max_retries, backoff_base, backoff_mul
 @pytest.mark.asyncio
 async def test_zero_retries_means_no_retries():
     """Property: max_retries=0 means no retries (only initial attempt)."""
-    policy = RetryPolicy(max_retries=0, backoff_base=0.01)
+    policy = RetryPolicy(max_retries=0, initial_delay=0.01)
 
     async def always_fails():
         raise RuntimeError("Always fails")
@@ -381,7 +381,7 @@ async def test_zero_retries_means_no_retries():
 @settings(max_examples=20, deadline=None)
 async def test_delays_length_equals_retry_count(max_retries):
     """Property: Number of delays equals number of retries."""
-    policy = RetryPolicy(max_retries=max_retries, backoff_base=0.01)
+    policy = RetryPolicy(max_retries=max_retries, initial_delay=0.01)
 
     async def always_fails():
         raise RuntimeError("Always fails")
@@ -406,12 +406,12 @@ async def test_delays_length_equals_retry_count(max_retries):
 @pytest.mark.timeout(90)
 @pytest.mark.asyncio
 @given(
-    backoff_base=st.floats(min_value=0.01, max_value=1.0),
+    initial_delay=st.floats(min_value=0.01, max_value=1.0),
 )
 @settings(max_examples=20, deadline=None)
-async def test_first_delay_is_base_delay(backoff_base):
-    """Property: First retry delay equals backoff_base."""
-    policy = RetryPolicy(max_retries=3, backoff_base=backoff_base, max_delay=999999.0)
+async def test_first_delay_is_base_delay(initial_delay):
+    """Property: First retry delay equals initial_delay."""
+    policy = RetryPolicy(max_retries=3, initial_delay=initial_delay, max_delay=999999.0)
 
     async def always_fails():
         raise RuntimeError("Always fails")
@@ -421,11 +421,11 @@ async def test_first_delay_is_base_delay(backoff_base):
 
     delays = policy.get_delays()
 
-    # Property: First delay should be base delay
+    # Property: First delay should be initial delay
     assert len(delays) > 0, "Should have at least one delay"
     assert (
-        abs(delays[0] - backoff_base) < 0.001
-    ), f"First delay ({delays[0]}) should equal backoff_base ({backoff_base})"
+        abs(delays[0] - initial_delay) < 0.001
+    ), f"First delay ({delays[0]}) should equal initial_delay ({initial_delay})"
 
 
 if __name__ == "__main__":

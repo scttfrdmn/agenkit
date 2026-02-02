@@ -44,10 +44,10 @@ class ErrorStrategy:
     """Retry strategy for specific error class."""
 
     error_class: ErrorClass
-    max_attempts: int
-    initial_backoff: float
-    max_backoff: float
-    backoff_multiplier: float
+    max_retries: int
+    initial_delay: float
+    max_delay: float
+    multiplier: float
     should_retry: bool = True
 
 
@@ -67,10 +67,10 @@ class EnhancedRetryConfig:
     """Configuration for enhanced retry behavior."""
 
     # Basic retry settings
-    max_attempts: int = 3
-    initial_backoff: float = 1.0
-    max_backoff: float = 30.0
-    backoff_multiplier: float = 2.0
+    max_retries: int = 3
+    initial_delay: float = 0.1
+    max_delay: float = 10.0
+    multiplier: float = 2.0
 
     # Jitter settings
     jitter_type: JitterType = JitterType.FULL
@@ -97,38 +97,38 @@ class EnhancedRetryConfig:
             self.error_strategies = {
                 ErrorClass.TRANSIENT: ErrorStrategy(
                     error_class=ErrorClass.TRANSIENT,
-                    max_attempts=5,
-                    initial_backoff=0.1,
-                    max_backoff=5.0,
-                    backoff_multiplier=2.0,
+                    max_retries=5,
+                    initial_delay=0.1,
+                    max_delay=5.0,
+                    multiplier=2.0,
                 ),
                 ErrorClass.RATE_LIMIT: ErrorStrategy(
                     error_class=ErrorClass.RATE_LIMIT,
-                    max_attempts=10,
-                    initial_backoff=60.0,  # Start with 1 minute
-                    max_backoff=300.0,  # Max 5 minutes
-                    backoff_multiplier=1.5,
+                    max_retries=10,
+                    initial_delay=60.0,  # Start with 1 minute
+                    max_delay=300.0,  # Max 5 minutes
+                    multiplier=1.5,
                 ),
                 ErrorClass.TIMEOUT: ErrorStrategy(
                     error_class=ErrorClass.TIMEOUT,
-                    max_attempts=3,
-                    initial_backoff=2.0,
-                    max_backoff=30.0,
-                    backoff_multiplier=2.0,
+                    max_retries=3,
+                    initial_delay=2.0,
+                    max_delay=30.0,
+                    multiplier=2.0,
                 ),
                 ErrorClass.SERVER_ERROR: ErrorStrategy(
                     error_class=ErrorClass.SERVER_ERROR,
-                    max_attempts=3,
-                    initial_backoff=5.0,
-                    max_backoff=60.0,
-                    backoff_multiplier=2.0,
+                    max_retries=3,
+                    initial_delay=5.0,
+                    max_delay=60.0,
+                    multiplier=2.0,
                 ),
                 ErrorClass.CLIENT_ERROR: ErrorStrategy(
                     error_class=ErrorClass.CLIENT_ERROR,
-                    max_attempts=1,
-                    initial_backoff=0.0,
-                    max_backoff=0.0,
-                    backoff_multiplier=1.0,
+                    max_retries=1,
+                    initial_delay=0.0,
+                    max_delay=0.0,
+                    multiplier=1.0,
                     should_retry=False,
                 ),
             }
@@ -231,10 +231,10 @@ class EnhancedRetryDecorator(Agent):
             # Use default strategy
             return ErrorStrategy(
                 error_class=error_class,
-                max_attempts=self._config.max_attempts,
-                initial_backoff=self._config.initial_backoff,
-                max_backoff=self._config.max_backoff,
-                backoff_multiplier=self._config.backoff_multiplier,
+                max_retries=self._config.max_retries,
+                initial_delay=self._config.initial_delay,
+                max_delay=self._config.max_delay,
+                multiplier=self._config.multiplier,
             )
 
         return strategy
@@ -265,7 +265,7 @@ class EnhancedRetryDecorator(Agent):
                 return base_backoff
             previous = self._calculate_backoff(base_backoff, attempt - 1)
             jittered = random.uniform(base_backoff, previous * 3)
-            return min(jittered, self._config.max_backoff)
+            return min(jittered, self._config.max_delay)
 
         return base_backoff
 
@@ -336,7 +336,7 @@ class EnhancedRetryDecorator(Agent):
         error_class: ErrorClass | None = None
         strategy: ErrorStrategy | None = None
 
-        for attempt in range(1, self._config.max_attempts + 1):
+        for attempt in range(1, self._config.max_retries + 1):
             self._metrics.total_attempts += 1
 
             try:
@@ -396,11 +396,11 @@ class EnhancedRetryDecorator(Agent):
                     raise Exception(f"Non-retryable error ({error_class.value}): {e}") from e
 
                 # Check if exceeded max attempts for this error class
-                if attempt >= strategy.max_attempts:
+                if attempt >= strategy.max_retries:
                     break
 
                 # Don't sleep after last attempt
-                if attempt == strategy.max_attempts:
+                if attempt == strategy.max_retries:
                     break
 
                 # Track retry
@@ -408,8 +408,8 @@ class EnhancedRetryDecorator(Agent):
                 self._budget.retry_count += 1
 
                 # Calculate backoff with jitter
-                base_backoff = strategy.initial_backoff * (strategy.backoff_multiplier ** (attempt - 1))
-                base_backoff = min(base_backoff, strategy.max_backoff)
+                base_backoff = strategy.initial_delay * (strategy.multiplier ** (attempt - 1))
+                base_backoff = min(base_backoff, strategy.max_delay)
                 backoff = self._calculate_backoff(base_backoff, attempt)
 
                 # Sleep with backoff
@@ -420,7 +420,7 @@ class EnhancedRetryDecorator(Agent):
 
         if strategy and error_class:
             raise Exception(
-                f"Max retry attempts ({strategy.max_attempts}) exceeded for {error_class.value}: {last_error}"
+                f"Max retry attempts ({strategy.max_retries}) exceeded for {error_class.value}: {last_error}"
             ) from last_error
 
-        raise Exception(f"Max retry attempts ({self._config.max_attempts}) exceeded: {last_error}") from last_error
+        raise Exception(f"Max retry attempts ({self._config.max_retries}) exceeded: {last_error}") from last_error

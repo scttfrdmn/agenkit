@@ -29,7 +29,6 @@ with open(FIXTURES_DIR / "api_consistency.json") as f:
 class TestParameterNaming:
     """Test that parameter names follow cross-language conventions."""
 
-    @pytest.mark.xfail(reason="Python uses max_attempts instead of max_retries - needs API alignment (issue #517)")
     def test_retry_parameter_names(self):
         """Verify RetryDecorator uses consistent parameter names."""
         test_case = next(
@@ -49,11 +48,9 @@ class TestParameterNaming:
         assert expected_name in param_names, \
             f"RetryConfig should have parameter '{expected_name}'"
 
-        # Verify forbidden names are NOT used
-        forbidden = set(params["max_retries"]["must_not_be_named"])
-        actual_forbidden = forbidden.intersection(param_names)
-        assert not actual_forbidden, \
-            f"RetryConfig uses forbidden parameter names: {actual_forbidden}"
+        # NOTE: We allow deprecated parameters during the transition period (v0.50.0)
+        # These will be removed in v0.51.0
+        # Therefore, we don't check "must_not_be_named" - old names are temporarily acceptable
 
         # Check initial_delay
         expected_name = params["initial_delay"]["expected_names"]["python"]
@@ -65,18 +62,22 @@ class TestParameterNaming:
         assert expected_name in param_names, \
             f"RetryConfig should have parameter '{expected_name}'"
 
-    def test_retry_parameter_names_current_state(self):
-        """Document current Python retry parameter names (to be changed)."""
+    def test_retry_parameter_transition(self):
+        """Verify transition period: both old (deprecated) and new parameter names exist."""
         sig = inspect.signature(RetryConfig.__init__)
         param_names = set(sig.parameters.keys()) - {"self"}
 
-        # Current Python implementation uses:
-        assert "max_attempts" in param_names, \
-            "Python currently uses max_attempts (should be max_retries)"
-        assert "initial_backoff" in param_names, \
-            "Python currently uses initial_backoff (should be initial_delay)"
-        assert "max_backoff" in param_names, \
-            "Python currently uses max_backoff (should be max_delay)"
+        # v0.50.0 transition: New parameter names (preferred)
+        assert "max_retries" in param_names, "New parameter name max_retries should exist"
+        assert "initial_delay" in param_names, "New parameter name initial_delay should exist"
+        assert "max_delay" in param_names, "New parameter name max_delay should exist"
+        assert "multiplier" in param_names, "New parameter name multiplier should exist"
+
+        # v0.50.0 transition: Old parameter names (deprecated, will be removed in v0.51.0)
+        assert "max_attempts" in param_names, "Deprecated max_attempts should still exist during transition"
+        assert "initial_backoff" in param_names, "Deprecated initial_backoff should still exist during transition"
+        assert "max_backoff" in param_names, "Deprecated max_backoff should still exist during transition"
+        assert "backoff_multiplier" in param_names, "Deprecated backoff_multiplier should still exist during transition"
 
     def test_timeout_parameter_names(self):
         """Verify TimeoutMiddleware parameter names clearly indicate units."""
@@ -130,7 +131,6 @@ class TestDefaultValues:
         assert actual_ms == expected_ms, \
             f"TimeoutConfig default should be {expected_ms}ms (30 seconds), got {actual_ms}ms"
 
-    @pytest.mark.xfail(reason="Python retry defaults don't match specification - needs API alignment (issue #517)")
     def test_retry_defaults(self):
         """Verify RetryMiddleware default configuration values."""
         test_case = next(
@@ -175,15 +175,46 @@ class TestDefaultValues:
         assert config.multiplier == expected_multiplier, \
             f"multiplier default should be {expected_multiplier}"
 
-    def test_retry_defaults_current_state(self):
-        """Document current Python retry defaults (to be changed)."""
-        config = RetryConfig()
+    def test_retry_using_new_parameter_names(self):
+        """Verify RetryConfig works correctly when using new parameter names."""
+        # Use new parameter names explicitly
+        config = RetryConfig(
+            max_retries=5,
+            initial_delay=0.5,
+            max_delay=20.0,
+            multiplier=3.0
+        )
 
-        # Current Python implementation:
-        assert config.max_attempts == 3, "Python uses max_attempts=3 (correct value, wrong name)"
-        assert config.initial_backoff == 1.0, "Python uses 1.0 seconds (spec says 100ms)"
-        assert config.max_backoff == 30.0, "Python uses 30.0 seconds (spec says 10 seconds)"
-        assert config.backoff_multiplier == 2.0, "Multiplier is correct"
+        assert config.max_retries == 5, "max_retries should be set correctly"
+        assert config.initial_delay == 0.5, "initial_delay should be set correctly"
+        assert config.max_delay == 20.0, "max_delay should be set correctly"
+        assert config.multiplier == 3.0, "multiplier should be set correctly"
+
+    def test_retry_using_deprecated_parameter_names(self):
+        """Verify RetryConfig still accepts deprecated parameter names with warnings."""
+        import warnings
+
+        # Use old parameter names - should trigger deprecation warnings
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            config = RetryConfig(
+                max_attempts=5,
+                initial_backoff=0.5,
+                max_backoff=20.0,
+                backoff_multiplier=3.0
+            )
+
+            # Should have triggered 4 deprecation warnings
+            assert len(w) == 4, f"Expected 4 deprecation warnings, got {len(w)}"
+            assert all(issubclass(warning.category, DeprecationWarning) for warning in w), \
+                "All warnings should be DeprecationWarnings"
+
+        # Despite using old names, new names should be set
+        assert config.max_retries == 5, "max_retries should be set from deprecated max_attempts"
+        assert config.initial_delay == 0.5, "initial_delay should be set from deprecated initial_backoff"
+        assert config.max_delay == 20.0, "max_delay should be set from deprecated max_backoff"
+        assert config.multiplier == 3.0, "multiplier should be set from deprecated backoff_multiplier"
 
     def test_rate_limiter_defaults(self):
         """Verify RateLimiterMiddleware default configuration values."""
@@ -306,17 +337,14 @@ class TestErrorTypes:
         assert str(error) == "Test timeout", \
             "TimeoutError should have message"
 
-    @pytest.mark.xfail(reason="MaxRetriesExceededError doesn't exist yet - needs to be added (issue #517)")
     def test_max_retries_exceeded_error_exists(self):
         """Verify MaxRetriesExceeded error type exists."""
-        # Check if error type exists
-        try:
-            from agenkit.middleware.retry import MaxRetriesExceededError
-        except ImportError:
-            pytest.fail("MaxRetriesExceededError should exist in agenkit.middleware.retry")
+        from agenkit.middleware.retry import MaxRetriesExceededError
 
-        # Should be able to instantiate
-        error = MaxRetriesExceededError("Max retries exceeded")
+        # Should be able to instantiate with message and attempts
+        error = MaxRetriesExceededError("Max retries exceeded", attempts=3)
 
         assert str(error) == "Max retries exceeded", \
             "MaxRetriesExceededError should have message"
+        assert error.attempts == 3, \
+            "MaxRetriesExceededError should track number of attempts"

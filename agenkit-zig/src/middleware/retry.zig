@@ -20,6 +20,7 @@
 /// const metrics = retry.metrics();
 /// ```
 const std = @import("std");
+const json = std.json;
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
@@ -210,7 +211,7 @@ pub const RetryDecorator = struct {
             self.mutex.unlock();
 
             // Wait before retrying (exponential backoff)
-            std.time.sleep(backoff_ms * std.time.ns_per_ms);
+            std.Thread.sleep(backoff_ms * std.time.ns_per_ms);
 
             // Calculate next backoff
             const next_backoff = @as(f64, @floatFromInt(backoff_ms)) * self.config.multiplier;
@@ -234,33 +235,39 @@ pub const RetryDecorator = struct {
         // Add retry metrics to metadata
         const metrics_snapshot = self.metrics();
 
-        var metadata = std.StringHashMap([]const u8).init(allocator);
-        errdefer metadata.deinit();
+        var metadata_map = json.ObjectMap.init(allocator);
+        errdefer metadata_map.deinit();
 
         // Add metrics as metadata
-        try metadata.put("total_attempts", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.total_attempts}));
-        try metadata.put("successful_first_attempt", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.successful_first_attempt}));
-        try metadata.put("successful_on_retry", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.successful_on_retry}));
-        try metadata.put("failed_after_retries", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.failed_after_retries}));
-        try metadata.put("total_retries", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.total_retries}));
-        try metadata.put("max_retries", try std.fmt.allocPrint(allocator, "{d}", .{self.config.max_retries}));
-        try metadata.put("initial_delay_ms", try std.fmt.allocPrint(allocator, "{d}", .{self.config.initial_delay_ms}));
-        try metadata.put("max_delay_ms", try std.fmt.allocPrint(allocator, "{d}", .{self.config.max_delay_ms}));
+        try metadata_map.put("total_attempts", json.Value{ .integer = @intCast(metrics_snapshot.total_attempts) });
+        try metadata_map.put("successful_first_attempt", json.Value{ .integer = @intCast(metrics_snapshot.successful_first_attempt) });
+        try metadata_map.put("successful_on_retry", json.Value{ .integer = @intCast(metrics_snapshot.successful_on_retry) });
+        try metadata_map.put("failed_after_retries", json.Value{ .integer = @intCast(metrics_snapshot.failed_after_retries) });
+        try metadata_map.put("total_retries", json.Value{ .integer = @intCast(metrics_snapshot.total_retries) });
+        try metadata_map.put("max_retries", json.Value{ .integer = @intCast(self.config.max_retries) });
+        try metadata_map.put("initial_delay_ms", json.Value{ .integer = @intCast(self.config.initial_delay_ms) });
+        try metadata_map.put("max_delay_ms", json.Value{ .integer = @intCast(self.config.max_delay_ms) });
 
-        // Merge with inner metadata
-        var inner_iter = inner_result.metadata.iterator();
-        while (inner_iter.next()) |entry| {
-            // Inner metadata wins for non-metric keys
-            if (!std.mem.startsWith(u8, entry.key_ptr.*, "retry_")) {
-                try metadata.put(entry.key_ptr.*, entry.value_ptr.*);
+        // Merge with inner metadata (if it's an object)
+        if (inner_result.metadata == .object) {
+            var inner_iter = inner_result.metadata.object.iterator();
+            while (inner_iter.next()) |entry| {
+                // Inner metadata wins for non-metric keys
+                const key = entry.key_ptr.*;
+                if (!std.mem.startsWith(u8, key, "retry_")) {
+                    try metadata_map.put(key, entry.value_ptr.*);
+                }
             }
         }
 
         return IntrospectionResult{
+            .allocator = allocator,
+            .timestamp = std.time.timestamp(),
             .agent_name = inner_result.agent_name,
             .capabilities = inner_result.capabilities,
-            .metadata = metadata,
-            .memory = inner_result.memory,
+            .memory_state = inner_result.memory_state,
+            .internal_state = inner_result.internal_state,
+            .metadata = json.Value{ .object = metadata_map },
         };
     }
 

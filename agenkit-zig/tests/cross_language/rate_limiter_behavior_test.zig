@@ -125,20 +125,29 @@ fn findTestCase(fixtures: json.Value, id: []const u8) ?json.Value {
     return null;
 }
 
+/// Helper to get number from JSON value (handles both integer and float)
+fn getJsonNumber(value: json.Value) f64 {
+    return switch (value) {
+        .integer => |i| @floatFromInt(i),
+        .float => |f| f,
+        else => 0.0,
+    };
+}
+
 /// Create rate limiter config from test case
 fn createConfig(test_case: json.Value) !RateLimiterConfig {
     const config_obj = test_case.object.get("config") orelse return error.MissingConfig;
     if (config_obj != .object) return error.InvalidConfig;
 
-    const rate = if (config_obj.object.get("rate")) |r| r.float else return error.MissingRate;
-    const capacity = if (config_obj.object.get("capacity")) |c| @as(u32, @intFromFloat(c.float)) else return error.MissingCapacity;
-    const tokens_per_request = if (config_obj.object.get("tokens_per_request")) |t| @as(u32, @intFromFloat(t.float)) else return error.MissingTokensPerRequest;
+    const rate = if (config_obj.object.get("rate")) |r| getJsonNumber(r) else return error.MissingRate;
+    const capacity = if (config_obj.object.get("capacity")) |c| @as(u32, @intFromFloat(getJsonNumber(c))) else return error.MissingCapacity;
+    const tokens_per_request = if (config_obj.object.get("tokens_per_request")) |t| @as(u32, @intFromFloat(getJsonNumber(t))) else return error.MissingTokensPerRequest;
 
     const max_wait_timeout_ms: ?u64 = if (config_obj.object.get("max_wait_ms")) |m| blk: {
         if (m == .null) {
             break :blk null; // Large default for null max_wait
         } else {
-            break :blk @intFromFloat(m.float);
+            break :blk @intFromFloat(getJsonNumber(m));
         }
     } else null;
 
@@ -169,7 +178,8 @@ test "rate_limiter_allows_within_capacity" {
 
     const requests = test_case.object.get("scenario").?.object.get("requests").?.array;
     for (requests.items) |_| {
-        const msg = try Message.withText(allocator, .user, "test");
+        var msg = try Message.withText(allocator, .user, "test");
+        defer msg.deinit();
 
         const result = rate_limiter.agent().process(msg);
         if (result) |res| {
@@ -186,13 +196,13 @@ test "rate_limiter_allows_within_capacity" {
     try testing.expect(expected.get("all_successful").?.bool);
 
     const metrics = rate_limiter.metrics();
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("total_requests").?.float)), metrics.total_requests);
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("allowed_requests").?.float)), metrics.allowed_requests);
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("rejected_requests").?.float)), metrics.rejected_requests);
-    try testing.expectEqual(successful, @as(usize, @intFromFloat(expected.get("total_requests").?.float)));
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("total_requests").?))), metrics.total_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("allowed_requests").?))), metrics.allowed_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("rejected_requests").?))), metrics.rejected_requests);
+    try testing.expectEqual(successful, @as(usize, @intFromFloat(getJsonNumber(expected.get("total_requests").?))));
 
-    const min_time: u64 = @intFromFloat(expected.get("min_total_time_ms").?.float);
-    const max_time: u64 = @intFromFloat(expected.get("max_total_time_ms").?.float);
+    const min_time: u64 = @intFromFloat(getJsonNumber(expected.get("min_total_time_ms").?));
+    const max_time: u64 = @intFromFloat(getJsonNumber(expected.get("max_total_time_ms").?));
     try testing.expect(elapsed_ms >= min_time);
     try testing.expect(elapsed_ms <= max_time);
 }
@@ -216,7 +226,8 @@ test "rate_limiter_waits_for_tokens" {
 
     const requests = test_case.object.get("scenario").?.object.get("requests").?.array;
     for (requests.items) |_| {
-        const msg = try Message.withText(allocator, .user, "test");
+        var msg = try Message.withText(allocator, .user, "test");
+        defer msg.deinit();
 
         const start = std.time.nanoTimestamp();
         const result = try rate_limiter.agent().process(msg);
@@ -231,15 +242,15 @@ test "rate_limiter_waits_for_tokens" {
     try testing.expect(expected.get("all_successful").?.bool);
 
     const metrics = rate_limiter.metrics();
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("total_requests").?.float)), metrics.total_requests);
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("allowed_requests").?.float)), metrics.allowed_requests);
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("rejected_requests").?.float)), metrics.rejected_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("total_requests").?))), metrics.total_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("allowed_requests").?))), metrics.allowed_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("rejected_requests").?))), metrics.rejected_requests);
     try testing.expect(expected.get("sixth_request_waited").?.bool);
 
     // Sixth request (index 5) should have waited
     const sixth_wait = wait_times.items[5];
-    const min_wait: u64 = @intFromFloat(expected.get("min_wait_time_ms").?.float);
-    const max_wait: u64 = @intFromFloat(expected.get("max_wait_time_ms").?.float);
+    const min_wait: u64 = @intFromFloat(getJsonNumber(expected.get("min_wait_time_ms").?));
+    const max_wait: u64 = @intFromFloat(getJsonNumber(expected.get("max_wait_time_ms").?));
     try testing.expect(sixth_wait >= min_wait);
     try testing.expect(sixth_wait <= max_wait);
 }
@@ -262,14 +273,15 @@ test "rate_limiter_rejects_on_timeout" {
 
     const requests = test_case.object.get("scenario").?.object.get("requests").?.array;
     for (requests.items) |_| {
-        const msg = try Message.withText(allocator, .user, "test");
+        var msg = try Message.withText(allocator, .user, "test");
+        defer msg.deinit();
 
         const result = rate_limiter.agent().process(msg);
         if (result) |res| {
             var response = try res.unwrap();
             defer response.deinit();
         } else |err| {
-            if (err == AgentError.ProcessingFailed) {
+            if (err == AgentError.Cancelled) {  // Rate limiter maps RateLimitExceeded to Cancelled
                 rejected += 1;
             }
         }
@@ -279,10 +291,10 @@ test "rate_limiter_rejects_on_timeout" {
     try testing.expect(!expected.get("all_successful").?.bool);
 
     const metrics = rate_limiter.metrics();
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("total_requests").?.float)), metrics.total_requests);
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("allowed_requests").?.float)), metrics.allowed_requests);
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("rejected_requests").?.float)), metrics.rejected_requests);
-    try testing.expectEqual(rejected, @as(usize, @intFromFloat(expected.get("rejected_requests").?.float)));
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("total_requests").?))), metrics.total_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("allowed_requests").?))), metrics.allowed_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("rejected_requests").?))), metrics.rejected_requests);
+    try testing.expectEqual(rejected, @as(usize, @intFromFloat(getJsonNumber(expected.get("rejected_requests").?))));
     try testing.expect(expected.get("third_request_rejected").?.bool);
 }
 
@@ -305,12 +317,13 @@ test "rate_limiter_token_refill" {
         const action = step.object.get("action").?.string;
 
         if (std.mem.eql(u8, action, "request")) {
-            const msg = try Message.withText(allocator, .user, "test");
+            var msg = try Message.withText(allocator, .user, "test");
+            defer msg.deinit();
             const result = try rate_limiter.agent().process(msg);
             var response = try result.unwrap();
             defer response.deinit();
         } else if (std.mem.eql(u8, action, "wait")) {
-            const duration_ms = @as(u64, @intFromFloat(step.object.get("duration_ms").?.float));
+            const duration_ms = @as(u64, @intFromFloat(getJsonNumber(step.object.get("duration_ms").?)));
             std.Thread.sleep(duration_ms * std.time.ns_per_ms);
         }
     }
@@ -319,9 +332,9 @@ test "rate_limiter_token_refill" {
     try testing.expect(expected.get("all_successful").?.bool);
 
     const metrics = rate_limiter.metrics();
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("total_requests").?.float)), metrics.total_requests);
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("allowed_requests").?.float)), metrics.allowed_requests);
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("rejected_requests").?.float)), metrics.rejected_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("total_requests").?))), metrics.total_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("allowed_requests").?))), metrics.allowed_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("rejected_requests").?))), metrics.rejected_requests);
     try testing.expect(expected.get("tokens_refilled").?.bool);
 }
 
@@ -343,7 +356,8 @@ test "rate_limiter_burst_capacity" {
 
     const requests = test_case.object.get("scenario").?.object.get("requests").?.array;
     for (requests.items) |_| {
-        const msg = try Message.withText(allocator, .user, "test");
+        var msg = try Message.withText(allocator, .user, "test");
+        defer msg.deinit();
         const result = try rate_limiter.agent().process(msg);
         var response = try result.unwrap();
         defer response.deinit();
@@ -356,12 +370,12 @@ test "rate_limiter_burst_capacity" {
     try testing.expect(expected.get("all_successful").?.bool);
 
     const metrics = rate_limiter.metrics();
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("total_requests").?.float)), metrics.total_requests);
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("allowed_requests").?.float)), metrics.allowed_requests);
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("rejected_requests").?.float)), metrics.rejected_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("total_requests").?))), metrics.total_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("allowed_requests").?))), metrics.allowed_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("rejected_requests").?))), metrics.rejected_requests);
     try testing.expect(expected.get("burst_handled").?.bool);
 
-    const max_time: u64 = @intFromFloat(expected.get("max_total_time_ms").?.float);
+    const max_time: u64 = @intFromFloat(getJsonNumber(expected.get("max_total_time_ms").?));
     try testing.expect(elapsed_ms <= max_time);
 }
 
@@ -381,7 +395,8 @@ test "rate_limiter_multiple_tokens_per_request" {
 
     const requests = test_case.object.get("scenario").?.object.get("requests").?.array;
     for (requests.items) |_| {
-        const msg = try Message.withText(allocator, .user, "test");
+        var msg = try Message.withText(allocator, .user, "test");
+        defer msg.deinit();
         const result = try rate_limiter.agent().process(msg);
         var response = try result.unwrap();
         defer response.deinit();
@@ -391,9 +406,9 @@ test "rate_limiter_multiple_tokens_per_request" {
     try testing.expect(expected.get("all_successful").?.bool);
 
     const metrics = rate_limiter.metrics();
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("total_requests").?.float)), metrics.total_requests);
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("allowed_requests").?.float)), metrics.allowed_requests);
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("rejected_requests").?.float)), metrics.rejected_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("total_requests").?))), metrics.total_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("allowed_requests").?))), metrics.allowed_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("rejected_requests").?))), metrics.rejected_requests);
 }
 
 test "rate_limiter_metrics_tracking" {
@@ -412,7 +427,8 @@ test "rate_limiter_metrics_tracking" {
 
     const requests = test_case.object.get("scenario").?.object.get("requests").?.array;
     for (requests.items) |_| {
-        const msg = try Message.withText(allocator, .user, "test");
+        var msg = try Message.withText(allocator, .user, "test");
+        defer msg.deinit();
         const result = rate_limiter.agent().process(msg);
         if (result) |res| {
             var response = try res.unwrap();
@@ -422,12 +438,12 @@ test "rate_limiter_metrics_tracking" {
 
     const expected = test_case.object.get("expected_metrics").?.object;
     const metrics = rate_limiter.metrics();
-    try testing.expectEqual(@as(u64, @intFromFloat(expected.get("total_requests").?.float)), metrics.total_requests);
+    try testing.expectEqual(@as(u64, @intFromFloat(getJsonNumber(expected.get("total_requests").?))), metrics.total_requests);
 
     // Zig's rate limiter may have similar timing behavior
     // Accept some variance in allowed/rejected due to token refill timing
-    const expected_allowed: u64 = @intFromFloat(expected.get("allowed_requests").?.float);
-    const expected_rejected: u64 = @intFromFloat(expected.get("rejected_requests").?.float);
+    const expected_allowed: u64 = @intFromFloat(getJsonNumber(expected.get("allowed_requests").?));
+    const expected_rejected: u64 = @intFromFloat(getJsonNumber(expected.get("rejected_requests").?));
 
     try testing.expect(
         metrics.allowed_requests >= expected_allowed and
@@ -438,5 +454,5 @@ test "rate_limiter_metrics_tracking" {
         try testing.expect(metrics.rejected_requests >= expected_rejected - 2);
     }
 
-    try testing.expect(metrics.total_wait_time_ms >= @as(u64, @intFromFloat(expected.get("total_wait_time_greater_than").?.float)));
+    try testing.expect(metrics.total_wait_time_ms >= @as(u64, @intFromFloat(getJsonNumber(expected.get("total_wait_time_greater_than").?))));
 }

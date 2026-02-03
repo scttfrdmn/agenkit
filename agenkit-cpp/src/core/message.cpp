@@ -95,6 +95,86 @@ Message Message::from_json(const nlohmann::json& j) {
     return msg;
 }
 
+void Message::validate() const {
+    // Role validation
+    if (role_.empty()) {
+        throw MessageValidationError("Message role cannot be empty");
+    }
+
+    if (role_.length() > 20) {
+        throw MessageValidationError(
+            "Message role exceeds maximum length of 20 characters (got " +
+            std::to_string(role_.length()) + ")"
+        );
+    }
+
+    // Validate role is one of the allowed values
+    static const std::set<std::string> allowed_roles = {
+        "user", "assistant", "system", "tool", "agent"
+    };
+    if (allowed_roles.find(role_) == allowed_roles.end()) {
+        throw MessageValidationError(
+            "Invalid message role: " + role_ +
+            ". Must be one of: user, assistant, system, tool, agent"
+        );
+    }
+
+    // Content size validation - max 16MB
+    std::string content_str = content_.dump();
+    size_t content_size = content_str.size();
+    constexpr size_t max_content_size = 16 * 1024 * 1024; // 16MB
+
+    if (content_size > max_content_size) {
+        throw MessageValidationError(
+            "Message content exceeds maximum size of " +
+            std::to_string(max_content_size) + " bytes (got " +
+            std::to_string(content_size) + " bytes)"
+        );
+    }
+
+    // Metadata validation
+    if (!metadata_.is_null() && metadata_.is_object()) {
+        // Max 100 keys
+        if (metadata_.size() > 100) {
+            throw MessageValidationError(
+                "Message metadata exceeds maximum of 100 keys (got " +
+                std::to_string(metadata_.size()) + ")"
+            );
+        }
+
+        // Validate each key and value
+        constexpr size_t max_key_length = 50;
+        constexpr size_t max_value_size = 16 * 1024 * 1024; // 16MB
+
+        for (auto& [key, value] : metadata_.items()) {
+            // Key length validation
+            if (key.length() > max_key_length) {
+                std::string short_key = key.substr(0, 20) + "...";
+                throw MessageValidationError(
+                    "Metadata key '" + short_key +
+                    "' exceeds maximum length of " +
+                    std::to_string(max_key_length) +
+                    " characters (got " +
+                    std::to_string(key.length()) + ")"
+                );
+            }
+
+            // Value size validation
+            std::string value_str = value.dump();
+            size_t value_size = value_str.size();
+
+            if (value_size > max_value_size) {
+                throw MessageValidationError(
+                    "Metadata value for key '" + key +
+                    "' exceeds maximum size of " +
+                    std::to_string(max_value_size) +
+                    " bytes (got " + std::to_string(value_size) + " bytes)"
+                );
+            }
+        }
+    }
+}
+
 // ToolResult implementation
 
 ToolResult::ToolResult(std::string tool_use_id, nlohmann::json result, bool is_error)

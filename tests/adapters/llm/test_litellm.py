@@ -1,5 +1,6 @@
 """Tests for LiteLLM adapter."""
 
+import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -89,6 +90,7 @@ def test_unwrap():
 
 # Integration Tests (Real API)
 @pytest.mark.integration
+@pytest.mark.llm_api
 @pytest.mark.asyncio
 async def test_litellm_with_openai(openai_api_key, simple_test_message):
     """Integration test using LiteLLM with OpenAI."""
@@ -102,6 +104,7 @@ async def test_litellm_with_openai(openai_api_key, simple_test_message):
 
 
 @pytest.mark.integration
+@pytest.mark.llm_api
 @pytest.mark.asyncio
 async def test_litellm_streaming(openai_api_key, simple_test_message):
     """Integration test for streaming via LiteLLM."""

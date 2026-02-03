@@ -190,6 +190,7 @@ async def test_python_client_to_go_server(go_server):
     assert response.metadata.get("server_language") == "go"
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_go_client_to_python_server(python_server):
     """Test Go client connecting to Python server via HTTP/1.1."""

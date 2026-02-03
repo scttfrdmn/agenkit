@@ -130,6 +130,7 @@ async def test_http_basic_communication(http_server):
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_http_streaming():
     """Test HTTP streaming with SSE."""
     agent = StreamingEchoAgent()
@@ -173,6 +174,7 @@ async def test_http_concurrent_requests(http_server):
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_http_error_handling():
     """Test HTTP error handling."""
     agent = ErrorAgent()
@@ -223,6 +225,7 @@ async def test_http_large_payload(http_server):
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_http_context_cancellation():
     """Test HTTP request cancellation."""
     agent = SlowAgent()
@@ -245,6 +248,7 @@ async def test_http_context_cancellation():
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_http2_basic_communication():
     """Test HTTP/2 cleartext communication."""
     agent = EchoAgent()
@@ -268,6 +272,7 @@ async def test_http2_basic_communication():
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_http2_streaming():
     """Test HTTP/2 streaming."""
     agent = StreamingEchoAgent()

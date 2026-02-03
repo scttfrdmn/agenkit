@@ -1,5 +1,7 @@
 """Tests for Google Gemini LLM adapter."""
 
+import os
+
 import pytest
 
 from agenkit.interfaces import Message
@@ -64,6 +66,7 @@ def test_unwrap():
 
 # Integration Tests (Real API)
 @pytest.mark.integration
+@pytest.mark.llm_api
 @pytest.mark.asyncio
 async def test_gemini_integration(gemini_api_key, simple_test_message):
     """Integration test with real Gemini API."""
@@ -79,6 +82,7 @@ async def test_gemini_integration(gemini_api_key, simple_test_message):
 
 
 @pytest.mark.integration
+@pytest.mark.llm_api
 @pytest.mark.asyncio
 async def test_gemini_streaming_integration(gemini_api_key, simple_test_message):
     """Integration test for streaming with real Gemini API."""

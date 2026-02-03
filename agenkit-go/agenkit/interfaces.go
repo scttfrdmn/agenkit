@@ -66,9 +66,9 @@ func (m *Message) Validate() error {
 		return fmt.Errorf("invalid message role: %s. Must be one of: user, assistant, system, tool, agent", m.Role)
 	}
 
-	// Content validation - max 1MB
+	// Content validation - max 16MB (aligned with other languages)
 	contentSize := len(m.Content)
-	maxContentSize := 1024 * 1024 // 1MB
+	maxContentSize := 16 * 1024 * 1024 // 16MB
 	if contentSize > maxContentSize {
 		return fmt.Errorf("message content exceeds maximum size of %d bytes (got %d bytes)", maxContentSize, contentSize)
 	}
@@ -82,7 +82,7 @@ func (m *Message) Validate() error {
 
 		// Validate each key and value
 		maxKeyLength := 50
-		maxValueSize := 10 * 1024 // 10KB
+		maxValueSize := 16 * 1024 * 1024 // 16MB (aligned with content limit)
 
 		for key, value := range m.Metadata {
 			// Key length validation

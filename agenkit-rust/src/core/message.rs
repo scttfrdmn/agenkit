@@ -13,8 +13,34 @@ pub enum MessageError {
     #[error("message role must be a non-empty string")]
     EmptyRole,
 
+    #[error("message role exceeds maximum length of 20 characters (got {0})")]
+    RoleTooLong(usize),
+
+    #[error("invalid message role: {0}. Must be one of: user, assistant, system, tool, agent")]
+    InvalidRole(String),
+
     #[error("message content cannot be null")]
     NullContent,
+
+    #[error("message content exceeds maximum size of {max} bytes (got {actual} bytes)")]
+    ContentTooLarge { max: usize, actual: usize },
+
+    #[error("message metadata exceeds maximum of {max} keys (got {actual})")]
+    TooManyMetadataKeys { max: usize, actual: usize },
+
+    #[error("metadata key '{key}' exceeds maximum length of {max} characters (got {actual})")]
+    MetadataKeyTooLong {
+        key: String,
+        max: usize,
+        actual: usize,
+    },
+
+    #[error("metadata value for key '{key}' exceeds maximum size of {max} bytes (got {actual} bytes)")]
+    MetadataValueTooLarge {
+        key: String,
+        max: usize,
+        actual: usize,
+    },
 
     #[error("invalid message format: {0}")]
     InvalidFormat(String),
@@ -112,18 +138,85 @@ impl Message {
     /// Validate the message according to security constraints.
     ///
     /// Checks:
-    /// - Role is non-empty
+    /// - Role is non-empty and <= 20 characters
+    /// - Role is one of: user, assistant, system, tool, agent
     /// - Content is not null
+    /// - Content size <= 16MB
+    /// - Metadata has <= 100 keys
+    /// - Each metadata key <= 50 characters
+    /// - Each metadata value <= 16MB
     ///
     /// # Errors
     /// Returns MessageError if validation fails.
     pub fn validate(&self) -> Result<(), MessageError> {
+        // Role validation
         if self.role.is_empty() {
             return Err(MessageError::EmptyRole);
         }
 
+        if self.role.len() > 20 {
+            return Err(MessageError::RoleTooLong(self.role.len()));
+        }
+
+        // Validate role is one of the allowed values
+        let allowed_roles = ["user", "assistant", "system", "tool", "agent"];
+        if !allowed_roles.contains(&self.role.as_str()) {
+            return Err(MessageError::InvalidRole(self.role.clone()));
+        }
+
+        // Content validation
         if self.content.is_null() {
             return Err(MessageError::NullContent);
+        }
+
+        // Content size validation - max 16MB
+        let content_str = self.content.to_string();
+        let content_size = content_str.as_bytes().len();
+        let max_content_size = 16 * 1024 * 1024; // 16MB
+
+        if content_size > max_content_size {
+            return Err(MessageError::ContentTooLarge {
+                max: max_content_size,
+                actual: content_size,
+            });
+        }
+
+        // Metadata validation
+        if !self.metadata.is_empty() {
+            // Max 100 keys
+            if self.metadata.len() > 100 {
+                return Err(MessageError::TooManyMetadataKeys {
+                    max: 100,
+                    actual: self.metadata.len(),
+                });
+            }
+
+            // Validate each key and value
+            let max_key_length = 50;
+            let max_value_size = 16 * 1024 * 1024; // 16MB
+
+            for (key, value) in &self.metadata {
+                // Key length validation
+                if key.len() > max_key_length {
+                    return Err(MessageError::MetadataKeyTooLong {
+                        key: key.clone(),
+                        max: max_key_length,
+                        actual: key.len(),
+                    });
+                }
+
+                // Value size validation
+                let value_str = value.to_string();
+                let value_size = value_str.as_bytes().len();
+
+                if value_size > max_value_size {
+                    return Err(MessageError::MetadataValueTooLarge {
+                        key: key.clone(),
+                        max: max_value_size,
+                        actual: value_size,
+                    });
+                }
+            }
         }
 
         Ok(())
@@ -266,5 +359,104 @@ mod tests {
         let result = ToolResult::success(json!("OK")).with_metadata("duration_ms", json!(123));
 
         assert_eq!(result.metadata.get("duration_ms"), Some(&json!(123)));
+    }
+
+    // Size validation tests
+    #[test]
+    fn test_validate_role_too_long() {
+        let msg = Message::new("a".repeat(21), json!("Hello"));
+        assert!(matches!(msg.validate(), Err(MessageError::RoleTooLong(21))));
+    }
+
+    #[test]
+    fn test_validate_invalid_role() {
+        let msg = Message::new("invalid_role", json!("Hello"));
+        assert!(matches!(
+            msg.validate(),
+            Err(MessageError::InvalidRole(_))
+        ));
+    }
+
+    #[test]
+    fn test_validate_all_valid_roles() {
+        let valid_roles = ["user", "assistant", "system", "tool", "agent"];
+        for role in &valid_roles {
+            let msg = Message::new(*role, json!("Hello"));
+            assert!(msg.validate().is_ok());
+        }
+    }
+
+    #[test]
+    fn test_validate_content_too_large() {
+        // Create a large string (>16MB)
+        let large_content = "a".repeat(17 * 1024 * 1024); // 17MB
+        let msg = Message::new("user", json!(large_content));
+        assert!(matches!(
+            msg.validate(),
+            Err(MessageError::ContentTooLarge { .. })
+        ));
+    }
+
+    #[test]
+    fn test_validate_content_under_limit() {
+        // Create a 1MB string
+        let content = "a".repeat(1024 * 1024);
+        let msg = Message::new("user", json!(content));
+        assert!(msg.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_too_many_metadata_keys() {
+        let mut msg = Message::new("user", json!("Hello"));
+        for i in 0..101 {
+            msg = msg.with_metadata(format!("key{}", i), json!("value"));
+        }
+        assert!(matches!(
+            msg.validate(),
+            Err(MessageError::TooManyMetadataKeys { .. })
+        ));
+    }
+
+    #[test]
+    fn test_validate_metadata_key_too_long() {
+        let long_key = "a".repeat(51);
+        let msg = Message::new("user", json!("Hello")).with_metadata(long_key, json!("value"));
+        assert!(matches!(
+            msg.validate(),
+            Err(MessageError::MetadataKeyTooLong { .. })
+        ));
+    }
+
+    #[test]
+    fn test_validate_metadata_value_too_large() {
+        let large_value = "a".repeat(17 * 1024 * 1024); // 17MB
+        let msg = Message::new("user", json!("Hello")).with_metadata("key", json!(large_value));
+        assert!(matches!(
+            msg.validate(),
+            Err(MessageError::MetadataValueTooLarge { .. })
+        ));
+    }
+
+    #[test]
+    fn test_validate_metadata_value_under_limit() {
+        let value = "a".repeat(1024 * 1024); // 1MB
+        let msg = Message::new("user", json!("Hello")).with_metadata("key", json!(value));
+        assert!(msg.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_100_metadata_keys() {
+        let mut msg = Message::new("user", json!("Hello"));
+        for i in 0..100 {
+            msg = msg.with_metadata(format!("key{}", i), json!("value"));
+        }
+        assert!(msg.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_50_char_metadata_key() {
+        let key = "a".repeat(50);
+        let msg = Message::new("user", json!("Hello")).with_metadata(key, json!("value"));
+        assert!(msg.validate().is_ok());
     }
 }

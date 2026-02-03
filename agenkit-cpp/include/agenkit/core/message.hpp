@@ -12,10 +12,23 @@
 #include <string>
 #include <chrono>
 #include <memory>
+#include <stdexcept>
+#include <set>
 #include <nlohmann/json.hpp>
 
 namespace agenkit {
 namespace core {
+
+/**
+ * @brief Exception thrown when message validation fails
+ *
+ * Used by Message::validate() to indicate size limit or constraint violations.
+ */
+class MessageValidationError : public std::runtime_error {
+public:
+    explicit MessageValidationError(const std::string& message)
+        : std::runtime_error(message) {}
+};
 
 /**
  * @brief Universal message format for agent communication
@@ -100,6 +113,21 @@ public:
      * @throws std::invalid_argument if JSON is invalid
      */
     static Message from_json(const nlohmann::json& j);
+
+    /**
+     * @brief Validate message according to security constraints
+     *
+     * Checks:
+     * - Role is non-empty and <= 20 characters
+     * - Role is one of: user, assistant, system, tool, agent
+     * - Content size <= 16MB
+     * - Metadata has <= 100 keys
+     * - Each metadata key <= 50 characters
+     * - Each metadata value <= 16MB
+     *
+     * @throws MessageValidationError if validation fails
+     */
+    void validate() const;
 
 private:
     std::string role_;

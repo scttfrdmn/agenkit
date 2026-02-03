@@ -176,7 +176,7 @@ int main() {
         OpenAIConfig config;
         config.api_key = "invalid-key";
         config.model = OpenAIModels::GPT_4O_MINI;
-        config.timeout_seconds = 5;
+        config.timeout = std::chrono::milliseconds{5000};
 
         OpenAIAgent gpt(config);
 

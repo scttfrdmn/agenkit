@@ -32,18 +32,18 @@ class AgentRegistry:
 
     def __init__(
         self,
-        heartbeat_interval: float = 30.0,
-        heartbeat_timeout: float = 90.0,
+        heartbeat_interval_ms: int = 30000,
+        heartbeat_timeout_ms: int = 90000,
     ):
         """Initialize agent registry.
 
         Args:
-            heartbeat_interval: Expected interval between heartbeats (seconds)
-            heartbeat_timeout: Time before marking agent as stale (seconds)
+            heartbeat_interval_ms: Expected interval between heartbeats (milliseconds)
+            heartbeat_timeout_ms: Time before marking agent as stale (milliseconds)
         """
         self._agents: dict[str, AgentRegistration] = {}
-        self._heartbeat_interval = heartbeat_interval
-        self._heartbeat_timeout = heartbeat_timeout
+        self._heartbeat_interval_ms = heartbeat_interval_ms
+        self._heartbeat_timeout_ms = heartbeat_timeout_ms
         self._lock = asyncio.Lock()
         self._prune_task: asyncio.Task[None] | None = None
 
@@ -147,13 +147,13 @@ class AgentRegistry:
 
             for name, registration in self._agents.items():
                 time_since_heartbeat = (now - registration.last_heartbeat).total_seconds()
-                if time_since_heartbeat > self._heartbeat_timeout:
+                if time_since_heartbeat > self._heartbeat_timeout_ms / 1000.0:
                     stale_agents.append(name)
 
             for name in stale_agents:
                 del self._agents[name]
                 logger.warning(
-                    f"Pruned stale agent: {name} (no heartbeat for {time_since_heartbeat:.1f}s)"
+                    f"Pruned stale agent: {name} (no heartbeat for {int(time_since_heartbeat * 1000)}ms)"
                 )
                 pruned += 1
 

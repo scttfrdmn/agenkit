@@ -49,8 +49,8 @@ struct GeminiConfig {
     /// API endpoint (default: Google AI production)
     std::string api_base{"https://generativelanguage.googleapis.com"};
 
-    /// Request timeout in seconds (default: 60)
-    int timeout_seconds{60};
+    /// Request timeout in milliseconds (default: 60000)
+    std::chrono::milliseconds timeout{60000};
 };
 
 /**

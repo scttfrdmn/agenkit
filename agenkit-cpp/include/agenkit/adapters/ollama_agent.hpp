@@ -33,8 +33,8 @@ struct OllamaConfig {
     /// Temperature 0-1 (default: 0.8)
     double temperature{0.8};
 
-    /// Request timeout in seconds (default: 120 for local)
-    int timeout_seconds{120};
+    /// Request timeout in milliseconds (default: 120000 for local)
+    std::chrono::milliseconds timeout{120000};
 
     /// Stream responses (default: false)
     bool stream{false};

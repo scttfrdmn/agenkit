@@ -118,7 +118,7 @@ OllamaAgent::call_api(const json& messages) {
     try {
         // Parse host URL
         httplib::Client client(config_.host);
-        client.set_read_timeout(config_.timeout_seconds, 0);
+        client.set_read_timeout(std::chrono::duration_cast<std::chrono::seconds>(config_.timeout).count(), 0);
 
         // Build request body
         json request_body = {
@@ -245,7 +245,7 @@ OllamaAgent::stream(core::Message message, std::function<bool(const std::string&
 
         // Parse host URL
         httplib::Client client(config_.host);
-        client.set_read_timeout(config_.timeout_seconds, 0);
+        client.set_read_timeout(std::chrono::duration_cast<std::chrono::seconds>(config_.timeout).count(), 0);
 
         // Build request body with stream=true
         json request_body = {

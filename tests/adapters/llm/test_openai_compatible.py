@@ -59,7 +59,7 @@ class TestInitialization:
         llm = OpenAICompatibleLLM(
             base_url="http://localhost:8000/v1",
             model="llama-2-7b",
-            timeout=120.0,
+            timeout_ms=120000,
         )
 
         assert llm._client is not None

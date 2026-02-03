@@ -71,14 +71,14 @@ pub const GrpcConfig = struct {
     /// Client key for mTLS
     client_key: ?[]const u8 = null,
 
-    /// Request timeout in seconds
-    timeout_secs: u32 = 30,
+    /// Request timeout in milliseconds
+    timeout_ms: u64 = 30000,
 
-    /// Connection timeout in seconds
-    connect_timeout_secs: u32 = 10,
+    /// Connection timeout in milliseconds
+    connect_timeout_ms: u64 = 10000,
 
-    /// Keep-alive interval in seconds
-    keepalive_interval_secs: u32 = 30,
+    /// Keep-alive interval in milliseconds
+    keepalive_interval_ms: u64 = 30000,
 
     /// Maximum message size in bytes
     max_message_size: usize = 4 * 1024 * 1024, // 4MB

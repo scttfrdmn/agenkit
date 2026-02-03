@@ -268,12 +268,12 @@ class TestWebSocketTransport:
         # Create transport with custom ping settings
         transport = WebSocketTransport(
             "ws://127.0.0.1:9009",
-            ping_interval=5.0,
-            ping_timeout=2.0,
+            ping_interval_ms=5000,
+            ping_timeout_ms=2000,
         )
 
-        assert transport._ping_interval == 5.0
-        assert transport._ping_timeout == 2.0
+        assert transport._ping_interval_ms == 5000
+        assert transport._ping_timeout_ms == 2000
 
     async def test_websocket_is_connected_property(self):
         """Test is_connected property behavior."""

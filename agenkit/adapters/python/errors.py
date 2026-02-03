@@ -104,8 +104,8 @@ class AgentUnavailableError(ProtocolError):
 class AgentTimeoutError(ProtocolError):
     """Agent timeout errors."""
 
-    def __init__(self, agent_name: str, timeout: float, details: dict[str, Any] | None = None):
-        message = f"Agent '{agent_name}' timed out after {timeout}s"
+    def __init__(self, agent_name: str, timeout_ms: int, details: dict[str, Any] | None = None):
+        message = f"Agent '{agent_name}' timed out after {timeout_ms}ms"
         super().__init__(ProtocolErrorCode.AGENT_TIMEOUT, message, details)
 
 

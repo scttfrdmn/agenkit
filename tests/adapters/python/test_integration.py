@@ -140,7 +140,7 @@ class TestRemoteAgentCommunication:
 
             try:
                 # Create client with short timeout
-                remote = RemoteAgent("slow", endpoint=endpoint, timeout=0.5)
+                remote = RemoteAgent("slow", endpoint=endpoint, timeout_ms=500)
 
                 # Request should timeout
                 msg = Message(role="user", content="test")
@@ -148,7 +148,7 @@ class TestRemoteAgentCommunication:
                     await remote.process(msg)
 
                 assert "slow" in str(exc_info.value)
-                assert "0.5" in str(exc_info.value)
+                assert "500" in str(exc_info.value)
             finally:
                 await server.stop()
 

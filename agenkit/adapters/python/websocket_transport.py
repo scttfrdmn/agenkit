@@ -29,8 +29,8 @@ class WebSocketTransport(Transport):
         url: str,
         max_retries: int = 5,
         initial_retry_delay: float = 1.0,
-        ping_interval: float = 30.0,
-        ping_timeout: float = 10.0,
+        ping_interval_ms: int = 30000,
+        ping_timeout_ms: int = 10000,
     ):
         """Initialize WebSocket transport.
 
@@ -38,14 +38,14 @@ class WebSocketTransport(Transport):
             url: WebSocket URL (ws:// or wss://)
             max_retries: Maximum number of reconnection attempts (default: 5)
             initial_retry_delay: Initial delay between retries in seconds (default: 1.0)
-            ping_interval: Interval between ping frames in seconds (default: 30.0)
-            ping_timeout: Timeout for ping/pong in seconds (default: 10.0)
+            ping_interval_ms: Interval between ping frames in milliseconds (default: 30000)
+            ping_timeout_ms: Timeout for ping/pong in milliseconds (default: 10000)
         """
         self._url = url
         self._max_retries = max_retries
         self._initial_retry_delay = initial_retry_delay
-        self._ping_interval = ping_interval
-        self._ping_timeout = ping_timeout
+        self._ping_interval_ms = ping_interval_ms
+        self._ping_timeout_ms = ping_timeout_ms
         self._websocket: ClientConnection | None = None
         self._connected = False
         self._reconnect_lock = asyncio.Lock()
@@ -68,8 +68,8 @@ class WebSocketTransport(Transport):
             try:
                 self._websocket = await websockets.connect(
                     self._url,
-                    ping_interval=self._ping_interval,
-                    ping_timeout=self._ping_timeout,
+                    ping_interval=self._ping_interval_ms / 1000.0,
+                    ping_timeout=self._ping_timeout_ms / 1000.0,
                     max_size=10 * 1024 * 1024,  # 10 MB max message size
                 )
                 self._connected = True

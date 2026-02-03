@@ -48,8 +48,8 @@ struct OpenAIConfig {
     /// API endpoint (default: OpenAI production)
     std::string api_base{"https://api.openai.com"};
 
-    /// Request timeout in seconds (default: 60)
-    int timeout_seconds{60};
+    /// Request timeout in milliseconds (default: 60000)
+    std::chrono::milliseconds timeout{60000};
 };
 
 /**

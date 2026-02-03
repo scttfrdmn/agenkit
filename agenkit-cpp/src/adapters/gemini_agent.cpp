@@ -129,7 +129,7 @@ GeminiAgent::call_api(const json& contents) {
 
         // Parse base URL for http client
         httplib::Client client(config_.api_base);
-        client.set_read_timeout(config_.timeout_seconds, 0);
+        client.set_read_timeout(std::chrono::duration_cast<std::chrono::seconds>(config_.timeout).count(), 0);
 
         // Build request body
         json request_body = {
@@ -310,7 +310,7 @@ GeminiAgent::stream(core::Message message, std::function<bool(const std::string&
 
         // Parse base URL for http client
         httplib::Client client(config_.api_base);
-        client.set_read_timeout(config_.timeout_seconds, 0);
+        client.set_read_timeout(std::chrono::duration_cast<std::chrono::seconds>(config_.timeout).count(), 0);
 
         // Build request body
         json request_body = {

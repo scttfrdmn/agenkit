@@ -221,7 +221,7 @@ int main() {
         LiteLLMConfig config;
         config.base_url = "http://localhost:9999";  // Wrong port
         config.model = "gpt-3.5-turbo";
-        config.timeout_seconds = 2;
+        config.timeout = std::chrono::milliseconds{2000};
 
         LiteLLMAgent agent(config);
 

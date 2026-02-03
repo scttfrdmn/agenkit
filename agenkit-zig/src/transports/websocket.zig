@@ -66,17 +66,17 @@ pub const WebSocketConfig = struct {
     /// Maximum retry delay in milliseconds
     max_retry_delay_ms: u64 = 30000,
 
-    /// Ping interval in seconds
-    ping_interval_secs: u32 = 30,
+    /// Ping interval in milliseconds
+    ping_interval_ms: u64 = 30000,
 
-    /// Ping timeout in seconds
-    ping_timeout_secs: u32 = 10,
+    /// Ping timeout in milliseconds
+    ping_timeout_ms: u64 = 10000,
 
-    /// Connection timeout in seconds
-    connect_timeout_secs: u32 = 10,
+    /// Connection timeout in milliseconds
+    connect_timeout_ms: u64 = 10000,
 
-    /// Request timeout in seconds
-    request_timeout_secs: u32 = 30,
+    /// Request timeout in milliseconds
+    request_timeout_ms: u64 = 30000,
 
     /// Custom headers for connection
     headers: std.StringHashMap([]const u8),

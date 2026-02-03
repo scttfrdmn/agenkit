@@ -154,7 +154,7 @@ class TestAgentRegistry:
     async def test_prune_stale_agents(self):
         """Test pruning agents with expired heartbeats."""
         # Use short timeout for testing
-        registry = AgentRegistry(heartbeat_timeout=0.2)
+        registry = AgentRegistry(heartbeat_timeout_ms=200)
 
         # Register agents
         for i in range(3):
@@ -182,7 +182,7 @@ class TestAgentRegistry:
 
     async def test_prune_no_stale_agents(self):
         """Test pruning when no agents are stale."""
-        registry = AgentRegistry(heartbeat_timeout=1.0)
+        registry = AgentRegistry(heartbeat_timeout_ms=1000)
 
         registration = AgentRegistration(name="agent", endpoint="unix:///tmp/test.sock")
         await registry.register(registration)
@@ -194,7 +194,7 @@ class TestAgentRegistry:
 
     async def test_registry_start_stop(self):
         """Test starting and stopping registry."""
-        registry = AgentRegistry(heartbeat_timeout=0.5)
+        registry = AgentRegistry(heartbeat_timeout_ms=500)
 
         # Start registry
         await registry.start()

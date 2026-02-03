@@ -250,7 +250,7 @@ int main() {
         GeminiConfig config;
         config.api_key = "invalid-key";
         config.model = GeminiModels::GEMINI_2_0_FLASH_EXP;
-        config.timeout_seconds = 5;
+        config.timeout = std::chrono::milliseconds{5000};
 
         GeminiAgent gemini(config);
 

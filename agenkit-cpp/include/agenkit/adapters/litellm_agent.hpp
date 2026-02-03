@@ -44,8 +44,8 @@ struct LiteLLMConfig {
     /// Top-p sampling parameter
     std::optional<double> top_p;
 
-    /// Request timeout in seconds (default: 60)
-    int timeout_seconds{60};
+    /// Request timeout in milliseconds (default: 60000)
+    std::chrono::milliseconds timeout{60000};
 };
 
 /**

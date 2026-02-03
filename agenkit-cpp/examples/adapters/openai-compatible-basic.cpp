@@ -236,7 +236,7 @@ void example_custom() {
     config.provider = "custom-provider";
     config.temperature = 0.8;
     config.max_tokens = 2048;
-    config.timeout_seconds = 120;
+    config.timeout = std::chrono::milliseconds{120000};
 
     std::cout << "Configuration:\n";
     std::cout << "  Provider:  " << config.provider.value() << "\n";

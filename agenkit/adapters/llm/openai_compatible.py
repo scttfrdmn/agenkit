@@ -128,7 +128,7 @@ class OpenAICompatibleLLM(LLM):
             so this defaults to "not-needed" if not provided.
         provider: Optional provider name for metadata and debugging (e.g., "vllm",
             "llamacpp", "sglang"). Helps identify which service is being used.
-        timeout: Request timeout in seconds (default: 60.0). Increase for larger
+        timeout_ms: Request timeout in milliseconds (default: 60000). Increase for larger
             models or slower hardware.
         **client_kwargs: Additional arguments passed to AsyncOpenAI client for
             advanced configuration (e.g., max_retries, http_client).
@@ -158,7 +158,7 @@ class OpenAICompatibleLLM(LLM):
         ...     base_url="http://localhost:30000/v1",
         ...     model="meta-llama/Llama-2-13b-chat-hf",
         ...     provider="sglang",
-        ...     timeout=120.0  # Larger model needs more time
+        ...     timeout_ms=120000  # Larger model needs more time
         ... )
 
     Example - TensorRT-LLM with API key:
@@ -180,7 +180,7 @@ class OpenAICompatibleLLM(LLM):
         model: str,
         api_key: str | None = None,
         provider: str | None = None,
-        timeout: float = 60.0,
+        timeout_ms: int = 60000,
         **client_kwargs: Any,
     ) -> None:
         """Initialize OpenAI-compatible LLM adapter."""
@@ -191,7 +191,7 @@ class OpenAICompatibleLLM(LLM):
         self._client = AsyncOpenAI(
             base_url=base_url,
             api_key=api_key,
-            timeout=timeout,
+            timeout=timeout_ms / 1000.0,
             **client_kwargs,
         )
         self._model = model

@@ -35,7 +35,7 @@ class RemoteAgent(Agent):
         name: str,
         endpoint: str | None = None,
         transport: Transport | None = None,
-        timeout: float = 30.0,
+        timeout_ms: int = 30000,
     ):
         """Initialize remote agent client.
 
@@ -43,7 +43,7 @@ class RemoteAgent(Agent):
             name: Name of the remote agent
             endpoint: Endpoint URL (e.g., "unix:///tmp/agent.sock")
             transport: Custom transport (if endpoint not provided)
-            timeout: Request timeout in seconds
+            timeout_ms: Request timeout in milliseconds
 
         Raises:
             ValueError: If neither endpoint nor transport is provided
@@ -54,7 +54,7 @@ class RemoteAgent(Agent):
         self._name = name
         self._endpoint = endpoint
         self._transport = transport or self._create_transport(endpoint)  # type: ignore
-        self._timeout = timeout
+        self._timeout_ms = timeout_ms
         self._connected = False
         self._lock = asyncio.Lock()  # Serialize requests on same connection
 
@@ -118,20 +118,20 @@ class RemoteAgent(Agent):
                 if hasattr(self._transport, "send_framed_envelope"):
                     # FAST PATH: Send dict directly (skip JSON encoding/decoding)
                     await asyncio.wait_for(
-                        self._transport.send_framed_envelope(request), timeout=self._timeout
+                        self._transport.send_framed_envelope(request), timeout=self._timeout_ms / 1000.0
                     )
                     response = await asyncio.wait_for(
-                        self._transport.receive_framed_envelope(), timeout=self._timeout
+                        self._transport.receive_framed_envelope(), timeout=self._timeout_ms / 1000.0
                     )
                 else:
                     # SLOW PATH: Encode to JSON for backward compatibility
                     request_bytes = encode_bytes(request)
                     await asyncio.wait_for(
-                        self._transport.send_framed(request_bytes), timeout=self._timeout
+                        self._transport.send_framed(request_bytes), timeout=self._timeout_ms / 1000.0
                     )
 
                     response_bytes = await asyncio.wait_for(
-                        self._transport.receive_framed(), timeout=self._timeout
+                        self._transport.receive_framed(), timeout=self._timeout_ms / 1000.0
                     )
                     response = decode_bytes(response_bytes)
 
@@ -153,7 +153,7 @@ class RemoteAgent(Agent):
                 return decode_message(response["payload"]["message"])
 
             except asyncio.TimeoutError as e:
-                raise AgentTimeoutError(self._name, self._timeout) from e
+                raise AgentTimeoutError(self._name, self._timeout_ms) from e
             except (ConnectionError, ProtocolError):
                 # Re-raise protocol/connection errors as-is
                 raise
@@ -190,14 +190,14 @@ class RemoteAgent(Agent):
                 if hasattr(self._transport, "send_framed_envelope"):
                     # FAST PATH: Send dict directly (skip JSON encoding/decoding)
                     await asyncio.wait_for(
-                        self._transport.send_framed_envelope(request), timeout=self._timeout
+                        self._transport.send_framed_envelope(request), timeout=self._timeout_ms / 1000.0
                     )
 
                     # Receive stream chunks
                     while True:
                         # Receive next frame (dict directly, no JSON decoding)
                         response = await asyncio.wait_for(
-                            self._transport.receive_framed_envelope(), timeout=self._timeout
+                            self._transport.receive_framed_envelope(), timeout=self._timeout_ms / 1000.0
                         )
 
                         # Handle response type
@@ -229,14 +229,14 @@ class RemoteAgent(Agent):
                     # SLOW PATH: Encode to JSON for backward compatibility
                     request_bytes = encode_bytes(request)
                     await asyncio.wait_for(
-                        self._transport.send_framed(request_bytes), timeout=self._timeout
+                        self._transport.send_framed(request_bytes), timeout=self._timeout_ms / 1000.0
                     )
 
                     # Receive stream chunks
                     while True:
                         # Receive next frame
                         response_bytes = await asyncio.wait_for(
-                            self._transport.receive_framed(), timeout=self._timeout
+                            self._transport.receive_framed(), timeout=self._timeout_ms / 1000.0
                         )
                         response = decode_bytes(response_bytes)
 
@@ -266,7 +266,7 @@ class RemoteAgent(Agent):
                             raise InvalidMessageError(msg, {"response": response})
 
             except asyncio.TimeoutError as e:
-                raise AgentTimeoutError(self._name, self._timeout) from e
+                raise AgentTimeoutError(self._name, self._timeout_ms) from e
             except (ConnectionError, ProtocolError):
                 # Re-raise protocol/connection errors as-is
                 raise

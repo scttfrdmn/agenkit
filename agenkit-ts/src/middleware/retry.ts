@@ -13,16 +13,16 @@ import { BaseMiddleware } from './base';
  */
 export interface RetryConfig {
   /** Maximum number of retry attempts (default: 3) */
-  maxAttempts?: number;
+  maxRetries?: number;
 
   /** Initial delay in milliseconds (default: 1000) */
-  initialDelay?: number;
+  initialDelayMs?: number;
 
   /** Backoff multiplier (default: 2.0) */
   backoffMultiplier?: number;
 
   /** Maximum delay in milliseconds (default: 30000) */
-  maxDelay?: number;
+  maxDelayMs?: number;
 
   /** Predicate to determine if error should trigger retry */
   shouldRetry?: (error: Error) => boolean;
@@ -74,8 +74,8 @@ function defaultShouldRetry(error: Error): boolean {
  *
  * Usage:
  *   const agent = new RetryMiddleware(baseAgent, {
- *     maxAttempts: 3,
- *     initialDelay: 1000,
+ *     maxRetries: 3,
+ *     initialDelayMs: 1000,
  *     backoffMultiplier: 2.0,
  *   });
  */
@@ -89,10 +89,10 @@ export class RetryMiddleware extends BaseMiddleware {
 
   constructor(agent: Agent, config: RetryConfig = {}) {
     super(agent);
-    this.maxAttempts = config.maxAttempts || 3;
-    this.initialDelay = config.initialDelay || 1000;
+    this.maxAttempts = config.maxRetries || 3;
+    this.initialDelay = config.initialDelayMs || 1000;
     this.backoffMultiplier = config.backoffMultiplier || 2.0;
-    this.maxDelay = config.maxDelay || 30000;
+    this.maxDelay = config.maxDelayMs || 30000;
     this.shouldRetry = config.shouldRetry || defaultShouldRetry;
     this._metrics = {
       totalAttempts: 0,

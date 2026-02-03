@@ -230,15 +230,114 @@ export function createMessage(
 /**
  * Helper function to validate a message.
  *
+ * Validates message structure and size limits:
+ * - Role: non-empty, <= 20 characters, one of: user, assistant, system, tool, agent
+ * - Content: <= 16MB
+ * - Metadata: <= 100 keys, each key <= 50 characters, each value <= 16MB
+ *
  * @param message Message to validate
  * @throws Error if message is invalid
  */
 export function validateMessage(message: Message): void {
+  // Role validation
   if (!message.role || typeof message.role !== 'string') {
     throw new Error('Message role must be a non-empty string');
   }
 
+  if (message.role.length > 20) {
+    throw new Error(
+      `Message role exceeds maximum length of 20 characters (got ${message.role.length})`,
+    );
+  }
+
+  // Validate role is one of the allowed values
+  const allowedRoles = new Set(['user', 'assistant', 'system', 'tool', 'agent']);
+  if (!allowedRoles.has(message.role)) {
+    throw new Error(
+      `Invalid message role: ${message.role}. Must be one of: ${Array.from(allowedRoles).join(', ')}`,
+    );
+  }
+
+  // Content validation
   if (message.content === undefined || message.content === null) {
     throw new Error('Message content cannot be undefined or null');
   }
+
+  // Content size validation - max 16MB
+  const contentStr =
+    typeof message.content === 'string'
+      ? message.content
+      : JSON.stringify(message.content);
+  const contentSize = new TextEncoder().encode(contentStr).length;
+  const maxContentSize = 16 * 1024 * 1024; // 16MB
+
+  if (contentSize > maxContentSize) {
+    throw new Error(
+      `Message content exceeds maximum size of ${maxContentSize} bytes (got ${contentSize} bytes)`,
+    );
+  }
+
+  // Metadata validation
+  if (message.metadata) {
+    const metadataKeys = Object.keys(message.metadata);
+
+    // Max 100 keys
+    if (metadataKeys.length > 100) {
+      throw new Error(
+        `Message metadata exceeds maximum of 100 keys (got ${metadataKeys.length})`,
+      );
+    }
+
+    // Validate each key and value
+    const maxKeyLength = 50;
+    const maxValueSize = 16 * 1024 * 1024; // 16MB
+
+    for (const [key, value] of Object.entries(message.metadata)) {
+      // Key length validation
+      if (key.length > maxKeyLength) {
+        throw new Error(
+          `Metadata key '${key.substring(0, 20)}...' exceeds maximum length of ${maxKeyLength} characters (got ${key.length})`,
+        );
+      }
+
+      // Value size validation
+      const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+      const valueSize = new TextEncoder().encode(valueStr).length;
+
+      if (valueSize > maxValueSize) {
+        throw new Error(
+          `Metadata value for key '${key}' exceeds maximum size of ${maxValueSize} bytes (got ${valueSize} bytes)`,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Helper function to create a validated message.
+ *
+ * Creates a message and validates it against size and structure constraints.
+ * This is a convenience function that combines createMessage() and validateMessage().
+ *
+ * @param role Message role
+ * @param content Message content
+ * @param metadata Optional metadata
+ * @returns Validated message
+ * @throws Error if message is invalid
+ *
+ * @example
+ * ```typescript
+ * const msg = createValidatedMessage('user', 'Hello, agent!', {
+ *   sessionId: '123',
+ * });
+ * ```
+ */
+export function createValidatedMessage(
+  role: string,
+  content: unknown,
+  metadata?: Record<string, unknown>,
+): Message {
+  const message = createMessage(role, content, metadata);
+  validateMessage(message);
+  return message;
 }

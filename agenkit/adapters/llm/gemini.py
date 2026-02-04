@@ -17,7 +17,7 @@ try:
 except ImportError as e:
     raise ImportError(
         "The google-genai package is required to use GeminiLLM. "
-        "Install it with: pip install google-genai>=0.3.0"
+        "Install it with: pip install agenkit[google]"
     ) from e
 
 

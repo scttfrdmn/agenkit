@@ -16,7 +16,7 @@ try:
 except ImportError as e:
     raise ImportError(
         "The ollama package is required to use OllamaLLM. "
-        "Install it with: pip install ollama>=0.1.0"
+        "Install it with: pip install agenkit[ollama]"
     ) from e
 
 

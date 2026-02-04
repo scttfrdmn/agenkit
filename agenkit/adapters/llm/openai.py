@@ -50,7 +50,7 @@ try:
 except ImportError as e:
     raise ImportError(
         "The openai package is required to use OpenAILLM. "
-        "Install it with: pip install openai>=1.50.0"
+        "Install it with: pip install agenkit[openai]"
     ) from e
 
 

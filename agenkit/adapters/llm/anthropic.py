@@ -16,7 +16,7 @@ try:
 except ImportError as e:
     raise ImportError(
         "The anthropic package is required to use AnthropicLLM. "
-        "Install it with: pip install anthropic>=0.40.0"
+        "Install it with: pip install agenkit[anthropic]"
     ) from e
 
 

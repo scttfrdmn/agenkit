@@ -270,6 +270,8 @@ WebSocketServer(agent, port=8765).start()  # Bidirectional streaming
 
 ## Installation
 
+### Core Installation
+
 ```bash
 # Python
 pip install agenkit
@@ -293,6 +295,31 @@ cargo add agenkit
 git clone https://github.com/agenkit/agenkit.git
 cd agenkit/agenkit-zig && zig build
 ```
+
+### Python: Install with Specific LLM Providers
+
+```bash
+# Install only what you need
+pip install agenkit[openai]          # OpenAI (GPT-4, GPT-3.5)
+pip install agenkit[anthropic]       # Anthropic (Claude 3.5)
+pip install agenkit[aws]             # AWS Bedrock
+pip install agenkit[google]          # Google Gemini
+pip install agenkit[ollama]          # Ollama (local models)
+
+# Multiple providers
+pip install agenkit[openai,anthropic]
+
+# All providers
+pip install agenkit[all-providers]
+
+# With Redis memory backend
+pip install agenkit[redis]
+
+# Everything (for development)
+pip install agenkit[all]
+```
+
+**See [INSTALLATION.md](INSTALLATION.md) for complete installation guide.**
 
 ## What's Included?
 

@@ -16,7 +16,7 @@ try:
 except ImportError as e:
     raise ImportError(
         "The litellm package is required to use LiteLLMLLM. "
-        "Install it with: pip install litellm>=1.50.0"
+        "Install it with: pip install agenkit[litellm]"
     ) from e
 
 

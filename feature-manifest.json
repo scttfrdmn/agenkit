@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-04T03:18:32.269817+00:00",
+  "generated_at": "2026-02-04T03:29:25.351807+00:00",
   "version": "1.0",
   "languages": {
     "python": {
@@ -158,22 +158,133 @@
       "techniques": []
     },
     "rust": {
-      "patterns": [],
-      "middleware": [],
-      "llm_adapters": [],
-      "memory": [],
+      "patterns": [
+        "AutonomousAgent",
+        "CollaborativeAgent",
+        "ConsensusAgent",
+        "ConversationalAgent",
+        "FallbackAgent",
+        "HumanInLoopAgent",
+        "ParallelAgent",
+        "PlanningAgent",
+        "ReActAgent",
+        "ReasoningWithToolsAgent",
+        "RecoveryAgent",
+        "ReflectionAgent",
+        "RouterAgent",
+        "SequentialAgent",
+        "SupervisorAgent"
+      ],
+      "middleware": [
+        "BatchingConfig",
+        "BatchingMiddleware",
+        "CachingConfig",
+        "CachingMiddleware",
+        "CircuitBreakerConfig",
+        "CircuitBreakerMiddleware",
+        "PerUserRateLimiterConfig",
+        "PerUserRateLimiterMiddleware",
+        "RateLimiterConfig",
+        "RateLimiterMiddleware",
+        "RetryConfig",
+        "RetryMiddleware",
+        "TimeoutConfig",
+        "TimeoutMiddleware"
+      ],
+      "llm_adapters": [
+        "AnthropicAdapter",
+        "BedrockAdapter",
+        "GeminiAdapter",
+        "LiteLLMAdapter",
+        "OllamaAdapter",
+        "OpenAIAdapter"
+      ],
+      "memory": [
+        "InMemoryMemory",
+        "RedisMemory",
+        "VectorMemory"
+      ],
       "techniques": []
     },
     "cpp": {
-      "patterns": [],
-      "middleware": [],
-      "llm_adapters": [],
+      "patterns": [
+        "AutonomousAgent",
+        "ClassifierAgent",
+        "CollaborativeAgent",
+        "ConsensusAgent",
+        "ConversationalAgent",
+        "FallbackAgent",
+        "HumanInLoopAgent",
+        "OrchestrationAgent",
+        "ParallelAgent",
+        "PlannerAgent",
+        "PlanningAgent",
+        "ReactAgent",
+        "ReasoningAgent",
+        "RecoveryAgent",
+        "ReflectionAgent",
+        "RouterAgent",
+        "SequentialAgent",
+        "SupervisorAgent"
+      ],
+      "middleware": [
+        "BatchingConfig",
+        "BatchingMiddleware",
+        "CachingConfig",
+        "CachingMiddleware",
+        "CircuitBreakerConfig",
+        "CircuitBreakerMiddleware",
+        "PerUserRateLimiterConfig",
+        "PerUserRateLimiterMiddleware",
+        "RateLimiterConfig",
+        "RateLimiterMiddleware",
+        "RetryConfig",
+        "RetryMiddleware",
+        "TimeoutConfig",
+        "TimeoutMiddleware"
+      ],
+      "llm_adapters": [
+        "BedrockAdapter",
+        "GeminiAdapter",
+        "LiteLLMAdapter",
+        "OllamaAdapter",
+        "OpenAIAdapter"
+      ],
       "memory": [],
       "techniques": []
     },
     "zig": {
-      "patterns": [],
-      "middleware": [],
+      "patterns": [
+        "AutonomousAgent",
+        "CollaborativeAgent",
+        "ConversationalAgent",
+        "FallbackAgent",
+        "HumanInLoopAgent",
+        "ParallelAgent",
+        "PlanningAgent",
+        "ReActAgent",
+        "ReasoningWithToolsAgent",
+        "ReflectionAgent",
+        "RouterAgent",
+        "SequentialAgent",
+        "SupervisorAgent"
+      ],
+      "middleware": [
+        "BatchingConfig",
+        "BatchingDecorator",
+        "CachingConfig",
+        "CachingDecorator",
+        "CircuitBreakerConfig",
+        "CircuitBreakerDecorator",
+        "PerUserRateLimiterConfig",
+        "PerUserRateLimiterDecorator",
+        "RateLimiterConfig",
+        "RateLimiterDecorator",
+        "RetryConfig",
+        "RetryDecorator",
+        "TimeoutConfig",
+        "TimeoutDecorator"
+      ],
       "llm_adapters": [],
       "memory": [],
       "techniques": []
@@ -184,31 +295,31 @@
       "python": 23,
       "go": 17,
       "typescript": 17,
-      "rust": 0,
-      "cpp": 0,
-      "zig": 0
+      "rust": 15,
+      "cpp": 18,
+      "zig": 13
     },
     "middleware": {
       "python": 8,
       "go": 14,
       "typescript": 7,
-      "rust": 0,
-      "cpp": 0,
-      "zig": 0
+      "rust": 14,
+      "cpp": 14,
+      "zig": 14
     },
     "llm_adapters": {
       "python": 7,
       "go": 7,
       "typescript": 7,
-      "rust": 0,
-      "cpp": 0,
+      "rust": 6,
+      "cpp": 5,
       "zig": 0
     },
     "memory": {
       "python": 5,
       "go": 5,
       "typescript": 5,
-      "rust": 0,
+      "rust": 3,
       "cpp": 0,
       "zig": 0
     },
@@ -224,9 +335,9 @@
       "python": 43,
       "go": 43,
       "typescript": 36,
-      "rust": 0,
-      "cpp": 0,
-      "zig": 0
+      "rust": 38,
+      "cpp": 37,
+      "zig": 27
     }
   }
 }

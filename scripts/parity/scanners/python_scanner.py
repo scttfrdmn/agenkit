@@ -1,0 +1,238 @@
+"""Python feature scanner using AST parsing.
+
+This scanner serves as the reference implementation for feature detection.
+It uses Python's AST module to accurately detect classes and their inheritance.
+"""
+
+import ast
+from pathlib import Path
+from typing import Any
+
+
+def scan() -> dict[str, Any]:
+    """Scan Python codebase for all features.
+
+    Returns:
+        Dictionary with detected features by category.
+    """
+    root = Path("agenkit")
+
+    return {
+        "patterns": scan_patterns(root),
+        "middleware": scan_middleware(root),
+        "llm_adapters": scan_llm_adapters(root),
+        "memory": scan_memory(root),
+        "techniques": scan_techniques(root),
+    }
+
+
+def scan_patterns(root: Path) -> list[str]:
+    """Scan for agent patterns in agenkit/patterns/.
+
+    Detects classes with 'Agent' in their name.
+
+    Args:
+        root: Root directory of Python package
+
+    Returns:
+        Sorted list of pattern names (e.g., ["ReflectionAgent", "SequentialAgent"])
+    """
+    patterns = []
+    patterns_dir = root / "patterns"
+
+    if not patterns_dir.exists():
+        return patterns
+
+    for py_file in patterns_dir.glob("*.py"):
+        if py_file.name.startswith("_"):  # Skip __init__.py, etc.
+            continue
+
+        try:
+            tree = ast.parse(py_file.read_text())
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef):
+                    # Look for classes with "Agent" in name
+                    if "Agent" in node.name and not node.name.startswith("_"):
+                        patterns.append(node.name)
+
+        except SyntaxError:
+            # Skip files with syntax errors
+            continue
+
+    return sorted(set(patterns))
+
+
+def scan_middleware(root: Path) -> list[str]:
+    """Scan for middleware in agenkit/middleware/.
+
+    Detects classes with 'Decorator' suffix or middleware-related names.
+
+    Args:
+        root: Root directory of Python package
+
+    Returns:
+        Sorted list of middleware names
+    """
+    middleware = []
+    middleware_dir = root / "middleware"
+
+    if not middleware_dir.exists():
+        return middleware
+
+    # Known middleware patterns
+    middleware_patterns = [
+        "Decorator",
+        "Middleware",
+        "TimeoutDecorator",
+        "RetryDecorator",
+        "RateLimiterDecorator",
+        "CircuitBreakerDecorator",
+        "CachingDecorator",
+        "BatchingDecorator",
+        "PerUserRateLimiterDecorator",
+    ]
+
+    for py_file in middleware_dir.glob("*.py"):
+        if py_file.name.startswith("_"):
+            continue
+
+        try:
+            tree = ast.parse(py_file.read_text())
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef):
+                    # Check if class name matches middleware patterns
+                    for pattern in middleware_patterns:
+                        if pattern in node.name and not node.name.startswith("_"):
+                            middleware.append(node.name)
+                            break
+
+        except SyntaxError:
+            continue
+
+    return sorted(set(middleware))
+
+
+def scan_llm_adapters(root: Path) -> list[str]:
+    """Scan for LLM adapters in agenkit/adapters/llm/.
+
+    Detects adapter classes (OpenAIAdapter, AnthropicAdapter, etc.).
+
+    Args:
+        root: Root directory of Python package
+
+    Returns:
+        Sorted list of adapter names
+    """
+    adapters = []
+    adapters_dir = root / "adapters" / "llm"
+
+    if not adapters_dir.exists():
+        return adapters
+
+    for py_file in adapters_dir.glob("*.py"):
+        if py_file.name in ["__init__.py", "base.py"]:  # Skip base classes
+            continue
+
+        try:
+            tree = ast.parse(py_file.read_text())
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef):
+                    # Look for classes ending in "Adapter" or "LLM"
+                    if (
+                        ("Adapter" in node.name or "LLM" in node.name)
+                        and not node.name.startswith("_")
+                        and node.name != "LLM"  # Skip base class
+                    ):
+                        adapters.append(node.name)
+
+        except SyntaxError:
+            continue
+
+    return sorted(set(adapters))
+
+
+def scan_memory(root: Path) -> list[str]:
+    """Scan for memory backends in agenkit/memory/.
+
+    Detects memory backend classes (InMemoryMemory, RedisMemory, etc.).
+
+    Args:
+        root: Root directory of Python package
+
+    Returns:
+        Sorted list of memory backend names
+    """
+    memory_backends = []
+    memory_dir = root / "memory"
+
+    if not memory_dir.exists():
+        return memory_backends
+
+    for py_file in memory_dir.glob("*.py"):
+        if py_file.name in ["__init__.py", "base.py"]:  # Skip base classes
+            continue
+
+        try:
+            tree = ast.parse(py_file.read_text())
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef):
+                    # Look for classes ending in "Memory"
+                    if (
+                        node.name.endswith("Memory")
+                        and not node.name.startswith("_")
+                        and node.name != "Memory"  # Skip base class
+                    ):
+                        memory_backends.append(node.name)
+
+        except SyntaxError:
+            continue
+
+    return sorted(set(memory_backends))
+
+
+def scan_techniques(root: Path) -> list[str]:
+    """Scan for techniques in agenkit/techniques/.
+
+    Detects technique implementations (ChainOfThought, SelfConsistency, etc.).
+
+    Args:
+        root: Root directory of Python package
+
+    Returns:
+        Sorted list of technique names
+    """
+    techniques = []
+    techniques_dir = root / "techniques"
+
+    if not techniques_dir.exists():
+        return techniques
+
+    for py_file in techniques_dir.glob("*.py"):
+        if py_file.name.startswith("_"):
+            continue
+
+        try:
+            tree = ast.parse(py_file.read_text())
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef):
+                    # Look for technique classes (any non-private class in techniques/)
+                    if not node.name.startswith("_"):
+                        techniques.append(node.name)
+
+        except SyntaxError:
+            continue
+
+    return sorted(set(techniques))
+
+
+if __name__ == "__main__":
+    """Quick test when run directly."""
+    import json
+
+    result = scan()
+    print(json.dumps(result, indent=2))

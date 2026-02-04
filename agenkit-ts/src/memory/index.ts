@@ -10,6 +10,7 @@
  *   HierarchyMemory: 3-tier hierarchy adapter (backward compatible)
  *   RedisMemory: Redis-backed persistent memory with TTL support
  *   VectorMemory: Semantic retrieval using embeddings and vector similarity
+ *   EndlessMemory: Infinite context through compression (requires endless client)
  *
  * Example:
  *   import { InMemoryMemory } from 'agenkit';
@@ -31,4 +32,5 @@ export {
   MessageSearchResult,
   MessageWithMetadata,
 } from './vector-memory';
+export { EndlessMemory, EndlessClient } from './endless-memory';
 export { OpenAIEmbeddings, ChromaDBVectorStore } from './integrations';

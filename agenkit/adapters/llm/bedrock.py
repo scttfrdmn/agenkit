@@ -20,7 +20,7 @@ try:
 except ImportError as e:
     raise ImportError(
         "The boto3 package is required to use BedrockLLM. "
-        "Install it with: pip install boto3>=1.34.0"
+        "Install it with: pip install agenkit[aws]"
     ) from e
 
 

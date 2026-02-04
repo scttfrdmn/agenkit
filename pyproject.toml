@@ -42,6 +42,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Testing
 test = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
@@ -52,6 +53,8 @@ test = [
     "boto3>=1.34.0",
     "botocore[crt]>=1.34.0",
 ]
+
+# Development
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
@@ -66,9 +69,54 @@ dev = [
     "hypothesis>=6.0.0",
     "grpcio-tools>=1.60.0",
 ]
+
 benchmarks = [
     "pytest-benchmark>=4.0.0",
 ]
+
+# LLM Provider Extras (install only what you need)
+aws = [
+    "boto3>=1.34.0",
+    "botocore[crt]>=1.34.0",
+]
+
+google = [
+    "google-genai>=0.3.0",
+]
+
+ollama = [
+    "ollama>=0.1.0",
+]
+
+litellm = [
+    "litellm>=1.50.0",
+]
+
+openai = [
+    "openai>=1.50.0",
+]
+
+anthropic = [
+    "anthropic>=0.40.0",
+]
+
+# Memory Backends
+redis = [
+    "redis>=4.5.0",
+]
+
+# Convenience Extras
+all-providers = [
+    "anthropic>=0.40.0",
+    "openai>=1.50.0",
+    "litellm>=1.50.0",
+    "google-genai>=0.3.0",
+    "boto3>=1.34.0",
+    "botocore[crt]>=1.34.0",
+    "ollama>=0.1.0",
+]
+
+# Legacy: kept for backwards compatibility
 llm = [
     "anthropic>=0.40.0",
     "openai>=1.50.0",
@@ -76,6 +124,18 @@ llm = [
     "google-genai>=0.3.0",
     "boto3>=1.34.0",
     "ollama>=0.1.0",
+]
+
+# Everything (for development or full-featured deployments)
+all = [
+    "anthropic>=0.40.0",
+    "openai>=1.50.0",
+    "litellm>=1.50.0",
+    "google-genai>=0.3.0",
+    "boto3>=1.34.0",
+    "botocore[crt]>=1.34.0",
+    "ollama>=0.1.0",
+    "redis>=4.5.0",
 ]
 
 [project.urls]

@@ -110,6 +110,137 @@ controller.abort();
 - Closes #507 - Type validation complete
 - Part of epic #445 - API Alignment Phase 2
 
+## [0.56.0] - 2026-02-04
+
+### 🎯 Automated Parity Validation & Tracking
+
+**Focus:** Automated feature detection and parity tracking across all 6 languages with CI integration.
+
+**Key Highlights:**
+- ✅ **Automated Feature Detection** - Scans all 6 codebases automatically
+- 📊 **Visual Parity Matrix** - Real-time ✅/❌ status across languages
+- 🚫 **Regression Prevention** - CI blocks PRs that drop below minimums
+- 📈 **100% Parity Visibility** - Python/Go at 100%, others tracked automatically
+- 🧪 **45 New Tests** - Comprehensive validation suite (all passing in 2.5s)
+
+### Added
+
+#### Automated Feature Scanner (Issue #406)
+**Detects features across all 6 languages automatically:**
+
+- **Python Scanner** (`scripts/parity/scanners/python_scanner.py`, 239 LOC)
+  - AST-based parsing for highest accuracy
+  - Detects patterns, middleware, LLM adapters, memory backends
+  - Filters out base classes and test utilities
+
+- **Go Scanner** (`scripts/parity/scanners/go_scanner.py`, 222 LOC)
+  - Regex-based: `type FooAgent struct`
+  - Filters mocks and internal types
+
+- **TypeScript Scanner** (`scripts/parity/scanners/typescript_scanner.py`, 238 LOC)
+  - Regex-based: `class FooAgent`
+  - Excludes base classes (Agent, MultiAgent)
+
+- **Rust Scanner** (`scripts/parity/scanners/rust_scanner.py`, 242 LOC)
+  - Regex-based: `pub struct FooAgent`
+  - Filters test utilities and mocks
+
+- **C++ Scanner** (`scripts/parity/scanners/cpp_scanner.py`, 242 LOC)
+  - Regex-based: `class FooAgent`
+  - Scans header files (.hpp)
+
+- **Zig Scanner** (`scripts/parity/scanners/zig_scanner.py`, 248 LOC)
+  - Regex-based: `pub const FooAgent = struct`
+  - Handles Zig naming conventions
+
+- **Orchestrator** (`scripts/parity/feature_scanner.py`, 381 LOC)
+  - Coordinates all language scanners
+  - Generates `feature-manifest.json`
+  - Summary statistics and categorization
+
+**Commits:** cc643dac (Phase 1), 80773cc4 (Phase 3)
+
+#### Parity Matrix Generator (Issue #406)
+**Visual reporting system:**
+
+- **Matrix Generator** (`scripts/parity/matrix_generator.py`, 394 LOC)
+  - Combines feature data with test counts
+  - Generates visual parity matrix
+  - Creates gap analysis reports
+  - Jinja2 templating for clean output
+
+- **Templates:**
+  - `scripts/parity/templates/matrix.md.j2` (116 LOC) - Visual matrix
+  - `scripts/parity/templates/gaps.md.j2` (33 LOC) - Gap analysis
+
+- **Generated Reports:**
+  - `docs/parity/FEATURE_MATRIX.md` - Visual ✅/❌ parity matrix
+  - `docs/parity/GAPS_ANALYSIS.md` - Missing features per language
+  - `docs/parity/README.md` - Complete documentation (385 LOC)
+
+**Commit:** 3cadb6dc (Phase 2)
+
+#### Regression Checker & CI Integration (Issue #406)
+**Prevents feature parity drift:**
+
+- **Regression Checker** (`scripts/parity/check_regression.py`, 197 LOC)
+  - Validates minimum feature counts per language
+  - Checks critical features exist (AutonomousAgent, TimeoutDecorator, etc.)
+  - Case-insensitive matching handles naming variations
+  - Exit code 0 = pass, 1 = fail
+
+- **CI Workflow** (`.github/workflows/parity-validation.yml`, 126 LOC)
+  - Runs on every PR automatically
+  - Scans all 6 languages
+  - Generates fresh parity matrix
+  - Runs 45 parity tests
+  - Posts parity summary to PR comments
+  - Uploads reports as artifacts
+
+**Commit:** 140e8209 (Phase 4)
+
+### Testing
+
+#### Comprehensive Test Suite (Issue #406)
+**45 new parity tests (all passing in 2.55s):**
+
+- **Feature Detection Tests** (`tests/parity/test_feature_detection.py`, 328 LOC)
+  - 20 tests validating scanner accuracy
+  - Tests for false positives/negatives
+  - Manifest structure validation
+
+- **Matrix Generation Tests** (`tests/parity/test_matrix_generation.py`, 250 LOC)
+  - 15 tests validating report generation
+  - Data integrity checks
+  - Markdown format validation
+
+- **Regression Tests** (`tests/parity/test_regression_check.py`, 216 LOC)
+  - 10 tests validating regression detection
+  - Feature count threshold validation
+  - Critical feature checks
+
+**Commits:** cc643dac (Phase 1), 3cadb6dc (Phase 2), 140e8209 (Phase 4)
+
+### Parity Results
+
+| Language   | Features | Parity % | Status |
+|------------|----------|----------|--------|
+| Python     | 43       | 100.0%   | ✅ Baseline |
+| Go         | 43       | 100.0%   | ✅ Complete |
+| TypeScript | 36       | 83.7%    | ✅ Strong |
+| Rust       | 38       | 88.4%    | ✅ Strong |
+| C++        | 37       | 86.0%    | ✅ Strong |
+| Zig        | 27       | 62.8%    | ⚠️ Growing |
+
+**Minimum Thresholds (enforced in CI):**
+- Python: 43, Go: 43, TypeScript: 35, Rust: 35, C++: 35, Zig: 25
+
+### Related Issues
+- Closes #406 - Automated parity validation test suite
+- Closes #407 - Parity tracking dashboard (delivered via #406)
+- Closes #346 - Document optional dependencies
+- Closes #387 - TypeScript memory backends
+
 ## [0.54.0] - 2026-01-27
 
 ### 🧠 Complete Reasoning Technique Cross-Language Parity

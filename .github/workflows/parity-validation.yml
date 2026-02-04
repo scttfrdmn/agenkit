@@ -1,0 +1,116 @@
+name: Parity Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:  # Allow manual triggers
+
+# NOTE: This workflow is supplementary to local testing.
+# Always run `make test` locally before pushing.
+# See CLAUDE.md for local testing requirements.
+
+jobs:
+  parity-check:
+    name: Feature Parity Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv sync
+
+      - name: Scan features across all languages
+        run: |
+          uv run python scripts/parity/feature_scanner.py
+
+      - name: Generate parity matrix
+        run: |
+          uv run python scripts/parity/matrix_generator.py
+
+      - name: Run parity tests
+        run: |
+          uv run pytest tests/parity/ -v --tb=short
+
+      - name: Check for regressions
+        run: |
+          uv run python scripts/parity/check_regression.py
+
+      - name: Upload parity reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-reports
+          path: |
+            feature-manifest.json
+            docs/parity/FEATURE_MATRIX.md
+            docs/parity/GAPS_ANALYSIS.md
+          retention-days: 30
+
+      - name: Comment PR with parity summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read feature manifest
+            const manifest = JSON.parse(fs.readFileSync('feature-manifest.json', 'utf8'));
+            const summary = manifest.summary.total;
+
+            // Calculate parity percentages
+            const pythonTotal = summary.python;
+            const parityPct = (lang) => ((summary[lang] / pythonTotal) * 100).toFixed(1);
+
+            // Build comment
+            const comment = `## 🔍 Feature Parity Report
+
+            | Language | Features | Parity % | Status |
+            |----------|----------|----------|--------|
+            | Python | ${summary.python} | 100.0% | ✅ Baseline |
+            | Go | ${summary.go} | ${parityPct('go')}% | ${summary.go >= 43 ? '✅' : '⚠️'} |
+            | TypeScript | ${summary.typescript} | ${parityPct('typescript')}% | ${summary.typescript >= 35 ? '✅' : '⚠️'} |
+            | Rust | ${summary.rust} | ${parityPct('rust')}% | ${summary.rust >= 35 ? '✅' : '⚠️'} |
+            | C++ | ${summary.cpp} | ${parityPct('cpp')}% | ${summary.cpp >= 35 ? '✅' : '⚠️'} |
+            | Zig | ${summary.zig} | ${parityPct('zig')}% | ${summary.zig >= 25 ? '✅' : '⚠️'} |
+
+            **Generated**: ${manifest.generated_at}
+
+            📊 View full reports in workflow artifacts
+            📋 See [FEATURE_MATRIX.md](../blob/${process.env.GITHUB_SHA}/docs/parity/FEATURE_MATRIX.md) for details
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Optional: Block PR if parity regresses
+  parity-gate:
+    name: Parity Gate (Optional)
+    runs-on: ubuntu-latest
+    needs: parity-check
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Check parity gate
+        run: |
+          echo "✅ Parity validation passed"
+          echo "This is an informational gate - local testing is primary validation"

@@ -1,6 +1,6 @@
 # Feature Parity Matrix
 
-**Generated**: 2026-02-04 03:22:10 UTC
+**Generated**: 2026-02-04 03:29:29 UTC
 
 This matrix shows feature implementation status across all 6 Agenkit language implementations.
 
@@ -18,9 +18,9 @@ This matrix shows feature implementation status across all 6 Agenkit language im
 | python     | 43 | 100.0% | 1836 tests |
 | go         | 43 | 100.0% | 950 tests |
 | typescript | 36 | 83.7% | 863 tests |
-| rust       | 0 | 0.0% | 681 tests |
-| cpp        | 0 | 0.0% | 793 tests |
-| zig        | 0 | 0.0% | 214 tests |
+| rust       | 38 | 88.4% | 681 tests |
+| cpp        | 37 | 86.0% | 793 tests |
+| zig        | 27 | 62.8% | 214 tests |
 
 ---
 
@@ -35,30 +35,32 @@ This matrix shows feature implementation status across all 6 Agenkit language im
 |---------|--------|----|-----------| -----|-----|-----|
 | AgentTask | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | AgentTool | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| AutonomousAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| ClassifierAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| CollaborativeAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| ConsensusAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| ConversationalAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| FallbackAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| HumanInLoopAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| AutonomousAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| ClassifierAgent | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| CollaborativeAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| ConsensusAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| ConversationalAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| FallbackAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| HumanInLoopAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | MultiAgentConfig | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | MultiAgentOrchestrator | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| OrchestrationAgent | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| ParallelAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| PlannerAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| PlanningAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| ReActAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| ReasoningWithToolsAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| RecoveryAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| ReflectionAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| RouterAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| SequentialAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| OrchestrationAgent | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| ParallelAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| PlannerAgent | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| PlanningAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| ReActAgent | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| ReactAgent | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| ReasoningAgent | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| ReasoningWithToolsAgent | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| RecoveryAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| ReflectionAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| RouterAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SequentialAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | StreamingConversationalAgent | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| SupervisorAgent | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| SupervisorAgent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 **Totals**:
-Python: 23, Go: 17, TypeScript: 17, Rust: 0, C++: 0, Zig: 0
+Python: 23, Go: 17, TypeScript: 17, Rust: 15, C++: 18, Zig: 13
 
 
 ---
@@ -70,27 +72,31 @@ Python: 23, Go: 17, TypeScript: 17, Rust: 0, C++: 0, Zig: 0
 
 | Feature | Python | Go | TypeScript | Rust | C++ | Zig |
 |---------|--------|----|-----------| -----|-----|-----|
-| BatchingConfig | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| BatchingDecorator | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| CachingConfig | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| CachingDecorator | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| CircuitBreakerConfig | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| CircuitBreakerDecorator | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| CircuitBreakerMiddleware | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| BatchingConfig | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| BatchingDecorator | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| BatchingMiddleware | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
+| CachingConfig | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| CachingDecorator | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| CachingMiddleware | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
+| CircuitBreakerConfig | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| CircuitBreakerDecorator | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| CircuitBreakerMiddleware | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ |
 | MetricsDecorator | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| PerUserRateLimiterConfig | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| PerUserRateLimiterDecorator | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| RateLimiterConfig | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| RateLimiterDecorator | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| RetryConfig | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| RetryDecorator | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| RetryMiddleware | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| TimeoutConfig | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| TimeoutDecorator | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| TimeoutMiddleware | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| PerUserRateLimiterConfig | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| PerUserRateLimiterDecorator | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| PerUserRateLimiterMiddleware | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
+| RateLimiterConfig | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| RateLimiterDecorator | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| RateLimiterMiddleware | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
+| RetryConfig | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| RetryDecorator | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| RetryMiddleware | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ |
+| TimeoutConfig | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| TimeoutDecorator | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| TimeoutMiddleware | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ |
 
 **Totals**:
-Python: 8, Go: 14, TypeScript: 7, Rust: 0, C++: 0, Zig: 0
+Python: 8, Go: 14, TypeScript: 7, Rust: 14, C++: 14, Zig: 14
 
 
 ---
@@ -102,23 +108,23 @@ Python: 8, Go: 14, TypeScript: 7, Rust: 0, C++: 0, Zig: 0
 
 | Feature | Python | Go | TypeScript | Rust | C++ | Zig |
 |---------|--------|----|-----------| -----|-----|-----|
-| AnthropicAdapter | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| AnthropicAdapter | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
 | AnthropicLLM | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| BedrockAdapter | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| BedrockAdapter | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ |
 | BedrockLLM | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| GeminiAdapter | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| GeminiAdapter | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ |
 | GeminiLLM | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| LiteLLMAdapter | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| LiteLLMAdapter | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ |
 | LiteLLMLLM | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | LocalAgent | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| OllamaAdapter | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| OllamaAdapter | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ |
 | OllamaLLM | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| OpenAIAdapter | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| OpenAIAdapter | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ |
 | OpenAICompatibleLLM | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | OpenAILLM | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 
 **Totals**:
-Python: 7, Go: 7, TypeScript: 7, Rust: 0, C++: 0, Zig: 0
+Python: 7, Go: 7, TypeScript: 7, Rust: 6, C++: 5, Zig: 0
 
 
 ---
@@ -132,12 +138,12 @@ Python: 7, Go: 7, TypeScript: 7, Rust: 0, C++: 0, Zig: 0
 |---------|--------|----|-----------| -----|-----|-----|
 | EndlessMemory | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | HierarchyMemory | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| InMemoryMemory | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| RedisMemory | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| VectorMemory | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| InMemoryMemory | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| RedisMemory | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| VectorMemory | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 
 **Totals**:
-Python: 5, Go: 5, TypeScript: 5, Rust: 0, C++: 0, Zig: 0
+Python: 5, Go: 5, TypeScript: 5, Rust: 3, C++: 0, Zig: 0
 
 
 ---
@@ -148,10 +154,10 @@ Python: 5, Go: 5, TypeScript: 5, Rust: 0, C++: 0, Zig: 0
 
 | Category | Python | Go | TypeScript | Rust | C++ | Zig |
 |----------|--------|----|-----------| -----|-----|-----|
-| Patterns | 23 | 17 | 17 | 0 | 0 | 0 |
-| Middleware | 8 | 14 | 7 | 0 | 0 | 0 |
-| Llm Adapters | 7 | 7 | 7 | 0 | 0 | 0 |
-| Memory | 5 | 5 | 5 | 0 | 0 | 0 |
+| Patterns | 23 | 17 | 17 | 15 | 18 | 13 |
+| Middleware | 8 | 14 | 7 | 14 | 14 | 14 |
+| Llm Adapters | 7 | 7 | 7 | 6 | 5 | 0 |
+| Memory | 5 | 5 | 5 | 3 | 0 | 0 |
 
 ---
 
@@ -167,11 +173,9 @@ Python: 5, Go: 5, TypeScript: 5, Rust: 0, C++: 0, Zig: 0
 ### Top Performing Languages (by feature count)
 1. **Go** - 43 features (100.0% parity) - Excellent coverage!
 2. **TypeScript** - 36 features (83.7% parity) - Strong implementation
+3. **Rust** - 38 features (88.4% parity) - Growing rapidly
 
 ### Areas for Improvement
-- **Rust**: Scanner not yet implemented (Phase 3)
-- **C++**: Scanner not yet implemented (Phase 3)
-- **Zig**: Scanner not yet implemented (Phase 3)
 
 
 ### Test Coverage Highlights

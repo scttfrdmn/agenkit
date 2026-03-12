@@ -160,3 +160,12 @@ type MessageWithMetadata struct {
 	Message   agenkit.Message        // The message
 	Metadata  map[string]interface{} // Associated metadata
 }
+
+// SharedMemory marks a memory backend accessible from multiple hosts (e.g. Redis, remote DB).
+type SharedMemory interface {
+	Memory
+	// URI returns the canonical URI of this memory backend.
+	URI() string
+	// Ping verifies that the backend is reachable and returns an error if not.
+	Ping(ctx context.Context) error
+}

@@ -10,7 +10,7 @@ import (
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
-// InMemoryMemory provides simple in-memory storage with LRU eviction.
+// EphemeralMemory provides simple in-memory storage with LRU eviction.
 //
 // Features:
 //   - Fast access (no I/O)
@@ -31,11 +31,11 @@ import (
 //
 // Example:
 //
-//	memory := NewInMemoryMemory(1000)
+//	memory := NewEphemeralMemory(1000)
 //	err := memory.Store(ctx, "session-123", message, nil)
 //	limit := 10
 //	messages, err := memory.Retrieve(ctx, "session-123", RetrieveOptions{Limit: &limit})
-type InMemoryMemory struct {
+type EphemeralMemory struct {
 	maxSize int
 	mu      sync.RWMutex
 	// sessionID -> list of messages with metadata
@@ -44,7 +44,7 @@ type InMemoryMemory struct {
 	counter int64
 }
 
-// NewInMemoryMemory creates a new in-memory memory instance.
+// NewEphemeralMemory creates a new in-memory memory instance.
 //
 // Args:
 //
@@ -52,9 +52,9 @@ type InMemoryMemory struct {
 //
 // Example:
 //
-//	memory := NewInMemoryMemory(1000)
-func NewInMemoryMemory(maxSize int) *InMemoryMemory {
-	return &InMemoryMemory{
+//	memory := NewEphemeralMemory(1000)
+func NewEphemeralMemory(maxSize int) *EphemeralMemory {
+	return &EphemeralMemory{
 		maxSize: maxSize,
 		storage: make(map[string][]MessageWithMetadata),
 		counter: 0,
@@ -62,7 +62,7 @@ func NewInMemoryMemory(maxSize int) *InMemoryMemory {
 }
 
 // Store saves a message to memory with optional metadata.
-func (m *InMemoryMemory) Store(ctx context.Context, sessionID string, message agenkit.Message, metadata map[string]interface{}) error {
+func (m *EphemeralMemory) Store(ctx context.Context, sessionID string, message agenkit.Message, metadata map[string]interface{}) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -101,7 +101,7 @@ func (m *InMemoryMemory) Store(ctx context.Context, sessionID string, message ag
 //   - TimeRange: Filter by time range
 //   - ImportanceThreshold: Filter by importance score (requires metadata with "importance")
 //   - Tags: Filter by tags (requires metadata with "tags")
-func (m *InMemoryMemory) Retrieve(ctx context.Context, sessionID string, opts RetrieveOptions) ([]agenkit.Message, error) {
+func (m *EphemeralMemory) Retrieve(ctx context.Context, sessionID string, opts RetrieveOptions) ([]agenkit.Message, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -204,7 +204,7 @@ func (m *InMemoryMemory) Retrieve(ctx context.Context, sessionID string, opts Re
 //
 // Simple implementation: Returns a message with concatenated content.
 // Production use should use LLM-based summarization.
-func (m *InMemoryMemory) Summarize(ctx context.Context, sessionID string, opts SummarizeOptions) (agenkit.Message, error) {
+func (m *EphemeralMemory) Summarize(ctx context.Context, sessionID string, opts SummarizeOptions) (agenkit.Message, error) {
 	limit := 100
 	messages, err := m.Retrieve(ctx, sessionID, RetrieveOptions{Limit: &limit})
 	if err != nil {
@@ -246,7 +246,7 @@ func (m *InMemoryMemory) Summarize(ctx context.Context, sessionID string, opts S
 }
 
 // Clear removes all memory for a session.
-func (m *InMemoryMemory) Clear(ctx context.Context, sessionID string) error {
+func (m *EphemeralMemory) Clear(ctx context.Context, sessionID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -255,7 +255,7 @@ func (m *InMemoryMemory) Clear(ctx context.Context, sessionID string) error {
 }
 
 // Capabilities returns the memory capabilities.
-func (m *InMemoryMemory) Capabilities() []string {
+func (m *EphemeralMemory) Capabilities() []string {
 	return []string{
 		"basic_retrieval",
 		"time_filtering",
@@ -267,7 +267,7 @@ func (m *InMemoryMemory) Capabilities() []string {
 // Additional utility methods
 
 // GetSessionCount returns the number of messages stored for a session.
-func (m *InMemoryMemory) GetSessionCount(sessionID string) int {
+func (m *EphemeralMemory) GetSessionCount(sessionID string) int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -278,7 +278,7 @@ func (m *InMemoryMemory) GetSessionCount(sessionID string) int {
 }
 
 // GetAllSessions returns a list of all session IDs.
-func (m *InMemoryMemory) GetAllSessions() []string {
+func (m *EphemeralMemory) GetAllSessions() []string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -291,7 +291,7 @@ func (m *InMemoryMemory) GetAllSessions() []string {
 }
 
 // GetMemoryUsage returns memory usage statistics.
-func (m *InMemoryMemory) GetMemoryUsage() map[string]interface{} {
+func (m *EphemeralMemory) GetMemoryUsage() map[string]interface{} {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -306,3 +306,9 @@ func (m *InMemoryMemory) GetMemoryUsage() map[string]interface{} {
 		"max_size_per_session": m.maxSize,
 	}
 }
+
+// Deprecated: use EphemeralMemory.
+type InMemoryMemory = EphemeralMemory
+
+// Deprecated: use NewEphemeralMemory.
+var NewInMemoryMemory = NewEphemeralMemory

@@ -13,6 +13,138 @@ import (
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
+// CacheStore is the interface for pluggable cache backends used by CachingDecorator.
+type CacheStore interface {
+	// Get returns the cached response for key, and whether it was found.
+	Get(key string) (*agenkit.Message, bool)
+	// Set stores a response under key with the given TTL.
+	Set(key string, value *agenkit.Message, ttl time.Duration)
+	// Delete removes the entry for key (no-op if absent).
+	Delete(key string)
+	// Flush removes all entries.
+	Flush()
+	// Size returns the number of currently cached entries.
+	Size() int
+}
+
+// MemoryCacheStore implements CacheStore with an in-process LRU cache and TTL expiry.
+//
+// This is the default store used by CachingDecorator when no custom store is provided.
+type MemoryCacheStore struct {
+	mu             sync.RWMutex
+	cache          map[string]*list.Element
+	lruList        *list.List
+	maxSize        int
+	cleanupCounter int64
+	onEvict        func() // optional: called by Set when an entry is evicted due to capacity
+}
+
+// NewMemoryCacheStore creates an in-process LRU cache store with the given capacity.
+func NewMemoryCacheStore(maxSize int) *MemoryCacheStore {
+	return &MemoryCacheStore{
+		cache:   make(map[string]*list.Element),
+		lruList: list.New(),
+		maxSize: maxSize,
+	}
+}
+
+// Get returns the cached message for key. Expired entries are treated as misses.
+func (s *MemoryCacheStore) Get(key string) (*agenkit.Message, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	elem, ok := s.cache[key]
+	if !ok {
+		return nil, false
+	}
+	item := elem.Value.(*lruItem)
+	if item.entry.isExpired() {
+		return nil, false
+	}
+	return item.entry.Response, true
+}
+
+// Set stores value under key with the given TTL, evicting the LRU entry if the cache is full.
+func (s *MemoryCacheStore) Set(key string, value *agenkit.Message, ttl time.Duration) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Remove stale entry for this key if present.
+	if elem, ok := s.cache[key]; ok {
+		s.lruList.Remove(elem)
+		delete(s.cache, key)
+	}
+
+	// Periodic cleanup of expired entries (every 100 writes).
+	s.cleanupCounter++
+	if s.cleanupCounter%100 == 0 {
+		s.cleanupExpiredLocked()
+	}
+
+	// Evict LRU entry when at capacity.
+	if s.lruList.Len() >= s.maxSize {
+		oldest := s.lruList.Back()
+		if oldest != nil {
+			evictedItem := oldest.Value.(*lruItem)
+			s.lruList.Remove(oldest)
+			delete(s.cache, evictedItem.key)
+			if s.onEvict != nil {
+				s.onEvict()
+			}
+		}
+	}
+
+	entry := &cacheEntry{
+		Response:  value,
+		ExpiresAt: time.Now().Add(ttl),
+		CreatedAt: time.Now(),
+	}
+	item := &lruItem{key: key, entry: entry}
+	elem := s.lruList.PushFront(item)
+	s.cache[key] = elem
+}
+
+// Delete removes the entry for key.
+func (s *MemoryCacheStore) Delete(key string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if elem, ok := s.cache[key]; ok {
+		s.lruList.Remove(elem)
+		delete(s.cache, key)
+	}
+}
+
+// Flush removes all entries.
+func (s *MemoryCacheStore) Flush() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cache = make(map[string]*list.Element)
+	s.lruList = list.New()
+}
+
+// Size returns the number of cached entries.
+func (s *MemoryCacheStore) Size() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.cache)
+}
+
+// cleanupExpiredLocked removes expired entries; must be called with write lock held.
+func (s *MemoryCacheStore) cleanupExpiredLocked() {
+	var expired []string
+	for key, elem := range s.cache {
+		if elem.Value.(*lruItem).entry.isExpired() {
+			expired = append(expired, key)
+		}
+	}
+	for _, key := range expired {
+		if elem, ok := s.cache[key]; ok {
+			s.lruList.Remove(elem)
+			delete(s.cache, key)
+		}
+	}
+}
+
 // CachingConfig configures caching behavior.
 type CachingConfig struct {
 	// MaxCacheSize is the maximum number of entries in the cache.
@@ -26,6 +158,10 @@ type CachingConfig struct {
 	// KeyGenerator is an optional custom function to generate cache keys.
 	// If nil, a default SHA256-based key generator is used.
 	KeyGenerator func(*agenkit.Message) string
+
+	// Store is an optional custom cache backend.
+	// If nil, NewCachingDecorator creates a MemoryCacheStore.
+	Store CacheStore
 }
 
 // DefaultCachingConfig returns a caching config with sensible defaults.
@@ -33,7 +169,6 @@ func DefaultCachingConfig() CachingConfig {
 	return CachingConfig{
 		MaxCacheSize: 1000,
 		DefaultTTL:   5 * time.Minute,
-		KeyGenerator: nil,
 	}
 }
 
@@ -46,6 +181,17 @@ func (c *CachingConfig) Validate() error {
 		return fmt.Errorf("default_ttl must be positive, got %v", c.DefaultTTL)
 	}
 	return nil
+}
+
+// WithCacheStore returns a functional option that sets a custom cache store on a CachingConfig.
+//
+// Example:
+//
+//	cfg := middleware.DefaultCachingConfig()
+//	middleware.WithCacheStore(redisStore)(&cfg)
+//	decorator, _ := middleware.NewCachingDecorator(agent, cfg)
+func WithCacheStore(store CacheStore) func(*CachingConfig) {
+	return func(c *CachingConfig) { c.Store = store }
 }
 
 // CachingMetrics tracks caching middleware metrics.
@@ -162,17 +308,16 @@ type lruItem struct {
 // The caching middleware reduces latency and cost by caching agent responses.
 // It implements:
 //
-// - LRU (Least Recently Used) eviction when cache is full
-// - TTL (Time To Live) based expiration with automatic cleanup
+// - Pluggable cache backends via CacheStore (default: MemoryCacheStore with LRU + TTL)
 // - Cache invalidation (specific entries or entire cache)
 // - Configurable cache keys with custom key generator support
-// - Thread-safe operations with sync.Mutex
+// - Thread-safe operations
 // - Comprehensive metrics (hits, misses, hit rate, evictions, invalidations)
 //
 // Example:
 //
 //	agent := &MyAgent{}
-//	cachingAgent := middleware.NewCachingDecorator(
+//	cachingAgent, _ := middleware.NewCachingDecorator(
 //		agent,
 //		middleware.CachingConfig{
 //			MaxCacheSize: 1000,
@@ -180,11 +325,7 @@ type lruItem struct {
 //		},
 //	)
 //
-//	ctx := context.Background()
 //	result, err := cachingAgent.Process(ctx, message)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
 //
 //	// Check cache metrics
 //	fmt.Printf("Hit rate: %.2f%%\n", cachingAgent.Metrics().HitRate() * 100)
@@ -192,11 +333,7 @@ type CachingDecorator struct {
 	agent   agenkit.Agent
 	config  CachingConfig
 	metrics *CachingMetrics
-
-	mu             sync.RWMutex             // Read-write lock for concurrent cache reads
-	cache          map[string]*list.Element // key -> list element
-	lruList        *list.List               // doubly linked list for LRU
-	cleanupCounter int64
+	store   CacheStore
 }
 
 // Verify that CachingDecorator implements Agent interface.
@@ -204,7 +341,7 @@ var _ agenkit.Agent = (*CachingDecorator)(nil)
 
 // NewCachingDecorator creates a new caching decorator.
 func NewCachingDecorator(agent agenkit.Agent, config CachingConfig) (*CachingDecorator, error) {
-	// Apply defaults
+	// Apply defaults.
 	if config.MaxCacheSize <= 0 {
 		config.MaxCacheSize = 1000
 	}
@@ -212,18 +349,26 @@ func NewCachingDecorator(agent agenkit.Agent, config CachingConfig) (*CachingDec
 		config.DefaultTTL = 5 * time.Minute
 	}
 
-	// Validate config
 	if err := config.Validate(); err != nil {
 		return nil, err
 	}
 
-	return &CachingDecorator{
+	d := &CachingDecorator{
 		agent:   agent,
 		config:  config,
 		metrics: NewCachingMetrics(),
-		cache:   make(map[string]*list.Element),
-		lruList: list.New(),
-	}, nil
+	}
+
+	// Use provided store or fall back to an in-process LRU store.
+	if config.Store != nil {
+		d.store = config.Store
+	} else {
+		ms := NewMemoryCacheStore(config.MaxCacheSize)
+		ms.onEvict = func() { d.metrics.RecordEviction() }
+		d.store = ms
+	}
+
+	return d, nil
 }
 
 // Name returns the name of the underlying agent.
@@ -248,12 +393,10 @@ func (c *CachingDecorator) Metrics() *CachingMetrics {
 
 // generateCacheKey generates a cache key from a message.
 func (c *CachingDecorator) generateCacheKey(message *agenkit.Message) string {
-	// Use custom key generator if provided
 	if c.config.KeyGenerator != nil {
 		return c.config.KeyGenerator(message)
 	}
 
-	// Default key generation: hash of role + content + metadata
 	keyData := map[string]interface{}{
 		"role":     message.Role,
 		"content":  message.Content,
@@ -262,7 +405,6 @@ func (c *CachingDecorator) generateCacheKey(message *agenkit.Message) string {
 
 	jsonBytes, err := json.Marshal(keyData)
 	if err != nil {
-		// Fallback to simple string concatenation
 		return fmt.Sprintf("%s:%s", message.Role, message.Content)
 	}
 
@@ -270,118 +412,23 @@ func (c *CachingDecorator) generateCacheKey(message *agenkit.Message) string {
 	return fmt.Sprintf("%x", hash)
 }
 
-// evictLRU evicts the least recently used entry if cache is full.
-func (c *CachingDecorator) evictLRU() {
-	if c.lruList.Len() >= c.config.MaxCacheSize {
-		// Remove oldest (least recently used) entry
-		oldest := c.lruList.Back()
-		if oldest != nil {
-			item := oldest.Value.(*lruItem)
-			c.lruList.Remove(oldest)
-			delete(c.cache, item.key)
-			c.metrics.RecordEviction()
-			c.metrics.UpdateSize(int64(len(c.cache)))
-		}
-	}
-}
-
-// cleanupExpired removes expired entries from cache.
-func (c *CachingDecorator) cleanupExpired() {
-	var expiredKeys []string
-
-	// Find expired entries
-	for key, elem := range c.cache {
-		item := elem.Value.(*lruItem)
-		if item.entry.isExpired() {
-			expiredKeys = append(expiredKeys, key)
-		}
-	}
-
-	// Remove expired entries
-	for _, key := range expiredKeys {
-		if elem, ok := c.cache[key]; ok {
-			c.lruList.Remove(elem)
-			delete(c.cache, key)
-			c.metrics.RecordEviction()
-		}
-	}
-
-	if len(expiredKeys) > 0 {
-		c.metrics.UpdateSize(int64(len(c.cache)))
-	}
-}
-
 // Process implements the Agent interface with caching.
 func (c *CachingDecorator) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	// Generate cache key (no lock needed)
 	cacheKey := c.generateCacheKey(message)
 
-	// Check cache with read lock (allows concurrent reads)
-	c.mu.RLock()
-	elem, ok := c.cache[cacheKey]
-	if ok {
-		item := elem.Value.(*lruItem)
-
-		// Check if expired
-		if !item.entry.isExpired() {
-			// Cache hit - return cached response
-			// Note: We don't MoveToFront here to avoid lock upgrade
-			// This slightly reduces LRU accuracy but improves concurrency
-			response := item.entry.Response
-			c.mu.RUnlock()
-			c.metrics.RecordHit()
-			return response, nil
-		}
+	if cached, ok := c.store.Get(cacheKey); ok {
+		c.metrics.RecordHit()
+		return cached, nil
 	}
-	c.mu.RUnlock()
-
-	// Cache miss or expired - update metrics
 	c.metrics.RecordMiss()
 
-	// Process message (outside lock to avoid blocking cache operations)
 	response, err := c.agent.Process(ctx, message)
 	if err != nil {
 		return nil, err
 	}
 
-	// Cache response (use write lock)
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	// Clean up expired entry if present
-	if elem, ok := c.cache[cacheKey]; ok {
-		item := elem.Value.(*lruItem)
-		if item.entry.isExpired() {
-			c.lruList.Remove(elem)
-			delete(c.cache, cacheKey)
-			c.metrics.RecordEviction()
-		}
-	}
-
-	// Periodic cleanup (every 100 requests)
-	c.cleanupCounter++
-	if c.cleanupCounter%100 == 0 {
-		c.cleanupExpired()
-	}
-
-	// Evict LRU if needed
-	c.evictLRU()
-
-	// Add to cache
-	entry := &cacheEntry{
-		Response:  response,
-		ExpiresAt: time.Now().Add(c.config.DefaultTTL),
-		CreatedAt: time.Now(),
-	}
-
-	item := &lruItem{
-		key:   cacheKey,
-		entry: entry,
-	}
-
-	elem = c.lruList.PushFront(item)
-	c.cache[cacheKey] = elem
-	c.metrics.UpdateSize(int64(len(c.cache)))
+	c.store.Set(cacheKey, response, c.config.DefaultTTL)
+	c.metrics.UpdateSize(int64(c.store.Size()))
 
 	return response, nil
 }
@@ -391,45 +438,29 @@ func (c *CachingDecorator) Process(ctx context.Context, message *agenkit.Message
 // If message is provided, invalidates only that message's cache entry.
 // If message is nil, invalidates the entire cache.
 func (c *CachingDecorator) Invalidate(message *agenkit.Message) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if message != nil {
-		// Invalidate specific entry
 		cacheKey := c.generateCacheKey(message)
-		if elem, ok := c.cache[cacheKey]; ok {
-			c.lruList.Remove(elem)
-			delete(c.cache, cacheKey)
-			c.metrics.RecordInvalidation()
-			c.metrics.UpdateSize(int64(len(c.cache)))
-		}
+		c.store.Delete(cacheKey)
+		c.metrics.RecordInvalidation()
 	} else {
-		// Invalidate entire cache
-		count := len(c.cache)
-		c.cache = make(map[string]*list.Element)
-		c.lruList = list.New()
+		count := c.store.Size()
+		c.store.Flush()
 		for i := 0; i < count; i++ {
 			c.metrics.RecordInvalidation()
 		}
-		c.metrics.UpdateSize(0)
 	}
+	c.metrics.UpdateSize(int64(c.store.Size()))
 }
 
 // GetCacheSize returns the current cache size.
 func (c *CachingDecorator) GetCacheSize() int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return len(c.cache)
+	return c.store.Size()
 }
 
 // GetCacheInfo returns detailed cache information.
 func (c *CachingDecorator) GetCacheInfo() map[string]interface{} {
-	c.mu.RLock()
-	size := len(c.cache)
-	c.mu.RUnlock()
-
 	return map[string]interface{}{
-		"size":        size,
+		"size":        c.store.Size(),
 		"max_size":    c.config.MaxCacheSize,
 		"default_ttl": c.config.DefaultTTL.Seconds(),
 		"metrics":     c.metrics.GetStats(),

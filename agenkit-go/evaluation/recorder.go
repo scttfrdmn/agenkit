@@ -180,14 +180,14 @@ type RecordingStorage interface {
 	DeleteRecording(sessionID string) error
 }
 
-// FileRecordingStorage provides file-based recording storage.
+// LocalRecordingStorage provides file-based recording storage.
 //
 // Stores recordings as JSON files on disk.
-type FileRecordingStorage struct {
+type LocalRecordingStorage struct {
 	recordingsDir string
 }
 
-// NewFileRecordingStorage creates a new file storage.
+// NewLocalRecordingStorage creates a new file storage.
 //
 // Args:
 //
@@ -195,8 +195,8 @@ type FileRecordingStorage struct {
 //
 // Example:
 //
-//	storage := NewFileRecordingStorage("./recordings")
-func NewFileRecordingStorage(recordingsDir string) *FileRecordingStorage {
+//	storage := NewLocalRecordingStorage("./recordings")
+func NewLocalRecordingStorage(recordingsDir string) *LocalRecordingStorage {
 	if recordingsDir == "" {
 		recordingsDir = "./recordings"
 	}
@@ -204,13 +204,13 @@ func NewFileRecordingStorage(recordingsDir string) *FileRecordingStorage {
 	// Create directory if needed
 	_ = os.MkdirAll(recordingsDir, 0755)
 
-	return &FileRecordingStorage{
+	return &LocalRecordingStorage{
 		recordingsDir: recordingsDir,
 	}
 }
 
 // SaveRecording saves recording to file.
-func (s *FileRecordingStorage) SaveRecording(recording *SessionRecording) error {
+func (s *LocalRecordingStorage) SaveRecording(recording *SessionRecording) error {
 	filePath := filepath.Join(s.recordingsDir, fmt.Sprintf("%s.json", recording.SessionID))
 
 	file, err := os.Create(filePath)
@@ -225,7 +225,7 @@ func (s *FileRecordingStorage) SaveRecording(recording *SessionRecording) error 
 }
 
 // LoadRecording loads recording from file.
-func (s *FileRecordingStorage) LoadRecording(sessionID string) (*SessionRecording, error) {
+func (s *LocalRecordingStorage) LoadRecording(sessionID string) (*SessionRecording, error) {
 	filePath := filepath.Join(s.recordingsDir, fmt.Sprintf("%s.json", sessionID))
 
 	file, err := os.Open(filePath)
@@ -247,7 +247,7 @@ func (s *FileRecordingStorage) LoadRecording(sessionID string) (*SessionRecordin
 }
 
 // ListRecordings lists all recordings.
-func (s *FileRecordingStorage) ListRecordings(limit, offset int) ([]*SessionRecording, error) {
+func (s *LocalRecordingStorage) ListRecordings(limit, offset int) ([]*SessionRecording, error) {
 	recordings := make([]*SessionRecording, 0)
 
 	// Find all JSON files
@@ -315,7 +315,7 @@ func (s *FileRecordingStorage) ListRecordings(limit, offset int) ([]*SessionReco
 }
 
 // DeleteRecording deletes recording file.
-func (s *FileRecordingStorage) DeleteRecording(sessionID string) error {
+func (s *LocalRecordingStorage) DeleteRecording(sessionID string) error {
 	filePath := filepath.Join(s.recordingsDir, fmt.Sprintf("%s.json", sessionID))
 
 	if _, err := os.Stat(filePath); err != nil {
@@ -328,28 +328,28 @@ func (s *FileRecordingStorage) DeleteRecording(sessionID string) error {
 	return os.Remove(filePath)
 }
 
-// InMemoryRecordingStorage provides in-memory recording storage for testing.
+// MemoryRecordingStorage provides in-memory recording storage for testing.
 //
 // Does not persist recordings across restarts.
-type InMemoryRecordingStorage struct {
+type MemoryRecordingStorage struct {
 	recordings map[string]*SessionRecording
 }
 
-// NewInMemoryRecordingStorage creates a new in-memory storage.
-func NewInMemoryRecordingStorage() *InMemoryRecordingStorage {
-	return &InMemoryRecordingStorage{
+// NewMemoryRecordingStorage creates a new in-memory storage.
+func NewMemoryRecordingStorage() *MemoryRecordingStorage {
+	return &MemoryRecordingStorage{
 		recordings: make(map[string]*SessionRecording),
 	}
 }
 
 // SaveRecording saves recording to memory.
-func (s *InMemoryRecordingStorage) SaveRecording(recording *SessionRecording) error {
+func (s *MemoryRecordingStorage) SaveRecording(recording *SessionRecording) error {
 	s.recordings[recording.SessionID] = recording
 	return nil
 }
 
 // LoadRecording loads recording from memory.
-func (s *InMemoryRecordingStorage) LoadRecording(sessionID string) (*SessionRecording, error) {
+func (s *MemoryRecordingStorage) LoadRecording(sessionID string) (*SessionRecording, error) {
 	recording, ok := s.recordings[sessionID]
 	if !ok {
 		return nil, nil
@@ -358,7 +358,7 @@ func (s *InMemoryRecordingStorage) LoadRecording(sessionID string) (*SessionReco
 }
 
 // ListRecordings lists recordings from memory.
-func (s *InMemoryRecordingStorage) ListRecordings(limit, offset int) ([]*SessionRecording, error) {
+func (s *MemoryRecordingStorage) ListRecordings(limit, offset int) ([]*SessionRecording, error) {
 	recordings := make([]*SessionRecording, 0, len(s.recordings))
 	for _, recording := range s.recordings {
 		recordings = append(recordings, recording)
@@ -383,7 +383,7 @@ func (s *InMemoryRecordingStorage) ListRecordings(limit, offset int) ([]*Session
 }
 
 // DeleteRecording deletes recording from memory.
-func (s *InMemoryRecordingStorage) DeleteRecording(sessionID string) error {
+func (s *MemoryRecordingStorage) DeleteRecording(sessionID string) error {
 	delete(s.recordings, sessionID)
 	return nil
 }
@@ -395,7 +395,7 @@ func (s *InMemoryRecordingStorage) DeleteRecording(sessionID string) error {
 //
 // Example:
 //
-//	recorder := NewSessionRecorder(NewFileRecordingStorage("./recordings"))
+//	recorder := NewSessionRecorder(NewLocalRecordingStorage("./recordings"))
 //	wrappedAgent := recorder.Wrap(agent)
 //
 //	// Use agent normally (automatically recorded)
@@ -419,7 +419,7 @@ type SessionRecorder struct {
 //	recorder := NewSessionRecorder(nil)
 func NewSessionRecorder(storage RecordingStorage) *SessionRecorder {
 	if storage == nil {
-		storage = NewInMemoryRecordingStorage()
+		storage = NewMemoryRecordingStorage()
 	}
 
 	return &SessionRecorder{
@@ -772,3 +772,15 @@ func getMapOrEmpty(data map[string]interface{}, key string) map[string]interface
 	}
 	return make(map[string]interface{})
 }
+
+// Deprecated: use MemoryRecordingStorage.
+type InMemoryRecordingStorage = MemoryRecordingStorage
+
+// Deprecated: use NewMemoryRecordingStorage.
+var NewInMemoryRecordingStorage = NewMemoryRecordingStorage
+
+// Deprecated: use LocalRecordingStorage.
+type FileRecordingStorage = LocalRecordingStorage
+
+// Deprecated: use NewLocalRecordingStorage.
+var NewFileRecordingStorage = NewLocalRecordingStorage

@@ -18,7 +18,7 @@ import (
 //
 // Example:
 //
-//	storage, _ := NewFileStorage("./checkpoints")
+//	storage, _ := NewLocalStorage("./checkpoints")
 //	durable := NewDurableAgent(
 //	    myAgent,
 //	    storage,
@@ -58,7 +58,7 @@ type DurableAgent struct {
 //
 // Example:
 //
-//	storage, _ := NewFileStorage("./checkpoints")
+//	storage, _ := NewLocalStorage("./checkpoints")
 //	durable := NewDurableAgent(myAgent, storage, 10, true, "")
 func NewDurableAgent(
 	agent agenkit.Agent,
@@ -251,6 +251,59 @@ func (d *DurableAgent) Resume(ctx context.Context, sessionID string, checkpointI
 	return d.sessionState[sessionID], nil
 }
 
+// ResumeMigrated resumes a session from a specific checkpoint that was created
+// during a spot-eviction or drain migration. Unlike Resume, it does not require
+// session continuity and injects the MigrationContext into the returned context
+// so downstream code can detect the migration.
+//
+// Args:
+//
+//	ctx: Context
+//	checkpointID: The checkpoint created at migration time
+//
+// Returns:
+//
+//	(responseCtx, restoredState, nil) on success, where responseCtx carries
+//	the MigrationContext under MigrationContextKey.
+//
+// Example:
+//
+//	resumeCtx, state, _ := durable.ResumeMigrated(ctx, "checkpoint-abc")
+//	if mc, ok := resumeCtx.Value(checkpointing.MigrationContextKey).(checkpointing.MigrationContext); ok {
+//	    log.Printf("resumed from %s (interrupted by %s)", mc.SourceHost, mc.InterruptedBy)
+//	}
+func (d *DurableAgent) ResumeMigrated(ctx context.Context, checkpointID string) (context.Context, map[string]interface{}, error) {
+	checkpoint, err := d.manager.LoadCheckpoint(ctx, checkpointID)
+	if err != nil {
+		return ctx, nil, fmt.Errorf("failed to load checkpoint: %w", err)
+	}
+	if checkpoint == nil {
+		return ctx, nil, fmt.Errorf("checkpoint %s not found", checkpointID)
+	}
+
+	sessionID := checkpoint.SessionID
+
+	// Restore session state (bypasses session-continuity check).
+	d.sessionState[sessionID] = make(map[string]interface{})
+	for k, v := range checkpoint.State {
+		d.sessionState[sessionID][k] = v
+	}
+	d.sessionSteps[sessionID] = checkpoint.StepNumber
+	d.sessionMessages[sessionID] = make([]agenkit.Message, len(checkpoint.Messages))
+	copy(d.sessionMessages[sessionID], checkpoint.Messages)
+	d.sessionResumed[sessionID] = true
+
+	log.Printf("INFO: ResumeMigrated: session %s from checkpoint %s at step %d",
+		sessionID, checkpointID, checkpoint.StepNumber)
+
+	// Inject MigrationContext into the returned context if present.
+	if mc, ok := ExtractMigrationContext(checkpoint); ok {
+		ctx = withMigrationContext(ctx, mc)
+	}
+
+	return ctx, d.GetState(sessionID), nil
+}
+
 // GetState gets current state for session.
 //
 // Args:
@@ -428,7 +481,7 @@ func copyMessages(dst, src []agenkit.Message) int {
 	return n
 }
 
-// MakeDurable is a convenience function to make an agent durable.
+// MakeDurableLocal is a convenience function to make an agent durable with local file storage.
 //
 // Args:
 //
@@ -443,7 +496,7 @@ func copyMessages(dst, src []agenkit.Message) int {
 //
 // Example:
 //
-//	durableAgent, _ := MakeDurable(
+//	durableAgent, _ := MakeDurableLocal(
 //	    myAgent,
 //	    "./checkpoints",
 //	    5,  // Checkpoint every 5 steps
@@ -452,8 +505,8 @@ func copyMessages(dst, src []agenkit.Message) int {
 //
 //	// Use like normal agent
 //	response, _ := durableAgent.Process(ctx, message, "session-1")
-func MakeDurable(agent agenkit.Agent, checkpointDir string, checkpointInterval int, agentName string) (*DurableAgent, error) {
-	storage, err := NewFileStorage(checkpointDir)
+func MakeDurableLocal(agent agenkit.Agent, checkpointDir string, checkpointInterval int, agentName string) (*DurableAgent, error) {
+	storage, err := NewLocalStorage(checkpointDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create checkpoint storage: %w", err)
 	}
@@ -466,3 +519,8 @@ func MakeDurable(agent agenkit.Agent, checkpointDir string, checkpointInterval i
 		agentName,
 	), nil
 }
+
+// MakeDurable is a convenience function to make an agent durable with local file storage.
+//
+// Deprecated: use MakeDurableLocal.
+var MakeDurable = MakeDurableLocal

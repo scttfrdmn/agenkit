@@ -7,9 +7,21 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
+
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
-// InMemoryStorage provides in-memory checkpoint storage.
+// SharedCheckpointStorage marks a storage backend that is accessible from multiple
+// hosts (e.g. S3, NFS). Implementations must be safe for concurrent access.
+type SharedCheckpointStorage interface {
+	CheckpointStorage
+	// URI returns the canonical URI of this storage backend (e.g. s3://bucket/prefix).
+	URI() string
+	// Ping verifies that the storage is reachable and returns an error if not.
+	Ping(ctx context.Context) error
+}
+
+// MemoryStorage provides in-memory checkpoint storage.
 //
 // Good for:
 //   - Testing
@@ -22,24 +34,24 @@ import (
 //
 // Example:
 //
-//	storage := NewInMemoryStorage()
+//	storage := NewMemoryStorage()
 //	err := storage.Save(ctx, checkpoint)
-type InMemoryStorage struct {
+type MemoryStorage struct {
 	mu                 sync.RWMutex
 	checkpoints        map[string]*Checkpoint // checkpoint_id -> Checkpoint
 	sessionCheckpoints map[string][]string    // session_id -> list of checkpoint_ids
 }
 
-// NewInMemoryStorage creates a new in-memory checkpoint storage.
-func NewInMemoryStorage() *InMemoryStorage {
-	return &InMemoryStorage{
+// NewMemoryStorage creates a new in-memory checkpoint storage.
+func NewMemoryStorage() *MemoryStorage {
+	return &MemoryStorage{
 		checkpoints:        make(map[string]*Checkpoint),
 		sessionCheckpoints: make(map[string][]string),
 	}
 }
 
 // Save saves checkpoint to memory.
-func (s *InMemoryStorage) Save(ctx context.Context, checkpoint *Checkpoint) error {
+func (s *MemoryStorage) Save(ctx context.Context, checkpoint *Checkpoint) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -70,7 +82,7 @@ func (s *InMemoryStorage) Save(ctx context.Context, checkpoint *Checkpoint) erro
 }
 
 // Load loads checkpoint from memory.
-func (s *InMemoryStorage) Load(ctx context.Context, checkpointID string) (*Checkpoint, error) {
+func (s *MemoryStorage) Load(ctx context.Context, checkpointID string) (*Checkpoint, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -82,7 +94,7 @@ func (s *InMemoryStorage) Load(ctx context.Context, checkpointID string) (*Check
 }
 
 // ListCheckpoints lists checkpoints for session.
-func (s *InMemoryStorage) ListCheckpoints(ctx context.Context, sessionID string, limit *int) ([]*Checkpoint, error) {
+func (s *MemoryStorage) ListCheckpoints(ctx context.Context, sessionID string, limit *int) ([]*Checkpoint, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -106,7 +118,7 @@ func (s *InMemoryStorage) ListCheckpoints(ctx context.Context, sessionID string,
 }
 
 // GetLatest gets latest checkpoint for session.
-func (s *InMemoryStorage) GetLatest(ctx context.Context, sessionID string) (*Checkpoint, error) {
+func (s *MemoryStorage) GetLatest(ctx context.Context, sessionID string) (*Checkpoint, error) {
 	one := 1
 	checkpoints, err := s.ListCheckpoints(ctx, sessionID, &one)
 	if err != nil {
@@ -121,7 +133,7 @@ func (s *InMemoryStorage) GetLatest(ctx context.Context, sessionID string) (*Che
 }
 
 // Delete deletes checkpoint.
-func (s *InMemoryStorage) Delete(ctx context.Context, checkpointID string) (bool, error) {
+func (s *MemoryStorage) Delete(ctx context.Context, checkpointID string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -148,7 +160,7 @@ func (s *InMemoryStorage) Delete(ctx context.Context, checkpointID string) (bool
 }
 
 // DeleteSession deletes all checkpoints for session.
-func (s *InMemoryStorage) DeleteSession(ctx context.Context, sessionID string) (int, error) {
+func (s *MemoryStorage) DeleteSession(ctx context.Context, sessionID string) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -169,7 +181,7 @@ func (s *InMemoryStorage) DeleteSession(ctx context.Context, sessionID string) (
 }
 
 // GetCheckpointHistory gets checkpoint history by following parent links.
-func (s *InMemoryStorage) GetCheckpointHistory(ctx context.Context, checkpointID string, maxDepth int) ([]*Checkpoint, error) {
+func (s *MemoryStorage) GetCheckpointHistory(ctx context.Context, checkpointID string, maxDepth int) ([]*Checkpoint, error) {
 	history := make([]*Checkpoint, 0)
 	currentID := checkpointID
 
@@ -195,7 +207,7 @@ func (s *InMemoryStorage) GetCheckpointHistory(ctx context.Context, checkpointID
 }
 
 // GetStats returns storage statistics.
-func (s *InMemoryStorage) GetStats() map[string]interface{} {
+func (s *MemoryStorage) GetStats() map[string]interface{} {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -211,7 +223,7 @@ func (s *InMemoryStorage) GetStats() map[string]interface{} {
 	}
 }
 
-// FileStorage provides file-based checkpoint storage.
+// LocalStorage provides file-based checkpoint storage.
 //
 // Stores each checkpoint as a JSON file on disk for persistence.
 //
@@ -230,13 +242,13 @@ func (s *InMemoryStorage) GetStats() map[string]interface{} {
 //
 // Example:
 //
-//	storage := NewFileStorage("./checkpoints")
+//	storage := NewLocalStorage("./checkpoints")
 //	err := storage.Save(ctx, checkpoint)
-type FileStorage struct {
+type LocalStorage struct {
 	checkpointDir string
 }
 
-// NewFileStorage creates a new file-based checkpoint storage.
+// NewLocalStorage creates a new file-based checkpoint storage.
 //
 // Args:
 //
@@ -244,30 +256,30 @@ type FileStorage struct {
 //
 // Example:
 //
-//	storage := NewFileStorage("./checkpoints")
-func NewFileStorage(checkpointDir string) (*FileStorage, error) {
+//	storage := NewLocalStorage("./checkpoints")
+func NewLocalStorage(checkpointDir string) (*LocalStorage, error) {
 	// Create directory if it doesn't exist
 	if err := os.MkdirAll(checkpointDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create checkpoint directory: %w", err)
 	}
 
-	return &FileStorage{
+	return &LocalStorage{
 		checkpointDir: checkpointDir,
 	}, nil
 }
 
 // getSessionDir gets directory for session checkpoints.
-func (s *FileStorage) getSessionDir(sessionID string) string {
+func (s *LocalStorage) getSessionDir(sessionID string) string {
 	return filepath.Join(s.checkpointDir, sessionID)
 }
 
 // getCheckpointPath gets file path for checkpoint.
-func (s *FileStorage) getCheckpointPath(sessionID, checkpointID string) string {
+func (s *LocalStorage) getCheckpointPath(sessionID, checkpointID string) string {
 	return filepath.Join(s.getSessionDir(sessionID), checkpointID+".json")
 }
 
 // Save saves checkpoint to file.
-func (s *FileStorage) Save(ctx context.Context, checkpoint *Checkpoint) error {
+func (s *LocalStorage) Save(ctx context.Context, checkpoint *Checkpoint) error {
 	// Create session directory
 	sessionDir := s.getSessionDir(checkpoint.SessionID)
 	if err := os.MkdirAll(sessionDir, 0755); err != nil {
@@ -290,7 +302,7 @@ func (s *FileStorage) Save(ctx context.Context, checkpoint *Checkpoint) error {
 }
 
 // Load loads checkpoint from file.
-func (s *FileStorage) Load(ctx context.Context, checkpointID string) (*Checkpoint, error) {
+func (s *LocalStorage) Load(ctx context.Context, checkpointID string) (*Checkpoint, error) {
 	// Search through session directories
 	entries, err := os.ReadDir(s.checkpointDir)
 	if err != nil {
@@ -325,7 +337,7 @@ func (s *FileStorage) Load(ctx context.Context, checkpointID string) (*Checkpoin
 }
 
 // ListCheckpoints lists checkpoints for session.
-func (s *FileStorage) ListCheckpoints(ctx context.Context, sessionID string, limit *int) ([]*Checkpoint, error) {
+func (s *LocalStorage) ListCheckpoints(ctx context.Context, sessionID string, limit *int) ([]*Checkpoint, error) {
 	sessionDir := s.getSessionDir(sessionID)
 
 	entries, err := os.ReadDir(sessionDir)
@@ -371,7 +383,7 @@ func (s *FileStorage) ListCheckpoints(ctx context.Context, sessionID string, lim
 }
 
 // GetLatest gets latest checkpoint for session.
-func (s *FileStorage) GetLatest(ctx context.Context, sessionID string) (*Checkpoint, error) {
+func (s *LocalStorage) GetLatest(ctx context.Context, sessionID string) (*Checkpoint, error) {
 	one := 1
 	checkpoints, err := s.ListCheckpoints(ctx, sessionID, &one)
 	if err != nil {
@@ -386,7 +398,7 @@ func (s *FileStorage) GetLatest(ctx context.Context, sessionID string) (*Checkpo
 }
 
 // Delete deletes checkpoint file.
-func (s *FileStorage) Delete(ctx context.Context, checkpointID string) (bool, error) {
+func (s *LocalStorage) Delete(ctx context.Context, checkpointID string) (bool, error) {
 	// Search through session directories
 	entries, err := os.ReadDir(s.checkpointDir)
 	if err != nil {
@@ -414,7 +426,7 @@ func (s *FileStorage) Delete(ctx context.Context, checkpointID string) (bool, er
 }
 
 // DeleteSession deletes all checkpoints for session.
-func (s *FileStorage) DeleteSession(ctx context.Context, sessionID string) (int, error) {
+func (s *LocalStorage) DeleteSession(ctx context.Context, sessionID string) (int, error) {
 	sessionDir := s.getSessionDir(sessionID)
 
 	entries, err := os.ReadDir(sessionDir)
@@ -446,7 +458,7 @@ func (s *FileStorage) DeleteSession(ctx context.Context, sessionID string) (int,
 }
 
 // GetCheckpointHistory gets checkpoint history by following parent links.
-func (s *FileStorage) GetCheckpointHistory(ctx context.Context, checkpointID string, maxDepth int) ([]*Checkpoint, error) {
+func (s *LocalStorage) GetCheckpointHistory(ctx context.Context, checkpointID string, maxDepth int) ([]*Checkpoint, error) {
 	history := make([]*Checkpoint, 0)
 	currentID := checkpointID
 
@@ -472,7 +484,7 @@ func (s *FileStorage) GetCheckpointHistory(ctx context.Context, checkpointID str
 }
 
 // GetStats returns storage statistics.
-func (s *FileStorage) GetStats() (map[string]interface{}, error) {
+func (s *LocalStorage) GetStats() (map[string]interface{}, error) {
 	stats := map[string]interface{}{
 		"total_sessions":    0,
 		"total_checkpoints": 0,
@@ -525,3 +537,37 @@ func (s *FileStorage) GetStats() (map[string]interface{}, error) {
 
 	return stats, nil
 }
+
+// MakeDurableNFS is a convenience function to make an agent durable using NFS-backed shared storage.
+//
+// The resulting DurableAgent can be resumed from any host that mounts the same NFS export.
+func MakeDurableNFS(agent agenkit.Agent, mountPath, nfsHost, nfsExport, agentName string, interval int) (*DurableAgent, error) {
+	storage, err := NewNFSStorage(mountPath, nfsHost, nfsExport)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create NFS storage: %w", err)
+	}
+	return NewDurableAgent(agent, storage, interval, true, agentName), nil
+}
+
+// MakeDurableS3 is a convenience function to make an agent durable using S3-backed shared storage.
+//
+// The resulting DurableAgent can be resumed from any host with access to the S3 bucket.
+func MakeDurableS3(ctx context.Context, agent agenkit.Agent, bucket, prefix, region, agentName string, interval int) (*DurableAgent, error) {
+	storage, err := NewS3Storage(ctx, bucket, prefix, region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create S3 storage: %w", err)
+	}
+	return NewDurableAgent(agent, storage, interval, true, agentName), nil
+}
+
+// Deprecated: use MemoryStorage.
+type InMemoryStorage = MemoryStorage
+
+// Deprecated: use NewMemoryStorage.
+var NewInMemoryStorage = NewMemoryStorage
+
+// Deprecated: use LocalStorage.
+type FileStorage = LocalStorage
+
+// Deprecated: use NewLocalStorage.
+var NewFileStorage = NewLocalStorage

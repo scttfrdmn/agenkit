@@ -43,11 +43,11 @@ type MessageSearchResult struct {
 	Score    float64
 }
 
-// InMemoryVectorStore is a simple in-memory vector store using cosine similarity.
+// MemoryVectorStore is a simple in-memory vector store using cosine similarity.
 //
 // Good for testing and small datasets. For production, use
 // specialized vector databases (Pinecone, Weaviate, Qdrant, etc.).
-type InMemoryVectorStore struct {
+type MemoryVectorStore struct {
 	mu sync.RWMutex
 	// sessionID -> list of (messageID, embedding, message, metadata, timestamp)
 	storage   map[string][]vectorEntry
@@ -62,16 +62,16 @@ type vectorEntry struct {
 	timestamp float64
 }
 
-// NewInMemoryVectorStore creates a new in-memory vector store.
-func NewInMemoryVectorStore() *InMemoryVectorStore {
-	return &InMemoryVectorStore{
+// NewMemoryVectorStore creates a new in-memory vector store.
+func NewMemoryVectorStore() *MemoryVectorStore {
+	return &MemoryVectorStore{
 		storage:   make(map[string][]vectorEntry),
 		idCounter: 0,
 	}
 }
 
 // cosineSimilarity calculates cosine similarity between two vectors.
-func (s *InMemoryVectorStore) cosineSimilarity(a, b []float64) float64 {
+func (s *MemoryVectorStore) cosineSimilarity(a, b []float64) float64 {
 	if len(a) != len(b) {
 		return 0.0
 	}
@@ -97,7 +97,7 @@ func (s *InMemoryVectorStore) cosineSimilarity(a, b []float64) float64 {
 }
 
 // Add adds a message with embedding to the store.
-func (s *InMemoryVectorStore) Add(ctx context.Context, sessionID, messageID string, embedding []float64, message agenkit.Message, metadata map[string]interface{}, timestamp float64) error {
+func (s *MemoryVectorStore) Add(ctx context.Context, sessionID, messageID string, embedding []float64, message agenkit.Message, metadata map[string]interface{}, timestamp float64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -117,7 +117,7 @@ func (s *InMemoryVectorStore) Add(ctx context.Context, sessionID, messageID stri
 }
 
 // Search searches for similar messages using cosine similarity.
-func (s *InMemoryVectorStore) Search(ctx context.Context, sessionID string, queryEmbedding []float64, limit int, opts RetrieveOptions) ([]MessageSearchResult, error) {
+func (s *MemoryVectorStore) Search(ctx context.Context, sessionID string, queryEmbedding []float64, limit int, opts RetrieveOptions) ([]MessageSearchResult, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -229,7 +229,7 @@ func (s *InMemoryVectorStore) Search(ctx context.Context, sessionID string, quer
 }
 
 // GetRecent gets recent messages without search.
-func (s *InMemoryVectorStore) GetRecent(ctx context.Context, sessionID string, limit int, opts RetrieveOptions) ([]MessageWithMetadata, error) {
+func (s *MemoryVectorStore) GetRecent(ctx context.Context, sessionID string, limit int, opts RetrieveOptions) ([]MessageWithMetadata, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -324,7 +324,7 @@ func (s *InMemoryVectorStore) GetRecent(ctx context.Context, sessionID string, l
 }
 
 // Clear clears all messages for a session.
-func (s *InMemoryVectorStore) Clear(ctx context.Context, sessionID string) error {
+func (s *MemoryVectorStore) Clear(ctx context.Context, sessionID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -374,7 +374,7 @@ type VectorMemory struct {
 //	memory := NewVectorMemory(embeddings, nil)
 func NewVectorMemory(embeddingProvider EmbeddingProvider, vectorStore VectorStore) *VectorMemory {
 	if vectorStore == nil {
-		vectorStore = NewInMemoryVectorStore()
+		vectorStore = NewMemoryVectorStore()
 	}
 
 	return &VectorMemory{
@@ -547,3 +547,9 @@ func (v *VectorMemory) Capabilities() []string {
 		"tag_filtering",
 	}
 }
+
+// Deprecated: use MemoryVectorStore.
+type InMemoryVectorStore = MemoryVectorStore
+
+// Deprecated: use NewMemoryVectorStore.
+var NewInMemoryVectorStore = NewMemoryVectorStore

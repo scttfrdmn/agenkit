@@ -162,6 +162,7 @@
 
 #pragma once
 
+#include "agenkit/middleware/metrics.hpp"
 #include "agenkit/middleware/retry.hpp"
 #include "agenkit/middleware/timeout.hpp"
 #include "agenkit/middleware/circuit_breaker.hpp"

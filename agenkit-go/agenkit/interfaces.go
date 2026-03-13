@@ -15,6 +15,13 @@ type Message struct {
 	Timestamp time.Time              `json:"timestamp"`
 }
 
+// ContentString returns the message content as a string.
+// This is the preferred accessor for LLM adapters and provides a stable API
+// for future migration to structured (multimodal) content types.
+func (m *Message) ContentString() string {
+	return m.Content
+}
+
 // NewMessage creates a new message with the given role and content.
 // NOTE: This function does not validate the message. For production code,
 // consider using NewValidatedMessage or calling Validate() explicitly.

@@ -342,7 +342,7 @@ func (a *AnthropicLLM) convertMessages(messages []*agenkit.Message) ([]anthropic
 	for _, msg := range messages {
 		// Extract system message
 		if msg.Role == "system" {
-			systemMessage = msg.Content
+			systemMessage = msg.ContentString()
 			continue
 		}
 
@@ -356,7 +356,7 @@ func (a *AnthropicLLM) convertMessages(messages []*agenkit.Message) ([]anthropic
 
 		anthropicMessages = append(anthropicMessages, anthropicMessage{
 			Role:    role,
-			Content: msg.Content,
+			Content: msg.ContentString(),
 		})
 	}
 

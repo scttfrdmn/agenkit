@@ -284,7 +284,7 @@ func (o *OpenAILLM) convertMessages(messages []*agenkit.Message) []openai.ChatCo
 
 		openaiMessages = append(openaiMessages, openai.ChatCompletionMessage{
 			Role:    role,
-			Content: msg.Content,
+			Content: msg.ContentString(),
 		})
 	}
 

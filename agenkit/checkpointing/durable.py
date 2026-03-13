@@ -9,7 +9,7 @@ from typing import Any
 
 from ..interfaces import Agent, Message
 from .manager import CheckpointManager
-from .storage import FileCheckpointStorage
+from .storage import LocalCheckpointStorage
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +25,10 @@ class DurableAgent:
     - Error recovery with checkpoint rollback
 
     Example:
-        >>> from agenkit.checkpointing import DurableAgent, FileCheckpointStorage
+        >>> from agenkit.checkpointing import DurableAgent, LocalCheckpointStorage
         >>>
         >>> # Create durable agent
-        >>> storage = FileCheckpointStorage("./checkpoints")
+        >>> storage = LocalCheckpointStorage("./checkpoints")
         >>> durable = DurableAgent(
         ...     agent=my_agent,
         ...     checkpoint_dir="./checkpoints",
@@ -67,7 +67,7 @@ class DurableAgent:
 
         # Initialize checkpoint manager
         if checkpoint_dir:
-            storage = FileCheckpointStorage(checkpoint_dir)
+            storage = LocalCheckpointStorage(checkpoint_dir)
             self.manager = CheckpointManager(
                 storage=storage, auto_checkpoint_interval=checkpoint_interval
             )

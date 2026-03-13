@@ -1,5 +1,5 @@
 """
-Tests for InMemoryMemory implementation.
+Tests for EphemeralMemory implementation.
 """
 
 from datetime import datetime, timezone
@@ -7,13 +7,13 @@ from datetime import datetime, timezone
 import pytest
 
 from agenkit.interfaces import Message
-from agenkit.memory.in_memory import InMemoryMemory
+from agenkit.memory.in_memory import EphemeralMemory
 
 
 @pytest.mark.asyncio
 async def test_store_and_retrieve():
     """Test basic store and retrieve operations."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Store messages
     msg1 = Message(role="user", content="Hello")
@@ -37,7 +37,7 @@ async def test_store_and_retrieve():
 @pytest.mark.asyncio
 async def test_retrieve_with_limit():
     """Test retrieve with limit."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Store 5 messages
     for i in range(5):
@@ -57,7 +57,7 @@ async def test_retrieve_with_limit():
 @pytest.mark.asyncio
 async def test_lru_eviction():
     """Test LRU eviction when max_size exceeded."""
-    memory = InMemoryMemory(max_size=3)
+    memory = EphemeralMemory(max_size=3)
 
     # Store 5 messages (should evict oldest 2)
     for i in range(5):
@@ -76,7 +76,7 @@ async def test_lru_eviction():
 @pytest.mark.asyncio
 async def test_multiple_sessions():
     """Test isolation between sessions."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Store in different sessions
     await memory.store("session-1", Message(role="user", content="Session 1 msg"))
@@ -94,7 +94,7 @@ async def test_multiple_sessions():
 @pytest.mark.asyncio
 async def test_retrieve_empty_session():
     """Test retrieving from non-existent session."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     messages = await memory.retrieve("non-existent", limit=10)
 
@@ -104,7 +104,7 @@ async def test_retrieve_empty_session():
 @pytest.mark.asyncio
 async def test_store_with_metadata():
     """Test storing messages with metadata."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     msg = Message(role="user", content="Important message")
     metadata = {"importance": 0.9, "tags": ["critical", "action-required"]}
@@ -123,7 +123,7 @@ async def test_store_with_metadata():
 @pytest.mark.asyncio
 async def test_retrieve_with_importance_threshold():
     """Test retrieving with importance threshold filter."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Store messages with different importance
     await memory.store(
@@ -146,7 +146,7 @@ async def test_retrieve_with_importance_threshold():
 @pytest.mark.asyncio
 async def test_retrieve_with_tags():
     """Test retrieving with tag filter."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Store messages with different tags
     await memory.store(
@@ -176,7 +176,7 @@ async def test_retrieve_with_tags():
 @pytest.mark.asyncio
 async def test_retrieve_with_time_range():
     """Test retrieving with time range filter."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Store messages
     await memory.store("session-1", Message(role="user", content="Old message"))
@@ -202,7 +202,7 @@ async def test_retrieve_with_time_range():
 @pytest.mark.asyncio
 async def test_summarize():
     """Test summarization."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Store some messages
     for i in range(5):
@@ -220,7 +220,7 @@ async def test_summarize():
 @pytest.mark.asyncio
 async def test_summarize_empty_session():
     """Test summarization of empty session."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     summary = await memory.summarize("non-existent")
 
@@ -231,7 +231,7 @@ async def test_summarize_empty_session():
 @pytest.mark.asyncio
 async def test_clear():
     """Test clearing session memory."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Store messages
     await memory.store("session-1", Message(role="user", content="Message 1"))
@@ -252,7 +252,7 @@ async def test_clear():
 @pytest.mark.asyncio
 async def test_capabilities():
     """Test capabilities property."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     capabilities = memory.capabilities
 
@@ -265,7 +265,7 @@ async def test_capabilities():
 @pytest.mark.asyncio
 async def test_get_session_count():
     """Test get_session_count utility method."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Empty session
     assert memory.get_session_count("session-1") == 0
@@ -280,7 +280,7 @@ async def test_get_session_count():
 @pytest.mark.asyncio
 async def test_get_all_sessions():
     """Test get_all_sessions utility method."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # No sessions initially
     assert len(memory.get_all_sessions()) == 0
@@ -300,7 +300,7 @@ async def test_get_all_sessions():
 @pytest.mark.asyncio
 async def test_get_memory_usage():
     """Test get_memory_usage utility method."""
-    memory = InMemoryMemory(max_size=100)
+    memory = EphemeralMemory(max_size=100)
 
     # Initial usage
     usage = memory.get_memory_usage()
@@ -325,7 +325,7 @@ async def test_concurrent_access():
     """Test concurrent access to memory."""
     import asyncio
 
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     async def store_messages(session_id: str, count: int):
         for i in range(count):
@@ -348,7 +348,7 @@ async def test_concurrent_access():
 @pytest.mark.asyncio
 async def test_combined_filters():
     """Test combining multiple filters."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Store messages with various metadata
     await memory.store(

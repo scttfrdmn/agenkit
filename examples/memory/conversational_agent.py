@@ -16,7 +16,7 @@ import asyncio
 from agenkit.interfaces import Message
 from agenkit.memory import (
     ImportanceWeightingStrategy,
-    InMemoryMemory,
+    EphemeralMemory,
     SlidingWindowStrategy,
     SummarizationStrategy,
 )
@@ -36,7 +36,7 @@ class ConversationalAgent:
 
         Args:
             name: Agent name
-            memory: Memory implementation (InMemoryMemory, RedisMemory, etc.)
+            memory: Memory implementation (EphemeralMemory, RedisMemory, etc.)
             strategy: MemoryStrategy for context selection (defaults to sliding window)
             context_limit: Maximum messages to include in context
         """
@@ -85,7 +85,7 @@ async def example_basic_conversation():
     print("\n=== Example 1: Basic Conversation ===\n")
 
     # Create agent with memory
-    memory = InMemoryMemory(max_size=100)
+    memory = EphemeralMemory(max_size=100)
     agent = ConversationalAgent(
         name="Assistant", memory=memory, strategy=SlidingWindowStrategy(window_size=5)
     )
@@ -118,7 +118,7 @@ async def example_importance_memory():
     """Example: Using importance weighting strategy."""
     print("\n=== Example 2: Importance-Based Memory ===\n")
 
-    memory = InMemoryMemory(max_size=100)
+    memory = EphemeralMemory(max_size=100)
     agent = ConversationalAgent(
         name="PriorityAssistant",
         memory=memory,
@@ -166,7 +166,7 @@ async def example_summarization():
     """Example: Using summarization strategy for long conversations."""
     print("\n=== Example 3: Summarization Strategy ===\n")
 
-    memory = InMemoryMemory(max_size=100)
+    memory = EphemeralMemory(max_size=100)
     agent = ConversationalAgent(
         name="SummarizingAssistant",
         memory=memory,
@@ -206,7 +206,7 @@ async def example_multi_session():
     print("\n=== Example 4: Multi-Session Management ===\n")
 
     # Shared memory across sessions
-    memory = InMemoryMemory(max_size=1000)
+    memory = EphemeralMemory(max_size=1000)
 
     # Create agents for different sessions
     sessions = {"user-alice": "Alice", "user-bob": "Bob", "user-charlie": "Charlie"}
@@ -237,7 +237,7 @@ async def example_strategy_comparison():
     """Example: Comparing different memory strategies."""
     print("\n=== Example 5: Strategy Comparison ===\n")
 
-    memory = InMemoryMemory(max_size=100)
+    memory = EphemeralMemory(max_size=100)
     session_id = "comparison"
 
     # Add test messages

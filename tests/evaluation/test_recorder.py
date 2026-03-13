@@ -11,8 +11,8 @@ from datetime import datetime, timezone
 import pytest
 
 from agenkit.evaluation.recorder import (
-    FileRecordingStorage,
-    InMemoryRecordingStorage,
+    LocalRecordingStorage,
+    MemoryRecordingStorage,
     InteractionRecord,
     SessionRecorder,
     SessionRecording,
@@ -38,7 +38,7 @@ class MockAgent:
 @pytest.mark.asyncio
 async def test_session_recorder_basic():
     """Test basic session recording."""
-    storage = InMemoryRecordingStorage()
+    storage = MemoryRecordingStorage()
     recorder = SessionRecorder(storage=storage)
 
     await recorder.start_session("test-session", "test_agent")
@@ -59,7 +59,7 @@ async def test_session_recorder_basic():
 @pytest.mark.asyncio
 async def test_session_recorder_multiple_interactions():
     """Test recording multiple interactions."""
-    storage = InMemoryRecordingStorage()
+    storage = MemoryRecordingStorage()
     recorder = SessionRecorder(storage=storage)
 
     await recorder.start_session("test-session", "test_agent")
@@ -81,7 +81,7 @@ async def test_session_recorder_multiple_interactions():
 @pytest.mark.asyncio
 async def test_session_recorder_auto_start():
     """Test auto-start of session if not explicitly started."""
-    storage = InMemoryRecordingStorage()
+    storage = MemoryRecordingStorage()
     recorder = SessionRecorder(storage=storage)
 
     # Record without starting session (should auto-start)
@@ -98,7 +98,7 @@ async def test_session_recorder_auto_start():
 @pytest.mark.asyncio
 async def test_session_recorder_wrap_agent():
     """Test wrapping agent for automatic recording."""
-    storage = InMemoryRecordingStorage()
+    storage = MemoryRecordingStorage()
     recorder = SessionRecorder(storage=storage)
 
     agent = MockAgent(responses=["Response 1", "Response 2"])
@@ -122,7 +122,7 @@ async def test_session_recorder_wrap_agent():
 @pytest.mark.asyncio
 async def test_session_recorder_load():
     """Test loading recording from storage."""
-    storage = InMemoryRecordingStorage()
+    storage = MemoryRecordingStorage()
     recorder = SessionRecorder(storage=storage)
 
     await recorder.start_session("test-session", "test_agent")
@@ -145,7 +145,7 @@ async def test_session_recorder_load():
 @pytest.mark.asyncio
 async def test_session_recorder_list():
     """Test listing recordings."""
-    storage = InMemoryRecordingStorage()
+    storage = MemoryRecordingStorage()
     recorder = SessionRecorder(storage=storage)
 
     # Create multiple recordings
@@ -167,7 +167,7 @@ async def test_session_recorder_list():
 @pytest.mark.asyncio
 async def test_session_recorder_delete():
     """Test deleting recording."""
-    storage = InMemoryRecordingStorage()
+    storage = MemoryRecordingStorage()
     recorder = SessionRecorder(storage=storage)
 
     await recorder.start_session("test-session", "test_agent")
@@ -194,7 +194,7 @@ async def test_file_recording_storage():
     temp_dir = tempfile.mkdtemp()
 
     try:
-        storage = FileRecordingStorage(recordings_dir=temp_dir)
+        storage = LocalRecordingStorage(recordings_dir=temp_dir)
         recorder = SessionRecorder(storage=storage)
 
         await recorder.start_session("test-session", "test_agent")
@@ -221,7 +221,7 @@ async def test_file_recording_storage():
 async def test_session_replay_basic():
     """Test replaying recorded session."""
     # Record session
-    storage = InMemoryRecordingStorage()
+    storage = MemoryRecordingStorage()
     recorder = SessionRecorder(storage=storage)
 
     agent = MockAgent(responses=["Original response"])
@@ -247,7 +247,7 @@ async def test_session_replay_basic():
 async def test_session_replay_multiple_interactions():
     """Test replaying session with multiple interactions."""
     # Record session
-    storage = InMemoryRecordingStorage()
+    storage = MemoryRecordingStorage()
     recorder = SessionRecorder(storage=storage)
 
     agent = MockAgent(responses=["Response 1", "Response 2", "Response 3"])

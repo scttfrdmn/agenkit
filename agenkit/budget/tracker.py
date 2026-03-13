@@ -69,7 +69,7 @@ class Storage:
         raise NotImplementedError
 
 
-class InMemoryStorage(Storage):
+class MemoryStorage(Storage):
     """In-memory storage for cost records."""
 
     def __init__(self):
@@ -141,7 +141,7 @@ class CostTracker:
         Args:
             storage: Storage backend (defaults to in-memory)
         """
-        self.storage = storage or InMemoryStorage()
+        self.storage = storage or MemoryStorage()
         self.model_pricing = ModelPricing()
 
     async def record_cost(
@@ -406,3 +406,7 @@ class CostTracker:
             )
             / len(costs),
         }
+
+
+# Deprecated alias — use MemoryStorage in new code.
+InMemoryStorage = MemoryStorage  # Deprecated: Use MemoryStorage instead.

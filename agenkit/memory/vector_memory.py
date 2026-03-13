@@ -74,7 +74,7 @@ class VectorStore(ABC):
         pass
 
 
-class InMemoryVectorStore(VectorStore):
+class MemoryVectorStore(VectorStore):
     """
     Simple in-memory vector store using cosine similarity.
 
@@ -271,7 +271,7 @@ class VectorMemory(Memory):
             vector_store: Vector storage backend (defaults to in-memory)
         """
         self.embeddings = embedding_provider
-        self.vector_store = vector_store or InMemoryVectorStore()
+        self.vector_store = vector_store or MemoryVectorStore()
         self._id_counter = 0
 
     def _generate_id(self) -> str:
@@ -381,3 +381,7 @@ class VectorMemory(Memory):
             "importance_filtering",
             "tag_filtering",
         ]
+
+
+# Deprecated alias — use MemoryVectorStore in new code.
+InMemoryVectorStore = MemoryVectorStore  # Deprecated: Use MemoryVectorStore instead.

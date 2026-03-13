@@ -11,7 +11,7 @@ from ..interfaces import Message
 from .base import Memory
 
 
-class InMemoryMemory(Memory):
+class EphemeralMemory(Memory):
     """
     Simple in-memory storage with LRU eviction.
 
@@ -33,7 +33,7 @@ class InMemoryMemory(Memory):
     - When persistence not needed
 
     Example:
-        >>> memory = InMemoryMemory(max_size=1000)
+        >>> memory = EphemeralMemory(max_size=1000)
         >>> await memory.store("session-123", message)
         >>> messages = await memory.retrieve("session-123", limit=10)
     """
@@ -175,3 +175,7 @@ class InMemoryMemory(Memory):
             "total_messages": sum(len(storage) for storage in self._storage.values()),
             "max_size_per_session": self.max_size,
         }
+
+
+# Deprecated alias — use EphemeralMemory in new code.
+InMemoryMemory = EphemeralMemory  # Deprecated: Use EphemeralMemory instead.

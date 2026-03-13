@@ -18,10 +18,10 @@ pub struct AnthropicConfig {
     /// API key (required) - get from https://console.anthropic.com/
     pub api_key: String,
 
-    /// Model to use (default: claude-3-5-sonnet-20241022)
+    /// Model to use (default: claude-sonnet-4-6)
     pub model: String,
 
-    /// Maximum tokens to generate (default: 1024)
+    /// Maximum tokens to generate (default: 4096)
     pub max_tokens: i32,
 
     /// Temperature 0-1 (default: 1.0)
@@ -47,8 +47,8 @@ impl Default for AnthropicConfig {
     fn default() -> Self {
         Self {
             api_key: std::env::var("ANTHROPIC_API_KEY").unwrap_or_default(),
-            model: "claude-3-5-sonnet-20241022".to_string(),
-            max_tokens: 1024,
+            model: "claude-sonnet-4-6".to_string(),
+            max_tokens: 4096,
             temperature: 1.0,
             top_p: 1.0,
             top_k: 5,
@@ -182,7 +182,7 @@ struct MessageDeltaData {
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let config = AnthropicConfig {
 ///         api_key: std::env::var("ANTHROPIC_API_KEY")?,
-///         model: "claude-3-5-sonnet-20241022".to_string(),
+///         model: "claude-sonnet-4-6".to_string(),
 ///         ..Default::default()
 ///     };
 ///

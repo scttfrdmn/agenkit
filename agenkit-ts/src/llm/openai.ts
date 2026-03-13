@@ -140,8 +140,10 @@ export class OpenAIAgent implements Agent {
 
     return createMessage('assistant', content, {
       model: this.model,
-      finishReason: choice.finish_reason,
-      usage: completion.usage,
+      stop_reason: choice.finish_reason,
+      input_tokens: completion.usage?.prompt_tokens ?? 0,
+      output_tokens: completion.usage?.completion_tokens ?? 0,
+      total_tokens: completion.usage?.total_tokens ?? 0,
       id: completion.id,
     });
   }

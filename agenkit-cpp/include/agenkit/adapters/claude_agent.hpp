@@ -27,11 +27,11 @@ struct ClaudeConfig {
     /// API key (required) - get from https://console.anthropic.com/
     std::string api_key;
 
-    /// Model to use (default: claude-sonnet-4-20250514)
-    std::string model{"claude-sonnet-4-20250514"};
+    /// Model to use (default: claude-sonnet-4-6)
+    std::string model{"claude-sonnet-4-6"};
 
-    /// Maximum tokens to generate (default: 1024)
-    int max_tokens{1024};
+    /// Maximum tokens to generate (default: 4096)
+    int max_tokens{4096};
 
     /// Temperature 0-1 (default: 1.0)
     double temperature{1.0};
@@ -170,7 +170,7 @@ private:
  */
 namespace ClaudeModels {
     /// Claude Sonnet 4 - Latest and most capable (November 2025)
-    constexpr const char* SONNET_4 = "claude-sonnet-4-20250514";
+    constexpr const char* SONNET_4 = "claude-sonnet-4-6";
 
     /// Claude 3.5 Sonnet v2 - Previous generation
     constexpr const char* SONNET_3_5_V2 = "claude-3-5-sonnet-20241022";

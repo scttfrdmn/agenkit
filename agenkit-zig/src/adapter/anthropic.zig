@@ -5,7 +5,7 @@
 ///
 /// Example:
 /// ```zig
-/// var llm_impl = try AnthropicLLM.init(allocator, api_key, "claude-3-sonnet-20240229");
+/// var llm_impl = try AnthropicLLM.init(allocator, api_key, "claude-sonnet-4-6");
 /// defer llm_impl.deinit();
 /// const llm = llm_impl.asLLM();
 ///
@@ -192,7 +192,7 @@ pub const AnthropicLLM = struct {
         const model_copy = if (model_str.len > 0)
             try allocator.dupe(u8, model_str)
         else
-            try allocator.dupe(u8, "claude-3-sonnet-20240229");
+            try allocator.dupe(u8, "claude-sonnet-4-6");
 
         self.* = AnthropicLLM{
             .allocator = allocator,
@@ -388,7 +388,7 @@ pub const AnthropicLLM = struct {
             try json.append(allocator, '"');
         }
 
-        const max_tokens = options.max_tokens orelse 1024;
+        const max_tokens = options.max_tokens orelse 4096;
         const max_tokens_str = try std.fmt.allocPrint(allocator, ",\"max_tokens\":{d}", .{max_tokens});
         defer allocator.free(max_tokens_str);
         try json.appendSlice(allocator, max_tokens_str);
@@ -511,7 +511,7 @@ pub const AnthropicLLM = struct {
         }
 
         // max_tokens is REQUIRED for Anthropic
-        const max_tokens = options.max_tokens orelse 1024;
+        const max_tokens = options.max_tokens orelse 4096;
         const max_tokens_str = try std.fmt.allocPrint(allocator, ",\"max_tokens\":{d}", .{max_tokens});
         defer allocator.free(max_tokens_str);
         try json.appendSlice(allocator, max_tokens_str);
@@ -617,11 +617,11 @@ pub const AnthropicLLM = struct {
 test "AnthropicLLM initialization" {
     const allocator = std.testing.allocator;
 
-    var llm_impl = try AnthropicLLM.init(allocator, "test-api-key", "claude-3-sonnet-20240229");
+    var llm_impl = try AnthropicLLM.init(allocator, "test-api-key", "claude-sonnet-4-6");
     defer llm_impl.deinit();
 
     const llm_interface = llm_impl.asLLM();
-    try std.testing.expectEqualStrings("claude-3-sonnet-20240229", llm_interface.model());
+    try std.testing.expectEqualStrings("claude-sonnet-4-6", llm_interface.model());
 }
 
 test "AnthropicLLM buildRequestBody" {

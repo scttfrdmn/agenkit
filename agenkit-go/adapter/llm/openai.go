@@ -17,7 +17,7 @@ import (
 //
 // Example:
 //
-//	llm := NewOpenAILLM("sk-...", "gpt-4-turbo")
+//	llm := NewOpenAILLM("sk-...", "gpt-4o")
 //	messages := []*agenkit.Message{
 //	    agenkit.NewMessage("user", "Hello!"),
 //	}
@@ -57,15 +57,15 @@ type OpenAILLM struct {
 //
 // Parameters:
 //   - apiKey: OpenAI API key. If empty, will use OPENAI_API_KEY env var
-//   - model: Model identifier (e.g., "gpt-4-turbo", "gpt-4o")
+//   - model: Model identifier (e.g., "gpt-4o", "gpt-4o-mini")
 //
 // Example:
 //
-//	llm := NewOpenAILLM("sk-...", "gpt-4-turbo")
+//	llm := NewOpenAILLM("sk-...", "gpt-4o")
 func NewOpenAILLM(apiKey, model string) *OpenAILLM {
 	client := openai.NewClient(apiKey)
 	if model == "" {
-		model = "gpt-4-turbo"
+		model = "gpt-4o"
 	}
 	return &OpenAILLM{
 		client: client,
@@ -112,8 +112,9 @@ func (o *OpenAILLM) Complete(ctx context.Context, messages []*agenkit.Message, o
 
 	// Build request
 	req := openai.ChatCompletionRequest{
-		Model:    o.model,
-		Messages: openaiMessages,
+		Model:     o.model,
+		Messages:  openaiMessages,
+		MaxTokens: 4096, // Default
 	}
 
 	// Apply options
@@ -199,9 +200,10 @@ func (o *OpenAILLM) Stream(ctx context.Context, messages []*agenkit.Message, opt
 
 	// Build request
 	req := openai.ChatCompletionRequest{
-		Model:    o.model,
-		Messages: openaiMessages,
-		Stream:   true,
+		Model:     o.model,
+		Messages:  openaiMessages,
+		MaxTokens: 4096, // Default
+		Stream:    true,
 	}
 
 	// Apply options
@@ -297,7 +299,7 @@ func (o *OpenAILLM) convertMessages(messages []*agenkit.Message) []openai.ChatCo
 //
 // Example:
 //
-//	llm := NewOpenAILLM("sk-...", "gpt-4-turbo")
+//	llm := NewOpenAILLM("sk-...", "gpt-4o")
 //	client := llm.Unwrap().(*openai.Client)
 //	// Use OpenAI-specific features
 //	resp, err := client.CreateChatCompletion(...)

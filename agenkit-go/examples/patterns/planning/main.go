@@ -10,38 +10,37 @@
 //   - Progress tracking and metadata
 //   - Replanning capabilities
 //
-// Run with: go run planning_pattern.go
+// Run with: go run main.go
 package main
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
-	"time"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"github.com/scttfrdmn/agenkit/agenkit-go/patterns"
 )
 
-// MockLLMAgent generates plans for different scenarios
-type MockLLMAgent struct {
+// MockLLMClient generates plans for different scenarios.
+type MockLLMClient struct {
 	scenario string
 }
 
-func (m *MockLLMAgent) Name() string {
-	return "MockLLM"
-}
-
-func (m *MockLLMAgent) Capabilities() []string {
-	return []string{"planning"}
-}
-
-func (m *MockLLMAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+func (m *MockLLMClient) Chat(_ context.Context, messages []*agenkit.Message) (*agenkit.Message, error) {
+	// Collect all message content for scenario detection
+	var combined strings.Builder
+	for _, msg := range messages {
+		combined.WriteString(msg.Content)
+		combined.WriteString(" ")
+	}
+	content := combined.String()
 
 	var planText string
 
-	if strings.Contains(content, "event") || m.scenario == "event" {
+	switch {
+	case strings.Contains(content, "event") || m.scenario == "event":
 		planText = `Goal: Organize a successful team event
 Steps:
 1. Choose date and venue for the event
@@ -49,7 +48,7 @@ Steps:
 3. Send invitations via email
 4. Arrange catering and refreshments
 5. Prepare agenda and activities`
-	} else if strings.Contains(content, "website") || m.scenario == "website" {
+	case strings.Contains(content, "website") || m.scenario == "website":
 		planText = `Goal: Launch a new company website
 Steps:
 1. Design website mockups and wireframes
@@ -58,7 +57,7 @@ Steps:
 4. Write content and add images
 5. Deploy to production server
 6. Configure domain and SSL certificate`
-	} else if strings.Contains(content, "campaign") || m.scenario == "campaign" {
+	case strings.Contains(content, "campaign") || m.scenario == "campaign":
 		planText = `Goal: Execute marketing campaign
 Steps:
 1. Define target audience and goals
@@ -66,7 +65,7 @@ Steps:
 3. Set up advertising channels
 4. Launch campaign across platforms
 5. Monitor metrics and performance`
-	} else {
+	default:
 		planText = `Goal: Complete the task
 Steps:
 1. Analyze requirements
@@ -78,12 +77,12 @@ Steps:
 	return agenkit.NewMessage("assistant", planText), nil
 }
 
-// CustomStepExecutor simulates realistic step execution
+// CustomStepExecutor simulates realistic step execution.
 type CustomStepExecutor struct {
 	verbose bool
 }
 
-func (c *CustomStepExecutor) Execute(ctx context.Context, step *patterns.PlanStep, contextData map[string]interface{}) (interface{}, error) {
+func (c *CustomStepExecutor) Execute(_ context.Context, step patterns.PlanStep, contextData map[string]interface{}) (interface{}, error) {
 	if c.verbose {
 		fmt.Printf("  → Executing: %s\n", step.Description)
 	}
@@ -133,32 +132,19 @@ func (c *CustomStepExecutor) Execute(ctx context.Context, step *patterns.PlanSte
 		fmt.Printf("    (Using context from %d previous steps)\n", len(contextData))
 	}
 
-	// Small delay to simulate work
-	time.Sleep(100 * time.Millisecond)
-
 	return result, nil
 }
 
-// Example 1: Simple event planning with default executor
-// TODO: Fix API usage - examples use incorrect PlanningAgent API
-/*
+// Example 1: Simple event planning with default executor.
 func exampleSimplePlanning() error {
 	fmt.Println("\n=== Example 1: Simple Event Planning (Default Executor) ===")
 
-	llm := &MockLLMAgent{scenario: "event"}
+	llm := &MockLLMClient{scenario: "event"}
 
-	config := patterns.PlanningConfig{
-		LLM:             llm,
-		Executor:        nil, // Use default executor
+	planner := patterns.NewPlanningAgent(llm, nil, &patterns.PlanningAgentConfig{
 		MaxSteps:        10,
 		AllowReplanning: false,
-		SystemPrompt:    "",
-	}
-
-	planner, err := patterns.NewPlanningAgent(config)
-	if err != nil {
-		return err
-	}
+	})
 
 	message := agenkit.NewMessage("user", "Organize a team event")
 	result, err := planner.Process(context.Background(), message)
@@ -168,42 +154,20 @@ func exampleSimplePlanning() error {
 
 	fmt.Printf("Result:\n%s\n\n", result.Content)
 
-	// Show plan details from metadata
-	if planData, ok := result.Metadata["plan"].(*patterns.Plan); ok {
-		fmt.Println("Plan Details:")
-		fmt.Printf("  Goal: %s\n", planData.Goal)
-		fmt.Printf("  Total Steps: %d\n", len(planData.Steps))
-		completed := 0
-		for _, s := range planData.Steps {
-			if s.Status == patterns.StepStatusCompleted {
-				completed++
-			}
-		}
-		fmt.Printf("  Completed: %d\n", completed)
-	}
-
 	return nil
 }
 
-// Example 2: Website launch with custom executor
+// Example 2: Website launch with custom executor.
 func exampleCustomExecutor() error {
 	fmt.Println("\n=== Example 2: Website Launch (Custom Executor) ===")
 
-	llm := &MockLLMAgent{scenario: "website"}
+	llm := &MockLLMClient{scenario: "website"}
 	customExecutor := &CustomStepExecutor{verbose: true}
 
-	config := patterns.PlanningConfig{
-		LLM:             llm,
-		Executor:        customExecutor,
+	planner := patterns.NewPlanningAgent(llm, customExecutor, &patterns.PlanningAgentConfig{
 		MaxSteps:        10,
 		AllowReplanning: false,
-		SystemPrompt:    "",
-	}
-
-	planner, err := patterns.NewPlanningAgent(config)
-	if err != nil {
-		return err
-	}
+	})
 
 	message := agenkit.NewMessage("user", "Launch a new website")
 	result, err := planner.Process(context.Background(), message)
@@ -213,32 +177,21 @@ func exampleCustomExecutor() error {
 
 	fmt.Printf("\nResult:\n%s\n\n", result.Content)
 
-	if progress, ok := result.Metadata["progress"].(float64); ok {
-		fmt.Printf("Overall Progress: %.1f%%\n", progress)
-	}
-
 	return nil
 }
 
-// Example 3: Marketing campaign with progress tracking
+// Example 3: Marketing campaign with progress tracking.
 func exampleProgressTracking() error {
 	fmt.Println("\n=== Example 3: Marketing Campaign (Progress Tracking) ===")
 
-	llm := &MockLLMAgent{scenario: "campaign"}
+	llm := &MockLLMClient{scenario: "campaign"}
 	customExecutor := &CustomStepExecutor{verbose: false}
 
-	config := patterns.PlanningConfig{
-		LLM:             llm,
-		Executor:        customExecutor,
+	planner := patterns.NewPlanningAgent(llm, customExecutor, &patterns.PlanningAgentConfig{
 		MaxSteps:        8,
 		AllowReplanning: false,
 		SystemPrompt:    "You are a marketing planning expert. Create detailed campaign plans.",
-	}
-
-	planner, err := patterns.NewPlanningAgent(config)
-	if err != nil {
-		return err
-	}
+	})
 
 	fmt.Println("Starting marketing campaign planning...")
 
@@ -248,60 +201,29 @@ func exampleProgressTracking() error {
 		return err
 	}
 
-	// Extract plan from metadata
-	if planData, ok := result.Metadata["plan"].(*patterns.Plan); ok {
-		fmt.Println("Campaign Plan Execution:")
-		fmt.Printf("Goal: %s\n\n", planData.Goal)
+	fmt.Printf("Result:\n%s\n\n", result.Content)
 
-		for _, step := range planData.Steps {
-			statusIcon := "○"
-			switch step.Status {
-			case patterns.StepStatusCompleted:
-				statusIcon = "✓"
-			case patterns.StepStatusFailed:
-				statusIcon = "✗"
-			case patterns.StepStatusSkipped:
-				statusIcon = "⊘"
-			case patterns.StepStatusInProgress:
-				statusIcon = "→"
-			}
-
-			fmt.Printf("%s Step %d: %s\n", statusIcon, step.StepNumber+1, step.Description)
-
-			if step.Result != nil {
-				if resultStr, ok := step.Result.(string); ok {
-					fmt.Printf("  Result: %s\n", resultStr)
-				}
-			}
-		}
-
-		fmt.Printf("\nProgress: %.1f%%\n", planData.GetProgress())
-		status := "In Progress"
-		if planData.IsComplete() {
-			status = "Complete"
-		}
-		fmt.Printf("Status: %s\n", status)
-	}
+	fmt.Printf("Progress: %.1f%%\n", planner.GetProgress())
 
 	return nil
 }
 
-// Example 4: Step dependencies demonstration
+// Example 4: Step dependencies demonstration.
 func exampleDependencies() error {
 	fmt.Println("\n=== Example 4: Step Dependencies ===")
 
 	// Create a plan manually to demonstrate dependencies
-	plan := patterns.NewPlan(
+	plan := patterns.CreatePlan(
 		"Build a simple application",
-		[]*patterns.PlanStep{
-			patterns.NewPlanStep("Set up development environment", 0, []int{}),
-			patterns.NewPlanStep("Design database schema", 1, []int{}),
-			patterns.NewPlanStep("Implement database migrations", 2, []int{1}),      // Depends on step 1
-			patterns.NewPlanStep("Create API endpoints", 3, []int{2}),                // Depends on step 2
-			patterns.NewPlanStep("Build frontend UI", 4, []int{0}),                   // Depends on step 0
-			patterns.NewPlanStep("Integrate frontend with API", 5, []int{3, 4}),      // Depends on 3 and 4
-			patterns.NewPlanStep("Write tests", 6, []int{5}),                         // Depends on step 5
-			patterns.NewPlanStep("Deploy to production", 7, []int{6}),                // Depends on step 6
+		[]patterns.PlanStep{
+			patterns.CreatePlanStep("Set up development environment", 0, []int{}),
+			patterns.CreatePlanStep("Design database schema", 1, []int{}),
+			patterns.CreatePlanStep("Implement database migrations", 2, []int{1}),
+			patterns.CreatePlanStep("Create API endpoints", 3, []int{2}),
+			patterns.CreatePlanStep("Build frontend UI", 4, []int{0}),
+			patterns.CreatePlanStep("Integrate frontend with API", 5, []int{3, 4}),
+			patterns.CreatePlanStep("Write tests", 6, []int{5}),
+			patterns.CreatePlanStep("Deploy to production", 7, []int{6}),
 		},
 	)
 
@@ -325,8 +247,8 @@ func exampleDependencies() error {
 	contextData := make(map[string]interface{})
 	executionRound := 0
 
-	for !plan.IsComplete() {
-		nextSteps := plan.GetNextSteps()
+	for !patterns.IsPlanComplete(plan) {
+		nextSteps := patterns.GetNextSteps(plan)
 		if len(nextSteps) == 0 {
 			break
 		}
@@ -335,64 +257,64 @@ func exampleDependencies() error {
 		fmt.Printf("\nRound %d:\n", executionRound)
 
 		for _, step := range nextSteps {
-			fmt.Printf("  → Executing Step %d: %s\n", step.StepNumber, step.Description)
+			fmt.Printf("  -> Executing Step %d: %s\n", step.StepNumber, step.Description)
 
 			result, err := executor.Execute(context.Background(), step, contextData)
 			if err != nil {
 				return err
 			}
 
-			step.Status = patterns.StepStatusCompleted
-			step.Result = result
+			// Update step status in the plan
+			for i := range plan.Steps {
+				if plan.Steps[i].StepNumber == step.StepNumber {
+					plan.Steps[i].Status = patterns.StepStatusCompleted
+					plan.Steps[i].Result = result
+					break
+				}
+			}
 			contextData[fmt.Sprintf("step_%d_result", step.StepNumber)] = result
 		}
 
-		fmt.Printf("  Progress: %.1f%%\n", plan.GetProgress())
+		fmt.Printf("  Progress: %.1f%%\n", patterns.GetPlanProgress(plan))
 	}
 
-	fmt.Println("\n✓ All steps completed!")
-	fmt.Printf("Final Progress: %.1f%%\n", plan.GetProgress())
+	fmt.Println("\nAll steps completed!")
+	fmt.Printf("Final Progress: %.1f%%\n", patterns.GetPlanProgress(plan))
 
 	return nil
 }
-*/
 
 func main() {
 	fmt.Println("Planning Pattern Examples")
 	fmt.Println(strings.Repeat("=", 60))
-	fmt.Println("\n⚠ These examples need updating to match current PlanningAgent API.")
-	fmt.Println("See agenkit-go/patterns/planning_test.go for correct usage.")
 
-	// TODO: Update examples to use correct API:
-	// NewPlanningAgent(llmClient LLMClient, stepExecutor StepExecutor, config *PlanningAgentConfig)
-	/*
-		// Run all examples
-		if err := exampleSimplePlanning(); err != nil {
-			log.Fatalf("Example 1 failed: %v", err)
-		}
+	// Run all examples
+	if err := exampleSimplePlanning(); err != nil {
+		log.Fatalf("Example 1 failed: %v", err)
+	}
 
-		if err := exampleCustomExecutor(); err != nil {
-			log.Fatalf("Example 2 failed: %v", err)
-		}
+	if err := exampleCustomExecutor(); err != nil {
+		log.Fatalf("Example 2 failed: %v", err)
+	}
 
-		if err := exampleProgressTracking(); err != nil {
-			log.Fatalf("Example 3 failed: %v", err)
-		}
+	if err := exampleProgressTracking(); err != nil {
+		log.Fatalf("Example 3 failed: %v", err)
+	}
 
-		if err := exampleDependencies(); err != nil {
-			log.Fatalf("Example 4 failed: %v", err)
-		}
-	*/
+	if err := exampleDependencies(); err != nil {
+		log.Fatalf("Example 4 failed: %v", err)
+	}
 
 	fmt.Println("\n" + strings.Repeat("=", 60))
-	fmt.Println("✓ All examples completed successfully!")
-	fmt.Println("\n💡 Key takeaways:")
+	fmt.Println("All examples completed successfully!")
+	fmt.Println()
+	fmt.Println("Key takeaways:")
 	fmt.Println("   - Planning decomposes complex tasks into steps")
 	fmt.Println("   - Dependencies ensure correct execution order")
 	fmt.Println("   - Custom executors enable specialized logic")
 	fmt.Println("   - Progress tracking provides visibility")
 	fmt.Println()
-	fmt.Println("🎯 When to use Planning:")
+	fmt.Println("When to use Planning:")
 	fmt.Println("   - Complex multi-step processes")
 	fmt.Println("   - Tasks with interdependencies")
 	fmt.Println("   - Projects requiring progress monitoring")

@@ -80,7 +80,7 @@ export interface Storage {
 /**
  * In-memory storage for cost records.
  */
-export class InMemoryStorage implements Storage {
+export class MemoryStorage implements Storage {
   private costs: Cost[] = [];
 
   /**
@@ -155,7 +155,7 @@ export class CostTracker {
   private modelPricing: ModelPricing;
 
   constructor(storage?: Storage) {
-    this.storage = storage || new InMemoryStorage();
+    this.storage = storage || new MemoryStorage();
     this.modelPricing = new ModelPricing();
   }
 
@@ -344,3 +344,6 @@ export class CostTracker {
     return await this.storage.query({ startTime, endTime });
   }
 }
+
+/** @deprecated Use {@link MemoryStorage} instead. */
+export const InMemoryStorage = MemoryStorage;

@@ -291,20 +291,20 @@ add_executable(test_simd utils/test_simd.cpp)
 target_link_libraries(test_simd agenkit gtest_main)
 add_test(NAME simd_tests COMMAND test_simd)
 
-# Infrastructure tests - Checkpointing (TODO: Fix includes and API usage)
-# add_executable(test_checkpointing infrastructure/test_checkpointing.cpp)
-# target_link_libraries(test_checkpointing agenkit gtest_main)
-# add_test(NAME checkpointing_tests COMMAND test_checkpointing)
+# Infrastructure tests - Checkpointing
+add_executable(test_checkpointing infrastructure/test_checkpointing.cpp)
+target_link_libraries(test_checkpointing agenkit gtest_main)
+add_test(NAME checkpointing_tests COMMAND test_checkpointing)
 
-# Infrastructure tests - Budget (TODO: Fix includes and API usage)
-# add_executable(test_budget infrastructure/test_budget.cpp)
-# target_link_libraries(test_budget agenkit gtest_main)
-# add_test(NAME budget_tests COMMAND test_budget)
+# Infrastructure tests - Budget
+add_executable(test_budget infrastructure/test_budget.cpp)
+target_link_libraries(test_budget agenkit gtest_main)
+add_test(NAME budget_tests COMMAND test_budget)
 
-# Infrastructure tests - Middleware (TODO: Fix includes and API usage)
-# add_executable(test_middleware infrastructure/test_middleware.cpp)
-# target_link_libraries(test_middleware agenkit gtest_main)
-# add_test(NAME middleware_tests COMMAND test_middleware)
+# Infrastructure tests - Middleware
+add_executable(test_middleware infrastructure/test_middleware.cpp)
+target_link_libraries(test_middleware agenkit gtest_main)
+add_test(NAME middleware_tests COMMAND test_middleware)
 
 # Middleware tests - Batching
 add_executable(test_batching middleware/test_batching.cpp)

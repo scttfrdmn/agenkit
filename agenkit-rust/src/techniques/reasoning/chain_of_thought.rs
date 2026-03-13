@@ -191,3 +191,141 @@ impl Agent for ChainOfThoughtAgent {
         Ok(result)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Mutex;
+
+    struct MockAgent {
+        response: Mutex<String>,
+    }
+
+    impl MockAgent {
+        fn new(response: impl Into<String>) -> Arc<Self> {
+            Arc::new(Self {
+                response: Mutex::new(response.into()),
+            })
+        }
+    }
+
+    #[async_trait]
+    impl Agent for MockAgent {
+        fn name(&self) -> &str {
+            "mock"
+        }
+
+        fn capabilities(&self) -> Vec<String> {
+            vec![]
+        }
+
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
+            let text = self.response.lock().unwrap().clone();
+            Ok(Message::with_text("assistant", text))
+        }
+    }
+
+    #[test]
+    fn test_default_config() {
+        let config = ChainOfThoughtConfig::default();
+        assert!(config.prompt_template.contains("{query}"));
+        assert!(config.parse_steps);
+        assert_eq!(config.step_delimiter, "\n");
+        assert!(config.max_steps.is_none());
+    }
+
+    #[test]
+    fn test_agent_name_and_capabilities() {
+        let agent = ChainOfThoughtAgent::new(MockAgent::new("ok"), ChainOfThoughtConfig::default());
+        assert_eq!(agent.name(), "chain_of_thought");
+        let caps = agent.capabilities();
+        assert!(caps.contains(&"chain_of_thought".to_string()));
+        assert!(caps.contains(&"reasoning".to_string()));
+    }
+
+    #[test]
+    fn test_extract_steps_numbered() {
+        let agent = ChainOfThoughtAgent::new(MockAgent::new("ok"), ChainOfThoughtConfig::default());
+        let text = "1. First step\n2. Second step\n3. Third step";
+        let steps = agent.extract_steps(text);
+        assert_eq!(steps.len(), 3);
+        assert_eq!(steps[0], "First step");
+        assert_eq!(steps[2], "Third step");
+    }
+
+    #[test]
+    fn test_extract_steps_parentheses() {
+        let agent = ChainOfThoughtAgent::new(MockAgent::new("ok"), ChainOfThoughtConfig::default());
+        let text = "1) Do this\n2) Do that\n3) Final step";
+        let steps = agent.extract_steps(text);
+        assert_eq!(steps.len(), 3);
+        assert_eq!(steps[0], "Do this");
+    }
+
+    #[test]
+    fn test_extract_steps_bullets() {
+        let agent = ChainOfThoughtAgent::new(MockAgent::new("ok"), ChainOfThoughtConfig::default());
+        let text = "- Step A\n- Step B\n- Step C";
+        let steps = agent.extract_steps(text);
+        assert_eq!(steps.len(), 3);
+        assert_eq!(steps[0], "Step A");
+    }
+
+    #[test]
+    fn test_extract_steps_fallback() {
+        let agent = ChainOfThoughtAgent::new(MockAgent::new("ok"), ChainOfThoughtConfig::default());
+        let text = "First thought\nSecond thought\nThird thought";
+        let steps = agent.extract_steps(text);
+        assert_eq!(steps.len(), 3);
+    }
+
+    #[test]
+    fn test_max_steps_limit() {
+        let config = ChainOfThoughtConfig {
+            max_steps: Some(2),
+            ..Default::default()
+        };
+        let agent = ChainOfThoughtAgent::new(MockAgent::new("ok"), config);
+        let text = "1. Step one\n2. Step two\n3. Step three\n4. Step four";
+        let steps = agent.extract_steps(text);
+        assert_eq!(steps.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_process_adds_metadata() {
+        let response_text = "1. First step\n2. Second step";
+        let agent = ChainOfThoughtAgent::new(
+            MockAgent::new(response_text),
+            ChainOfThoughtConfig::default(),
+        );
+        let msg = Message::with_text("user", "What is 2+2?");
+        let result = agent.process(msg).await.unwrap();
+        assert_eq!(result.metadata["technique"], "chain_of_thought");
+        assert!(result.metadata.contains_key("reasoning_steps"));
+        assert!(result.metadata.contains_key("num_steps"));
+    }
+
+    #[tokio::test]
+    async fn test_process_invalid_template() {
+        let config = ChainOfThoughtConfig {
+            prompt_template: "No placeholder here".to_string(),
+            ..Default::default()
+        };
+        let agent = ChainOfThoughtAgent::new(MockAgent::new("ok"), config);
+        let msg = Message::with_text("user", "test");
+        assert!(agent.process(msg).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_process_no_parse_steps() {
+        let config = ChainOfThoughtConfig {
+            parse_steps: false,
+            ..Default::default()
+        };
+        let agent = ChainOfThoughtAgent::new(MockAgent::new("some response"), config);
+        let msg = Message::with_text("user", "What is 2+2?");
+        let result = agent.process(msg).await.unwrap();
+        assert_eq!(result.metadata["technique"], "chain_of_thought");
+        assert!(!result.metadata.contains_key("reasoning_steps"));
+    }
+}

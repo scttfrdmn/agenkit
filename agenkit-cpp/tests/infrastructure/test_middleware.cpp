@@ -891,3 +891,117 @@ TEST(MiddlewareThreadSafetyTest, ConcurrentCircuitBreaker) {
     auto metrics = breaker->metrics().snapshot(breaker->state());
     EXPECT_EQ(metrics.total_requests, 100);
 }
+
+// ============================================================================
+// MetricsMiddleware Tests
+// ============================================================================
+
+TEST(MetricsMiddlewareTest, InitialMetricsAreZero) {
+    auto agent = std::make_shared<TestAgent>();
+    auto metrics = std::make_shared<MetricsMiddleware>(agent);
+
+    auto snap = metrics->get_metrics();
+    EXPECT_EQ(snap.total_requests, 0u);
+    EXPECT_EQ(snap.success_requests, 0u);
+    EXPECT_EQ(snap.error_requests, 0u);
+    EXPECT_EQ(snap.in_flight, 0u);
+    EXPECT_DOUBLE_EQ(snap.avg_latency_ms, 0.0);
+}
+
+TEST(MetricsMiddlewareTest, CountsSuccessfulRequests) {
+    auto agent = std::make_shared<TestAgent>(0.0); // 0% failure
+    auto metrics = std::make_shared<MetricsMiddleware>(agent);
+
+    auto msg = Message::with_text("user", "hello");
+    metrics->process(msg).get();
+    metrics->process(msg).get();
+
+    auto snap = metrics->get_metrics();
+    EXPECT_EQ(snap.total_requests, 2u);
+    EXPECT_EQ(snap.success_requests, 2u);
+    EXPECT_EQ(snap.error_requests, 0u);
+    EXPECT_DOUBLE_EQ(snap.success_rate(), 1.0);
+}
+
+TEST(MetricsMiddlewareTest, CountsErrorRequests) {
+    auto agent = std::make_shared<TestAgent>(1.0); // 100% failure
+    auto metrics = std::make_shared<MetricsMiddleware>(agent);
+
+    auto msg = Message::with_text("user", "hello");
+    metrics->process(msg).get();
+    metrics->process(msg).get();
+
+    auto snap = metrics->get_metrics();
+    EXPECT_EQ(snap.total_requests, 2u);
+    EXPECT_EQ(snap.success_requests, 0u);
+    EXPECT_EQ(snap.error_requests, 2u);
+    EXPECT_DOUBLE_EQ(snap.success_rate(), 0.0);
+}
+
+TEST(MetricsMiddlewareTest, TracksLatency) {
+    // Use a 5ms delay agent so latency is measurable
+    auto agent = std::make_shared<TestAgent>(0.0, std::chrono::milliseconds(5));
+    auto metrics = std::make_shared<MetricsMiddleware>(agent);
+
+    auto msg = Message::with_text("user", "hello");
+    metrics->process(msg).get();
+    metrics->process(msg).get();
+    metrics->process(msg).get();
+
+    auto snap = metrics->get_metrics();
+    EXPECT_GT(snap.min_latency_ms, 0.0);
+    EXPECT_GE(snap.max_latency_ms, snap.min_latency_ms);
+    EXPECT_GE(snap.avg_latency_ms, snap.min_latency_ms);
+    EXPECT_LE(snap.avg_latency_ms, snap.max_latency_ms);
+}
+
+TEST(MetricsMiddlewareTest, ResetClearsAllCounters) {
+    auto agent = std::make_shared<TestAgent>(0.0);
+    auto metrics = std::make_shared<MetricsMiddleware>(agent);
+
+    auto msg = Message::with_text("user", "hello");
+    metrics->process(msg).get();
+    metrics->process(msg).get();
+
+    metrics->reset_metrics();
+
+    auto snap = metrics->get_metrics();
+    EXPECT_EQ(snap.total_requests, 0u);
+    EXPECT_EQ(snap.success_requests, 0u);
+    EXPECT_EQ(snap.error_requests, 0u);
+    EXPECT_DOUBLE_EQ(snap.avg_latency_ms, 0.0);
+}
+
+TEST(MetricsMiddlewareTest, DelegatesAgentName) {
+    auto agent = std::make_shared<TestAgent>();
+    auto metrics = std::make_shared<MetricsMiddleware>(agent);
+    EXPECT_EQ(metrics->name(), "test_agent");
+}
+
+TEST(MetricsMiddlewareTest, InFlightIsZeroAfterCompletion) {
+    auto agent = std::make_shared<TestAgent>(0.0);
+    auto metrics = std::make_shared<MetricsMiddleware>(agent);
+
+    auto msg = Message::with_text("user", "hello");
+    metrics->process(msg).get();
+
+    auto snap = metrics->get_metrics();
+    EXPECT_EQ(snap.in_flight, 0u);
+}
+
+TEST(MetricsMiddlewareTest, MixedSuccessAndErrors) {
+    // Use 50% failure with deterministic seed
+    auto agent = std::make_shared<TestAgent>(0.5, std::chrono::milliseconds(0), true);
+    auto metrics = std::make_shared<MetricsMiddleware>(agent);
+
+    auto msg = Message::with_text("user", "hello");
+    for (int i = 0; i < 10; i++) {
+        metrics->process(msg).get();
+    }
+
+    auto snap = metrics->get_metrics();
+    EXPECT_EQ(snap.total_requests, 10u);
+    EXPECT_EQ(snap.success_requests + snap.error_requests, 10u);
+    EXPECT_GE(snap.success_rate(), 0.0);
+    EXPECT_LE(snap.success_rate(), 1.0);
+}

@@ -5,9 +5,8 @@
 /// patterns for consensus, voting, or redundancy.
 ///
 /// Performance Characteristics:
-/// - Bounded by slowest agent (in true parallel execution)
+/// - Bounded by slowest agent (true parallel execution via std.Thread)
 /// - Memory: O(n) where n = number of agents
-/// - Current implementation: Sequential execution (true parallelism TODO)
 ///
 /// Use Cases:
 /// - Consensus building (multiple agents vote)
@@ -26,9 +25,10 @@
 ///
 ///     const result = try parallel.agent().process(input_message);
 ///
-/// Note: Current implementation executes agents sequentially. True parallel
-/// execution using Zig threads will be added in future version once Zig's
-/// async story stabilizes.
+/// Thread Safety:
+///   Each agent processes an independent copy of the input message.
+///   Agents must not modify the message in place; they are expected to
+///   produce a new Message as their result.
 
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
@@ -174,41 +174,96 @@ pub const ParallelAgent = struct {
         return caps;
     }
 
+    /// Per-thread context: holds the input, output, and error state for one agent.
+    /// The `message` field is a shallow copy of the caller's input — agents must
+    /// only READ from it, never call deinit() or modify it.
+    const ThreadContext = struct {
+        agent: Agent,
+        message: Message, // NOT owned; shared read-only input
+        result: ?Message = null,
+        failed: bool = false,
+        err: AgentError = AgentError.ProcessingFailed,
+
+        fn run(ctx: *ThreadContext) void {
+            const res = ctx.agent.process(ctx.message) catch |err| {
+                ctx.failed = true;
+                ctx.err = err;
+                return;
+            };
+            ctx.result = res.unwrap() catch |err| {
+                ctx.failed = true;
+                ctx.err = err;
+                return;
+            };
+        }
+    };
+
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
         const self: *ParallelAgent = @ptrCast(@alignCast(ptr));
 
-        // Allocate results array
+        // Allocate per-thread contexts
+        const contexts = self.allocator.alloc(ThreadContext, self.agents.len) catch {
+            return AgentError.ProcessingFailed;
+        };
+        defer self.allocator.free(contexts);
+
+        // Allocate thread handles
+        const threads = self.allocator.alloc(std.Thread, self.agents.len) catch {
+            return AgentError.ProcessingFailed;
+        };
+        defer self.allocator.free(threads);
+
+        // Initialise all contexts
+        for (self.agents, 0..) |a, i| {
+            contexts[i] = .{ .agent = a, .message = message };
+        }
+
+        // Spawn one thread per agent; on spawn failure join already-running threads
+        var spawned: usize = 0;
+        for (0..self.agents.len) |i| {
+            threads[i] = std.Thread.spawn(.{}, ThreadContext.run, .{&contexts[i]}) catch {
+                for (threads[0..spawned]) |t| t.join();
+                for (contexts[0..spawned]) |*ctx| {
+                    if (ctx.result) |*r| r.deinit();
+                }
+                return AgentError.ProcessingFailed;
+            };
+            spawned += 1;
+        }
+
+        // Join all threads
+        for (threads[0..spawned]) |t| t.join();
+
+        // Check for errors from any thread; clean up all results on failure
+        for (contexts) |ctx| {
+            if (ctx.failed) {
+                for (contexts) |*c| {
+                    if (c.result) |*r| r.deinit();
+                }
+                return ctx.err;
+            }
+        }
+
+        // Collect results into a contiguous slice
         const results = self.allocator.alloc(Message, self.agents.len) catch {
+            for (contexts) |*ctx| {
+                if (ctx.result) |*r| r.deinit();
+            }
             return AgentError.ProcessingFailed;
         };
         defer self.allocator.free(results);
 
-        var results_count: usize = 0;
-        errdefer {
-            // Clean up any results collected so far
-            for (results[0..results_count]) |*r| {
-                r.deinit();
-            }
+        for (contexts, 0..) |ctx, i| {
+            results[i] = ctx.result.?;
         }
 
-        // Execute all agents (currently sequential, TODO: parallel threads)
-        for (self.agents, 0..) |a, i| {
-            const result = a.process(message) catch |err| {
-                return err;
-            };
-
-            results[i] = result.unwrap() catch |err| {
-                return err;
-            };
-            results_count += 1;
-        }
-
-        // Aggregate results
+        // Aggregate results (creates a new message)
         const aggregated = self.aggregator(self.allocator, results) catch |err| {
+            for (results) |*r| r.deinit();
             return err;
         };
 
-        // Clean up individual results (aggregator creates new message)
+        // Clean up individual results (aggregator owns the output message)
         for (results) |*r| {
             r.deinit();
         }

@@ -32,3 +32,4 @@
 
 export { ModelPricing } from './models';
 export { Cost, costToDict, Storage, MemoryStorage, InMemoryStorage, CostTracker } from './tracker';
+export { BudgetConfig, BudgetExceededError, BudgetWarning, BudgetLimiter } from './limiter';

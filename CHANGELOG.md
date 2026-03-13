@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.57.0] - 2026-03-13
+
+### Added
+
+#### TypeScript BudgetLimiter (Issue #426)
+- **New**: `agenkit-ts/src/budget/limiter.ts` — BudgetLimiter class wrapping any Agent
+- Enforces session, agent, and global cost budgets via CostTracker integration
+- Configurable actions on budget exceeded: `'error'` | `'warning'` | `'switch_model'`
+- `BudgetWarning` event type and `BudgetExceededError` with structured fields (level, current, limit)
+- `getRemainingBudget()` for real-time budget inspection
+- Exported from `agenkit-ts/src/budget/index.ts`
+- 12/12 tests passing
+
+#### TypeScript ReasoningGraph Tests (Issue #354)
+- **New**: `agenkit-ts/src/techniques/reasoning/reasoning-graph.test.ts`
+- 32 tests covering node creation, edge construction, path finding, cycle detection,
+  path scoring, and statistics
+- Closes #354 (techniques test coverage now complete)
+
+#### C++ MetricsMiddleware (Issue #531)
+- **New**: `agenkit-cpp/include/agenkit/middleware/metrics.hpp` — header-only class
+- Tracks total/success/error request counts, in-flight requests, min/max/avg latency
+- Thread-safe: atomic counters + mutex-protected latency state
+- `get_metrics()` returns `MetricsSnapshot`; `reset_metrics()` zeroes all counters
+- 8 tests added to `test_middleware.cpp`
+- Included in `agenkit/middleware/middleware.hpp` umbrella header
+
+#### Go ContentString() Accessor (Issue #422)
+- **New**: `ContentString()` method on `Message` for forward-compatible content access
+- Adapters (`anthropic.go`, `openai.go`) updated to use `ContentString()` instead of `.Content` directly
+- Prepares for future structured/multimodal content without breaking the API
+
+#### Error Handling Documentation (Issue #421)
+- **New**: `docs/ERROR_HANDLING.md` — cross-language error type reference
+- Mapping table: 6 languages × 7 error types (AgentError, LLMError, RateLimitError, etc.)
+- Language-specific handling patterns with code examples
+- Decision guide: error vs panic vs Result vs assertion
+- Retry guidance pointing to built-in middleware
+
+### Changed
+
+#### Zig Parallel True Parallelism (Issue #533)
+- `ParallelAgent.processImpl` now uses `std.Thread.spawn()` per agent
+- Previously sequential; agents now execute concurrently, bounded by slowest agent
+- Proper cleanup of results on spawn failure or agent error
+- `ThreadContext` per thread: holds agent, input message (read-only), result, error state
+- All existing parallel tests continue to pass
+
+#### TypeScript gRPC `any` Cleanup (Issue #536)
+- `agenkit-ts/src/transports/grpc.ts`: replaced all `any` annotations with typed interfaces
+  (`GrpcProtoMessage`, `GrpcProtoResponse`, `GrpcAgentServiceClient`, `GrpcProtoPackage`, etc.)
+- `agenkit-ts/src/transports/grpc-transport.ts`: same treatment with `GrpcProtoRequest`,
+  `GrpcProtoPackage`, `GrpcAgentServiceClient`
+- `catch (error: any)` → `catch (error: unknown)` with `instanceof Error` guards throughout
+- `GrpcTransportError.details?: any` → `details?: unknown`
+
+### Closed (Already Implemented)
+
+- **#352** — C++ safety module tests already comprehensive (30 tests in `test_safety.cpp`)
+- **#357** — Zig evaluation framework tests already implemented (72 inline tests)
+
 ## [0.56.1] - 2026-03-13
 
 ### ✅ API Alignment Phase 2B/2C Complete (January 28, 2026)

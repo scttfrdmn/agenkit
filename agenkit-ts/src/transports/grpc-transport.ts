@@ -20,6 +20,58 @@ import {
   MalformedPayloadError,
 } from './errors';
 
+// ── Internal proto types (mirrors proto/agent.proto) ─────────────────────────
+
+interface GrpcProtoMessage {
+  role: string;
+  content: string;
+  metadata: Record<string, unknown>;
+  timestamp: string;
+}
+
+interface GrpcProtoError {
+  code: string;
+  message: string;
+  details: Record<string, unknown>;
+}
+
+interface GrpcProtoResponse {
+  version: string;
+  id: string;
+  timestamp: string;
+  type: string;
+  message?: GrpcProtoMessage;
+  error?: GrpcProtoError;
+  metadata?: Record<string, unknown>;
+}
+
+interface GrpcProtoRequest {
+  version: string;
+  id: string;
+  timestamp: string;
+  method: string;
+  agentName?: string;
+  agent_name?: string;
+  messages: GrpcProtoMessage[];
+  metadata: Record<string, unknown>;
+}
+
+interface GrpcAgentServiceClient {
+  Process(
+    request: GrpcProtoRequest,
+    options: { deadline?: number },
+    callback: (error: grpc.ServiceError | null, response: GrpcProtoResponse) => void,
+  ): void;
+  ProcessStream(request: GrpcProtoRequest): grpc.ClientReadableStream<GrpcProtoResponse>;
+}
+
+interface GrpcProtoPackage {
+  AgentService: new (
+    target: string,
+    credentials: grpc.ChannelCredentials,
+  ) => GrpcAgentServiceClient;
+}
+
 /**
  * gRPC Transport configuration
  */
@@ -64,8 +116,8 @@ export class GRPCTransport extends Transport {
   private host: string;
   private port: number;
   private channel: grpc.Channel | null = null;
-  private client: any = null;
-  private proto: any = null;
+  private client: GrpcAgentServiceClient | null = null;
+  private proto: GrpcProtoPackage | null = null;
   private _connected = false;
   private responseQueue: Array<ProtocolEnvelope> = [];
   private queueResolvers: Array<(value: ProtocolEnvelope) => void> = [];
@@ -108,7 +160,7 @@ export class GRPCTransport extends Transport {
       oneofs: true,
     });
 
-    this.proto = grpc.loadPackageDefinition(packageDefinition).agenkit as any;
+    this.proto = grpc.loadPackageDefinition(packageDefinition).agenkit as GrpcProtoPackage;
   }
 
   async connect(): Promise<void> {
@@ -137,7 +189,7 @@ export class GRPCTransport extends Transport {
       };
 
       this.channel = new grpc.Channel(target, credentials, options);
-      this.client = new this.proto.AgentService(target, credentials);
+      this.client = new this.proto!.AgentService(target, credentials);
       this._connected = true;
     } catch (error) {
       const tlsNote = this.config.useTLS ? ' (TLS enabled)' : ' (INSECURE: no TLS)';
@@ -198,9 +250,9 @@ export class GRPCTransport extends Transport {
 
       if (isStreaming) {
         // Use ProcessStream RPC
-        const call = this.client.ProcessStream(pbRequest);
+        const call = this.client!.ProcessStream(pbRequest);
 
-        call.on('data', (chunk: any) => {
+        call.on('data', (chunk: GrpcProtoResponse) => {
           // FAST PATH: protobuf → dict directly (skip JSON encoding)
           const envelopeDict = this.protobufChunkToEnvelope(chunk);
           this.enqueueResponse(envelopeDict);
@@ -220,12 +272,12 @@ export class GRPCTransport extends Transport {
         });
       } else {
         // Use unary Process RPC
-        this.client.Process(
+        this.client!.Process(
           pbRequest,
           {
             deadline: Date.now() + (this.config.timeout || 30000),
           },
-          (error: grpc.ServiceError | null, response: any) => {
+          (error: grpc.ServiceError | null, response: GrpcProtoResponse) => {
             if (error) {
               const errorEnvelope = this.createErrorEnvelope(
                 envelope.id || 'unknown',
@@ -315,32 +367,30 @@ export class GRPCTransport extends Transport {
   /**
    * Convert JSON envelope to protobuf Request.
    */
-  private envelopeToProtobufRequest(envelope: ProtocolEnvelope): any {
+  private envelopeToProtobufRequest(envelope: ProtocolEnvelope): GrpcProtoRequest {
     const payload = envelope.payload || {};
 
-    const request: any = {
+    const request: GrpcProtoRequest = {
       version: envelope.version || '1.0',
       id: envelope.id || '',
       timestamp: envelope.timestamp || new Date().toISOString(),
-      method: payload.method || 'process',
-      agentName: payload.agent_name || payload.agentName || '',
+      method: (payload['method'] as string) || 'process',
+      agentName: (payload['agent_name'] as string) || (payload['agentName'] as string) || '',
       messages: [],
       metadata: {},
     };
 
     // Convert messages if present
-    if (payload.message) {
-      // Single message
-      const msg = payload.message as any;
+    if (payload['message']) {
+      const msg = payload['message'] as GrpcProtoMessage;
       request.messages.push({
         role: msg.role || '',
         content: this.serializeContent(msg.content),
         metadata: msg.metadata || {},
         timestamp: msg.timestamp || new Date().toISOString(),
       });
-    } else if (payload.messages) {
-      // Multiple messages
-      for (const msg of payload.messages as any[]) {
+    } else if (payload['messages']) {
+      for (const msg of payload['messages'] as GrpcProtoMessage[]) {
         request.messages.push({
           role: msg.role || '',
           content: this.serializeContent(msg.content),
@@ -351,8 +401,8 @@ export class GRPCTransport extends Transport {
     }
 
     // Add metadata
-    if (payload.metadata) {
-      request.metadata = payload.metadata;
+    if (payload['metadata']) {
+      request.metadata = payload['metadata'] as Record<string, unknown>;
     }
 
     return request;
@@ -361,8 +411,8 @@ export class GRPCTransport extends Transport {
   /**
    * Convert protobuf Response to JSON envelope.
    */
-  private protobufResponseToEnvelope(response: any): ProtocolEnvelope {
-    const payload: any = {};
+  private protobufResponseToEnvelope(response: GrpcProtoResponse): ProtocolEnvelope {
+    const payload: Record<string, unknown> = {};
 
     if (response.type === 'RESPONSE_TYPE_MESSAGE' && response.message) {
       payload.message = {
@@ -397,7 +447,7 @@ export class GRPCTransport extends Transport {
   /**
    * Convert protobuf StreamChunk to JSON envelope.
    */
-  private protobufChunkToEnvelope(chunk: any): ProtocolEnvelope {
+  private protobufChunkToEnvelope(chunk: GrpcProtoResponse): ProtocolEnvelope {
     if (chunk.type === 'CHUNK_TYPE_END') {
       return {
         version: chunk.version || '1.0',
@@ -448,7 +498,7 @@ export class GRPCTransport extends Transport {
   /**
    * Serialize content to string for protobuf.
    */
-  private serializeContent(content: any): string {
+  private serializeContent(content: unknown): string {
     if (typeof content === 'string') {
       return content;
     }
@@ -458,7 +508,7 @@ export class GRPCTransport extends Transport {
   /**
    * Deserialize content from string.
    */
-  private deserializeContent(content: string): any {
+  private deserializeContent(content: string): unknown {
     if (!content) {
       return content;
     }

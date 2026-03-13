@@ -12,6 +12,65 @@ import * as protoLoader from '@grpc/proto-loader';
 import { Agent, Message } from '../core/interfaces';
 import * as path from 'path';
 
+// ── Internal proto types ──────────────────────────────────────────────────────
+// These mirror the protobuf message shapes defined in proto/agent.proto.
+
+/** A message as represented in the proto wire format */
+interface GrpcProtoMessage {
+  role: string;
+  content: string;
+  metadata: Record<string, unknown>;
+  timestamp: string;
+}
+
+/** A gRPC error object returned in response/chunk envelopes */
+interface GrpcProtoError {
+  code: string;
+  message: string;
+  details: Record<string, unknown>;
+}
+
+/** Unary Process RPC response */
+interface GrpcProtoResponse {
+  version: string;
+  id: string;
+  timestamp: string;
+  type: string;
+  message?: GrpcProtoMessage;
+  error?: GrpcProtoError;
+  metadata?: Record<string, unknown>;
+}
+
+/** A streaming chunk returned by ProcessStream */
+type GrpcProtoChunk = GrpcProtoResponse;
+
+/** Event-emitting stream returned by client.ProcessStream() */
+interface GrpcCallStream {
+  on(event: 'data', callback: (chunk: GrpcProtoChunk) => void): this;
+  on(event: 'error', callback: (error: Error) => void): this;
+  on(event: 'end', callback: () => void): this;
+  cancel(): void;
+}
+
+/** The gRPC client stub generated from the AgentService proto definition */
+interface GrpcAgentServiceClient {
+  Process(
+    request: Record<string, unknown>,
+    options: { deadline?: number },
+    callback: (error: grpc.ServiceError | null, response: GrpcProtoResponse) => void,
+  ): void;
+  ProcessStream(request: Record<string, unknown>): GrpcCallStream;
+  close(): void;
+}
+
+/** The loaded agenkit proto package — provides the AgentService constructor */
+interface GrpcProtoPackage {
+  AgentService: (new (
+    address: string,
+    credentials: grpc.ChannelCredentials,
+  ) => GrpcAgentServiceClient) & { service: grpc.ServiceDefinition };
+}
+
 /**
  * gRPC client configuration
  */
@@ -47,7 +106,7 @@ export class GrpcTransportError extends Error {
   constructor(
     message: string,
     public code: grpc.status,
-    public details?: any,
+    public details?: unknown,
   ) {
     super(message);
     this.name = 'GrpcTransportError';
@@ -70,9 +129,9 @@ export class GrpcTransportError extends Error {
  * ```
  */
 export class GrpcAgent implements Agent {
-  private client: any;
+  private client: GrpcAgentServiceClient | null = null;
   private packageDefinition: protoLoader.PackageDefinition;
-  private proto: any;
+  private proto: GrpcProtoPackage;
   private connected: boolean = false;
 
   constructor(
@@ -90,7 +149,7 @@ export class GrpcAgent implements Agent {
     });
 
     // Load gRPC package
-    this.proto = grpc.loadPackageDefinition(this.packageDefinition).agenkit as any;
+    this.proto = grpc.loadPackageDefinition(this.packageDefinition).agenkit as GrpcProtoPackage;
   }
 
   get name(): string {
@@ -109,7 +168,7 @@ export class GrpcAgent implements Agent {
       ? this.config.credentials || grpc.credentials.createSsl()
       : grpc.credentials.createInsecure();
 
-    this.client = new this.proto.AgentService(this.config.address, credentials);
+    this.client = new (this.proto.AgentService)(this.config.address, credentials);
     this.connected = true;
   }
 
@@ -146,10 +205,10 @@ export class GrpcAgent implements Agent {
         ? Date.now() + this.config.timeout
         : undefined;
 
-      this.client.Process(
+      this.client!.Process(
         request,
         { deadline },
-        (error: grpc.ServiceError | null, response: any) => {
+        (error: grpc.ServiceError | null, response: GrpcProtoResponse) => {
           if (error) {
             reject(
               new GrpcTransportError(
@@ -196,7 +255,7 @@ export class GrpcAgent implements Agent {
       metadata: message.metadata || {},
     };
 
-    const call = this.client.ProcessStream(request);
+    const call = this.client!.ProcessStream(request);
 
     try {
       for await (const chunk of this.streamToAsyncIterator(call)) {
@@ -224,12 +283,12 @@ export class GrpcAgent implements Agent {
   /**
    * Convert gRPC stream to async iterator
    */
-  private async *streamToAsyncIterator(call: any): AsyncGenerator<any> {
-    const queue: any[] = [];
+  private async *streamToAsyncIterator(call: GrpcCallStream): AsyncGenerator<GrpcProtoChunk> {
+    const queue: GrpcProtoChunk[] = [];
     let error: Error | null = null;
     let done = false;
 
-    call.on('data', (chunk: any) => {
+    call.on('data', (chunk: GrpcProtoChunk) => {
       queue.push(chunk);
     });
 
@@ -258,11 +317,11 @@ export class GrpcAgent implements Agent {
   /**
    * Convert Message to proto format
    */
-  private messageToProto(message: Message): any {
+  private messageToProto(message: Message): GrpcProtoMessage {
     return {
       role: message.role,
-      content: message.content,
-      metadata: message.metadata || {},
+      content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content),
+      metadata: (message.metadata as Record<string, unknown>) || {},
       timestamp: new Date().toISOString(),
     };
   }
@@ -270,7 +329,7 @@ export class GrpcAgent implements Agent {
   /**
    * Convert proto message to Message
    */
-  private protoToMessage(proto: any): Message {
+  private protoToMessage(proto: GrpcProtoMessage): Message {
     return {
       role: proto.role,
       content: proto.content,
@@ -300,7 +359,7 @@ export class GrpcAgent implements Agent {
  */
 export class GrpcServer {
   private server: grpc.Server;
-  private proto: any;
+  private proto: GrpcProtoPackage;
   private packageDefinition: protoLoader.PackageDefinition;
 
   constructor(
@@ -318,7 +377,7 @@ export class GrpcServer {
     });
 
     // Load gRPC package
-    this.proto = grpc.loadPackageDefinition(this.packageDefinition).agenkit as any;
+    this.proto = grpc.loadPackageDefinition(this.packageDefinition).agenkit as GrpcProtoPackage;
 
     // Create server
     this.server = new grpc.Server();
@@ -384,7 +443,7 @@ export class GrpcServer {
         message: this.messageToProto(response),
         metadata: response.metadata || {},
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       callback(null, {
         version: '1.0',
         id: call.request.id,
@@ -392,7 +451,7 @@ export class GrpcServer {
         type: 'RESPONSE_TYPE_ERROR',
         error: {
           code: 'INTERNAL_ERROR',
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
           details: {},
         },
       });
@@ -443,7 +502,7 @@ export class GrpcServer {
       });
 
       call.end();
-    } catch (error: any) {
+    } catch (error: unknown) {
       call.write({
         version: '1.0',
         id: call.request.id,
@@ -451,7 +510,7 @@ export class GrpcServer {
         type: 'CHUNK_TYPE_ERROR',
         error: {
           code: 'INTERNAL_ERROR',
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
           details: {},
         },
       });
@@ -465,7 +524,7 @@ export class GrpcServer {
   private async handleBidirectionalStream(
     call: grpc.ServerDuplexStream<any, any>,
   ): Promise<void> {
-    call.on('data', async (request: any) => {
+    call.on('data', async (request: { id: string; messages: GrpcProtoMessage[] }) => {
       try {
         const message = this.protoToMessage(request.messages[0]);
         const response = await this.agent.process(message);
@@ -478,7 +537,7 @@ export class GrpcServer {
           message: this.messageToProto(response),
           metadata: response.metadata || {},
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         call.write({
           version: '1.0',
           id: request.id,
@@ -486,7 +545,7 @@ export class GrpcServer {
           type: 'RESPONSE_TYPE_ERROR',
           error: {
             code: 'INTERNAL_ERROR',
-            message: error.message,
+            message: error instanceof Error ? error.message : String(error),
             details: {},
           },
         });
@@ -506,7 +565,7 @@ export class GrpcServer {
   /**
    * Convert proto message to Message
    */
-  private protoToMessage(proto: any): Message {
+  private protoToMessage(proto: GrpcProtoMessage): Message {
     return {
       role: proto.role,
       content: proto.content,
@@ -517,11 +576,11 @@ export class GrpcServer {
   /**
    * Convert Message to proto format
    */
-  private messageToProto(message: Message): any {
+  private messageToProto(message: Message): GrpcProtoMessage {
     return {
       role: message.role,
-      content: message.content,
-      metadata: message.metadata || {},
+      content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content),
+      metadata: (message.metadata as Record<string, unknown>) || {},
       timestamp: new Date().toISOString(),
     };
   }

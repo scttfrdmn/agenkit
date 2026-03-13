@@ -123,9 +123,15 @@ tests/adapters/llm/test_openai.py::test_openai_integration SKIPPED (OPENAI_API_K
 
 ## Cross-Language Integration Tests
 
-Cross-language tests verify Python ↔ Go communication. Requires Go runtime and compiled servers.
+Cross-language tests verify behavioral equivalence across all 6 language implementations
+(Python, Go, TypeScript, Rust, C++, Zig). Two suites exist:
 
-### Setup
+### Suite 1 — Python ↔ Go Communication Tests (`tests/integration/`)
+
+Verifies Python ↔ Go wire-level communication using HTTP/gRPC/WebSocket transports.
+Requires Go runtime and compiled servers.
+
+#### Setup
 
 ```bash
 # Build Go test servers (if needed)
@@ -134,7 +140,7 @@ go build -o bin/http-server ./cmd/http-server
 go build -o bin/grpc-server ./cmd/grpc-server
 ```
 
-### Running
+#### Running
 
 ```bash
 # Run cross-language tests
@@ -143,6 +149,85 @@ pytest tests/integration/ -m "cross_language" -v
 # Run all integration tests
 pytest tests/integration/ -v
 ```
+
+### Suite 2 — 6-Language Equivalence Tests (`tests/cross_language/`)
+
+Verifies that all 6 language implementations produce equivalent behavior for
+message serialization, API consistency, retry/timeout/circuit-breaker/rate-limiter
+behavior, and multi-pattern scenarios.
+
+The suite uses a harness-based runner: each language has a compiled or interpreted
+harness binary (`harness_go`, `harness_rust`, etc.) that accepts JSON scenarios
+over stdin and returns JSON results, which are compared by the Python test runner.
+
+#### Setup
+
+```bash
+# Build language harnesses (only needed once, or after source changes)
+./scripts/build-harnesses.sh
+
+# Or build individually:
+cd agenkit-go && go build -o tests/cross_language/harness_go_bin ./cross_language_tests/
+cd agenkit-rust && cargo build --release --example cross_language_harness
+cd agenkit-cpp/build && cmake .. -DAGENKIT_BUILD_CROSS_LANGUAGE=ON && make cross_language_harness
+```
+
+#### Running
+
+```bash
+# Run all cross-language equivalence tests
+uv run pytest tests/cross_language/ -m "cross_language" -v
+
+# Run specific behavior tests
+uv run pytest tests/cross_language/test_api_consistency.py -v
+uv run pytest tests/cross_language/test_message_serialization.py -v
+uv run pytest tests/cross_language/test_retry_behavior.py -v
+uv run pytest tests/cross_language/test_timeout_behavior.py -v
+uv run pytest tests/cross_language/test_circuit_breaker_behavior.py -v
+uv run pytest tests/cross_language/test_rate_limiter_behavior.py -v
+
+# Run the standalone equivalence test runner (generates JSON report)
+uv run python tests/cross_language/run_equivalence_tests.py
+```
+
+#### Test Scenarios
+
+Scenarios are defined as YAML specs in `tests/cross_language/specs/` and cover
+all 18 agent patterns. Each spec defines: input message, expected output fields,
+and tolerance rules (e.g., exact match vs regex vs schema validation).
+
+```
+tests/cross_language/
+├── specs/                    # 23 YAML scenario specs (one per pattern)
+├── schemas/                  # JSON Schema for harness protocol validation
+├── harness_manager.py        # Subprocess runner for each language harness
+├── spec_loader.py            # YAML scenario loader
+├── result_comparator.py      # Cross-language result comparison
+├── run_equivalence_tests.py  # Standalone equivalence test runner
+├── test_api_consistency.py   # API consistency pytest suite
+├── test_message_serialization.py
+├── test_retry_behavior.py
+├── test_timeout_behavior.py
+├── test_circuit_breaker_behavior.py
+└── test_rate_limiter_behavior.py
+```
+
+#### Adding New Cross-Language Scenarios
+
+1. Create a new YAML spec in `tests/cross_language/specs/my_scenario.yaml`
+   following the schema in `tests/cross_language/schemas/` and the examples in
+   existing specs.
+
+2. Each spec must define:
+   - `name`: Scenario identifier
+   - `input`: JSON object with `role` and `content` fields
+   - `expected_fields`: List of fields that must be present in the response
+   - `tolerance`: Match strategy (`exact`, `contains`, `schema`, `regex`)
+
+3. Run `uv run python tests/cross_language/run_equivalence_tests.py` to validate
+   the new scenario works across all available language harnesses.
+
+4. Add a pytest test case in the appropriate `test_*.py` file or create a new one.
 
 ## Test Performance
 

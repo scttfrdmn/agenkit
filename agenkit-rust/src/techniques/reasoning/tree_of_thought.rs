@@ -440,3 +440,140 @@ impl Agent for TreeOfThoughtAgent {
         Ok(response)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Mutex;
+
+    struct MockAgent {
+        response: String,
+        call_count: Mutex<usize>,
+    }
+
+    impl MockAgent {
+        fn new(response: impl Into<String>) -> Arc<Self> {
+            Arc::new(Self {
+                response: response.into(),
+                call_count: Mutex::new(0),
+            })
+        }
+    }
+
+    #[async_trait]
+    impl Agent for MockAgent {
+        fn name(&self) -> &str {
+            "mock"
+        }
+
+        fn capabilities(&self) -> Vec<String> {
+            vec![]
+        }
+
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
+            *self.call_count.lock().unwrap() += 1;
+            Ok(Message::with_text("assistant", self.response.clone()))
+        }
+    }
+
+    #[test]
+    fn test_default_config() {
+        let config = TreeOfThoughtConfig::default();
+        assert!(config.branching_factor > 0);
+        assert!(config.max_depth > 0);
+        assert!(config.prune_threshold >= 0.0 && config.prune_threshold <= 1.0);
+    }
+
+    #[test]
+    fn test_agent_name_and_capabilities() {
+        let agent =
+            TreeOfThoughtAgent::new(MockAgent::new("ok"), TreeOfThoughtConfig::default());
+        assert_eq!(agent.name(), "tree_of_thought");
+        let caps = agent.capabilities();
+        assert!(caps.contains(&"tree_of_thought".to_string()));
+        assert!(caps.contains(&"reasoning".to_string()));
+    }
+
+    #[test]
+    fn test_default_evaluator_structured_text() {
+        // Structured text with numbered items should score higher
+        let structured = "1. Step one\n2. Step two\n3. Step three\nConclusion";
+        let plain = "just some text";
+        assert!(default_evaluator(structured) > default_evaluator(plain));
+    }
+
+    #[test]
+    fn test_default_evaluator_score_range() {
+        let score = default_evaluator("some text here");
+        assert!(score >= 0.0 && score <= 1.0);
+    }
+
+    #[test]
+    fn test_default_evaluator_empty() {
+        let score = default_evaluator("");
+        assert!(score >= 0.0);
+    }
+
+    #[test]
+    fn test_search_strategy_variants() {
+        let _bfs = SearchStrategy::BFS;
+        let _dfs = SearchStrategy::DFS;
+        let _best = SearchStrategy::BestFirst;
+    }
+
+    #[test]
+    fn test_custom_evaluator() {
+        let config = TreeOfThoughtConfig {
+            evaluator: Some(Arc::new(|_text: &str| 0.99)),
+            ..Default::default()
+        };
+        let evaluator = config.evaluator.unwrap();
+        assert_eq!(evaluator("anything"), 0.99);
+    }
+
+    #[tokio::test]
+    async fn test_process_adds_metadata() {
+        let agent = TreeOfThoughtAgent::new(
+            MockAgent::new("1. Think about this\n2. Consider that\n3. Conclude"),
+            TreeOfThoughtConfig {
+                branching_factor: 2,
+                max_depth: 2,
+                ..Default::default()
+            },
+        );
+        let msg = Message::with_text("user", "What is the best approach?");
+        let result = agent.process(msg).await.unwrap();
+        assert_eq!(result.metadata["technique"], "tree_of_thought");
+        assert!(result.metadata.contains_key("search_strategy"));
+        assert!(result.metadata.contains_key("best_score"));
+    }
+
+    #[tokio::test]
+    async fn test_process_bfs_strategy() {
+        let config = TreeOfThoughtConfig {
+            strategy: SearchStrategy::BFS,
+            branching_factor: 2,
+            max_depth: 2,
+            ..Default::default()
+        };
+        let agent = TreeOfThoughtAgent::new(MockAgent::new("response text"), config);
+        let msg = Message::with_text("user", "test");
+        let result = agent.process(msg).await.unwrap();
+        assert_eq!(result.metadata["search_strategy"], "bfs");
+    }
+
+    #[tokio::test]
+    async fn test_process_dfs_strategy() {
+        let config = TreeOfThoughtConfig {
+            strategy: SearchStrategy::DFS,
+            branching_factor: 2,
+            max_depth: 2,
+            ..Default::default()
+        };
+        let agent = TreeOfThoughtAgent::new(MockAgent::new("response text"), config);
+        let msg = Message::with_text("user", "test");
+        let result = agent.process(msg).await.unwrap();
+        assert_eq!(result.metadata["search_strategy"], "dfs");
+    }
+}

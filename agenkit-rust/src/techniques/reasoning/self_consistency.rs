@@ -323,3 +323,169 @@ impl Agent for SelfConsistencyAgent {
         Ok(response)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Mutex;
+
+    struct MockAgent {
+        responses: Mutex<Vec<String>>,
+        call_count: Mutex<usize>,
+    }
+
+    impl MockAgent {
+        fn new(responses: Vec<&str>) -> Arc<Self> {
+            Arc::new(Self {
+                responses: Mutex::new(responses.into_iter().map(|s| s.to_string()).collect()),
+                call_count: Mutex::new(0),
+            })
+        }
+    }
+
+    #[async_trait]
+    impl Agent for MockAgent {
+        fn name(&self) -> &str {
+            "mock"
+        }
+
+        fn capabilities(&self) -> Vec<String> {
+            vec![]
+        }
+
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
+            let mut count = self.call_count.lock().unwrap();
+            let responses = self.responses.lock().unwrap();
+            let response = responses[*count % responses.len()].clone();
+            *count += 1;
+            Ok(Message::with_text("assistant", response))
+        }
+    }
+
+    #[test]
+    fn test_default_config() {
+        let config = SelfConsistencyConfig::default();
+        assert_eq!(config.num_samples, 5);
+        assert!(matches!(config.voting_strategy, VotingStrategy::Majority));
+        assert!(config.temperature.is_none());
+    }
+
+    #[test]
+    fn test_agent_name_and_capabilities() {
+        let agent = SelfConsistencyAgent::new(
+            MockAgent::new(vec!["ans"]),
+            SelfConsistencyConfig::default(),
+        );
+        assert_eq!(agent.name(), "self_consistency");
+        let caps = agent.capabilities();
+        assert!(caps.contains(&"self_consistency".to_string()));
+        assert!(caps.contains(&"majority_voting".to_string()));
+    }
+
+    #[test]
+    fn test_default_answer_extractor_with_answer_label() {
+        let text = "The answer is: 42";
+        let result = default_answer_extractor(text);
+        assert!(result.contains("42"));
+    }
+
+    #[test]
+    fn test_default_answer_extractor_last_sentence() {
+        let text = "Some reasoning here. The final answer is 7.";
+        let result = default_answer_extractor(text);
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_vote_majority_picks_most_common() {
+        let agent = SelfConsistencyAgent::new(
+            MockAgent::new(vec!["a"]),
+            SelfConsistencyConfig::default(),
+        );
+        let answers = vec!["42".to_string(), "7".to_string(), "42".to_string(), "42".to_string()];
+        let (winner, score) = agent.vote_majority(&answers);
+        assert_eq!(winner.to_lowercase(), "42");
+        assert!(score > 0.5);
+    }
+
+    #[test]
+    fn test_vote_first_returns_first() {
+        let agent = SelfConsistencyAgent::new(
+            MockAgent::new(vec!["a"]),
+            SelfConsistencyConfig::default(),
+        );
+        let answers = vec!["first".to_string(), "second".to_string()];
+        let (winner, score) = agent.vote_first(&answers);
+        assert_eq!(winner, "first");
+        assert_eq!(score, 1.0);
+    }
+
+    #[test]
+    fn test_vote_first_empty() {
+        let agent = SelfConsistencyAgent::new(
+            MockAgent::new(vec!["a"]),
+            SelfConsistencyConfig::default(),
+        );
+        let (winner, _) = agent.vote_first(&[]);
+        assert!(winner.is_empty());
+    }
+
+    #[test]
+    fn test_count_answers_case_insensitive() {
+        let agent = SelfConsistencyAgent::new(
+            MockAgent::new(vec!["a"]),
+            SelfConsistencyConfig::default(),
+        );
+        let answers = vec!["Paris".to_string(), "paris".to_string(), "PARIS".to_string()];
+        let counts = agent.count_answers(&answers);
+        assert_eq!(counts.get("paris"), Some(&3));
+    }
+
+    #[tokio::test]
+    async fn test_process_majority_voting() {
+        let config = SelfConsistencyConfig {
+            num_samples: 3,
+            voting_strategy: VotingStrategy::Majority,
+            ..Default::default()
+        };
+        let agent = SelfConsistencyAgent::new(
+            MockAgent::new(vec!["The answer is 42", "The answer is 42", "The answer is 7"]),
+            config,
+        );
+        let msg = Message::with_text("user", "What is 6*7?");
+        let result = agent.process(msg).await.unwrap();
+        assert_eq!(result.metadata["technique"], "self_consistency");
+        assert_eq!(result.metadata["num_samples"], 3);
+        assert!(result.metadata.contains_key("consistency_score"));
+    }
+
+    #[tokio::test]
+    async fn test_process_first_strategy() {
+        let config = SelfConsistencyConfig {
+            num_samples: 3,
+            voting_strategy: VotingStrategy::First,
+            ..Default::default()
+        };
+        let agent = SelfConsistencyAgent::new(
+            MockAgent::new(vec!["First response"]),
+            config,
+        );
+        let msg = Message::with_text("user", "test");
+        let result = agent.process(msg).await.unwrap();
+        assert_eq!(result.metadata["voting_strategy"], "first");
+    }
+
+    #[tokio::test]
+    async fn test_process_metadata_completeness() {
+        let agent = SelfConsistencyAgent::new(
+            MockAgent::new(vec!["response"]),
+            SelfConsistencyConfig { num_samples: 2, ..Default::default() },
+        );
+        let msg = Message::with_text("user", "test");
+        let result = agent.process(msg).await.unwrap();
+        assert!(result.metadata.contains_key("samples"));
+        assert!(result.metadata.contains_key("extracted_answers"));
+        assert!(result.metadata.contains_key("answer_counts"));
+        assert!(result.metadata.contains_key("base_agent"));
+    }
+}

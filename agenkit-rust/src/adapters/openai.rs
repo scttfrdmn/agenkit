@@ -509,4 +509,171 @@ mod tests {
         assert!(caps.contains(&"llm".to_string()));
         assert!(caps.contains(&"openai".to_string()));
     }
+
+    #[test]
+    fn test_default_config_values() {
+        let config = OpenAIConfig::default();
+        assert_eq!(config.model, "gpt-4o");
+        assert_eq!(config.max_tokens, 4096);
+        assert!((config.temperature - 0.7).abs() < f64::EPSILON);
+    }
+
+    #[tokio::test]
+    async fn test_successful_completion() {
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/v1/chat/completions")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{
+                "id": "chatcmpl-test123",
+                "object": "chat.completion",
+                "model": "gpt-4o",
+                "choices": [{
+                    "message": {"role": "assistant", "content": "Paris is the capital of France."},
+                    "finish_reason": "stop",
+                    "index": 0
+                }],
+                "usage": {
+                    "prompt_tokens": 15,
+                    "completion_tokens": 10,
+                    "total_tokens": 25
+                }
+            }"#)
+            .create_async()
+            .await;
+
+        let config = OpenAIConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = OpenAIAgent::new(config);
+        let msg = Message::with_text("user", "What is the capital of France?");
+        let response = agent.process(msg).await.unwrap();
+
+        assert!(response.content_as_str().unwrap_or("").contains("Paris"));
+        assert!(response.metadata.contains_key("model"));
+        assert!(response.metadata.contains_key("finish_reason"));
+        assert!(response.metadata.contains_key("usage"));
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_auth_error_handling() {
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/v1/chat/completions")
+            .with_status(401)
+            .with_body(r#"{"error": {"type": "invalid_api_key", "message": "Invalid API key"}}"#)
+            .create_async()
+            .await;
+
+        let config = OpenAIConfig {
+            api_key: "invalid-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = OpenAIAgent::new(config);
+        let msg = Message::with_text("user", "hello");
+        assert!(agent.process(msg).await.is_err());
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_rate_limit_error_handling() {
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/v1/chat/completions")
+            .with_status(429)
+            .with_body(r#"{"error": {"type": "rate_limit_exceeded", "message": "Rate limit exceeded"}}"#)
+            .create_async()
+            .await;
+
+        let config = OpenAIConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = OpenAIAgent::new(config);
+        let msg = Message::with_text("user", "hello");
+        assert!(agent.process(msg).await.is_err());
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_response_metadata_fields() {
+        let mut server = mockito::Server::new_async().await;
+
+        server
+            .mock("POST", "/v1/chat/completions")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{
+                "id": "chatcmpl-abc",
+                "object": "chat.completion",
+                "model": "gpt-4o",
+                "choices": [{
+                    "message": {"role": "assistant", "content": "42"},
+                    "finish_reason": "stop",
+                    "index": 0
+                }],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2, "total_tokens": 7}
+            }"#)
+            .create_async()
+            .await;
+
+        let config = OpenAIConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = OpenAIAgent::new(config);
+        let response = agent.process(Message::with_text("user", "What is 6*7?")).await.unwrap();
+
+        assert!(response.metadata.contains_key("openai_message_id"));
+        assert!(response.metadata.contains_key("model"));
+        assert!(response.metadata.contains_key("usage"));
+        assert!(response.metadata.contains_key("finish_reason"));
+
+        let usage = &response.metadata["usage"];
+        assert!(usage.get("prompt_tokens").is_some());
+        assert!(usage.get("completion_tokens").is_some());
+        assert!(usage.get("total_tokens").is_some());
+    }
+
+    #[tokio::test]
+    async fn test_message_response_role() {
+        let mut server = mockito::Server::new_async().await;
+
+        server
+            .mock("POST", "/v1/chat/completions")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{
+                "id": "chatcmpl-role",
+                "object": "chat.completion",
+                "model": "gpt-4o",
+                "choices": [{
+                    "message": {"role": "assistant", "content": "Hello!"},
+                    "finish_reason": "stop",
+                    "index": 0
+                }],
+                "usage": {"prompt_tokens": 3, "completion_tokens": 2, "total_tokens": 5}
+            }"#)
+            .create_async()
+            .await;
+
+        let config = OpenAIConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = OpenAIAgent::new(config);
+        let response = agent.process(Message::with_text("user", "Hello")).await.unwrap();
+        assert_eq!(response.role, "assistant");
+    }
 }

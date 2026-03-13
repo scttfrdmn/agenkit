@@ -289,3 +289,136 @@ impl Agent for LeastToMostAgent {
         Ok(result)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Mutex;
+
+    struct MockAgent {
+        responses: Mutex<Vec<String>>,
+        call_count: Mutex<usize>,
+    }
+
+    impl MockAgent {
+        fn new(responses: Vec<&str>) -> Arc<Self> {
+            Arc::new(Self {
+                responses: Mutex::new(responses.into_iter().map(|s| s.to_string()).collect()),
+                call_count: Mutex::new(0),
+            })
+        }
+    }
+
+    #[async_trait]
+    impl Agent for MockAgent {
+        fn name(&self) -> &str {
+            "mock"
+        }
+
+        fn capabilities(&self) -> Vec<String> {
+            vec![]
+        }
+
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
+            let mut count = self.call_count.lock().unwrap();
+            let responses = self.responses.lock().unwrap();
+            let response = responses[*count % responses.len()].clone();
+            *count += 1;
+            Ok(Message::with_text("assistant", response))
+        }
+    }
+
+    #[test]
+    fn test_default_config() {
+        let config = LeastToMostConfig::default();
+        assert!(config.max_subproblems > 0);
+        assert!(config.compose_solutions);
+        assert!(config.decomposer.is_none());
+    }
+
+    #[test]
+    fn test_agent_name_and_capabilities() {
+        let agent = LeastToMostAgent::new(MockAgent::new(vec!["ok"]), LeastToMostConfig::default());
+        assert_eq!(agent.name(), "least_to_most");
+        let caps = agent.capabilities();
+        assert!(caps.contains(&"least_to_most".to_string()));
+        assert!(caps.contains(&"decomposition".to_string()));
+    }
+
+    #[test]
+    fn test_parse_subproblems_numbered() {
+        let agent = LeastToMostAgent::new(MockAgent::new(vec!["ok"]), LeastToMostConfig::default());
+        let text = "1. Learn addition\n2. Learn multiplication\n3. Solve final problem";
+        let subproblems = agent.parse_subproblems(text, "original");
+        assert_eq!(subproblems.len(), 3);
+        assert_eq!(subproblems[0].content, "Learn addition");
+    }
+
+    #[test]
+    fn test_parse_subproblems_fallback_to_atomic() {
+        let agent = LeastToMostAgent::new(MockAgent::new(vec!["ok"]), LeastToMostConfig::default());
+        let text = "This has no numbered steps";
+        let subproblems = agent.parse_subproblems(text, "original problem");
+        assert_eq!(subproblems.len(), 1);
+        assert_eq!(subproblems[0].content, "original problem");
+    }
+
+    #[test]
+    fn test_parse_subproblems_max_limit() {
+        let config = LeastToMostConfig {
+            max_subproblems: 2,
+            ..Default::default()
+        };
+        let agent = LeastToMostAgent::new(MockAgent::new(vec!["ok"]), config);
+        let text = "1. Step one\n2. Step two\n3. Step three\n4. Step four";
+        let subproblems = agent.parse_subproblems(text, "original");
+        assert!(subproblems.len() <= 2);
+    }
+
+    #[test]
+    fn test_subproblem_struct() {
+        let sp = Subproblem {
+            content: "test problem".to_string(),
+            difficulty: 3,
+            dependencies: vec![0, 1],
+        };
+        assert_eq!(sp.content, "test problem");
+        assert_eq!(sp.difficulty, 3);
+        assert_eq!(sp.dependencies.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_process_with_custom_decomposer() {
+        let decomposer: DecomposerFn = Arc::new(|problem: &str| {
+            Ok(vec![
+                format!("simple: {}", &problem[..problem.len().min(5)]),
+                format!("full: {}", problem),
+            ])
+        });
+        let config = LeastToMostConfig {
+            decomposer: Some(decomposer),
+            ..Default::default()
+        };
+        let agent = LeastToMostAgent::new(MockAgent::new(vec!["solution"]), config);
+        let msg = Message::with_text("user", "solve this problem");
+        let result = agent.process(msg).await.unwrap();
+        assert_eq!(result.metadata["technique"], "least_to_most");
+        assert!(result.metadata["num_subproblems"].as_u64().unwrap() >= 1);
+    }
+
+    #[tokio::test]
+    async fn test_process_metadata_completeness() {
+        // Decomposer returns numbered steps so agent can decompose
+        let decomposer: DecomposerFn = Arc::new(|_| Ok(vec!["step1".to_string()]));
+        let config = LeastToMostConfig {
+            decomposer: Some(decomposer),
+            ..Default::default()
+        };
+        let agent = LeastToMostAgent::new(MockAgent::new(vec!["answer"]), config);
+        let msg = Message::with_text("user", "test");
+        let result = agent.process(msg).await.unwrap();
+        assert!(result.metadata.contains_key("subproblems"));
+        assert!(result.metadata.contains_key("subproblem_solutions"));
+        assert!(result.metadata.contains_key("compose_solutions"));
+    }
+}

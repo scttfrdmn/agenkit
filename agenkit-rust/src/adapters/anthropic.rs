@@ -597,4 +597,165 @@ mod tests {
         assert!(caps.contains(&"llm".to_string()));
         assert!(caps.contains(&"claude".to_string()));
     }
+
+    #[test]
+    fn test_default_config_values() {
+        let config = AnthropicConfig::default();
+        assert_eq!(config.model, "claude-sonnet-4-6");
+        assert_eq!(config.max_tokens, 4096);
+        assert!((config.temperature - 1.0).abs() < f64::EPSILON);
+        assert_eq!(config.api_version, "2023-06-01");
+    }
+
+    #[tokio::test]
+    async fn test_successful_completion() {
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/v1/messages")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{
+                "id": "msg_test123",
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": "Paris is the capital of France."}],
+                "model": "claude-sonnet-4-6",
+                "stop_reason": "end_turn",
+                "usage": {"input_tokens": 15, "output_tokens": 10}
+            }"#)
+            .create_async()
+            .await;
+
+        let config = AnthropicConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = AnthropicAgent::new(config);
+        let msg = Message::with_text("user", "What is the capital of France?");
+        let response = agent.process(msg).await.unwrap();
+
+        assert!(response.content_as_str().unwrap_or("").contains("Paris"));
+        assert_eq!(response.metadata["model"], "claude-sonnet-4-6");
+        assert!(response.metadata.contains_key("stop_reason"));
+        assert!(response.metadata.contains_key("usage"));
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_auth_error_handling() {
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/v1/messages")
+            .with_status(401)
+            .with_body(r#"{"error": {"type": "authentication_error", "message": "Invalid API key"}}"#)
+            .create_async()
+            .await;
+
+        let config = AnthropicConfig {
+            api_key: "invalid-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = AnthropicAgent::new(config);
+        let msg = Message::with_text("user", "hello");
+        assert!(agent.process(msg).await.is_err());
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_rate_limit_error_handling() {
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/v1/messages")
+            .with_status(429)
+            .with_body(r#"{"error": {"type": "rate_limit_error", "message": "Rate limit exceeded"}}"#)
+            .create_async()
+            .await;
+
+        let config = AnthropicConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = AnthropicAgent::new(config);
+        let msg = Message::with_text("user", "hello");
+        assert!(agent.process(msg).await.is_err());
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_response_metadata_fields() {
+        let mut server = mockito::Server::new_async().await;
+
+        server
+            .mock("POST", "/v1/messages")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{
+                "id": "msg_abc",
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": "42"}],
+                "model": "claude-sonnet-4-6",
+                "stop_reason": "end_turn",
+                "usage": {"input_tokens": 5, "output_tokens": 2}
+            }"#)
+            .create_async()
+            .await;
+
+        let config = AnthropicConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = AnthropicAgent::new(config);
+        let response = agent.process(Message::with_text("user", "What is 6*7?")).await.unwrap();
+
+        assert!(response.metadata.contains_key("claude_message_id"));
+        assert!(response.metadata.contains_key("model"));
+        assert!(response.metadata.contains_key("usage"));
+        assert!(response.metadata.contains_key("stop_reason"));
+
+        // Verify usage fields
+        let usage = &response.metadata["usage"];
+        assert!(usage.get("input_tokens").is_some());
+        assert!(usage.get("output_tokens").is_some());
+    }
+
+    #[tokio::test]
+    async fn test_system_message_handling() {
+        let mut server = mockito::Server::new_async().await;
+
+        server
+            .mock("POST", "/v1/messages")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{
+                "id": "msg_sys",
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": "I am a helpful assistant."}],
+                "model": "claude-sonnet-4-6",
+                "stop_reason": "end_turn",
+                "usage": {"input_tokens": 20, "output_tokens": 8}
+            }"#)
+            .create_async()
+            .await;
+
+        let config = AnthropicConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = AnthropicAgent::new(config);
+        // System messages are handled by mapping role
+        let msg = Message::with_text("system", "You are a helpful assistant.");
+        // System messages are extracted separately, not passed as user messages
+        let response = agent.process(msg).await.unwrap();
+        assert!(!response.content_as_str().unwrap_or("").is_empty());
+    }
 }

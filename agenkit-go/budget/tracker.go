@@ -87,7 +87,7 @@ func (s *MemoryStorage) Store(ctx context.Context, cost *Cost) error {
 }
 
 // Query retrieves cost records from memory matching the criteria.
-func (s *InMemoryStorage) Query(ctx context.Context, sessionID, agentName string, startTime, endTime *time.Time) ([]*Cost, error) {
+func (s *MemoryStorage) Query(ctx context.Context, sessionID, agentName string, startTime, endTime *time.Time) ([]*Cost, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -151,7 +151,7 @@ type CostTracker struct {
 //	tracker := NewCostTracker(nil) // Uses default in-memory storage
 func NewCostTracker(storage Storage) *CostTracker {
 	if storage == nil {
-		storage = NewInMemoryStorage()
+		storage = NewMemoryStorage()
 	}
 
 	return &CostTracker{
@@ -447,6 +447,12 @@ type AgentCost struct {
 	AgentName string
 	TotalCost float64
 }
+
+// Deprecated: Use MemoryStorage instead.
+type InMemoryStorage = MemoryStorage
+
+// Deprecated: Use NewMemoryStorage instead.
+var NewInMemoryStorage = NewMemoryStorage
 
 // GetStatistics returns cost statistics.
 //

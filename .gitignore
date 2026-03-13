@@ -73,6 +73,10 @@ agenkit-go/rate_limiter_example
 *.test
 *.out
 agenkit-go/test_client
+agenkit-go/memory_hierarchy
+
+# Zig cache
+agenkit-zig/.zig-cache/
 
 # Documentation build
 site/

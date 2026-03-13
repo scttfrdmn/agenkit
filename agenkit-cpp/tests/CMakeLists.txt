@@ -251,6 +251,21 @@ add_executable(test_graph_of_thought techniques/reasoning/test_graph_of_thought.
 target_link_libraries(test_graph_of_thought agenkit gtest_main)
 add_test(NAME graph_of_thought_tests COMMAND test_graph_of_thought)
 
+# Technique tests - Self-Consistency
+add_executable(test_self_consistency techniques/reasoning/test_self_consistency.cpp)
+target_link_libraries(test_self_consistency agenkit gtest_main)
+add_test(NAME self_consistency_tests COMMAND test_self_consistency)
+
+# Adapter tests - Claude
+add_executable(test_claude_adapter test_claude_adapter.cpp)
+target_link_libraries(test_claude_adapter agenkit gtest_main)
+add_test(NAME claude_adapter_tests COMMAND test_claude_adapter)
+
+# Adapter tests - OpenAI
+add_executable(test_openai_adapter test_openai_adapter.cpp)
+target_link_libraries(test_openai_adapter agenkit gtest_main)
+add_test(NAME openai_adapter_tests COMMAND test_openai_adapter)
+
 # Infrastructure tests - Safety
 add_executable(test_safety infrastructure/test_safety.cpp)
 target_link_libraries(test_safety agenkit gtest_main)

@@ -9,7 +9,8 @@
  *   Cost: Single cost record interface
  *   CostTracker: Track costs per session, agent, and globally
  *   Storage: Abstract interface for cost storage backends
- *   InMemoryStorage: In-memory cost storage implementation
+ *   MemoryStorage: In-memory cost storage implementation
+ *   InMemoryStorage: Deprecated alias for MemoryStorage
  *
  * Example:
  *   import { CostTracker } from 'agenkit';
@@ -30,4 +31,4 @@
  */
 
 export { ModelPricing } from './models';
-export { Cost, costToDict, Storage, InMemoryStorage, CostTracker } from './tracker';
+export { Cost, costToDict, Storage, MemoryStorage, InMemoryStorage, CostTracker } from './tracker';

@@ -4,7 +4,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "agenkit/infrastructure/checkpointing.hpp"
+#include "agenkit/infrastructure/checkpointing/checkpointing.hpp"
 #include "agenkit/core/message.hpp"
 #include <filesystem>
 #include <fstream>

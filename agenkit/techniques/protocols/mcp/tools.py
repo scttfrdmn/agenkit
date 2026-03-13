@@ -227,7 +227,10 @@ def tool_decorator(
         ...     }
         ... )
         ... async def calculate(params):
-        ...     return {"result": eval(params["expression"])}
+        ...     # WARNING: Never use eval() with untrusted input in production.
+        ...     # This example is for illustration only. Use a safe expression
+        ...     # evaluator (e.g., asteval, numexpr, or a sandboxed subprocess).
+        ...     return {"result": eval(params["expression"])}  # noqa: S307
     """
 
     def decorator(func: Callable[[dict[str, Any]], Awaitable[Any]]):

@@ -27,11 +27,11 @@ struct OpenAIConfig {
     /// API key (required) - get from https://platform.openai.com/api-keys
     std::string api_key;
 
-    /// Model to use (default: gpt-4-turbo)
-    std::string model{"gpt-4-turbo"};
+    /// Model to use (default: gpt-4o)
+    std::string model{"gpt-4o"};
 
-    /// Maximum tokens to generate (default: 1024)
-    int max_tokens{1024};
+    /// Maximum tokens to generate (default: 4096)
+    int max_tokens{4096};
 
     /// Temperature 0-2 (default: 0.7)
     double temperature{0.7};

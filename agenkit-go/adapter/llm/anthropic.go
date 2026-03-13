@@ -20,7 +20,7 @@ import (
 //
 // Example:
 //
-//	llm := NewAnthropicLLM("sk-ant-...", "claude-3-5-sonnet-20241022")
+//	llm := NewAnthropicLLM("sk-ant-...", "claude-sonnet-4-6")
 //	messages := []*agenkit.Message{
 //	    agenkit.NewMessage("user", "Hello!"),
 //	}
@@ -61,14 +61,14 @@ type AnthropicLLM struct {
 //
 // Parameters:
 //   - apiKey: Anthropic API key
-//   - model: Model identifier (e.g., "claude-3-5-sonnet-20241022")
+//   - model: Model identifier (e.g., "claude-sonnet-4-6")
 //
 // Example:
 //
-//	llm := NewAnthropicLLM("sk-ant-...", "claude-3-5-sonnet-20241022")
+//	llm := NewAnthropicLLM("sk-ant-...", "claude-sonnet-4-6")
 func NewAnthropicLLM(apiKey, model string) *AnthropicLLM {
 	if model == "" {
-		model = "claude-3-haiku-20240307"
+		model = "claude-sonnet-4-6"
 	}
 	return &AnthropicLLM{
 		apiKey:     apiKey,
@@ -411,7 +411,7 @@ func (a *AnthropicLLM) makeRequest(ctx context.Context, req anthropicRequest) (*
 //
 // Example:
 //
-//	llm := NewAnthropicLLM("sk-ant-...", "claude-3-5-sonnet-20241022")
+//	llm := NewAnthropicLLM("sk-ant-...", "claude-sonnet-4-6")
 //	client := llm.Unwrap().(*http.Client)
 //	// Use for custom requests
 func (a *AnthropicLLM) Unwrap() interface{} {

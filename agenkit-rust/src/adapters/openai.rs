@@ -18,10 +18,10 @@ pub struct OpenAIConfig {
     /// API key (required) - get from https://platform.openai.com/api-keys
     pub api_key: String,
 
-    /// Model to use (default: gpt-4-turbo)
+    /// Model to use (default: gpt-4o)
     pub model: String,
 
-    /// Maximum tokens to generate (default: 1024)
+    /// Maximum tokens to generate (default: 4096)
     pub max_tokens: i32,
 
     /// Temperature 0-2 (default: 0.7)
@@ -47,8 +47,8 @@ impl Default for OpenAIConfig {
     fn default() -> Self {
         Self {
             api_key: std::env::var("OPENAI_API_KEY").unwrap_or_default(),
-            model: "gpt-4-turbo".to_string(),
-            max_tokens: 1024,
+            model: "gpt-4o".to_string(),
+            max_tokens: 4096,
             temperature: 0.7,
             top_p: 1.0,
             frequency_penalty: 0.0,

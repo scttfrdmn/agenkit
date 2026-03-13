@@ -26,7 +26,7 @@ USE OpenAICompatibleLLM (agenkit.adapters.llm.openai_compatible) WHEN:
 
 EXAMPLE - Official OpenAI API (this module):
     >>> from agenkit.adapters.llm import OpenAILLM
-    >>> llm = OpenAILLM(api_key="sk-...", model="gpt-4-turbo")
+    >>> llm = OpenAILLM(api_key="sk-...", model="gpt-4o")
     >>> response = await llm.complete(messages)  # Charges your OpenAI account
 
 EXAMPLE - Self-hosted vLLM (use OpenAICompatibleLLM instead):
@@ -64,7 +64,7 @@ class OpenAILLM(LLM):
     Args:
         api_key: OpenAI API key. If not provided, will use OPENAI_API_KEY
             environment variable.
-        model: Model identifier (default: gpt-4-turbo)
+        model: Model identifier (default: gpt-4o)
         **client_kwargs: Additional arguments passed to AsyncOpenAI client
 
     Example:
@@ -94,7 +94,7 @@ class OpenAILLM(LLM):
     def __init__(
         self,
         api_key: str | None = None,
-        model: str = "gpt-4-turbo",
+        model: str = "gpt-4o",
         **client_kwargs: Any,
     ):
         """Initialize OpenAI LLM adapter."""

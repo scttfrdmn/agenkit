@@ -273,7 +273,7 @@ pub const techniques = struct {
 };
 
 // Version information
-pub const version = "0.40.0";
+pub const version = "0.56.1";
 pub const zig_version = @import("builtin").zig_version;
 
 test {

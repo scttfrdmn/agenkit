@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.56.1] - 2026-03-13
+
 ### ✅ API Alignment Phase 2B/2C Complete (January 28, 2026)
 
 **Focus:** Complete cross-language API consistency with Tool interfaces, validation, and naming clarity.
@@ -109,6 +111,109 @@ controller.abort();
 - Closes #506 - Go nullable patterns confirmed
 - Closes #507 - Type validation complete
 - Part of epic #445 - API Alignment Phase 2
+
+### Added
+
+#### Checkpointing Migration Primitives
+- **New**: `MigrationContext`, `S3Storage`, `NFSStorage`, `ResumeMigrated` in checkpointing module
+- Cross-language migration primitives for moving checkpoint state between storage backends
+- **Commit**: 5b3d39cd
+
+#### Middleware Cache Interface
+- **New**: `CacheStore` interface extracted from caching middleware
+- `MemoryCacheStore` and `RedisCacheStore` implementations
+- Enables pluggable cache backends without rewriting middleware
+- **Commit**: 2c789279
+
+#### Rust SandboxBuilder (Issue #408)
+- **New**: Ergonomic `SandboxBuilder` fluent API for safety permissions
+- `builder().allow_read("/path").deny_write("/etc").build()`
+- **Commit**: 56751de3
+
+#### Go Load Balancer Tests (Issue #358)
+- Comprehensive tests for round-robin, weighted, least-connections strategies
+- Health check and failover behavior coverage
+- **Commit**: fad34c15
+
+#### Shared Test Mock Helpers (Issue #219)
+- Python: `tests/helpers/mock_llm.py` — `MockLLMClient`, `MockStreamingLLMClient`, `MockAgent`
+- Go: `agenkit-go/testutil/` — `MockAgent`, `MockLLMClient` with functional options
+- **Commit**: 4b99a41b
+
+#### Comprehensive Documentation
+- **New**: `docs/api/` — Per-language API reference for all 6 languages (#347)
+- **New**: `docs/tutorials/` — 5-part tutorial series: getting started through multi-agent (#16)
+- **New**: `docs/techniques/` — TESTING_PATTERNS, SECURITY_PATTERNS, DEPLOYMENT_PATTERNS, BEST_PRACTICES guides (#240)
+- Updated `docs/TESTING.md` with 6-language integration test suite documentation (#344)
+- **Commits**: 77de59bc, b0b4fa20
+
+#### Rust Tests (Issues #351, #353, #355)
+- Comprehensive techniques module tests (CoT, ToT, self-consistency, etc.)
+- Safety module tests (permissions, output validation, prompt injection, audit)
+- Adapter tests (Anthropic, OpenAI) with mock HTTP responses
+- **Commit**: 92265586
+
+#### C++ Tests (Issues #350, #356)
+- Techniques pattern tests and adapter tests added
+- **Commit**: b9d9d281
+
+### Fixed
+
+#### API Default Model Standardization (Issue #412)
+- All 6 languages now default to `claude-sonnet-4-6` (Anthropic) and `gpt-4o` (OpenAI)
+- All languages default `max_tokens` to `4096`
+- **Commit**: 47008228
+
+#### Go Budget Tracker
+- Fixed `Query` method receiver type (`*InMemoryStorage` → `*MemoryStorage`)
+- `NewCostTracker` now uses `NewMemoryStorage()` consistently
+- **Commit**: 754b8400
+
+#### Go Memory Hierarchy Example
+- Rewrote example to use current API: `NewDefaultHierarchyMemory()`, `NewHierarchyMemory(HierarchyConfig{...})`
+- Removed 300+ lines of dead commented-out code
+- **Commit**: a69b3adb
+
+#### TypeScript Budget Storage Naming
+- Renamed `InMemoryStorage` → `MemoryStorage` (deprecated alias preserved)
+- **Commit**: a69b3adb
+
+#### C++ Infrastructure Tests
+- Re-enabled previously commented-out `test_checkpointing`, `test_budget`, `test_middleware` targets
+- Fixed checkpointing test include path
+- **Commit**: a69b3adb
+
+### Refactored
+
+#### Python Storage Naming Consistency
+- `EphemeralMemory` (was `InMemoryMemory`), `LocalCheckpointStorage`, `MemoryStorage`, etc.
+- Deprecated aliases preserved for backward compatibility
+- **Commit**: 6f3f4de9
+
+#### Go Budget Storage Naming
+- `MemoryStorage` (was `InMemoryStorage`), deprecated alias preserved
+- **Commit**: 5a7e1231
+
+#### Memory/Checkpointing/Evaluation Naming
+- Consistent `MemoryXxx` prefix across memory, checkpointing, evaluation modules
+- **Commits**: 00b3394f, 1941768a, 549e05c1
+
+### Chore
+
+- Removed compiled Go binary and Zig build cache from git tracking
+- Added `agenkit-go/memory_hierarchy` and `agenkit-zig/.zig-cache/` to `.gitignore`
+
+### Related Issues
+- Closes #412 - Cross-language API consistency
+- Closes #408 - Rust builder patterns
+- Closes #358 - Go routing/load balancer tests
+- Closes #355, #353, #351 - Rust adapter, safety, techniques tests
+- Closes #356, #350 - C++ adapter and techniques tests
+- Closes #347 - API reference documentation
+- Closes #344 - Integration test documentation
+- Closes #240 - Techniques documentation
+- Closes #219 - Test infrastructure improvements
+- Closes #16 - Tutorial series
 
 ## [0.56.0] - 2026-02-04
 

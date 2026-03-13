@@ -64,21 +64,21 @@ type Storage interface {
 	Query(ctx context.Context, sessionID, agentName string, startTime, endTime *time.Time) ([]*Cost, error)
 }
 
-// InMemoryStorage provides in-memory storage for cost records.
-type InMemoryStorage struct {
+// MemoryStorage provides in-memory storage for cost records.
+type MemoryStorage struct {
 	mu    sync.RWMutex
 	costs []*Cost
 }
 
-// NewInMemoryStorage creates a new in-memory storage instance.
-func NewInMemoryStorage() *InMemoryStorage {
-	return &InMemoryStorage{
+// NewMemoryStorage creates a new in-memory storage instance.
+func NewMemoryStorage() *MemoryStorage {
+	return &MemoryStorage{
 		costs: make([]*Cost, 0),
 	}
 }
 
 // Store saves a cost record in memory.
-func (s *InMemoryStorage) Store(ctx context.Context, cost *Cost) error {
+func (s *MemoryStorage) Store(ctx context.Context, cost *Cost) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

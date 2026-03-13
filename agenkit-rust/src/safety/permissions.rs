@@ -133,7 +133,106 @@ impl Default for Sandbox {
     }
 }
 
+/// Builder for `Sandbox` configuration.
+///
+/// # Example
+///
+/// ```rust
+/// use agenkit::safety::permissions::Sandbox;
+///
+/// let sandbox = Sandbox::builder()
+///     .allow_path("/home/user")
+///     .deny_path("/etc")
+///     .allow_command("python")
+///     .deny_command("sudo")
+///     .allow_domain("api.example.com")
+///     .max_file_size(5 * 1024 * 1024)
+///     .max_execution_time(60)
+///     .build();
+/// ```
+pub struct SandboxBuilder {
+    sandbox: Sandbox,
+}
+
+impl SandboxBuilder {
+    fn new() -> Self {
+        Self {
+            sandbox: Sandbox::default(),
+        }
+    }
+
+    /// Allow a file path prefix.
+    pub fn allow_path(mut self, path: impl Into<String>) -> Self {
+        self.sandbox.allowed_paths.insert(path.into());
+        self
+    }
+
+    /// Deny a file path prefix.
+    pub fn deny_path(mut self, path: impl Into<String>) -> Self {
+        self.sandbox.denied_paths.insert(path.into());
+        self
+    }
+
+    /// Allow a command.
+    pub fn allow_command(mut self, cmd: impl Into<String>) -> Self {
+        self.sandbox.allowed_commands.insert(cmd.into());
+        self
+    }
+
+    /// Deny a command.
+    pub fn deny_command(mut self, cmd: impl Into<String>) -> Self {
+        self.sandbox.denied_commands.insert(cmd.into());
+        self
+    }
+
+    /// Allow an outbound domain.
+    pub fn allow_domain(mut self, domain: impl Into<String>) -> Self {
+        self.sandbox.allowed_domains.insert(domain.into());
+        self
+    }
+
+    /// Deny an outbound domain.
+    pub fn deny_domain(mut self, domain: impl Into<String>) -> Self {
+        self.sandbox.denied_domains.insert(domain.into());
+        self
+    }
+
+    /// Allow a SQL operation (e.g., "SELECT", "INSERT").
+    pub fn allow_sql_operation(mut self, op: impl Into<String>) -> Self {
+        self.sandbox.allowed_sql_operations.insert(op.into());
+        self
+    }
+
+    /// Set the maximum allowed file size in bytes.
+    pub fn max_file_size(mut self, bytes: usize) -> Self {
+        self.sandbox.max_file_size = bytes;
+        self
+    }
+
+    /// Set the maximum allowed execution time in seconds.
+    pub fn max_execution_time(mut self, seconds: u64) -> Self {
+        self.sandbox.max_execution_time = seconds;
+        self
+    }
+
+    /// Set the maximum allowed memory in bytes.
+    pub fn max_memory(mut self, bytes: usize) -> Self {
+        self.sandbox.max_memory = bytes;
+        self
+    }
+
+    /// Build the `Sandbox`.
+    pub fn build(self) -> Sandbox {
+        self.sandbox
+    }
+}
+
 impl Sandbox {
+    /// Create a new `SandboxBuilder` initialized with defaults.
+    pub fn builder() -> SandboxBuilder {
+        SandboxBuilder::new()
+    }
+
     /// Check if a file path is allowed.
     pub fn is_path_allowed(&self, path: &str) -> bool {
         let path_obj = Path::new(path);
@@ -376,6 +475,80 @@ mod tests {
         sandbox.allowed_paths.insert("/custom/path".to_string());
 
         assert!(sandbox.is_path_allowed("/custom/path/file.txt"));
+    }
+
+    #[test]
+    fn test_sandbox_builder_allow_path() {
+        let sandbox = Sandbox::builder()
+            .allow_path("/home/user")
+            .build();
+        assert!(sandbox.is_path_allowed("/home/user/file.txt"));
+    }
+
+    #[test]
+    fn test_sandbox_builder_deny_path() {
+        let sandbox = Sandbox::builder()
+            .deny_path("/secrets")
+            .build();
+        assert!(!sandbox.is_path_allowed("/secrets/key.pem"));
+    }
+
+    #[test]
+    fn test_sandbox_builder_allow_command() {
+        let sandbox = Sandbox::builder()
+            .allow_command("rustc")
+            .build();
+        assert!(sandbox.is_command_allowed("rustc"));
+    }
+
+    #[test]
+    fn test_sandbox_builder_deny_command() {
+        let sandbox = Sandbox::builder()
+            .deny_command("curl")
+            .build();
+        assert!(!sandbox.is_command_allowed("curl"));
+    }
+
+    #[test]
+    fn test_sandbox_builder_allow_domain() {
+        let sandbox = Sandbox::builder()
+            .allow_domain("api.example.com")
+            .build();
+        assert!(sandbox.is_domain_allowed("api.example.com"));
+    }
+
+    #[test]
+    fn test_sandbox_builder_max_file_size() {
+        let sandbox = Sandbox::builder()
+            .max_file_size(1024)
+            .build();
+        assert_eq!(sandbox.max_file_size, 1024);
+    }
+
+    #[test]
+    fn test_sandbox_builder_max_execution_time() {
+        let sandbox = Sandbox::builder()
+            .max_execution_time(120)
+            .build();
+        assert_eq!(sandbox.max_execution_time, 120);
+    }
+
+    #[test]
+    fn test_sandbox_builder_chained() {
+        let sandbox = Sandbox::builder()
+            .allow_path("/work")
+            .deny_path("/etc")
+            .allow_command("cargo")
+            .deny_command("rm")
+            .allow_domain("crates.io")
+            .max_file_size(50_000_000)
+            .max_execution_time(300)
+            .build();
+
+        assert!(sandbox.is_path_allowed("/work/main.rs"));
+        assert!(!sandbox.is_path_allowed("/etc/passwd"));
+        assert!(sandbox.is_command_allowed("cargo"));
+        assert!(!sandbox.is_command_allowed("rm"));
     }
 
     #[test]

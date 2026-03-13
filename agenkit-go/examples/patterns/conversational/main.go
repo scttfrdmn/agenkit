@@ -7,102 +7,101 @@
 //   - Creating conversational agents with history tracking
 //   - Multi-turn conversations with context retention
 //   - History pruning and capacity management
-//   - Exporting and importing conversation history
+//   - Inspecting conversation history with GetHistory()
 //   - Clearing history while preserving system prompts
 //
-// Run with: go run conversational_pattern.go
+// Run with: go run main.go
 package main
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/patterns"
 )
 
-// MockLLMAgent simulates an LLM that responds contextually based on conversation history
-type MockLLMAgent struct {
+// MockLLMClient simulates an LLM that responds contextually based on conversation history.
+type MockLLMClient struct {
 	scenario string
 }
 
-func (m *MockLLMAgent) Name() string {
-	return "MockLLM"
-}
-
-func (m *MockLLMAgent) Capabilities() []string {
-	return []string{"chat"}
-}
-
-func (m *MockLLMAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+func (m *MockLLMClient) Chat(_ context.Context, messages []*agenkit.Message) (*agenkit.Message, error) {
+	// Collect all message content for scenario detection
+	var combined strings.Builder
+	for _, msg := range messages {
+		combined.WriteString(msg.Content)
+		combined.WriteString(" ")
+	}
+	content := combined.String()
 
 	var response string
 
-	// Parse conversation history from context
-	if strings.Contains(content, "My name is Alice") && strings.Contains(content, "What's my name?") {
+	switch {
+	case strings.Contains(content, "My name is Alice") && strings.Contains(content, "What's my name?"):
 		response = "Your name is Alice, as you mentioned earlier!"
-	} else if strings.Contains(content, "My name is Alice") {
+	case strings.Contains(content, "My name is Alice"):
 		response = "Nice to meet you, Alice! How can I help you today?"
-	} else if strings.Contains(content, "What's my name?") {
+	case strings.Contains(content, "What's my name?"):
 		response = "I don't recall you mentioning your name. Could you tell me?"
-	} else if strings.Contains(content, "I like pizza") && strings.Contains(content, "What's my favorite food?") {
+	case strings.Contains(content, "I like pizza") && strings.Contains(content, "What's my favorite food?"):
 		response = "Based on our conversation, your favorite food is pizza!"
-	} else if strings.Contains(content, "I like pizza") {
+	case strings.Contains(content, "I like pizza"):
 		response = "Pizza is delicious! Do you have a favorite type?"
-	} else if strings.Contains(content, "favorite color") && strings.Contains(content, "blue") {
+	case strings.Contains(content, "favorite color") && strings.Contains(content, "blue"):
 		response = "Blue is a great color! Is there anything else you'd like to talk about?"
-	} else if strings.Contains(content, "What did we talk about") {
-		if strings.Contains(content, "color") && strings.Contains(content, "pizza") {
+	case strings.Contains(content, "What did we talk about"):
+		switch {
+		case strings.Contains(content, "color") && strings.Contains(content, "pizza"):
 			response = "We talked about your favorite food (pizza) and your favorite color (blue)."
-		} else if strings.Contains(content, "pizza") {
+		case strings.Contains(content, "pizza"):
 			response = "We talked about your favorite food, which is pizza."
-		} else {
+		default:
 			response = "We haven't talked about much yet. What would you like to discuss?"
 		}
-	} else if strings.Contains(content, "capital of France") {
+	case strings.Contains(content, "capital of France"):
 		response = "The capital of France is Paris."
-	} else if strings.Contains(content, "Who was the first president") {
+	case strings.Contains(content, "Who was the first president"):
 		response = "The first President of the United States was George Washington."
-	} else if strings.Contains(content, "previous question") || strings.Contains(content, "asked before") {
-		if strings.Contains(content, "France") {
+	case strings.Contains(content, "previous question") || strings.Contains(content, "asked before"):
+		switch {
+		case strings.Contains(content, "France"):
 			response = "You asked about the capital of France, which is Paris."
-		} else if strings.Contains(content, "president") {
+		case strings.Contains(content, "president"):
 			response = "You asked about the first President of the United States, which was George Washington."
-		} else {
+		default:
 			response = "I remember your previous questions from our conversation."
 		}
-	} else if m.scenario == "customer_support" {
-		if strings.Contains(content, "order") && strings.Contains(content, "123") {
+	case m.scenario == "customer_support":
+		switch {
+		case strings.Contains(content, "order") && strings.Contains(content, "123"):
 			response = "I found your order #123. It's currently being processed and should ship tomorrow."
-		} else if strings.Contains(content, "shipping") {
+		case strings.Contains(content, "shipping"):
 			response = "Based on your order #123, shipping will take 3-5 business days."
-		} else {
+		default:
 			response = "I'm here to help! What can I assist you with today?"
 		}
-	} else {
+	default:
 		response = "I understand. What else would you like to know?"
 	}
 
 	return agenkit.NewMessage("assistant", response), nil
 }
 
-// Example 1: Basic conversation with name memory
-// TODO: Uncomment when ConversationalAgent is implemented
-/*
+// Example 1: Basic conversation with name memory.
 func exampleBasicConversation() error {
 	fmt.Println("\n=== Example 1: Basic Conversation with Memory ===")
 
-	llm := &MockLLMAgent{scenario: "general"}
+	llm := &MockLLMClient{scenario: "general"}
 
-	config := patterns.ConversationalConfig{
-		LLM:           llm,
+	agent, err := patterns.NewConversationalAgent(&patterns.ConversationalAgentConfig{
+		LLMClient:     llm,
 		MaxHistory:    10,
 		SystemPrompt:  "You are a friendly assistant that remembers context.",
 		IncludeSystem: true,
-	}
-
-	agent, err := patterns.NewConversationalAgent(config)
+	})
 	if err != nil {
 		return err
 	}
@@ -126,20 +125,18 @@ func exampleBasicConversation() error {
 	return nil
 }
 
-// Example 2: Multi-topic conversation tracking
+// Example 2: Multi-topic conversation tracking.
 func exampleMultiTopic() error {
 	fmt.Println("\n=== Example 2: Multi-Topic Conversation ===")
 
-	llm := &MockLLMAgent{scenario: "general"}
+	llm := &MockLLMClient{scenario: "general"}
 
-	config := patterns.ConversationalConfig{
-		LLM:           llm,
+	agent, err := patterns.NewConversationalAgent(&patterns.ConversationalAgentConfig{
+		LLMClient:     llm,
 		MaxHistory:    20,
 		SystemPrompt:  "You are a helpful assistant.",
 		IncludeSystem: true,
-	}
-
-	agent, err := patterns.NewConversationalAgent(config)
+	})
 	if err != nil {
 		return err
 	}
@@ -165,20 +162,18 @@ func exampleMultiTopic() error {
 	return nil
 }
 
-// Example 3: History pruning demonstration
+// Example 3: History pruning demonstration.
 func exampleHistoryPruning() error {
 	fmt.Println("\n=== Example 3: History Pruning ===")
 
-	llm := &MockLLMAgent{scenario: "general"}
+	llm := &MockLLMClient{scenario: "general"}
 
-	config := patterns.ConversationalConfig{
-		LLM:           llm,
+	agent, err := patterns.NewConversationalAgent(&patterns.ConversationalAgentConfig{
+		LLMClient:     llm,
 		MaxHistory:    5, // Small history to demonstrate pruning
 		SystemPrompt:  "System prompt",
 		IncludeSystem: true,
-	}
-
-	agent, err := patterns.NewConversationalAgent(config)
+	})
 	if err != nil {
 		return err
 	}
@@ -189,8 +184,7 @@ func exampleHistoryPruning() error {
 	// Add several messages
 	for i := 1; i <= 4; i++ {
 		fmt.Printf("Turn %d: Sending message...\n", i)
-		_, err := agent.Process(context.Background(), agenkit.NewMessage("user", fmt.Sprintf("Message %d", i)))
-		if err != nil {
+		if _, err := agent.Process(context.Background(), agenkit.NewMessage("user", fmt.Sprintf("Message %d", i))); err != nil {
 			return err
 		}
 		fmt.Printf("History length: %d\n\n", agent.HistoryLength())
@@ -209,84 +203,56 @@ func exampleHistoryPruning() error {
 	return nil
 }
 
-// Example 4: Export and import history
-func exampleExportImport() error {
-	fmt.Println("\n=== Example 4: Export and Import History ===")
+// Example 4: History inspection demo using GetHistory().
+func exampleHistoryInspection() error {
+	fmt.Println("\n=== Example 4: History Inspection ===")
 
-	llm := &MockLLMAgent{scenario: "general"}
+	llm := &MockLLMClient{scenario: "general"}
 
-	// First agent
-	config1 := patterns.ConversationalConfig{
-		LLM:           llm,
+	agent, err := patterns.NewConversationalAgent(&patterns.ConversationalAgentConfig{
+		LLMClient:     llm,
 		MaxHistory:    10,
 		IncludeSystem: false,
-	}
-
-	agent1, err := patterns.NewConversationalAgent(config1)
+	})
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Agent 1: Starting conversation...")
-	_, err = agent1.Process(context.Background(), agenkit.NewMessage("user", "What's the capital of France?"))
-	if err != nil {
+	fmt.Println("Starting conversation...")
+	if _, err := agent.Process(context.Background(), agenkit.NewMessage("user", "What's the capital of France?")); err != nil {
 		return err
 	}
-	_, err = agent1.Process(context.Background(), agenkit.NewMessage("user", "Who was the first president of the US?"))
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Agent 1: History length: %d\n", agent1.HistoryLength())
-
-	// Export history
-	exported := agent1.ExportHistory()
-	fmt.Printf("Exported %d messages\n\n", len(exported))
-
-	// Second agent - import history
-	config2 := patterns.ConversationalConfig{
-		LLM:           llm,
-		MaxHistory:    10,
-		IncludeSystem: false,
-	}
-
-	agent2, err := patterns.NewConversationalAgent(config2)
-	if err != nil {
+	if _, err := agent.Process(context.Background(), agenkit.NewMessage("user", "Who was the first president of the US?")); err != nil {
 		return err
 	}
 
-	if err := agent2.ImportHistory(exported); err != nil {
-		return err
-	}
-	fmt.Println("Agent 2: Imported history")
-	fmt.Printf("Agent 2: History length: %d\n", agent2.HistoryLength())
+	fmt.Printf("History length: %d\n\n", agent.HistoryLength())
 
-	// Continue conversation on agent2
-	fmt.Println("\nAgent 2: Continuing conversation...")
-	fmt.Println("User: What was my previous question about France?")
-	response, err := agent2.Process(context.Background(), agenkit.NewMessage("user", "What was my previous question about France?"))
-	if err != nil {
-		return err
+	fmt.Println("Full conversation history:")
+	history := agent.GetHistory()
+	for i, msg := range history {
+		content := msg.Content
+		if len(content) > 60 {
+			content = content[:60] + "..."
+		}
+		fmt.Printf("  [%d] %s: %s\n", i, msg.Role, content)
 	}
-	fmt.Printf("Assistant: %s\n\n", response.Content)
 
 	return nil
 }
 
-// Example 5: Customer support conversation
+// Example 5: Customer support conversation.
 func exampleCustomerSupport() error {
 	fmt.Println("\n=== Example 5: Customer Support Scenario ===")
 
-	llm := &MockLLMAgent{scenario: "customer_support"}
+	llm := &MockLLMClient{scenario: "customer_support"}
 
-	config := patterns.ConversationalConfig{
-		LLM:           llm,
+	agent, err := patterns.NewConversationalAgent(&patterns.ConversationalAgentConfig{
+		LLMClient:     llm,
 		MaxHistory:    15,
 		SystemPrompt:  "You are a customer support agent. Be helpful and remember order details.",
 		IncludeSystem: true,
-	}
-
-	agent, err := patterns.NewConversationalAgent(config)
+	})
 	if err != nil {
 		return err
 	}
@@ -314,31 +280,27 @@ func exampleCustomerSupport() error {
 	return nil
 }
 
-// Example 6: Clear history demonstration
+// Example 6: Clear history demonstration.
 func exampleClearHistory() error {
 	fmt.Println("\n=== Example 6: Clear History ===")
 
-	llm := &MockLLMAgent{scenario: "general"}
+	llm := &MockLLMClient{scenario: "general"}
 
-	config := patterns.ConversationalConfig{
-		LLM:           llm,
+	agent, err := patterns.NewConversationalAgent(&patterns.ConversationalAgentConfig{
+		LLMClient:     llm,
 		MaxHistory:    10,
 		SystemPrompt:  "You are a helpful assistant.",
 		IncludeSystem: true,
-	}
-
-	agent, err := patterns.NewConversationalAgent(config)
+	})
 	if err != nil {
 		return err
 	}
 
 	// Build up some history
-	_, err = agent.Process(context.Background(), agenkit.NewMessage("user", "My name is Bob"))
-	if err != nil {
+	if _, err := agent.Process(context.Background(), agenkit.NewMessage("user", "My name is Bob")); err != nil {
 		return err
 	}
-	_, err = agent.Process(context.Background(), agenkit.NewMessage("user", "I like coffee"))
-	if err != nil {
+	if _, err := agent.Process(context.Background(), agenkit.NewMessage("user", "I like coffee")); err != nil {
 		return err
 	}
 
@@ -361,23 +323,36 @@ func exampleClearHistory() error {
 
 	return nil
 }
-*/
 
 func main() {
 	fmt.Println("Conversational Pattern Examples")
 	fmt.Println(strings.Repeat("=", 60))
-	fmt.Println("\n⚠ This example requires ConversationalAgent pattern implementation.")
-	fmt.Println("See Python implementation for reference.")
 
-	// TODO: Uncomment when ConversationalAgent is implemented in Go
-	// // Run all examples
-	// if err := exampleBasicConversation(); err != nil {
-	// 	log.Fatalf("Example 1 failed: %v", err)
-	// }
-	// if err := exampleClearHistory(); err != nil {
-	// 	log.Fatalf("Example 6 failed: %v", err)
-	// }
-	//
-	// fmt.Println("\n" + strings.Repeat("=", 60))
-	// fmt.Println("✓ All examples completed successfully!")
+	// Run all examples
+	if err := exampleBasicConversation(); err != nil {
+		log.Fatalf("Example 1 failed: %v", err)
+	}
+
+	if err := exampleMultiTopic(); err != nil {
+		log.Fatalf("Example 2 failed: %v", err)
+	}
+
+	if err := exampleHistoryPruning(); err != nil {
+		log.Fatalf("Example 3 failed: %v", err)
+	}
+
+	if err := exampleHistoryInspection(); err != nil {
+		log.Fatalf("Example 4 failed: %v", err)
+	}
+
+	if err := exampleCustomerSupport(); err != nil {
+		log.Fatalf("Example 5 failed: %v", err)
+	}
+
+	if err := exampleClearHistory(); err != nil {
+		log.Fatalf("Example 6 failed: %v", err)
+	}
+
+	fmt.Println("\n" + strings.Repeat("=", 60))
+	fmt.Println("All examples completed successfully!")
 }

@@ -10,7 +10,7 @@ from pathlib import Path
 from .checkpoint import Checkpoint, CheckpointStorage
 
 
-class InMemoryCheckpointStorage(CheckpointStorage):
+class MemoryCheckpointStorage(CheckpointStorage):
     """
     In-memory checkpoint storage.
 
@@ -120,7 +120,7 @@ class InMemoryCheckpointStorage(CheckpointStorage):
         }
 
 
-class FileCheckpointStorage(CheckpointStorage):
+class LocalCheckpointStorage(CheckpointStorage):
     """
     File-based checkpoint storage.
 
@@ -288,3 +288,8 @@ class FileCheckpointStorage(CheckpointStorage):
                 stats["disk_usage_bytes"] += checkpoint_file.stat().st_size
 
         return stats
+
+
+# Deprecated aliases — use new names in new code.
+InMemoryCheckpointStorage = MemoryCheckpointStorage  # Deprecated: Use MemoryCheckpointStorage instead.
+FileCheckpointStorage = LocalCheckpointStorage  # Deprecated: Use LocalCheckpointStorage instead.

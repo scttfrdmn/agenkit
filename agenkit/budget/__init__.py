@@ -48,7 +48,7 @@ from .optimizer import (
     ModelOptimizer,
 )
 from .reasoning import ThinkingBudget, ThinkingBudgetAllocator, ThinkingMode, ThinkingModeDetector
-from .tracker import Cost, CostTracker, InMemoryStorage, Storage
+from .tracker import Cost, CostTracker, InMemoryStorage, MemoryStorage, Storage
 
 __all__ = [
     "BudgetExceededError",
@@ -60,8 +60,9 @@ __all__ = [
     "Cost",
     "CostTracker",
     "HeuristicComplexityDetector",
-    "InMemoryStorage",
     "LLMBasedComplexityDetector",
+    # Storage (current names)
+    "MemoryStorage",
     # Optimization
     "ModelOptimizer",
     # Pricing
@@ -72,4 +73,6 @@ __all__ = [
     "ThinkingBudgetAllocator",
     "ThinkingMode",
     "ThinkingModeDetector",
+    # Deprecated aliases
+    "InMemoryStorage",
 ]

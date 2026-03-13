@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .checkpoint import Checkpoint, CheckpointStorage
-from .storage import InMemoryCheckpointStorage
+from .storage import MemoryCheckpointStorage
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class CheckpointManager:
             storage: Checkpoint storage backend (defaults to in-memory)
             auto_checkpoint_interval: Automatically checkpoint every N steps (None = manual only)
         """
-        self.storage = storage or InMemoryCheckpointStorage()
+        self.storage = storage or MemoryCheckpointStorage()
         self.auto_checkpoint_interval = auto_checkpoint_interval
 
         # Track step counts for auto-checkpointing

@@ -92,7 +92,7 @@ class TestPythonScanner:
 
         # Should find core memory backends
         expected_memory = [
-            "InMemoryMemory",
+            "EphemeralMemory",
             "VectorMemory",
             "RedisMemory",
         ]
@@ -197,7 +197,7 @@ class TestTypeScriptScanner:
 
         # Should find core memory backends
         expected_memory = [
-            "InMemoryMemory",
+            "EphemeralMemory",
             "VectorMemory",
             "RedisMemory",
             "EndlessMemory",  # TypeScript has this!

@@ -6,7 +6,7 @@ enabling context management beyond raw message lists.
 
 Classes:
     Memory: Abstract base class for memory systems
-    InMemoryMemory: Simple in-memory storage with LRU eviction
+    EphemeralMemory: Simple in-memory storage with LRU eviction
     HierarchyMemory: 3-tier hierarchy adapter (backward compatible)
     RedisMemory: Redis-backed memory with persistence
     VectorMemory: Vector database for semantic retrieval
@@ -19,8 +19,8 @@ Strategies:
     SummarizationStrategy: Summarize old, keep recent verbatim
 
 Example:
-    >>> from agenkit.memory import InMemoryMemory, SlidingWindowStrategy
-    >>> memory = InMemoryMemory(max_size=1000)
+    >>> from agenkit.memory import EphemeralMemory, SlidingWindowStrategy
+    >>> memory = EphemeralMemory(max_size=1000)
     >>> strategy = SlidingWindowStrategy(window_size=10)
     >>> await memory.store("session-123", message)
     >>> messages = await strategy.select(memory, "session-123", context_limit=10)
@@ -29,7 +29,7 @@ Example:
 from .base import Memory
 from .endless_memory import EndlessClient, EndlessMemory
 from .hierarchy_memory import HierarchyMemory
-from .in_memory import InMemoryMemory
+from .in_memory import EphemeralMemory, InMemoryMemory
 
 # Import strategies
 from .strategies import (
@@ -38,7 +38,13 @@ from .strategies import (
     SlidingWindowStrategy,
     SummarizationStrategy,
 )
-from .vector_memory import EmbeddingProvider, InMemoryVectorStore, VectorMemory, VectorStore
+from .vector_memory import (
+    EmbeddingProvider,
+    InMemoryVectorStore,
+    MemoryVectorStore,
+    VectorMemory,
+    VectorStore,
+)
 
 # Optional imports (require extra dependencies)
 try:
@@ -48,31 +54,39 @@ try:
         "EmbeddingProvider",
         "EndlessClient",
         "EndlessMemory",
+        # Current names
+        "EphemeralMemory",
         "HierarchyMemory",
         "ImportanceWeightingStrategy",
-        "InMemoryMemory",
-        "InMemoryVectorStore",
         "Memory",
         "MemoryStrategy",
+        "MemoryVectorStore",
         "RedisMemory",
         "SlidingWindowStrategy",
         "SummarizationStrategy",
         "VectorMemory",
         "VectorStore",
+        # Deprecated aliases
+        "InMemoryMemory",
+        "InMemoryVectorStore",
     ]
 except ImportError:
     __all__ = [
         "EmbeddingProvider",
         "EndlessClient",
         "EndlessMemory",
+        # Current names
+        "EphemeralMemory",
         "HierarchyMemory",
         "ImportanceWeightingStrategy",
-        "InMemoryMemory",
-        "InMemoryVectorStore",
         "Memory",
         "MemoryStrategy",
+        "MemoryVectorStore",
         "SlidingWindowStrategy",
         "SummarizationStrategy",
         "VectorMemory",
         "VectorStore",
+        # Deprecated aliases
+        "InMemoryMemory",
+        "InMemoryVectorStore",
     ]

@@ -135,7 +135,7 @@ class RecordingStorage(Protocol):
         ...
 
 
-class FileRecordingStorage:
+class LocalRecordingStorage:
     """
     File-based recording storage.
 
@@ -189,7 +189,7 @@ class FileRecordingStorage:
             file_path.unlink()
 
 
-class InMemoryRecordingStorage:
+class MemoryRecordingStorage:
     """
     In-memory recording storage for testing.
 
@@ -247,7 +247,7 @@ class SessionRecorder:
         Args:
             storage: Storage backend (defaults to in-memory)
         """
-        self.storage = storage or InMemoryRecordingStorage()
+        self.storage = storage or MemoryRecordingStorage()
         self._active_sessions: dict[str, SessionRecording] = {}
 
     def wrap(self, agent: Agent) -> Agent:
@@ -395,6 +395,10 @@ class SessionRecorder:
             "metadata": message.metadata or {},
         }
 
+
+# Deprecated aliases — use new names in new code.
+FileRecordingStorage = LocalRecordingStorage  # Deprecated: Use LocalRecordingStorage instead.
+InMemoryRecordingStorage = MemoryRecordingStorage  # Deprecated: Use MemoryRecordingStorage instead.
 
 class SessionReplay:
     """

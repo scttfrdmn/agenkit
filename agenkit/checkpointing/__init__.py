@@ -7,8 +7,8 @@ enabling state persistence, crash recovery, and time-travel debugging.
 Classes:
     Checkpoint: Checkpoint data structure
     CheckpointStorage: Abstract storage interface
-    InMemoryCheckpointStorage: In-memory storage (testing)
-    FileCheckpointStorage: File-based storage (production)
+    MemoryCheckpointStorage: In-memory storage (testing)
+    LocalCheckpointStorage: File-based storage (production)
     CheckpointManager: High-level checkpoint management
     DurableAgent: Agent wrapper with automatic checkpointing
 
@@ -32,7 +32,12 @@ Example:
 from .checkpoint import Checkpoint, CheckpointStorage
 from .durable import DurableAgent, make_durable
 from .manager import CheckpointManager
-from .storage import FileCheckpointStorage, InMemoryCheckpointStorage
+from .storage import (
+    FileCheckpointStorage,
+    InMemoryCheckpointStorage,
+    LocalCheckpointStorage,
+    MemoryCheckpointStorage,
+)
 
 __all__ = [
     # Core
@@ -42,8 +47,11 @@ __all__ = [
     "CheckpointStorage",
     # Durable execution
     "DurableAgent",
-    "FileCheckpointStorage",
-    # Storage
-    "InMemoryCheckpointStorage",
+    # Storage (current names)
+    "LocalCheckpointStorage",
+    "MemoryCheckpointStorage",
     "make_durable",
+    # Deprecated aliases
+    "FileCheckpointStorage",
+    "InMemoryCheckpointStorage",
 ]

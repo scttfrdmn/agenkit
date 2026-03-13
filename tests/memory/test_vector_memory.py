@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import pytest
 
 from agenkit.interfaces import Message
-from agenkit.memory.vector_memory import EmbeddingProvider, InMemoryVectorStore, VectorMemory
+from agenkit.memory.vector_memory import EmbeddingProvider, MemoryVectorStore, VectorMemory
 
 
 class MockEmbeddingProvider(EmbeddingProvider):
@@ -320,7 +320,7 @@ async def test_capabilities(vector_memory):
 @pytest.mark.asyncio
 async def test_cosine_similarity():
     """Test cosine similarity calculation."""
-    store = InMemoryVectorStore()
+    store = MemoryVectorStore()
 
     # Test identical vectors (should be 1.0)
     sim = store._cosine_similarity([1.0, 0.0, 0.0], [1.0, 0.0, 0.0])
@@ -370,7 +370,7 @@ async def test_combined_filters(vector_memory):
 async def test_custom_vector_store():
     """Test using custom vector store."""
     # Create custom store
-    custom_store = InMemoryVectorStore()
+    custom_store = MemoryVectorStore()
     embeddings = MockEmbeddingProvider()
 
     memory = VectorMemory(embeddings, vector_store=custom_store)

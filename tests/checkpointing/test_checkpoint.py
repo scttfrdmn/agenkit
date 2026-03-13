@@ -11,8 +11,8 @@ import pytest
 from agenkit.checkpointing import (
     Checkpoint,
     CheckpointManager,
-    FileCheckpointStorage,
-    InMemoryCheckpointStorage,
+    LocalCheckpointStorage,
+    MemoryCheckpointStorage,
 )
 from agenkit.interfaces import Message
 
@@ -102,13 +102,13 @@ def test_checkpoint_json_serialization():
     assert restored.metadata == original.metadata
 
 
-# ===== InMemoryCheckpointStorage Tests =====
+# ===== MemoryCheckpointStorage Tests =====
 
 
 @pytest.mark.asyncio
 async def test_inmemory_save_and_load():
     """Test saving and loading checkpoints in memory."""
-    storage = InMemoryCheckpointStorage()
+    storage = MemoryCheckpointStorage()
 
     checkpoint = Checkpoint(
         checkpoint_id="checkpoint-1",
@@ -132,7 +132,7 @@ async def test_inmemory_save_and_load():
 @pytest.mark.asyncio
 async def test_inmemory_list_checkpoints():
     """Test listing checkpoints for a session."""
-    storage = InMemoryCheckpointStorage()
+    storage = MemoryCheckpointStorage()
 
     # Create multiple checkpoints
     for i in range(5):
@@ -158,7 +158,7 @@ async def test_inmemory_list_checkpoints():
 @pytest.mark.asyncio
 async def test_inmemory_get_latest():
     """Test getting latest checkpoint."""
-    storage = InMemoryCheckpointStorage()
+    storage = MemoryCheckpointStorage()
 
     # Create checkpoints
     for i in range(3):
@@ -183,7 +183,7 @@ async def test_inmemory_get_latest():
 @pytest.mark.asyncio
 async def test_inmemory_delete():
     """Test deleting a checkpoint."""
-    storage = InMemoryCheckpointStorage()
+    storage = MemoryCheckpointStorage()
 
     checkpoint = Checkpoint(
         checkpoint_id="checkpoint-1",
@@ -208,7 +208,7 @@ async def test_inmemory_delete():
 @pytest.mark.asyncio
 async def test_inmemory_delete_session():
     """Test deleting all checkpoints for a session."""
-    storage = InMemoryCheckpointStorage()
+    storage = MemoryCheckpointStorage()
 
     # Create checkpoints for multiple sessions
     for session_num in range(1, 3):
@@ -241,7 +241,7 @@ async def test_inmemory_delete_session():
 @pytest.mark.asyncio
 async def test_inmemory_checkpoint_history():
     """Test getting checkpoint history by following parent links."""
-    storage = InMemoryCheckpointStorage()
+    storage = MemoryCheckpointStorage()
 
     # Create chain of checkpoints
     parent_id = None
@@ -268,7 +268,7 @@ async def test_inmemory_checkpoint_history():
     assert history[-1].checkpoint_id == "checkpoint-0"
 
 
-# ===== FileCheckpointStorage Tests =====
+# ===== LocalCheckpointStorage Tests =====
 
 
 @pytest.fixture
@@ -282,7 +282,7 @@ def temp_checkpoint_dir():
 @pytest.mark.asyncio
 async def test_file_save_and_load(temp_checkpoint_dir):
     """Test saving and loading checkpoints to files."""
-    storage = FileCheckpointStorage(temp_checkpoint_dir)
+    storage = LocalCheckpointStorage(temp_checkpoint_dir)
 
     checkpoint = Checkpoint(
         checkpoint_id="checkpoint-1",
@@ -307,7 +307,7 @@ async def test_file_save_and_load(temp_checkpoint_dir):
 async def test_file_persistence(temp_checkpoint_dir):
     """Test that checkpoints persist across storage instances."""
     # Create storage and save checkpoint
-    storage1 = FileCheckpointStorage(temp_checkpoint_dir)
+    storage1 = LocalCheckpointStorage(temp_checkpoint_dir)
 
     checkpoint = Checkpoint(
         checkpoint_id="checkpoint-1",
@@ -323,7 +323,7 @@ async def test_file_persistence(temp_checkpoint_dir):
     await storage1.save(checkpoint)
 
     # Create new storage instance (simulates restart)
-    storage2 = FileCheckpointStorage(temp_checkpoint_dir)
+    storage2 = LocalCheckpointStorage(temp_checkpoint_dir)
 
     loaded = await storage2.load("checkpoint-1")
 
@@ -334,7 +334,7 @@ async def test_file_persistence(temp_checkpoint_dir):
 @pytest.mark.asyncio
 async def test_file_get_stats(temp_checkpoint_dir):
     """Test getting storage statistics."""
-    storage = FileCheckpointStorage(temp_checkpoint_dir)
+    storage = LocalCheckpointStorage(temp_checkpoint_dir)
 
     # Create some checkpoints
     for i in range(3):

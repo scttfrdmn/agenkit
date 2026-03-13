@@ -5,7 +5,7 @@ Tests for memory strategies.
 import pytest
 
 from agenkit.interfaces import Message
-from agenkit.memory import InMemoryMemory
+from agenkit.memory import EphemeralMemory
 from agenkit.memory.strategies import (
     ImportanceWeightingStrategy,
     SlidingWindowStrategy,
@@ -16,7 +16,7 @@ from agenkit.memory.strategies import (
 @pytest.fixture
 async def populated_memory():
     """Create memory with test messages."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Add 10 messages with varying importance
     for i in range(10):
@@ -70,7 +70,7 @@ async def test_sliding_window_respects_context_limit(populated_memory):
 @pytest.mark.asyncio
 async def test_sliding_window_empty_session():
     """Test sliding window with empty session."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
     strategy = SlidingWindowStrategy(window_size=5)
 
     messages = await strategy.select(memory=memory, session_id="empty-session", context_limit=10)
@@ -149,7 +149,7 @@ async def test_importance_weighting_with_recency_bonus(populated_memory):
 @pytest.mark.asyncio
 async def test_importance_weighting_custom_scorer():
     """Test importance weighting with custom scorer."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Add messages without importance metadata
     for i in range(5):
@@ -242,7 +242,7 @@ async def test_summarization_respects_context_limit(populated_memory):
 @pytest.mark.asyncio
 async def test_summarization_empty_session():
     """Test summarization with empty session."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
     strategy = SummarizationStrategy(recent_count=5, summarize_older=True)
 
     messages = await strategy.select(memory=memory, session_id="empty-session", context_limit=10)
@@ -253,7 +253,7 @@ async def test_summarization_empty_session():
 @pytest.mark.asyncio
 async def test_summarization_few_messages():
     """Test summarization when there are fewer messages than recent_count."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Only add 3 messages
     for i in range(3):
@@ -278,7 +278,7 @@ async def test_summarization_few_messages():
 @pytest.mark.asyncio
 async def test_strategy_switching():
     """Test switching between different strategies."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Add messages
     for i in range(10):
@@ -309,7 +309,7 @@ async def test_strategy_switching():
 @pytest.mark.asyncio
 async def test_strategies_with_real_conversation():
     """Test strategies with realistic conversation flow."""
-    memory = InMemoryMemory()
+    memory = EphemeralMemory()
 
     # Simulate a conversation
     conversation = [

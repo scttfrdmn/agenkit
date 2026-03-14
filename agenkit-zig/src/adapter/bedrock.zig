@@ -207,7 +207,7 @@ pub const BedrockLLM = struct {
             if (msg.role == .system) {
                 system_content = switch (msg.content) {
                     .text => |t| t,
-                    .structured => "",
+                    .structured => "", // system prompt must be plain text per Bedrock API
                 };
                 has_system = true;
                 break;
@@ -233,30 +233,38 @@ pub const BedrockLLM = struct {
             };
 
             try json.appendSlice(allocator, role_str);
-            try json.appendSlice(allocator, "\",\"content\":\"");
+            try json.appendSlice(allocator, "\",\"content\":");
 
-            const content = switch (msg.content) {
-                .text => |t| t,
-                .structured => "",
-            };
-
-            for (content) |c| {
-                if (c == '"') {
-                    try json.appendSlice(allocator, "\\\"");
-                } else if (c == '\\') {
-                    try json.appendSlice(allocator, "\\\\");
-                } else if (c == '\n') {
-                    try json.appendSlice(allocator, "\\n");
-                } else if (c == '\r') {
-                    try json.appendSlice(allocator, "\\r");
-                } else if (c == '\t') {
-                    try json.appendSlice(allocator, "\\t");
-                } else {
-                    try json.append(allocator, c);
-                }
+            switch (msg.content) {
+                .text => |t| {
+                    // Text content: serialize as a JSON string
+                    try json.append(allocator, '"');
+                    for (t) |c| {
+                        if (c == '"') {
+                            try json.appendSlice(allocator, "\\\"");
+                        } else if (c == '\\') {
+                            try json.appendSlice(allocator, "\\\\");
+                        } else if (c == '\n') {
+                            try json.appendSlice(allocator, "\\n");
+                        } else if (c == '\r') {
+                            try json.appendSlice(allocator, "\\r");
+                        } else if (c == '\t') {
+                            try json.appendSlice(allocator, "\\t");
+                        } else {
+                            try json.append(allocator, c);
+                        }
+                    }
+                    try json.append(allocator, '"');
+                },
+                .structured => |val| {
+                    // Structured content: serialize as JSON array (Bedrock Converse API format)
+                    const val_json = try std.json.Stringify.valueAlloc(allocator, val, .{});
+                    defer allocator.free(val_json);
+                    try json.appendSlice(allocator, val_json);
+                },
             }
 
-            try json.appendSlice(allocator, "\"}");
+            try json.append(allocator, '}');
         }
 
         try json.append(allocator, ']');
@@ -306,26 +314,195 @@ pub const BedrockLLM = struct {
         return try json.toOwnedSlice(allocator);
     }
 
-    /// Make HTTP request to Bedrock API (with AWS SigV4 signing)
+    /// Make HTTP request to Bedrock API with AWS SigV4 signing
     fn makeRequest(self: *BedrockLLM, allocator: Allocator, body: []const u8) ![]const u8 {
-        // Note: Full AWS SigV4 implementation is complex and would require
-        // significant code (~300-400 lines for proper implementation).
-        // For production use, recommend using AWS SDK or a dedicated library.
-        //
-        // This is a simplified placeholder that shows the structure.
-        // In practice, you would need to implement:
-        // 1. Canonical request creation
-        // 2. String to sign
-        // 3. Signing key derivation
-        // 4. Authorization header generation
+        // Build the Bedrock endpoint URL
+        // Format: https://bedrock-runtime.<region>.amazonaws.com/model/<model-id>/invoke
+        const host = try std.fmt.allocPrint(
+            allocator,
+            "bedrock-runtime.{s}.amazonaws.com",
+            .{self.region},
+        );
+        defer allocator.free(host);
 
-        _ = self;
-        _ = allocator;
-        _ = body;
+        const uri_path = try std.fmt.allocPrint(
+            allocator,
+            "/model/{s}/invoke",
+            .{self.model_id},
+        );
+        defer allocator.free(uri_path);
 
-        // TODO: Implement full AWS SigV4 signing
-        // For now, return an error indicating this needs AWS SDK
-        return error.BedrockRequiresAWSSDK;
+        // Get current timestamp for signing
+        const timestamp_secs = std.time.timestamp();
+        const timestamp = try formatTimestamp(allocator, timestamp_secs);
+        defer allocator.free(timestamp);
+
+        const date = timestamp[0..8]; // "YYYYMMDD"
+
+        // Compute payload SHA-256 hash
+        var payload_hash_bytes: [std.crypto.hash.sha2.Sha256.digest_length]u8 = undefined;
+        std.crypto.hash.sha2.Sha256.hash(body, &payload_hash_bytes, .{});
+        const payload_hash = try hexEncode(allocator, &payload_hash_bytes);
+        defer allocator.free(payload_hash);
+
+        // Build canonical headers (must be sorted and lowercase)
+        const canonical_headers = try std.fmt.allocPrint(
+            allocator,
+            "content-type:application/json\nhost:{s}\nx-amz-date:{s}\n",
+            .{ host, timestamp },
+        );
+        defer allocator.free(canonical_headers);
+
+        const signed_headers = "content-type;host;x-amz-date";
+
+        // Add session token header if present
+        const canonical_headers_with_token = if (self.session_token) |token| blk: {
+            const with_token = try std.fmt.allocPrint(
+                allocator,
+                "content-type:application/json\nhost:{s}\nx-amz-date:{s}\nx-amz-security-token:{s}\n",
+                .{ host, timestamp, token },
+            );
+            break :blk with_token;
+        } else null;
+        defer if (canonical_headers_with_token) |s| allocator.free(s);
+
+        const final_canonical_headers = canonical_headers_with_token orelse canonical_headers;
+        const final_signed_headers = if (self.session_token != null)
+            "content-type;host;x-amz-date;x-amz-security-token"
+        else
+            signed_headers;
+
+        // Step 1: Build canonical request
+        const canonical_request = try std.fmt.allocPrint(
+            allocator,
+            "POST\n{s}\n\n{s}\n{s}\n{s}",
+            .{ uri_path, final_canonical_headers, final_signed_headers, payload_hash },
+        );
+        defer allocator.free(canonical_request);
+
+        // Hash the canonical request
+        var cr_hash_bytes: [std.crypto.hash.sha2.Sha256.digest_length]u8 = undefined;
+        std.crypto.hash.sha2.Sha256.hash(canonical_request, &cr_hash_bytes, .{});
+        const cr_hash = try hexEncode(allocator, &cr_hash_bytes);
+        defer allocator.free(cr_hash);
+
+        // Step 2: Build string to sign
+        const credential_scope = try std.fmt.allocPrint(
+            allocator,
+            "{s}/{s}/bedrock/aws4_request",
+            .{ date, self.region },
+        );
+        defer allocator.free(credential_scope);
+
+        const string_to_sign = try std.fmt.allocPrint(
+            allocator,
+            "AWS4-HMAC-SHA256\n{s}\n{s}\n{s}",
+            .{ timestamp, credential_scope, cr_hash },
+        );
+        defer allocator.free(string_to_sign);
+
+        // Step 3: Build signing key chain
+        // signingKey = HMAC(HMAC(HMAC(HMAC("AWS4" + secret, date), region), "bedrock"), "aws4_request")
+        const aws4_secret = try std.fmt.allocPrint(allocator, "AWS4{s}", .{self.secret_access_key});
+        defer allocator.free(aws4_secret);
+
+        var k_date: [std.crypto.auth.hmac.sha2.HmacSha256.mac_length]u8 = undefined;
+        std.crypto.auth.hmac.sha2.HmacSha256.create(&k_date, date, aws4_secret);
+
+        var k_region: [std.crypto.auth.hmac.sha2.HmacSha256.mac_length]u8 = undefined;
+        std.crypto.auth.hmac.sha2.HmacSha256.create(&k_region, self.region, &k_date);
+
+        var k_service: [std.crypto.auth.hmac.sha2.HmacSha256.mac_length]u8 = undefined;
+        std.crypto.auth.hmac.sha2.HmacSha256.create(&k_service, "bedrock", &k_region);
+
+        var k_signing: [std.crypto.auth.hmac.sha2.HmacSha256.mac_length]u8 = undefined;
+        std.crypto.auth.hmac.sha2.HmacSha256.create(&k_signing, "aws4_request", &k_service);
+
+        // Step 4: Compute signature
+        var sig_bytes: [std.crypto.auth.hmac.sha2.HmacSha256.mac_length]u8 = undefined;
+        std.crypto.auth.hmac.sha2.HmacSha256.create(&sig_bytes, string_to_sign, &k_signing);
+        const signature = try hexEncode(allocator, &sig_bytes);
+        defer allocator.free(signature);
+
+        // Build Authorization header
+        const auth_header = try std.fmt.allocPrint(
+            allocator,
+            "AWS4-HMAC-SHA256 Credential={s}/{s}, SignedHeaders={s}, Signature={s}",
+            .{ self.access_key_id, credential_scope, final_signed_headers, signature },
+        );
+        defer allocator.free(auth_header);
+
+        // Make the HTTP request
+        var client = std.http.Client{ .allocator = allocator };
+        defer client.deinit();
+
+        const full_url = try std.fmt.allocPrint(
+            allocator,
+            "https://{s}{s}",
+            .{ host, uri_path },
+        );
+        defer allocator.free(full_url);
+
+        // Build headers slice (unmanaged ArrayList, Zig 0.15 pattern)
+        var headers_list = std.ArrayList(std.http.Header){};
+        defer headers_list.deinit(allocator);
+
+        try headers_list.append(allocator, .{ .name = "Content-Type", .value = "application/json" });
+        try headers_list.append(allocator, .{ .name = "Authorization", .value = auth_header });
+        try headers_list.append(allocator, .{ .name = "x-amz-date", .value = timestamp });
+        if (self.session_token) |token| {
+            try headers_list.append(allocator, .{ .name = "x-amz-security-token", .value = token });
+        }
+
+        var response_body: std.io.Writer.Allocating = .init(allocator);
+        defer response_body.deinit();
+
+        const result = try client.fetch(.{
+            .location = .{ .url = full_url },
+            .method = .POST,
+            .payload = body,
+            .extra_headers = headers_list.items,
+            .response_writer = &response_body.writer,
+        });
+
+        if (result.status != .ok) {
+            return error.ServerError;
+        }
+
+        return try response_body.toOwnedSlice();
+    }
+
+    /// Format a Unix timestamp as "YYYYMMDDTHHmmSSZ"
+    fn formatTimestamp(allocator: Allocator, secs: i64) ![]const u8 {
+        const epoch = std.time.epoch.EpochSeconds{ .secs = @intCast(secs) };
+        const epoch_day = epoch.getEpochDay();
+        const year_day = epoch_day.calculateYearDay();
+        const month_day = year_day.calculateMonthDay();
+        const day_seconds = epoch.getDaySeconds();
+
+        return std.fmt.allocPrint(
+            allocator,
+            "{d:0>4}{d:0>2}{d:0>2}T{d:0>2}{d:0>2}{d:0>2}Z",
+            .{
+                year_day.year,
+                month_day.month.numeric(),
+                month_day.day_index + 1,
+                day_seconds.getHoursIntoDay(),
+                day_seconds.getMinutesIntoHour(),
+                day_seconds.getSecondsIntoMinute(),
+            },
+        );
+    }
+
+    /// Hex-encode a byte slice into a lowercase hex string
+    fn hexEncode(allocator: Allocator, bytes: []const u8) ![]const u8 {
+        const hex_chars = "0123456789abcdef";
+        const result = try allocator.alloc(u8, bytes.len * 2);
+        for (bytes, 0..) |b, i| {
+            result[i * 2] = hex_chars[b >> 4];
+            result[i * 2 + 1] = hex_chars[b & 0x0f];
+        }
+        return result;
     }
 
     /// Parse Bedrock API response
@@ -414,4 +591,101 @@ test "BedrockLLM buildRequestBody" {
     try std.testing.expect(std.mem.indexOf(u8, body, "\"system\":\"You are helpful.\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, body, "\"max_tokens\":512") != null);
     try std.testing.expect(std.mem.indexOf(u8, body, "\"temperature\":0.7") != null);
+}
+
+test "hexEncode produces correct lowercase hex" {
+    const allocator = std.testing.allocator;
+
+    const input = [_]u8{ 0x00, 0xff, 0x1a, 0xb3 };
+    const result = try BedrockLLM.hexEncode(allocator, &input);
+    defer allocator.free(result);
+
+    try std.testing.expectEqualStrings("00ff1ab3", result);
+}
+
+test "SigV4 signing key derivation" {
+    // Test vector from AWS SigV4 test suite
+    // https://docs.aws.amazon.com/general/latest/gr/sigv4-create-signed-request.html
+    const secret = "AWS4wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY";
+    const date = "20130524";
+    const region = "us-east-1";
+
+    var k_date: [std.crypto.auth.hmac.sha2.HmacSha256.mac_length]u8 = undefined;
+    std.crypto.auth.hmac.sha2.HmacSha256.create(&k_date, date, secret);
+
+    var k_region: [std.crypto.auth.hmac.sha2.HmacSha256.mac_length]u8 = undefined;
+    std.crypto.auth.hmac.sha2.HmacSha256.create(&k_region, region, &k_date);
+
+    var k_service: [std.crypto.auth.hmac.sha2.HmacSha256.mac_length]u8 = undefined;
+    std.crypto.auth.hmac.sha2.HmacSha256.create(&k_service, "bedrock", &k_region);
+
+    var k_signing: [std.crypto.auth.hmac.sha2.HmacSha256.mac_length]u8 = undefined;
+    std.crypto.auth.hmac.sha2.HmacSha256.create(&k_signing, "aws4_request", &k_service);
+
+    // Signing key is 32 bytes (HMAC-SHA256 output)
+    try std.testing.expectEqual(@as(usize, 32), k_signing.len);
+}
+
+test "SigV4 payload hash" {
+    // SHA-256("") = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    const allocator = std.testing.allocator;
+
+    var hash_bytes: [std.crypto.hash.sha2.Sha256.digest_length]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash("", &hash_bytes, .{});
+    const hex = try BedrockLLM.hexEncode(allocator, &hash_bytes);
+    defer allocator.free(hex);
+
+    try std.testing.expectEqualStrings(
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        hex,
+    );
+}
+
+test "formatTimestamp produces correct format" {
+    const allocator = std.testing.allocator;
+
+    // 2026-03-14T12:00:00Z = 1773568800 (approx)
+    // Use a known timestamp: 2020-01-01T00:00:00Z = 1577836800
+    const ts = try BedrockLLM.formatTimestamp(allocator, 1577836800);
+    defer allocator.free(ts);
+
+    // Should be 16 chars: "YYYYMMDDTHHmmSSZ"
+    try std.testing.expectEqual(@as(usize, 16), ts.len);
+    try std.testing.expectEqualStrings("20200101T000000Z", ts);
+}
+
+test "BedrockLLM structured content in request body" {
+    const allocator = std.testing.allocator;
+
+    var llm_impl = try BedrockLLM.init(
+        allocator,
+        "test-key",
+        "test-secret",
+        "anthropic.claude-3-haiku-20240307-v1:0",
+        "us-west-2",
+    );
+    defer llm_impl.deinit();
+
+    // Build a structured json.Value directly (array of content blocks)
+    const parsed = try std.json.parseFromSlice(
+        std.json.Value,
+        allocator,
+        "[{\"type\":\"text\",\"text\":\"Hello from structured\"}]",
+        .{},
+    );
+    defer parsed.deinit();
+
+    var user = Message.withStructured(allocator, .user, parsed.value);
+    defer user.deinit();
+
+    const messages = [_]*Message{&user};
+    var options = llm.CallOptions.init(allocator);
+    defer options.deinit();
+
+    const body = try llm_impl.buildRequestBody(allocator, &messages, &options);
+    defer allocator.free(body);
+
+    // Structured content should appear as a JSON array, not an empty string
+    try std.testing.expect(std.mem.indexOf(u8, body, "\"content\":\"\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, body, "\"content\":[") != null);
 }

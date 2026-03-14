@@ -5,6 +5,7 @@
 
 #include "agenkit/adapters/claude_agent.hpp"
 #include "agenkit/adapters/validation.hpp"
+#include "agenkit/core/sse_parser.hpp"
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
@@ -217,50 +218,56 @@ ClaudeAgent::stream(core::Message message, std::function<bool(const std::string&
             {"content-type", "application/json"}
         };
 
-        // TODO(Issue #XXX): Fix httplib streaming API - currently using fallback
-        // The httplib Post() API changed and streaming callbacks need to be updated
-        // For now, make a non-streaming request
-        request_body["stream"] = false;  // Disable streaming
-        auto response = client.Post("/v1/messages", headers,
-                                   request_body.dump(),
-                                   "application/json");
+        // Use httplib Request with content_receiver for true SSE streaming
+        httplib::Request req;
+        req.method = "POST";
+        req.path = "/v1/messages";
+        req.headers = headers;
+        req.body = request_body.dump();
+        req.set_header("Content-Type", "application/json");
 
-        if (!response) {
+        std::string stream_error;
+        core::SseParser parser;
+
+        req.content_receiver = [&](const char* data, size_t data_length,
+                                   uint64_t /*offset*/, uint64_t /*total*/) -> bool {
+            return parser.feed(data, data_length, core::SseParser::Mode::SSE,
+                [&](const std::string& json_str) -> bool {
+                    try {
+                        auto chunk = json::parse(json_str);
+                        // content_block_delta events carry the streamed text
+                        if (chunk.contains("type") &&
+                            chunk["type"] == "content_block_delta" &&
+                            chunk.contains("delta") &&
+                            chunk["delta"].contains("text")) {
+                            callback(chunk["delta"]["text"].get<std::string>());
+                        }
+                    } catch (const json::exception&) {
+                        // skip malformed chunks
+                    }
+                    return true;
+                });
+        };
+
+        httplib::Response res;
+        httplib::Error err = httplib::Error::Success;
+        if (!client.send(req, res, err)) {
             return core::Result<void, core::AgentError>::err(
                 core::AgentError(
                     core::AgentErrorType::Transport,
-                    "Failed to connect to Claude API for streaming"
+                    "failed to connect to Claude API for streaming: " +
+                    httplib::to_string(err)
                 )
             );
         }
 
-        if (response->status != 200) {
-            std::string error_msg = "Claude streaming error (" +
-                                   std::to_string(response->status) + "): " +
-                                   response->body;
+        if (res.status != 200) {
             return core::Result<void, core::AgentError>::err(
                 core::AgentError(
                     core::AgentErrorType::Http,
-                    error_msg
+                    "Claude streaming error (" + std::to_string(res.status) + "): " + res.body
                 )
             );
-        }
-
-        // TODO(Issue #XXX): Implement proper streaming
-        // For now, return the full response body through the callback
-        try {
-            json response_json = json::parse(response->body);
-            if (response_json.contains("content") && response_json["content"].is_array()) {
-                for (const auto& content_block : response_json["content"]) {
-                    if (content_block.contains("type") &&
-                        content_block["type"] == "text" &&
-                        content_block.contains("text")) {
-                        callback(content_block["text"].get<std::string>());
-                    }
-                }
-            }
-        } catch (const json::exception&) {
-            // Ignore parse errors
         }
 
         return core::Result<void, core::AgentError>::ok();

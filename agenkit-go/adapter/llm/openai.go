@@ -154,8 +154,12 @@ func (o *OpenAILLM) Complete(ctx context.Context, messages []*agenkit.Message, o
 		return nil, errors.New("openai returned no choices")
 	}
 
-	// Convert response to Agenkit Message
-	response := agenkit.NewMessage("agent", resp.Choices[0].Message.Content)
+	// Convert response to Agenkit Message.
+	// Content field holds the text for backward compatibility.
+	// When tool_calls are present (multi-block response), they are stored in
+	// Metadata["content_blocks"] for consumers that need the full structured response.
+	msg := resp.Choices[0].Message
+	response := agenkit.NewMessage("agent", msg.Content)
 	response.Metadata["model"] = resp.Model
 	response.Metadata["usage"] = map[string]interface{}{
 		"prompt_tokens":     resp.Usage.PromptTokens,
@@ -164,6 +168,26 @@ func (o *OpenAILLM) Complete(ctx context.Context, messages []*agenkit.Message, o
 	}
 	response.Metadata["finish_reason"] = resp.Choices[0].FinishReason
 	response.Metadata["id"] = resp.ID
+
+	// Store content_blocks for multimodal consumers when tool calls are present
+	if len(msg.ToolCalls) > 0 {
+		blocks := make([]interface{}, 0, len(msg.ToolCalls)+1)
+		if msg.Content != "" {
+			blocks = append(blocks, map[string]interface{}{
+				"type": "text",
+				"text": msg.Content,
+			})
+		}
+		for _, tc := range msg.ToolCalls {
+			blocks = append(blocks, map[string]interface{}{
+				"type": "tool_use",
+				"id":   tc.ID,
+				"name": tc.Function.Name,
+				"input": tc.Function.Arguments,
+			})
+		}
+		response.Metadata["content_blocks"] = blocks
+	}
 
 	return response, nil
 }

@@ -306,31 +306,38 @@ pub const OpenAILLM = struct {
 
             try json.appendSlice(allocator, "{\"role\":\"");
             try json.appendSlice(allocator, msg.role.toString());
-            try json.appendSlice(allocator, "\",\"content\":\"");
+            try json.appendSlice(allocator, "\",\"content\":");
 
-            const content = switch (msg.content) {
-                .text => |t| t,
-                .structured => "", // TODO: Handle structured content
-            };
-
-            // Escape special characters in content
-            for (content) |c| {
-                if (c == '"') {
-                    try json.appendSlice(allocator, "\\\"");
-                } else if (c == '\\') {
-                    try json.appendSlice(allocator, "\\\\");
-                } else if (c == '\n') {
-                    try json.appendSlice(allocator, "\\n");
-                } else if (c == '\r') {
-                    try json.appendSlice(allocator, "\\r");
-                } else if (c == '\t') {
-                    try json.appendSlice(allocator, "\\t");
-                } else {
-                    try json.append(allocator, c);
-                }
+            switch (msg.content) {
+                .text => |t| {
+                    // Text content: serialize as a JSON string
+                    try json.append(allocator, '"');
+                    for (t) |c| {
+                        if (c == '"') {
+                            try json.appendSlice(allocator, "\\\"");
+                        } else if (c == '\\') {
+                            try json.appendSlice(allocator, "\\\\");
+                        } else if (c == '\n') {
+                            try json.appendSlice(allocator, "\\n");
+                        } else if (c == '\r') {
+                            try json.appendSlice(allocator, "\\r");
+                        } else if (c == '\t') {
+                            try json.appendSlice(allocator, "\\t");
+                        } else {
+                            try json.append(allocator, c);
+                        }
+                    }
+                    try json.append(allocator, '"');
+                },
+                .structured => |val| {
+                    // Structured content: serialize as JSON array (OpenAI multimodal format)
+                    const val_json = try std.json.Stringify.valueAlloc(allocator, val, .{});
+                    defer allocator.free(val_json);
+                    try json.appendSlice(allocator, val_json);
+                },
             }
 
-            try json.appendSlice(allocator, "\"}");
+            try json.append(allocator, '}');
         }
 
         try json.append(allocator, ']');

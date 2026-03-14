@@ -22,6 +22,31 @@ func (m *Message) ContentString() string {
 	return m.Content
 }
 
+// ContentBlocks returns structured content blocks if present in Metadata,
+// or nil for plain-text messages.
+//
+// This is the interim accessor for multimodal / multi-block responses
+// (e.g. tool-use, vision).  When the full Content string→any migration
+// ships in v0.59.0, this method will read from the Content field directly.
+//
+// Adapters that receive multi-block responses from providers store the raw
+// block slice under Metadata["content_blocks"] and write a text summary
+// into Content for backward compatibility.
+func (m *Message) ContentBlocks() []interface{} {
+	if m.Metadata == nil {
+		return nil
+	}
+	blocks, ok := m.Metadata["content_blocks"]
+	if !ok {
+		return nil
+	}
+	s, ok := blocks.([]interface{})
+	if !ok {
+		return nil
+	}
+	return s
+}
+
 // NewMessage creates a new message with the given role and content.
 // NOTE: This function does not validate the message. For production code,
 // consider using NewValidatedMessage or calling Validate() explicitly.

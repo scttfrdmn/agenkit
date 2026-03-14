@@ -206,10 +206,19 @@ func (a *AnthropicLLM) Complete(ctx context.Context, messages []*agenkit.Message
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	// Extract text content
+	// Extract content; Content field holds the text for backward compatibility.
+	// When multiple blocks are present (tool_use, vision), all text blocks are joined
+	// and the raw block list is stored in Metadata["content_blocks"] for consumers
+	// that need the full structured response.
 	var content string
 	if len(anthropicResp.Content) > 0 {
-		content = anthropicResp.Content[0].Text
+		var textParts []string
+		for _, block := range anthropicResp.Content {
+			if block.Type == "text" && block.Text != "" {
+				textParts = append(textParts, block.Text)
+			}
+		}
+		content = strings.Join(textParts, "")
 	}
 
 	// Convert to Agenkit Message
@@ -221,6 +230,18 @@ func (a *AnthropicLLM) Complete(ctx context.Context, messages []*agenkit.Message
 	}
 	response.Metadata["stop_reason"] = anthropicResp.StopReason
 	response.Metadata["id"] = anthropicResp.ID
+
+	// Store content_blocks for multimodal consumers when multiple blocks present
+	if len(anthropicResp.Content) > 1 {
+		blocks := make([]interface{}, len(anthropicResp.Content))
+		for i, b := range anthropicResp.Content {
+			blocks[i] = map[string]interface{}{
+				"type": b.Type,
+				"text": b.Text,
+			}
+		}
+		response.Metadata["content_blocks"] = blocks
+	}
 
 	return response, nil
 }

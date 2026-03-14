@@ -49,7 +49,7 @@ func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 	}
 	time.Sleep(duration)
 
-	result := agenkit.NewMessage("agent", fmt.Sprintf("%s: %s", a.name, message.Content))
+	result := agenkit.NewMessage("agent", fmt.Sprintf("%s: %s", a.name, message.ContentString()))
 	result.WithMetadata("processed_by", a.name)
 	result.WithMetadata("duration_ms", duration.Milliseconds())
 	return result, nil
@@ -89,7 +89,7 @@ func main() {
 		return
 	}
 
-	fmt.Printf("   Result: %s\n", result1.Content)
+	fmt.Printf("   Result: %s\n", result1.ContentString())
 	fmt.Printf("   Total time: %dms (parallel execution)\n", duration.Milliseconds())
 	fmt.Printf("   Note: ~200ms (slowest agent), not 450ms (sum of all)\n\n")
 
@@ -104,7 +104,7 @@ func main() {
 			if i > 0 {
 				combined += ", "
 			}
-			combined += msg.Content
+			combined += msg.ContentString()
 
 			if agent, ok := msg.Metadata["processed_by"].(string); ok {
 				agents = append(agents, agent)
@@ -138,7 +138,7 @@ func main() {
 		return
 	}
 
-	fmt.Printf("   Result: %s\n", result2.Content)
+	fmt.Printf("   Result: %s\n", result2.ContentString())
 	fmt.Printf("   Agents: %v\n", result2.Metadata["agents"])
 	fmt.Printf("   Wall time: %dms\n", duration.Milliseconds())
 	fmt.Printf("   CPU time: %dms (sum of all agents)\n\n", result2.Metadata["total_processing_ms"])

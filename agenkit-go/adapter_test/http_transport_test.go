@@ -44,8 +44,8 @@ func TestHTTPBasicCommunication(t *testing.T) {
 	if response.Role != "agent" {
 		t.Errorf("Expected role 'agent', got '%s'", response.Role)
 	}
-	if response.Content != "Echo: test message" {
-		t.Errorf("Expected 'Echo: test message', got '%s'", response.Content)
+	if response.ContentString() != "Echo: test message" {
+		t.Errorf("Expected 'Echo: test message', got '%s'", response.ContentString())
 	}
 }
 
@@ -103,8 +103,8 @@ func TestHTTPStreaming(t *testing.T) {
 	}
 	for i, chunk := range chunks {
 		expected := fmt.Sprintf("Chunk %d: test", i)
-		if chunk.Content != expected {
-			t.Errorf("Chunk %d: expected '%s', got '%s'", i, expected, chunk.Content)
+		if chunk.ContentString() != expected {
+			t.Errorf("Chunk %d: expected '%s', got '%s'", i, expected, chunk.ContentString())
 		}
 	}
 }
@@ -145,8 +145,8 @@ func TestHTTPConcurrentRequests(t *testing.T) {
 				t.Errorf("Client %d failed: %v", idx, err)
 			}
 			expected := fmt.Sprintf("Echo: message %d", idx)
-			if response.Content != expected {
-				t.Errorf("Client %d: expected '%s', got '%s'", idx, expected, response.Content)
+			if response.ContentString() != expected {
+				t.Errorf("Client %d: expected '%s', got '%s'", idx, expected, response.ContentString())
 			}
 			done <- true
 		}(i, client)
@@ -230,8 +230,8 @@ func TestHTTPMetadataPreservation(t *testing.T) {
 	}
 
 	// Verify response was received (EchoAgent doesn't preserve metadata, just echoes content)
-	if response.Content != "Echo: test" {
-		t.Errorf("Expected 'Echo: test', got '%s'", response.Content)
+	if response.ContentString() != "Echo: test" {
+		t.Errorf("Expected 'Echo: test', got '%s'", response.ContentString())
 	}
 
 	// Verify message was sent successfully with metadata
@@ -327,7 +327,7 @@ func TestHTTPLargePayload(t *testing.T) {
 
 	// Verify response
 	expected := "Echo: " + largeContent
-	if response.Content != expected {
+	if response.ContentString() != expected {
 		t.Error("Large payload not handled correctly")
 	}
 }
@@ -436,8 +436,8 @@ func TestHTTP2BasicCommunication(t *testing.T) {
 	if response.Role != "agent" {
 		t.Errorf("Expected role 'agent', got '%s'", response.Role)
 	}
-	if response.Content != "Echo: test message http2" {
-		t.Errorf("Expected 'Echo: test message http2', got '%s'", response.Content)
+	if response.ContentString() != "Echo: test message http2" {
+		t.Errorf("Expected 'Echo: test message http2', got '%s'", response.ContentString())
 	}
 }
 
@@ -498,8 +498,8 @@ func TestHTTP2Streaming(t *testing.T) {
 	}
 	for i, chunk := range chunks {
 		expected := fmt.Sprintf("Chunk %d: test", i)
-		if chunk.Content != expected {
-			t.Errorf("Chunk %d: expected '%s', got '%s'", i, expected, chunk.Content)
+		if chunk.ContentString() != expected {
+			t.Errorf("Chunk %d: expected '%s', got '%s'", i, expected, chunk.ContentString())
 		}
 	}
 }
@@ -543,8 +543,8 @@ func TestHTTP2ConcurrentRequests(t *testing.T) {
 				t.Errorf("Client %d failed: %v", idx, err)
 			}
 			expected := fmt.Sprintf("Echo: message %d", idx)
-			if response.Content != expected {
-				t.Errorf("Client %d: expected '%s', got '%s'", idx, expected, response.Content)
+			if response.ContentString() != expected {
+				t.Errorf("Client %d: expected '%s', got '%s'", idx, expected, response.ContentString())
 			}
 			done <- true
 		}(i, client)

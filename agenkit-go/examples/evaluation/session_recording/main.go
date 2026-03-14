@@ -43,7 +43,7 @@ func (a *MockAgent) Introspect() *agenkit.IntrospectionResult {
 
 func (a *MockAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simple echo agent with version-specific behavior
-	response := fmt.Sprintf("[%s] You said: %s", a.version, message.Content)
+	response := fmt.Sprintf("[%s] You said: %s", a.version, message.ContentString())
 
 	return &agenkit.Message{
 		Role:    "assistant",
@@ -99,7 +99,7 @@ func main() {
 		}
 
 		fmt.Printf("  %d. User: %s\n", i+1, input)
-		fmt.Printf("     Agent: %s\n", response.Content)
+		fmt.Printf("     Agent: %s\n", response.ContentString())
 	}
 	fmt.Println()
 

@@ -48,7 +48,7 @@ func (a *TestAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 
 	return &agenkit.Message{
 		Role:    "agent",
-		Content: fmt.Sprintf("%s: %s", a.responsePrefix, message.Content),
+		Content: fmt.Sprintf("%s: %s", a.responsePrefix, message.ContentString()),
 		Metadata: map[string]interface{}{
 			"call_count": count,
 		},
@@ -80,7 +80,7 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestCustomConfig(t *testing.T) {
 	customKeyGen := func(msg *agenkit.Message) string {
-		return fmt.Sprintf("custom-%s", msg.Content)
+		return fmt.Sprintf("custom-%s", msg.ContentString())
 	}
 
 	config := CachingConfig{
@@ -175,8 +175,8 @@ func TestCacheHit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
-	if response1.Content != "Response: test" {
-		t.Errorf("Expected 'Response: test', got '%s'", response1.Content)
+	if response1.ContentString() != "Response: test" {
+		t.Errorf("Expected 'Response: test', got '%s'", response1.ContentString())
 	}
 	if agent.GetCallCount() != 1 {
 		t.Errorf("Expected agent call count=1, got %d", agent.GetCallCount())
@@ -193,8 +193,8 @@ func TestCacheHit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
-	if response2.Content != "Response: test" {
-		t.Errorf("Expected 'Response: test', got '%s'", response2.Content)
+	if response2.ContentString() != "Response: test" {
+		t.Errorf("Expected 'Response: test', got '%s'", response2.ContentString())
 	}
 	if agent.GetCallCount() != 1 { // Not called again
 		t.Errorf("Expected agent call count=1, got %d", agent.GetCallCount())
@@ -228,11 +228,11 @@ func TestCacheMissDifferentMessages(t *testing.T) {
 		t.Fatalf("Process failed: %v", err)
 	}
 
-	if response1.Content != "Response: test1" {
-		t.Errorf("Expected 'Response: test1', got '%s'", response1.Content)
+	if response1.ContentString() != "Response: test1" {
+		t.Errorf("Expected 'Response: test1', got '%s'", response1.ContentString())
 	}
-	if response2.Content != "Response: test2" {
-		t.Errorf("Expected 'Response: test2', got '%s'", response2.Content)
+	if response2.ContentString() != "Response: test2" {
+		t.Errorf("Expected 'Response: test2', got '%s'", response2.ContentString())
 	}
 	if agent.GetCallCount() != 2 {
 		t.Errorf("Expected agent call count=2, got %d", agent.GetCallCount())
@@ -491,7 +491,7 @@ func TestCustomKeyGenerator(t *testing.T) {
 
 	// Key generator that ignores metadata
 	contentOnlyKey := func(message *agenkit.Message) string {
-		return message.Content
+		return message.ContentString()
 	}
 
 	config := CachingConfig{
@@ -668,8 +668,8 @@ func TestConcurrentCacheAccess(t *testing.T) {
 			if err != nil {
 				t.Errorf("Process failed: %v", err)
 			}
-			if response.Content != "Response: test" {
-				t.Errorf("Expected 'Response: test', got '%s'", response.Content)
+			if response.ContentString() != "Response: test" {
+				t.Errorf("Expected 'Response: test', got '%s'", response.ContentString())
 			}
 		}()
 	}

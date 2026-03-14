@@ -163,8 +163,8 @@ func TestRouterAgent_BasicProcess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "billing handled" {
-		t.Errorf("expected 'billing handled', got '%s'", result.Content)
+	if result.ContentString() != "billing handled" {
+		t.Errorf("expected 'billing handled', got '%s'", result.ContentString())
 	}
 }
 
@@ -306,8 +306,8 @@ func TestRouterAgent_UnknownCategoryWithDefault(t *testing.T) {
 	}
 
 	// Should use default agent
-	if result.Content != "default response" {
-		t.Errorf("expected 'default response', got '%s'", result.Content)
+	if result.ContentString() != "default response" {
+		t.Errorf("expected 'default response', got '%s'", result.ContentString())
 	}
 
 	// Metadata should reflect default routing

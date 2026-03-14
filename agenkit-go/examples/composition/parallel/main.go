@@ -66,7 +66,7 @@ func (a *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) 
 	// Simulate different analysis latencies
 	time.Sleep(time.Duration(50+rand.Intn(150)) * time.Millisecond)
 
-	text := strings.ToLower(message.Content)
+	text := strings.ToLower(message.ContentString())
 	var score float64
 	var sentiment string
 
@@ -141,7 +141,7 @@ func example1EnsembleVoting() {
 			continue
 		}
 
-		fmt.Printf("Combined result (in %v):\n%s\n", elapsed.Round(time.Millisecond), result.Content)
+		fmt.Printf("Combined result (in %v):\n%s\n", elapsed.Round(time.Millisecond), result.ContentString())
 	}
 
 	fmt.Println("\nWHY PARALLEL ENSEMBLE?")
@@ -223,7 +223,7 @@ func example2MultisourceSearch() {
 		return
 	}
 
-	fmt.Printf("\nResult (completed in %v):\n%s\n", elapsed.Round(time.Millisecond), result.Content)
+	fmt.Printf("\nResult (completed in %v):\n%s\n", elapsed.Round(time.Millisecond), result.ContentString())
 
 	fmt.Println("\nPERFORMANCE COMPARISON:")
 	fmt.Printf("  Parallel:   %v (actual)\n", elapsed.Round(time.Millisecond))
@@ -301,7 +301,7 @@ func example3ABTesting() {
 	}
 
 	fmt.Printf("\nCompleted in %v (vs ~1.1s sequential)\n", elapsed.Round(time.Millisecond))
-	fmt.Printf("\nCombined responses:\n%s\n", result.Content)
+	fmt.Printf("\nCombined responses:\n%s\n", result.ContentString())
 
 	fmt.Println("\nA/B TESTING BENEFITS:")
 	fmt.Println("  - Get results from all models in parallel")

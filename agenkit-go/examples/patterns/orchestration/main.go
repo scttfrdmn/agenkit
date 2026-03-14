@@ -45,7 +45,7 @@ func (v *ValidatorAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (v *ValidatorAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+	content := message.ContentString()
 	fmt.Println("   🔍 Validator: Checking input...")
 	time.Sleep(50 * time.Millisecond)
 	validated := fmt.Sprintf("✓ Validated: %s", content)
@@ -71,7 +71,7 @@ func (p *ProcessorAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (p *ProcessorAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+	content := message.ContentString()
 	fmt.Println("   ⚙️  Processor: Processing data...")
 	time.Sleep(50 * time.Millisecond)
 	processed := fmt.Sprintf("⚙️  Processed: %s", content)
@@ -97,7 +97,7 @@ func (f *FormatterAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (f *FormatterAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+	content := message.ContentString()
 	fmt.Println("   📝 Formatter: Formatting output...")
 	time.Sleep(50 * time.Millisecond)
 	formatted := fmt.Sprintf("📄 Formatted:\n   %s", content)
@@ -126,7 +126,7 @@ func (r *ReviewerAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (r *ReviewerAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+	content := message.ContentString()
 	fmt.Printf("   %s Reviewer: Analyzing from %s perspective...\n", r.icon, r.perspective)
 	time.Sleep(50 * time.Millisecond)
 
@@ -169,7 +169,7 @@ func exampleSequentialPattern() error {
 		return err
 	}
 
-	fmt.Printf("\n✅ Final Output:\n%s\n", result.Content)
+	fmt.Printf("\n✅ Final Output:\n%s\n", result.ContentString())
 
 	return nil
 }
@@ -206,7 +206,7 @@ func exampleParallelPattern() error {
 		return err
 	}
 
-	fmt.Printf("\n✅ Primary Result (first reviewer):\n%s\n", result.Content)
+	fmt.Printf("\n✅ Primary Result (first reviewer):\n%s\n", result.ContentString())
 
 	// Show all parallel results from metadata
 	if parallelResults, ok := result.Metadata["parallel_results"].([]interface{}); ok {
@@ -214,7 +214,7 @@ func exampleParallelPattern() error {
 		for i, res := range parallelResults {
 			if msg, ok := res.(*agenkit.Message); ok {
 				fmt.Printf("\n   Result %d:\n", i+1)
-				for _, line := range strings.Split(msg.Content, "\n") {
+				for _, line := range strings.Split(msg.ContentString(), "\n") {
 					fmt.Printf("      %s\n", line)
 				}
 			}
@@ -285,7 +285,7 @@ func exampleComposedPattern() error {
 		return err
 	}
 
-	fmt.Printf("\n✅ Final Composed Output:\n%s\n", result.Content)
+	fmt.Printf("\n✅ Final Composed Output:\n%s\n", result.ContentString())
 
 	return nil
 }
@@ -313,7 +313,7 @@ func exampleErrorHandling() error {
 		return nil
 	}
 
-	fmt.Printf("\n✅ Success:\n%s\n", result.Content)
+	fmt.Printf("\n✅ Success:\n%s\n", result.ContentString())
 	fmt.Println("\n💡 Note: Errors in any stage will terminate the pipeline")
 
 	return nil

@@ -67,7 +67,7 @@ func (m *ContextMetrics) Measure(agent agenkit.Agent, inputMessage, outputMessag
 		if history, ok := conversationHistory.([]*agenkit.Message); ok {
 			totalTokens := 0
 			for _, msg := range history {
-				totalTokens += m.estimateTokens(msg.Content)
+				totalTokens += m.estimateTokens(msg.ContentString())
 			}
 			return float64(totalTokens), nil
 		}
@@ -369,7 +369,7 @@ func (m *CompressionMetrics) testRetrieval(agent agenkit.Agent, sessionID string
 		}
 
 		// Check if response contains needle content
-		if strings.Contains(strings.ToLower(response.Content), strings.ToLower(needle)) {
+		if strings.Contains(strings.ToLower(response.ContentString()), strings.ToLower(needle)) {
 			correct++
 		}
 	}

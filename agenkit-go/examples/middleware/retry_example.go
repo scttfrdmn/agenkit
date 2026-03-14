@@ -83,7 +83,7 @@ func (a *UnreliableAgent) Process(ctx context.Context, message *agenkit.Message)
 
 	// Success
 	fmt.Println("✓ Success")
-	return agenkit.NewMessage("assistant", fmt.Sprintf("Translated: %s", message.Content)), nil
+	return agenkit.NewMessage("assistant", fmt.Sprintf("Translated: %s", message.ContentString())), nil
 }
 
 // Example 1: Basic Retry
@@ -117,7 +117,7 @@ func example1BasicRetry() {
 	if err != nil {
 		fmt.Printf("\n❌ Final failure after retries: %v\n", err)
 	} else {
-		fmt.Printf("\n✓ Success: %s\n", result.Content)
+		fmt.Printf("\n✓ Success: %s\n", result.ContentString())
 		fmt.Printf("  Total time: %dms\n", elapsed.Milliseconds())
 		fmt.Printf("  Total attempts: %d\n", baseAgent.attemptCount)
 	}
@@ -201,7 +201,7 @@ func example3RateLimitHandling() {
 	if err != nil {
 		fmt.Printf("\n❌ Failed: %v\n", err)
 	} else {
-		fmt.Printf("\n✓ Success after rate limit: %s\n", result.Content)
+		fmt.Printf("\n✓ Success after rate limit: %s\n", result.ContentString())
 		fmt.Printf("  Total time: %dms\n", elapsed.Milliseconds())
 	}
 

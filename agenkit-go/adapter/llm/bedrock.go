@@ -182,7 +182,7 @@ func (b *BedrockLLM) Model() string {
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	fmt.Println(response.Content)
+//	fmt.Println(response.ContentString())
 //	fmt.Printf("Usage: %+v\n", response.Metadata["usage"])
 func (b *BedrockLLM) Complete(ctx context.Context, messages []*agenkit.Message, opts ...CallOption) (*agenkit.Message, error) {
 	// Build options
@@ -285,7 +285,7 @@ func (b *BedrockLLM) Complete(ctx context.Context, messages []*agenkit.Message, 
 //	    log.Fatal(err)
 //	}
 //	for chunk := range stream {
-//	    fmt.Print(chunk.Content)
+//	    fmt.Print(chunk.ContentString())
 //	}
 func (b *BedrockLLM) Stream(ctx context.Context, messages []*agenkit.Message, opts ...CallOption) (<-chan *agenkit.Message, error) {
 	// Build options
@@ -391,7 +391,7 @@ func (b *BedrockLLM) convertMessages(messages []*agenkit.Message) ([]types.Messa
 		// Handle system messages separately
 		if msg.Role == "system" {
 			systemPrompts = append(systemPrompts, &types.SystemContentBlockMemberText{
-				Value: msg.Content,
+				Value: msg.ContentString(),
 			})
 			continue
 		}
@@ -408,7 +408,7 @@ func (b *BedrockLLM) convertMessages(messages []*agenkit.Message) ([]types.Messa
 		// Create content blocks
 		contentBlocks := []types.ContentBlock{
 			&types.ContentBlockMemberText{
-				Value: msg.Content,
+				Value: msg.ContentString(),
 			},
 		}
 

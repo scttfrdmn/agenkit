@@ -69,7 +69,7 @@ func (f *FinancialAgent) Capabilities() []string {
 }
 
 func (f *FinancialAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := strings.ToLower(message.Content)
+	content := strings.ToLower(message.ContentString())
 
 	// Extract amount
 	amount := extractAmount(content)
@@ -249,7 +249,7 @@ func tieredApprovalFunc(ctx context.Context, request *patterns.ApprovalRequest) 
 		approvalLog = append(approvalLog, logEntry)
 
 		// Modify the message to add compliance requirement
-		originalContent := request.Message.Content
+		originalContent := request.Message.ContentString()
 		modifiedContent := originalContent + " [REQUIRES COMPLIANCE REVIEW]"
 
 		modifiedMessage := agenkit.NewMessage(request.Message.Role, modifiedContent)

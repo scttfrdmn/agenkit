@@ -37,7 +37,7 @@ func (a *DemoAgent) Capabilities() []string {
 func (a *DemoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "assistant",
-		Content: "Processed: " + message.Content,
+		Content: "Processed: " + message.ContentString(),
 	}, nil
 }
 
@@ -120,7 +120,7 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error: %v\n\n", err)
 	} else {
-		fmt.Printf("✓ Success: %s\n\n", response.Content)
+		fmt.Printf("✓ Success: %s\n\n", response.ContentString())
 		auditLogger.LogAccess(true, "demo-user", "demo-agent", "process_message", nil)
 	}
 
@@ -133,7 +133,7 @@ func main() {
 	response, err = fullyProtectedAgent.Process(context.Background(), message)
 	if err != nil {
 		fmt.Printf("✓ Blocked by input validation: %v\n\n", err)
-		auditLogger.LogValidationFailure("demo-user", "input", "prompt injection", message.Content, "demo-agent")
+		auditLogger.LogValidationFailure("demo-user", "input", "prompt injection", message.ContentString(), "demo-agent")
 	}
 
 	// Test 3: Permission denied (blocked by permission control)

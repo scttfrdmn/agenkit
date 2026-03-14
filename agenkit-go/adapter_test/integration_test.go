@@ -22,7 +22,7 @@ func (e *EchoAgent) Name() string {
 }
 
 func (e *EchoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	return agenkit.NewMessage("agent", "Echo: "+message.Content), nil
+	return agenkit.NewMessage("agent", "Echo: "+message.ContentString()), nil
 }
 
 func (e *EchoAgent) Capabilities() []string {
@@ -57,7 +57,7 @@ func (s *StreamingEchoAgent) Stream(ctx context.Context, message *agenkit.Messag
 				return
 			default:
 				time.Sleep(10 * time.Millisecond)
-				msg := agenkit.NewMessage("agent", fmt.Sprintf("Chunk %d: %s", i, message.Content)).
+				msg := agenkit.NewMessage("agent", fmt.Sprintf("Chunk %d: %s", i, message.ContentString())).
 					WithMetadata("chunk_id", i)
 				messageChan <- msg
 			}
@@ -164,8 +164,8 @@ func TestBasicCommunicationUnixSocket(t *testing.T) {
 	if response.Role != "agent" {
 		t.Errorf("Expected role 'agent', got '%s'", response.Role)
 	}
-	if response.Content != "Echo: Hello World" {
-		t.Errorf("Expected content 'Echo: Hello World', got '%s'", response.Content)
+	if response.ContentString() != "Echo: Hello World" {
+		t.Errorf("Expected content 'Echo: Hello World', got '%s'", response.ContentString())
 	}
 }
 
@@ -203,8 +203,8 @@ func TestBasicCommunicationTCP(t *testing.T) {
 	}
 
 	// Verify response
-	if response.Content != "Echo: TCP Test" {
-		t.Errorf("Expected content 'Echo: TCP Test', got '%s'", response.Content)
+	if response.ContentString() != "Echo: TCP Test" {
+		t.Errorf("Expected content 'Echo: TCP Test', got '%s'", response.ContentString())
 	}
 }
 
@@ -250,8 +250,8 @@ func TestMultipleSequentialRequests(t *testing.T) {
 		}
 
 		expected := fmt.Sprintf("Echo: Message %d", i)
-		if response.Content != expected {
-			t.Errorf("Request %d: expected '%s', got '%s'", i, expected, response.Content)
+		if response.ContentString() != expected {
+			t.Errorf("Request %d: expected '%s', got '%s'", i, expected, response.ContentString())
 		}
 	}
 }
@@ -304,9 +304,9 @@ func TestConcurrentRequests(t *testing.T) {
 				}
 
 				expected := fmt.Sprintf("Echo: %s", content)
-				if response.Content != expected {
+				if response.ContentString() != expected {
 					errors <- fmt.Errorf("client %d request %d: expected '%s', got '%s'",
-						id, reqID, expected, response.Content)
+						id, reqID, expected, response.ContentString())
 					return
 				}
 			}
@@ -368,8 +368,8 @@ func TestMetadataPreservation(t *testing.T) {
 
 	// Response should have metadata in its envelope (not copied from request)
 	// But the agent can access request metadata in Process()
-	if response.Content != "Echo: Test" {
-		t.Errorf("Unexpected content: %s", response.Content)
+	if response.ContentString() != "Echo: Test" {
+		t.Errorf("Unexpected content: %s", response.ContentString())
 	}
 }
 
@@ -446,8 +446,8 @@ func TestLargeMessage(t *testing.T) {
 
 	// Verify response
 	expectedLen := len("Echo: ") + len(largeContent)
-	if len(response.Content) != expectedLen {
-		t.Errorf("Expected content length %d, got %d", expectedLen, len(response.Content))
+	if len(response.ContentString()) != expectedLen {
+		t.Errorf("Expected content length %d, got %d", expectedLen, len(response.ContentString()))
 	}
 }
 
@@ -518,8 +518,8 @@ func TestBasicStreaming(t *testing.T) {
 	}
 	for i, chunk := range chunks {
 		expected := fmt.Sprintf("Chunk %d: test", i)
-		if chunk.Content != expected {
-			t.Errorf("Chunk %d: expected '%s', got '%s'", i, expected, chunk.Content)
+		if chunk.ContentString() != expected {
+			t.Errorf("Chunk %d: expected '%s', got '%s'", i, expected, chunk.ContentString())
 		}
 		chunkID, ok := chunk.Metadata["chunk_id"]
 		if !ok {

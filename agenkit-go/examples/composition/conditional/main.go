@@ -131,7 +131,7 @@ func example1IntentRouting() {
 	// Route code requests to code agent
 	router.AddRoute(
 		func(msg *agenkit.Message) bool {
-			lower := strings.ToLower(msg.Content)
+			lower := strings.ToLower(msg.ContentString())
 			keywords := []string{"code", "function", "implement", "debug", "bug"}
 			for _, keyword := range keywords {
 				if strings.Contains(lower, keyword) {
@@ -146,7 +146,7 @@ func example1IntentRouting() {
 	// Route documentation requests to docs agent
 	router.AddRoute(
 		func(msg *agenkit.Message) bool {
-			lower := strings.ToLower(msg.Content)
+			lower := strings.ToLower(msg.ContentString())
 			keywords := []string{"explain", "document", "how does", "what is", "tutorial"}
 			for _, keyword := range keywords {
 				if strings.Contains(lower, keyword) {
@@ -173,7 +173,7 @@ func example1IntentRouting() {
 
 		fmt.Printf("Routed to: %v\n", result.Metadata["conditional_agent_used"])
 		fmt.Printf("Response type: %v\n", result.Metadata["type"])
-		fmt.Printf("Preview: %s\n", result.Content[:min(80, len(result.Content))])
+		fmt.Printf("Preview: %s\n", result.ContentString()[:min(80, len(result.ContentString()))])
 	}
 
 	fmt.Println("\nWHY CONDITIONAL ROUTING?")
@@ -198,7 +198,7 @@ func (a *SimpleQueryAgent) Introspect() *agenkit.IntrospectionResult {
 func (a *SimpleQueryAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(50 * time.Millisecond)
 
-	text := strings.ToLower(message.Content)
+	text := strings.ToLower(message.ContentString())
 	var response string
 
 	if strings.Contains(text, "weather") {
@@ -248,7 +248,7 @@ func example2ComplexityRouting() {
 	// Route simple queries to fast agent
 	router.AddRoute(
 		func(msg *agenkit.Message) bool {
-			lower := strings.ToLower(msg.Content)
+			lower := strings.ToLower(msg.ContentString())
 			// Simple queries are short and use simple words
 			simplePatterns := []string{"what is", "when", "where", "who", "weather", "time"}
 			for _, pattern := range simplePatterns {
@@ -256,7 +256,7 @@ func example2ComplexityRouting() {
 					return true
 				}
 			}
-			return len(strings.Fields(msg.Content)) <= 5
+			return len(strings.Fields(msg.ContentString())) <= 5
 		},
 		&SimpleQueryAgent{},
 	)

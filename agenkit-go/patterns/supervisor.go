@@ -262,7 +262,7 @@ func (p *SimplePlanner) Synthesize(ctx context.Context, original *agenkit.Messag
 	combined.WriteString("Synthesis of specialist results:\n\n")
 
 	for key, result := range results {
-		combined.WriteString(fmt.Sprintf("Result from %s:\n%s\n\n", key, result.Content))
+		combined.WriteString(fmt.Sprintf("Result from %s:\n%s\n\n", key, result.ContentString()))
 	}
 
 	return agenkit.NewMessage("assistant", combined.String()), nil

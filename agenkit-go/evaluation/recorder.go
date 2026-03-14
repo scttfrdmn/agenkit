@@ -759,7 +759,7 @@ func messageToDict(message *agenkit.Message) map[string]interface{} {
 
 	return map[string]interface{}{
 		"role":     message.Role,
-		"content":  message.Content,
+		"content":  message.ContentString(),
 		"metadata": metadata,
 	}
 }

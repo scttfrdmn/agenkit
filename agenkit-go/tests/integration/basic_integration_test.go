@@ -23,9 +23,9 @@ func (a *SimpleEchoAgent) Capabilities() []string {
 func (a *SimpleEchoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "agent",
-		Content: "Echo: " + message.Content,
+		Content: "Echo: " + message.ContentString(),
 		Metadata: map[string]interface{}{
-			"original": message.Content,
+			"original": message.ContentString(),
 			"language": "go",
 			"agent":    a.Name(),
 		},
@@ -39,8 +39,8 @@ func TestMessageCreation(t *testing.T) {
 	if msg.Role != "user" {
 		t.Errorf("Expected role='user', got '%s'", msg.Role)
 	}
-	if msg.Content != "Hello" {
-		t.Errorf("Expected content='Hello', got '%s'", msg.Content)
+	if msg.ContentString() != "Hello" {
+		t.Errorf("Expected content='Hello', got '%s'", msg.ContentString())
 	}
 	if msg.Metadata["test"] != true {
 		t.Errorf("Expected metadata['test']=true, got '%v'", msg.Metadata["test"])
@@ -81,8 +81,8 @@ func TestMessageSerialization(t *testing.T) {
 	if deserialized.Role != "user" {
 		t.Errorf("Expected role='user', got '%s'", deserialized.Role)
 	}
-	if deserialized.Content != "Test message" {
-		t.Errorf("Expected content='Test message', got '%s'", deserialized.Content)
+	if deserialized.ContentString() != "Test message" {
+		t.Errorf("Expected content='Test message', got '%s'", deserialized.ContentString())
 	}
 	if deserialized.Metadata["string"] != "value" {
 		t.Errorf("Expected metadata['string']='value', got '%v'", deserialized.Metadata["string"])
@@ -114,8 +114,8 @@ func TestAgentBasicProcessing(t *testing.T) {
 	if response.Role != "agent" {
 		t.Errorf("Expected role='agent', got '%s'", response.Role)
 	}
-	if response.Content != "Echo: Hello" {
-		t.Errorf("Expected content='Echo: Hello', got '%s'", response.Content)
+	if response.ContentString() != "Echo: Hello" {
+		t.Errorf("Expected content='Echo: Hello', got '%s'", response.ContentString())
 	}
 	if response.Metadata["original"] != "Hello" {
 		t.Errorf("Expected metadata['original']='Hello', got '%v'", response.Metadata["original"])
@@ -161,8 +161,8 @@ func TestMultipleSequentialRequests(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Process %d failed: %v", i, err)
 		}
-		if response.Content != "Echo: Message "+string(rune('0'+i)) {
-			t.Errorf("Request %d: expected 'Echo: Message %c', got '%s'", i, '0'+i, response.Content)
+		if response.ContentString() != "Echo: Message "+string(rune('0'+i)) {
+			t.Errorf("Request %d: expected 'Echo: Message %c', got '%s'", i, '0'+i, response.ContentString())
 		}
 	}
 }
@@ -215,7 +215,7 @@ func TestAgentConsistency(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Process %d failed: %v", i, err)
 		}
-		results[i] = response.Content
+		results[i] = response.ContentString()
 	}
 
 	// All results should be identical
@@ -242,8 +242,8 @@ func TestEmptyContentHandling(t *testing.T) {
 	if response.Role != "agent" {
 		t.Errorf("Expected role='agent', got '%s'", response.Role)
 	}
-	if response.Content != "Echo: " {
-		t.Errorf("Expected content='Echo: ', got '%s'", response.Content)
+	if response.ContentString() != "Echo: " {
+		t.Errorf("Expected content='Echo: ', got '%s'", response.ContentString())
 	}
 	if response.Metadata["original"] != "" {
 		t.Errorf("Expected metadata['original']='', got '%v'", response.Metadata["original"])
@@ -263,8 +263,8 @@ func TestUnicodeContentHandling(t *testing.T) {
 	}
 
 	expected := "Echo: " + unicodeContent
-	if response.Content != expected {
-		t.Errorf("Expected content='%s', got '%s'", expected, response.Content)
+	if response.ContentString() != expected {
+		t.Errorf("Expected content='%s', got '%s'", expected, response.ContentString())
 	}
 	if response.Metadata["original"] != unicodeContent {
 		t.Errorf("Expected metadata['original']='%s', got '%v'", unicodeContent, response.Metadata["original"])

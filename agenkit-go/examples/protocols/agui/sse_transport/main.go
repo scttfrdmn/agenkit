@@ -64,14 +64,14 @@ func (d *DemoAgent) Capabilities() []string {
 }
 
 func (d *DemoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	log.Printf("🤖 Agent processing: %s", message.Content)
+	log.Printf("🤖 Agent processing: %s", message.ContentString())
 
 	// Simulate processing time
 	time.Sleep(200 * time.Millisecond)
 
 	// Determine confidence based on message content
 	confidence := d.defaultConfidence
-	content := message.Content
+	content := message.ContentString()
 
 	// High confidence for simple math
 	if len(content) < 20 {
@@ -109,7 +109,7 @@ func logApprovalFunc(ctx context.Context, request *patterns.ApprovalRequest) (*p
 	confidence := request.Confidence
 	log.Printf("👤 APPROVAL REQUESTED")
 	log.Printf("   Confidence: %.2f", confidence)
-	log.Printf("   Message: %s", request.Message.Content)
+	log.Printf("   Message: %s", request.Message.ContentString())
 	log.Printf("   Agent: %v", request.Context["agent"])
 	log.Printf("   Threshold: %v", request.Context["approval_threshold"])
 

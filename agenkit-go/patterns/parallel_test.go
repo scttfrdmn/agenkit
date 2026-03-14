@@ -83,8 +83,8 @@ func TestParallelAgent_BasicProcess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "aggregated 3 responses" {
-		t.Errorf("expected 'aggregated 3 responses', got '%s'", result.Content)
+	if result.ContentString() != "aggregated 3 responses" {
+		t.Errorf("expected 'aggregated 3 responses', got '%s'", result.ContentString())
 	}
 }
 
@@ -188,8 +188,8 @@ func TestParallelAgent_PartialFailure(t *testing.T) {
 	}
 
 	// Should have 2 successes
-	if result.Content != "got 2 successes" {
-		t.Errorf("expected 'got 2 successes', got '%s'", result.Content)
+	if result.ContentString() != "got 2 successes" {
+		t.Errorf("expected 'got 2 successes', got '%s'", result.ContentString())
 	}
 
 	// Check error metadata
@@ -291,8 +291,8 @@ func TestParallelAgent_DefaultAggregatorFirst(t *testing.T) {
 	}
 
 	// First should return one of the results (order may vary due to concurrency)
-	if result.Content != "first" && result.Content != "second" {
-		t.Errorf("expected 'first' or 'second', got '%s'", result.Content)
+	if result.ContentString() != "first" && result.ContentString() != "second" {
+		t.Errorf("expected 'first' or 'second', got '%s'", result.ContentString())
 	}
 }
 
@@ -313,11 +313,11 @@ func TestParallelAgent_DefaultAggregatorConcatenate(t *testing.T) {
 	}
 
 	// Should contain both responses with separator
-	if !strings.Contains(result.Content, "response1") || !strings.Contains(result.Content, "response2") {
-		t.Errorf("expected concatenated responses, got '%s'", result.Content)
+	if !strings.Contains(result.ContentString(), "response1") || !strings.Contains(result.ContentString(), "response2") {
+		t.Errorf("expected concatenated responses, got '%s'", result.ContentString())
 	}
-	if !strings.Contains(result.Content, "---") {
-		t.Errorf("expected separator in concatenated result, got '%s'", result.Content)
+	if !strings.Contains(result.ContentString(), "---") {
+		t.Errorf("expected separator in concatenated result, got '%s'", result.ContentString())
 	}
 }
 
@@ -339,8 +339,8 @@ func TestParallelAgent_DefaultAggregatorMajorityVote(t *testing.T) {
 	}
 
 	// Should return "A" (majority)
-	if result.Content != "A" {
-		t.Errorf("expected 'A' (majority), got '%s'", result.Content)
+	if result.ContentString() != "A" {
+		t.Errorf("expected 'A' (majority), got '%s'", result.ContentString())
 	}
 
 	// Check vote metadata
@@ -363,7 +363,7 @@ func TestParallelAgent_CustomAggregator(t *testing.T) {
 		sum := 0
 		for _, msg := range messages {
 			var num int
-			if _, err := fmt.Sscanf(msg.Content, "%d", &num); err == nil {
+			if _, err := fmt.Sscanf(msg.ContentString(), "%d", &num); err == nil {
 				sum += num
 			}
 		}
@@ -381,7 +381,7 @@ func TestParallelAgent_CustomAggregator(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "60" {
-		t.Errorf("expected '60', got '%s'", result.Content)
+	if result.ContentString() != "60" {
+		t.Errorf("expected '60', got '%s'", result.ContentString())
 	}
 }

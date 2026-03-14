@@ -335,7 +335,7 @@ func (s *GRPCServer) messageToProtobufResponse(requestID string, message *agenki
 func (s *GRPCServer) messageToProtobufMessage(message *agenkit.Message) *agentpb.Message {
 	pbMsg := &agentpb.Message{
 		Role:      message.Role,
-		Content:   s.serializeContent(message.Content),
+		Content:   s.serializeContent(message.ContentString()),
 		Timestamp: message.Timestamp.Format(time.RFC3339Nano),
 		Metadata:  make(map[string]string),
 	}

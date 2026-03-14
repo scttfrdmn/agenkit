@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.59.0] - 2026-03-14
+
+### Added
+
+#### Go Full `Content string→any` Migration (#422)
+- **Breaking (Go only)**: `Message.Content` field changed from `string` to `any`
+  — all existing code that reads `.Content` as a string must use `.ContentString()` instead
+- `ContentString()` updated: type-switches safely over `string`, `nil`, and any other type
+- `ContentBlocks()` updated: checks `Content.([]interface{})` first, then falls back to
+  `Metadata["content_blocks"]` for backward compatibility with v0.58.0 adapters
+- `Validate()` updated to handle `any` content via type switch
+- 143 files across `patterns/`, `memory/`, `middleware/`, `evaluation/`, `safety/`,
+  `observability/`, `adapter/llm/`, `examples/`, and test files updated to use `.ContentString()`
+
+### Fixed
+- All 143 read sites in agenkit-go now use `.ContentString()` — zero compile errors, all tests pass
+
 ## [0.58.0] - 2026-03-14
 
 ### Added

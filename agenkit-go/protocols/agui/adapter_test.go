@@ -125,7 +125,7 @@ func TestStreamEvents_Success(t *testing.T) {
 	}
 
 	if complete.Content != "Hello world" {
-		t.Errorf("Complete.Content = %s, want 'Hello world'", complete.Content)
+		t.Errorf("Complete.ContentString() = %s, want 'Hello world'", complete.Content)
 	}
 
 	if complete.FinishReason != "stop" {
@@ -292,8 +292,8 @@ func TestProcess_NonStreaming(t *testing.T) {
 		t.Fatalf("Process() error = %v", err)
 	}
 
-	if result.Content != "Hello world" {
-		t.Errorf("Content = %s, want 'Hello world'", result.Content)
+	if result.ContentString() != "Hello world" {
+		t.Errorf("Content = %s, want 'Hello world'", result.ContentString())
 	}
 
 	if result.Role != "assistant" {
@@ -314,8 +314,8 @@ func TestProcess_WithCustomMessageID(t *testing.T) {
 		t.Fatalf("ProcessWithMessageID() error = %v", err)
 	}
 
-	if result.Content != "Hello" {
-		t.Errorf("Content = %s, want Hello", result.Content)
+	if result.ContentString() != "Hello" {
+		t.Errorf("Content = %s, want Hello", result.ContentString())
 	}
 }
 

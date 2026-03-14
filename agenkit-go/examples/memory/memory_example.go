@@ -54,7 +54,7 @@ func main() {
 
 	fmt.Printf("Retrieved %d messages:\n", len(messages))
 	for i, msg := range messages {
-		fmt.Printf("  %d. [%s] %s\n", i+1, msg.Role, msg.Content)
+		fmt.Printf("  %d. [%s] %s\n", i+1, msg.Role, msg.ContentString())
 	}
 
 	// Get summary
@@ -62,7 +62,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("\nSummary:\n%s\n\n", summary.Content)
+	fmt.Printf("\nSummary:\n%s\n\n", summary.ContentString())
 
 	// Example 2: Importance-Based Filtering
 	fmt.Println("=== Example 2: Importance-Based Filtering ===")
@@ -77,7 +77,7 @@ func main() {
 
 	fmt.Printf("Messages with importance >= %.1f:\n", threshold)
 	for i, msg := range importantMessages {
-		fmt.Printf("  %d. [%s] %s\n", i+1, msg.Role, msg.Content)
+		fmt.Printf("  %d. [%s] %s\n", i+1, msg.Role, msg.ContentString())
 	}
 	fmt.Println()
 
@@ -105,7 +105,7 @@ func main() {
 
 	fmt.Printf("Sliding window (5 most recent):\n")
 	for i, msg := range recentMessages {
-		fmt.Printf("  %d. %s\n", i+1, msg.Content)
+		fmt.Printf("  %d. %s\n", i+1, msg.ContentString())
 	}
 	fmt.Println()
 
@@ -139,7 +139,7 @@ func main() {
 
 	fmt.Printf("Top important messages (threshold: 0.5):\n")
 	for i, msg := range importantMsgs {
-		fmt.Printf("  %d. %s\n", i+1, msg.Content)
+		fmt.Printf("  %d. %s\n", i+1, msg.ContentString())
 	}
 	fmt.Println()
 

@@ -122,8 +122,8 @@ func TestCollaborativeAgent_BasicProcess(t *testing.T) {
 	}
 
 	// Result should contain concatenated responses
-	if !strings.Contains(result.Content, "response1") || !strings.Contains(result.Content, "response2") {
-		t.Errorf("expected concatenated responses, got '%s'", result.Content)
+	if !strings.Contains(result.ContentString(), "response1") || !strings.Contains(result.ContentString(), "response2") {
+		t.Errorf("expected concatenated responses, got '%s'", result.ContentString())
 	}
 }
 
@@ -446,8 +446,8 @@ func TestCollaborativeAgent_MergeFuncVote(t *testing.T) {
 	}
 
 	result := DefaultMergeFunc.Vote(messages)
-	if result.Content != "A" {
-		t.Errorf("expected 'A' (most votes), got '%s'", result.Content)
+	if result.ContentString() != "A" {
+		t.Errorf("expected 'A' (most votes), got '%s'", result.ContentString())
 	}
 	if result.Metadata["votes"] != 2 {
 		t.Errorf("expected votes=2, got %v", result.Metadata["votes"])
@@ -462,8 +462,8 @@ func TestCollaborativeAgent_MergeFuncFirst(t *testing.T) {
 	}
 
 	result := DefaultMergeFunc.First(messages)
-	if result.Content != "first" {
-		t.Errorf("expected 'first', got '%s'", result.Content)
+	if result.ContentString() != "first" {
+		t.Errorf("expected 'first', got '%s'", result.ContentString())
 	}
 }
 
@@ -475,8 +475,8 @@ func TestCollaborativeAgent_MergeFuncLast(t *testing.T) {
 	}
 
 	result := DefaultMergeFunc.Last(messages)
-	if result.Content != "last" {
-		t.Errorf("expected 'last', got '%s'", result.Content)
+	if result.ContentString() != "last" {
+		t.Errorf("expected 'last', got '%s'", result.ContentString())
 	}
 }
 
@@ -487,7 +487,7 @@ func TestCollaborativeAgent_ContextInMessages(t *testing.T) {
 	agent := &extendedMockAgent{
 		name: "tracker",
 		processFunc: func(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
-			receivedMessages = append(receivedMessages, msg.Content)
+			receivedMessages = append(receivedMessages, msg.ContentString())
 			return agenkit.NewMessage("assistant", "response"), nil
 		},
 	}

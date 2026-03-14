@@ -32,9 +32,9 @@ func (a *EchoAgent) Introspect() *agenkit.IntrospectionResult {
 func (a *EchoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "agent",
-		Content: fmt.Sprintf("Echo: %s", message.Content),
+		Content: fmt.Sprintf("Echo: %s", message.ContentString()),
 		Metadata: map[string]interface{}{
-			"original": message.Content,
+			"original": message.ContentString(),
 			"language": "go",
 		},
 	}, nil

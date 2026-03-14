@@ -150,7 +150,7 @@ func (c *ConditionalAgent) GetDefaultAgent() agenkit.Agent {
 // ContentContains returns a condition that checks if message content contains a substring.
 func ContentContains(substr string) Condition {
 	return func(message *agenkit.Message) bool {
-		return len(message.Content) >= len(substr) && findSubstring(message.Content, substr)
+		return len(message.ContentString()) >= len(substr) && findSubstring(message.ContentString(), substr)
 	}
 }
 

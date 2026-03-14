@@ -47,7 +47,7 @@ func (s *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) 
 	time.Sleep(100 * time.Millisecond) // Simulate processing
 
 	// Simple sentiment detection
-	content := strings.ToLower(message.Content)
+	content := strings.ToLower(message.ContentString())
 	sentiment := "neutral"
 	if strings.Contains(content, "great") || strings.Contains(content, "excellent") {
 		sentiment = "positive"
@@ -83,7 +83,7 @@ func (e *EntityAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 	time.Sleep(150 * time.Millisecond) // Simulate processing
 
 	// Simple entity extraction (capital words)
-	words := strings.Fields(message.Content)
+	words := strings.Fields(message.ContentString())
 	entities := []string{}
 	for _, word := range words {
 		if len(word) > 0 && word[0] >= 'A' && word[0] <= 'Z' {
@@ -124,7 +124,7 @@ func (t *TopicAgent) Process(ctx context.Context, message *agenkit.Message) (*ag
 	time.Sleep(120 * time.Millisecond) // Simulate processing
 
 	// Simple topic detection
-	content := strings.ToLower(message.Content)
+	content := strings.ToLower(message.ContentString())
 	topic := "general"
 	if strings.Contains(content, "product") || strings.Contains(content, "service") {
 		topic = "business"
@@ -186,7 +186,7 @@ func main() {
 
 	text := agenkit.NewMessage("user", "This is a great product with excellent features. The Service team was very helpful.")
 
-	fmt.Printf("\n📥 Input: %s\n\n", text.Content)
+	fmt.Printf("\n📥 Input: %s\n\n", text.ContentString())
 	fmt.Println("Running 3 analyzers in parallel...")
 
 	ctx := context.Background()
@@ -197,7 +197,7 @@ func main() {
 	}
 	elapsed := time.Since(start)
 
-	fmt.Printf("\n📤 Analysis Results:\n%s\n", result.Content)
+	fmt.Printf("\n📤 Analysis Results:\n%s\n", result.ContentString())
 	fmt.Printf("\n⏱️  Completed in %v (parallel execution)\n", elapsed)
 
 	if parallelAgents, ok := result.Metadata["parallel_agents"].(int); ok {
@@ -231,7 +231,7 @@ func main() {
 
 	message := agenkit.NewMessage("user", "Check this out!")
 
-	fmt.Printf("\n📥 Input: %s\n", message.Content)
+	fmt.Printf("\n📥 Input: %s\n", message.ContentString())
 	fmt.Println("\nRunning 5-classifier ensemble...")
 
 	result, err = ensemble.Process(ctx, message)
@@ -239,7 +239,7 @@ func main() {
 		log.Fatalf("Ensemble failed: %v", err)
 	}
 
-	fmt.Printf("\n📤 Ensemble Result: %s\n", result.Content)
+	fmt.Printf("\n📤 Ensemble Result: %s\n", result.ContentString())
 	if votes, ok := result.Metadata["votes"].(int); ok {
 		if total, ok := result.Metadata["total_agents"].(int); ok {
 			fmt.Printf("   Votes: %d/%d\n", votes, total)
@@ -273,7 +273,7 @@ func main() {
 		log.Fatalf("Should not fail entirely: %v", err)
 	}
 
-	fmt.Printf("\n📤 Results (from successful agents):\n%s\n", result.Content)
+	fmt.Printf("\n📤 Results (from successful agents):\n%s\n", result.ContentString())
 
 	if errors, ok := result.Metadata["errors"].([]map[string]interface{}); ok {
 		fmt.Printf("\n⚠️  Errors encountered: %d\n", len(errors))
@@ -298,7 +298,7 @@ func main() {
 		summary.WriteString(fmt.Sprintf("- Received %d analyses\n", len(messages)))
 
 		for i, msg := range messages {
-			summary.WriteString(fmt.Sprintf("- Analysis %d: %s\n", i+1, msg.Content))
+			summary.WriteString(fmt.Sprintf("- Analysis %d: %s\n", i+1, msg.ContentString()))
 		}
 
 		return agenkit.NewMessage("agent", summary.String())
@@ -317,7 +317,7 @@ func main() {
 		log.Fatalf("Custom analysis failed: %v", err)
 	}
 
-	fmt.Printf("\n📤 Custom Aggregation Result:\n%s\n", result.Content)
+	fmt.Printf("\n📤 Custom Aggregation Result:\n%s\n", result.ContentString())
 
 	fmt.Println("\n✅ Parallel pattern demo complete!")
 }

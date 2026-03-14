@@ -44,10 +44,10 @@ func TestHierarchyMemoryBasic(t *testing.T) {
 	foundHello := false
 	foundHi := false
 	for _, msg := range messages {
-		if msg.Content == "Hello" {
+		if msg.ContentString() == "Hello" {
 			foundHello = true
 		}
-		if msg.Content == "Hi there" {
+		if msg.ContentString() == "Hi there" {
 			foundHi = true
 		}
 	}
@@ -430,7 +430,7 @@ func TestHierarchyMemorySummarize(t *testing.T) {
 	}
 
 	// Content is already a string in Go agenkit.Message
-	summaryStr := summary.Content
+	summaryStr := summary.ContentString()
 
 	if !strings.Contains(strings.ToLower(summaryStr), "summary") {
 		t.Errorf("Expected summary to contain 'summary', got: %s", summaryStr)

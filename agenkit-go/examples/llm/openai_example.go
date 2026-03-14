@@ -57,7 +57,7 @@ func simpleCompletion(llmAdapter llm.LLM) {
 	}
 
 	fmt.Printf("User: What is 2+2?\n")
-	fmt.Printf("Assistant: %s\n", response.Content)
+	fmt.Printf("Assistant: %s\n", response.ContentString())
 
 	// Print usage stats
 	if usage, ok := response.Metadata["usage"].(map[string]interface{}); ok {
@@ -84,9 +84,9 @@ func conversationWithHistory(llmAdapter llm.LLM) {
 
 	fmt.Printf("Conversation:\n")
 	for _, msg := range messages {
-		fmt.Printf("%s: %s\n", msg.Role, msg.Content)
+		fmt.Printf("%s: %s\n", msg.Role, msg.ContentString())
 	}
-	fmt.Printf("agent: %s\n", response.Content)
+	fmt.Printf("agent: %s\n", response.ContentString())
 }
 
 // streamingResponse demonstrates streaming completions.
@@ -111,7 +111,7 @@ func streamingResponse(llmAdapter llm.LLM) {
 			log.Fatalf("Stream error: %s", errMsg)
 		}
 
-		fmt.Print(chunk.Content)
+		fmt.Print(chunk.ContentString())
 	}
 	fmt.Println()
 }
@@ -139,7 +139,7 @@ func customParameters(llmAdapter llm.LLM) {
 	}
 
 	fmt.Printf("User: Write a short poem about coding.\n")
-	fmt.Printf("Assistant: %s\n", response.Content)
+	fmt.Printf("Assistant: %s\n", response.ContentString())
 	fmt.Printf("\nParameters used:\n")
 	fmt.Printf("  Temperature: 0.9\n")
 	fmt.Printf("  MaxTokens: 200\n")

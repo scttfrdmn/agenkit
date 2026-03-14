@@ -312,7 +312,7 @@ func (p *PlanningAgent) Capabilities() []string {
 // Process processes a task by creating and executing a plan.
 func (p *PlanningAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Create plan
-	plan, err := p.createPlan(ctx, message.Content)
+	plan, err := p.createPlan(ctx, message.ContentString())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create plan: %w", err)
 	}
@@ -351,7 +351,7 @@ func (p *PlanningAgent) createPlan(ctx context.Context, task string) (Plan, erro
 	}
 
 	// Parse the plan
-	plan := p.parsePlan(response.Content, task)
+	plan := p.parsePlan(response.ContentString(), task)
 
 	return plan, nil
 }

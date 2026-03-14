@@ -447,8 +447,8 @@ func TestProcess_DirectConclusion(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !strings.Contains(result.Content, "The result is 42") {
-		t.Errorf("expected answer in result, got: %s", result.Content)
+	if !strings.Contains(result.ContentString(), "The result is 42") {
+		t.Errorf("expected answer in result, got: %s", result.ContentString())
 	}
 
 	// Check metadata
@@ -485,8 +485,8 @@ func TestProcess_WithToolCall(t *testing.T) {
 		t.Errorf("expected calculator called once, got %d", calculator.callCount)
 	}
 
-	if !strings.Contains(result.Content, "The result is 4") {
-		t.Errorf("expected answer in result, got: %s", result.Content)
+	if !strings.Contains(result.ContentString(), "The result is 4") {
+		t.Errorf("expected answer in result, got: %s", result.ContentString())
 	}
 
 	// Check trace
@@ -521,7 +521,7 @@ func TestProcess_ToolCallFailure(t *testing.T) {
 	}
 
 	// Should continue despite tool failure
-	if !strings.Contains(result.Content, "Continuing without search results") {
+	if !strings.Contains(result.ContentString(), "Continuing without search results") {
 		t.Error("expected agent to continue after tool failure")
 	}
 }
@@ -547,7 +547,7 @@ func TestProcess_UnknownTool(t *testing.T) {
 	}
 
 	// Should continue with regular thinking
-	if !strings.Contains(result.Content, "Proceeding without unknown tool") {
+	if !strings.Contains(result.ContentString(), "Proceeding without unknown tool") {
 		t.Error("expected agent to continue when tool not found")
 	}
 }

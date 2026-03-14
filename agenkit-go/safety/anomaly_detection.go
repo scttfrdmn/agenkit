@@ -471,7 +471,7 @@ func (m *AnomalyDetectionMiddleware) Process(ctx context.Context, message *agenk
 	}
 
 	// 2. Check content anomaly
-	contentStr := message.Content
+	contentStr := message.ContentString()
 	if event, details := m.detector.DetectContentAnomaly(m.userID, contentStr); event != nil {
 		m.onAnomaly(event, details)
 	}
@@ -495,7 +495,7 @@ func (m *AnomalyDetectionMiddleware) Process(ctx context.Context, message *agenk
 	if response != nil {
 		processingTime := time.Since(startTime).Seconds()
 		inputSize := len(contentStr)
-		outputSize := len(response.Content)
+		outputSize := len(response.ContentString())
 
 		// Check size anomaly
 		if event, details := m.detector.DetectSizeAnomaly(inputSize, outputSize); event != nil {

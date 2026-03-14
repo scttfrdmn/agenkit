@@ -102,7 +102,7 @@ func (a *PlanAndSolveAgent) llmCall(ctx context.Context, prompt string) (string,
 		return "", err
 	}
 
-	return response.Content, nil
+	return response.ContentString(), nil
 }
 
 // CreatePlan creates a solution plan for the problem
@@ -255,7 +255,7 @@ func (a *PlanAndSolveAgent) ExecutePlan(ctx context.Context, plan *Plan) ([]stri
 
 // Process processes a message with Plan-and-Solve prompting
 func (a *PlanAndSolveAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	problem := message.Content
+	problem := message.ContentString()
 
 	// Phase 1: Create plan
 	plan, err := a.CreatePlan(ctx, problem)

@@ -353,8 +353,8 @@ func TestAgentToolOutputFormatMessage(t *testing.T) {
 		t.Errorf("expected *Message output, got %T", result.Data)
 	}
 
-	if msg.Content != "test response" {
-		t.Errorf("expected content 'test response', got %q", msg.Content)
+	if msg.ContentString() != "test response" {
+		t.Errorf("expected content 'test response', got %q", msg.ContentString())
 	}
 }
 

@@ -31,7 +31,7 @@ func (e *EchoAgent) Name() string {
 }
 
 func (e *EchoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	return agenkit.NewMessage("agent", "Echo: "+message.Content), nil
+	return agenkit.NewMessage("agent", "Echo: "+message.ContentString()), nil
 }
 
 func (e *EchoAgent) Capabilities() []string {
@@ -46,7 +46,7 @@ func (g *GreetingAgent) Name() string {
 }
 
 func (g *GreetingAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	greeting := fmt.Sprintf("Hello, %s! Welcome to agenkit-go.", message.Content)
+	greeting := fmt.Sprintf("Hello, %s! Welcome to agenkit-go.", message.ContentString())
 	return agenkit.NewMessage("agent", greeting), nil
 }
 
@@ -102,7 +102,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("Agent: %s\n\n", response.Content)
+		fmt.Printf("Agent: %s\n\n", response.ContentString())
 	}
 
 	// Stop echo server
@@ -145,7 +145,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("Agent: %s\n\n", response.Content)
+		fmt.Printf("Agent: %s\n\n", response.ContentString())
 	}
 
 	// Stop greeter server
@@ -182,7 +182,7 @@ func main() {
 		WithMetadata("tags", []string{"test", "demo"})
 
 	fmt.Printf("Sending message with metadata:\n")
-	fmt.Printf("  Content: %s\n", msg.Content)
+	fmt.Printf("  Content: %s\n", msg.ContentString())
 	fmt.Printf("  Metadata: %v\n\n", msg.Metadata)
 
 	response, err := remoteEcho2.Process(ctx, msg)
@@ -191,7 +191,7 @@ func main() {
 	}
 
 	fmt.Printf("Received response:\n")
-	fmt.Printf("  Content: %s\n", response.Content)
+	fmt.Printf("  Content: %s\n", response.ContentString())
 	fmt.Printf("  Role: %s\n", response.Role)
 	fmt.Printf("  Timestamp: %s\n", response.Timestamp.Format(time.RFC3339))
 

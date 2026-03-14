@@ -49,8 +49,8 @@ func TestTCPBasicCommunication(t *testing.T) {
 	if response.Role != "agent" {
 		t.Errorf("Expected role 'agent', got '%s'", response.Role)
 	}
-	if response.Content != "Echo: Hello" {
-		t.Errorf("Expected content 'Echo: Hello', got '%s'", response.Content)
+	if response.ContentString() != "Echo: Hello" {
+		t.Errorf("Expected content 'Echo: Hello', got '%s'", response.ContentString())
 	}
 }
 
@@ -88,8 +88,8 @@ func TestTCPMultipleRequests(t *testing.T) {
 		}
 
 		expected := fmt.Sprintf("Echo: Message %d", i)
-		if response.Content != expected {
-			t.Errorf("Request %d: expected '%s', got '%s'", i, expected, response.Content)
+		if response.ContentString() != expected {
+			t.Errorf("Request %d: expected '%s', got '%s'", i, expected, response.ContentString())
 		}
 	}
 }
@@ -138,8 +138,8 @@ func TestTCPConcurrentRequests(t *testing.T) {
 			}
 
 			expected := fmt.Sprintf("Echo: Message %d", id)
-			if response.Content != expected {
-				errors <- fmt.Errorf("client %d: expected '%s', got '%s'", id, expected, response.Content)
+			if response.ContentString() != expected {
+				errors <- fmt.Errorf("client %d: expected '%s', got '%s'", id, expected, response.ContentString())
 			}
 		}(i)
 	}
@@ -196,8 +196,8 @@ func TestTCPMultipleClients(t *testing.T) {
 			}
 
 			expected := fmt.Sprintf("Echo: Client %d", id)
-			if response.Content != expected {
-				errors <- fmt.Errorf("client %d: expected '%s', got '%s'", id, expected, response.Content)
+			if response.ContentString() != expected {
+				errors <- fmt.Errorf("client %d: expected '%s', got '%s'", id, expected, response.ContentString())
 			}
 		}(i)
 	}
@@ -269,8 +269,8 @@ func TestTCPLargeMessage(t *testing.T) {
 
 	// Verify response
 	expectedLen := len("Echo: ") + len(largeContent)
-	if len(response.Content) != expectedLen {
-		t.Errorf("Expected content length %d, got %d", expectedLen, len(response.Content))
+	if len(response.ContentString()) != expectedLen {
+		t.Errorf("Expected content length %d, got %d", expectedLen, len(response.ContentString()))
 	}
 }
 
@@ -310,7 +310,7 @@ func TestTCPMessageMetadataPreserved(t *testing.T) {
 	}
 
 	// Verify response exists and has required fields
-	if response.Content == "" {
+	if response.ContentString() == "" {
 		t.Error("Expected non-empty content")
 	}
 	if response.Timestamp.IsZero() {
@@ -350,8 +350,8 @@ func TestTCPServerStartStopMultipleTimes(t *testing.T) {
 		}
 
 		expected := fmt.Sprintf("Echo: Iteration %d", i)
-		if response.Content != expected {
-			t.Errorf("Iteration %d: expected '%s', got '%s'", i, expected, response.Content)
+		if response.ContentString() != expected {
+			t.Errorf("Iteration %d: expected '%s', got '%s'", i, expected, response.ContentString())
 		}
 
 		_ = client.Close()

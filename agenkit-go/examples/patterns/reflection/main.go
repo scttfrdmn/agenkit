@@ -102,7 +102,7 @@ func (c *MockCodeCritic) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (c *MockCodeCritic) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	code := message.Content
+	code := message.ContentString()
 
 	// Simulate critique based on code features
 	var score float64
@@ -154,7 +154,7 @@ func main() {
 	// Create user request
 	request := agenkit.NewMessage("user", "Write a Python function to check if a number is prime")
 
-	fmt.Printf("User Request: %s\n\n", request.Content)
+	fmt.Printf("User Request: %s\n\n", request.ContentString())
 	fmt.Println("Starting reflection loop...")
 	fmt.Println("---")
 
@@ -167,7 +167,7 @@ func main() {
 
 	// Display results
 	fmt.Println("\n=== Final Result ===")
-	fmt.Printf("\n%s\n\n", result.Content)
+	fmt.Printf("\n%s\n\n", result.ContentString())
 
 	// Extract and display metadata
 	fmt.Println("=== Reflection Metadata ===")

@@ -167,11 +167,11 @@ func (t *AgentTool) Execute(ctx context.Context, params map[string]any) (*agenki
 func (t *AgentTool) formatOutput(response *agenkit.Message) interface{} {
 	switch t.outputFormat {
 	case OutputFormatString:
-		return response.Content
+		return response.ContentString()
 
 	case OutputFormatDict:
 		result := map[string]interface{}{
-			"content": response.Content,
+			"content": response.ContentString(),
 		}
 		if t.includeMetadata {
 			result["metadata"] = response.Metadata
@@ -183,7 +183,7 @@ func (t *AgentTool) formatOutput(response *agenkit.Message) interface{} {
 
 	default:
 		// Default to string content
-		return response.Content
+		return response.ContentString()
 	}
 }
 

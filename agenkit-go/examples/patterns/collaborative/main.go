@@ -49,7 +49,7 @@ func (e *EditorAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 
 	// Extract round from message if present
 	round := 0
-	content := message.Content
+	content := message.ContentString()
 	if strings.Contains(content, "Round") {
 		_, _ = fmt.Sscanf(content, "=== Collaboration Round %d ===", &round)
 	}
@@ -105,8 +105,8 @@ func (c *CodeReviewerAgent) Process(ctx context.Context, message *agenkit.Messag
 
 	// Simulate review based on round
 	round := 0
-	if strings.Contains(message.Content, "Round") {
-		_, _ = fmt.Sscanf(message.Content, "=== Collaboration Round %d ===", &round)
+	if strings.Contains(message.ContentString(), "Round") {
+		_, _ = fmt.Sscanf(message.ContentString(), "=== Collaboration Round %d ===", &round)
 	}
 
 	var review string
@@ -200,7 +200,7 @@ func main() {
 	document := agenkit.NewMessage("user",
 		"Document to review: The team should be implementing the feature quickly.")
 
-	fmt.Printf("\n📥 Document: %s\n", document.Content)
+	fmt.Printf("\n📥 Document: %s\n", document.ContentString())
 	fmt.Println("\nStarting collaborative editing with 3 editors...")
 
 	result, err := editTeam.Process(ctx, document)
@@ -210,7 +210,7 @@ func main() {
 
 	fmt.Println("\n" + strings.Repeat("=", 50))
 	fmt.Println("\n📤 Collaborative Review Result:")
-	fmt.Println(result.Content)
+	fmt.Println(result.ContentString())
 
 	// Display collaboration metadata
 	if rounds, ok := result.Metadata["collaboration_rounds"].(int); ok {
@@ -238,7 +238,7 @@ func main() {
 	// Custom consensus: all reviews must contain "LGTM"
 	reviewConsensus := func(messages []*agenkit.Message) bool {
 		for _, msg := range messages {
-			if !strings.Contains(msg.Content, "LGTM") {
+			if !strings.Contains(msg.ContentString(), "LGTM") {
 				return false
 			}
 		}
@@ -258,7 +258,7 @@ func main() {
 	codeSubmission := agenkit.NewMessage("user",
 		"Code PR #123: New feature implementation ready for review")
 
-	fmt.Printf("\n📥 Submission: %s\n", codeSubmission.Content)
+	fmt.Printf("\n📥 Submission: %s\n", codeSubmission.ContentString())
 	fmt.Println("\nStarting collaborative code review...")
 
 	result, err = reviewTeam.Process(ctx, codeSubmission)
@@ -268,7 +268,7 @@ func main() {
 
 	fmt.Println("\n" + strings.Repeat("=", 50))
 	fmt.Println("\n📤 Code Review Result:")
-	fmt.Println(result.Content)
+	fmt.Println(result.ContentString())
 
 	if reason, ok := result.Metadata["stop_reason"].(string); ok {
 		fmt.Printf("\nStatus: %s\n", reason)
@@ -299,7 +299,7 @@ func main() {
 
 	proposal := agenkit.NewMessage("user", "Proposal: Adopt new development framework")
 
-	fmt.Printf("\n📥 Proposal: %s\n", proposal.Content)
+	fmt.Printf("\n📥 Proposal: %s\n", proposal.ContentString())
 	fmt.Println("\nCollecting votes from 5 agents...")
 
 	result, err = votingTeam.Process(ctx, proposal)
@@ -307,7 +307,7 @@ func main() {
 		log.Fatalf("Voting failed: %v", err)
 	}
 
-	fmt.Printf("\n📤 Voting Result: %s\n", result.Content)
+	fmt.Printf("\n📤 Voting Result: %s\n", result.ContentString())
 
 	if votes, ok := result.Metadata["votes"].(int); ok {
 		if total, ok := result.Metadata["total"].(int); ok {
@@ -340,7 +340,7 @@ func main() {
 
 	decision := agenkit.NewMessage("user", "Decision required: Proceed with acquisition?")
 
-	fmt.Printf("\n📥 Decision: %s\n", decision.Content)
+	fmt.Printf("\n📥 Decision: %s\n", decision.ContentString())
 	fmt.Println("\nCollaborating until consensus or max rounds...")
 
 	result, err = limitedTeam.Process(ctx, decision)
@@ -349,7 +349,7 @@ func main() {
 	}
 
 	fmt.Println("\n📤 Result (max rounds reached):")
-	fmt.Println(result.Content)
+	fmt.Println(result.ContentString())
 
 	if rounds, ok := result.Metadata["collaboration_rounds"].(int); ok {
 		fmt.Printf("\nCompleted %d rounds without full consensus\n", rounds)
@@ -369,9 +369,9 @@ func main() {
 		rejections := 0
 
 		for i, msg := range messages {
-			summary.WriteString(fmt.Sprintf("%d. %s\n", i+1, msg.Content))
+			summary.WriteString(fmt.Sprintf("%d. %s\n", i+1, msg.ContentString()))
 
-			if strings.Contains(msg.Content, "Approved") || strings.Contains(msg.Content, "LGTM") {
+			if strings.Contains(msg.ContentString(), "Approved") || strings.Contains(msg.ContentString(), "LGTM") {
 				approvals++
 			} else {
 				rejections++
@@ -400,7 +400,7 @@ func main() {
 
 	review := agenkit.NewMessage("user", "Final review of completed work")
 
-	fmt.Printf("\n📥 Review: %s\n", review.Content)
+	fmt.Printf("\n📥 Review: %s\n", review.ContentString())
 
 	result, err = customTeam.Process(ctx, review)
 	if err != nil {
@@ -408,7 +408,7 @@ func main() {
 	}
 
 	fmt.Println("\n📤 Custom Merge Result:")
-	fmt.Println(result.Content)
+	fmt.Println(result.ContentString())
 
 	fmt.Println("\n✅ Collaborative pattern demo complete!")
 }

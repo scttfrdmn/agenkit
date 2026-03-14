@@ -92,7 +92,7 @@ func vllmExample() {
 		return
 	}
 
-	fmt.Printf("📥 Assistant: %s\n", response.Content)
+	fmt.Printf("📥 Assistant: %s\n", response.ContentString())
 
 	// Print metadata
 	if provider, ok := response.Metadata["provider"].(string); ok {
@@ -145,7 +145,7 @@ func llamacppExample() {
 		return
 	}
 
-	fmt.Printf("📥 Assistant:\n%s\n", response.Content)
+	fmt.Printf("📥 Assistant:\n%s\n", response.ContentString())
 }
 
 // streamingExample demonstrates streaming responses.
@@ -184,7 +184,7 @@ func streamingExample() {
 			return
 		}
 
-		fmt.Print(chunk.Content)
+		fmt.Print(chunk.ContentString())
 	}
 	fmt.Println()
 }
@@ -242,7 +242,7 @@ func multiServiceExample() {
 		}
 
 		fmt.Printf("  ✅ %s responded:\n", svc.name)
-		fmt.Printf("     %s\n", truncate(response.Content, 80))
+		fmt.Printf("     %s\n", truncate(response.ContentString(), 80))
 		if provider, ok := response.Metadata["provider"].(string); ok {
 			fmt.Printf("     Provider: %s\n", provider)
 		}

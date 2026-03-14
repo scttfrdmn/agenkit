@@ -245,7 +245,7 @@ func (hc *HealthChecker) CheckReadiness(ctx context.Context) HealthCheckResult {
 	response, err := hc.agent.Process(checkCtx, testMsg)
 	duration := time.Since(startTime).Milliseconds()
 
-	if err != nil || response.Content == "" {
+	if err != nil || response.ContentString() == "" {
 		hc.trackCheckFailure(probeType, float64(duration))
 		return HealthCheckResult{
 			Status:     Unhealthy,

@@ -324,7 +324,7 @@ func (e *Evaluator) checkTest(output *agenkit.Message, testCase map[string]inter
 
 	// Simple string matching
 	if expectedStr, ok := expected.(string); ok {
-		return contains(output.Content, expectedStr)
+		return contains(output.ContentString(), expectedStr)
 	}
 
 	// Custom validator function (would need to support func type)

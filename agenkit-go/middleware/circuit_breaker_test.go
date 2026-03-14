@@ -72,8 +72,8 @@ func TestCircuitBreakerClosed(t *testing.T) {
 			t.Fatalf("Attempt %d: Expected success, got error: %v", i+1, err)
 		}
 
-		if response.Content != "success" {
-			t.Errorf("Attempt %d: Expected 'success', got '%s'", i+1, response.Content)
+		if response.ContentString() != "success" {
+			t.Errorf("Attempt %d: Expected 'success', got '%s'", i+1, response.ContentString())
 		}
 	}
 
@@ -210,8 +210,8 @@ func TestCircuitBreakerHalfOpen(t *testing.T) {
 		t.Fatalf("Expected success in half-open, got error: %v", err)
 	}
 
-	if response.Content != "success" {
-		t.Errorf("Expected 'success', got '%s'", response.Content)
+	if response.ContentString() != "success" {
+		t.Errorf("Expected 'success', got '%s'", response.ContentString())
 	}
 
 	// Should be in half-open state
@@ -254,8 +254,8 @@ func TestCircuitBreakerRecovery(t *testing.T) {
 			t.Fatalf("Attempt %d: Expected success, got error: %v", i+1, err)
 		}
 
-		if response.Content != "success" {
-			t.Errorf("Attempt %d: Expected 'success', got '%s'", i+1, response.Content)
+		if response.ContentString() != "success" {
+			t.Errorf("Attempt %d: Expected 'success', got '%s'", i+1, response.ContentString())
 		}
 	}
 

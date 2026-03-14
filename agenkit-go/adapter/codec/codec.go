@@ -53,7 +53,7 @@ type ToolResultData struct {
 func EncodeMessage(msg *agenkit.Message) MessageData {
 	return MessageData{
 		Role:      msg.Role,
-		Content:   msg.Content,
+		Content:   msg.ContentString(),
 		Metadata:  msg.Metadata,
 		Timestamp: msg.Timestamp.Format(time.RFC3339Nano),
 	}

@@ -165,7 +165,7 @@ func (sc *SelfConsistency) sampleOnce(ctx context.Context, message *agenkit.Mess
 		return "", "", err
 	}
 
-	fullResponse := response.Content
+	fullResponse := response.ContentString()
 	answer := sc.answerExtractor(fullResponse)
 	return fullResponse, answer, nil
 }

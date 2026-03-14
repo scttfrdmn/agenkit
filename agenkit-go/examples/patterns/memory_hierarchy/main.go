@@ -78,7 +78,7 @@ func exampleDefaultHierarchy() error {
 
 	fmt.Printf("Stored %d messages, retrieved %d\n", len(messages), len(retrieved))
 	for i, entry := range retrieved {
-		fmt.Printf("  [%d] %s: %s\n", i+1, entry.Role, truncate(entry.Content, 60))
+		fmt.Printf("  [%d] %s: %s\n", i+1, entry.Role, truncate(entry.ContentString(), 60))
 	}
 
 	return nil
@@ -118,7 +118,7 @@ func exampleCustomConfig() error {
 
 	fmt.Printf("Stored 5 messages, retrieved %d (working capacity=3)\n", len(retrieved))
 	for _, entry := range retrieved {
-		fmt.Printf("  %s\n", entry.Content)
+		fmt.Printf("  %s\n", entry.ContentString())
 	}
 
 	return nil

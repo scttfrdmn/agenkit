@@ -197,8 +197,8 @@ func TestReActAgent_SingleStepFinalAnswer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(result.Content, "The answer is 42") {
-		t.Errorf("expected result to contain 'The answer is 42', got %s", result.Content)
+	if !strings.Contains(result.ContentString(), "The answer is 42") {
+		t.Errorf("expected result to contain 'The answer is 42', got %s", result.ContentString())
 	}
 	if result.Metadata["stop_reason"] != string(StopReasonFinalAnswer) {
 		t.Errorf("expected stop_reason final_answer, got %v", result.Metadata["stop_reason"])
@@ -233,8 +233,8 @@ func TestReActAgent_MultiStepReasoning(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(result.Content, "It is sunny") {
-		t.Errorf("expected result to contain 'It is sunny', got %s", result.Content)
+	if !strings.Contains(result.ContentString(), "It is sunny") {
+		t.Errorf("expected result to contain 'It is sunny', got %s", result.ContentString())
 	}
 	if result.Metadata["stop_reason"] != string(StopReasonFinalAnswer) {
 		t.Errorf("expected stop_reason final_answer, got %v", result.Metadata["stop_reason"])
@@ -271,8 +271,8 @@ func TestReActAgent_MultipleToolCalls(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(result.Content, "Population is 2000") {
-		t.Errorf("expected result to contain 'Population is 2000', got %s", result.Content)
+	if !strings.Contains(result.ContentString(), "Population is 2000") {
+		t.Errorf("expected result to contain 'Population is 2000', got %s", result.ContentString())
 	}
 	if result.Metadata["steps"] != 3 {
 		t.Errorf("expected 3 steps, got %v", result.Metadata["steps"])
@@ -355,8 +355,8 @@ func TestReActAgent_ToolExecutionFails(t *testing.T) {
 	if result.Metadata["stop_reason"] != string(StopReasonToolError) {
 		t.Errorf("expected stop_reason tool_error, got %v", result.Metadata["stop_reason"])
 	}
-	if !strings.Contains(result.Content, "Unable to complete task") {
-		t.Errorf("expected error message in content, got %s", result.Content)
+	if !strings.Contains(result.ContentString(), "Unable to complete task") {
+		t.Errorf("expected error message in content, got %s", result.ContentString())
 	}
 }
 
@@ -455,16 +455,16 @@ func TestReActAgent_VerboseMode(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// Verbose should include full trace
-	if !strings.Contains(result.Content, "Thought:") {
+	if !strings.Contains(result.ContentString(), "Thought:") {
 		t.Error("expected verbose output to contain 'Thought:'")
 	}
-	if !strings.Contains(result.Content, "Action:") {
+	if !strings.Contains(result.ContentString(), "Action:") {
 		t.Error("expected verbose output to contain 'Action:'")
 	}
-	if !strings.Contains(result.Content, "Observation:") {
+	if !strings.Contains(result.ContentString(), "Observation:") {
 		t.Error("expected verbose output to contain 'Observation:'")
 	}
-	if !strings.Contains(result.Content, "---") {
+	if !strings.Contains(result.ContentString(), "---") {
 		t.Error("expected verbose output to contain separator '---'")
 	}
 }
@@ -497,14 +497,14 @@ func TestReActAgent_NonVerboseMode(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// Non-verbose should only have final answer
-	if strings.Contains(result.Content, "Thought:") {
+	if strings.Contains(result.ContentString(), "Thought:") {
 		t.Error("expected non-verbose output to not contain 'Thought:'")
 	}
-	if strings.Contains(result.Content, "Action:") {
+	if strings.Contains(result.ContentString(), "Action:") {
 		t.Error("expected non-verbose output to not contain 'Action:'")
 	}
-	if result.Content != "Result found" {
-		t.Errorf("expected only final answer, got %s", result.Content)
+	if result.ContentString() != "Result found" {
+		t.Errorf("expected only final answer, got %s", result.ContentString())
 	}
 }
 

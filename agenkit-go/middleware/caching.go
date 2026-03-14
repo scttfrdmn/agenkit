@@ -399,13 +399,13 @@ func (c *CachingDecorator) generateCacheKey(message *agenkit.Message) string {
 
 	keyData := map[string]interface{}{
 		"role":     message.Role,
-		"content":  message.Content,
+		"content":  message.ContentString(),
 		"metadata": message.Metadata,
 	}
 
 	jsonBytes, err := json.Marshal(keyData)
 	if err != nil {
-		return fmt.Sprintf("%s:%s", message.Role, message.Content)
+		return fmt.Sprintf("%s:%s", message.Role, message.ContentString())
 	}
 
 	hash := sha256.Sum256(jsonBytes)

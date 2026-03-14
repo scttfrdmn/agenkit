@@ -156,7 +156,7 @@ func TestTimeoutSuccessWithinLimit(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, expected.Successful)
 	assert.False(t, expected.TimedOut)
-	assert.Equal(t, expected.FinalResponse, result.Content)
+	assert.Equal(t, expected.FinalResponse, result.ContentString())
 
 	elapsedMS := elapsed.Milliseconds()
 	assert.GreaterOrEqual(t, elapsedMS, expected.MinElapsedMS)
@@ -226,7 +226,7 @@ func TestTimeoutExactlyAtLimit(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, expected.Successful)
 	assert.False(t, expected.TimedOut)
-	assert.Equal(t, expected.FinalResponse, result.Content)
+	assert.Equal(t, expected.FinalResponse, result.ContentString())
 
 	elapsedMS := elapsed.Milliseconds()
 	assert.GreaterOrEqual(t, elapsedMS, expected.MinElapsedMS)
@@ -261,7 +261,7 @@ func TestTimeoutZeroDelay(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, expected.Successful)
 	assert.False(t, expected.TimedOut)
-	assert.Equal(t, expected.FinalResponse, result.Content)
+	assert.Equal(t, expected.FinalResponse, result.ContentString())
 
 	elapsedMS := elapsed.Milliseconds()
 	assert.LessOrEqual(t, elapsedMS, expected.MaxElapsedMS)

@@ -226,9 +226,9 @@ func TestConvertMessages(t *testing.T) {
 
 			// Verify content is preserved
 			for i, msg := range tt.messages {
-				if converted[i].Content != msg.Content {
+				if converted[i].Content != msg.ContentString() {
 					t.Errorf("Message %d: content not preserved. Expected %s, got %s",
-						i, msg.Content, converted[i].Content)
+						i, msg.ContentString(), converted[i].Content)
 				}
 			}
 		})

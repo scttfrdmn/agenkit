@@ -124,7 +124,7 @@ func (cot *ChainOfThought) Process(ctx context.Context, message *agenkit.Message
 	}
 
 	// Apply CoT prompting
-	cotPrompt := strings.ReplaceAll(cot.promptTemplate, "{query}", message.Content)
+	cotPrompt := strings.ReplaceAll(cot.promptTemplate, "{query}", message.ContentString())
 
 	// Get response from agent
 	promptMessage := &agenkit.Message{
@@ -145,7 +145,7 @@ func (cot *ChainOfThought) Process(ctx context.Context, message *agenkit.Message
 
 	// Parse steps if requested
 	if cot.parseSteps {
-		steps := cot.extractSteps(response.Content)
+		steps := cot.extractSteps(response.ContentString())
 		response.Metadata["reasoning_steps"] = steps
 		response.Metadata["num_steps"] = len(steps)
 	}

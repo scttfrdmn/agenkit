@@ -43,7 +43,7 @@ func (a *StreamingTestAgent) Introspect() *agenkit.IntrospectionResult {
 func (a *StreamingTestAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "agent",
-		Content: "Processed: " + message.Content,
+		Content: "Processed: " + message.ContentString(),
 	}, nil
 }
 
@@ -66,7 +66,7 @@ func (a *StreamingTestAgent) Stream(ctx context.Context, message *agenkit.Messag
 				select {
 				case messageChan <- &agenkit.Message{
 					Role:    "agent",
-					Content: fmt.Sprintf("Chunk %d: %s", i, message.Content),
+					Content: fmt.Sprintf("Chunk %d: %s", i, message.ContentString()),
 				}:
 				case <-ctx.Done():
 					errorChan <- ctx.Err()
@@ -120,7 +120,7 @@ func TestTimeoutStreamingSuccess(t *testing.T) {
 				}
 				return
 			}
-			messages = append(messages, msg.Content)
+			messages = append(messages, msg.ContentString())
 		case err := <-errorChan:
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)

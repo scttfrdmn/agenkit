@@ -26,7 +26,7 @@ func (m *mockGraphAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (m *mockGraphAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+	content := message.ContentString()
 
 	// Match patterns and return appropriate responses
 	for pattern, response := range m.responses {
@@ -403,7 +403,7 @@ func TestProcess(t *testing.T) {
 		t.Errorf("Expected role 'assistant', got '%s'", response.Role)
 	}
 
-	if response.Content == "" {
+	if response.ContentString() == "" {
 		t.Error("Expected non-empty content")
 	}
 

@@ -29,7 +29,7 @@ func (e *echoAgent) Capabilities() []string {
 
 func (e *echoAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
 	// Simple echo - return input as output
-	return agenkit.NewMessage("assistant", msg.Content), nil
+	return agenkit.NewMessage("assistant", msg.ContentString()), nil
 }
 
 func (e *echoAgent) Introspect() *agenkit.IntrospectionResult {
@@ -44,7 +44,7 @@ type echoLLMClient struct{}
 
 func (e *echoLLMClient) Chat(ctx context.Context, messages []*agenkit.Message) (*agenkit.Message, error) {
 	if len(messages) > 0 {
-		return agenkit.NewMessage("assistant", messages[len(messages)-1].Content), nil
+		return agenkit.NewMessage("assistant", messages[len(messages)-1].ContentString()), nil
 	}
 	return agenkit.NewMessage("assistant", "echo"), nil
 }

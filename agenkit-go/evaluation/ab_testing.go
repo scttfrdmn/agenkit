@@ -298,7 +298,7 @@ func (t *ABTest) evaluateVariant(ctx context.Context, variant *ABVariant, testCa
 			accuracy = 0.0
 		} else {
 			// Simple accuracy check (contains expected)
-			actual := response.Content
+			actual := response.ContentString()
 			if expected != "" {
 				if stringContainsIgnoreCase(actual, expected) {
 					accuracy = 1.0
@@ -315,7 +315,7 @@ func (t *ABTest) evaluateVariant(ctx context.Context, variant *ABVariant, testCa
 			"latency_ms": latencyMs,
 			"input":      input,
 			"expected":   expected,
-			"actual":     response.Content,
+			"actual":     response.ContentString(),
 		})
 	}
 

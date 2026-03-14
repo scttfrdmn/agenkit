@@ -39,7 +39,7 @@ import (
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	fmt.Println(response.Content)
+//	fmt.Println(response.ContentString())
 //
 // Swapping providers:
 //
@@ -54,7 +54,7 @@ import (
 //	    log.Fatal(err)
 //	}
 //	for chunk := range stream {
-//	    fmt.Print(chunk.Content)
+//	    fmt.Print(chunk.ContentString())
 //	}
 type LLM interface {
 	// Complete generates a single completion from the LLM.
@@ -122,7 +122,7 @@ type LLM interface {
 	//	    log.Fatal(err)
 	//	}
 	//	for chunk := range stream {
-	//	    fmt.Print(chunk.Content)
+	//	    fmt.Print(chunk.ContentString())
 	//	}
 	//
 	// Note:

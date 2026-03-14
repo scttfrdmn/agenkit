@@ -79,7 +79,7 @@ func (a *SlowLLMAgent) Process(ctx context.Context, message *agenkit.Message) (*
 	// Simulate processing time, respecting context cancellation
 	select {
 	case <-time.After(a.responseTime):
-		response := agenkit.NewMessage("assistant", fmt.Sprintf("Generated response for: %s", message.Content))
+		response := agenkit.NewMessage("assistant", fmt.Sprintf("Generated response for: %s", message.ContentString()))
 		response.Metadata = map[string]interface{}{
 			"processing_time": a.responseTime.Seconds(),
 		}
@@ -130,7 +130,7 @@ func (a *UnpredictableAgent) Process(ctx context.Context, message *agenkit.Messa
 	// Simulate processing time, respecting context cancellation
 	select {
 	case <-time.After(responseTime):
-		response := agenkit.NewMessage("assistant", fmt.Sprintf("Analysis complete for: %s", message.Content))
+		response := agenkit.NewMessage("assistant", fmt.Sprintf("Analysis complete for: %s", message.ContentString()))
 		response.Metadata = map[string]interface{}{
 			"response_time": responseTime.Seconds(),
 		}
@@ -164,7 +164,7 @@ func example1BasicTimeout() {
 		fmt.Printf("❌ Request timed out: %v\n", err)
 		fmt.Println("   The request was cancelled to prevent blocking")
 	} else {
-		fmt.Printf("✅ Response received: %s\n", response.Content)
+		fmt.Printf("✅ Response received: %s\n", response.ContentString())
 	}
 }
 
@@ -191,7 +191,7 @@ func example2SuccessfulWithTimeout() {
 	if err != nil {
 		fmt.Printf("❌ Unexpected timeout: %v\n", err)
 	} else {
-		fmt.Printf("✅ Response received: %s\n", response.Content)
+		fmt.Printf("✅ Response received: %s\n", response.ContentString())
 		if processingTime, ok := response.Metadata["processing_time"].(float64); ok {
 			fmt.Printf("   Processing time: %.1fs\n", processingTime)
 		}
@@ -297,10 +297,10 @@ func example4FallbackOnTimeout() {
 		fmt.Println("   Falling back to cached response...")
 		response, err = fallback.Process(ctx, message)
 		if err == nil {
-			fmt.Printf("✅ Fallback response: %s\n", response.Content)
+			fmt.Printf("✅ Fallback response: %s\n", response.ContentString())
 		}
 	} else {
-		fmt.Printf("✅ Primary response: %s\n", response.Content)
+		fmt.Printf("✅ Primary response: %s\n", response.ContentString())
 	}
 }
 
@@ -392,7 +392,7 @@ func example5StreamingTimeout() {
 				}
 				return
 			}
-			fmt.Printf("   📦 %s\n", chunk.Content)
+			fmt.Printf("   📦 %s\n", chunk.ContentString())
 		case err := <-errorChan:
 			if err != nil {
 				fmt.Printf("❌ Stream timed out: %v\n", err)
@@ -431,7 +431,7 @@ func example6DifferentTimeoutStrategies() {
 	if err != nil {
 		fmt.Println("   ❌ Timeout: Too slow for interactive use")
 	} else {
-		fmt.Printf("   ✅ Success: %s\n", response.Content)
+		fmt.Printf("   ✅ Success: %s\n", response.ContentString())
 	}
 
 	// Background request (relaxed timeout)
@@ -440,7 +440,7 @@ func example6DifferentTimeoutStrategies() {
 	if err != nil {
 		fmt.Println("   ❌ Timeout: Even background processing failed")
 	} else {
-		fmt.Printf("   ✅ Success: %s\n", response.Content)
+		fmt.Printf("   ✅ Success: %s\n", response.ContentString())
 	}
 }
 

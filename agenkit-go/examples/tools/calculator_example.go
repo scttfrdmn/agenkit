@@ -209,7 +209,7 @@ func (a *SimpleAgent) Capabilities() []string { return []string{"math", "calcula
 
 func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simple parsing to extract tool calls from natural language
-	content := strings.ToLower(message.Content)
+	content := strings.ToLower(message.ContentString())
 
 	var result *agenkit.ToolResult
 	var err error
@@ -304,7 +304,7 @@ func example1BasicMath() {
 	for _, test := range tests {
 		fmt.Printf("\nQuery: %s\n", test)
 		result, _ := agent.Process(ctx, agenkit.NewMessage("user", test))
-		fmt.Printf("Result: %s\n", result.Content)
+		fmt.Printf("Result: %s\n", result.ContentString())
 
 		// Show the actual tool data
 		if toolResult, ok := result.Metadata["tool_result"].(map[string]interface{}); ok {
@@ -342,7 +342,7 @@ func example2MathFunctions() {
 	for _, test := range tests {
 		fmt.Printf("\nQuery: %s\n", test)
 		result, _ := agent.Process(ctx, agenkit.NewMessage("user", test))
-		fmt.Printf("Result: %s\n", result.Content)
+		fmt.Printf("Result: %s\n", result.ContentString())
 	}
 
 	fmt.Println("\nWHY TOOLS FOR MATH FUNCTIONS?")

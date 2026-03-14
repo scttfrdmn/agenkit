@@ -131,7 +131,7 @@ func TestRetryBehavior_SuccessFirstAttempt(t *testing.T) {
 	// Verify expected behavior
 	require.NoError(t, err)
 	assert.Equal(t, int(testCase.ExpectedBehavior["total_attempts"].(float64)), agent.CallCount)
-	assert.Equal(t, testCase.ExpectedBehavior["final_response"], response.Content)
+	assert.Equal(t, testCase.ExpectedBehavior["final_response"], response.ContentString())
 	assert.True(t, testCase.ExpectedBehavior["successful"].(bool))
 }
 
@@ -159,7 +159,7 @@ func TestRetryBehavior_SuccessAfterRetry(t *testing.T) {
 	// Verify expected behavior
 	require.NoError(t, err)
 	assert.Equal(t, int(testCase.ExpectedBehavior["total_attempts"].(float64)), agent.CallCount)
-	assert.Equal(t, testCase.ExpectedBehavior["final_response"], response.Content)
+	assert.Equal(t, testCase.ExpectedBehavior["final_response"], response.ContentString())
 
 	// Verify delay within expected range
 	minDelay := int64(testCase.ExpectedBehavior["min_total_delay_ms"].(float64))
@@ -264,7 +264,7 @@ func TestRetryBehavior_MaxBackoffCap(t *testing.T) {
 	assert.LessOrEqual(t, elapsed, maxDelay+100, "Delay too long (100ms tolerance)")
 
 	// Verify response
-	assert.Equal(t, "Success", response.Content)
+	assert.Equal(t, "Success", response.ContentString())
 }
 
 func TestRetryBehavior_NonRetryableError(t *testing.T) {
@@ -321,7 +321,7 @@ func TestRetryBehavior_MetricsTracking(t *testing.T) {
 
 	// Verify success
 	require.NoError(t, err)
-	assert.Equal(t, "Success", response.Content)
+	assert.Equal(t, "Success", response.ContentString())
 
 	// Verify metrics
 	expected := testCase.ExpectedMetrics

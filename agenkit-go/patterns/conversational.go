@@ -227,7 +227,7 @@ func (c *ConversationalAgent) GetHistory() []*agenkit.Message {
 		// Deep copy each message
 		msgCopy := &agenkit.Message{
 			Role:    msg.Role,
-			Content: msg.Content,
+			Content: msg.ContentString(),
 		}
 		if msg.Metadata != nil {
 			msgCopy.Metadata = make(map[string]interface{})

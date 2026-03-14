@@ -215,7 +215,7 @@ func (t *TracingMiddleware) Process(ctx context.Context, message *agenkit.Messag
 	span.SetAttributes(
 		attribute.String("agent.name", t.agent.Name()),
 		attribute.String("message.role", message.Role),
-		attribute.Int("message.content_length", len(message.Content)),
+		attribute.Int("message.content_length", len(message.ContentString())),
 	)
 
 	// Add metadata attributes

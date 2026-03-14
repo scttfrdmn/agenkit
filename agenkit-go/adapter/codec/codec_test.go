@@ -38,8 +38,8 @@ func TestEncodeDecodeMessage(t *testing.T) {
 	if decoded.Role != msg.Role {
 		t.Errorf("Expected role '%s', got '%s'", msg.Role, decoded.Role)
 	}
-	if decoded.Content != msg.Content {
-		t.Errorf("Expected content '%s', got '%s'", msg.Content, decoded.Content)
+	if decoded.ContentString() != msg.ContentString() {
+		t.Errorf("Expected content '%s', got '%s'", msg.ContentString(), decoded.ContentString())
 	}
 	if decoded.Metadata["key1"] != msg.Metadata["key1"] {
 		t.Errorf("Metadata mismatch")
@@ -311,8 +311,8 @@ func TestDecodeMessage(t *testing.T) {
 	if msg.Role != "agent" {
 		t.Errorf("Expected role 'agent', got '%s'", msg.Role)
 	}
-	if msg.Content != "response" {
-		t.Errorf("Expected content 'response', got '%s'", msg.Content)
+	if msg.ContentString() != "response" {
+		t.Errorf("Expected content 'response', got '%s'", msg.ContentString())
 	}
 }
 
@@ -348,8 +348,8 @@ func TestDecodeMessageMalformed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-	if msg.Content != "" {
-		t.Errorf("Expected empty content, got '%s'", msg.Content)
+	if msg.ContentString() != "" {
+		t.Errorf("Expected empty content, got '%s'", msg.ContentString())
 	}
 }
 
@@ -371,8 +371,8 @@ func TestRoundtripMessage(t *testing.T) {
 	if decoded.Role != original.Role {
 		t.Errorf("Role mismatch: %s != %s", decoded.Role, original.Role)
 	}
-	if decoded.Content != original.Content {
-		t.Errorf("Content mismatch: %s != %s", decoded.Content, original.Content)
+	if decoded.ContentString() != original.ContentString() {
+		t.Errorf("Content mismatch: %s != %s", decoded.ContentString(), original.ContentString())
 	}
 	if decoded.Metadata["key1"] != original.Metadata["key1"] {
 		t.Error("Metadata key1 mismatch")

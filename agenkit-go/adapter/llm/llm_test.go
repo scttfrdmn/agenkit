@@ -147,8 +147,8 @@ func TestMockLLM(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
-		if response.Content != "mock response" {
-			t.Errorf("Expected 'mock response', got %s", response.Content)
+		if response.ContentString() != "mock response" {
+			t.Errorf("Expected 'mock response', got %s", response.ContentString())
 		}
 	})
 
@@ -163,7 +163,7 @@ func TestMockLLM(t *testing.T) {
 
 		var content string
 		for chunk := range stream {
-			content += chunk.Content
+			content += chunk.ContentString()
 		}
 
 		if content != "mock response" {

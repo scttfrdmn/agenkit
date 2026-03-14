@@ -82,8 +82,8 @@ func (e *EchoAgent) Name() string {
 }
 
 func (e *EchoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	return agenkit.NewMessage("agent", "Echo: "+message.Content).
-		WithMetadata("original", message.Content), nil
+	return agenkit.NewMessage("agent", "Echo: "+message.ContentString()).
+		WithMetadata("original", message.ContentString()), nil
 }
 
 func (e *EchoAgent) Capabilities() []string {
@@ -98,7 +98,7 @@ func (s *StreamingEchoAgent) Name() string {
 }
 
 func (s *StreamingEchoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	return agenkit.NewMessage("agent", "Echo: "+message.Content), nil
+	return agenkit.NewMessage("agent", "Echo: "+message.ContentString()), nil
 }
 
 func (s *StreamingEchoAgent) Stream(ctx context.Context, message *agenkit.Message) (<-chan *agenkit.Message, <-chan error) {
@@ -110,7 +110,7 @@ func (s *StreamingEchoAgent) Stream(ctx context.Context, message *agenkit.Messag
 		defer close(errorChan)
 
 		// Split content into words
-		words := splitWords(message.Content)
+		words := splitWords(message.ContentString())
 
 		for i, word := range words {
 			select {
@@ -155,12 +155,12 @@ func (m *MetadataAgent) Process(ctx context.Context, message *agenkit.Message) (
 	// Add response metadata
 	responseMetadata := map[string]interface{}{
 		"received_at":    time.Now().Unix(),
-		"message_length": len(message.Content),
+		"message_length": len(message.ContentString()),
 		"user_metadata":  metadata,
 		"processed_by":   m.Name(),
 	}
 
-	response := agenkit.NewMessage("agent", "Processed: "+message.Content)
+	response := agenkit.NewMessage("agent", "Processed: "+message.ContentString())
 	for k, v := range responseMetadata {
 		response.WithMetadata(k, v)
 	}
@@ -257,7 +257,7 @@ func scenario1BasicCommunication() {
 			log.Fatalf("Failed to process message: %v", err)
 		}
 
-		fmt.Printf("Agent: %s\n", response.Content)
+		fmt.Printf("Agent: %s\n", response.ContentString())
 		fmt.Printf("Metadata: %v\n\n", response.Metadata)
 	}
 
@@ -318,19 +318,19 @@ func scenario2StreamingResponses() {
 	// Test non-streaming first
 	fmt.Println("--- Non-Streaming Mode ---")
 	message := agenkit.NewMessage("user", "The quick brown fox jumps")
-	fmt.Printf("User: %s\n", message.Content)
+	fmt.Printf("User: %s\n", message.ContentString())
 	response, err := remoteAgent.Process(ctx, message)
 	if err != nil {
 		log.Fatalf("Failed to process message: %v", err)
 	}
-	fmt.Printf("Agent: %s\n\n", response.Content)
+	fmt.Printf("Agent: %s\n\n", response.ContentString())
 
 	time.Sleep(500 * time.Millisecond)
 
 	// Test streaming
 	fmt.Println("--- Streaming Mode ---")
 	message = agenkit.NewMessage("user", "gRPC streaming is efficient and fast")
-	fmt.Printf("User: %s\n", message.Content)
+	fmt.Printf("User: %s\n", message.ContentString())
 	fmt.Print("Agent: ")
 
 	startTime := time.Now()
@@ -345,7 +345,7 @@ func scenario2StreamingResponses() {
 				fmt.Printf("\n\nStreaming completed in %.2fs\n", elapsed)
 				goto streamDone
 			}
-			fmt.Printf("%s ", chunk.Content)
+			fmt.Printf("%s ", chunk.ContentString())
 
 		case err, ok := <-errorChan:
 			if ok && err != nil {
@@ -429,7 +429,7 @@ func scenario3ConcurrentClients() {
 			return
 		}
 
-		fmt.Printf("Client %2d: %s (took %.1fms)\n", clientID, response.Content, elapsed.Seconds()*1000)
+		fmt.Printf("Client %2d: %s (took %.1fms)\n", clientID, response.ContentString(), elapsed.Seconds()*1000)
 	}
 
 	// Send concurrent requests
@@ -546,7 +546,7 @@ func scenario4MetadataHandling() {
 			log.Fatalf("Failed to process message: %v", err)
 		}
 
-		fmt.Printf("Agent: %s\n", response.Content)
+		fmt.Printf("Agent: %s\n", response.ContentString())
 		fmt.Printf("Response metadata: %v\n\n", response.Metadata)
 	}
 
@@ -601,7 +601,7 @@ func scenario5ErrorHandling() {
 		if err != nil {
 			fmt.Printf("ERROR: %v\n", err)
 		} else {
-			fmt.Printf("Unexpected success: %s\n", response.Content)
+			fmt.Printf("Unexpected success: %s\n", response.ContentString())
 		}
 	}()
 	fmt.Println()
@@ -644,7 +644,7 @@ func scenario5ErrorHandling() {
 		if err != nil {
 			fmt.Printf("ERROR: %v\n", err)
 		} else {
-			fmt.Printf("Success: %s\n", response.Content)
+			fmt.Printf("Success: %s\n", response.ContentString())
 		}
 
 		// Stop server
@@ -662,7 +662,7 @@ func scenario5ErrorHandling() {
 		if err != nil {
 			fmt.Printf("ERROR: %v\n", err)
 		} else {
-			fmt.Printf("Unexpected success: %s\n", response.Content)
+			fmt.Printf("Unexpected success: %s\n", response.ContentString())
 		}
 	}()
 	fmt.Println()
@@ -709,7 +709,7 @@ func scenario5ErrorHandling() {
 			cancel()
 
 			if err == nil {
-				fmt.Printf("Success on attempt %d: %s\n", attempt+1, response.Content)
+				fmt.Printf("Success on attempt %d: %s\n", attempt+1, response.ContentString())
 				break
 			}
 

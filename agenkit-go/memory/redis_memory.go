@@ -82,7 +82,7 @@ func (r *RedisMemory) sessionKey(sessionID string) string {
 func (r *RedisMemory) serializeMessage(message agenkit.Message, metadata map[string]interface{}) (string, error) {
 	data := map[string]interface{}{
 		"role":     message.Role,
-		"content":  message.Content,
+		"content":  message.ContentString(),
 		"metadata": metadata,
 	}
 	bytes, err := json.Marshal(data)
@@ -283,7 +283,7 @@ func (r *RedisMemory) Summarize(ctx context.Context, sessionID string, opts Summ
 
 	for i := 0; i < maxMessages; i++ {
 		msg := messages[i]
-		preview := msg.Content
+		preview := msg.ContentString()
 		if len(preview) > 100 {
 			preview = preview[:100] + "..."
 		}

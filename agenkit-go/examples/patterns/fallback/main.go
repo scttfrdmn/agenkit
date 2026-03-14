@@ -177,7 +177,7 @@ func main() {
 		log.Fatalf("All services failed: %v", err)
 	}
 
-	fmt.Printf("\n📤 Result: %s\n", result.Content)
+	fmt.Printf("\n📤 Result: %s\n", result.ContentString())
 
 	if service, ok := result.Metadata["service"].(string); ok {
 		fmt.Printf("   Service: %s\n", service)
@@ -255,7 +255,7 @@ func main() {
 		log.Fatalf("Recovery should have handled error: %v", err)
 	}
 
-	fmt.Printf("📤 Result: %s\n", result.Content)
+	fmt.Printf("📤 Result: %s\n", result.ContentString())
 
 	if used, ok := result.Metadata["recovery_used"].(bool); ok && used {
 		fmt.Println("   ℹ️  Recovery was triggered")
@@ -274,7 +274,7 @@ func main() {
 
 		// Create context-aware fallback response
 		recovery := fmt.Sprintf("Unable to process request: '%s'. Error: %v\n\nSuggestion: Please try again or contact support.",
-			msg.Content, originalError)
+			msg.ContentString(), originalError)
 
 		result := agenkit.NewMessage("agent", recovery)
 		result.WithMetadata("recovery_type", "custom")
@@ -290,7 +290,7 @@ func main() {
 		log.Fatalf("Custom recovery should have handled error: %v", err)
 	}
 
-	fmt.Printf("📤 Result:\n%s\n", result.Content)
+	fmt.Printf("📤 Result:\n%s\n", result.ContentString())
 
 	// Example 6: Demonstrating first-success optimization
 	fmt.Println("\n" + strings.Repeat("=", 50))
@@ -316,7 +316,7 @@ func main() {
 		log.Fatalf("Should have succeeded: %v", err)
 	}
 
-	fmt.Printf("📤 Result: %s\n", result.Content)
+	fmt.Printf("📤 Result: %s\n", result.ContentString())
 	fmt.Printf("⏱️  Completed in %v\n", elapsed)
 
 	if service, ok := result.Metadata["service"].(string); ok {

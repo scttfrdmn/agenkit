@@ -135,7 +135,7 @@ func (p *ParallelAgent) combineResponses(results []*AgentResult) *agenkit.Messag
 
 	for _, result := range results {
 		if result.Message != nil {
-			contentParts = append(contentParts, fmt.Sprintf("[%s]: %s", result.AgentName, result.Message.Content))
+			contentParts = append(contentParts, fmt.Sprintf("[%s]: %s", result.AgentName, result.Message.ContentString()))
 
 			// Merge metadata with agent name prefix
 			for key, value := range result.Message.Metadata {

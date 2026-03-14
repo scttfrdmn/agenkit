@@ -40,7 +40,7 @@ func (a *ProductionAgent) Process(ctx context.Context, message *agenkit.Message)
 	time.Sleep(time.Duration(50+rand.Intn(200)) * time.Millisecond)
 	return &agenkit.Message{
 		Role:    "assistant",
-		Content: "Response to: " + message.Content,
+		Content: "Response to: " + message.ContentString(),
 	}, nil
 }
 

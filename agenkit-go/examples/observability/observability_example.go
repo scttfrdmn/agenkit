@@ -45,13 +45,13 @@ func (a *SimpleAgent) Capabilities() []string {
 func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	a.logger.InfoContext(ctx, fmt.Sprintf("Agent %s processing message", a.name),
 		slog.String("agent", a.name),
-		slog.Int("content_length", len(message.Content)),
+		slog.Int("content_length", len(message.ContentString())),
 	)
 
 	// Simulate some processing
 	time.Sleep(100 * time.Millisecond)
 
-	responseContent := fmt.Sprintf("Processed by %s: %s", a.name, message.Content)
+	responseContent := fmt.Sprintf("Processed by %s: %s", a.name, message.ContentString())
 
 	a.logger.InfoContext(ctx, fmt.Sprintf("Agent %s completed processing", a.name),
 		slog.String("agent", a.name),
@@ -154,7 +154,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("\n   ✓ Final response: %s\n\n", response2.Content)
+	fmt.Printf("\n   ✓ Final response: %s\n\n", response2.ContentString())
 
 	// Show observability features
 	fmt.Println("4. Observability Features:")

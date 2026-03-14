@@ -57,7 +57,7 @@ func main() {
 	// Print response
 	fmt.Printf("Response from server:\n")
 	fmt.Printf("  Role: %s\n", response.Role)
-	fmt.Printf("  Content: %s\n", response.Content)
+	fmt.Printf("  Content: %s\n", response.ContentString())
 	if len(response.Metadata) > 0 {
 		fmt.Printf("  Metadata: %v\n", response.Metadata)
 	}

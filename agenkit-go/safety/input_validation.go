@@ -394,7 +394,7 @@ func (m *InputValidationMiddleware) Capabilities() []string {
 // Process processes message with input validation.
 func (m *InputValidationMiddleware) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Validate message content
-	contentStr := message.Content
+	contentStr := message.ContentString()
 
 	// 1. Check for prompt injection
 	isInjection, score, matched := m.detector.Detect(contentStr)
@@ -430,7 +430,7 @@ func (m *InputValidationMiddleware) Process(ctx context.Context, message *agenki
 	}
 
 	// 2. Check content filter
-	isValid, errorMsgPtr := m.contentFilter.Validate(message.Content)
+	isValid, errorMsgPtr := m.contentFilter.Validate(message.ContentString())
 	if !isValid {
 		errorMsg := *errorMsgPtr
 		if m.strict {

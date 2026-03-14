@@ -28,7 +28,7 @@ func (a *ExampleAgent) Introspect() *agenkit.IntrospectionResult {
 
 func (a *ExampleAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
 	// Simple Q&A logic
-	content := msg.Content
+	content := msg.ContentString()
 	var response string
 
 	switch content {

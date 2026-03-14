@@ -10,29 +10,34 @@ import (
 // Message represents a message exchanged between agents or tools.
 type Message struct {
 	Role      string                 `json:"role"`
-	Content   string                 `json:"content"`
+	Content   any                    `json:"content"`
 	Metadata  map[string]interface{} `json:"metadata"`
 	Timestamp time.Time              `json:"timestamp"`
 }
 
 // ContentString returns the message content as a string.
-// This is the preferred accessor for LLM adapters and provides a stable API
-// for future migration to structured (multimodal) content types.
+// For string content it returns the value directly; for nil it returns "";
+// for any other type it returns a fmt.Sprintf("%v") representation.
 func (m *Message) ContentString() string {
-	return m.Content
+	switch v := m.Content.(type) {
+	case string:
+		return v
+	case nil:
+		return ""
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
 
-// ContentBlocks returns structured content blocks if present in Metadata,
-// or nil for plain-text messages.
-//
-// This is the interim accessor for multimodal / multi-block responses
-// (e.g. tool-use, vision).  When the full Content string→any migration
-// ships in v0.59.0, this method will read from the Content field directly.
-//
-// Adapters that receive multi-block responses from providers store the raw
-// block slice under Metadata["content_blocks"] and write a text summary
-// into Content for backward compatibility.
+// ContentBlocks returns structured content blocks if the Content field holds
+// a []interface{} value (as set by multimodal adapters), or falls back to
+// Metadata["content_blocks"] for backward compatibility with v0.58.0 adapters.
 func (m *Message) ContentBlocks() []interface{} {
+	// Prefer content field when it already holds a block slice.
+	if blocks, ok := m.Content.([]interface{}); ok {
+		return blocks
+	}
+	// Backward-compat: v0.58.0 adapters stored blocks in metadata.
 	if m.Metadata == nil {
 		return nil
 	}
@@ -99,8 +104,16 @@ func (m *Message) Validate() error {
 	}
 
 	// Content validation - max 16MB (aligned with other languages)
-	contentSize := len(m.Content)
 	maxContentSize := 16 * 1024 * 1024 // 16MB
+	var contentSize int
+	switch v := m.Content.(type) {
+	case string:
+		contentSize = len(v)
+	case nil:
+		contentSize = 0
+	default:
+		contentSize = len(fmt.Sprintf("%v", v))
+	}
 	if contentSize > maxContentSize {
 		return fmt.Errorf("message content exceeds maximum size of %d bytes (got %d bytes)", maxContentSize, contentSize)
 	}

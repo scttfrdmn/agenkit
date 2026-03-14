@@ -223,8 +223,8 @@ func (h *AGUIHumanInLoopAdapter) StreamEvents(ctx context.Context, message *agen
 
 		// Extract content
 		content := ""
-		if response.Content != "" {
-			content = response.Content
+		if cs := response.ContentString(); cs != "" {
+			content = cs
 		}
 
 		// Stream content in chunks
@@ -386,8 +386,8 @@ func (h *AGUIHumanInLoopAdapter) StreamEventsWithConfig(
 
 		// Extract content
 		content := ""
-		if response.Content != "" {
-			content = response.Content
+		if cs := response.ContentString(); cs != "" {
+			content = cs
 		}
 
 		// Stream content in chunks
@@ -486,7 +486,7 @@ func (h *AGUIHumanInLoopAdapter) HandleInterruptResponse(interruptResponse *Inte
 
 	case InterruptActionEdit:
 		response.Metadata["approval_status"] = "approved_with_modifications"
-		response.Metadata["original_response"] = response.Content
+		response.Metadata["original_response"] = response.ContentString()
 		if interruptResponse.Data != nil {
 			if modifiedContent, ok := interruptResponse.Data["modified_content"].(string); ok && modifiedContent != "" {
 				response.Content = modifiedContent

@@ -262,7 +262,7 @@ func (s *SoftwarePlannerAgent) Synthesize(ctx context.Context, original *agenkit
 	synthesis.WriteString("=== Software Development Summary ===\n\n")
 
 	synthesis.WriteString("Task: ")
-	synthesis.WriteString(original.Content)
+	synthesis.WriteString(original.ContentString())
 	synthesis.WriteString("\n\n")
 
 	// Organize results by phase
@@ -372,7 +372,7 @@ func main() {
 	task := agenkit.NewMessage("user",
 		"Create a calculator module with Add, Multiply, and Calculate functions")
 
-	fmt.Printf("\n📥 Task: %s\n", task.Content)
+	fmt.Printf("\n📥 Task: %s\n", task.ContentString())
 
 	result, err := supervisor.Process(ctx, task)
 	if err != nil {
@@ -381,7 +381,7 @@ func main() {
 
 	fmt.Println("\n" + strings.Repeat("=", 50))
 	fmt.Println("\n📤 Final Result:")
-	fmt.Println(result.Content)
+	fmt.Println(result.ContentString())
 
 	// Display supervisor metadata
 	if subtasks, ok := result.Metadata["supervisor_subtasks"].(int); ok {
@@ -409,7 +409,7 @@ func main() {
 
 	simpleTask := agenkit.NewMessage("user", "Simple task that doesn't need decomposition")
 
-	fmt.Printf("\n📥 Task: %s\n", simpleTask.Content)
+	fmt.Printf("\n📥 Task: %s\n", simpleTask.ContentString())
 
 	_, err = simpleSupervisor.Process(ctx, simpleTask)
 	if err != nil {

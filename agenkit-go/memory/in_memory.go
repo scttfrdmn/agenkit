@@ -227,7 +227,7 @@ func (m *EphemeralMemory) Summarize(ctx context.Context, sessionID string, opts 
 
 	for i := 0; i < maxMessages; i++ {
 		msg := messages[i]
-		preview := msg.Content
+		preview := msg.ContentString()
 		if len(preview) > 100 {
 			preview = preview[:100] + "..."
 		}

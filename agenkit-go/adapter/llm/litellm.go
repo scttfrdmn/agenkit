@@ -39,7 +39,7 @@ import (
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	fmt.Println(response.Content)
+//	fmt.Println(response.ContentString())
 //
 // Streaming example:
 //
@@ -48,7 +48,7 @@ import (
 //	    log.Fatal(err)
 //	}
 //	for chunk := range stream {
-//	    fmt.Print(chunk.Content)
+//	    fmt.Print(chunk.ContentString())
 //	}
 //
 // Provider-specific options:
@@ -208,7 +208,7 @@ type litellmDelta struct {
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	fmt.Println(response.Content)
+//	fmt.Println(response.ContentString())
 //	fmt.Printf("Usage: %+v\n", response.Metadata["usage"])
 func (l *LiteLLMLLM) Complete(ctx context.Context, messages []*agenkit.Message, opts ...CallOption) (*agenkit.Message, error) {
 	// Build options
@@ -287,7 +287,7 @@ func (l *LiteLLMLLM) Complete(ctx context.Context, messages []*agenkit.Message, 
 //	    log.Fatal(err)
 //	}
 //	for chunk := range stream {
-//	    fmt.Print(chunk.Content)
+//	    fmt.Print(chunk.ContentString())
 //	}
 func (l *LiteLLMLLM) Stream(ctx context.Context, messages []*agenkit.Message, opts ...CallOption) (<-chan *agenkit.Message, error) {
 	// Build options
@@ -393,7 +393,7 @@ func (l *LiteLLMLLM) convertMessages(messages []*agenkit.Message) []litellmMessa
 
 		litellmMessages = append(litellmMessages, litellmMessage{
 			Role:    role,
-			Content: msg.Content,
+			Content: msg.ContentString(),
 		})
 	}
 

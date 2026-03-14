@@ -78,7 +78,7 @@ func (c *ChatAgent) Name() string {
 
 // Process processes a single message and returns a complete response.
 func (c *ChatAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	userMessage := strings.ToLower(message.Content)
+	userMessage := strings.ToLower(message.ContentString())
 
 	var response string
 	if strings.Contains(userMessage, "hello") || strings.Contains(userMessage, "hi") {
@@ -90,7 +90,7 @@ func (c *ChatAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 	} else if strings.Contains(userMessage, "help") {
 		response = "I can respond to greetings, check how you're doing, or provide information. Try asking me something!"
 	} else {
-		response = fmt.Sprintf("You said: '%s'. That's interesting!", message.Content)
+		response = fmt.Sprintf("You said: '%s'. That's interesting!", message.ContentString())
 	}
 
 	return agenkit.NewMessage("agent", response), nil
@@ -215,7 +215,7 @@ func runChatExample(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("process failed: %w", err)
 		}
-		fmt.Printf("Agent: %s\n\n", response.Content)
+		fmt.Printf("Agent: %s\n\n", response.ContentString())
 
 		// Small delay between messages
 		time.Sleep(500 * time.Millisecond)
@@ -267,7 +267,7 @@ func runStreamingExample(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("process failed: %w", err)
 	}
-	fmt.Printf("Agent: %s\n\n", response.Content)
+	fmt.Printf("Agent: %s\n\n", response.ContentString())
 
 	time.Sleep(1 * time.Second)
 
@@ -287,7 +287,7 @@ func runStreamingExample(ctx context.Context) error {
 				fmt.Println()
 				goto streamingDone
 			}
-			fmt.Printf("%s ", chunk.Content)
+			fmt.Printf("%s ", chunk.ContentString())
 
 		case err, ok := <-errorChan:
 			if ok && err != nil {
@@ -354,7 +354,7 @@ func runConcurrentExample(ctx context.Context) error {
 				return
 			}
 
-			results <- clientResult{clientID: clientID, response: response.Content}
+			results <- clientResult{clientID: clientID, response: response.ContentString()}
 		}(i)
 	}
 
@@ -419,7 +419,7 @@ func runPersistenceExample(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("process failed: %w", err)
 		}
-		fmt.Printf("  [%d/10] %s\n", i+1, response.Content)
+		fmt.Printf("  [%d/10] %s\n", i+1, response.ContentString())
 	}
 
 	fmt.Println()

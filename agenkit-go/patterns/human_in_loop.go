@@ -219,7 +219,7 @@ func (h *HumanInLoopAgent) Process(ctx context.Context, message *agenkit.Message
 		Context: map[string]interface{}{
 			"agent":                h.agent.Name(),
 			"approval_threshold":   h.approvalThreshold,
-			"original_message":     message.Content,
+			"original_message":     message.ContentString(),
 			"confidence_shortfall": h.approvalThreshold - confidence,
 		},
 		Timestamp: time.Now().UTC(),
@@ -241,7 +241,7 @@ func (h *HumanInLoopAgent) Process(ctx context.Context, message *agenkit.Message
 		}
 
 		rejectionMsg.Metadata["approval_status"] = "rejected"
-		rejectionMsg.Metadata["original_response"] = response.Content
+		rejectionMsg.Metadata["original_response"] = response.ContentString()
 		rejectionMsg.Metadata["confidence"] = confidence
 
 		return rejectionMsg, nil
@@ -253,7 +253,7 @@ func (h *HumanInLoopAgent) Process(ctx context.Context, message *agenkit.Message
 		// Use modified version
 		finalResponse = approval.ModifiedMessage
 		finalResponse.Metadata["approval_status"] = "approved_with_modifications"
-		finalResponse.Metadata["original_response"] = response.Content
+		finalResponse.Metadata["original_response"] = response.ContentString()
 	} else {
 		finalResponse.Metadata["approval_status"] = "approved"
 	}
@@ -319,7 +319,7 @@ func SimpleApprovalFunc(autoApprove bool) ApprovalFunc {
 //
 //	func ConsoleApprovalFunc(ctx context.Context, request *ApprovalRequest) (*ApprovalResponse, error) {
 //	    fmt.Printf("\nApproval Required (confidence: %.2f)\n", request.Confidence)
-//	    fmt.Printf("Message: %s\n", request.Message.Content)
+//	    fmt.Printf("Message: %s\n", request.Message.ContentString())
 //	    fmt.Print("Approve? (y/n): ")
 //
 //	    var response string

@@ -32,7 +32,7 @@ func (a *testHealthAgent) Introspect() *agenkit.IntrospectionResult {
 func (a *testHealthAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "assistant",
-		Content: "Echo: " + message.Content,
+		Content: "Echo: " + message.ContentString(),
 	}, nil
 }
 

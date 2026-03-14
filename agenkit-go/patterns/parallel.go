@@ -220,7 +220,7 @@ var DefaultAggregators = struct {
 			if i > 0 {
 				combined += "\n\n---\n\n"
 			}
-			combined += msg.Content
+			combined += msg.ContentString()
 		}
 
 		return agenkit.NewMessage("assistant", combined)
@@ -236,8 +236,8 @@ var DefaultAggregators = struct {
 		msgByContent := make(map[string]*agenkit.Message)
 
 		for _, msg := range messages {
-			votes[msg.Content]++
-			msgByContent[msg.Content] = msg
+			votes[msg.ContentString()]++
+			msgByContent[msg.ContentString()] = msg
 		}
 
 		// Find most common response

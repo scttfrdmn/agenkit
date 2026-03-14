@@ -297,7 +297,7 @@ func TestTreeOfThoughtCustomEvaluator(t *testing.T) {
 	}
 
 	// Best path should contain "Branch A" due to custom evaluator
-	pathText := response.Content
+	pathText := response.ContentString()
 	if !strings.Contains(pathText, "Branch A") {
 		t.Errorf("Expected best path to contain 'Branch A', got: %s", pathText)
 	}

@@ -31,8 +31,8 @@ func TestLeastToMostBasic(t *testing.T) {
 	}
 
 	// Check response content
-	if response.Content != "22" {
-		t.Errorf("Expected content='22', got: %s", response.Content)
+	if response.ContentString() != "22" {
+		t.Errorf("Expected content='22', got: %s", response.ContentString())
 	}
 
 	// Check metadata
@@ -177,8 +177,8 @@ func TestLeastToMostFinalSolution(t *testing.T) {
 		t.Fatalf("Process failed: %v", err)
 	}
 
-	if response.Content != "Final answer" {
-		t.Errorf("Expected content='Final answer', got: %s", response.Content)
+	if response.ContentString() != "Final answer" {
+		t.Errorf("Expected content='Final answer', got: %s", response.ContentString())
 	}
 
 	if response.Role != "assistant" {
@@ -468,8 +468,8 @@ func TestLeastToMostAtomicProblem(t *testing.T) {
 		t.Errorf("Expected atomic problem, got: %v", subproblems)
 	}
 
-	if response.Content != "Single solution" {
-		t.Errorf("Expected content='Single solution', got: %s", response.Content)
+	if response.ContentString() != "Single solution" {
+		t.Errorf("Expected content='Single solution', got: %s", response.ContentString())
 	}
 }
 

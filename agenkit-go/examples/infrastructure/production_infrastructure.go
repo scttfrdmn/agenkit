@@ -39,7 +39,7 @@ func (a *SimpleEchoAgent) Capabilities() []string {
 func (a *SimpleEchoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "assistant",
-		Content: fmt.Sprintf("[%s] Echo: %s", a.name, message.Content),
+		Content: fmt.Sprintf("[%s] Echo: %s", a.name, message.ContentString()),
 	}, nil
 }
 
@@ -82,7 +82,7 @@ func basicLoadBalancingExample() {
 			log.Printf("Request %d failed: %v", i+1, err)
 			continue
 		}
-		fmt.Printf("Request %d: %s\n", i+1, response.Content)
+		fmt.Printf("Request %d: %s\n", i+1, response.ContentString())
 	}
 
 	// Show backend statistics
@@ -245,7 +245,7 @@ func enhancedRetryExample() {
 		log.Printf("Failed after retries: %v", err)
 		return
 	}
-	fmt.Printf("Response: %s\n", response.Content)
+	fmt.Printf("Response: %s\n", response.ContentString())
 
 	// Show retry metrics
 	metrics := retryAgent.Metrics()
@@ -292,7 +292,7 @@ func errorClassificationExample() {
 		return
 	}
 
-	fmt.Printf("Response: %s\n", response.Content)
+	fmt.Printf("Response: %s\n", response.ContentString())
 	fmt.Printf("\nError class distribution:\n")
 	for errorClass, count := range retryAgent.Metrics().ErrorClassCounts {
 		fmt.Printf("  %s: %d\n", errorClass, count)

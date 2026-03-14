@@ -81,8 +81,8 @@ func TestSelfConsistencyBasic(t *testing.T) {
 	}
 
 	// Check response content
-	if !strings.Contains(response.Content, "42") {
-		t.Errorf("Expected answer to contain '42', got: %s", response.Content)
+	if !strings.Contains(response.ContentString(), "42") {
+		t.Errorf("Expected answer to contain '42', got: %s", response.ContentString())
 	}
 
 	// Check metadata
@@ -148,8 +148,8 @@ func TestSelfConsistencyMajorityVoting(t *testing.T) {
 	}
 
 	// Majority vote should be "Paris" (3/5 = 0.6)
-	if !strings.Contains(strings.ToLower(response.Content), "paris") {
-		t.Errorf("Expected answer to contain 'paris', got: %s", response.Content)
+	if !strings.Contains(strings.ToLower(response.ContentString()), "paris") {
+		t.Errorf("Expected answer to contain 'paris', got: %s", response.ContentString())
 	}
 
 	consistencyScore := response.Metadata["consistency_score"].(float64)
@@ -184,8 +184,8 @@ func TestSelfConsistencyWeightedVoting(t *testing.T) {
 	}
 
 	// Weighted vote should favor "London" despite fewer occurrences
-	if !strings.Contains(strings.ToLower(response.Content), "london") {
-		t.Errorf("Expected answer to contain 'london', got: %s", response.Content)
+	if !strings.Contains(strings.ToLower(response.ContentString()), "london") {
+		t.Errorf("Expected answer to contain 'london', got: %s", response.ContentString())
 	}
 }
 
@@ -213,8 +213,8 @@ func TestSelfConsistencyFirstStrategy(t *testing.T) {
 	}
 
 	// Should return the first answer (answers[0])
-	if !strings.Contains(response.Content, "A") {
-		t.Errorf("Expected answer to contain 'A', got: %s", response.Content)
+	if !strings.Contains(response.ContentString(), "A") {
+		t.Errorf("Expected answer to contain 'A', got: %s", response.ContentString())
 	}
 
 	consistencyScore := response.Metadata["consistency_score"].(float64)
@@ -261,8 +261,8 @@ func TestSelfConsistencyCustomExtractor(t *testing.T) {
 	}
 
 	// Should extract "42" as majority
-	if response.Content != "42" {
-		t.Errorf("Expected answer='42', got: %s", response.Content)
+	if response.ContentString() != "42" {
+		t.Errorf("Expected answer='42', got: %s", response.ContentString())
 	}
 }
 
@@ -346,8 +346,8 @@ func TestSelfConsistencySingleSample(t *testing.T) {
 	}
 
 	// Should work with single sample
-	if !strings.Contains(response.Content, "42") {
-		t.Errorf("Expected answer to contain '42', got: %s", response.Content)
+	if !strings.Contains(response.ContentString(), "42") {
+		t.Errorf("Expected answer to contain '42', got: %s", response.ContentString())
 	}
 
 	consistencyScore := response.Metadata["consistency_score"].(float64)
@@ -550,8 +550,8 @@ func TestSelfConsistencyCaseInsensitive(t *testing.T) {
 	}
 
 	// Should recognize all case variations as the same answer (4/5 = 0.8)
-	if !strings.Contains(strings.ToLower(response.Content), "paris") {
-		t.Errorf("Expected answer to contain 'paris', got: %s", response.Content)
+	if !strings.Contains(strings.ToLower(response.ContentString()), "paris") {
+		t.Errorf("Expected answer to contain 'paris', got: %s", response.ContentString())
 	}
 
 	consistencyScore := response.Metadata["consistency_score"].(float64)

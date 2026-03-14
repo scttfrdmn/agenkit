@@ -66,7 +66,7 @@ func (d *DecisionAgent) Capabilities() []string {
 }
 
 func (d *DecisionAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := strings.ToLower(message.Content)
+	content := strings.ToLower(message.ContentString())
 
 	// Analyze request complexity
 	var confidence float64
@@ -87,7 +87,7 @@ func (d *DecisionAgent) Process(ctx context.Context, message *agenkit.Message) (
 		decisionType = "routine"
 	}
 
-	response := agenkit.NewMessage("assistant", fmt.Sprintf("%s Regarding: %s", responseText, message.Content))
+	response := agenkit.NewMessage("assistant", fmt.Sprintf("%s Regarding: %s", responseText, message.ContentString()))
 	response.Metadata = map[string]interface{}{
 		"confidence":    confidence,
 		"decision_type": decisionType,

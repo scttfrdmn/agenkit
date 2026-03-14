@@ -113,7 +113,7 @@ type StreamEventsConfig struct {
 //	for event := range adapter.StreamEvents(ctx, message) {
 //	    switch e := event.(type) {
 //	    case *TextMessageChunk:
-//	        fmt.Print(e.Content)
+//	        fmt.Print(e.ContentString())
 //	    case *TextMessageComplete:
 //	        fmt.Printf("\n[Finished: %s]\n", e.FinishReason)
 //	    }
@@ -179,7 +179,7 @@ func (a *AGUIAdapter) StreamEventsWithConfig(
 		}
 
 		// Extract content
-		content := response.Content
+		content := response.ContentString()
 
 		// Stream content in chunks (simulating streaming)
 		// In a real streaming implementation, this would yield as content arrives

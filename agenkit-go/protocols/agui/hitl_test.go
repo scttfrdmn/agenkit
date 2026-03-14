@@ -524,8 +524,8 @@ func TestAGUIHumanInLoopAdapter_HandleInterruptResponse_Edit(t *testing.T) {
 		t.Errorf("original_response = %v, want 'Original response'", response.Metadata["original_response"])
 	}
 
-	if response.Content != "Modified response" {
-		t.Errorf("Content = %s, want 'Modified response'", response.Content)
+	if response.ContentString() != "Modified response" {
+		t.Errorf("Content = %s, want 'Modified response'", response.ContentString())
 	}
 }
 

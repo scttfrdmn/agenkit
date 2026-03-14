@@ -51,7 +51,7 @@ func (b *BillingAgent) Process(ctx context.Context, message *agenkit.Message) (*
 		"- Billing disputes\n"+
 		"- Subscription changes\n\n"+
 		"Please provide your account number for assistance.",
-		message.Content)
+		message.ContentString())
 
 	return agenkit.NewMessage("agent", response), nil
 }
@@ -84,7 +84,7 @@ func (t *TechnicalAgent) Process(ctx context.Context, message *agenkit.Message) 
 		"- Error resolution\n"+
 		"- System optimization\n\n"+
 		"Let's diagnose the problem together.",
-		message.Content)
+		message.ContentString())
 
 	return agenkit.NewMessage("agent", response), nil
 }
@@ -117,7 +117,7 @@ func (a *AccountAgent) Process(ctx context.Context, message *agenkit.Message) (*
 		"- Account preferences\n"+
 		"- Data management\n\n"+
 		"How can I assist with your account today?",
-		message.Content)
+		message.ContentString())
 
 	return agenkit.NewMessage("agent", response), nil
 }
@@ -150,7 +150,7 @@ func (g *GeneralAgent) Process(ctx context.Context, message *agenkit.Message) (*
 		"- Service overview\n"+
 		"- Routing to specialists\n\n"+
 		"How may I assist you today?",
-		message.Content)
+		message.ContentString())
 
 	return agenkit.NewMessage("agent", response), nil
 }
@@ -175,7 +175,7 @@ func (m *MockLLMAgent) Introspect() *agenkit.IntrospectionResult {
 
 func (m *MockLLMAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simple classification based on content
-	content := strings.ToLower(message.Content)
+	content := strings.ToLower(message.ContentString())
 
 	category := "general"
 	if strings.Contains(content, "classify") {
@@ -284,7 +284,7 @@ func main() {
 	complexRequest := agenkit.NewMessage("user",
 		"I'm having trouble accessing my account after making a payment. The system shows an error.")
 
-	fmt.Printf("\nComplex request: %s\n", complexRequest.Content)
+	fmt.Printf("\nComplex request: %s\n", complexRequest.ContentString())
 
 	result, err := llmRouter.Process(ctx, complexRequest)
 	if err != nil {
@@ -296,7 +296,7 @@ func main() {
 	}
 
 	fmt.Printf("\n📤 Response preview:\n%s\n",
-		truncate(result.Content, 150))
+		truncate(result.ContentString(), 150))
 
 	// Example 3: Handling unknown categories with default
 	fmt.Println("\n" + strings.Repeat("=", 50))
@@ -306,7 +306,7 @@ func main() {
 	unknownRequest := agenkit.NewMessage("user",
 		"Can you tell me about your company?")
 
-	fmt.Printf("\nUnknown category request: %s\n", unknownRequest.Content)
+	fmt.Printf("\nUnknown category request: %s\n", unknownRequest.ContentString())
 
 	result, err = router.Process(ctx, unknownRequest)
 	if err != nil {
@@ -336,7 +336,7 @@ func main() {
 
 	ambiguousRequest := agenkit.NewMessage("user", "Hello, I need help")
 
-	fmt.Printf("\nAmbiguous request: %s\n", ambiguousRequest.Content)
+	fmt.Printf("\nAmbiguous request: %s\n", ambiguousRequest.ContentString())
 
 	_, err = strictRouter.Process(ctx, ambiguousRequest)
 	if err != nil {
@@ -381,7 +381,7 @@ func main() {
 
 	techRequest := agenkit.NewMessage("user", "My keyboard is not working properly")
 
-	fmt.Printf("\nNested routing request: %s\n", techRequest.Content)
+	fmt.Printf("\nNested routing request: %s\n", techRequest.ContentString())
 	fmt.Println("   Level 1: Main router → technical")
 	fmt.Println("   Level 2: Tech sub-router → hardware specialist")
 

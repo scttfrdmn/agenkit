@@ -225,14 +225,14 @@ func (r *ReflectionAgent) Process(ctx context.Context, message *agenkit.Message)
 		}
 
 		// Critique current output
-		critiqueMsg := r.buildCritiquePrompt(message.Content, output.Content)
+		critiqueMsg := r.buildCritiquePrompt(message.ContentString(), output.ContentString())
 		critiqueResponse, err := r.critic.Process(ctx, critiqueMsg)
 		if err != nil {
 			return nil, fmt.Errorf("critique failed at iteration %d: %w", iteration, err)
 		}
 
 		// Parse critique (score + feedback)
-		score, feedback, err := r.parseCritique(critiqueResponse.Content)
+		score, feedback, err := r.parseCritique(critiqueResponse.ContentString())
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse critique at iteration %d: %w", iteration, err)
 		}
@@ -242,7 +242,7 @@ func (r *ReflectionAgent) Process(ctx context.Context, message *agenkit.Message)
 		// Record step (skip timestamp if not verbose to avoid syscall)
 		step := ReflectionStep{
 			Iteration:    iteration,
-			Output:       output.Content,
+			Output:       output.ContentString(),
 			Critique:     feedback,
 			QualityScore: score,
 			Improvement:  improvement,
@@ -260,7 +260,7 @@ func (r *ReflectionAgent) Process(ctx context.Context, message *agenkit.Message)
 		}
 
 		// Refine based on critique
-		refineMsg := r.buildRefinementPrompt(message.Content, output.Content, feedback, iteration)
+		refineMsg := r.buildRefinementPrompt(message.ContentString(), output.ContentString(), feedback, iteration)
 		output, err = r.generator.Process(ctx, refineMsg)
 		if err != nil {
 			return nil, fmt.Errorf("refinement failed at iteration %d: %w", iteration, err)
@@ -450,7 +450,7 @@ func (r *ReflectionAgent) formatResult(output *agenkit.Message, stopReason StopR
 
 	result := &agenkit.Message{
 		Role:      output.Role,
-		Content:   output.Content,
+		Content:   output.ContentString(),
 		Metadata:  metadata,
 		Timestamp: time.Now().UTC(),
 	}

@@ -41,7 +41,7 @@ func (a *QuizAgent) Introspect() *agenkit.IntrospectionResult {
 
 func (a *QuizAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simple rule-based responses for demo
-	query := strings.ToLower(message.Content)
+	query := strings.ToLower(message.ContentString())
 	var response string
 
 	switch {

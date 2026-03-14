@@ -166,11 +166,11 @@ func TestMultiAgentOrchestrator_ProcessSuccess(t *testing.T) {
 	}
 
 	// Check result contains both agent responses
-	if !strings.Contains(result.Content, "agent1: Response from agent1") {
+	if !strings.Contains(result.ContentString(), "agent1: Response from agent1") {
 		t.Error("expected result to contain agent1 response")
 	}
 
-	if !strings.Contains(result.Content, "agent2: Response from agent2") {
+	if !strings.Contains(result.ContentString(), "agent2: Response from agent2") {
 		t.Error("expected result to contain agent2 response")
 	}
 
@@ -206,7 +206,7 @@ func TestMultiAgentOrchestrator_ProcessWithFailure(t *testing.T) {
 	}
 
 	// Result should show failure
-	if !strings.Contains(result.Content, "agent2: Failed - agent2 failed") {
+	if !strings.Contains(result.ContentString(), "agent2: Failed - agent2 failed") {
 		t.Error("expected result to show agent2 failure")
 	}
 
@@ -274,8 +274,8 @@ func TestMultiAgentOrchestrator_NoAgents(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "" {
-		t.Errorf("expected empty result with no agents, got: %s", result.Content)
+	if result.ContentString() != "" {
+		t.Errorf("expected empty result with no agents, got: %s", result.ContentString())
 	}
 }
 
@@ -373,20 +373,20 @@ func TestConsensusAgent_ProcessSuccess(t *testing.T) {
 	}
 
 	// Check result format
-	if !strings.Contains(result.Content, "Consensus from 3 agents:") {
+	if !strings.Contains(result.ContentString(), "Consensus from 3 agents:") {
 		t.Error("expected consensus header")
 	}
 
 	// Check all agent responses are included
-	if !strings.Contains(result.Content, "Agent 1: Answer A") {
+	if !strings.Contains(result.ContentString(), "Agent 1: Answer A") {
 		t.Error("expected Agent 1 response")
 	}
 
-	if !strings.Contains(result.Content, "Agent 2: Answer B") {
+	if !strings.Contains(result.ContentString(), "Agent 2: Answer B") {
 		t.Error("expected Agent 2 response")
 	}
 
-	if !strings.Contains(result.Content, "Agent 3: Answer C") {
+	if !strings.Contains(result.ContentString(), "Agent 3: Answer C") {
 		t.Error("expected Agent 3 response")
 	}
 }
@@ -426,8 +426,8 @@ func TestConsensusAgent_NoAgents(t *testing.T) {
 	}
 
 	// Should return consensus from 0 agents
-	if !strings.Contains(result.Content, "Consensus from 0 agents:") {
-		t.Errorf("expected consensus from 0 agents, got: %s", result.Content)
+	if !strings.Contains(result.ContentString(), "Consensus from 0 agents:") {
+		t.Errorf("expected consensus from 0 agents, got: %s", result.ContentString())
 	}
 }
 
@@ -446,11 +446,11 @@ func TestConsensusAgent_SingleAgent(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !strings.Contains(result.Content, "Consensus from 1 agents:") {
+	if !strings.Contains(result.ContentString(), "Consensus from 1 agents:") {
 		t.Error("expected consensus from 1 agent")
 	}
 
-	if !strings.Contains(result.Content, "Agent 1: Single answer") {
+	if !strings.Contains(result.ContentString(), "Agent 1: Single answer") {
 		t.Error("expected agent response")
 	}
 }

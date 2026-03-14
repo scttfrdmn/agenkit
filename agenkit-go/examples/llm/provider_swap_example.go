@@ -72,7 +72,7 @@ func runExamples(llmAdapter llm.LLM) {
 	}
 
 	fmt.Printf("User: What is the meaning of life?\n")
-	fmt.Printf("Assistant: %s\n", response.Content)
+	fmt.Printf("Assistant: %s\n", response.ContentString())
 
 	// Example 2: Streaming
 	fmt.Println("\n=== Example 2: Streaming Response ===")
@@ -92,7 +92,7 @@ func runExamples(llmAdapter llm.LLM) {
 		if errMsg, ok := chunk.Metadata["error"].(string); ok {
 			log.Fatalf("Stream error: %s", errMsg)
 		}
-		fmt.Print(chunk.Content)
+		fmt.Print(chunk.ContentString())
 	}
 	fmt.Println()
 
@@ -114,7 +114,7 @@ func runExamples(llmAdapter llm.LLM) {
 	}
 
 	fmt.Printf("User: Explain quantum computing in one sentence.\n")
-	fmt.Printf("Assistant: %s\n", response.Content)
+	fmt.Printf("Assistant: %s\n", response.ContentString())
 
 	// Example 4: Accessing provider-specific features via Unwrap()
 	fmt.Println("\n=== Example 4: Provider-Specific Features ===")

@@ -45,12 +45,12 @@ func (a *testAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 	time.Sleep(a.delay)
 
 	if a.shouldFail {
-		return nil, fmt.Errorf("agent failed processing: %s", message.Content)
+		return nil, fmt.Errorf("agent failed processing: %s", message.ContentString())
 	}
 
 	return &agenkit.Message{
 		Role:    "agent",
-		Content: fmt.Sprintf("Processed: %s", message.Content),
+		Content: fmt.Sprintf("Processed: %s", message.ContentString()),
 	}, nil
 }
 
@@ -184,8 +184,8 @@ func TestBasicBatching(t *testing.T) {
 			continue
 		}
 		expected := fmt.Sprintf("Processed: msg%d", i)
-		if result.Content != expected {
-			t.Errorf("Request %d: expected %q, got %q", i, expected, result.Content)
+		if result.ContentString() != expected {
+			t.Errorf("Request %d: expected %q, got %q", i, expected, result.ContentString())
 		}
 	}
 
@@ -683,11 +683,11 @@ func (a *partialFailAgent) Introspect() *agenkit.IntrospectionResult {
 
 func (a *partialFailAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(10 * time.Millisecond)
-	if len(message.Content) >= 4 && message.Content[:4] == "fail" {
-		return nil, fmt.Errorf("Failed: %s", message.Content)
+	if cs := message.ContentString(); len(cs) >= 4 && cs[:4] == "fail" {
+		return nil, fmt.Errorf("Failed: %s", cs)
 	}
 	return &agenkit.Message{
 		Role:    "agent",
-		Content: fmt.Sprintf("Success: %s", message.Content),
+		Content: fmt.Sprintf("Success: %s", message.ContentString()),
 	}, nil
 }

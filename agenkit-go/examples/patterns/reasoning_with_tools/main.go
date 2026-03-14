@@ -156,7 +156,7 @@ func exampleBasicReasoning() error {
 	}
 
 	fmt.Println("Question: What is 2 + 2?")
-	fmt.Printf("Answer: %s\n", result.Content)
+	fmt.Printf("Answer: %s\n", result.ContentString())
 	fmt.Println("✓ Tool was called DURING reasoning, not after")
 
 	return nil
@@ -190,7 +190,7 @@ func exampleMultipleTools() error {
 
 	fmt.Println("Question: Search for Go and calculate 15 + 30")
 	fmt.Println("Tools used: search, calculator")
-	fmt.Printf("Answer: %s\n", result.Content)
+	fmt.Printf("Answer: %s\n", result.ContentString())
 	fmt.Println("✓ Multiple tools orchestrated through reasoning")
 
 	return nil
@@ -227,7 +227,7 @@ func exampleExtendedThinking() error {
 
 	fmt.Println("Question: Calculate 10 * 5 and 100 / 4")
 	fmt.Println("Steps taken: Multiple reasoning steps with tool calls")
-	fmt.Printf("Answer: %s\n", result.Content)
+	fmt.Printf("Answer: %s\n", result.ContentString())
 
 	if _, ok := result.Metadata["reasoning_trace"]; ok {
 		fmt.Println("✓ Reasoning trace captured:")
@@ -304,7 +304,7 @@ func exampleMaxStepsLimit() error {
 
 	fmt.Println("Question: Think deeply")
 	fmt.Println("Max reasoning steps: 5")
-	fmt.Printf("Answer: %s\n", result.Content)
+	fmt.Printf("Answer: %s\n", result.ContentString())
 	fmt.Println("✓ Reasoning terminated at max steps to prevent infinite loops")
 
 	return nil

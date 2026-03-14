@@ -74,7 +74,7 @@ func (m *AccuracyMetric) Measure(agent agenkit.Agent, inputMessage, outputMessag
 		return 1.0, nil // No expected output = always correct
 	}
 
-	actual := outputMessage.Content
+	actual := outputMessage.ContentString()
 
 	// Custom validator
 	if m.validator != nil {
@@ -210,8 +210,8 @@ func (m *QualityMetrics) Measure(agent agenkit.Agent, inputMessage, outputMessag
 //
 //	Quality score (0.0 to 1.0)
 func (m *QualityMetrics) ruleBasedQuality(inputMessage, outputMessage *agenkit.Message, ctx map[string]interface{}) float64 {
-	inputText := strings.ToLower(inputMessage.Content)
-	outputText := strings.ToLower(outputMessage.Content)
+	inputText := strings.ToLower(inputMessage.ContentString())
+	outputText := strings.ToLower(outputMessage.ContentString())
 
 	scores := make(map[string]float64)
 

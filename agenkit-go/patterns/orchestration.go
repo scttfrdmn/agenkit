@@ -300,7 +300,7 @@ func (p *ParallelPattern) Unwrap() []agenkit.Agent {
 // Example:
 //
 //	router := func(msg agenkit.Message) string {
-//	    if strings.Contains(msg.Content, "code") {
+//	    if strings.Contains(msg.ContentString(), "code") {
 //	        return "code_agent"
 //	    }
 //	    return "general_agent"

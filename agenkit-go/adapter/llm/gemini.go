@@ -27,7 +27,7 @@ import (
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	fmt.Println(response.Content)
+//	fmt.Println(response.ContentString())
 //
 // Streaming example:
 //
@@ -36,7 +36,7 @@ import (
 //	    log.Fatal(err)
 //	}
 //	for chunk := range stream {
-//	    fmt.Print(chunk.Content)
+//	    fmt.Print(chunk.ContentString())
 //	}
 //
 // Provider-specific options:
@@ -121,7 +121,7 @@ func (g *GeminiLLM) Model() string {
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	fmt.Println(response.Content)
+//	fmt.Println(response.ContentString())
 //	fmt.Printf("Usage: %+v\n", response.Metadata["usage"])
 func (g *GeminiLLM) Complete(ctx context.Context, messages []*agenkit.Message, opts ...CallOption) (*agenkit.Message, error) {
 	// Build options
@@ -191,7 +191,7 @@ func (g *GeminiLLM) Complete(ctx context.Context, messages []*agenkit.Message, o
 //	    log.Fatal(err)
 //	}
 //	for chunk := range stream {
-//	    fmt.Print(chunk.Content)
+//	    fmt.Print(chunk.ContentString())
 //	}
 func (g *GeminiLLM) Stream(ctx context.Context, messages []*agenkit.Message, opts ...CallOption) (<-chan *agenkit.Message, error) {
 	// Build options
@@ -274,7 +274,7 @@ func (g *GeminiLLM) convertMessages(messages []*agenkit.Message) ([]*genai.Conte
 		content := &genai.Content{
 			Role: role,
 			Parts: []genai.Part{
-				genai.Text(msg.Content),
+				genai.Text(msg.ContentString()),
 			},
 		}
 
@@ -284,7 +284,7 @@ func (g *GeminiLLM) convertMessages(messages []*agenkit.Message) ([]*genai.Conte
 	// The last message is what we're sending
 	lastMsg := messages[len(messages)-1]
 	lastParts := []genai.Part{
-		genai.Text(lastMsg.Content),
+		genai.Text(lastMsg.ContentString()),
 	}
 
 	return history, lastParts

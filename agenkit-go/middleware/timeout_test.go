@@ -39,7 +39,7 @@ func (a *FastAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 	time.Sleep(a.delay)
 	return &agenkit.Message{
 		Role:    "agent",
-		Content: "Processed: " + message.Content,
+		Content: "Processed: " + message.ContentString(),
 	}, nil
 }
 
@@ -68,7 +68,7 @@ func (a *SlowAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 	time.Sleep(a.delay)
 	return &agenkit.Message{
 		Role:    "agent",
-		Content: "Processed after delay: " + message.Content,
+		Content: "Processed after delay: " + message.ContentString(),
 	}, nil
 }
 
@@ -178,8 +178,8 @@ func TestTimeoutAllowsFastAgent(t *testing.T) {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 
-	if response.Content != "Processed: test" {
-		t.Errorf("Expected 'Processed: test', got '%s'", response.Content)
+	if response.ContentString() != "Processed: test" {
+		t.Errorf("Expected 'Processed: test', got '%s'", response.ContentString())
 	}
 
 	// Check metrics
@@ -214,8 +214,8 @@ func TestTimeoutMultipleSuccessfulRequests(t *testing.T) {
 			t.Fatalf("Request %d: expected no error, got %v", i, err)
 		}
 
-		if response.Content != "Processed: test" {
-			t.Errorf("Request %d: expected 'Processed: test', got '%s'", i, response.Content)
+		if response.ContentString() != "Processed: test" {
+			t.Errorf("Request %d: expected 'Processed: test', got '%s'", i, response.ContentString())
 		}
 	}
 
@@ -306,8 +306,8 @@ func TestTimeoutBoundaryCase(t *testing.T) {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 
-	if response.Content != "Processed: test" {
-		t.Errorf("Expected 'Processed: test', got '%s'", response.Content)
+	if response.ContentString() != "Processed: test" {
+		t.Errorf("Expected 'Processed: test', got '%s'", response.ContentString())
 	}
 
 	if timeoutAgent.Metrics().SuccessfulRequests != 1 {
@@ -325,8 +325,8 @@ func TestTimeoutMixedRequests(t *testing.T) {
 	if err1 != nil {
 		t.Fatalf("Request 1: expected no error, got %v", err1)
 	}
-	if response1.Content != "Response" {
-		t.Errorf("Request 1: expected 'Response', got '%s'", response1.Content)
+	if response1.ContentString() != "Response" {
+		t.Errorf("Request 1: expected 'Response', got '%s'", response1.ContentString())
 	}
 
 	// Request 2: Slow (times out)
@@ -345,8 +345,8 @@ func TestTimeoutMixedRequests(t *testing.T) {
 	if err3 != nil {
 		t.Fatalf("Request 3: expected no error, got %v", err3)
 	}
-	if response3.Content != "Response" {
-		t.Errorf("Request 3: expected 'Response', got '%s'", response3.Content)
+	if response3.ContentString() != "Response" {
+		t.Errorf("Request 3: expected 'Response', got '%s'", response3.ContentString())
 	}
 
 	// Check metrics
@@ -522,8 +522,8 @@ func TestTimeoutDefaultConfig(t *testing.T) {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 
-	if response.Content != "Processed: test" {
-		t.Errorf("Expected 'Processed: test', got '%s'", response.Content)
+	if response.ContentString() != "Processed: test" {
+		t.Errorf("Expected 'Processed: test', got '%s'", response.ContentString())
 	}
 
 	if timeoutAgent.Metrics().SuccessfulRequests != 1 {
@@ -543,8 +543,8 @@ func TestTimeoutDefaultIs30Seconds(t *testing.T) {
 		t.Fatalf("Expected no error with 30s timeout, got %v", err)
 	}
 
-	if response.Content != "Processed after delay: test" {
-		t.Errorf("Expected 'Processed after delay: test', got '%s'", response.Content)
+	if response.ContentString() != "Processed after delay: test" {
+		t.Errorf("Expected 'Processed after delay: test', got '%s'", response.ContentString())
 	}
 
 	// Verify the default timeout is 30 seconds

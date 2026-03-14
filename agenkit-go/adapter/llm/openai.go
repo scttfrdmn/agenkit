@@ -25,7 +25,7 @@ import (
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	fmt.Println(response.Content)
+//	fmt.Println(response.ContentString())
 //
 // Streaming example:
 //
@@ -34,7 +34,7 @@ import (
 //	    log.Fatal(err)
 //	}
 //	for chunk := range stream {
-//	    fmt.Print(chunk.Content)
+//	    fmt.Print(chunk.ContentString())
 //	}
 //
 // Provider-specific options:
@@ -101,7 +101,7 @@ func (o *OpenAILLM) Model() string {
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	fmt.Println(response.Content)
+//	fmt.Println(response.ContentString())
 //	fmt.Printf("Usage: %+v\n", response.Metadata["usage"])
 func (o *OpenAILLM) Complete(ctx context.Context, messages []*agenkit.Message, opts ...CallOption) (*agenkit.Message, error) {
 	// Build options
@@ -213,7 +213,7 @@ func (o *OpenAILLM) Complete(ctx context.Context, messages []*agenkit.Message, o
 //	    log.Fatal(err)
 //	}
 //	for chunk := range stream {
-//	    fmt.Print(chunk.Content)
+//	    fmt.Print(chunk.ContentString())
 //	}
 func (o *OpenAILLM) Stream(ctx context.Context, messages []*agenkit.Message, opts ...CallOption) (<-chan *agenkit.Message, error) {
 	// Build options

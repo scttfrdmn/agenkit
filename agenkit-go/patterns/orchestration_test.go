@@ -37,7 +37,7 @@ func (m *mockAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 	}
 	return &agenkit.Message{
 		Role:    "assistant",
-		Content: m.prefix + message.Content,
+		Content: m.prefix + message.ContentString(),
 	}, nil
 }
 
@@ -102,7 +102,7 @@ func TestSequentialPattern_Process(t *testing.T) {
 	})
 
 	assertError(t, err, false)
-	assertEqual(t, result.Content, "B:A:test")
+	assertEqual(t, result.ContentString(), "B:A:test")
 }
 
 func TestSequentialPattern_ThreeAgents(t *testing.T) {
@@ -118,7 +118,7 @@ func TestSequentialPattern_ThreeAgents(t *testing.T) {
 	})
 
 	assertError(t, err, false)
-	assertEqual(t, result.Content, "C:B:A:test")
+	assertEqual(t, result.ContentString(), "C:B:A:test")
 }
 
 func TestSequentialPattern_ErrorPropagation(t *testing.T) {
@@ -233,7 +233,7 @@ func TestParallelPattern_Process(t *testing.T) {
 	aggregator := func(messages []*agenkit.Message) *agenkit.Message {
 		combined := ""
 		for _, msg := range messages {
-			combined += msg.Content + ","
+			combined += msg.ContentString() + ","
 		}
 		return &agenkit.Message{Role: "assistant", Content: combined}
 	}
@@ -246,8 +246,8 @@ func TestParallelPattern_Process(t *testing.T) {
 	})
 
 	assertError(t, err, false)
-	assertContains(t, result.Content, "A:test")
-	assertContains(t, result.Content, "B:test")
+	assertContains(t, result.ContentString(), "A:test")
+	assertContains(t, result.ContentString(), "B:test")
 }
 
 func TestParallelPattern_ErrorHandling(t *testing.T) {
@@ -342,7 +342,7 @@ func TestRouterPattern_Process(t *testing.T) {
 	agent2 := &mockAgent{name: "agent2", prefix: "B:"}
 
 	router := func(msg *agenkit.Message) string {
-		if strings.Contains(msg.Content, "route1") {
+		if strings.Contains(msg.ContentString(), "route1") {
 			return "agent1"
 		}
 		return "agent2"
@@ -362,7 +362,7 @@ func TestRouterPattern_Process(t *testing.T) {
 	})
 
 	assertError(t, err, false)
-	assertEqual(t, result1.Content, "A:route1")
+	assertEqual(t, result1.ContentString(), "A:route1")
 
 	// Route to agent2
 	result2, err := pattern.Process(context.Background(), &agenkit.Message{
@@ -371,7 +371,7 @@ func TestRouterPattern_Process(t *testing.T) {
 	})
 
 	assertError(t, err, false)
-	assertEqual(t, result2.Content, "B:route2")
+	assertEqual(t, result2.ContentString(), "B:route2")
 }
 
 func TestRouterPattern_UnknownKey(t *testing.T) {
@@ -419,7 +419,7 @@ func TestRouterPattern_DefaultHandler(t *testing.T) {
 	})
 
 	assertError(t, err, false)
-	assertEqual(t, result.Content, "DEFAULT:test")
+	assertEqual(t, result.ContentString(), "DEFAULT:test")
 }
 
 func TestRouterPattern_Capabilities(t *testing.T) {
@@ -484,5 +484,5 @@ func TestComposition_SequentialOfParallel(t *testing.T) {
 	})
 
 	assertError(t, err, false)
-	assertEqual(t, result.Content, "C:parallel_result")
+	assertEqual(t, result.ContentString(), "C:parallel_result")
 }

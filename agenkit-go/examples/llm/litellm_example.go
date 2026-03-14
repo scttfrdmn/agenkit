@@ -71,7 +71,7 @@ func simpleCompletion(llmAdapter llm.LLM) {
 	}
 
 	fmt.Printf("User: What is the capital of France?\n")
-	fmt.Printf("Assistant: %s\n", response.Content)
+	fmt.Printf("Assistant: %s\n", response.ContentString())
 
 	// Print usage stats
 	if usage, ok := response.Metadata["usage"].(map[string]interface{}); ok {
@@ -95,7 +95,7 @@ func conversationWithSystem(llmAdapter llm.LLM) {
 
 	fmt.Printf("System: You are a helpful coding assistant that explains concepts clearly.\n")
 	fmt.Printf("User: What is a REST API in one sentence?\n")
-	fmt.Printf("Assistant: %s\n", response.Content)
+	fmt.Printf("Assistant: %s\n", response.ContentString())
 }
 
 // streamingResponse demonstrates streaming completions.
@@ -120,7 +120,7 @@ func streamingResponse(llmAdapter llm.LLM) {
 			log.Fatalf("Stream error: %s", errMsg)
 		}
 
-		fmt.Print(chunk.Content)
+		fmt.Print(chunk.ContentString())
 	}
 	fmt.Println()
 }
@@ -147,7 +147,7 @@ func customParameters(llmAdapter llm.LLM) {
 	}
 
 	fmt.Printf("User: Explain HTTP in exactly one sentence.\n")
-	fmt.Printf("Assistant: %s\n", response.Content)
+	fmt.Printf("Assistant: %s\n", response.ContentString())
 	fmt.Printf("\nParameters used:\n")
 	fmt.Printf("  Temperature: 0.3 (precise)\n")
 	fmt.Printf("  MaxTokens: 100\n")
@@ -213,6 +213,6 @@ func multipleProviders(baseURL, apiKey string) {
 		return
 	}
 
-	fmt.Printf("\nResponse: %s\n", response.Content)
+	fmt.Printf("\nResponse: %s\n", response.ContentString())
 	fmt.Printf("Model used: %s\n", response.Metadata["model"])
 }

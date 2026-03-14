@@ -38,7 +38,7 @@ func TestPlanAndSolveBasic(t *testing.T) {
 		t.Fatalf("Process failed: %v", err)
 	}
 
-	if response.Content == "" {
+	if response.ContentString() == "" {
 		t.Error("Expected non-empty response content")
 	}
 
@@ -241,8 +241,8 @@ func TestPlanAndSolveCustomSolver(t *testing.T) {
 		t.Fatalf("Process failed: %v", err)
 	}
 
-	if !strings.Contains(response.Content, "Custom solution") {
-		t.Errorf("Expected custom solver output, got '%s'", response.Content)
+	if !strings.Contains(response.ContentString(), "Custom solution") {
+		t.Errorf("Expected custom solver output, got '%s'", response.ContentString())
 	}
 }
 

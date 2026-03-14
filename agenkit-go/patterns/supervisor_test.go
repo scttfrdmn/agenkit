@@ -126,8 +126,8 @@ func TestSupervisorAgent_BasicProcess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "final synthesized result" {
-		t.Errorf("expected 'final synthesized result', got '%s'", result.Content)
+	if result.ContentString() != "final synthesized result" {
+		t.Errorf("expected 'final synthesized result', got '%s'", result.ContentString())
 	}
 }
 
@@ -154,8 +154,8 @@ func TestSupervisorAgent_NoSubtasks(t *testing.T) {
 	}
 
 	// Should use planner's direct response
-	if result.Content != "direct response" {
-		t.Errorf("expected 'direct response', got '%s'", result.Content)
+	if result.ContentString() != "direct response" {
+		t.Errorf("expected 'direct response', got '%s'", result.ContentString())
 	}
 }
 
@@ -452,8 +452,8 @@ func TestSupervisorAgent_SimplePlanner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(synthesized.Content, "result1") || !strings.Contains(synthesized.Content, "result2") {
-		t.Errorf("expected synthesized result to contain both results, got: %s", synthesized.Content)
+	if !strings.Contains(synthesized.ContentString(), "result1") || !strings.Contains(synthesized.ContentString(), "result2") {
+		t.Errorf("expected synthesized result to contain both results, got: %s", synthesized.ContentString())
 	}
 }
 

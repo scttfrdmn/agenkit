@@ -49,7 +49,7 @@ func (f *FastAgent) Capabilities() []string {
 }
 
 func (f *FastAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	return agenkit.NewMessage("agent", "Processed: "+message.Content), nil
+	return agenkit.NewMessage("agent", "Processed: "+message.ContentString()), nil
 }
 
 func (f *FastAgent) Introspect() *agenkit.IntrospectionResult {

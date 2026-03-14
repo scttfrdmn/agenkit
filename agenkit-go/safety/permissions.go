@@ -446,7 +446,7 @@ func (m *PermissionMiddleware) Process(ctx context.Context, message *agenkit.Mes
 	}
 
 	// Check for dangerous operations in message content
-	contentStr := strings.ToLower(message.Content)
+	contentStr := strings.ToLower(message.ContentString())
 
 	// Detect file operations
 	if strings.Contains(contentStr, "read file") || strings.Contains(contentStr, "write file") || strings.Contains(contentStr, "delete file") {

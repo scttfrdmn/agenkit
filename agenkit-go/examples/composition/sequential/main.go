@@ -55,7 +55,7 @@ func (a *TranslationAgent) Introspect() *agenkit.IntrospectionResult {
 func (a *TranslationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(100 * time.Millisecond) // Simulate processing
 
-	text := message.Content
+	text := message.ContentString()
 	lang := "English"
 
 	// Simple detection
@@ -89,7 +89,7 @@ func (a *SummarizationAgent) Introspect() *agenkit.IntrospectionResult {
 func (a *SummarizationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(200 * time.Millisecond) // Simulate processing
 
-	text := message.Content
+	text := message.ContentString()
 	sentences := strings.Split(text, ".")
 	summary := fmt.Sprintf("Summary: %d sentences", len(sentences))
 
@@ -122,7 +122,7 @@ func (a *SentimentAgent) Introspect() *agenkit.IntrospectionResult {
 func (a *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(50 * time.Millisecond) // Simulate processing
 
-	text := strings.ToLower(message.Content)
+	text := strings.ToLower(message.ContentString())
 
 	// Simple sentiment detection
 	positive := []string{"good", "great", "excellent", "amazing", "wonderful"}
@@ -149,7 +149,7 @@ func (a *SentimentAgent) Process(ctx context.Context, message *agenkit.Message) 
 		sentiment = "negative"
 	}
 
-	result := agenkit.NewMessage("agent", fmt.Sprintf("%s [Sentiment: %s]", message.Content, sentiment))
+	result := agenkit.NewMessage("agent", fmt.Sprintf("%s [Sentiment: %s]", message.ContentString(), sentiment))
 	result.Metadata["sentiment"] = sentiment
 
 	// Preserve upstream metadata
@@ -184,7 +184,7 @@ func example1ContentPipeline() {
 	// Test with French input
 	input := agenkit.NewMessage("user", "Bonjour. This product is amazing! The quality is excellent.")
 
-	fmt.Printf("\nInput (French): %s\n", input.Content)
+	fmt.Printf("\nInput (French): %s\n", input.ContentString())
 
 	ctx := context.Background()
 	result, err := pipeline.Process(ctx, input)
@@ -193,7 +193,7 @@ func example1ContentPipeline() {
 		return
 	}
 
-	fmt.Printf("\nOutput: %s\n", result.Content)
+	fmt.Printf("\nOutput: %s\n", result.ContentString())
 	fmt.Println("\nMetadata:")
 	fmt.Printf("  Source Language: %v\n", result.Metadata["source_language"])
 	fmt.Printf("  Sentiment: %v\n", result.Metadata["sentiment"])
@@ -217,7 +217,7 @@ func (a *ValidationAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (a *ValidationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	text := message.Content
+	text := message.ContentString()
 	var errors []string
 
 	if len(text) < 10 {
@@ -258,7 +258,7 @@ func (a *NormalizationAgent) Process(ctx context.Context, message *agenkit.Messa
 	}
 
 	// Normalize whitespace
-	text := strings.Join(strings.Fields(message.Content), " ")
+	text := strings.Join(strings.Fields(message.ContentString()), " ")
 	text = strings.ToLower(text)
 
 	result := agenkit.NewMessage("agent", text)
@@ -291,16 +291,16 @@ func example2ValidationPipeline() {
 	fmt.Println("\nTest 1: Valid input")
 	validInput := agenkit.NewMessage("user", "  This is   VALID input   with  extra   spaces.  ")
 	result, _ := pipeline.Process(context.Background(), validInput)
-	fmt.Printf("  Input:  '%s'\n", validInput.Content)
-	fmt.Printf("  Output: '%s'\n", result.Content)
+	fmt.Printf("  Input:  '%s'\n", validInput.ContentString())
+	fmt.Printf("  Output: '%s'\n", result.ContentString())
 	fmt.Printf("  Valid:  %v\n", result.Metadata["valid"])
 
 	// Test invalid input
 	fmt.Println("\nTest 2: Invalid input (too short)")
 	invalidInput := agenkit.NewMessage("user", "Hi")
 	result, _ = pipeline.Process(context.Background(), invalidInput)
-	fmt.Printf("  Input:  '%s'\n", invalidInput.Content)
-	fmt.Printf("  Output: '%s'\n", result.Content)
+	fmt.Printf("  Input:  '%s'\n", invalidInput.ContentString())
+	fmt.Printf("  Output: '%s'\n", result.ContentString())
 	fmt.Printf("  Valid:  %v\n", result.Metadata["valid"])
 
 	fmt.Println("\nWHY SEQUENTIAL?")

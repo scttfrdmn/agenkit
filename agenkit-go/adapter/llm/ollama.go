@@ -29,7 +29,7 @@ import (
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	fmt.Println(response.Content)
+//	fmt.Println(response.ContentString())
 //
 // Streaming example:
 //
@@ -38,7 +38,7 @@ import (
 //	    log.Fatal(err)
 //	}
 //	for chunk := range stream {
-//	    fmt.Print(chunk.Content)
+//	    fmt.Print(chunk.ContentString())
 //	}
 //
 // Provider-specific options:
@@ -150,7 +150,7 @@ func (o *OllamaLLM) Complete(ctx context.Context, messages []*agenkit.Message, o
 	for i, msg := range messages {
 		ollamaMessages[i] = ollamaMessage{
 			Role:    msg.Role,
-			Content: msg.Content,
+			Content: msg.ContentString(),
 		}
 	}
 
@@ -237,7 +237,7 @@ func (o *OllamaLLM) Complete(ctx context.Context, messages []*agenkit.Message, o
 //
 //	stream, errChan := llm.Stream(ctx, messages)
 //	for chunk := range stream {
-//	    fmt.Print(chunk.Content)
+//	    fmt.Print(chunk.ContentString())
 //	}
 //	if err := <-errChan; err != nil {
 //	    log.Fatal(err)
@@ -260,7 +260,7 @@ func (o *OllamaLLM) Stream(ctx context.Context, messages []*agenkit.Message, opt
 		for i, msg := range messages {
 			ollamaMessages[i] = ollamaMessage{
 				Role:    msg.Role,
-				Content: msg.Content,
+				Content: msg.ContentString(),
 			}
 		}
 

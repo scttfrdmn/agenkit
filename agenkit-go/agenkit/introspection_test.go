@@ -24,7 +24,7 @@ func (a *SimpleAgent) Name() string {
 }
 
 func (a *SimpleAgent) Process(ctx context.Context, message *Message) (*Message, error) {
-	return NewMessage("assistant", "Processed: "+message.Content), nil
+	return NewMessage("assistant", "Processed: "+message.ContentString()), nil
 }
 
 func (a *SimpleAgent) Capabilities() []string {

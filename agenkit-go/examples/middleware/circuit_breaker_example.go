@@ -124,7 +124,7 @@ func example1BasicCircuitBreaker() {
 		if err != nil {
 			fmt.Printf("❌ Call %d: %v\n", i+1, err)
 		} else {
-			fmt.Printf("✅ Call %d: %s\n", i+1, response.Content)
+			fmt.Printf("✅ Call %d: %s\n", i+1, response.ContentString())
 		}
 	}
 
@@ -142,7 +142,7 @@ func example1BasicCircuitBreaker() {
 				fmt.Printf("❌ Call %d: Failed - %v\n", i+4, err)
 			}
 		} else {
-			fmt.Printf("✅ Call %d: %s\n", i+4, response.Content)
+			fmt.Printf("✅ Call %d: %s\n", i+4, response.ContentString())
 		}
 	}
 
@@ -209,7 +209,7 @@ func example2RecoveryScenario() {
 	if err != nil {
 		fmt.Printf("❌ Failed: %v\n", err)
 	} else {
-		fmt.Printf("✅ Success: %s\n", response.Content)
+		fmt.Printf("✅ Success: %s\n", response.ContentString())
 		fmt.Printf("   Circuit State: %s\n", protectedAPI.State())
 	}
 
@@ -219,7 +219,7 @@ func example2RecoveryScenario() {
 	if err != nil {
 		fmt.Printf("❌ Failed: %v\n", err)
 	} else {
-		fmt.Printf("✅ Success: %s\n", response.Content)
+		fmt.Printf("✅ Success: %s\n", response.ContentString())
 		fmt.Printf("   Circuit State: %s 🎉\n", protectedAPI.State())
 	}
 
@@ -314,7 +314,7 @@ func example3CircuitBreakerWithRetry() {
 				fmt.Printf("❌ Call %d: Failed after retries\n", i+1)
 			}
 		} else {
-			fmt.Printf("✅ Call %d: Success - %s\n", i+1, response.Content)
+			fmt.Printf("✅ Call %d: Success - %s\n", i+1, response.ContentString())
 		}
 
 		time.Sleep(100 * time.Millisecond)

@@ -74,7 +74,7 @@ func (h *HeuristicComplexityDetector) Detect(ctx context.Context, messages []age
 		return "simple", nil
 	}
 
-	latest := messages[len(messages)-1].Content
+	latest := messages[len(messages)-1].ContentString()
 	latestLower := strings.ToLower(latest)
 
 	// Check for complex keywords
@@ -141,7 +141,7 @@ func (l *LLMBasedComplexityDetector) Detect(ctx context.Context, messages []agen
 		return "simple", nil
 	}
 
-	latest := messages[len(messages)-1].Content
+	latest := messages[len(messages)-1].ContentString()
 
 	prompt := fmt.Sprintf(`Analyze the following query and classify its complexity:
 
@@ -159,7 +159,7 @@ Respond with only one word: simple, medium, or complex.`, latest)
 		return "medium", err
 	}
 
-	complexity := strings.ToLower(strings.TrimSpace(response.Content))
+	complexity := strings.ToLower(strings.TrimSpace(response.ContentString()))
 
 	if complexity != "simple" && complexity != "medium" && complexity != "complex" {
 		log.Printf("WARNING: Invalid complexity from LLM: %s, defaulting to medium", complexity)

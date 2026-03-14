@@ -54,7 +54,7 @@ func (a *EchoAgent) Capabilities() []string {
 }
 
 func (a *EchoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	return agenkit.NewMessage("agent", "Echo: "+message.Content), nil
+	return agenkit.NewMessage("agent", "Echo: "+message.ContentString()), nil
 }
 
 func (a *EchoAgent) Introspect() *agenkit.IntrospectionResult {
@@ -79,7 +79,7 @@ func (a *SlowAgent) Capabilities() []string {
 
 func (a *SlowAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	time.Sleep(time.Duration(a.delayMs) * time.Millisecond)
-	return agenkit.NewMessage("agent", "Processed: "+message.Content), nil
+	return agenkit.NewMessage("agent", "Processed: "+message.ContentString()), nil
 }
 
 func (a *SlowAgent) Introspect() *agenkit.IntrospectionResult {

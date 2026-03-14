@@ -186,7 +186,7 @@ func (m *MultiAgentOrchestrator) Process(ctx context.Context, message *agenkit.M
 	for agentName, agent := range m.agents {
 		task := AgentTask{
 			AgentName:   agentName,
-			Description: message.Content,
+			Description: message.ContentString(),
 			Status:      TaskStatusInProgress,
 		}
 		m.tasks = append(m.tasks, task)
@@ -198,9 +198,9 @@ func (m *MultiAgentOrchestrator) Process(ctx context.Context, message *agenkit.M
 			m.tasks[taskIdx].Status = TaskStatusFailed
 			results = append(results, fmt.Sprintf("%s: Failed - %s", agentName, err.Error()))
 		} else {
-			m.tasks[taskIdx].Result = response.Content
+			m.tasks[taskIdx].Result = response.ContentString()
 			m.tasks[taskIdx].Status = TaskStatusCompleted
-			results = append(results, fmt.Sprintf("%s: %s", agentName, response.Content))
+			results = append(results, fmt.Sprintf("%s: %s", agentName, response.ContentString()))
 		}
 	}
 
@@ -310,7 +310,7 @@ func (c *ConsensusAgent) Process(ctx context.Context, message *agenkit.Message) 
 		if err != nil {
 			return nil, fmt.Errorf("agent %s failed: %w", agent.Name(), err)
 		}
-		responses = append(responses, response.Content)
+		responses = append(responses, response.ContentString())
 	}
 
 	// Simple consensus: combine all responses

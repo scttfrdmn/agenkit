@@ -455,16 +455,16 @@ Steps:
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !strings.Contains(result.Content, "Task completed") {
+	if !strings.Contains(result.ContentString(), "Task completed") {
 		t.Error("expected result to contain 'Task completed'")
 	}
 
-	if !strings.Contains(result.Content, "Goal: Test task") {
+	if !strings.Contains(result.ContentString(), "Goal: Test task") {
 		t.Error("expected result to contain goal")
 	}
 
-	if !strings.Contains(result.Content, "Steps completed: 2/2") {
-		t.Errorf("expected result to show 2/2 steps completed, got: %s", result.Content)
+	if !strings.Contains(result.ContentString(), "Steps completed: 2/2") {
+		t.Errorf("expected result to show 2/2 steps completed, got: %s", result.ContentString())
 	}
 
 	// Check that executor was called twice
@@ -518,8 +518,8 @@ Steps:
 	}
 
 	// Should show partial completion
-	if !strings.Contains(result.Content, "Steps completed: 2/3") {
-		t.Errorf("expected 2/3 steps completed, got: %s", result.Content)
+	if !strings.Contains(result.ContentString(), "Steps completed: 2/3") {
+		t.Errorf("expected 2/3 steps completed, got: %s", result.ContentString())
 	}
 
 	// Check the plan
@@ -621,7 +621,7 @@ Steps:
 	}
 
 	// Should still show completion
-	if !strings.Contains(result.Content, "Task completed") {
+	if !strings.Contains(result.ContentString(), "Task completed") {
 		t.Error("expected task to complete after replanning")
 	}
 }
@@ -652,7 +652,7 @@ Steps:
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !strings.Contains(result.Content, "Task completed") {
+	if !strings.Contains(result.ContentString(), "Task completed") {
 		t.Error("expected task completion")
 	}
 

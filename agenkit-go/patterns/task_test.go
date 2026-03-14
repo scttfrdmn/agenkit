@@ -80,8 +80,8 @@ func TestTask_BasicExecution(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Content != "Hello" {
-		t.Errorf("expected 'Hello', got %s", result.Content)
+	if result.ContentString() != "Hello" {
+		t.Errorf("expected 'Hello', got %s", result.ContentString())
 	}
 	if !task.Completed() {
 		t.Error("expected task to be completed")
@@ -132,8 +132,8 @@ func TestTask_WithConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Content != "Hello" {
-		t.Errorf("expected 'Hello', got %s", result.Content)
+	if result.ContentString() != "Hello" {
+		t.Errorf("expected 'Hello', got %s", result.ContentString())
 	}
 }
 
@@ -188,8 +188,8 @@ func TestTask_NoTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Content != "Hello" {
-		t.Errorf("expected 'Hello', got %s", result.Content)
+	if result.ContentString() != "Hello" {
+		t.Errorf("expected 'Hello', got %s", result.ContentString())
 	}
 }
 
@@ -249,8 +249,8 @@ func TestTask_RetrySucceedsOnSecondAttempt(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "Success" {
-		t.Errorf("expected 'Success', got %s", result.Content)
+	if result.ContentString() != "Success" {
+		t.Errorf("expected 'Success', got %s", result.ContentString())
 	}
 
 	// Should have tried 2 times (first fail, second success)
@@ -332,8 +332,8 @@ func TestTask_CleanupDoesNotPanic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Content != "Hello" {
-		t.Errorf("expected 'Hello', got %s", result.Content)
+	if result.ContentString() != "Hello" {
+		t.Errorf("expected 'Hello', got %s", result.ContentString())
 	}
 
 	// Manually call cleanup - should not panic
@@ -355,8 +355,8 @@ func TestExecuteTask_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Content != "Hello" {
-		t.Errorf("expected 'Hello', got %s", result.Content)
+	if result.ContentString() != "Hello" {
+		t.Errorf("expected 'Hello', got %s", result.ContentString())
 	}
 }
 
@@ -492,8 +492,8 @@ func TestTask_NilConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Content != "Hello" {
-		t.Errorf("expected 'Hello', got %s", result.Content)
+	if result.ContentString() != "Hello" {
+		t.Errorf("expected 'Hello', got %s", result.ContentString())
 	}
 }
 

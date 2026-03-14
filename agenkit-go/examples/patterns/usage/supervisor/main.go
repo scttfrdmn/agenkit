@@ -42,7 +42,7 @@ func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 	fmt.Printf("   🤖 %s processing...\n", a.name)
 	time.Sleep(100 * time.Millisecond)
 
-	result := agenkit.NewMessage("agent", fmt.Sprintf("%s processed: %s", a.name, message.Content))
+	result := agenkit.NewMessage("agent", fmt.Sprintf("%s processed: %s", a.name, message.ContentString()))
 	return result, nil
 }
 

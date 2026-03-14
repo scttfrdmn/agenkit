@@ -39,7 +39,7 @@ func (a *AgentV1) Introspect() *agenkit.IntrospectionResult {
 
 func (a *AgentV1) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Simple responses
-	query := strings.ToLower(message.Content)
+	query := strings.ToLower(message.ContentString())
 	var response string
 
 	if strings.Contains(query, "weather") {
@@ -73,7 +73,7 @@ func (a *AgentV2) Introspect() *agenkit.IntrospectionResult {
 
 func (a *AgentV2) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Improved responses with more detail
-	query := strings.ToLower(message.Content)
+	query := strings.ToLower(message.ContentString())
 	var response string
 
 	if strings.Contains(query, "weather") {
@@ -130,7 +130,7 @@ func main() {
 
 		response, _ := wrappedV1.Process(context.Background(), message)
 		fmt.Printf("  %d. Input: %s\n", i+1, input)
-		fmt.Printf("     V1: %s\n", response.Content)
+		fmt.Printf("     V1: %s\n", response.ContentString())
 	}
 
 	recordingV1, _ := recorderV1.FinalizeSession(sessionID)

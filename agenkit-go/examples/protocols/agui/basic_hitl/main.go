@@ -54,10 +54,10 @@ func (s *SimpleAgent) Capabilities() []string {
 }
 
 func (s *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	fmt.Printf("   🤖 %s processing: %s\n", s.name, message.Content)
+	fmt.Printf("   🤖 %s processing: %s\n", s.name, message.ContentString())
 	time.Sleep(100 * time.Millisecond)
 
-	response := agenkit.NewMessage("assistant", fmt.Sprintf("Processed: %s", message.Content))
+	response := agenkit.NewMessage("assistant", fmt.Sprintf("Processed: %s", message.ContentString()))
 	response.Metadata = map[string]interface{}{
 		"confidence": s.confidence,
 	}
@@ -78,7 +78,7 @@ func (s *SimpleAgent) Introspect() *agenkit.IntrospectionResult {
 func simpleApprovalFunc(ctx context.Context, request *patterns.ApprovalRequest) (*patterns.ApprovalResponse, error) {
 	confidence := request.Confidence
 	fmt.Printf("   👤 Approval requested - Confidence: %.2f\n", confidence)
-	fmt.Printf("      Message: %s\n", request.Message.Content)
+	fmt.Printf("      Message: %s\n", request.Message.ContentString())
 	fmt.Printf("      Context: %v\n", request.Context)
 
 	// For demo, auto-approve after short delay
@@ -116,7 +116,7 @@ func exampleHighConfidence() {
 
 	// Stream events
 	message := agenkit.NewMessage("user", "What is 2+2?")
-	fmt.Printf("\n📥 User: %s\n\n", message.Content)
+	fmt.Printf("\n📥 User: %s\n\n", message.ContentString())
 
 	ctx := context.Background()
 	events := []agui.AGUIEvent{}
@@ -172,7 +172,7 @@ func exampleLowConfidence() {
 
 	// Stream events
 	message := agenkit.NewMessage("user", "Make a critical decision")
-	fmt.Printf("\n📥 User: %s\n\n", message.Content)
+	fmt.Printf("\n📥 User: %s\n\n", message.ContentString())
 
 	ctx := context.Background()
 	events := []agui.AGUIEvent{}
@@ -243,7 +243,7 @@ func exampleRejection() {
 
 	// Stream events
 	message := agenkit.NewMessage("user", "Execute risky operation")
-	fmt.Printf("\n📥 User: %s\n\n", message.Content)
+	fmt.Printf("\n📥 User: %s\n\n", message.ContentString())
 
 	ctx := context.Background()
 	events := []agui.AGUIEvent{}
@@ -298,7 +298,7 @@ func exampleDisabledInterrupts() {
 
 	// Stream events
 	message := agenkit.NewMessage("user", "Test with interrupts disabled")
-	fmt.Printf("\n📥 User: %s\n\n", message.Content)
+	fmt.Printf("\n📥 User: %s\n\n", message.ContentString())
 
 	ctx := context.Background()
 	events := []agui.AGUIEvent{}

@@ -53,8 +53,8 @@ func TestFallbackAgent_FirstAgentSuccess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "success from agent1" {
-		t.Errorf("expected 'success from agent1', got '%s'", result.Content)
+	if result.ContentString() != "success from agent1" {
+		t.Errorf("expected 'success from agent1', got '%s'", result.ContentString())
 	}
 
 	// Check metadata
@@ -83,8 +83,8 @@ func TestFallbackAgent_SecondAgentSuccess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "success from agent2" {
-		t.Errorf("expected 'success from agent2', got '%s'", result.Content)
+	if result.ContentString() != "success from agent2" {
+		t.Errorf("expected 'success from agent2', got '%s'", result.ContentString())
 	}
 
 	// Check metadata
@@ -125,8 +125,8 @@ func TestFallbackAgent_LastAgentSuccess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "success from agent3" {
-		t.Errorf("expected 'success from agent3', got '%s'", result.Content)
+	if result.ContentString() != "success from agent3" {
+		t.Errorf("expected 'success from agent3', got '%s'", result.ContentString())
 	}
 
 	// Should have tried all 3 agents
@@ -271,8 +271,8 @@ func TestFallbackAgent_SingleAgent(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "result" {
-		t.Errorf("expected 'result', got '%s'", result.Content)
+	if result.ContentString() != "result" {
+		t.Errorf("expected 'result', got '%s'", result.ContentString())
 	}
 
 	// Should have no failed attempts
@@ -362,8 +362,8 @@ func TestRecoveryAgent_BasicRecovery(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "recovered successfully" {
-		t.Errorf("expected 'recovered successfully', got '%s'", result.Content)
+	if result.ContentString() != "recovered successfully" {
+		t.Errorf("expected 'recovered successfully', got '%s'", result.ContentString())
 	}
 
 	// Check recovery metadata
@@ -392,8 +392,8 @@ func TestRecoveryAgent_NoRecoveryNeeded(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "primary success" {
-		t.Errorf("expected 'primary success', got '%s'", result.Content)
+	if result.ContentString() != "primary success" {
+		t.Errorf("expected 'primary success', got '%s'", result.ContentString())
 	}
 
 	// Should not have recovery metadata
@@ -460,8 +460,8 @@ func TestDefaultRecovery_StaticMessage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Content != "Service temporarily unavailable" {
-		t.Errorf("expected static message, got '%s'", result.Content)
+	if result.ContentString() != "Service temporarily unavailable" {
+		t.Errorf("expected static message, got '%s'", result.ContentString())
 	}
 }
 
@@ -473,7 +473,7 @@ func TestDefaultRecovery_EmptyResponse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Content != "" {
-		t.Errorf("expected empty content, got '%s'", result.Content)
+	if result.ContentString() != "" {
+		t.Errorf("expected empty content, got '%s'", result.ContentString())
 	}
 }

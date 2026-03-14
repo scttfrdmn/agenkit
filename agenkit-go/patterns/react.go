@@ -188,7 +188,7 @@ func (r *ReActAgent) Capabilities() []string {
 // Process executes the ReAct reasoning-acting loop.
 func (r *ReActAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	r.steps = []ReActStep{}
-	conversationHistory := []string{r.promptTemplate, fmt.Sprintf("\nQuestion: %s", message.Content)}
+	conversationHistory := []string{r.promptTemplate, fmt.Sprintf("\nQuestion: %s", message.ContentString())}
 
 	for step := 0; step < r.maxSteps; step++ {
 		// Get agent's reasoning
@@ -201,7 +201,7 @@ func (r *ReActAgent) Process(ctx context.Context, message *agenkit.Message) (*ag
 			return nil, fmt.Errorf("agent process failed: %w", err)
 		}
 
-		responseText := response.Content
+		responseText := response.ContentString()
 
 		// Parse the response
 		parsed := r.parseResponse(responseText)

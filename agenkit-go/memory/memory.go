@@ -91,7 +91,7 @@ type Memory interface {
 	//
 	// Example:
 	//   summary, err := memory.Summarize(ctx, "session-123", SummarizeOptions{})
-	//   fmt.Println(summary.Content) // "Discussed pricing strategy, decided on $50/month tier..."
+	//   fmt.Println(summary.ContentString()) // "Discussed pricing strategy, decided on $50/month tier..."
 	Summarize(ctx context.Context, sessionID string, opts SummarizeOptions) (agenkit.Message, error)
 
 	// Clear removes all memory for a session.

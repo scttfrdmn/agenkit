@@ -92,7 +92,7 @@ func (m *ModerationAgent) Process(ctx context.Context, message *agenkit.Message)
 	time.Sleep(80 * time.Millisecond)
 
 	// Simulate moderation with varying confidence
-	content := strings.ToLower(message.Content)
+	content := strings.ToLower(message.ContentString())
 	action := "APPROVE"
 	confidence := 0.95
 
@@ -186,7 +186,7 @@ func main() {
 
 	trade := agenkit.NewMessage("user", "Execute trade based on current market conditions")
 
-	fmt.Printf("\n📥 Request: %s\n", trade.Content)
+	fmt.Printf("\n📥 Request: %s\n", trade.ContentString())
 	fmt.Println("\nProcessing with approval threshold of 0.80...")
 
 	result, err := safeTrade.Process(ctx, trade)
@@ -194,7 +194,7 @@ func main() {
 		log.Fatalf("Trade failed: %v", err)
 	}
 
-	fmt.Printf("\n📤 Result:\n%s\n", result.Content)
+	fmt.Printf("\n📤 Result:\n%s\n", result.ContentString())
 
 	if confidence, ok := result.Metadata["confidence"].(float64); ok {
 		fmt.Printf("\nMetrics:\n")
@@ -230,7 +230,7 @@ func main() {
 		log.Fatalf("Trade processing failed: %v", err)
 	}
 
-	fmt.Printf("\n📤 Result:\n%s\n", result.Content)
+	fmt.Printf("\n📤 Result:\n%s\n", result.ContentString())
 
 	if confidence, ok := result.Metadata["confidence"].(float64); ok {
 		fmt.Printf("\nMetrics:\n")
@@ -324,14 +324,14 @@ func main() {
 
 	diagnosis := agenkit.NewMessage("user", "Patient presenting with symptoms X, Y, Z")
 
-	fmt.Printf("\n📥 Case: %s\n", diagnosis.Content)
+	fmt.Printf("\n📥 Case: %s\n", diagnosis.ContentString())
 
 	result, err = medicalAI.Process(ctx, diagnosis)
 	if err != nil {
 		log.Fatalf("Medical review failed: %v", err)
 	}
 
-	fmt.Printf("📤 Result:\n%s\n", result.Content)
+	fmt.Printf("📤 Result:\n%s\n", result.ContentString())
 
 	if status, ok := result.Metadata["approval_status"].(string); ok {
 		fmt.Printf("\nStatus: %s\n", status)
@@ -349,7 +349,7 @@ func main() {
 		fmt.Println("\n   👤 Human reviewer modifying suggestion...")
 
 		// Simulate human modifying the recommendation
-		original := request.Message.Content
+		original := request.Message.ContentString()
 		modified := strings.Replace(original, "BUY", "BUY (reduced amount)", 1)
 		modified = strings.Replace(modified, "$1000", "$500", 1)
 
@@ -379,7 +379,7 @@ func main() {
 		log.Fatalf("Modified trade failed: %v", err)
 	}
 
-	fmt.Printf("\n📤 Modified Result:\n%s\n", result.Content)
+	fmt.Printf("\n📤 Modified Result:\n%s\n", result.ContentString())
 
 	if status, ok := result.Metadata["approval_status"].(string); ok {
 		fmt.Printf("\nStatus: %s\n", status)

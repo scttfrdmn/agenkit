@@ -138,7 +138,7 @@ func (m *MockReasoningAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (m *MockReasoningAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+	content := message.ContentString()
 
 	var response string
 
@@ -206,7 +206,7 @@ func main() {
 		log.Fatalf("ReAct processing failed: %v", err)
 	}
 
-	fmt.Printf("\n✅ Result:\n%s\n", result.Content)
+	fmt.Printf("\n✅ Result:\n%s\n", result.ContentString())
 
 	// Example 2: Information search with ReAct
 	fmt.Println("\n\n" + strings.Repeat("=", 60))
@@ -235,7 +235,7 @@ func main() {
 		log.Fatalf("ReAct processing failed: %v", err)
 	}
 
-	fmt.Printf("\n✅ Result:\n%s\n", result2.Content)
+	fmt.Printf("\n✅ Result:\n%s\n", result2.ContentString())
 
 	// Example 3: Multi-step reasoning with multiple tools
 	fmt.Println("\n\n" + strings.Repeat("=", 60))
@@ -265,7 +265,7 @@ func main() {
 		log.Fatalf("ReAct processing failed: %v", err)
 	}
 
-	fmt.Printf("\n✅ Result:\n%s\n", result3.Content)
+	fmt.Printf("\n✅ Result:\n%s\n", result3.ContentString())
 
 	// Summary
 	fmt.Println("\n\n" + strings.Repeat("=", 60))

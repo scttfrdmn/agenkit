@@ -395,7 +395,7 @@ func (v *VectorMemory) generateID() string {
 // Store saves a message with embedding in vector store.
 func (v *VectorMemory) Store(ctx context.Context, sessionID string, message agenkit.Message, metadata map[string]interface{}) error {
 	// Generate embedding
-	embedding, err := v.embeddings.Embed(ctx, message.Content)
+	embedding, err := v.embeddings.Embed(ctx, message.ContentString())
 	if err != nil {
 		return fmt.Errorf("failed to generate embedding: %w", err)
 	}
@@ -513,7 +513,7 @@ func (v *VectorMemory) Summarize(ctx context.Context, sessionID string, opts Sum
 
 	for i := 0; i < maxMessages; i++ {
 		msg := messages[i]
-		preview := msg.Content
+		preview := msg.ContentString()
 		if len(preview) > 100 {
 			preview = preview[:100] + "..."
 		}

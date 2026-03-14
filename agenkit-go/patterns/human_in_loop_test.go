@@ -147,8 +147,8 @@ func TestHumanInLoopAgent_HighConfidenceBypassed(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Content != "high confidence result" {
-		t.Errorf("expected original result, got '%s'", result.Content)
+	if result.ContentString() != "high confidence result" {
+		t.Errorf("expected original result, got '%s'", result.ContentString())
 	}
 
 	// Check metadata
@@ -189,8 +189,8 @@ func TestHumanInLoopAgent_LowConfidenceApproved(t *testing.T) {
 	}
 
 	// Should still get result because approval was granted
-	if result.Content != "low confidence result" {
-		t.Errorf("expected original result, got '%s'", result.Content)
+	if result.ContentString() != "low confidence result" {
+		t.Errorf("expected original result, got '%s'", result.ContentString())
 	}
 
 	// Check metadata
@@ -231,8 +231,8 @@ func TestHumanInLoopAgent_LowConfidenceRejected(t *testing.T) {
 	}
 
 	// Should get rejection message
-	if !strings.Contains(result.Content, "rejected") {
-		t.Errorf("expected rejection message, got '%s'", result.Content)
+	if !strings.Contains(result.ContentString(), "rejected") {
+		t.Errorf("expected rejection message, got '%s'", result.ContentString())
 	}
 
 	// Check metadata
@@ -281,8 +281,8 @@ func TestHumanInLoopAgent_ApprovedWithModifications(t *testing.T) {
 	}
 
 	// Should get modified response
-	if result.Content != "modified response" {
-		t.Errorf("expected 'modified response', got '%s'", result.Content)
+	if result.ContentString() != "modified response" {
+		t.Errorf("expected 'modified response', got '%s'", result.ContentString())
 	}
 
 	// Check metadata
@@ -579,8 +579,8 @@ func TestHumanInLoopAgent_ApprovalRequestContext(t *testing.T) {
 	if capturedRequest.Confidence != 0.6 {
 		t.Errorf("expected confidence=0.6, got %f", capturedRequest.Confidence)
 	}
-	if capturedRequest.Message.Content != "result" {
-		t.Errorf("expected message content='result', got '%s'", capturedRequest.Message.Content)
+	if capturedRequest.Message.ContentString() != "result" {
+		t.Errorf("expected message content='result', got '%s'", capturedRequest.Message.ContentString())
 	}
 	if capturedRequest.Context["agent"] != "agent" {
 		t.Errorf("expected agent context, got %v", capturedRequest.Context["agent"])

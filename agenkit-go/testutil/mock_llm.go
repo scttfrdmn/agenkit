@@ -61,7 +61,7 @@ func (m *MockLLMClient) Process(_ context.Context, msg *agenkit.Message) (*agenk
 	resp := m.responses[idx%int64(len(m.responses))]
 	reply := agenkit.NewMessage("assistant", resp)
 	reply.Metadata["model"] = "mock"
-	reply.Metadata["input_tokens"] = int64(len(msg.Content) / 4)
+	reply.Metadata["input_tokens"] = int64(len(msg.ContentString()) / 4)
 	reply.Metadata["output_tokens"] = int64(len(resp) / 4)
 	reply.Metadata["stop_reason"] = "end_turn"
 	return reply, nil

@@ -33,7 +33,7 @@ func (a *SimpleAgent) Capabilities() []string {
 func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "assistant",
-		Content: "Processed: " + message.Content,
+		Content: "Processed: " + message.ContentString(),
 	}, nil
 }
 
@@ -61,7 +61,7 @@ func main() {
 	if err != nil {
 		log.Printf("Error: %v\n", err)
 	} else {
-		fmt.Printf("Response: %s\n\n", response.Content)
+		fmt.Printf("Response: %s\n\n", response.ContentString())
 	}
 
 	// Test 2: Prompt injection attempt (should be blocked)

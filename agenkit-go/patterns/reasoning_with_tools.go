@@ -227,7 +227,7 @@ func (r *ReasoningWithToolsAgent) Process(ctx context.Context, message *agenkit.
 USER QUESTION:
 %s
 
-Begin reasoning. Use tools as needed while thinking.`, r.toolUsePrompt, message.Content)
+Begin reasoning. Use tools as needed while thinking.`, r.toolUsePrompt, message.ContentString())
 
 	// Reasoning loop
 	currentContext := enhancedContent
@@ -250,7 +250,7 @@ Begin reasoning. Use tools as needed while thinking.`, r.toolUsePrompt, message.
 			return nil, fmt.Errorf("LLM process failed: %w", err)
 		}
 
-		responseText := response.Content
+		responseText := response.ContentString()
 
 		// Check if this is a tool call
 		if strings.Contains(responseText, "TOOL_CALL:") {

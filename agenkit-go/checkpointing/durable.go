@@ -386,8 +386,8 @@ func (d *DurableAgent) updateState(sessionID string, inputMessage, outputMessage
 		messageCount = 0
 	}
 	state["message_count"] = messageCount + 1
-	state["last_input"] = inputMessage.Content
-	state["last_output"] = outputMessage.Content
+	state["last_input"] = inputMessage.ContentString()
+	state["last_output"] = outputMessage.ContentString()
 
 	// Track any metadata from response
 	if outputMessage.Metadata != nil {

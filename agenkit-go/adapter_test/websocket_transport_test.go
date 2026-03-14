@@ -47,8 +47,8 @@ func TestWebSocketBasicCommunication(t *testing.T) {
 	if response.Role != "agent" {
 		t.Errorf("Expected role 'agent', got '%s'", response.Role)
 	}
-	if response.Content != "Echo: Hello" {
-		t.Errorf("Expected content 'Echo: Hello', got '%s'", response.Content)
+	if response.ContentString() != "Echo: Hello" {
+		t.Errorf("Expected content 'Echo: Hello', got '%s'", response.ContentString())
 	}
 }
 
@@ -82,8 +82,8 @@ func TestWebSocketMultipleRequests(t *testing.T) {
 		}
 
 		expected := fmt.Sprintf("Echo: Message %d", i)
-		if response.Content != expected {
-			t.Errorf("Request %d: expected '%s', got '%s'", i, expected, response.Content)
+		if response.ContentString() != expected {
+			t.Errorf("Request %d: expected '%s', got '%s'", i, expected, response.ContentString())
 		}
 	}
 }
@@ -128,8 +128,8 @@ func TestWebSocketConcurrentRequests(t *testing.T) {
 			}
 
 			expected := fmt.Sprintf("Echo: Message %d", id)
-			if response.Content != expected {
-				errors <- fmt.Errorf("client %d: expected '%s', got '%s'", id, expected, response.Content)
+			if response.ContentString() != expected {
+				errors <- fmt.Errorf("client %d: expected '%s', got '%s'", id, expected, response.ContentString())
 			}
 		}(i)
 	}
@@ -197,8 +197,8 @@ func TestWebSocketLargeMessage(t *testing.T) {
 
 	// Verify response
 	expectedLen := len("Echo: ") + len(largeContent)
-	if len(response.Content) != expectedLen {
-		t.Errorf("Expected content length %d, got %d", expectedLen, len(response.Content))
+	if len(response.ContentString()) != expectedLen {
+		t.Errorf("Expected content length %d, got %d", expectedLen, len(response.ContentString()))
 	}
 }
 
@@ -228,8 +228,8 @@ func TestWebSocketReconnection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if response.Content != "Echo: First" {
-		t.Errorf("Expected 'Echo: First', got '%s'", response.Content)
+	if response.ContentString() != "Echo: First" {
+		t.Errorf("Expected 'Echo: First', got '%s'", response.ContentString())
 	}
 
 	// Stop server
@@ -255,8 +255,8 @@ func TestWebSocketReconnection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if response.Content != "Echo: Second" {
-		t.Errorf("Expected 'Echo: Second', got '%s'", response.Content)
+	if response.ContentString() != "Echo: Second" {
+		t.Errorf("Expected 'Echo: Second', got '%s'", response.ContentString())
 	}
 }
 
@@ -292,7 +292,7 @@ func TestWebSocketBinaryData(t *testing.T) {
 	if response.Role != "agent" {
 		t.Errorf("Expected role 'agent', got '%s'", response.Role)
 	}
-	if len(response.Content) == 0 {
+	if len(response.ContentString()) == 0 {
 		t.Error("Expected non-empty content")
 	}
 }
@@ -333,8 +333,8 @@ func TestWebSocketIsConnectedProperty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if response.Content != "Echo: test2" {
-		t.Errorf("Expected 'Echo: test2', got '%s'", response.Content)
+	if response.ContentString() != "Echo: test2" {
+		t.Errorf("Expected 'Echo: test2', got '%s'", response.ContentString())
 	}
 }
 
@@ -370,7 +370,7 @@ func TestWebSocketMessageMetadataPreserved(t *testing.T) {
 	}
 
 	// Verify response exists and has required fields
-	if response.Content == "" {
+	if response.ContentString() == "" {
 		t.Error("Expected non-empty content")
 	}
 	if response.Timestamp.IsZero() {
@@ -406,8 +406,8 @@ func TestWebSocketServerStartStopMultipleTimes(t *testing.T) {
 		}
 
 		expected := fmt.Sprintf("Echo: Iteration %d", i)
-		if response.Content != expected {
-			t.Errorf("Iteration %d: expected '%s', got '%s'", i, expected, response.Content)
+		if response.ContentString() != expected {
+			t.Errorf("Iteration %d: expected '%s', got '%s'", i, expected, response.ContentString())
 		}
 
 		_ = client.Close()
@@ -470,8 +470,8 @@ func TestWebSocketWithLocalAgent(t *testing.T) {
 	if response.Role != "agent" {
 		t.Errorf("Expected role 'agent', got '%s'", response.Role)
 	}
-	if response.Content != "Echo: Hello from LocalAgent" {
-		t.Errorf("Expected content 'Echo: Hello from LocalAgent', got '%s'", response.Content)
+	if response.ContentString() != "Echo: Hello from LocalAgent" {
+		t.Errorf("Expected content 'Echo: Hello from LocalAgent', got '%s'", response.ContentString())
 	}
 }
 

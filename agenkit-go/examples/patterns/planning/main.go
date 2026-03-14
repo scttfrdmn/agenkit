@@ -32,7 +32,7 @@ func (m *MockLLMClient) Chat(_ context.Context, messages []*agenkit.Message) (*a
 	// Collect all message content for scenario detection
 	var combined strings.Builder
 	for _, msg := range messages {
-		combined.WriteString(msg.Content)
+		combined.WriteString(msg.ContentString())
 		combined.WriteString(" ")
 	}
 	content := combined.String()
@@ -152,7 +152,7 @@ func exampleSimplePlanning() error {
 		return err
 	}
 
-	fmt.Printf("Result:\n%s\n\n", result.Content)
+	fmt.Printf("Result:\n%s\n\n", result.ContentString())
 
 	return nil
 }
@@ -175,7 +175,7 @@ func exampleCustomExecutor() error {
 		return err
 	}
 
-	fmt.Printf("\nResult:\n%s\n\n", result.Content)
+	fmt.Printf("\nResult:\n%s\n\n", result.ContentString())
 
 	return nil
 }
@@ -201,7 +201,7 @@ func exampleProgressTracking() error {
 		return err
 	}
 
-	fmt.Printf("Result:\n%s\n\n", result.Content)
+	fmt.Printf("Result:\n%s\n\n", result.ContentString())
 
 	fmt.Printf("Progress: %.1f%%\n", planner.GetProgress())
 

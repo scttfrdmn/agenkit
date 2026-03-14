@@ -48,7 +48,7 @@ func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 		confidence = 0.9 // High confidence by default
 	}
 
-	result := agenkit.NewMessage("agent", fmt.Sprintf("%s processed: %s", a.name, message.Content))
+	result := agenkit.NewMessage("agent", fmt.Sprintf("%s processed: %s", a.name, message.ContentString()))
 	result.WithMetadata("confidence", confidence)
 	return result, nil
 }
@@ -86,7 +86,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to process message: %v", err)
 	}
-	fmt.Printf("   Result: %s\n", result1.Content)
+	fmt.Printf("   Result: %s\n", result1.ContentString())
 	fmt.Printf("   Status: %v\n", result1.Metadata["approval_status"])
 
 	// Example 2: Medium confidence agent (requires approval, auto-approved)
@@ -105,7 +105,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to process message: %v", err)
 	}
-	fmt.Printf("   Result: %s\n", result2.Content)
+	fmt.Printf("   Result: %s\n", result2.ContentString())
 	fmt.Printf("   Status: %v\n", result2.Metadata["approval_status"])
 	fmt.Printf("   Feedback: %v\n", result2.Metadata["approval_feedback"])
 
@@ -125,7 +125,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to process message: %v", err)
 	}
-	fmt.Printf("   Result: %s\n", result3.Content)
+	fmt.Printf("   Result: %s\n", result3.ContentString())
 	fmt.Printf("   Status: %v\n", result3.Metadata["approval_status"])
 
 	// Example 4: Confidence-based approval function
@@ -145,7 +145,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to process message: %v", err)
 	}
-	fmt.Printf("   Result: %s\n", result4.Content)
+	fmt.Printf("   Result: %s\n", result4.ContentString())
 	fmt.Printf("   Status: %v\n", result4.Metadata["approval_status"])
 	if feedback, ok := result4.Metadata["approval_feedback"]; ok {
 		fmt.Printf("   Feedback: %v\n", feedback)

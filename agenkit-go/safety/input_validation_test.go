@@ -26,7 +26,7 @@ func (m *mockAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 	// Echo back the message
 	return &agenkit.Message{
 		Role:    "assistant",
-		Content: "Processed: " + message.Content,
+		Content: "Processed: " + message.ContentString(),
 	}, nil
 }
 
@@ -387,8 +387,8 @@ func TestInputValidationMiddlewareAllowsSafeInput(t *testing.T) {
 	if response == nil {
 		t.Error("Expected response, got nil")
 	}
-	if response != nil && !strings.Contains(response.Content, "Processed:") {
-		t.Errorf("Expected processed response, got: %s", response.Content)
+	if response != nil && !strings.Contains(response.ContentString(), "Processed:") {
+		t.Errorf("Expected processed response, got: %s", response.ContentString())
 	}
 }
 

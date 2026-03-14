@@ -247,7 +247,7 @@ func (c *SimpleClassifier) Classify(ctx context.Context, message *agenkit.Messag
 		return "", fmt.Errorf("message cannot be nil")
 	}
 
-	content := strings.ToLower(message.Content)
+	content := strings.ToLower(message.ContentString())
 
 	// Check each category's keywords
 	maxMatches := 0
@@ -338,7 +338,7 @@ func (c *LLMClassifier) Classify(ctx context.Context, message *agenkit.Message) 
 	}
 
 	// Build classification prompt
-	classificationMsg := agenkit.NewMessage("user", c.prompt+message.Content)
+	classificationMsg := agenkit.NewMessage("user", c.prompt+message.ContentString())
 
 	// Get LLM classification
 	result, err := c.agent.Process(ctx, classificationMsg)
@@ -346,7 +346,7 @@ func (c *LLMClassifier) Classify(ctx context.Context, message *agenkit.Message) 
 		return "", fmt.Errorf("llm classification failed: %w", err)
 	}
 
-	category := strings.TrimSpace(result.Content)
+	category := strings.TrimSpace(result.ContentString())
 
 	// Validate category is in allowed list
 	for _, validCat := range c.categories {

@@ -106,8 +106,8 @@ func TestAutonomousAgent_Process(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !strings.Contains(result.Content, "Test objective") {
-		t.Errorf("expected result to contain objective, got: %s", result.Content)
+	if !strings.Contains(result.ContentString(), "Test objective") {
+		t.Errorf("expected result to contain objective, got: %s", result.ContentString())
 	}
 }
 

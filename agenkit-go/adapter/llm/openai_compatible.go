@@ -42,7 +42,7 @@ import (
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	fmt.Println(response.Content)
+//	fmt.Println(response.ContentString())
 //
 // Example - llama.cpp server:
 //
@@ -60,7 +60,7 @@ import (
 //	    log.Fatal(err)
 //	}
 //	for chunk := range stream {
-//	    fmt.Print(chunk.Content)
+//	    fmt.Print(chunk.ContentString())
 //	}
 type OpenAICompatibleLLM struct {
 	client   *openai.Client
@@ -159,7 +159,7 @@ func (o *OpenAICompatibleLLM) Model() string {
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	fmt.Println(response.Content)
+//	fmt.Println(response.ContentString())
 //	fmt.Printf("Provider: %s\n", response.Metadata["provider"])
 //	fmt.Printf("Tokens: %v\n", response.Metadata["usage"])
 func (o *OpenAICompatibleLLM) Complete(ctx context.Context, messages []*agenkit.Message, opts ...CallOption) (*agenkit.Message, error) {
@@ -258,14 +258,14 @@ func (o *OpenAICompatibleLLM) Complete(ctx context.Context, messages []*agenkit.
 //	    log.Fatal(err)
 //	}
 //	for chunk := range stream {
-//	    fmt.Print(chunk.Content)
+//	    fmt.Print(chunk.ContentString())
 //	}
 //
 // Example - accumulate full response:
 //
 //	var fullResponse string
 //	for chunk := range stream {
-//	    fullResponse += chunk.Content
+//	    fullResponse += chunk.ContentString()
 //	}
 //	fmt.Println(fullResponse)
 //
@@ -372,7 +372,7 @@ func (o *OpenAICompatibleLLM) convertMessages(messages []*agenkit.Message) []ope
 
 		openaiMessages = append(openaiMessages, openai.ChatCompletionMessage{
 			Role:    role,
-			Content: msg.Content,
+			Content: msg.ContentString(),
 		})
 	}
 

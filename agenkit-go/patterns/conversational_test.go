@@ -140,8 +140,8 @@ func TestConversationalAgent_SingleTurn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if response.Content != "Hello! How can I help you?" {
-		t.Errorf("unexpected response: %s", response.Content)
+	if response.ContentString() != "Hello! How can I help you?" {
+		t.Errorf("unexpected response: %s", response.ContentString())
 	}
 	if agent.HistoryLength() != 2 {
 		t.Errorf("expected 2 messages in history, got %d", agent.HistoryLength())
@@ -180,8 +180,8 @@ func TestConversationalAgent_MultiTurnConversation(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if response.Content != "Your name is Alice." {
-		t.Errorf("expected context-aware response, got: %s", response.Content)
+	if response.ContentString() != "Your name is Alice." {
+		t.Errorf("expected context-aware response, got: %s", response.ContentString())
 	}
 
 	// Verify history length (2 turns = 4 messages)

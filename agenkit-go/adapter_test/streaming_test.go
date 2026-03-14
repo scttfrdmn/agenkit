@@ -244,8 +244,8 @@ func TestStreamingLargeChunks(t *testing.T) {
 	}
 	for i, chunk := range chunks {
 		expected := fmt.Sprintf("Chunk %d:", i)
-		if len(chunk.Content) < len(expected)+10000 {
-			t.Errorf("Chunk %d: expected length > %d, got %d", i, len(expected)+10000, len(chunk.Content))
+		if len(chunk.ContentString()) < len(expected)+10000 {
+			t.Errorf("Chunk %d: expected length > %d, got %d", i, len(expected)+10000, len(chunk.ContentString()))
 		}
 	}
 }
@@ -376,7 +376,7 @@ func TestStreamingMultipleClients(t *testing.T) {
 					if !ok {
 						done = true
 					} else {
-						chunks = append(chunks, chunk.Content)
+						chunks = append(chunks, chunk.ContentString())
 					}
 				case err, ok := <-errorChan:
 					if ok && err != nil {

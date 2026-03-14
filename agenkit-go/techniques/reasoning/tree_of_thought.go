@@ -194,7 +194,7 @@ func (tot *TreeOfThought) generateBranches(ctx context.Context, prompt string, n
 				return
 			}
 
-			results <- response.Content
+			results <- response.ContentString()
 		}(i)
 	}
 
@@ -388,7 +388,7 @@ func (tot *TreeOfThought) searchBestFirst(ctx context.Context, tree *ReasoningTr
 //   - num_steps: int
 //   - best_score: float64
 func (tot *TreeOfThought) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	query := message.Content
+	query := message.ContentString()
 
 	// Create reasoning tree
 	tree := NewReasoningTree()

@@ -159,7 +159,7 @@ Subproblems (from simplest to most complex):`, problem)
 	}
 
 	// Parse subproblems from response
-	subproblems := ltm.parseSubproblems(response.Content, problem)
+	subproblems := ltm.parseSubproblems(response.ContentString(), problem)
 
 	return subproblems, nil
 }
@@ -251,7 +251,7 @@ Solution:`, subproblem.Content)
 		return "", fmt.Errorf("subproblem solving failed: %w", err)
 	}
 
-	return strings.TrimSpace(response.Content), nil
+	return strings.TrimSpace(response.ContentString()), nil
 }
 
 // Process processes a message with Least-to-Most reasoning.
@@ -266,7 +266,7 @@ Solution:`, subproblem.Content)
 //   - subproblem_solutions: []string
 //   - compose_solutions: bool
 func (ltm *LeastToMost) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	problem := message.Content
+	problem := message.ContentString()
 
 	// Step 1: Decompose problem
 	subproblems, err := ltm.decompose(ctx, problem)

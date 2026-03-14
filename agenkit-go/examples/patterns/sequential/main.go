@@ -45,7 +45,7 @@ func (e *ExtractorAgent) Process(ctx context.Context, message *agenkit.Message) 
 	fmt.Println("\n📄 Stage 1: Extracting key information...")
 
 	// Simulate extraction by identifying key points
-	content := message.Content
+	content := message.ContentString()
 	var extracted strings.Builder
 
 	extracted.WriteString("Extracted Key Information:\n")
@@ -94,7 +94,7 @@ func (t *TranslatorAgent) Process(ctx context.Context, message *agenkit.Message)
 	translated.WriteString("Structured Data:\n")
 	translated.WriteString("{\n")
 
-	lines := strings.Split(message.Content, "\n")
+	lines := strings.Split(message.ContentString(), "\n")
 	for _, line := range lines {
 		if strings.TrimSpace(line) != "" {
 			translated.WriteString("  ")
@@ -190,7 +190,7 @@ It contains multiple sentences and various pieces of information.
 The sequential pattern will process this through multiple stages.`)
 
 	fmt.Println("\n📥 Input Document:")
-	fmt.Printf("   %s\n", strings.ReplaceAll(document.Content, "\n", "\n   "))
+	fmt.Printf("   %s\n", strings.ReplaceAll(document.ContentString(), "\n", "\n   "))
 
 	// Process through pipeline
 	ctx := context.Background()
@@ -202,7 +202,7 @@ The sequential pattern will process this through multiple stages.`)
 	// Display final result
 	fmt.Println("\n" + strings.Repeat("=", 50))
 	fmt.Println("\n📤 Pipeline Output:")
-	fmt.Println(result.Content)
+	fmt.Println(result.ContentString())
 
 	// Display metadata
 	if pipelineLength, ok := result.Metadata["pipeline_length"].(int); ok {

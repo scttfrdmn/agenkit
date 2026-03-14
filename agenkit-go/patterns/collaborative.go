@@ -222,14 +222,14 @@ func (c *CollaborativeAgent) buildContextMessage(context []*agenkit.Message, rou
 	// Add conversation history
 	if round == 0 {
 		content.WriteString("Original Request:\n")
-		content.WriteString(context[0].Content)
+		content.WriteString(context[0].ContentString())
 	} else {
 		content.WriteString("Original Request:\n")
-		content.WriteString(context[0].Content)
+		content.WriteString(context[0].ContentString())
 		content.WriteString("\n\n--- Previous Responses ---\n\n")
 
 		for i, msg := range context[1:] {
-			content.WriteString(fmt.Sprintf("Response %d:\n%s\n\n", i+1, msg.Content))
+			content.WriteString(fmt.Sprintf("Response %d:\n%s\n\n", i+1, msg.ContentString()))
 		}
 
 		content.WriteString("--- Your Turn ---\n")
@@ -284,9 +284,9 @@ var DefaultConsensusFunc = struct {
 			return true
 		}
 
-		first := messages[0].Content
+		first := messages[0].ContentString()
 		for _, msg := range messages[1:] {
-			if msg.Content != first {
+			if msg.ContentString() != first {
 				return false
 			}
 		}
@@ -301,9 +301,9 @@ var DefaultConsensusFunc = struct {
 
 			// Simple similarity: compare common words
 			// In production, use proper similarity metrics
-			first := strings.ToLower(messages[0].Content)
+			first := strings.ToLower(messages[0].ContentString())
 			for _, msg := range messages[1:] {
-				current := strings.ToLower(msg.Content)
+				current := strings.ToLower(msg.ContentString())
 				if !strings.Contains(first, current[:min(len(current), 20)]) {
 					return false
 				}
@@ -320,7 +320,7 @@ var DefaultConsensusFunc = struct {
 		// Count identical responses
 		contentCount := make(map[string]int)
 		for _, msg := range messages {
-			contentCount[msg.Content]++
+			contentCount[msg.ContentString()]++
 		}
 
 		// Check if any content has majority
@@ -359,7 +359,7 @@ var DefaultMergeFunc = struct {
 			if i > 0 {
 				combined.WriteString("\n\n---\n\n")
 			}
-			combined.WriteString(msg.Content)
+			combined.WriteString(msg.ContentString())
 		}
 
 		return agenkit.NewMessage("assistant", combined.String())
@@ -375,8 +375,8 @@ var DefaultMergeFunc = struct {
 		msgByContent := make(map[string]*agenkit.Message)
 
 		for _, msg := range messages {
-			votes[msg.Content]++
-			msgByContent[msg.Content] = msg
+			votes[msg.ContentString()]++
+			msgByContent[msg.ContentString()] = msg
 		}
 
 		// Find winner

@@ -32,7 +32,7 @@ func (m *MockLLMClient) Chat(_ context.Context, messages []*agenkit.Message) (*a
 	// Collect all message content for scenario detection
 	var combined strings.Builder
 	for _, msg := range messages {
-		combined.WriteString(msg.Content)
+		combined.WriteString(msg.ContentString())
 		combined.WriteString(" ")
 	}
 	content := combined.String()
@@ -111,14 +111,14 @@ func exampleBasicConversation() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Assistant: %s\n\n", response1.Content)
+	fmt.Printf("Assistant: %s\n\n", response1.ContentString())
 
 	fmt.Println("User: What's my name?")
 	response2, err := agent.Process(context.Background(), agenkit.NewMessage("user", "What's my name?"))
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Assistant: %s\n\n", response2.Content)
+	fmt.Printf("Assistant: %s\n\n", response2.ContentString())
 
 	fmt.Printf("History length: %d messages\n", agent.HistoryLength())
 
@@ -154,7 +154,7 @@ func exampleMultiTopic() error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Assistant: %s\n\n", response.Content)
+		fmt.Printf("Assistant: %s\n\n", response.ContentString())
 	}
 
 	fmt.Printf("Current history length: %d\n", agent.HistoryLength())
@@ -193,7 +193,7 @@ func exampleHistoryPruning() error {
 	fmt.Println("Final history:")
 	history := agent.GetHistory()
 	for i, msg := range history {
-		content := msg.Content
+		content := msg.ContentString()
 		if len(content) > 50 {
 			content = content[:50] + "..."
 		}
@@ -231,7 +231,7 @@ func exampleHistoryInspection() error {
 	fmt.Println("Full conversation history:")
 	history := agent.GetHistory()
 	for i, msg := range history {
-		content := msg.Content
+		content := msg.ContentString()
 		if len(content) > 60 {
 			content = content[:60] + "..."
 		}
@@ -270,7 +270,7 @@ func exampleCustomerSupport() error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Support: %s\n\n", response.Content)
+		fmt.Printf("Support: %s\n\n", response.ContentString())
 
 		if i == 1 {
 			fmt.Println("[Agent remembered order number from context]")
@@ -318,7 +318,7 @@ func exampleClearHistory() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Assistant: %s\n\n", response.Content)
+	fmt.Printf("Assistant: %s\n\n", response.ContentString())
 	fmt.Println("[Agent doesn't remember because history was cleared]")
 
 	return nil

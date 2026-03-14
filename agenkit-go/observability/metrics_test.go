@@ -455,8 +455,8 @@ func TestMetricsMiddlewarePreservesAgentInterface(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
-	if response.Content != "response" {
-		t.Errorf("Expected content 'response', got '%s'", response.Content)
+	if response.ContentString() != "response" {
+		t.Errorf("Expected content 'response', got '%s'", response.ContentString())
 	}
 }
 

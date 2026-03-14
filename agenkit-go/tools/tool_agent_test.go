@@ -56,7 +56,7 @@ func (m *MockAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 	if m.processFunc != nil {
 		return m.processFunc(ctx, message)
 	}
-	return agenkit.NewMessage("agent", "echo: "+message.Content), nil
+	return agenkit.NewMessage("agent", "echo: "+message.ContentString()), nil
 }
 
 func TestToolRegistryRegister(t *testing.T) {
@@ -196,8 +196,8 @@ func TestToolAgentPassthrough(t *testing.T) {
 		t.Fatalf("Process failed: %v", err)
 	}
 
-	if response.Content != "echo: hello" {
-		t.Errorf("Expected 'echo: hello', got '%s'", response.Content)
+	if response.ContentString() != "echo: hello" {
+		t.Errorf("Expected 'echo: hello', got '%s'", response.ContentString())
 	}
 }
 

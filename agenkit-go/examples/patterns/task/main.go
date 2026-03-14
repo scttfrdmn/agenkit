@@ -46,7 +46,7 @@ func (s *SummarizationAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (s *SummarizationAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+	content := message.ContentString()
 
 	// Simulate processing time
 	time.Sleep(100 * time.Millisecond)
@@ -96,7 +96,7 @@ func (u *UnreliableAgent) Process(ctx context.Context, message *agenkit.Message)
 		return nil, fmt.Errorf("attempt %d failed", attemptNum)
 	}
 
-	content := message.Content
+	content := message.ContentString()
 	result := fmt.Sprintf("Processed after %d attempts: %s", attemptNum, content)
 	return agenkit.NewMessage("assistant", result), nil
 }
@@ -146,7 +146,7 @@ func exampleBasicTask() error {
 		return err
 	}
 
-	fmt.Printf("Result: %s\n\n", result.Content)
+	fmt.Printf("Result: %s\n\n", result.ContentString())
 	fmt.Printf("Task completed: %t\n", task.Completed())
 	fmt.Printf("Task has result: %t\n", task.Result() != nil)
 
@@ -207,7 +207,7 @@ func exampleRetries() error {
 		return err
 	}
 
-	fmt.Printf("Result: %s\n", result.Content)
+	fmt.Printf("Result: %s\n", result.ContentString())
 	fmt.Printf("Total attempts made: %d\n\n", agent.attempt)
 
 	return nil
@@ -233,7 +233,7 @@ func exampleReusePrevention() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Result 1: %s\n\n", result1.Content)
+	fmt.Printf("Result 1: %s\n\n", result1.ContentString())
 
 	// Try to execute again
 	fmt.Println("Attempting second execution on same task...")
@@ -273,7 +273,7 @@ func exampleConvenienceFunction() error {
 		return err
 	}
 
-	fmt.Printf("Result: %s\n", result.Content)
+	fmt.Printf("Result: %s\n", result.ContentString())
 	fmt.Println("✓ Task executed and cleaned up automatically")
 
 	return nil
@@ -333,7 +333,7 @@ func exampleBatchProcessing() error {
 		if res.err != nil {
 			fmt.Printf("Document %d: Error - %v\n", res.docNum, res.err)
 		} else {
-			fmt.Printf("Document %d: %s\n", res.docNum, res.message.Content)
+			fmt.Printf("Document %d: %s\n", res.docNum, res.message.ContentString())
 		}
 	}
 
@@ -371,7 +371,7 @@ func exampleLifecycle() error {
 	fmt.Printf("  Has result: %t\n", task.Result() != nil)
 
 	if result := task.Result(); result != nil {
-		fmt.Printf("  Result content: %s\n", result.Content)
+		fmt.Printf("  Result content: %s\n", result.ContentString())
 	}
 
 	fmt.Println("\nPerforming cleanup...")

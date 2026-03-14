@@ -161,8 +161,8 @@ func TestInMemoryMemorySummarize(t *testing.T) {
 		t.Errorf("Expected role 'system', got '%s'", summary.Role)
 	}
 
-	if !strings.Contains(summary.Content, "Session summary") {
-		t.Errorf("Expected summary to contain 'Session summary', got: %s", summary.Content)
+	if !strings.Contains(summary.ContentString(), "Session summary") {
+		t.Errorf("Expected summary to contain 'Session summary', got: %s", summary.ContentString())
 	}
 }
 

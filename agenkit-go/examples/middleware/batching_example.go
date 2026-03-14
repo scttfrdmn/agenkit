@@ -91,7 +91,7 @@ func (a *MockLLMBatchAgent) Process(ctx context.Context, message *agenkit.Messag
 
 	a.totalProcessed.Add(1)
 
-	response := agenkit.NewMessage("assistant", fmt.Sprintf("Generated: %s", message.Content))
+	response := agenkit.NewMessage("assistant", fmt.Sprintf("Generated: %s", message.ContentString()))
 	response.Metadata = map[string]interface{}{
 		"model":        "gpt-4-batch",
 		"cost_savings": "50%", // Batch API pricing
@@ -135,7 +135,7 @@ func (a *MockDatabaseAgent) Process(ctx context.Context, message *agenkit.Messag
 	a.dbCalls.Add(1)
 	a.recordsInserted.Add(1)
 
-	response := agenkit.NewMessage("assistant", fmt.Sprintf("Inserted: %s", message.Content))
+	response := agenkit.NewMessage("assistant", fmt.Sprintf("Inserted: %s", message.ContentString()))
 	response.Metadata = map[string]interface{}{
 		"table":     "users",
 		"operation": "INSERT",
@@ -174,7 +174,7 @@ func (a *MockAnalyticsAgent) Process(ctx context.Context, message *agenkit.Messa
 
 	a.eventsProcessed.Add(1)
 
-	response := agenkit.NewMessage("assistant", fmt.Sprintf("Processed event: %s", message.Content))
+	response := agenkit.NewMessage("assistant", fmt.Sprintf("Processed event: %s", message.ContentString()))
 	response.Metadata = map[string]interface{}{
 		"pipeline":  "clickstream",
 		"timestamp": time.Now().Unix(),
@@ -399,13 +399,13 @@ func (a *PartialFailAgent) Process(ctx context.Context, message *agenkit.Message
 	time.Sleep(10 * time.Millisecond)
 
 	// Fail on messages containing "fail"
-	if strings.Contains(strings.ToLower(message.Content), "fail") {
+	if strings.Contains(strings.ToLower(message.ContentString()), "fail") {
 		a.failureCount.Add(1)
-		return nil, fmt.Errorf("processing failed for: %s", message.Content)
+		return nil, fmt.Errorf("processing failed for: %s", message.ContentString())
 	}
 
 	a.successCount.Add(1)
-	return agenkit.NewMessage("assistant", fmt.Sprintf("Success: %s", message.Content)), nil
+	return agenkit.NewMessage("assistant", fmt.Sprintf("Success: %s", message.ContentString())), nil
 }
 
 // Example 4: Handling Partial Failures
@@ -467,7 +467,7 @@ func example4PartialFailures() {
 		case error:
 			fmt.Printf("   ❌ Request %d: %v\n", i+1, v)
 		case *agenkit.Message:
-			fmt.Printf("   ✓ Request %d: %s\n", i+1, v.Content)
+			fmt.Printf("   ✓ Request %d: %s\n", i+1, v.ContentString())
 		}
 	}
 

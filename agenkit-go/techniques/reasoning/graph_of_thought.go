@@ -139,7 +139,7 @@ func (got *GraphOfThought) llmCall(ctx context.Context, prompt string) (string, 
 		return "", fmt.Errorf("llm call failed: %w", err)
 	}
 
-	return response.Content, nil
+	return response.ContentString(), nil
 }
 
 // GeneratePremises generates initial premises/facts for the problem.
@@ -475,7 +475,7 @@ func (got *GraphOfThought) AggregatePaths(graph *ReasoningGraph, paths [][]int) 
 //	}
 //	fmt.Printf("Nodes: %v\n", response.Metadata["num_nodes"])
 func (got *GraphOfThought) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	problem := message.Content
+	problem := message.ContentString()
 
 	// Step 1: Build reasoning graph
 	graph, err := got.BuildGraph(ctx, problem)

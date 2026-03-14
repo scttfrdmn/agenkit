@@ -66,7 +66,7 @@ func validateAgainstSchema(t *testing.T, schema *gojsonschema.Schema, data map[s
 func messageToMap(msg *agenkit.Message) map[string]interface{} {
 	result := map[string]interface{}{
 		"role":    msg.Role,
-		"content": msg.Content,
+		"content": msg.ContentString(),
 	}
 
 	if len(msg.Metadata) > 0 {
@@ -121,7 +121,7 @@ func TestSimpleUserMessage(t *testing.T) {
 
 	// Validate properties
 	assert.Equal(t, "user", msg.Role)
-	assert.Equal(t, "Hello, agent!", msg.Content)
+	assert.Equal(t, "Hello, agent!", msg.ContentString())
 
 	// Serialize back
 	serialized := messageToMap(msg)
@@ -158,7 +158,7 @@ func TestAssistantMessageWithMetadata(t *testing.T) {
 
 	// Validate
 	assert.Equal(t, "assistant", msg.Role)
-	assert.Equal(t, "I can help you with that!", msg.Content)
+	assert.Equal(t, "I can help you with that!", msg.ContentString())
 	assert.Equal(t, 3, len(msg.Metadata))
 	assert.Contains(t, msg.Metadata, "model")
 	assert.Contains(t, msg.Metadata, "temperature")
@@ -200,7 +200,7 @@ func TestToolMessageStructured(t *testing.T) {
 
 	// Parse content back for validation
 	var contentMap map[string]interface{}
-	err = json.Unmarshal([]byte(msg.Content), &contentMap)
+	err = json.Unmarshal([]byte(msg.ContentString()), &contentMap)
 	require.NoError(t, err)
 	assert.Equal(t, "calculator", contentMap["tool_name"])
 	assert.Equal(t, float64(5), contentMap["result"])
@@ -235,9 +235,9 @@ func TestUnicodeContent(t *testing.T) {
 	}
 
 	// Verify Unicode characters preserved
-	assert.Contains(t, msg.Content, "世界")
-	assert.Contains(t, msg.Content, "🌍")
-	assert.Contains(t, msg.Content, "мир")
+	assert.Contains(t, msg.ContentString(), "世界")
+	assert.Contains(t, msg.ContentString(), "🌍")
+	assert.Contains(t, msg.ContentString(), "мир")
 
 	// Serialize and validate
 	serialized := messageToMap(msg)

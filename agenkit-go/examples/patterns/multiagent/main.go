@@ -46,7 +46,7 @@ func (r *ResearchAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (r *ResearchAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+	content := message.ContentString()
 
 	// Simulate research work
 	time.Sleep(50 * time.Millisecond)
@@ -79,7 +79,7 @@ func (w *WritingAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (w *WritingAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+	content := message.ContentString()
 
 	// Simulate writing work
 	time.Sleep(50 * time.Millisecond)
@@ -141,7 +141,7 @@ func (c *CriticAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (c *CriticAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+	content := message.ContentString()
 
 	critique := fmt.Sprintf("[Critic - %s perspective] Regarding %s: "+
 		"The approach has merit but should consider additional factors. "+
@@ -170,7 +170,7 @@ func exampleSequentialOrchestration() error {
 		return err
 	}
 
-	fmt.Printf("Combined result:\n%s\n\n", result.Content)
+	fmt.Printf("Combined result:\n%s\n\n", result.ContentString())
 
 	// Check task history
 	tasks := orchestrator.GetTasks()
@@ -201,7 +201,7 @@ func exampleConsensus() error {
 		return err
 	}
 
-	fmt.Printf("Consensus result:\n%s\n\n", result.Content)
+	fmt.Printf("Consensus result:\n%s\n\n", result.ContentString())
 
 	return nil
 }
@@ -222,7 +222,7 @@ func exampleResearchTeam() error {
 		return err
 	}
 
-	fmt.Printf("Research findings:\n%s\n\n", result.Content)
+	fmt.Printf("Research findings:\n%s\n\n", result.ContentString())
 
 	return nil
 }
@@ -250,7 +250,7 @@ func exampleContentPipeline() error {
 		return err
 	}
 
-	fmt.Printf("Pipeline output:\n%s\n\n", result.Content)
+	fmt.Printf("Pipeline output:\n%s\n\n", result.ContentString())
 
 	// Show pipeline stages
 	tasks := orchestrator.GetTasks()
@@ -285,7 +285,7 @@ func exampleDynamicRegistration() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("\nResult with 2 agents:\n%s\n\n", result.Content)
+	fmt.Printf("\nResult with 2 agents:\n%s\n\n", result.ContentString())
 
 	// Remove an agent
 	fmt.Println("Removing researcher...")

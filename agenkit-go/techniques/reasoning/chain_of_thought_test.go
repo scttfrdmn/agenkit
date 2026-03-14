@@ -25,8 +25,8 @@ func TestChainOfThoughtBasic(t *testing.T) {
 	}
 
 	// Check response content
-	if !strings.Contains(response.Content, "42") {
-		t.Errorf("Expected answer to contain '42', got: %s", response.Content)
+	if !strings.Contains(response.ContentString(), "42") {
+		t.Errorf("Expected answer to contain '42', got: %s", response.ContentString())
 	}
 
 	// Check metadata
@@ -316,7 +316,7 @@ func (a *CustomCaptureAgent) Capabilities() []string {
 }
 
 func (a *CustomCaptureAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	*a.promptCaptured = message.Content
+	*a.promptCaptured = message.ContentString()
 	return agenkit.NewMessage("assistant", a.response), nil
 }
 

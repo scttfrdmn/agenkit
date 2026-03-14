@@ -430,7 +430,7 @@ func (m *OutputValidationMiddleware) Process(ctx context.Context, message *agenk
 	}
 
 	// 1. Check output size
-	contentStr := response.Content
+	contentStr := response.ContentString()
 	if len(contentStr) > m.maxSize {
 		return nil, &OutputValidationError{
 			Message: fmt.Sprintf("Output exceeds maximum size (%d chars)", m.maxSize),
@@ -442,7 +442,7 @@ func (m *OutputValidationMiddleware) Process(ctx context.Context, message *agenk
 
 	// 2. Validate against schema
 	if m.schema != nil {
-		isValid, errorMsgPtr := m.schema.Validate(response.Content)
+		isValid, errorMsgPtr := m.schema.Validate(response.ContentString())
 		if !isValid {
 			errorMsg := *errorMsgPtr
 			contentPreview := contentStr
@@ -461,7 +461,7 @@ func (m *OutputValidationMiddleware) Process(ctx context.Context, message *agenk
 
 	// 3. Auto-redact sensitive data
 	if m.autoRedact {
-		redactedContent := m.redactor.Redact(response.Content)
+		redactedContent := m.redactor.Redact(response.ContentString())
 
 		// Create new Message with redacted content
 		response = &agenkit.Message{
@@ -472,7 +472,7 @@ func (m *OutputValidationMiddleware) Process(ctx context.Context, message *agenk
 	}
 
 	// 4. Log if sensitive data detected (even if redacted)
-	if m.autoRedact && m.redactor.HasSensitiveData(response.Content) {
+	if m.autoRedact && m.redactor.HasSensitiveData(response.ContentString()) {
 		log.Println("WARNING: Output may contain sensitive data (has been redacted)")
 	}
 

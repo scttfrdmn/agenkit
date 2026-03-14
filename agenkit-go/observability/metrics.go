@@ -143,7 +143,7 @@ func (m *MetricsMiddleware) Process(ctx context.Context, message *agenkit.Messag
 	}
 
 	// Record message size
-	messageSize := int64(len(message.Content))
+	messageSize := int64(len(message.ContentString()))
 	m.messageSizeHist.Record(ctx, messageSize, metric.WithAttributes(attrs...))
 
 	// Process message

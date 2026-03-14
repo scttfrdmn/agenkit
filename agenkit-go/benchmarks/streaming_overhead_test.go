@@ -156,7 +156,7 @@ func measureStreaming(ctx context.Context, client *remote.RemoteAgent, message *
 			}
 
 			chunksReceived++
-			bytesReceived += len(chunk.Content)
+			bytesReceived += len(chunk.ContentString())
 
 		case err := <-errorChan:
 			if err != nil {

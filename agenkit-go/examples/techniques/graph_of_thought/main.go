@@ -59,7 +59,7 @@ func (m *MockGraphLLM) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (m *MockGraphLLM) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	content := message.Content
+	content := message.ContentString()
 	m.step++
 
 	// Simulate LLM responses based on prompt patterns
@@ -137,8 +137,8 @@ func main() {
 		log.Fatalf("Graph-of-Thought failed: %v", err)
 	}
 
-	fmt.Printf("Question: %s\n\n", message.Content)
-	fmt.Printf("Answer:\n%s\n\n", response.Content)
+	fmt.Printf("Question: %s\n\n", message.ContentString())
+	fmt.Printf("Answer:\n%s\n\n", response.ContentString())
 
 	// Display graph statistics
 	fmt.Println("Graph Statistics:")
@@ -178,8 +178,8 @@ func main() {
 		log.Fatalf("Graph-of-Thought failed: %v", err)
 	}
 
-	fmt.Printf("Question: %s\n\n", message2.Content)
-	fmt.Printf("Answer (Node-Based):\n%s\n\n", response2.Content)
+	fmt.Printf("Question: %s\n\n", message2.ContentString())
+	fmt.Printf("Answer (Node-Based):\n%s\n\n", response2.ContentString())
 	fmt.Printf("Aggregation Strategy: %s\n", response2.Metadata["aggregator"])
 	fmt.Printf("Nodes: %d, Edges: %d\n\n", response2.Metadata["num_nodes"], response2.Metadata["num_edges"])
 
@@ -202,8 +202,8 @@ func main() {
 		log.Fatalf("Graph-of-Thought failed: %v", err)
 	}
 
-	fmt.Printf("Question: %s\n\n", message3.Content)
-	fmt.Printf("Answer:\n%s\n\n", response3.Content)
+	fmt.Printf("Question: %s\n\n", message3.ContentString())
+	fmt.Printf("Answer:\n%s\n\n", response3.ContentString())
 	fmt.Printf("Cycles Allowed: %v\n", response3.Metadata["allow_cycles"])
 	fmt.Printf("Has Cycles: %v\n\n", response3.Metadata["has_cycles"])
 

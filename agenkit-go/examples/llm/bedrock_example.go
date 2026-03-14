@@ -69,7 +69,7 @@ func iamRoleExample(ctx context.Context) {
 	}
 
 	fmt.Printf("User: What is the capital of France?\n")
-	fmt.Printf("Assistant: %s\n", response.Content)
+	fmt.Printf("Assistant: %s\n", response.ContentString())
 
 	// Print usage stats
 	if usage, ok := response.Metadata["usage"].(map[string]interface{}); ok {
@@ -110,7 +110,7 @@ func profileExample(ctx context.Context) {
 	}
 
 	fmt.Printf("User: Name three countries in South America.\n")
-	fmt.Printf("Assistant: %s\n", response.Content)
+	fmt.Printf("Assistant: %s\n", response.ContentString())
 }
 
 // explicitCredentialsExample demonstrates using explicit credentials
@@ -151,7 +151,7 @@ func explicitCredentialsExample(ctx context.Context) {
 	}
 
 	fmt.Printf("User: What is 7 * 8?\n")
-	fmt.Printf("Assistant: %s\n", response.Content)
+	fmt.Printf("Assistant: %s\n", response.ContentString())
 }
 
 // streamingExample demonstrates streaming responses
@@ -185,7 +185,7 @@ func streamingExample(ctx context.Context) {
 			return
 		}
 
-		fmt.Print(chunk.Content)
+		fmt.Print(chunk.ContentString())
 	}
 	fmt.Println()
 }
@@ -220,7 +220,7 @@ func customParametersExample(ctx context.Context) {
 	}
 
 	fmt.Printf("User: Explain what AWS Lambda is in one sentence.\n")
-	fmt.Printf("Assistant: %s\n", response.Content)
+	fmt.Printf("Assistant: %s\n", response.ContentString())
 	fmt.Printf("\nParameters used:\n")
 	fmt.Printf("  Temperature: 0.3 (precise)\n")
 	fmt.Printf("  MaxTokens: 100\n")
@@ -256,7 +256,7 @@ func conversationExample(ctx context.Context) {
 	}
 
 	fmt.Printf("User: Write a Go function that adds two numbers.\n")
-	fmt.Printf("Assistant: %s\n\n", response1.Content)
+	fmt.Printf("Assistant: %s\n\n", response1.ContentString())
 
 	// Add assistant response to conversation
 	messages = append(messages, response1)
@@ -271,5 +271,5 @@ func conversationExample(ctx context.Context) {
 	}
 
 	fmt.Printf("User: Now write a test for that function.\n")
-	fmt.Printf("Assistant: %s\n", response2.Content)
+	fmt.Printf("Assistant: %s\n", response2.ContentString())
 }

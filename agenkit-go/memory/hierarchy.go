@@ -182,7 +182,7 @@ func (h *HierarchyMemory) Store(
 	}
 
 	// Convert message content to string
-	content := fmt.Sprintf("%v", message.Content)
+	content := fmt.Sprintf("%v", message.ContentString())
 
 	// Store in hierarchy
 	_, err := h.hierarchy.Store(ctx, content, combinedMetadata, importance, sessionID)
@@ -272,7 +272,7 @@ func (h *HierarchyMemory) Summarize(
 
 	for i := 0; i < maxMessages; i++ {
 		msg := messages[i]
-		preview := fmt.Sprintf("%v", msg.Content)
+		preview := fmt.Sprintf("%v", msg.ContentString())
 		if len(preview) > 100 {
 			preview = preview[:100] + "..."
 		}

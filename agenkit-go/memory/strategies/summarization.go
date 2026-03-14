@@ -94,7 +94,7 @@ func (s *SummarizationStrategy) Select(ctx context.Context, mem memory.Memory, s
 	}
 
 	// Check if summary indicates no older messages
-	if strings.Contains(summary.Content, "No messages") {
+	if strings.Contains(summary.ContentString(), "No messages") {
 		// No older messages to summarize
 		if len(recent) > contextLimit {
 			recent = recent[:contextLimit]

@@ -68,8 +68,8 @@ func TestSequentialAgentBasic(t *testing.T) {
 	}
 
 	// Final result should be from last agent
-	if result.Content != "step3" {
-		t.Errorf("Expected final result 'step3', got '%s'", result.Content)
+	if result.ContentString() != "step3" {
+		t.Errorf("Expected final result 'step3', got '%s'", result.ContentString())
 	}
 
 	// All agents should have been called
@@ -164,7 +164,7 @@ func TestParallelAgentBasic(t *testing.T) {
 	}
 
 	// Result should contain all responses
-	content := result.Content
+	content := result.ContentString()
 	if !strings.Contains(content, "agent1") || !strings.Contains(content, "response1") {
 		t.Errorf("Expected agent1 response in combined result")
 	}
@@ -254,8 +254,8 @@ func TestFallbackAgentFirstSucceeds(t *testing.T) {
 	}
 
 	// Should use first agent
-	if result.Content != "success1" {
-		t.Errorf("Expected response from agent1, got '%s'", result.Content)
+	if result.ContentString() != "success1" {
+		t.Errorf("Expected response from agent1, got '%s'", result.ContentString())
 	}
 
 	// Only first agent should be called
@@ -288,8 +288,8 @@ func TestFallbackAgentSecondSucceeds(t *testing.T) {
 	}
 
 	// Should use second agent
-	if result.Content != "success2" {
-		t.Errorf("Expected response from agent2, got '%s'", result.Content)
+	if result.ContentString() != "success2" {
+		t.Errorf("Expected response from agent2, got '%s'", result.ContentString())
 	}
 
 	// First two agents should be called
@@ -349,8 +349,8 @@ func TestConditionalAgentRouting(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
-	if result1.Content != "handled by agent1" {
-		t.Errorf("Expected agent1 response, got '%s'", result1.Content)
+	if result1.ContentString() != "handled by agent1" {
+		t.Errorf("Expected agent1 response, got '%s'", result1.ContentString())
 	}
 	if agent1.calls != 1 {
 		t.Errorf("Expected agent1 called once, got %d", agent1.calls)
@@ -362,8 +362,8 @@ func TestConditionalAgentRouting(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
-	if result2.Content != "handled by agent2" {
-		t.Errorf("Expected agent2 response, got '%s'", result2.Content)
+	if result2.ContentString() != "handled by agent2" {
+		t.Errorf("Expected agent2 response, got '%s'", result2.ContentString())
 	}
 	if agent2.calls != 1 {
 		t.Errorf("Expected agent2 called once, got %d", agent2.calls)
@@ -375,8 +375,8 @@ func TestConditionalAgentRouting(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
-	if result3.Content != "handled by default" {
-		t.Errorf("Expected default agent response, got '%s'", result3.Content)
+	if result3.ContentString() != "handled by default" {
+		t.Errorf("Expected default agent response, got '%s'", result3.ContentString())
 	}
 	if defaultAgent.calls != 1 {
 		t.Errorf("Expected default agent called once, got %d", defaultAgent.calls)

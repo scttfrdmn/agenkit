@@ -44,7 +44,7 @@ func (c *CodeSpecialistAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (c *CodeSpecialistAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	query := strings.ToLower(message.Content)
+	query := strings.ToLower(message.ContentString())
 
 	var response string
 	switch {
@@ -114,7 +114,7 @@ func (d *DataSpecialistAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (d *DataSpecialistAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	query := strings.ToLower(message.Content)
+	query := strings.ToLower(message.ContentString())
 
 	var response string
 	switch {
@@ -176,7 +176,7 @@ func (s *SupervisorAgent) Capabilities() []string {
 }
 
 func (s *SupervisorAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	query := strings.ToLower(message.Content)
+	query := strings.ToLower(message.ContentString())
 
 	// Simple routing logic
 	var toolName string
@@ -206,7 +206,7 @@ func (s *SupervisorAgent) Process(ctx context.Context, message *agenkit.Message)
 
 	// Delegate to the specialist
 	result, err := tool.Execute(ctx, map[string]interface{}{
-		"query": message.Content,
+		"query": message.ContentString(),
 	})
 	if err != nil {
 		return nil, err
@@ -301,7 +301,7 @@ func main() {
 			continue
 		}
 
-		fmt.Printf("Response:\n%s\n", result.Content)
+		fmt.Printf("Response:\n%s\n", result.ContentString())
 	}
 
 	// Demonstrate direct tool usage (without supervisor)

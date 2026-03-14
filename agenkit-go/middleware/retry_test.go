@@ -60,8 +60,8 @@ func TestRetrySuccess(t *testing.T) {
 		t.Fatalf("Expected success after retries, got error: %v", err)
 	}
 
-	if response.Content != "success after retries" {
-		t.Errorf("Expected content 'success after retries', got '%s'", response.Content)
+	if response.ContentString() != "success after retries" {
+		t.Errorf("Expected content 'success after retries', got '%s'", response.ContentString())
 	}
 
 	if agent.attempts != 3 {
@@ -122,8 +122,8 @@ func TestRetryFirstAttemptSuccess(t *testing.T) {
 		t.Fatalf("Expected immediate success, got error: %v", err)
 	}
 
-	if response.Content != "immediate success" {
-		t.Errorf("Expected content 'immediate success', got '%s'", response.Content)
+	if response.ContentString() != "immediate success" {
+		t.Errorf("Expected content 'immediate success', got '%s'", response.ContentString())
 	}
 
 	if agent.attempts != 1 {
@@ -383,8 +383,8 @@ func TestRetryZeroValues(t *testing.T) {
 		t.Fatalf("Expected success with default config, got error: %v", err)
 	}
 
-	if response.Content != "success" {
-		t.Errorf("Expected content 'success', got '%s'", response.Content)
+	if response.ContentString() != "success" {
+		t.Errorf("Expected content 'success', got '%s'", response.ContentString())
 	}
 
 	if agent.attempts != 3 {

@@ -5,6 +5,7 @@
 
 #include "agenkit/adapters/openai_agent.hpp"
 #include "agenkit/adapters/validation.hpp"
+#include "agenkit/core/sse_parser.hpp"
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
@@ -286,47 +287,56 @@ OpenAIAgent::stream(core::Message message, std::function<bool(const std::string&
             {"Content-Type", "application/json"}
         };
 
-        // TODO(Issue #XXX): Fix httplib streaming API - currently using fallback
-        // The httplib Post() API changed and streaming callbacks need to be updated
-        // For now, make a non-streaming request and simulate streaming by chunking
-        auto response = client.Post("/v1/chat/completions", headers,
-                                   request_body.dump(),
-                                   "application/json");
+        // Use httplib Request with content_receiver for true NDJSON streaming
+        httplib::Request req;
+        req.method = "POST";
+        req.path = "/v1/chat/completions";
+        req.headers = headers;
+        req.body = request_body.dump();
+        req.set_header("Content-Type", "application/json");
 
-        if (!response) {
+        core::SseParser parser;
+
+        req.content_receiver = [&](const char* data, size_t data_length,
+                                   uint64_t /*offset*/, uint64_t /*total*/) -> bool {
+            return parser.feed(data, data_length, core::SseParser::Mode::SSE,
+                [&](const std::string& json_str) -> bool {
+                    try {
+                        auto chunk = json::parse(json_str);
+                        if (chunk.contains("choices") && !chunk["choices"].empty()) {
+                            const auto& delta = chunk["choices"][0];
+                            if (delta.contains("delta") &&
+                                delta["delta"].contains("content") &&
+                                delta["delta"]["content"].is_string()) {
+                                callback(delta["delta"]["content"].get<std::string>());
+                            }
+                        }
+                    } catch (const json::exception&) {
+                        // skip malformed chunks
+                    }
+                    return true;
+                });
+        };
+
+        httplib::Response res;
+        httplib::Error err = httplib::Error::Success;
+        if (!client.send(req, res, err)) {
             return core::Result<void, core::AgentError>::err(
                 core::AgentError(
                     core::AgentErrorType::Transport,
-                    "Failed to connect to OpenAI API for streaming"
+                    "failed to connect to OpenAI API for streaming: " +
+                    httplib::to_string(err)
                 )
             );
         }
 
-        if (response->status != 200) {
-            std::string error_msg = "OpenAI streaming error (" +
-                                   std::to_string(response->status) + "): " +
-                                   response->body;
+        if (res.status != 200) {
             return core::Result<void, core::AgentError>::err(
                 core::AgentError(
                     core::AgentErrorType::Http,
-                    error_msg
+                    "OpenAI streaming error (" + std::to_string(res.status) + "): " + res.body
                 )
             );
-        }
-
-        // TODO(Issue #XXX): Implement proper streaming
-        // For now, return the full response body through the callback
-        try {
-            json response_json = json::parse(response->body);
-            if (response_json.contains("choices") && !response_json["choices"].empty()) {
-                const auto& choice = response_json["choices"][0];
-                if (choice.contains("message") && choice["message"].contains("content")) {
-                    std::string content = choice["message"]["content"].get<std::string>();
-                    callback(content);
-                }
-            }
-        } catch (const json::exception&) {
-            // Ignore parse errors
         }
 
         return core::Result<void, core::AgentError>::ok();

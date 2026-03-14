@@ -5,6 +5,7 @@
 
 #include "agenkit/adapters/ollama_agent.hpp"
 #include "agenkit/adapters/validation.hpp"
+#include "agenkit/core/sse_parser.hpp"
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
@@ -270,47 +271,61 @@ OllamaAgent::stream(core::Message message, std::function<bool(const std::string&
             {"Content-Type", "application/json"}
         };
 
-        // TODO(Issue #XXX): Fix httplib streaming API - currently using fallback
-        // The httplib Post() API changed and streaming callbacks need to be updated
-        // For now, make a non-streaming request
-        request_body["stream"] = false;
-        auto response = client.Post("/api/chat", headers,
-                                   request_body.dump(),
-                                   "application/json");
+        // Enable streaming — Ollama returns NDJSON with one JSON object per line.
+        // Each line has {"message": {"role": "assistant", "content": "<chunk>"}, "done": false}
+        // The final line has "done": true.
 
-        if (!response) {
+        // Use httplib Request with content_receiver for true NDJSON streaming
+        httplib::Request req;
+        req.method = "POST";
+        req.path = "/api/chat";
+        req.headers = headers;
+        req.body = request_body.dump();
+        req.set_header("Content-Type", "application/json");
+
+        core::SseParser parser;
+
+        req.content_receiver = [&](const char* data, size_t data_length,
+                                   uint64_t /*offset*/, uint64_t /*total*/) -> bool {
+            return parser.feed(data, data_length, core::SseParser::Mode::NDJSON,
+                [&](const std::string& json_str) -> bool {
+                    try {
+                        auto chunk = json::parse(json_str);
+                        if (chunk.contains("message")) {
+                            const auto& msg_obj = chunk["message"];
+                            if (msg_obj.contains("content") && msg_obj["content"].is_string()) {
+                                std::string content = msg_obj["content"].get<std::string>();
+                                if (!content.empty()) {
+                                    callback(content);
+                                }
+                            }
+                        }
+                    } catch (const json::exception&) {
+                        // skip malformed chunks
+                    }
+                    return true;
+                });
+        };
+
+        httplib::Response res;
+        httplib::Error err = httplib::Error::Success;
+        if (!client.send(req, res, err)) {
             return core::Result<void, core::AgentError>::err(
                 core::AgentError(
                     core::AgentErrorType::Transport,
-                    "Failed to connect to Ollama for streaming at " + config_.host
+                    "failed to connect to Ollama for streaming at " + config_.host + ": " +
+                    httplib::to_string(err)
                 )
             );
         }
 
-        if (response->status != 200) {
-            std::string error_msg = "Ollama streaming error (" +
-                                   std::to_string(response->status) + "): " +
-                                   response->body;
+        if (res.status != 200) {
             return core::Result<void, core::AgentError>::err(
                 core::AgentError(
                     core::AgentErrorType::Http,
-                    error_msg
+                    "Ollama streaming error (" + std::to_string(res.status) + "): " + res.body
                 )
             );
-        }
-
-        // TODO(Issue #XXX): Implement proper streaming
-        // For now, return the full response body through the callback
-        try {
-            json response_json = json::parse(response->body);
-            if (response_json.contains("message")) {
-                const auto& msg = response_json["message"];
-                if (msg.contains("content")) {
-                    callback(msg["content"].get<std::string>());
-                }
-            }
-        } catch (const json::exception&) {
-            // Ignore parse errors
         }
 
         return core::Result<void, core::AgentError>::ok();

@@ -5,6 +5,7 @@
 
 #include "agenkit/adapters/gemini_agent.hpp"
 #include "agenkit/adapters/validation.hpp"
+#include "agenkit/core/sse_parser.hpp"
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
@@ -351,50 +352,60 @@ GeminiAgent::stream(core::Message message, std::function<bool(const std::string&
             {"Content-Type", "application/json"}
         };
 
-        // TODO(Issue #XXX): Fix httplib streaming API - currently using fallback
-        // The httplib Post() API changed and streaming callbacks need to be updated
-        // For now, make a non-streaming request (Gemini doesn't require stream parameter)
-        auto response = client.Post(endpoint.c_str(), headers,
-                                   request_body.dump(),
-                                   "application/json");
+        // Use httplib Request with content_receiver for true NDJSON streaming.
+        // The :streamGenerateContent endpoint returns NDJSON (one JSON object per line).
+        httplib::Request req;
+        req.method = "POST";
+        req.path = endpoint;
+        req.headers = headers;
+        req.body = request_body.dump();
+        req.set_header("Content-Type", "application/json");
 
-        if (!response) {
+        core::SseParser parser;
+
+        req.content_receiver = [&](const char* data, size_t data_length,
+                                   uint64_t /*offset*/, uint64_t /*total*/) -> bool {
+            return parser.feed(data, data_length, core::SseParser::Mode::NDJSON,
+                [&](const std::string& json_str) -> bool {
+                    try {
+                        auto chunk = json::parse(json_str);
+                        if (chunk.contains("candidates") && !chunk["candidates"].empty()) {
+                            const auto& candidate = chunk["candidates"][0];
+                            if (candidate.contains("content") &&
+                                candidate["content"].contains("parts") &&
+                                !candidate["content"]["parts"].empty()) {
+                                const auto& part = candidate["content"]["parts"][0];
+                                if (part.contains("text") && part["text"].is_string()) {
+                                    callback(part["text"].get<std::string>());
+                                }
+                            }
+                        }
+                    } catch (const json::exception&) {
+                        // skip malformed chunks
+                    }
+                    return true;
+                });
+        };
+
+        httplib::Response res;
+        httplib::Error err = httplib::Error::Success;
+        if (!client.send(req, res, err)) {
             return core::Result<void, core::AgentError>::err(
                 core::AgentError(
                     core::AgentErrorType::Transport,
-                    "failed to connect to Gemini API for streaming"
+                    "failed to connect to Gemini API for streaming: " +
+                    httplib::to_string(err)
                 )
             );
         }
 
-        if (response->status != 200) {
-            std::string error_msg = "Gemini streaming error (" +
-                                   std::to_string(response->status) + "): " +
-                                   response->body;
+        if (res.status != 200) {
             return core::Result<void, core::AgentError>::err(
                 core::AgentError(
                     core::AgentErrorType::Http,
-                    error_msg
+                    "Gemini streaming error (" + std::to_string(res.status) + "): " + res.body
                 )
             );
-        }
-
-        // TODO(Issue #XXX): Implement proper streaming
-        // For now, return the full response body through the callback
-        try {
-            json response_json = json::parse(response->body);
-            if (response_json.contains("candidates") && !response_json["candidates"].empty()) {
-                const auto& candidate = response_json["candidates"][0];
-                if (candidate.contains("content") && candidate["content"].contains("parts")) {
-                    for (const auto& part : candidate["content"]["parts"]) {
-                        if (part.contains("text")) {
-                            callback(part["text"].get<std::string>());
-                        }
-                    }
-                }
-            }
-        } catch (const json::exception&) {
-            // Ignore parse errors
         }
 
         return core::Result<void, core::AgentError>::ok();

@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.58.0] - 2026-03-14
+
+### Added
+
+#### C++ SSE/NDJSON Streaming (Issue #532)
+- **New**: `agenkit-cpp/include/agenkit/core/sse_parser.hpp` — header-only SSE and NDJSON parser
+- `SseParser` buffers raw bytes from httplib `content_receiver` callbacks, fires per-event callbacks
+- Supports `Mode::SSE` (Claude `data: <json>` lines, stops on `[DONE]`) and `Mode::NDJSON` (one JSON object per line)
+- All 4 adapters updated to use real streaming via `httplib::Request.content_receiver`:
+  - **Claude** (`claude_agent.cpp`): `stream=true` + SSE parsing of `content_block_delta` events
+  - **OpenAI** (`openai_agent.cpp`): SSE parsing of `choices[0].delta.content` chunks
+  - **Gemini** (`gemini_agent.cpp`): switched to `:streamGenerateContent` + NDJSON delta parsing
+  - **Ollama** (`ollama_agent.cpp`): re-enabled `"stream":true` + NDJSON `message.content` parsing
+
+#### Zig Structured Content (#534)
+- **Fixed**: `agenkit-zig/src/adapter/openai.zig` — `.structured` content now serialized as JSON array
+  (was mapping to `""`)
+- **Fixed**: `agenkit-zig/src/adapter/bedrock.zig` — same fix for regular messages; system prompt
+  remains plain text per Bedrock API contract
+- Uses `std.json.Stringify.valueAlloc` to serialize `json.Value` directly into the request body
+
+#### Zig AWS SigV4 for Bedrock (#535)
+- **Implemented**: `BedrockLLM.makeRequest()` — full AWS SigV4 signing replacing the `BedrockRequiresAWSSDK` stub
+- 4-step canonical algorithm: canonical request → string to sign → HMAC-SHA256 key chain (date/region/service/aws4_request) → signature
+- Uses only `std.crypto.auth.hmac.sha2.HmacSha256` and `std.crypto.hash.sha2.Sha256` (no external deps)
+- Supports optional `session_token` for STS/assumed-role credentials
+- Helper functions: `hexEncode()` and `formatTimestamp()` (Zig 0.15 epoch API)
+- 4 new unit tests: `hexEncode`, `SigV4 signing key derivation`, `SigV4 payload hash`, `formatTimestamp`, `structured content in request body`
+
+#### Go Adapter Content Blocks (#422, scoped)
+- **New**: `ContentBlocks() []interface{}` accessor on `Message` — returns structured blocks from
+  `Metadata["content_blocks"]` for multimodal consumers; nil for plain-text messages
+- `agenkit-go/adapter/llm/anthropic.go`: multi-block responses (tool_use + text) now stored in
+  `Metadata["content_blocks"]`; all text blocks joined into `Content` for backward compatibility
+- `agenkit-go/adapter/llm/openai.go`: tool call responses stored as `content_blocks`
+- **New**: `docs/STRUCTURED_CONTENT.md` — documents interim approach and v0.59.0 full migration plan
+
+### Closed (already done / intentional)
+- **#438** — Cross-language API consistency test suite: 101 scenarios × 6 languages = 606 combinations, 100% passing
+- **#433** — Token usage metadata: already consistent (`prompt_tokens`, `completion_tokens`, `total_tokens`) across all languages
+- **#430** — Parameter naming: TypeScript uses `initialDelayMs`/`maxDelayMs` (idiomatic JS/TS); Go/Python use seconds; correct by design
+
 ## [0.57.0] - 2026-03-13
 
 ### Added

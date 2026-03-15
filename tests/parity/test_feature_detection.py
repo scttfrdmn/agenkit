@@ -197,7 +197,7 @@ class TestTypeScriptScanner:
 
         # Should find core memory backends
         expected_memory = [
-            "EphemeralMemory",
+            "InMemoryMemory",
             "VectorMemory",
             "RedisMemory",
             "EndlessMemory",  # TypeScript has this!

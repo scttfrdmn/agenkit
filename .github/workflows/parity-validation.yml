@@ -33,7 +33,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync
+          uv sync --extra dev
 
       - name: Scan features across all languages
         run: |

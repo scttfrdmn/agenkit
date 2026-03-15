@@ -26,7 +26,7 @@ import (
 
 const (
 	// AgenkitVersion is the current version of the Agenkit library
-	AgenkitVersion = "0.44.0"
+	AgenkitVersion = "0.61.0"
 )
 
 // sanitizeErrorMessage sanitizes error messages to prevent information disclosure.

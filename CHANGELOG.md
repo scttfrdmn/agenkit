@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.61.0] - 2026-03-15
+
+### Added
+- **Service Connectors**: Named provider preset factory functions for production inference servers
+  - Python: `VLLMConnector`, `SGLangConnector`, `TensorRTLLMConnector`, `DeepSpeedConnector` in `agenkit.adapters.llm`
+  - Go: `VLLMConnector`, `SGLangConnector`, `TensorRTLLMConnector`, `DeepSpeedConnector` in `adapter/llm`
+  - All connectors wrap `OpenAICompatibleLLM` with provider-specific defaults
+  - Examples: `examples/service_connectors/` (Python) and `agenkit-go/examples/llm/service_connectors/` (Go)
+- **agenkit-runtime v0.3.0**: Real Firecracker snapshot UDS API, S3 snapshot store, VM pool wiring
+
 ## [0.60.2] - 2026-03-15
 
 ### Fixed

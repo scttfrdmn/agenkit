@@ -95,3 +95,16 @@ try:
     __all__.append("OpenAICompatibleLLM")
 except ImportError:
     pass
+
+# Service Connectors — named presets for production inference servers
+try:
+    from agenkit.adapters.llm.service_connectors import (
+        DeepSpeedConnector,
+        SGLangConnector,
+        TensorRTLLMConnector,
+        VLLMConnector,
+    )
+
+    __all__.extend(["VLLMConnector", "SGLangConnector", "TensorRTLLMConnector", "DeepSpeedConnector"])
+except ImportError:
+    pass

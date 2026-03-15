@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.60.0] - 2026-03-15
+
+### Added
+
+#### Local-Model Provider Examples (#537)
+- **New**: `agenkit-go/examples/llm/local_models/main.go` — Go example targeting Ollama,
+  vLLM, llama.cpp, and LM Studio via `NewOpenAICompatibleLLM`; includes `ProviderConfig`
+  struct and a provider-swap demo showing zero code changes needed between providers
+- **New**: `examples/local_models/ollama_example.py` — Ollama via OpenAI-compatible endpoint
+  (completion, streaming, multi-turn conversation)
+- **New**: `examples/local_models/vllm_example.py` — vLLM GPU inference server
+  (completion, streaming, custom parameters)
+- **New**: `examples/local_models/llamacpp_example.py` — llama.cpp CPU/Metal server
+  (completion, streaming, system prompt)
+- All examples gracefully handle connection-refused errors when the server is not running
+
 ## [0.59.0] - 2026-03-14
 
 ### Added

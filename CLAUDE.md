@@ -34,7 +34,7 @@
 ### Project Context
 - **Project**: Agenkit - Cross-language AI agent **toolkit** (NOT a framework)
 - **Languages**: Python, Go, TypeScript, Rust, C++, Zig (100% feature parity achieved!)
-- **Current**: v0.49.0 (66 observability tests, exceeds Python + Go combined)
+- **Current**: v0.59.0 (Go Content string→any migration, agenkit-runtime v0.1.0)
 - **Tests**: `make test` (15-30s locally, 100% pass required)
 
 ### 🚨 Testing Policy

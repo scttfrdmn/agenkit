@@ -1,6 +1,6 @@
 # Feature Parity Matrix
 
-**Generated**: 2026-02-04 03:29:29 UTC
+**Generated**: 2026-03-15 02:59:57 UTC
 
 This matrix shows feature implementation status across all 6 Agenkit language implementations.
 

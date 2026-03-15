@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.60.2] - 2026-03-15
+
+### Fixed
+- Parity tests: `TestTypeScriptScanner::test_scan_memory` was asserting `EphemeralMemory`
+  but the TypeScript implementation uses `InMemoryMemory` (`agenkit-ts/src/memory/in-memory.ts`);
+  updated expected class name so CI parity tests pass
+
 ## [0.60.1] - 2026-03-15
 
 ### Fixed

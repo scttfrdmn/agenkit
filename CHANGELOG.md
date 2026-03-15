@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.60.1] - 2026-03-15
+
+### Fixed
+- CI: `jinja2` was missing from installed dependencies, causing the Parity Validation
+  workflow to fail on every push since v0.56.0
+  - Added `jinja2>=3.1.0` to `[project.optional-dependencies] dev`
+  - Changed CI `uv sync` → `uv sync --extra dev` so dev tools are available
+  - Bumped `pyproject.toml` version from stuck `0.58.0` to `0.60.1`
+
 ## [0.60.0] - 2026-03-15
 
 ### Added

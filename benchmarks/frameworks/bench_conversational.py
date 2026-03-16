@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "examples" / "frameworks"))
 
 from agenkit import Message  # noqa: E402
-from agenkit.patterns import ConversationalAgent  # noqa: E402
+from agenkit.patterns import ConversationalAgent, ConversationalAgentConfig  # noqa: E402
 from benchmarks.frameworks.mock_llm import MockLLM, run_benchmark  # noqa: E402
 from minichain import ConversationChain  # noqa: E402
 
@@ -36,7 +36,8 @@ async def run_native_conversation(llm: MockLLM) -> None:
         async def chat(self, messages: list[Message]) -> Message:
             return await self.llm_instance.complete(messages)
 
-    agent = ConversationalAgent(llm_client=LLMClientAdapter(llm), max_history=10)
+    config = ConversationalAgentConfig(llm_client=LLMClientAdapter(llm), max_history=10)
+    agent = ConversationalAgent(config)
     for i in range(TURNS):
         await agent.process(Message(role="user", content=f"message {i}"))
 

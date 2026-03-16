@@ -34,7 +34,7 @@
 ### Project Context
 - **Project**: Agenkit - Cross-language AI agent **toolkit** (NOT a framework)
 - **Languages**: Python, Go, TypeScript, Rust, C++, Zig (100% feature parity achieved!)
-- **Current**: v0.59.0 (Go Content string→any migration, agenkit-runtime v0.1.0)
+- **Current**: v0.69.0 (API Standardization — ConversationalAgentConfig, DEFAULTS.md, Go verbose fix)
 - **Tests**: `make test` (15-30s locally, 100% pass required)
 
 ### 🚨 Testing Policy
@@ -202,7 +202,7 @@ agenkit/
 ├── agenkit-cpp/          # C++ implementation
 ├── agenkit-zig/          # Zig implementation
 ├── docs/                 # Architecture & pattern docs
-├── examples/             # 27+ examples (all languages)
+├── examples/             # 40+ examples (all languages, 14+ frameworks)
 ├── tests/                # Python tests
 ├── benchmarks/           # Performance benchmarks
 ├── scripts/              # Development scripts
@@ -294,28 +294,28 @@ Examples in this codebase teach users how to use the toolkit. Non-idiomatic exam
 
 ---
 
-## Current Release Status (Jan 2026)
+## Current Release Status (March 2026)
 
-**v0.49.0 (Released January 16, 2026):**
-- ✅ Rust Observability - 66 tests (exceeds Python + Go combined!)
-- ✅ 4 modules: tracing, metrics, logging, audit
-- ✅ W3C Trace Context propagation
-- ✅ Production-ready with comprehensive examples
-- ✅ All tests passing locally (100%)
+**v0.69.0 (Released March 16, 2026):**
+- ✅ `ConversationalAgentConfig` — completes config-object API across all agents
+- ✅ `MemoryHierarchy.store(session_id=...)` deprecation warning added
+- ✅ Go `ReActConfig.Verbose` default corrected to `false` (matches all other languages)
+- ✅ `docs/DEFAULTS.md` — canonical cross-language defaults reference
+- ✅ 23 new tests, 1989 total passing (0 failed)
 
-**v0.46.0 (Released January 9, 2026):**
-- ✅ 67% faster tests (11+ min → 3:37) with pytest-xdist
-- ✅ Language updates: Python 3.13, Go 1.23, Node 22
-- ✅ 1,770+ tests passing, 100% success rate
+**v0.68.0 (Released March 16, 2026):**
+- ✅ Framework compatibility tests (LangChain, CrewAI, LlamaIndex, etc.)
+- ✅ Performance benchmarks: 5 suites, all sub-millisecond overhead
+- ✅ `visualize.py` + `RESULTS.md` with measured data
 
 **Next Focus:**
+- v0.70.0 (see GitHub milestone) — planned in next sprint
 - Maintain 100% local test pass rate
-- Continue feature parity across languages
-- Optimize for fast local development workflow
+- `docs/` refresh: tutorials (#16), cross-language examples
 
 See `ROADMAP.md` for complete release schedule.
 
 ---
 
-**Last Updated:** January 14, 2026 (v0.46.0 current)
-**Token Count:** ~200 lines (vs 435 in previous version - 54% reduction)
+**Last Updated:** March 16, 2026 (v0.69.0 current)
+**Token Count:** ~200 lines

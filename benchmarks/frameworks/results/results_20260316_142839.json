@@ -1,0 +1,92 @@
+{
+  "timestamp": "20260316_142839",
+  "results": {
+    "simple_chain": {
+      "LLMChain.run": {
+        "mean_ms": 0.0016,
+        "p50_ms": 0.0016,
+        "p95_ms": 0.0017,
+        "p99_ms": 0.002,
+        "iter_per_sec": 624364.7
+      },
+      "direct_llm_complete": {
+        "mean_ms": 0.0007,
+        "p50_ms": 0.0007,
+        "p95_ms": 0.0008,
+        "p99_ms": 0.0009,
+        "iter_per_sec": 1387415.7
+      },
+      "agent_process": {
+        "mean_ms": 0.0008,
+        "p50_ms": 0.0008,
+        "p95_ms": 0.0009,
+        "p99_ms": 0.001,
+        "iter_per_sec": 1236550.7
+      }
+    },
+    "sequential": {
+      "SequentialChain (3 agents)": {
+        "mean_ms": 0.0033,
+        "p50_ms": 0.0032,
+        "p95_ms": 0.0034,
+        "p99_ms": 0.0035,
+        "iter_per_sec": 306045.6
+      },
+      "SequentialAgent (3 agents)": {
+        "mean_ms": 0.0032,
+        "p50_ms": 0.0032,
+        "p95_ms": 0.0033,
+        "p99_ms": 0.0034,
+        "iter_per_sec": 314762.4
+      }
+    },
+    "parallel": {
+      "Crew parallel (3 agents)": {
+        "mean_ms": 0.078,
+        "p50_ms": 0.0713,
+        "p95_ms": 0.1542,
+        "p99_ms": 0.2007,
+        "iter_per_sec": 12813.7
+      },
+      "ParallelAgent (3 agents)": {
+        "mean_ms": 0.0835,
+        "p50_ms": 0.0694,
+        "p95_ms": 0.1478,
+        "p99_ms": 0.9502,
+        "iter_per_sec": 11979.2
+      }
+    },
+    "conversational": {
+      "ConversationChain (10 turns)": {
+        "mean_ms": 0.0206,
+        "p50_ms": 0.0204,
+        "p95_ms": 0.0216,
+        "p99_ms": 0.0238,
+        "iter_per_sec": 48654.2
+      },
+      "ConversationalAgent (10 turns)": {
+        "mean_ms": 0.025,
+        "p50_ms": 0.0231,
+        "p95_ms": 0.0272,
+        "p99_ms": 0.0988,
+        "iter_per_sec": 40032.1
+      }
+    },
+    "router": {
+      "RouterChain": {
+        "mean_ms": 0.0018,
+        "p50_ms": 0.0017,
+        "p95_ms": 0.0021,
+        "p99_ms": 0.0036,
+        "iter_per_sec": 557086.5
+      },
+      "RouterAgent": {
+        "mean_ms": 0.0021,
+        "p50_ms": 0.0021,
+        "p95_ms": 0.0022,
+        "p99_ms": 0.004,
+        "iter_per_sec": 473122.9
+      }
+    }
+  }
+}

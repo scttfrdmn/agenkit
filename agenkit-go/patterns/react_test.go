@@ -147,8 +147,8 @@ func TestReActAgent_DefaultVerbose(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !reactAgent.verbose {
-		t.Error("expected default verbose true, got false")
+	if reactAgent.verbose {
+		t.Error("expected default verbose false, got true")
 	}
 }
 

@@ -134,9 +134,78 @@ The router's fallback destination when no routing rule matches. If `None`/`nil`,
 unmatched messages raise an error. Set to a valid agent key to enable graceful
 fallback routing.
 
+## TTL Expiration Semantics
+
+All languages implement TTL-based cache expiration with equivalent semantics:
+**keep an entry if its age is strictly less than the configured TTL**.
+
+### Per-language expiration checks
+
+**Python** (`agenkit/memory/memory.py:314`):
+```python
+# Keep entry if age < ttl
+if now - e.timestamp < self.ttl:
+    valid_entries.append(e)
+```
+
+**Go** (`agenkit-go/memory/memory.go:311`):
+```go
+// Keep entry if age < ttl
+if now.Sub(entry.Timestamp) < s.ttl {
+    valid = append(valid, entry)
+}
+```
+
+**TypeScript** (`agenkit-ts/src/memory/memory.ts`):
+```typescript
+// Keep entry if age < ttl
+if (Date.now() - entry.timestamp < this.ttlMs) {
+  valid.push(entry);
+}
+```
+
+**Rust** (`agenkit-rust/src/memory/entry.rs:62`):
+```rust
+// Note: inverted boolean — is_expired returns true when age >= ttl
+pub fn is_expired(&self, ttl_seconds: i64) -> bool {
+    let age = Utc::now() - self.timestamp;
+    age.num_seconds() >= ttl_seconds
+}
+// Caller: keep entry if !entry.is_expired(ttl)
+```
+
+**C++** (`agenkit-cpp/src/memory/memory.cpp`):
+```cpp
+// Keep entry if age < ttl
+auto age = std::chrono::steady_clock::now() - entry.timestamp;
+if (age < ttl_) {
+    valid.push_back(entry);
+}
+```
+
+**Zig** (`agenkit-zig/src/memory/memory.zig`):
+```zig
+// Keep entry if age < ttl
+const age = std.time.milliTimestamp() - entry.timestamp_ms;
+if (age < self.ttl_ms) {
+    try valid.append(entry);
+}
+```
+
+### Equivalence note
+
+All implementations produce the same result. The Rust `is_expired` helper uses an
+**inverted boolean** (`age >= ttl` returns `true` meaning expired) while the other
+languages use a direct keep-if-less-than check — both express identical semantics.
+Rust callers filter with `!entry.is_expired(ttl)`.
+
+The boundary condition (`age == ttl` exactly) is treated as expired in all languages:
+Python and Go use `<` (strict), Rust uses `>=` for the expired check (equivalent).
+
 ## Related Documentation
 
 - [Migration Guides](migrations/) — step-by-step upgrade instructions
 - [Framework Comparison Matrix](framework_comparison_matrix.md) — per-framework
   defaults and feature support
 - [ARCHITECTURE.md](../ARCHITECTURE.md) — design principles behind these choices
+- [TYPE_VALIDATION.md](TYPE_VALIDATION.md) — per-language type checking patterns

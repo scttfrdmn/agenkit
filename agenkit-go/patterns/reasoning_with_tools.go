@@ -254,9 +254,10 @@ Begin reasoning. Use tools as needed while thinking.`, r.toolUsePrompt, message.
 
 		// Check if this is a tool call
 		if strings.Contains(responseText, "TOOL_CALL:") {
-			toolName, parameters, remainingText := r.parseToolCall(responseText)
+			toolNamePtr, parameters, remainingText := r.parseToolCall(responseText)
 
-			if toolName != "" && r.tools[toolName] != nil {
+			if toolNamePtr != nil && r.tools[*toolNamePtr] != nil {
+				toolName := *toolNamePtr
 				// Record thinking before tool call
 				if trace != nil && strings.TrimSpace(remainingText) != "" {
 					trace.Steps = append(trace.Steps, ReasoningStep{
@@ -400,9 +401,10 @@ Continue reasoning or provide final answer.`, currentContext, responseText)
 }
 
 // parseToolCall parses tool call from text.
-func (r *ReasoningWithToolsAgent) parseToolCall(text string) (string, map[string]interface{}, string) {
+// Returns a pointer to the tool name (nil if no tool call found), parameters, and remaining text.
+func (r *ReasoningWithToolsAgent) parseToolCall(text string) (*string, map[string]interface{}, string) {
 	if !strings.Contains(text, "TOOL_CALL:") {
-		return "", nil, text
+		return nil, nil, text
 	}
 
 	parts := strings.SplitN(text, "TOOL_CALL:", 2)
@@ -442,7 +444,7 @@ func (r *ReasoningWithToolsAgent) parseToolCall(text string) (string, map[string
 		}
 	}
 
-	return toolName, parameters, before
+	return &toolName, parameters, before
 }
 
 // isConclusion checks if text contains a final conclusion.

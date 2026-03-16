@@ -166,10 +166,14 @@ TOOL_CALL: calculator
 PARAMETERS: {"expression": "2 + 2"}
 This should give me the answer.`
 
-	toolName, parameters, remainingText := agent.parseToolCall(text)
+	toolNamePtr, parameters, remainingText := agent.parseToolCall(text)
 
-	if toolName != "calculator" {
-		t.Errorf("expected tool name 'calculator', got '%s'", toolName)
+	if toolNamePtr == nil || *toolNamePtr != "calculator" {
+		name := "<nil>"
+		if toolNamePtr != nil {
+			name = *toolNamePtr
+		}
+		t.Errorf("expected tool name 'calculator', got '%s'", name)
 	}
 
 	if parameters["expression"] != "2 + 2" {
@@ -188,10 +192,14 @@ func TestParseToolCall_NoParameters(t *testing.T) {
 
 	text := "TOOL_CALL: search"
 
-	toolName, parameters, _ := agent.parseToolCall(text)
+	toolNamePtr, parameters, _ := agent.parseToolCall(text)
 
-	if toolName != "search" {
-		t.Errorf("expected tool name 'search', got '%s'", toolName)
+	if toolNamePtr == nil || *toolNamePtr != "search" {
+		name := "<nil>"
+		if toolNamePtr != nil {
+			name = *toolNamePtr
+		}
+		t.Errorf("expected tool name 'search', got '%s'", name)
 	}
 
 	if len(parameters) != 0 {
@@ -225,10 +233,10 @@ func TestParseToolCall_NoToolCall(t *testing.T) {
 
 	text := "Just regular thinking, no tool call"
 
-	toolName, parameters, remainingText := agent.parseToolCall(text)
+	toolNamePtr, parameters, remainingText := agent.parseToolCall(text)
 
-	if toolName != "" {
-		t.Errorf("expected empty tool name, got '%s'", toolName)
+	if toolNamePtr != nil {
+		t.Errorf("expected nil tool name, got '%s'", *toolNamePtr)
 	}
 
 	if parameters != nil {

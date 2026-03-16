@@ -8,17 +8,18 @@
 
 This document outlines the development roadmap for agenkit, organized by phases and milestones.
 
-## Current Status (January 2026)
+## Current Status (March 2026)
 
 ### 🚀 Strategic Context: Production Infrastructure Complete
 
-**January 2026** marks the completion of production infrastructure across all major languages:
+**March 2026** — v0.69.0 shipped. Framework ecosystem coverage complete (14+ frameworks),
+API standardization done across all 6 languages, 1989 tests passing.
 
-1. **30-Hour Autonomous Operation**: Infrastructure now ready for Claude Sonnet 4.5, OpenAI o3 extended sessions
+1. **30-Hour Autonomous Operation**: Infrastructure now ready for Claude Sonnet 4.6, OpenAI o3 extended sessions
 2. **Production Infrastructure**: Checkpointing, budget tracking, and memory systems complete
-3. **Cross-Language Parity**: 100% feature parity across Python, TypeScript, Rust, and **Zig infrastructure now complete** ✅
-4. **Battle-Tested**: 399 tests passing with comprehensive production examples
-5. **Zig Infrastructure Complete** (Jan 15, 2026): 245 tests passing (+38 from infrastructure), 13.7% parity with 8,029 lines of production code
+3. **Cross-Language Parity**: 100% feature parity across Python, Go, TypeScript, Rust, C++, and Zig ✅
+4. **Battle-Tested**: 1989 tests passing across all languages
+5. **Framework Ecosystem**: 14+ framework examples (LangChain, CrewAI, LlamaIndex, LangGraph, DSPy, OpenAI Agents SDK, etc.) with migration guides and performance benchmarks
 
 **Agenkit's 2026 Mission:** Provide minimal, composable interfaces for **production-scale autonomous agents**.
 

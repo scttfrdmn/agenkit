@@ -18,7 +18,7 @@ from typing import Any, Protocol, cast
 
 from agenkit import Agent, Message
 from agenkit.adapters.llm import LLM, OpenAILLM
-from agenkit.patterns import ConversationalAgent, RouterAgent, RouterConfig, SequentialAgent
+from agenkit.patterns import ConversationalAgent, ConversationalAgentConfig, RouterAgent, RouterConfig, SequentialAgent
 
 
 class Chain(Protocol):
@@ -67,9 +67,10 @@ class ConversationChain:
                 return await self.llm_instance.complete(messages)
 
         llm_client = LLMClientAdapter(llm)
-        self.agent = ConversationalAgent(
+        config = ConversationalAgentConfig(
             llm_client=llm_client, max_history=max_history, system_prompt=system_prompt
         )
+        self.agent = ConversationalAgent(config)
 
     async def run(self, input: str) -> str:
         """Process input with conversation context."""

@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.69.0] - 2026-03-16
+
+### Added
+
+- `ConversationalAgentConfig` dataclass in `agenkit/patterns/conversational.py` — config-object
+  API matching all other languages (Issue #440). Export added to `agenkit.patterns`.
+- `docs/DEFAULTS.md` — canonical cross-language defaults reference table (Issue #444).
+  Covers `max_history`, `max_steps`, `verbose`, `include_system`, `checkpoint max_depth`,
+  `default_key`/`route` with equivalent init patterns in Python, Go, TypeScript, Rust, C++, Zig.
+- `tests/test_api_standardization.py` — 23 new tests for ConversationalAgentConfig, deprecation
+  warnings, MemoryHierarchy session_id deprecation, and canonical default values.
+
+### Changed
+
+- `ConversationalAgent.__init__` now accepts `ConversationalAgentConfig` as first positional
+  arg (recommended). Direct kwargs (`llm_client=`, `max_history=`, etc.) still work but emit
+  `DeprecationWarning` (will be removed in v2.0). Positional LLM client also handled gracefully.
+- `MemoryHierarchy.store()`: passing `session_id` as a keyword argument now emits
+  `DeprecationWarning`. Embed `session_id` in the `MemoryEntry` instead (Issue #443).
+- Go `ReActConfig.Verbose` default corrected from implicitly `true` (buggy heuristic) to `false`
+  (Go zero value, matches Python/TypeScript/Rust defaults). Explicit `Verbose: true` required
+  for verbose output going forward (Issue #444).
+
+### Fixed
+
+- Go `react.go`: removed buggy verbose-default block that set `verbose=true` when no config
+  fields were set — this made it impossible to explicitly opt out of verbose mode.
+- `agenkit-go/patterns/react_test.go`: updated `TestReActAgent_DefaultVerbose` to assert
+  `verbose==false` (correct canonical default).
+
+## [v0.68.0] - 2026-03-16
+
 ## [v0.67.0] - 2026-03-16
 
 ### Fixed

@@ -52,6 +52,7 @@ References:
 """
 
 import uuid
+import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -520,6 +521,16 @@ class MemoryHierarchy:
         """
         if not 0.0 <= importance <= 1.0:
             raise ValueError("importance must be between 0.0 and 1.0")
+
+        if session_id is not None:
+            warnings.warn(
+                "Passing session_id as a parameter to MemoryHierarchy.store() is deprecated "
+                "and will be removed in v2.0. Embed session_id in the MemoryEntry instead: "
+                "MemoryEntry(session_id=..., key=..., value=...). "
+                "See migration guide for details.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
         # Create entry
         entry = MemoryEntry(

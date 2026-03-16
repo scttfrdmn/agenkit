@@ -66,7 +66,7 @@ type ReActConfig struct {
 	Tools []agenkit.Tool
 	// MaxSteps is the maximum number of reasoning-acting steps (default: 10)
 	MaxSteps int
-	// Verbose includes step-by-step reasoning in final output (default: true)
+	// Verbose includes step-by-step reasoning in final output (default: false)
 	Verbose bool
 	// PromptTemplate is a custom prompt template for the agent
 	PromptTemplate string
@@ -124,10 +124,6 @@ func NewReActAgent(config *ReActConfig) (*ReActAgent, error) {
 	}
 
 	verbose := config.Verbose
-	// Default to true if not explicitly set
-	if !config.Verbose && config.MaxSteps == 0 && config.PromptTemplate == "" {
-		verbose = true
-	}
 
 	promptTemplate := config.PromptTemplate
 	if promptTemplate == "" {

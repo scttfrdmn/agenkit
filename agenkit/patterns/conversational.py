@@ -11,6 +11,8 @@ Key Features:
 - Support for different history strategies
 """
 
+import warnings
+from dataclasses import dataclass
 from typing import Protocol
 
 from agenkit import Agent, Message
@@ -24,6 +26,31 @@ class LLMClient(Protocol):
         ...
 
 
+@dataclass
+class ConversationalAgentConfig:
+    """
+    Configuration for ConversationalAgent.
+
+    Use this class to configure ConversationalAgent in a way that is consistent
+    across all languages in the agenkit toolkit.
+
+    Example:
+        ```python
+        config = ConversationalAgentConfig(
+            llm_client=llm,
+            max_history=10,
+            system_prompt="You are a helpful assistant.",
+        )
+        agent = ConversationalAgent(config)
+        ```
+    """
+
+    llm_client: LLMClient
+    max_history: int = 10
+    system_prompt: str | None = None
+    include_system: bool = True
+
+
 class ConversationalAgent(Agent):
     """
     Agent that maintains conversation history for context-aware responses.
@@ -31,54 +58,116 @@ class ConversationalAgent(Agent):
     This agent stores previous messages and includes them when processing new messages,
     allowing the LLM to maintain context across multiple turns.
 
-    Example:
+    Recommended usage (config-based, matches all other languages):
         ```python
-        from agenkit.patterns import ConversationalAgent
+        from agenkit.patterns import ConversationalAgent, ConversationalAgentConfig
         from my_llm import MyLLMClient
 
         llm = MyLLMClient(model="gpt-4")
+        config = ConversationalAgentConfig(
+            llm_client=llm,
+            max_history=10,
+            system_prompt="You are a helpful assistant.",
+        )
+        agent = ConversationalAgent(config)
+        ```
+
+    Deprecated usage (direct kwargs, will be removed in v2.0):
+        ```python
         agent = ConversationalAgent(
             llm_client=llm,
             max_history=10,
-            system_prompt="You are a helpful assistant."
+            system_prompt="You are a helpful assistant.",
         )
-
-        # First turn
-        response1 = await agent.process(
-            Message(role="user", content="My name is Alice")
-        )
-        # Response: "Nice to meet you, Alice!"
-
-        # Second turn - agent remembers the name
-        response2 = await agent.process(
-            Message(role="user", content="What's my name?")
-        )
-        # Response: "Your name is Alice."
         ```
 
     Args:
-        llm_client: LLM client that implements the chat interface
-        max_history: Maximum number of messages to retain (default: 10)
-        system_prompt: Optional system prompt to prepend to conversations
-        include_system: Whether to include system prompt in history (default: True)
+        config: Configuration object (recommended, matches other languages)
+        llm_client: (Deprecated) LLM client that implements the chat interface
+        max_history: (Deprecated) Maximum number of messages to retain (default: 10)
+        system_prompt: (Deprecated) Optional system prompt to prepend to conversations
+        include_system: (Deprecated) Whether to include system prompt in history (default: True)
     """
 
     def __init__(
         self,
-        llm_client: LLMClient,
-        max_history: int = 10,
-        system_prompt: str | None = None,
-        include_system: bool = True,
+        config: ConversationalAgentConfig | None = None,
+        *,
+        llm_client: LLMClient | None = None,  # deprecated
+        max_history: int = 10,  # deprecated
+        system_prompt: str | None = None,  # deprecated
+        include_system: bool = True,  # deprecated
     ):
-        self.llm = llm_client
-        self.max_history = max_history
-        self.system_prompt = system_prompt
-        self.include_system = include_system
+        """
+        Initialize ConversationalAgent.
+
+        Args:
+            config: Configuration object (recommended, matches all other languages)
+            llm_client: (Deprecated) LLM client that implements the chat interface
+            max_history: (Deprecated) Maximum number of messages to retain
+            system_prompt: (Deprecated) Optional system prompt to prepend
+            include_system: (Deprecated) Whether to include system prompt in history
+
+        Examples:
+            >>> # Recommended: config-based (matches all other languages)
+            >>> config = ConversationalAgentConfig(llm_client=llm, max_history=20)
+            >>> agent = ConversationalAgent(config)
+            >>>
+            >>> # Deprecated: direct parameters (will be removed in v2.0)
+            >>> agent = ConversationalAgent(llm_client=llm, max_history=20)
+
+        Migration:
+            Old code:
+                agent = ConversationalAgent(
+                    llm_client=llm,
+                    max_history=20,
+                    system_prompt="You are helpful.",
+                )
+
+            New code:
+                config = ConversationalAgentConfig(
+                    llm_client=llm,
+                    max_history=20,
+                    system_prompt="You are helpful.",
+                )
+                agent = ConversationalAgent(config)
+        """
+        # Handle positional LLM client passed in the old style: ConversationalAgent(my_llm)
+        if config is not None and not isinstance(config, ConversationalAgentConfig):
+            llm_client = config  # type: ignore[assignment]
+            config = None
+
+        if config is not None:
+            # New config-based API (recommended)
+            self.llm = config.llm_client
+            self.max_history = config.max_history
+            self.system_prompt = config.system_prompt
+            self.include_system = config.include_system
+        elif llm_client is not None:
+            # Old direct-parameter API (deprecated)
+            warnings.warn(
+                "Direct parameters for ConversationalAgent are deprecated and will be removed in v2.0. "
+                "Use ConversationalAgentConfig instead: "
+                "ConversationalAgent(ConversationalAgentConfig(llm_client=...)). "
+                "See migration guide for details.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self.llm = llm_client
+            self.max_history = max_history
+            self.system_prompt = system_prompt
+            self.include_system = include_system
+        else:
+            raise ValueError(
+                "Either 'config' or 'llm_client' must be provided. "
+                "Recommended: Use ConversationalAgentConfig for cross-language API consistency."
+            )
+
         self.history: list[Message] = []
 
         # Add system prompt to history if provided
-        if system_prompt and include_system:
-            self.history.append(Message(role="system", content=system_prompt))
+        if self.system_prompt and self.include_system:
+            self.history.append(Message(role="system", content=self.system_prompt))
 
     @property
     def name(self) -> str:

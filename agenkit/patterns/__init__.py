@@ -36,6 +36,7 @@ from agenkit.patterns.collaborative import (
 )
 from agenkit.patterns.conversational import (
     ConversationalAgent,
+    ConversationalAgentConfig,
     LLMClient,
     StreamingConversationalAgent,
 )
@@ -140,6 +141,7 @@ __all__ = [
     # Pattern Library - Collaborative (NEW in v0.32.0)
     "ConsensusFunc",
     "ConversationalAgent",
+    "ConversationalAgentConfig",
     # Critique/Reflection (NEW)
     "CritiqueFormat",
     # Pattern Library - Fallback (NEW in v0.32.0)

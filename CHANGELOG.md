@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.64.0] - 2026-03-15
+
+### Added
+
+#### OpenAI Agents SDK, DSPy (Python + Go) and TypeScript Framework Examples (9 new files)
+
+Extends framework coverage with two high-priority March 2026 frameworks
+(OpenAI Agents SDK, DSPy) across Python and Go, plus the first-ever TypeScript
+framework examples (5 TS-native frameworks).
+
+**New Python examples** (`examples/frameworks/`):
+- **`miniopenaiagents.py`** — OpenAI Agents SDK (Jan 2026): `OAIAgent`,
+  `FunctionTool`, `@function_tool` decorator, `Handoff`, `Runner.run_sync()`,
+  `Runner.run()` async streaming, triage→specialist handoff demo (~320 LOC)
+- **`minidspy.py`** — DSPy declarative LM programming: `Signature`,
+  `Predict`, `ChainOfThought` (implicit reasoning field), `ReAct`
+  (Reason+Act+Observe loop), `Module` composition, multi-hop Q&A pipeline
+  (~490 LOC)
+
+**New Go examples** (`agenkit-go/examples/frameworks/`):
+- **`miniopenaiagents/main.go`** — same patterns as Python; `OAIAgent`,
+  `FunctionTool`, `Handoff`, `RunSync()`, `Run()` goroutine+channel streaming
+  (~310 LOC)
+- **`minidspy/main.go`** — same 4-scenario progression as Python;
+  `Signature.ToPrompt()`, `Predict.Call()`, `ChainOfThought`, `ReAct`,
+  `Module.Forward()`, `MultiHopQA` pipeline (~340 LOC)
+
+**New TypeScript framework examples** (`agenkit-ts/examples/frameworks/`):
+- **`minichain.ts`** — LangChain.js: `LLMChain`, `SequentialChain`,
+  `ConversationChain` with history, `RouterChain` keyword dispatch,
+  `PromptTemplate` with `{variable}` slots (~280 LOC)
+- **`minilanggraph.ts`** — LangGraph.js: `StateGraph<S>`, `CompiledGraph`,
+  `MemorySaver`, `END` sentinel, `addConditionalEdges`, thread-based
+  state persistence (~330 LOC)
+- **`miniopenaiagents.ts`** — OpenAI Agents SDK (TS-first): `OAIAgent`,
+  `FunctionTool`, `Handoff`, `Runner.run()`/`Runner.runSync()`, triage+handoff
+  demo, async generator streaming (~310 LOC)
+- **`miniverscel.ts`** — Vercel AI SDK (TS-only, no Python/Go equivalent):
+  `streamText()`, `generateText()`, `tool()`, `generateObject()`,
+  `TextStreamPart` union events (~350 LOC)
+- **`minimastra.ts`** — Mastra (TS-only, no Python/Go equivalent):
+  `Step<I,O>`, `Workflow` fluent builder, `Workflow.branch()` conditional
+  routing, `CompiledWorkflow.execute()`, `MastraAgent`, `MastraContext`
+  (~340 LOC)
+
+All 9 examples:
+- Use only agenkit-internal types + stdlib (no external framework packages)
+- Gracefully degrade when Ollama/LLM is unavailable
+- Include side-by-side SDK vs Agenkit code comments
+- Pass `ruff` (Python) and `go vet` (Go) without errors
+
 ## [v0.63.0] - 2026-03-15
 
 ### Added

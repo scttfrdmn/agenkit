@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.65.0] - 2026-03-15
+
+### Added
+
+#### Framework Interoperability Phase 1.6 — 9 Migration Guides + Comparison Matrix
+
+Completes Phase 1.6 of the Framework Interoperability track: migration guides for all 9
+remaining frameworks (previously only 6 of 15 had guides) plus a comprehensive comparison
+matrix. Also closes 6 stale GitHub issues and fixes version drift in `pyproject.toml`.
+
+**New migration guides** (`docs/migrations/`):
+- **`llamaindex-to-agenkit.md`** — LlamaIndex: VectorStoreIndex, QueryEngine,
+  QueryEngineTool, FunctionAgent, ReActAgent, AgentWorkflow (~400L)
+- **`langgraph-to-agenkit.md`** — LangGraph: StateGraph, CompiledGraph,
+  add_conditional_edges, ToolNode, MemorySaver → ConversationalAgent (~420L)
+- **`semantickernel-to-agenkit.md`** — Semantic Kernel: Kernel, KernelPlugin,
+  KernelFunction (native + semantic), ChatHistory, SequentialPlanner (~380L)
+- **`googleadk-to-agenkit.md`** — Google ADK: Agent, SequentialAgent, ParallelAgent,
+  LoopAgent, @tool, InMemorySessionService, Content/Part → Message (~370L)
+- **`pydanticai-to-agenkit.md`** — Pydantic AI: Agent[T], @agent.tool, RunContext,
+  structured output, ModelRetry → RetryMiddleware (~390L)
+- **`dspy-to-agenkit.md`** — DSPy: Signature, Predict, ChainOfThought, ReAct,
+  Module.forward() → explicit prompts + ReActAgent (~420L)
+- **`openaiagents-to-agenkit.md`** — OpenAI Agents SDK: Agent, Runner, @function_tool,
+  handoff() → RouterAgent, RunResult → Message (~380L)
+- **`mastra-to-agenkit.md`** — Mastra: Step<I,O>, Workflow, branch(), commit(),
+  MastraAgent, MastraContext (~400L)
+- **`copilotkit-to-agenkit.md`** — CopilotKit: CopilotRuntime, CopilotAction,
+  useCopilotChat, useCopilotReadable → AGUIAdapter + StateManager (~340L)
+
+**New documentation** (`docs/`):
+- **`FRAMEWORK_COMPARISON.md`** — Full comparison matrix of all 15 frameworks:
+  language support, paradigm, LLM lock-in, streaming, memory, tool use, migration guide
+  link, Agenkit equivalent pattern; LLM provider support table; performance comparison;
+  mini-examples reference table (~160L)
+
+### Fixed
+
+- **`pyproject.toml`**: version drift corrected from `0.61.0` → `0.65.0`
+
+### Closed GitHub Issues
+
+- **#189** — LlamaIndex framework example (delivered in v0.63.0)
+- **#190** — LangGraph framework example (delivered in v0.63.0/v0.64.0)
+- **#191** — Semantic Kernel example (delivered in v0.63.0)
+- **#192** — Google ADK example (delivered in v0.63.0)
+- **#193** — Phase 1 framework examples all complete (v0.64.0)
+- **#240** — v0.42.0 production docs (SECURITY.md, TESTING.md, tutorials exist)
+
 ## [v0.64.0] - 2026-03-15
 
 ### Added

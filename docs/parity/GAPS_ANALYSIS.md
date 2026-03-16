@@ -1,5 +1,5 @@
 # Feature Gap Analysis
-Generated: 2026-03-15 02:59:57 UTC
+Generated: 2026-03-16 16:35:24 UTC
 
 This report shows features present in Python (baseline) but missing in other languages.
 
@@ -17,6 +17,10 @@ This report shows features present in Python (baseline) but missing in other lan
 ### Missing Middleware
 
 - MetricsDecorator
+
+### Missing Memory
+
+- EphemeralMemory
 
 ## Typescript Gaps
 
@@ -45,6 +49,10 @@ This report shows features present in Python (baseline) but missing in other lan
 - OllamaLLM
 - OpenAICompatibleLLM
 - OpenAILLM
+
+### Missing Memory
+
+- EphemeralMemory
 
 ## Rust Gaps
 
@@ -83,6 +91,7 @@ This report shows features present in Python (baseline) but missing in other lan
 ### Missing Memory
 
 - EndlessMemory
+- EphemeralMemory
 - HierarchyMemory
 
 ## Cpp Gaps
@@ -121,8 +130,8 @@ This report shows features present in Python (baseline) but missing in other lan
 ### Missing Memory
 
 - EndlessMemory
+- EphemeralMemory
 - HierarchyMemory
-- InMemoryMemory
 - RedisMemory
 - VectorMemory
 
@@ -158,8 +167,8 @@ This report shows features present in Python (baseline) but missing in other lan
 ### Missing Memory
 
 - EndlessMemory
+- EphemeralMemory
 - HierarchyMemory
-- InMemoryMemory
 - RedisMemory
 - VectorMemory
 

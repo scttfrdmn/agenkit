@@ -85,7 +85,7 @@ class HTTPAgentServer:
         # Apply default security middleware if enabled
         if enable_default_middleware:
             # Apply timeout first (innermost), then rate limiting (outermost)
-            timeout_conf = timeout_config or TimeoutConfig(timeout=30.0)
+            timeout_conf = timeout_config or TimeoutConfig(timeout_ms=30000)
             agent = TimeoutDecorator(agent, timeout_conf)
 
             # Use production-appropriate rate limits: 100 req/sec with burst of 200
@@ -99,7 +99,7 @@ class HTTPAgentServer:
             logger.info(
                 f"Default security middleware enabled: "
                 f"rate_limit={rate_conf.rate} req/s (burst={rate_conf.capacity}), "
-                f"timeout={timeout_conf.timeout}s"
+                f"timeout={timeout_conf.timeout_ms / 1000:.1f}s"
             )
 
         self.agent = agent

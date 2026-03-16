@@ -113,6 +113,8 @@ test = [
 dev = [
     { name = "hypothesis" },
     { name = "jinja2" },
+    { name = "jsonschema" },
+    { name = "pydantic" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -197,6 +199,8 @@ provides-extras = ["test", "dev", "benchmarks", "aws", "google", "ollama", "lite
 dev = [
     { name = "hypothesis", specifier = ">=6.0.0" },
     { name = "jinja2", specifier = ">=3.1.0" },
+    { name = "jsonschema", specifier = ">=4.0.0" },
+    { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pytest", specifier = ">=9.0.0" },
     { name = "pytest-asyncio", specifier = ">=0.21.0" },
     { name = "pytest-cov", specifier = ">=4.1.0" },

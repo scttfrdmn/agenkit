@@ -11,6 +11,8 @@ import time
 
 import pytest
 
+pytestmark = pytest.mark.xdist_group("cross_language")
+
 from agenkit.adapters.python.local_agent import LocalAgent
 from agenkit.adapters.python.remote_agent import RemoteAgent
 from agenkit.interfaces import Agent, Message

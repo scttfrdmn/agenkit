@@ -3,6 +3,8 @@
 Tests Python client → Go server and Go client → Python server communication.
 """
 
+import shutil
+
 import httpx
 import pytest
 
@@ -10,6 +12,14 @@ from agenkit.adapters.python.remote_agent import RemoteAgent
 from agenkit.interfaces import Message
 
 from .helpers import go_http_server, python_http_server
+
+pytestmark = [
+    pytest.mark.skipif(
+        shutil.which("go") is None,
+        reason="Go not installed — skipping cross-language integration tests",
+    ),
+    pytest.mark.xdist_group("cross_language"),
+]
 
 # Python Client → Go Server Tests
 

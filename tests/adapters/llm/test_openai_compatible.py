@@ -14,6 +14,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+pytest.importorskip("openai", reason="openai package not installed — skipping LLM adapter tests")
+
 from agenkit.adapters.llm.openai_compatible import OpenAICompatibleLLM
 from agenkit.interfaces import Message
 

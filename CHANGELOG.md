@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.62.0] - 2026-03-15
+
+### Added
+
+#### Go Framework Examples — 8 mini-frameworks
+All 8 Python framework examples in `examples/frameworks/` now have Go equivalents
+under `agenkit-go/examples/frameworks/`. Each uses `//go:build ignore` and
+`llm.NewOpenAICompatibleLLM` with graceful "not running" error handling.
+
+- **`minichain/main.go`** — LangChain/LangGraph: `LLMChain`, `SequentialChain`,
+  `ConversationChain`, `RouterChain` with keyword routing (~250 LOC)
+- **`minicrew/main.go`** — CrewAI: `CrewMember`, `Task`, `Crew` with sequential
+  and parallel process types; 3-member research team demo (~300 LOC)
+- **`miniautogen/main.go`** — AutoGen: `ConversableAgent`, `AssistantAgent`,
+  `UserProxyAgent`, `GroupChat`, `GroupChatManager` with round-robin dispatch
+  and TERMINATE stop condition (~310 LOC)
+- **`minismolagents/main.go`** — SmoLAgents: `Tool` interface, `FunctionTool`,
+  `ToolCallingAgent` (parses TOOL:/ARGS: protocol), `CodeAgent` (~280 LOC)
+- **`minihaystack/main.go`** — Haystack: `Component` interface, `Pipeline`
+  (fluent builder), `InMemoryDocumentStore` (keyword scoring), `Retriever`,
+  `PromptBuilder`, `Generator`; full RAG demo (~300 LOC)
+- **`ministrands/main.go`** — AWS Strands: `Node`, `Edge`, `EdgeCondition`,
+  `Graph` (fluent), `GraphExecutor`; 4-node classify→route→summarize graph (~280 LOC)
+- **`minipydantic/main.go`** — Pydantic AI: `TypeSafeTool` with generics
+  `[I, O any]` + `reflect`-based JSON schema generation; `TypeSafeAgent` (~270 LOC)
+- **`minicopilotkit/main.go`** — CopilotKit: `StateHook` (RWMutex), `ApprovalGate`
+  (channel), `CopilotAgent` streaming NDJSON events to `io.Writer` (~420 LOC)
+
+#### ResumeMigrated Integration Example — closes #539
+- **`agenkit-go/examples/checkpointing/resume_migrated/main.go`**: End-to-end
+  demo of `DurableAgent.ResumeMigrated` — the recovery path taken by
+  `agenkit-runtime recover` after a spot eviction
+  - Uses `InMemoryStorage` (no real Firecracker needed)
+  - Shows checkpoint creation, `ResumeMigrated` call, state verification
+  - Demonstrates `AttachMigrationContext` for production recovery path
+  - Explains the full `SpotMonitor → Migrator → recover → ResumeMigrated` flow
+
+#### agenkit-runtime v0.4.0
+- Unit tests for `pkg/pool`, `pkg/migration`, `pkg/vsock`, `pkg/snapshot`
+- Structured logging (`slog`) + `--log-level` flag in `serve` daemon
+- Prometheus metrics (`/metrics` endpoint, `--metrics-addr` flag)
+
 ## [v0.61.0] - 2026-03-15
 
 ### Added

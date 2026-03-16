@@ -1,6 +1,6 @@
 # Feature Parity Matrix
 
-**Generated**: 2026-03-15 02:59:57 UTC
+**Generated**: 2026-03-16 16:35:24 UTC
 
 This matrix shows feature implementation status across all 6 Agenkit language implementations.
 
@@ -16,7 +16,7 @@ This matrix shows feature implementation status across all 6 Agenkit language im
 | Language | Total Features | Parity % | Test Coverage |
 |----------|----------------|----------|---------------|
 | python     | 43 | 100.0% | 1836 tests |
-| go         | 43 | 100.0% | 950 tests |
+| go         | 42 | 97.7% | 950 tests |
 | typescript | 36 | 83.7% | 863 tests |
 | rust       | 38 | 88.4% | 681 tests |
 | cpp        | 37 | 86.0% | 793 tests |
@@ -137,13 +137,14 @@ Python: 7, Go: 7, TypeScript: 7, Rust: 6, C++: 5, Zig: 0
 | Feature | Python | Go | TypeScript | Rust | C++ | Zig |
 |---------|--------|----|-----------| -----|-----|-----|
 | EndlessMemory | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| EphemeralMemory | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | HierarchyMemory | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| InMemoryMemory | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| InMemoryMemory | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
 | RedisMemory | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | VectorMemory | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 
 **Totals**:
-Python: 5, Go: 5, TypeScript: 5, Rust: 3, C++: 0, Zig: 0
+Python: 5, Go: 4, TypeScript: 5, Rust: 3, C++: 0, Zig: 0
 
 
 ---
@@ -157,7 +158,7 @@ Python: 5, Go: 5, TypeScript: 5, Rust: 3, C++: 0, Zig: 0
 | Patterns | 23 | 17 | 17 | 15 | 18 | 13 |
 | Middleware | 8 | 14 | 7 | 14 | 14 | 14 |
 | Llm Adapters | 7 | 7 | 7 | 6 | 5 | 0 |
-| Memory | 5 | 5 | 5 | 3 | 0 | 0 |
+| Memory | 5 | 4 | 5 | 3 | 0 | 0 |
 
 ---
 
@@ -171,7 +172,7 @@ Python: 5, Go: 5, TypeScript: 5, Rust: 3, C++: 0, Zig: 0
 
 
 ### Top Performing Languages (by feature count)
-1. **Go** - 43 features (100.0% parity) - Excellent coverage!
+1. **Go** - 42 features (97.7% parity) - Excellent coverage!
 2. **TypeScript** - 36 features (83.7% parity) - Strong implementation
 3. **Rust** - 38 features (88.4% parity) - Growing rapidly
 

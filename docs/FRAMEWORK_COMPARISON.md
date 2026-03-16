@@ -42,7 +42,7 @@ Last updated: v0.65.0 (2026-03-15)
 | **Google ADK** | Python | Multi-agent composition | Gemini preferred | ✅ | InMemorySessionService | `@tool` | [guide](migrations/googleadk-to-agenkit.md) | `SequentialAgent`, `ParallelAgent` |
 | **Pydantic AI** | Python | Type-safe agents | None | ✅ | In-context only | `@agent.tool` | [guide](migrations/pydanticai-to-agenkit.md) | `Agent` + Pydantic validation |
 | **Mastra** | TypeScript | Typed step workflows | None | ✅ | MastraContext | Step.execute() | [guide](migrations/mastra-to-agenkit.md) | `SequentialAgent`, `RouterAgent` |
-| **Vercel AI SDK** | TypeScript | Streaming text/objects | OpenAI preferred | ✅ | None built-in | `tool()` | *(see minivercel example)* | `process_stream()`, `Tool` |
+| **Vercel AI SDK** | TypeScript | Streaming text/objects | OpenAI preferred | ✅ | None built-in | `tool()` | [guide](migrations/vercelai-to-agenkit.md) | `process_stream()`, `Tool` |
 | **CopilotKit** | TypeScript/React | AI chat UI + actions | OpenAI preferred | ✅ | CopilotKitContext | CopilotAction | [guide](migrations/copilotkit-to-agenkit.md) | `AGUIAdapter`, `Tool` |
 
 ---

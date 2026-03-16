@@ -250,7 +250,7 @@ def test_benchmark_agents_as_tools():
 
     # Use tool (simulates coordinator calling specialist)
     async def bench():
-        await tool.execute(query="test")
+        await tool.execute(params={"query": "test"})
 
     result = benchmark_async(bench, iterations=100)
     print_result("Agents-as-Tools (tool call)", result)

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-04T03:29:25.351807+00:00",
+  "generated_at": "2026-03-16T16:35:21.841527+00:00",
   "version": "1.0",
   "languages": {
     "python": {
@@ -49,8 +49,8 @@
       ],
       "memory": [
         "EndlessMemory",
+        "EphemeralMemory",
         "HierarchyMemory",
-        "InMemoryMemory",
         "RedisMemory",
         "VectorMemory"
       ],
@@ -104,7 +104,6 @@
       "memory": [
         "EndlessMemory",
         "HierarchyMemory",
-        "InMemoryMemory",
         "RedisMemory",
         "VectorMemory"
       ],
@@ -317,7 +316,7 @@
     },
     "memory": {
       "python": 5,
-      "go": 5,
+      "go": 4,
       "typescript": 5,
       "rust": 3,
       "cpp": 0,
@@ -333,7 +332,7 @@
     },
     "total": {
       "python": 43,
-      "go": 43,
+      "go": 42,
       "typescript": 36,
       "rust": 38,
       "cpp": 37,

@@ -4,6 +4,8 @@ Tests trace propagation and distributed tracing across Python ↔ Go boundaries
 using OpenTelemetry.
 """
 
+import shutil
+
 import pytest
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -15,6 +17,14 @@ from agenkit.interfaces import Agent, Message
 from agenkit.observability.tracing import TracingMiddleware, inject_trace_context
 
 from .helpers import go_grpc_server, go_http_server
+
+pytestmark = [
+    pytest.mark.skipif(
+        shutil.which("go") is None,
+        reason="Go not installed — skipping cross-language integration tests",
+    ),
+    pytest.mark.xdist_group("cross_language"),
+]
 
 
 @pytest.fixture(scope="module")

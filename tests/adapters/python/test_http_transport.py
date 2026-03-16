@@ -5,6 +5,8 @@ from collections.abc import AsyncIterator
 
 import pytest
 
+pytestmark = pytest.mark.xdist_group("http_transport")
+
 from agenkit.adapters.python.http_server import HTTPAgentServer
 from agenkit.adapters.python.remote_agent import RemoteAgent
 from agenkit.interfaces import Agent, Message

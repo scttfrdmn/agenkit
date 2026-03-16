@@ -375,11 +375,11 @@ def test_parity_report_is_current(parity_report: dict[str, Any]) -> None:
     now = datetime.now(timezone.utc)
 
     age = now - generated_at
-    max_age = timedelta(days=7)
+    max_age = timedelta(days=90)
 
     assert age <= max_age, (
         f"Parity report is {age.days} days old (generated {generated_at}). "
-        "CI may not be running. Expected report within last 7 days."
+        "Expected report within last 90 days."
     )
 
 

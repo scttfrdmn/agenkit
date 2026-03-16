@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.70.0] - 2026-03-16
+
+### Added
+
+- `docs/TYPE_VALIDATION.md` — per-language type validation patterns (string, int/float, bool,
+  object, array, null) with equivalence analysis across Python, Go, TypeScript, Rust, C++, Zig.
+  Documents why idiomatic differences (Go's `float64` for JSON numbers, Python's bool-is-int
+  inheritance, etc.) are correct and do not represent bugs (Issue #428).
+- `docs/DEFAULTS.md`: added `## TTL Expiration Semantics` section with per-language code
+  snippets showing the keep-if-age<ttl pattern and a note on Rust's inverted `is_expired`
+  boolean (Issue #442).
+
+### Changed
+
+- Go `patterns.ReasoningWithToolsAgent.parseToolCall` now returns `*string` (pointer) instead
+  of `string` for the tool name. A `nil` return unambiguously means "no tool call found",
+  eliminating the sentinel empty-string pattern (Issue #429). Callers updated accordingly.
+
 ## [v0.69.0] - 2026-03-16
 
 ### Added

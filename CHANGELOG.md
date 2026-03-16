@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.66.0] - 2026-03-15
+
+### Fixed
+
+#### Test Infrastructure Repair
+
+Resolved the root cause of 1866 test collection errors introduced when `uv sync` ran
+without extras (missing `pytest-asyncio`, `pytest-timeout`, `hypothesis`).
+
+**`pyproject.toml` — add `[dependency-groups]` (PEP 735, uv-native)**:
+- Added `[dependency-groups].dev` with all required test packages
+- `uv sync` now automatically installs test dependencies without `--extra test`
+- Packages: `pytest>=9.0.0`, `pytest-asyncio>=0.21.0`, `pytest-cov>=4.1.0`,
+  `pytest-timeout>=2.2.0`, `pytest-xdist>=3.5.0`, `hypothesis>=6.0.0`, `jinja2>=3.1.0`
+
+**`tests/conftest.py` — convert `cleanup_async_resources` to sync fixture**:
+- Changed `async def cleanup_async_resources()` → `def cleanup_async_resources()`
+- Eliminates `PytestRemovedIn9Warning`: async autouse fixture applied to sync tests
+- Cleanup is now best-effort via `asyncio.get_event_loop()` guard (no `await` needed)
+- Compatible with pytest 9 (hard error for async fixtures on sync tests)
+
+**Result**: Test collection errors reduced from 1866 → 8 (8 remaining are pre-existing
+optional-dependency errors for `openai`/`anthropic` packages not installed in base env).
+
+### Added
+
+#### Vercel AI SDK Migration Guide (`docs/migrations/vercelai-to-agenkit.md`)
+
+~290-line migration guide covering the full Vercel AI SDK API surface mapped to Agenkit:
+
+- **Pattern mapping table**: `streamText()`, `generateText()`, `tool()`, `generateObject()`,
+  `TextStreamPart`, `useChat()`, `CoreMessage[]` → Agenkit equivalents
+- **6 worked examples** with before/after TypeScript code:
+  1. Basic text generation (`generateText` → `agent.process()`)
+  2. Token streaming (`streamText` → `agent.processStream()`)
+  3. Tools / function calling (`tool()` + `streamText` → `ReActAgent`)
+  4. Structured object generation (`generateObject` → structured prompt + `JSON.parse`)
+  5. Multi-turn conversation (`ConversationalAgent` auto-history)
+  6. React hook replacement (`useChat()` → AG-UI streaming protocol)
+- **Provider migration**: OpenAI, Anthropic, Ollama setup in Agenkit
+- **`TextStreamPart` vs `Message`** mapping table
+- **Step-by-step checklist** for migrating an existing Vercel AI SDK codebase
+- References `agenkit-ts/examples/frameworks/miniverscel.ts` (the runnable example)
+
 ## [v0.65.0] - 2026-03-15
 
 ### Added

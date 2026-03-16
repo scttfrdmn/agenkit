@@ -49,44 +49,28 @@ def pytest_runtest_makereport(item, call):
 
 
 @pytest.fixture(scope="function", autouse=True)
-async def cleanup_async_resources():
+def cleanup_async_resources():
     """
     Automatically cleanup async resources after each test.
 
-    This helps prevent resource leaks that can cause flaky tests
-    by ensuring all tasks, connections, and file handles are properly closed.
+    Sync fixture (works for both sync and async tests). Cancels pending
+    asyncio tasks using the running loop if one is available.
     """
     yield
 
-    # Give pending tasks time to complete
+    # Best-effort async task cleanup — only runs if an event loop exists
     try:
-        await asyncio.wait_for(asyncio.sleep(0.01), timeout=0.1)
-    except (asyncio.TimeoutError, RuntimeError):
-        pass
-
-    # Cancel any remaining tasks with timeout
-    try:
-        loop = asyncio.get_running_loop()
-        tasks = [
-            t for t in asyncio.all_tasks(loop) if not t.done() and t != asyncio.current_task(loop)
-        ]
-
-        if tasks:
+        loop = asyncio.get_event_loop()
+        if not loop.is_closed():
+            tasks = [
+                t for t in asyncio.all_tasks(loop)
+                if not t.done() and t != asyncio.current_task(loop)
+            ]
             for task in tasks:
-                if not task.done():
-                    task.cancel()
+                task.cancel()
+    except RuntimeError:
+        pass  # No running loop — nothing to clean up
 
-            # Wait for cancellations with timeout
-            try:
-                await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=0.5)
-            except asyncio.TimeoutError:
-                # Some tasks didn't cancel in time, ignore
-                pass
-    except (RuntimeError, ValueError):
-        # Event loop might be closed or no running loop
-        pass
-
-    # Force garbage collection
     gc.collect()
 
 

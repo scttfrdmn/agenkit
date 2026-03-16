@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.63.0] - 2026-03-15
+
+### Added
+
+#### Go + Python Framework Examples — 4 Missing Frameworks
+
+Completes framework coverage for the 7 frameworks requested: LlamaIndex,
+Semantic Kernel, AutoGen, Google ADK, Pydantic AI, CrewAI, LangGraph.
+
+**New Python examples** (`examples/frameworks/`):
+- **`minillamaindex.py`** — LlamaIndex Agent Workflow: `VectorStoreIndex`,
+  `QueryEngine`, `FunctionTool`/`QueryEngineTool`, `FunctionAgent`,
+  `AgentWorkflow` with `HANDOFF:` event-driven routing (~280 LOC)
+- **`minilanggraph.py`** — LangGraph `StateGraph` API (distinct from LangChain):
+  `GraphState`, `StateGraph`, `CompiledGraph`, `MemorySaver`, `ToolNode`,
+  conditional routing via `add_conditional_edges`, `END` sentinel (~310 LOC)
+- **`minisemantickernel.py`** — Microsoft Semantic Kernel v1.x: `Kernel`,
+  `KernelPlugin`, `KernelFunction` (native + semantic), `KernelArguments`,
+  `ChatHistory`, `{{$var}}` template substitution, sequential planner (~300 LOC)
+- **`minigoogleadk.py`** — Google ADK v0.1+: `Content`/`Part` message format,
+  `ADKAgent`, `SequentialADKAgent`, `ParallelADKAgent`, `LoopADKAgent`,
+  `InMemorySessionService`, `Runner`, `@adk_tool` decorator (~350 LOC)
+
+**New Go examples** (`agenkit-go/examples/frameworks/`):
+- **`minillamaindex/main.go`** — same patterns as Python; `AgentWorkflow` with
+  `HANDOFF:` routing, `VectorStoreIndex` keyword search (~290 LOC)
+- **`minilanggraph/main.go`** — `StateGraph`, `CompiledGraph`, `MemorySaver`;
+  conditional routing demo and state persistence demo (~310 LOC)
+- **`minisemantickernel/main.go`** — `Kernel.InvokePrompt` with `{{$varname}}`
+  substitution; native + semantic plugins; sequential 3-step planner (~290 LOC)
+- **`minigoogleadk/main.go`** — `ParallelADKAgent` with goroutines+channel;
+  `LoopADKAgent` stops on "STOP" or max iterations (~295 LOC)
+
+**Framework coverage is now complete for the 7 requested frameworks:**
+LlamaIndex Agent Workflow ✓ | Microsoft Semantic Kernel ✓ | AutoGen ✓ |
+Google ADK ✓ | Pydantic AI ✓ | CrewAI ✓ | LangGraph ✓
+
 ## [v0.62.0] - 2026-03-15
 
 ### Added

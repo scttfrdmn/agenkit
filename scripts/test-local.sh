@@ -150,6 +150,17 @@ else
         go test -race "${GO_TEST_ARGS[@]}" $PACKAGES
 fi
 
+# C# Tests
+echo -e "${BLUE}=== C# / .NET Tests ===${NC}"
+cd "$REPO_ROOT"
+if command -v dotnet &>/dev/null && [ -f "agenkit-cs/Agenkit.sln" ]; then
+    run_step "dotnet test (C#)" \
+        dotnet test agenkit-cs/Agenkit.sln --nologo -q
+else
+    echo -e "${YELLOW}  ⚠ dotnet not found, skipping C# tests${NC}"
+    echo ""
+fi
+
 # Summary
 cd "$REPO_ROOT"
 END_TIME=$(date +%s)

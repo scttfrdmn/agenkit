@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.71.0] - 2026-03-17
+
+### Added
+
+- `agenkit-cs/` — C#/.NET 10 implementation of agenkit (Issue #229, Milestone #77)
+  - **Core**: `Message` (record), `IAgent`, `IStreamingAgent`, `ITool`, `ToolResult`, `IntrospectionResult`
+  - **15 Patterns**: ConversationalAgent, ReActAgent, PlanningAgent, ReflectionAgent, RouterAgent,
+    SupervisorAgent, CollaborativeAgent, HumanInLoopAgent, FallbackAgent, AutonomousAgent,
+    OrchestrationAgent, MultiAgentOrchestrator, ReasoningWithToolsAgent, MemoryAugmentedAgent, TaskAgent
+  - **3 Composition**: SequentialAgent, ParallelAgent, ConditionalAgent
+  - **8 Middleware**: Retry, Timeout, CircuitBreaker, Caching, RateLimiter, PerUserRateLimiter,
+    Metrics, Batching — plus fluent `AgentExtensions` (`WithRetry()`, `WithTimeout()`, etc.)
+  - **Memory**: EphemeralMemory, MemoryHierarchy (3-tier), VectorMemory + SlidingWindow /
+    ImportanceWeighting / Summarization strategies
+  - **Adapters**: `ILlmClient`, OpenAiAdapter, AnthropicAdapter (HttpClient), MockAdapter
+  - **Safety**: InputValidator, OutputValidator, PermissionChecker, AnomalyDetector, AuditLogger
+  - **Observability**: TracingAgent (OpenTelemetry), MetricsCollector
+  - **Budget**: ModelPricing, CostTracker, BudgetLimiter
+  - **Evaluation**: Metric, Evaluator, Benchmark
+  - **Checkpointing**: CheckpointManager, DurableAgent
+  - **4 Examples**: basic, react-agent, middleware, streaming
+  - **241 tests** (xUnit + FluentAssertions), 0 failures
+  - NuGet package: `Agenkit` v0.71.0
+- `scripts/test-local.sh`: added `dotnet test` step for C# (runs when `dotnet` is on PATH)
+
 ## [v0.70.0] - 2026-03-16
 
 ### Added

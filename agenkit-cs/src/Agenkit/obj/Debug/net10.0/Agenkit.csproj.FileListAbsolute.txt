@@ -1,0 +1,13 @@
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/bin/Debug/net10.0/Agenkit.deps.json
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/bin/Debug/net10.0/Agenkit.dll
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/bin/Debug/net10.0/Agenkit.pdb
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/obj/Debug/net10.0/Agenkit.csproj.AssemblyReference.cache
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/obj/Debug/net10.0/Agenkit.GeneratedMSBuildEditorConfig.editorconfig
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/obj/Debug/net10.0/Agenkit.AssemblyInfoInputs.cache
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/obj/Debug/net10.0/Agenkit.AssemblyInfo.cs
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/obj/Debug/net10.0/Agenkit.csproj.CoreCompileInputs.cache
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/obj/Debug/net10.0/Agenkit.sourcelink.json
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/obj/Debug/net10.0/Agenkit.dll
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/obj/Debug/net10.0/refint/Agenkit.dll
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/obj/Debug/net10.0/Agenkit.pdb
+/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/obj/Debug/net10.0/ref/Agenkit.dll

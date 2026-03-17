@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "dgSpecHash": "GrljL5nca3M=",
+  "success": true,
+  "projectFilePath": "/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/Agenkit.csproj",
+  "expectedPackageFiles": [
+    "/Users/scttfrdmn/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.0/microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/microsoft.extensions.logging.abstractions/8.0.0/microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/system.text.json/8.0.5/system.text.json.8.0.5.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1510",
+      "level": "Warning",
+      "message": "PackageReference System.Text.Json will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.",
+      "projectPath": "/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/Agenkit.csproj",
+      "warningLevel": 1,
+      "filePath": "/Users/scttfrdmn/src/agenkit/agenkit-cs/src/Agenkit/Agenkit.csproj",
+      "libraryId": "System.Text.Json",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    }
+  ]
+}

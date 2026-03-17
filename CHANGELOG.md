@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.73.0] - 2026-03-17
+
+### Added
+
+- `agenkit-scala/` — Scala 3 implementation of agenkit (Issue #231, Milestone #79)
+  - **Core**: `Message` (case class), `Agent`, `StreamingAgent`, `Tool`, `ToolResult`, `IntrospectionResult`
+  - **15 Patterns**: ConversationalAgent, ReActAgent, PlanningAgent, ReflectionAgent, RouterAgent,
+    SupervisorAgent, CollaborativeAgent, HumanInLoopAgent, FallbackAgent, AutonomousAgent,
+    OrchestrationAgent, MultiAgentOrchestrator, ReasoningWithToolsAgent, MemoryAugmentedAgent, TaskAgent
+  - **3 Composition**: SequentialAgent, ParallelAgent, ConditionalAgent
+  - **8 Middleware**: Retry, Timeout, CircuitBreaker, Caching, RateLimiter, PerUserRateLimiter,
+    Metrics, Batching — plus fluent `AgentOps` extension methods (`.withRetry()`, `.withTimeout()`, etc.)
+  - **Memory**: EphemeralMemory, MemoryHierarchy (3-tier), VectorMemory + SlidingWindow /
+    ImportanceWeighting / Summarization strategies
+  - **Adapters**: `LlmClient`, OpenAiAdapter, AnthropicAdapter, MockAdapter
+  - **Safety**: InputValidator, OutputValidator, PermissionChecker, AnomalyDetector, AuditLogger
+  - **Observability**: TracingAgent, MetricsCollector
+  - **Budget**: ModelPricing, CostTracker, BudgetLimiter
+  - **Evaluation**: Metric, Evaluator, Benchmark
+  - **Checkpointing**: CheckpointManager, DurableAgent
+  - **4 Examples**: basic, react-agent, middleware, streaming
+  - Scala 3 idioms: `given`/`using` for ExecutionContext, extension methods, enums, case classes
+  - sbt artifact: `io.agenkit:agenkit-scala_3:0.73.0` (Scala 3.4.2 / JVM 17+)
+- `scripts/test-local.sh`: added `sbt test` step for Scala (runs when `sbt` is on PATH)
+- `feature-manifest.json`: registered Scala (agenkit-scala) language support
+
 ## [v0.72.0] - 2026-03-17
 
 ### Added

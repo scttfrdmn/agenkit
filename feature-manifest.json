@@ -287,6 +287,92 @@
       "llm_adapters": [],
       "memory": [],
       "techniques": []
+    },
+    "csharp": {
+      "patterns": [
+        "AutonomousAgent",
+        "CollaborativeAgent",
+        "ConversationalAgent",
+        "FallbackAgent",
+        "HumanInLoopAgent",
+        "MemoryAugmentedAgent",
+        "MultiAgentOrchestrator",
+        "OrchestrationAgent",
+        "ParallelAgent",
+        "PlanningAgent",
+        "ReActAgent",
+        "ReasoningWithToolsAgent",
+        "ReflectionAgent",
+        "RouterAgent",
+        "SequentialAgent",
+        "SupervisorAgent",
+        "TaskAgent",
+        "ConditionalAgent"
+      ],
+      "middleware": [
+        "BatchingMiddleware",
+        "CachingMiddleware",
+        "CircuitBreakerMiddleware",
+        "MetricsMiddleware",
+        "PerUserRateLimiterMiddleware",
+        "RateLimiterMiddleware",
+        "RetryMiddleware",
+        "TimeoutMiddleware"
+      ],
+      "llm_adapters": [
+        "AnthropicAdapter",
+        "MockAdapter",
+        "OpenAiAdapter"
+      ],
+      "memory": [
+        "EphemeralMemory",
+        "MemoryHierarchy",
+        "VectorMemory"
+      ],
+      "techniques": []
+    },
+    "java": {
+      "patterns": [
+        "AutonomousAgent",
+        "CollaborativeAgent",
+        "ConversationalAgent",
+        "FallbackAgent",
+        "HumanInLoopAgent",
+        "MemoryAugmentedAgent",
+        "MultiAgentOrchestrator",
+        "OrchestrationAgent",
+        "ParallelAgent",
+        "PlanningAgent",
+        "ReActAgent",
+        "ReasoningWithToolsAgent",
+        "ReflectionAgent",
+        "RouterAgent",
+        "SequentialAgent",
+        "SupervisorAgent",
+        "TaskAgent",
+        "ConditionalAgent"
+      ],
+      "middleware": [
+        "BatchingMiddleware",
+        "CachingMiddleware",
+        "CircuitBreakerMiddleware",
+        "MetricsMiddleware",
+        "PerUserRateLimiterMiddleware",
+        "RateLimiterMiddleware",
+        "RetryMiddleware",
+        "TimeoutMiddleware"
+      ],
+      "llm_adapters": [
+        "AnthropicAdapter",
+        "MockAdapter",
+        "OpenAiAdapter"
+      ],
+      "memory": [
+        "EphemeralMemory",
+        "MemoryHierarchy",
+        "VectorMemory"
+      ],
+      "techniques": []
     }
   },
   "summary": {
@@ -296,7 +382,9 @@
       "typescript": 17,
       "rust": 15,
       "cpp": 18,
-      "zig": 13
+      "zig": 13,
+      "csharp": 18,
+      "java": 18
     },
     "middleware": {
       "python": 8,
@@ -304,7 +392,9 @@
       "typescript": 7,
       "rust": 14,
       "cpp": 14,
-      "zig": 14
+      "zig": 14,
+      "csharp": 8,
+      "java": 8
     },
     "llm_adapters": {
       "python": 7,
@@ -312,7 +402,9 @@
       "typescript": 7,
       "rust": 6,
       "cpp": 5,
-      "zig": 0
+      "zig": 0,
+      "csharp": 3,
+      "java": 3
     },
     "memory": {
       "python": 5,
@@ -320,7 +412,9 @@
       "typescript": 5,
       "rust": 3,
       "cpp": 0,
-      "zig": 0
+      "zig": 0,
+      "csharp": 3,
+      "java": 3
     },
     "techniques": {
       "python": 0,
@@ -328,7 +422,9 @@
       "typescript": 0,
       "rust": 0,
       "cpp": 0,
-      "zig": 0
+      "zig": 0,
+      "csharp": 0,
+      "java": 0
     },
     "total": {
       "python": 43,
@@ -336,7 +432,9 @@
       "typescript": 36,
       "rust": 38,
       "cpp": 37,
-      "zig": 27
+      "zig": 27,
+      "csharp": 32,
+      "java": 32
     }
   }
 }

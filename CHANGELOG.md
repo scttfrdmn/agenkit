@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.72.0] - 2026-03-17
+
+### Added
+
+- `agenkit-java/` — Java 17 implementation of agenkit (Issue #230, Milestone #78)
+  - **Core**: `Message`, `Agent`, `StreamingAgent`, `Tool`, `ToolResult`, `IntrospectionResult`
+  - **15 Patterns**: ConversationalAgent, ReActAgent, PlanningAgent, ReflectionAgent, RouterAgent,
+    SupervisorAgent, CollaborativeAgent, HumanInLoopAgent, FallbackAgent, AutonomousAgent,
+    OrchestrationAgent, MultiAgentOrchestrator, ReasoningWithToolsAgent, MemoryAugmentedAgent, TaskAgent
+  - **3 Composition**: SequentialAgent, ParallelAgent, ConditionalAgent
+  - **8 Middleware**: Retry, Timeout, CircuitBreaker, Caching, RateLimiter, PerUserRateLimiter,
+    Metrics, Batching — plus fluent `AgentBuilder` (`.withRetry()`, `.withTimeout()`, etc.)
+  - **Memory**: EphemeralMemory, MemoryHierarchy (3-tier), VectorMemory
+  - **Adapters**: `LlmClient`, OpenAiAdapter, AnthropicAdapter, MockAdapter
+  - **Safety**: InputValidator, OutputValidator, PermissionChecker, AnomalyDetector, AuditLogger
+  - **Observability**: TracingAgent, MetricsCollector
+  - **Budget**: ModelPricing, CostTracker, BudgetLimiter
+  - **Evaluation**: Metric, Evaluator, Benchmark
+  - **Checkpointing**: CheckpointManager, DurableAgent
+  - **4 Examples**: basic, react-agent, middleware, streaming
+  - Maven artifact: `io.agenkit:agenkit:0.72.0` (Java 17+)
+- `scripts/test-local.sh`: added `mvn test` step for Java
+- `feature-manifest.json`: registered C# (agenkit-cs) and Java (agenkit-java) language support
+
 ## [v0.71.0] - 2026-03-17
 
 ### Added

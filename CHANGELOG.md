@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.74.0] - 2026-03-17
+
+### Added
+
+- `agenkit-runtime` v0.5.0: Firecracker process spawning, ResumeMigrated
+  vsock bridge, integration test — closes Issue #530, Milestone #82
+  - `VM.Spawn()` in `pkg/pool/vm.go`: launches a real Firecracker process,
+    writes per-slot config JSON, polls for socket readiness
+  - `SignalResumeMigrated` + `Bus.RequestResume()` in `pkg/vsock/`
+  - `recover` command now sends vsock `resume_migrated` signals to available
+    pool slots instead of marking sessions unrecoverable
+  - Integration test: provision → assign → drain → deprovision lifecycle
+    using `mockSpawn` (no Firecracker binary required)
+
 ## [v0.73.0] - 2026-03-17
 
 ### Added

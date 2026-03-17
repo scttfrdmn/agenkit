@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.75.0] - 2026-03-17
+
+### Added
+
+#### TypeScript Pattern Tests (Issue #217, closes #176)
+- 9 new pattern test files in `agenkit-ts/src/__tests__/patterns/`:
+  - `conversational.test.ts` — ConversationalAgent: history management, LLM delegation, pruning (20 tests)
+  - `react.test.ts` — ReActAgent: tool use, max steps, stop reasons, verbose mode (18 tests)
+  - `planning.test.ts` — PlanningAgent + plan utilities: step creation, dependency resolution, progress tracking (28 tests)
+  - `reflection.test.ts` — ReflectionAgent: quality thresholds, iteration limits, critique modes (18 tests)
+  - `autonomous.test.ts` — AutonomousAgent: goal management, run/stop lifecycle, progress tracking (23 tests)
+  - `orchestration.test.ts` — SequentialPattern, ParallelPattern, RouterPattern: hooks, aggregators (28 tests)
+  - `multi-agent-orchestrator.test.ts` — MultiAgentOrchestrator + ConsensusAgent: task tracking, voting strategies (26 tests)
+  - `reasoning-with-tools.test.ts` — ReasoningWithToolsAgent + trace utilities: trace lifecycle, tool registry (21 tests)
+  - `memory-augmented.test.ts` — MemoryHierarchy + WorkingMemory/ShortTermMemory/LongTermMemory: FIFO eviction, capacity, deduplication (22 tests)
+- **204 new TypeScript pattern tests**; pattern test files: 7 → 16
+
+#### Go Property-Based Testing (Issue #360)
+- New package `agenkit-go/property/` using `pgregory.net/rapid` v1.2.0
+- `message_properties_test.go` — 15 tests: JSON round-trip, role/content/metadata invariants, Unicode, concurrency safety
+- `middleware_properties_test.go` — 15 tests: retry count bounds, circuit breaker state transitions, rate limiter token invariants, timeout bounds
+- `agent_properties_test.go` — 10 tests: response invariants, context cancellation, concurrent safety, capabilities stability
+- **40 new Go property tests**; Go property test count: 0 → 40
+- Dependency: `pgregory.net/rapid v1.2.0` added to `agenkit-go/go.mod`
+
+#### TypeScript Property-Based Testing Expansion (Issue #360)
+- 3 new property test files in `agenkit-ts/src/__tests__/property/`:
+  - `message_properties.test.ts` — 10 tests: serialization round-trips, role/content invariants, Unicode, metadata, array operations
+  - `retry_properties.test.ts` — 10 tests: attempt count bounds, delay invariants, exponential backoff monotonicity
+  - `circuit_breaker_properties.test.ts` — 10 tests: state transitions, reset behavior, failure count invariants
+- **30 new TypeScript property tests**; TS property test count: 8 → 38
+
 ## [v0.74.0] - 2026-03-17
 
 ### Added

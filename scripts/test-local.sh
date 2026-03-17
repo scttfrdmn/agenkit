@@ -174,6 +174,19 @@ else
     echo ""
 fi
 
+# Scala Tests
+echo -e "${BLUE}=== Scala / sbt Tests ===${NC}"
+cd "$REPO_ROOT"
+if command -v sbt &>/dev/null && [ -f "agenkit-scala/build.sbt" ]; then
+    cd "$REPO_ROOT/agenkit-scala"
+    run_step "sbt test (Scala)" \
+        sbt -batch test
+    cd "$REPO_ROOT"
+else
+    echo -e "${YELLOW}  ⚠ sbt not found or agenkit-scala missing, skipping Scala tests${NC}"
+    echo ""
+fi
+
 # Summary
 cd "$REPO_ROOT"
 END_TIME=$(date +%s)

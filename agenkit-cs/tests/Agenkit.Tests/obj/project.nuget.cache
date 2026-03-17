@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "dgSpecHash": "mvH3b8b1JiA=",
+  "success": true,
+  "projectFilePath": "/Users/scttfrdmn/src/agenkit/agenkit-cs/tests/Agenkit.Tests/Agenkit.Tests.csproj",
+  "expectedPackageFiles": [
+    "/Users/scttfrdmn/.nuget/packages/fluentassertions/6.12.0/fluentassertions.6.12.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/microsoft.codecoverage/17.8.0/microsoft.codecoverage.17.8.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.0/microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/microsoft.extensions.logging.abstractions/8.0.0/microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/microsoft.net.test.sdk/17.8.0/microsoft.net.test.sdk.17.8.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/microsoft.testplatform.objectmodel/17.8.0/microsoft.testplatform.objectmodel.17.8.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/microsoft.testplatform.testhost/17.8.0/microsoft.testplatform.testhost.17.8.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/newtonsoft.json/13.0.1/newtonsoft.json.13.0.1.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/nuget.frameworks/6.5.0/nuget.frameworks.6.5.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/system.configuration.configurationmanager/4.4.0/system.configuration.configurationmanager.4.4.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/system.security.cryptography.protecteddata/4.4.0/system.security.cryptography.protecteddata.4.4.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/xunit/2.6.6/xunit.2.6.6.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/xunit.abstractions/2.0.3/xunit.abstractions.2.0.3.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/xunit.analyzers/1.10.0/xunit.analyzers.1.10.0.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/xunit.assert/2.6.6/xunit.assert.2.6.6.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/xunit.core/2.6.6/xunit.core.2.6.6.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/xunit.extensibility.core/2.6.6/xunit.extensibility.core.2.6.6.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/xunit.extensibility.execution/2.6.6/xunit.extensibility.execution.2.6.6.nupkg.sha512",
+    "/Users/scttfrdmn/.nuget/packages/xunit.runner.visualstudio/2.5.6/xunit.runner.visualstudio.2.5.6.nupkg.sha512"
+  ],
+  "logs": []
+}

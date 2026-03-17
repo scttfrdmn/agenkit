@@ -33,8 +33,8 @@
 
 ### Project Context
 - **Project**: Agenkit - Cross-language AI agent **toolkit** (NOT a framework)
-- **Languages**: Python, Go, TypeScript, Rust, C++, Zig (100% feature parity achieved!)
-- **Current**: v0.70.0 (Code Quality & Safety Hardening — Go nullable return, TYPE_VALIDATION.md, TTL docs)
+- **Languages**: Python, Go, TypeScript, Rust, C++, Zig, C# (100% feature parity achieved!)
+- **Current**: v0.71.0 (C#/.NET Implementation — agenkit-cs, 241 tests, NuGet `Agenkit`)
 - **Tests**: `make test` (15-30s locally, 100% pass required)
 
 ### 🚨 Testing Policy
@@ -160,6 +160,7 @@ make test-lint
 | Rust       | `cd agenkit-rust && cargo test`      | 0.4s  |
 | C++        | `cd agenkit-cpp/build && ctest`      | 50s   |
 | Zig        | `cd agenkit-zig && zig build test`   | 0.16s |
+| C#         | `cd agenkit-cs && dotnet test`       | ~5s   |
 
 **Local testing is your ONLY validation** - No CI/CD available currently.
 
@@ -296,21 +297,20 @@ Examples in this codebase teach users how to use the toolkit. Non-idiomatic exam
 
 ## Current Release Status (March 2026)
 
+**v0.71.0 (Released March 17, 2026):**
+- ✅ `agenkit-cs/` — C#/.NET 10 full-parity implementation (Issue #229, Milestone #77)
+- ✅ 18 patterns (15 + 3 composition), 8 middleware, memory, safety, observability, adapters, budget, evaluation, checkpointing
+- ✅ 241 C# tests passing (0 failed); NuGet package `Agenkit` v0.71.0
+- ✅ `scripts/test-local.sh` updated with `dotnet test` step
+
 **v0.70.0 (Released March 16, 2026):**
 - ✅ Go `parseToolCall` returns `*string` — eliminates sentinel empty-string pattern (Issue #429)
 - ✅ `docs/TYPE_VALIDATION.md` — per-language type checking patterns + equivalence analysis (Issue #428)
 - ✅ `docs/DEFAULTS.md` — added TTL expiration semantics section (Issue #442)
 - ✅ 1989 tests passing (0 failed)
 
-**v0.69.0 (Released March 16, 2026):**
-- ✅ `ConversationalAgentConfig` — completes config-object API across all agents
-- ✅ `MemoryHierarchy.store(session_id=...)` deprecation warning added
-- ✅ Go `ReActConfig.Verbose` default corrected to `false` (matches all other languages)
-- ✅ `docs/DEFAULTS.md` — canonical cross-language defaults reference
-- ✅ 23 new tests, 1989 total passing (0 failed)
-
 **Next Focus:**
-- v0.71.0 (see GitHub milestone) — planned in next sprint
+- v0.72.0 (see GitHub milestone)
 - Maintain 100% local test pass rate
 - `docs/` refresh: tutorials (#16), cross-language examples
 
@@ -318,5 +318,5 @@ See `ROADMAP.md` for complete release schedule.
 
 ---
 
-**Last Updated:** March 16, 2026 (v0.70.0 current)
+**Last Updated:** March 17, 2026 (v0.71.0 current)
 **Token Count:** ~200 lines

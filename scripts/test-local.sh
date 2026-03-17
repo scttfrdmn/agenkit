@@ -161,6 +161,19 @@ else
     echo ""
 fi
 
+# Java Tests
+echo -e "${BLUE}=== Java Tests ===${NC}"
+cd "$REPO_ROOT"
+if command -v mvn &>/dev/null && [ -d "agenkit-java" ]; then
+    cd "$REPO_ROOT/agenkit-java"
+    run_step "mvn test (Java)" \
+        mvn test -q
+    cd "$REPO_ROOT"
+else
+    echo -e "${YELLOW}  ⚠ mvn not found or agenkit-java missing, skipping Java tests${NC}"
+    echo ""
+fi
+
 # Summary
 cd "$REPO_ROOT"
 END_TIME=$(date +%s)

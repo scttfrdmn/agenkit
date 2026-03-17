@@ -33,8 +33,8 @@
 
 ### Project Context
 - **Project**: Agenkit - Cross-language AI agent **toolkit** (NOT a framework)
-- **Languages**: Python, Go, TypeScript, Rust, C++, Zig, C# (100% feature parity achieved!)
-- **Current**: v0.71.0 (C#/.NET Implementation — agenkit-cs, 241 tests, NuGet `Agenkit`)
+- **Languages**: Python, Go, TypeScript, Rust, C++, Zig, C#, Java (100% feature parity achieved!)
+- **Current**: v0.72.0 (Java Implementation — agenkit-java, Maven `io.agenkit:agenkit`)
 - **Tests**: `make test` (15-30s locally, 100% pass required)
 
 ### 🚨 Testing Policy
@@ -161,6 +161,7 @@ make test-lint
 | C++        | `cd agenkit-cpp/build && ctest`      | 50s   |
 | Zig        | `cd agenkit-zig && zig build test`   | 0.16s |
 | C#         | `cd agenkit-cs && dotnet test`       | ~5s   |
+| Java       | `cd agenkit-java && mvn test`        | ~15s  |
 
 **Local testing is your ONLY validation** - No CI/CD available currently.
 
@@ -297,6 +298,13 @@ Examples in this codebase teach users how to use the toolkit. Non-idiomatic exam
 
 ## Current Release Status (March 2026)
 
+**v0.72.0 (Released March 17, 2026):**
+- ✅ `agenkit-java/` — Java 17 full-parity implementation (Issue #230, Milestone #78)
+- ✅ 18 patterns (15 + 3 composition), 8 middleware, memory, safety, observability, adapters, budget, evaluation, checkpointing
+- ✅ Maven artifact: `io.agenkit:agenkit:0.72.0`
+- ✅ `scripts/test-local.sh` updated with `mvn test` step
+- ✅ `feature-manifest.json` updated with C# and Java entries
+
 **v0.71.0 (Released March 17, 2026):**
 - ✅ `agenkit-cs/` — C#/.NET 10 full-parity implementation (Issue #229, Milestone #77)
 - ✅ 18 patterns (15 + 3 composition), 8 middleware, memory, safety, observability, adapters, budget, evaluation, checkpointing
@@ -310,7 +318,7 @@ Examples in this codebase teach users how to use the toolkit. Non-idiomatic exam
 - ✅ 1989 tests passing (0 failed)
 
 **Next Focus:**
-- v0.72.0 (see GitHub milestone)
+- v0.73.0 (see GitHub milestone)
 - Maintain 100% local test pass rate
 - `docs/` refresh: tutorials (#16), cross-language examples
 

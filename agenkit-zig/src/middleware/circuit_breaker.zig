@@ -310,7 +310,7 @@ pub const CircuitBreakerDecorator = struct {
 
         // Check if we should attempt recovery
         if (self.shouldAttemptRecovery()) {
-            try self.transitionState(.HALF_OPEN);
+            self.transitionState(.HALF_OPEN) catch {};
         }
 
         // Check circuit state
@@ -333,14 +333,14 @@ pub const CircuitBreakerDecorator = struct {
         // Handle result
         if (result) |res| {
             if (res.isOk()) {
-                try self.recordSuccess();
+                self.recordSuccess() catch {};
                 return res;
             } else {
-                try self.recordFailure();
+                self.recordFailure() catch {};
                 return res;
             }
         } else |err| {
-            try self.recordFailure();
+            self.recordFailure() catch {};
             return err;
         }
     }
@@ -351,49 +351,40 @@ pub const CircuitBreakerDecorator = struct {
         // Get introspection from inner agent
         const inner_result = try self.inner_agent.introspect(allocator);
 
-        // Add circuit breaker metrics to metadata
-        const metrics_snapshot = try self.metrics();
+        // Add circuit breaker metrics to metadata as JSON object
+        var metrics_snapshot = try self.metrics();
         defer metrics_snapshot.state_transitions.deinit();
 
-        var metadata = std.StringHashMap([]const u8).init(allocator);
-        errdefer metadata.deinit();
+        var metadata_obj = std.json.ObjectMap.init(allocator);
+        errdefer metadata_obj.deinit();
 
-        // Add metrics as metadata
-        try metadata.put("total_requests", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.total_requests}));
-        try metadata.put("successful_requests", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.successful_requests}));
-        try metadata.put("failed_requests", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.failed_requests}));
-        try metadata.put("rejected_requests", try std.fmt.allocPrint(allocator, "{d}", .{metrics_snapshot.rejected_requests}));
-        try metadata.put("current_state", try std.fmt.allocPrint(allocator, "{s}", .{metrics_snapshot.current_state.toString()}));
+        try metadata_obj.put("total_requests", std.json.Value{ .integer = @intCast(metrics_snapshot.total_requests) });
+        try metadata_obj.put("successful_requests", std.json.Value{ .integer = @intCast(metrics_snapshot.successful_requests) });
+        try metadata_obj.put("failed_requests", std.json.Value{ .integer = @intCast(metrics_snapshot.failed_requests) });
+        try metadata_obj.put("rejected_requests", std.json.Value{ .integer = @intCast(metrics_snapshot.rejected_requests) });
+        try metadata_obj.put("current_state", std.json.Value{ .string = metrics_snapshot.current_state.toString() });
+        try metadata_obj.put("failure_threshold", std.json.Value{ .integer = @intCast(self.config.failure_threshold) });
+        try metadata_obj.put("success_threshold", std.json.Value{ .integer = @intCast(self.config.success_threshold) });
+        try metadata_obj.put("recovery_timeout_ms", std.json.Value{ .integer = @intCast(self.config.recovery_timeout_ms) });
 
-        if (metrics_snapshot.last_state_change_ms) |timestamp| {
-            try metadata.put("last_state_change_ms", try std.fmt.allocPrint(allocator, "{d}", .{timestamp}));
-        }
-
-        // Add state transitions
-        var iter = metrics_snapshot.state_transitions.iterator();
-        while (iter.next()) |entry| {
-            const key = try std.fmt.allocPrint(allocator, "transition_{s}", .{entry.key_ptr.*});
-            try metadata.put(key, try std.fmt.allocPrint(allocator, "{d}", .{entry.value_ptr.*}));
-        }
-
-        // Add configuration
-        try metadata.put("failure_threshold", try std.fmt.allocPrint(allocator, "{d}", .{self.config.failure_threshold}));
-        try metadata.put("success_threshold", try std.fmt.allocPrint(allocator, "{d}", .{self.config.success_threshold}));
-        try metadata.put("recovery_timeout_ms", try std.fmt.allocPrint(allocator, "{d}", .{self.config.recovery_timeout_ms}));
-
-        // Merge with inner metadata
-        var inner_iter = inner_result.metadata.iterator();
-        while (inner_iter.next()) |entry| {
-            if (!std.mem.startsWith(u8, entry.key_ptr.*, "circuit_")) {
-                try metadata.put(entry.key_ptr.*, entry.value_ptr.*);
+        // Merge with inner metadata (if it's an object)
+        if (inner_result.metadata == .object) {
+            var inner_iter = inner_result.metadata.object.iterator();
+            while (inner_iter.next()) |entry| {
+                if (!std.mem.startsWith(u8, entry.key_ptr.*, "circuit_")) {
+                    try metadata_obj.put(entry.key_ptr.*, entry.value_ptr.*);
+                }
             }
         }
 
         return IntrospectionResult{
+            .allocator = allocator,
+            .timestamp = std.time.timestamp(),
             .agent_name = inner_result.agent_name,
             .capabilities = inner_result.capabilities,
-            .metadata = metadata,
-            .memory = inner_result.memory,
+            .memory_state = inner_result.memory_state,
+            .internal_state = inner_result.internal_state,
+            .metadata = std.json.Value{ .object = metadata_obj },
         };
     }
 

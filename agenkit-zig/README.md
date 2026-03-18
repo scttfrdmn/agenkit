@@ -12,7 +12,7 @@ Agenkit-Zig is a systems-level implementation of the Agenkit framework, bringing
 - **Zero-Cost Abstractions**: Interface-based design using vtable pattern with no runtime overhead
 - **Comprehensive Error Handling**: Error union types (`!`) for safe, explicit error propagation
 - **Cross-Language Compatible**: API parity with Python, Go, TypeScript, C++, and Rust implementations
-- **Built-in Testing**: Integrated test framework with memory leak detection
+- **Built-in Testing**: Integrated test framework with memory leak detection and property-based tests
 - **Production Observability**: OpenTelemetry tracing, metrics collection, structured logging, and audit logging
 
 ## Installation
@@ -438,10 +438,10 @@ zig build test
 
 ## Testing
 
-Agenkit includes comprehensive tests:
+Agenkit includes comprehensive tests including property-based testing (v0.78.0+):
 
 ```bash
-# Run all tests
+# Run all tests (unit + integration + property-based)
 zig build test
 
 # Run with verbose output
@@ -450,6 +450,16 @@ zig build test --summary all
 # Run specific test
 zig test src/message.zig
 ```
+
+### Property-Based Tests
+
+`tests/property/` contains 35 property-based tests using a custom framework built on `std.Random.DefaultPrng`. Each property runs 50 iterations with varied random inputs:
+
+- `message_properties.zig` — 12 tests: Role/Content/Result invariants
+- `middleware_properties.zig` — 13 tests: retry, circuit breaker, rate limiter behavior
+- `agent_properties.zig` — 10 tests: EchoAgent, SequentialAgent, interface contracts
+
+See [TESTING.md](TESTING.md) for details on the framework and how to add new properties.
 
 Example test:
 

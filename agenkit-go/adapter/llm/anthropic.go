@@ -57,25 +57,48 @@ type AnthropicLLM struct {
 	httpClient *http.Client
 }
 
+// AnthropicOption is a functional option for configuring AnthropicLLM.
+type AnthropicOption func(*AnthropicLLM)
+
+// WithBaseURL overrides the Anthropic API base URL.
+//
+// Use this to point at an Anthropic-compatible proxy, a corporate gateway,
+// or a self-hosted inference server.
+//
+// Example:
+//
+//	llm := NewAnthropicLLM("key", "claude-sonnet-4-6", WithBaseURL("https://my-proxy.internal/v1"))
+func WithBaseURL(baseURL string) AnthropicOption {
+	return func(a *AnthropicLLM) {
+		a.baseURL = baseURL
+	}
+}
+
 // NewAnthropicLLM creates a new Anthropic LLM adapter.
 //
 // Parameters:
 //   - apiKey: Anthropic API key
 //   - model: Model identifier (e.g., "claude-sonnet-4-6")
+//   - opts: Optional AnthropicOptions (e.g., WithBaseURL)
 //
 // Example:
 //
 //	llm := NewAnthropicLLM("sk-ant-...", "claude-sonnet-4-6")
-func NewAnthropicLLM(apiKey, model string) *AnthropicLLM {
+//	llm := NewAnthropicLLM("key", "claude-sonnet-4-6", WithBaseURL("https://proxy.internal/v1"))
+func NewAnthropicLLM(apiKey, model string, opts ...AnthropicOption) *AnthropicLLM {
 	if model == "" {
 		model = "claude-sonnet-4-6"
 	}
-	return &AnthropicLLM{
+	a := &AnthropicLLM{
 		apiKey:     apiKey,
 		model:      model,
 		baseURL:    "https://api.anthropic.com/v1",
 		httpClient: &http.Client{},
 	}
+	for _, opt := range opts {
+		opt(a)
+	}
+	return a
 }
 
 // Model returns the model identifier.

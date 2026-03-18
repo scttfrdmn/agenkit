@@ -347,6 +347,12 @@ add_executable(test_reasoning_graph techniques/reasoning/test_reasoning_graph.cp
 target_link_libraries(test_reasoning_graph agenkit gtest_main)
 add_test(NAME reasoning_graph_tests COMMAND test_reasoning_graph)
 
+# MCP protocol tests
+add_executable(test_mcp test_mcp.cpp)
+target_link_libraries(test_mcp agenkit GTest::gtest_main)
+target_include_directories(test_mcp PRIVATE ${CMAKE_SOURCE_DIR}/include)
+add_test(NAME mcp_tests COMMAND test_mcp)
+
 # Cross-language test harness (standalone executable, not a gtest)
 add_executable(cross_language_harness cross_language_harness.cpp)
 target_link_libraries(cross_language_harness nlohmann_json::nlohmann_json)

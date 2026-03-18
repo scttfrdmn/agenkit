@@ -171,7 +171,7 @@ class MCPServer:
 
         try:
             tool_result = await tool.execute(args)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001  # tool errors become MCP error results
             mcp_result = MCPToolResult(
                 content=[MCPContent(type="text", text=str(exc))],
                 is_error=True,

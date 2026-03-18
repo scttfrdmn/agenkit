@@ -45,6 +45,8 @@ pub use tool_adapter::{McpToolAdapter, tools_from_client};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+pub(crate) const PROTOCOL_VERSION: &str = "2024-11-05";
+
 // ── JSON-RPC 2.0 wire types ───────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize)]
@@ -56,7 +58,7 @@ pub struct JsonRpcRequest {
     pub params: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonRpcResponse {
     pub jsonrpc: String,
     pub id: u64,

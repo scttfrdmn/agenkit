@@ -493,3 +493,14 @@ export {
   EnhancedRetryMetrics,
   defaultEnhancedRetryConfig,
 } from './infrastructure';
+
+// MCP Protocol
+export type { McpTool, McpContent, McpToolResult, McpServerInfo, McpClient } from './protocols/mcp/index.js';
+export {
+  textContent,
+  StdioClient as McpStdioClient,
+  HttpClient as McpHttpClient,
+  McpServer,
+  McpToolAdapter,
+  toolsFromClient,
+} from './protocols/mcp/index.js';

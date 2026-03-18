@@ -6,12 +6,11 @@
 use crate::core::{AgentError, Tool};
 use crate::protocols::mcp::{
     JsonRpcError, JsonRpcRequest, JsonRpcResponse, McpContent, McpServerInfo, McpToolResult,
+    PROTOCOL_VERSION,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-
-const PROTOCOL_VERSION: &str = "2024-11-05";
 
 /// Configuration for `McpServer`.
 pub struct ServerConfig {
@@ -27,14 +26,12 @@ pub struct ServerConfig {
 pub struct McpServer {
     info: McpServerInfo,
     tools: HashMap<String, Arc<dyn Tool>>,
-    tool_list: Vec<Arc<dyn Tool>>,
 }
 
 impl McpServer {
     /// Create a new McpServer with the given configuration.
     pub fn new(cfg: ServerConfig) -> Self {
         let mut tools = HashMap::new();
-        let tool_list = cfg.tools.clone();
         for t in cfg.tools {
             tools.insert(t.name().to_string(), t);
         }
@@ -44,7 +41,6 @@ impl McpServer {
                 version: cfg.version,
             },
             tools,
-            tool_list,
         }
     }
 
@@ -97,8 +93,7 @@ impl McpServer {
                 }
             };
 
-            let mut out =
-                serde_json::to_string(&resp_to_json(&resp)).unwrap_or_default();
+            let mut out = serde_json::to_string(&resp).unwrap_or_default();
             out.push('\n');
             writer
                 .write_all(out.as_bytes())
@@ -148,8 +143,8 @@ impl McpServer {
 
     fn handle_tools_list(&self, req: &JsonRpcRequest) -> JsonRpcResponse {
         let tools: Vec<serde_json::Value> = self
-            .tool_list
-            .iter()
+            .tools
+            .values()
             .map(|t| serde_json::json!({"name": t.name(), "description": t.description()}))
             .collect();
         JsonRpcResponse {
@@ -233,20 +228,3 @@ impl McpServer {
     }
 }
 
-fn resp_to_json(resp: &JsonRpcResponse) -> serde_json::Value {
-    let mut m = serde_json::Map::new();
-    m.insert(
-        "jsonrpc".to_string(),
-        serde_json::Value::String(resp.jsonrpc.clone()),
-    );
-    m.insert("id".to_string(), serde_json::json!(resp.id));
-    if let Some(err) = &resp.error {
-        m.insert(
-            "error".to_string(),
-            serde_json::json!({"code": err.code, "message": err.message}),
-        );
-    } else if let Some(r) = &resp.result {
-        m.insert("result".to_string(), r.clone());
-    }
-    serde_json::Value::Object(m)
-}

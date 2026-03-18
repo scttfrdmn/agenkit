@@ -182,6 +182,7 @@ add_library(agenkit
     src/middleware/per_user_rate_limiter.cpp
     src/middleware/caching.cpp
     src/middleware/batching.cpp
+    src/protocols/mcp.cpp
 )
 
 # Add observability sources if enabled

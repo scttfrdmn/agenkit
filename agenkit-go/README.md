@@ -30,6 +30,17 @@ The Go implementation of Agenkit provides exceptional performance (18x faster th
 go get github.com/scttfrdmn/agenkit/agenkit-go
 ```
 
+## Documentation
+
+Full documentation is available in [agenkit-go/docs/](docs/):
+
+- [Getting Started](docs/GETTING_STARTED.md) — Installation, first agent, goroutine safety, testing
+- [API Reference](docs/API.md) — Complete Go API documentation
+- [Patterns](docs/PATTERNS.md) — All 11 agent patterns with Go examples
+- [Migration Guide](docs/MIGRATION.md) — Migrating to/from Go for 5 languages
+- [Observability](docs/OBSERVABILITY.md) — Tracing, metrics, structured logging
+- [Testing Framework](docs/TESTING_FRAMEWORK.md) — go test patterns, rapid property tests
+
 ## Quick Start
 
 ### Basic Agent

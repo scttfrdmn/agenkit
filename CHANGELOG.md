@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.76.0] - 2026-03-17
+
+### Documentation (Milestone #80)
+
+- **agenkit-go/docs/**: 6-file documentation suite (GETTING_STARTED, API, PATTERNS, MIGRATION, OBSERVABILITY, TESTING_FRAMEWORK) — Issue #242
+- **agenkit-ts/docs/**: 6-file documentation suite (GETTING_STARTED, API, PATTERNS, MIGRATION, OBSERVABILITY, TESTING_FRAMEWORK) — Issue #243
+- **agenkit-cpp/docs/**: 5 new docs + renamed observability.md → OBSERVABILITY.md (GETTING_STARTED, API, PATTERNS, MIGRATION, TESTING_FRAMEWORK) — Issue #244
+- **agenkit-rust/docs/**: 6-file documentation suite (GETTING_STARTED, API, PATTERNS, MIGRATION, OBSERVABILITY, TESTING_FRAMEWORK) — Issue #245
+- **docs/tutorials/**: 4 language-specific tutorial files (go_patterns, typescript_patterns, rust_patterns, cpp_patterns) — Issue #16
+- **docs/MIGRATION_VERIFICATION.md**: Audit of migration guides against v0.76.0 implementations — Issue #247
+
+### Summary
+
+23 new markdown files, 9 edited files. All 4 languages (Go, TypeScript, C++, Rust) now match the Zig v0.41.0 documentation standard with complete 6-file docs/ suites covering getting started, API reference, patterns, migration, observability, and testing.
+
 ## [v0.75.0] - 2026-03-17
 
 ### Added

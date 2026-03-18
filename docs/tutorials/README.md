@@ -43,3 +43,17 @@ npx ts-node myAgent.ts
 - **Pattern catalogue:** `docs/PATTERNS.md`
 - **Runnable examples:** `examples/`
 - **FAQ:** `docs/FAQ.md`
+
+---
+
+## Language-Specific Tutorials
+
+Deep-dive guides for each compiled language, covering idiomatic patterns, concurrency
+models, testing strategies, and production best practices.
+
+| Tutorial | Language | Key Topics |
+|----------|----------|------------|
+| [Building Production AI Agents in Go](./go_patterns.md) | Go | Goroutines, fan-out/fan-in channels, middleware chaining, property tests with `pgregory.net/rapid`, graceful shutdown |
+| [Building Production AI Agents in TypeScript](./typescript_patterns.md) | TypeScript | Async chains, generic typed tools, React integration with abort signals, property tests with `fast-check`, error boundary patterns |
+| [Building Production AI Agents in Rust](./rust_patterns.md) | Rust | `Arc<Mutex<T>>` vs `Rc<RefCell<T>>`, tokio concurrency, `Cow<str>` zero-copy, `thiserror`/`anyhow` error propagation, property tests with `proptest` |
+| [Building Production AI Agents in C++](./cpp_patterns.md) | C++ | RAII smart pointers, variadic template composition, `std::async`/`std::future`, GoogleTest fixtures and parameterised tests, RapidCheck property tests |

@@ -386,7 +386,7 @@ export OTLP_ENDPOINT="http://localhost:4317"
 
 ### Documentation
 
-- **Complete Guide**: [docs/observability.md](docs/observability.md)
+- **Complete Guide**: [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md)
 - **API Reference**: Full API documentation with examples
 - **Production Deployment**: Kubernetes, Docker Compose, alerting
 - **63 Tests**: Comprehensive test coverage (tracing: 12, metrics: 12, logging: 14, audit: 17, integration: 8)
@@ -449,9 +449,13 @@ export OTLP_ENDPOINT="http://localhost:4317"
 
 - **Build Instructions**: [docs/BUILD.md](docs/BUILD.md)
 - **Benchmark Results**: [docs/BENCHMARKS.md](docs/BENCHMARKS.md)
-- **Observability Guide**: [docs/observability.md](docs/observability.md) ⭐ NEW
+- **Observability Guide**: [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md)
+- **API Reference**: [docs/API.md](docs/API.md)
+- **Getting Started**: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
+- **Patterns Guide**: [docs/PATTERNS.md](docs/PATTERNS.md)
+- **Migration Guide**: [docs/MIGRATION.md](docs/MIGRATION.md)
+- **Testing Framework**: [docs/TESTING_FRAMEWORK.md](docs/TESTING_FRAMEWORK.md)
 - **Infrastructure Plan**: [../docs/cpp_infrastructure_plan.md](../docs/cpp_infrastructure_plan.md)
-- **API Reference**: Coming soon (Doxygen)
 
 ---
 

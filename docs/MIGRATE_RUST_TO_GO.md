@@ -1,5 +1,5 @@
 # Quick Reference: Rust → Go Migration
-
+<!-- verified: v0.76.0 -->
 **For**: Rust developers migrating Agenkit code to Go
 **Time**: 15 minute read
 **Full Details**: See [Rust Language Profile](LANGUAGE_PROFILE_RUST.md) and [Go Language Profile](LANGUAGE_PROFILE_GO.md)

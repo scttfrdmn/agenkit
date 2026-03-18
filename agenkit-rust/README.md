@@ -11,6 +11,17 @@ Minimal, composable interfaces for AI agents in Rust.
 - **Production-ready**: HTTP transport with timeouts, error handling, and tracing
 - **WebAssembly**: Run agents directly in web browsers
 
+## Documentation
+
+Full documentation is available in [agenkit-rust/docs/](docs/):
+
+- [Getting Started](docs/GETTING_STARTED.md) — cargo add, first agent, async/await, error handling
+- [API Reference](docs/API.md) — Complete Rust API documentation
+- [Patterns](docs/PATTERNS.md) — All 11 agent patterns with async Rust examples
+- [Migration Guide](docs/MIGRATION.md) — Migrating to/from Rust for 5 languages
+- [Observability](docs/OBSERVABILITY.md) — tracing crate, metrics, OpenTelemetry
+- [Testing Framework](docs/TESTING_FRAMEWORK.md) — cargo test, tokio::test, proptest
+
 ## Quick Start
 
 Add to your `Cargo.toml`:

@@ -17,6 +17,17 @@ Minimal, composable interfaces for AI agents in TypeScript.
 npm install @agenkit/core
 ```
 
+## Documentation
+
+Full documentation is available in [agenkit-ts/docs/](docs/):
+
+- [Getting Started](docs/GETTING_STARTED.md) — npm install, first agent, async/await, TypeScript config
+- [API Reference](docs/API.md) — Complete TypeScript API documentation
+- [Patterns](docs/PATTERNS.md) — All 11 agent patterns with async examples
+- [Migration Guide](docs/MIGRATION.md) — Migrating to/from TypeScript for 5 languages + frameworks
+- [Observability](docs/OBSERVABILITY.md) — OpenTelemetry, metrics, structured logging
+- [Testing Framework](docs/TESTING_FRAMEWORK.md) — Vitest, fast-check property tests
+
 ## Quick Start
 
 ### Local Agent

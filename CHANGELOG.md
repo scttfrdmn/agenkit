@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.80.0] - 2026-03-18
+
+### C++ Extended Test Coverage (Milestone v0.80.0, Issue #545)
+
+- **`agenkit-cpp/tests/CMakeLists.txt`**: Added RapidCheck via `FetchContent_Declare` (GIT_TAG master, `RC_ENABLE_GTEST ON`) + 5 new test executables: `test_message_properties`, `test_agent_properties`, `test_middleware_properties`, `test_reasoning_tree`, `test_reasoning_graph`
+- **`agenkit-cpp/tests/property/message_properties_test.cpp`**: New — 15 `RC_GTEST_PROP` property tests for `Message` invariants: role/content round-trip, JSON serialization identity, metadata key preservation, multi-key no-overwrite, role immutability under metadata, empty content, timestamp non-decreasing, non-string content returns empty, `with_text` equivalence, initial empty metadata, all-valid-roles round-trip, long content preservation, metadata always JSON object, fluent chaining accumulation
+- **`agenkit-cpp/tests/property/agent_properties_test.cpp`**: New — 12 `RC_GTEST_PROP` property tests for `Agent` invariants: echo response non-empty, `is_ok()` on success, name stability, assistant role on response, sequential composition length, empty message succeeds, failing agent always errors, error message non-empty, multiple calls independent, name never empty, success result has content, future `.get()` does not throw
+- **`agenkit-cpp/tests/property/middleware_properties_test.cpp`**: New — 15 `RC_GTEST_PROP` property tests for `RetryMiddleware`/`CircuitBreakerMiddleware` invariants: call count ≤ max_attempts, success always ok, exhaustion always errors, max_attempts bounds validation, backoff multiplier > 1.0 valid, ≤ 1.0 invalid, name contains wrapped agent name, circuit opens after threshold, stays closed on success, invalid max_attempts throws, invalid backoff throws, metrics non-negative, at least one attempt recorded, name never empty, success content preserved
+- **`agenkit-cpp/tests/techniques/reasoning/test_reasoning_tree.cpp`**: New — 8 `TEST()` unit tests for `ReasoningTree`: node creation (id=0/depth=0/no parent), add child (parent↔children linkage), state transitions (Open→Active→Evaluated→Terminal), score assignment, leaf detection, depth (0/1/2), prune sets Pruned state, content preserved
+- **`agenkit-cpp/tests/techniques/reasoning/test_reasoning_graph.cpp`**: New — 8 `TEST()` unit tests for `ReasoningGraph`: NodeType distinctness, EdgeType distinctness, add node retrieval, add edge connectivity, cycle detection (A→B→A), acyclic chain (A→B→C), empty graph (0 nodes/0 edges), node content preserved
+
+### Summary
+
+793 → 851 tests (+58). 0 failed. RapidCheck property-based testing added to C++. Closes Issue #545, Milestone v0.80.0.
+
 ## [v0.79.0] - 2026-03-18
 
 ### Java/Scala Test Coverage (Milestone v0.79.0, Issues #543, #544)

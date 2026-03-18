@@ -9,6 +9,7 @@
 ///!   to frontends over HTTP/SSE and WebSocket.
 
 pub mod agui;
+pub mod mcp;
 
 // Re-export main types for convenience
 pub use agui::{
@@ -16,3 +17,8 @@ pub use agui::{
 };
 pub use agui::transports::http::{SSEFormatter, SSEStreamConfig};
 pub use agui::transports::websocket::WebSocketHandlerConfig;
+pub use mcp::{
+    HttpClient as McpHttpClient, McpClient, McpContent, McpServerInfo, McpTool, McpToolResult,
+    McpServer, ServerConfig as McpServerConfig, StdioClient as McpStdioClient,
+};
+pub use mcp::tools_from_client as mcp_tools_from_client;

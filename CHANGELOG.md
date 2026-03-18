@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.82.0] - 2026-03-18
+
+### Go MCP Support: StdioClient, HTTPClient, MCPServer, ToolsFromClient (Milestone #88, Issue #546)
+
+- **`agenkit-go/protocols/mcp/mcp.go`**: New — core JSON-RPC 2.0 wire types (`jsonrpcRequest`, `jsonrpcResponse`, `jsonrpcError`); MCP domain types (`MCPTool`, `MCPContent`, `MCPToolResult`, `MCPServerInfo`); `MCPClient` interface with `Initialize`, `ListTools`, `CallTool`, `ServerInfo`, `Close`; `textContent` helper joining text content blocks
+- **`agenkit-go/protocols/mcp/client.go`**: New — `StdioClient`: subprocess transport (`StdioConfig`, `NewStdioClient`) spawning a process and speaking JSON-RPC over stdin/stdout with `sync.Mutex` serialisation; `HTTPClient`: HTTP transport (`NewHTTPClient`) POSTing JSON-RPC to a running MCP server; both implement `MCPClient`; stdlib only (`encoding/json`, `os/exec`, `bufio`, `net/http`, `sync`)
+- **`agenkit-go/protocols/mcp/server.go`**: New — `MCPServer` exposing agenkit tools as an MCP stdio server (`ServerConfig`, `NewServer`, `ServeStdio`, `handleRequest`); dispatches `initialize`, `tools/list`, `tools/call`; maps `agenkit.ToolResult` to `MCPToolResult`
+- **`agenkit-go/protocols/mcp/tool_adapter.go`**: New — `mcpToolAdapter` bridges `MCPTool` → `agenkit.Tool`; `ToolsFromClient(ctx, client)` factory wraps all server tools for use with any agenkit agent
+- **`agenkit-go/protocols/mcp/mcp_test.go`**: New — 12 tests: `TestMCPClientInterface` (compile-time assertions for both transports), `TestJSONRPCRequestMarshal`, `TestJSONRPCResponseUnmarshal`, `TestMCPToolMarshal`, `TestTextContent_Single`, `TestTextContent_Multi`, `TestMCPToolAdapterName`, `TestMCPToolAdapterDescription`, `TestMCPToolAdapterExecute_Success`, `TestMCPToolAdapterExecute_IsError`, `TestToolsFromClient`, `TestMCPServerHandleRequest`
+- **`agenkit-go/examples/protocols/mcp/main.go`**: New — `//go:build ignore` example with four sections: StdioClient, HTTPClient, MCPServer, and ToolsFromClient demos
+
+### Python MCP Support (`agenkit/protocols/mcp/`)
+
+- **`agenkit/protocols/mcp/types.py`**: New — `_JSONRPCRequest`, `_JSONRPCResponse`, `_JSONRPCError` wire types; `MCPTool`, `MCPContent`, `MCPToolResult`, `MCPServerInfo` domain types; `MCPClient` ABC with `initialize`, `list_tools`, `call_tool`, `server_info`, `close`; `async with` context manager support; `_text_content` helper
+- **`agenkit/protocols/mcp/client.py`**: New — `StdioClient` using `asyncio.create_subprocess_exec` + `AsyncReader`/`AsyncWriter`; `HTTPClient` using `httpx.AsyncClient`; both implement `MCPClient`
+- **`agenkit/protocols/mcp/server.py`**: New — `MCPServer` exposing agenkit tools via MCP stdio; `handle_request` dispatcher (public for testing); handles `initialize`, `tools/list`, `tools/call`
+- **`agenkit/protocols/mcp/tool_adapter.py`**: New — `MCPToolAdapter` bridges `MCPTool` → `agenkit.Tool`; `tools_from_client` factory
+- **`agenkit/protocols/mcp/__init__.py`**: New — flat re-exports of all public types
+- **`tests/protocols/test_mcp.py`**: New — 18 tests all passing
+
+### Rust MCP Support (`agenkit-rust/src/protocols/mcp/`)
+
+- **`agenkit-rust/src/protocols/mcp/mod.rs`**: New — `JsonRpcRequest`, `JsonRpcResponse`, `JsonRpcError` wire types; `McpTool`, `McpContent`, `McpToolResult`, `McpServerInfo` domain types; `McpClient` trait; `text_content` helper; module exports
+- **`agenkit-rust/src/protocols/mcp/client.rs`**: New — `StdioClient` using `tokio::process::Command` + `BufReader`; `HttpClient` using `reqwest` (native feature only, stub otherwise); both implement `McpClient`; `AtomicU64` for lock-free ID generation
+- **`agenkit-rust/src/protocols/mcp/server.rs`**: New — `McpServer` + `ServerConfig`; `serve_stdio` for real stdio; `handle_request` (pub) for in-memory testing
+- **`agenkit-rust/src/protocols/mcp/tool_adapter.rs`**: New — `McpToolAdapter` + `tools_from_client` (Arc-shared client)
+- **`agenkit-rust/src/protocols/mod.rs`**: Updated — added `pub mod mcp` + re-exports
+- **`agenkit-rust/tests/test_mcp_protocol.rs`**: New — 12 tests all passing
+
+### Summary
+
+18 Python + 12 Rust = 30 new tests, all passing. No external MCP library in any language. Closes Issue #546, Milestone #88.
+
 ## [v0.81.0] - 2026-03-18
 
 ### Go Local LLM Adapters: VllmLLM + SGLangLLM (Milestone #87, Issues #550, #551)

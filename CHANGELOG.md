@@ -22,6 +22,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 793 → 851 tests (+58). 0 failed. RapidCheck property-based testing added to C++. Closes Issue #545, Milestone v0.80.0.
 
+### C++ Pre-existing Failure Fixes (follow-up, same milestone)
+
+All pre-existing build and test failures resolved — 64/64 test executables now pass (100%):
+
+- **`result.hpp`**: Fixed `Result<T,E>` when `T==E` using `OkTag`/`ErrTag` + `std::in_place_index<N>` to disambiguate variant construction
+- **`test_middleware.cpp`**: Fixed `CircuitState` enum casing (`Closed`→`CLOSED`/`Open`→`OPEN`/`HalfOpen`→`HALF_OPEN`); fixed `AgentErrorType` names; added `FailNThenSucceed` helper for deterministic retry/circuit-breaker tests; made `TestAgent` truly async for timeout tests
+- **`test_checkpointing.cpp`**: Rewrote `DurableAgent` tests using correct `DurableAgent<T>` template + `DurableAgentMock`; fixed `get_latest_checkpoint()`/`get_stats()` call signatures; map-based stats access
+- **`plan_and_solve.cpp`**: Fixed validation logic (`INVALID` substring of `VALID`); added `plan_steps`, `execution_steps`, `strategy` metadata fields
+- **`pricing.cpp`**: `get_model_pricing()` returns default pricing with the requested model name
+- **`audit.cpp`**: Fixed `SecurityAuditLogger` deadlock — `rotate_log()` re-acquired mutex already held by `log()`
+- **`tests/CMakeLists.txt`**: Set `WORKING_DIRECTORY ${CMAKE_BINARY_DIR}` on cross-language serialization test
+- **Adapter tests**: Fixed `role()`/`content_as_str()` accessor calls, `timeout` type conversions, `metadata().count()` accessor
+
 ## [v0.79.0] - 2026-03-18
 
 ### Java/Scala Test Coverage (Milestone v0.79.0, Issues #543, #544)

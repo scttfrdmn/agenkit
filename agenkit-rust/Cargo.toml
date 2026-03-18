@@ -137,6 +137,7 @@ redis = { version = "0.24", features = ["tokio-comp", "connection-manager"], opt
 tokio-test = "0.4"
 mockito = "1.2"
 tempfile = "3.8"
+proptest = "1.4"
 
 # Benchmarking
 criterion = { version = "0.5", features = ["async_tokio", "html_reports"] }

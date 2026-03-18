@@ -105,6 +105,7 @@ pub mod optimizations;
 pub mod patterns;
 pub mod protocols;
 pub mod safety;
+pub mod skills;
 pub mod techniques;
 
 #[cfg(feature = "opentelemetry")]

@@ -26,6 +26,7 @@ require (
 	golang.org/x/net v0.46.0
 	golang.org/x/text v0.30.0
 	gonum.org/v1/gonum v0.16.0
+	gopkg.in/yaml.v3 v3.0.1
 	google.golang.org/api v0.206.0
 	google.golang.org/grpc v1.70.0-dev
 	google.golang.org/protobuf v1.36.2
@@ -89,6 +90,5 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	pgregory.net/rapid v1.2.0 // indirect
 )

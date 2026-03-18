@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.85.0] - 2026-03-18
+
+### Agent Skills — AgentSkill, SkillRegistry, SkillEnabledAgent (Issue #498, Milestone #91)
+
+Adds support for the [Agent Skills](https://agentskills.io/) specification — an open standard for packaging reusable agent capabilities as discoverable, portable instruction bundles. A skill is a directory with a `SKILL.md` file containing YAML frontmatter and Markdown instructions. Implemented in Python, Go, and Rust with full test coverage.
+
+#### Python (`agenkit/skills/`)
+
+- **`AgentSkill`** (`loader.py`): loads and parses a `SKILL.md` directory — extracts `name`, `description`, `instructions`, optional `license` and `metadata`; `to_prompt()` renders an injection-ready block
+- **`SkillRegistry`** (`loader.py`): discovers skills across filesystem search paths; `find_relevant_skills(query, max_results)` uses name/description/word-overlap scoring (+10 name match, +5 desc match, +N word overlap); `get_skill(name)`
+- **`SkillEnabledAgent`** (`agent.py`): wraps any `Agent`; injects `<available_skills>` block into messages; sets `metadata["active_skills"]`; respects `max_active_skills` limit (default 3)
+- 17 tests in `tests/skills/` (loader: 10, agent: 7)
+
+#### Go (`agenkit-go/skills/`)
+
+- **`LoadSkill(skillDir string)`** (`loader.go`): parses SKILL.md with `gopkg.in/yaml.v3`; validates required fields; returns `*AgentSkill`
+- **`SkillRegistry`** (`loader.go`): `NewSkillRegistry`, `DiscoverSkills`, `FindRelevantSkills`, `GetSkill`
+- **`SkillEnabledAgent`** (`agent.go`): implements `agenkit.Agent`; `WithMaxActiveSkills` option; stores `active_skills` as comma-joined string in metadata
+- `gopkg.in/yaml.v3` promoted from indirect to direct dependency in `go.mod`
+- 18 tests across `loader_test.go` and `agent_test.go`
+
+#### Rust (`agenkit-rust/src/skills/`)
+
+- **`AgentSkill`** (`loader.rs`): `from_directory(&Path)` → `Result<AgentSkill, SkillError>`; full `SkillError` type with `Io`, `InvalidFormat`, `MissingField`, `YamlParse` variants
+- **`SkillRegistry`** (`loader.rs`): `new`, `discover_skills`, `find_relevant_skills`, `get_skill`
+- **`SkillEnabledAgent<A: Agent>`** (`agent.rs`): `new`, `with_max_active_skills`; `#[async_trait]` implementation; stores `active_skills` as JSON array in metadata
+- `serde_yaml = "0.9"` added to `Cargo.toml`
+- 10 inline unit tests across `loader.rs` and `agent.rs`
+
 ## [v0.84.0] - 2026-03-18
 
 ### Reasoning Memory — Verifier, ReasoningArtifact, ReasoningMemory (Issues #552–#555, Milestone #90)

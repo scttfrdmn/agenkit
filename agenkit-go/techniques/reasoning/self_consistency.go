@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/memory"
 )
 
 // VotingStrategy defines how to aggregate multiple answers.
@@ -38,6 +39,9 @@ type SelfConsistency struct {
 	votingStrategy  VotingStrategy
 	temperature     *float64
 	answerExtractor AnswerExtractor
+	mem             memory.Memory
+	verifier        agenkit.Verifier
+	sessionID       string
 }
 
 // SelfConsistencyOption is a functional option for configuring SelfConsistency.
@@ -68,6 +72,27 @@ func WithTemperature(temp float64) SelfConsistencyOption {
 func WithAnswerExtractor(extractor AnswerExtractor) SelfConsistencyOption {
 	return func(sc *SelfConsistency) {
 		sc.answerExtractor = extractor
+	}
+}
+
+// WithSCMemory attaches a memory backend for persisting reasoning artifacts.
+func WithSCMemory(mem memory.Memory) SelfConsistencyOption {
+	return func(sc *SelfConsistency) {
+		sc.mem = mem
+	}
+}
+
+// WithSCVerifier attaches a ground-truth verifier for the consensus answer.
+func WithSCVerifier(v agenkit.Verifier) SelfConsistencyOption {
+	return func(sc *SelfConsistency) {
+		sc.verifier = v
+	}
+}
+
+// WithSCSessionID sets the session identifier used when storing artifacts to memory.
+func WithSCSessionID(id string) SelfConsistencyOption {
+	return func(sc *SelfConsistency) {
+		sc.sessionID = id
 	}
 }
 
@@ -332,6 +357,45 @@ func (sc *SelfConsistency) Process(ctx context.Context, message *agenkit.Message
 		answerCounts[normalized]++
 	}
 
+	// Build candidates from unique extracted answers weighted by frequency.
+	type scEntry struct {
+		original string
+		score    float64
+	}
+	candidateMap := make(map[string]*scEntry)
+	for _, answer := range extractedAnswers {
+		normalized := strings.ToLower(strings.TrimSpace(answer))
+		if entry, exists := candidateMap[normalized]; exists {
+			entry.score += 1.0 / float64(sc.numSamples)
+		} else {
+			candidateMap[normalized] = &scEntry{
+				original: answer,
+				score:    1.0 / float64(sc.numSamples),
+			}
+		}
+	}
+	candidates := make([]agenkit.ScoredCandidate, 0, len(candidateMap))
+	for _, entry := range candidateMap {
+		candidates = append(candidates, agenkit.ScoredCandidate{
+			Text:  entry.original,
+			Score: entry.score,
+		})
+	}
+
+	artifactMeta := map[string]interface{}{
+		"voting_strategy":   string(sc.votingStrategy),
+		"consistency_score": consistencyScore,
+		"num_samples":       sc.numSamples,
+	}
+
+	if sc.verifier != nil {
+		if result, verr := sc.verifier.Verify(ctx, message.ContentString(), consensusAnswer); verr == nil {
+			artifactMeta["verification"] = result
+		}
+	}
+
+	artifact := newArtifact("self_consistency", sc.sessionID, candidates, artifactMeta)
+
 	// Build response
 	response := agenkit.NewMessage("assistant", consensusAnswer)
 	response.Metadata["technique"] = "self_consistency"
@@ -342,6 +406,17 @@ func (sc *SelfConsistency) Process(ctx context.Context, message *agenkit.Message
 	response.Metadata["extracted_answers"] = extractedAnswers
 	response.Metadata["answer_counts"] = answerCounts
 	response.Metadata["base_agent"] = sc.agent.Name()
+	response.Metadata["reasoning_artifact"] = artifact
+
+	if sc.mem != nil {
+		if rm, ok := sc.mem.(memory.ReasoningMemory); ok {
+			_ = rm.StoreArtifact(ctx, sc.sessionID, artifact)
+		} else {
+			artifactMsg := agenkit.NewMessage("assistant", consensusAnswer)
+			artifactMsg.Metadata["reasoning_artifact"] = artifact
+			_ = sc.mem.Store(ctx, sc.sessionID, *artifactMsg, nil)
+		}
+	}
 
 	return response, nil
 }

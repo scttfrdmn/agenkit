@@ -393,6 +393,76 @@ func TestTreeOfThoughtDefaultEvaluator(t *testing.T) {
 	}
 }
 
+// TestTreeOfThoughtWithMemoryOption verifies WithMemory option func sets the field.
+func TestTreeOfThoughtWithMemoryOption(t *testing.T) {
+	mem := newMockReasoningMemory()
+	tot := NewTreeOfThought(NewVariedMockAgent(), WithMemory(mem))
+	if tot.mem == nil {
+		t.Error("expected mem to be set after WithMemory")
+	}
+}
+
+// TestTreeOfThoughtWithVerifierOption verifies WithVerifier option func sets the field.
+func TestTreeOfThoughtWithVerifierOption(t *testing.T) {
+	v := &mockVerifier{result: agenkit.VerificationResult{Passed: true, Score: 1.0}}
+	tot := NewTreeOfThought(NewVariedMockAgent(), WithVerifier(v))
+	if tot.verifier == nil {
+		t.Error("expected verifier to be set after WithVerifier")
+	}
+}
+
+// TestTreeOfThoughtWithSessionIDOption verifies WithSessionID option func sets the field.
+func TestTreeOfThoughtWithSessionIDOption(t *testing.T) {
+	tot := NewTreeOfThought(NewVariedMockAgent(), WithSessionID("my-session"))
+	if tot.sessionID != "my-session" {
+		t.Errorf("expected sessionID='my-session', got=%q", tot.sessionID)
+	}
+}
+
+// TestTreeOfThoughtArtifactInMetadata verifies that Process attaches a ReasoningArtifact.
+func TestTreeOfThoughtArtifactInMetadata(t *testing.T) {
+	tot := NewTreeOfThought(
+		NewVariedMockAgent(),
+		WithBranchingFactor(2),
+		WithMaxDepth(2),
+		WithSessionID("sess-tot"),
+	)
+	ctx := context.Background()
+	response, err := tot.Process(ctx, agenkit.NewMessage("user", "Test"))
+	if err != nil {
+		t.Fatalf("Process failed: %v", err)
+	}
+	artifact, ok := response.Metadata["reasoning_artifact"].(agenkit.ReasoningArtifact)
+	if !ok {
+		t.Fatalf("expected reasoning_artifact in metadata, got %T", response.Metadata["reasoning_artifact"])
+	}
+	if artifact.Technique() != "tree_of_thought" {
+		t.Errorf("expected technique='tree_of_thought', got=%q", artifact.Technique())
+	}
+	if artifact.SessionID() != "sess-tot" {
+		t.Errorf("expected sessionID='sess-tot', got=%q", artifact.SessionID())
+	}
+}
+
+// TestTreeOfThoughtArtifactStoredToMemory verifies StoreArtifact is called on ReasoningMemory.
+func TestTreeOfThoughtArtifactStoredToMemory(t *testing.T) {
+	mem := newMockReasoningMemory()
+	tot := NewTreeOfThought(
+		NewVariedMockAgent(),
+		WithBranchingFactor(2),
+		WithMaxDepth(2),
+		WithMemory(mem),
+		WithSessionID("store-sess"),
+	)
+	ctx := context.Background()
+	if _, err := tot.Process(ctx, agenkit.NewMessage("user", "Test")); err != nil {
+		t.Fatalf("Process failed: %v", err)
+	}
+	if len(mem.stored) == 0 {
+		t.Error("expected artifact to be stored in ReasoningMemory")
+	}
+}
+
 // Test max depth limiting
 func TestTreeOfThoughtMaxDepth(t *testing.T) {
 	mockAgent := NewVariedMockAgent()

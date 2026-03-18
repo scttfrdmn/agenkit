@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.84.0] - 2026-03-18
+
+### Reasoning Memory — Verifier, ReasoningArtifact, ReasoningMemory (Issues #552–#555, Milestone #90)
+
+Adds memory-aware reasoning to agenkit-go: structured intermediate outputs can be persisted to memory and ground-truth verification runs alongside heuristic evaluation. All APIs are additive — existing code compiles without changes.
+
+#### `agenkit-go/agenkit/interfaces.go` (Issues #552–#553)
+
+- **`VerificationResult`**: `{Passed bool, Score float64, Reason string}` — outcome of a `Verifier` check
+- **`Verifier`** interface: `Verify(ctx, question, answer) (VerificationResult, error)` — exact/binary, complements heuristic `EvaluatorFunc`
+- **`ScoredCandidate`**: `{Text string, Score float64}` — pairs candidate text with evaluation score
+- **`ReasoningArtifact`** interface: `Technique()`, `SessionID()`, `Candidates()`, `BestCandidate()`, `Metadata()` — structured intermediate reasoning output
+
+#### `agenkit-go/memory/memory.go` (Issue #554)
+
+- **`ReasoningMemory`** interface extending `Memory`: `StoreArtifact(ctx, sessionID, artifact)` + `RetrieveArtifacts(ctx, sessionID, technique)` — reasoning-artifact persistence with graceful degradation to plain `Memory.Store` when the backend doesn't implement the full interface
+
+#### `agenkit-go/techniques/reasoning/artifact.go` (Issue #555)
+
+- **`reasoningArtifact`**: concrete implementation of `agenkit.ReasoningArtifact`; `BestCandidate()` returns the highest-scored entry; nil metadata initialised to empty map
+
+#### Memory-aware reasoning techniques (Issue #555)
+
+Each of the four techniques gains three new optional fields (`mem memory.Memory`, `verifier agenkit.Verifier`, `sessionID string`) and three option functions:
+
+| Technique | Option functions |
+|---|---|
+| `TreeOfThought` | `WithMemory`, `WithVerifier`, `WithSessionID` |
+| `GraphOfThought` | `WithGraphMemory`, `WithGraphVerifier`, `WithGraphSessionID` |
+| `SelfConsistency` | `WithSCMemory`, `WithSCVerifier`, `WithSCSessionID` |
+| `ChainOfThought` | `WithCOTMemory`, `WithCOTVerifier`, `WithCOTSessionID` |
+
+Every `Process()` method now:
+1. Builds `[]agenkit.ScoredCandidate` from internal scored nodes (leaves for ToT, conclusions for GoT, answer frequencies for SC, full output for CoT)
+2. Optionally calls `verifier.Verify()` and stores the result in artifact metadata
+3. Creates a `reasoningArtifact` and attaches it to `response.Metadata["reasoning_artifact"]`
+4. If `mem != nil`: casts to `ReasoningMemory` and calls `StoreArtifact`; otherwise falls back to `mem.Store` with artifact in message metadata
+
+#### Tests
+
+- **`artifact_test.go`**: 8 new tests — `Technique`, `SessionID`, `Candidates`, `BestCandidate`, `BestCandidateEmpty`, `Metadata`, `NilMetadataDefaults`, `ReasoningMemoryInterface`
+- **`tree_of_thought_test.go`**: 5 new tests (option funcs + artifact-in-metadata + StoreArtifact called)
+- **`graph_of_thought_test.go`**: 4 new tests (option funcs + artifact-in-metadata)
+- **`self_consistency_test.go`**: 4 new tests (option funcs + artifact-in-metadata)
+- **`chain_of_thought_test.go`**: 4 new tests (option funcs + artifact-in-metadata + score=1.0 single candidate)
+- **Total new tests**: 25
+
 ## [v0.83.0] - 2026-03-18
 
 ### MCP Cross-Language Parity: TypeScript, C++, Zig, C#, Java, Scala (Issue #546)

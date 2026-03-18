@@ -35,4 +35,21 @@ class ToolResultTest {
         assertThat(ToolResult.ok("hello").toString()).contains("success=true");
         assertThat(ToolResult.fail("oops").toString()).contains("success=false").contains("oops");
     }
+
+    @Test
+    void okWithNullDataIsValid() {
+        ToolResult result = ToolResult.ok(null);
+        assertThat(result.isSuccess()).isTrue();
+        assertThat(result.getData()).isNull();
+        assertThat(result.getError()).isNull();
+    }
+
+    @Test
+    void metadataAccumulatesAcrossMultipleCalls() {
+        ToolResult r = ToolResult.ok("payload")
+                .withMetadata("k1", "v1")
+                .withMetadata("k2", 99);
+        assertThat(r.getMetadata()).containsEntry("k1", "v1").containsEntry("k2", 99);
+        assertThat(r.getData()).isEqualTo("payload");
+    }
 }

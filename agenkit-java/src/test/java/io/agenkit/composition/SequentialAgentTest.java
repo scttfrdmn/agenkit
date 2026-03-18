@@ -30,4 +30,35 @@ class SequentialAgentTest {
         Message response = seq.process(input).get();
         assertThat(response.contentString()).isEqualTo("hello");
     }
+
+    @Test
+    void singleAgentWorks() throws Exception {
+        MockAgent only = new MockAgent("only", msg -> "processed: " + msg.contentString());
+        SequentialAgent seq = new SequentialAgent("single", List.of(only));
+        Message response = seq.process(Message.of("user", "input")).get();
+        assertThat(response.contentString()).isEqualTo("processed: input");
+    }
+
+    @Test
+    void getNameReturnsName() {
+        SequentialAgent seq = new SequentialAgent("my-pipeline", List.of());
+        assertThat(seq.getName()).isEqualTo("my-pipeline");
+    }
+
+    @Test
+    void introspectReturnsAgentCount() {
+        MockAgent a = new MockAgent("a", "ra");
+        MockAgent b = new MockAgent("b", "rb");
+        SequentialAgent seq = new SequentialAgent("pipe", List.of(a, b));
+        assertThat(seq.introspect().getAgentName()).isEqualTo("pipe");
+    }
+
+    @Test
+    void pipelineMetadataPresent() throws Exception {
+        MockAgent step = new MockAgent("s1", msg -> msg.contentString() + "_done");
+        SequentialAgent seq = new SequentialAgent("pl", List.of(step, step));
+        Message response = seq.process(Message.of("user", "x")).get();
+        assertThat(response.getMetadata()).containsKey("pipeline_length");
+        assertThat(response.getMetadata().get("pipeline_length")).isEqualTo(2);
+    }
 }

@@ -44,3 +44,22 @@ class EphemeralMemorySpec extends AnyFunSuite with Matchers:
     (1 to 10).foreach(i => mem.store(Message.user(s"item $i")))
     val results = mem.retrieve("item", limit = 3)
     results.size should be <= 3
+
+  test("EphemeralMemory stores assistant messages"):
+    val mem = EphemeralMemory()
+    mem.store(Message.assistant("assistant reply"))
+    mem.size shouldBe 1
+    mem.retrieve("assistant") should not be empty
+
+  test("EphemeralMemory retrieve returns messages with matching content"):
+    val mem = EphemeralMemory()
+    mem.store(Message.user("machine learning"))
+    mem.store(Message.user("deep neural networks"))
+    mem.store(Message.user("cooking pasta"))
+    val results = mem.retrieve("learning")
+    results.foreach(r => r.contentString should include("learning"))
+
+  test("EphemeralMemory default maxSize is larger than small stores"):
+    val mem = EphemeralMemory()
+    (1 to 5).foreach(i => mem.store(Message.user(s"msg $i")))
+    mem.size shouldBe 5

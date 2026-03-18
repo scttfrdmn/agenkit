@@ -33,3 +33,19 @@ class CachingMiddlewareSpec extends AnyFunSuite with Matchers:
     val cache = CachingMiddleware(MockAgent(), ttl = 1.second)
     val r     = cache.introspect()
     r.capabilities should contain("caching")
+
+  test("CachingMiddleware cache hit returns same content as original"):
+    val inner  = MockAgent(response = "exact-response")
+    val cache  = CachingMiddleware(inner, ttl = 10.seconds)
+    val msg    = Message.user("repeated question")
+    val first  = Await.result(cache.process(msg), 5.seconds)
+    val second = Await.result(cache.process(msg), 5.seconds)
+    second.contentString shouldBe first.contentString
+
+  test("CachingMiddleware differentiates by message content"):
+    val inner = MockAgent()
+    val cache = CachingMiddleware(inner, ttl = 10.seconds)
+    Await.result(cache.process(Message.user("alpha")), 5.seconds)
+    Await.result(cache.process(Message.user("beta")), 5.seconds)
+    Await.result(cache.process(Message.user("gamma")), 5.seconds)
+    inner.callCount shouldBe 3

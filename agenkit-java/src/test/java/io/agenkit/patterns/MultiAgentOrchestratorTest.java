@@ -49,4 +49,64 @@ class MultiAgentOrchestratorTest {
         var result = orch.introspect();
         assertThat(result.getState()).containsEntry("agentCount", 2);
     }
+
+    @Test
+    void processReturnsAssistantRole() throws Exception {
+        MockAgent agent = new MockAgent("worker", "done");
+        MockLlmClient llm = new MockLlmClient("AGENT: worker\nTASK: do work");
+
+        MultiAgentOrchestrator orchestrator = new MultiAgentOrchestrator(
+                "orch", llm, Map.of("worker", agent));
+
+        Message response = orchestrator.process(Message.of("user", "work")).get();
+
+        assertThat(response.getRole()).isEqualTo("assistant");
+    }
+
+    @Test
+    void getNameReturnsName() {
+        MultiAgentOrchestrator orch = new MultiAgentOrchestrator(
+                "my-orch", new MockLlmClient(), Map.of("a", new MockAgent("a")));
+        assertThat(orch.getName()).isEqualTo("my-orch");
+    }
+
+    @Test
+    void introspectReturnsAgentName() {
+        MultiAgentOrchestrator orch = new MultiAgentOrchestrator(
+                "orch-x", new MockLlmClient(), Map.of("a", new MockAgent("a")));
+        var result = orch.introspect();
+        assertThat(result.getAgentName()).isEqualTo("orch-x");
+    }
+
+    @Test
+    void orchestratorCapabilityListed() {
+        MultiAgentOrchestrator orch = new MultiAgentOrchestrator(
+                "orch", new MockLlmClient(), Map.of("a", new MockAgent("a")));
+        assertThat(orch.getCapabilities()).isNotEmpty();
+    }
+
+    @Test
+    void emptyAgentMapHandled() throws Exception {
+        MockLlmClient llm = new MockLlmClient("AGENT: nobody\nTASK: something");
+        MultiAgentOrchestrator orch = new MultiAgentOrchestrator("orch", llm, Map.of());
+
+        Message response = orch.process(Message.of("user", "anything")).get();
+
+        assertThat(response).isNotNull();
+    }
+
+    @Test
+    void multipleCallsWork() throws Exception {
+        MockAgent worker = new MockAgent("worker", "result");
+        MockLlmClient llm = new MockLlmClient("AGENT: worker\nTASK: task");
+
+        MultiAgentOrchestrator orch = new MultiAgentOrchestrator(
+                "orch", llm, Map.of("worker", worker));
+
+        Message first = orch.process(Message.of("user", "first")).get();
+        Message second = orch.process(Message.of("user", "second")).get();
+
+        assertThat(first).isNotNull();
+        assertThat(second).isNotNull();
+    }
 }

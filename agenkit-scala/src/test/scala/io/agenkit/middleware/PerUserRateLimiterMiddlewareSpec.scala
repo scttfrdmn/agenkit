@@ -37,3 +37,16 @@ class PerUserRateLimiterMiddlewareSpec extends AnyFunSuite with Matchers:
     val rl = PerUserRateLimiterMiddleware(MockAgent())
     val r  = rl.introspect()
     r.capabilities should contain("per-user-rate-limiting")
+
+  test("PerUserRateLimiter name includes inner name"):
+    val rl = PerUserRateLimiterMiddleware(MockAgent(name = "base"))
+    rl.name should include("base")
+
+  test("PerUserRateLimiter allows multiple users each up to limit"):
+    val inner = MockAgent()
+    val rl    = PerUserRateLimiterMiddleware(inner, requestsPerSecond = 2)
+    Await.result(rl.process(msgFor("alice")), 5.seconds)
+    Await.result(rl.process(msgFor("alice")), 5.seconds)
+    Await.result(rl.process(msgFor("bob")), 5.seconds)
+    Await.result(rl.process(msgFor("bob")), 5.seconds)
+    inner.callCount shouldBe 4

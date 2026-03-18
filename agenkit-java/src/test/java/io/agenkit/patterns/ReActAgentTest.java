@@ -62,4 +62,43 @@ class ReActAgentTest {
         var result = agent.introspect();
         assertThat(result.getTools()).containsExactlyInAnyOrder("tool1", "tool2");
     }
+
+    @Test
+    void processReturnsAssistantRole() throws Exception {
+        MockLlmClient llm = new MockLlmClient("Thought: done\nFinal Answer: result");
+        ReActAgent agent = new ReActAgent("react", llm, List.of());
+
+        Message response = agent.process(Message.of("user", "question")).get();
+
+        assertThat(response.getRole()).isEqualTo("assistant");
+    }
+
+    @Test
+    void getNameReturnsName() {
+        ReActAgent agent = new ReActAgent("my-react", new MockLlmClient(), List.of());
+        assertThat(agent.getName()).isEqualTo("my-react");
+    }
+
+    @Test
+    void getCapabilitiesIncludesReact() {
+        ReActAgent agent = new ReActAgent("react", new MockLlmClient(), List.of());
+        assertThat(agent.getCapabilities()).contains("reasoning");
+    }
+
+    @Test
+    void introspectReturnsAgentName() {
+        ReActAgent agent = new ReActAgent("react-x", new MockLlmClient(), List.of());
+        var result = agent.introspect();
+        assertThat(result.getAgentName()).isEqualTo("react-x");
+    }
+
+    @Test
+    void emptyToolListWorks() throws Exception {
+        MockLlmClient llm = new MockLlmClient("Thought: no tools needed\nFinal Answer: done");
+        ReActAgent agent = new ReActAgent("react", llm, List.of());
+
+        Message response = agent.process(Message.of("user", "simple question")).get();
+
+        assertThat(response.contentString()).isEqualTo("done");
+    }
 }

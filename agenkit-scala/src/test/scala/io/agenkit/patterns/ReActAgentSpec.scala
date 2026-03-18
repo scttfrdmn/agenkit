@@ -40,10 +40,10 @@ class ReActAgentSpec extends AnyFunSuite with Matchers:
     result.contentString shouldBe "done"
 
   test("ReActAgent respects maxIterations"):
-    val llm   = MockLlmClient(_ => "THOUGHT: still thinking")
+    val llm   = MockLlmClient(_ => "THOUGHT: loop\nACTION: unknown_tool\nPARAMS:")
     val agent = ReActAgent("test", llm, maxIterations = 2)
     val result = Await.result(agent.process(Message.user("loop")), 5.seconds)
-    result.contentString should include("Max iterations")
+    result.contentString should include("Max iterations reached")
 
   test("ReActAgent introspect"):
     val llm   = MockLlmClient()
@@ -51,3 +51,25 @@ class ReActAgentSpec extends AnyFunSuite with Matchers:
     val r     = agent.introspect()
     r.name shouldBe "react-agent"
     r.capabilities should contain("react")
+
+  test("ReActAgent returns assistant role"):
+    val llm    = MockLlmClient(_ => "ANSWER: result")
+    val agent  = ReActAgent("test", llm)
+    val result = Await.result(agent.process(Message.user("go")), 5.seconds)
+    result.role shouldBe "assistant"
+
+  test("ReActAgent name getter"):
+    val agent = ReActAgent("my-react", MockLlmClient())
+    agent.name shouldBe "my-react"
+
+  test("ReActAgent capabilities contain react"):
+    val agent = ReActAgent("react", MockLlmClient())
+    agent.capabilities should contain("react")
+
+  test("ReActAgent multiple sequential calls"):
+    val llm   = MockLlmClient(_ => "ANSWER: ok")
+    val agent = ReActAgent("test", llm)
+    val r1    = Await.result(agent.process(Message.user("first")), 5.seconds)
+    val r2    = Await.result(agent.process(Message.user("second")), 5.seconds)
+    r1.contentString shouldBe "ok"
+    r2.contentString shouldBe "ok"

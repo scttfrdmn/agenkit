@@ -31,4 +31,26 @@ class ParallelAgentTest {
         Message response = parallel.process(Message.of("user", "hi")).get();
         assertThat(response.contentString()).isEqualTo("solo");
     }
+
+    @Test
+    void getNameReturnsParallelName() {
+        ParallelAgent parallel = new ParallelAgent("fan-out", List.of());
+        assertThat(parallel.getName()).isEqualTo("fan-out");
+    }
+
+    @Test
+    void parallelCountMetadataMatchesAgentCount() throws Exception {
+        MockAgent x = new MockAgent("x", "rx");
+        MockAgent y = new MockAgent("y", "ry");
+        ParallelAgent parallel = new ParallelAgent("par", List.of(x, y));
+        Message response = parallel.process(Message.of("user", "q")).get();
+        assertThat(response.getMetadata()).containsEntry("parallel_count", 2);
+    }
+
+    @Test
+    void introspectReturnsAgentName() {
+        MockAgent a = new MockAgent("a", "ra");
+        ParallelAgent parallel = new ParallelAgent("my-parallel", List.of(a));
+        assertThat(parallel.introspect().getAgentName()).isEqualTo("my-parallel");
+    }
 }

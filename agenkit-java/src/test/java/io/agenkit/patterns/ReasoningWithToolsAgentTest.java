@@ -50,4 +50,61 @@ class ReasoningWithToolsAgentTest {
                 "rta", new MockLlmClient(), List.of());
         assertThat(agent.getCapabilities()).contains("chain_of_thought");
     }
+
+    @Test
+    void processReturnsAssistantRole() throws Exception {
+        MockLlmClient llm = new MockLlmClient("THINK: done\nANSWER: result");
+        ReasoningWithToolsAgent agent = new ReasoningWithToolsAgent("rta", llm, List.of());
+
+        Message response = agent.process(Message.of("user", "question")).get();
+
+        assertThat(response.getRole()).isEqualTo("assistant");
+    }
+
+    @Test
+    void getNameReturnsName() {
+        ReasoningWithToolsAgent agent = new ReasoningWithToolsAgent(
+                "my-rta", new MockLlmClient(), List.of());
+        assertThat(agent.getName()).isEqualTo("my-rta");
+    }
+
+    @Test
+    void introspectReturnsAgentName() {
+        ReasoningWithToolsAgent agent = new ReasoningWithToolsAgent(
+                "rta-x", new MockLlmClient(), List.of());
+        var result = agent.introspect();
+        assertThat(result.getAgentName()).isEqualTo("rta-x");
+    }
+
+    @Test
+    void introspectReturnsStepState() throws Exception {
+        MockLlmClient llm = new MockLlmClient("THINK: ok\nANSWER: done");
+        ReasoningWithToolsAgent agent = new ReasoningWithToolsAgent("rta", llm, List.of());
+        agent.process(Message.of("user", "hello")).get();
+
+        var result = agent.introspect();
+        assertThat(result.getState()).containsKey("maxSteps");
+    }
+
+    @Test
+    void emptyToolListWorks() throws Exception {
+        MockLlmClient llm = new MockLlmClient("THINK: no tools\nANSWER: 42");
+        ReasoningWithToolsAgent agent = new ReasoningWithToolsAgent("rta", llm, List.of());
+
+        Message response = agent.process(Message.of("user", "no tool needed")).get();
+
+        assertThat(response.contentString()).isEqualTo("42");
+    }
+
+    @Test
+    void multipleCallsWork() throws Exception {
+        MockLlmClient llm = new MockLlmClient("THINK: thinking\nANSWER: ok");
+        ReasoningWithToolsAgent agent = new ReasoningWithToolsAgent("rta", llm, List.of());
+
+        Message first = agent.process(Message.of("user", "first")).get();
+        Message second = agent.process(Message.of("user", "second")).get();
+
+        assertThat(first.getRole()).isEqualTo("assistant");
+        assertThat(second.getRole()).isEqualTo("assistant");
+    }
 }

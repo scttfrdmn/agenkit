@@ -61,4 +61,28 @@ class MessageTest {
         assertThatThrownBy(() -> msg.getMetadata().put("key", "value"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void timestampIsSetOnCreation() {
+        Message msg = Message.of("user", "content");
+        assertThat(msg.getTimestamp()).isNotNull();
+        assertThat(msg.getTimestamp()).isBeforeOrEqualTo(java.time.Instant.now());
+    }
+
+    @Test
+    void roleIsAccessible() {
+        for (String role : new String[]{"user", "assistant", "system"}) {
+            Message msg = Message.of(role, "some content");
+            assertThat(msg.getRole()).isEqualTo(role);
+        }
+    }
+
+    @Test
+    void withMetadataPreservesContent() {
+        Message original = Message.of("user", "original content");
+        Message withMeta = original.withMetadata("source", "test");
+        assertThat(withMeta.contentString()).isEqualTo("original content");
+        assertThat(withMeta.getRole()).isEqualTo("user");
+        assertThat(withMeta.getMetadata()).containsEntry("source", "test");
+    }
 }

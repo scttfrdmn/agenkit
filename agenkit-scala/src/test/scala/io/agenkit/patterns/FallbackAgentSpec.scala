@@ -37,3 +37,30 @@ class FallbackAgentSpec extends AnyFunSuite with Matchers:
     val r     = agent.introspect()
     r.name shouldBe "fallback"
     r.capabilities should contain("fallback")
+
+  test("FallbackAgent returns assistant role on success"):
+    val first  = MockAgent(name = "first", response = "ok")
+    val agent  = FallbackAgent("fallback", List(first))
+    val result = Await.result(agent.process(Message.user("hi")), 5.seconds)
+    result.role shouldBe "assistant"
+
+  test("FallbackAgent name getter"):
+    val agent = FallbackAgent("my-fallback", List(MockAgent()))
+    agent.name shouldBe "my-fallback"
+
+  test("FallbackAgent capabilities contain fallback"):
+    val agent = FallbackAgent("fallback", List(MockAgent()))
+    agent.capabilities should contain("fallback")
+
+  test("FallbackAgent introspect returns name"):
+    val agent = FallbackAgent("fallback-agent", List(MockAgent()))
+    agent.introspect().name shouldBe "fallback-agent"
+
+  test("FallbackAgent multiple sequential calls each succeed via first agent"):
+    val first = MockAgent(name = "first", response = "good")
+    val agent = FallbackAgent("fallback", List(first))
+    val r1    = Await.result(agent.process(Message.user("one")), 5.seconds)
+    val r2    = Await.result(agent.process(Message.user("two")), 5.seconds)
+    r1.contentString shouldBe "good"
+    r2.contentString shouldBe "good"
+    first.callCount shouldBe 2

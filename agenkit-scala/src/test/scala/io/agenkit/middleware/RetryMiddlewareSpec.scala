@@ -45,3 +45,22 @@ class RetryMiddlewareSpec extends AnyFunSuite with Matchers:
     val retry = RetryMiddleware(inner)
     val r     = retry.introspect()
     r.capabilities should contain("retry")
+
+  test("RetryMiddleware with zero retries fails immediately"):
+    val inner  = MockAgent(shouldFail = true)
+    val retry  = RetryMiddleware(inner, maxAttempts = 1)
+    val ex     = Await.result(retry.process(Message.user("test")).failed, 5.seconds)
+    ex.getMessage shouldBe "mock failure"
+    inner.callCount shouldBe 1
+
+  test("RetryMiddleware respects different maxAttempts configuration"):
+    var attempts = 0
+    val inner = new MockAgent("inner"):
+      override def process(message: Message)(using ec: scala.concurrent.ExecutionContext) =
+        attempts += 1
+        if attempts < 4 then scala.concurrent.Future.failed(new RuntimeException("fail"))
+        else scala.concurrent.Future.successful(Message.of("assistant", "ok"))
+    val retry  = RetryMiddleware(inner, maxAttempts = 4)
+    val result = Await.result(retry.process(Message.user("test")), 5.seconds)
+    result.contentString shouldBe "ok"
+    attempts shouldBe 4

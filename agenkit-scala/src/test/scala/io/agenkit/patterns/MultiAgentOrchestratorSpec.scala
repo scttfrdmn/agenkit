@@ -28,3 +28,40 @@ class MultiAgentOrchestratorSpec extends AnyFunSuite with Matchers:
     val r     = agent.introspect()
     r.name shouldBe "mao"
     r.capabilities should contain("multi-agent")
+
+  test("MultiAgentOrchestrator returns assistant role"):
+    val llm    = MockLlmClient(_ => "worker")
+    val worker = MockAgent(name = "worker", response = "worker reply")
+    val agent  = MultiAgentOrchestrator("mao", llm, Map("worker" -> worker))
+    val result = Await.result(agent.process(Message.user("go")), 5.seconds)
+    result.role shouldBe "assistant"
+
+  test("MultiAgentOrchestrator name getter"):
+    val agent = MultiAgentOrchestrator("my-mao", MockLlmClient(), Map("a" -> MockAgent()))
+    agent.name shouldBe "my-mao"
+
+  test("MultiAgentOrchestrator capabilities contain multi-agent"):
+    val agent = MultiAgentOrchestrator("mao", MockLlmClient(), Map("a" -> MockAgent()))
+    agent.capabilities should contain("multi-agent")
+
+  test("MultiAgentOrchestrator introspect returns name"):
+    val agent = MultiAgentOrchestrator("mao-agent", MockLlmClient(), Map("a" -> MockAgent()))
+    agent.introspect().name shouldBe "mao-agent"
+
+  test("MultiAgentOrchestrator calls target agent exactly once"):
+    val llm    = MockLlmClient(_ => "target")
+    val target = MockAgent(name = "target", response = "targeted")
+    val other  = MockAgent(name = "other", response = "other")
+    val agent  = MultiAgentOrchestrator("mao", llm, Map("target" -> target, "other" -> other))
+    Await.result(agent.process(Message.user("route")), 5.seconds)
+    target.callCount shouldBe 1
+    other.callCount shouldBe 0
+
+  test("MultiAgentOrchestrator multiple sequential calls"):
+    val llm    = MockLlmClient(_ => "spec")
+    val spec   = MockAgent(name = "spec", response = "ok")
+    val agent  = MultiAgentOrchestrator("mao", llm, Map("spec" -> spec))
+    val r1     = Await.result(agent.process(Message.user("first")), 5.seconds)
+    val r2     = Await.result(agent.process(Message.user("second")), 5.seconds)
+    r1.role shouldBe "assistant"
+    r2.role shouldBe "assistant"

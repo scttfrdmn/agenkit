@@ -35,3 +35,27 @@ class AutonomousAgentSpec extends AnyFunSuite with Matchers:
     val r     = agent.introspect()
     r.name shouldBe "auto"
     r.capabilities should contain("autonomous")
+
+  test("AutonomousAgent returns assistant role"):
+    val llm    = MockLlmClient(_ => "COMPLETE")
+    val agent  = AutonomousAgent("auto", llm)
+    val result = Await.result(agent.process(Message.user("run")), 5.seconds)
+    result.role shouldBe "assistant"
+
+  test("AutonomousAgent name getter"):
+    val agent = AutonomousAgent("my-auto", MockLlmClient())
+    agent.name shouldBe "my-auto"
+
+  test("AutonomousAgent capabilities contain autonomous"):
+    val agent = AutonomousAgent("auto", MockLlmClient())
+    agent.capabilities should contain("autonomous")
+
+  test("AutonomousAgent introspect returns name"):
+    val agent = AutonomousAgent("auto-agent", MockLlmClient())
+    agent.introspect().name shouldBe "auto-agent"
+
+  test("AutonomousAgent with maxIterations of 1 makes exactly one LLM call"):
+    val llm   = MockLlmClient(_ => "still going")
+    val agent = AutonomousAgent("auto", llm, maxIterations = 1)
+    Await.result(agent.process(Message.user("test")), 5.seconds)
+    llm.callCount shouldBe 1

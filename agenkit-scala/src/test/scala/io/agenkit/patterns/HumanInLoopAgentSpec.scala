@@ -35,3 +35,30 @@ class HumanInLoopAgentSpec extends AnyFunSuite with Matchers:
     val r     = agent.introspect()
     r.name shouldBe "hilm"
     r.capabilities should contain("human-in-loop")
+
+  test("HumanInLoopAgent returns assistant role on approval"):
+    val inner  = MockAgent(response = "approved output")
+    val agent  = HumanInLoopAgent("hilm", inner, _ => Future.successful(true))
+    val result = Await.result(agent.process(Message.user("go")), 5.seconds)
+    result.role shouldBe "assistant"
+
+  test("HumanInLoopAgent name getter"):
+    val agent = HumanInLoopAgent("my-hilm", MockAgent(), _ => Future.successful(true))
+    agent.name shouldBe "my-hilm"
+
+  test("HumanInLoopAgent capabilities contain human-in-loop"):
+    val agent = HumanInLoopAgent("hilm", MockAgent(), _ => Future.successful(true))
+    agent.capabilities should contain("human-in-loop")
+
+  test("HumanInLoopAgent introspect returns name"):
+    val agent = HumanInLoopAgent("hilm-agent", MockAgent(), _ => Future.successful(true))
+    agent.introspect().name shouldBe "hilm-agent"
+
+  test("HumanInLoopAgent multiple sequential approvals"):
+    val inner = MockAgent(response = "done")
+    val agent = HumanInLoopAgent("hilm", inner, _ => Future.successful(true))
+    val r1    = Await.result(agent.process(Message.user("first")), 5.seconds)
+    val r2    = Await.result(agent.process(Message.user("second")), 5.seconds)
+    r1.contentString shouldBe "done"
+    r2.contentString shouldBe "done"
+    inner.callCount shouldBe 2

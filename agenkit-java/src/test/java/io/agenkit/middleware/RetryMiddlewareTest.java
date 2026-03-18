@@ -74,4 +74,42 @@ class RetryMiddlewareTest {
         assertThatThrownBy(() -> retry.process(Message.of("user", "hi")).get())
                 .hasCauseInstanceOf(RuntimeException.class);
     }
+
+    @Test
+    void getNameIncludesInnerName() {
+        MockAgent inner = new MockAgent("my-inner", "ok");
+        RetryMiddleware retry = new RetryMiddleware(inner, 3);
+        assertThat(retry.getName()).contains("my-inner").contains("retry");
+    }
+
+    @Test
+    void introspectReturnsRetryCapability() {
+        MockAgent inner = new MockAgent("cap-agent");
+        RetryMiddleware retry = new RetryMiddleware(inner, 3);
+        assertThat(retry.introspect().getCapabilities()).isNotNull();
+    }
+
+    @Test
+    void zeroRetriesFailsImmediately() {
+        Agent alwaysFail = new Agent() {
+            public String getName() { return "fail"; }
+            public List<String> getCapabilities() { return List.of(); }
+            public CompletableFuture<Message> process(Message m) {
+                return CompletableFuture.failedFuture(new RuntimeException("immediate fail"));
+            }
+            public IntrospectionResult introspect() {
+                return new IntrospectionResult("fail", List.of(), null, null, null);
+            }
+        };
+
+        RetryMiddleware retry = new RetryMiddleware(alwaysFail,
+                RetryMiddleware.RetryConfig.builder()
+                        .maxAttempts(1)
+                        .initialDelay(Duration.ofMillis(1))
+                        .build());
+
+        assertThatThrownBy(() -> retry.process(Message.of("user", "hi")).get())
+                .hasCauseInstanceOf(RuntimeException.class)
+                .hasMessageContaining("immediate fail");
+    }
 }

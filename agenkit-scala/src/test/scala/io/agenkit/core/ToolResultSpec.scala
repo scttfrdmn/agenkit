@@ -24,4 +24,14 @@ class ToolResultSpec extends AnyFunSuite with Matchers:
 
   test("ToolOk with complex data"):
     val result = ToolOk(Map("key" -> "value"))
-    result.data.asInstanceOf[Map[?, ?]]("key") shouldBe "value"
+    result.data.asInstanceOf[Map[String, String]]("key") shouldBe "value"
+
+  test("ToolResult.ok with integer data"):
+    val result = ToolResult.ok(99)
+    result shouldBe a[ToolOk]
+    result.asInstanceOf[ToolOk].data shouldBe 99
+
+  test("ToolResult.fail with empty error message"):
+    val result = ToolResult.fail("")
+    result shouldBe a[ToolFail]
+    result.asInstanceOf[ToolFail].error shouldBe ""

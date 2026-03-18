@@ -40,3 +40,29 @@ class OrchestrationAgentSpec extends AnyFunSuite with Matchers:
     val r     = agent.introspect()
     r.name shouldBe "orch"
     r.capabilities should contain("orchestration")
+
+  test("OrchestrationAgent returns assistant role"):
+    val sub   = MockAgent(name = "sub", response = "sub result")
+    val agent = OrchestrationAgent("orch", List(sub), OrchestrationMode.Sequential)
+    val result = Await.result(agent.process(Message.user("run")), 5.seconds)
+    result.role shouldBe "assistant"
+
+  test("OrchestrationAgent name getter"):
+    val agent = OrchestrationAgent("my-orch", List(MockAgent()))
+    agent.name shouldBe "my-orch"
+
+  test("OrchestrationAgent capabilities contain orchestration"):
+    val agent = OrchestrationAgent("orch", List(MockAgent()))
+    agent.capabilities should contain("orchestration")
+
+  test("OrchestrationAgent introspect returns name"):
+    val agent = OrchestrationAgent("orch-agent", List(MockAgent()))
+    agent.introspect().name shouldBe "orch-agent"
+
+  test("OrchestrationAgent sequential calls each sub-agent once"):
+    val a1    = MockAgent(name = "a1", response = "r1")
+    val a2    = MockAgent(name = "a2", response = "r2")
+    val agent = OrchestrationAgent("orch", List(a1, a2), OrchestrationMode.Sequential)
+    Await.result(agent.process(Message.user("go")), 5.seconds)
+    a1.callCount shouldBe 1
+    a2.callCount shouldBe 1

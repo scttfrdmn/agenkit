@@ -27,3 +27,14 @@ class IntrospectionResultSpec extends AnyFunSuite with Matchers:
     r.capabilities shouldBe List("chat")
     r.activeConnections shouldBe 2
     r.processedMessages shouldBe 100L
+
+  test("IntrospectionResult copy updates fields"):
+    val r     = IntrospectionResult("agent1", processedMessages = 5L)
+    val updated = r.copy(processedMessages = 10L)
+    updated.name shouldBe "agent1"
+    updated.processedMessages shouldBe 10L
+
+  test("IntrospectionResult multiple capabilities"):
+    val r = IntrospectionResult("agent1", capabilities = List("chat", "tool-use", "memory"))
+    r.capabilities should have size 3
+    r.capabilities should contain("tool-use")

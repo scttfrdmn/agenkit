@@ -1,5 +1,5 @@
 # Quick Reference: Go → TypeScript Migration
-
+<!-- verified: v0.76.0 -->
 **For**: Go developers migrating Agenkit code to TypeScript
 **Time**: 15 minute read
 **Full Details**: See [Go Language Profile](LANGUAGE_PROFILE_GO.md) and [TypeScript Language Profile](LANGUAGE_PROFILE_TYPESCRIPT.md)

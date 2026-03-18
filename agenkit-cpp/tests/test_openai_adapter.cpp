@@ -132,6 +132,6 @@ TEST(OpenAIAgentTest, CustomTemperature) {
 // Test message content access
 TEST(OpenAIAgentTest, MessageWithText) {
     auto msg = Message::with_text("user", "Hello, GPT!");
-    EXPECT_EQ(msg.role, "user");
+    EXPECT_EQ(msg.role(), "user");
     EXPECT_EQ(msg.content_as_str(), "Hello, GPT!");
 }

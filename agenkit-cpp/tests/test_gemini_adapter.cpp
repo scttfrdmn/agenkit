@@ -161,7 +161,7 @@ TEST(GeminiAgentTest, DefaultConfigurationValues) {
     EXPECT_FALSE(config.top_k.has_value());
     EXPECT_TRUE(config.stop_sequences.empty());
     EXPECT_EQ(config.api_base, "https://generativelanguage.googleapis.com");
-    EXPECT_EQ(config.timeout_seconds, 60);
+    EXPECT_EQ(config.timeout.count(), 60000);
 }
 
 // Test 11: Message format conversion with different roles
@@ -191,11 +191,11 @@ TEST(GeminiAgentTest, TimeoutConfiguration) {
     GeminiConfig config;
     config.api_key = "test-key";
     config.model = "gemini-2.0-flash-exp";
-    config.timeout_seconds = 30;
+    config.timeout = std::chrono::milliseconds(30000);
 
     GeminiAgent agent(config);
 
-    EXPECT_EQ(agent.config().timeout_seconds, 30);
+    EXPECT_EQ(agent.config().timeout.count(), 30000);
 }
 
 // Test 13: Stop sequences configuration

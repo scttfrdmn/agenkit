@@ -123,6 +123,6 @@ TEST(ClaudeAgentTest, CustomModel) {
 // Test message content access
 TEST(ClaudeAgentTest, MessageWithText) {
     auto msg = Message::with_text("user", "Hello, Claude!");
-    EXPECT_EQ(msg.role, "user");
+    EXPECT_EQ(msg.role(), "user");
     EXPECT_EQ(msg.content_as_str(), "Hello, Claude!");
 }

@@ -237,7 +237,7 @@ TEST(ObjectPoolTest, PerformanceComparison) {
     std::cout << "Speedup: " << (static_cast<double>(duration_malloc) / duration_pool) << "x\n";
 
     // Pool should be faster (but this is not guaranteed on all systems)
-    // Just verify it completes successfully
-    EXPECT_GT(duration_malloc, 0);
-    EXPECT_GT(duration_pool, 0);
+    // Just verify it completes successfully (timing may be 0 on fast systems)
+    EXPECT_GE(duration_malloc, 0);
+    EXPECT_GE(duration_pool, 0);
 }

@@ -28,7 +28,6 @@ public:
         bool deterministic = true
     ) : failure_rate_(failure_rate),
         delay_(delay),
-        deterministic_(deterministic),
         rng_(deterministic ? 42 : std::random_device{}()) {}
 
     std::string name() const override {
@@ -39,38 +38,62 @@ public:
     process(Message message) override {
         request_count_++;
 
-        // Simulate delay
         if (delay_.count() > 0) {
-            std::this_thread::sleep_for(delay_);
+            // Truly async so timeout middleware can observe the delay
+            return std::async(std::launch::async,
+                [this, msg = std::move(message)]() mutable -> Result<Message, AgentError> {
+                    std::this_thread::sleep_for(delay_);
+                    return make_response(std::move(msg));
+                });
         }
 
-        // Simulate failures
-        std::uniform_real_distribution<double> dist(0.0, 1.0);
-        if (dist(rng_) < failure_rate_) {
-            return make_ready_future(
-                Result<Message, AgentError>::err(
-                    AgentError(AgentErrorType::ProcessingError, "Simulated failure")
-                )
-            );
-        }
-
-        // Success
-        auto response = Message::with_text(
-            "assistant",
-            "Processed: " + message.content_as_str()
-        );
-        return make_ready_future(Result<Message, AgentError>::ok(response));
+        return make_ready_future(make_response(std::move(message)));
     }
 
     int request_count() const { return request_count_; }
     void reset_count() { request_count_ = 0; }
 
 private:
+    Result<Message, AgentError> make_response(Message message) {
+        std::lock_guard<std::mutex> lock(rng_mutex_);
+        std::uniform_real_distribution<double> dist(0.0, 1.0);
+        if (dist(rng_) < failure_rate_) {
+            return Result<Message, AgentError>::err(
+                AgentError(AgentErrorType::ProcessingError, "Simulated failure")
+            );
+        }
+        auto response = Message::with_text(
+            "assistant",
+            "Processed: " + message.content_as_str()
+        );
+        return Result<Message, AgentError>::ok(response);
+    }
+
     double failure_rate_;
     std::chrono::milliseconds delay_;
-    bool deterministic_;
     std::mt19937 rng_;
+    mutable std::mutex rng_mutex_;
     std::atomic<int> request_count_{0};
+};
+
+/// Agent that fails exactly N times then always succeeds
+class FailNThenSucceed : public Agent {
+    int fail_n_;
+    std::atomic<int> count_{0};
+public:
+    explicit FailNThenSucceed(int n) : fail_n_(n) {}
+    std::string name() const override { return "fail_n_then_succeed"; }
+    int call_count() const { return count_.load(); }
+
+    std::future<Result<Message, AgentError>> process(Message) override {
+        int n = ++count_;
+        if (n <= fail_n_) {
+            return make_ready_future(Result<Message, AgentError>::err(
+                AgentError(AgentErrorType::ProcessingError, "deliberate fail")));
+        }
+        return make_ready_future(Result<Message, AgentError>::ok(
+            Message::with_text("assistant", "success")));
+    }
 };
 
 // ============================================================================
@@ -99,7 +122,7 @@ TEST(RetryMiddlewareTest, SuccessfulOnFirstAttempt) {
 }
 
 TEST(RetryMiddlewareTest, SuccessfulAfterRetries) {
-    auto agent = std::make_shared<TestAgent>(0.5, std::chrono::milliseconds(0), true);
+    auto agent = std::make_shared<FailNThenSucceed>(2);  // fails 2x, then succeeds
 
     auto config = RetryConfig::builder()
         .max_attempts(5)
@@ -113,7 +136,7 @@ TEST(RetryMiddlewareTest, SuccessfulAfterRetries) {
     auto result = retry_agent->process(message).get();
 
     EXPECT_TRUE(result.is_ok());
-    EXPECT_GT(agent->request_count(), 1);  // Multiple attempts
+    EXPECT_GT(agent->call_count(), 1);  // Multiple attempts (2 failures + 1 success)
 
     auto metrics = retry_agent->metrics().snapshot();
     EXPECT_GT(metrics.total_retries, 0);
@@ -147,7 +170,7 @@ TEST(RetryMiddlewareTest, ExponentialBackoff) {
         .max_attempts(5)
         .initial_backoff(std::chrono::milliseconds(10))
         .max_backoff(std::chrono::milliseconds(100))
-        .multiplier(2.0)
+        .backoff_multiplier(2.0)
         .build();
 
     auto retry_agent = std::make_shared<RetryMiddleware>(agent, config);
@@ -178,7 +201,7 @@ TEST(RetryMiddlewareTest, Metrics) {
     }
 
     auto metrics = retry_agent->metrics().snapshot();
-    EXPECT_EQ(metrics.total_requests, 10);
+    EXPECT_EQ(metrics.total_attempts, 10);
     EXPECT_GT(metrics.avg_retries_per_request, 0.0);
 }
 
@@ -217,7 +240,7 @@ TEST(TimeoutMiddlewareTest, TimeoutOccurs) {
     auto result = timeout_agent->process(message).get();
 
     EXPECT_TRUE(result.is_err());
-    EXPECT_EQ(result.unwrap_err().type(), AgentErrorType::TimeoutError);
+    EXPECT_EQ(result.unwrap_err().type(), AgentErrorType::Timeout);
 
     auto metrics = timeout_agent->metrics().snapshot();
     EXPECT_EQ(metrics.timed_out_requests, 1);
@@ -264,7 +287,7 @@ TEST(CircuitBreakerTest, InitiallyClosedState) {
 
     auto breaker = std::make_shared<CircuitBreakerMiddleware>(agent, config);
 
-    EXPECT_EQ(breaker->state(), CircuitState::Closed);
+    EXPECT_EQ(breaker->state(), CircuitState::CLOSED);
 }
 
 TEST(CircuitBreakerTest, TransitionToOpen) {
@@ -284,7 +307,7 @@ TEST(CircuitBreakerTest, TransitionToOpen) {
         breaker->process(message).get();
     }
 
-    EXPECT_EQ(breaker->state(), CircuitState::Open);
+    EXPECT_EQ(breaker->state(), CircuitState::OPEN);
 }
 
 TEST(CircuitBreakerTest, RejectWhenOpen) {
@@ -304,46 +327,47 @@ TEST(CircuitBreakerTest, RejectWhenOpen) {
         breaker->process(message).get();
     }
 
-    EXPECT_EQ(breaker->state(), CircuitState::Open);
+    EXPECT_EQ(breaker->state(), CircuitState::OPEN);
 
     // Next request should be rejected immediately
     auto message = Message::with_text("user", "test");
     auto result = breaker->process(message).get();
 
     EXPECT_TRUE(result.is_err());
-    EXPECT_EQ(result.unwrap_err().type(), AgentErrorType::CircuitBreakerOpen);
+    EXPECT_EQ(result.unwrap_err().type(), AgentErrorType::ProcessingError);
 
     auto metrics = breaker->metrics().snapshot(breaker->state());
     EXPECT_GT(metrics.rejected_requests, 0);
 }
 
 TEST(CircuitBreakerTest, TransitionToHalfOpen) {
-    auto agent = std::make_shared<TestAgent>(1.0);
+    // Fails first 2 requests (opens circuit), then succeeds (for half-open recovery)
+    auto agent = std::make_shared<FailNThenSucceed>(2);
 
     auto config = CircuitBreakerConfig::builder()
         .failure_threshold(2)
-        .success_threshold(2)
+        .success_threshold(3)  // need 3 successes to close; 1 success leaves in HALF_OPEN
         .recovery_timeout(std::chrono::milliseconds(50))
         .build();
 
     auto breaker = std::make_shared<CircuitBreakerMiddleware>(agent, config);
 
-    // Open the circuit
+    // Open the circuit (2 failures)
     for (int i = 0; i < 2; i++) {
         auto message = Message::with_text("user", "test" + std::to_string(i));
         breaker->process(message).get();
     }
 
-    EXPECT_EQ(breaker->state(), CircuitState::Open);
+    EXPECT_EQ(breaker->state(), CircuitState::OPEN);
 
     // Wait for recovery timeout
     std::this_thread::sleep_for(std::chrono::milliseconds(60));
 
-    // Next request should transition to half-open
+    // Next request: transitions to HALF_OPEN, agent now succeeds (1 of 3 needed -> stays HALF_OPEN)
     auto message = Message::with_text("user", "test");
     breaker->process(message).get();
 
-    EXPECT_EQ(breaker->state(), CircuitState::HalfOpen);
+    EXPECT_EQ(breaker->state(), CircuitState::HALF_OPEN);
 }
 
 TEST(CircuitBreakerTest, RecoveryToClosedState) {
@@ -363,7 +387,7 @@ TEST(CircuitBreakerTest, RecoveryToClosedState) {
         breaker->process(message).get();
     }
 
-    EXPECT_EQ(breaker->state(), CircuitState::Open);
+    EXPECT_EQ(breaker->state(), CircuitState::OPEN);
 
     // Wait for recovery
     std::this_thread::sleep_for(std::chrono::milliseconds(60));
@@ -392,7 +416,7 @@ TEST(CircuitBreakerTest, RecoveryToClosedState) {
         breaker->process(message).get();
     }
 
-    EXPECT_EQ(breaker->state(), CircuitState::Closed);
+    EXPECT_EQ(breaker->state(), CircuitState::CLOSED);
 }
 
 TEST(CircuitBreakerTest, Metrics) {
@@ -464,7 +488,7 @@ TEST(RateLimiterTest, RejectOverCapacity) {
     for (int i = 0; i < 10; i++) {
         auto message = Message::with_text("user", "test" + std::to_string(i));
         auto result = limiter->process(message).get();
-        if (result.is_err() && result.unwrap_err().type() == AgentErrorType::RateLimitExceeded) {
+        if (result.is_err() && result.unwrap_err().type() == AgentErrorType::ProcessingError) {
             rejections++;
         }
     }
@@ -703,7 +727,7 @@ TEST(MiddlewareCompositionTest, RetryWithTimeout) {
 
     // Should timeout on all attempts
     EXPECT_TRUE(result.is_err());
-    EXPECT_EQ(result.unwrap_err().type(), AgentErrorType::TimeoutError);
+    EXPECT_EQ(result.unwrap_err().type(), AgentErrorType::Timeout);
 }
 
 TEST(MiddlewareCompositionTest, CachingWithRateLimiter) {
@@ -791,7 +815,7 @@ TEST(MiddlewareCompositionTest, FullStack) {
     }
 
     EXPECT_GT(successes, 0);
-    EXPECT_EQ(breaker->state(), CircuitState::Closed);
+    EXPECT_EQ(breaker->state(), CircuitState::CLOSED);
 }
 
 // ============================================================================

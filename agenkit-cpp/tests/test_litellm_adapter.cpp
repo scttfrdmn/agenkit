@@ -168,7 +168,7 @@ TEST(LiteLLMAgentTest, DefaultConfigurationValues) {
     EXPECT_FALSE(config.temperature.has_value());
     EXPECT_FALSE(config.max_tokens.has_value());
     EXPECT_FALSE(config.top_p.has_value());
-    EXPECT_EQ(config.timeout_seconds, 60);
+    EXPECT_EQ(config.timeout.count(), 60000);
 }
 
 // Test 11: Message format conversion with different roles
@@ -199,9 +199,9 @@ TEST(LiteLLMAgentTest, TimeoutConfiguration) {
     LiteLLMConfig config;
     config.model = "gpt-3.5-turbo";
     config.base_url = "http://localhost:4000";
-    config.timeout_seconds = 30;
+    config.timeout = std::chrono::milliseconds(30000);
 
     LiteLLMAgent agent(config);
 
-    EXPECT_EQ(agent.config().timeout_seconds, 30);
+    EXPECT_EQ(agent.config().timeout.count(), 30000);
 }

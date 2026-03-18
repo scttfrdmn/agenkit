@@ -180,7 +180,7 @@ TEST(BedrockAgentTest, DefaultConfigurationValues) {
     EXPECT_FALSE(config.max_tokens.has_value());
     EXPECT_FALSE(config.top_p.has_value());
     EXPECT_TRUE(config.stop_sequences.empty());
-    EXPECT_EQ(config.timeout_seconds, 60);
+    EXPECT_EQ(config.timeout.count(), 60000);
 }
 
 // Test 9: Message format conversion with different roles
@@ -203,9 +203,9 @@ TEST(BedrockAgentTest, TimeoutConfiguration) {
     BedrockConfig config;
     config.region = "us-east-1";
     config.model = "anthropic.claude-3-5-sonnet-20241022-v2:0";
-    config.timeout_seconds = 30;
+    config.timeout = std::chrono::milliseconds(30000);
 
-    EXPECT_EQ(config.timeout_seconds, 30);
+    EXPECT_EQ(config.timeout.count(), 30000);
 }
 
 // Test 11: Stop sequences configuration

@@ -242,6 +242,11 @@ pub const middleware = @import("middleware/mod.zig");
 // Infrastructure for production systems
 pub const infrastructure = @import("infrastructure/mod.zig");
 
+// Protocols
+pub const protocols = struct {
+    pub const mcp = @import("protocols/mcp.zig");
+};
+
 // Techniques
 pub const techniques = struct {
     // Reasoning techniques

@@ -226,6 +226,19 @@ pub fn build(b: *std.Build) void {
     });
     const run_prop_agent_tests = b.addRunArtifact(prop_agent_tests);
 
+    // MCP protocol tests
+    const mcp_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/protocols/mcp_test.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
+        }),
+    });
+    const run_mcp_tests = b.addRunArtifact(mcp_tests);
+
     // A top level step for running all tests. dependOn can be called multiple
     // times and since the two run steps do not depend on one another, this will
     // make the two of them run in parallel.
@@ -239,6 +252,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_prop_message_tests.step);
     test_step.dependOn(&run_prop_middleware_tests.step);
     test_step.dependOn(&run_prop_agent_tests.step);
+    test_step.dependOn(&run_mcp_tests.step);
 
     // Just like flags, top level steps are also listed in the `--help` menu.
     //

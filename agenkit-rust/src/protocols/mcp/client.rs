@@ -6,16 +6,14 @@
 use crate::core::AgentError;
 use crate::protocols::mcp::{
     JsonRpcRequest, JsonRpcResponse, McpClient, McpServerInfo, McpTool, McpToolResult,
+    PROTOCOL_VERSION,
 };
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::Mutex;
-
-const PROTOCOL_VERSION: &str = "2024-11-05";
 
 fn init_params() -> serde_json::Value {
     serde_json::json!({
@@ -23,6 +21,16 @@ fn init_params() -> serde_json::Value {
         "capabilities": {},
         "clientInfo": {"name": "agenkit", "version": "0.82.0"}
     })
+}
+
+fn parse_server_info(result: &serde_json::Value) -> McpServerInfo {
+    result
+        .get("serverInfo")
+        .map(|info| McpServerInfo {
+            name: info.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+            version: info.get("version").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        })
+        .unwrap_or_default()
 }
 
 // ── StdioClient ───────────────────────────────────────────────────────────────
@@ -37,10 +45,14 @@ pub struct StdioClient {
     server_info: McpServerInfo,
 }
 
+struct StdioIo {
+    stdin: ChildStdin,
+    stdout: BufReader<ChildStdout>,
+}
+
 struct StdioInner {
     _child: Child,
-    stdin: Arc<Mutex<ChildStdin>>,
-    stdout: Arc<Mutex<BufReader<ChildStdout>>>,
+    io: Mutex<StdioIo>,
 }
 
 impl StdioClient {
@@ -84,26 +96,22 @@ impl StdioClient {
 
         let line = serde_json::to_string(&req).map_err(AgentError::Serialization)? + "\n";
 
-        {
-            let mut stdin = inner.stdin.lock().await;
-            stdin
-                .write_all(line.as_bytes())
-                .await
-                .map_err(|e| AgentError::Transport(e.to_string()))?;
-            stdin
-                .flush()
-                .await
-                .map_err(|e| AgentError::Transport(e.to_string()))?;
-        }
+        // Single lock covers the full write→read cycle to prevent interleaving.
+        let mut io = inner.io.lock().await;
+        io.stdin
+            .write_all(line.as_bytes())
+            .await
+            .map_err(|e| AgentError::Transport(e.to_string()))?;
+        io.stdin
+            .flush()
+            .await
+            .map_err(|e| AgentError::Transport(e.to_string()))?;
 
         let mut buf = String::new();
-        {
-            let mut stdout = inner.stdout.lock().await;
-            stdout
-                .read_line(&mut buf)
-                .await
-                .map_err(|e| AgentError::Transport(e.to_string()))?;
-        }
+        io.stdout
+            .read_line(&mut buf)
+            .await
+            .map_err(|e| AgentError::Transport(e.to_string()))?;
 
         if buf.is_empty() {
             return Err(AgentError::Transport(
@@ -153,26 +161,12 @@ impl McpClient for StdioClient {
 
         self.inner = Some(StdioInner {
             _child: child,
-            stdin: Arc::new(Mutex::new(stdin)),
-            stdout: Arc::new(Mutex::new(BufReader::new(stdout))),
+            io: Mutex::new(StdioIo { stdin, stdout: BufReader::new(stdout) }),
         });
 
         let resp = self.send_request("initialize", Some(init_params())).await?;
         let result = resp.result.unwrap_or_default();
-        if let Some(info) = result.get("serverInfo") {
-            self.server_info = McpServerInfo {
-                name: info
-                    .get("name")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string(),
-                version: info
-                    .get("version")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string(),
-            };
-        }
+        self.server_info = parse_server_info(&result);
         Ok(())
     }
 
@@ -274,20 +268,7 @@ impl McpClient for HttpClient {
             .send_request("initialize", Some(init_params()))
             .await?;
         let result = resp.result.unwrap_or_default();
-        if let Some(info) = result.get("serverInfo") {
-            self.server_info = McpServerInfo {
-                name: info
-                    .get("name")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string(),
-                version: info
-                    .get("version")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string(),
-            };
-        }
+        self.server_info = parse_server_info(&result);
         Ok(())
     }
 

@@ -173,7 +173,6 @@ class HTTPClient(MCPClient):
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._http: httpx.AsyncClient | None = None
-        self._lock = asyncio.Lock()
         self._next_id = 0
         self._server_info = MCPServerInfo()
 
@@ -230,25 +229,24 @@ class HTTPClient(MCPClient):
     async def _send(
         self, method: str, params: dict[str, Any] | None
     ) -> _JSONRPCResponse:
-        async with self._lock:
-            self._next_id += 1
-            req = _JSONRPCRequest(
-                jsonrpc="2.0",
-                id=self._next_id,
-                method=method,
-                params=params,
-            )
+        self._next_id += 1
+        req = _JSONRPCRequest(
+            jsonrpc="2.0",
+            id=self._next_id,
+            method=method,
+            params=params,
+        )
 
-            if self._http is None:
-                raise RuntimeError("mcp: client not initialized — call initialize() first")
+        if self._http is None:
+            raise RuntimeError("mcp: client not initialized — call initialize() first")
 
-            http_resp = await self._http.post(
-                self._base_url,
-                content=json.dumps(req.to_dict()).encode(),
-                headers={"Content-Type": "application/json"},
-            )
-            http_resp.raise_for_status()
-            return _JSONRPCResponse.from_dict(http_resp.json())
+        http_resp = await self._http.post(
+            self._base_url,
+            content=json.dumps(req.to_dict()).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        http_resp.raise_for_status()
+        return _JSONRPCResponse.from_dict(http_resp.json())
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

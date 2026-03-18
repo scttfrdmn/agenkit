@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.83.0] - 2026-03-18
+
+### MCP Cross-Language Parity: TypeScript, C++, Zig, C#, Java, Scala (Issue #546)
+
+Completes MCP (Model Context Protocol) support across all 9 agenkit languages. Go, Python, and Rust shipped in v0.82.0; this release adds the remaining 6.
+
+#### TypeScript (`agenkit-ts/src/protocols/mcp/`)
+
+- **`types.ts`**: `McpTool`, `McpContent`, `McpToolResult`, `McpServerInfo` domain types; `McpClient` interface; `textContent` helper; JSON-RPC 2.0 wire types (internal)
+- **`client.ts`**: `StdioClient` (child_process.spawn + readline + serial promise queue); `HttpClient` (global fetch, stateless)
+- **`server.ts`**: `McpServer` (readline on stdin, process.stdout, `handleRequest` public for testing)
+- **`tool_adapter.ts`**: `McpToolAdapter` + `toolsFromClient()`
+- **`index.ts`**: Barrel export
+- **`__tests__/mcp.test.ts`**: 12 Vitest tests — all passing
+
+#### C++ (`agenkit-cpp/`)
+
+- **`include/agenkit/protocols/mcp.hpp`**: Wire types (`JsonRpcRequest`, `JsonRpcResponse`); domain types; `McpClient` abstract base; `StdioClient`, `HttpClient`, `McpServer`, `McpToolAdapter` declarations; `tools_from_client`; `text_content` helper
+- **`src/protocols/mcp.cpp`**: `StdioClient` via POSIX `fork`/`execvp`/`pipe`; `HttpClient` via cpp-httplib; `McpServer` reading `std::cin`; `McpToolAdapter` wrapping calls as `std::future`
+- **`tests/test_mcp.cpp`**: 13 Google Test tests — all passing
+- **`CMakeLists.txt`**: Added `src/protocols/mcp.cpp` to the `agenkit` static library
+- **`tests/CMakeLists.txt`**: Added `test_mcp` executable + CTest entry
+
+#### Zig (`agenkit-zig/src/protocols/mcp.zig`)
+
+- Single-file module: wire types, domain types, `McpClient` vtable interface, `StdioClient` (std.process.Child), `HttpClient` (std.http.Client), `McpServer`, `McpToolAdapter`, `toolsFromClient`, `textContent` helper
+- **`tests/protocols/mcp_test.zig`**: 12 tests (MockMcpClient vtable) — all passing
+- **`build.zig`**: Added `mcp_tests` executable wired to `test_step`
+- **`src/root.zig`**: Added `pub const protocols = struct { pub const mcp = ... }`
+
+#### C# (`agenkit-cs/src/Agenkit/Protocols/Mcp/`)
+
+- **`McpTypes.cs`**: Wire records (`JsonRpcRequest`, `JsonRpcResponse`, `McpRpcError`); domain records (`McpTool`, `McpContent`, `McpToolResult`, `McpServerInfo`); `McpContentExtensions.TextContent()`; `McpConstants`
+- **`IMcpClient.cs`**: `IMcpClient : IDisposable` with `InitializeAsync`, `ListToolsAsync`, `CallToolAsync`, `ServerInfo`
+- **`StdioClient.cs`**: `System.Diagnostics.Process` + `SemaphoreSlim` serialisation
+- **`McpHttpClient.cs`**: `System.Net.Http.HttpClient` (named `McpHttpClient` to avoid namespace clash)
+- **`McpServer.cs`**: `ServeStdioAsync` + public `HandleRequestAsync` for testing
+- **`ToolAdapter.cs`**: Internal `McpToolAdapter` + `McpExtensions.ToolsFromClientAsync()`
+- **`tests/Agenkit.Tests/Protocols/McpTests.cs`**: 12 xUnit `[Fact]` tests — all passing
+
+#### Java (`agenkit-java/src/main/java/io/agenkit/protocols/mcp/`)
+
+- `JsonRpcRequest`, `JsonRpcResponse`, `JsonRpcError` — Jackson records with `JsonNode` for raw params/result
+- `McpTool`, `McpContent`, `McpToolResult`, `McpServerInfo`, `McpConstants`
+- `McpClient` — interface extending `AutoCloseable`
+- `StdioClient` — `ProcessBuilder` + `ReentrantLock` + `AtomicLong`
+- `McpHttpClient` — `java.net.http.HttpClient` (named to avoid clash)
+- `McpServer` — `handleRequest` public for testing; `serveStdio` for production
+- `McpToolAdapter` (package-private) + `McpTools.fromClient()`
+- **`src/test/java/io/agenkit/protocols/mcp/McpTest.java`**: 22 JUnit 5 tests — all passing
+
+#### Scala (`agenkit-scala/src/main/scala/io/agenkit/protocols/mcp/`)
+
+- `McpTypes.scala` — case classes with custom upickle `ReadWriter` for `Option[ujson.Value]` fields; `textContent` helper; `ProtocolVersion`/`ClientVersion` constants
+- `McpClient.scala` — synchronous `McpClient` trait (Java-interop–friendly)
+- `StdioClient.scala` — `ProcessBuilder` + `ReentrantLock` + `AtomicLong`
+- `HttpClient.scala` — `java.net.http.HttpClient` via Java interop
+- `McpServer.scala` — `handleRequest` + `serveStdio`
+- `McpToolAdapter.scala` — private class + `toolsFromClient` function
+- **`src/test/scala/io/agenkit/protocols/mcp/McpSpec.scala`**: 13 ScalaTest tests — all passing
+
+### Summary
+
+No new dependencies in any language. Closes Issue #546 (full 9-language MCP parity).
+
+New tests: 12 TS + 13 C++ + 12 Zig + 12 C# + 22 Java + 13 Scala = **84 new tests**, all passing.
+
 ## [v0.82.0] - 2026-03-18
 
 ### Go MCP Support: StdioClient, HTTPClient, MCPServer, ToolsFromClient (Milestone #88, Issue #546)

@@ -43,3 +43,21 @@ class TaskAgentSpec extends AnyFunSuite with Matchers:
     val r     = agent.introspect()
     r.name shouldBe "task-agent"
     r.capabilities should contain("task")
+
+  test("TaskAgent returns assistant role"):
+    val llm    = MockLlmClient(_ => "done")
+    val agent  = TaskAgent("task", llm)
+    val result = Await.result(agent.process(Message.user("run")), 5.seconds)
+    result.role shouldBe "assistant"
+
+  test("TaskAgent name getter"):
+    val agent = TaskAgent("my-task", MockLlmClient())
+    agent.name shouldBe "my-task"
+
+  test("TaskAgent capabilities contain task"):
+    val agent = TaskAgent("task", MockLlmClient())
+    agent.capabilities should contain("task")
+
+  test("TaskAgent introspect returns name"):
+    val agent = TaskAgent("task-runner", MockLlmClient())
+    agent.introspect().name shouldBe "task-runner"

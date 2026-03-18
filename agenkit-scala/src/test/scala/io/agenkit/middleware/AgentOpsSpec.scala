@@ -44,3 +44,15 @@ class AgentOpsSpec extends AnyFunSuite with Matchers:
     val wrapped = inner.withRetry(2).withMetrics("test")
     val result  = Await.result(wrapped.process(Message.user("hi")), 5.seconds)
     result.contentString shouldBe "ok"
+
+  test("withRetry preserves response content"):
+    val inner   = MockAgent(response = "preserved")
+    val wrapped = inner.withRetry(3)
+    val result  = Await.result(wrapped.process(Message.user("q")), 5.seconds)
+    result.contentString shouldBe "preserved"
+
+  test("withCaching wraps then withTimeout produces valid agent"):
+    val inner   = MockAgent(response = "data")
+    val wrapped = inner.withCaching(1.second).withTimeout(5.seconds)
+    val result  = Await.result(wrapped.process(Message.user("q")), 10.seconds)
+    result.role shouldBe "assistant"

@@ -35,3 +35,21 @@ class VectorMemorySpec extends AnyFunSuite with Matchers:
     mem.store(Message.user("second"))
     mem.store(Message.user("third"))
     mem.size shouldBe 2
+
+  test("VectorMemory retrieve limit is respected"):
+    val mem = VectorMemory()
+    (1 to 10).foreach(i => mem.store(Message.user(s"data point $i")))
+    val results = mem.retrieve("data", limit = 3)
+    results.size should be <= 3
+
+  test("VectorMemory stores assistant messages"):
+    val mem = VectorMemory()
+    mem.store(Message.assistant("assistant answer"))
+    mem.size shouldBe 1
+
+  test("VectorMemory multiple stores increment size"):
+    val mem = VectorMemory()
+    mem.store(Message.user("alpha"))
+    mem.store(Message.user("beta"))
+    mem.store(Message.user("gamma"))
+    mem.size shouldBe 3

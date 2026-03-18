@@ -39,3 +39,28 @@ class CircuitBreakerMiddlewareSpec extends AnyFunSuite with Matchers:
     val cb = CircuitBreakerMiddleware(MockAgent())
     val r  = cb.introspect()
     r.capabilities should contain("circuit-breaker")
+
+  test("CircuitBreaker name contains middleware label"):
+    val inner = MockAgent(name = "agent")
+    val cb    = CircuitBreakerMiddleware(inner)
+    cb.name should include("agent")
+
+  test("CircuitBreaker success does not open circuit"):
+    val inner = MockAgent(response = "ok")
+    val cb    = CircuitBreakerMiddleware(inner, failureThreshold = 2)
+    Await.result(cb.process(Message.user("ok")), 5.seconds)
+    Await.result(cb.process(Message.user("ok")), 5.seconds)
+    cb.circuitState shouldBe CircuitState.Closed
+
+  test("CircuitBreaker failure count resets on success"):
+    var failNext = true
+    val inner = new MockAgent("flaky"):
+      override def process(message: Message)(using ec: scala.concurrent.ExecutionContext) =
+        if failNext then scala.concurrent.Future.failed(new RuntimeException("fail"))
+        else scala.concurrent.Future.successful(Message.of("assistant", "ok"))
+    val cb = CircuitBreakerMiddleware(inner, failureThreshold = 3)
+    Await.result(cb.process(Message.user("fail")).recover { case _ => Message.of("assistant", "") }, 5.seconds)
+    failNext = false
+    Await.result(cb.process(Message.user("ok")), 5.seconds)
+    // one failure then one success — still closed
+    cb.circuitState shouldBe CircuitState.Closed

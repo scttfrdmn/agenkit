@@ -58,4 +58,47 @@ class ConversationalAgentTest {
         assertThat(result.getAgentName()).isEqualTo("test");
         assertThat(result.getState()).containsKey("historySize");
     }
+
+    @Test
+    void getCapabilitiesIncludesConversation() {
+        ConversationalAgent agent = new ConversationalAgent("conv", new MockLlmClient());
+        assertThat(agent.getCapabilities()).contains("conversation");
+    }
+
+    @Test
+    void processWithSystemPrompt() throws Exception {
+        MockLlmClient llm = new MockLlmClient("system-aware response");
+        ConversationalAgent agent = new ConversationalAgent("test", llm,
+                "You are a helpful assistant", 100);
+
+        Message response = agent.process(Message.of("user", "hi")).get();
+
+        assertThat(response.getRole()).isEqualTo("assistant");
+        assertThat(response.contentString()).isEqualTo("system-aware response");
+    }
+
+    @Test
+    void multipleSessionsIndependent() throws Exception {
+        MockLlmClient llm = new MockLlmClient("response");
+        ConversationalAgent agent1 = new ConversationalAgent("agent1", llm);
+        ConversationalAgent agent2 = new ConversationalAgent("agent2", llm);
+
+        agent1.process(Message.of("user", "msg1")).get();
+        agent1.process(Message.of("user", "msg2")).get();
+
+        assertThat(agent1.getHistory()).hasSize(4);
+        assertThat(agent2.getHistory()).isEmpty();
+    }
+
+    @Test
+    void multipleCallsWork() throws Exception {
+        MockLlmClient llm = new MockLlmClient("ok");
+        ConversationalAgent agent = new ConversationalAgent("test", llm);
+
+        Message first = agent.process(Message.of("user", "hello")).get();
+        Message second = agent.process(Message.of("user", "world")).get();
+
+        assertThat(first.getRole()).isEqualTo("assistant");
+        assertThat(second.getRole()).isEqualTo("assistant");
+    }
 }

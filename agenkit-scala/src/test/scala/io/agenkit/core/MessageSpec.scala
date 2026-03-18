@@ -42,3 +42,14 @@ class MessageSpec extends AnyFunSuite with Matchers:
     val copy     = original.copy(content = Some("updated"))
     copy.role shouldBe "user"
     copy.contentString shouldBe "updated"
+
+  test("Message.of with empty content string stores empty"):
+    val msg = Message.of("user", "")
+    msg.contentString shouldBe ""
+    msg.content shouldBe Some("")
+
+  test("Message equality is structural"):
+    val a = Message.user("hello")
+    val b = Message.user("hello")
+    a.role shouldBe b.role
+    a.contentString shouldBe b.contentString

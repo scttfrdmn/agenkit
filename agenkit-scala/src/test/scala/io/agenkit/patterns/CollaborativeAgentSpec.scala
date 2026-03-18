@@ -30,3 +30,36 @@ class CollaborativeAgentSpec extends AnyFunSuite with Matchers:
     val r     = agent.introspect()
     r.name shouldBe "collab"
     r.capabilities should contain("collaboration")
+
+  test("CollaborativeAgent returns assistant role"):
+    val peer   = MockAgent(name = "p1", response = "some answer")
+    val agent  = CollaborativeAgent("collab", List(peer))
+    val result = Await.result(agent.process(Message.user("hi")), 5.seconds)
+    result.role shouldBe "assistant"
+
+  test("CollaborativeAgent name getter"):
+    val agent = CollaborativeAgent("my-collab", List(MockAgent()))
+    agent.name shouldBe "my-collab"
+
+  test("CollaborativeAgent capabilities contain collaboration"):
+    val agent = CollaborativeAgent("collab", List(MockAgent()))
+    agent.capabilities should contain("collaboration")
+
+  test("CollaborativeAgent introspect returns name"):
+    val agent = CollaborativeAgent("collab-agent", List(MockAgent()))
+    agent.introspect().name shouldBe "collab-agent"
+
+  test("CollaborativeAgent works with single peer"):
+    val peer   = MockAgent(name = "solo", response = "solo response")
+    val agent  = CollaborativeAgent("collab", List(peer))
+    val result = Await.result(agent.process(Message.user("only one")), 5.seconds)
+    result.contentString should include("solo response")
+
+  test("CollaborativeAgent multiple sequential calls"):
+    val peer  = MockAgent(name = "p", response = "resp")
+    val agent = CollaborativeAgent("collab", List(peer))
+    val r1    = Await.result(agent.process(Message.user("first")), 5.seconds)
+    val r2    = Await.result(agent.process(Message.user("second")), 5.seconds)
+    r1.role shouldBe "assistant"
+    r2.role shouldBe "assistant"
+    peer.callCount shouldBe 2

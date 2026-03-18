@@ -40,3 +40,29 @@ class ReasoningWithToolsAgentSpec extends AnyFunSuite with Matchers:
     val r     = agent.introspect()
     r.name shouldBe "rta"
     r.capabilities should contain("reasoning")
+
+  test("ReasoningWithToolsAgent returns assistant role"):
+    val llm    = MockLlmClient(_ => "ANSWER: done")
+    val agent  = ReasoningWithToolsAgent("rta", llm)
+    val result = Await.result(agent.process(Message.user("go")), 5.seconds)
+    result.role shouldBe "assistant"
+
+  test("ReasoningWithToolsAgent name getter"):
+    val agent = ReasoningWithToolsAgent("my-rta", MockLlmClient())
+    agent.name shouldBe "my-rta"
+
+  test("ReasoningWithToolsAgent capabilities contain reasoning"):
+    val agent = ReasoningWithToolsAgent("rta", MockLlmClient())
+    agent.capabilities should contain("reasoning")
+
+  test("ReasoningWithToolsAgent introspect returns name"):
+    val agent = ReasoningWithToolsAgent("rta-agent", MockLlmClient())
+    agent.introspect().name shouldBe "rta-agent"
+
+  test("ReasoningWithToolsAgent multiple sequential calls"):
+    val llm   = MockLlmClient(_ => "ANSWER: ok")
+    val agent = ReasoningWithToolsAgent("rta", llm)
+    val r1    = Await.result(agent.process(Message.user("first")), 5.seconds)
+    val r2    = Await.result(agent.process(Message.user("second")), 5.seconds)
+    r1.contentString shouldBe "ok"
+    r2.contentString shouldBe "ok"

@@ -22,6 +22,10 @@ public final class MockLlmClient implements LlmClient {
         this.responder = responder;
     }
 
+    public MockLlmClient(Function<List<Message>, String> responder) {
+        this("mock-model", responder);
+    }
+
     public MockLlmClient(String response) {
         this("mock-model", messages -> response);
     }

@@ -34,3 +34,37 @@ class MemoryAugmentedAgentSpec extends AnyFunSuite with Matchers:
     val r      = agent.introspect()
     r.name shouldBe "maa"
     r.capabilities should contain("memory-augmented")
+
+  test("MemoryAugmentedAgent returns assistant role"):
+    val llm    = MockLlmClient()
+    val memory = EphemeralMemory()
+    val agent  = MemoryAugmentedAgent("maa", llm, memory)
+    val result = Await.result(agent.process(Message.user("hello")), 5.seconds)
+    result.role shouldBe "assistant"
+
+  test("MemoryAugmentedAgent name getter"):
+    val agent = MemoryAugmentedAgent("my-maa", MockLlmClient(), EphemeralMemory())
+    agent.name shouldBe "my-maa"
+
+  test("MemoryAugmentedAgent capabilities contain memory-augmented"):
+    val agent = MemoryAugmentedAgent("maa", MockLlmClient(), EphemeralMemory())
+    agent.capabilities should contain("memory-augmented")
+
+  test("MemoryAugmentedAgent introspect returns name"):
+    val agent = MemoryAugmentedAgent("maa-agent", MockLlmClient(), EphemeralMemory())
+    agent.introspect().name shouldBe "maa-agent"
+
+  test("MemoryAugmentedAgent accumulates memory across calls"):
+    val llm    = MockLlmClient()
+    val memory = EphemeralMemory()
+    val agent  = MemoryAugmentedAgent("maa", llm, memory)
+    Await.result(agent.process(Message.user("first")), 5.seconds)
+    Await.result(agent.process(Message.user("second")), 5.seconds)
+    memory.size shouldBe 4
+
+  test("MemoryAugmentedAgent empty memory still processes message"):
+    val llm    = MockLlmClient(_ => "response")
+    val memory = EphemeralMemory()
+    val agent  = MemoryAugmentedAgent("maa", llm, memory)
+    val result = Await.result(agent.process(Message.user("go")), 5.seconds)
+    result.contentString shouldBe "response"

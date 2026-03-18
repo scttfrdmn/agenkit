@@ -33,4 +33,20 @@ class IntrospectionResultTest {
         assertThat(result.getState()).isEmpty();
         assertThat(result.getTools()).isEmpty();
     }
+
+    @Test
+    void multipleCapabilitiesPreserveOrder() {
+        IntrospectionResult result = new IntrospectionResult(
+                "ordered-agent",
+                List.of("alpha", "beta", "gamma"),
+                null, null, null);
+        assertThat(result.getCapabilities()).containsExactly("alpha", "beta", "gamma");
+    }
+
+    @Test
+    void agentNameIsReturnedExactly() {
+        IntrospectionResult result = new IntrospectionResult(
+                "exact-name-agent", List.of(), null, null, null);
+        assertThat(result.getAgentName()).isEqualTo("exact-name-agent");
+    }
 }

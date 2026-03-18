@@ -48,3 +48,17 @@ class ConversationalAgentSpec extends AnyFunSuite with Matchers:
     Await.result(agent.process(Message.user("first")), 5.seconds)
     Await.result(agent.process(Message.user("second")), 5.seconds)
     agent.getHistory should have size 4
+
+  test("ConversationalAgent name getter"):
+    val agent = ConversationalAgent("my-agent", MockLlmClient())
+    agent.name shouldBe "my-agent"
+
+  test("ConversationalAgent capabilities contain conversation"):
+    val agent = ConversationalAgent("test", MockLlmClient())
+    agent.capabilities should contain("conversation")
+
+  test("ConversationalAgent content includes LLM response"):
+    val llm    = MockLlmClient(_ => "hello back")
+    val agent  = ConversationalAgent("test", llm)
+    val result = Await.result(agent.process(Message.user("hello")), 5.seconds)
+    result.contentString shouldBe "hello back"

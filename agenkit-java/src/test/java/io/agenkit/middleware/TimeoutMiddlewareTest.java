@@ -51,4 +51,26 @@ class TimeoutMiddlewareTest {
         TimeoutMiddleware timeout = new TimeoutMiddleware(inner, Duration.ofSeconds(10));
         assertThat(timeout.getName()).contains("timeout");
     }
+
+    @Test
+    void introspectCapabilitiesContainsMock() {
+        MockAgent inner = new MockAgent("cap-agent");
+        TimeoutMiddleware timeout = new TimeoutMiddleware(inner, Duration.ofSeconds(5));
+        assertThat(timeout.introspect().getCapabilities()).contains("mock");
+    }
+
+    @Test
+    void getNameIncludesInnerName() {
+        MockAgent inner = new MockAgent("inner-x", "ok");
+        TimeoutMiddleware timeout = new TimeoutMiddleware(inner, Duration.ofSeconds(1));
+        assertThat(timeout.getName()).contains("inner-x");
+    }
+
+    @Test
+    void processWithinTimeoutReturnsContent() throws Exception {
+        MockAgent inner = new MockAgent("fast-agent", "fast result");
+        TimeoutMiddleware timeout = new TimeoutMiddleware(inner, Duration.ofSeconds(5));
+        Message response = timeout.process(Message.of("user", "ping")).get();
+        assertThat(response.contentString()).isEqualTo("fast result");
+    }
 }

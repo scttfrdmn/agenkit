@@ -36,3 +36,32 @@ class RouterAgentSpec extends AnyFunSuite with Matchers:
     val r     = agent.introspect()
     r.name shouldBe "router"
     r.capabilities should contain("routing")
+
+  test("RouterAgent returns assistant role"):
+    val llm    = MockLlmClient(_ => "route-a")
+    val target = MockAgent(name = "route-a", response = "routed")
+    val agent  = RouterAgent("router", llm, routes = Map("route-a" -> target))
+    val result = Await.result(agent.process(Message.user("go")), 5.seconds)
+    result.role shouldBe "assistant"
+
+  test("RouterAgent name getter"):
+    val agent = RouterAgent("my-router", MockLlmClient(), routes = Map("a" -> MockAgent()))
+    agent.name shouldBe "my-router"
+
+  test("RouterAgent capabilities contain routing"):
+    val agent = RouterAgent("router", MockLlmClient(), routes = Map("a" -> MockAgent()))
+    agent.capabilities should contain("routing")
+
+  test("RouterAgent introspect returns name"):
+    val agent = RouterAgent("router-agent", MockLlmClient(), routes = Map("a" -> MockAgent()))
+    agent.introspect().name shouldBe "router-agent"
+
+  test("RouterAgent routes only to matched agent"):
+    val llm    = MockLlmClient(_ => "a")
+    val agentA = MockAgent(name = "a", response = "from A")
+    val agentB = MockAgent(name = "b", response = "from B")
+    val agent  = RouterAgent("router", llm, routes = Map("a" -> agentA, "b" -> agentB))
+    val result = Await.result(agent.process(Message.user("test")), 5.seconds)
+    result.contentString shouldBe "from A"
+    agentA.callCount shouldBe 1
+    agentB.callCount shouldBe 0

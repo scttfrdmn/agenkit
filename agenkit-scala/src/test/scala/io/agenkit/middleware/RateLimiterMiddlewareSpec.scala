@@ -31,3 +31,16 @@ class RateLimiterMiddlewareSpec extends AnyFunSuite with Matchers:
     val rl = RateLimiterMiddleware(MockAgent(), requestsPerSecond = 10)
     val r  = rl.introspect()
     r.capabilities should contain("rate-limiting")
+
+  test("RateLimiterMiddleware allows burst up to exact limit"):
+    val inner = MockAgent()
+    val rl    = RateLimiterMiddleware(inner, requestsPerSecond = 3)
+    // should allow exactly 3 requests
+    (1 to 3).foreach { i =>
+      Await.result(rl.process(Message.user(s"req $i")), 5.seconds)
+    }
+    inner.callCount shouldBe 3
+
+  test("RateLimiterMiddleware name includes rate-limiter label"):
+    val rl = RateLimiterMiddleware(MockAgent(name = "base"), requestsPerSecond = 5)
+    rl.name should include("rate-limiter")

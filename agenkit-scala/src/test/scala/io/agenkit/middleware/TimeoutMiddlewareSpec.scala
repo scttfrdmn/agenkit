@@ -35,3 +35,14 @@ class TimeoutMiddlewareSpec extends AnyFunSuite with Matchers:
     val timeout = TimeoutMiddleware(inner, 1.second)
     val r       = timeout.introspect()
     r.capabilities should contain("timeout")
+
+  test("TimeoutMiddleware name includes timeout label"):
+    val inner   = MockAgent(name = "agent")
+    val timeout = TimeoutMiddleware(inner, 1.second)
+    timeout.name should include("timeout")
+
+  test("TimeoutMiddleware introspect capabilities are non-empty"):
+    val inner   = MockAgent()
+    val timeout = TimeoutMiddleware(inner, 1.second)
+    val r       = timeout.introspect()
+    r.capabilities should not be empty

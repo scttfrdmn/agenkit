@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.79.0] - 2026-03-18
+
+### Java/Scala Test Coverage (Milestone v0.79.0, Issues #543, #544)
+
+- **`agenkit-java/pom.xml`**: Added `net.jqwik:jqwik:1.8.3` for property-based testing
+- **`agenkit-java/src/test/java/io/agenkit/helpers/MockLlmClient.java`**: Added single-function-arg constructor `MockLlmClient(Function<List<Message>, String>)`
+- **15 × `agenkit-java/src/test/java/io/agenkit/patterns/*Test.java`**: Expanded all pattern tests to 9 tests each — role validation, name getter, capabilities, introspect name/state, edge cases, sequential calls, content verification
+- **5 × `agenkit-java/src/test/java/io/agenkit/middleware/*Test.java`**: Expanded all middleware tests to 6-8 tests each — edge cases, name format, capabilities, additional scenarios
+- **`agenkit-java/src/test/java/io/agenkit/core/`**: Expanded MessageTest (10 tests), IntrospectionResultTest (4), ToolResultTest (6)
+- **`agenkit-java/src/test/java/io/agenkit/memory/`**: Expanded EphemeralMemoryTest (8 tests), MemoryHierarchyTest (6)
+- **`agenkit-java/src/test/java/io/agenkit/composition/`**: Expanded SequentialAgentTest (6), ConditionalAgentTest (5), ParallelAgentTest (5)
+- **`agenkit-java/src/test/java/io/agenkit/adapters/LlmAdapterTest.java`**: New — 10 tests for LlmClient/adapter layer
+- **`agenkit-java/src/test/java/io/agenkit/budget/BudgetManagerTest.java`**: New — 10 tests for BudgetLimiter and CostTracker
+- **`agenkit-java/src/test/java/io/agenkit/checkpointing/CheckpointManagerTest.java`**: New — 10 tests for CheckpointManager and DurableAgent
+- **`agenkit-java/src/test/java/io/agenkit/observability/MetricsCollectorTest.java`**: New — 10 tests for MetricsCollector and TracingAgent
+- **`agenkit-java/src/test/java/io/agenkit/safety/SafetyFilterTest.java`**: New — 10 tests for InputValidator, OutputValidator, PermissionChecker, AuditLogger
+- **`agenkit-java/src/test/java/io/agenkit/evaluation/EvaluatorTest.java`**: New — 9 tests for Evaluator metrics and scoring
+- **`agenkit-java/src/test/java/io/agenkit/properties/MessagePropertyTest.java`**: New — 12 jqwik property tests for Message invariants
+- **`agenkit-java/src/test/java/io/agenkit/properties/AgentPropertyTest.java`**: New — 12 jqwik property tests for Agent behavior invariants
+- **`agenkit-java/src/test/java/io/agenkit/properties/MiddlewarePropertyTest.java`**: New — 12 jqwik property tests for middleware invariants
+- **15 × `agenkit-scala/src/test/scala/io/agenkit/patterns/*Spec.scala`**: Expanded all pattern specs to 9 tests each — same categories as Java
+- **8 × `agenkit-scala/src/test/scala/io/agenkit/middleware/*Spec.scala`**: Expanded middleware specs with edge cases, name format, capability checks
+- **`agenkit-scala/src/test/scala/io/agenkit/core/`**: Expanded MessageSpec (10), IntrospectionResultSpec (5), ToolResultSpec (7)
+- **`agenkit-scala/src/test/scala/io/agenkit/memory/`**: Expanded EphemeralMemorySpec (9), MemoryHierarchySpec (7), VectorMemorySpec (8)
+- **`agenkit-scala/src/test/scala/io/agenkit/properties/MessagePropertySpec.scala`**: New — 10 ScalaCheck property tests for Message
+- **`agenkit-scala/src/test/scala/io/agenkit/properties/AgentPropertySpec.scala`**: New — 10 ScalaCheck property tests for Agent
+- **`agenkit-scala/src/test/scala/io/agenkit/properties/MiddlewarePropertySpec.scala`**: New — 10 ScalaCheck property tests for middleware
+
+### Summary
+
+Java: 80 → 312 tests (0 failed). Scala: 186 → 325 tests (0 failed). Closes Issues #543, #544, Milestone v0.79.0.
+
 ## [v0.78.0] - 2026-03-18
 
 ### Zig Property Testing (Milestone #84, Issue #542)

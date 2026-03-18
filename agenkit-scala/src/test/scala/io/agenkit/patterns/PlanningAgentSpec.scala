@@ -32,3 +32,35 @@ class PlanningAgentSpec extends AnyFunSuite with Matchers:
     val r     = agent.introspect()
     r.name shouldBe "planner"
     r.capabilities should contain("planning")
+
+  test("PlanningAgent returns assistant role"):
+    val llm    = MockLlmClient(_ => "1. Step one")
+    val agent  = PlanningAgent("planner", llm)
+    val result = Await.result(agent.process(Message.user("plan this")), 5.seconds)
+    result.role shouldBe "assistant"
+
+  test("PlanningAgent name getter"):
+    val agent = PlanningAgent("my-planner", MockLlmClient())
+    agent.name shouldBe "my-planner"
+
+  test("PlanningAgent capabilities contain planning"):
+    val agent = PlanningAgent("planner", MockLlmClient())
+    agent.capabilities should contain("planning")
+
+  test("PlanningAgent introspect returns name"):
+    val agent = PlanningAgent("plan-agent", MockLlmClient())
+    agent.introspect().name shouldBe "plan-agent"
+
+  test("PlanningAgent multiple sequential calls"):
+    val llm   = MockLlmClient(_ => "1. Do thing")
+    val agent = PlanningAgent("planner", llm)
+    val r1    = Await.result(agent.process(Message.user("first")), 5.seconds)
+    val r2    = Await.result(agent.process(Message.user("second")), 5.seconds)
+    r1.role shouldBe "assistant"
+    r2.role shouldBe "assistant"
+
+  test("PlanningAgent with minimal input"):
+    val llm    = MockLlmClient(_ => "")
+    val agent  = PlanningAgent("planner", llm)
+    val result = Await.result(agent.process(Message.user("")), 5.seconds)
+    result.role shouldBe "assistant"

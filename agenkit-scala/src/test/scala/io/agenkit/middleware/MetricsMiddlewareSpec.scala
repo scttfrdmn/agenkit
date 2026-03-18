@@ -39,3 +39,23 @@ class MetricsMiddlewareSpec extends AnyFunSuite with Matchers:
     val metrics = MetricsMiddleware(MockAgent())
     val r       = metrics.introspect()
     r.capabilities should contain("metrics")
+
+  test("MetricsMiddleware success count matches call count"):
+    val inner   = MockAgent()
+    val metrics = MetricsMiddleware(inner)
+    Await.result(metrics.process(Message.user("a")), 5.seconds)
+    Await.result(metrics.process(Message.user("b")), 5.seconds)
+    Await.result(metrics.process(Message.user("c")), 5.seconds)
+    metrics.successCount  shouldBe 3
+    metrics.totalRequests shouldBe 3
+    metrics.errorCount    shouldBe 0
+
+  test("MetricsMiddleware error count accumulates across multiple failures"):
+    val inner   = MockAgent(shouldFail = true)
+    val metrics = MetricsMiddleware(inner)
+    (1 to 3).foreach { _ =>
+      Await.result(metrics.process(Message.user("test")).recover { case _ => Message.of("assistant", "") }, 5.seconds)
+    }
+    metrics.errorCount    shouldBe 3
+    metrics.totalRequests shouldBe 3
+    metrics.successCount  shouldBe 0

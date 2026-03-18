@@ -30,4 +30,41 @@ class RateLimiterTest {
                 .hasCauseInstanceOf(RuntimeException.class)
                 .hasMessageContaining("rate limit");
     }
+
+    @Test
+    void getNameIncludesRateLimiter() {
+        MockAgent inner = new MockAgent("my-agent");
+        RateLimiterMiddleware rl = new RateLimiterMiddleware(inner, 5);
+        assertThat(rl.getName()).contains("rate");
+    }
+
+    @Test
+    void introspectReturnsCapabilities() {
+        MockAgent inner = new MockAgent("agent-a");
+        RateLimiterMiddleware rl = new RateLimiterMiddleware(inner, 5);
+        assertThat(rl.introspect().getCapabilities()).isNotNull();
+    }
+
+    @Test
+    void allowsBurstUpToLimit() throws Exception {
+        MockAgent inner = new MockAgent("agent", "response");
+        RateLimiterMiddleware rl = new RateLimiterMiddleware(inner, 3);
+
+        // All three should succeed
+        rl.process(Message.of("user", "req1")).get();
+        rl.process(Message.of("user", "req2")).get();
+        Message last = rl.process(Message.of("user", "req3")).get();
+        assertThat(last.contentString()).isEqualTo("response");
+    }
+
+    @Test
+    void multipleCallsWithinLimitWork() throws Exception {
+        MockAgent inner = new MockAgent("agent", "result");
+        RateLimiterMiddleware rl = new RateLimiterMiddleware(inner, 5);
+
+        for (int i = 0; i < 5; i++) {
+            Message response = rl.process(Message.of("user", "msg-" + i)).get();
+            assertThat(response.contentString()).isEqualTo("result");
+        }
+    }
 }

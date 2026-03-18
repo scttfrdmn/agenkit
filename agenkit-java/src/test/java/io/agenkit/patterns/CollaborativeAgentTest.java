@@ -43,4 +43,63 @@ class CollaborativeAgentTest {
         var result = agent.introspect();
         assertThat(result.getState()).containsEntry("peerCount", 2);
     }
+
+    @Test
+    void processReturnsAssistantRole() throws Exception {
+        MockAgent peer = new MockAgent("peer", "peer opinion");
+        MockLlmClient llm = new MockLlmClient("synthesized answer");
+
+        CollaborativeAgent agent = new CollaborativeAgent("collab", llm, List.of(peer));
+        Message response = agent.process(Message.of("user", "question")).get();
+
+        assertThat(response.getRole()).isEqualTo("assistant");
+    }
+
+    @Test
+    void getNameReturnsName() {
+        CollaborativeAgent agent = new CollaborativeAgent("my-collab", new MockLlmClient(),
+                List.of(new MockAgent()));
+        assertThat(agent.getName()).isEqualTo("my-collab");
+    }
+
+    @Test
+    void introspectReturnsAgentName() {
+        CollaborativeAgent agent = new CollaborativeAgent("collab-y", new MockLlmClient(),
+                List.of(new MockAgent()));
+        var result = agent.introspect();
+        assertThat(result.getAgentName()).isEqualTo("collab-y");
+    }
+
+    @Test
+    void emptyPeerListUsesLlmDirectly() throws Exception {
+        MockLlmClient llm = new MockLlmClient("direct answer");
+        CollaborativeAgent agent = new CollaborativeAgent("collab", llm, List.of());
+
+        Message response = agent.process(Message.of("user", "solo question")).get();
+
+        assertThat(response).isNotNull();
+        assertThat(response.getMetadata()).containsEntry("peer_count", 0);
+    }
+
+    @Test
+    void processContentVerification() throws Exception {
+        MockAgent peer = new MockAgent("peer", "42");
+        MockLlmClient llm = new MockLlmClient("the answer is 42");
+
+        CollaborativeAgent agent = new CollaborativeAgent("collab", llm, List.of(peer));
+        Message response = agent.process(Message.of("user", "what is the answer?")).get();
+
+        assertThat(response.contentString()).contains("42");
+    }
+
+    @Test
+    void singlePeerWorks() throws Exception {
+        MockAgent peer = new MockAgent("solo-peer", "only opinion");
+        MockLlmClient llm = new MockLlmClient("based on peer: only opinion");
+
+        CollaborativeAgent agent = new CollaborativeAgent("collab", llm, List.of(peer));
+        Message response = agent.process(Message.of("user", "any thoughts?")).get();
+
+        assertThat(response.getMetadata()).containsEntry("peer_count", 1);
+    }
 }

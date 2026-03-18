@@ -39,3 +39,28 @@ class MemoryHierarchySpec extends AnyFunSuite with Matchers:
     layer2.store(Message.user("b"))
     val hier = MemoryHierarchy(List(layer1, layer2))
     hier.size shouldBe 2
+
+  test("MemoryHierarchy works with single layer"):
+    val layer = EphemeralMemory()
+    val hier  = MemoryHierarchy(List(layer))
+    hier.store(Message.user("single layer test"))
+    hier.size shouldBe 1
+    hier.retrieve("single") should not be empty
+
+  test("MemoryHierarchy retrieve returns results from both layers"):
+    val layer1 = EphemeralMemory()
+    val layer2 = EphemeralMemory()
+    layer1.store(Message.user("unique in layer one"))
+    layer2.store(Message.user("unique in layer two"))
+    val hier    = MemoryHierarchy(List(layer1, layer2))
+    val results = hier.retrieve("unique")
+    results should have size 2
+
+  test("MemoryHierarchy store followed by clear yields zero size"):
+    val layer1 = EphemeralMemory()
+    val layer2 = EphemeralMemory()
+    val hier   = MemoryHierarchy(List(layer1, layer2))
+    hier.store(Message.user("a"))
+    hier.store(Message.user("b"))
+    hier.clear()
+    hier.size shouldBe 0

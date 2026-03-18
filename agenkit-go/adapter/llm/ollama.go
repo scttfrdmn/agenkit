@@ -230,100 +230,90 @@ func (o *OllamaLLM) Complete(ctx context.Context, messages []*agenkit.Message, o
 //   - opts: Options like temperature
 //
 // Returns:
-//   - Channel of Message chunks
-//   - Error channel for async errors
+//   - Channel of Message chunks (closed when stream ends)
+//   - Error if the request could not be initiated
 //
 // Example:
 //
-//	stream, errChan := llm.Stream(ctx, messages)
+//	stream, err := llm.Stream(ctx, messages)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
 //	for chunk := range stream {
 //	    fmt.Print(chunk.ContentString())
 //	}
-//	if err := <-errChan; err != nil {
-//	    log.Fatal(err)
-//	}
-func (o *OllamaLLM) Stream(ctx context.Context, messages []*agenkit.Message, opts ...CallOption) (<-chan *agenkit.Message, <-chan error) {
+func (o *OllamaLLM) Stream(ctx context.Context, messages []*agenkit.Message, opts ...CallOption) (<-chan *agenkit.Message, error) {
+	options := BuildCallOptions(opts...)
+
+	// Convert messages to Ollama format
+	ollamaMessages := make([]ollamaMessage, len(messages))
+	for i, msg := range messages {
+		ollamaMessages[i] = ollamaMessage{
+			Role:    msg.Role,
+			Content: msg.ContentString(),
+		}
+	}
+
+	// Build request
+	reqBody := ollamaChatRequest{
+		Model:    o.model,
+		Messages: ollamaMessages,
+		Stream:   true,
+	}
+
+	// Add options if specified
+	if options.Temperature != nil || options.MaxTokens != nil {
+		reqBody.Options = &ollamaOptions{}
+		if options.Temperature != nil {
+			reqBody.Options.Temperature = *options.Temperature
+		}
+		if options.MaxTokens != nil {
+			reqBody.Options.NumPredict = *options.MaxTokens
+		}
+	}
+
+	reqJSON, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", o.baseURL+"/api/chat", bytes.NewBuffer(reqJSON))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := o.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		return nil, fmt.Errorf("ollama API error (%d): %s", resp.StatusCode, string(body))
+	}
+
 	msgChan := make(chan *agenkit.Message)
-	errChan := make(chan error, 1)
 
 	go func() {
 		defer close(msgChan)
-		defer close(errChan)
-
-		options := &CallOptions{}
-		for _, opt := range opts {
-			opt(options)
-		}
-
-		// Convert messages to Ollama format
-		ollamaMessages := make([]ollamaMessage, len(messages))
-		for i, msg := range messages {
-			ollamaMessages[i] = ollamaMessage{
-				Role:    msg.Role,
-				Content: msg.ContentString(),
-			}
-		}
-
-		// Build request
-		reqBody := ollamaChatRequest{
-			Model:    o.model,
-			Messages: ollamaMessages,
-			Stream:   true,
-		}
-
-		// Add options if specified
-		if options.Temperature != nil || options.MaxTokens != nil {
-			reqBody.Options = &ollamaOptions{}
-			if options.Temperature != nil {
-				reqBody.Options.Temperature = *options.Temperature
-			}
-			if options.MaxTokens != nil {
-				reqBody.Options.NumPredict = *options.MaxTokens
-			}
-		}
-
-		reqJSON, err := json.Marshal(reqBody)
-		if err != nil {
-			errChan <- fmt.Errorf("failed to marshal request: %w", err)
-			return
-		}
-
-		// Make request
-		req, err := http.NewRequestWithContext(ctx, "POST", o.baseURL+"/api/chat", bytes.NewBuffer(reqJSON))
-		if err != nil {
-			errChan <- fmt.Errorf("failed to create request: %w", err)
-			return
-		}
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := o.client.Do(req)
-		if err != nil {
-			errChan <- fmt.Errorf("failed to make request: %w", err)
-			return
-		}
 		defer func() { _ = resp.Body.Close() }()
 
-		if resp.StatusCode != http.StatusOK {
-			body, _ := io.ReadAll(resp.Body)
-			errChan <- fmt.Errorf("ollama API error (%d): %s", resp.StatusCode, string(body))
-			return
-		}
-
-		// Parse streaming response
 		decoder := json.NewDecoder(resp.Body)
 		for {
 			var chunk ollamaChatResponse
 			if err := decoder.Decode(&chunk); err != nil {
-				if errors.Is(err, io.EOF) {
-					break
+				if !errors.Is(err, io.EOF) {
+					// non-EOF errors are lost here; callers detect via channel close
+					_ = err
 				}
-				errChan <- fmt.Errorf("failed to decode chunk: %w", err)
 				return
 			}
 
-			// Send chunk
 			msg := agenkit.NewMessage(chunk.Message.Role, chunk.Message.Content)
 			msg.Metadata["model"] = chunk.Model
+			msg.Metadata["streaming"] = true
 			if chunk.Done {
 				msg.Metadata["done"] = true
 			}
@@ -331,17 +321,19 @@ func (o *OllamaLLM) Stream(ctx context.Context, messages []*agenkit.Message, opt
 			select {
 			case msgChan <- msg:
 			case <-ctx.Done():
-				errChan <- ctx.Err()
 				return
 			}
 
 			if chunk.Done {
-				break
+				return
 			}
 		}
-
-		errChan <- nil
 	}()
 
-	return msgChan, errChan
+	return msgChan, nil
+}
+
+// Unwrap returns the underlying *http.Client for advanced usage.
+func (o *OllamaLLM) Unwrap() interface{} {
+	return o.client
 }

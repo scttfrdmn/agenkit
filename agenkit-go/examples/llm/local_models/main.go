@@ -75,6 +75,16 @@ func main() {
 	fmt.Println("Because all providers use the same interface, you can swap them")
 	fmt.Println("by changing only the BaseURL and Model — zero other code changes.")
 	providerSwapDemo(ctx)
+
+	fmt.Println()
+	fmt.Println("vLLM Named Type Demo")
+	fmt.Println("=====================")
+	vllmNamedTypeDemo(ctx)
+
+	fmt.Println()
+	fmt.Println("SGLang Named Type Demo")
+	fmt.Println("=======================")
+	sglangNamedTypeDemo(ctx)
 }
 
 // runExample connects to a single provider and asks a simple question.
@@ -99,6 +109,43 @@ func runExample(ctx context.Context, p ProviderConfig) {
 			fmt.Printf("  Tokens : %d\n", total)
 		}
 	}
+}
+
+// vllmNamedTypeDemo demonstrates the VllmLLM named type with structured-output helpers.
+func vllmNamedTypeDemo(ctx context.Context) {
+	adapter := llm.NewVllmLLM("meta-llama/Llama-3.1-8B-Instruct", "")
+	messages := []*agenkit.Message{
+		agenkit.NewMessage("user", "Reply in one sentence: what are you?"),
+	}
+	resp, err := adapter.Complete(ctx, messages,
+		llm.WithMaxTokens(80),
+		llm.WithVllmGuidedRegex(`[A-Za-z ,.'!?]+`),
+	)
+	if err != nil {
+		log.Printf("  [vLLM] not available (is the server running?): %v", err)
+		return
+	}
+	fmt.Printf("  Model : %s\n", adapter.Model())
+	fmt.Printf("  Reply : %s\n", resp.ContentString())
+}
+
+// sglangNamedTypeDemo demonstrates the SGLangLLM named type with JSON-schema constrained output.
+func sglangNamedTypeDemo(ctx context.Context) {
+	adapter := llm.NewSGLangLLM("meta-llama/Llama-3.1-8B-Instruct", "")
+	schema := `{"type":"object","properties":{"answer":{"type":"string"}}}`
+	messages := []*agenkit.Message{
+		agenkit.NewMessage("user", "What is 2+2? Respond as JSON."),
+	}
+	resp, err := adapter.Complete(ctx, messages,
+		llm.WithMaxTokens(50),
+		llm.WithSGLangJSONSchema(schema),
+	)
+	if err != nil {
+		log.Printf("  [SGLang] not available (is the server running?): %v", err)
+		return
+	}
+	fmt.Printf("  Model : %s\n", adapter.Model())
+	fmt.Printf("  Reply : %s\n", resp.ContentString())
 }
 
 // providerSwapDemo shows that the identical request works against any provider.

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.81.0] - 2026-03-18
+
+### Go Local LLM Adapters: VllmLLM + SGLangLLM (Milestone #87, Issues #550, #551)
+
+- **`agenkit-go/adapter/llm/vllm.go`**: New — `VllmLLM` struct embedding `*OpenAICompatibleLLM`; `NewVllmLLM(model, baseURL string)` constructor with default `http://localhost:8000/v1`; 5 vLLM-specific `CallOption` helpers: `WithVllmGuidedJSON`, `WithVllmGuidedRegex`, `WithVllmGuidedGrammar`, `WithVllmBestOf`, `WithVllmUseBeamSearch`
+- **`agenkit-go/adapter/llm/sglang.go`**: New — `SGLangLLM` struct embedding `*OpenAICompatibleLLM`; `NewSGLangLLM(model, baseURL string)` constructor with default `http://localhost:30000/v1`; 4 SGLang-specific `CallOption` helpers: `WithSGLangJSONSchema`, `WithSGLangRegex`, `WithSGLangEBNF`, `WithSGLangReturnLogprob`
+- **`agenkit-go/adapter/llm/vllm_test.go`**: New — 8 tests: interface assertion, default/custom baseURL, model name, provider name, `Unwrap()` non-nil, `WithVllmGuidedJSON`, `WithVllmGuidedRegex`
+- **`agenkit-go/adapter/llm/sglang_test.go`**: New — 8 tests: interface assertion, default/custom baseURL, model name, provider name, `Unwrap()` non-nil, `WithSGLangJSONSchema`, `WithSGLangRegex`
+- **`agenkit-go/examples/llm/local_models/main.go`**: Added `vllmNamedTypeDemo` and `sglangNamedTypeDemo` functions demonstrating structured-output helpers; called from `main()`
+
+### Summary
+
+16 new tests (8 vLLM + 8 SGLang), all passing. Closes Issues #550, #551, Milestone #87.
+
 ## [v0.80.0] - 2026-03-18
 
 ### C++ Extended Test Coverage (Milestone v0.80.0, Issue #545)

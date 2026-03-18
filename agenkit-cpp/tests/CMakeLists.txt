@@ -13,6 +13,17 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(googletest)
 
+# Fetch RapidCheck (property-based testing)
+# GIT_SUBMODULES "" prevents cloning ext/googletest since we already have it
+FetchContent_Declare(
+    rapidcheck
+    GIT_REPOSITORY https://github.com/emil-e/rapidcheck.git
+    GIT_TAG        master
+    GIT_SUBMODULES ""
+)
+set(RC_ENABLE_GTEST ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(rapidcheck)
+
 # Enable testing
 enable_testing()
 
@@ -310,6 +321,31 @@ add_test(NAME middleware_tests COMMAND test_middleware)
 add_executable(test_batching middleware/test_batching.cpp)
 target_link_libraries(test_batching agenkit gtest_main)
 add_test(NAME batching_middleware_tests COMMAND test_batching)
+
+# Property tests - Message invariants
+add_executable(test_message_properties property/message_properties_test.cpp)
+target_link_libraries(test_message_properties agenkit rapidcheck rapidcheck_gtest gtest_main)
+add_test(NAME message_property_tests COMMAND test_message_properties)
+
+# Property tests - Agent response invariants
+add_executable(test_agent_properties property/agent_properties_test.cpp)
+target_link_libraries(test_agent_properties agenkit rapidcheck rapidcheck_gtest gtest_main)
+add_test(NAME agent_property_tests COMMAND test_agent_properties)
+
+# Property tests - Middleware behavior invariants
+add_executable(test_middleware_properties property/middleware_properties_test.cpp)
+target_link_libraries(test_middleware_properties agenkit rapidcheck rapidcheck_gtest gtest_main)
+add_test(NAME middleware_property_tests COMMAND test_middleware_properties)
+
+# Technique tests - ReasoningTree data structure
+add_executable(test_reasoning_tree techniques/reasoning/test_reasoning_tree.cpp)
+target_link_libraries(test_reasoning_tree agenkit gtest_main)
+add_test(NAME reasoning_tree_tests COMMAND test_reasoning_tree)
+
+# Technique tests - ReasoningGraph data structure
+add_executable(test_reasoning_graph techniques/reasoning/test_reasoning_graph.cpp)
+target_link_libraries(test_reasoning_graph agenkit gtest_main)
+add_test(NAME reasoning_graph_tests COMMAND test_reasoning_graph)
 
 # Cross-language test harness (standalone executable, not a gtest)
 add_executable(cross_language_harness cross_language_harness.cpp)

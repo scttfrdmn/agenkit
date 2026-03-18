@@ -173,7 +173,7 @@ def scan_memory(root: Path) -> list[str]:
 
     # Pattern for memory backends
     # Matches: type InMemory, type InMemoryMemory, type RedisBackend
-    memory_pattern = re.compile(r"type\s+(InMemory|Redis|Vector|Hierarchy|Endless)(Memory|Backend)?\s+struct")
+    memory_pattern = re.compile(r"type\s+(InMemory|Ephemeral|Redis|Vector|Hierarchy|Endless)(Memory|Backend)?\s+struct")
 
     for go_file in memory_dir.glob("*.go"):
         if go_file.name in ["memory.go"] or go_file.name.endswith("_test.go"):

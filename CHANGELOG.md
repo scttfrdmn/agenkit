@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.78.0] - 2026-03-18
+
+### Zig Property Testing (Milestone #84, Issue #542)
+
+- **`agenkit-zig/tests/property/framework.zig`**: Custom property-based testing framework built on `std.Random.DefaultPrng` — `runProperty(name, N, seed, allocator, fn)` runner, `randomRole`, `randomText`, `FailingAgent`, `CountingFailingAgent`, `CountingEchoAgent` helpers; zero external dependencies
+- **`agenkit-zig/tests/property/message_properties.zig`**: 12 property tests for `Message`, `Role`, `Content`, and `Result` types — role roundtrip, text content preservation, empty/unicode/long text, deinit safety, multiple message independence, result discriminant integrity
+- **`agenkit-zig/tests/property/middleware_properties.zig`**: 13 property tests for retry, circuit breaker, and rate limiter middleware — call count bounds, first-success short-circuit, error propagation, circuit state transitions, threshold exactness, token bucket capacity
+- **`agenkit-zig/tests/property/agent_properties.zig`**: 10 property tests for Agent interface and SequentialAgent — echo behavior, name stability, composition invariants, deinit safety, input immutability, determinism
+- **`agenkit-zig/build.zig`**: Added 3 new `b.addTest` blocks + `test_step.dependOn` calls for all three property test files
+- **`agenkit-zig/TESTING.md`**: New — custom PBT framework documentation, property table, comparison with Go/TS/Rust approaches, test counts
+- **`agenkit-zig/src/middleware/circuit_breaker.zig`**: Fixed pre-existing bugs — `processImpl` now catches `OutOfMemory` from state transition recording (error set mismatch), `introspectImpl` corrected to use `json.Value` metadata and proper `IntrospectionResult` field names
+- **`agenkit-zig/README.md`**: Updated Testing section to document property-based tests
+
+### Summary
+
+4 new test files (1 framework + 3 property suites), 35 new property tests, 2 bug fixes in circuit_breaker.zig. Test count: 390 → 425 (0 failed). Closes Issue #542, Milestone #84.
+
 ## [v0.77.0] - 2026-03-18
 
 ### Rust Test Coverage (Milestone #83, Issue #541)

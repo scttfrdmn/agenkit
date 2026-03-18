@@ -254,6 +254,34 @@ type StreamingAgent interface {
 	Stream(ctx context.Context, message *Message) (<-chan *Message, <-chan error)
 }
 
+// VerificationResult is the outcome of a Verifier check.
+type VerificationResult struct {
+	Passed bool
+	Score  float64 // 0.0–1.0; 1.0 = fully correct
+	Reason string
+}
+
+// Verifier checks a candidate answer against ground truth.
+// Unlike EvaluatorFunc (heuristic float64), Verifier is exact and binary.
+type Verifier interface {
+	Verify(ctx context.Context, question, answer string) (VerificationResult, error)
+}
+
+// ScoredCandidate pairs a candidate text with its evaluation score.
+type ScoredCandidate struct {
+	Text  string
+	Score float64
+}
+
+// ReasoningArtifact is structured intermediate reasoning output stored in message metadata.
+type ReasoningArtifact interface {
+	Technique() string // "tree_of_thought", "chain_of_thought", etc.
+	SessionID() string
+	Candidates() []ScoredCandidate
+	BestCandidate() ScoredCandidate
+	Metadata() map[string]interface{}
+}
+
 // Tool represents an executable capability that agents can use.
 type Tool interface {
 	// Name returns the unique identifier for this tool.

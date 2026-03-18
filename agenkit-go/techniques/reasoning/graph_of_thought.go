@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/memory"
 )
 
 // AggregatorType defines the aggregation strategy for combining reasoning paths.
@@ -49,6 +50,9 @@ type GraphOfThought struct {
 	maxEdges    int
 	aggregator  AggregatorType
 	allowCycles bool
+	mem         memory.Memory
+	verifier    agenkit.Verifier
+	sessionID   string
 }
 
 // GraphOfThoughtOption is a functional option for configuring GraphOfThought.
@@ -79,6 +83,27 @@ func WithAggregator(agg AggregatorType) GraphOfThoughtOption {
 func WithAllowCycles(allow bool) GraphOfThoughtOption {
 	return func(got *GraphOfThought) {
 		got.allowCycles = allow
+	}
+}
+
+// WithGraphMemory attaches a memory backend for persisting reasoning artifacts.
+func WithGraphMemory(mem memory.Memory) GraphOfThoughtOption {
+	return func(got *GraphOfThought) {
+		got.mem = mem
+	}
+}
+
+// WithGraphVerifier attaches a ground-truth verifier for the final answer.
+func WithGraphVerifier(v agenkit.Verifier) GraphOfThoughtOption {
+	return func(got *GraphOfThought) {
+		got.verifier = v
+	}
+}
+
+// WithGraphSessionID sets the session identifier used when storing artifacts to memory.
+func WithGraphSessionID(id string) GraphOfThoughtOption {
+	return func(got *GraphOfThought) {
+		got.sessionID = id
 	}
 }
 
@@ -498,20 +523,63 @@ func (got *GraphOfThought) Process(ctx context.Context, message *agenkit.Message
 	// Get statistics
 	stats := graph.Statistics()
 
-	return &agenkit.Message{
+	// Build candidates from conclusion nodes.
+	conclusions := graph.GetConclusions()
+	candidates := make([]agenkit.ScoredCandidate, 0, len(conclusions))
+	for _, c := range conclusions {
+		candidates = append(candidates, agenkit.ScoredCandidate{
+			Text:  c.Content,
+			Score: c.Confidence,
+		})
+	}
+	if len(candidates) == 0 {
+		candidates = append(candidates, agenkit.ScoredCandidate{
+			Text:  finalAnswer,
+			Score: 0.8,
+		})
+	}
+
+	artifactMeta := map[string]interface{}{
+		"aggregator": string(got.aggregator),
+		"num_nodes":  stats.NumNodes,
+		"num_edges":  stats.NumEdges,
+	}
+
+	if got.verifier != nil {
+		if result, verr := got.verifier.Verify(ctx, problem, finalAnswer); verr == nil {
+			artifactMeta["verification"] = result
+		}
+	}
+
+	artifact := newArtifact("graph_of_thought", got.sessionID, candidates, artifactMeta)
+
+	response := &agenkit.Message{
 		Role:    "assistant",
 		Content: finalAnswer,
 		Metadata: map[string]interface{}{
-			"technique":       "graph_of_thought",
-			"graph":           graph,
-			"reasoning_paths": reasoningPaths,
-			"num_nodes":       stats.NumNodes,
-			"num_edges":       stats.NumEdges,
-			"has_cycles":      stats.HasCycles,
-			"node_types":      stats.NodeTypes,
-			"edge_types":      stats.EdgeTypes,
-			"aggregator":      string(got.aggregator),
-			"allow_cycles":    got.allowCycles,
+			"technique":          "graph_of_thought",
+			"graph":              graph,
+			"reasoning_paths":    reasoningPaths,
+			"num_nodes":          stats.NumNodes,
+			"num_edges":          stats.NumEdges,
+			"has_cycles":         stats.HasCycles,
+			"node_types":         stats.NodeTypes,
+			"edge_types":         stats.EdgeTypes,
+			"aggregator":         string(got.aggregator),
+			"allow_cycles":       got.allowCycles,
+			"reasoning_artifact": artifact,
 		},
-	}, nil
+	}
+
+	if got.mem != nil {
+		if rm, ok := got.mem.(memory.ReasoningMemory); ok {
+			_ = rm.StoreArtifact(ctx, got.sessionID, artifact)
+		} else {
+			artifactMsg := agenkit.NewMessage("assistant", finalAnswer)
+			artifactMsg.Metadata["reasoning_artifact"] = artifact
+			_ = got.mem.Store(ctx, got.sessionID, *artifactMsg, nil)
+		}
+	}
+
+	return response, nil
 }

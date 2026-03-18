@@ -646,3 +646,58 @@ func BenchmarkSelfConsistencyWeighted(b *testing.B) {
 		_, _ = sc.Process(ctx, message)
 	}
 }
+
+// TestSelfConsistencyWithSCMemoryOption verifies WithSCMemory option sets the field.
+func TestSelfConsistencyWithSCMemoryOption(t *testing.T) {
+	mem := newMockReasoningMemory()
+	sc := NewSelfConsistency(NewMockAgent([]string{"answer"}), WithSCMemory(mem))
+	if sc.mem == nil {
+		t.Error("expected mem to be set after WithSCMemory")
+	}
+}
+
+// TestSelfConsistencyWithSCVerifierOption verifies WithSCVerifier option sets the field.
+func TestSelfConsistencyWithSCVerifierOption(t *testing.T) {
+	v := &mockVerifier{result: agenkit.VerificationResult{Passed: true, Score: 1.0}}
+	sc := NewSelfConsistency(NewMockAgent([]string{"answer"}), WithSCVerifier(v))
+	if sc.verifier == nil {
+		t.Error("expected verifier to be set after WithSCVerifier")
+	}
+}
+
+// TestSelfConsistencyWithSCSessionIDOption verifies WithSCSessionID option sets the field.
+func TestSelfConsistencyWithSCSessionIDOption(t *testing.T) {
+	sc := NewSelfConsistency(NewMockAgent([]string{"answer"}), WithSCSessionID("sc-sess"))
+	if sc.sessionID != "sc-sess" {
+		t.Errorf("expected sessionID='sc-sess', got=%q", sc.sessionID)
+	}
+}
+
+// TestSelfConsistencyArtifactInMetadata verifies Process attaches a ReasoningArtifact.
+func TestSelfConsistencyArtifactInMetadata(t *testing.T) {
+	agent := NewMockAgent([]string{
+		"The answer is 42.",
+		"The answer is 42.",
+		"The answer is 43.",
+	})
+	sc := NewSelfConsistency(
+		agent,
+		WithNumSamples(3),
+		WithSCSessionID("sc-test"),
+	)
+	ctx := context.Background()
+	response, err := sc.Process(ctx, agenkit.NewMessage("user", "What is the answer?"))
+	if err != nil {
+		t.Fatalf("Process failed: %v", err)
+	}
+	artifact, ok := response.Metadata["reasoning_artifact"].(agenkit.ReasoningArtifact)
+	if !ok {
+		t.Fatalf("expected reasoning_artifact in metadata, got %T", response.Metadata["reasoning_artifact"])
+	}
+	if artifact.Technique() != "self_consistency" {
+		t.Errorf("expected technique='self_consistency', got=%q", artifact.Technique())
+	}
+	if len(artifact.Candidates()) == 0 {
+		t.Error("expected at least one candidate in artifact")
+	}
+}

@@ -485,3 +485,47 @@ func TestAggregatePathsEmpty(t *testing.T) {
 		t.Errorf("Expected fallback to any node, got '%s'", result)
 	}
 }
+
+// TestGraphOfThoughtWithGraphMemoryOption verifies WithGraphMemory option sets the field.
+func TestGraphOfThoughtWithGraphMemoryOption(t *testing.T) {
+	mem := newMockReasoningMemory()
+	got := NewGraphOfThought(&mockGraphAgent{responses: make(map[string]string)}, WithGraphMemory(mem))
+	if got.mem == nil {
+		t.Error("expected mem to be set after WithGraphMemory")
+	}
+}
+
+// TestGraphOfThoughtWithGraphVerifierOption verifies WithGraphVerifier option sets the field.
+func TestGraphOfThoughtWithGraphVerifierOption(t *testing.T) {
+	v := &mockVerifier{result: agenkit.VerificationResult{Passed: true, Score: 1.0}}
+	got := NewGraphOfThought(&mockGraphAgent{responses: make(map[string]string)}, WithGraphVerifier(v))
+	if got.verifier == nil {
+		t.Error("expected verifier to be set after WithGraphVerifier")
+	}
+}
+
+// TestGraphOfThoughtWithGraphSessionIDOption verifies WithGraphSessionID option sets the field.
+func TestGraphOfThoughtWithGraphSessionIDOption(t *testing.T) {
+	got := NewGraphOfThought(&mockGraphAgent{responses: make(map[string]string)}, WithGraphSessionID("graph-sess"))
+	if got.sessionID != "graph-sess" {
+		t.Errorf("expected sessionID='graph-sess', got=%q", got.sessionID)
+	}
+}
+
+// TestGraphOfThoughtArtifactInMetadata verifies Process attaches a ReasoningArtifact.
+func TestGraphOfThoughtArtifactInMetadata(t *testing.T) {
+	agent := &mockGraphAgent{responses: make(map[string]string)}
+	got := NewGraphOfThought(agent, WithGraphSessionID("got-sess"))
+	ctx := context.Background()
+	response, err := got.Process(ctx, agenkit.NewMessage("user", "Test problem"))
+	if err != nil {
+		t.Fatalf("Process failed: %v", err)
+	}
+	artifact, ok := response.Metadata["reasoning_artifact"].(agenkit.ReasoningArtifact)
+	if !ok {
+		t.Fatalf("expected reasoning_artifact in metadata, got %T", response.Metadata["reasoning_artifact"])
+	}
+	if artifact.Technique() != "graph_of_thought" {
+		t.Errorf("expected technique='graph_of_thought', got=%q", artifact.Technique())
+	}
+}

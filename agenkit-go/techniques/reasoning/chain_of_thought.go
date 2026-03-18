@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/memory"
 )
 
 // ChainOfThought implements the Chain-of-Thought reasoning technique.
@@ -32,6 +33,9 @@ type ChainOfThought struct {
 	parseSteps     bool
 	stepDelimiter  string
 	maxSteps       *int
+	mem            memory.Memory
+	verifier       agenkit.Verifier
+	sessionID      string
 }
 
 // ChainOfThoughtOption is a functional option for configuring ChainOfThought.
@@ -62,6 +66,27 @@ func WithStepDelimiter(delimiter string) ChainOfThoughtOption {
 func WithMaxSteps(max int) ChainOfThoughtOption {
 	return func(cot *ChainOfThought) {
 		cot.maxSteps = &max
+	}
+}
+
+// WithCOTMemory attaches a memory backend for persisting reasoning artifacts.
+func WithCOTMemory(mem memory.Memory) ChainOfThoughtOption {
+	return func(cot *ChainOfThought) {
+		cot.mem = mem
+	}
+}
+
+// WithCOTVerifier attaches a ground-truth verifier for the chain output.
+func WithCOTVerifier(v agenkit.Verifier) ChainOfThoughtOption {
+	return func(cot *ChainOfThought) {
+		cot.verifier = v
+	}
+}
+
+// WithCOTSessionID sets the session identifier used when storing artifacts to memory.
+func WithCOTSessionID(id string) ChainOfThoughtOption {
+	return func(cot *ChainOfThought) {
+		cot.sessionID = id
 	}
 }
 
@@ -151,6 +176,34 @@ func (cot *ChainOfThought) Process(ctx context.Context, message *agenkit.Message
 	}
 
 	response.Metadata["technique"] = "chain_of_thought"
+
+	// Build artifact: single candidate is the full chain output.
+	candidates := []agenkit.ScoredCandidate{
+		{Text: response.ContentString(), Score: 1.0},
+	}
+
+	artifactMeta := map[string]interface{}{
+		"prompt_template": cot.promptTemplate,
+	}
+
+	if cot.verifier != nil {
+		if result, verr := cot.verifier.Verify(ctx, message.ContentString(), response.ContentString()); verr == nil {
+			artifactMeta["verification"] = result
+		}
+	}
+
+	artifact := newArtifact("chain_of_thought", cot.sessionID, candidates, artifactMeta)
+	response.Metadata["reasoning_artifact"] = artifact
+
+	if cot.mem != nil {
+		if rm, ok := cot.mem.(memory.ReasoningMemory); ok {
+			_ = rm.StoreArtifact(ctx, cot.sessionID, artifact)
+		} else {
+			artifactMsg := agenkit.NewMessage("assistant", response.ContentString())
+			artifactMsg.Metadata["reasoning_artifact"] = artifact
+			_ = cot.mem.Store(ctx, cot.sessionID, *artifactMsg, nil)
+		}
+	}
 
 	return response, nil
 }

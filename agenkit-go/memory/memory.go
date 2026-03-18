@@ -161,6 +161,13 @@ type MessageWithMetadata struct {
 	Metadata  map[string]interface{} // Associated metadata
 }
 
+// ReasoningMemory extends Memory with reasoning-artifact persistence.
+type ReasoningMemory interface {
+	Memory
+	StoreArtifact(ctx context.Context, sessionID string, artifact agenkit.ReasoningArtifact) error
+	RetrieveArtifacts(ctx context.Context, sessionID string, technique string) ([]agenkit.ReasoningArtifact, error)
+}
+
 // SharedMemory marks a memory backend accessible from multiple hosts (e.g. Redis, remote DB).
 type SharedMemory interface {
 	Memory

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.77.0] - 2026-03-18
+
+### Rust Test Coverage (Milestone #83, Issue #541)
+
+- **`agenkit-rust/Cargo.toml`**: Added `proptest = "1.4"` to `[dev-dependencies]`
+- **`agenkit-rust/tests/test_pattern_techniques.rs`**: ~58 new tests across 9 patterns (ReflectionAgent, ReActAgent, PlanningAgent, AutonomousAgent, SequentialAgent, ParallelAgent, Task, ConversationalAgent, MultiAgentOrchestrator) — creation, processing, error propagation, metadata, config variants
+- **`agenkit-rust/tests/test_middleware_techniques.rs`**: ~60 new tests across 6 middleware (RetryMiddleware, CircuitBreakerMiddleware, TimeoutMiddleware, CachingMiddleware, RateLimiterMiddleware, BatchingMiddleware) — config builders, metrics tracking, introspection, pass/fail behavior, name preservation
+- **`agenkit-rust/tests/test_composition_techniques.rs`**: ~37 new tests across 4 composition patterns (SequentialAgent, ParallelAgent, ConditionalAgent, FallbackAgent) — routing, chaining, error propagation, condition utilities, `AgentResult`, composition of compositions
+- **`agenkit-rust/tests/test_agent_invariants.rs`**: ~34 new tests for cross-cutting invariants — message properties (role, content, metadata, JSON roundtrip, unicode), agent lifecycle (name stability, concurrent safety, error recovery), tool call/result API, error variants display
+- **`agenkit-rust/tests/test_property_based.rs`**: 23 proptest property tests — message properties (role/content/metadata roundtrip), middleware invariants (delay ordering, name preservation, threshold configs), composition properties (agent count, name stability, fallback correctness)
+
+### Summary
+
+5 new test files, ~240 new Rust tests. Test count: 984 → 1,218 (0 failed). Closes Issue #541, Milestone #83.
+
 ## [v0.76.0] - 2026-03-17
 
 ### Documentation (Milestone #80)

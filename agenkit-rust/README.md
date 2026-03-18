@@ -366,15 +366,15 @@ Agenkit follows a layered architecture:
 - Core utilities and error handling
 - Transport layer and serialization
 
-**Total**: ~12,713 LOC, 646 tests (100% passing)
+**Total**: ~12,713 LOC, 1,218 tests (100% passing)
 
 **Achievement**: 🎯 **4 languages at 100% parity!**
 - ✅ Python: 11/11 patterns, 10/10 eval frameworks (1,826 tests)
 - ✅ Go: 11/11 patterns, 10/10 eval frameworks (950 tests)
 - ✅ TypeScript: 11/11 patterns, 8/8 core eval (640 tests)
-- ✅ Rust: 11/11 patterns, 10/10 eval frameworks, WASM (646 tests)
+- ✅ Rust: 11/11 patterns, 10/10 eval frameworks, WASM (1,218 tests)
 
-**Total**: 4,062+ tests across 4 languages!
+**Total**: 4,634+ tests across 4 languages!
 
 **Completed**: 3 months ahead of schedule (planned March 2026, completed November 2025)
 

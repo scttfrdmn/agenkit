@@ -122,8 +122,12 @@ std::future<core::Result<void, core::AgentError>> PlanAndSolveAgent::validate(Pl
         std::transform(response_upper.begin(), response_upper.end(),
                        response_upper.begin(), ::toupper);
 
-        bool is_valid = response_upper.find("VALID") != std::string::npos ||
-                        response_upper.find("YES") != std::string::npos;
+        // Check INVALID first since it contains "VALID" as a substring
+        bool is_invalid = response_upper.find("INVALID") != std::string::npos;
+        bool is_valid = !is_invalid && (
+            response_upper.find("VALID") != std::string::npos ||
+            response_upper.find("YES") != std::string::npos
+        );
 
         plan.validated = is_valid;
 
@@ -292,6 +296,25 @@ std::future<core::Result<core::Message, core::AgentError>> PlanAndSolveAgent::pr
             result.with_metadata("validation_notes", *plan.validation_notes);
         }
         result.with_metadata("allow_replanning", allow_replanning_);
+
+        // Add plan_steps array
+        nlohmann::json plan_steps_json = nlohmann::json::array();
+        for (const auto& step : plan.steps) {
+            plan_steps_json.push_back(step.description);
+        }
+        result.with_metadata("plan_steps", plan_steps_json);
+
+        // Add execution_steps array
+        nlohmann::json execution_steps_json = nlohmann::json::array();
+        for (const auto& exec_result : execution_results) {
+            execution_steps_json.push_back(exec_result);
+        }
+        result.with_metadata("execution_steps", execution_steps_json);
+
+        // Add strategy if provided by planner
+        if (plan.strategy) {
+            result.with_metadata("strategy", *plan.strategy);
+        }
 
         return core::Result<core::Message, core::AgentError>::ok(result);
     });

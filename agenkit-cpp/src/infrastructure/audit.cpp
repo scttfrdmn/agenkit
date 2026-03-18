@@ -142,7 +142,7 @@ bool SecurityAuditLogger::should_log(AuditSeverity severity) const {
 }
 
 void SecurityAuditLogger::rotate_log() {
-  std::lock_guard<std::mutex> lock(mutex_);
+  // Called from log() which already holds mutex_; do not re-lock here.
 
   // Close current stream
   if (log_stream_.is_open()) {

@@ -156,7 +156,7 @@ TEST(OpenAICompatibleAgentTest, DefaultConfigurationValues) {
     EXPECT_EQ(config.max_tokens, 1024);
     EXPECT_DOUBLE_EQ(config.temperature, 0.7);
     EXPECT_DOUBLE_EQ(config.top_p, 1.0);
-    EXPECT_EQ(config.timeout_seconds, 60);
+    EXPECT_EQ(config.timeout.count(), 60000);
 }
 
 // Test 11: Provider helper - vLLM
@@ -200,10 +200,10 @@ TEST(OpenAICompatibleAgentTest, CustomTimeoutConfiguration) {
     OpenAICompatibleConfig config;
     config.base_url = "http://localhost:8000/v1";
     config.model = "llama-2-7b";
-    config.timeout_seconds = 120;
+    config.timeout = std::chrono::milliseconds(120000);
 
     OpenAICompatibleAgent agent(config);
-    EXPECT_EQ(agent.config().timeout_seconds, 120);
+    EXPECT_EQ(agent.config().timeout.count(), 120000);
 }
 
 // Test 16: Configuration with custom temperature

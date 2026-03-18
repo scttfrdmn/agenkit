@@ -55,7 +55,7 @@ public:
      * @return Result containing the value
      */
     static Result ok(T value) {
-        return Result(std::move(value), true);
+        return Result(OkTag{}, std::move(value));
     }
 
     /**
@@ -64,7 +64,7 @@ public:
      * @return Result containing the error
      */
     static Result err(E error) {
-        return Result(std::move(error), false);
+        return Result(ErrTag{}, std::move(error));
     }
 
     /**
@@ -72,7 +72,7 @@ public:
      * @return true if ok, false if error
      */
     bool is_ok() const {
-        return std::holds_alternative<T>(value_);
+        return value_.index() == 0;
     }
 
     /**
@@ -80,7 +80,7 @@ public:
      * @return true if error, false if ok
      */
     bool is_err() const {
-        return std::holds_alternative<E>(value_);
+        return value_.index() == 1;
     }
 
     /**
@@ -92,7 +92,7 @@ public:
         if (is_err()) {
             throw std::logic_error("called unwrap() on an error Result");
         }
-        return std::get<T>(value_);
+        return std::get<0>(value_);
     }
 
     /**
@@ -104,7 +104,7 @@ public:
         if (is_err()) {
             throw std::logic_error("called unwrap() on an error Result");
         }
-        return std::get<T>(value_);
+        return std::get<0>(value_);
     }
 
     /**
@@ -116,7 +116,7 @@ public:
         if (is_ok()) {
             throw std::logic_error("called unwrap_err() on an ok Result");
         }
-        return std::get<E>(value_);
+        return std::get<1>(value_);
     }
 
     /**
@@ -128,7 +128,7 @@ public:
         if (is_ok()) {
             throw std::logic_error("called unwrap_err() on an ok Result");
         }
-        return std::get<E>(value_);
+        return std::get<1>(value_);
     }
 
     /**
@@ -138,20 +138,24 @@ public:
      */
     T unwrap_or(T default_value) const {
         if (is_ok()) {
-            return std::get<T>(value_);
+            return std::get<0>(value_);
         }
         return default_value;
     }
 
 private:
+    // Tag types for unambiguous construction even when T == E
+    struct OkTag {};
+    struct ErrTag {};
+
     std::variant<T, E> value_;
 
-    Result(T value, bool /* ok_marker */)
-        : value_(std::move(value))
+    Result(OkTag, T value)
+        : value_(std::in_place_index<0>, std::move(value))
     {}
 
-    Result(E error, bool /* err_marker */)
-        : value_(std::move(error))
+    Result(ErrTag, E error)
+        : value_(std::in_place_index<1>, std::move(error))
     {}
 };
 

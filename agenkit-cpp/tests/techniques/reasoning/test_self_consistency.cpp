@@ -135,8 +135,8 @@ TEST(SelfConsistencyTest, MetadataTechnique) {
     ASSERT_TRUE(result.is_ok());
     auto response = result.unwrap();
 
-    EXPECT_TRUE(response.metadata.count("technique") > 0);
-    EXPECT_EQ(response.metadata.at("technique"), "self_consistency");
+    EXPECT_TRUE(response.metadata().count("technique") > 0);
+    EXPECT_EQ(response.metadata().at("technique"), "self_consistency");
 }
 
 // Test metadata contains num_samples
@@ -152,7 +152,7 @@ TEST(SelfConsistencyTest, MetadataNumSamples) {
 
     ASSERT_TRUE(result.is_ok());
     auto response = result.unwrap();
-    EXPECT_TRUE(response.metadata.count("num_samples") > 0);
+    EXPECT_TRUE(response.metadata().count("num_samples") > 0);
 }
 
 // Test voting strategy with weighted mode
@@ -183,5 +183,5 @@ TEST(SelfConsistencyTest, ResponseRole) {
 
     ASSERT_TRUE(result.is_ok());
     auto response = result.unwrap();
-    EXPECT_EQ(response.role, "assistant");
+    EXPECT_EQ(response.role(), "assistant");
 }

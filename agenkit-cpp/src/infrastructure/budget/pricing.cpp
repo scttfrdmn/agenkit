@@ -87,8 +87,10 @@ PricingInfo ModelPricing::get_model_pricing(const std::string& model) const {
         return it->second;
     }
 
-    // Return default pricing
-    return pricing_data_.at("default");
+    // Return default pricing with the requested model name
+    auto default_pricing = pricing_data_.at("default");
+    default_pricing.model = model;
+    return default_pricing;
 }
 
 std::vector<std::string> ModelPricing::list_models() const {

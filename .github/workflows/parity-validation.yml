@@ -27,19 +27,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
+      # uv provisions Python — works on both hosted and self-hosted runners
+      # (actions/setup-python only ships CPython for hosted images).
       - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        uses: astral-sh/setup-uv@v4
 
-      - name: Install dependencies
+      - name: Install Python 3.12 + dependencies
         run: |
-          uv sync --extra dev
+          uv python install 3.12
+          uv sync --extra dev --python 3.12
 
       - name: Scan features across all languages
         run: |

@@ -24,13 +24,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          # No pip cache: this project uses uv (installed below), so there is
-          # no pip cache dir — `cache: 'pip'` fails the post-job cleanup step.
-
       - name: Set up Go 1.23
         uses: actions/setup-go@v5
         with:
@@ -38,12 +31,16 @@ jobs:
           cache: true
           cache-dependency-path: agenkit-go/go.sum
 
+      # uv provisions Python itself — works identically on GitHub-hosted and
+      # self-hosted runners. (actions/setup-python only ships prebuilt CPython
+      # for hosted images, so it fails on the self-hosted Linux runners.)
       - name: Install uv
         uses: astral-sh/setup-uv@v4
 
-      - name: Install Python dependencies
+      - name: Install Python 3.12 + dependencies
         run: |
-          uv pip install --system -e ".[test]"
+          uv python install 3.12
+          uv sync --extra test --python 3.12
 
       - name: Run Python smoke tests (quick, no integration)
         run: |

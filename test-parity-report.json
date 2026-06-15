@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-01-17T22:40:29Z",
+  "generated_at": "2026-06-14T22:50:22Z",
   "languages": {
     "python": {
-      "total": 1836,
+      "total": 2044,
       "categories": {
-        "patterns": 439,
+        "patterns": 443,
         "techniques": 240,
         "safety": 162,
-        "adapters": 151,
+        "adapters": 141,
         "evaluation": 116,
         "middleware": 92,
         "memory": 101,
@@ -22,12 +22,12 @@
       }
     },
     "go": {
-      "total": 950,
+      "total": 1244,
       "categories": {
         "patterns": 362,
-        "techniques": 37,
+        "techniques": 107,
         "safety": 94,
-        "adapters": 54,
+        "adapters": 89,
         "evaluation": 127,
         "middleware": 91,
         "memory": 18,
@@ -40,11 +40,11 @@
       }
     },
     "cpp": {
-      "total": 793,
+      "total": 1034,
       "note": "C++ counts individual TEST() macros",
       "categories": {
         "patterns": 310,
-        "techniques": 22,
+        "techniques": 116,
         "unit": 112,
         "integration": 65,
         "safety": 0,
@@ -55,14 +55,14 @@
       }
     },
     "rust": {
-      "total": 681,
+      "total": 1253,
       "categories": {
         "patterns": 133,
-        "techniques": 0,
-        "adapters": 31,
+        "techniques": 95,
+        "adapters": 48,
         "evaluation": 73,
         "observability": 66,
-        "safety": 52,
+        "safety": 60,
         "routing": 0,
         "chaos": 0,
         "property": 0
@@ -74,21 +74,20 @@
       "categories": {}
     },
     "typescript": {
+      "total": 928,
+      "test_files": 116,
+      "note": "Counts may be estimated from test files",
       "categories": {
-        "patterns": 7,
-        "techniques": 108,
+        "patterns": 16,
+        "techniques": 216,
         "safety": 135,
         "adapters": 79,
-        "evaluation": 108,
-        "middleware": 91,
+        "evaluation": 98,
         "routing": 0,
         "chaos": 61,
-        "property": 8,
-        "integration": 45,
-        "memory": 81
-      },
-      "total": 863,
-      "note": "Counts may be estimated from test files. All memory tests passing (81/81)!"
+        "property": 42,
+        "integration": 45
+      }
     }
   }
 }

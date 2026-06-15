@@ -40,6 +40,7 @@ ENV/
 # Testing
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 .tox/
 .benchmarks/
@@ -114,3 +115,17 @@ agenkit-zig/test_arraylist*
 # C++ build artifacts
 agenkit-cpp/build/
 agenkit-cpp/.cmake/
+
+# C#/.NET build artifacts
+agenkit-cs/**/bin/
+agenkit-cs/**/obj/
+
+# C#/.NET, JVM build/test artifacts
+agenkit-java/.jqwik-database
+agenkit-scala/project/target/
+agenkit-scala/target/
+
+# Stray tooling artifacts
+=*
+*.log
+excalidraw.log

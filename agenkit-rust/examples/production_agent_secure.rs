@@ -162,6 +162,7 @@ impl SecureProductionSession {
                 &model,
                 input_tokens,
                 output_tokens,
+                0, // thinking_tokens
                 None,
             )
             .await?;
@@ -172,20 +173,18 @@ impl SecureProductionSession {
         // SECURITY LAYER 2: Output Validation and Redaction
         // ====================================================================
 
-        // Check for sensitive data in output
-        let has_sensitive = self.output_redactor.has_sensitive_data(&response_text);
+        // Redact sensitive data from response; a difference indicates a match.
+        let safe_response = self.output_redactor.redact_text(&response_text);
+        let has_sensitive = safe_response != response_text;
 
         if has_sensitive {
             // Log sensitive data detection
             self.audit_logger
-                .log_sensitive_data_redaction(&self.user_id, "output", "Redacted")
+                .log_sensitive_data_redaction(&self.user_id, "output")
                 .unwrap_or_else(|e| eprintln!("Audit log error: {}", e));
 
             println!("🔒 SECURITY: Sensitive data detected and redacted");
         }
-
-        // Redact sensitive data from response
-        let safe_response = self.output_redactor.redact(&response_text);
 
         // 7. Store response in memory
         self.memory
@@ -229,7 +228,7 @@ impl SecureProductionSession {
 
             // Log checkpoint creation
             self.audit_logger
-                .log_agent_execution("production-agent", true, "Checkpoint created")
+                .log_agent_execution("production-agent", true, 0)
                 .unwrap_or_else(|e| eprintln!("Audit log error: {}", e));
         }
 
@@ -328,7 +327,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let audit_logger = SecurityAuditLogger::new(audit_config)?;
 
     // Log agent startup
-    audit_logger.log_agent_execution("production-agent", true, "Agent started")?;
+    audit_logger.log_agent_execution("production-agent", true, 0)?;
 
     println!("  ✅ Audit logger initialized");
     println!("  ✅ Logging to: ./logs/secure_agent_audit.log\n");
@@ -517,7 +516,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  • Security violations: Check audit log for details");
 
     // Log completion
-    audit_logger.log_agent_execution("production-agent", true, "Agent completed successfully")?;
+    audit_logger.log_agent_execution("production-agent", true, 0)?;
 
     println!("\n✨ Secure production agent example completed successfully!");
     println!("{}", "=".repeat(70));

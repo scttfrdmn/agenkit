@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Configure Ollama
     let config = OllamaConfig {
         model: "llama2".to_string(),
-        base_url: "http://localhost:11434".to_string(),
+        api_base: "http://localhost:11434".to_string(),
         temperature: 0.7,
         ..Default::default()
     };

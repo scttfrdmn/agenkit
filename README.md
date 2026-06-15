@@ -11,8 +11,8 @@ Agenkit is a lightweight, cross-language toolkit for building distributed AI age
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org/)
 [![Zig 0.15.2+](https://img.shields.io/badge/zig-0.15.2+-F7A41D.svg)](https://ziglang.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Tests: 2100+ tests](https://img.shields.io/badge/tests-2100+%20passing-brightgreen.svg)](tests/)
-[![6 Languages at 100%](https://img.shields.io/badge/languages-6%20at%20100%25%20parity-success.svg)](README.md#status)
+[![Tests: 5000+ tests](https://img.shields.io/badge/tests-5000+%20passing-brightgreen.svg)](tests/)
+[![9 Languages](https://img.shields.io/badge/languages-9%20implementations-success.svg)](README.md#status)
 
 ## Why Agenkit?
 
@@ -136,7 +136,9 @@ agent = TimeoutDecorator(agent, timeout_ms=30000)
 
 ### 🌐 Cross-Language Support
 
-Write once. Deploy anywhere. **Six languages at 100% parity:**
+Write once. Deploy anywhere. **Nine language implementations** (Python is the
+reference; all nine share the same `Agent`/`Message`/`Tool` core and the 18
+patterns — see [Status](#status) for per-language depth):
 
 ```python
 # Python - Prototype quickly with ML ecosystem
@@ -193,7 +195,9 @@ const MyAgent = struct {
 };
 ```
 
-**Same interface across all 6 languages. Choose the right tool for each service.**
+**Same interface across all languages.** Python, Go, and Rust are the most
+complete; C#, Java, and Scala are newer and still filling in advanced
+subsystems (skills, some adapters). Choose the right tool for each service.
 
 ### 📊 Full Observability
 
@@ -369,11 +373,11 @@ See [benchmarks/BASELINES.md](benchmarks/BASELINES.md) for detailed performance 
 
 ## Production Ready
 
-### 1500+ Tests Passing
-- 47 cross-language integration tests (Python ↔ Go ↔ C++)
-- 53 chaos engineering tests (network failures, crashes)
-- 37 property-based tests (invariant validation)
-- 1,360+ unit and integration tests across 5 languages
+### 5000+ Tests Passing
+- Cross-language integration tests (Python ↔ Go ↔ C++)
+- Chaos engineering tests (network failures, crashes)
+- Property-based tests (invariant validation)
+- Thousands of unit and integration tests across 9 languages (Python alone: 2000+)
 
 ### Security
 - Input validation
@@ -525,60 +529,44 @@ Apache License 2.0 - See [LICENSE](LICENSE) for details.
 
 ## Status
 
-**v0.50.0 - Production Ready! 🚀**
+**v0.85.0 — 9 language implementations, Python reference**
 
 ### Language Support
 
-| Language | Patterns | Adapters | Observability | Tests | Status | Performance |
-|----------|----------|----------|---------------|-------|--------|-------------|
-| **Python** | 18/18 (100%) | 6/6 (100%) | ✅ Full | 470+ | ✅ Complete | Reference |
-| **TypeScript** | 18/18 (100%) | 6/6 (100%) | ✅ Full | 650+ | ✅ Complete | Node.js speed |
-| **Go** | 18/18 (100%) | 6/6 (100%) | ✅ Full | 420+ | ✅ Complete | 18x Python |
-| **Rust** | 18/18 (100%) | 6/6 (100%) | ✅ Full | 335+ | ✅ Complete | 20x Python |
-| **C++** | 18/18 (100%) | 6/6 (100%) | ✅ Full | 250+ | ✅ Complete | 25x Python |
-| **Zig** | 18/18 (100%) | 6/6 (100%) | ✅ Full | 335+ | ✅ Complete | 22x Python |
+Patterns are the shared core — all implementations expose the same 18 patterns
+and the `Agent`/`Message`/`Tool` interface. The "Tests" column is the test count
+from the parity report; "Depth" reflects how many advanced subsystems (memory,
+skills, reasoning memory, full adapter set) are implemented.
+
+| Language | Patterns | LLM Adapters | Tests | Depth |
+|----------|----------|--------------|-------|-------|
+| **Python** | 18/18 | 7 | 2044 | Reference — all subsystems |
+| **Go** | 18/18 | 7 (+vLLM, SGLang) | 1244 | Complete — incl. reasoning memory, skills |
+| **Rust** | 18/18 | 6 | 1253 | Complete — incl. skills |
+| **C++** | 18/18 | 5 | 1034 | Broad — `safety/` not yet implemented |
+| **TypeScript** | 18/18 | 7 | 928 | Broad — no skills / reasoning memory |
+| **Zig** | 18/18 | 8 | 214 | Broad — no skills |
+| **C#** (.NET) | 15 | 2 (+mock) | — | Newer — no skills |
+| **Java** | 15 | 2 (+mock) | — | Newer — no skills |
+| **Scala** | 15 | mock only | — | Newest — LLM adapters are stubs |
 
 **18 Core Patterns** documented in the [Agent Patterns Book](../agent-patterns-book): Task, Conversational, ReAct, Planning, Reflection, ReasoningWithTools, AgentsAsTools, Memory, Sequential, Parallel, Router, Fallback, Orchestration, Supervisor, Collaborative, HumanInLoop, MultiAgent, Autonomous
 
-**Historic Milestone:** First AI agent toolkit to achieve 100% feature parity across 6 languages!
+### Recent Highlights (v0.81 – v0.85)
 
-### v0.50.0 Release Highlights
-
-- ✅ **API Alignment Complete** - Consistent parameter naming and validation across all languages
-- ✅ **Parameter Validation** - LLM parameters validated at construction (temperature 0-2, max_tokens >0, top_p 0-1)
-- ✅ **Timeout Standardization** - Clear millisecond units (timeout_ms) in Python, TypeScript, C++, Zig
-- ✅ **Go Nullable Patterns** - Proper pointer types instead of sentinel values
-- ✅ **Observability Parity** - Full OpenTelemetry integration across all 6 languages
-- ✅ **Language-Specific Guides** - Comprehensive getting started documentation for each language
-- ✅ **Advanced Architecture Docs** - Pattern compositions and multi-agent system guidance
+- ✅ **Agent Skills** (v0.85) — `AgentSkill`, `SkillRegistry`, `SkillEnabledAgent` (Python, Go, Rust)
+- ✅ **Reasoning Memory** (v0.84) — `Verifier`, `ReasoningArtifact`, `ReasoningMemory` (Go; partial elsewhere)
+- ✅ **MCP support** (v0.82–v0.83) — Model Context Protocol client/server across all 9 languages
+- ✅ **Go local-LLM adapters** (v0.81) — `VllmLLM`, `SGLangLLM` with guided-decoding helpers
 
 ### Project Status
 
-- ✅ Core toolkit complete across 6 languages
-- ✅ **100% Pattern Parity** - All 18 patterns in all 6 languages ([see book](../agent-patterns-book))
-- ✅ **100% Adapter Parity** - All 6 LLM adapters (OpenAI, Anthropic, Ollama, Bedrock, Gemini, LiteLLM)
-- ✅ **100% Observability Parity** - OpenTelemetry, W3C Trace Context, distributed tracing
-- ✅ 2,100+ tests passing (100% success rate across all 6 languages)
-- ✅ Production middleware ready (retry, circuit breaker, timeout, rate limiting, caching, batching)
+- ✅ Core toolkit + all 18 patterns across 9 languages
+- ✅ MCP (Model Context Protocol) client/server in every language
+- ✅ Production middleware (retry, circuit breaker, timeout, rate limiting, caching, batching)
 - ✅ Multiple transports (HTTP/1.1, HTTP/2, HTTP/3, gRPC, WebSocket)
 - ✅ Deployment manifests (Docker + Kubernetes with HPA)
-- ✅ Comprehensive documentation: 6 language guides + pattern book + advanced architectures
-- 🚀 **Next:** v1.0.0 release (Q1 2026)
-
----
-
-### v0.50.0 Breaking Changes
-
-**Python:**
-- `timeout` (seconds) → `timeout_ms` (milliseconds) - Update all timeout parameters
-- LLM parameter validation now enforced at construction
-
-**Go:**
-- `UserIDExtractor` signature changed from `func(*Message) string` to `func(*Message) *string`
-
-**All other languages**: No breaking changes
-
-See language-specific getting started guides for migration examples.
+- 🚧 Advanced-subsystem parity (skills, reasoning memory, full adapter sets) still landing in the JVM/.NET tier
 
 ---
 
@@ -586,14 +574,19 @@ See language-specific getting started guides for migration examples.
 
 ## Test Parity
 
-Agenkit maintains test parity across all 6 language implementations to ensure consistent behavior and quality. View the [Test Parity Dashboard](docs/TEST_PARITY.md) to track progress.
+Patterns are at full parity across languages; **test-count** parity varies — the
+secondary languages have fewer tests than the Python reference. Counts come from
+the [Test Parity Dashboard](docs/TEST_PARITY.md), regenerated via
+`scripts/test-parity.sh`. Relative to Python's 2044 tests:
 
-**Current Status:**
-- ✅ **Patterns**: 100% parity (all 18 patterns implemented)
-- 🟡 **Go**: 51.7% parity (926/1789 tests)
-- 🔴 **C++**: Limited (598 estimated tests)
-- 🔴 **Rust**: 15.4% parity (277/1789 tests)
-- 🔴 **Zig**: 11.9% parity (214/1789 tests)
-- 🔴 **TypeScript**: 18.3% parity (328/1789 tests)
+| Language | Tests | vs Python |
+|----------|-------|-----------|
+| Rust | 1253 | 61% |
+| Go | 1244 | 61% |
+| C++ | 1034 | 51% |
+| TypeScript | 928 | 45% |
+| Zig | 214 | 10% |
+
+(C#, Java, and Scala are not yet tracked in the parity report.)
 
 See [README-test-parity.md](README-test-parity.md) for full documentation.

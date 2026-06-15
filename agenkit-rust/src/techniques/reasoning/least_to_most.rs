@@ -71,9 +71,19 @@ impl Default for LeastToMostConfig {
 ///
 /// ```no_run
 /// use agenkit::techniques::reasoning::{LeastToMostAgent, LeastToMostConfig};
+/// use agenkit::core::{Agent, Message};
 /// use std::sync::Arc;
 ///
-/// let base_agent = Arc::new(my_agent);
+/// # async fn example() -> Result<(), agenkit::core::AgentError> {
+/// # struct MyAgent;
+/// # #[async_trait::async_trait]
+/// # impl Agent for MyAgent {
+/// #     fn name(&self) -> &str { "base" }
+/// #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> {
+/// #         Ok(Message::with_text("assistant", "ok"))
+/// #     }
+/// # }
+/// let base_agent = Arc::new(MyAgent);
 /// let config = LeastToMostConfig {
 ///     max_subproblems: 5,
 ///     compose_solutions: true,
@@ -81,8 +91,11 @@ impl Default for LeastToMostConfig {
 /// };
 ///
 /// let ltm = LeastToMostAgent::new(base_agent, config);
+/// let message = Message::with_text("user", "Solve this multi-step problem.");
 /// let response = ltm.process(message).await?;
 /// // Access subproblems and solutions from metadata
+/// # Ok(())
+/// # }
 /// ```
 pub struct LeastToMostAgent {
     agent: Arc<dyn Agent>,

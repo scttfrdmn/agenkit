@@ -10,9 +10,8 @@
 //! Run with: cargo run --example evaluation-ab-testing
 
 use agenkit::core::{Agent, AgentError, Message};
-use agenkit::evaluation::recorder::SessionRecorder;
 use async_trait::async_trait;
-use std::collections::HashMap;
+use std::time::Instant;
 
 /// AgentV1 represents version 1 of the agent (current production)
 struct AgentV1;
@@ -88,155 +87,75 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Agent B (Variant): {}", agent_v2.name());
     println!("Test Cases: {}\n", test_inputs.len());
 
-    // Step 2: Record baseline session (V1)
-    println!("Step 2: Recording Baseline Session (Agent V1)");
-    println!("----------------------------------------------");
+    // Step 2: Run both versions on the identical inputs
+    println!("Step 2: Running Both Versions on Identical Inputs");
+    println!("--------------------------------------------------");
 
-    let recorder_v1 = SessionRecorder::new(None);
-    let wrapped_v1 = recorder_v1.wrap(agent_v1.clone());
+    // Collected per-input results: (input, v1_output, v2_output, v1_latency_ms, v2_latency_ms)
+    let mut rows: Vec<(String, String, String, f64, f64)> = Vec::new();
 
-    let session_id = "ab-test-session";
     for (i, input) in test_inputs.iter().enumerate() {
-        let mut metadata = HashMap::new();
-        metadata.insert("session_id".to_string(), serde_json::json!(session_id));
+        let msg_v1 = Message::with_text("user", *input);
+        let start_v1 = Instant::now();
+        let out_v1 = agent_v1.process(msg_v1).await?;
+        let lat_v1 = start_v1.elapsed().as_secs_f64() * 1000.0;
 
-        let message = Message::with_text("user", input).with_metadata_map(metadata);
+        let msg_v2 = Message::with_text("user", *input);
+        let start_v2 = Instant::now();
+        let out_v2 = agent_v2.process(msg_v2).await?;
+        let lat_v2 = start_v2.elapsed().as_secs_f64() * 1000.0;
 
-        let response = wrapped_v1.process(message).await?;
-        println!("  {}. Input: {}", i + 1, input);
-        println!("     V1: {}", response.content_as_str().unwrap_or(""));
-    }
-
-    let recording_v1 = recorder_v1.finalize_session(session_id).await?;
-    println!(
-        "\n✓ Baseline recorded: {} interactions\n",
-        recording_v1.interactions.len()
-    );
-
-    // Step 3: Replay with both versions
-    println!("Step 3: Replaying with Both Versions");
-    println!("-------------------------------------");
-
-    let results_v1 = recorder_v1
-        .replay(&recording_v1, agent_v1.clone(), None)
-        .await?;
-    let results_v2 = recorder_v1
-        .replay(&recording_v1, agent_v2.clone(), None)
-        .await?;
-
-    println!("Comparing outputs:\n");
-
-    // Extract interactions
-    let interactions_v1 = results_v1
-        .get("interactions")
-        .and_then(|v: &serde_json::Value| v.as_array())
-        .unwrap();
-    let interactions_v2 = results_v2
-        .get("interactions")
-        .and_then(|v: &serde_json::Value| v.as_array())
-        .unwrap();
-
-    for i in 0..interactions_v1.len() {
-        let output_v1 = interactions_v1[i]
-            .get("replay_output")
-            .and_then(|v: &serde_json::Value| v.get("content"))
-            .and_then(|v: &serde_json::Value| v.as_str())
-            .unwrap_or("");
-        let output_v2 = interactions_v2[i]
-            .get("replay_output")
-            .and_then(|v: &serde_json::Value| v.get("content"))
-            .and_then(|v: &serde_json::Value| v.as_str())
-            .unwrap_or("");
-
-        let input = interactions_v1[i]
-            .get("input")
-            .and_then(|v: &serde_json::Value| v.get("content"))
-            .and_then(|v: &serde_json::Value| v.as_str())
-            .unwrap_or("");
+        let output_v1 = out_v1.content_as_str().unwrap_or("").to_string();
+        let output_v2 = out_v2.content_as_str().unwrap_or("").to_string();
 
         println!("  {}. Input: {}", i + 1, input);
         println!("     V1: {}", output_v1);
         println!("     V2: {}", output_v2);
-
-        if output_v2.len() > output_v1.len() {
+        if output_v2.len() > output_v1.len() && !output_v1.is_empty() {
             let improvement =
                 (output_v2.len() - output_v1.len()) as f64 / output_v1.len() as f64 * 100.0;
             println!("     📈 V2 is {:.0}% longer (more detailed)", improvement);
         }
         println!();
+
+        rows.push((input.to_string(), output_v1, output_v2, lat_v1, lat_v2));
     }
 
-    // Step 4: Compare metrics
-    println!("Step 4: Comparing Metrics");
+    // Step 3: Compare metrics
+    println!("Step 3: Comparing Metrics");
     println!("-------------------------");
 
-    let comparison = recorder_v1.compare(&results_v1, &results_v2);
+    let total_lat_v1: f64 = rows.iter().map(|r| r.3).sum();
+    let total_lat_v2: f64 = rows.iter().map(|r| r.4).sum();
+    let latency_diff_ms = total_lat_v2 - total_lat_v1;
+    let latency_increase = if total_lat_v1 > 0.0 {
+        latency_diff_ms / total_lat_v1 * 100.0
+    } else {
+        0.0
+    };
+    let output_diffs = rows.iter().filter(|r| r.1 != r.2).count();
 
     println!("Performance Comparison:");
-    println!(
-        "  Latency V1: {:.0}ms",
-        results_v1
-            .get("total_latency_ms")
-            .and_then(|v: &serde_json::Value| v.as_f64())
-            .unwrap_or(0.0)
-    );
-    println!(
-        "  Latency V2: {:.0}ms",
-        results_v2
-            .get("total_latency_ms")
-            .and_then(|v: &serde_json::Value| v.as_f64())
-            .unwrap_or(0.0)
-    );
+    println!("  Latency V1: {:.0}ms", total_lat_v1);
+    println!("  Latency V2: {:.0}ms", total_lat_v2);
     println!(
         "  Difference: {:.0}ms ({:.1}%)",
-        comparison
-            .get("latency_diff_ms")
-            .and_then(|v: &serde_json::Value| v.as_f64())
-            .unwrap_or(0.0),
-        comparison
-            .get("latency_diff_percent")
-            .and_then(|v: &serde_json::Value| v.as_f64())
-            .unwrap_or(0.0)
+        latency_diff_ms, latency_increase
     );
-
-    let output_diffs = comparison
-        .get("output_differences")
-        .and_then(|v: &serde_json::Value| v.as_array())
-        .map(|a| a.len())
-        .unwrap_or(0);
     println!(
         "\n  Output Differences: {}/{}",
         output_diffs,
         test_inputs.len()
     );
 
-    // Step 5: Statistical analysis
-    println!("\nStep 5: Statistical Analysis");
+    // Step 4: Statistical analysis
+    println!("\nStep 4: Statistical Analysis");
     println!("----------------------------");
 
-    // Calculate response lengths
-    let mut v1_lengths = Vec::new();
-    let mut v2_lengths = Vec::new();
-
-    for i in 0..interactions_v1.len() {
-        if let Some(output) = interactions_v1[i]
-            .get("replay_output")
-            .and_then(|v: &serde_json::Value| v.get("content"))
-            .and_then(|v: &serde_json::Value| v.as_str())
-        {
-            v1_lengths.push(output.len());
-        }
-        if let Some(output) = interactions_v2[i]
-            .get("replay_output")
-            .and_then(|v: &serde_json::Value| v.get("content"))
-            .and_then(|v: &serde_json::Value| v.as_str())
-        {
-            v2_lengths.push(output.len());
-        }
-    }
-
-    let v1_avg_length = v1_lengths.iter().sum::<usize>() as f64 / v1_lengths.len() as f64;
-    let v2_avg_length = v2_lengths.iter().sum::<usize>() as f64 / v2_lengths.len() as f64;
+    let v1_avg_length =
+        rows.iter().map(|r| r.1.len()).sum::<usize>() as f64 / rows.len() as f64;
+    let v2_avg_length =
+        rows.iter().map(|r| r.2.len()).sum::<usize>() as f64 / rows.len() as f64;
 
     println!("Response Length Analysis:");
     println!("  V1 Average: {:.0} characters", v1_avg_length);
@@ -251,14 +170,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     );
 
-    // Step 6: Recommendation
-    println!("\nStep 6: Recommendation");
+    // Step 5: Recommendation
+    println!("\nStep 5: Recommendation");
     println!("----------------------");
-
-    let latency_increase = comparison
-        .get("latency_diff_percent")
-        .and_then(|v: &serde_json::Value| v.as_f64())
-        .unwrap_or(0.0);
 
     if v2_avg_length > v1_avg_length * 1.2 && latency_increase < 20.0 {
         println!("✓ RECOMMENDATION: Deploy V2");

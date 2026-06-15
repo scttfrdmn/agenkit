@@ -16,27 +16,36 @@
 //! # Example
 //!
 //! ```rust
-//! use agenkit::budget::{ModelPricing, CostTracker, BudgetLimiter, BudgetConfig};
+//! use agenkit::budget::{ModelPricing, CostTracker, BudgetLimiter, BudgetConfigBuilder};
+//! use agenkit::core::{Agent, Message};
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! # struct MyAgent;
+//! # #[async_trait::async_trait]
+//! # impl Agent for MyAgent {
+//! #     fn name(&self) -> &str { "agent-1" }
+//! #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> {
+//! #         Ok(Message::with_text("assistant", "ok"))
+//! #     }
+//! # }
 //! // Create pricing database
 //! let pricing = ModelPricing::new();
 //!
 //! // Create cost tracker
 //! let tracker = CostTracker::new();
 //!
-//! // Create budget limiter
-//! let config = BudgetConfig::builder()
+//! // Create budget limiter wrapping an agent
+//! let config = BudgetConfigBuilder::new()
 //!     .session_limit(10.0)
 //!     .agent_limit(100.0)
 //!     .global_limit(500.0)
 //!     .action("error")
 //!     .build();
 //!
-//! let limiter = BudgetLimiter::new(tracker.clone(), config);
+//! let limiter = BudgetLimiter::new(MyAgent, "agent-1".to_string(), tracker.clone(), config);
 //!
-//! // Track costs
-//! tracker.record_cost("session-1", "agent-1", "gpt-4", 1000, 500, None).await?;
+//! // Track costs (input_tokens, output_tokens, thinking_tokens, metadata)
+//! tracker.record_cost("session-1", "agent-1", "gpt-4", 1000, 500, 0, None).await?;
 //!
 //! // Query costs
 //! let session_cost = tracker.get_session_cost("session-1").await?;

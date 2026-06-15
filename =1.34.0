@@ -1,6 +1,0 @@
-Resolved 8 packages in 120ms
-Downloading awscrt (3.3MiB)
- Downloaded awscrt
-Prepared 1 package in 77ms
-Installed 1 package in 3ms
- + awscrt==0.29.2

@@ -62,6 +62,14 @@ export interface Subproblem {
 }
 
 /**
+ * Custom function to decompose a problem into ordered subproblem strings
+ * (simplest to hardest). May be sync or async.
+ */
+export type DecomposerFunction = (
+  problem: string,
+) => string[] | Promise<string[]>;
+
+/**
  * Configuration options for Least-to-Most agent.
  */
 export interface LeastToMostConfig {
@@ -72,7 +80,7 @@ export interface LeastToMostConfig {
    * @param problem The problem to decompose
    * @returns Array of subproblem strings (ordered from simplest to hardest)
    */
-  decomposer?: (problem: string) => string[] | Promise<string[]>;
+  decomposer?: DecomposerFunction;
 
   /**
    * Maximum number of subproblems to generate.

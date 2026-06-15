@@ -223,15 +223,18 @@ export class OpenAICompatibleAgent implements Agent {
   async process(message: Message): Promise<Message> {
     const openaiMessage = this.toOpenAIMessage(message);
 
-    const response = await this.client.chat.completions.create({
+    // Spreading `...this.options` defeats TS's literal-narrowing on
+    // `stream: false`, so the result is typed as the streaming/non-streaming
+    // union. We pass stream:false, so assert the non-streaming response.
+    const response = (await this.client.chat.completions.create({
       model: this.model,
       messages: [openaiMessage],
       temperature: this.temperature,
       max_tokens: this.maxTokens,
       top_p: this.topP,
-      stream: false,
       ...this.options,
-    });
+      stream: false,
+    })) as OpenAI.Chat.ChatCompletion;
 
     // Check for valid response
     if (!response.choices || response.choices.length === 0) {
@@ -279,15 +282,17 @@ export class OpenAICompatibleAgent implements Agent {
   ): AsyncGenerator<Message, void, undefined> {
     const openaiMessage = this.toOpenAIMessage(message);
 
-    const stream = await this.client.chat.completions.create({
+    // See process(): the options spread defeats stream-literal narrowing, so
+    // assert the streaming response type (we pass stream:true).
+    const stream = (await this.client.chat.completions.create({
       model: this.model,
       messages: [openaiMessage],
       temperature: this.temperature,
       max_tokens: this.maxTokens,
       top_p: this.topP,
-      stream: true,
       ...this.options,
-    });
+      stream: true,
+    })) as AsyncIterable<OpenAI.Chat.ChatCompletionChunk>;
 
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta;

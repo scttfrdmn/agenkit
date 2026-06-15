@@ -132,7 +132,7 @@ export class GraphOfThought implements Agent {
       role: 'user',
       content: prompt,
     });
-    return response.content;
+    return String(response.content);
   }
 
   /**
@@ -488,7 +488,7 @@ Final conclusion:`;
    * ```
    */
   async process(message: Message): Promise<Message> {
-    const problem = message.content;
+    const problem = String(message.content);
 
     // Step 1: Build reasoning graph
     const graph = await this.buildGraph(problem);

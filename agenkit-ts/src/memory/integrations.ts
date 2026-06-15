@@ -440,7 +440,7 @@ export class ChromaDBVectorStore implements VectorStore {
       const docId = this.generateDocId(sessionId, item.messageId);
       ids.push(docId);
       embeddings.push(item.embedding);
-      documents.push(item.message.content);
+      documents.push(String(item.message.content));
 
       const chromaMetadata = {
         session_id: sessionId,

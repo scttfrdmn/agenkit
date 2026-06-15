@@ -619,7 +619,7 @@ export class VectorMemory implements Memory {
 
   async store(sessionId: string, message: Message, metadata?: Record<string, unknown>): Promise<void> {
     // Generate embedding
-    const embedding = await this.embeddings.embed(message.content);
+    const embedding = await this.embeddings.embed(String(message.content));
 
     // Store with unique timestamp (ensure strictly increasing)
     const messageId = this.generateId();
@@ -673,7 +673,7 @@ export class VectorMemory implements Memory {
     }>,
   ): Promise<void> {
     // Generate all embeddings in parallel
-    const embeddings = await Promise.all(items.map((item) => this.embeddings.embed(item.message.content)));
+    const embeddings = await Promise.all(items.map((item) => this.embeddings.embed(String(item.message.content))));
 
     // Prepare batch items
     const batchItems = items.map((item, index) => {
@@ -792,8 +792,9 @@ export class VectorMemory implements Memory {
 
     for (let i = 0; i < messagesToSummarize.length; i++) {
       const msg = messagesToSummarize[i];
-      let preview = msg.content.substring(0, 100);
-      if (msg.content.length > 100) {
+      const msgText = String(msg.content);
+      let preview = msgText.substring(0, 100);
+      if (msgText.length > 100) {
         preview += '...';
       }
       summaryParts.push(`${i + 1}. [${msg.role}] ${preview}`);

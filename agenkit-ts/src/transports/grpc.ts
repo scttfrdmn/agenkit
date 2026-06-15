@@ -149,7 +149,7 @@ export class GrpcAgent implements Agent {
     });
 
     // Load gRPC package
-    this.proto = grpc.loadPackageDefinition(this.packageDefinition).agenkit as GrpcProtoPackage;
+    this.proto = grpc.loadPackageDefinition(this.packageDefinition).agenkit as unknown as GrpcProtoPackage;
   }
 
   get name(): string {
@@ -231,6 +231,16 @@ export class GrpcAgent implements Agent {
             return;
           }
 
+          if (!response.message) {
+            reject(
+              new GrpcTransportError(
+                'Response missing message payload',
+                grpc.status.UNKNOWN,
+              ),
+            );
+            return;
+          }
+
           resolve(this.protoToMessage(response.message));
         },
       );
@@ -306,7 +316,7 @@ export class GrpcAgent implements Agent {
       }
 
       if (queue.length > 0) {
-        yield queue.shift();
+        yield queue.shift()!;
       } else {
         // Wait a bit before checking again
         await new Promise((resolve) => setTimeout(resolve, 10));
@@ -377,7 +387,7 @@ export class GrpcServer {
     });
 
     // Load gRPC package
-    this.proto = grpc.loadPackageDefinition(this.packageDefinition).agenkit as GrpcProtoPackage;
+    this.proto = grpc.loadPackageDefinition(this.packageDefinition).agenkit as unknown as GrpcProtoPackage;
 
     // Create server
     this.server = new grpc.Server();

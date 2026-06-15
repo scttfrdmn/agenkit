@@ -80,10 +80,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Interactions:");
 
     for (i, input) in interactions.iter().enumerate() {
-        let mut metadata = HashMap::new();
-        metadata.insert("session_id".to_string(), serde_json::json!(session_id));
-
-        let message = Message::with_text("user", input).with_metadata_map(metadata);
+        let message = Message::with_text("user", *input)
+            .with_metadata("session_id", serde_json::json!(session_id));
 
         match wrapped_agent.process(message).await {
             Ok(response) => {
@@ -97,12 +95,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     println!();
 
-    // Step 4: Finalize and save recording
+    // Step 4: Inspect the active recording, then finalize (save) it.
+    //
+    // `get_session` returns a snapshot of the in-progress recording;
+    // `finalize_session` then persists it to the configured storage.
     println!("Step 4: Finalizing Recording");
     println!("-----------------------------");
-    let recording = recorder.finalize_session(session_id).await?;
+    let recording = recorder
+        .get_session(session_id)
+        .expect("session should be active before finalize");
+    recorder.finalize_session(session_id).await?;
 
     println!("✓ Session recorded: {}", recording.session_id);
+    println!("  Agent: {}", recording.agent_name);
     println!("  Interactions: {}", recording.interaction_count());
     println!(
         "  Duration: {:.2}s",
@@ -110,139 +115,79 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     println!("  Total Latency: {:.0}ms\n", recording.total_latency_ms());
 
-    // Step 5: Load and replay session
-    println!("Step 5: Loading and Replaying Session");
-    println!("--------------------------------------");
-    let loaded_recording = recorder.load_recording(session_id).await?;
+    // Step 5: Replay the recorded inputs through the original agent (v1).
+    //
+    // Replaying re-processes each recorded input message through an agent so
+    // its outputs can be compared. We do this directly against the recording's
+    // interaction log.
+    println!("Step 5: Replaying Session");
+    println!("--------------------------");
 
-    match loaded_recording {
-        Some(ref rec) => {
-            println!("✓ Loaded recording: {}", rec.session_id);
-            println!("  Agent: {}", rec.agent_name);
-            println!("  Interactions: {}\n", rec.interactions.len());
-
-            // Replay with original agent
-            println!("Replaying with original agent (v1)...");
-            let results_v1 = recorder.replay(&rec, agent_v1.clone(), None).await?;
-
-            println!("✓ Replay complete");
-            println!(
-                "  Total Latency: {:.0}ms",
-                results_v1
-                    .get("total_latency_ms")
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(0.0)
-            );
-            println!(
-                "  Errors: {}\n",
-                results_v1
-                    .get("error_count")
-                    .and_then(|v| v.as_i64())
-                    .unwrap_or(0)
-            );
-
-            // Step 6: Replay with different agent version (A/B testing)
-            println!("Step 6: A/B Testing with Different Agent Version");
-            println!("-------------------------------------------------");
-            let agent_v2 = std::sync::Arc::new(MockAgent::new("echo-agent", "v2"));
-
-            println!("Replaying with new agent version (v2)...");
-            let results_v2 = recorder.replay(&rec, agent_v2, None).await?;
-
-            println!("✓ Replay complete");
-            println!(
-                "  Total Latency: {:.0}ms",
-                results_v2
-                    .get("total_latency_ms")
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(0.0)
-            );
-            println!(
-                "  Errors: {}\n",
-                results_v2
-                    .get("error_count")
-                    .and_then(|v| v.as_i64())
-                    .unwrap_or(0)
-            );
-
-            // Step 7: Compare results
-            println!("Step 7: Comparing Results");
-            println!("-------------------------");
-            let comparison = recorder.compare(&results_v1, &results_v2);
-
-            println!("Comparison:");
-            println!(
-                "  Interactions: {}",
-                comparison
-                    .get("interaction_count")
-                    .and_then(|v| v.as_i64())
-                    .unwrap_or(0)
-            );
-            println!(
-                "  Latency Difference: {:.0}ms ({:.1}%)",
-                comparison
-                    .get("latency_diff_ms")
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(0.0),
-                comparison
-                    .get("latency_diff_percent")
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(0.0)
-            );
-            println!(
-                "  Error Difference: {}",
-                comparison
-                    .get("error_diff")
-                    .and_then(|v| v.as_i64())
-                    .unwrap_or(0)
-            );
-
-            let output_diffs = comparison
-                .get("output_differences")
-                .and_then(|v| v.as_array())
-                .map(|a| a.len())
-                .unwrap_or(0);
-            println!("  Output Differences: {}", output_diffs);
-
-            if output_diffs > 0 {
-                println!("\nDetailed Output Differences:");
-                if let Some(diffs) = comparison
-                    .get("output_differences")
-                    .and_then(|v| v.as_array())
-                {
-                    for diff in diffs {
-                        let idx = diff
-                            .get("interaction_index")
-                            .and_then(|v| v.as_i64())
-                            .unwrap_or(0);
-                        let output_a = diff.get("output_a").and_then(|v| v.as_str()).unwrap_or("");
-                        let output_b = diff.get("output_b").and_then(|v| v.as_str()).unwrap_or("");
-                        println!("  Interaction {}:", idx + 1);
-                        println!("    v1: {}", output_a);
-                        println!("    v2: {}", output_b);
-                    }
-                }
-            }
-            println!();
+    async fn replay(
+        agent: &std::sync::Arc<MockAgent>,
+        recording: &agenkit::evaluation::recorder::SessionRecording,
+    ) -> Result<(Vec<String>, f64), AgentError> {
+        let mut outputs = Vec::new();
+        let mut total_latency_ms = 0.0;
+        for interaction in &recording.interactions {
+            let input = Message {
+                role: "user".to_string(),
+                content: interaction.input_message.clone(),
+                metadata: HashMap::new(),
+                timestamp: interaction.timestamp,
+            };
+            let start = std::time::Instant::now();
+            let response = agent.process(input).await?;
+            total_latency_ms += start.elapsed().as_secs_f64() * 1000.0;
+            outputs.push(response.content_as_str().unwrap_or("").to_string());
         }
-        None => {
-            println!("Recording not found");
-        }
+        Ok((outputs, total_latency_ms))
     }
 
-    // Step 8: List all recordings
-    println!("Step 8: Listing All Recordings");
-    println!("-------------------------------");
-    let recordings = recorder.list_recordings(10, 0).await?;
+    println!("Replaying with original agent (v1)...");
+    let (outputs_v1, latency_v1) = replay(&agent_v1, &recording).await?;
+    println!("✓ Replay complete");
+    println!("  Total Latency: {:.0}ms\n", latency_v1);
 
-    println!("Found {} recordings:", recordings.len());
-    for (i, rec) in recordings.iter().enumerate() {
-        println!("  {}. {} ({})", i + 1, rec.session_id, rec.agent_name);
-        println!(
-            "     Interactions: {}, Duration: {:.2}s",
-            rec.interaction_count(),
-            rec.duration_seconds().unwrap_or(0.0)
-        );
+    // Step 6: Replay with a different agent version (A/B testing)
+    println!("Step 6: A/B Testing with Different Agent Version");
+    println!("-------------------------------------------------");
+    let agent_v2 = std::sync::Arc::new(MockAgent::new("echo-agent", "v2"));
+
+    println!("Replaying with new agent version (v2)...");
+    let (outputs_v2, latency_v2) = replay(&agent_v2, &recording).await?;
+    println!("✓ Replay complete");
+    println!("  Total Latency: {:.0}ms\n", latency_v2);
+
+    // Step 7: Compare results
+    println!("Step 7: Comparing Results");
+    println!("-------------------------");
+
+    let latency_diff_ms = latency_v2 - latency_v1;
+    let latency_diff_percent = if latency_v1 > 0.0 {
+        latency_diff_ms / latency_v1 * 100.0
+    } else {
+        0.0
+    };
+    let output_diffs: Vec<usize> = (0..outputs_v1.len())
+        .filter(|&i| outputs_v1[i] != outputs_v2[i])
+        .collect();
+
+    println!("Comparison:");
+    println!("  Interactions: {}", outputs_v1.len());
+    println!(
+        "  Latency Difference: {:.0}ms ({:.1}%)",
+        latency_diff_ms, latency_diff_percent
+    );
+    println!("  Output Differences: {}", output_diffs.len());
+
+    if !output_diffs.is_empty() {
+        println!("\nDetailed Output Differences:");
+        for &i in &output_diffs {
+            println!("  Interaction {}:", i + 1);
+            println!("    v1: {}", outputs_v1[i]);
+            println!("    v2: {}", outputs_v2[i]);
+        }
     }
     println!();
 

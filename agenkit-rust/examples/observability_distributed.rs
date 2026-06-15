@@ -183,7 +183,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         log_agent_event("pipeline.start", &details);
 
         // Stage 1: Preprocess
-        let message1 = Message::with_text("user", input)
+        let message1 = Message::with_text("user", *input)
             .with_metadata("request_id", serde_json::json!(i + 1));
 
         let result1 = observed_preprocessor.process(message1).await?;

@@ -9,7 +9,7 @@
 //!
 //! Run: cargo run --example pattern-collaborative-usage
 
-use agenkit::core::{Agent, Message};
+use agenkit::core::{Agent, AgentError, Message};
 use agenkit::patterns::collaborative::*;
 use async_trait::async_trait;
 use std::error::Error;
@@ -34,13 +34,13 @@ impl Agent for SimpleAgent {
         vec!["demo".to_string()]
     }
 
-    async fn process(&self, message: Message) -> Result<Message, Box<dyn Error>> {
+    async fn process(&self, message: Message) -> Result<Message, AgentError> {
         println!("   🤖 {} processing...", self.name);
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
-        Ok(Message::new(
+        Ok(Message::with_text(
             "agent",
-            format!("{} processed: {}", self.name, message.content()),
+            format!("{} processed: {}", self.name, message.content_as_str().unwrap_or("")),
         ))
     }
 }

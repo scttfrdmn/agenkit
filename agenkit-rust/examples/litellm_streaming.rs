@@ -24,8 +24,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = LiteLLMConfig {
         model: "gpt-3.5-turbo".to_string(),
         base_url: "http://localhost:4000".to_string(),
-        api_key: std::env::var("LITELLM_API_KEY").unwrap_or_default(),
-        temperature: 1.0,
+        api_key: std::env::var("LITELLM_API_KEY").ok(),
+        temperature: Some(1.0),
         max_tokens: Some(1024),
         ..Default::default()
     };

@@ -23,12 +23,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -36,11 +30,14 @@ jobs:
           cache: true
           cache-dependency-path: agenkit-go/go.sum
 
-      - name: Install Black
-        run: pip install black
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
 
+      # Use the repo's locked black (via uv) so CI and local `make format`
+      # never disagree on formatting — pinning avoids version skew where a
+      # newer black reformats files the locked version leaves alone.
       - name: Check Python formatting (Black)
-        run: black --check agenkit/ tests/ || (echo "❌ Python code not formatted. Run 'make format' to fix" && exit 1)
+        run: uv run black --check agenkit/ tests/ || (echo "❌ Python code not formatted. Run 'make format' to fix" && exit 1)
 
       - name: Check Go formatting (gofmt)
         working-directory: agenkit-go

@@ -101,9 +101,8 @@ async fn example_ollama() {
 
     let config = OllamaConfig {
         model: "llama2".to_string(),
-        base_url: "http://localhost:11434".to_string(),
+        api_base: "http://localhost:11434".to_string(),
         temperature: 0.7,
-        max_tokens: 150,
         ..Default::default()
     };
 

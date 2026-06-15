@@ -57,8 +57,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("------------------------------");
     let agent = std::sync::Arc::new(QuizAgent);
 
-    let accuracy_metric = Box::new(AccuracyMetric::new(None, false));
-    let quality_metric = Box::new(QualityMetrics::new(false, "", None));
+    let accuracy_metric: std::sync::Arc<dyn agenkit::evaluation::Metric> =
+        std::sync::Arc::new(AccuracyMetric::new(None, false));
+    let quality_metric: std::sync::Arc<dyn agenkit::evaluation::Metric> =
+        std::sync::Arc::new(QualityMetrics::new(false, None, None));
 
     let evaluator = Evaluator::new(
         agent,
@@ -144,16 +146,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Step 4: Accuracy Analysis");
     println!("-------------------------");
     if let Some(accuracy_stats) = result.aggregated_metrics.get("accuracy") {
-        if let Some(accuracy) = accuracy_stats.get("accuracy").and_then(|v| v.as_f64()) {
+        if let Some(accuracy) = accuracy_stats.get("accuracy").copied() {
             println!("Overall Accuracy: {:.1}%", accuracy * 100.0);
         }
-        if let Some(correct) = accuracy_stats.get("correct").and_then(|v| v.as_f64()) {
+        if let Some(correct) = accuracy_stats.get("correct").copied() {
             println!("Correct: {:.0}", correct);
         }
-        if let Some(incorrect) = accuracy_stats.get("incorrect").and_then(|v| v.as_f64()) {
+        if let Some(incorrect) = accuracy_stats.get("incorrect").copied() {
             println!("Incorrect: {:.0}", incorrect);
         }
-        if let Some(total) = accuracy_stats.get("total").and_then(|v| v.as_f64()) {
+        if let Some(total) = accuracy_stats.get("total").copied() {
             println!("Total: {:.0}\n", total);
         }
     }
@@ -162,16 +164,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Step 5: Quality Analysis");
     println!("------------------------");
     if let Some(quality_stats) = result.aggregated_metrics.get("quality") {
-        if let Some(mean) = quality_stats.get("mean").and_then(|v| v.as_f64()) {
+        if let Some(mean) = quality_stats.get("mean").copied() {
             println!("Overall Quality Score: {:.3}", mean);
         }
-        if let Some(min) = quality_stats.get("min").and_then(|v| v.as_f64()) {
+        if let Some(min) = quality_stats.get("min").copied() {
             println!("Min: {:.3}", min);
         }
-        if let Some(max) = quality_stats.get("max").and_then(|v| v.as_f64()) {
+        if let Some(max) = quality_stats.get("max").copied() {
             println!("Max: {:.3}", max);
         }
-        if let Some(std) = quality_stats.get("std").and_then(|v| v.as_f64()) {
+        if let Some(std) = quality_stats.get("std").copied() {
             println!("Std Dev: {:.3}\n", std);
         }
     }

@@ -10,6 +10,7 @@
 //! use agenkit::core::{Agent, Message};
 //!
 //! # struct MyAgent;
+//! # #[async_trait::async_trait]
 //! # impl Agent for MyAgent {
 //! #     fn name(&self) -> &str { "test" }
 //! #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> { Ok(msg) }
@@ -123,6 +124,7 @@ pub fn get_meter(name: &'static str) -> Meter {
 /// # use agenkit::observability::{init_metrics, MetricsMiddleware};
 /// # use agenkit::core::{Agent, Message};
 /// # struct MyAgent;
+/// # #[async_trait::async_trait]
 /// # impl Agent for MyAgent {
 /// #     fn name(&self) -> &str { "test" }
 /// #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> { Ok(msg) }
@@ -158,6 +160,7 @@ impl<A: Agent> MetricsMiddleware<A> {
     /// # use agenkit::observability::MetricsMiddleware;
     /// # use agenkit::core::{Agent, Message};
     /// # struct MyAgent;
+    /// # #[async_trait::async_trait]
     /// # impl Agent for MyAgent {
     /// #     fn name(&self) -> &str { "test" }
     /// #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> { Ok(msg) }

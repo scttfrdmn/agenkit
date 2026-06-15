@@ -1,0 +1,53 @@
+name: Lint (Basic Formatting)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Basic formatting checks only - detailed linting runs locally
+  format-check:
+    name: Format Check (Python Black + Go fmt)
+    # push/schedule -> self-hosted orion (fast); PRs (incl. forks) -> hosted,
+    # so untrusted PR code never runs on the LAN runner.
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'orion' }}
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+          cache-dependency-path: agenkit-go/go.sum
+
+      - name: Install Black
+        run: pip install black
+
+      - name: Check Python formatting (Black)
+        run: black --check agenkit/ tests/ || (echo "❌ Python code not formatted. Run 'make format' to fix" && exit 1)
+
+      - name: Check Go formatting (gofmt)
+        working-directory: agenkit-go
+        run: |
+          UNFORMATTED=$(gofmt -s -l . | grep -v '^examples/' || true)
+          if [ -n "$UNFORMATTED" ]; then
+            echo "❌ Go code not formatted. Run 'make format' to fix:"
+            echo "$UNFORMATTED"
+            exit 1
+          fi

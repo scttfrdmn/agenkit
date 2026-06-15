@@ -9,8 +9,14 @@
 //!
 //! Run with: cargo run --example evaluation-bayesian-optimizer
 
+use agenkit::core::AgentError;
 use agenkit::evaluation::optimizer::{AcquisitionFunction, BayesianOptimizer, SearchSpace};
 use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
+
+/// Boxed-future objective type expected by `BayesianOptimizer::new`.
+type Objective = Pin<Box<dyn Future<Output = Result<f64, AgentError>> + Send>>;
 
 /// Expensive objective function to minimize
 /// Simulates an agent evaluation that takes time
@@ -70,7 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     space.add_continuous("y", 0.0, 10.0);
 
     let mut optimizer = BayesianOptimizer::new(
-        quadratic_objective,
+        |config| -> Objective { Box::pin(quadratic_objective(config)) },
         space,
         false, // minimize
         AcquisitionFunction::EI,
@@ -121,7 +127,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     space2.add_continuous("top_p", 0.1, 1.0);
 
     let mut optimizer2 = BayesianOptimizer::new(
-        expensive_objective,
+        |config| -> Objective { Box::pin(expensive_objective(config)) },
         space2,
         false, // minimize cost
         AcquisitionFunction::UCB,
@@ -201,7 +207,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut space = SearchSpace::new();
         space.add_continuous("x", 0.0, 10.0);
 
-        let objective = |config: HashMap<String, serde_json::Value>| {
+        let objective = |config: HashMap<String, serde_json::Value>| -> Objective {
             Box::pin(async move {
                 let x = config.get("x").unwrap().as_f64().unwrap();
                 // Minimize (x - 5)²
@@ -227,7 +233,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", "-".repeat(70));
 
     // Same function, different optimization directions
-    let test_objective = |config: HashMap<String, serde_json::Value>| {
+    let test_objective = |config: HashMap<String, serde_json::Value>| -> Objective {
         Box::pin(async move {
             let x = config.get("x").unwrap().as_f64().unwrap();
             Ok((x - 6.0).powi(2))
@@ -259,7 +265,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Maximization (find x at boundaries)
     let mut space_max = SearchSpace::new();
     space_max.add_continuous("x", 0.0, 10.0);
-    let test_objective_max = |config: HashMap<String, serde_json::Value>| {
+    let test_objective_max = |config: HashMap<String, serde_json::Value>| -> Objective {
         Box::pin(async move {
             let x = config.get("x").unwrap().as_f64().unwrap();
             Ok((x - 6.0).powi(2))

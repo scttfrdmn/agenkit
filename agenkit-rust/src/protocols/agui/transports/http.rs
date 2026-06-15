@@ -147,7 +147,7 @@ impl Default for SSEStreamConfig {
 /// let adapter = AGUIAdapter::new(agent, AGUIAdapterConfig::default());
 /// let message = Message::with_text("user", "Hello!");
 ///
-/// let mut stream = AGUISSEStream::new(adapter, message);
+/// let mut stream = AGUISSEStream::new(adapter, message).await;
 ///
 /// while let Some(sse_chunk) = stream.next().await {
 ///     // Send sse_chunk to client

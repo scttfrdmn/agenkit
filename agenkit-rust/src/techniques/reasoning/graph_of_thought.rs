@@ -66,9 +66,19 @@ impl Default for GraphOfThoughtConfig {
 ///
 /// ```no_run
 /// use agenkit::techniques::reasoning::{GraphOfThoughtAgent, GraphOfThoughtConfig, AggregatorType};
+/// use agenkit::core::{Agent, Message};
 /// use std::sync::Arc;
 ///
-/// let base_agent = Arc::new(my_agent);
+/// # async fn example() -> Result<(), agenkit::core::AgentError> {
+/// # struct MyAgent;
+/// # #[async_trait::async_trait]
+/// # impl Agent for MyAgent {
+/// #     fn name(&self) -> &str { "base" }
+/// #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> {
+/// #         Ok(Message::with_text("assistant", "ok"))
+/// #     }
+/// # }
+/// let base_agent = Arc::new(MyAgent);
 /// let config = GraphOfThoughtConfig {
 ///     max_nodes: 20,
 ///     max_edges: 40,
@@ -77,8 +87,11 @@ impl Default for GraphOfThoughtConfig {
 /// };
 ///
 /// let got = GraphOfThoughtAgent::new(base_agent, config);
+/// let message = Message::with_text("user", "Plan a trip.");
 /// let response = got.process(message).await?;
 /// // Access reasoning graph and paths from metadata
+/// # Ok(())
+/// # }
 /// ```
 pub struct GraphOfThoughtAgent {
     agent: Arc<dyn Agent>,

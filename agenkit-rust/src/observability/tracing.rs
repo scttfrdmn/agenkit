@@ -10,6 +10,7 @@
 //! use agenkit::core::{Agent, Message};
 //!
 //! # struct MyAgent;
+//! # #[async_trait::async_trait]
 //! # impl Agent for MyAgent {
 //! #     fn name(&self) -> &str { "test" }
 //! #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> { Ok(msg) }
@@ -245,18 +246,24 @@ pub fn inject_trace_context_from(
 /// # Example
 ///
 /// ```rust
-/// # use agenkit::observability::{inject_trace_context, init_tracing};
+/// # use agenkit::observability::inject_trace_context_from;
 /// # use std::collections::HashMap;
-/// # use opentelemetry::global;
-/// # use opentelemetry::trace::{Tracer, TracerProvider};
-/// # init_tracing("console", None).unwrap();
-/// let tracer = global::tracer("test");
-/// let span = tracer.start("test-span");
-/// let cx = opentelemetry::Context::current_with_value(span);
-/// let _guard = cx.attach();
+/// # use opentelemetry::trace::{
+/// #     SpanContext, TraceId, SpanId, TraceFlags, TraceState, TraceContextExt,
+/// # };
+/// # use opentelemetry::Context;
+/// // Build a context carrying a valid span context (normally created by a tracer).
+/// let span_context = SpanContext::new(
+///     TraceId::from_hex("4bf92f3577b34da6a3ce929d0e0e4736").unwrap(),
+///     SpanId::from_hex("00f067aa0ba902b7").unwrap(),
+///     TraceFlags::SAMPLED,
+///     false,
+///     TraceState::default(),
+/// );
+/// let cx = Context::current().with_remote_span_context(span_context);
 ///
 /// let mut metadata = HashMap::new();
-/// inject_trace_context(&mut metadata);
+/// inject_trace_context_from(&mut metadata, &cx);
 ///
 /// // metadata now contains trace_context with traceparent
 /// assert!(metadata.contains_key("trace_context"));
@@ -281,6 +288,7 @@ pub fn inject_trace_context(metadata: &mut HashMap<String, serde_json::Value>) {
 /// # use agenkit::observability::TracingMiddleware;
 /// # use agenkit::core::{Agent, Message};
 /// # struct MyAgent;
+/// # #[async_trait::async_trait]
 /// # impl Agent for MyAgent {
 /// #     fn name(&self) -> &str { "test" }
 /// #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> { Ok(msg) }
@@ -307,6 +315,7 @@ impl<A: Agent> TracingMiddleware<A> {
     /// # use agenkit::observability::TracingMiddleware;
     /// # use agenkit::core::{Agent, Message};
     /// # struct MyAgent;
+    /// # #[async_trait::async_trait]
     /// # impl Agent for MyAgent {
     /// #     fn name(&self) -> &str { "test" }
     /// #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> { Ok(msg) }

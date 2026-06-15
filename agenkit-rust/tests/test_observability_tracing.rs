@@ -66,30 +66,29 @@ async fn test_tracing_middleware_preserves_agent_interface() {
 
 #[tokio::test]
 async fn test_inject_trace_context() {
-    use opentelemetry::global;
-    use opentelemetry::trace::{Span, Tracer};
+    use agenkit::observability::inject_trace_context_from;
+    use opentelemetry::trace::{
+        SpanContext, SpanId, TraceContextExt, TraceFlags, TraceId, TraceState,
+    };
+    use opentelemetry::Context;
 
-    init_tracing("console", None).unwrap();
+    // Build a context carrying a known-valid span context. We construct it
+    // explicitly (rather than via the process-global tracer) so the test is
+    // deterministic and independent of test ordering / global tracer state.
+    let span_context = SpanContext::new(
+        TraceId::from_hex("4bf92f3577b34da6a3ce929d0e0e4736").unwrap(),
+        SpanId::from_hex("00f067aa0ba902b7").unwrap(),
+        TraceFlags::SAMPLED,
+        false,
+        TraceState::default(),
+    );
+    assert!(span_context.is_valid());
+    let cx = Context::current().with_remote_span_context(span_context);
 
-    // Create a span
-    let tracer = global::tracer("test");
-    let span = tracer.start("test-span");
-    let span_context = span.span_context().clone();
-
-    // Manually create trace context in metadata
     let mut metadata = HashMap::new();
-    if span_context.is_valid() {
-        let trace_id = format!("{:032x}", span_context.trace_id());
-        let span_id = format!("{:016x}", span_context.span_id());
-        let flags = if span_context.is_sampled() { "01" } else { "00" };
-        let traceparent = format!("00-{}-{}-{}", trace_id, span_id, flags);
+    inject_trace_context_from(&mut metadata, &cx);
 
-        let mut trace_ctx = HashMap::new();
-        trace_ctx.insert("traceparent".to_string(), json!(traceparent));
-        metadata.insert("trace_context".to_string(), json!(trace_ctx));
-    }
-
-    // Should have trace_context key when there's a valid span
+    // A valid span context should produce a trace_context entry.
     assert!(metadata.contains_key("trace_context"));
 }
 

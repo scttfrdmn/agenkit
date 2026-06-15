@@ -64,7 +64,7 @@ impl Tool for McpToolAdapter {
 ///
 /// ```no_run
 /// use std::sync::Arc;
-/// use agenkit::protocols::mcp::{StdioClient, tools_from_client};
+/// use agenkit::protocols::mcp::{McpClient, StdioClient, tools_from_client};
 ///
 /// #[tokio::main]
 /// async fn main() {

@@ -23,6 +23,7 @@
 //!
 //! // Wrap your agent with observability
 //! # struct MyAgent;
+//! # #[async_trait::async_trait]
 //! # impl Agent for MyAgent {
 //! #     fn name(&self) -> &str { "my-agent" }
 //! #     async fn process(&self, msg: agenkit::core::Message) -> Result<agenkit::core::Message, agenkit::core::AgentError> {

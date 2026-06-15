@@ -16,19 +16,16 @@
 //!
 //! ```rust,no_run
 //! use agenkit::transports::WebSocketAgent;
-//! use agenkit::core::Message;
+//! use agenkit::core::{Agent, Message};
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! // Connect to WebSocket server
 //! let agent = WebSocketAgent::new("ws://localhost:8080").await?;
 //!
 //! // Process message
-//! let response = agent.process(vec![Message {
-//!     role: "user".to_string(),
-//!     content: "Hello!".to_string(),
-//! }]).await?;
+//! let response = agent.process(Message::with_text("user", "Hello!")).await?;
 //!
-//! println!("Response: {}", response.content);
+//! println!("Response: {}", response.content_as_str().unwrap_or(""));
 //! # Ok(())
 //! # }
 //! ```

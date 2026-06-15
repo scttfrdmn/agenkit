@@ -38,6 +38,7 @@ impl Default for AGUIAdapterConfig {
 /// ```no_run
 /// use agenkit::core::{Agent, Message};
 /// use agenkit::protocols::agui::{AGUIAdapter, AGUIAdapterConfig};
+/// use futures::StreamExt;
 /// use std::sync::Arc;
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {

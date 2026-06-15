@@ -50,7 +50,8 @@ impl Default for AGUIHumanInLoopConfig {
 /// ```no_run
 /// use agenkit::core::{Agent, Message};
 /// use agenkit::patterns::{HumanInLoopAgent, HumanInLoopConfig, simple_approval_func};
-/// use agenkit::protocols::agui::{AGUIHumanInLoopAdapter, AGUIHumanInLoopConfig};
+/// use agenkit::protocols::agui::{AGUIHumanInLoopAdapter, AGUIHumanInLoopConfig, AGUIEvent, EventType};
+/// use futures::StreamExt;
 /// use std::sync::Arc;
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {

@@ -15,7 +15,6 @@ import pytest
 from agenkit.interfaces import Agent, Message
 from agenkit.middleware.retry import RetryDecorator, RetryConfig
 
-
 # Load retry behavior fixtures
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 

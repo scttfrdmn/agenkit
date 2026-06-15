@@ -36,8 +36,10 @@ jobs:
       # Use the repo's locked black (via uv) so CI and local `make format`
       # never disagree on formatting — pinning avoids version skew where a
       # newer black reformats files the locked version leaves alone.
+      # --extra dev installs black (a dev dependency); without it uv can't
+      # find black to run.
       - name: Check Python formatting (Black)
-        run: uv run black --check agenkit/ tests/ || (echo "❌ Python code not formatted. Run 'make format' to fix" && exit 1)
+        run: uv run --extra dev black --check agenkit/ tests/ || (echo "❌ Python code not formatted. Run 'make format' to fix" && exit 1)
 
       - name: Check Go formatting (gofmt)
         working-directory: agenkit-go

@@ -11,14 +11,11 @@ from agenkit.patterns import Plan, PlanningAgent, PlanStep, StepStatus
 # Mock Planning Agent
 class MockPlanningAgent:
     def __init__(self, plan_text=None):
-        self.plan_text = (
-            plan_text
-            or """Goal: Test goal
+        self.plan_text = plan_text or """Goal: Test goal
 Steps:
 1. First step
 2. Second step
 3. Third step"""
-        )
         self.call_count = 0
         self.last_message = None
         self.name = "MockPlanningAgent"
@@ -210,15 +207,13 @@ async def test_planning_agent_executes_steps():
 @pytest.mark.asyncio
 async def test_planning_agent_max_steps():
     """Test max_steps limit."""
-    mock_planner = MockPlanningAgent(
-        plan_text="""Goal: Test
+    mock_planner = MockPlanningAgent(plan_text="""Goal: Test
 Steps:
 1. Step 1
 2. Step 2
 3. Step 3
 4. Step 4
-5. Step 5"""
-    )
+5. Step 5""")
 
     agent = PlanningAgent(planner=mock_planner, max_steps=3)
 

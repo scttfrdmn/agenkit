@@ -14,7 +14,6 @@ from jsonschema import validate, ValidationError
 
 from agenkit import Message
 
-
 # Load test fixtures and schema
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 SCHEMAS_DIR = Path(__file__).parent / "schemas"

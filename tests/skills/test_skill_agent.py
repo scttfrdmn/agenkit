@@ -8,7 +8,6 @@ from agenkit.interfaces import Agent, Message
 from agenkit.skills.agent import SkillEnabledAgent
 from agenkit.skills.loader import SkillRegistry
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

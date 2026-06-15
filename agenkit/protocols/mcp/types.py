@@ -10,7 +10,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # ── JSON-RPC 2.0 wire types ──────────────────────────────────────────────────
 
 

@@ -423,4 +423,6 @@ class EnhancedRetryDecorator(Agent):
                 f"Max retry attempts ({strategy.max_retries}) exceeded for {error_class.value}: {last_error}"
             ) from last_error
 
-        raise Exception(f"Max retry attempts ({self._config.max_retries}) exceeded: {last_error}") from last_error
+        raise Exception(
+            f"Max retry attempts ({self._config.max_retries}) exceeded: {last_error}"
+        ) from last_error

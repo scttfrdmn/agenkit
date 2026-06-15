@@ -10,7 +10,9 @@ from agenkit.adapters.llm import LLM
 class MockLLM(LLM):
     """Mock LLM that returns pre-configured responses without API calls."""
 
-    def __init__(self, responses: list[str] | None = None, default_response: str = "mock response") -> None:
+    def __init__(
+        self, responses: list[str] | None = None, default_response: str = "mock response"
+    ) -> None:
         """Create mock LLM with configurable responses."""
         self._responses = responses or []
         self._default_response = default_response

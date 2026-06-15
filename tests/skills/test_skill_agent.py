@@ -14,16 +14,12 @@ from agenkit.skills.loader import SkillRegistry
 # ---------------------------------------------------------------------------
 
 
-def make_skill_dir(tmp_path: Path, name: str, description: str, body: str = "Instructions here.") -> Path:
+def make_skill_dir(
+    tmp_path: Path, name: str, description: str, body: str = "Instructions here."
+) -> Path:
     skill_dir = tmp_path / name
     skill_dir.mkdir()
-    content = (
-        "---\n"
-        f"name: {name}\n"
-        f"description: {description}\n"
-        "---\n"
-        f"{body}"
-    )
+    content = "---\n" f"name: {name}\n" f"description: {description}\n" "---\n" f"{body}"
     (skill_dir / "SKILL.md").write_text(content, encoding="utf-8")
     return skill_dir
 

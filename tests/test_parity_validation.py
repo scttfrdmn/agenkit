@@ -205,7 +205,9 @@ def test_no_missing_languages(parity_report: dict[str, Any]) -> None:
 
     # Warn about other missing languages but don't fail
     if missing:
-        pytest.skip(f"Some languages not yet in parity report: {missing}. This is OK during development.")
+        pytest.skip(
+            f"Some languages not yet in parity report: {missing}. This is OK during development."
+        )
 
 
 def test_python_is_reference(parity_report: dict[str, Any]) -> None:
@@ -269,9 +271,7 @@ def test_all_languages_have_patterns(parity_report: dict[str, Any]) -> None:
             # TypeScript counts are file-based estimates, may show 0 in categories
             continue
 
-        python_patterns = parity_report["languages"]["python"]["categories"][
-            "patterns"
-        ]
+        python_patterns = parity_report["languages"]["python"]["categories"]["patterns"]
         pattern_parity = (pattern_tests / python_patterns) * 100 if pattern_tests > 0 else 0
 
         min_pattern_parity = min_pattern_parity_by_lang.get(language, 1.0)
@@ -307,9 +307,7 @@ def test_no_negative_test_counts(parity_report: dict[str, Any]) -> None:
 
         categories = lang_data.get("categories", {})
         for cat_name, cat_count in categories.items():
-            assert cat_count >= 0, (
-                f"{lang_name}/{cat_name} has negative count: {cat_count}"
-            )
+            assert cat_count >= 0, f"{lang_name}/{cat_name} has negative count: {cat_count}"
 
 
 def test_zig_infrastructure_complete(parity_report: dict[str, Any]) -> None:
@@ -364,9 +362,9 @@ def test_cpp_test_counting_fixed(parity_report: dict[str, Any]) -> None:
 
     # Check the note was updated
     cpp_note = parity_report["languages"]["cpp"].get("note", "")
-    assert "individual TEST()" in cpp_note or "TEST() macros" in cpp_note, (
-        f"C++ note should mention individual tests: {cpp_note}"
-    )
+    assert (
+        "individual TEST()" in cpp_note or "TEST() macros" in cpp_note
+    ), f"C++ note should mention individual tests: {cpp_note}"
 
 
 @pytest.mark.slow
@@ -424,8 +422,7 @@ def test_all_languages_positive_counts(parity_report: dict[str, Any]) -> None:
 
         total = lang_data.get("total", 0)
         assert total > 0, (
-            f"{lang_name.upper()} has zero tests. "
-            "This suggests a counting or build issue."
+            f"{lang_name.upper()} has zero tests. " "This suggests a counting or build issue."
         )
 
 

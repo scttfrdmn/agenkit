@@ -86,9 +86,7 @@ class StdioClient(MCPClient):
 
         resp = await self._send("initialize", _INIT_PARAMS)
         if resp.error:
-            raise RuntimeError(
-                f"mcp initialize error {resp.error.code}: {resp.error.message}"
-            )
+            raise RuntimeError(f"mcp initialize error {resp.error.code}: {resp.error.message}")
         result = resp.result or {}
         info = result.get("serverInfo", {})
         self._server_info = MCPServerInfo(
@@ -99,9 +97,7 @@ class StdioClient(MCPClient):
     async def list_tools(self) -> list[MCPTool]:
         resp = await self._send("tools/list", None)
         if resp.error:
-            raise RuntimeError(
-                f"mcp tools/list error {resp.error.code}: {resp.error.message}"
-            )
+            raise RuntimeError(f"mcp tools/list error {resp.error.code}: {resp.error.message}")
         result = resp.result or {}
         return [
             MCPTool(
@@ -115,9 +111,7 @@ class StdioClient(MCPClient):
     async def call_tool(self, name: str, args: dict[str, Any]) -> MCPToolResult:
         resp = await self._send("tools/call", {"name": name, "arguments": args})
         if resp.error:
-            raise RuntimeError(
-                f"mcp tools/call error {resp.error.code}: {resp.error.message}"
-            )
+            raise RuntimeError(f"mcp tools/call error {resp.error.code}: {resp.error.message}")
         result = resp.result or {}
         return _parse_tool_result(result)
 
@@ -136,9 +130,7 @@ class StdioClient(MCPClient):
 
     # ── Internal ──────────────────────────────────────────────────────────────
 
-    async def _send(
-        self, method: str, params: dict[str, Any] | None
-    ) -> _JSONRPCResponse:
+    async def _send(self, method: str, params: dict[str, Any] | None) -> _JSONRPCResponse:
         async with self._lock:
             self._next_id += 1
             req = _JSONRPCRequest(
@@ -181,9 +173,7 @@ class HTTPClient(MCPClient):
         self._http = httpx.AsyncClient(timeout=self._timeout)
         resp = await self._send("initialize", _INIT_PARAMS)
         if resp.error:
-            raise RuntimeError(
-                f"mcp initialize error {resp.error.code}: {resp.error.message}"
-            )
+            raise RuntimeError(f"mcp initialize error {resp.error.code}: {resp.error.message}")
         result = resp.result or {}
         info = result.get("serverInfo", {})
         self._server_info = MCPServerInfo(
@@ -194,9 +184,7 @@ class HTTPClient(MCPClient):
     async def list_tools(self) -> list[MCPTool]:
         resp = await self._send("tools/list", None)
         if resp.error:
-            raise RuntimeError(
-                f"mcp tools/list error {resp.error.code}: {resp.error.message}"
-            )
+            raise RuntimeError(f"mcp tools/list error {resp.error.code}: {resp.error.message}")
         result = resp.result or {}
         return [
             MCPTool(
@@ -210,9 +198,7 @@ class HTTPClient(MCPClient):
     async def call_tool(self, name: str, args: dict[str, Any]) -> MCPToolResult:
         resp = await self._send("tools/call", {"name": name, "arguments": args})
         if resp.error:
-            raise RuntimeError(
-                f"mcp tools/call error {resp.error.code}: {resp.error.message}"
-            )
+            raise RuntimeError(f"mcp tools/call error {resp.error.code}: {resp.error.message}")
         result = resp.result or {}
         return _parse_tool_result(result)
 
@@ -226,9 +212,7 @@ class HTTPClient(MCPClient):
 
     # ── Internal ──────────────────────────────────────────────────────────────
 
-    async def _send(
-        self, method: str, params: dict[str, Any] | None
-    ) -> _JSONRPCResponse:
+    async def _send(self, method: str, params: dict[str, Any] | None) -> _JSONRPCResponse:
         self._next_id += 1
         req = _JSONRPCRequest(
             jsonrpc="2.0",

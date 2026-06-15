@@ -26,7 +26,9 @@ class TestCrewTask:
     def test_creation(self) -> None:
         """CrewTask can be created with description and agent."""
         llm = MockLLM()
-        agent = CrewAgent(role="Researcher", goal="Research things", backstory="Experienced", llm=llm)
+        agent = CrewAgent(
+            role="Researcher", goal="Research things", backstory="Experienced", llm=llm
+        )
         task = CrewTask(description="Research AI trends", agent=agent)
         assert task.description == "Research AI trends"
         assert task.agent is agent
@@ -43,9 +45,7 @@ class TestCrewTask:
         llm = MockLLM()
         agent = CrewAgent(role="Analyst", goal="Analyze", backstory="Sharp", llm=llm)
         upstream = CrewTask(description="Gather data", agent=agent)
-        downstream = CrewTask(
-            description="Analyze data", agent=agent, context=[upstream]
-        )
+        downstream = CrewTask(description="Analyze data", agent=agent, context=[upstream])
         assert len(downstream.context) == 1
         assert downstream.context[0] is upstream
 
@@ -128,9 +128,7 @@ class TestCrewSequential:
         """tasks_completed equals the number of tasks submitted."""
         llm = MockLLM(default_response="ok")
         agent = CrewAgent(role="Worker", goal="Work", backstory="Diligent", llm=llm)
-        tasks = [
-            CrewTask(description=f"Task {i}", agent=agent) for i in range(3)
-        ]
+        tasks = [CrewTask(description=f"Task {i}", agent=agent) for i in range(3)]
         crew = Crew(agents=[agent], tasks=tasks)
         result = await crew.kickoff()
         assert result["tasks_completed"] == 3
@@ -182,9 +180,7 @@ class TestCrewParallel:
             CrewAgent(role=f"Agent {i}", goal="Work", backstory="Focused", llm=llm)
             for i in range(3)
         ]
-        tasks = [
-            CrewTask(description=f"Task {i}", agent=agents[i]) for i in range(3)
-        ]
+        tasks = [CrewTask(description=f"Task {i}", agent=agents[i]) for i in range(3)]
         crew = Crew(agents=agents, tasks=tasks, process="parallel")
         result = await crew.kickoff()
         assert result["process"] == "parallel"

@@ -400,6 +400,7 @@ class SessionRecorder:
 FileRecordingStorage = LocalRecordingStorage  # Deprecated: Use LocalRecordingStorage instead.
 InMemoryRecordingStorage = MemoryRecordingStorage  # Deprecated: Use MemoryRecordingStorage instead.
 
+
 class SessionReplay:
     """
     Replay recorded sessions for analysis and A/B testing.

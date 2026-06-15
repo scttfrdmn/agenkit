@@ -66,9 +66,7 @@ class AgentSkill:
         # Split on "---" delimiters. File must start with "---".
         parts = raw.split("---", 2)
         if len(parts) < 3:
-            raise ValueError(
-                f"Invalid SKILL.md in {skill_dir}: missing frontmatter delimiters"
-            )
+            raise ValueError(f"Invalid SKILL.md in {skill_dir}: missing frontmatter delimiters")
 
         frontmatter_text = parts[1].strip()
         instructions = parts[2].strip()
@@ -76,26 +74,18 @@ class AgentSkill:
         try:
             fm = yaml.safe_load(frontmatter_text)
         except yaml.YAMLError as exc:
-            raise ValueError(
-                f"Invalid YAML frontmatter in {skill_dir}/SKILL.md: {exc}"
-            ) from exc
+            raise ValueError(f"Invalid YAML frontmatter in {skill_dir}/SKILL.md: {exc}") from exc
 
         if not isinstance(fm, dict):
-            raise ValueError(
-                f"Invalid frontmatter in {skill_dir}/SKILL.md: expected YAML mapping"
-            )
+            raise ValueError(f"Invalid frontmatter in {skill_dir}/SKILL.md: expected YAML mapping")
 
         name = fm.get("name")
         if not name:
-            raise ValueError(
-                f"Missing required field 'name' in {skill_dir}/SKILL.md"
-            )
+            raise ValueError(f"Missing required field 'name' in {skill_dir}/SKILL.md")
 
         description = fm.get("description")
         if not description:
-            raise ValueError(
-                f"Missing required field 'description' in {skill_dir}/SKILL.md"
-            )
+            raise ValueError(f"Missing required field 'description' in {skill_dir}/SKILL.md")
 
         return cls(
             name=str(name),
@@ -154,9 +144,7 @@ class SkillRegistry:
                 except ValueError as exc:
                     logger.warning("skipping skill directory %s: %s", entry, exc)
 
-    def find_relevant_skills(
-        self, query: str, max_results: int = 5
-    ) -> list[AgentSkill]:
+    def find_relevant_skills(self, query: str, max_results: int = 5) -> list[AgentSkill]:
         """
         Return skills most relevant to the given query string.
 

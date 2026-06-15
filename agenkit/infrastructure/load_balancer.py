@@ -118,7 +118,9 @@ class LoadBalancer(Agent):
         if weights is None:
             weights = [1] * len(agents)
         elif len(weights) != len(agents):
-            raise ValueError(f"Weights length ({len(weights)}) must match agents length ({len(agents)})")
+            raise ValueError(
+                f"Weights length ({len(weights)}) must match agents length ({len(agents)})"
+            )
 
         self._backends = [
             AgentBackend(agent=agent, weight=weight)
@@ -311,7 +313,9 @@ class LoadBalancer(Agent):
 
             # Avoid retrying same backend
             if backend.agent.name in attempted_backends:
-                if not self._config.enable_failover or len(attempted_backends) >= len(self._backends):
+                if not self._config.enable_failover or len(attempted_backends) >= len(
+                    self._backends
+                ):
                     raise Exception(f"All backends attempted: {attempted_backends}")
 
                 # Try next backend

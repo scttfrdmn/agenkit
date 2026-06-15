@@ -110,9 +110,7 @@ def test_jsonrpc_request_to_dict() -> None:
 
 def test_jsonrpc_request_to_dict_with_params() -> None:
     """_JSONRPCRequest.to_dict() includes params when set."""
-    req = _JSONRPCRequest(
-        jsonrpc="2.0", id=1, method="tools/call", params={"name": "echo"}
-    )
+    req = _JSONRPCRequest(jsonrpc="2.0", id=1, method="tools/call", params={"name": "echo"})
     d = req.to_dict()
     assert d["params"] == {"name": "echo"}
 

@@ -65,9 +65,7 @@ class SkillEnabledAgent(Agent):
         will include ``active_skills``.
         """
         query = str(message.content) if message.content is not None else ""
-        relevant = self._registry.find_relevant_skills(
-            query, max_results=self._max_active_skills
-        )
+        relevant = self._registry.find_relevant_skills(query, max_results=self._max_active_skills)
 
         if relevant:
             skill_blocks = "\n\n".join(skill.to_prompt() for skill in relevant)

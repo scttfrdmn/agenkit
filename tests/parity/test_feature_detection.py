@@ -307,9 +307,9 @@ class TestFeatureManifest:
             for category, items in features.items():
                 if isinstance(items, list):
                     # Check for duplicates
-                    assert len(items) == len(set(items)), (
-                        f"Duplicates found in {lang}.{category}: {items}"
-                    )
+                    assert len(items) == len(
+                        set(items)
+                    ), f"Duplicates found in {lang}.{category}: {items}"
 
 
 @pytest.mark.parametrize(

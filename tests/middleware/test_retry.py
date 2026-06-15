@@ -39,9 +39,7 @@ async def test_retry_success():
         fail_count=2, success_msg="success after retries", failure_msg="temporary failure"
     )
 
-    retry = RetryDecorator(
-        agent, RetryConfig(max_retries=3, initial_delay=0.01, multiplier=2.0)
-    )
+    retry = RetryDecorator(agent, RetryConfig(max_retries=3, initial_delay=0.01, multiplier=2.0))
 
     msg = Message(role="user", content="test")
     response = await retry.process(msg)
@@ -57,9 +55,7 @@ async def test_retry_max_retries_exceeded():
         fail_count=10, success_msg="should not succeed", failure_msg="persistent failure"
     )
 
-    retry = RetryDecorator(
-        agent, RetryConfig(max_retries=3, initial_delay=0.01, multiplier=2.0)
-    )
+    retry = RetryDecorator(agent, RetryConfig(max_retries=3, initial_delay=0.01, multiplier=2.0))
 
     msg = Message(role="user", content="test")
 
@@ -77,9 +73,7 @@ async def test_retry_immediate_success():
         fail_count=0, success_msg="immediate success", failure_msg="should not fail"
     )
 
-    retry = RetryDecorator(
-        agent, RetryConfig(max_retries=3, initial_delay=0.01, multiplier=2.0)
-    )
+    retry = RetryDecorator(agent, RetryConfig(max_retries=3, initial_delay=0.01, multiplier=2.0))
 
     msg = Message(role="user", content="test")
     response = await retry.process(msg)

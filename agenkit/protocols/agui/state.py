@@ -112,9 +112,7 @@ class StateManager:
         if old_value is None:
             self._pending_operations.append({"op": "add", "path": path, "value": value})
         else:
-            self._pending_operations.append(
-                {"op": "replace", "path": path, "value": value}
-            )
+            self._pending_operations.append({"op": "replace", "path": path, "value": value})
 
     def remove(self, path: str) -> None:
         """Remove a value at a path.

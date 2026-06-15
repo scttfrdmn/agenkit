@@ -5,11 +5,15 @@ name: Security
 # kept minimal, but security tooling runs here because it only delivers value
 # in CI (PR gating, scheduled scans, GitHub Security tab / SARIF integration).
 #
-# Runner split (public repo + self-hosted runner on orion.local):
-#   - push to main / tags / schedule  -> self-hosted `orion` (fast, our hardware)
+# Runner split (public repo + self-hosted Linux runners on janus.local):
+#   - push to main / tags / schedule  -> self-hosted [self-hosted, Linux]
+#                                         (janus, Rocky 9 + Docker — container
+#                                         jobs run natively)
 #   - pull_request (incl. forks)       -> ephemeral GitHub-hosted runner, so
 #                                         untrusted PR code never executes on the
 #                                         LAN runner.
+# Note: orion (macOS) cannot run `container:` jobs, so CI targets the Linux
+# runners; orion stays available as overflow for non-container work.
 # See: https://docs.github.com/actions/security-guides/security-hardening-for-github-actions#hardening-for-self-hosted-runners
 
 on:
@@ -36,7 +40,7 @@ jobs:
   # ---------------------------------------------------------------------------
   codeql:
     name: CodeQL (${{ matrix.language }})
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'orion' }}
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -62,12 +66,12 @@ jobs:
   # ---------------------------------------------------------------------------
   trivy:
     name: Trivy filesystem scan
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'orion' }}
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Trivy filesystem scan (SARIF)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -88,7 +92,7 @@ jobs:
   # ---------------------------------------------------------------------------
   govulncheck:
     name: govulncheck (Go)
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'orion' }}
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -109,7 +113,7 @@ jobs:
   # ---------------------------------------------------------------------------
   semgrep:
     name: Semgrep SAST
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'orion' }}
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     timeout-minutes: 20
     container:
       image: semgrep/semgrep

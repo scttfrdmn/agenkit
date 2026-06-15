@@ -14,9 +14,9 @@ jobs:
   # Basic formatting checks only - detailed linting runs locally
   format-check:
     name: Format Check (Python Black + Go fmt)
-    # push/schedule -> self-hosted orion (fast); PRs (incl. forks) -> hosted,
-    # so untrusted PR code never runs on the LAN runner.
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'orion' }}
+    # push/schedule -> self-hosted Linux (janus, fast); PRs (incl. forks) ->
+    # GitHub-hosted, so untrusted PR code never runs on the LAN runner.
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     timeout-minutes: 5
 
     steps:

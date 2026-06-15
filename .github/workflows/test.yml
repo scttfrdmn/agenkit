@@ -28,7 +28,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: 'pip'
+          # No pip cache: this project uses uv (installed below), so there is
+          # no pip cache dir — `cache: 'pip'` fails the post-job cleanup step.
 
       - name: Set up Go 1.23
         uses: actions/setup-go@v5

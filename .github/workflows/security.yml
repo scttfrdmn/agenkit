@@ -125,14 +125,21 @@ jobs:
     name: Semgrep SAST
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     timeout-minutes: 20
-    container:
-      image: semgrep/semgrep
     steps:
       - uses: actions/checkout@v4
+      # Run semgrep via `docker run --user` rather than a `container:` job, so
+      # output files are owned by the runner user. A `container:` job runs as
+      # root and litters the shared self-hosted `_work` dir with root-owned
+      # files that break later (non-container) jobs' checkout step.
       - name: Semgrep scan (SARIF)
-        run: semgrep scan --config auto --sarif --output semgrep.sarif
-        env:
-          SEMGREP_RULES: "p/default p/security-audit p/secrets"
+        run: |
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/src \
+            -v "${{ github.workspace }}:/src" \
+            -w /src \
+            semgrep/semgrep \
+            semgrep scan --config auto --sarif --output semgrep.sarif
       - name: Upload Semgrep SARIF
         if: always()
         uses: github/codeql-action/upload-sarif@v3

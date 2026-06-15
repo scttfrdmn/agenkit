@@ -38,13 +38,11 @@
 - **Tests**: `make test` (15-30s locally, 100% pass required)
 
 ### 🚨 Testing Policy
-**USE LOCAL TESTING ONLY - NO CI/CD**
+**LOCAL TESTING IS PRIMARY — CI IS A SAFETY NET, NOT THE GATE**
 
-- **Primary validation**: `make test` (fast, reliable, 15-30s)
-- **DO NOT** wait for or rely on GitHub CI/CD
-- **DO NOT** mention CI/CD in commit messages or docs
-- **WHY**: Current CI infrastructure is under-resourced
-- **All validation must pass locally before committing**
+- **Primary validation**: `make test` (fast, reliable, 15-30s). Always run it
+  locally and make it pass **before** committing — do not push and wait on CI.
+- **All validation must pass locally before committing.**
 
 Quick commands:
 ```bash
@@ -52,7 +50,23 @@ make test         # Fast validation (15-30s)
 make test-quick   # Quick smoke tests (~10s)
 make pre-commit   # Format + test
 make test-lint    # Full lint + test (optional)
+make security     # Local security scan (trivy/govulncheck/semgrep) — optional
 ```
+
+#### CI policy (updated)
+CI **is** enabled, but it is supplementary to local testing, not a substitute.
+- **Self-hosted runner**: functional CI (test, lint, parity) runs on the
+  `orion` self-hosted runner for `push`/`schedule`. **Pull requests (incl.
+  forks) run on GitHub-hosted runners** so untrusted code never executes on the
+  LAN runner — this split is encoded in every workflow's `runs-on:` and must be
+  preserved.
+- **Security scanning is the sanctioned exception** to "minimal CI": CodeQL,
+  Trivy, govulncheck, and Semgrep run in `.github/workflows/security.yml`, and
+  SBOM generation + Sigstore signing run on release in
+  `release-security.yml`. These only deliver value in CI (SARIF → Security tab,
+  release attestation), so they live there by design.
+- Dependabot (alerts + automated security fixes + grouped version updates) and
+  GitHub secret scanning + push protection are enabled at the repo level.
 
 ### Core Principle
 **Write idiomatic, production-quality code from the start** - not as an afterthought. Every line must pass linting checks and follow language idioms.

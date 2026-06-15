@@ -1,0 +1,95 @@
+name: Release SBOM + Signing
+
+# On each published release (or version tag), generate a Software Bill of
+# Materials for the whole repo and sign it + a checksum manifest with cosign
+# keyless signing (Sigstore / Fulcio + Rekor transparency log). Artifacts are
+# attached to the GitHub release.
+#
+# Runs on GitHub-hosted runners: keyless signing uses the workflow's OIDC
+# identity (id-token: write), and releases are maintainer-triggered/trusted,
+# so there is no fork-PR exposure to the self-hosted runner here.
+
+on:
+  release:
+    types: [published]
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write # attach assets to the release
+  id-token: write # cosign keyless (OIDC)
+
+jobs:
+  sbom-sign:
+    name: SBOM + Sign
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install syft (SBOM generator)
+        uses: anchore/sbom-action/download-syft@v0.17.0
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3.7.0
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate SBOMs (CycloneDX + SPDX)
+        run: |
+          syft scan dir:. -o cyclonedx-json="agenkit-${{ steps.ver.outputs.tag }}.cdx.json"
+          syft scan dir:. -o spdx-json="agenkit-${{ steps.ver.outputs.tag }}.spdx.json"
+
+      - name: Checksums
+        run: |
+          sha256sum \
+            "agenkit-${{ steps.ver.outputs.tag }}.cdx.json" \
+            "agenkit-${{ steps.ver.outputs.tag }}.spdx.json" \
+            > "agenkit-${{ steps.ver.outputs.tag }}.sha256"
+
+      - name: Sign artifacts (cosign keyless)
+        env:
+          COSIGN_YES: "true"
+        run: |
+          for f in \
+            "agenkit-${{ steps.ver.outputs.tag }}.cdx.json" \
+            "agenkit-${{ steps.ver.outputs.tag }}.spdx.json" \
+            "agenkit-${{ steps.ver.outputs.tag }}.sha256"; do
+            cosign sign-blob --yes \
+              --output-signature "${f}.sig" \
+              --output-certificate "${f}.pem" \
+              "${f}"
+          done
+
+      - name: Upload SBOMs + signatures as workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ steps.ver.outputs.tag }}
+          path: |
+            agenkit-${{ steps.ver.outputs.tag }}.*
+          retention-days: 90
+
+      - name: Attach to GitHub release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ steps.ver.outputs.tag }}" \
+            agenkit-${{ steps.ver.outputs.tag }}.cdx.json \
+            agenkit-${{ steps.ver.outputs.tag }}.spdx.json \
+            agenkit-${{ steps.ver.outputs.tag }}.sha256 \
+            agenkit-${{ steps.ver.outputs.tag }}.cdx.json.sig \
+            agenkit-${{ steps.ver.outputs.tag }}.cdx.json.pem \
+            agenkit-${{ steps.ver.outputs.tag }}.spdx.json.sig \
+            agenkit-${{ steps.ver.outputs.tag }}.spdx.json.pem \
+            agenkit-${{ steps.ver.outputs.tag }}.sha256.sig \
+            agenkit-${{ steps.ver.outputs.tag }}.sha256.pem \
+            --clobber

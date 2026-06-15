@@ -15,7 +15,9 @@ jobs:
   # Minimal smoke test - local testing is primary validation
   smoke-test:
     name: Smoke Test (Python 3.12 + Go 1.23)
-    runs-on: ubuntu-latest
+    # push/schedule -> self-hosted orion (fast); PRs (incl. forks) -> hosted,
+    # so untrusted PR code never runs on the LAN runner.
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'orion' }}
     timeout-minutes: 15
 
     steps:

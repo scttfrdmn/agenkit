@@ -1,4 +1,4 @@
-.PHONY: help test test-quick test-lint clean coverage
+.PHONY: help test test-quick test-lint security clean coverage
 
 # Default target
 .DEFAULT_GOAL := help
@@ -18,6 +18,16 @@ test-lint: ## Run tests with linting (slower, CI-equivalent)
 
 test-verbose: ## Run tests with verbose output
 	@./scripts/test-local.sh -v
+
+security: ## Run local security scans (trivy + govulncheck + semgrep)
+	@echo "=== Trivy (filesystem: deps, misconfig, secrets) ==="
+	@command -v trivy >/dev/null && trivy fs --scanners vuln,misconfig,secret --severity CRITICAL,HIGH --ignore-unfixed . || echo "  ⚠ trivy not installed, skipping"
+	@echo ""
+	@echo "=== govulncheck (Go) ==="
+	@command -v govulncheck >/dev/null && (cd agenkit-go && govulncheck ./...) || echo "  ⚠ govulncheck not installed, skipping (go install golang.org/x/vuln/cmd/govulncheck@latest)"
+	@echo ""
+	@echo "=== Semgrep (SAST, all languages) ==="
+	@command -v semgrep >/dev/null && semgrep scan --config auto --error || echo "  ⚠ semgrep not installed, skipping"
 
 clean: ## Clean build artifacts and coverage files
 	@echo "Cleaning build artifacts..."

@@ -1,0 +1,82 @@
+# Dependabot configuration.
+#
+# Security alerts + automated security fixes are enabled at the repo level
+# (Settings > Code security). This file adds scheduled *version* updates.
+#
+# Updates are weekly and GROUPED (one PR per ecosystem per run) to keep PR
+# volume low — CI here is intentionally light (see CLAUDE.md: local testing
+# is the primary gate). Security updates are not affected by the grouping or
+# open-PR limits below; they always land as soon as an advisory is published.
+#
+# Note: Dependabot has no support for sbt (agenkit-scala) or Zig
+# (agenkit-zig); those ecosystems are necessarily excluded.
+version: 2
+updates:
+  # GitHub Actions used by the workflows
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Python (core, reference implementation)
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      python:
+        patterns: ["*"]
+
+  # Go
+  - package-ecosystem: gomod
+    directory: "/agenkit-go"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      go:
+        patterns: ["*"]
+
+  # TypeScript / Node
+  - package-ecosystem: npm
+    directory: "/agenkit-ts"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm:
+        patterns: ["*"]
+
+  # Rust
+  - package-ecosystem: cargo
+    directory: "/agenkit-rust"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      cargo:
+        patterns: ["*"]
+
+  # C# / .NET
+  - package-ecosystem: nuget
+    directory: "/agenkit-cs"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      nuget:
+        patterns: ["*"]
+
+  # Java / Maven
+  - package-ecosystem: maven
+    directory: "/agenkit-java"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      maven:
+        patterns: ["*"]

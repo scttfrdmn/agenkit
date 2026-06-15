@@ -1,0 +1,127 @@
+name: Security
+
+# Security scanning (SAST + dependency + vuln + IaC). This is the sanctioned
+# exception to the "local testing only" policy in CLAUDE.md: functional CI is
+# kept minimal, but security tooling runs here because it only delivers value
+# in CI (PR gating, scheduled scans, GitHub Security tab / SARIF integration).
+#
+# Runner split (public repo + self-hosted runner on orion.local):
+#   - push to main / tags / schedule  -> self-hosted `orion` (fast, our hardware)
+#   - pull_request (incl. forks)       -> ephemeral GitHub-hosted runner, so
+#                                         untrusted PR code never executes on the
+#                                         LAN runner.
+# See: https://docs.github.com/actions/security-guides/security-hardening-for-github-actions#hardening-for-self-hosted-runners
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "27 6 * * 1" # Mondays 06:27 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write # upload SARIF to the Security tab
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # CodeQL SAST. Covers the languages CodeQL supports here; Rust, Zig, and
+  # Scala are NOT supported by CodeQL and are covered by semgrep below instead.
+  # ---------------------------------------------------------------------------
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'orion' }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, go, javascript-typescript, java]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          language: ${{ matrix.language }}
+          queries: security-extended
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # ---------------------------------------------------------------------------
+  # Trivy: filesystem scan (dependencies + misconfig + secrets) across the
+  # whole repo. Results uploaded as SARIF.
+  # ---------------------------------------------------------------------------
+  trivy:
+    name: Trivy filesystem scan
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'orion' }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy filesystem scan (SARIF)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-fs
+
+  # ---------------------------------------------------------------------------
+  # Go vulnerability scanning (govulncheck) — call-graph aware, so it reports
+  # only vulns the code actually reaches.
+  # ---------------------------------------------------------------------------
+  govulncheck:
+    name: govulncheck (Go)
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'orion' }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+          cache-dependency-path: agenkit-go/go.sum
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      - name: Run govulncheck
+        working-directory: agenkit-go
+        run: govulncheck ./...
+
+  # ---------------------------------------------------------------------------
+  # Semgrep SAST — covers all languages, including the ones CodeQL can't
+  # (Rust, Zig, Scala). Uploads SARIF to the Security tab.
+  # ---------------------------------------------------------------------------
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'orion' }}
+    timeout-minutes: 20
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: Semgrep scan (SARIF)
+        run: semgrep scan --config auto --sarif --output semgrep.sarif
+        env:
+          SEMGREP_RULES: "p/default p/security-audit p/secrets"
+      - name: Upload Semgrep SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep

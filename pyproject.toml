@@ -46,7 +46,7 @@ dependencies = [
 [project.optional-dependencies]
 # Testing
 test = [
-    "pytest>=7.4.0",
+    "pytest>=9.0.3",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.1.0",
     "pytest-timeout>=2.2.0",
@@ -58,7 +58,7 @@ test = [
 
 # Development
 dev = [
-    "pytest>=7.4.0",
+    "pytest>=9.0.3",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.1.0",
     "pytest-timeout>=2.2.0",
@@ -143,7 +143,7 @@ all = [
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.0",
+    "pytest>=9.0.3",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.1.0",
     "pytest-timeout>=2.2.0",

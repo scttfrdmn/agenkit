@@ -11,6 +11,10 @@ on:
 # Always run `make test` locally before pushing.
 # See CLAUDE.md for local testing requirements.
 
+permissions:
+  contents: read
+  pull-requests: write # for the parity-summary PR comment
+
 jobs:
   parity-check:
     name: Feature Parity Validation
@@ -65,7 +69,10 @@ jobs:
           retention-days: 30
 
       - name: Comment PR with parity summary
+        # Forked PRs get a read-only token, so commenting will fail there — keep
+        # it non-fatal so a missing comment never reds the whole run.
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |

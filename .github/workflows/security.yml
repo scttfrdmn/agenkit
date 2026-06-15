@@ -45,16 +45,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [python, go, javascript-typescript, java]
+        # build-mode none avoids the fragile autobuild step for the languages
+        # that support it (Go included, in modern CodeQL). Java still needs a
+        # build, so it uses autobuild.
+        include:
+          - language: python
+            build-mode: none
+          - language: go
+            build-mode: none
+          - language: javascript-typescript
+            build-mode: none
+          - language: java
+            build-mode: autobuild
     steps:
       - uses: actions/checkout@v4
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           language: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
           queries: security-extended
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
       - name: Analyze
         uses: github/codeql-action/analyze@v3
         with:

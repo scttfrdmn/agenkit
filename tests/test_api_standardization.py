@@ -21,7 +21,6 @@ from agenkit.patterns import (
 )
 from agenkit.patterns.memory import MemoryEntry, MemoryHierarchy, WorkingMemory
 
-
 # ---------------------------------------------------------------------------
 # Shared mock LLM (no real API calls)
 # ---------------------------------------------------------------------------

@@ -28,7 +28,6 @@ from agenkit.protocols.mcp.types import (
     _text_content,
 )
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 

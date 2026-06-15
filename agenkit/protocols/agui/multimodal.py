@@ -28,7 +28,6 @@ from typing import Any, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
-
 # ============================================
 # Content Part Types
 # ============================================

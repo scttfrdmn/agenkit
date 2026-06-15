@@ -32,10 +32,10 @@ type ParameterNamingCategory struct {
 }
 
 type ParameterTestCase struct {
-	ID         string                 `json:"id"`
-	Name       string                 `json:"name"`
-	Component  string                 `json:"component"`
-	Parameters map[string]Parameter   `json:"parameters"`
+	ID         string               `json:"id"`
+	Name       string               `json:"name"`
+	Component  string               `json:"component"`
+	Parameters map[string]Parameter `json:"parameters"`
 }
 
 type Parameter struct {

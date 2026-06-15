@@ -48,10 +48,10 @@ type SolverFunc func(ctx context.Context, step *PlanStep, previousResults []stri
 
 // PlanAndSolveConfig configures the Plan-and-Solve agent
 type PlanAndSolveConfig struct {
-	Planner          PlannerFunc
-	Solver           SolverFunc
-	ValidatePlan     bool
-	AllowReplanning  bool
+	Planner         PlannerFunc
+	Solver          SolverFunc
+	ValidatePlan    bool
+	AllowReplanning bool
 }
 
 // PlanAndSolveAgent implements the Plan-and-Solve technique
@@ -312,13 +312,13 @@ Improved Plan:`, problem, plan.ValidationNotes)
 	}
 
 	metadata := map[string]interface{}{
-		"technique":         "plan_and_solve",
-		"plan_steps":        planSteps,
-		"execution_steps":   executionResults,
-		"num_steps":         len(plan.Steps),
-		"validated":         plan.Validated,
-		"validation_notes":  plan.ValidationNotes,
-		"allow_replanning":  a.allowReplanning,
+		"technique":        "plan_and_solve",
+		"plan_steps":       planSteps,
+		"execution_steps":  executionResults,
+		"num_steps":        len(plan.Steps),
+		"validated":        plan.Validated,
+		"validation_notes": plan.ValidationNotes,
+		"allow_replanning": a.allowReplanning,
 	}
 
 	return &agenkit.Message{

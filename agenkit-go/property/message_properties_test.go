@@ -331,7 +331,7 @@ type mockAgentForProp struct {
 	name string
 }
 
-func (a *mockAgentForProp) Name() string        { return a.name }
+func (a *mockAgentForProp) Name() string           { return a.name }
 func (a *mockAgentForProp) Capabilities() []string { return nil }
 func (a *mockAgentForProp) Introspect() *agenkit.IntrospectionResult {
 	return agenkit.DefaultIntrospectionResult(a)

@@ -103,10 +103,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         log_agent_event("message.processing", &details);
 
         // Process the message (tracing span created automatically)
-        let message = Message::with_text("user", content);
+        let message = Message::with_text("user", *content);
         let response = observed_agent.process(message).await?;
 
-        println!("   Response: \"{}\"", response.content);
+        println!("   Response: \"{}\"", response.content_as_str().unwrap_or(""));
 
         // Log audit event
         let audit_event = AuditEvent::new(

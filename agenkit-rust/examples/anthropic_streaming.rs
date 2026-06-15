@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Anthropic Claude Streaming Example ===\n");
     println!("Asking Claude to count to 10...\n");
     println!("Response (streaming):");
-    println!("-" .repeat(60));
+    println!("{}", "-".repeat(60));
 
     // Create message
     let message = Message::with_text("user", "Count to 10, one number per line.");
@@ -64,7 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n\n=== Story Generation Example ===\n");
     println!("Asking Claude to write a short story...\n");
     println!("Response (streaming):");
-    println!("-".repeat(60));
+    println!("{}", "-".repeat(60));
 
     let message = Message::with_text(
         "user",

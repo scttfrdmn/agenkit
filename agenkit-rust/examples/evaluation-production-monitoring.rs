@@ -27,9 +27,13 @@ impl Agent for ProductionAgent {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        // Simulate processing
-        let mut rng = rand::thread_rng();
-        sleep(Duration::from_millis(50 + rng.gen_range(0..200))).await;
+        // Simulate processing. Scope the (non-Send) RNG so it is dropped
+        // before the await point — the Agent future must be Send.
+        let jitter = {
+            let mut rng = rand::thread_rng();
+            rng.gen_range(0..200)
+        };
+        sleep(Duration::from_millis(50 + jitter)).await;
 
         let content = message.content_as_str().unwrap_or("");
         Ok(Message::with_text(
@@ -48,8 +52,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Step 1: Initializing Monitoring Infrastructure");
     println!("-----------------------------------------------");
 
-    // Create metrics collector (thread-safe for concurrent access)
-    let collector = MetricsCollector::new();
+    // Create metrics collector (aggregates results across sessions)
+    let mut collector = MetricsCollector::new();
 
     // Create session recorder with file storage
     let recorder = SessionRecorder::new(Some(Box::new(FileRecordingStorage::new(
@@ -61,16 +65,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         evaluation_id: "baseline".to_string(),
         agent_name: "production-agent".to_string(),
         timestamp: Utc::now(),
-        total_tests: 0,
-        passed_tests: 0,
-        failed_tests: 0,
+        metrics: HashMap::new(),
+        aggregated_metrics: HashMap::new(),
+        context_length: None,
+        compressed_length: None,
+        compression_ratio: None,
         accuracy: Some(0.95),
         quality_score: Some(0.90),
         avg_latency_ms: Some(150.0),
-        context_length: None,
-        compression_ratio: None,
-        per_test_metrics: vec![],
-        aggregated_metrics: HashMap::new(),
+        p95_latency_ms: None,
+        total_tests: 0,
+        passed_tests: 0,
+        failed_tests: 0,
+        metadata: HashMap::new(),
     };
 
     let mut detector = RegressionDetector::new(None, Some(baseline));
@@ -101,11 +108,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut result = SessionResult::new(&session_id, agent.name());
 
         // Process message
-        let mut metadata = HashMap::new();
-        metadata.insert("session_id".to_string(), serde_json::json!(session_id));
-
         let message = Message::with_text("user", &format!("User query {}", i + 1))
-            .with_metadata_map(metadata);
+            .with_metadata("session_id", serde_json::json!(session_id));
 
         let start = std::time::Instant::now();
         let process_result = monitored_agent.process(message).await;
@@ -115,7 +119,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         match process_result {
             Err(e) => {
                 result.set_status(SessionStatus::Failed);
-                result.add_error("processing_error", &format!("{:?}", e), HashMap::new());
+                result.add_error(agenkit::evaluation::ErrorRecord::new(
+                    "processing_error",
+                    format!("{:?}", e),
+                ));
             }
             Ok(_) => {
                 result.set_status(SessionStatus::Completed);
@@ -169,7 +176,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        collector.add_result(result);
+        collector.add_session(result);
 
         // Print progress every 10 requests
         if (i + 1) % 10 == 0 {
@@ -182,95 +189,48 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Step 4: Real-time statistics
     println!("Step 4: Real-time Performance Statistics");
     println!("-----------------------------------------");
-    let stats = collector.get_statistics();
+
+    let total_sessions = collector.sessions.len();
+    let completed = collector
+        .sessions
+        .iter()
+        .filter(|s| s.is_successful())
+        .count();
+    let failed = total_sessions - completed;
+    let success_rate = collector.overall_success_rate();
+    let avg_duration = {
+        let durations: Vec<f64> = collector
+            .sessions
+            .iter()
+            .filter_map(|s| s.duration_secs())
+            .collect();
+        if durations.is_empty() {
+            0.0
+        } else {
+            durations.iter().sum::<f64>() / durations.len() as f64
+        }
+    };
 
     println!("Session Statistics:");
-    println!(
-        "  Total Sessions: {}",
-        stats
-            .get("session_count")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(0)
-    );
-    println!(
-        "  Completed: {}",
-        stats
-            .get("completed_count")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(0)
-    );
-    println!(
-        "  Failed: {}",
-        stats
-            .get("failed_count")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(0)
-    );
-    println!(
-        "  Success Rate: {:.1}%",
-        stats
-            .get("success_rate")
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0)
-            * 100.0
-    );
-    println!(
-        "  Avg Duration: {:.3}s",
-        stats
-            .get("avg_duration")
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0)
-    );
-    println!(
-        "  Total Errors: {}\n",
-        stats
-            .get("total_errors")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(0)
-    );
+    println!("  Total Sessions: {}", total_sessions);
+    println!("  Completed: {}", completed);
+    println!("  Failed: {}", failed);
+    println!("  Success Rate: {:.1}%", success_rate * 100.0);
+    println!("  Avg Duration: {:.3}s", avg_duration);
+    println!("  Total Errors: {}\n", collector.total_errors());
 
-    // Quality metrics
-    let quality_stats = collector.get_metric_aggregates("response_quality");
+    // Quality metrics (aggregate_by_name returns mean/min/max/sum/std/count)
+    let quality_stats = collector.aggregate_by_name("response_quality");
     println!("Quality Metrics:");
-    println!(
-        "  Mean: {:.3}",
-        quality_stats
-            .get("mean")
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0)
-    );
-    println!(
-        "  Min: {:.3}",
-        quality_stats
-            .get("min")
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0)
-    );
-    println!(
-        "  Max: {:.3}\n",
-        quality_stats
-            .get("max")
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0)
-    );
+    println!("  Mean: {:.3}", quality_stats.get("mean").copied().unwrap_or(0.0));
+    println!("  Min: {:.3}", quality_stats.get("min").copied().unwrap_or(0.0));
+    println!("  Max: {:.3}\n", quality_stats.get("max").copied().unwrap_or(0.0));
 
     // Cost metrics
-    let cost_stats = collector.get_metric_aggregates("total_cost");
+    let cost_stats = collector.aggregate_by_name("total_cost");
     println!("Cost Metrics:");
-    println!(
-        "  Total: ${:.4}",
-        cost_stats
-            .get("sum")
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0)
-    );
-    println!(
-        "  Average: ${:.4}\n",
-        cost_stats
-            .get("mean")
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0)
-    );
+    println!("  Total: ${:.4}", cost_stats.get("sum").copied().unwrap_or(0.0));
+    println!("  Average: ${:.4}\n", cost_stats.get("mean").copied().unwrap_or(0.0));
 
     // Step 5: Regression detection
     println!("Step 5: Checking for Regressions");
@@ -280,38 +240,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         evaluation_id: "current".to_string(),
         agent_name: "production-agent".to_string(),
         timestamp: Utc::now(),
-        total_tests: 50,
-        passed_tests: stats
-            .get("completed_count")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(0) as usize,
-        failed_tests: stats
-            .get("failed_count")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(0) as usize,
-        accuracy: Some(
-            stats
-                .get("success_rate")
-                .and_then(|v| v.as_f64())
-                .unwrap_or(0.0),
-        ),
-        quality_score: Some(
-            quality_stats
-                .get("mean")
-                .and_then(|v| v.as_f64())
-                .unwrap_or(0.0),
-        ),
-        avg_latency_ms: Some(
-            stats
-                .get("avg_duration")
-                .and_then(|v| v.as_f64())
-                .unwrap_or(0.0)
-                * 1000.0,
-        ),
-        context_length: None,
-        compression_ratio: None,
-        per_test_metrics: vec![],
+        metrics: HashMap::new(),
         aggregated_metrics: HashMap::new(),
+        context_length: None,
+        compressed_length: None,
+        compression_ratio: None,
+        accuracy: Some(success_rate),
+        quality_score: Some(quality_stats.get("mean").copied().unwrap_or(0.0)),
+        avg_latency_ms: Some(avg_duration * 1000.0),
+        p95_latency_ms: None,
+        total_tests: 50,
+        passed_tests: completed,
+        failed_tests: failed,
+        metadata: HashMap::new(),
     };
 
     let regressions = detector.detect(&current_eval, false);

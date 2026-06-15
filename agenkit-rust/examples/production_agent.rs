@@ -99,6 +99,7 @@ impl ProductionSession {
                 &model,
                 input_tokens,
                 output_tokens,
+                0, // thinking_tokens
                 None,
             )
             .await?;

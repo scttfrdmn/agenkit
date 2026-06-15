@@ -68,11 +68,22 @@ def test_unwrap():
 
 
 def test_aws_profile_initialization():
-    """Test initialization with AWS profile."""
-    llm = BedrockLLM(
-        model_id="anthropic.claude-3-haiku-20240307-v1:0",
-        profile_name="aws",
-    )
+    """Test initialization with AWS profile.
+
+    boto3 validates the named profile eagerly at session creation, so this
+    skips when no matching profile is configured (e.g. in CI without AWS
+    credentials) rather than failing on an environment gap.
+    """
+    from botocore.exceptions import ProfileNotFound
+
+    try:
+        llm = BedrockLLM(
+            model_id="anthropic.claude-3-haiku-20240307-v1:0",
+            profile_name="aws",
+        )
+    except ProfileNotFound:
+        pytest.skip("AWS profile 'aws' not configured in this environment")
+
     assert llm.model == "anthropic.claude-3-haiku-20240307-v1:0"
 
 

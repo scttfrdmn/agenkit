@@ -55,11 +55,15 @@ make security     # Local security scan (trivy/govulncheck/semgrep) — optional
 
 #### CI policy (updated)
 CI **is** enabled, but it is supplementary to local testing, not a substitute.
-- **Self-hosted runner**: functional CI (test, lint, parity) runs on the
-  `orion` self-hosted runner for `push`/`schedule`. **Pull requests (incl.
-  forks) run on GitHub-hosted runners** so untrusted code never executes on the
-  LAN runner — this split is encoded in every workflow's `runs-on:` and must be
-  preserved.
+- **Self-hosted runners**: functional CI + security scans run on the
+  `[self-hosted, Linux]` runners (janus.local, Rocky 9 — 6 runners) for
+  `push`/`schedule`. Linux is required because container jobs (Semgrep, Trivy,
+  CodeQL build) only run on Linux runners — the macOS `orion` runners cannot
+  run `container:` jobs and serve as overflow for non-container work only.
+  **Pull requests (incl. forks) run on GitHub-hosted runners** so untrusted
+  code never executes on the LAN runners — this split is encoded in every
+  workflow's `runs-on:` (`pull_request ? ubuntu-latest : [self-hosted, Linux]`)
+  and must be preserved.
 - **Security scanning is the sanctioned exception** to "minimal CI": CodeQL,
   Trivy, govulncheck, and Semgrep run in `.github/workflows/security.yml`, and
   SBOM generation + Sigstore signing run on release in

@@ -92,7 +92,7 @@ ollama = [
 ]
 
 litellm = [
-    "litellm>=1.50.0",
+    "litellm>=1.83.10",
 ]
 
 openai = [
@@ -112,7 +112,7 @@ redis = [
 all-providers = [
     "anthropic>=0.40.0",
     "openai>=1.50.0",
-    "litellm>=1.50.0",
+    "litellm>=1.83.10",
     "google-genai>=0.3.0",
     "boto3>=1.34.0",
     "botocore[crt]>=1.34.0",
@@ -123,7 +123,7 @@ all-providers = [
 llm = [
     "anthropic>=0.40.0",
     "openai>=1.50.0",
-    "litellm>=1.50.0",
+    "litellm>=1.83.10",
     "google-genai>=0.3.0",
     "boto3>=1.34.0",
     "ollama>=0.1.0",
@@ -133,7 +133,7 @@ llm = [
 all = [
     "anthropic>=0.40.0",
     "openai>=1.50.0",
-    "litellm>=1.50.0",
+    "litellm>=1.83.10",
     "google-genai>=0.3.0",
     "boto3>=1.34.0",
     "botocore[crt]>=1.34.0",

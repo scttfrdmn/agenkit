@@ -17,9 +17,9 @@ import (
 
 // CircuitBreakerTestCase represents a test case from the circuit_breaker_behavior.json fixture
 type CircuitBreakerTestCase struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Config   struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Config struct {
 		FailureThreshold  int `json:"failure_threshold"`
 		RecoveryTimeoutMS int `json:"recovery_timeout_ms"`
 		SuccessThreshold  int `json:"success_threshold"`
@@ -30,27 +30,27 @@ type CircuitBreakerTestCase struct {
 		Steps          []CircuitBreakerStep     `json:"steps,omitempty"`
 	} `json:"scenario"`
 	ExpectedBehavior *struct {
-		FinalState                     string   `json:"final_state"`
-		TotalRequests                  int      `json:"total_requests,omitempty"`
-		SuccessfulRequests             int      `json:"successful_requests,omitempty"`
-		FailedRequests                 int      `json:"failed_requests,omitempty"`
-		RejectedRequests               int      `json:"rejected_requests,omitempty"`
-		AllRequestsCompleted           bool     `json:"all_requests_completed,omitempty"`
-		StateTransitions               []string `json:"state_transitions,omitempty"`
-		FourthRequestRejected          bool     `json:"fourth_request_rejected,omitempty"`
-		RecoverySuccessful             bool     `json:"recovery_successful,omitempty"`
-		TotalSuccessfulInHalfOpen      int      `json:"total_successful_in_half_open,omitempty"`
-		CircuitFullyRecovered          bool     `json:"circuit_fully_recovered,omitempty"`
-		ReopenedAfterPartialRecovery   bool     `json:"reopened_after_partial_recovery,omitempty"`
-		AllRejectedWhileOpen           bool     `json:"all_rejected_while_open,omitempty"`
+		FinalState                   string   `json:"final_state"`
+		TotalRequests                int      `json:"total_requests,omitempty"`
+		SuccessfulRequests           int      `json:"successful_requests,omitempty"`
+		FailedRequests               int      `json:"failed_requests,omitempty"`
+		RejectedRequests             int      `json:"rejected_requests,omitempty"`
+		AllRequestsCompleted         bool     `json:"all_requests_completed,omitempty"`
+		StateTransitions             []string `json:"state_transitions,omitempty"`
+		FourthRequestRejected        bool     `json:"fourth_request_rejected,omitempty"`
+		RecoverySuccessful           bool     `json:"recovery_successful,omitempty"`
+		TotalSuccessfulInHalfOpen    int      `json:"total_successful_in_half_open,omitempty"`
+		CircuitFullyRecovered        bool     `json:"circuit_fully_recovered,omitempty"`
+		ReopenedAfterPartialRecovery bool     `json:"reopened_after_partial_recovery,omitempty"`
+		AllRejectedWhileOpen         bool     `json:"all_rejected_while_open,omitempty"`
 	} `json:"expected_behavior,omitempty"`
 	ExpectedMetrics *struct {
-		TotalRequests      int              `json:"total_requests"`
-		SuccessfulRequests int              `json:"successful_requests"`
-		FailedRequests     int              `json:"failed_requests"`
-		RejectedRequests   int              `json:"rejected_requests"`
-		StateChanges       map[string]int   `json:"state_changes"`
-		FinalState         string           `json:"final_state"`
+		TotalRequests      int            `json:"total_requests"`
+		SuccessfulRequests int            `json:"successful_requests"`
+		FailedRequests     int            `json:"failed_requests"`
+		RejectedRequests   int            `json:"rejected_requests"`
+		StateChanges       map[string]int `json:"state_changes"`
+		FinalState         string         `json:"final_state"`
 	} `json:"expected_metrics,omitempty"`
 }
 

@@ -17,24 +17,24 @@ import (
 
 // TimeoutTestCase represents a test case from the timeout_behavior.json fixture
 type TimeoutTestCase struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Config   struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Config struct {
 		TimeoutMS int `json:"timeout_ms"`
 	} `json:"config"`
 	Scenario struct {
-		AgentDelayMS   int                    `json:"agent_delay_ms"`
-		AgentResponse  map[string]interface{} `json:"agent_response,omitempty"`
-		Requests       []TimeoutRequest       `json:"requests,omitempty"`
+		AgentDelayMS  int                    `json:"agent_delay_ms"`
+		AgentResponse map[string]interface{} `json:"agent_response,omitempty"`
+		Requests      []TimeoutRequest       `json:"requests,omitempty"`
 	} `json:"scenario"`
 	ExpectedBehavior *struct {
-		Successful            bool    `json:"successful"`
-		TimedOut              bool    `json:"timed_out"`
-		FinalResponse         string  `json:"final_response,omitempty"`
-		ErrorType             string  `json:"error_type,omitempty"`
-		ErrorMessageContains  string  `json:"error_message_contains,omitempty"`
-		MinElapsedMS          int64   `json:"min_elapsed_ms"`
-		MaxElapsedMS          int64   `json:"max_elapsed_ms"`
+		Successful           bool   `json:"successful"`
+		TimedOut             bool   `json:"timed_out"`
+		FinalResponse        string `json:"final_response,omitempty"`
+		ErrorType            string `json:"error_type,omitempty"`
+		ErrorMessageContains string `json:"error_message_contains,omitempty"`
+		MinElapsedMS         int64  `json:"min_elapsed_ms"`
+		MaxElapsedMS         int64  `json:"max_elapsed_ms"`
 	} `json:"expected_behavior,omitempty"`
 	ExpectedMetrics *struct {
 		TotalRequests      int     `json:"total_requests"`

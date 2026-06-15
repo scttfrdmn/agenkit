@@ -117,9 +117,7 @@ class MCPClient(ABC):
         """Return the tools advertised by the server."""
 
     @abstractmethod
-    async def call_tool(
-        self, name: str, args: dict[str, Any]
-    ) -> MCPToolResult:
+    async def call_tool(self, name: str, args: dict[str, Any]) -> MCPToolResult:
         """Invoke a named tool with the given arguments."""
 
     @property

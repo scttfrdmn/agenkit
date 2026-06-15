@@ -104,9 +104,7 @@ class TestMatrixMarkdownGeneration:
 
     def test_generate_feature_matrix(self, feature_manifest, test_report):
         """Verify matrix markdown is generated."""
-        matrix_md = matrix_generator.generate_feature_matrix(
-            feature_manifest, test_report
-        )
+        matrix_md = matrix_generator.generate_feature_matrix(feature_manifest, test_report)
 
         # Should be non-empty string
         assert isinstance(matrix_md, str)
@@ -119,9 +117,7 @@ class TestMatrixMarkdownGeneration:
 
     def test_matrix_contains_language_names(self, feature_manifest, test_report):
         """Verify matrix includes all language names."""
-        matrix_md = matrix_generator.generate_feature_matrix(
-            feature_manifest, test_report
-        )
+        matrix_md = matrix_generator.generate_feature_matrix(feature_manifest, test_report)
 
         languages = ["Python", "Go", "TypeScript", "Rust", "C++", "Zig"]
 
@@ -130,9 +126,7 @@ class TestMatrixMarkdownGeneration:
 
     def test_matrix_contains_status_indicators(self, feature_manifest, test_report):
         """Verify matrix uses status indicators."""
-        matrix_md = matrix_generator.generate_feature_matrix(
-            feature_manifest, test_report
-        )
+        matrix_md = matrix_generator.generate_feature_matrix(feature_manifest, test_report)
 
         # Should contain status indicators
         assert "✅" in matrix_md  # Implemented
@@ -158,7 +152,10 @@ class TestGapAnalysis:
         gap_md = matrix_generator.generate_gap_analysis(feature_manifest)
 
         # If TypeScript has gaps (which it does), they should be listed
-        if feature_manifest["summary"]["total"]["typescript"] < feature_manifest["summary"]["total"]["python"]:
+        if (
+            feature_manifest["summary"]["total"]["typescript"]
+            < feature_manifest["summary"]["total"]["python"]
+        ):
             assert "## Typescript Gaps" in gap_md
 
     def test_gap_analysis_excludes_python(self, feature_manifest):
@@ -229,9 +226,7 @@ class TestDataIntegrity:
                 total == manifest_total
             ), f"{lang}: matrix shows {total} but manifest has {manifest_total}"
 
-    def test_parity_percentages_calculated_correctly(
-        self, feature_manifest, test_report
-    ):
+    def test_parity_percentages_calculated_correctly(self, feature_manifest, test_report):
         """Verify parity percentages are calculated correctly."""
         matrix_data = matrix_generator.build_matrix_data(feature_manifest, test_report)
 
@@ -241,9 +236,7 @@ class TestDataIntegrity:
 
         for stat in matrix_data["summary_stats"]:
             if python_total > 0:
-                expected_parity = round(
-                    stat["total_features"] / python_total * 100, 1
-                )
+                expected_parity = round(stat["total_features"] / python_total * 100, 1)
                 assert (
                     abs(stat["parity_percent"] - expected_parity) < 0.1
                 ), f"{stat['language']}: parity mismatch"

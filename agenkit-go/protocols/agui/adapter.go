@@ -36,11 +36,11 @@ import (
 //	    sendToFrontend(json)
 //	}
 type AGUIAdapter struct {
-	agent              agenkit.Agent
-	agentName          string
-	emitHeartbeats     bool
-	heartbeatInterval  float64
-	heartbeatSequence  int64
+	agent             agenkit.Agent
+	agentName         string
+	emitHeartbeats    bool
+	heartbeatInterval float64
+	heartbeatSequence int64
 }
 
 // AGUIAdapterConfig holds configuration for AGUIAdapter

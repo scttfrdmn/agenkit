@@ -26,7 +26,7 @@ func (e *echoAgent) Process(_ context.Context, msg *agenkit.Message) (*agenkit.M
 	return out, nil
 }
 
-func (e *echoAgent) Capabilities() []string               { return []string{} }
+func (e *echoAgent) Capabilities() []string { return []string{} }
 func (e *echoAgent) Introspect() *agenkit.IntrospectionResult {
 	return agenkit.DefaultIntrospectionResult(e)
 }

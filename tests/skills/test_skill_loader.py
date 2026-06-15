@@ -12,17 +12,13 @@ from agenkit.skills.loader import AgentSkill, SkillRegistry
 # ---------------------------------------------------------------------------
 
 
-def make_skill_dir(tmp_path: Path, name: str, description: str, body: str = "Instructions here.") -> Path:
+def make_skill_dir(
+    tmp_path: Path, name: str, description: str, body: str = "Instructions here."
+) -> Path:
     """Create a minimal valid skill directory inside tmp_path."""
     skill_dir = tmp_path / name
     skill_dir.mkdir()
-    content = (
-        "---\n"
-        f"name: {name}\n"
-        f"description: {description}\n"
-        "---\n"
-        f"{body}"
-    )
+    content = "---\n" f"name: {name}\n" f"description: {description}\n" "---\n" f"{body}"
     (skill_dir / "SKILL.md").write_text(content, encoding="utf-8")
     return skill_dir
 
@@ -33,7 +29,9 @@ def make_skill_dir(tmp_path: Path, name: str, description: str, body: str = "Ins
 
 
 def test_load_skill_valid(tmp_path: Path) -> None:
-    skill_dir = make_skill_dir(tmp_path, "pdf-processing", "Extract text from PDFs.", "# PDF\nDo stuff.")
+    skill_dir = make_skill_dir(
+        tmp_path, "pdf-processing", "Extract text from PDFs.", "# PDF\nDo stuff."
+    )
     skill = AgentSkill.from_directory(skill_dir)
 
     assert skill.name == "pdf-processing"

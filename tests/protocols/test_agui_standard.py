@@ -162,9 +162,7 @@ async def test_adapter_basic_streaming():
     assert events[1].role == "assistant"
 
     # Collect all content
-    content = "".join(
-        e.delta for e in events if isinstance(e, TextMessageContentEvent)
-    )
+    content = "".join(e.delta for e in events if isinstance(e, TextMessageContentEvent))
     assert "Echo: Hello" in content
 
 

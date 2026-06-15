@@ -34,24 +34,24 @@ const (
 
 // AgentBackend represents a backend agent with metadata.
 type AgentBackend struct {
-	Agent              agenkit.Agent
-	Weight             int
-	Healthy            bool
-	ActiveConnections  int
-	TotalRequests      int64
-	TotalFailures      int64
-	LastHealthCheck    time.Time
+	Agent               agenkit.Agent
+	Weight              int
+	Healthy             bool
+	ActiveConnections   int
+	TotalRequests       int64
+	TotalFailures       int64
+	LastHealthCheck     time.Time
 	consecutiveFailures int
 }
 
 // LoadBalancerConfig configures the load balancer.
 type LoadBalancerConfig struct {
-	Strategy              LoadBalancingStrategy
-	HealthCheckInterval   time.Duration
-	HealthCheckTimeout    time.Duration
-	FailureThreshold      int
-	SuccessThreshold      int
-	EnableFailover        bool
+	Strategy            LoadBalancingStrategy
+	HealthCheckInterval time.Duration
+	HealthCheckTimeout  time.Duration
+	FailureThreshold    int
+	SuccessThreshold    int
+	EnableFailover      bool
 }
 
 // DefaultLoadBalancerConfig returns default configuration.
@@ -68,23 +68,23 @@ func DefaultLoadBalancerConfig() LoadBalancerConfig {
 
 // LoadBalancerMetrics tracks load balancer performance.
 type LoadBalancerMetrics struct {
-	TotalRequests      int64
-	SuccessfulRequests int64
-	FailedRequests     int64
-	FailoverAttempts   int64
+	TotalRequests        int64
+	SuccessfulRequests   int64
+	FailedRequests       int64
+	FailoverAttempts     int64
 	BackendHealthChanges map[string]int64
-	mu sync.RWMutex
+	mu                   sync.RWMutex
 }
 
 // LoadBalancer distributes requests across multiple agents.
 type LoadBalancer struct {
-	backends      []*AgentBackend
-	config        LoadBalancerConfig
-	metrics       *LoadBalancerMetrics
-	currentIndex  int
-	mu            sync.Mutex
+	backends        []*AgentBackend
+	config          LoadBalancerConfig
+	metrics         *LoadBalancerMetrics
+	currentIndex    int
+	mu              sync.Mutex
 	stopHealthCheck chan struct{}
-	wg            sync.WaitGroup
+	wg              sync.WaitGroup
 }
 
 // NewLoadBalancer creates a new load balancer.
@@ -116,9 +116,9 @@ func NewLoadBalancer(agents []agenkit.Agent, config LoadBalancerConfig, weights 
 	}
 
 	lb := &LoadBalancer{
-		backends:        backends,
-		config:          config,
-		metrics:         &LoadBalancerMetrics{
+		backends: backends,
+		config:   config,
+		metrics: &LoadBalancerMetrics{
 			BackendHealthChanges: make(map[string]int64),
 		},
 		stopHealthCheck: make(chan struct{}),
@@ -386,7 +386,7 @@ func (lb *LoadBalancer) Process(ctx context.Context, message *agenkit.Message) (
 		}
 
 		// No more failover
-		return nil,fmt.Errorf("backend %s failed: %w", backend.Agent.Name(), err)
+		return nil, fmt.Errorf("backend %s failed: %w", backend.Agent.Name(), err)
 	}
 }
 

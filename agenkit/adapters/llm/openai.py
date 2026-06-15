@@ -106,7 +106,6 @@ class OpenAILLM(LLM):
         """Return the model identifier."""
         return self._model
 
-
     async def complete(
         self,
         messages: list[Message],

@@ -102,12 +102,16 @@ class TestBaseLLMValidation:
 
     def test_presence_penalty_validation_too_low(self, llm):
         """Test that presence_penalty below -2 raises ValueError."""
-        with pytest.raises(ValueError, match=r"presence_penalty must be between -2 and 2, got -2\.5"):
+        with pytest.raises(
+            ValueError, match=r"presence_penalty must be between -2 and 2, got -2\.5"
+        ):
             llm._validate_llm_params(temperature=1.0, max_tokens=None, presence_penalty=-2.5)
 
     def test_presence_penalty_validation_too_high(self, llm):
         """Test that presence_penalty above 2 raises ValueError."""
-        with pytest.raises(ValueError, match=r"presence_penalty must be between -2 and 2, got 2\.5"):
+        with pytest.raises(
+            ValueError, match=r"presence_penalty must be between -2 and 2, got 2\.5"
+        ):
             llm._validate_llm_params(temperature=1.0, max_tokens=None, presence_penalty=2.5)
 
     def test_presence_penalty_validation_valid_range(self, llm):
@@ -148,6 +152,7 @@ class TestAdapterValidationIntegration:
     @pytest.mark.asyncio
     async def test_openai_complete_validates_temperature(self, openai_llm, monkeypatch):
         """Test that complete() validates temperature before calling API."""
+
         # Mock the API call to fail if it's reached
         def mock_create(*args, **kwargs):
             pytest.fail("API should not be called when validation fails")
@@ -163,6 +168,7 @@ class TestAdapterValidationIntegration:
     @pytest.mark.asyncio
     async def test_openai_complete_validates_max_tokens(self, openai_llm, monkeypatch):
         """Test that complete() validates max_tokens before calling API."""
+
         def mock_create(*args, **kwargs):
             pytest.fail("API should not be called when validation fails")
 
@@ -177,6 +183,7 @@ class TestAdapterValidationIntegration:
     @pytest.mark.asyncio
     async def test_openai_stream_validates_temperature(self, openai_llm, monkeypatch):
         """Test that stream() validates temperature before calling API."""
+
         def mock_create(*args, **kwargs):
             pytest.fail("API should not be called when validation fails")
 

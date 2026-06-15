@@ -51,13 +51,13 @@ func (m *MockRateLimiterAgent) Process(ctx context.Context, message *agenkit.Mes
 
 // RateLimiterTestCase represents a rate limiter test case from fixtures.
 type RateLimiterTestCase struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Config   struct {
-		Rate             float64  `json:"rate"`
-		Capacity         int      `json:"capacity"`
-		TokensPerRequest int      `json:"tokens_per_request"`
-		MaxWaitMs        *int     `json:"max_wait_ms"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Config struct {
+		Rate             float64 `json:"rate"`
+		Capacity         int     `json:"capacity"`
+		TokensPerRequest int     `json:"tokens_per_request"`
+		MaxWaitMs        *int    `json:"max_wait_ms"`
 	} `json:"config"`
 	Scenario struct {
 		Requests []struct {
@@ -83,18 +83,18 @@ type RateLimiterTestCase struct {
 		BurstHandled         bool `json:"burst_handled,omitempty"`
 	} `json:"expected_behavior,omitempty"`
 	ExpectedMetrics *struct {
-		TotalRequests           int `json:"total_requests"`
-		AllowedRequests         int `json:"allowed_requests"`
-		RejectedRequests        int `json:"rejected_requests"`
+		TotalRequests            int `json:"total_requests"`
+		AllowedRequests          int `json:"allowed_requests"`
+		RejectedRequests         int `json:"rejected_requests"`
 		TotalWaitTimeGreaterThan int `json:"total_wait_time_greater_than"`
 	} `json:"expected_metrics,omitempty"`
 }
 
 // RateLimiterFixtures represents the rate limiter test fixtures file.
 type RateLimiterFixtures struct {
-	Version     string                    `json:"version"`
-	Description string                    `json:"description"`
-	TestCases   []RateLimiterTestCase     `json:"test_cases"`
+	Version     string                `json:"version"`
+	Description string                `json:"description"`
+	TestCases   []RateLimiterTestCase `json:"test_cases"`
 }
 
 func loadRateLimiterFixtures(t *testing.T) *RateLimiterFixtures {

@@ -170,7 +170,9 @@ def image_file(path: str | Path) -> ImageBase64ContentPart:
     return ImageBase64ContentPart(image_base64=image_data, mime_type=mime_type)
 
 
-def file_url(url: str, filename: Optional[str] = None, mime_type: Optional[str] = None) -> FileURLContentPart:
+def file_url(
+    url: str, filename: Optional[str] = None, mime_type: Optional[str] = None
+) -> FileURLContentPart:
     """Create a file URL content part.
 
     Args:

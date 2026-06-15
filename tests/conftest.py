@@ -63,7 +63,8 @@ def cleanup_async_resources():
         loop = asyncio.get_event_loop()
         if not loop.is_closed():
             tasks = [
-                t for t in asyncio.all_tasks(loop)
+                t
+                for t in asyncio.all_tasks(loop)
                 if not t.done() and t != asyncio.current_task(loop)
             ]
             for task in tasks:

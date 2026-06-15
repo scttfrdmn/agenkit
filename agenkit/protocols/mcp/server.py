@@ -71,9 +71,7 @@ class MCPServer:
         finally:
             writer.close()
 
-    async def handle_request(
-        self, req: _JSONRPCRequest
-    ) -> _JSONRPCResponse:
+    async def handle_request(self, req: _JSONRPCRequest) -> _JSONRPCResponse:
         """Dispatch one JSON-RPC request and return the response.
 
         This method is public for direct use in tests without needing
@@ -98,9 +96,7 @@ class MCPServer:
 
     # ── Private helpers ───────────────────────────────────────────────────────
 
-    async def _handle_line(
-        self, raw: bytes, writer: asyncio.StreamWriter
-    ) -> None:
+    async def _handle_line(self, raw: bytes, writer: asyncio.StreamWriter) -> None:
         try:
             data = json.loads(raw)
             req = _JSONRPCRequest(
@@ -121,9 +117,7 @@ class MCPServer:
         resp = await self.handle_request(req)
         self._write_response(resp, writer)
 
-    def _write_response(
-        self, resp: _JSONRPCResponse, writer: asyncio.StreamWriter
-    ) -> None:
+    def _write_response(self, resp: _JSONRPCResponse, writer: asyncio.StreamWriter) -> None:
         d: dict[str, Any] = {"jsonrpc": resp.jsonrpc, "id": resp.id}
         if resp.error is not None:
             d["error"] = {"code": resp.error.code, "message": resp.error.message}
@@ -140,21 +134,11 @@ class MCPServer:
         return _JSONRPCResponse(jsonrpc="2.0", id=req.id, result=result)
 
     def _handle_tools_list(self, req: _JSONRPCRequest) -> _JSONRPCResponse:
-        tools = [
-            MCPTool(name=t.name, description=t.description)
-            for t in self._tools.values()
-        ]
-        result = {
-            "tools": [
-                {"name": t.name, "description": t.description}
-                for t in tools
-            ]
-        }
+        tools = [MCPTool(name=t.name, description=t.description) for t in self._tools.values()]
+        result = {"tools": [{"name": t.name, "description": t.description} for t in tools]}
         return _JSONRPCResponse(jsonrpc="2.0", id=req.id, result=result)
 
-    async def _handle_tools_call(
-        self, req: _JSONRPCRequest
-    ) -> _JSONRPCResponse:
+    async def _handle_tools_call(self, req: _JSONRPCRequest) -> _JSONRPCResponse:
         params = req.params or {}
         name = params.get("name", "")
         args: dict[str, Any] = params.get("arguments", {})
@@ -164,9 +148,7 @@ class MCPServer:
             return _JSONRPCResponse(
                 jsonrpc="2.0",
                 id=req.id,
-                error=_JSONRPCError(
-                    code=-32602, message=f"unknown tool: {name}"
-                ),
+                error=_JSONRPCError(code=-32602, message=f"unknown tool: {name}"),
             )
 
         try:
@@ -187,9 +169,7 @@ class MCPServer:
         return _make_tool_call_response(req.id, mcp_result)
 
 
-def _make_tool_call_response(
-    req_id: int, result: MCPToolResult
-) -> _JSONRPCResponse:
+def _make_tool_call_response(req_id: int, result: MCPToolResult) -> _JSONRPCResponse:
     return _JSONRPCResponse(
         jsonrpc="2.0",
         id=req_id,

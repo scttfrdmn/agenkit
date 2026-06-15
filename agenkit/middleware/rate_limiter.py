@@ -18,7 +18,9 @@ class RateLimiterConfig:
     rate: float = 10.0  # Tokens per second
     capacity: int = 10  # Maximum burst capacity
     tokens_per_request: int = 1  # Tokens consumed per request
-    max_wait_ms: int | None = None  # Maximum milliseconds to wait for tokens (None = wait indefinitely)
+    max_wait_ms: int | None = (
+        None  # Maximum milliseconds to wait for tokens (None = wait indefinitely)
+    )
 
     def __post_init__(self):
         """Validate configuration."""

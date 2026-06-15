@@ -13,13 +13,19 @@ import warnings
 import pytest
 
 from agenkit import Message
-from agenkit.patterns import ConversationalAgent, ConversationalAgentConfig, ReActConfig, RouterConfig
+from agenkit.patterns import (
+    ConversationalAgent,
+    ConversationalAgentConfig,
+    ReActConfig,
+    RouterConfig,
+)
 from agenkit.patterns.memory import MemoryEntry, MemoryHierarchy, WorkingMemory
 
 
 # ---------------------------------------------------------------------------
 # Shared mock LLM (no real API calls)
 # ---------------------------------------------------------------------------
+
 
 class MockChatLLM:
     """Minimal mock implementing the LLMClient protocol (chat method)."""
@@ -36,6 +42,7 @@ class MockChatLLM:
 # ---------------------------------------------------------------------------
 # Group 1: ConversationalAgentConfig — 6 tests
 # ---------------------------------------------------------------------------
+
 
 class TestConversationalAgentConfig:
     """Tests for the new ConversationalAgentConfig dataclass."""
@@ -137,6 +144,7 @@ class TestConversationalAgentConfig:
 # Group 2: Deprecation warnings — 4 tests
 # ---------------------------------------------------------------------------
 
+
 class TestDeprecationWarnings:
     """Deprecation warning behavior for ConversationalAgent."""
 
@@ -174,6 +182,7 @@ class TestDeprecationWarnings:
 # ---------------------------------------------------------------------------
 # Group 3: MemoryHierarchy session_id deprecation — 4 tests
 # ---------------------------------------------------------------------------
+
 
 class TestMemorySessionIdDeprecation:
     """session_id deprecation warnings in MemoryHierarchy.store()."""
@@ -220,6 +229,7 @@ class TestMemorySessionIdDeprecation:
 # Group 4: Canonical defaults — 8 tests
 # ---------------------------------------------------------------------------
 
+
 class TestCanonicalDefaults:
     """Verify canonical default values match cross-language specification."""
 
@@ -262,12 +272,14 @@ class TestCanonicalDefaults:
         # without constructing RouterAgent to avoid needing a classifier
         import inspect
         from agenkit.patterns.router import RouterConfig as RC
+
         fields = {f.name: f.default for f in RC.__dataclass_fields__.values()}
         assert fields["default_key"] is None
 
     def test_react_config_max_steps_default(self) -> None:
         """ReActConfig max_steps defaults to 10."""
         import inspect
+
         fields = {f.name: f.default for f in ReActConfig.__dataclass_fields__.values()}
         assert fields["max_steps"] == 10
 

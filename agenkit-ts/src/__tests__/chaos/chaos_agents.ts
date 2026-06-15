@@ -52,7 +52,7 @@ export class ChaosAgent implements Agent {
   }
 
   get capabilities(): string[] {
-    return this.agent.capabilities;
+    return this.agent.capabilities ?? [];
   }
 
   setCrashAfter(count: number): void {
@@ -148,7 +148,7 @@ export class FlakeyAgent implements Agent {
   }
 
   get capabilities(): string[] {
-    return this.agent.capabilities;
+    return this.agent.capabilities ?? [];
   }
 
   reset(): void {
@@ -190,7 +190,7 @@ export class OverloadedAgent implements Agent {
   }
 
   get capabilities(): string[] {
-    return this.agent.capabilities;
+    return this.agent.capabilities ?? [];
   }
 
   isOverloaded(): boolean {

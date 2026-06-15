@@ -53,9 +53,19 @@ impl Default for ChainOfThoughtConfig {
 ///
 /// ```no_run
 /// use agenkit::techniques::reasoning::{ChainOfThoughtAgent, ChainOfThoughtConfig};
+/// use agenkit::core::{Agent, Message};
 /// use std::sync::Arc;
 ///
-/// let base_agent = Arc::new(my_agent);
+/// # async fn example() -> Result<(), agenkit::core::AgentError> {
+/// # struct MyAgent;
+/// # #[async_trait::async_trait]
+/// # impl Agent for MyAgent {
+/// #     fn name(&self) -> &str { "base" }
+/// #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> {
+/// #         Ok(Message::with_text("assistant", "ok"))
+/// #     }
+/// # }
+/// let base_agent = Arc::new(MyAgent);
 /// let config = ChainOfThoughtConfig {
 ///     prompt_template: "Solve step by step:\n{query}".to_string(),
 ///     max_steps: Some(5),
@@ -63,8 +73,11 @@ impl Default for ChainOfThoughtConfig {
 /// };
 ///
 /// let cot = ChainOfThoughtAgent::new(base_agent, config);
+/// let message = Message::with_text("user", "What is 2 + 2?");
 /// let response = cot.process(message).await?;
 /// // Access reasoning_steps from metadata
+/// # Ok(())
+/// # }
 /// ```
 pub struct ChainOfThoughtAgent {
     agent: Arc<dyn Agent>,

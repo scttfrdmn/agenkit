@@ -16,19 +16,16 @@
 //!
 //! ```rust,no_run
 //! use agenkit::transports::GrpcAgent;
-//! use agenkit::core::Message;
+//! use agenkit::core::{Agent, Message};
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! // Connect to gRPC server
 //! let agent = GrpcAgent::new("grpc://localhost:50051").await?;
 //!
 //! // Process message
-//! let response = agent.process(vec![Message {
-//!     role: "user".to_string(),
-//!     content: "Hello!".to_string(),
-//! }]).await?;
+//! let response = agent.process(Message::with_text("user", "Hello!")).await?;
 //!
-//! println!("Response: {}", response.content);
+//! println!("Response: {}", response.content_as_str().unwrap_or(""));
 //! # Ok(())
 //! # }
 //! ```
@@ -218,18 +215,16 @@ impl GrpcAgent {
     /// ```rust,no_run
     /// # use agenkit::transports::GrpcAgent;
     /// # use agenkit::core::Message;
+    /// # use futures::StreamExt;
     /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// # let agent = GrpcAgent::new("grpc://localhost:50051").await?;
-    /// let messages = vec![Message {
-    ///     role: "user".to_string(),
-    ///     content: "Tell me a story".to_string(),
-    /// }];
+    /// let messages = vec![Message::with_text("user", "Tell me a story")];
     ///
     /// let mut stream = agent.process_stream(messages).await?;
     ///
     /// while let Some(chunk) = stream.next().await {
     ///     match chunk {
-    ///         Ok(msg) => print!("{}", msg.content),
+    ///         Ok(msg) => print!("{}", msg.content_as_str().unwrap_or("")),
     ///         Err(e) => eprintln!("Error: {}", e),
     ///     }
     /// }

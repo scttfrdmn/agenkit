@@ -20,7 +20,7 @@ type successAgent struct {
 	name string
 }
 
-func (a *successAgent) Name() string        { return a.name }
+func (a *successAgent) Name() string           { return a.name }
 func (a *successAgent) Capabilities() []string { return []string{"mock"} }
 func (a *successAgent) Introspect() *agenkit.IntrospectionResult {
 	return agenkit.DefaultIntrospectionResult(a)
@@ -31,11 +31,11 @@ func (a *successAgent) Process(ctx context.Context, msg *agenkit.Message) (*agen
 
 // errorAgent always returns an error.
 type errorAgent struct {
-	name    string
-	errMsg  string
+	name   string
+	errMsg string
 }
 
-func (a *errorAgent) Name() string        { return a.name }
+func (a *errorAgent) Name() string           { return a.name }
 func (a *errorAgent) Capabilities() []string { return []string{"mock"} }
 func (a *errorAgent) Introspect() *agenkit.IntrospectionResult {
 	return agenkit.DefaultIntrospectionResult(a)
@@ -50,7 +50,7 @@ type echoAgent struct {
 	prefix string
 }
 
-func (a *echoAgent) Name() string        { return a.name }
+func (a *echoAgent) Name() string           { return a.name }
 func (a *echoAgent) Capabilities() []string { return []string{"echo"} }
 func (a *echoAgent) Introspect() *agenkit.IntrospectionResult {
 	return agenkit.DefaultIntrospectionResult(a)
@@ -66,7 +66,7 @@ type countingAgent struct {
 	mu        sync.Mutex
 }
 
-func (a *countingAgent) Name() string        { return a.name }
+func (a *countingAgent) Name() string           { return a.name }
 func (a *countingAgent) Capabilities() []string { return []string{"counting"} }
 func (a *countingAgent) Introspect() *agenkit.IntrospectionResult {
 	return agenkit.DefaultIntrospectionResult(a)
@@ -155,7 +155,7 @@ func TestAgentRunWithCancelledContextReturnsError(t *testing.T) {
 // ctxAwareAgent respects context cancellation.
 type ctxAwareAgent struct{ name string }
 
-func (a *ctxAwareAgent) Name() string        { return a.name }
+func (a *ctxAwareAgent) Name() string           { return a.name }
 func (a *ctxAwareAgent) Capabilities() []string { return nil }
 func (a *ctxAwareAgent) Introspect() *agenkit.IntrospectionResult {
 	return agenkit.DefaultIntrospectionResult(a)

@@ -291,5 +291,7 @@ class LocalCheckpointStorage(CheckpointStorage):
 
 
 # Deprecated aliases — use new names in new code.
-InMemoryCheckpointStorage = MemoryCheckpointStorage  # Deprecated: Use MemoryCheckpointStorage instead.
+InMemoryCheckpointStorage = (
+    MemoryCheckpointStorage  # Deprecated: Use MemoryCheckpointStorage instead.
+)
 FileCheckpointStorage = LocalCheckpointStorage  # Deprecated: Use LocalCheckpointStorage instead.

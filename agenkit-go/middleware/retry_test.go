@@ -48,9 +48,9 @@ func TestRetrySuccess(t *testing.T) {
 	}
 
 	retry := NewRetryDecorator(agent, RetryConfig{
-		MaxRetries:       3,
-		InitialRetryDelay:    10 * time.Millisecond,
-		RetryMultiplier: 2.0,
+		MaxRetries:        3,
+		InitialRetryDelay: 10 * time.Millisecond,
+		RetryMultiplier:   2.0,
 	})
 
 	msg := agenkit.NewMessage("user", "test")
@@ -80,9 +80,9 @@ func TestRetryMaxRetriesExceeded(t *testing.T) {
 	}
 
 	retry := NewRetryDecorator(agent, RetryConfig{
-		MaxRetries:       3,
-		InitialRetryDelay:    10 * time.Millisecond,
-		RetryMultiplier: 2.0,
+		MaxRetries:        3,
+		InitialRetryDelay: 10 * time.Millisecond,
+		RetryMultiplier:   2.0,
 	})
 
 	msg := agenkit.NewMessage("user", "test")
@@ -142,9 +142,9 @@ func TestRetryContextCancellation(t *testing.T) {
 	}
 
 	retry := NewRetryDecorator(agent, RetryConfig{
-		MaxRetries:       5,
-		InitialRetryDelay:    50 * time.Millisecond,
-		RetryMultiplier: 2.0,
+		MaxRetries:        5,
+		InitialRetryDelay: 50 * time.Millisecond,
+		RetryMultiplier:   2.0,
 	})
 
 	// Cancel after first failure
@@ -184,9 +184,9 @@ func TestRetryExponentialBackoff(t *testing.T) {
 	start := time.Now()
 
 	retry := NewRetryDecorator(agent, RetryConfig{
-		MaxRetries:       3,
-		InitialRetryDelay:    100 * time.Millisecond,
-		RetryMultiplier: 2.0,
+		MaxRetries:        3,
+		InitialRetryDelay: 100 * time.Millisecond,
+		RetryMultiplier:   2.0,
 	})
 
 	msg := agenkit.NewMessage("user", "test")
@@ -219,10 +219,10 @@ func TestRetryMaxRetryDelay(t *testing.T) {
 	}
 
 	retry := NewRetryDecorator(agent, RetryConfig{
-		MaxRetries:       4,
-		InitialRetryDelay:    100 * time.Millisecond,
-		MaxRetryDelay:        150 * time.Millisecond, // Cap backoff at 150ms
-		RetryMultiplier: 3.0,                    // Would be 300ms without cap
+		MaxRetries:        4,
+		InitialRetryDelay: 100 * time.Millisecond,
+		MaxRetryDelay:     150 * time.Millisecond, // Cap backoff at 150ms
+		RetryMultiplier:   3.0,                    // Would be 300ms without cap
 	})
 
 	start := time.Now()
@@ -295,7 +295,7 @@ func TestRetryShouldRetryPredicate(t *testing.T) {
 	// Test retriable error
 	retriableAgent := &SelectiveFailingAgent{errorType: "retriable"}
 	retry := NewRetryDecorator(retriableAgent, RetryConfig{
-		MaxRetries:    3,
+		MaxRetries:        3,
 		InitialRetryDelay: 10 * time.Millisecond,
 		ShouldRetry: func(err error) bool {
 			_, ok := err.(*RetriableError)
@@ -317,7 +317,7 @@ func TestRetryShouldRetryPredicate(t *testing.T) {
 	// Test non-retriable error
 	nonRetriableAgent := &SelectiveFailingAgent{errorType: "non-retriable"}
 	retry2 := NewRetryDecorator(nonRetriableAgent, RetryConfig{
-		MaxRetries:    3,
+		MaxRetries:        3,
 		InitialRetryDelay: 10 * time.Millisecond,
 		ShouldRetry: func(err error) bool {
 			_, ok := err.(*RetriableError)

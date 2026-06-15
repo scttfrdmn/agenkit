@@ -404,33 +404,43 @@ class HealthChecker:
         for probe_type, count in self._metrics.total_checks.items():
             lines.append(f'agenkit_health_checks_total{{probe="{probe_type.value}"}} {count}')
 
-        lines.extend([
-            "",
-            "# HELP agenkit_health_check_failures_total Total number of failed health checks",
-            "# TYPE agenkit_health_check_failures_total counter",
-        ])
+        lines.extend(
+            [
+                "",
+                "# HELP agenkit_health_check_failures_total Total number of failed health checks",
+                "# TYPE agenkit_health_check_failures_total counter",
+            ]
+        )
 
         for probe_type, count in self._metrics.failed_checks.items():
-            lines.append(f'agenkit_health_check_failures_total{{probe="{probe_type.value}"}} {count}')
+            lines.append(
+                f'agenkit_health_check_failures_total{{probe="{probe_type.value}"}} {count}'
+            )
 
-        lines.extend([
-            "",
-            "# HELP agenkit_health_check_duration_ms Duration of last health check in milliseconds",
-            "# TYPE agenkit_health_check_duration_ms gauge",
-        ])
+        lines.extend(
+            [
+                "",
+                "# HELP agenkit_health_check_duration_ms Duration of last health check in milliseconds",
+                "# TYPE agenkit_health_check_duration_ms gauge",
+            ]
+        )
 
         for probe_type, duration in self._metrics.last_check_duration.items():
-            lines.append(f'agenkit_health_check_duration_ms{{probe="{probe_type.value}"}} {duration}')
+            lines.append(
+                f'agenkit_health_check_duration_ms{{probe="{probe_type.value}"}} {duration}'
+            )
 
-        lines.extend([
-            "",
-            "# HELP agenkit_agent_uptime_seconds Uptime in seconds",
-            "# TYPE agenkit_agent_uptime_seconds gauge",
-            f"agenkit_agent_uptime_seconds {self._metrics.get_uptime()}",
-            "",
-            "# HELP agenkit_agent_healthy Agent health status (1=healthy, 0=unhealthy)",
-            "# TYPE agenkit_agent_healthy gauge",
-            f"agenkit_agent_healthy {1 if self.is_healthy else 0}",
-        ])
+        lines.extend(
+            [
+                "",
+                "# HELP agenkit_agent_uptime_seconds Uptime in seconds",
+                "# TYPE agenkit_agent_uptime_seconds gauge",
+                f"agenkit_agent_uptime_seconds {self._metrics.get_uptime()}",
+                "",
+                "# HELP agenkit_agent_healthy Agent health status (1=healthy, 0=unhealthy)",
+                "# TYPE agenkit_agent_healthy gauge",
+                f"agenkit_agent_healthy {1 if self.is_healthy else 0}",
+            ]
+        )
 
         return "\n".join(lines) + "\n"

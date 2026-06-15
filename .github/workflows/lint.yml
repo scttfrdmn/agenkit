@@ -14,20 +14,14 @@ jobs:
   # Basic formatting checks only - detailed linting runs locally
   format-check:
     name: Format Check (Python Black + Go fmt)
-    # push/schedule -> self-hosted orion (fast); PRs (incl. forks) -> hosted,
-    # so untrusted PR code never runs on the LAN runner.
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'orion' }}
+    # push/schedule -> self-hosted Linux (janus, fast); PRs (incl. forks) ->
+    # GitHub-hosted, so untrusted PR code never runs on the LAN runner.
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     timeout-minutes: 5
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -36,11 +30,16 @@ jobs:
           cache: true
           cache-dependency-path: agenkit-go/go.sum
 
-      - name: Install Black
-        run: pip install black
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
 
+      # Use the repo's locked black (via uv) so CI and local `make format`
+      # never disagree on formatting — pinning avoids version skew where a
+      # newer black reformats files the locked version leaves alone.
+      # --extra dev installs black (a dev dependency); without it uv can't
+      # find black to run.
       - name: Check Python formatting (Black)
-        run: black --check agenkit/ tests/ || (echo "❌ Python code not formatted. Run 'make format' to fix" && exit 1)
+        run: uv run --extra dev black --check agenkit/ tests/ || (echo "❌ Python code not formatted. Run 'make format' to fix" && exit 1)
 
       - name: Check Go formatting (gofmt)
         working-directory: agenkit-go

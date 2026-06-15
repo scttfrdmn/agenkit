@@ -118,7 +118,8 @@ class RemoteAgent(Agent):
                 if hasattr(self._transport, "send_framed_envelope"):
                     # FAST PATH: Send dict directly (skip JSON encoding/decoding)
                     await asyncio.wait_for(
-                        self._transport.send_framed_envelope(request), timeout=self._timeout_ms / 1000.0
+                        self._transport.send_framed_envelope(request),
+                        timeout=self._timeout_ms / 1000.0,
                     )
                     response = await asyncio.wait_for(
                         self._transport.receive_framed_envelope(), timeout=self._timeout_ms / 1000.0
@@ -127,7 +128,8 @@ class RemoteAgent(Agent):
                     # SLOW PATH: Encode to JSON for backward compatibility
                     request_bytes = encode_bytes(request)
                     await asyncio.wait_for(
-                        self._transport.send_framed(request_bytes), timeout=self._timeout_ms / 1000.0
+                        self._transport.send_framed(request_bytes),
+                        timeout=self._timeout_ms / 1000.0,
                     )
 
                     response_bytes = await asyncio.wait_for(
@@ -190,14 +192,16 @@ class RemoteAgent(Agent):
                 if hasattr(self._transport, "send_framed_envelope"):
                     # FAST PATH: Send dict directly (skip JSON encoding/decoding)
                     await asyncio.wait_for(
-                        self._transport.send_framed_envelope(request), timeout=self._timeout_ms / 1000.0
+                        self._transport.send_framed_envelope(request),
+                        timeout=self._timeout_ms / 1000.0,
                     )
 
                     # Receive stream chunks
                     while True:
                         # Receive next frame (dict directly, no JSON decoding)
                         response = await asyncio.wait_for(
-                            self._transport.receive_framed_envelope(), timeout=self._timeout_ms / 1000.0
+                            self._transport.receive_framed_envelope(),
+                            timeout=self._timeout_ms / 1000.0,
                         )
 
                         # Handle response type
@@ -229,7 +233,8 @@ class RemoteAgent(Agent):
                     # SLOW PATH: Encode to JSON for backward compatibility
                     request_bytes = encode_bytes(request)
                     await asyncio.wait_for(
-                        self._transport.send_framed(request_bytes), timeout=self._timeout_ms / 1000.0
+                        self._transport.send_framed(request_bytes),
+                        timeout=self._timeout_ms / 1000.0,
                     )
 
                     # Receive stream chunks

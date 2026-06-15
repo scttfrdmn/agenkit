@@ -60,8 +60,7 @@ class TestRetryBehavior:
     async def test_success_first_attempt(self):
         """Verify successful first attempt requires no retries."""
         test_case = next(
-            tc for tc in RETRY_FIXTURES["test_cases"]
-            if tc["id"] == "retry_success_first_attempt"
+            tc for tc in RETRY_FIXTURES["test_cases"] if tc["id"] == "retry_success_first_attempt"
         )
 
         # Create agent with responses from scenario
@@ -73,7 +72,7 @@ class TestRetryBehavior:
             max_retries=config_data["max_retries"],
             initial_delay=config_data["initial_backoff_ms"] / 1000.0,
             max_delay=config_data["max_backoff_ms"] / 1000.0,
-            multiplier=config_data["backoff_multiplier"]
+            multiplier=config_data["backoff_multiplier"],
         )
         retry = RetryDecorator(agent, config)
 
@@ -90,8 +89,7 @@ class TestRetryBehavior:
     async def test_success_after_retry(self):
         """Verify success after one failed attempt."""
         test_case = next(
-            tc for tc in RETRY_FIXTURES["test_cases"]
-            if tc["id"] == "retry_success_second_attempt"
+            tc for tc in RETRY_FIXTURES["test_cases"] if tc["id"] == "retry_success_second_attempt"
         )
 
         agent = MockAgent(test_case["scenario"]["agent_responses"])
@@ -100,7 +98,7 @@ class TestRetryBehavior:
             max_retries=config_data["max_retries"],
             initial_delay=config_data["initial_backoff_ms"] / 1000.0,
             max_delay=config_data["max_backoff_ms"] / 1000.0,
-            multiplier=config_data["backoff_multiplier"]
+            multiplier=config_data["backoff_multiplier"],
         )
         retry = RetryDecorator(agent, config)
 
@@ -118,16 +116,14 @@ class TestRetryBehavior:
         # Verify delay is within expected range
         min_delay = expected.get("min_total_delay_ms", 0)
         max_delay = expected.get("max_total_delay_ms", float("inf"))
-        assert min_delay <= elapsed_ms <= max_delay * 1.5, \
-            f"Delay {elapsed_ms}ms not in range [{min_delay}, {max_delay}]"
+        assert (
+            min_delay <= elapsed_ms <= max_delay * 1.5
+        ), f"Delay {elapsed_ms}ms not in range [{min_delay}, {max_delay}]"
 
     @pytest.mark.asyncio
     async def test_retries_exhausted(self):
         """Verify failure when all retries exhausted."""
-        test_case = next(
-            tc for tc in RETRY_FIXTURES["test_cases"]
-            if tc["id"] == "retry_exhausted"
-        )
+        test_case = next(tc for tc in RETRY_FIXTURES["test_cases"] if tc["id"] == "retry_exhausted")
 
         agent = MockAgent(test_case["scenario"]["agent_responses"])
         config_data = test_case["config"]
@@ -135,7 +131,7 @@ class TestRetryBehavior:
             max_retries=config_data["max_retries"],
             initial_delay=config_data["initial_backoff_ms"] / 1000.0,
             max_delay=config_data["max_backoff_ms"] / 1000.0,
-            multiplier=config_data["backoff_multiplier"]
+            multiplier=config_data["backoff_multiplier"],
         )
         retry = RetryDecorator(agent, config)
 
@@ -153,8 +149,7 @@ class TestRetryBehavior:
     async def test_exponential_backoff(self):
         """Verify exponential backoff timing."""
         test_case = next(
-            tc for tc in RETRY_FIXTURES["test_cases"]
-            if tc["id"] == "retry_exponential_backoff"
+            tc for tc in RETRY_FIXTURES["test_cases"] if tc["id"] == "retry_exponential_backoff"
         )
 
         agent = MockAgent(test_case["scenario"]["agent_responses"])
@@ -163,7 +158,7 @@ class TestRetryBehavior:
             max_retries=config_data["max_retries"],
             initial_delay=config_data["initial_backoff_ms"] / 1000.0,
             max_delay=config_data["max_backoff_ms"] / 1000.0,
-            multiplier=config_data["backoff_multiplier"]
+            multiplier=config_data["backoff_multiplier"],
         )
         retry = RetryDecorator(agent, config)
 
@@ -182,15 +177,15 @@ class TestRetryBehavior:
         # Expected: 100ms + 200ms + 400ms = 700ms
         min_delay = expected.get("min_total_delay_ms", 0)
         max_delay = expected.get("max_total_delay_ms", float("inf"))
-        assert min_delay <= elapsed_ms <= max_delay * 1.5, \
-            f"Delay {elapsed_ms}ms not in range [{min_delay}, {max_delay}]"
+        assert (
+            min_delay <= elapsed_ms <= max_delay * 1.5
+        ), f"Delay {elapsed_ms}ms not in range [{min_delay}, {max_delay}]"
 
     @pytest.mark.asyncio
     async def test_max_backoff_cap(self):
         """Verify backoff is capped at max_backoff."""
         test_case = next(
-            tc for tc in RETRY_FIXTURES["test_cases"]
-            if tc["id"] == "retry_max_backoff_capped"
+            tc for tc in RETRY_FIXTURES["test_cases"] if tc["id"] == "retry_max_backoff_capped"
         )
 
         agent = MockAgent(test_case["scenario"]["agent_responses"])
@@ -199,7 +194,7 @@ class TestRetryBehavior:
             max_retries=config_data["max_retries"],
             initial_delay=config_data["initial_backoff_ms"] / 1000.0,
             max_delay=config_data["max_backoff_ms"] / 1000.0,
-            multiplier=config_data["backoff_multiplier"]
+            multiplier=config_data["backoff_multiplier"],
         )
         retry = RetryDecorator(agent, config)
 
@@ -218,15 +213,15 @@ class TestRetryBehavior:
         # Verify capped backoff: 100ms + 200ms (capped) + 200ms (capped) + 200ms (capped) = 700ms
         min_delay = expected.get("min_total_delay_ms", 0)
         max_delay = expected.get("max_total_delay_ms", float("inf"))
-        assert min_delay <= elapsed_ms <= max_delay * 1.5, \
-            f"Delay {elapsed_ms}ms not in range [{min_delay}, {max_delay}]"
+        assert (
+            min_delay <= elapsed_ms <= max_delay * 1.5
+        ), f"Delay {elapsed_ms}ms not in range [{min_delay}, {max_delay}]"
 
     @pytest.mark.asyncio
     async def test_non_retryable_error(self):
         """Verify non-retryable errors fail immediately."""
         test_case = next(
-            tc for tc in RETRY_FIXTURES["test_cases"]
-            if tc["id"] == "retry_non_retryable_error"
+            tc for tc in RETRY_FIXTURES["test_cases"] if tc["id"] == "retry_non_retryable_error"
         )
 
         agent = MockAgent(test_case["scenario"]["agent_responses"])
@@ -241,7 +236,7 @@ class TestRetryBehavior:
             initial_delay=config_data["initial_backoff_ms"] / 1000.0,
             max_delay=config_data["max_backoff_ms"] / 1000.0,
             multiplier=config_data["backoff_multiplier"],
-            should_retry=should_retry
+            should_retry=should_retry,
         )
         retry = RetryDecorator(agent, config)
 
@@ -259,8 +254,7 @@ class TestRetryBehavior:
     async def test_metrics_tracking(self):
         """Verify retry metrics are tracked correctly."""
         test_case = next(
-            tc for tc in RETRY_FIXTURES["test_cases"]
-            if tc["id"] == "retry_metrics_tracking"
+            tc for tc in RETRY_FIXTURES["test_cases"] if tc["id"] == "retry_metrics_tracking"
         )
 
         agent = MockAgent(test_case["scenario"]["agent_responses"])
@@ -269,7 +263,7 @@ class TestRetryBehavior:
             max_retries=config_data["max_retries"],
             initial_delay=config_data["initial_backoff_ms"] / 1000.0,
             max_delay=config_data["max_backoff_ms"] / 1000.0,
-            multiplier=config_data["backoff_multiplier"]
+            multiplier=config_data["backoff_multiplier"],
         )
         retry = RetryDecorator(agent, config)
 

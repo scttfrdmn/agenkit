@@ -207,9 +207,7 @@ class CircuitBreakerDecorator(Agent):
         # Attempt request with timeout
         try:
             timeout_seconds = self._config.timeout_ms / 1000.0
-            result = await asyncio.wait_for(
-                self._agent.process(message), timeout=timeout_seconds
-            )
+            result = await asyncio.wait_for(self._agent.process(message), timeout=timeout_seconds)
 
             async with self._lock:
                 await self._on_success()

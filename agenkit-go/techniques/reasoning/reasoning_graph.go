@@ -403,12 +403,12 @@ func (g *ReasoningGraph) GetPathScore(path []int) float64 {
 
 // GraphStatistics contains statistics about the reasoning graph.
 type GraphStatistics struct {
-	NumNodes       int
-	NumEdges       int
-	NodeTypes      map[string]int
-	EdgeTypes      map[string]int
-	HasCycles      bool
-	AvgConfidence  float64
+	NumNodes      int
+	NumEdges      int
+	NodeTypes     map[string]int
+	EdgeTypes     map[string]int
+	HasCycles     bool
+	AvgConfidence float64
 }
 
 // Statistics returns statistics about the graph.

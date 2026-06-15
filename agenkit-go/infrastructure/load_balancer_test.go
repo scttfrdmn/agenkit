@@ -11,17 +11,17 @@ import (
 
 // mockAgentLB is a test double for the Agent interface.
 type mockAgentLB struct {
-	name        string
-	response    string
-	callCount   atomic.Int64
-	shouldFail  bool
+	name       string
+	response   string
+	callCount  atomic.Int64
+	shouldFail bool
 }
 
 func newMockAgentLB(name, response string) *mockAgentLB {
 	return &mockAgentLB{name: name, response: response}
 }
 
-func (m *mockAgentLB) Name() string { return m.name }
+func (m *mockAgentLB) Name() string           { return m.name }
 func (m *mockAgentLB) Capabilities() []string { return []string{"mock"} }
 func (m *mockAgentLB) Introspect() *agenkit.IntrospectionResult {
 	return &agenkit.IntrospectionResult{AgentName: m.name}

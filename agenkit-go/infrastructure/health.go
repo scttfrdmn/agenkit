@@ -49,20 +49,20 @@ type HealthCheckResult struct {
 // HealthCheckConfig configures health check behavior.
 type HealthCheckConfig struct {
 	// Liveness probe settings
-	LivenessEnabled         bool
-	LivenessInterval        time.Duration
-	LivenessTimeout         time.Duration
+	LivenessEnabled          bool
+	LivenessInterval         time.Duration
+	LivenessTimeout          time.Duration
 	LivenessFailureThreshold int
 
 	// Readiness probe settings
-	ReadinessEnabled         bool
-	ReadinessInterval        time.Duration
-	ReadinessTimeout         time.Duration
+	ReadinessEnabled          bool
+	ReadinessInterval         time.Duration
+	ReadinessTimeout          time.Duration
 	ReadinessFailureThreshold int
 
 	// Startup probe settings
-	StartupEnabled         bool
-	StartupTimeout         time.Duration
+	StartupEnabled          bool
+	StartupTimeout          time.Duration
 	StartupFailureThreshold int
 
 	// Custom health check function
@@ -88,14 +88,14 @@ func DefaultHealthCheckConfig() HealthCheckConfig {
 
 // HealthMetrics tracks health check metrics.
 type HealthMetrics struct {
-	TotalChecks          map[ProbeType]int64
-	SuccessfulChecks     map[ProbeType]int64
-	FailedChecks         map[ProbeType]int64
-	LastCheckTime        map[ProbeType]time.Time
-	LastCheckDuration    map[ProbeType]float64
-	ConsecutiveFailures  map[ProbeType]int
-	UptimeStart          time.Time
-	mu                   sync.RWMutex
+	TotalChecks         map[ProbeType]int64
+	SuccessfulChecks    map[ProbeType]int64
+	FailedChecks        map[ProbeType]int64
+	LastCheckTime       map[ProbeType]time.Time
+	LastCheckDuration   map[ProbeType]float64
+	ConsecutiveFailures map[ProbeType]int
+	UptimeStart         time.Time
+	mu                  sync.RWMutex
 }
 
 // NewHealthMetrics creates new health metrics.
@@ -118,16 +118,16 @@ func (hm *HealthMetrics) GetUptime() float64 {
 
 // HealthChecker monitors agent health.
 type HealthChecker struct {
-	agent            agenkit.Agent
-	config           HealthCheckConfig
-	metrics          *HealthMetrics
-	isAlive          bool
-	isReady          bool
-	startupComplete  bool
+	agent                 agenkit.Agent
+	config                HealthCheckConfig
+	metrics               *HealthMetrics
+	isAlive               bool
+	isReady               bool
+	startupComplete       bool
 	lastSuccessfulRequest time.Time
-	mu               sync.RWMutex
-	stopChan         chan struct{}
-	wg               sync.WaitGroup
+	mu                    sync.RWMutex
+	stopChan              chan struct{}
+	wg                    sync.WaitGroup
 }
 
 // NewHealthChecker creates a new health checker.

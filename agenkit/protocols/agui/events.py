@@ -99,9 +99,7 @@ class RunFinishedEvent(BaseEvent):
     type: Literal[EventType.RUN_FINISHED] = EventType.RUN_FINISHED
     thread_id: str = Field(description="Thread identifier")
     run_id: str = Field(description="Run identifier")
-    result: Optional[dict[str, Any]] = Field(
-        default=None, description="Final result of the run"
-    )
+    result: Optional[dict[str, Any]] = Field(default=None, description="Final result of the run")
 
 
 class RunErrorEvent(BaseEvent):
@@ -118,9 +116,7 @@ class StepStartedEvent(BaseEvent):
 
     type: Literal[EventType.STEP_STARTED] = EventType.STEP_STARTED
     step_name: str = Field(description="Name of the processing step")
-    metadata: Optional[dict[str, Any]] = Field(
-        default=None, description="Additional step metadata"
-    )
+    metadata: Optional[dict[str, Any]] = Field(default=None, description="Additional step metadata")
 
 
 class StepFinishedEvent(BaseEvent):
@@ -142,9 +138,7 @@ class TextMessageStartEvent(BaseEvent):
     type: Literal[EventType.TEXT_MESSAGE_START] = EventType.TEXT_MESSAGE_START
     message_id: str = Field(description="Unique message identifier")
     role: str = Field(description="Message role (assistant, user, system)")
-    metadata: Optional[dict[str, Any]] = Field(
-        default=None, description="Message metadata"
-    )
+    metadata: Optional[dict[str, Any]] = Field(default=None, description="Message metadata")
 
 
 class TextMessageContentEvent(BaseEvent):
@@ -160,9 +154,7 @@ class TextMessageEndEvent(BaseEvent):
 
     type: Literal[EventType.TEXT_MESSAGE_END] = EventType.TEXT_MESSAGE_END
     message_id: str = Field(description="Message identifier")
-    metadata: Optional[dict[str, Any]] = Field(
-        default=None, description="Final message metadata"
-    )
+    metadata: Optional[dict[str, Any]] = Field(default=None, description="Final message metadata")
 
 
 class TextMessageChunkEvent(BaseEvent):
@@ -193,9 +185,7 @@ class ToolCallStartEvent(BaseEvent):
     type: Literal[EventType.TOOL_CALL_START] = EventType.TOOL_CALL_START
     tool_call_id: str = Field(description="Unique tool call identifier")
     tool_call_name: str = Field(description="Name of the tool being called")
-    parent_message_id: Optional[str] = Field(
-        default=None, description="Parent message ID"
-    )
+    parent_message_id: Optional[str] = Field(default=None, description="Parent message ID")
 
 
 class ToolCallArgsEvent(BaseEvent):
@@ -218,12 +208,8 @@ class ToolCallProgressEvent(BaseEvent):
 
     type: Literal[EventType.TOOL_CALL_PROGRESS] = EventType.TOOL_CALL_PROGRESS
     tool_call_id: str = Field(description="Tool call identifier")
-    progress: float = Field(
-        description="Progress percentage (0.0 to 1.0)", ge=0.0, le=1.0
-    )
-    status: Optional[str] = Field(
-        default=None, description="Human-readable status message"
-    )
+    progress: float = Field(description="Progress percentage (0.0 to 1.0)", ge=0.0, le=1.0)
+    status: Optional[str] = Field(default=None, description="Human-readable status message")
     metadata: Optional[dict[str, Any]] = Field(
         default=None, description="Additional progress metadata"
     )
@@ -244,9 +230,7 @@ class ToolCallChunkEvent(BaseEvent):
 
     type: Literal[EventType.TOOL_CALL_CHUNK] = EventType.TOOL_CALL_CHUNK
     tool_call_id: str = Field(description="Tool call identifier")
-    tool_call_name: Optional[str] = Field(
-        default=None, description="Tool name (for first chunk)"
-    )
+    tool_call_name: Optional[str] = Field(default=None, description="Tool name (for first chunk)")
     delta: Optional[str] = Field(default=None, description="Argument delta")
     is_first: bool = Field(default=False, description="Whether this is the first chunk")
     is_last: bool = Field(default=False, description="Whether this is the last chunk")

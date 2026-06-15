@@ -23,19 +23,19 @@ type RetryBehaviorFixtures struct {
 }
 
 type RetryBehaviorTest struct {
-	ID               string               `json:"id"`
-	Name             string               `json:"name"`
-	Config           RetryConfigData      `json:"config"`
-	Scenario         RetryScenario        `json:"scenario"`
-	ExpectedBehavior map[string]any       `json:"expected_behavior,omitempty"`
-	ExpectedMetrics  map[string]any       `json:"expected_metrics,omitempty"`
+	ID               string          `json:"id"`
+	Name             string          `json:"name"`
+	Config           RetryConfigData `json:"config"`
+	Scenario         RetryScenario   `json:"scenario"`
+	ExpectedBehavior map[string]any  `json:"expected_behavior,omitempty"`
+	ExpectedMetrics  map[string]any  `json:"expected_metrics,omitempty"`
 }
 
 type RetryConfigData struct {
-	MaxRetries          int     `json:"max_retries"`
-	InitialBackoffMs    int     `json:"initial_backoff_ms"`
-	MaxBackoffMs        int     `json:"max_backoff_ms"`
-	BackoffMultiplier   float64 `json:"backoff_multiplier"`
+	MaxRetries        int     `json:"max_retries"`
+	InitialBackoffMs  int     `json:"initial_backoff_ms"`
+	MaxBackoffMs      int     `json:"max_backoff_ms"`
+	BackoffMultiplier float64 `json:"backoff_multiplier"`
 }
 
 type RetryScenario struct {
@@ -115,10 +115,10 @@ func TestRetryBehavior_SuccessFirstAttempt(t *testing.T) {
 
 	// Create retry config
 	config := middleware.RetryConfig{
-		MaxRetries:          testCase.Config.MaxRetries,
-		InitialRetryDelay:   time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
-		MaxRetryDelay:       time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
-		RetryMultiplier:     testCase.Config.BackoffMultiplier,
+		MaxRetries:        testCase.Config.MaxRetries,
+		InitialRetryDelay: time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
+		MaxRetryDelay:     time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
+		RetryMultiplier:   testCase.Config.BackoffMultiplier,
 	}
 
 	retry := middleware.NewRetryDecorator(agent, config)
@@ -141,10 +141,10 @@ func TestRetryBehavior_SuccessAfterRetry(t *testing.T) {
 
 	agent := &MockRetryAgent{Responses: testCase.Scenario.AgentResponses}
 	config := middleware.RetryConfig{
-		MaxRetries:          testCase.Config.MaxRetries,
-		InitialRetryDelay:   time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
-		MaxRetryDelay:       time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
-		RetryMultiplier:     testCase.Config.BackoffMultiplier,
+		MaxRetries:        testCase.Config.MaxRetries,
+		InitialRetryDelay: time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
+		MaxRetryDelay:     time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
+		RetryMultiplier:   testCase.Config.BackoffMultiplier,
 	}
 
 	retry := middleware.NewRetryDecorator(agent, config)
@@ -174,10 +174,10 @@ func TestRetryBehavior_RetriesExhausted(t *testing.T) {
 
 	agent := &MockRetryAgent{Responses: testCase.Scenario.AgentResponses}
 	config := middleware.RetryConfig{
-		MaxRetries:          testCase.Config.MaxRetries,
-		InitialRetryDelay:   time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
-		MaxRetryDelay:       time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
-		RetryMultiplier:     testCase.Config.BackoffMultiplier,
+		MaxRetries:        testCase.Config.MaxRetries,
+		InitialRetryDelay: time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
+		MaxRetryDelay:     time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
+		RetryMultiplier:   testCase.Config.BackoffMultiplier,
 	}
 
 	retry := middleware.NewRetryDecorator(agent, config)
@@ -199,10 +199,10 @@ func TestRetryBehavior_ExponentialBackoff(t *testing.T) {
 
 	agent := &MockRetryAgent{Responses: testCase.Scenario.AgentResponses}
 	config := middleware.RetryConfig{
-		MaxRetries:          testCase.Config.MaxRetries,
-		InitialRetryDelay:   time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
-		MaxRetryDelay:       time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
-		RetryMultiplier:     testCase.Config.BackoffMultiplier,
+		MaxRetries:        testCase.Config.MaxRetries,
+		InitialRetryDelay: time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
+		MaxRetryDelay:     time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
+		RetryMultiplier:   testCase.Config.BackoffMultiplier,
 	}
 
 	retry := middleware.NewRetryDecorator(agent, config)
@@ -236,10 +236,10 @@ func TestRetryBehavior_MaxBackoffCap(t *testing.T) {
 
 	agent := &MockRetryAgent{Responses: testCase.Scenario.AgentResponses}
 	config := middleware.RetryConfig{
-		MaxRetries:          testCase.Config.MaxRetries,
-		InitialRetryDelay:   time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
-		MaxRetryDelay:       time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
-		RetryMultiplier:     testCase.Config.BackoffMultiplier,
+		MaxRetries:        testCase.Config.MaxRetries,
+		InitialRetryDelay: time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
+		MaxRetryDelay:     time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
+		RetryMultiplier:   testCase.Config.BackoffMultiplier,
 	}
 
 	retry := middleware.NewRetryDecorator(agent, config)
@@ -279,11 +279,11 @@ func TestRetryBehavior_NonRetryableError(t *testing.T) {
 	}
 
 	config := middleware.RetryConfig{
-		MaxRetries:          testCase.Config.MaxRetries,
-		InitialRetryDelay:   time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
-		MaxRetryDelay:       time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
-		RetryMultiplier:     testCase.Config.BackoffMultiplier,
-		ShouldRetry:         shouldRetry,
+		MaxRetries:        testCase.Config.MaxRetries,
+		InitialRetryDelay: time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
+		MaxRetryDelay:     time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
+		RetryMultiplier:   testCase.Config.BackoffMultiplier,
+		ShouldRetry:       shouldRetry,
 	}
 
 	retry := middleware.NewRetryDecorator(agent, config)
@@ -306,10 +306,10 @@ func TestRetryBehavior_MetricsTracking(t *testing.T) {
 
 	agent := &MockRetryAgent{Responses: testCase.Scenario.AgentResponses}
 	config := middleware.RetryConfig{
-		MaxRetries:          testCase.Config.MaxRetries,
-		InitialRetryDelay:   time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
-		MaxRetryDelay:       time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
-		RetryMultiplier:     testCase.Config.BackoffMultiplier,
+		MaxRetries:        testCase.Config.MaxRetries,
+		InitialRetryDelay: time.Duration(testCase.Config.InitialBackoffMs) * time.Millisecond,
+		MaxRetryDelay:     time.Duration(testCase.Config.MaxBackoffMs) * time.Millisecond,
+		RetryMultiplier:   testCase.Config.BackoffMultiplier,
 	}
 
 	retry := middleware.NewRetryDecorator(agent, config)

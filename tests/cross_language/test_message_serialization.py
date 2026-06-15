@@ -75,8 +75,7 @@ class TestMessageSerialization:
     def test_assistant_message_with_metadata(self, message_test_cases):
         """Test assistant message with metadata."""
         test_case = next(
-            tc for tc in message_test_cases
-            if tc["id"] == "assistant_message_with_metadata"
+            tc for tc in message_test_cases if tc["id"] == "assistant_message_with_metadata"
         )
 
         msg_data = test_case["message"]
@@ -120,10 +119,7 @@ class TestMessageSerialization:
 
     def test_tool_message_structured(self, message_test_cases):
         """Test tool message with structured content."""
-        test_case = next(
-            tc for tc in message_test_cases
-            if tc["id"] == "tool_message_structured"
-        )
+        test_case = next(tc for tc in message_test_cases if tc["id"] == "tool_message_structured")
 
         msg_data = test_case["message"]
         msg = Message(
@@ -250,10 +246,7 @@ class TestMessageSerialization:
 
     def test_numeric_metadata(self, message_test_cases):
         """Test message with various numeric metadata types."""
-        test_case = next(
-            tc for tc in message_test_cases
-            if tc["id"] == "numeric_metadata"
-        )
+        test_case = next(tc for tc in message_test_cases if tc["id"] == "numeric_metadata")
 
         msg_data = test_case["message"]
         msg = Message(
@@ -296,9 +289,7 @@ class TestMessageSerialization:
             try:
                 validate(instance=serialized, schema=MESSAGE_SCHEMA)
             except ValidationError as e:
-                pytest.fail(
-                    f"Test case '{test_case['id']}' failed schema validation: {e.message}"
-                )
+                pytest.fail(f"Test case '{test_case['id']}' failed schema validation: {e.message}")
 
             # Verify core properties match
             assert serialized["role"] == msg_data["role"]
@@ -318,7 +309,11 @@ class TestMessageSerialization:
             result["metadata"] = msg.metadata
 
         if hasattr(msg, "timestamp") and msg.timestamp:
-            result["timestamp"] = msg.timestamp.isoformat() if hasattr(msg.timestamp, "isoformat") else str(msg.timestamp)
+            result["timestamp"] = (
+                msg.timestamp.isoformat()
+                if hasattr(msg.timestamp, "isoformat")
+                else str(msg.timestamp)
+            )
 
         return result
 

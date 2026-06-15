@@ -180,9 +180,9 @@ func (o *OpenAILLM) Complete(ctx context.Context, messages []*agenkit.Message, o
 		}
 		for _, tc := range msg.ToolCalls {
 			blocks = append(blocks, map[string]interface{}{
-				"type": "tool_use",
-				"id":   tc.ID,
-				"name": tc.Function.Name,
+				"type":  "tool_use",
+				"id":    tc.ID,
+				"name":  tc.Function.Name,
 				"input": tc.Function.Arguments,
 			})
 		}

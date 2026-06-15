@@ -18,7 +18,6 @@ from agenkit.middleware.timeout import TimeoutDecorator, TimeoutConfig
 from agenkit.middleware.rate_limiter import RateLimiterDecorator, RateLimiterConfig
 from agenkit.middleware.circuit_breaker import CircuitBreakerDecorator, CircuitBreakerConfig
 
-
 # Load API consistency fixtures
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 

@@ -6,7 +6,6 @@ import pytest
 
 from agenkit.skills.loader import AgentSkill, SkillRegistry
 
-
 # ---------------------------------------------------------------------------
 # Fixture helpers
 # ---------------------------------------------------------------------------

@@ -60,11 +60,11 @@ func TestSSEFormatter_FormatEvent(t *testing.T) {
 	formatter := SSEFormatter{}
 
 	tests := []struct {
-		name              string
-		event             agui.AGUIEvent
-		includeEventName  bool
-		wantContains      []string
-		wantNotContains   []string
+		name             string
+		event            agui.AGUIEvent
+		includeEventName bool
+		wantContains     []string
+		wantNotContains  []string
 	}{
 		{
 			name:             "TextMessageChunk without event name",
@@ -179,12 +179,12 @@ func TestAGUISSEHandler_ServeHTTP_Success(t *testing.T) {
 	body := rr.Body.String()
 
 	expectedPatterns := []string{
-		"data:",                     // SSE format
-		"metadata",                  // MetadataEvent
-		"text_message_start",        // TextMessageStart
-		"text_message_chunk",        // TextMessageChunk
-		"text_message_complete",     // TextMessageComplete
-		"stream_complete",           // Completion comment
+		"data:",                 // SSE format
+		"metadata",              // MetadataEvent
+		"text_message_start",    // TextMessageStart
+		"text_message_chunk",    // TextMessageChunk
+		"text_message_complete", // TextMessageComplete
+		"stream_complete",       // Completion comment
 	}
 
 	for _, pattern := range expectedPatterns {

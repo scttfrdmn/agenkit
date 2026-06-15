@@ -202,10 +202,10 @@ func TestGenerateThoughts(t *testing.T) {
 // TestIdentifyConnections tests identifying logical connections between thoughts.
 func TestIdentifyConnections(t *testing.T) {
 	tests := []struct {
-		name       string
-		response   string
+		name         string
+		response     string
 		expectedEdge EdgeType
-		expectError bool
+		expectError  bool
 	}{
 		{
 			name:         "Support relationship",
@@ -272,9 +272,9 @@ func TestIdentifyConnections(t *testing.T) {
 func TestBuildGraph(t *testing.T) {
 	baseAgent := &mockGraphAgent{
 		responses: map[string]string{
-			"Premises": "1. Machine learning uses algorithms\n2. Algorithms process data",
-			"New thoughts": "- ML can predict outcomes\n- Data quality matters",
-			"relationship": "SUPPORT",
+			"Premises":         "1. Machine learning uses algorithms\n2. Algorithms process data",
+			"New thoughts":     "- ML can predict outcomes\n- Data quality matters",
+			"relationship":     "SUPPORT",
 			"Final conclusion": "Machine learning is powerful but requires good data",
 		},
 	}
@@ -378,9 +378,9 @@ func TestAggregatePaths(t *testing.T) {
 func TestProcess(t *testing.T) {
 	baseAgent := &mockGraphAgent{
 		responses: map[string]string{
-			"Premises": "1. Premise A\n2. Premise B",
-			"New thoughts": "- Thought 1\n- Thought 2",
-			"relationship": "SUPPORT",
+			"Premises":         "1. Premise A\n2. Premise B",
+			"New thoughts":     "- Thought 1\n- Thought 2",
+			"relationship":     "SUPPORT",
 			"Final conclusion": "This is the answer",
 		},
 	}
@@ -434,9 +434,9 @@ func TestProcess(t *testing.T) {
 func TestProcessWithCycleDetection(t *testing.T) {
 	baseAgent := &mockGraphAgent{
 		responses: map[string]string{
-			"Premises": "1. Start point",
-			"New thoughts": "- Step 1",
-			"relationship": "SUPPORT",
+			"Premises":         "1. Start point",
+			"New thoughts":     "- Step 1",
+			"relationship":     "SUPPORT",
 			"Final conclusion": "End point",
 		},
 	}

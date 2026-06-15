@@ -64,108 +64,108 @@ func (ec ErrorClass) String() string {
 // ErrorStrategy defines retry strategy for specific error class.
 type ErrorStrategy struct {
 	ErrorClass        ErrorClass
-	MaxRetries       int
-	InitialRetryDelay    time.Duration
-	MaxRetryDelay        time.Duration
-	RetryMultiplier float64
+	MaxRetries        int
+	InitialRetryDelay time.Duration
+	MaxRetryDelay     time.Duration
+	RetryMultiplier   float64
 	ShouldRetry       bool
 }
 
 // RetryBudget limits retry costs.
 type RetryBudget struct {
-	MaxCost            float64
-	CurrentCost        float64
-	MaxRetriesPerHour  int64
-	RetryCount         int64
-	WindowStart        time.Time
-	mu                 sync.Mutex
+	MaxCost           float64
+	CurrentCost       float64
+	MaxRetriesPerHour int64
+	RetryCount        int64
+	WindowStart       time.Time
+	mu                sync.Mutex
 }
 
 // EnhancedRetryConfig configures enhanced retry behavior.
 type EnhancedRetryConfig struct {
 	// Basic retry settings
-	MaxRetries       int
-	InitialRetryDelay    time.Duration
-	MaxRetryDelay        time.Duration
-	RetryMultiplier float64
+	MaxRetries        int
+	InitialRetryDelay time.Duration
+	MaxRetryDelay     time.Duration
+	RetryMultiplier   float64
 
 	// Jitter settings
 	JitterType     JitterType
 	JitterMinRatio float64 // For EqualJitter
 
 	// Error-specific strategies
-	ErrorStrategies  map[ErrorClass]ErrorStrategy
-	ErrorClassifier  func(error) ErrorClass
+	ErrorStrategies map[ErrorClass]ErrorStrategy
+	ErrorClassifier func(error) ErrorClass
 
 	// Budget settings
-	EnableBudget       bool
-	CostTracker        func(agenkit.Message) float64
-	MaxCostPerHour     float64
-	MaxRetriesPerHour  int64
+	EnableBudget      bool
+	CostTracker       func(agenkit.Message) float64
+	MaxCostPerHour    float64
+	MaxRetriesPerHour int64
 
 	// Backpressure detection
-	EnableBackpressure  bool
+	EnableBackpressure    bool
 	BackpressureThreshold float64
-	BackpressureWindow  int
+	BackpressureWindow    int
 }
 
 // DefaultEnhancedRetryConfig returns default configuration with error strategies.
 func DefaultEnhancedRetryConfig() EnhancedRetryConfig {
 	config := EnhancedRetryConfig{
 		MaxRetries:            3,
-		InitialRetryDelay:         1 * time.Second,
-		MaxRetryDelay:             30 * time.Second,
-		RetryMultiplier:      2.0,
-		JitterType:             FullJitter,
-		JitterMinRatio:         0.5,
-		EnableBudget:           false,
-		MaxCostPerHour:         100.0,
-		MaxRetriesPerHour:      1000,
-		EnableBackpressure:     true,
-		BackpressureThreshold:  0.5,
-		BackpressureWindow:     100,
+		InitialRetryDelay:     1 * time.Second,
+		MaxRetryDelay:         30 * time.Second,
+		RetryMultiplier:       2.0,
+		JitterType:            FullJitter,
+		JitterMinRatio:        0.5,
+		EnableBudget:          false,
+		MaxCostPerHour:        100.0,
+		MaxRetriesPerHour:     1000,
+		EnableBackpressure:    true,
+		BackpressureThreshold: 0.5,
+		BackpressureWindow:    100,
 	}
 
 	// Default error strategies
 	config.ErrorStrategies = map[ErrorClass]ErrorStrategy{
 		Transient: {
 			ErrorClass:        Transient,
-			MaxRetries:       5,
-			InitialRetryDelay:    100 * time.Millisecond,
-			MaxRetryDelay:        5 * time.Second,
-			RetryMultiplier: 2.0,
+			MaxRetries:        5,
+			InitialRetryDelay: 100 * time.Millisecond,
+			MaxRetryDelay:     5 * time.Second,
+			RetryMultiplier:   2.0,
 			ShouldRetry:       true,
 		},
 		RateLimit: {
 			ErrorClass:        RateLimit,
-			MaxRetries:       10,
-			InitialRetryDelay:    60 * time.Second,
-			MaxRetryDelay:        300 * time.Second,
-			RetryMultiplier: 1.5,
+			MaxRetries:        10,
+			InitialRetryDelay: 60 * time.Second,
+			MaxRetryDelay:     300 * time.Second,
+			RetryMultiplier:   1.5,
 			ShouldRetry:       true,
 		},
 		Timeout: {
 			ErrorClass:        Timeout,
-			MaxRetries:       3,
-			InitialRetryDelay:    2 * time.Second,
-			MaxRetryDelay:        30 * time.Second,
-			RetryMultiplier: 2.0,
+			MaxRetries:        3,
+			InitialRetryDelay: 2 * time.Second,
+			MaxRetryDelay:     30 * time.Second,
+			RetryMultiplier:   2.0,
 			ShouldRetry:       true,
 		},
 		ServerError: {
 			ErrorClass:        ServerError,
-			MaxRetries:       3,
-			InitialRetryDelay:    5 * time.Second,
-			MaxRetryDelay:        60 * time.Second,
-			RetryMultiplier: 2.0,
+			MaxRetries:        3,
+			InitialRetryDelay: 5 * time.Second,
+			MaxRetryDelay:     60 * time.Second,
+			RetryMultiplier:   2.0,
 			ShouldRetry:       true,
 		},
 		ClientError: {
 			ErrorClass:        ClientError,
-			MaxRetries:       1,
-			InitialRetryDelay:    0,
-			MaxRetryDelay:        0,
-			RetryMultiplier: 1.0,
+			MaxRetries:        1,
+			InitialRetryDelay: 0,
+			MaxRetryDelay:     0,
+			RetryMultiplier:   1.0,
 			ShouldRetry:       false,
 		},
 	}
@@ -199,8 +199,8 @@ type EnhancedRetryDecorator struct {
 // NewEnhancedRetryDecorator creates a new enhanced retry decorator.
 func NewEnhancedRetryDecorator(agent agenkit.Agent, config EnhancedRetryConfig) *EnhancedRetryDecorator {
 	return &EnhancedRetryDecorator{
-		agent:   agent,
-		config:  config,
+		agent:  agent,
+		config: config,
 		metrics: &EnhancedRetryMetrics{
 			ErrorClassCounts: make(map[ErrorClass]int64),
 			RecentResults:    make([]bool, 0, config.BackpressureWindow),
@@ -257,10 +257,10 @@ func (erd *EnhancedRetryDecorator) getStrategy(errorClass ErrorClass) ErrorStrat
 	// Default strategy
 	return ErrorStrategy{
 		ErrorClass:        errorClass,
-		MaxRetries:       erd.config.MaxRetries,
-		InitialRetryDelay:    erd.config.InitialRetryDelay,
-		MaxRetryDelay:        erd.config.MaxRetryDelay,
-		RetryMultiplier: erd.config.RetryMultiplier,
+		MaxRetries:        erd.config.MaxRetries,
+		InitialRetryDelay: erd.config.InitialRetryDelay,
+		MaxRetryDelay:     erd.config.MaxRetryDelay,
+		RetryMultiplier:   erd.config.RetryMultiplier,
 		ShouldRetry:       true,
 	}
 }
@@ -443,7 +443,7 @@ func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message *agenkit
 			erd.metrics.mu.Lock()
 			erd.metrics.FailedAfterRetries++
 			erd.metrics.mu.Unlock()
-			return nil,fmt.Errorf("non-retryable error (%s): %w", errorClass, err)
+			return nil, fmt.Errorf("non-retryable error (%s): %w", errorClass, err)
 		}
 
 		// Check if exceeded max attempts for this error class
@@ -470,7 +470,7 @@ func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message *agenkit
 		// Sleep with backoff
 		select {
 		case <-ctx.Done():
-			return nil,ctx.Err()
+			return nil, ctx.Err()
 		case <-time.After(backoff):
 		}
 	}
@@ -480,7 +480,7 @@ func (erd *EnhancedRetryDecorator) Process(ctx context.Context, message *agenkit
 	erd.metrics.FailedAfterRetries++
 	erd.metrics.mu.Unlock()
 
-	return nil,fmt.Errorf("max retry attempts (%d) exceeded for %s: %w", strategy.MaxRetries, errorClass, lastError)
+	return nil, fmt.Errorf("max retry attempts (%d) exceeded for %s: %w", strategy.MaxRetries, errorClass, lastError)
 }
 
 // Metrics returns current metrics.

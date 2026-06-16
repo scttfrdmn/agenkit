@@ -7,7 +7,7 @@
  * - Detailed metrics
  */
 
-import type { Agent, Message } from '../core';
+import type { Agent, Message } from '../core/interfaces';
 
 /**
  * Jitter types for retry backoff.
@@ -203,12 +203,12 @@ export class EnhancedRetryDecorator implements Agent {
     };
   }
 
-  name(): string {
-    return this.agent.name();
+  get name(): string {
+    return this.agent.name;
   }
 
-  capabilities(): string[] {
-    return this.agent.capabilities();
+  get capabilities(): string[] {
+    return this.agent.capabilities ?? [];
   }
 
   private classifyError(error: Error): ErrorClass {

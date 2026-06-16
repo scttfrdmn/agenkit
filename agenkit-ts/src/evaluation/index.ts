@@ -183,7 +183,7 @@ export {
   type PatternTestCase,
   type TestCaseResult,
   type BenchmarkResult,
-  type SuiteResult,
+  type SuiteResult as PatternSuiteResult,
 } from './pattern-benchmarks';
 
 // Context metrics

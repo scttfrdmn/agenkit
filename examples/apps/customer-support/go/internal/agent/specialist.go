@@ -2,11 +2,10 @@ package agent
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"strings"
 
-	agenkit "github.com/agenkit/agenkit-go"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // SpecialistAgent handles complex queries with RAG search and analytics.
@@ -31,6 +30,11 @@ func (a *SpecialistAgent) Capabilities() []string {
 	return []string{"rag", "analytics", "complex_queries"}
 }
 
+// Introspect returns a snapshot of the agent's current state.
+func (a *SpecialistAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 // Process handles complex queries.
 //
 // In production, this would:
@@ -40,7 +44,7 @@ func (a *SpecialistAgent) Capabilities() []string {
 //
 // For now, it provides intelligent responses based on keywords.
 func (a *SpecialistAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	query := strings.ToLower(message.Content)
+	query := strings.ToLower(message.ContentString())
 
 	log.Printf("Specialist agent processing: %s", query)
 
@@ -119,10 +123,10 @@ func (a *SpecialistAgent) Process(ctx context.Context, message *agenkit.Message)
 		Role:    "assistant",
 		Content: response,
 		Metadata: map[string]interface{}{
-			"source":      "specialist_rag",
-			"confidence":  confidence,
-			"sources":     sources,
-			"num_sources": len(sources),
+			"source":       "specialist_rag",
+			"confidence":   confidence,
+			"sources":      sources,
+			"num_sources":  len(sources),
 			"processed_by": "go_worker",
 		},
 	}, nil

@@ -2,14 +2,14 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
-	agenkit "github.com/agenkit/agenkit-go"
-	"github.com/agenkit/agenkit-go/adapters/go/grpc"
-	"github.com/agenkit/customer-support-worker/internal/agent"
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/grpc"
+	"github.com/scttfrdmn/agenkit/examples/customer-support-worker/internal/agent"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 	log.Printf("Capabilities: %v", specialist.Capabilities())
 
 	// Create gRPC server
-	server, err := grpc.NewGRPCServer(specialist, *port)
+	server, err := grpc.NewGRPCServer(specialist, fmt.Sprintf(":%d", *port))
 	if err != nil {
 		log.Fatalf("Failed to create gRPC server: %v", err)
 	}

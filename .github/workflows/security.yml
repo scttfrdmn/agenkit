@@ -59,6 +59,15 @@ jobs:
             build-mode: autobuild
     steps:
       - uses: actions/checkout@v4
+      # Go autobuild compiles agenkit-go, whose go.mod requires Go 1.25.11.
+      # Provision that toolchain (and put it first on PATH) so autobuild on the
+      # self-hosted runner doesn't fall back to an older system Go.
+      - name: Set up Go (for go autobuild)
+        if: matrix.language == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.11"
+          cache: false
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:

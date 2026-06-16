@@ -300,7 +300,7 @@ export class LoadBalancer implements Agent {
 
     const attempted = new Set<string>();
 
-    while (true) {
+    for (;;) {
       const backend = this.selectBackend();
       if (!backend) {
         throw new Error('All backends unhealthy');

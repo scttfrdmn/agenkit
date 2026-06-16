@@ -183,7 +183,7 @@ export class AgentTool implements Tool {
       case OutputFormat.STRING:
         return String(response.content);
 
-      case OutputFormat.DICT:
+      case OutputFormat.DICT: {
         const result: Record<string, unknown> = {
           content: response.content,
         };
@@ -191,6 +191,7 @@ export class AgentTool implements Tool {
           result.metadata = response.metadata;
         }
         return result;
+      }
 
       case OutputFormat.MESSAGE:
         return response;

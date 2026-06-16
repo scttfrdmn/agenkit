@@ -125,8 +125,12 @@ agenkit-cs/**/obj/
 
 # C#/.NET, JVM build/test artifacts
 agenkit-java/.jqwik-database
+agenkit-java/target/
 agenkit-scala/project/target/
 agenkit-scala/target/
+
+# Cross-language test harness build artifacts
+tests/cross_language/harness_rust/target/
 
 # Stray tooling artifacts
 =*

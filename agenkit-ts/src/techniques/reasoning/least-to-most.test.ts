@@ -193,7 +193,7 @@ describe('LeastToMost', () => {
     });
 
     it('should compose solutions when enabled (default)', async () => {
-      let capturedPrompts: string[] = [];
+      const capturedPrompts: string[] = [];
       const capturingAgent: Agent = {
         name: 'capturing',
         capabilities: [],
@@ -221,7 +221,7 @@ describe('LeastToMost', () => {
     });
 
     it('should not compose solutions when disabled', async () => {
-      let capturedPrompts: string[] = [];
+      const capturedPrompts: string[] = [];
       const capturingAgent: Agent = {
         name: 'capturing',
         capabilities: [],

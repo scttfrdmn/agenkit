@@ -113,6 +113,10 @@ export {
   createErrorRecord,
 } from './metrics';
 
+// Local bindings for the metric-factory helpers below (re-export above does
+// not bring these into local scope).
+import { MetricType, createMetricMeasurement } from './metrics';
+
 // Quality metrics
 export {
   type Metric as QualityMetric,
@@ -258,7 +262,6 @@ export function createQualityMetric(
   maxScore: number = 1.0,
   metadata?: Record<string, unknown>
 ): import('./metrics').MetricMeasurement {
-  const { createMetricMeasurement, MetricType } = require('./metrics');
   return createMetricMeasurement(
     name,
     score / maxScore,
@@ -280,7 +283,6 @@ export function createCostMetric(
   currency: string = 'USD',
   metadata?: Record<string, unknown>
 ): import('./metrics').MetricMeasurement {
-  const { createMetricMeasurement, MetricType } = require('./metrics');
   return createMetricMeasurement('total_cost', cost, MetricType.Cost, {
     currency,
     ...metadata,
@@ -298,7 +300,6 @@ export function createDurationMetric(
   durationSeconds: number,
   metadata?: Record<string, unknown>
 ): import('./metrics').MetricMeasurement {
-  const { createMetricMeasurement, MetricType } = require('./metrics');
   return createMetricMeasurement(
     'duration',
     durationSeconds,
@@ -318,7 +319,6 @@ export function createSuccessMetric(
   success: boolean,
   metadata?: Record<string, unknown>
 ): import('./metrics').MetricMeasurement {
-  const { createMetricMeasurement, MetricType } = require('./metrics');
   return createMetricMeasurement(
     'success',
     success ? 1.0 : 0.0,

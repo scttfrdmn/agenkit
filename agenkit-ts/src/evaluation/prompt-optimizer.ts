@@ -189,11 +189,12 @@ export class PromptOptimizer {
       case 'grid':
         result = await this.optimizeGrid(testCases);
         break;
-      case 'random':
+      case 'random': {
         const nSamples = (options?.nSamples as number) || 20;
         result = await this.optimizeRandom(testCases, nSamples);
         break;
-      case 'genetic':
+      }
+      case 'genetic': {
         const geneticConfig: GeneticConfig = {
           populationSize: (options?.populationSize as number) || 10,
           nGenerations: (options?.nGenerations as number) || 10,
@@ -201,6 +202,7 @@ export class PromptOptimizer {
         };
         result = await this.optimizeGenetic(testCases, geneticConfig);
         break;
+      }
       default:
         throw new Error(`Unknown strategy: ${strategy}`);
     }

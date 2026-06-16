@@ -7,12 +7,13 @@
 
 import { trace, context, Span, SpanStatusCode, Tracer } from '@opentelemetry/api';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
-import { Resource } from '@opentelemetry/resources';
+import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 import {
   ConsoleSpanExporter,
   SimpleSpanProcessor as BaseSimpleSpanProcessor,
   BatchSpanProcessor as BaseBatchSpanProcessor,
+  type SpanProcessor,
 } from '@opentelemetry/sdk-trace-base';
 import { TraceIdRatioBasedSampler, ParentBasedSampler } from '@opentelemetry/sdk-trace-base';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
@@ -72,8 +73,8 @@ let tracer: Tracer | null = null;
  */
 export function initTracing(config: TracingConfig): NodeTracerProvider {
   // Create resource with service name
-  const resource = Resource.default().merge(
-    new Resource({
+  const resource = defaultResource().merge(
+    resourceFromAttributes({
       [ATTR_SERVICE_NAME]: config.serviceName,
     })
   );
@@ -86,23 +87,25 @@ export function initTracing(config: TracingConfig): NodeTracerProvider {
     root: new TraceIdRatioBasedSampler(sampleRate),
   });
 
-  // Create tracer provider with sampler
-  tracerProvider = new NodeTracerProvider({
-    resource,
-    sampler,
-  });
-
-  // Add exporters
+  // Build span processors up-front: modern otel-js takes them via the
+  // constructor (`addSpanProcessor` was removed).
+  const spanProcessors: SpanProcessor[] = [];
   if (config.consoleExport) {
-    tracerProvider.addSpanProcessor(new BaseSimpleSpanProcessor(new ConsoleSpanExporter()) as any);
+    spanProcessors.push(new BaseSimpleSpanProcessor(new ConsoleSpanExporter()));
   }
-
   if (config.otlpEndpoint) {
     const otlpExporter = new OTLPTraceExporter({
       url: config.otlpEndpoint,
     });
-    tracerProvider.addSpanProcessor(new BaseBatchSpanProcessor(otlpExporter) as any);
+    spanProcessors.push(new BaseBatchSpanProcessor(otlpExporter));
   }
+
+  // Create tracer provider with sampler + processors
+  tracerProvider = new NodeTracerProvider({
+    resource,
+    sampler,
+    spanProcessors,
+  });
 
   // Register as global provider
   tracerProvider.register();

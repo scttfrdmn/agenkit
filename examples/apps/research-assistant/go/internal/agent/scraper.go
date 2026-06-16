@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	agenkit "github.com/agenkit/agenkit-go"
+	agenkit "github.com/scttfrdmn/agenkit/agenkit-go"
 )
 
 // ScraperAgent handles web scraping and content extraction.

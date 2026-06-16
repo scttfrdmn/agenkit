@@ -243,6 +243,8 @@ describe('LocalAgent: Error Handling', () => {
     const agent = new LocalAgent({
       name: 'error-agent',
       process: async (msg) => createMessage('assistant', 'Response'),
+      // Intentionally throws before yielding to simulate a failing stream.
+      // eslint-disable-next-line require-yield
       processStream: async function* () {
         throw new Error('Streaming failed');
       },

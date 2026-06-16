@@ -159,6 +159,10 @@ export abstract class Transport {
  * @returns Transport instance
  * @throws Error if endpoint format is unsupported
  */
+/* eslint-disable @typescript-eslint/no-require-imports --
+   Transports are loaded lazily via require() so that selecting one endpoint
+   type does not eagerly pull in the others' heavy deps (e.g. gRPC). A static
+   import here would load every transport unconditionally. */
 export function parseEndpoint(endpoint: string): Transport {
   if (endpoint.startsWith('tcp://')) {
     const { TCPTransport } = require('./tcp');
@@ -192,3 +196,4 @@ export function parseEndpoint(endpoint: string): Transport {
 
   throw new Error(`Unsupported endpoint format: ${endpoint}`);
 }
+/* eslint-enable @typescript-eslint/no-require-imports */

@@ -382,18 +382,17 @@ export class SessionRecorder {
    * @returns Wrapped agent that records all interactions
    */
   wrap(agent: Agent, sessionId?: string): Agent {
-    const recorder = this;
-
+    // Arrow function closes over `this` (the recorder), avoiding a this-alias.
     const wrapped: RecordingAgent = {
       name: agent.name || 'recording_wrapper',
       capabilities: agent.capabilities || [],
 
-      async process(message: Message): Promise<Message> {
+      process: async (message: Message): Promise<Message> => {
         const sid = sessionId || 'default';
 
         // Start session if not already started
-        if (!recorder.activeSessions.has(sid)) {
-          await recorder.startSession(sid, wrapped.name);
+        if (!this.activeSessions.has(sid)) {
+          await this.startSession(sid, wrapped.name);
         }
 
         // Process with timing
@@ -402,7 +401,7 @@ export class SessionRecorder {
         const latency = performance.now() - startTime;
 
         // Record interaction
-        await recorder.recordInteraction(sid, message, output, latency);
+        await this.recordInteraction(sid, message, output, latency);
 
         return output;
       },

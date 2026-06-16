@@ -15,8 +15,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/agenkit/agenkit-go/core"
-	"github.com/agenkit/agenkit-go/infrastructure"
+	"github.com/scttfrdmn/agenkit/agenkit-go/core"
+	"github.com/scttfrdmn/agenkit/agenkit-go/infrastructure"
 )
 
 // SimulatedAgent implements a test agent with configurable failure rate.

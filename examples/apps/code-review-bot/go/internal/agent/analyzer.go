@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/anthropics/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // AnalyzerAgent performs static code analysis.
@@ -30,9 +30,14 @@ func (a *AnalyzerAgent) Capabilities() []string {
 	return []string{"static_analysis", "security_scanning", "complexity_analysis"}
 }
 
+// Introspect returns a snapshot of the agent's current state.
+func (a *AnalyzerAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 // Process analyzes code for issues.
 func (a *AnalyzerAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	code := message.Content
+	code := message.ContentString()
 
 	// Handle health checks
 	if message.Metadata != nil {

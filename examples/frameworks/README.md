@@ -603,7 +603,7 @@ pipeline = SequentialAgent([agent1, agent2, agent3])
 
 ```go
 // Deploy in Go (18x faster)
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
 pipeline := patterns.NewSequentialAgent(agent1, agent2, agent3)
 ```
 

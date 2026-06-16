@@ -37,6 +37,9 @@ ENV/
 *~
 .DS_Store
 
+# Claude Code local session state / tooling (settings, worktrees, audit notes)
+.claude/
+
 # Testing
 .pytest_cache/
 .coverage

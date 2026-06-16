@@ -309,7 +309,7 @@ describe('Adaptive Timeout Behavior', () => {
     const message: Message = { role: 'user', content: 'Test' };
 
     // Start with conservative timeout
-    let timeout = 500;
+    const timeout = 500;
     const measurements: number[] = [];
 
     // Measure actual response times

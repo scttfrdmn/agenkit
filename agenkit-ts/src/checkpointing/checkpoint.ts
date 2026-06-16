@@ -88,9 +88,6 @@ export function checkpointFromDict(data: Record<string, unknown>): Checkpoint {
   const deserializedMessages: Message[] = [];
   for (const msg of (dataCopy.messages as Record<string, unknown>[]) || []) {
     const msgCopy = { ...msg };
-    if (msgCopy.timestamp && typeof msgCopy.timestamp === 'string') {
-      msgCopy.timestamp = msgCopy.timestamp;
-    }
     deserializedMessages.push(
       createMessage({
         role: msgCopy.role as 'user' | 'assistant' | 'system',

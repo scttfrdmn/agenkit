@@ -447,7 +447,7 @@ describe('Safety: Sandbox Extended', () => {
       allowedCommands: new Set(['echo', 'date', 'whoami']),
     });
 
-    let [isAllowed, _] = sandbox.isCommandAllowed('echo hello');
+    const [isAllowed, _] = sandbox.isCommandAllowed('echo hello');
     expect(isAllowed).toBe(true);
 
     const [isAllowed2, error] = sandbox.isCommandAllowed('curl example.com');
@@ -460,7 +460,7 @@ describe('Safety: Sandbox Extended', () => {
       allowedSqlOperations: new Set(['SELECT', 'EXPLAIN', 'DESCRIBE']),
     });
 
-    let [isAllowed, _] = sandbox.isSqlOperationAllowed('DESCRIBE users');
+    const [isAllowed, _] = sandbox.isSqlOperationAllowed('DESCRIBE users');
     expect(isAllowed).toBe(true);
 
     const [isAllowed2, error] = sandbox.isSqlOperationAllowed('INSERT INTO users VALUES (1)');
@@ -489,7 +489,7 @@ describe('Safety: Sandbox Extended', () => {
       allowedDomains: new Set(['example.com', 'api.example.com']),
     });
 
-    let [isAllowed, _] = sandbox.isDomainAllowed('api.example.com');
+    const [isAllowed, _] = sandbox.isDomainAllowed('api.example.com');
     expect(isAllowed).toBe(true);
 
     // Subdomain not explicitly allowed

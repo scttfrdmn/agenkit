@@ -61,7 +61,6 @@ function createFinalAnswerAgent(answer: string) {
 /** Agent that returns an action then a final answer */
 function createToolUseAgent(toolName: string, toolInput: string, finalAnswer: string) {
   let callCount = 0;
-  const { ExtendedMockAgent } = require('./test-helpers');
   return {
     name: 'llm',
     capabilities: ['mock'],

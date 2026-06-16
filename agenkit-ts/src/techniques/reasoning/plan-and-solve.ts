@@ -88,7 +88,7 @@ Solution Plan:`;
       const line = lines[i].trim();
       if (!line) continue;
 
-      const cleaned = line.replace(/^\d+[\.\)]\s*/, '');
+      const cleaned = line.replace(/^\d+[.)]\s*/, '');
       if (cleaned) {
         steps.push({
           description: cleaned,

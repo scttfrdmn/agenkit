@@ -50,9 +50,9 @@ async def test_rate_limiter_basic():
 
     metrics = rl.metrics
     assert metrics.total_requests == 10, f"Expected 10 total requests, got {metrics.total_requests}"
-    assert (
-        metrics.allowed_requests == 10
-    ), f"Expected 10 allowed requests, got {metrics.allowed_requests}"
+    assert metrics.allowed_requests == 10, (
+        f"Expected 10 allowed requests, got {metrics.allowed_requests}"
+    )
 
 
 @pytest.mark.asyncio
@@ -85,9 +85,9 @@ async def test_rate_limiter_refill():
             break  # Stop on first error
 
     # Should have successfully made around 5 requests (allowing for timing variance)
-    assert (
-        success_count >= 4
-    ), f"Expected at least 4 successful requests after refill, got {success_count}"
+    assert success_count >= 4, (
+        f"Expected at least 4 successful requests after refill, got {success_count}"
+    )
 
 
 @pytest.mark.asyncio
@@ -116,9 +116,9 @@ async def test_rate_limiter_wait():
 
     # Should have waited approximately 200ms (1 token / 5 tokens per second)
     expected_wait = 0.2
-    assert (
-        elapsed >= expected_wait / 2
-    ), f"Expected to wait at least {expected_wait / 2}s, but only waited {elapsed}s"
+    assert elapsed >= expected_wait / 2, (
+        f"Expected to wait at least {expected_wait / 2}s, but only waited {elapsed}s"
+    )
 
     metrics = rl.metrics
     assert metrics.total_wait_time > 0, "Expected non-zero total wait time"
@@ -213,17 +213,17 @@ async def test_rate_limiter_metrics():
     metrics = rl.metrics
 
     assert metrics.total_requests == 5, f"Expected 5 total requests, got {metrics.total_requests}"
-    assert (
-        metrics.allowed_requests == 5
-    ), f"Expected 5 allowed requests, got {metrics.allowed_requests}"
-    assert (
-        metrics.rejected_requests == 0
-    ), f"Expected 0 rejected requests, got {metrics.rejected_requests}"
+    assert metrics.allowed_requests == 5, (
+        f"Expected 5 allowed requests, got {metrics.allowed_requests}"
+    )
+    assert metrics.rejected_requests == 0, (
+        f"Expected 0 rejected requests, got {metrics.rejected_requests}"
+    )
 
     # Current tokens should be near 0
-    assert (
-        metrics.current_tokens <= 1.0
-    ), f"Expected current tokens near 0, got {metrics.current_tokens}"
+    assert metrics.current_tokens <= 1.0, (
+        f"Expected current tokens near 0, got {metrics.current_tokens}"
+    )
 
 
 @pytest.mark.asyncio
@@ -253,6 +253,6 @@ async def test_rate_limiter_high_throughput():
     assert agent.call_count == 100, f"Expected 100 calls, got {agent.call_count}"
 
     metrics = rl.metrics
-    assert (
-        metrics.allowed_requests == 100
-    ), f"Expected 100 allowed requests, got {metrics.allowed_requests}"
+    assert metrics.allowed_requests == 100, (
+        f"Expected 100 allowed requests, got {metrics.allowed_requests}"
+    )

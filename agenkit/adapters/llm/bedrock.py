@@ -19,8 +19,7 @@ try:
     from botocore.exceptions import ClientError
 except ImportError as e:
     raise ImportError(
-        "The boto3 package is required to use BedrockLLM. "
-        "Install it with: pip install agenkit[aws]"
+        "The boto3 package is required to use BedrockLLM. Install it with: pip install agenkit[aws]"
     ) from e
 
 

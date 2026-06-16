@@ -20,9 +20,12 @@ Usage::
 
 from __future__ import annotations
 
-from typing import AsyncIterator, Sequence
+from typing import TYPE_CHECKING
 
 from agenkit import Message
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Sequence
 
 
 class MockLLMClient:

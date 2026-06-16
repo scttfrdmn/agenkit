@@ -7,10 +7,10 @@ when built on top of Agenkit primitives.
 
 import pytest
 
-from tests.frameworks.fixtures.mock_providers import MockAgent, MockClassifier, MockLLM
-
 # minichain is importable via the sys.path injection in conftest.py
 from minichain import ConversationChain, LLMChain, RouterChain, SequentialChain, SimpleMemory
+
+from tests.frameworks.fixtures.mock_providers import MockAgent, MockClassifier, MockLLM
 
 pytestmark = pytest.mark.frameworks
 

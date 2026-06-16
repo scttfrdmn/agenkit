@@ -58,6 +58,9 @@ try:
         "EphemeralMemory",
         "HierarchyMemory",
         "ImportanceWeightingStrategy",
+        # Deprecated aliases
+        "InMemoryMemory",
+        "InMemoryVectorStore",
         "Memory",
         "MemoryStrategy",
         "MemoryVectorStore",
@@ -66,9 +69,6 @@ try:
         "SummarizationStrategy",
         "VectorMemory",
         "VectorStore",
-        # Deprecated aliases
-        "InMemoryMemory",
-        "InMemoryVectorStore",
     ]
 except ImportError:
     __all__ = [
@@ -79,6 +79,9 @@ except ImportError:
         "EphemeralMemory",
         "HierarchyMemory",
         "ImportanceWeightingStrategy",
+        # Deprecated aliases
+        "InMemoryMemory",
+        "InMemoryVectorStore",
         "Memory",
         "MemoryStrategy",
         "MemoryVectorStore",
@@ -86,7 +89,4 @@ except ImportError:
         "SummarizationStrategy",
         "VectorMemory",
         "VectorStore",
-        # Deprecated aliases
-        "InMemoryMemory",
-        "InMemoryVectorStore",
     ]

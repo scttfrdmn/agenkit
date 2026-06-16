@@ -60,9 +60,7 @@ class MockAgent(Agent):
     def capabilities(self) -> list[str]:
         return ["mock", "test"]
 
-    async def process(  # noqa: PLR0911 - Mock agent handles many test scenarios with early returns
-        self, message: Message
-    ) -> Message:
+    async def process(self, message: Message) -> Message:
         """Return a mock response."""
         # Check for specific test scenarios and respond appropriately
         content_lower = message.content.lower()
@@ -374,7 +372,7 @@ PATTERNS = {
 }
 
 
-def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles all 18 patterns
+def execute_test(
     payload: dict[str, Any],
 ) -> dict[str, Any]:
     """
@@ -869,7 +867,7 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
 
             # Detect scenario and return appropriate structured output
             retention_strategy = config.get("retention_strategy", "")
-            max_memories = config.get("max_memories", 100)
+            config.get("max_memories", 100)
 
             # Check operations to determine scenario
             has_retrieve = any(op.get("action") == "retrieve" for op in operations)
@@ -1206,22 +1204,21 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
                     "resolution_method": "voting",
                     "final_decision": True,
                 }
-            else:
-                # Fallback: transform existing metadata
-                if "collaboration_agents" in transformed_metadata:
-                    agents_value = transformed_metadata.get("collaboration_agents", [])
-                    if isinstance(agents_value, int):
-                        agents_count = agents_value
-                        agents_list = [f"agent{i + 1}" for i in range(agents_count)]
-                    else:
-                        agents_list = agents_value
-                        agents_count = len(agents_list)
+            # Fallback: transform existing metadata
+            elif "collaboration_agents" in transformed_metadata:
+                agents_value = transformed_metadata.get("collaboration_agents", [])
+                if isinstance(agents_value, int):
+                    agents_count = agents_value
+                    agents_list = [f"agent{i + 1}" for i in range(agents_count)]
+                else:
+                    agents_list = agents_value
+                    agents_count = len(agents_list)
 
-                    transformed_metadata = {
-                        "agents_participated": agents_count,
-                        "perspectives": agents_list,
-                        "collaboration_rounds": transformed_metadata.get("collaboration_rounds", 2),
-                    }
+                transformed_metadata = {
+                    "agents_participated": agents_count,
+                    "perspectives": agents_list,
+                    "collaboration_rounds": transformed_metadata.get("collaboration_rounds", 2),
+                }
 
             output_message = Message(
                 role=output_message.role,

@@ -98,22 +98,27 @@ class StructuredFormatter(logging.Formatter):
             ]:
                 # Only add JSON-serializable basic types to avoid recursion errors
                 # Check type first before attempting serialization
-                if isinstance(value, (str, int, float, bool, type(None))):
-                    log_data[key] = value
-                elif isinstance(value, (list, tuple)) and all(
-                    isinstance(v, (str, int, float, bool, type(None))) for v in value
-                ):
-                    log_data[key] = value
-                elif isinstance(value, dict) and all(
-                    isinstance(k, str) and isinstance(v, (str, int, float, bool, type(None)))
-                    for k, v in value.items()
+                if (
+                    isinstance(value, (str, int, float, bool, type(None)))
+                    or (
+                        isinstance(value, (list, tuple))
+                        and all(isinstance(v, (str, int, float, bool, type(None))) for v in value)
+                    )
+                    or (
+                        isinstance(value, dict)
+                        and all(
+                            isinstance(k, str)
+                            and isinstance(v, (str, int, float, bool, type(None)))
+                            for k, v in value.items()
+                        )
+                    )
                 ):
                     log_data[key] = value
                 else:
                     # Complex object, convert to string representation
                     try:
                         log_data[key] = str(value)
-                    except Exception:  # noqa: S110
+                    except Exception:
                         # If even str() fails, skip it
                         pass
 

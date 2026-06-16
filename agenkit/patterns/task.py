@@ -139,7 +139,7 @@ class Task:
                 self._result = result
                 return result
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Timeout - don't retry
                 self._completed = True
                 await self.cleanup()

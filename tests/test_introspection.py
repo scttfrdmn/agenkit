@@ -1,6 +1,6 @@
 """Tests for introspection capability."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -60,7 +60,7 @@ class AgentWithMemory(Agent):
 def test_introspection_result_creation():
     """Test creating IntrospectionResult."""
     result = IntrospectionResult(
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         agent_name="test",
         capabilities=["test"],
         memory_state=None,
@@ -79,7 +79,7 @@ def test_introspection_result_validation():
     # Empty agent name should raise
     with pytest.raises(ValueError, match="agent_name cannot be empty"):
         IntrospectionResult(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             agent_name="",
             capabilities=[],
             memory_state=None,
@@ -89,7 +89,7 @@ def test_introspection_result_validation():
     # Capabilities must be a list
     with pytest.raises(TypeError, match="capabilities must be a list"):
         IntrospectionResult(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             agent_name="test",
             capabilities="not a list",  # type: ignore
             memory_state=None,
@@ -99,7 +99,7 @@ def test_introspection_result_validation():
     # Internal state must be a dict
     with pytest.raises(TypeError, match="internal_state must be a dict"):
         IntrospectionResult(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             agent_name="test",
             capabilities=[],
             memory_state=None,
@@ -154,7 +154,7 @@ async def test_introspection_reflects_state_changes():
 def test_introspection_immutable():
     """Test that IntrospectionResult is immutable."""
     result = IntrospectionResult(
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         agent_name="test",
         capabilities=["test"],
         memory_state=None,
@@ -172,9 +172,9 @@ def test_introspection_immutable():
 def test_introspection_timestamp():
     """Test that introspection timestamp is recent."""
     agent = SimpleAgent()
-    before = datetime.now(timezone.utc)
+    before = datetime.now(UTC)
     result = agent.introspect()
-    after = datetime.now(timezone.utc)
+    after = datetime.now(UTC)
 
     assert before <= result.timestamp <= after
 
@@ -189,7 +189,7 @@ def test_introspection_with_metadata():
 
     # Can create result with metadata
     custom_result = IntrospectionResult(
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         agent_name="test",
         capabilities=[],
         memory_state=None,

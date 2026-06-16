@@ -111,8 +111,12 @@ def test_sequential_custom_name():
 def test_sequential_with_hooks():
     """Test sequential pattern with hooks."""
     agent = MockAgent("agent")
-    before_hook = lambda agent, msg: None  # noqa: E731
-    after_hook = lambda agent, msg: None  # noqa: E731
+
+    def before_hook(agent, msg):
+        return None
+
+    def after_hook(agent, msg):
+        return None
 
     seq = SequentialPattern([agent], before_agent=before_hook, after_agent=after_hook)
 

@@ -1,7 +1,6 @@
 """Shared fixtures and path setup for framework compatibility tests."""
 
 import sys
-import types
 from pathlib import Path
 
 import pytest
@@ -15,7 +14,7 @@ if _FRAMEWORKS_DIR not in sys.path:
 # Patch agenkit.adapters.llm to expose OpenAILLM as a stub when openai package
 # is not installed.  The minichain/minicrew example files import OpenAILLM at
 # module level only to demonstrate the API; tests never actually call it.
-import agenkit.adapters.llm as _llm_module  # noqa: E402
+import agenkit.adapters.llm as _llm_module
 
 if not hasattr(_llm_module, "OpenAILLM"):
     # Create a minimal stub so the import in minichain.py / minicrew.py succeeds

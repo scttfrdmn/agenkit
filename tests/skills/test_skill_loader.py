@@ -62,7 +62,7 @@ def test_load_skill_with_license_and_metadata(tmp_path: Path) -> None:
 def test_load_skill_missing_skill_md(tmp_path: Path) -> None:
     empty_dir = tmp_path / "empty"
     empty_dir.mkdir()
-    with pytest.raises(ValueError, match="No SKILL.md found"):
+    with pytest.raises(ValueError, match=r"No SKILL\.md found"):
         AgentSkill.from_directory(empty_dir)
 
 

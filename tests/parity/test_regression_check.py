@@ -162,7 +162,7 @@ class TestCriticalFeatureValidation:
             "RetryMiddleware",
         ]
 
-        passed, errors = check_regression.check_critical_features(mock_manifest)
+        passed, _errors = check_regression.check_critical_features(mock_manifest)
 
         assert passed  # Should still pass despite different naming
 
@@ -175,7 +175,7 @@ class TestCriticalFeatureValidation:
             "ReactAgent",  # Different casing
         ]
 
-        passed, errors = check_regression.check_critical_features(mock_manifest)
+        passed, _errors = check_regression.check_critical_features(mock_manifest)
 
         assert passed  # Should pass with case-insensitive matching
 

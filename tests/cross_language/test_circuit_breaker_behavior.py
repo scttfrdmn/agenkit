@@ -167,7 +167,7 @@ async def test_circuit_breaker_half_open_transition():
             try:
                 await circuit_breaker.process(msg)
             except Exception:
-                pass  # noqa: S110 - Expected failures during test
+                pass
         elif step["action"] == "wait":
             await asyncio.sleep(step["duration_ms"] / 1000.0)
 
@@ -214,7 +214,7 @@ async def test_circuit_breaker_half_open_to_closed():
                 if was_half_open:
                     successful_in_half_open += 1
             except Exception:
-                pass  # noqa: S110 - Expected failures during test
+                pass
         elif step["action"] == "wait":
             await asyncio.sleep(step["duration_ms"] / 1000.0)
 
@@ -254,7 +254,7 @@ async def test_circuit_breaker_half_open_reopens():
             try:
                 await circuit_breaker.process(msg)
             except Exception:
-                pass  # noqa: S110 - Expected failures during test
+                pass
         elif step["action"] == "wait":
             await asyncio.sleep(step["duration_ms"] / 1000.0)
 
@@ -291,7 +291,7 @@ async def test_circuit_breaker_rejects_when_open():
         except CircuitBreakerError:
             rejected += 1
         except Exception:
-            pass  # noqa: S110 - Agent failures
+            pass
 
     # Verify expected behavior
     expected = test_case["expected_behavior"]
@@ -330,7 +330,7 @@ async def test_circuit_breaker_metrics_tracking():
             try:
                 await circuit_breaker.process(msg)
             except Exception:
-                pass  # noqa: S110 - Expected failures and rejections
+                pass
         elif step["action"] == "wait":
             await asyncio.sleep(step["duration_ms"] / 1000.0)
 

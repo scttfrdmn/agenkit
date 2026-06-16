@@ -11,7 +11,7 @@ Coverage:
 - Eviction and promotion logic
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -32,7 +32,7 @@ def test_memory_entry_creation():
         id="test-1",
         content="Test memory",
         metadata={"category": "test"},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         importance=0.8,
     )
 
@@ -45,7 +45,7 @@ def test_memory_entry_creation():
 
 def test_memory_entry_to_dict():
     """Test MemoryEntry.to_dict() serialization."""
-    timestamp = datetime.now(timezone.utc)
+    timestamp = datetime.now(UTC)
     entry = MemoryEntry(
         id="test-1",
         content="Test content",
@@ -76,7 +76,7 @@ async def test_working_memory_basic():
         id="test-1",
         content="Test message",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
     await memory.store(entry)
@@ -96,7 +96,7 @@ async def test_working_memory_eviction():
             id=f"test-{i}",
             content=f"Message {i}",
             metadata={},
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         await memory.store(entry)
 
@@ -107,7 +107,7 @@ async def test_working_memory_eviction():
         id="test-3",
         content="Message 3",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
     await memory.store(entry4)
 
@@ -128,7 +128,7 @@ async def test_working_memory_retrieve():
             id=f"test-{i}",
             content=f"Message {i}",
             metadata={},
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         await memory.store(entry)
 
@@ -146,12 +146,8 @@ async def test_working_memory_delete():
     """Test deleting specific entry."""
     memory = WorkingMemory(max_messages=10)
 
-    entry1 = MemoryEntry(
-        id="test-1", content="Message 1", metadata={}, timestamp=datetime.now(timezone.utc)
-    )
-    entry2 = MemoryEntry(
-        id="test-2", content="Message 2", metadata={}, timestamp=datetime.now(timezone.utc)
-    )
+    entry1 = MemoryEntry(id="test-1", content="Message 1", metadata={}, timestamp=datetime.now(UTC))
+    entry2 = MemoryEntry(id="test-2", content="Message 2", metadata={}, timestamp=datetime.now(UTC))
 
     await memory.store(entry1)
     await memory.store(entry2)
@@ -174,7 +170,7 @@ async def test_working_memory_clear():
             id=f"test-{i}",
             content=f"Message {i}",
             metadata={},
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         await memory.store(entry)
 
@@ -203,7 +199,7 @@ async def test_short_term_memory_basic():
         id="test-1",
         content="Recent memory",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
     await memory.store(entry)
@@ -221,7 +217,7 @@ async def test_short_term_memory_ttl_expiration():
         id="test-old",
         content="Old memory",
         metadata={},
-        timestamp=datetime.now(timezone.utc) - timedelta(seconds=2),  # 2 seconds ago
+        timestamp=datetime.now(UTC) - timedelta(seconds=2),  # 2 seconds ago
     )
 
     memory._messages.append(old_entry)  # Add directly to bypass timestamp
@@ -231,7 +227,7 @@ async def test_short_term_memory_ttl_expiration():
         id="test-fresh",
         content="Fresh memory",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
     await memory.store(fresh_entry)
@@ -252,7 +248,7 @@ async def test_short_term_memory_lru_eviction():
             id=f"test-{i}",
             content=f"Message {i}",
             metadata={},
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         await memory.store(entry)
 
@@ -265,7 +261,7 @@ async def test_short_term_memory_lru_eviction():
         id="test-3",
         content="Message 3",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
     await memory.store(entry4)
 
@@ -281,7 +277,7 @@ async def test_short_term_memory_retrieve_updates_access():
         id="test-1",
         content="Test memory",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
     await memory.store(entry)
@@ -318,7 +314,7 @@ async def test_long_term_memory_basic():
         id="test-1",
         content="Important memory",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         importance=0.8,
     )
 
@@ -337,7 +333,7 @@ async def test_long_term_memory_importance_threshold():
         id="test-high",
         content="High importance",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         importance=0.9,
     )
 
@@ -349,7 +345,7 @@ async def test_long_term_memory_importance_threshold():
         id="test-low",
         content="Low importance",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         importance=0.5,
     )
 
@@ -367,7 +363,7 @@ async def test_long_term_memory_retrieve_keyword():
         id="test-1",
         content="Python programming language",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         importance=0.8,
     )
 
@@ -375,7 +371,7 @@ async def test_long_term_memory_retrieve_keyword():
         id="test-2",
         content="JavaScript programming",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         importance=0.7,
     )
 
@@ -383,7 +379,7 @@ async def test_long_term_memory_retrieve_keyword():
         id="test-3",
         content="Data science",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         importance=0.9,
     )
 
@@ -408,7 +404,7 @@ async def test_long_term_memory_delete():
         id="test-1",
         content="Test memory",
         metadata={},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         importance=0.8,
     )
 

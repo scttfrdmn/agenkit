@@ -251,7 +251,7 @@ class TestFeatureManifest:
         if not feature_manifest:
             pytest.skip("Feature manifest not generated yet")
 
-        for lang, features in feature_manifest["languages"].items():
+        for features in feature_manifest["languages"].values():
             # Each language should have these categories
             assert "patterns" in features
             assert "middleware" in features

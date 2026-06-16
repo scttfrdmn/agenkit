@@ -8,7 +8,7 @@ Supports pluggable embedding providers and vector stores.
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ..interfaces import Message
 from .base import Memory
@@ -135,7 +135,7 @@ class MemoryVectorStore(VectorStore):
             # Time range filter
             if "time_range" in kwargs:
                 start_time, end_time = kwargs["time_range"]
-                msg_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+                msg_time = datetime.fromtimestamp(timestamp, tz=UTC)
                 if not (start_time <= msg_time <= end_time):
                     continue
 
@@ -183,7 +183,7 @@ class MemoryVectorStore(VectorStore):
             # Time range filter
             if "time_range" in kwargs:
                 start_time, end_time = kwargs["time_range"]
-                msg_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+                msg_time = datetime.fromtimestamp(timestamp, tz=UTC)
                 if not (start_time <= msg_time <= end_time):
                     continue
 
@@ -285,7 +285,7 @@ class VectorMemory(Memory):
         embedding = await self.embeddings.embed(message.content)
 
         # Store
-        timestamp = datetime.now(timezone.utc).timestamp()
+        timestamp = datetime.now(UTC).timestamp()
         message_id = self._generate_id()
 
         await self.vector_store.add(

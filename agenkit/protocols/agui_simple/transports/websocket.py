@@ -35,7 +35,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Callable, Coroutine
 
     from agenkit.protocols.agui.events import AGUIEvent
 
@@ -51,7 +51,7 @@ class WebSocketMessageFormat:
     """
 
     @staticmethod
-    def format_event(event: "AGUIEvent") -> str:  # noqa: UP037
+    def format_event(event: AGUIEvent) -> str:
         """
         Format AG-UI event as WebSocket message (JSON string).
 
@@ -257,7 +257,7 @@ try:
                         }
                     )
                     await websocket.send_text(error_msg)
-                except Exception:  # noqa: S110
+                except Exception:
                     pass  # Connection might be closed - expected failure
                 raise
 
@@ -277,8 +277,6 @@ except ImportError:
 
 # aiohttp WebSocket integration
 try:
-    from collections.abc import Callable, Coroutine  # noqa: TC003
-
     from aiohttp import WSMsgType, web
 
     def create_websocket_handler(
@@ -377,7 +375,7 @@ try:
                         }
                     )
                     await ws.send_str(error_msg)
-                except Exception:  # noqa: S110
+                except Exception:
                     pass  # Connection might be closed - expected failure
 
             await ws.close()

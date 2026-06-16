@@ -227,7 +227,7 @@ class LocalAgent:
                 # Read length prefix (4 bytes)
                 try:
                     length_bytes = await asyncio.wait_for(reader.readexactly(4), timeout=60.0)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # No data for 60 seconds - close connection
                     break
                 except asyncio.IncompleteReadError:

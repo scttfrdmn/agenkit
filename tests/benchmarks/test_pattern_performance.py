@@ -27,6 +27,7 @@ import asyncio
 import json
 import statistics
 import time
+from datetime import UTC
 from typing import Any
 
 import pytest
@@ -376,7 +377,7 @@ def test_benchmark_autonomous():
 @pytest.mark.benchmark
 def test_benchmark_memory_working():
     """Benchmark Memory: Working (store + retrieve)."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     async def bench_store():
         memory = WorkingMemory(max_messages=10)
@@ -384,7 +385,7 @@ def test_benchmark_memory_working():
             id="test",
             content="test content",
             metadata={},
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         await memory.store(entry)
 
@@ -394,7 +395,7 @@ def test_benchmark_memory_working():
             id="test",
             content="test content",
             metadata={},
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         await memory.store(entry)
         await memory.retrieve("test", limit=5)
@@ -412,7 +413,7 @@ def test_benchmark_memory_working():
 @pytest.mark.benchmark
 def test_benchmark_memory_short_term():
     """Benchmark Memory: Short-Term (store + retrieve)."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     async def bench_store():
         memory = ShortTermMemory(max_messages=100, ttl_seconds=3600)
@@ -420,7 +421,7 @@ def test_benchmark_memory_short_term():
             id="test",
             content="test content",
             metadata={},
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         await memory.store(entry)
 
@@ -430,7 +431,7 @@ def test_benchmark_memory_short_term():
             id="test",
             content="test content",
             metadata={},
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         await memory.store(entry)
         await memory.retrieve("test", limit=5)

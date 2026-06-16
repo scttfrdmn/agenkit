@@ -5,7 +5,7 @@ Note: These tests require a running Redis server.
 They will be skipped if Redis is not available.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -13,7 +13,7 @@ from agenkit.interfaces import Message
 
 # Try to import RedisMemory
 try:
-    import redis.asyncio  # noqa: F401
+    import redis.asyncio  # noqa: F401  # availability probe; RedisMemory import below is what's used
 
     from agenkit.memory.redis_memory import RedisMemory
 
@@ -51,7 +51,7 @@ async def redis_memory():
         for session_id in sessions:
             await memory.clear(session_id)
         await memory.close()
-    except Exception:  # noqa: S110
+    except Exception:
         pass  # Cleanup code - silent failure acceptable for teardown
 
 
@@ -196,14 +196,14 @@ async def test_retrieve_with_time_range(redis_memory):
     import asyncio
 
     await asyncio.sleep(0.1)
-    cutoff_time = datetime.now(timezone.utc)
+    cutoff_time = datetime.now(UTC)
     await asyncio.sleep(0.1)
 
     await redis_memory.store("test-session-7", Message(role="user", content="New message"))
 
     # Retrieve only messages after cutoff
     messages = await redis_memory.retrieve(
-        "test-session-7", limit=10, time_range=(cutoff_time, datetime.now(timezone.utc))
+        "test-session-7", limit=10, time_range=(cutoff_time, datetime.now(UTC))
     )
 
     assert len(messages) == 1

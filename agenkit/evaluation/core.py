@@ -6,7 +6,7 @@ Provides base interfaces and orchestration for agent evaluation.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from ..interfaces import Agent, Message
@@ -77,7 +77,7 @@ class EvaluationResult:
     # Identification
     evaluation_id: str
     agent_name: str
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     # Metrics
     metrics: dict[str, float] = field(default_factory=dict)
@@ -160,7 +160,7 @@ class Evaluator:
         """
         self.agent = agent
         self.metrics = metrics or []
-        self.session_id = session_id or f"eval-{datetime.now(timezone.utc).timestamp()}"
+        self.session_id = session_id or f"eval-{datetime.now(UTC).timestamp()}"
 
     async def evaluate(
         self, test_cases: list[dict[str, Any]], evaluation_id: str | None = None

@@ -30,7 +30,9 @@ import json
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Callable, Coroutine
+
+    from fastapi import Request
 
     from agenkit.protocols.agui.events import AGUIEvent
 
@@ -51,7 +53,7 @@ class SSEFormatter:
     """
 
     @staticmethod
-    def format_event(event: "AGUIEvent", include_event_name: bool = False) -> str:  # noqa: UP037
+    def format_event(event: AGUIEvent, include_event_name: bool = False) -> str:
         """
         Format AG-UI event as SSE message.
 
@@ -183,7 +185,6 @@ def create_sse_response_iterator(
 
 # FastAPI integration
 try:
-    from fastapi import Request  # type: ignore[import-not-found]  # noqa: TC002
     from fastapi.responses import StreamingResponse  # type: ignore[import-not-found]
 
     class AGUISSEEndpoint:
@@ -290,8 +291,6 @@ except ImportError:
 
 # aiohttp integration
 try:
-    from collections.abc import Callable, Coroutine  # noqa: TC003
-
     from aiohttp import web
 
     def create_sse_handler(

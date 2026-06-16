@@ -8,6 +8,7 @@ Part of v0.48.0 Phase 2: Parity Enforcement (Task 2.2)
 """
 
 import json
+from datetime import UTC
 from pathlib import Path
 from typing import Any
 
@@ -290,7 +291,7 @@ def test_report_has_timestamp(parity_report: dict[str, Any]) -> None:
     from datetime import datetime
 
     try:
-        datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        datetime.fromisoformat(timestamp)
     except (ValueError, AttributeError) as e:
         pytest.fail(f"Invalid timestamp format: {timestamp} ({e})")
 
@@ -373,11 +374,11 @@ def test_parity_report_is_current(parity_report: dict[str, Any]) -> None:
     This test is marked slow and can be skipped in fast test runs.
     It ensures the CI is actually running and updating the report.
     """
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     timestamp = parity_report["generated_at"]
-    generated_at = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-    now = datetime.now(timezone.utc)
+    generated_at = datetime.fromisoformat(timestamp)
+    now = datetime.now(UTC)
 
     age = now - generated_at
     max_age = timedelta(days=90)

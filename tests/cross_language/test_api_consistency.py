@@ -9,14 +9,13 @@ and interface signatures.
 import inspect
 import json
 from pathlib import Path
-from typing import Any
 
 import pytest
 
-from agenkit.middleware.retry import RetryDecorator, RetryConfig
-from agenkit.middleware.timeout import TimeoutDecorator, TimeoutConfig
-from agenkit.middleware.rate_limiter import RateLimiterDecorator, RateLimiterConfig
-from agenkit.middleware.circuit_breaker import CircuitBreakerDecorator, CircuitBreakerConfig
+from agenkit.middleware.circuit_breaker import CircuitBreakerConfig
+from agenkit.middleware.rate_limiter import RateLimiterConfig
+from agenkit.middleware.retry import RetryConfig
+from agenkit.middleware.timeout import TimeoutConfig
 
 # Load API consistency fixtures
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -80,7 +79,7 @@ class TestParameterNaming:
 
     def test_timeout_parameter_names(self):
         """Verify TimeoutMiddleware parameter names clearly indicate units."""
-        test_case = next(
+        next(
             tc
             for tc in API_FIXTURES["test_categories"]["parameter_naming"]["test_cases"]
             if tc["id"] == "timeout_parameter_names"
@@ -97,7 +96,7 @@ class TestParameterNaming:
 
         # If using primitive (not timedelta), should indicate unit
         # This is a soft check - we're validating the pattern exists
-        has_clear_unit = any("_ms" in p or "_seconds" in p for p in timeout_params)
+        any("_ms" in p or "_seconds" in p for p in timeout_params)
         # Note: This test documents the expectation but allows flexibility
         # for implementations that use timedelta (which is self-documenting)
 

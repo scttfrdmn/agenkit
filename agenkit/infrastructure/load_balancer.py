@@ -16,7 +16,6 @@ Features:
 import asyncio
 import random
 import time
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -275,7 +274,7 @@ class LoadBalancer(Agent):
         Higher weight means more requests. Weight=2 gets twice as many requests as weight=1.
         """
         # Calculate total weight
-        total_weight = sum(b.weight for b in backends)
+        sum(b.weight for b in backends)
 
         # Generate weighted list
         weighted_backends: list[AgentBackend] = []

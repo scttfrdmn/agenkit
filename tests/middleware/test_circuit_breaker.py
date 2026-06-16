@@ -333,7 +333,7 @@ async def test_circuit_breaker_metrics():
         msg = Message(role="user", content="test")
         try:
             await cb.process(msg)
-        except Exception:  # noqa: S110
+        except Exception:
             pass  # Expected failures - testing circuit breaker metrics
 
     metrics = cb.metrics

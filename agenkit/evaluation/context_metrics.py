@@ -5,7 +5,7 @@ Designed for systems like endless that operate at 1M-25M+ token contexts.
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from ..interfaces import Agent, Message
@@ -114,7 +114,7 @@ class CompressionStats:
 
     def __post_init__(self):
         if self.timestamp is None:
-            self.timestamp = datetime.now(timezone.utc)
+            self.timestamp = datetime.now(UTC)
 
     def to_dict(self) -> dict:
         """Convert to dictionary."""

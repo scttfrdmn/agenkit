@@ -76,7 +76,7 @@ class WebSocketTransport(Transport):
                 self._receive_buffer.clear()
                 return
 
-            except (OSError, WebSocketException, asyncio.TimeoutError) as e:
+            except (TimeoutError, OSError, WebSocketException) as e:
                 last_error = e
                 if attempt < self._max_retries - 1:
                     await asyncio.sleep(retry_delay)

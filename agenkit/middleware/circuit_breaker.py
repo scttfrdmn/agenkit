@@ -214,7 +214,7 @@ class CircuitBreakerDecorator(Agent):
 
             return result
 
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             async with self._lock:
                 await self._on_failure()
             raise TimeoutError(f"Request exceeded timeout of {self._config.timeout_ms}ms") from e

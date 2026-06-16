@@ -5,7 +5,7 @@ Provides simple in-memory storage with LRU eviction for testing
 and simple applications that don't need persistence.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ..interfaces import Message
 from .base import Memory
@@ -60,7 +60,7 @@ class EphemeralMemory(Memory):
         session_storage = self._storage[session_id]
 
         # Add message with timestamp (use counter to ensure unique ordering)
-        timestamp = datetime.now(timezone.utc).timestamp() + (self._counter * 0.000001)
+        timestamp = datetime.now(UTC).timestamp() + (self._counter * 0.000001)
         self._counter += 1
         session_storage.append((timestamp, message, metadata or {}))
 
@@ -94,7 +94,7 @@ class EphemeralMemory(Memory):
             # Time range filter
             if "time_range" in kwargs:
                 start_time, end_time = kwargs["time_range"]
-                msg_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+                msg_time = datetime.fromtimestamp(timestamp, tz=UTC)
                 if not (start_time <= msg_time <= end_time):
                     continue
 

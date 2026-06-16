@@ -38,7 +38,7 @@ import random
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -80,13 +80,13 @@ class SearchSpace:
         config = {}
         for name, spec in self.parameters.items():
             if spec["type"] == "continuous":
-                config[name] = random.uniform(spec["low"], spec["high"])  # noqa: S311
+                config[name] = random.uniform(spec["low"], spec["high"])
             elif spec["type"] == "discrete":
-                config[name] = random.choice(spec["values"])  # noqa: S311
+                config[name] = random.choice(spec["values"])
             elif spec["type"] == "integer":
-                config[name] = random.randint(spec["low"], spec["high"])  # noqa: S311
+                config[name] = random.randint(spec["low"], spec["high"])
             elif spec["type"] == "categorical":
-                config[name] = random.choice(spec["values"])  # noqa: S311
+                config[name] = random.choice(spec["values"])
         return config
 
     def validate(self, config: dict[str, Any]) -> bool:
@@ -302,7 +302,7 @@ class RandomSearchOptimizer(Optimizer):
         self, test_cases: list[dict[str, Any]], n_iterations: int, **kwargs: Any
     ) -> OptimizationResult:
         """Run random search optimization."""
-        start_time = datetime.now(timezone.utc).isoformat()
+        start_time = datetime.now(UTC).isoformat()
         self.history = []
 
         best_config: dict[str, Any] | None = None
@@ -321,7 +321,7 @@ class RandomSearchOptimizer(Optimizer):
                 best_score = score
                 best_config = config.copy()
 
-        end_time = datetime.now(timezone.utc).isoformat()
+        end_time = datetime.now(UTC).isoformat()
 
         if best_config is None:
             best_config = self.search_space.sample()

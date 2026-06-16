@@ -154,7 +154,7 @@ class RemoteAgent(Agent):
                 # Decode and return message
                 return decode_message(response["payload"]["message"])
 
-            except asyncio.TimeoutError as e:
+            except TimeoutError as e:
                 raise AgentTimeoutError(self._name, self._timeout_ms) from e
             except (ConnectionError, ProtocolError):
                 # Re-raise protocol/connection errors as-is
@@ -270,7 +270,7 @@ class RemoteAgent(Agent):
                             )
                             raise InvalidMessageError(msg, {"response": response})
 
-            except asyncio.TimeoutError as e:
+            except TimeoutError as e:
                 raise AgentTimeoutError(self._name, self._timeout_ms) from e
             except (ConnectionError, ProtocolError):
                 # Re-raise protocol/connection errors as-is

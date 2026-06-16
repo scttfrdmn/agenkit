@@ -2,7 +2,7 @@
 Tests for VectorMemory implementation.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -246,14 +246,14 @@ async def test_retrieve_with_time_range(vector_memory):
     import asyncio
 
     await asyncio.sleep(0.1)
-    cutoff_time = datetime.now(timezone.utc)
+    cutoff_time = datetime.now(UTC)
     await asyncio.sleep(0.1)
 
     await vector_memory.store("session-1", Message(role="user", content="New message"))
 
     # Retrieve only messages after cutoff
     messages = await vector_memory.retrieve(
-        "session-1", limit=10, time_range=(cutoff_time, datetime.now(timezone.utc))
+        "session-1", limit=10, time_range=(cutoff_time, datetime.now(UTC))
     )
 
     assert len(messages) == 1

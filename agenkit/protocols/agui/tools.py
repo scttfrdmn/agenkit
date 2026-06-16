@@ -7,10 +7,9 @@ in the AG-UI protocol.
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncIterator, Callable, Optional
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
-from agenkit import Tool, ToolResult
 from agenkit.protocols.agui.events import (
     ToolCallArgsEvent,
     ToolCallEndEvent,
@@ -18,6 +17,11 @@ from agenkit.protocols.agui.events import (
     ToolCallResultEvent,
     ToolCallStartEvent,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Callable
+
+    from agenkit import Tool
 
 
 class ProgressReporter:
@@ -45,8 +49,8 @@ class ProgressReporter:
     def report(
         self,
         progress: float,
-        status: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        status: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Report progress.
 
@@ -89,10 +93,10 @@ class ToolCallTracker:
         self,
         tool: Tool,
         args: dict[str, Any],
-        parent_message_id: Optional[str] = None,
+        parent_message_id: str | None = None,
         stream_args: bool = True,
         arg_chunk_size: int = 100,
-        on_progress: Optional[Callable[[str, float, Optional[str]], None]] = None,
+        on_progress: Callable[[str, float, str | None], None] | None = None,
     ) -> AsyncIterator:
         """Track a tool call and emit events.
 
@@ -148,8 +152,8 @@ class ToolCallTracker:
                 def emit_progress(
                     tid: str,
                     progress: float,
-                    status: Optional[str] = None,
-                    metadata: Optional[dict[str, Any]] = None,
+                    status: str | None = None,
+                    metadata: dict[str, Any] | None = None,
                 ) -> None:
                     progress_events.append(
                         ToolCallProgressEvent(
@@ -226,7 +230,7 @@ class ToolRegistry:
         """
         self._tools[tool.name] = tool
 
-    def get(self, name: str) -> Optional[Tool]:
+    def get(self, name: str) -> Tool | None:
         """Get a tool by name.
 
         Args:

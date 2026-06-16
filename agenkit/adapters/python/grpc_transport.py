@@ -2,7 +2,7 @@
 
 import asyncio
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlparse
 
@@ -196,7 +196,7 @@ class GRPCTransport(Transport):
         """
         raise NotImplementedError("Use receive_framed() for gRPC transport")
 
-    async def send_framed(self, data: bytes) -> None:  # noqa: PLR0915
+    async def send_framed(self, data: bytes) -> None:
         """Send length-prefixed framed data via gRPC.
 
         This method converts the JSON envelope to a protobuf Request,
@@ -328,7 +328,7 @@ class GRPCTransport(Transport):
             data = await asyncio.wait_for(self._response_queue.get(), timeout=60.0)
             return data
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise ConnectionClosedError("Response timeout - connection may be closed")
         except Exception as e:
             raise ConnError(f"Failed to receive data via gRPC: {e}") from e
@@ -488,7 +488,7 @@ class GRPCTransport(Transport):
             data = await asyncio.wait_for(self._response_queue.get(), timeout=60.0)
             return data  # type: ignore[return-value]
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise ConnectionClosedError("Response timeout - connection may be closed")
         except Exception as e:
             raise ConnError(f"Failed to receive data via gRPC: {e}") from e
@@ -512,7 +512,7 @@ class GRPCTransport(Transport):
             request = agent_pb2.Request(
                 version=envelope.get("version", "1.0"),
                 id=envelope.get("id", ""),
-                timestamp=envelope.get("timestamp", datetime.now(timezone.utc).isoformat()),
+                timestamp=envelope.get("timestamp", datetime.now(UTC).isoformat()),
                 method=payload.get("method", "process"),
                 agent_name=payload.get("agent_name", ""),
             )
@@ -728,7 +728,7 @@ class GRPCTransport(Transport):
             "version": "1.0",
             "type": "error",
             "id": request_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "payload": {
                 "error_code": error_code,
                 "error_message": error_message,

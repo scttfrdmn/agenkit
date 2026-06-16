@@ -106,7 +106,7 @@ try:
     )
 
     __all__.extend(
-        ["VLLMConnector", "SGLangConnector", "TensorRTLLMConnector", "DeepSpeedConnector"]
+        ["DeepSpeedConnector", "SGLangConnector", "TensorRTLLMConnector", "VLLMConnector"]
     )
 except ImportError:
     pass

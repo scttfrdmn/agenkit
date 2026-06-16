@@ -7,22 +7,24 @@ emits AG-UI Standard protocol events.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, AsyncIterator, Optional
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
-from agenkit import Agent, Message
 from agenkit.protocols.agui.events import (
     Event,
     RunErrorEvent,
     RunFinishedEvent,
     RunStartedEvent,
-    StateDeltaEvent,
-    StateSnapshotEvent,
     TextMessageContentEvent,
     TextMessageEndEvent,
     TextMessageStartEvent,
 )
-from agenkit.protocols.agui.state import StateManager
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+    from agenkit import Agent, Message
+    from agenkit.protocols.agui.state import StateManager
 
 
 class AGUIAdapter:
@@ -57,8 +59,8 @@ class AGUIAdapter:
         self,
         agent: Agent,
         chunk_size: int = 20,
-        agent_name: Optional[str] = None,
-        state_manager: Optional[StateManager] = None,
+        agent_name: str | None = None,
+        state_manager: StateManager | None = None,
         emit_state_snapshots: bool = False,
     ):
         """Initialize the AG-UI adapter.
@@ -80,9 +82,9 @@ class AGUIAdapter:
         self,
         message: Message,
         thread_id: str,
-        run_id: Optional[str] = None,
-        parent_run_id: Optional[str] = None,
-        input_data: Optional[dict[str, Any]] = None,
+        run_id: str | None = None,
+        parent_run_id: str | None = None,
+        input_data: dict[str, Any] | None = None,
     ) -> AsyncIterator[Event]:
         """Stream AG-UI events for a message.
 
@@ -181,8 +183,8 @@ class AGUIAdapter:
         self,
         message: Message,
         thread_id: str,
-        run_id: Optional[str] = None,
-        steps: Optional[list[str]] = None,
+        run_id: str | None = None,
+        steps: list[str] | None = None,
     ) -> AsyncIterator[Event]:
         """Stream events with step tracking.
 

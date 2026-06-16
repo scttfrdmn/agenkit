@@ -55,7 +55,7 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 __all__ = [
@@ -300,7 +300,7 @@ class ShortTermMemory(MemoryStore):
         results = sorted_messages[:limit]
 
         # Update access time and count
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for entry in results:
             entry.access_count += 1
             entry.last_accessed = now
@@ -313,7 +313,7 @@ class ShortTermMemory(MemoryStore):
 
     async def _clean_expired(self) -> None:
         """Remove entries older than TTL."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         self._messages = [e for e in self._messages if now - e.timestamp < self.ttl]
 
     def __len__(self) -> int:
@@ -411,7 +411,7 @@ class LongTermMemory(MemoryStore):
             score += entry.importance * 0.3
 
             # Recency weight (more recent = higher score)
-            age_days = (datetime.now(timezone.utc) - entry.timestamp).days
+            age_days = (datetime.now(UTC) - entry.timestamp).days
             recency_score = max(0.0, 1.0 - age_days / 365.0)  # Decay over a year
             score += recency_score * 0.2
 
@@ -424,7 +424,7 @@ class LongTermMemory(MemoryStore):
         results = [entry for entry, score in scored_entries[:limit]]
 
         # Update access time
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for entry in results:
             entry.access_count += 1
             entry.last_accessed = now
@@ -537,7 +537,7 @@ class MemoryHierarchy:
             id=str(uuid.uuid4()),
             content=content,
             metadata=metadata or {},
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             importance=importance,
             session_id=session_id,
         )
@@ -664,7 +664,7 @@ class MemoryHierarchy:
             score += entry.importance * 0.3
 
             # Recency (20% weight)
-            age_seconds = (datetime.now(timezone.utc) - entry.timestamp).total_seconds()
+            age_seconds = (datetime.now(UTC) - entry.timestamp).total_seconds()
             max_age = 86400  # 1 day in seconds
             recency_score = max(0.0, 1.0 - age_seconds / max_age)
             score += recency_score * 0.2

@@ -74,9 +74,9 @@ class TestParameterNaming:
         assert "max_attempts" not in param_names, "Deprecated max_attempts should be removed"
         assert "initial_backoff" not in param_names, "Deprecated initial_backoff should be removed"
         assert "max_backoff" not in param_names, "Deprecated max_backoff should be removed"
-        assert (
-            "backoff_multiplier" not in param_names
-        ), "Deprecated backoff_multiplier should be removed"
+        assert "backoff_multiplier" not in param_names, (
+            "Deprecated backoff_multiplier should be removed"
+        )
 
     def test_timeout_parameter_names(self):
         """Verify TimeoutMiddleware parameter names clearly indicate units."""
@@ -128,9 +128,9 @@ class TestDefaultValues:
         else:
             pytest.fail("TimeoutConfig has no recognizable timeout attribute")
 
-        assert (
-            actual_ms == expected_ms
-        ), f"TimeoutConfig default should be {expected_ms}ms (30 seconds), got {actual_ms}ms"
+        assert actual_ms == expected_ms, (
+            f"TimeoutConfig default should be {expected_ms}ms (30 seconds), got {actual_ms}ms"
+        )
 
     def test_retry_defaults(self):
         """Verify RetryMiddleware default configuration values."""
@@ -145,9 +145,9 @@ class TestDefaultValues:
 
         # Check max_retries
         expected_max_retries = defaults["max_retries"]["value"]
-        assert (
-            config.max_retries == expected_max_retries
-        ), f"max_retries default should be {expected_max_retries}"
+        assert config.max_retries == expected_max_retries, (
+            f"max_retries default should be {expected_max_retries}"
+        )
 
         # Check initial_delay (convert to ms)
         expected_initial_delay_ms = defaults["initial_delay"]["value_ms"]
@@ -158,9 +158,9 @@ class TestDefaultValues:
         else:
             pytest.fail("RetryConfig has no recognizable initial_delay attribute")
 
-        assert (
-            actual_delay_ms == expected_initial_delay_ms
-        ), f"initial_delay default should be {expected_initial_delay_ms}ms"
+        assert actual_delay_ms == expected_initial_delay_ms, (
+            f"initial_delay default should be {expected_initial_delay_ms}ms"
+        )
 
         # Check max_delay (convert to ms)
         expected_max_delay_ms = defaults["max_delay"]["value_ms"]
@@ -171,15 +171,15 @@ class TestDefaultValues:
         else:
             pytest.fail("RetryConfig has no recognizable max_delay attribute")
 
-        assert (
-            actual_max_delay_ms == expected_max_delay_ms
-        ), f"max_delay default should be {expected_max_delay_ms}ms"
+        assert actual_max_delay_ms == expected_max_delay_ms, (
+            f"max_delay default should be {expected_max_delay_ms}ms"
+        )
 
         # Check multiplier
         expected_multiplier = defaults["multiplier"]["value"]
-        assert (
-            config.multiplier == expected_multiplier
-        ), f"multiplier default should be {expected_multiplier}"
+        assert config.multiplier == expected_multiplier, (
+            f"multiplier default should be {expected_multiplier}"
+        )
 
     def test_retry_using_new_parameter_names(self):
         """Verify RetryConfig works correctly when using new parameter names."""
@@ -208,15 +208,15 @@ class TestDefaultValues:
 
         # Check rate
         expected_rate = defaults["rate"]["value"]
-        assert (
-            config.rate == expected_rate
-        ), f"rate default should be {expected_rate} requests/second"
+        assert config.rate == expected_rate, (
+            f"rate default should be {expected_rate} requests/second"
+        )
 
         # Check capacity
         expected_capacity = defaults["capacity"]["value"]
-        assert (
-            config.capacity == expected_capacity
-        ), f"capacity default should be {expected_capacity}"
+        assert config.capacity == expected_capacity, (
+            f"capacity default should be {expected_capacity}"
+        )
 
     def test_circuit_breaker_defaults(self):
         """Verify CircuitBreakerMiddleware default configuration values."""
@@ -231,15 +231,15 @@ class TestDefaultValues:
 
         # Check failure_threshold
         expected_failure_threshold = defaults["failure_threshold"]["value"]
-        assert (
-            config.failure_threshold == expected_failure_threshold
-        ), f"failure_threshold default should be {expected_failure_threshold}"
+        assert config.failure_threshold == expected_failure_threshold, (
+            f"failure_threshold default should be {expected_failure_threshold}"
+        )
 
         # Check success_threshold
         expected_success_threshold = defaults["success_threshold"]["value"]
-        assert (
-            config.success_threshold == expected_success_threshold
-        ), f"success_threshold default should be {expected_success_threshold}"
+        assert config.success_threshold == expected_success_threshold, (
+            f"success_threshold default should be {expected_success_threshold}"
+        )
 
         # Check timeout (convert to ms)
         expected_timeout_ms = defaults["timeout"]["value_ms"]
@@ -250,9 +250,9 @@ class TestDefaultValues:
         else:
             pytest.fail("CircuitBreakerConfig has no recognizable timeout attribute")
 
-        assert (
-            actual_timeout_ms == expected_timeout_ms
-        ), f"timeout default should be {expected_timeout_ms}ms"
+        assert actual_timeout_ms == expected_timeout_ms, (
+            f"timeout default should be {expected_timeout_ms}ms"
+        )
 
         # Check recovery_timeout (convert to ms)
         expected_recovery_ms = defaults["recovery_timeout"]["value_ms"]
@@ -263,9 +263,9 @@ class TestDefaultValues:
         else:
             pytest.fail("CircuitBreakerConfig has no recognizable recovery_timeout attribute")
 
-        assert (
-            actual_recovery_ms == expected_recovery_ms
-        ), f"recovery_timeout default should be {expected_recovery_ms}ms"
+        assert actual_recovery_ms == expected_recovery_ms, (
+            f"recovery_timeout default should be {expected_recovery_ms}ms"
+        )
 
 
 class TestInterfaceSignatures:
@@ -281,17 +281,17 @@ class TestInterfaceSignatures:
 
         # Python should have: self, params (dict[str, Any])
         assert "self" in params
-        assert (
-            "params" in params or "kwargs" in params
-        ), "Tool.execute should accept params or **kwargs"
+        assert "params" in params or "kwargs" in params, (
+            "Tool.execute should accept params or **kwargs"
+        )
 
         # Check return type annotation if available
         if sig.return_annotation != inspect.Signature.empty:
             # Should return ToolResult (or awaitable ToolResult for async)
             return_type_str = str(sig.return_annotation)
-            assert (
-                "ToolResult" in return_type_str
-            ), f"Tool.execute should return ToolResult, got {return_type_str}"
+            assert "ToolResult" in return_type_str, (
+                f"Tool.execute should return ToolResult, got {return_type_str}"
+            )
 
     def test_agent_process_signature(self):
         """Verify Agent.process() method signature matches specification."""
@@ -308,9 +308,9 @@ class TestInterfaceSignatures:
         # Check return type annotation if available
         if sig.return_annotation != inspect.Signature.empty:
             return_type_str = str(sig.return_annotation)
-            assert (
-                "Message" in return_type_str
-            ), f"Agent.process should return Message, got {return_type_str}"
+            assert "Message" in return_type_str, (
+                f"Agent.process should return Message, got {return_type_str}"
+            )
 
 
 class TestErrorTypes:

@@ -18,7 +18,7 @@ def make_skill_dir(
 ) -> Path:
     skill_dir = tmp_path / name
     skill_dir.mkdir()
-    content = "---\n" f"name: {name}\n" f"description: {description}\n" "---\n" f"{body}"
+    content = f"---\nname: {name}\ndescription: {description}\n---\n{body}"
     (skill_dir / "SKILL.md").write_text(content, encoding="utf-8")
     return skill_dir
 

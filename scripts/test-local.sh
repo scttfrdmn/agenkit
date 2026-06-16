@@ -87,8 +87,8 @@ if [ "$LINT" = true ]; then
     run_step "Ruff (Python linter)" \
         ruff check agenkit/ tests/
 
-    run_step "Black (Python formatter)" \
-        black --check agenkit/ tests/
+    run_step "ruff format (Python formatter)" \
+        ruff format --check agenkit/ tests/
 
     cd "$REPO_ROOT/agenkit-go"
     run_step "go fmt check" \

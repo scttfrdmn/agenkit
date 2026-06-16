@@ -54,18 +54,18 @@ install: ## Install development dependencies
 	@echo ""
 	@echo "Go dependencies are managed by go.mod"
 
-format: ## Format code (Python: black, Go: gofmt)
+format: ## Format code (Python: ruff format, Go: gofmt)
 	@echo "Formatting Python code..."
-	@black agenkit/ tests/ examples/
+	@ruff format agenkit/ tests/ examples/
 	@echo "Formatting Go code..."
 	@cd agenkit-go && gofmt -s -w .
 	@echo "✓ Code formatted"
 
 lint: ## Run linters only (no tests)
-	@echo "Running Ruff..."
+	@echo "Running Ruff check..."
 	@ruff check agenkit/ tests/
-	@echo "Running Black check..."
-	@black --check agenkit/ tests/
+	@echo "Running Ruff format check..."
+	@ruff format --check agenkit/ tests/
 	@echo "Running go fmt check..."
 	@cd agenkit-go && gofmt -s -l . | grep -v "^examples/" || echo "✓ Go code formatted"
 	@echo "Running go vet..."

@@ -13,7 +13,7 @@ import {
   PeriodicExportingMetricReader,
 } from '@opentelemetry/sdk-metrics';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
-import { Resource } from '@opentelemetry/resources';
+import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 import { metrics, Counter, Histogram } from '@opentelemetry/api';
 import { Agent, Message } from '../core/interfaces';
@@ -78,8 +78,8 @@ export async function initMetrics(config: MetricsConfig): Promise<MeterProvider>
   );
 
   // Create resource
-  const resource = Resource.default().merge(
-    new Resource({
+  const resource = defaultResource().merge(
+    resourceFromAttributes({
       [ATTR_SERVICE_NAME]: config.serviceName,
     })
   );

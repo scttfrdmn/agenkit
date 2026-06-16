@@ -48,18 +48,18 @@ async-stream = "0.3"
 wasm-bindgen-futures = { version = "0.4", optional = true }
 
 # HTTP client and server
-reqwest = { version = "0.11", features = ["json"], optional = true }
-axum = { version = "0.7", features = ["json"], optional = true }
-tower = { version = "0.4", optional = true }
-tower-http = { version = "0.5", features = ["trace", "cors"], optional = true }
+reqwest = { version = "0.13", features = ["json"], optional = true }
+axum = { version = "0.8", features = ["json"], optional = true }
+tower = { version = "0.5", optional = true }
+tower-http = { version = "0.6", features = ["trace", "cors"], optional = true }
 
 # WebSocket client and server
-tokio-tungstenite = { version = "0.21", optional = true }
+tokio-tungstenite = { version = "0.29", optional = true }
 futures-util = { version = "0.3", optional = true }
 
 # gRPC client and server
-tonic = { version = "0.11", optional = true }
-prost = { version = "0.12", optional = true }
+tonic = { version = "0.14", optional = true }
+prost = { version = "0.14", optional = true }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -68,7 +68,7 @@ serde_yaml = "0.9"
 chrono = { version = "0.4", features = ["serde"] }
 
 # Error handling
-thiserror = "1.0"
+thiserror = "2.0"
 anyhow = "1.0"
 
 # Regex for pattern parsing
@@ -78,14 +78,14 @@ regex = "1.10"
 uuid = { version = "1.6", features = ["v4", "js"] }
 
 # Random number generation
-rand = "0.8"
+rand = "0.9"
 getrandom = { version = "0.2", features = ["js"], optional = true }
 
 # Statistical functions for evaluation
-statrs = "0.17"
+statrs = "0.18"
 
 # Performance optimizations
-lru = { version = "0.12", optional = true }
+lru = { version = "0.18", optional = true }
 moka = { version = "0.12", features = ["future"], optional = true }
 crossbeam = { version = "0.8", optional = true }
 rayon = { version = "1.8", optional = true }
@@ -97,12 +97,12 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"], optional = true }
 
 # OpenTelemetry Core
-opentelemetry = { version = "0.23", features = ["trace", "metrics", "logs"], optional = true }
-opentelemetry_sdk = { version = "0.23", features = ["trace", "metrics", "logs", "rt-tokio"], optional = true }
+opentelemetry = { version = "0.32", features = ["trace", "metrics", "logs"], optional = true }
+opentelemetry_sdk = { version = "0.32", features = ["trace", "metrics", "logs", "rt-tokio"], optional = true }
 
 # OpenTelemetry Tracing Integration
-tracing-opentelemetry = { version = "0.23", optional = true }
-opentelemetry-otlp = { version = "0.16", features = ["trace", "metrics", "logs", "grpc-tonic"], optional = true }
+tracing-opentelemetry = { version = "0.33", optional = true }
+opentelemetry-otlp = { version = "0.32", features = ["trace", "metrics", "logs", "grpc-tonic"], optional = true }
 
 # OpenTelemetry Exporters
 # NOTE: opentelemetry-jaeger (deprecated upstream; Jaeger ingests OTLP natively),
@@ -110,7 +110,7 @@ opentelemetry-otlp = { version = "0.16", features = ["trace", "metrics", "logs",
 # removed — they were unused in the code and pulled in vulnerable transitive
 # crates (thrift, protobuf 2.x). The stdout exporter is the only one wired up;
 # OTLP remains for the modern export path.
-opentelemetry-stdout = { version = "0.4", optional = true }
+opentelemetry-stdout = { version = "0.32", optional = true }
 
 # Global state management
 once_cell = { version = "1.19", optional = true }
@@ -130,7 +130,7 @@ aws-sdk-bedrockruntime = { version = "1.56", optional = true }
 aws-credential-types = { version = "1.2", optional = true }
 
 # Redis for persistent memory
-redis = { version = "0.24", features = ["tokio-comp", "connection-manager"], optional = true }
+redis = { version = "1.2", features = ["tokio-comp", "connection-manager"], optional = true }
 
 [dev-dependencies]
 # Testing
@@ -140,7 +140,7 @@ tempfile = "3.8"
 proptest = "1.4"
 
 # Benchmarking
-criterion = { version = "0.5", features = ["async_tokio", "html_reports"] }
+criterion = { version = "0.8", features = ["async_tokio", "html_reports"] }
 
 [features]
 default = ["native"]

@@ -18,6 +18,8 @@ jobs:
     # GitHub-hosted, so untrusted PR code never runs on the LAN runner.
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     timeout-minutes: 5
+    env:
+      GOTOOLCHAIN: local # pin installed Go; never auto-fetch an old toolchain
 
     steps:
       - name: Checkout code
@@ -27,8 +29,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.25'
-          cache: true
-          cache-dependency-path: agenkit-go/go.sum
+          # cache disabled on persistent self-hosted runner (tar restore collides
+          # with the on-disk module cache); see govulncheck job in security.yml.
+          cache: false
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4

@@ -109,7 +109,7 @@ jobs:
       - uses: actions/setup-go@v5
         id: setup-go
         with:
-          go-version: "1.25"
+          go-version: "1.25.11"
           # cache disabled: on the persistent self-hosted runner the module
           # cache already lives on disk, and setup-go's tar-based restore
           # collided with it ("Cannot open: File exists"), corrupting state.

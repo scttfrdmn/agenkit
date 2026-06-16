@@ -105,13 +105,12 @@ tracing-opentelemetry = { version = "0.23", optional = true }
 opentelemetry-otlp = { version = "0.16", features = ["trace", "metrics", "logs", "grpc-tonic"], optional = true }
 
 # OpenTelemetry Exporters
-opentelemetry-jaeger = { version = "0.22", features = ["rt-tokio"], optional = true }
-opentelemetry-zipkin = { version = "0.21", features = ["reqwest-client"], optional = true }
-opentelemetry-prometheus = { version = "0.16", optional = true }
+# NOTE: opentelemetry-jaeger (deprecated upstream; Jaeger ingests OTLP natively),
+# opentelemetry-zipkin, opentelemetry-prometheus, and the prometheus client were
+# removed — they were unused in the code and pulled in vulnerable transitive
+# crates (thrift, protobuf 2.x). The stdout exporter is the only one wired up;
+# OTLP remains for the modern export path.
 opentelemetry-stdout = { version = "0.4", optional = true }
-
-# Prometheus client for metrics registry
-prometheus = { version = "0.13", optional = true }
 
 # Global state management
 once_cell = { version = "1.19", optional = true }
@@ -152,11 +151,7 @@ opentelemetry = [
     "dep:opentelemetry_sdk",
     "dep:tracing-opentelemetry",
     "dep:opentelemetry-otlp",
-    "dep:opentelemetry-jaeger",
-    "dep:opentelemetry-zipkin",
-    "dep:opentelemetry-prometheus",
     "dep:opentelemetry-stdout",
-    "dep:prometheus",
     "dep:once_cell",
 ]
 

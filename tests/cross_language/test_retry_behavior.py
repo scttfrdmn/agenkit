@@ -13,7 +13,7 @@ from typing import Any
 import pytest
 
 from agenkit.interfaces import Agent, Message
-from agenkit.middleware.retry import RetryDecorator, RetryConfig
+from agenkit.middleware.retry import RetryConfig, RetryDecorator
 
 # Load retry behavior fixtures
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -136,7 +136,7 @@ class TestRetryBehavior:
 
         # Should raise exception after exhausting retries
         msg = Message(role="user", content="test")
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(Exception):
             await retry.process(msg)
 
         # Verify expected behavior
@@ -164,7 +164,7 @@ class TestRetryBehavior:
         # Measure time
         start = asyncio.get_event_loop().time()
         msg = Message(role="user", content="test")
-        response = await retry.process(msg)
+        await retry.process(msg)
         elapsed_ms = (asyncio.get_event_loop().time() - start) * 1000
 
         # Verify expected behavior
@@ -200,7 +200,7 @@ class TestRetryBehavior:
         # Measure time
         start = asyncio.get_event_loop().time()
         msg = Message(role="user", content="test")
-        response = await retry.process(msg)
+        await retry.process(msg)
         elapsed_ms = (asyncio.get_event_loop().time() - start) * 1000
 
         # Verify expected behavior
@@ -241,7 +241,7 @@ class TestRetryBehavior:
 
         # Should fail immediately without retrying
         msg = Message(role="user", content="test")
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(Exception):
             await retry.process(msg)
 
         # Verify expected behavior

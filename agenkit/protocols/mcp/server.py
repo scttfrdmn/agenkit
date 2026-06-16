@@ -18,18 +18,20 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from agenkit.interfaces import Tool
 from agenkit.protocols.mcp.types import (
     MCPContent,
     MCPServerInfo,
     MCPTool,
     MCPToolResult,
+    _JSONRPCError,
     _JSONRPCRequest,
     _JSONRPCResponse,
-    _JSONRPCError,
 )
+
+if TYPE_CHECKING:
+    from agenkit.interfaces import Tool
 
 _PROTOCOL_VERSION = "2024-11-05"
 
@@ -153,7 +155,7 @@ class MCPServer:
 
         try:
             tool_result = await tool.execute(args)
-        except Exception as exc:  # noqa: BLE001  # tool errors become MCP error results
+        except Exception as exc:  # tool errors become MCP error results
             mcp_result = MCPToolResult(
                 content=[MCPContent(type="text", text=str(exc))],
                 is_error=True,

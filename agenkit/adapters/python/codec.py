@@ -1,7 +1,7 @@
 """Message serialization and deserialization for protocol adapter."""
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -50,7 +50,7 @@ def decode_message(data: dict[str, Any]) -> Message:
                 timestamp_str = timestamp_str[:-1] + "+00:00"
             timestamp = datetime.fromisoformat(timestamp_str)
         else:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
 
         return Message(
             role=data["role"],
@@ -119,7 +119,7 @@ def create_request_envelope(
         "version": PROTOCOL_VERSION,
         "type": "request",
         "id": str(uuid4()),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "payload": {
             "method": method,
             **({"agent_name": agent_name} if agent_name else {}),
@@ -142,7 +142,7 @@ def create_response_envelope(request_id: str, payload: dict[str, Any]) -> dict[s
         "version": PROTOCOL_VERSION,
         "type": "response",
         "id": request_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "payload": payload,
     }
 
@@ -168,7 +168,7 @@ def create_error_envelope(
         "version": PROTOCOL_VERSION,
         "type": "error",
         "id": request_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "payload": {
             "error_code": error_code,
             "error_message": error_message,
@@ -191,7 +191,7 @@ def create_stream_chunk_envelope(request_id: str, message: dict[str, Any]) -> di
         "version": PROTOCOL_VERSION,
         "type": "stream_chunk",
         "id": request_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "payload": {"message": message},
     }
 
@@ -209,7 +209,7 @@ def create_stream_end_envelope(request_id: str) -> dict[str, Any]:
         "version": PROTOCOL_VERSION,
         "type": "stream_end",
         "id": request_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "payload": {},
     }
 

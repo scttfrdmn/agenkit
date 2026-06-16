@@ -60,6 +60,8 @@ __all__ = [
     "Cost",
     "CostTracker",
     "HeuristicComplexityDetector",
+    # Deprecated aliases
+    "InMemoryStorage",
     "LLMBasedComplexityDetector",
     # Storage (current names)
     "MemoryStorage",
@@ -73,6 +75,4 @@ __all__ = [
     "ThinkingBudgetAllocator",
     "ThinkingMode",
     "ThinkingModeDetector",
-    # Deprecated aliases
-    "InMemoryStorage",
 ]

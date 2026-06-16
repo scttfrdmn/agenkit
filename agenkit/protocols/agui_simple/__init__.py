@@ -33,6 +33,7 @@ from agenkit.protocols.agui.events import (
     ToolCallStart,
     parse_event,
 )
+from agenkit.protocols.agui.hitl import AGUIHumanInLoopAdapter
 from agenkit.protocols.agui.transports.http import (
     AGUISSEEndpoint,
     AGUISSEStream,
@@ -40,7 +41,6 @@ from agenkit.protocols.agui.transports.http import (
     create_sse_handler,
     create_sse_response_iterator,
 )
-from agenkit.protocols.agui.hitl import AGUIHumanInLoopAdapter
 from agenkit.protocols.agui.transports.websocket import (
     AGUIWebSocketHandler,
     AGUIWebSocketStream,

@@ -13,7 +13,7 @@ import json
 import logging
 import logging.handlers
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -63,7 +63,7 @@ class AuditEvent:
 
     event_type: AuditEventType
     severity: AuditSeverity
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     user_id: str | None = None
     agent_name: str | None = None
     message: str | None = None

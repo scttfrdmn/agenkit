@@ -290,7 +290,7 @@ class YAMLBenchmarkLoader:
             Validation function that checks if a Message meets expectations
         """
 
-        def validator(  # noqa: PLR0911 - Multiple validation checks require early returns
+        def validator(
             msg: Message,
         ) -> bool:
             """Validate message against expected output."""

@@ -145,7 +145,7 @@ async def test_tail_latency_spikes():
         async def process(self, message: Message) -> Message:
             # Most requests are fast, but 10% have spikes
             # S311: Pseudo-random for chaos testing, not cryptographic use
-            if random.random() < self._spike_probability:  # noqa: S311
+            if random.random() < self._spike_probability:
                 await asyncio.sleep(0.2)  # 200ms spike
             else:
                 await asyncio.sleep(0.01)  # 10ms normal
@@ -331,7 +331,7 @@ async def test_performance_under_sustained_load():
     agent = LoadSensitiveAgent()
     message = Message(role="user", content="Test")
 
-    # Sequential: 10 requests × 50ms each = 500ms
+    # Sequential: 10 requests x 50ms each = 500ms
     start = time.time()
     for _ in range(10):
         await agent.process(message)
@@ -414,7 +414,7 @@ async def test_slow_response_percentiles():
         async def process(self, message: Message) -> Message:
             # Variable latency: 10-100ms
             # S311: Pseudo-random for chaos testing, not cryptographic use
-            delay = random.uniform(0.01, 0.1)  # noqa: S311
+            delay = random.uniform(0.01, 0.1)
             await asyncio.sleep(delay)
 
             return Message(role="agent", content=f"Processed: {message.content}")

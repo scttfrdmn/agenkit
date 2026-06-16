@@ -9,7 +9,7 @@ Validates message serialization/deserialization invariants:
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from hypothesis import assume, given, settings
@@ -233,7 +233,7 @@ def test_unicode_content_preservation(unicode_content):
 def test_timestamp_preservation(content):
     """Property: Timestamp is preserved through serialization."""
     # Create message with explicit timestamp
-    timestamp = datetime.now(timezone.utc)
+    timestamp = datetime.now(UTC)
     msg = Message(role="user", content=content, timestamp=timestamp)
 
     serialized = serialize_message(msg)

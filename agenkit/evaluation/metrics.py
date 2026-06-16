@@ -14,7 +14,7 @@ Key use case: "How do you know a 30-hour agent succeeded?"
 import json
 import statistics
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -48,7 +48,7 @@ class Metric:
     name: str
     value: float
     type: MetricType
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -68,7 +68,7 @@ class Metric:
             name=data["name"],
             value=data["value"],
             type=MetricType(data["type"]),
-            timestamp=data.get("timestamp", datetime.now(timezone.utc).isoformat()),
+            timestamp=data.get("timestamp", datetime.now(UTC).isoformat()),
             metadata=data.get("metadata", {}),
         )
 
@@ -99,7 +99,7 @@ class EvaluationResult:
                 "type": error_type,
                 "message": message,
                 "details": details or {},
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
 
@@ -119,8 +119,8 @@ class EvaluationResult:
         if not self.end_time:
             return None
 
-        start = datetime.fromisoformat(self.start_time.replace("Z", "+00:00"))
-        end = datetime.fromisoformat(self.end_time.replace("Z", "+00:00"))
+        start = datetime.fromisoformat(self.start_time)
+        end = datetime.fromisoformat(self.end_time)
         return (end - start).total_seconds()
 
     def to_dict(self) -> dict[str, Any]:
@@ -249,7 +249,7 @@ class MetricsCollector:
         data = {
             "results": [r.to_dict() for r in self.results],
             "statistics": self.get_statistics(),
-            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "exported_at": datetime.now(UTC).isoformat(),
         }
 
         with open(filepath, "w") as f:

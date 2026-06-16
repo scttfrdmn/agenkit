@@ -2,12 +2,16 @@
 Tests for HierarchyMemory backward compatibility adapter.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 import pytest
 
 from agenkit.interfaces import Message
 from agenkit.memory.hierarchy_memory import HierarchyMemory
+
+if TYPE_CHECKING:
+    from agenkit.memory.base import Memory
 
 
 @pytest.mark.asyncio
@@ -250,9 +254,9 @@ async def test_time_range_filter():
     memory = HierarchyMemory()
 
     # Store messages with specific timestamps
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     past = now - timedelta(hours=2)
-    future = now + timedelta(hours=2)
+    now + timedelta(hours=2)
 
     # Store old message
     msg1 = Message(role="user", content="Old message", timestamp=past)
@@ -402,7 +406,6 @@ async def test_semantic_retrieval_with_query():
 @pytest.mark.asyncio
 async def test_backward_compatibility_interface():
     """Test that HierarchyMemory is a drop-in replacement for Memory interface."""
-    from agenkit.memory.base import Memory
 
     memory: Memory = HierarchyMemory()  # Type annotation verifies interface
 
@@ -435,7 +438,7 @@ async def test_invalid_parameters():
         HierarchyMemory(short_term_ttl_seconds=0)
 
     # Test invalid long_term_min_importance
-    with pytest.raises(ValueError, match="long_term_min_importance must be between 0.0 and 1.0"):
+    with pytest.raises(ValueError, match=r"long_term_min_importance must be between 0\.0 and 1\.0"):
         HierarchyMemory(long_term_min_importance=1.5)
 
 

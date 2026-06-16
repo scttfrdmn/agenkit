@@ -2,6 +2,8 @@
 Tests for optimization framework base classes.
 """
 
+from datetime import UTC
+
 import pytest
 
 from agenkit.evaluation import OptimizationResult, RandomSearchOptimizer, SearchSpace
@@ -113,10 +115,10 @@ def test_search_space_validate():
 
 def test_optimization_result_creation():
     """Test optimization result creation."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    start = datetime.now(timezone.utc).isoformat()
-    end = datetime.now(timezone.utc).isoformat()
+    start = datetime.now(UTC).isoformat()
+    end = datetime.now(UTC).isoformat()
 
     result = OptimizationResult(
         best_config={"temperature": 0.5},
@@ -135,10 +137,10 @@ def test_optimization_result_creation():
 
 def test_optimization_result_improvement():
     """Test improvement calculation."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    start = datetime.now(timezone.utc).isoformat()
-    end = datetime.now(timezone.utc).isoformat()
+    start = datetime.now(UTC).isoformat()
+    end = datetime.now(UTC).isoformat()
 
     result = OptimizationResult(
         best_config={"temperature": 0.5},
@@ -156,10 +158,10 @@ def test_optimization_result_improvement():
 
 def test_optimization_result_to_dict():
     """Test converting result to dictionary."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    start = datetime.now(timezone.utc).isoformat()
-    end = datetime.now(timezone.utc).isoformat()
+    start = datetime.now(UTC).isoformat()
+    end = datetime.now(UTC).isoformat()
 
     result = OptimizationResult(
         best_config={"temperature": 0.5},

@@ -6,7 +6,7 @@ Defines message format for Agent-to-Agent (A2A) protocol communication.
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -61,7 +61,7 @@ class A2AMessage:
     # Priority and tracking
     priority: MessagePriority = MessagePriority.NORMAL
     correlation_id: str | None = None  # For request/response correlation
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     # Timeout and retry
     timeout_ms: int | None = None
@@ -99,7 +99,7 @@ class A2AMessage:
             metadata=data.get("metadata", {}),
             priority=MessagePriority(data.get("priority", "normal")),
             correlation_id=data.get("correlation_id"),
-            timestamp=data.get("timestamp", datetime.now(timezone.utc).isoformat()),
+            timestamp=data.get("timestamp", datetime.now(UTC).isoformat()),
             timeout_ms=data.get("timeout_ms"),
             retry_count=data.get("retry_count", 0),
             max_retries=data.get("max_retries", 3),

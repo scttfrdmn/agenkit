@@ -8,7 +8,7 @@ Requires: redis>=5.0.0
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -109,7 +109,7 @@ class RedisMemory(Memory):
         client = await self._get_client()
 
         # Serialize
-        timestamp = datetime.now(timezone.utc).timestamp()
+        timestamp = datetime.now(UTC).timestamp()
         value = self._serialize_message(message, metadata or {})
 
         # Store in sorted set (score = timestamp)
@@ -149,7 +149,7 @@ class RedisMemory(Memory):
             # Time range filter
             if "time_range" in kwargs:
                 start_time, end_time = kwargs["time_range"]
-                msg_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+                msg_time = datetime.fromtimestamp(timestamp, tz=UTC)
                 if not (start_time <= msg_time <= end_time):
                     continue
 

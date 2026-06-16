@@ -17,7 +17,7 @@ Performance characteristics:
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from agenkit.introspection import IntrospectionResult
@@ -51,7 +51,7 @@ class Message:
     role: str
     content: Any
     metadata: dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
         """Validate message after initialization."""
@@ -360,7 +360,7 @@ class Agent(ABC):
             ...     print(f"Memory entries: {len(result.memory_state)}")
         """
         return IntrospectionResult(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             agent_name=self.name,
             capabilities=self.capabilities,
             memory_state=self._get_memory_state(),

@@ -186,7 +186,7 @@ async def test_rate_limiter_cancellation():
         try:
             msg = Message(role="user", content="test")
             await asyncio.wait_for(rl.process(msg), timeout=0.05)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise
 
     # Should be cancelled before tokens refill

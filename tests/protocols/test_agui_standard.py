@@ -213,7 +213,7 @@ async def test_adapter_with_metadata():
     assert run_started.input.get("extra") == "data"
 
     # Check TextMessageEnd has metadata
-    text_end = [e for e in events if isinstance(e, TextMessageEndEvent)][0]
+    text_end = next(e for e in events if isinstance(e, TextMessageEndEvent))
     assert text_end.metadata is not None
     assert text_end.metadata.get("original") == "Test"
 

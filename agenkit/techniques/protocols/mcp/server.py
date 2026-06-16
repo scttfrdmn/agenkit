@@ -143,9 +143,7 @@ class MCPServer:
 
         return decorator
 
-    async def handle_request(  # noqa: PLR0911 - MCP protocol dispatcher with multiple method handlers
-        self, request: MCPRequest
-    ) -> MCPResponse:
+    async def handle_request(self, request: MCPRequest) -> MCPResponse:
         """
         Handle an MCP request.
 

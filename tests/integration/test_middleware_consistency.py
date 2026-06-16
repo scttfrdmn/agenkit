@@ -266,7 +266,7 @@ async def test_timeout_enforcement():
             agent.process(Message(role="user", content="test")), timeout=1.0
         )
         assert response.metadata["delay"] == 0.5
-    except asyncio.TimeoutError:
+    except TimeoutError:
         pytest.fail("Should not timeout with 1s limit")
 
     # Test with 0.1s timeout (should fail)

@@ -265,6 +265,16 @@ ignore = [
     "B017",    # Allow pytest.raises(Exception) in tests
     "S108",    # Allow /tmp paths in tests
     "PTH",     # Allow os.path in tests for compatibility
+    "S110",    # try-except-pass intentional in chaos/cross-language tests
+    "E402",    # imports after sys.path / importorskip setup in some test modules
+    "ASYNC109", # `timeout` param on async test helpers is intentional
+    "S311",    # Pseudo-random for chaos/load fixtures (not crypto)
+    "S603",    # subprocess to launch test harness servers (trusted args)
+    "S607",    # Partial executable path (go/python) in test harnesses
+    "ASYNC220", # Blocking subprocess in async test helpers - acceptable
+    "ASYNC221", # Blocking process run in async test helpers - acceptable
+    "PLR0911", # Many returns in cross-language dispatch harnesses
+    "PLR0915", # Many statements in cross-language dispatch harnesses
 ]
 "examples/**/*.py" = [
     "S105",    # Possible hardcoded password (examples)
@@ -312,6 +322,29 @@ ignore = [
 "agenkit/evaluation/*.py" = [
     "PTH",    # Allow os.path/open for evaluation data files
     "ASYNC230", # Blocking file ops acceptable for evaluation storage
+    "S311",   # Pseudo-random for A/B sampling (not crypto)
+    "PLR0911", # Many returns in benchmark scoring dispatch
+]
+"agenkit/evaluation/bayesian_optimizer.py" = [
+    "N803",   # Capital X/Y matrix/vector args follow ML/stats convention
+    "N806",   # Capital X/Y/Z matrix/vector locals follow ML/stats convention
+]
+"agenkit/adapters/llm/service_connectors.py" = [
+    "N802",   # Factory functions (VLLMConnector, etc.) named after the
+              # connector classes they build - PascalCase is the public API.
+]
+"agenkit/infrastructure/retry_enhanced.py" = [
+    "S311",   # Pseudo-random for retry jitter (not crypto)
+]
+"agenkit/infrastructure/load_balancer.py" = [
+    "S311",   # Pseudo-random for backend selection (not crypto)
+]
+"agenkit/protocols/agui/multimodal.py" = [
+    "PTH123", # open() for multimodal file I/O - acceptable
+    "UP007",  # Union[...] type alias kept for readability
+]
+"agenkit/protocols/agui/events.py" = [
+    "UP007",  # Large categorized Union[...] event alias kept for readability
 ]
 "agenkit/middleware/caching.py" = [
     "S110",   # Allow try-except-pass for cache cleanup
@@ -332,6 +365,25 @@ ignore = [
 ]
 "agenkit/safety/permissions.py" = [
     "S104",    # Binding to all interfaces - intentional for examples
+]
+"agenkit/techniques/protocols/a2a/**/*.py" = [
+    "S104",    # host="0.0.0.0" default is conventional for containerized A2A servers
+    "PLR0911", # Many returns in protocol message dispatch
+]
+"agenkit/techniques/protocols/mcp/server.py" = [
+    "PLR0911", # Many returns in MCP method dispatch
+]
+"agenkit/protocols/agui_simple/transports/*.py" = [
+    "S110",    # try-except-pass for transport connection cleanup
+]
+"agenkit/patterns/orchestration.py" = [
+    "PLR0915", # Many statements in the orchestration dispatch loop
+]
+"agenkit/adapters/python/grpc_transport.py" = [
+    "PLR0915", # Many statements in the gRPC transport setup
+]
+"agenkit/observability/logging.py" = [
+    "S110",    # try-except-pass in best-effort log handler fallback
 ]
 "agenkit/**/__init__.py" = [
     "F401",    # Imported but unused - false positive for re-exports via __all__

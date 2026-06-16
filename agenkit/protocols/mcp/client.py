@@ -125,7 +125,7 @@ class StdioClient(MCPClient):
                 self._proc.stdin.close()
             try:
                 await asyncio.wait_for(self._proc.wait(), timeout=5.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self._proc.kill()
 
     # ── Internal ──────────────────────────────────────────────────────────────

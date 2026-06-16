@@ -6,7 +6,7 @@ Tracks costs per session, per agent, and globally for budget management.
 
 from collections import defaultdict
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .models import ModelPricing
 
@@ -208,7 +208,7 @@ class CostTracker:
             output_cost=output_cost,
             thinking_cost=thinking_cost,
             total_cost=total_cost,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             metadata=metadata or {},
         )
 

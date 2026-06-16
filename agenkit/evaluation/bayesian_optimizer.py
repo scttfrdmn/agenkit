@@ -19,7 +19,7 @@ Example:
 """
 
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -136,9 +136,9 @@ class BayesianOptimizer(Optimizer):
 
     def _expected_improvement(
         self,
-        X: np.ndarray,  # noqa: N803
-        X_sample: np.ndarray,  # noqa: N803
-        Y_sample: np.ndarray,  # noqa: N803
+        X: np.ndarray,
+        X_sample: np.ndarray,
+        Y_sample: np.ndarray,
     ) -> np.ndarray:
         """
         Expected Improvement acquisition function.
@@ -156,13 +156,13 @@ class BayesianOptimizer(Optimizer):
 
         with np.errstate(divide="warn"):
             imp = mu - mu_sample_opt - self.xi
-            Z = imp / sigma  # noqa: N806
+            Z = imp / sigma
             ei = imp * self._norm_cdf(Z) + sigma * self._norm_pdf(Z)
             ei[sigma == 0.0] = 0.0
 
         return ei
 
-    def _upper_confidence_bound(self, X: np.ndarray) -> np.ndarray:  # noqa: N803
+    def _upper_confidence_bound(self, X: np.ndarray) -> np.ndarray:
         """
         Upper Confidence Bound acquisition function.
 
@@ -177,9 +177,9 @@ class BayesianOptimizer(Optimizer):
 
     def _probability_of_improvement(
         self,
-        X: np.ndarray,  # noqa: N803
-        X_sample: np.ndarray,  # noqa: N803
-        Y_sample: np.ndarray,  # noqa: N803
+        X: np.ndarray,
+        X_sample: np.ndarray,
+        Y_sample: np.ndarray,
     ) -> np.ndarray:
         """
         Probability of Improvement acquisition function.
@@ -196,7 +196,7 @@ class BayesianOptimizer(Optimizer):
         mu_sample_opt = np.max(Y_sample)
 
         with np.errstate(divide="warn"):
-            Z = (mu - mu_sample_opt - self.xi) / sigma  # noqa: N806
+            Z = (mu - mu_sample_opt - self.xi) / sigma
             pi = self._norm_cdf(Z)
             pi[sigma == 0.0] = 0.0
 
@@ -216,8 +216,8 @@ class BayesianOptimizer(Optimizer):
 
     def _propose_location(
         self,
-        X_sample: np.ndarray,  # noqa: N803
-        Y_sample: np.ndarray,  # noqa: N803
+        X_sample: np.ndarray,
+        Y_sample: np.ndarray,
         n_candidates: int = 1000,
     ) -> np.ndarray:
         """
@@ -267,12 +267,12 @@ class BayesianOptimizer(Optimizer):
         Returns:
             OptimizationResult with best configuration
         """
-        start_time = datetime.now(timezone.utc).isoformat()
+        start_time = datetime.now(UTC).isoformat()
         self.history = []
 
         # Phase 1: Random initialization
-        X_sample: list[np.ndarray] = []  # noqa: N806
-        Y_sample: list[float] = []  # noqa: N806
+        X_sample: list[np.ndarray] = []
+        Y_sample: list[float] = []
 
         for _ in range(min(self.n_initial, n_iterations)):
             config = self.search_space.sample()
@@ -285,8 +285,8 @@ class BayesianOptimizer(Optimizer):
         # Phase 2: Bayesian optimization
         for _ in range(self.n_initial, n_iterations):
             # Fit GP on observed data
-            X_array = np.array(X_sample)  # noqa: N806
-            Y_array = np.array(Y_sample)  # noqa: N806
+            X_array = np.array(X_sample)
+            Y_array = np.array(Y_sample)
             self.gp.fit(X_array, Y_array)
 
             # Propose next location
@@ -306,7 +306,7 @@ class BayesianOptimizer(Optimizer):
         best_config = self.history[best_idx][0]
         best_score = Y_sample[best_idx]
 
-        end_time = datetime.now(timezone.utc).isoformat()
+        end_time = datetime.now(UTC).isoformat()
 
         return OptimizationResult(
             best_config=best_config,

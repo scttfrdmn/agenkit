@@ -236,7 +236,7 @@ async def test_very_short_timeout():
     start = time.time()
     expected = test_case["expected_behavior"]
 
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(Exception):
         await timeout_agent.process(Message(role="user", content="test"))
 
     elapsed_ms = (time.time() - start) * 1000

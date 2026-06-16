@@ -106,7 +106,7 @@ class ChaosAgent(Agent):
 
         elif self._chaos_mode == ChaosMode.RANDOM_ERROR:
             # S311: Pseudo-random for chaos testing, not cryptographic use
-            if random.random() < self._failure_rate:  # noqa: S311
+            if random.random() < self._failure_rate:
                 self._failure_count += 1
                 raise RuntimeError(f"Random failure (rate={self._failure_rate})")
 
@@ -117,7 +117,7 @@ class ChaosAgent(Agent):
         elif self._chaos_mode == ChaosMode.INTERMITTENT:
             # Randomly fail or succeed
             # S311: Pseudo-random for chaos testing, not cryptographic use
-            if random.random() < self._failure_rate:  # noqa: S311
+            if random.random() < self._failure_rate:
                 self._failure_count += 1
                 raise ConnectionError("Intermittent failure (simulated)")
 
@@ -188,11 +188,7 @@ class StreamingChaosAgent(StreamingAgent):
                 await asyncio.sleep(self._delay_per_chunk_ms / 1000.0)
 
             # Random failures (before yielding)
-            if (
-                self._chaos_mode == ChaosMode.INTERMITTENT
-                and random.random()  # noqa: S311 - Pseudo-random acceptable for chaos testing
-                < self._failure_rate
-            ):
+            if self._chaos_mode == ChaosMode.INTERMITTENT and random.random() < self._failure_rate:
                 raise ConnectionError(f"Intermittent stream failure at chunk {chunk_count}")
 
             # Yield chunk
@@ -297,7 +293,7 @@ class OverloadedAgent(Agent):
 
         # If overloaded, fail probabilistically
         # S311: Pseudo-random for chaos testing, not cryptographic use
-        if self.is_overloaded() and random.random() < self._overload_failure_rate:  # noqa: S311
+        if self.is_overloaded() and random.random() < self._overload_failure_rate:
             raise RuntimeError(
                 f"Service overloaded (requests={self._request_count}, "
                 f"threshold={self._overload_threshold})"

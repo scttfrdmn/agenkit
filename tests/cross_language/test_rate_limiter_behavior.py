@@ -8,7 +8,6 @@ import asyncio
 import json
 import time
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -113,7 +112,7 @@ async def test_rate_limiter_waits_for_tokens():
 
     # Execute requests and track timing
     wait_times = []
-    for i in range(len(test_case["scenario"]["requests"])):
+    for _i in range(len(test_case["scenario"]["requests"])):
         msg = Message(role="user", content="test")
         start = time.time()
         await rate_limiter.process(msg)

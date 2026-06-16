@@ -64,7 +64,7 @@ class TestMatrixDataGeneration:
             assert len(row["languages"]) == 6
 
             # Status should be either ✅ or ❌
-            for lang, status in row["languages"].items():
+            for status in row["languages"].values():
                 assert status in ["✅", "❌"], f"Invalid status: {status}"
 
     def test_summary_stats_format(self, feature_manifest, test_report):

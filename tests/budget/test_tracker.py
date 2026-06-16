@@ -2,7 +2,7 @@
 Tests for CostTracker.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -191,7 +191,7 @@ async def test_time_range_filtering():
     await tracker.record_cost("session-1", "agent-1", "claude-sonnet-4", 1000, 500)
 
     # Get current time
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Record cost now
     await tracker.record_cost("session-1", "agent-1", "claude-sonnet-4", 2000, 1000)

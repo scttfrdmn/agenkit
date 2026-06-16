@@ -17,9 +17,8 @@ from agenkit.patterns import (
     ConversationalAgent,
     ConversationalAgentConfig,
     ReActConfig,
-    RouterConfig,
 )
-from agenkit.patterns.memory import MemoryEntry, MemoryHierarchy, WorkingMemory
+from agenkit.patterns.memory import MemoryHierarchy, WorkingMemory
 
 # ---------------------------------------------------------------------------
 # Shared mock LLM (no real API calls)
@@ -269,15 +268,13 @@ class TestCanonicalDefaults:
         """RouterConfig default_key defaults to None."""
         # RouterConfig requires classifier and agents — peek at the dataclass default
         # without constructing RouterAgent to avoid needing a classifier
-        import inspect
-        from agenkit.patterns.router import RouterConfig as RC
+        from agenkit.patterns.router import RouterConfig
 
-        fields = {f.name: f.default for f in RC.__dataclass_fields__.values()}
+        fields = {f.name: f.default for f in RouterConfig.__dataclass_fields__.values()}
         assert fields["default_key"] is None
 
     def test_react_config_max_steps_default(self) -> None:
         """ReActConfig max_steps defaults to 10."""
-        import inspect
 
         fields = {f.name: f.default for f in ReActConfig.__dataclass_fields__.values()}
         assert fields["max_steps"] == 10

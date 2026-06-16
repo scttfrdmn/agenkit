@@ -160,7 +160,7 @@ export class GRPCTransport extends Transport {
       oneofs: true,
     });
 
-    this.proto = grpc.loadPackageDefinition(packageDefinition).agenkit as GrpcProtoPackage;
+    this.proto = grpc.loadPackageDefinition(packageDefinition).agenkit as unknown as GrpcProtoPackage;
   }
 
   async connect(): Promise<void> {

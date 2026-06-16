@@ -6,7 +6,7 @@
  * - Prometheus metrics export
  */
 
-import type { Agent, Message } from '../core';
+import type { Agent, Message } from '../core/interfaces';
 
 /**
  * Health status values.
@@ -194,9 +194,9 @@ export class HealthChecker {
     this.trackCheckStarted(probeType);
 
     try {
-      // Basic liveness: Can we call methods?
-      this.agent.name();
-      this.agent.capabilities();
+      // Basic liveness: can we access the agent's identity/capabilities?
+      void this.agent.name;
+      void this.agent.capabilities;
 
       // Custom check if provided
       if (this.config.customCheck && !this.config.customCheck(this.agent)) {

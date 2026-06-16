@@ -7,7 +7,7 @@
  * - Thread-safe for concurrent requests
  */
 
-import type { Agent, Message } from '../core';
+import type { Agent, Message } from '../core/interfaces';
 
 /**
  * Load balancing algorithm strategy.
@@ -132,14 +132,14 @@ export class LoadBalancer implements Agent {
     this.currentIndex = 0;
   }
 
-  name(): string {
+  get name(): string {
     return `LoadBalancer(${this.backends.length} backends)`;
   }
 
-  capabilities(): string[] {
+  get capabilities(): string[] {
     const capsMap = new Map<string, boolean>();
     for (const backend of this.backends) {
-      for (const cap of backend.agent.capabilities()) {
+      for (const cap of backend.agent.capabilities ?? []) {
         capsMap.set(cap, true);
       }
     }
@@ -151,7 +151,7 @@ export class LoadBalancer implements Agent {
    */
   getBackendStats(): BackendStats[] {
     return this.backends.map((backend) => ({
-      name: backend.agent.name(),
+      name: backend.agent.name,
       healthy: backend.healthy,
       weight: backend.weight,
       activeConnections: backend.activeConnections,
@@ -207,7 +207,7 @@ export class LoadBalancer implements Agent {
         backend.consecutiveFailures = 0;
         if (!backend.healthy && backend.consecutiveFailures === 0) {
           backend.healthy = true;
-          this.trackHealthChange(backend.agent.name(), 'recovered');
+          this.trackHealthChange(backend.agent.name, 'recovered');
         }
       } catch {
         // Failure
@@ -216,7 +216,7 @@ export class LoadBalancer implements Agent {
 
         if (backend.healthy && backend.consecutiveFailures >= this.config.failureThreshold) {
           backend.healthy = false;
-          this.trackHealthChange(backend.agent.name(), 'unhealthy');
+          this.trackHealthChange(backend.agent.name, 'unhealthy');
         }
       }
     }
@@ -307,14 +307,14 @@ export class LoadBalancer implements Agent {
       }
 
       // Avoid retrying same backend
-      if (attempted.has(backend.agent.name())) {
+      if (attempted.has(backend.agent.name)) {
         if (!this.config.enableFailover || attempted.size >= this.backends.length) {
           throw new Error('All backends attempted');
         }
         continue;
       }
 
-      attempted.add(backend.agent.name());
+      attempted.add(backend.agent.name);
 
       // Track request
       backend.activeConnections++;
@@ -338,7 +338,7 @@ export class LoadBalancer implements Agent {
         // Check if should mark unhealthy
         if (backend.totalFailures >= this.config.failureThreshold) {
           backend.healthy = false;
-          this.trackHealthChange(backend.agent.name(), 'unhealthy');
+          this.trackHealthChange(backend.agent.name, 'unhealthy');
         }
 
         // Try failover if enabled
@@ -348,7 +348,7 @@ export class LoadBalancer implements Agent {
         }
 
         // No more failover
-        throw new Error(`Backend ${backend.agent.name()} failed: ${error}`);
+        throw new Error(`Backend ${backend.agent.name} failed: ${error}`);
       }
     }
   }

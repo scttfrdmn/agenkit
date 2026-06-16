@@ -123,7 +123,7 @@ export class RedisMemory implements Memory {
   private serializeMessage(message: Message, metadata: Record<string, unknown> = {}): string {
     const data: StoredMessage = {
       role: message.role,
-      content: message.content,
+      content: String(message.content),
       metadata,
     };
     return JSON.stringify(data);
@@ -274,7 +274,7 @@ export class RedisMemory implements Memory {
 
     for (let i = 0; i < maxMessages; i++) {
       const msg = messages[i];
-      let preview = msg.content;
+      let preview = String(msg.content);
       if (preview.length > 100) {
         preview = preview.substring(0, 100) + '...';
       }

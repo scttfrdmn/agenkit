@@ -726,7 +726,7 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
                 spec_result = {
                     "checkpoints_created": checkpoints_created,
                     "checkpoint_locations": [
-                        f"checkpoint_{i*checkpoint_interval}" for i in range(checkpoints_created)
+                        f"checkpoint_{i * checkpoint_interval}" for i in range(checkpoints_created)
                     ],
                 }
             elif config.get("stop_condition"):
@@ -1212,7 +1212,7 @@ def execute_test(  # noqa: PLR0911, PLR0915 - Test harness dispatcher handles al
                     agents_value = transformed_metadata.get("collaboration_agents", [])
                     if isinstance(agents_value, int):
                         agents_count = agents_value
-                        agents_list = [f"agent{i+1}" for i in range(agents_count)]
+                        agents_list = [f"agent{i + 1}" for i in range(agents_count)]
                     else:
                         agents_list = agents_value
                         agents_count = len(agents_list)

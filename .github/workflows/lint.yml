@@ -13,7 +13,7 @@ concurrency:
 jobs:
   # Basic formatting checks only - detailed linting runs locally
   format-check:
-    name: Format Check (Python Black + Go fmt)
+    name: Format Check (Python ruff format + Go fmt)
     # push/schedule -> self-hosted Linux (janus, fast); PRs (incl. forks) ->
     # GitHub-hosted, so untrusted PR code never runs on the LAN runner.
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
@@ -33,13 +33,10 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
 
-      # Use the repo's locked black (via uv) so CI and local `make format`
-      # never disagree on formatting — pinning avoids version skew where a
-      # newer black reformats files the locked version leaves alone.
-      # --extra dev installs black (a dev dependency); without it uv can't
-      # find black to run.
-      - name: Check Python formatting (Black)
-        run: uv run --extra dev black --check agenkit/ tests/ || (echo "❌ Python code not formatted. Run 'make format' to fix" && exit 1)
+      # Use the repo's locked ruff (via uv --extra dev) so CI and local
+      # `make format` agree — pinning avoids formatter version skew.
+      - name: Check Python formatting (ruff format)
+        run: uv run --extra dev ruff format --check agenkit/ tests/ || (echo "❌ Python code not formatted. Run 'make format' to fix" && exit 1)
 
       - name: Check Go formatting (gofmt)
         working-directory: agenkit-go

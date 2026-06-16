@@ -119,9 +119,9 @@ async def test_gradual_performance_degradation():
 
     assert elapsed5 >= 0.06, f"6th request should take >=60ms, took {elapsed5:.3f}s"
     # Later requests should be significantly slower (use 2x multiplier to handle timing variance)
-    assert (
-        elapsed5 > elapsed1 * 2
-    ), f"6th request ({elapsed5:.3f}s) should be > 2x first request ({elapsed1:.3f}s)"
+    assert elapsed5 > elapsed1 * 2, (
+        f"6th request ({elapsed5:.3f}s) should be > 2x first request ({elapsed1:.3f}s)"
+    )
 
 
 @pytest.mark.asyncio
@@ -176,9 +176,9 @@ async def test_tail_latency_spikes():
 
     # Also check that max latency shows spikes exist
     max_latency = latencies[-1]
-    assert (
-        max_latency > 0.15
-    ), f"Max latency ({max_latency * 1000:.1f}ms) should show spikes (>150ms)"
+    assert max_latency > 0.15, (
+        f"Max latency ({max_latency * 1000:.1f}ms) should show spikes (>150ms)"
+    )
 
 
 # ============================================
@@ -346,14 +346,14 @@ async def test_performance_under_sustained_load():
     # Concurrent should be significantly faster (at least 3x faster)
     # Sequential: ~0.50s, Concurrent: ~0.05s
     # Use conservative 2x threshold to handle timing variance
-    assert (
-        concurrent_time * 2 < sequential_time
-    ), f"Concurrent ({concurrent_time:.2f}s) should be <50% of sequential ({sequential_time:.2f}s)"
+    assert concurrent_time * 2 < sequential_time, (
+        f"Concurrent ({concurrent_time:.2f}s) should be <50% of sequential ({sequential_time:.2f}s)"
+    )
 
     # Verify concurrent execution actually happened
-    assert (
-        agent._max_concurrent >= 5
-    ), f"Should have seen significant concurrency, got max={agent._max_concurrent}"
+    assert agent._max_concurrent >= 5, (
+        f"Should have seen significant concurrency, got max={agent._max_concurrent}"
+    )
 
 
 @pytest.mark.asyncio

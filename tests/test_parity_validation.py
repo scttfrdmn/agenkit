@@ -361,9 +361,9 @@ def test_cpp_test_counting_fixed(parity_report: dict[str, Any]) -> None:
 
     # Check the note was updated
     cpp_note = parity_report["languages"]["cpp"].get("note", "")
-    assert (
-        "individual TEST()" in cpp_note or "TEST() macros" in cpp_note
-    ), f"C++ note should mention individual tests: {cpp_note}"
+    assert "individual TEST()" in cpp_note or "TEST() macros" in cpp_note, (
+        f"C++ note should mention individual tests: {cpp_note}"
+    )
 
 
 @pytest.mark.slow
@@ -421,7 +421,7 @@ def test_all_languages_positive_counts(parity_report: dict[str, Any]) -> None:
 
         total = lang_data.get("total", 0)
         assert total > 0, (
-            f"{lang_name.upper()} has zero tests. " "This suggests a counting or build issue."
+            f"{lang_name.upper()} has zero tests. This suggests a counting or build issue."
         )
 
 

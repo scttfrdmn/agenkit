@@ -222,9 +222,9 @@ class TestDataIntegrity:
 
             manifest_total = feature_manifest["summary"]["total"].get(lang, 0)
 
-            assert (
-                total == manifest_total
-            ), f"{lang}: matrix shows {total} but manifest has {manifest_total}"
+            assert total == manifest_total, (
+                f"{lang}: matrix shows {total} but manifest has {manifest_total}"
+            )
 
     def test_parity_percentages_calculated_correctly(self, feature_manifest, test_report):
         """Verify parity percentages are calculated correctly."""
@@ -237,6 +237,6 @@ class TestDataIntegrity:
         for stat in matrix_data["summary_stats"]:
             if python_total > 0:
                 expected_parity = round(stat["total_features"] / python_total * 100, 1)
-                assert (
-                    abs(stat["parity_percent"] - expected_parity) < 0.1
-                ), f"{stat['language']}: parity mismatch"
+                assert abs(stat["parity_percent"] - expected_parity) < 0.1, (
+                    f"{stat['language']}: parity mismatch"
+                )

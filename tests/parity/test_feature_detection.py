@@ -307,9 +307,9 @@ class TestFeatureManifest:
             for category, items in features.items():
                 if isinstance(items, list):
                     # Check for duplicates
-                    assert len(items) == len(
-                        set(items)
-                    ), f"Duplicates found in {lang}.{category}: {items}"
+                    assert len(items) == len(set(items)), (
+                        f"Duplicates found in {lang}.{category}: {items}"
+                    )
 
 
 @pytest.mark.parametrize(
@@ -329,6 +329,6 @@ def test_scanner_min_feature_count(scanner, expected_count):
         for cat in ["patterns", "middleware", "llm_adapters", "memory", "techniques"]
     )
 
-    assert (
-        total_features >= expected_count
-    ), f"{scanner.__name__} found {total_features} features, expected >= {expected_count}"
+    assert total_features >= expected_count, (
+        f"{scanner.__name__} found {total_features} features, expected >= {expected_count}"
+    )

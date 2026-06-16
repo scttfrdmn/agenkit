@@ -115,9 +115,9 @@ class TestRetryBehavior:
         # Verify delay is within expected range
         min_delay = expected.get("min_total_delay_ms", 0)
         max_delay = expected.get("max_total_delay_ms", float("inf"))
-        assert (
-            min_delay <= elapsed_ms <= max_delay * 1.5
-        ), f"Delay {elapsed_ms}ms not in range [{min_delay}, {max_delay}]"
+        assert min_delay <= elapsed_ms <= max_delay * 1.5, (
+            f"Delay {elapsed_ms}ms not in range [{min_delay}, {max_delay}]"
+        )
 
     @pytest.mark.asyncio
     async def test_retries_exhausted(self):
@@ -176,9 +176,9 @@ class TestRetryBehavior:
         # Expected: 100ms + 200ms + 400ms = 700ms
         min_delay = expected.get("min_total_delay_ms", 0)
         max_delay = expected.get("max_total_delay_ms", float("inf"))
-        assert (
-            min_delay <= elapsed_ms <= max_delay * 1.5
-        ), f"Delay {elapsed_ms}ms not in range [{min_delay}, {max_delay}]"
+        assert min_delay <= elapsed_ms <= max_delay * 1.5, (
+            f"Delay {elapsed_ms}ms not in range [{min_delay}, {max_delay}]"
+        )
 
     @pytest.mark.asyncio
     async def test_max_backoff_cap(self):
@@ -212,9 +212,9 @@ class TestRetryBehavior:
         # Verify capped backoff: 100ms + 200ms (capped) + 200ms (capped) + 200ms (capped) = 700ms
         min_delay = expected.get("min_total_delay_ms", 0)
         max_delay = expected.get("max_total_delay_ms", float("inf"))
-        assert (
-            min_delay <= elapsed_ms <= max_delay * 1.5
-        ), f"Delay {elapsed_ms}ms not in range [{min_delay}, {max_delay}]"
+        assert min_delay <= elapsed_ms <= max_delay * 1.5, (
+            f"Delay {elapsed_ms}ms not in range [{min_delay}, {max_delay}]"
+        )
 
     @pytest.mark.asyncio
     async def test_non_retryable_error(self):

@@ -55,9 +55,7 @@ class AsyncRWLock:
                         self._readers -= 1
                     if self._readers == 0:
                         self._write_ok.notify()
-            except (
-                Exception
-            ):  # noqa: BLE001 — last-ditch cleanup during CancelledError, all exceptions must be suppressed
+            except Exception:  # noqa: BLE001 — last-ditch cleanup during CancelledError, all exceptions must be suppressed
                 pass
             raise
 
@@ -88,9 +86,7 @@ class AsyncRWLock:
                     self._writer = False
                     self._read_ok.notify_all()
                     self._write_ok.notify()
-            except (
-                Exception
-            ):  # noqa: BLE001 — last-ditch cleanup during CancelledError, all exceptions must be suppressed
+            except Exception:  # noqa: BLE001 — last-ditch cleanup during CancelledError, all exceptions must be suppressed
                 pass
             raise
 

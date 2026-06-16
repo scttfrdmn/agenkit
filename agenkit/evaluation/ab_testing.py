@@ -33,7 +33,7 @@ Example:
 import asyncio
 import statistics
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -100,7 +100,7 @@ class ABResult:
     significance_level: SignificanceLevel
     effect_size: float
     confidence_interval: tuple[float, float]
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     @property
     def is_significant(self) -> bool:
@@ -351,13 +351,9 @@ class ABTest:
         differences = []
 
         for _ in range(n_iterations):
-            control_resample = [
-                random.choice(control_samples)
-                for _ in range(len(control_samples))  # noqa: S311
-            ]
+            control_resample = [random.choice(control_samples) for _ in range(len(control_samples))]
             treatment_resample = [
-                random.choice(treatment_samples)  # noqa: S311
-                for _ in range(len(treatment_samples))
+                random.choice(treatment_samples) for _ in range(len(treatment_samples))
             ]
 
             diff = statistics.mean(treatment_resample) - statistics.mean(control_resample)

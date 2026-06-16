@@ -1,7 +1,5 @@
 """Tests for OpenAI LLM adapter."""
 
-import os
-
 import pytest
 
 from agenkit.interfaces import Message

@@ -5,10 +5,12 @@ SkillEnabledAgent — wraps an Agent and injects relevant skill instructions.
 from __future__ import annotations
 
 import dataclasses
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from agenkit.interfaces import Agent, IntrospectionResult, Message
-from agenkit.skills.loader import SkillRegistry
+
+if TYPE_CHECKING:
+    from agenkit.skills.loader import SkillRegistry
 
 
 class SkillEnabledAgent(Agent):

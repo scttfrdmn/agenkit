@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +45,7 @@ class AgentSkill:
     skill_dir: Path | None = None
 
     @classmethod
-    def from_directory(cls, skill_dir: Path) -> "AgentSkill":
+    def from_directory(cls, skill_dir: Path) -> AgentSkill:
         """
         Load a skill from a directory containing a SKILL.md file.
 

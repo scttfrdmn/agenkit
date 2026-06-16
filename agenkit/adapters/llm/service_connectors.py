@@ -73,7 +73,7 @@ def SGLangConnector(
     """Return an OpenAICompatibleLLM configured for an SGLang inference server.
 
     SGLang (Structured Generation Language) is optimised for complex prompts,
-    structured output, and multi-turn conversations.  It can be 29–64% faster
+    structured output, and multi-turn conversations.  It can be 29-64% faster
     than vLLM for certain workloads.
 
     Args:

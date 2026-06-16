@@ -4,7 +4,7 @@ import asyncio
 import contextlib
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -18,8 +18,8 @@ class AgentRegistration:
     endpoint: str  # e.g., "unix:///tmp/agent.sock" or "tcp://localhost:8080"
     capabilities: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
-    registered_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    last_heartbeat: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    registered_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_heartbeat: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class AgentRegistry:
@@ -130,7 +130,7 @@ class AgentRegistry:
             if agent_name not in self._agents:
                 raise KeyError(f"Agent '{agent_name}' is not registered")
 
-            self._agents[agent_name].last_heartbeat = datetime.now(timezone.utc)
+            self._agents[agent_name].last_heartbeat = datetime.now(UTC)
             logger.debug(f"Heartbeat received from agent: {agent_name}")
 
     async def prune_stale_agents(self) -> int:
@@ -139,7 +139,7 @@ class AgentRegistry:
         Returns:
             Number of agents pruned
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         pruned = 0
 
         async with self._lock:

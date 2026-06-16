@@ -5,7 +5,7 @@ Implements the session-based Memory interface while using the 3-tier memory
 hierarchy internally for improved performance and scalability.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 from ..interfaces import Message
@@ -321,7 +321,6 @@ class HierarchyMemory(Memory):
         Note:
             Filters out internal metadata and reconstructs original message timestamp.
         """
-        from datetime import datetime
 
         # Extract role from metadata (default to assistant if not found)
         role = entry.metadata.get("role", "assistant")
@@ -382,10 +381,9 @@ class HierarchyMemory(Memory):
                 message_timestamp = datetime.fromisoformat(entry.metadata["message_timestamp"])
                 if not (start_time <= message_timestamp <= end_time):
                     return False
-            else:
-                # Fallback to storage timestamp if message timestamp not preserved
-                if not (start_time <= entry.timestamp <= end_time):
-                    return False
+            # Fallback to storage timestamp if message timestamp not preserved
+            elif not (start_time <= entry.timestamp <= end_time):
+                return False
 
         return True
 

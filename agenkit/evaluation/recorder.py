@@ -6,7 +6,7 @@ Records agent interactions for later replay, analysis, and A/B testing.
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -303,7 +303,7 @@ class SessionRecorder:
         self._active_sessions[session_id] = SessionRecording(
             session_id=session_id,
             agent_name=agent_name,
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
             metadata=metadata or {},
         )
 
@@ -339,7 +339,7 @@ class SessionRecorder:
             session_id=session_id,
             input_message=self._message_to_dict(input_message),
             output_message=self._message_to_dict(output_message),
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             latency_ms=latency_ms,
             metadata=metadata or {},
         )
@@ -360,7 +360,7 @@ class SessionRecorder:
             raise ValueError(f"No active session: {session_id}")
 
         session = self._active_sessions.pop(session_id)
-        session.end_time = datetime.now(timezone.utc)
+        session.end_time = datetime.now(UTC)
 
         # Save to storage
         await self.storage.save_recording(session)

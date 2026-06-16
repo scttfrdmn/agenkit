@@ -6,14 +6,14 @@ Tests SessionRecorder, SessionReplay, and storage backends.
 
 import shutil
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 from agenkit.evaluation.recorder import (
+    InteractionRecord,
     LocalRecordingStorage,
     MemoryRecordingStorage,
-    InteractionRecord,
     SessionRecorder,
     SessionRecording,
     SessionReplay,
@@ -280,14 +280,14 @@ async def test_session_replay_with_errors():
     recording = SessionRecording(
         session_id="test",
         agent_name="test_agent",
-        start_time=datetime.now(timezone.utc),
+        start_time=datetime.now(UTC),
         interactions=[
             InteractionRecord(
                 interaction_id="1",
                 session_id="test",
                 input_message={"role": "user", "content": "Hello", "metadata": {}},
                 output_message={"role": "assistant", "content": "Response", "metadata": {}},
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 latency_ms=10.0,
             )
         ],
@@ -307,14 +307,14 @@ async def test_session_replay_compare():
     recording = SessionRecording(
         session_id="test",
         agent_name="test_agent",
-        start_time=datetime.now(timezone.utc),
+        start_time=datetime.now(UTC),
         interactions=[
             InteractionRecord(
                 interaction_id="1",
                 session_id="test",
                 input_message={"role": "user", "content": "Hello", "metadata": {}},
                 output_message={"role": "assistant", "content": "Original", "metadata": {}},
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 latency_ms=10.0,
             )
         ],
@@ -343,7 +343,7 @@ def test_interaction_record_serialization():
         session_id="session-1",
         input_message={"role": "user", "content": "Hello"},
         output_message={"role": "assistant", "content": "Hi"},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         latency_ms=10.5,
     )
 
@@ -364,15 +364,15 @@ def test_session_recording_properties():
     recording = SessionRecording(
         session_id="test",
         agent_name="test_agent",
-        start_time=datetime.now(timezone.utc),
-        end_time=datetime.now(timezone.utc),
+        start_time=datetime.now(UTC),
+        end_time=datetime.now(UTC),
         interactions=[
             InteractionRecord(
                 interaction_id="1",
                 session_id="test",
                 input_message={},
                 output_message={},
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 latency_ms=10.0,
             ),
             InteractionRecord(
@@ -380,7 +380,7 @@ def test_session_recording_properties():
                 session_id="test",
                 input_message={},
                 output_message={},
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 latency_ms=20.0,
             ),
         ],

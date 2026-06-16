@@ -212,7 +212,7 @@ class BatchingDecorator(Agent):
             try:
                 request = await asyncio.wait_for(self._queue.get(), timeout=remaining_time)
                 batch.append(request)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 break
 
         return batch
@@ -303,7 +303,7 @@ class BatchingDecorator(Agent):
                 self._queue.put(request),
                 timeout=1.0,  # Prevent indefinite blocking
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise RuntimeError(
                 f"Failed to enqueue request within timeout (queue size: {self._queue.qsize()})"
             )

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from jsonschema import validate, ValidationError
+from jsonschema import ValidationError, validate
 
 from agenkit import Message
 

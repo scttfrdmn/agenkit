@@ -75,7 +75,7 @@ async def test_timeout_with_retry():
         try:
             await asyncio.wait_for(chaos_agent.process(message), timeout=0.1)
             pytest.fail("Should have timed out")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass  # Expected
 
     # All retries should timeout

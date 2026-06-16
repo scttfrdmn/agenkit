@@ -1,6 +1,7 @@
 """Timeout middleware for preventing long-running requests from blocking resources."""
 
 import asyncio
+import builtins
 import time
 from dataclasses import dataclass
 
@@ -193,7 +194,7 @@ class TimeoutDecorator(Agent):
 
             return result
 
-        except asyncio.TimeoutError:
+        except builtins.TimeoutError:
             duration = time.time() - start_time
             async with self._lock:
                 self._metrics.record_timeout(duration)
@@ -248,14 +249,14 @@ class TimeoutDecorator(Agent):
                     # Check if we've exceeded timeout
                     elapsed = time.time() - start_time
                     if elapsed > timeout:
-                        raise asyncio.TimeoutError()
+                        raise builtins.TimeoutError()
                     yield chunk
 
                 duration = time.time() - start_time
                 async with self._lock:
                     self._metrics.record_success(duration)
 
-            except asyncio.TimeoutError:
+            except builtins.TimeoutError:
                 duration = time.time() - start_time
                 async with self._lock:
                     self._metrics.record_timeout(duration)

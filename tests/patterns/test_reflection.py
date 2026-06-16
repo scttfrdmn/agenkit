@@ -14,6 +14,7 @@ Coverage:
 """
 
 import json
+from datetime import UTC
 
 import pytest
 
@@ -420,7 +421,7 @@ async def test_reflection_json_with_code_block():
 @pytest.mark.asyncio
 async def test_reflection_step_to_dict():
     """Test ReflectionStep.to_dict() method."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     step = ReflectionStep(
         iteration=1,
@@ -428,7 +429,7 @@ async def test_reflection_step_to_dict():
         critique="Test critique",
         quality_score=0.75,
         improvement=0.15,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
     step_dict = step.to_dict()

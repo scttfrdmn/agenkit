@@ -40,10 +40,7 @@ class MockAgent:
         await asyncio.sleep(self.latency_ms / 1000)
 
         # Simulate success/failure based on accuracy
-        success = (
-            random.random()  # noqa: S311 - Pseudo-random acceptable for test mocking
-            < self.accuracy
-        )
+        success = random.random() < self.accuracy
         content = "correct" if success else "incorrect"
 
         return Message(role="assistant", content=content)

@@ -162,7 +162,7 @@ class A2AServer:
     async def start(
         self,
         transport: str | None = None,
-        host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
+        host: str = "0.0.0.0",
         port: int = 8080,
         **kwargs,
     ):
@@ -253,7 +253,7 @@ class AgentA2AServer:
     async def run(
         self,
         transport: str = "http",
-        host: str = "0.0.0.0",  # noqa: S104 - Server must bind to all interfaces for deployment
+        host: str = "0.0.0.0",
         port: int = 8080,
         **kwargs,
     ):

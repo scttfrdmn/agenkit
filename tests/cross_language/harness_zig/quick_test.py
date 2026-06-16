@@ -15,6 +15,7 @@ def run_command_test(name, request):
     # Run harness
     proc = subprocess.run(
         ["./harness_zig"],
+        check=False,
         input=json.dumps(request),
         capture_output=True,
         text=True,
@@ -165,7 +166,7 @@ def main():
 
     # Summary
     print(f"\n{'=' * 60}")
-    print(f"Test Summary")
+    print("Test Summary")
     print(f"{'=' * 60}")
     print(f"✅ Passed: {tests_passed}")
     print(f"❌ Failed: {tests_failed}")

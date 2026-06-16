@@ -2,7 +2,7 @@
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import grpc
@@ -140,7 +140,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
                 yield agent_pb2.StreamChunk(
                     version="1.0",
                     id=request.id,
-                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    timestamp=datetime.now(UTC).isoformat(),
                     type=agent_pb2.CHUNK_TYPE_END,
                 )
             else:
@@ -155,7 +155,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
                 yield agent_pb2.StreamChunk(
                     version="1.0",
                     id=request.id,
-                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    timestamp=datetime.now(UTC).isoformat(),
                     type=agent_pb2.CHUNK_TYPE_END,
                 )
 
@@ -165,7 +165,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
             yield agent_pb2.StreamChunk(
                 version="1.0",
                 id=request.id,
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
                 type=agent_pb2.CHUNK_TYPE_ERROR,
                 error=agent_pb2.Error(code="AGENT_ERROR", message=str(e)),
             )
@@ -207,7 +207,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
         pb_message = agent_pb2.Message(
             role=message.role,
             content=self._serialize_content(message.content),
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
         # Add metadata
@@ -218,7 +218,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
         return agent_pb2.Response(
             version="1.0",
             id=request_id,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             type=agent_pb2.RESPONSE_TYPE_MESSAGE,
             message=pb_message,
         )
@@ -236,7 +236,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
         pb_message = agent_pb2.Message(
             role=message.role,
             content=self._serialize_content(message.content),
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
         # Add metadata
@@ -247,7 +247,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
         return agent_pb2.StreamChunk(
             version="1.0",
             id=request_id,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             type=agent_pb2.CHUNK_TYPE_MESSAGE,
             message=pb_message,
         )
@@ -268,7 +268,7 @@ class GRPCServer(agent_pb2_grpc.AgentServiceServicer):
         return agent_pb2.Response(
             version="1.0",
             id=request_id,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             type=agent_pb2.RESPONSE_TYPE_ERROR,
             error=agent_pb2.Error(code=error_code, message=error_message),
         )

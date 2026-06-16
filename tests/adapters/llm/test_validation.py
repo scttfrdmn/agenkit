@@ -4,7 +4,6 @@ import pytest
 
 pytest.importorskip("openai", reason="openai package not installed — skipping LLM adapter tests")
 
-from agenkit.adapters.llm.base import LLM
 from agenkit.adapters.llm.openai import OpenAILLM
 from agenkit.interfaces import Message
 

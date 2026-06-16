@@ -2,7 +2,7 @@
 
 import asyncio
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import grpc
@@ -126,7 +126,7 @@ class TestGRPCTransportUnaryRPC:
             "version": "1.0",
             "type": "request",
             "id": "test-123",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "payload": {
                 "method": "process",
                 "messages": [
@@ -134,7 +134,7 @@ class TestGRPCTransportUnaryRPC:
                         "role": "user",
                         "content": "Hello",
                         "metadata": {},
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
                 ],
             },
@@ -144,12 +144,12 @@ class TestGRPCTransportUnaryRPC:
         mock_response = agent_pb2.Response(
             version="1.0",
             id="test-123",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             type=agent_pb2.RESPONSE_TYPE_MESSAGE,
             message=agent_pb2.Message(
                 role="assistant",
                 content="Hello back!",
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
             ),
         )
 
@@ -188,7 +188,7 @@ class TestGRPCTransportUnaryRPC:
             "version": "1.0",
             "type": "request",
             "id": "test-123",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "payload": {"method": "process", "messages": []},
         }
 
@@ -225,7 +225,7 @@ class TestGRPCTransportUnaryRPC:
             "version": "1.0",
             "type": "request",
             "id": "test-123",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "payload": {"method": "process", "messages": []},
         }
 
@@ -271,7 +271,7 @@ class TestGRPCTransportStreamingRPC:
             "version": "1.0",
             "type": "request",
             "id": "test-123",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "payload": {
                 "method": "stream",
                 "messages": [
@@ -279,7 +279,7 @@ class TestGRPCTransportStreamingRPC:
                         "role": "user",
                         "content": "Stream me",
                         "metadata": {},
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
                 ],
             },
@@ -290,29 +290,29 @@ class TestGRPCTransportStreamingRPC:
             agent_pb2.StreamChunk(
                 version="1.0",
                 id="test-123",
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
                 type=agent_pb2.CHUNK_TYPE_MESSAGE,
                 message=agent_pb2.Message(
                     role="assistant",
                     content="Chunk 1",
-                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    timestamp=datetime.now(UTC).isoformat(),
                 ),
             ),
             agent_pb2.StreamChunk(
                 version="1.0",
                 id="test-123",
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
                 type=agent_pb2.CHUNK_TYPE_MESSAGE,
                 message=agent_pb2.Message(
                     role="assistant",
                     content="Chunk 2",
-                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    timestamp=datetime.now(UTC).isoformat(),
                 ),
             ),
             agent_pb2.StreamChunk(
                 version="1.0",
                 id="test-123",
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
                 type=agent_pb2.CHUNK_TYPE_END,
             ),
         ]
@@ -362,7 +362,7 @@ class TestGRPCTransportStreamingRPC:
             "version": "1.0",
             "type": "request",
             "id": "test-123",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "payload": {"method": "stream", "messages": []},
         }
 
@@ -412,7 +412,7 @@ class TestGRPCTransportProtocolConversion:
             "version": "1.0",
             "type": "request",
             "id": "test-123",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "payload": {
                 "method": "execute",
                 "tool_call": {
@@ -441,7 +441,7 @@ class TestGRPCTransportProtocolConversion:
         pb_response = agent_pb2.Response(
             version="1.0",
             id="test-123",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             type=agent_pb2.RESPONSE_TYPE_TOOL_RESULT,
             tool_result=agent_pb2.ToolResult(success=True, data='{"result": 3}', error=""),
         )
@@ -463,7 +463,7 @@ class TestGRPCTransportProtocolConversion:
         pb_response = agent_pb2.Response(
             version="1.0",
             id="test-123",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             type=agent_pb2.RESPONSE_TYPE_ERROR,
             error=agent_pb2.Error(
                 code="AGENT_NOT_FOUND", message="Agent not found", details={"agent_name": "missing"}
@@ -487,12 +487,12 @@ class TestGRPCTransportProtocolConversion:
         pb_chunk = agent_pb2.StreamChunk(
             version="1.0",
             id="test-123",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             type=agent_pb2.CHUNK_TYPE_MESSAGE,
             message=agent_pb2.Message(
                 role="assistant",
                 content='{"text": "Hello"}',
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
             ),
         )
 
@@ -513,7 +513,7 @@ class TestGRPCTransportProtocolConversion:
         pb_chunk = agent_pb2.StreamChunk(
             version="1.0",
             id="test-123",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             type=agent_pb2.CHUNK_TYPE_END,
         )
 

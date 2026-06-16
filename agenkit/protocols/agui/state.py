@@ -6,9 +6,8 @@ for efficient incremental updates between agents and frontends.
 
 from __future__ import annotations
 
-import json
 from copy import deepcopy
-from typing import Any, Optional
+from typing import Any
 
 from agenkit.protocols.agui.events import StateDeltaEvent, StateSnapshotEvent
 
@@ -47,7 +46,7 @@ class StateManager:
         ```
     """
 
-    def __init__(self, initial_state: Optional[dict[str, Any]] = None):
+    def __init__(self, initial_state: dict[str, Any] | None = None):
         """Initialize state manager.
 
         Args:
@@ -141,7 +140,7 @@ class StateManager:
             del current[last_key]
             self._pending_operations.append({"op": "remove", "path": path})
 
-    def get_delta_event(self) -> Optional[StateDeltaEvent]:
+    def get_delta_event(self) -> StateDeltaEvent | None:
         """Get StateDelta event for pending changes.
 
         Returns:
@@ -200,7 +199,7 @@ class StateManager:
             op_type = op["op"]
             path = op["path"]
 
-            if op_type == "add" or op_type == "replace":
+            if op_type in {"add", "replace"}:
                 self.update(path, op["value"])
             elif op_type == "remove":
                 self.remove(path)

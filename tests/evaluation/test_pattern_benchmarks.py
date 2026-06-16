@@ -95,9 +95,7 @@ class TestYAMLBenchmarkLoader:
             try:
                 result = tc.expected(mock_msg)
                 assert isinstance(result, bool)
-            except (  # noqa: S110 - Expected test failures for validators requiring specific content
-                Exception
-            ):
+            except Exception:
                 # Some validators may require specific content
                 pass
 

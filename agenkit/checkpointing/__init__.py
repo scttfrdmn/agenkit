@@ -47,11 +47,11 @@ __all__ = [
     "CheckpointStorage",
     # Durable execution
     "DurableAgent",
+    # Deprecated aliases
+    "FileCheckpointStorage",
+    "InMemoryCheckpointStorage",
     # Storage (current names)
     "LocalCheckpointStorage",
     "MemoryCheckpointStorage",
     "make_durable",
-    # Deprecated aliases
-    "FileCheckpointStorage",
-    "InMemoryCheckpointStorage",
 ]

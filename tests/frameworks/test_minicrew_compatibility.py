@@ -7,10 +7,10 @@ when built on top of Agenkit primitives.
 
 import pytest
 
-from tests.frameworks.fixtures.mock_providers import MockLLM
-
 # minicrew is importable via the sys.path injection in conftest.py
 from minicrew import Crew, CrewAgent, CrewTask
+
+from tests.frameworks.fixtures.mock_providers import MockLLM
 
 pytestmark = pytest.mark.frameworks
 

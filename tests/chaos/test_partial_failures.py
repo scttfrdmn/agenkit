@@ -132,7 +132,7 @@ async def test_partial_failure_with_retry():
         try:
             await chaos_agent.process(message)
             successes_no_retry += 1
-        except Exception:  # noqa: S110
+        except Exception:
             pass  # Expected failures - testing retry behavior
 
     # With retry: most requests should eventually succeed
@@ -247,7 +247,7 @@ async def test_stream_slow_chunks():
     # Should have all 3 chunks
     assert len(chunks) == 3
 
-    # Should take ~150ms (3 chunks × 50ms each)  # noqa: RUF003
+    # Should take ~150ms (3 chunks x 50ms each)
     assert elapsed >= 0.15, f"Should take >=150ms, took {elapsed:.3f}s"
 
 
@@ -270,7 +270,7 @@ async def test_stream_cancellation_cleanup():
             chunks.append(chunk)
             if len(chunks) >= 5:
                 break  # Cancel stream
-    except Exception:  # noqa: S110
+    except Exception:
         pass  # Stream cancellation - expected behavior
 
     elapsed = time.time() - start
@@ -382,8 +382,8 @@ async def test_batch_with_timeout():
                         self._process_one(msg, delay), timeout=timeout
                     )
                     results.append((True, response))
-                except asyncio.TimeoutError:
-                    results.append((False, asyncio.TimeoutError(f"Item {i} timed out")))
+                except TimeoutError:
+                    results.append((False, TimeoutError(f"Item {i} timed out")))
 
             return results
 
@@ -450,7 +450,7 @@ async def test_some_requests_timeout_others_succeed():
         try:
             response = await asyncio.wait_for(agent.process(message), timeout=timeout)
             results.append(("success", response))
-        except asyncio.TimeoutError:
+        except TimeoutError:
             results.append(("timeout", None))
 
     # Requests 3, 6, 9 should timeout (every 3rd)

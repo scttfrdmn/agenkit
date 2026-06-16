@@ -9,9 +9,11 @@ This is the transport used by CopilotKit and other AG-UI frontends.
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, AsyncIterator
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from agenkit.protocols.agui.events import Event
 
 

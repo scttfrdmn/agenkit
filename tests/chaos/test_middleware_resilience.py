@@ -393,7 +393,7 @@ class TimeoutMiddleware:
         """Process with timeout."""
         try:
             return await asyncio.wait_for(self._agent.process(message), timeout=self._timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._timeout_count += 1
             raise
 

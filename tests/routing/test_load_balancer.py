@@ -50,7 +50,7 @@ class MockAgent:
             import random
 
             # S311: Pseudo-random for test simulation, not cryptographic use
-            if random.random() < self.fail_rate:  # noqa: S311
+            if random.random() < self.fail_rate:
                 raise Exception(f"Simulated failure from {self._name}")
 
         return Message(role="assistant", content=f"Response from {self._name}: {message.content}")
@@ -292,7 +292,7 @@ async def test_failure_tracking():
         message = Message(role="user", content=f"Request {i}")
         try:
             await balancer.process(message)
-        except Exception:  # noqa: S110
+        except Exception:
             pass  # Expected failures - testing load balancer behavior
 
     # Check metrics

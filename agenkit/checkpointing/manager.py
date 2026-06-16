@@ -7,7 +7,7 @@ Provides operations like create, resume, replay, and time-travel debugging.
 import logging
 import uuid
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from .checkpoint import Checkpoint, CheckpointStorage
@@ -105,7 +105,7 @@ class CheckpointManager:
             checkpoint_id=checkpoint_id,
             session_id=session_id,
             agent_name=agent_name,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             step_number=step_number,
             state=state,
             messages=messages,

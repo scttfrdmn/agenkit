@@ -30,7 +30,7 @@ Example:
 import random
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -161,7 +161,7 @@ class PromptOptimizer:
 
     def _sample_config(self) -> dict[str, str]:
         """Sample random configuration."""
-        return {key: random.choice(values) for key, values in self.variations.items()}  # noqa: S311
+        return {key: random.choice(values) for key, values in self.variations.items()}
 
     async def _evaluate_prompt(
         self, prompt: str, test_cases: list[dict[str, Any]]
@@ -223,7 +223,7 @@ class PromptOptimizer:
         Returns:
             PromptOptimizationResult
         """
-        start_time = datetime.now(timezone.utc).isoformat()
+        start_time = datetime.now(UTC).isoformat()
         self.history = []
 
         # Generate all configs
@@ -248,7 +248,7 @@ class PromptOptimizer:
                 best_config = config.copy()
                 best_scores = scores.copy()
 
-        end_time = datetime.now(timezone.utc).isoformat()
+        end_time = datetime.now(UTC).isoformat()
 
         return PromptOptimizationResult(
             best_prompt=best_prompt,
@@ -274,7 +274,7 @@ class PromptOptimizer:
         Returns:
             PromptOptimizationResult
         """
-        start_time = datetime.now(timezone.utc).isoformat()
+        start_time = datetime.now(UTC).isoformat()
         self.history = []
 
         best_prompt = ""
@@ -297,7 +297,7 @@ class PromptOptimizer:
                 best_config = config.copy()
                 best_scores = scores.copy()
 
-        end_time = datetime.now(timezone.utc).isoformat()
+        end_time = datetime.now(UTC).isoformat()
 
         return PromptOptimizationResult(
             best_prompt=best_prompt,
@@ -329,7 +329,7 @@ class PromptOptimizer:
         Returns:
             PromptOptimizationResult
         """
-        start_time = datetime.now(timezone.utc).isoformat()
+        start_time = datetime.now(UTC).isoformat()
         self.history = []
 
         # Initialize population with random configurations
@@ -358,8 +358,8 @@ class PromptOptimizer:
             # Mutation
             for config in new_population:
                 for key in config:
-                    if random.random() < mutation_rate:  # noqa: S311
-                        config[key] = random.choice(self.variations[key])  # noqa: S311
+                    if random.random() < mutation_rate:
+                        config[key] = random.choice(self.variations[key])
 
             # Evaluate new population
             population = new_population
@@ -378,7 +378,7 @@ class PromptOptimizer:
         )
         best_prompt, best_config, best_scores = self.history[best_idx]
 
-        end_time = datetime.now(timezone.utc).isoformat()
+        end_time = datetime.now(UTC).isoformat()
 
         return PromptOptimizationResult(
             best_prompt=best_prompt,

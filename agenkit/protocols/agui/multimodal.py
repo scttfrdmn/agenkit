@@ -24,7 +24,7 @@ import base64
 import mimetypes
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Union
 
 from pydantic import BaseModel, Field
 
@@ -62,8 +62,8 @@ class FileURLContentPart(BaseModel):
 
     type: Literal["file_url"] = "file_url"
     file_url: str = Field(description="File URL")
-    filename: Optional[str] = Field(default=None, description="Original filename")
-    mime_type: Optional[str] = Field(default=None, description="File MIME type")
+    filename: str | None = Field(default=None, description="Original filename")
+    mime_type: str | None = Field(default=None, description="File MIME type")
 
 
 class FileBase64ContentPart(BaseModel):
@@ -80,7 +80,7 @@ class AudioURLContentPart(BaseModel):
 
     type: Literal["audio_url"] = "audio_url"
     audio_url: str = Field(description="Audio URL")
-    duration: Optional[float] = Field(default=None, description="Duration in seconds")
+    duration: float | None = Field(default=None, description="Duration in seconds")
 
 
 class AudioBase64ContentPart(BaseModel):
@@ -89,7 +89,7 @@ class AudioBase64ContentPart(BaseModel):
     type: Literal["audio_base64"] = "audio_base64"
     audio_base64: str = Field(description="Base64-encoded audio data")
     mime_type: str = Field(default="audio/wav", description="Audio MIME type")
-    duration: Optional[float] = Field(default=None, description="Duration in seconds")
+    duration: float | None = Field(default=None, description="Duration in seconds")
 
 
 # Union of all content part types
@@ -170,7 +170,7 @@ def image_file(path: str | Path) -> ImageBase64ContentPart:
 
 
 def file_url(
-    url: str, filename: Optional[str] = None, mime_type: Optional[str] = None
+    url: str, filename: str | None = None, mime_type: str | None = None
 ) -> FileURLContentPart:
     """Create a file URL content part.
 
@@ -221,7 +221,7 @@ def file(path: str | Path) -> FileBase64ContentPart:
     )
 
 
-def audio_url(url: str, duration: Optional[float] = None) -> AudioURLContentPart:
+def audio_url(url: str, duration: float | None = None) -> AudioURLContentPart:
     """Create an audio URL content part.
 
     Args:
@@ -291,7 +291,7 @@ class MultimodalContent:
         if self.parts is None:
             object.__setattr__(self, "parts", [])
 
-    def add_text(self, text_content: str) -> "MultimodalContent":
+    def add_text(self, text_content: str) -> MultimodalContent:
         """Add text content.
 
         Args:
@@ -303,7 +303,7 @@ class MultimodalContent:
         self.parts.append(text(text_content))
         return self
 
-    def add_image_url(self, url: str, detail: str = "auto") -> "MultimodalContent":
+    def add_image_url(self, url: str, detail: str = "auto") -> MultimodalContent:
         """Add image from URL.
 
         Args:
@@ -316,7 +316,7 @@ class MultimodalContent:
         self.parts.append(image_url(url, detail))
         return self
 
-    def add_image(self, path: str | Path) -> "MultimodalContent":
+    def add_image(self, path: str | Path) -> MultimodalContent:
         """Add image from file.
 
         Args:
@@ -329,8 +329,8 @@ class MultimodalContent:
         return self
 
     def add_file_url(
-        self, url: str, filename: Optional[str] = None, mime_type: Optional[str] = None
-    ) -> "MultimodalContent":
+        self, url: str, filename: str | None = None, mime_type: str | None = None
+    ) -> MultimodalContent:
         """Add file from URL.
 
         Args:
@@ -344,7 +344,7 @@ class MultimodalContent:
         self.parts.append(file_url(url, filename, mime_type))
         return self
 
-    def add_file(self, path: str | Path) -> "MultimodalContent":
+    def add_file(self, path: str | Path) -> MultimodalContent:
         """Add file.
 
         Args:
@@ -356,7 +356,7 @@ class MultimodalContent:
         self.parts.append(file(path))
         return self
 
-    def add_audio_url(self, url: str, duration: Optional[float] = None) -> "MultimodalContent":
+    def add_audio_url(self, url: str, duration: float | None = None) -> MultimodalContent:
         """Add audio from URL.
 
         Args:
@@ -369,7 +369,7 @@ class MultimodalContent:
         self.parts.append(audio_url(url, duration))
         return self
 
-    def add_audio(self, path: str | Path) -> "MultimodalContent":
+    def add_audio(self, path: str | Path) -> MultimodalContent:
         """Add audio from file.
 
         Args:
@@ -399,20 +399,20 @@ class MultimodalContent:
 
 
 __all__ = [
-    "TextContentPart",
-    "ImageURLContentPart",
-    "ImageBase64ContentPart",
-    "FileURLContentPart",
-    "FileBase64ContentPart",
-    "AudioURLContentPart",
     "AudioBase64ContentPart",
+    "AudioURLContentPart",
     "ContentPart",
-    "text",
-    "image_url",
-    "image_file",
-    "file_url",
-    "file",
-    "audio_url",
-    "audio_file",
+    "FileBase64ContentPart",
+    "FileURLContentPart",
+    "ImageBase64ContentPart",
+    "ImageURLContentPart",
     "MultimodalContent",
+    "TextContentPart",
+    "audio_file",
+    "audio_url",
+    "file",
+    "file_url",
+    "image_file",
+    "image_url",
+    "text",
 ]

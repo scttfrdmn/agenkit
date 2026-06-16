@@ -14,7 +14,6 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
 
 from agenkit.interfaces import Agent, Message
 

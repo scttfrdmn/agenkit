@@ -200,7 +200,7 @@ make test-lint
 - [ ] All operations use `uv run` prefix
 - [ ] Regex patterns use raw strings (`r"..."`)
 - [ ] Type hints present on function signatures
-- [ ] Code passes ruff, black, mypy without warnings
+- [ ] Code passes ruff (check + format), mypy without warnings
 - [ ] Exception handlers include noqa comments explaining why
 
 ### All Languages

@@ -31,7 +31,7 @@ make test
 make test          # Run all tests (fast, ~15-30s)
 make test-quick    # Run quick tests only (~10s, skip integration)
 make test-lint     # Run tests with linting (slower, CI-equivalent)
-make format        # Format code (Python: black, Go: gofmt)
+make format        # Format code (Python: ruff format, Go: gofmt)
 make lint          # Run linters only (no tests)
 make pre-commit    # Format + test (recommended before commit)
 make coverage      # Generate coverage reports
@@ -78,7 +78,7 @@ make test-lint     # Slower but thorough, matches CI
 
 CI now runs minimal smoke tests only:
 - **test.yml**: Quick unit tests (Python + Go, no integration)
-- **lint.yml**: Basic formatting check (Black + gofmt)
+- **lint.yml**: Basic formatting check (ruff format + gofmt)
 
 Purpose: Catch obvious regressions, not primary validation.
 

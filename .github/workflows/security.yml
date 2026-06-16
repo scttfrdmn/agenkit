@@ -104,13 +104,20 @@ jobs:
     name: govulncheck (Go)
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     timeout-minutes: 15
+    # GOTOOLCHAIN=local pins the installed Go (1.25) and forbids auto-downloading
+    # an older toolchain into the module cache — without it, a stale cached
+    # toolchain made govulncheck analyze an old stdlib and report its CVEs.
+    env:
+      GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: "1.25"
-          cache: true
-          cache-dependency-path: agenkit-go/go.sum
+          # cache disabled: on the persistent self-hosted runner the module
+          # cache already lives on disk, and setup-go's tar-based restore
+          # collided with it ("Cannot open: File exists"), corrupting state.
+          cache: false
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
       - name: Run govulncheck

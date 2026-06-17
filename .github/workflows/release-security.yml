@@ -26,13 +26,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install syft (SBOM generator)
-        uses: anchore/sbom-action/download-syft@v0.17.0
+        uses: anchore/sbom-action/download-syft@v0.24.0
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@v3.7.0
+        uses: sigstore/cosign-installer@v4.1.2
 
       - name: Resolve version
         id: ver
@@ -70,7 +70,7 @@ jobs:
           done
 
       - name: Upload SBOMs + signatures as workflow artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom-${{ steps.ver.outputs.tag }}
           path: |

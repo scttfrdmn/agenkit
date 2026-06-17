@@ -11,7 +11,37 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { RedisMemory } from '../../memory/redisMemory';
 import { createMessage } from '../../core/interfaces';
 
-describe('RedisMemory', () => {
+/**
+ * Probe Redis availability once. Without a running server these tests would
+ * otherwise each open a client that retries the connection until the test
+ * timeout, hanging CI. When Redis is absent we skip the whole suite instead.
+ */
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const redisAvailable = await (async (): Promise<boolean> => {
+  const probe = new RedisMemory({ redisUrl, keyPrefix: 'agenkit:test:probe' });
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('redis probe timeout')), 1500).unref(),
+  );
+  try {
+    // Race the probe against a short timeout: the redis client otherwise
+    // buffers and retries the connection, hanging when no server is present.
+    await Promise.race([probe.getAllSessions(), timeout]);
+    return true;
+  } catch {
+    return false;
+  } finally {
+    try {
+      await Promise.race([
+        probe.close(),
+        new Promise((resolve) => setTimeout(resolve, 500).unref()),
+      ]);
+    } catch {
+      /* ignore */
+    }
+  }
+})();
+
+describe.skipIf(!redisAvailable)('RedisMemory', () => {
   let memory: RedisMemory;
 
   beforeEach(() => {

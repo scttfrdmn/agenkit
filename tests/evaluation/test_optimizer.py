@@ -2,6 +2,7 @@
 Tests for optimization framework base classes.
 """
 
+import random
 from datetime import UTC
 
 import pytest
@@ -219,6 +220,11 @@ async def test_random_search_optimizer_basic():
 @pytest.mark.asyncio
 async def test_random_search_improvement():
     """Test that random search finds improvements."""
+    # Seed the RNG: RandomSearchOptimizer samples via the stdlib `random`
+    # module, so an unseeded run can miss the scoring threshold across all
+    # iterations and flakily yield best_score == 0.0. A fixed seed makes the
+    # search deterministic without weakening the assertion.
+    random.seed(42)
 
     def agent_factory(config):
         return MockAgent(**config)

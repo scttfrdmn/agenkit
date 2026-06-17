@@ -333,14 +333,19 @@ export class RedisMemory implements Memory {
     const pattern = `${this.keyPrefix}:*:messages`;
     const sessions: string[] = [];
 
-    // Use SCAN to iterate over keys
-    for await (const key of client.scanIterator({ MATCH: pattern })) {
-      // Extract session_id from key
-      // Format: "agenkit:memory:{session_id}:messages"
-      const parts = key.split(':');
-      if (parts.length >= 3) {
-        const sessionId = parts[parts.length - 2]; // Second to last part
-        sessions.push(sessionId);
+    // Use SCAN to iterate over keys. redis v6's scanIterator yields a batch
+    // of keys (string[]) per iteration rather than one key at a time, so
+    // normalize to an array before processing.
+    for await (const batch of client.scanIterator({ MATCH: pattern })) {
+      const keys = Array.isArray(batch) ? batch : [batch];
+      for (const key of keys) {
+        // Extract session_id from key
+        // Format: "agenkit:memory:{session_id}:messages"
+        const parts = key.split(':');
+        if (parts.length >= 3) {
+          const sessionId = parts[parts.length - 2]; // Second to last part
+          sessions.push(sessionId);
+        }
       }
     }
 

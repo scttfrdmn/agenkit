@@ -49,7 +49,6 @@
 ///     defer response.deinit();
 /// }
 /// ```
-
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Agent = @import("../agent.zig").Agent;
@@ -155,9 +154,9 @@ pub const MultiAgentOrchestrator = struct {
     pub fn init(allocator: Allocator, strategy: OrchestrationStrategy) !MultiAgentOrchestrator {
         return MultiAgentOrchestrator{
             .allocator = allocator,
-            .agents = std.ArrayList(RegisteredAgent){},
+            .agents = std.ArrayList(RegisteredAgent).empty,
             .strategy = strategy,
-            .tasks = std.ArrayList(AgentTask){},
+            .tasks = std.ArrayList(AgentTask).empty,
             .agent_name = try allocator.dupe(u8, "MultiAgentOrchestrator"),
         };
     }
@@ -188,7 +187,7 @@ pub const MultiAgentOrchestrator = struct {
 
     /// Get list of registered agent names
     pub fn listAgents(self: *const MultiAgentOrchestrator, allocator: Allocator) !std.ArrayList([]const u8) {
-        var names = std.ArrayList([]const u8){};
+        var names = std.ArrayList([]const u8).empty;
         for (self.agents.items) |entry| {
             try names.append(allocator, try allocator.dupe(u8, entry.name));
         }
@@ -211,7 +210,7 @@ pub const MultiAgentOrchestrator = struct {
             return AgentError.InvalidInput;
         }
 
-        var results = std.ArrayList([]const u8){};
+        var results = std.ArrayList([]const u8).empty;
         defer {
             for (results.items) |r| {
                 self.allocator.free(r);
@@ -256,7 +255,7 @@ pub const MultiAgentOrchestrator = struct {
         }
 
         // Combine all results
-        var combined = std.ArrayList(u8){};
+        var combined = std.ArrayList(u8).empty;
         defer combined.deinit(self.allocator);
 
         for (results.items, 0..) |r, i| {
@@ -307,7 +306,6 @@ pub const MultiAgentOrchestrator = struct {
         return Result{ .ok = response };
     }
 
-
     fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
         const caps = try capabilitiesImpl(ptr, alloc);
         defer {
@@ -343,12 +341,11 @@ pub const MultiAgentOrchestrator = struct {
 const testing = std.testing;
 const EchoAgent = @import("../agent.zig").EchoAgent;
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "TaskStatus toString" {
     try testing.expectEqualStrings("pending", TaskStatus.pending.toString());

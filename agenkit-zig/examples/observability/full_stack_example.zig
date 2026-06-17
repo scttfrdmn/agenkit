@@ -53,7 +53,7 @@ fn completeSetup(allocator: std.mem.Allocator) !void {
     // 2. Create audit logger
     var audit_logger = try audit.AuditLogger.init(allocator, "example_audit.log");
     defer audit_logger.deinit();
-    defer std.fs.cwd().deleteFile("example_audit.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(agenkit.io_compat.io(), "example_audit.log") catch {};
     std.debug.print("✅ Audit logger initialized\n", .{});
 
     // 3. Create agent with tracing and metrics
@@ -195,7 +195,7 @@ fn productionAgent(allocator: std.mem.Allocator) !void {
     // Create audit logger with descriptive name
     var audit_logger = try audit.AuditLogger.init(allocator, "production_audit.log");
     defer audit_logger.deinit();
-    defer std.fs.cwd().deleteFile("production_audit.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(agenkit.io_compat.io(), "production_audit.log") catch {};
 
     // Create fully instrumented agent
     var echo = try EchoAgent.init(allocator);

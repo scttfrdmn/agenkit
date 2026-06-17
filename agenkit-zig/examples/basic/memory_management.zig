@@ -2,7 +2,7 @@
 //!
 //! This example demonstrates:
 //! - Different allocator types in Zig
-//! - DebugAllocator for leak detection
+//! - GeneralPurposeAllocator for leak detection
 //! - ArenaAllocator for bulk cleanup
 //! - Proper defer patterns for cleanup
 //! - Memory ownership in agent processing
@@ -16,8 +16,8 @@ const agenkit = @import("agenkit");
 pub fn main() !void {
     std.debug.print("\n=== AgentKit Memory Management Example ===\n\n", .{});
 
-    // Example 1: DebugAllocator with leak detection
-    std.debug.print("--- Example 1: DebugAllocator with Leak Detection ---\n", .{});
+    // Example 1: GeneralPurposeAllocator with leak detection
+    std.debug.print("--- Example 1: GeneralPurposeAllocator with Leak Detection ---\n", .{});
     {
         var gpa = std.heap.DebugAllocator(.{}){};
         defer {
@@ -194,7 +194,7 @@ pub fn main() !void {
 
     std.debug.print("=== Memory Management Best Practices ===\n", .{});
     std.debug.print("1. Always use defer for cleanup\n", .{});
-    std.debug.print("2. Use DebugAllocator during development\n", .{});
+    std.debug.print("2. Use GeneralPurposeAllocator during development\n", .{});
     std.debug.print("3. Consider ArenaAllocator for short-lived operations\n", .{});
     std.debug.print("4. Clear ownership: who allocates, who frees?\n", .{});
     std.debug.print("5. Clean up intermediate results in chains\n", .{});

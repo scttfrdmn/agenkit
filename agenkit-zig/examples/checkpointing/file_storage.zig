@@ -98,11 +98,11 @@ pub fn main() !void {
         );
         defer allocator.free(file_path);
 
-        const file = std.fs.cwd().openFile(file_path, .{}) catch |err| {
+        const file = std.Io.Dir.cwd().openFile(agenkit.io_compat.io(), file_path, .{}) catch |err| {
             std.debug.print("       ⚠️  File not found: {}\n", .{err});
             continue;
         };
-        file.close();
+        file.close(agenkit.io_compat.io());
         std.debug.print("       ✅ File exists: {s}\n", .{file_path});
     }
     std.debug.print("\n", .{});
@@ -110,7 +110,7 @@ pub fn main() !void {
     // Step 6: Get session statistics
     std.debug.print("6. Session statistics:\n", .{});
     var stats = try durable.getSessionStats(session_id);
-    defer stats.object.deinit();
+    defer stats.object.deinit(allocator);
 
     if (stats.object.get("total_checkpoints")) |total| {
         std.debug.print("   Total checkpoints: {d}\n", .{total.integer});

@@ -50,7 +50,6 @@
 /// - Message metadata system
 /// - Evaluation framework
 /// - External systems (Jaeger, Zipkin, Prometheus, Grafana)
-
 const std = @import("std");
 
 // Export all observability modules

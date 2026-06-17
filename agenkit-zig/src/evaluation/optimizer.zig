@@ -8,8 +8,8 @@
 /// - Pluggable optimization algorithms
 /// - History tracking for analysis
 /// - Support for maximization and minimization
-
 const std = @import("std");
+const agktime = @import("../time_compat.zig");
 const Allocator = std.mem.Allocator;
 
 /// Parameter type in search space
@@ -85,9 +85,9 @@ pub const SearchSpace = struct {
 
     pub fn init(allocator: Allocator) !*SearchSpace {
         const self = try allocator.create(SearchSpace);
-        const seed = @as(u64, @intCast(std.time.timestamp()));
+        const seed = @as(u64, @intCast(agktime.timestamp()));
         self.* = SearchSpace{
-            .parameters = std.ArrayList(Parameter){},
+            .parameters = std.ArrayList(Parameter).empty,
             .allocator = allocator,
             .rng = std.Random.DefaultPrng.init(seed),
         };
@@ -265,8 +265,8 @@ pub const OptimizationResult = struct {
             .best_config = std.StringHashMap(ConfigValue).init(allocator),
             .best_score = -std.math.inf(f64), // Start with worst possible
             .n_iterations = 0,
-            .history = std.ArrayList(OptimizationStep){},
-            .start_time = std.time.timestamp(),
+            .history = std.ArrayList(OptimizationStep).empty,
+            .start_time = agktime.timestamp(),
             .end_time = 0,
             .allocator = allocator,
         };
@@ -372,7 +372,7 @@ pub const RandomSearchOptimizer = struct {
             try result.history.append(self.allocator, step);
         }
 
-        result.end_time = std.time.timestamp();
+        result.end_time = agktime.timestamp();
         return result;
     }
 

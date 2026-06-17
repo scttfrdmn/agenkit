@@ -54,8 +54,9 @@
 ///     }
 /// }
 /// ```
-
 const std = @import("std");
+const ioc = @import("../io_compat.zig");
+const agktime = @import("../time_compat.zig");
 const Allocator = std.mem.Allocator;
 const AgentError = @import("../agent.zig").AgentError;
 
@@ -80,7 +81,7 @@ pub const MemoryEntry = struct {
     ) !MemoryEntry {
         // Generate UUID-like ID
         var id_buf: [36]u8 = undefined;
-        const id_str = std.fmt.bufPrint(&id_buf, "{x:0>32}", .{std.crypto.random.int(u128)}) catch unreachable;
+        const id_str = std.fmt.bufPrint(&id_buf, "{x:0>32}", .{ioc.randomInt(u128)}) catch unreachable;
 
         const meta = if (metadata) |m| blk: {
             var new_map = std.StringHashMap([]const u8).init(allocator);
@@ -97,7 +98,7 @@ pub const MemoryEntry = struct {
             .id = try allocator.dupe(u8, id_str),
             .content = try allocator.dupe(u8, content),
             .metadata = meta,
-            .timestamp = std.time.timestamp(),
+            .timestamp = agktime.timestamp(),
             .access_count = 0,
             .last_accessed = null,
             .importance = importance,
@@ -145,7 +146,7 @@ pub const MemoryEntry = struct {
     /// Update access tracking
     pub fn markAccessed(self: *MemoryEntry) void {
         self.access_count += 1;
-        self.last_accessed = std.time.timestamp();
+        self.last_accessed = agktime.timestamp();
     }
 };
 
@@ -169,7 +170,7 @@ pub const WorkingMemory = struct {
         return WorkingMemory{
             .allocator = allocator,
             .max_messages = max_messages,
-            .messages = std.ArrayList(MemoryEntry){},
+            .messages = std.ArrayList(MemoryEntry).empty,
         };
     }
 
@@ -195,7 +196,7 @@ pub const WorkingMemory = struct {
     pub fn retrieve(self: *WorkingMemory, allocator: Allocator, query: []const u8, limit: usize) !std.ArrayList(MemoryEntry) {
         _ = query; // Working memory returns all recent messages
 
-        var results = std.ArrayList(MemoryEntry){};
+        var results = std.ArrayList(MemoryEntry).empty;
 
         const start = if (self.messages.items.len > limit)
             self.messages.items.len - limit
@@ -225,7 +226,7 @@ pub const WorkingMemory = struct {
 
     /// Get all working memory entries
     pub fn getAll(self: *const WorkingMemory, allocator: Allocator) !std.ArrayList(MemoryEntry) {
-        var results = std.ArrayList(MemoryEntry){};
+        var results = std.ArrayList(MemoryEntry).empty;
         for (self.messages.items) |*entry| {
             const cloned = try entry.clone();
             try results.append(allocator, cloned);
@@ -272,7 +273,7 @@ pub const ShortTermMemory = struct {
             .allocator = allocator,
             .max_messages = max_messages,
             .ttl_seconds = ttl_seconds,
-            .messages = std.ArrayList(MemoryEntry){},
+            .messages = std.ArrayList(MemoryEntry).empty,
         };
     }
 
@@ -285,7 +286,7 @@ pub const ShortTermMemory = struct {
 
     /// Clean expired entries
     fn cleanExpired(self: *ShortTermMemory) void {
-        const now = std.time.timestamp();
+        const now = agktime.timestamp();
         var i: usize = 0;
         while (i < self.messages.items.len) {
             const age = now - self.messages.items[i].timestamp;
@@ -326,7 +327,7 @@ pub const ShortTermMemory = struct {
         self.cleanExpired();
 
         // Sort by timestamp (most recent first)
-        var sorted = std.ArrayList(MemoryEntry){};
+        var sorted = std.ArrayList(MemoryEntry).empty;
         for (self.messages.items) |*entry| {
             const cloned = try entry.clone();
             try sorted.append(allocator, cloned);
@@ -339,7 +340,7 @@ pub const ShortTermMemory = struct {
         }.lessThan);
 
         // Take top limit
-        var results = std.ArrayList(MemoryEntry){};
+        var results = std.ArrayList(MemoryEntry).empty;
         const count = @min(sorted.items.len, limit);
         for (sorted.items[0..count]) |*entry| {
             // Mark accessed in original
@@ -434,7 +435,7 @@ pub const LongTermMemory = struct {
             score: f64,
         };
 
-        var scored_entries = std.ArrayList(ScoredEntry){};
+        var scored_entries = std.ArrayList(ScoredEntry).empty;
         defer scored_entries.deinit(allocator);
 
         const query_lower = try std.ascii.allocLowerString(allocator, query);
@@ -456,7 +457,7 @@ pub const LongTermMemory = struct {
             score += entry.importance * 0.3;
 
             // Recency weight
-            const now = std.time.timestamp();
+            const now = agktime.timestamp();
             const age_days: f64 = @as(f64, @floatFromInt(now - entry.timestamp)) / 86400.0;
             const recency_score = @max(0.0, 1.0 - age_days / 365.0);
             score += recency_score * 0.2;
@@ -472,7 +473,7 @@ pub const LongTermMemory = struct {
         }.lessThan);
 
         // Take top limit and clone
-        var results = std.ArrayList(MemoryEntry){};
+        var results = std.ArrayList(MemoryEntry).empty;
         const count = @min(scored_entries.items.len, limit);
         for (scored_entries.items[0..count]) |scored| {
             // Mark accessed in original
@@ -580,7 +581,7 @@ pub const MemoryHierarchy = struct {
         limit: usize,
         search_tiers: ?[]const []const u8,
     ) !std.ArrayList(MemoryEntry) {
-        var all_results = std.ArrayList(MemoryEntry){};
+        var all_results = std.ArrayList(MemoryEntry).empty;
         errdefer {
             for (all_results.items) |*entry| {
                 entry.deinit();
@@ -640,7 +641,7 @@ pub const MemoryHierarchy = struct {
         var seen = std.StringHashMap(void).init(allocator);
         defer seen.deinit();
 
-        var unique = std.ArrayList(MemoryEntry){};
+        var unique = std.ArrayList(MemoryEntry).empty;
         for (all_results.items) |*entry| {
             if (!seen.contains(entry.id)) {
                 try seen.put(entry.id, {});

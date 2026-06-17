@@ -80,7 +80,7 @@ pub const Message = struct {
         return Message{
             .role = role,
             .content = .{ .text = owned_text },
-            .metadata = json.Value{ .object = json.ObjectMap.init(allocator) },
+            .metadata = json.Value{ .object = json.ObjectMap.empty },
             .allocator = allocator,
         };
     }
@@ -90,7 +90,7 @@ pub const Message = struct {
         return Message{
             .role = role,
             .content = .{ .structured = data },
-            .metadata = json.Value{ .object = json.ObjectMap.init(allocator) },
+            .metadata = json.Value{ .object = json.ObjectMap.empty },
             .allocator = allocator,
         };
     }
@@ -118,7 +118,7 @@ pub const Message = struct {
                     freeJsonValue(allocator, entry.value_ptr.*);
                 }
                 var mut_obj = obj;
-                mut_obj.deinit();
+                mut_obj.deinit(allocator);
             },
             else => {
                 // Don't free top-level strings - they might be static literals
@@ -134,12 +134,12 @@ pub const Message = struct {
             freeJsonValue(self.allocator, entry.value_ptr.*);
         }
         // Free the ObjectMap internal storage
-        self.metadata.object.deinit();
+        self.metadata.object.deinit(self.allocator);
     }
 
     /// Set metadata key-value pair
     pub fn setMetadata(self: *Message, key: []const u8, value: json.Value) !void {
-        try self.metadata.object.put(key, value);
+        try self.metadata.object.put(self.allocator, key, value);
     }
 
     /// Get metadata value by key
@@ -182,7 +182,7 @@ pub const Message = struct {
 
         const max_content_size = 16 * 1024 * 1024; // 16MB
         if (content_size > max_content_size) {
-            std.log.err(
+            std.log.warn(
                 "Message content exceeds maximum size of {d} bytes (got {d} bytes)",
                 .{ max_content_size, content_size },
             );
@@ -195,7 +195,7 @@ pub const Message = struct {
 
             // Max 100 keys
             if (metadata_obj.count() > 100) {
-                std.log.err(
+                std.log.warn(
                     "Message metadata exceeds maximum of 100 keys (got {d})",
                     .{metadata_obj.count()},
                 );
@@ -210,7 +210,7 @@ pub const Message = struct {
             while (it.next()) |entry| {
                 // Key length validation
                 if (entry.key_ptr.*.len > max_key_length) {
-                    std.log.err(
+                    std.log.warn(
                         "Metadata key exceeds maximum length of {d} characters (got {d})",
                         .{ max_key_length, entry.key_ptr.*.len },
                     );
@@ -222,7 +222,7 @@ pub const Message = struct {
                 if (entry.value_ptr.* == .string) {
                     const value_size = entry.value_ptr.*.string.len;
                     if (value_size > max_value_size) {
-                        std.log.err(
+                        std.log.warn(
                             "Metadata value for key '{s}' exceeds maximum size of {d} bytes (got {d} bytes)",
                             .{ entry.key_ptr.*, max_value_size, value_size },
                         );
@@ -235,23 +235,23 @@ pub const Message = struct {
 
     /// Serialize message to JSON
     pub fn toJson(self: *const Message, allocator: Allocator) !json.Value {
-        var obj = json.ObjectMap.init(allocator);
+        var obj = json.ObjectMap.empty;
 
         // Add role
-        try obj.put("role", json.Value{ .string = self.role.toString() });
+        try obj.put(allocator, "role", json.Value{ .string = self.role.toString() });
 
         // Add content
         switch (self.content) {
             .text => |t| {
-                try obj.put("content", json.Value{ .string = t });
+                try obj.put(allocator, "content", json.Value{ .string = t });
             },
             .structured => |s| {
-                try obj.put("content", s);
+                try obj.put(allocator, "content", s);
             },
         }
 
         // Add metadata
-        try obj.put("metadata", self.metadata);
+        try obj.put(allocator, "metadata", self.metadata);
 
         return json.Value{ .object = obj };
     }
@@ -274,7 +274,7 @@ pub const Message = struct {
         };
 
         // Parse metadata (optional)
-        const metadata = if (obj.get("metadata")) |m| m else json.Value{ .object = json.ObjectMap.init(allocator) };
+        const metadata = if (obj.get("metadata")) |m| m else json.Value{ .object = json.ObjectMap.empty };
 
         return Message{
             .role = role,

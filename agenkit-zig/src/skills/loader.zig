@@ -36,6 +36,7 @@
 ///   remain owned by the registry — do NOT deinit them.
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const ioc = @import("../io_compat.zig");
 
 /// Errors raised while loading a skill from disk.
 pub const SkillError = error{
@@ -81,17 +82,15 @@ pub const AgentSkill = struct {
     ///
     /// The returned skill owns all of its memory; the caller must `deinit` it.
     pub fn fromDirectory(allocator: Allocator, skill_dir: []const u8) !AgentSkill {
-        var dir = std.fs.cwd().openDir(skill_dir, .{}) catch {
+        const io = ioc.io();
+        var dir = std.Io.Dir.cwd().openDir(io, skill_dir, .{}) catch {
             return SkillError.MissingSkillFile;
         };
-        defer dir.close();
+        defer dir.close(io);
 
-        const file = dir.openFile("SKILL.md", .{}) catch {
+        const raw = dir.readFileAlloc(io, "SKILL.md", allocator, .unlimited) catch {
             return SkillError.MissingSkillFile;
         };
-        defer file.close();
-
-        const raw = try file.readToEndAlloc(allocator, 16 * 1024 * 1024); // 16MB cap
         defer allocator.free(raw);
 
         return fromContent(allocator, raw, skill_dir);
@@ -221,14 +220,14 @@ const Frontmatter = struct {
         var self = Frontmatter{
             .allocator = allocator,
             .fields = std.StringHashMap([]const u8).init(allocator),
-            .metadata = std.ArrayList(MetadataEntry).init(allocator),
+            .metadata = std.ArrayList(MetadataEntry).empty,
         };
         errdefer self.deinit();
 
         var in_metadata = false;
         var lines = std.mem.splitScalar(u8, text, '\n');
         while (lines.next()) |raw_line| {
-            const line = std.mem.trimRight(u8, raw_line, " \t\r");
+            const line = std.mem.trimEnd(u8, raw_line, " \t\r");
             if (line.len == 0) continue;
 
             const indent = leadingSpaces(line);
@@ -251,7 +250,7 @@ const Frontmatter = struct {
             } else if (in_metadata) {
                 // Indented child of the metadata block.
                 if (value.len == 0) continue;
-                try self.metadata.append(.{ .key = key, .value = value });
+                try self.metadata.append(allocator, .{ .key = key, .value = value });
             }
         }
 
@@ -286,7 +285,7 @@ const Frontmatter = struct {
 
     fn deinit(self: *Frontmatter) void {
         self.fields.deinit();
-        self.metadata.deinit();
+        self.metadata.deinit(self.allocator);
     }
 };
 
@@ -350,12 +349,13 @@ pub const SkillRegistry = struct {
     /// If a skill name is already loaded it is replaced (matching the Python
     /// `self._skills[skill.name] = skill` behaviour).
     pub fn discoverSkills(self: *SkillRegistry) !void {
+        const io = ioc.io();
         for (self.search_paths) |search_path| {
-            var dir = std.fs.cwd().openDir(search_path, .{ .iterate = true }) catch continue;
-            defer dir.close();
+            var dir = std.Io.Dir.cwd().openDir(io, search_path, .{ .iterate = true }) catch continue;
+            defer dir.close(io);
 
             var iter = dir.iterate();
-            while (try iter.next()) |entry| {
+            while (try iter.next(io)) |entry| {
                 if (entry.kind != .directory) continue;
 
                 const skill_path = try std.fs.path.join(
@@ -414,8 +414,8 @@ pub const SkillRegistry = struct {
             skill: *const AgentSkill,
         };
 
-        var scored = std.ArrayList(Scored).init(allocator);
-        defer scored.deinit();
+        var scored = std.ArrayList(Scored).empty;
+        defer scored.deinit(allocator);
 
         var it = self.skills.iterator();
         while (it.next()) |entry| {
@@ -436,7 +436,7 @@ pub const SkillRegistry = struct {
             score += wordOverlap(query_lower, desc_lower);
 
             if (score > 0) {
-                try scored.append(.{ .score = score, .skill = skill });
+                try scored.append(allocator, .{ .score = score, .skill = skill });
             }
         }
 
@@ -499,25 +499,36 @@ fn wordOverlap(query_lower: []const u8, desc_lower: []const u8) i64 {
 const testing = std.testing;
 
 /// Create a minimal valid skill directory inside `dir`.
-fn makeSkillDir(dir: std.fs.Dir, name: []const u8, description: []const u8, body: []const u8) !void {
-    try dir.makeDir(name);
-    var sub = try dir.openDir(name, .{});
-    defer sub.close();
+fn makeSkillDir(dir: std.Io.Dir, name: []const u8, description: []const u8, body: []const u8) !void {
+    const io = testing.io;
+    try dir.createDir(io, name, .default_dir);
+    var sub = try dir.openDir(io, name, .{});
+    defer sub.close(io);
     var buf: [4096]u8 = undefined;
     const content = try std.fmt.bufPrint(
         &buf,
         "---\nname: {s}\ndescription: {s}\n---\n{s}",
         .{ name, description, body },
     );
-    const file = try sub.createFile("SKILL.md", .{});
-    defer file.close();
-    try file.writeAll(content);
+    var file = try sub.createFile(io, "SKILL.md", .{});
+    defer file.close(io);
+    try file.writeStreamingAll(io, content);
 }
 
-fn writeRawFile(dir: std.fs.Dir, sub_path: []const u8, data: []const u8) !void {
-    const file = try dir.createFile(sub_path, .{});
-    defer file.close();
-    try file.writeAll(data);
+fn realpathAlloc(dir: std.Io.Dir, allocator: Allocator, sub_path: []const u8) ![]u8 {
+    const io = testing.io;
+    var sub = try dir.openDir(io, sub_path, .{});
+    defer sub.close(io);
+    var buf: [std.fs.max_path_bytes]u8 = undefined;
+    const len = try sub.realPath(io, &buf);
+    return allocator.dupe(u8, buf[0..len]);
+}
+
+fn writeRawFile(dir: std.Io.Dir, sub_path: []const u8, data: []const u8) !void {
+    const io = testing.io;
+    var file = try dir.createFile(io, sub_path, .{});
+    defer file.close(io);
+    try file.writeStreamingAll(io, data);
 }
 
 test "fromContent loads a valid skill" {
@@ -570,8 +581,8 @@ test "fromContent missing description" {
 test "fromDirectory missing SKILL.md" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
-    try tmp.dir.makeDir("empty");
-    const path = try tmp.dir.realpathAlloc(testing.allocator, "empty");
+    try tmp.dir.createDir(testing.io, "empty", .default_dir);
+    const path = try realpathAlloc(tmp.dir, testing.allocator, "empty");
     defer testing.allocator.free(path);
 
     try testing.expectError(SkillError.MissingSkillFile, AgentSkill.fromDirectory(testing.allocator, path));
@@ -581,7 +592,7 @@ test "fromDirectory loads from disk" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "csv-tools", "Handle CSV files.", "Parse and write CSV.");
-    const path = try tmp.dir.realpathAlloc(testing.allocator, "csv-tools");
+    const path = try realpathAlloc(tmp.dir, testing.allocator, "csv-tools");
     defer testing.allocator.free(path);
 
     var skill = try AgentSkill.fromDirectory(testing.allocator, path);
@@ -611,7 +622,7 @@ test "registry skips non-directories" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
     try writeRawFile(tmp.dir, "not_a_dir.md", "ignored");
-    const root = try tmp.dir.realpathAlloc(testing.allocator, ".");
+    const root = try realpathAlloc(tmp.dir, testing.allocator, ".");
     defer testing.allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -626,7 +637,7 @@ test "registry discovers valid skills" {
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "skill-a", "Skill A description.", "Body.");
     try makeSkillDir(tmp.dir, "skill-b", "Skill B description.", "Body.");
-    const root = try tmp.dir.realpathAlloc(testing.allocator, ".");
+    const root = try realpathAlloc(tmp.dir, testing.allocator, ".");
     defer testing.allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -643,7 +654,7 @@ test "registry find relevant name match" {
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "pdf-processing", "Work with PDF documents.", "Body.");
     try makeSkillDir(tmp.dir, "csv-tools", "Handle CSV spreadsheets.", "Body.");
-    const root = try tmp.dir.realpathAlloc(testing.allocator, ".");
+    const root = try realpathAlloc(tmp.dir, testing.allocator, ".");
     defer testing.allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -668,7 +679,7 @@ test "registry find relevant respects max_results" {
         const desc = try std.fmt.bufPrint(&desc_buf, "A skill about document processing number {d}.", .{i});
         try makeSkillDir(tmp.dir, name, desc, "Body.");
     }
-    const root = try tmp.dir.realpathAlloc(testing.allocator, ".");
+    const root = try realpathAlloc(tmp.dir, testing.allocator, ".");
     defer testing.allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -685,7 +696,7 @@ test "registry get skill" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "email-compose", "Compose professional emails.", "Body.");
-    const root = try tmp.dir.realpathAlloc(testing.allocator, ".");
+    const root = try realpathAlloc(tmp.dir, testing.allocator, ".");
     defer testing.allocator.free(root);
 
     const paths = [_][]const u8{root};

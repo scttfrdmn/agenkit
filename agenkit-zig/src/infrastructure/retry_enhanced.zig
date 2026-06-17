@@ -6,6 +6,8 @@
 // - Detailed metrics
 
 const std = @import("std");
+const agksync = @import("../sync_compat.zig");
+const agktime = @import("../time_compat.zig");
 const Agent = @import("../agent.zig").Agent;
 const Message = @import("../message.zig").Message;
 
@@ -178,7 +180,7 @@ pub const EnhancedRetryMetrics = struct {
             .budget_exceeded_count = 0,
             .backpressure_detected = 0,
             .error_class_counts = std.AutoHashMap(ErrorClass, u64).init(allocator),
-            .recent_results = std.ArrayList(bool).init(allocator),
+            .recent_results = std.ArrayList(bool).empty,
         };
     }
 
@@ -195,7 +197,7 @@ pub const EnhancedRetryDecorator = struct {
     config: EnhancedRetryConfig,
     metrics: EnhancedRetryMetrics,
     budget: RetryBudget,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -212,9 +214,9 @@ pub const EnhancedRetryDecorator = struct {
                 .current_cost = 0.0,
                 .max_retries_per_hour = config.max_retries_per_hour,
                 .retry_count = 0,
-                .window_start = std.time.milliTimestamp(),
+                .window_start = agktime.milliTimestamp(),
             },
-            .mutex = std.Thread.Mutex{},
+            .mutex = agksync.Mutex{},
         };
     }
 
@@ -275,7 +277,7 @@ pub const EnhancedRetryDecorator = struct {
 
     fn calculateBackoff(self: *EnhancedRetryDecorator, base_backoff_ms: u64, attempt: usize) u64 {
         const base_ms = @as(f64, @floatFromInt(base_backoff_ms));
-        var prng = std.rand.DefaultPrng.init(@intCast(std.time.milliTimestamp()));
+        var prng = std.Random.DefaultPrng.init(@intCast(agktime.milliTimestamp()));
         const rand = prng.random();
 
         const jittered_ms: f64 = switch (self.config.jitter_type) {
@@ -313,10 +315,10 @@ pub const EnhancedRetryDecorator = struct {
 
         // Reset window if hour has passed
         const hour_in_ms = 3600000;
-        if (std.time.milliTimestamp() - self.budget.window_start > hour_in_ms) {
+        if (agktime.milliTimestamp() - self.budget.window_start > hour_in_ms) {
             self.budget.current_cost = 0.0;
             self.budget.retry_count = 0;
-            self.budget.window_start = std.time.milliTimestamp();
+            self.budget.window_start = agktime.milliTimestamp();
         }
 
         // Check cost budget
@@ -386,7 +388,7 @@ pub const EnhancedRetryDecorator = struct {
 
             // Check backpressure
             if (self.checkBackpressure()) {
-                std.time.sleep(5000 * std.time.ns_per_ms);
+                agktime.sleep(5000 * std.time.ns_per_ms);
             }
 
             // Process message
@@ -468,7 +470,7 @@ pub const EnhancedRetryDecorator = struct {
                 const backoff_ms = self.calculateBackoff(base_backoff_ms, attempt);
 
                 // Sleep with backoff
-                std.time.sleep(backoff_ms * std.time.ns_per_ms);
+                agktime.sleep(backoff_ms * std.time.ns_per_ms);
             }
         }
 

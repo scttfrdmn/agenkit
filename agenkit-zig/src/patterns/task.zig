@@ -53,7 +53,6 @@
 ///     // Task automatically marked as completed, cannot reuse
 /// }
 /// ```
-
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Agent = @import("../agent.zig").Agent;
@@ -204,12 +203,11 @@ fn cloneMessage(allocator: Allocator, msg: Message) !Message {
 const testing = std.testing;
 const EchoAgent = @import("../agent.zig").EchoAgent;
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "TaskConfig default" {
     const config = TaskConfig{};
@@ -381,7 +379,6 @@ const FailingAgent = struct {
 
         return Result{ .ok = response };
     }
-
 
     fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
         const caps = try capabilitiesImpl(ptr, alloc);

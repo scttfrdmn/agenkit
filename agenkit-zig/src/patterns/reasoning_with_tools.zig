@@ -43,7 +43,6 @@
 /// const result = try agent.agent().process(message);
 /// // Inspect reasoning trace in metadata
 /// ```
-
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
@@ -245,7 +244,6 @@ pub const ReasoningWithToolsAgent = struct {
         return self.allocator.realloc(prompt, offset);
     }
 
-
     fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
         const caps = try capabilitiesImpl(ptr, alloc);
         defer {
@@ -280,12 +278,11 @@ pub const ReasoningWithToolsAgent = struct {
 // Tests
 // ============================================================================
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "ReasoningWithToolsAgent: initialization" {
     const allocator = std.testing.allocator;

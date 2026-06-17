@@ -50,7 +50,6 @@
 ///     defer response2.deinit();
 /// }
 /// ```
-
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Agent = @import("../agent.zig").Agent;
@@ -86,7 +85,7 @@ pub const ConversationalAgent = struct {
             return AgentError.InvalidInput;
         }
 
-        var history = std.ArrayList(Message){};
+        var history = std.ArrayList(Message).empty;
 
         // Add system prompt to history if provided
         const system_prompt_copy = if (system_prompt) |prompt|
@@ -130,10 +129,10 @@ pub const ConversationalAgent = struct {
         }
 
         // Separate system messages from conversation
-        var system_messages = std.ArrayList(Message){};
+        var system_messages = std.ArrayList(Message).empty;
         defer system_messages.deinit(self.allocator);
 
-        var conversation_messages = std.ArrayList(Message){};
+        var conversation_messages = std.ArrayList(Message).empty;
         defer conversation_messages.deinit(self.allocator);
 
         for (self.history.items) |msg| {
@@ -282,7 +281,6 @@ pub const ConversationalAgent = struct {
         return Result{ .ok = response };
     }
 
-
     fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
         const caps = try capabilitiesImpl(ptr, alloc);
         defer {
@@ -317,12 +315,11 @@ pub const ConversationalAgent = struct {
 // Tests
 const testing = std.testing;
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "ConversationalAgent creation" {
     const allocator = testing.allocator;

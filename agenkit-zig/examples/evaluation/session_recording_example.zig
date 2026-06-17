@@ -159,17 +159,14 @@ pub fn main() !void {
     std.debug.print("  ✓ Exported to: {s}\n\n", .{export_path});
 
     // Read and display
-    const file = try std.fs.cwd().openFile(export_path, .{});
-    defer file.close();
-
-    const content = try file.readToEndAlloc(allocator, 10000);
+    const content = try std.Io.Dir.cwd().readFileAlloc(agenkit.io_compat.io(), export_path, allocator, .limited(10000));
     defer allocator.free(content);
 
     std.debug.print("  JSON Content:\n", .{});
     std.debug.print("  {s}\n\n", .{content});
 
     // Clean up
-    try std.fs.cwd().deleteFile(export_path);
+    try std.Io.Dir.cwd().deleteFile(agenkit.io_compat.io(), export_path);
 
     // ========================================================================
     // Summary

@@ -7,6 +7,7 @@
 /// 4. Test cache invalidation
 
 const std = @import("std");
+const agktime = @import("../../src/time_compat.zig");
 const agenkit = @import("agenkit");
 
 // Counter agent that tracks how many times it's actually called
@@ -191,7 +192,7 @@ fn cacheExpirationExample(allocator: std.mem.Allocator) !void {
 
     // Wait for TTL expiration
     std.debug.print("  Waiting 600ms for cache expiration...\\n", .{});
-    std.time.sleep(600 * std.time.ns_per_ms);
+    agktime.sleep(600 * std.time.ns_per_ms);
 
     // Third request - cache miss (expired)
     std.debug.print("  Request 3 (cache miss - expired)...\\n", .{});

@@ -101,8 +101,8 @@ fn completionWithOptions(allocator: std.mem.Allocator, llm: llm_mod.LLM) !void {
 
     var options = llm_mod.CallOptions.init(allocator);
     defer options.deinit();
-    options.withTemperature(0.9); // Higher temp for creative output
-    options.withMaxTokens(100);
+    try options.withTemperature(0.9); // Higher temp for creative output
+    try options.withMaxTokens(100);
 
     std.debug.print("Request: {s}\n", .{msg.content.text});
     std.debug.print("Options: temperature=0.9, max_tokens=100\n", .{});
@@ -134,7 +134,7 @@ fn multiTurnConversation(allocator: std.mem.Allocator, llm: llm_mod.LLM) !void {
 
     var options = llm_mod.CallOptions.init(allocator);
     defer options.deinit();
-    options.withTemperature(0.2); // Low temp for factual responses
+    try options.withTemperature(0.2); // Low temp for factual responses
 
     std.debug.print("Conversation:\n", .{});
     std.debug.print("System: {s}\n", .{system.content.text});
@@ -171,8 +171,8 @@ fn codeGeneration(allocator: std.mem.Allocator, llm: llm_mod.LLM) !void {
 
     var options = llm_mod.CallOptions.init(allocator);
     defer options.deinit();
-    options.withTemperature(0.2); // Low temp for code
-    options.withMaxTokens(500);
+    try options.withTemperature(0.2); // Low temp for code
+    try options.withMaxTokens(500);
 
     std.debug.print("Request: {s}\n", .{user.content.text});
 

@@ -6,7 +6,6 @@
 ///
 /// Reference: "Plan-and-Solve Prompting: Improving Zero-Shot Chain-of-Thought Reasoning"
 /// Lei Wang et al., 2023 - https://arxiv.org/abs/2305.04091
-
 const std = @import("std");
 const Agent = @import("../../agent.zig").Agent;
 const AgentError = @import("../../agent.zig").AgentError;
@@ -57,7 +56,7 @@ pub const Plan = struct {
     pub fn init(allocator: Allocator, problem: []const u8) !Plan {
         const problem_copy = try allocator.dupe(u8, problem);
         return Plan{
-            .steps = std.ArrayList(PlanStep).init(allocator),
+            .steps = std.ArrayList(PlanStep).empty,
             .problem = problem_copy,
             .strategy = null,
             .validated = false,
@@ -289,9 +288,9 @@ pub const PlanAndSolveAgent = struct {
             var start: usize = 0;
             while (start < trimmed.len and
                 (std.ascii.isDigit(trimmed[start]) or
-                trimmed[start] == '.' or
-                trimmed[start] == ')' or
-                std.ascii.isWhitespace(trimmed[start])))
+                    trimmed[start] == '.' or
+                    trimmed[start] == ')' or
+                    std.ascii.isWhitespace(trimmed[start])))
             {
                 start += 1;
             }
@@ -341,7 +340,7 @@ pub const PlanAndSolveAgent = struct {
     }
 
     fn formatPlan(self: *PlanAndSolveAgent, plan: *Plan) ![]const u8 {
-        var buffer = std.ArrayList(u8).init(self.allocator);
+        var buffer = std.ArrayList(u8).empty;
         defer buffer.deinit();
 
         const writer = buffer.writer();
@@ -363,7 +362,7 @@ pub const PlanAndSolveAgent = struct {
         previous_results: []const []const u8,
     ) ![]const u8 {
         const prompt = if (previous_results.len > 0) blk: {
-            var buffer = std.ArrayList(u8).init(self.allocator);
+            var buffer = std.ArrayList(u8).empty;
             defer buffer.deinit();
 
             const writer = buffer.writer();
@@ -398,7 +397,7 @@ pub const PlanAndSolveAgent = struct {
     }
 
     fn executePlan(self: *PlanAndSolveAgent, plan: *Plan) ![][]const u8 {
-        var results = std.ArrayList([]const u8).init(self.allocator);
+        var results = std.ArrayList([]const u8).empty;
         errdefer {
             for (results.items) |result| {
                 self.allocator.free(result);

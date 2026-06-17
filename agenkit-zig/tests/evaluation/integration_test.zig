@@ -49,7 +49,7 @@ test "Integration: Evaluation with multiple metrics" {
     // to evaluate an agent on a test suite
 
     // Create test cases
-    var test_cases = std.ArrayList(*evaluation.TestCase).init(allocator);
+    var test_cases = std.ArrayList(*evaluation.TestCase).empty;
     defer {
         for (test_cases.items) |tc| tc.deinit();
         test_cases.deinit();
@@ -290,7 +290,7 @@ test "Integration: End-to-end evaluation pipeline" {
     const session_id = "pipeline-test-001";
 
     // Step 1: Create test cases
-    var test_cases = std.ArrayList(*evaluation.TestCase).init(allocator);
+    var test_cases = std.ArrayList(*evaluation.TestCase).empty;
     defer {
         for (test_cases.items) |tc| tc.deinit();
         test_cases.deinit();

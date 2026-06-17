@@ -1,8 +1,8 @@
 /// Test utilities for Agenkit Zig
 ///
 /// Provides reusable mocks, fixtures, and helpers for testing agents.
-
 const std = @import("std");
+const agktime = @import("time_compat.zig");
 const Agent = @import("agent.zig").Agent;
 const AgentError = @import("agent.zig").AgentError;
 const Result = @import("agent.zig").Result;
@@ -338,7 +338,7 @@ pub const MockLLM = struct {
 
         // Simulate network delay if configured
         if (self.delay_ms > 0) {
-            std.time.sleep(self.delay_ms * std.time.ns_per_ms);
+            agktime.sleep(self.delay_ms * std.time.ns_per_ms);
         }
 
         // Simulate failure if configured

@@ -119,7 +119,8 @@ const MockTool = struct {
 
     pub fn parameters(self: *const MockTool, allocator: std.mem.Allocator) !std.json.Value {
         _ = self;
-        return std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
+        _ = allocator;
+        return std.json.Value{ .object = std.json.ObjectMap.empty };
     }
 
     pub fn execute(

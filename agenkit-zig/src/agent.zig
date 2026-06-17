@@ -244,10 +244,10 @@ pub const EchoAgent = struct {
     fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult {
         const self: *EchoAgent = @ptrCast(@alignCast(ptr));
         const caps = try capabilitiesImpl(ptr, allocator);
-        defer {
-            for (caps) |cap| allocator.free(cap);
-            allocator.free(caps);
-        }
+        // Capability strings are borrowed (see SequentialAgent/ParallelAgent:
+        // they pass inner cap strings through by reference). Only the array is
+        // owned here; `createDefaultIntrospectionResult` duplicates the strings.
+        defer allocator.free(caps);
         return createDefaultIntrospectionResult(allocator, self.agent_name, caps);
     }
 

@@ -8,7 +8,6 @@
 ///
 /// These are minimal composition primitives. For richer agent patterns
 /// with advanced features, see the patterns module.
-
 const std = @import("std");
 const Agent = @import("agent.zig").Agent;
 const AgentError = @import("agent.zig").AgentError;
@@ -72,7 +71,7 @@ pub const SequentialAgent = struct {
             }
         }
 
-        var caps = std.ArrayList([]const u8).init(allocator);
+        var caps = std.ArrayList([]const u8).empty;
         var it = cap_set.keyIterator();
         while (it.next()) |key| {
             try caps.append(try allocator.dupe(u8, key.*));
@@ -173,7 +172,7 @@ pub const FallbackAgent = struct {
             }
         }
 
-        var caps = std.ArrayList([]const u8).init(allocator);
+        var caps = std.ArrayList([]const u8).empty;
         var it = cap_set.keyIterator();
         while (it.next()) |key| {
             try caps.append(try allocator.dupe(u8, key.*));

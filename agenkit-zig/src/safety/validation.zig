@@ -27,7 +27,7 @@ pub const PromptInjectionDetector = struct {
     pub fn init(allocator: Allocator, config: Config) !PromptInjectionDetector {
         var detector = PromptInjectionDetector{
             .threshold = config.threshold,
-            .patterns = std.ArrayList([]const u8){},
+            .patterns = std.ArrayList([]const u8).empty,
             .keywords = StringHashMap(i32).init(allocator),
             .allocator = allocator,
         };
@@ -79,7 +79,7 @@ pub const PromptInjectionDetector = struct {
 
     pub fn detect(self: *PromptInjectionDetector, text: []const u8) !DetectionResult {
         var score: f64 = 0.0;
-        var matched = std.ArrayList([]const u8){};
+        var matched = std.ArrayList([]const u8).empty;
 
         // Convert to lowercase for case-insensitive matching
         const lower_text = try std.ascii.allocLowerString(self.allocator, text);
@@ -134,7 +134,7 @@ pub const ContentFilter = struct {
     pub fn init(allocator: Allocator, config: Config) !ContentFilter {
         var filter = ContentFilter{
             .max_length = config.max_length,
-            .banned_words = std.ArrayList([]const u8){},
+            .banned_words = std.ArrayList([]const u8).empty,
             .check_pii = config.check_pii,
             .allocator = allocator,
         };
@@ -219,7 +219,7 @@ pub const SensitiveDataRedactor = struct {
 
     pub fn init(allocator: Allocator) !SensitiveDataRedactor {
         var redactor = SensitiveDataRedactor{
-            .patterns = std.ArrayList(Pattern){},
+            .patterns = std.ArrayList(Pattern).empty,
             .allocator = allocator,
         };
 

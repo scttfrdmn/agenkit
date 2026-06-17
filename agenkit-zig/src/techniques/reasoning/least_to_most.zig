@@ -8,7 +8,6 @@
 ///
 /// Reference: "Least-to-Most Prompting Enables Complex Reasoning in Large Language Models"
 /// Zhou et al., 2022 - https://arxiv.org/abs/2205.10625
-
 const std = @import("std");
 const Agent = @import("../../agent.zig").Agent;
 const AgentError = @import("../../agent.zig").AgentError;
@@ -111,7 +110,7 @@ pub const LeastToMostAgent = struct {
         }
 
         // Step 2: Solve subproblems sequentially
-        var solutions = std.ArrayListUnmanaged([]const u8){};
+        var solutions = std.ArrayListUnmanaged([]const u8).empty;
         defer {
             for (solutions.items) |sol| {
                 self.allocator.free(sol);
@@ -157,7 +156,7 @@ pub const LeastToMostAgent = struct {
         };
 
         // Add subproblems array
-        var subproblems_array = std.ArrayListUnmanaged(std.json.Value){};
+        var subproblems_array = std.ArrayListUnmanaged(std.json.Value).empty;
         for (subproblems) |sub| {
             const dupe_content = self.allocator.dupe(u8, sub.content) catch {
                 // Clean up any already added items
@@ -187,7 +186,7 @@ pub const LeastToMostAgent = struct {
         };
 
         // Add solutions array
-        var solutions_array = std.ArrayListUnmanaged(std.json.Value){};
+        var solutions_array = std.ArrayListUnmanaged(std.json.Value).empty;
         for (solutions.items) |sol| {
             const dupe_sol = self.allocator.dupe(u8, sol) catch {
                 // Clean up any already added items
@@ -250,7 +249,7 @@ pub const LeastToMostAgent = struct {
                 self.allocator.free(subproblem_texts);
             }
 
-            var subproblems = std.ArrayListUnmanaged(Subproblem){};
+            var subproblems = std.ArrayListUnmanaged(Subproblem).empty;
             errdefer {
                 for (subproblems.items) |*sub| {
                     var mutable_sub = sub.*;
@@ -305,7 +304,7 @@ pub const LeastToMostAgent = struct {
 
     /// Parse subproblems from LLM response
     fn parseSubproblems(self: *LeastToMostAgent, response_text: []const u8, original_problem: []const u8) ![]Subproblem {
-        var subproblems = std.ArrayListUnmanaged(Subproblem){};
+        var subproblems = std.ArrayListUnmanaged(Subproblem).empty;
         errdefer {
             for (subproblems.items) |*sub| {
                 var mutable_sub = sub.*;
@@ -364,21 +363,19 @@ pub const LeastToMostAgent = struct {
         subproblem: Subproblem,
         previous_solutions: []const []const u8,
     ) ![]const u8 {
-        var prompt_buf = std.ArrayListUnmanaged(u8){};
+        var prompt_buf = std.ArrayListUnmanaged(u8).empty;
         defer prompt_buf.deinit(self.allocator);
-
-        const writer = prompt_buf.writer(self.allocator);
 
         if (self.config.compose_solutions and previous_solutions.len > 0) {
             // Include previous solutions as context
-            try writer.writeAll("Given these previous solutions to simpler subproblems:\n\n");
+            try prompt_buf.appendSlice(self.allocator, "Given these previous solutions to simpler subproblems:\n\n");
             for (previous_solutions, 0..) |sol, i| {
-                try writer.print("Previous solution {d}: {s}\n", .{ i + 1, sol });
+                try prompt_buf.print(self.allocator, "Previous solution {d}: {s}\n", .{ i + 1, sol });
             }
-            try writer.print("\nNow solve this subproblem:\n{s}\n\nSolution:", .{subproblem.content});
+            try prompt_buf.print(self.allocator, "\nNow solve this subproblem:\n{s}\n\nSolution:", .{subproblem.content});
         } else {
             // Solve without context
-            try writer.print("Solve this subproblem:\n\n{s}\n\nSolution:", .{subproblem.content});
+            try prompt_buf.print(self.allocator, "Solve this subproblem:\n\n{s}\n\nSolution:", .{subproblem.content});
         }
 
         const prompt = try prompt_buf.toOwnedSlice(self.allocator);

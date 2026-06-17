@@ -13,6 +13,7 @@
 /// - ArXiv: Introspection of Thought Helps AI Agents (https://arxiv.org/abs/2507.08664)
 /// - Biswas & Talukdar: Building Agentic AI Systems
 const std = @import("std");
+const agktime = @import("time_compat.zig");
 const Allocator = std.mem.Allocator;
 
 /// Result of agent introspection - a snapshot of internal state.
@@ -84,7 +85,7 @@ pub const IntrospectionResult = struct {
             return error.OutOfMemory; // Zig doesn't have custom validation errors in allocator context
         }
 
-        const timestamp = std.time.timestamp();
+        const timestamp = agktime.timestamp();
 
         return IntrospectionResult{
             .allocator = allocator,
@@ -112,16 +113,16 @@ pub const IntrospectionResult = struct {
         if (self.memory_state) |mem| {
             if (mem == .object) {
                 var obj = mem.object;
-                obj.deinit();
+                obj.deinit(self.allocator);
             }
         }
         if (self.internal_state == .object) {
             var obj = self.internal_state.object;
-            obj.deinit();
+            obj.deinit(self.allocator);
         }
         if (self.metadata == .object) {
             var obj = self.metadata.object;
-            obj.deinit();
+            obj.deinit(self.allocator);
         }
     }
 
@@ -165,8 +166,8 @@ pub fn createDefaultIntrospectionResult(
     }
 
     // Create empty JSON objects
-    const internal_state = std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
-    const metadata = std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
+    const internal_state = std.json.Value{ .object = std.json.ObjectMap.empty };
+    const metadata = std.json.Value{ .object = std.json.ObjectMap.empty };
 
     return IntrospectionResult.init(
         allocator,
@@ -189,8 +190,8 @@ test "IntrospectionResult - basic creation" {
     caps[0] = try allocator.dupe(u8, "test");
     caps[1] = try allocator.dupe(u8, "demo");
 
-    const internal_state = std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
-    const metadata = std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
+    const internal_state = std.json.Value{ .object = std.json.ObjectMap.empty };
+    const metadata = std.json.Value{ .object = std.json.ObjectMap.empty };
 
     var result = try IntrospectionResult.init(
         allocator,
@@ -214,13 +215,13 @@ test "IntrospectionResult - with memory state" {
     const caps = try allocator.alloc([]const u8, 1);
     caps[0] = try allocator.dupe(u8, "memory");
 
-    var memory = std.json.ObjectMap.init(allocator);
-    try memory.put("short_term_count", std.json.Value{ .integer = 5 });
-    try memory.put("long_term_count", std.json.Value{ .integer = 10 });
+    var memory = std.json.ObjectMap.empty;
+    try memory.put(allocator, "short_term_count", std.json.Value{ .integer = 5 });
+    try memory.put(allocator, "long_term_count", std.json.Value{ .integer = 10 });
     const memory_state = std.json.Value{ .object = memory };
 
-    const internal_state = std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
-    const metadata = std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
+    const internal_state = std.json.Value{ .object = std.json.ObjectMap.empty };
+    const metadata = std.json.Value{ .object = std.json.ObjectMap.empty };
 
     var result = try IntrospectionResult.init(
         allocator,
@@ -243,8 +244,8 @@ test "IntrospectionResult - validation" {
     const name = try allocator.dupe(u8, "test");
     const caps = try allocator.alloc([]const u8, 0);
 
-    const internal_state = std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
-    const metadata = std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
+    const internal_state = std.json.Value{ .object = std.json.ObjectMap.empty };
+    const metadata = std.json.Value{ .object = std.json.ObjectMap.empty };
 
     var result = try IntrospectionResult.init(
         allocator,
@@ -262,12 +263,12 @@ test "IntrospectionResult - validation" {
 test "IntrospectionResult - timestamp is recent" {
     const allocator = testing.allocator;
 
-    const before = std.time.timestamp();
+    const before = agktime.timestamp();
 
     const name = try allocator.dupe(u8, "test");
     const caps = try allocator.alloc([]const u8, 0);
-    const internal_state = std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
-    const metadata = std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
+    const internal_state = std.json.Value{ .object = std.json.ObjectMap.empty };
+    const metadata = std.json.Value{ .object = std.json.ObjectMap.empty };
 
     var result = try IntrospectionResult.init(
         allocator,
@@ -279,7 +280,7 @@ test "IntrospectionResult - timestamp is recent" {
     );
     defer result.deinit();
 
-    const after = std.time.timestamp();
+    const after = agktime.timestamp();
 
     try testing.expect(result.timestamp >= before);
     try testing.expect(result.timestamp <= after);

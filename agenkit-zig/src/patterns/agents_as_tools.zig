@@ -32,7 +32,6 @@
 ///
 ///     // Execute tool
 ///     const result = try tool.execute(allocator, "Write a function to reverse a string");
-
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
@@ -215,7 +214,7 @@ pub const ToolCoordinator = struct {
         self.* = ToolCoordinator{
             .allocator = allocator,
             .agent_name = try allocator.dupe(u8, name),
-            .tools = .{},
+            .tools = .empty,
         };
         return self;
     }
@@ -333,12 +332,11 @@ pub const ToolCoordinator = struct {
 // Tests
 // ============================================================================
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "AgentTool basic functionality" {
     const allocator = std.testing.allocator;

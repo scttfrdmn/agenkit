@@ -26,8 +26,9 @@
 /// const response = try llm.complete(allocator, &messages, &options);
 /// defer response.deinit();
 /// ```
-
 const std = @import("std");
+const ioc = @import("../io_compat.zig");
+const agkenv = @import("../env_compat.zig");
 const llm = @import("llm.zig");
 const Message = @import("../message.zig").Message;
 const Role = @import("../message.zig").Role;
@@ -38,11 +39,11 @@ const LiteLLMStream = struct {
     chunks: std.ArrayList([]const u8),
     current_index: usize,
     fn makeStreamRequest(self: *LiteLLMStream, body: []const u8) !void {
-        var client = std.http.Client{ .allocator = self.allocator };
+        var client = std.http.Client{ .allocator = self.allocator, .io = ioc.io() };
         defer client.deinit();
         const uri_str = try std.fmt.allocPrint(self.allocator, "{s}/chat/completions", .{self.self.base_url});
         defer self.allocator.free(uri_str);
-        var headers = std.ArrayList(std.http.Header){};
+        var headers = std.ArrayList(std.http.Header).empty;
         defer headers.deinit(self.allocator);
         try headers.append(self.allocator, .{ .name = "Content-Type", .value = "application/json" });
 
@@ -52,7 +53,7 @@ const LiteLLMStream = struct {
             try headers.append(self.allocator, .{ .name = "Authorization", .value = auth_value });
         }
 
-        var response_buffer: std.io.Writer.Allocating = .init(self.allocator);
+        var response_buffer: std.Io.Writer.Allocating = .init(self.allocator);
         defer response_buffer.deinit();
 
         const result = try client.fetch(.{
@@ -90,10 +91,26 @@ const LiteLLMStream = struct {
             }
         }
     }
-    fn deinit(self: *LiteLLMStream) void { for (self.chunks.items) |chunk| self.allocator.free(chunk); self.chunks.deinit(self.allocator); self.allocator.destroy(self); }
+    fn deinit(self: *LiteLLMStream) void {
+        for (self.chunks.items) |chunk| self.allocator.free(chunk);
+        self.chunks.deinit(self.allocator);
+        self.allocator.destroy(self);
+    }
 };
-fn litellmStreamNext(ptr: *anyopaque, allocator: Allocator) !?*Message { const self: *LiteLLMStream = @ptrCast(@alignCast(ptr)); if (self.current_index >= self.chunks.items.len) return null; const text = self.chunks.items[self.current_index]; self.current_index += 1; const msg = try allocator.create(Message); msg.* = try Message.withText(allocator, .assistant, text); try msg.setMetadata("streaming", std.json.Value{ .bool = true }); return msg; }
-fn litellmStreamDeinit(ptr: *anyopaque) void { const self: *LiteLLMStream = @ptrCast(@alignCast(ptr)); self.deinit(); }
+fn litellmStreamNext(ptr: *anyopaque, allocator: Allocator) !?*Message {
+    const self: *LiteLLMStream = @ptrCast(@alignCast(ptr));
+    if (self.current_index >= self.chunks.items.len) return null;
+    const text = self.chunks.items[self.current_index];
+    self.current_index += 1;
+    const msg = try allocator.create(Message);
+    msg.* = try Message.withText(allocator, .assistant, text);
+    try msg.setMetadata("streaming", std.json.Value{ .bool = true });
+    return msg;
+}
+fn litellmStreamDeinit(ptr: *anyopaque) void {
+    const self: *LiteLLMStream = @ptrCast(@alignCast(ptr));
+    self.deinit();
+}
 
 const Allocator = std.mem.Allocator;
 
@@ -127,7 +144,7 @@ pub const LiteLLMLLM = struct {
             try allocator.dupe(u8, api_key)
         else blk: {
             // Try LITELLM_API_KEY, fallback to empty (for local deployments)
-            const env_key = std.process.getEnvVarOwned(allocator, "LITELLM_API_KEY") catch {
+            const env_key = agkenv.getEnvVarOwned(allocator, "LITELLM_API_KEY") catch {
                 break :blk try allocator.dupe(u8, "");
             };
             break :blk env_key;
@@ -208,7 +225,7 @@ pub const LiteLLMLLM = struct {
         stream_impl.* = LiteLLMStream{
             .allocator = allocator,
             .self = self,
-            .chunks = std.ArrayList([]const u8){},
+            .chunks = std.ArrayList([]const u8).empty,
             .current_index = 0,
         };
 
@@ -253,7 +270,7 @@ pub const LiteLLMLLM = struct {
         options: *const llm.CallOptions,
         is_stream: bool,
     ) ![]const u8 {
-        var json = std.ArrayList(u8){};
+        var json = std.ArrayList(u8).empty;
         defer json.deinit(allocator);
 
         try json.appendSlice(allocator, "{\"model\":\"");
@@ -325,7 +342,7 @@ pub const LiteLLMLLM = struct {
 
     /// Make HTTP request to LiteLLM API
     fn makeRequest(self: *LiteLLMLLM, allocator: Allocator, body: []const u8) ![]const u8 {
-        var client = std.http.Client{ .allocator = allocator };
+        var client = std.http.Client{ .allocator = allocator, .io = ioc.io() };
         defer client.deinit();
 
         const uri_str = try std.fmt.allocPrint(
@@ -353,7 +370,7 @@ pub const LiteLLMLLM = struct {
 
         const headers = headers_buf[0..headers_count];
 
-        var response_body: std.io.Writer.Allocating = .init(allocator);
+        var response_body: std.Io.Writer.Allocating = .init(allocator);
         defer response_body.deinit();
 
         const result = try client.fetch(.{

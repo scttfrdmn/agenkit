@@ -29,7 +29,6 @@
 /// defer logger.deinit();
 /// try logger.logAccessGranted("user123", "/api/data", "my-agent");
 /// ```
-
 pub const validation = @import("safety/validation.zig");
 pub const permissions = @import("safety/permissions.zig");
 pub const anomaly = @import("safety/anomaly.zig");

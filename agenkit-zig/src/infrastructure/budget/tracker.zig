@@ -19,6 +19,7 @@
 ///
 ///   const total = try tracker.getSessionCost("session-1", null, null);
 const std = @import("std");
+const agksync = @import("../../sync_compat.zig");
 const Allocator = std.mem.Allocator;
 const models = @import("models.zig");
 const Cost = models.Cost;
@@ -83,7 +84,7 @@ pub const Storage = struct {
 ///   try storage.store(&cost);
 pub const InMemoryStorage = struct {
     allocator: Allocator,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
     costs: std.ArrayList(*Cost),
 
     pub fn init(allocator: Allocator) InMemoryStorage {
@@ -170,7 +171,7 @@ pub const InMemoryStorage = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        var results: std.ArrayList(*Cost) = .{};
+        var results: std.ArrayList(*Cost) = .empty;
 
         for (self.costs.items) |cost| {
             // Filter by session_id
@@ -478,7 +479,7 @@ pub const CostTracker = struct {
         defer self.allocator.free(costs);
 
         if (costs.len == 0) {
-            var obj = std.json.ObjectMap.init(self.allocator);
+            var obj = std.json.ObjectMap.empty;
             try obj.put("total_cost", .{ .float = 0.0 });
             try obj.put("total_requests", .{ .integer = 0 });
             try obj.put("total_input_tokens", .{ .integer = 0 });
@@ -499,7 +500,7 @@ pub const CostTracker = struct {
             total_thinking_tokens += cost.thinking_tokens;
         }
 
-        var obj = std.json.ObjectMap.init(self.allocator);
+        var obj = std.json.ObjectMap.empty;
         try obj.put("total_cost", .{ .float = total_cost });
         try obj.put("total_requests", .{ .integer = @intCast(costs.len) });
         try obj.put("total_input_tokens", .{ .integer = @intCast(total_input_tokens) });

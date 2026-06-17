@@ -7,7 +7,6 @@
 /// - Load balancing: Distribute requests across multiple agents ✅
 /// - Health checks: Kubernetes-style probes with monitoring ✅
 /// - Enhanced retry: Jitter, error classification, budget awareness ✅
-
 pub const checkpointing = struct {
     pub const Checkpoint = @import("checkpointing/checkpoint.zig").Checkpoint;
     pub const CheckpointStorage = @import("checkpointing/storage.zig").CheckpointStorage;

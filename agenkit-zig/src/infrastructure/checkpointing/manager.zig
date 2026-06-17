@@ -74,12 +74,12 @@ pub const CheckpointManager = struct {
                 return .{ .array = array_copy };
             },
             .object => |obj| {
-                var object_copy = std.json.ObjectMap.init(self.allocator);
+                var object_copy = std.json.ObjectMap.empty;
                 var iter = obj.iterator();
                 while (iter.next()) |entry| {
                     const key_copy = try self.allocator.dupe(u8, entry.key_ptr.*);
                     const value_copy = try self.deepCopyJsonValue(entry.value_ptr.*);
-                    try object_copy.put(key_copy, value_copy);
+                    try object_copy.put(self.allocator, key_copy, value_copy);
                 }
                 return .{ .object = object_copy };
             },
@@ -315,33 +315,33 @@ pub const CheckpointManager = struct {
         }
 
         if (checkpoints.len == 0) {
-            var obj = std.json.ObjectMap.init(self.allocator);
-            try obj.put("total_checkpoints", .{ .integer = 0 });
-            try obj.put("first_checkpoint", .null);
-            try obj.put("latest_checkpoint", .null);
-            try obj.put("steps_covered", .{ .integer = 0 });
+            var obj = std.json.ObjectMap.empty;
+            try obj.put(self.allocator, "total_checkpoints", .{ .integer = 0 });
+            try obj.put(self.allocator, "first_checkpoint", .null);
+            try obj.put(self.allocator, "latest_checkpoint", .null);
+            try obj.put(self.allocator, "steps_covered", .{ .integer = 0 });
             return std.json.Value{ .object = obj };
         }
 
         const first_checkpoint = checkpoints[checkpoints.len - 1];
         const latest_checkpoint = checkpoints[0];
 
-        var obj = std.json.ObjectMap.init(self.allocator);
-        try obj.put("total_checkpoints", .{ .integer = @intCast(checkpoints.len) });
-        try obj.put("first_checkpoint", .{ .string = first_checkpoint.checkpoint_id });
-        try obj.put("latest_checkpoint", .{ .string = latest_checkpoint.checkpoint_id });
-        try obj.put("first_step", .{ .integer = @intCast(first_checkpoint.step_number) });
-        try obj.put("latest_step", .{ .integer = @intCast(latest_checkpoint.step_number) });
+        var obj = std.json.ObjectMap.empty;
+        try obj.put(self.allocator, "total_checkpoints", .{ .integer = @intCast(checkpoints.len) });
+        try obj.put(self.allocator, "first_checkpoint", .{ .string = first_checkpoint.checkpoint_id });
+        try obj.put(self.allocator, "latest_checkpoint", .{ .string = latest_checkpoint.checkpoint_id });
+        try obj.put(self.allocator, "first_step", .{ .integer = @intCast(first_checkpoint.step_number) });
+        try obj.put(self.allocator, "latest_step", .{ .integer = @intCast(latest_checkpoint.step_number) });
 
         // Calculate steps_covered safely (handle case where order might be reversed)
         const steps_covered = if (latest_checkpoint.step_number >= first_checkpoint.step_number)
             latest_checkpoint.step_number - first_checkpoint.step_number
         else
             0;
-        try obj.put("steps_covered", .{ .integer = @intCast(steps_covered) });
+        try obj.put(self.allocator, "steps_covered", .{ .integer = @intCast(steps_covered) });
 
         const time_span = @as(f64, @floatFromInt(latest_checkpoint.timestamp - first_checkpoint.timestamp)) / 1000.0;
-        try obj.put("time_span_seconds", .{ .float = time_span });
+        try obj.put(self.allocator, "time_span_seconds", .{ .float = time_span });
 
         return std.json.Value{ .object = obj };
     }
@@ -436,7 +436,7 @@ test "CheckpointManager createCheckpoint and getLatest" {
     defer manager.deinit();
 
     // Create empty state
-    var state = std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
+    var state = std.json.Value{ .object = std.json.ObjectMap.empty };
     defer state.object.deinit();
 
     const messages = try allocator.alloc(Message, 0);
@@ -480,7 +480,7 @@ test "CheckpointManager deleteSession" {
     defer manager.deinit();
 
     // Create empty state
-    var state = std.json.Value{ .object = std.json.ObjectMap.init(allocator) };
+    var state = std.json.Value{ .object = std.json.ObjectMap.empty };
     defer state.object.deinit();
 
     const messages = try allocator.alloc(Message, 0);

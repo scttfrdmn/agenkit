@@ -40,16 +40,17 @@ const SessionState = struct {
     resumed: bool,
 
     fn init(allocator: Allocator) SessionState {
+        _ = allocator; // containers start empty (unmanaged); allocator supplied at use sites
         return .{
-            .state = std.json.ObjectMap.init(allocator),
+            .state = std.json.ObjectMap.empty,
             .steps = 0,
-            .messages = .{},
+            .messages = .empty,
             .resumed = false,
         };
     }
 
     fn deinit(self: *SessionState, allocator: Allocator) void {
-        self.state.deinit();
+        self.state.deinit(allocator);
         for (self.messages.items) |*msg| {
             msg.deinit();
         }
@@ -244,13 +245,13 @@ pub const DurableAgent = struct {
         const session = gop.value_ptr;
 
         // Clear old state
-        session.state.deinit();
-        session.state = std.json.ObjectMap.init(self.allocator);
+        session.state.deinit(self.allocator);
+        session.state = std.json.ObjectMap.empty;
 
         // Restore state
         var iter = chkpt.?.state.object.iterator();
         while (iter.next()) |entry| {
-            try session.state.put(entry.key_ptr.*, entry.value_ptr.*);
+            try session.state.put(self.allocator, entry.key_ptr.*, entry.value_ptr.*);
         }
 
         session.steps = chkpt.?.step_number;
@@ -324,13 +325,13 @@ pub const DurableAgent = struct {
         const message_count_val = session.state.get("message_count") orelse std.json.Value{ .integer = 0 };
         const message_count = if (message_count_val == .integer) @as(i64, message_count_val.integer) else 0;
 
-        try session.state.put("message_count", std.json.Value{ .integer = message_count + 1 });
+        try session.state.put(self.allocator, "message_count", std.json.Value{ .integer = message_count + 1 });
 
         const input_text = try input_message.contentAsText();
         const output_text = try output_message.contentAsText();
 
-        try session.state.put("last_input", std.json.Value{ .string = input_text });
-        try session.state.put("last_output", std.json.Value{ .string = output_text });
+        try session.state.put(self.allocator, "last_input", std.json.Value{ .string = input_text });
+        try session.state.put(self.allocator, "last_output", std.json.Value{ .string = output_text });
     }
 
     /// List checkpoints for session.
@@ -351,9 +352,9 @@ pub const DurableAgent = struct {
 
         const session = self.sessions.get(session_id);
         if (session) |s| {
-            try checkpoint_stats.object.put("current_step", std.json.Value{ .integer = @intCast(s.steps) });
-            try checkpoint_stats.object.put("message_count", std.json.Value{ .integer = @intCast(s.messages.items.len) });
-            try checkpoint_stats.object.put("state_size", std.json.Value{ .integer = @intCast(s.state.count()) });
+            try checkpoint_stats.object.put(self.allocator, "current_step", std.json.Value{ .integer = @intCast(s.steps) });
+            try checkpoint_stats.object.put(self.allocator, "message_count", std.json.Value{ .integer = @intCast(s.messages.items.len) });
+            try checkpoint_stats.object.put(self.allocator, "state_size", std.json.Value{ .integer = @intCast(s.state.count()) });
         }
 
         return checkpoint_stats;

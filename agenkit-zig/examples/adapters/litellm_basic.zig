@@ -126,7 +126,7 @@ fn modelRouting(allocator: std.mem.Allocator) !void {
 
     var options = llm_mod.CallOptions.init(allocator);
     defer options.deinit();
-    options.withMaxTokens(50);
+    try options.withMaxTokens(50);
 
     const response = fast_llm.complete(allocator, &messages, &options) catch |err| {
         std.debug.print("Error: {}\n", .{err});
@@ -174,7 +174,7 @@ fn costAwareRouting(allocator: std.mem.Allocator) !void {
 
     var options1 = llm_mod.CallOptions.init(allocator);
     defer options1.deinit();
-    options1.withMaxTokens(100);
+    try options1.withMaxTokens(100);
 
     const response1 = cheap_llm.complete(allocator, &messages1, &options1) catch |err| {
         std.debug.print("Error: {}\n", .{err});

@@ -8,8 +8,10 @@
 /// - Efficient serialization (JSON)
 /// - Replay with fidelity
 /// - Memory and file storage options
-
 const std = @import("std");
+const ioc = @import("../io_compat.zig");
+const agksync = @import("../sync_compat.zig");
+const agktime = @import("../time_compat.zig");
 const Allocator = std.mem.Allocator;
 const Agent = @import("../agent.zig").Agent;
 const Message = @import("../message.zig").Message;
@@ -33,7 +35,7 @@ pub const Interaction = struct {
         self.* = Interaction{
             .input = try allocator.dupe(u8, input),
             .output = try allocator.dupe(u8, output),
-            .timestamp = std.time.timestamp(),
+            .timestamp = agktime.timestamp(),
             .duration_ms = duration_ms,
             .metadata = std.StringHashMap([]const u8).init(allocator),
             .allocator = allocator,
@@ -76,9 +78,9 @@ pub const SessionTrace = struct {
         const self = try allocator.create(SessionTrace);
         self.* = SessionTrace{
             .session_id = try allocator.dupe(u8, session_id),
-            .interactions = std.ArrayList(*Interaction){},
+            .interactions = std.ArrayList(*Interaction).empty,
             .metadata = std.StringHashMap([]const u8).init(allocator),
-            .start_time = std.time.timestamp(),
+            .start_time = agktime.timestamp(),
             .end_time = 0,
             .allocator = allocator,
         };
@@ -99,13 +101,13 @@ pub const SessionTrace = struct {
 
     /// Mark trace as complete
     pub fn complete(self: *SessionTrace) void {
-        self.end_time = std.time.timestamp();
+        self.end_time = agktime.timestamp();
     }
 
     /// Get total duration in seconds
     pub fn duration(self: *const SessionTrace) f64 {
         if (self.end_time == 0) {
-            const now = std.time.timestamp();
+            const now = agktime.timestamp();
             return @as(f64, @floatFromInt(now - self.start_time));
         }
         return @as(f64, @floatFromInt(self.end_time - self.start_time));
@@ -153,7 +155,7 @@ pub const SessionRecorder = struct {
     traces: std.StringHashMap(*SessionTrace),
     active_sessions: std.StringHashMap(bool),
     allocator: Allocator,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(allocator: Allocator) !*SessionRecorder {
         const self = try allocator.create(SessionRecorder);
@@ -241,7 +243,7 @@ pub const SessionRecorder = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        var result = std.ArrayList(*SessionTrace){};
+        var result = std.ArrayList(*SessionTrace).empty;
 
         var it = self.traces.iterator();
         while (it.next()) |entry| {
@@ -308,16 +310,16 @@ pub const SessionRecorder = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        const file = try std.fs.cwd().createFile(path, .{});
-        defer file.close();
+        const file = try std.Io.Dir.cwd().createFile(ioc.io(), path, .{});
+        defer file.close(ioc.io());
 
         // Simple JSON format: array of traces
-        try file.writeAll("[");
+        try file.writeStreamingAll(ioc.io(), "[");
 
         var first = true;
         var it = self.traces.iterator();
         while (it.next()) |entry| {
-            if (!first) try file.writeAll(",");
+            if (!first) try file.writeStreamingAll(ioc.io(), ",");
             first = false;
 
             const trace = entry.value_ptr.*;
@@ -327,10 +329,10 @@ pub const SessionRecorder = struct {
                 .{ trace.session_id, trace.interactionCount() },
             );
             defer self.allocator.free(json);
-            try file.writeAll(json);
+            try file.writeStreamingAll(ioc.io(), json);
         }
 
-        try file.writeAll("]");
+        try file.writeStreamingAll(ioc.io(), "]");
     }
 
     pub fn deinit(self: *SessionRecorder) void {
@@ -574,5 +576,5 @@ test "SessionRecorder save to file" {
     try recorder.saveToFile(temp_path);
 
     // Clean up
-    std.fs.cwd().deleteFile(temp_path) catch {};
+    std.Io.Dir.cwd().deleteFile(ioc.io(), temp_path) catch {};
 }

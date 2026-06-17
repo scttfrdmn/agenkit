@@ -47,7 +47,6 @@
 ///     defer result.deinit();
 /// }
 /// ```
-
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Agent = @import("../agent.zig").Agent;
@@ -120,7 +119,7 @@ pub const AutonomousResult = struct {
             .objective = try allocator.dupe(u8, objective),
             .iterations = iterations,
             .goals_completed = goals_completed,
-            .results = std.ArrayList([]const u8){},
+            .results = std.ArrayList([]const u8).empty,
             .allocator = allocator,
         };
     }
@@ -171,7 +170,7 @@ pub const AutonomousAgent = struct {
             .allocator = allocator,
             .objective = try allocator.dupe(u8, objective),
             .max_iterations = max_iter,
-            .goals = std.ArrayList(Goal){},
+            .goals = std.ArrayList(Goal).empty,
             .iteration_count = 0,
             .is_running = false,
             .worker = defaultWorker,

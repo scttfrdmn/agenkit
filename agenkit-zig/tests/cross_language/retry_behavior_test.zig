@@ -8,6 +8,7 @@ const json = std.json;
 const testing = std.testing;
 const time = std.time;
 const agenkit = @import("agenkit");
+const agktime = agenkit.time_compat;
 const Agent = agenkit.Agent;
 const AgentError = agenkit.AgentError;
 const Message = agenkit.Message;
@@ -84,7 +85,7 @@ const MockRetryAgent = struct {
             const msg = Message{
                 .role = .agent,
                 .content = .{ .text = response.content },
-                .metadata = json.Value{ .object = json.ObjectMap.init(self.allocator) },
+                .metadata = json.Value{ .object = json.ObjectMap.empty },
                 .allocator = self.allocator,
             };
             return Result{ .ok = msg };
@@ -103,12 +104,12 @@ const MockRetryAgent = struct {
         _ = ptr;
         return IntrospectionResult{
             .allocator = allocator,
-            .timestamp = std.time.timestamp(),
+            .timestamp = agktime.timestamp(),
             .agent_name = "mock-retry-agent",
             .capabilities = try allocator.alloc([]const u8, 0),
             .memory_state = null,
-            .internal_state = json.Value{ .object = json.ObjectMap.init(allocator) },
-            .metadata = json.Value{ .object = json.ObjectMap.init(allocator) },
+            .internal_state = json.Value{ .object = json.ObjectMap.empty },
+            .metadata = json.Value{ .object = json.ObjectMap.empty },
         };
     }
 
@@ -121,10 +122,7 @@ const MockRetryAgent = struct {
 /// Load retry behavior fixtures from JSON file
 fn loadFixtures(allocator: std.mem.Allocator) !json.Parsed(json.Value) {
     const fixtures_path = "../tests/cross_language/fixtures/retry_behavior.json";
-    const file = try std.fs.cwd().openFile(fixtures_path, .{});
-    defer file.close();
-
-    const content = try file.readToEndAlloc(allocator, 1024 * 1024);
+    const content = try std.Io.Dir.cwd().readFileAlloc(agenkit.io_compat.io(), fixtures_path, allocator, .limited(1024 * 1024));
     defer allocator.free(content);
 
     return try json.parseFromSlice(json.Value, allocator, content, .{});
@@ -237,11 +235,11 @@ test "success after retry" {
     defer retry.agent().deinit();
 
     // Measure time
-    const start = time.nanoTimestamp();
+    const start = agktime.nanoTimestamp();
     var msg = try Message.withText(allocator, .user, "test");
     defer msg.deinit();
     const result = try retry.agent().process(msg);
-    const elapsed_ns = time.nanoTimestamp() - start;
+    const elapsed_ns = agktime.nanoTimestamp() - start;
     const elapsed_ms: i64 = @intCast(@divTrunc(elapsed_ns, time.ns_per_ms));
 
     // Verify expected behavior
@@ -313,11 +311,11 @@ test "exponential backoff timing" {
     defer retry.agent().deinit();
 
     // Measure time
-    const start = time.nanoTimestamp();
+    const start = agktime.nanoTimestamp();
     var msg = try Message.withText(allocator, .user, "test");
     defer msg.deinit();
     const result = try retry.agent().process(msg);
-    const elapsed_ns = time.nanoTimestamp() - start;
+    const elapsed_ns = agktime.nanoTimestamp() - start;
     const elapsed_ms: i64 = @intCast(@divTrunc(elapsed_ns, time.ns_per_ms));
 
     // Verify expected behavior
@@ -354,11 +352,11 @@ test "max backoff cap" {
     defer retry.agent().deinit();
 
     // Measure time
-    const start = time.nanoTimestamp();
+    const start = agktime.nanoTimestamp();
     var msg = try Message.withText(allocator, .user, "test");
     defer msg.deinit();
     const result = try retry.agent().process(msg);
-    const elapsed_ns = time.nanoTimestamp() - start;
+    const elapsed_ns = agktime.nanoTimestamp() - start;
     const elapsed_ms: i64 = @intCast(@divTrunc(elapsed_ns, time.ns_per_ms));
 
     // Verify expected behavior

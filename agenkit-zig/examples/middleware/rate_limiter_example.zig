@@ -7,6 +7,7 @@
 /// 4. Observe token refill behavior
 
 const std = @import("std");
+const agktime = @import("../../src/time_compat.zig");
 const agenkit = @import("agenkit");
 
 // Echo agent that simply returns the message
@@ -126,7 +127,7 @@ fn basicRateLimitingExample(allocator: std.mem.Allocator) !void {
     defer message.deinit();
 
     std.debug.print("  Sending 5 requests (should succeed immediately)...\\n", .{});
-    const start_time = std.time.milliTimestamp();
+    const start_time = agktime.milliTimestamp();
 
     var i: u32 = 0;
     while (i < 5) : (i += 1) {
@@ -136,7 +137,7 @@ fn basicRateLimitingExample(allocator: std.mem.Allocator) !void {
         std.debug.print("    Request {d}: SUCCESS\\n", .{i + 1});
     }
 
-    const elapsed_ms = std.time.milliTimestamp() - start_time;
+    const elapsed_ms = agktime.milliTimestamp() - start_time;
     std.debug.print("  Completed in {d}ms\\n", .{elapsed_ms});
 
     const metrics = limiter.metrics();
@@ -166,7 +167,7 @@ fn burstCapacityExample(allocator: std.mem.Allocator) !void {
     defer message.deinit();
 
     std.debug.print("  Sending 30 requests in burst...\\n", .{});
-    const start_time = std.time.milliTimestamp();
+    const start_time = agktime.milliTimestamp();
 
     var i: u32 = 0;
     while (i < 30) : (i += 1) {
@@ -181,7 +182,7 @@ fn burstCapacityExample(allocator: std.mem.Allocator) !void {
         }
     }
 
-    const elapsed_ms = std.time.milliTimestamp() - start_time;
+    const elapsed_ms = agktime.milliTimestamp() - start_time;
     std.debug.print("  Completed in {d}ms\\n", .{elapsed_ms});
 
     const metrics = limiter.metrics();
@@ -223,13 +224,13 @@ fn tokenRefillExample(allocator: std.mem.Allocator) !void {
 
     // Wait for refill
     std.debug.print("  Waiting 1 second for refill...\\n", .{});
-    std.time.sleep(1000 * std.time.ns_per_ms);
+    agktime.sleep(1000 * std.time.ns_per_ms);
 
     // Send one more request (should wait for tokens)
     std.debug.print("  Sending request (will wait for tokens)...\\n", .{});
-    const start_time = std.time.milliTimestamp();
+    const start_time = agktime.milliTimestamp();
     const result = try limiter.agent().process(message);
-    const elapsed_ms = std.time.milliTimestamp() - start_time;
+    const elapsed_ms = agktime.milliTimestamp() - start_time;
     var response = try result.unwrap();
     response.deinit();
 
@@ -259,7 +260,7 @@ fn metricsExample(allocator: std.mem.Allocator) !void {
 
     // Send 150 requests
     std.debug.print("  Sending 150 requests...\\n", .{});
-    const start_time = std.time.milliTimestamp();
+    const start_time = agktime.milliTimestamp();
 
     var i: u32 = 0;
     while (i < 150) : (i += 1) {
@@ -269,12 +270,12 @@ fn metricsExample(allocator: std.mem.Allocator) !void {
 
         // Print progress every 50 requests
         if ((i + 1) % 50 == 0) {
-            const elapsed_ms = std.time.milliTimestamp() - start_time;
+            const elapsed_ms = agktime.milliTimestamp() - start_time;
             std.debug.print("    Completed {d} requests in {d}ms\\n", .{ i + 1, elapsed_ms });
         }
     }
 
-    const total_time = std.time.milliTimestamp() - start_time;
+    const total_time = agktime.milliTimestamp() - start_time;
     const metrics = limiter.metrics();
 
     std.debug.print("\\n  Final Metrics:\\n", .{});

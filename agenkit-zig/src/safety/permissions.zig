@@ -85,12 +85,12 @@ pub const Sandbox = struct {
 
     pub fn init(allocator: Allocator, config: Config) !Sandbox {
         var sandbox = Sandbox{
-            .allowed_paths = std.ArrayList([]const u8){},
-            .denied_paths = std.ArrayList([]const u8){},
+            .allowed_paths = std.ArrayList([]const u8).empty,
+            .denied_paths = std.ArrayList([]const u8).empty,
             .allowed_commands = StringHashMap(void).init(allocator),
             .denied_commands = StringHashMap(void).init(allocator),
-            .allowed_domains = std.ArrayList([]const u8){},
-            .denied_domains = std.ArrayList([]const u8){},
+            .allowed_domains = std.ArrayList([]const u8).empty,
+            .denied_domains = std.ArrayList([]const u8).empty,
             .max_file_size = config.max_file_size,
             .max_execution_time = config.max_execution_time,
             .max_memory_mb = config.max_memory_mb,

@@ -24,8 +24,9 @@
 /// const tools = try cli.listTools(allocator);
 /// defer allocator.free(tools);
 /// ```
-
 const std = @import("std");
+const ioc = @import("../io_compat.zig");
+const agksync = @import("../sync_compat.zig");
 const Allocator = std.mem.Allocator;
 
 // ── Protocol constants ────────────────────────────────────────────────────────
@@ -86,7 +87,7 @@ pub const McpServerInfo = struct {
 /// Concatenate all text-type content blocks, separated by spaces.
 /// Caller owns the returned slice.
 pub fn textContent(allocator: Allocator, contents: []const McpContent) ![]u8 {
-    var parts = std.ArrayList(u8){};
+    var parts = std.ArrayList(u8).empty;
     defer parts.deinit(allocator);
     for (contents) |c| {
         if (std.mem.eql(u8, c.type, "text") and c.text.len > 0) {
@@ -151,7 +152,7 @@ pub const StdioClient = struct {
     args: []const []const u8,
     child: ?std.process.Child = null,
     next_id: u64 = 1,
-    mutex: std.Thread.Mutex = .{},
+    mutex: agksync.Mutex = .{},
     server_info_data: McpServerInfo = .{},
 
     pub fn init(allocator: Allocator, command: []const u8, args: []const []const u8) StdioClient {
@@ -184,15 +185,16 @@ pub const StdioClient = struct {
         argv[0] = self.command;
         for (self.args, 0..) |a, i| argv[i + 1] = a;
 
-        var child = std.process.Child.init(argv, self.allocator);
-        child.stdin_behavior = .Pipe;
-        child.stdout_behavior = .Pipe;
-        child.stderr_behavior = .Ignore;
-        try child.spawn();
+        const child = try std.process.spawn(ioc.io(), .{
+            .argv = argv,
+            .stdin = .pipe,
+            .stdout = .pipe,
+            .stderr = .ignore,
+        });
         self.child = child;
 
         // Build initialize params
-        var params_str = std.ArrayList(u8){};
+        var params_str = std.ArrayList(u8).empty;
         defer params_str.deinit(self.allocator);
         try params_str.appendSlice(self.allocator, "{\"protocolVersion\":\"");
         try params_str.appendSlice(self.allocator, PROTOCOL_VERSION);
@@ -244,7 +246,7 @@ pub const StdioClient = struct {
         const args_str = try std.json.Stringify.valueAlloc(self.allocator, args, .{});
         defer self.allocator.free(args_str);
 
-        var params_json = std.ArrayList(u8){};
+        var params_json = std.ArrayList(u8).empty;
         defer params_json.deinit(self.allocator);
         try params_json.appendSlice(self.allocator, "{\"name\":\"");
         try params_json.appendSlice(self.allocator, name);
@@ -269,9 +271,9 @@ pub const StdioClient = struct {
     fn deinitImpl(ptr: *anyopaque) void {
         const self: *StdioClient = @ptrCast(@alignCast(ptr));
         if (self.child) |*child| {
-            if (child.stdin) |stdin| stdin.close();
+            if (child.stdin) |stdin| stdin.close(ioc.io());
             child.stdin = null;
-            _ = child.wait() catch {};
+            _ = child.wait(ioc.io()) catch {};
         }
         if (self.server_info_data.name.len > 0) self.allocator.free(self.server_info_data.name);
         if (self.server_info_data.version.len > 0) self.allocator.free(self.server_info_data.version);
@@ -292,7 +294,7 @@ pub const StdioClient = struct {
         self.next_id += 1;
 
         // Build request line into a buffer
-        var line = std.ArrayList(u8){};
+        var line = std.ArrayList(u8).empty;
         defer line.deinit(self.allocator);
 
         // "{\"jsonrpc\":\"2.0\",\"id\":<id>,\"method\":\"<method>\""
@@ -314,11 +316,11 @@ pub const StdioClient = struct {
         try line.append(self.allocator, '}');
         try line.append(self.allocator, '\n');
 
-        try stdin_file.writeAll(line.items);
+        try stdin_file.writeStreamingAll(ioc.io(), line.items);
 
         // Read response line
         var read_buf: [65536]u8 = undefined;
-        var file_reader = stdout_file.reader(&read_buf);
+        var file_reader = stdout_file.reader(ioc.io(), &read_buf);
         const resp_line = try file_reader.interface.takeDelimiterExclusive('\n');
         const resp_owned = try self.allocator.dupe(u8, resp_line);
         defer self.allocator.free(resp_owned);
@@ -331,12 +333,12 @@ pub const StdioClient = struct {
         const child = &(self.child orelse return error.NotInitialized);
         const stdin_file = child.stdin orelse return error.NotInitialized;
 
-        var line = std.ArrayList(u8){};
+        var line = std.ArrayList(u8).empty;
         defer line.deinit(self.allocator);
         try line.appendSlice(self.allocator, "{\"jsonrpc\":\"2.0\",\"method\":\"");
         try line.appendSlice(self.allocator, method);
         try line.appendSlice(self.allocator, "\"}\n");
-        try stdin_file.writeAll(line.items);
+        try stdin_file.writeStreamingAll(ioc.io(), line.items);
     }
 };
 
@@ -374,7 +376,7 @@ pub const HttpClient = struct {
     fn initializeImpl(ptr: *anyopaque) !void {
         const self: *HttpClient = @ptrCast(@alignCast(ptr));
 
-        var params_str = std.ArrayList(u8){};
+        var params_str = std.ArrayList(u8).empty;
         defer params_str.deinit(self.allocator);
         try params_str.appendSlice(self.allocator, "{\"protocolVersion\":\"");
         try params_str.appendSlice(self.allocator, PROTOCOL_VERSION);
@@ -416,7 +418,7 @@ pub const HttpClient = struct {
         const args_str = try std.json.Stringify.valueAlloc(self.allocator, args, .{});
         defer self.allocator.free(args_str);
 
-        var params_json = std.ArrayList(u8){};
+        var params_json = std.ArrayList(u8).empty;
         defer params_json.deinit(self.allocator);
         try params_json.appendSlice(self.allocator, "{\"name\":\"");
         try params_json.appendSlice(self.allocator, name);
@@ -451,7 +453,7 @@ pub const HttpClient = struct {
         self.next_id += 1;
 
         // Build request body
-        var body = std.ArrayList(u8){};
+        var body = std.ArrayList(u8).empty;
         defer body.deinit(self.allocator);
 
         try body.appendSlice(self.allocator, "{\"jsonrpc\":\"2.0\",\"id\":");
@@ -472,14 +474,14 @@ pub const HttpClient = struct {
         try body.append(self.allocator, '}');
 
         // Make HTTP request
-        var http_client = std.http.Client{ .allocator = self.allocator };
+        var http_client = std.http.Client{ .allocator = self.allocator, .io = ioc.io() };
         defer http_client.deinit();
 
         const headers = [_]std.http.Header{
             .{ .name = "Content-Type", .value = "application/json" },
         };
 
-        var response_body: std.io.Writer.Allocating = .init(self.allocator);
+        var response_body: std.Io.Writer.Allocating = .init(self.allocator);
         defer response_body.deinit();
 
         const result = try http_client.fetch(.{
@@ -568,11 +570,11 @@ pub const McpServer = struct {
 
     /// Serve MCP protocol over stdin/stdout until EOF.
     pub fn serveStdio(self: *McpServer) !void {
-        const stdin_file = std.fs.File.stdin();
-        const stdout_file = std.fs.File.stdout();
+        const stdin_file = std.Io.File.stdin();
+        const stdout_file = std.Io.File.stdout();
 
         var read_buf: [65536]u8 = undefined;
-        var file_reader = stdin_file.reader(&read_buf);
+        var file_reader = stdin_file.reader(ioc.io(), &read_buf);
 
         while (true) {
             const line = file_reader.interface.takeDelimiterExclusive('\n') catch |err| switch (err) {
@@ -591,7 +593,7 @@ pub const McpServer = struct {
             if (response.len == 0) continue;
 
             var write_buf: [4096]u8 = undefined;
-            var file_writer = stdout_file.writer(&write_buf);
+            var file_writer = stdout_file.writer(ioc.io(), &write_buf);
             try file_writer.interface.writeAll(response);
             try file_writer.interface.writeByte('\n');
             try file_writer.interface.flush();
@@ -614,7 +616,7 @@ pub const McpServer = struct {
     }
 
     fn handleInitialize(self: *McpServer, id: u64) ![]u8 {
-        var buf = std.ArrayList(u8){};
+        var buf = std.ArrayList(u8).empty;
         defer buf.deinit(self.allocator);
         var id_buf: [24]u8 = undefined;
         const id_str = std.fmt.bufPrint(&id_buf, "{d}", .{id}) catch unreachable;
@@ -631,7 +633,7 @@ pub const McpServer = struct {
     }
 
     fn handleToolsList(self: *McpServer, id: u64) ![]u8 {
-        var buf = std.ArrayList(u8){};
+        var buf = std.ArrayList(u8).empty;
         defer buf.deinit(self.allocator);
         var id_buf: [24]u8 = undefined;
         const id_str = std.fmt.bufPrint(&id_buf, "{d}", .{id}) catch unreachable;
@@ -668,7 +670,7 @@ pub const McpServer = struct {
                 return self.errorResponse(id, -32603, "Tool execution failed");
             };
 
-            var buf = std.ArrayList(u8){};
+            var buf = std.ArrayList(u8).empty;
             defer buf.deinit(self.allocator);
             var id_buf: [24]u8 = undefined;
             const id_str = std.fmt.bufPrint(&id_buf, "{d}", .{id}) catch unreachable;
@@ -693,7 +695,7 @@ pub const McpServer = struct {
     }
 
     fn errorResponse(self: *McpServer, id: u64, code: i32, message: []const u8) ![]u8 {
-        var buf = std.ArrayList(u8){};
+        var buf = std.ArrayList(u8).empty;
         defer buf.deinit(self.allocator);
         var id_buf: [24]u8 = undefined;
         const id_str = std.fmt.bufPrint(&id_buf, "{d}", .{id}) catch unreachable;
@@ -916,14 +918,14 @@ fn deepCloneJsonValue(allocator: Allocator, value: std.json.Value) !std.json.Val
             return std.json.Value{ .array = new_arr };
         },
         .object => |obj| {
-            var new_obj = std.json.ObjectMap.init(allocator);
-            errdefer new_obj.deinit();
+            var new_obj = std.json.ObjectMap.empty;
+            errdefer new_obj.deinit(allocator);
             var it = obj.iterator();
             while (it.next()) |entry| {
                 const key = try allocator.dupe(u8, entry.key_ptr.*);
                 errdefer allocator.free(key);
                 const val = try deepCloneJsonValue(allocator, entry.value_ptr.*);
-                try new_obj.put(key, val);
+                try new_obj.put(allocator, key, val);
             }
             return std.json.Value{ .object = new_obj };
         },
@@ -946,7 +948,7 @@ fn freeJsonValue(allocator: Allocator, value: std.json.Value) void {
                 freeJsonValue(allocator, entry.value_ptr.*);
             }
             var mut_obj = obj;
-            mut_obj.deinit();
+            mut_obj.deinit(allocator);
         },
         else => {},
     }

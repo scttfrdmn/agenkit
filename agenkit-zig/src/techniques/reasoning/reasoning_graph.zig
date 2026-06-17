@@ -10,7 +10,6 @@
 /// - Path aggregation
 ///
 /// Reference: Graph-of-Thought paper: https://arxiv.org/abs/2308.09687
-
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
@@ -72,7 +71,7 @@ pub const ReasoningGraph = struct {
         return ReasoningGraph{
             .allocator = allocator,
             .nodes = std.AutoHashMap(usize, ThoughtNode).init(allocator),
-            .edges = std.ArrayList(LogicalEdge).init(allocator),
+            .edges = std.ArrayList(LogicalEdge).empty,
             .next_id = 0,
             .outgoing = std.AutoHashMap(usize, std.ArrayList(usize)).init(allocator),
             .incoming = std.AutoHashMap(usize, std.ArrayList(usize)).init(allocator),
@@ -117,8 +116,8 @@ pub const ReasoningGraph = struct {
         };
 
         try self.nodes.put(node_id, node);
-        try self.outgoing.put(node_id, std.ArrayList(usize).init(self.allocator));
-        try self.incoming.put(node_id, std.ArrayList(usize).init(self.allocator));
+        try self.outgoing.put(node_id, std.ArrayList(usize).empty);
+        try self.incoming.put(node_id, std.ArrayList(usize).empty);
 
         return node_id;
     }
@@ -152,7 +151,7 @@ pub const ReasoningGraph = struct {
 
     /// Get all premise nodes
     pub fn getPremises(self: *const ReasoningGraph, allocator: Allocator) ![]const *const ThoughtNode {
-        var premises = std.ArrayList(*const ThoughtNode).init(allocator);
+        var premises = std.ArrayList(*const ThoughtNode).empty;
         defer premises.deinit();
 
         var iter = self.nodes.valueIterator();
@@ -167,7 +166,7 @@ pub const ReasoningGraph = struct {
 
     /// Get all conclusion nodes
     pub fn getConclusions(self: *const ReasoningGraph, allocator: Allocator) ![]const *const ThoughtNode {
-        var conclusions = std.ArrayList(*const ThoughtNode).init(allocator);
+        var conclusions = std.ArrayList(*const ThoughtNode).empty;
         defer conclusions.deinit();
 
         var iter = self.nodes.valueIterator();
@@ -182,7 +181,7 @@ pub const ReasoningGraph = struct {
 
     /// Find all paths from start to end node
     pub fn findPaths(self: *const ReasoningGraph, allocator: Allocator, start: usize, end: usize, max_length: usize) ![][]usize {
-        var paths = std.ArrayList([]usize).init(allocator);
+        var paths = std.ArrayList([]usize).empty;
         defer {
             for (paths.items) |path| {
                 allocator.free(path);
@@ -193,7 +192,7 @@ pub const ReasoningGraph = struct {
         var visited = std.AutoHashMap(usize, void).init(allocator);
         defer visited.deinit();
 
-        var current_path = std.ArrayList(usize).init(allocator);
+        var current_path = std.ArrayList(usize).empty;
         defer current_path.deinit();
 
         try self.dfsPath(allocator, start, end, max_length, &visited, &current_path, &paths);

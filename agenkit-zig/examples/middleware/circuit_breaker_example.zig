@@ -7,6 +7,7 @@
 /// 4. Handle rejected requests when circuit is open
 
 const std = @import("std");
+const agktime = @import("../../src/time_compat.zig");
 const agenkit = @import("agenkit");
 
 // Unreliable agent that fails based on configuration
@@ -195,7 +196,7 @@ fn circuitRecoveryExample(allocator: std.mem.Allocator) !void {
 
     // Step 2: Wait for recovery timeout
     std.debug.print("  Step 2: Waiting for recovery timeout (100ms)...\n", .{});
-    std.time.sleep(150 * std.time.ns_per_ms);
+    agktime.sleep(150 * std.time.ns_per_ms);
 
     // Step 3: Service recovers
     unreliable.setFailure(false);
@@ -247,7 +248,7 @@ fn halfOpenFailureExample(allocator: std.mem.Allocator) !void {
 
     // Step 2: Wait for recovery
     std.debug.print("  Step 2: Waiting for recovery timeout...\n", .{});
-    std.time.sleep(150 * std.time.ns_per_ms);
+    agktime.sleep(150 * std.time.ns_per_ms);
 
     // Step 3: Service still failing - fails in HALF_OPEN
     std.debug.print("  Step 3: Service still failing...\n", .{});
@@ -296,7 +297,7 @@ fn metricsExample(allocator: std.mem.Allocator) !void {
 
         // Add small delay to avoid opening circuit too fast
         if (i % 3 == 2) {
-            std.time.sleep(50 * std.time.ns_per_ms);
+            agktime.sleep(50 * std.time.ns_per_ms);
         }
     }
 
@@ -309,6 +310,6 @@ fn metricsExample(allocator: std.mem.Allocator) !void {
     std.debug.print("    Rejected:            {d}\n", .{metrics.rejected_requests});
     std.debug.print("    Current state:       {s}\n", .{metrics.current_state.toString()});
     if (metrics.last_state_change_ms) |timestamp| {
-        std.debug.print("    Last state change:   {d}ms ago\n", .{std.time.milliTimestamp() - timestamp});
+        std.debug.print("    Last state change:   {d}ms ago\n", .{agktime.milliTimestamp() - timestamp});
     }
 }

@@ -134,7 +134,7 @@ pub fn main() !void {
     // Step 10: Get statistics
     std.debug.print("10. Session statistics:\n", .{});
     var stats = try durable.getSessionStats(session_id);
-    defer stats.object.deinit();
+    defer stats.object.deinit(allocator);
 
     if (stats.object.get("total_checkpoints")) |total| {
         std.debug.print("   Total checkpoints: {d}\n", .{total.integer});

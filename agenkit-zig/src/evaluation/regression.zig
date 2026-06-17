@@ -9,8 +9,8 @@
 /// - Configurable thresholds per metric
 /// - Severity classification
 /// - Actionable regression reports
-
 const std = @import("std");
+const agksync = @import("../sync_compat.zig");
 const Allocator = std.mem.Allocator;
 
 /// Severity level of a detected regression
@@ -130,7 +130,7 @@ pub const BaselineMeasurement = struct {
     pub fn init(allocator: Allocator) !*BaselineMeasurement {
         const self = try allocator.create(BaselineMeasurement);
         self.* = BaselineMeasurement{
-            .samples = std.ArrayList(f64){},
+            .samples = std.ArrayList(f64).empty,
             .mean = 0.0,
             .std_dev = 0.0,
             .allocator = allocator,
@@ -183,7 +183,7 @@ pub const RegressionDetector = struct {
     thresholds: std.StringHashMap(f64),
     config: RegressionConfig,
     allocator: Allocator,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(allocator: Allocator, config: RegressionConfig) !*RegressionDetector {
         const self = try allocator.create(RegressionDetector);
@@ -260,7 +260,7 @@ pub const RegressionDetector = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        var regressions = std.ArrayList(*Regression){};
+        var regressions = std.ArrayList(*Regression).empty;
 
         // Check each metric in current against baseline
         var current_it = current.iterator();

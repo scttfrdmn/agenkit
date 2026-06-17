@@ -7,7 +7,6 @@
 /// - Explicit memory management with allocators
 /// - Type-safe metric definitions
 /// - Composable evaluation components
-
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const Message = @import("../message.zig").Message;
@@ -165,7 +164,7 @@ pub const EvaluationResult = struct {
             .n_cases = 0,
             .n_passed = 0,
             .metrics = std.StringHashMap(f64).init(allocator),
-            .errors = std.ArrayList(*ErrorRecord){},
+            .errors = std.ArrayList(*ErrorRecord).empty,
             .allocator = allocator,
         };
         return self;

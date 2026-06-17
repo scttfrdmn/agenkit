@@ -20,6 +20,8 @@
 /// const metrics = retry.metrics();
 /// ```
 const std = @import("std");
+const agksync = @import("../sync_compat.zig");
+const agktime = @import("../time_compat.zig");
 const json = std.json;
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
@@ -104,7 +106,7 @@ pub const RetryDecorator = struct {
     inner_agent: Agent,
     config: RetryConfig,
     metrics_data: RetryMetrics,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(allocator: Allocator, inner_agent: Agent, config: RetryConfig) !*RetryDecorator {
         // Validate configuration
@@ -116,7 +118,7 @@ pub const RetryDecorator = struct {
             .inner_agent = inner_agent,
             .config = config,
             .metrics_data = RetryMetrics{},
-            .mutex = std.Thread.Mutex{},
+            .mutex = agksync.Mutex{},
         };
         return self;
     }
@@ -211,7 +213,7 @@ pub const RetryDecorator = struct {
             self.mutex.unlock();
 
             // Wait before retrying (exponential backoff)
-            std.Thread.sleep(backoff_ms * std.time.ns_per_ms);
+            agktime.sleep(backoff_ms * std.time.ns_per_ms);
 
             // Calculate next backoff
             const next_backoff = @as(f64, @floatFromInt(backoff_ms)) * self.config.multiplier;
@@ -235,18 +237,18 @@ pub const RetryDecorator = struct {
         // Add retry metrics to metadata
         const metrics_snapshot = self.metrics();
 
-        var metadata_map = json.ObjectMap.init(allocator);
-        errdefer metadata_map.deinit();
+        var metadata_map = json.ObjectMap.empty;
+        errdefer metadata_map.deinit(allocator);
 
         // Add metrics as metadata
-        try metadata_map.put("total_attempts", json.Value{ .integer = @intCast(metrics_snapshot.total_attempts) });
-        try metadata_map.put("successful_first_attempt", json.Value{ .integer = @intCast(metrics_snapshot.successful_first_attempt) });
-        try metadata_map.put("successful_on_retry", json.Value{ .integer = @intCast(metrics_snapshot.successful_on_retry) });
-        try metadata_map.put("failed_after_retries", json.Value{ .integer = @intCast(metrics_snapshot.failed_after_retries) });
-        try metadata_map.put("total_retries", json.Value{ .integer = @intCast(metrics_snapshot.total_retries) });
-        try metadata_map.put("max_retries", json.Value{ .integer = @intCast(self.config.max_retries) });
-        try metadata_map.put("initial_delay_ms", json.Value{ .integer = @intCast(self.config.initial_delay_ms) });
-        try metadata_map.put("max_delay_ms", json.Value{ .integer = @intCast(self.config.max_delay_ms) });
+        try metadata_map.put(allocator, "total_attempts", json.Value{ .integer = @intCast(metrics_snapshot.total_attempts) });
+        try metadata_map.put(allocator, "successful_first_attempt", json.Value{ .integer = @intCast(metrics_snapshot.successful_first_attempt) });
+        try metadata_map.put(allocator, "successful_on_retry", json.Value{ .integer = @intCast(metrics_snapshot.successful_on_retry) });
+        try metadata_map.put(allocator, "failed_after_retries", json.Value{ .integer = @intCast(metrics_snapshot.failed_after_retries) });
+        try metadata_map.put(allocator, "total_retries", json.Value{ .integer = @intCast(metrics_snapshot.total_retries) });
+        try metadata_map.put(allocator, "max_retries", json.Value{ .integer = @intCast(self.config.max_retries) });
+        try metadata_map.put(allocator, "initial_delay_ms", json.Value{ .integer = @intCast(self.config.initial_delay_ms) });
+        try metadata_map.put(allocator, "max_delay_ms", json.Value{ .integer = @intCast(self.config.max_delay_ms) });
 
         // Merge with inner metadata (if it's an object)
         if (inner_result.metadata == .object) {
@@ -255,14 +257,14 @@ pub const RetryDecorator = struct {
                 // Inner metadata wins for non-metric keys
                 const key = entry.key_ptr.*;
                 if (!std.mem.startsWith(u8, key, "retry_")) {
-                    try metadata_map.put(key, entry.value_ptr.*);
+                    try metadata_map.put(allocator, key, entry.value_ptr.*);
                 }
             }
         }
 
         return IntrospectionResult{
             .allocator = allocator,
-            .timestamp = std.time.timestamp(),
+            .timestamp = agktime.timestamp(),
             .agent_name = inner_result.agent_name,
             .capabilities = inner_result.capabilities,
             .memory_state = inner_result.memory_state,
@@ -281,12 +283,11 @@ pub const RetryDecorator = struct {
 // Tests
 const testing = std.testing;
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "RetryConfig validation" {
     var config = RetryConfig{};

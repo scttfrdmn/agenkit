@@ -9,8 +9,9 @@
 /// - Time-based session tracking
 /// - Flexible metric aggregation
 /// - JSON serialization support
-
 const std = @import("std");
+const agksync = @import("../sync_compat.zig");
+const agktime = @import("../time_compat.zig");
 const Allocator = std.mem.Allocator;
 
 /// Session execution status
@@ -108,7 +109,7 @@ pub const MetricMeasurement = struct {
         self.* = MetricMeasurement{
             .metric_type = metric_type,
             .value = value,
-            .timestamp = std.time.timestamp(),
+            .timestamp = agktime.timestamp(),
             .session_id = try allocator.dupe(u8, session_id),
             .allocator = allocator,
         };
@@ -143,7 +144,7 @@ pub const SessionResult = struct {
             .agent_name = try allocator.dupe(u8, agent_name),
             .status = .running,
             .metrics = std.StringHashMap(f64).init(allocator),
-            .start_time = std.time.timestamp(),
+            .start_time = agktime.timestamp(),
             .end_time = 0,
             .error_message = null,
             .allocator = allocator,
@@ -155,7 +156,7 @@ pub const SessionResult = struct {
     pub fn duration(self: *const SessionResult) f64 {
         if (self.end_time == 0) {
             // Session still running, use current time
-            const now = std.time.timestamp();
+            const now = agktime.timestamp();
             return @as(f64, @floatFromInt(now - self.start_time));
         }
         return @as(f64, @floatFromInt(self.end_time - self.start_time));
@@ -164,13 +165,13 @@ pub const SessionResult = struct {
     /// Mark session as completed
     pub fn complete(self: *SessionResult) void {
         self.status = .completed;
-        self.end_time = std.time.timestamp();
+        self.end_time = agktime.timestamp();
     }
 
     /// Mark session as failed with error message
     pub fn fail(self: *SessionResult, error_msg: []const u8) !void {
         self.status = .failed;
-        self.end_time = std.time.timestamp();
+        self.end_time = agktime.timestamp();
         self.error_message = try self.allocator.dupe(u8, error_msg);
     }
 
@@ -230,12 +231,12 @@ pub const Statistics = struct {
 pub const MetricsCollector = struct {
     sessions: std.ArrayList(*SessionResult),
     allocator: Allocator,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(allocator: Allocator) !*MetricsCollector {
         const self = try allocator.create(MetricsCollector);
         self.* = .{
-            .sessions = std.ArrayList(*SessionResult){},
+            .sessions = std.ArrayList(*SessionResult).empty,
             .allocator = allocator,
             .mutex = .{},
         };
@@ -334,7 +335,7 @@ pub const MetricsCollector = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        var filtered = std.ArrayList(*SessionResult){};
+        var filtered = std.ArrayList(*SessionResult).empty;
 
         for (self.sessions.items) |session| {
             if (std.mem.eql(u8, session.agent_name, agent_name)) {
@@ -354,7 +355,7 @@ pub const MetricsCollector = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        var filtered = std.ArrayList(*SessionResult){};
+        var filtered = std.ArrayList(*SessionResult).empty;
 
         for (self.sessions.items) |session| {
             if (session.status == status) {
@@ -375,7 +376,7 @@ pub const MetricsCollector = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        var filtered = std.ArrayList(*SessionResult){};
+        var filtered = std.ArrayList(*SessionResult).empty;
 
         for (self.sessions.items) |session| {
             if (session.start_time >= start and session.start_time <= end) {

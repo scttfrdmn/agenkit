@@ -26,8 +26,10 @@
 /// const response = try llm.complete(allocator, &messages, &options);
 /// defer response.deinit();
 /// ```
-
 const std = @import("std");
+const ioc = @import("../io_compat.zig");
+const agkenv = @import("../env_compat.zig");
+const agktime = @import("../time_compat.zig");
 const llm = @import("llm.zig");
 const Message = @import("../message.zig").Message;
 const Role = @import("../message.zig").Role;
@@ -67,7 +69,7 @@ pub const BedrockLLM = struct {
         const key_id = if (access_key_id.len > 0)
             try allocator.dupe(u8, access_key_id)
         else blk: {
-            const env_key = std.process.getEnvVarOwned(allocator, "AWS_ACCESS_KEY_ID") catch {
+            const env_key = agkenv.getEnvVarOwned(allocator, "AWS_ACCESS_KEY_ID") catch {
                 return error.MissingAccessKeyID;
             };
             break :blk env_key;
@@ -77,14 +79,14 @@ pub const BedrockLLM = struct {
         const secret = if (secret_access_key.len > 0)
             try allocator.dupe(u8, secret_access_key)
         else blk: {
-            const env_secret = std.process.getEnvVarOwned(allocator, "AWS_SECRET_ACCESS_KEY") catch {
+            const env_secret = agkenv.getEnvVarOwned(allocator, "AWS_SECRET_ACCESS_KEY") catch {
                 return error.MissingSecretAccessKey;
             };
             break :blk env_secret;
         };
 
         // Session Token (optional)
-        const token = std.process.getEnvVarOwned(allocator, "AWS_SESSION_TOKEN") catch null;
+        const token = agkenv.getEnvVarOwned(allocator, "AWS_SESSION_TOKEN") catch null;
 
         // Model ID
         const model_copy = if (model_id.len > 0)
@@ -96,7 +98,7 @@ pub const BedrockLLM = struct {
         const region_copy = if (region.len > 0)
             try allocator.dupe(u8, region)
         else blk: {
-            const env_region = std.process.getEnvVarOwned(allocator, "AWS_REGION") catch {
+            const env_region = agkenv.getEnvVarOwned(allocator, "AWS_REGION") catch {
                 // Default to us-east-1
                 break :blk try allocator.dupe(u8, "us-east-1");
             };
@@ -193,7 +195,7 @@ pub const BedrockLLM = struct {
     ) ![]const u8 {
         _ = self;
 
-        var json = std.ArrayList(u8){};
+        var json = std.ArrayList(u8).empty;
         defer json.deinit(allocator);
 
         // Anthropic format on Bedrock
@@ -333,7 +335,7 @@ pub const BedrockLLM = struct {
         defer allocator.free(uri_path);
 
         // Get current timestamp for signing
-        const timestamp_secs = std.time.timestamp();
+        const timestamp_secs = agktime.timestamp();
         const timestamp = try formatTimestamp(allocator, timestamp_secs);
         defer allocator.free(timestamp);
 
@@ -433,7 +435,7 @@ pub const BedrockLLM = struct {
         defer allocator.free(auth_header);
 
         // Make the HTTP request
-        var client = std.http.Client{ .allocator = allocator };
+        var client = std.http.Client{ .allocator = allocator, .io = ioc.io() };
         defer client.deinit();
 
         const full_url = try std.fmt.allocPrint(
@@ -444,7 +446,7 @@ pub const BedrockLLM = struct {
         defer allocator.free(full_url);
 
         // Build headers slice (unmanaged ArrayList, Zig 0.15 pattern)
-        var headers_list = std.ArrayList(std.http.Header){};
+        var headers_list = std.ArrayList(std.http.Header).empty;
         defer headers_list.deinit(allocator);
 
         try headers_list.append(allocator, .{ .name = "Content-Type", .value = "application/json" });
@@ -454,7 +456,7 @@ pub const BedrockLLM = struct {
             try headers_list.append(allocator, .{ .name = "x-amz-security-token", .value = token });
         }
 
-        var response_body: std.io.Writer.Allocating = .init(allocator);
+        var response_body: std.Io.Writer.Allocating = .init(allocator);
         defer response_body.deinit();
 
         const result = try client.fetch(.{

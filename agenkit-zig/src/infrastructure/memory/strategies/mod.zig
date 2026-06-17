@@ -13,7 +13,6 @@
 /// });
 /// defer sliding.deinit();
 /// ```
-
 pub const base = @import("base.zig");
 pub const MemoryStrategy = base.MemoryStrategy;
 pub const StrategyContext = base.StrategyContext;

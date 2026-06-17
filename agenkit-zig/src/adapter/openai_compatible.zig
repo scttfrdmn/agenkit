@@ -34,8 +34,8 @@
 /// const response = try llm.complete(allocator, &messages, &options);
 /// defer response.deinit();
 /// ```
-
 const std = @import("std");
+const ioc = @import("../io_compat.zig");
 const llm = @import("llm.zig");
 const Message = @import("../message.zig").Message;
 const Role = @import("../message.zig").Role;
@@ -218,7 +218,7 @@ pub const OpenAICompatibleLLM = struct {
         is_stream: bool,
     ) ![]const u8 {
         // Build JSON manually for now (simpler than using std.json API)
-        var json = std.ArrayList(u8){};
+        var json = std.ArrayList(u8).empty;
         defer json.deinit(allocator);
 
         try json.appendSlice(allocator, "{\"model\":\"");
@@ -292,7 +292,7 @@ pub const OpenAICompatibleLLM = struct {
 
     /// Make HTTP request to OpenAI-compatible API
     fn makeRequest(self: *OpenAICompatibleLLM, allocator: Allocator, body: []const u8) ![]const u8 {
-        var client = std.http.Client{ .allocator = allocator };
+        var client = std.http.Client{ .allocator = allocator, .io = ioc.io() };
         defer client.deinit();
 
         // Build URI
@@ -318,8 +318,8 @@ pub const OpenAICompatibleLLM = struct {
             .{ .name = "Content-Type", .value = "application/json" },
         };
 
-        // Use std.io.Writer.Allocating for response body (Zig 0.15 pattern)
-        var response_body: std.io.Writer.Allocating = .init(allocator);
+        // Use std.Io.Writer.Allocating for response body (Zig 0.15 pattern)
+        var response_body: std.Io.Writer.Allocating = .init(allocator);
         defer response_body.deinit();
 
         // Make request using fetch API

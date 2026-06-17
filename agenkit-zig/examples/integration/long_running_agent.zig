@@ -31,7 +31,7 @@ const AssistantAgent = struct {
             .allocator = allocator,
             .name = try allocator.dupe(u8, name),
             .interaction_count = 0,
-            .memory = std.ArrayList([]const u8){},
+            .memory = std.ArrayList([]const u8).empty,
         };
         return self;
     }
@@ -65,7 +65,7 @@ const AssistantAgent = struct {
     }
 
     pub fn recallMemories(self: *AssistantAgent, query: []const u8, allocator: std.mem.Allocator) ![][]const u8 {
-        var results = std.ArrayList([]const u8){};
+        var results = std.ArrayList([]const u8).empty;
         errdefer results.deinit(allocator);
 
         // Simple substring search

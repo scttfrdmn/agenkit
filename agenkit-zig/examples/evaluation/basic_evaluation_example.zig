@@ -26,7 +26,7 @@ pub fn main() !void {
     // ========================================================================
     std.debug.print("Step 1: Creating test cases...\n", .{});
 
-    var test_cases = std.ArrayList(*evaluation.TestCase){};
+    var test_cases = std.ArrayList(*evaluation.TestCase).empty;
     defer {
         for (test_cases.items) |tc| tc.deinit();
         test_cases.deinit(allocator);

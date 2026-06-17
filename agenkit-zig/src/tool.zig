@@ -56,7 +56,7 @@
 ///         const query = params.object.get("query") orelse return error.MissingParameter;
 ///
 ///         // Perform search...
-///         var result_data = json.ObjectMap.init(allocator);
+///         var result_data = json.ObjectMap.empty;
 ///         try result_data.put("results", json.Value{ .string = "Search results..." });
 ///
 ///         return ToolResult{
@@ -131,7 +131,7 @@ pub const ToolResult = struct {
                     freeJsonValue(allocator, entry.value_ptr.*);
                 }
                 var mut_obj = obj;
-                mut_obj.deinit();
+                mut_obj.deinit(allocator);
             },
             else => {},
         }
@@ -139,15 +139,13 @@ pub const ToolResult = struct {
 
     /// Get result as JSON string
     pub fn asJson(self: *const ToolResult, allocator: Allocator) ![]const u8 {
-        var obj = json.ObjectMap.init(allocator);
-        defer obj.deinit();
+        var obj = json.ObjectMap.empty;
+        defer obj.deinit(allocator);
 
-        try obj.put("id", json.Value{ .string = self.id });
-        try obj.put("result", self.result);
+        try obj.put(allocator, "id", json.Value{ .string = self.id });
+        try obj.put(allocator, "result", self.result);
 
-        var string = std.ArrayList(u8).init(allocator);
-        try std.json.stringify(json.Value{ .object = obj }, .{}, string.writer());
-        return string.toOwnedSlice();
+        return std.json.Stringify.valueAlloc(allocator, json.Value{ .object = obj }, .{});
     }
 };
 
@@ -216,7 +214,7 @@ pub const Tool = struct {
     ///
     /// Example:
     /// ```zig
-    /// var params = json.ObjectMap.init(allocator);
+    /// var params = json.ObjectMap.empty;
     /// try params.put("query", json.Value{ .string = "What is the weather?" });
     ///
     /// var result = try tool.execute(json.Value{ .object = params }, allocator);
@@ -302,9 +300,9 @@ test "EchoTool basic functionality" {
     try std.testing.expectEqualStrings("Echo back the provided parameters", tool_iface.description());
 
     // Create test parameters
-    var params = json.ObjectMap.init(allocator);
+    var params = json.ObjectMap.empty;
     const test_str = try allocator.dupe(u8, "value");
-    try params.put("test", json.Value{ .string = test_str });
+    try params.put(allocator, "test", json.Value{ .string = test_str });
 
     // Execute tool (ToolResult takes ownership of params and its contents)
     var result = try tool_iface.execute(json.Value{ .object = params }, allocator);
@@ -320,9 +318,9 @@ test "EchoTool basic functionality" {
 test "ToolResult creation and cleanup" {
     const allocator = std.testing.allocator;
 
-    var result_data = json.ObjectMap.init(allocator);
+    var result_data = json.ObjectMap.empty;
     const status_str = try allocator.dupe(u8, "success");
-    try result_data.put("status", json.Value{ .string = status_str });
+    try result_data.put(allocator, "status", json.Value{ .string = status_str });
 
     var result = try ToolResult.init(allocator, "test_id", json.Value{ .object = result_data });
     defer result.deinit();

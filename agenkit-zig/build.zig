@@ -743,6 +743,9 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("tests/cross_language_harness.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
         }),
     });
     b.installArtifact(test_harness);

@@ -29,7 +29,6 @@
 ///   Each agent processes an independent copy of the input message.
 ///   Agents must not modify the message in place; they are expected to
 ///   produce a new Message as their result.
-
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
@@ -271,7 +270,6 @@ pub const ParallelAgent = struct {
         return Result{ .ok = aggregated };
     }
 
-
     fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
         const caps = try capabilitiesImpl(ptr, alloc);
         defer {
@@ -313,12 +311,11 @@ pub const ParallelPattern = ParallelAgent;
 // Tests
 // ============================================================================
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "ParallelAgent basic execution" {
     const allocator = std.testing.allocator;
@@ -366,7 +363,7 @@ test "ParallelAgent custom aggregator" {
             }
 
             // Concatenate all content
-            var buffer = std.ArrayList(u8){};
+            var buffer = std.ArrayList(u8).empty;
             defer buffer.deinit(alloc);
 
             for (messages, 0..) |m, i| {
@@ -418,7 +415,7 @@ test "ParallelAgent name and capabilities" {
     var echo1 = try EchoAgent.init(allocator);
     defer echo1.agent().deinit();
 
-    const agents = [_]Agent{ echo1.agent() };
+    const agents = [_]Agent{echo1.agent()};
     var parallel = try ParallelAgent.init(allocator, &agents, "my_parallel", defaultAggregator);
     defer parallel.deinit();
 

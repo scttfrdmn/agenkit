@@ -29,6 +29,8 @@
 /// const metrics = limiter.metrics();
 /// ```
 const std = @import("std");
+const agksync = @import("../sync_compat.zig");
+const agktime = @import("../time_compat.zig");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
@@ -109,7 +111,7 @@ const UserBucket = struct {
     fn init(capacity: u32) UserBucket {
         return UserBucket{
             .tokens = @as(f64, @floatFromInt(capacity)),
-            .last_update_ms = std.time.milliTimestamp(),
+            .last_update_ms = agktime.milliTimestamp(),
         };
     }
 };
@@ -162,7 +164,7 @@ pub const PerUserRateLimiterDecorator = struct {
     config: PerUserRateLimiterConfig,
     metrics_data: PerUserRateLimiterMetrics,
     buckets: std.StringHashMap(UserBucket),
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(allocator: Allocator, inner_agent: Agent, config: PerUserRateLimiterConfig) !*PerUserRateLimiterDecorator {
         // Validate configuration
@@ -175,7 +177,7 @@ pub const PerUserRateLimiterDecorator = struct {
             .config = config,
             .metrics_data = PerUserRateLimiterMetrics{},
             .buckets = std.StringHashMap(UserBucket).init(allocator),
-            .mutex = std.Thread.Mutex{},
+            .mutex = agksync.Mutex{},
         };
         return self;
     }
@@ -217,7 +219,7 @@ pub const PerUserRateLimiterDecorator = struct {
 
     /// Refill tokens for a user based on elapsed time
     fn refillUserTokens(self: *PerUserRateLimiterDecorator, bucket: *UserBucket) void {
-        const now_ms = std.time.milliTimestamp();
+        const now_ms = agktime.milliTimestamp();
         const elapsed_ms = now_ms - bucket.last_update_ms;
         const elapsed_sec = @as(f64, @floatFromInt(elapsed_ms)) / 1000.0;
 
@@ -265,7 +267,7 @@ pub const PerUserRateLimiterDecorator = struct {
         self.mutex.unlock();
 
         // Wait for tokens to refill
-        std.time.sleep(wait_time_ms * std.time.ns_per_ms);
+        agktime.sleep(wait_time_ms * std.time.ns_per_ms);
 
         // Re-acquire lock and try again
         self.mutex.lock();
@@ -381,12 +383,11 @@ pub const PerUserRateLimiterDecorator = struct {
 // Tests
 const testing = std.testing;
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "PerUserRateLimiterConfig validation" {
     var config = PerUserRateLimiterConfig{};

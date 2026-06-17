@@ -155,7 +155,7 @@ pub fn main() !void {
     std.debug.print("----------------\n", .{});
 
     const log_path = "agenkit_safety_demo.log";
-    defer std.fs.cwd().deleteFile(log_path) catch {};
+    defer std.Io.Dir.cwd().deleteFile(agenkit.io_compat.io(), log_path) catch {};
 
     var logger = try agenkit.safety.audit.SecurityAuditLogger.init(allocator, .{
         .log_file_path = log_path,

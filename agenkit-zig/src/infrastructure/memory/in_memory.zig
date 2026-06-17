@@ -29,6 +29,7 @@
 /// const entries = try memory.retrieve("session-1", 10);
 /// ```
 const std = @import("std");
+const agksync = @import("../../sync_compat.zig");
 const Allocator = std.mem.Allocator;
 const MemoryEntry = @import("base.zig").MemoryEntry;
 const Memory = @import("base.zig").Memory;
@@ -53,8 +54,8 @@ pub const InMemoryConfig = struct {
 /// LRU node for tracking entry access order.
 const LRUNode = struct {
     entry_id: []const u8,
-    map_key: []const u8,  // The key used in lru_nodes HashMap (for reliable removal)
-    evicted: bool,  // Set to true when node is evicted (for deinit to skip)
+    map_key: []const u8, // The key used in lru_nodes HashMap (for reliable removal)
+    evicted: bool, // Set to true when node is evicted (for deinit to skip)
     prev: ?*LRUNode,
     next: ?*LRUNode,
 };
@@ -63,7 +64,7 @@ const LRUNode = struct {
 pub const InMemoryMemory = struct {
     allocator: Allocator,
     config: InMemoryConfig,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     // Storage: session_id -> list of entries
     entries: std.StringHashMap(std.ArrayList(*MemoryEntry)),
@@ -163,7 +164,7 @@ pub const InMemoryMemory = struct {
         } else {
             // Create new session with duped key
             session_key = try self.allocator.dupe(u8, entry.session_id);
-            const new_list = std.ArrayList(*MemoryEntry){};
+            const new_list = std.ArrayList(*MemoryEntry).empty;
             try self.entries.put(session_key, new_list);
             entry_list = self.entries.getPtr(session_key).?;
         }
@@ -349,8 +350,8 @@ pub const InMemoryMemory = struct {
             const entry_id_copy = try self.allocator.dupe(u8, entry_id);
             node = try self.allocator.create(LRUNode);
             node.* = .{
-                .entry_id = entry_id_copy,  // This IS the HashMap key
-                .map_key = entry_id_copy,   // Same pointer - we'll only free once
+                .entry_id = entry_id_copy, // This IS the HashMap key
+                .map_key = entry_id_copy, // Same pointer - we'll only free once
                 .evicted = false,
                 .prev = null,
                 .next = null,
@@ -412,7 +413,7 @@ pub const InMemoryMemory = struct {
     fn evictOldest(self: *InMemoryMemory, session_id: []const u8) !void {
         const tail = self.lru_tails.get(session_id) orelse return;
         const entry_id_to_find = tail.entry_id;
-        const map_key = tail.map_key;  // The exact key used in lru_nodes
+        const map_key = tail.map_key; // The exact key used in lru_nodes
 
         // Find and remove entry from list
         if (self.entries.getPtr(session_id)) |entry_list| {

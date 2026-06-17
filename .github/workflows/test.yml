@@ -204,3 +204,52 @@ jobs:
         working-directory: agenkit-zig
         run: zig build test
 
+  # Redis-backed tests (Python + TypeScript RedisMemory). These suites skip
+  # themselves when no Redis server is reachable, so they never gated anything
+  # in CI. A redis:7-alpine service container makes them actually run. Hosted
+  # ubuntu only (both push and PR): keeps untrusted PR code off the LAN runners
+  # and the hosted image has Docker for the service container. Separate job so
+  # the smoke/lang jobs stay fast and unaffected. (#648)
+  redis-tests:
+    name: Redis Tests (Python + TS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    env:
+      REDIS_URL: redis://localhost:6379
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # --- Python RedisMemory tests ---
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Install Python 3.12 + redis extra
+        run: |
+          uv python install 3.12
+          uv sync --extra test --extra redis --python 3.12
+      - name: Run Python RedisMemory tests
+        run: uv run pytest tests/memory/test_redis_memory.py -v
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+
+      # --- TypeScript RedisMemory tests ---
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: TypeScript RedisMemory tests
+        working-directory: agenkit-ts
+        run: |
+          npm ci
+          npx vitest run src/__tests__/memory/redis.test.ts
+

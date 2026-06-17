@@ -575,9 +575,9 @@ skills, reasoning memory, full adapter set) are implemented.
 ## Test Parity
 
 Patterns are at full parity across languages; **test-count** parity varies — the
-secondary languages have fewer tests than the Python reference. Counts come from
-the [Test Parity Dashboard](docs/TEST_PARITY.md), regenerated via
-`scripts/test-parity.sh`. Relative to Python's 2044 tests:
+secondary languages have fewer tests than the Python reference. Counts are
+regenerated via `scripts/test-parity.sh` (and surfaced by the Parity Validation
+CI workflow). Relative to Python's 2044 tests:
 
 | Language | Tests | vs Python |
 |----------|-------|-----------|
@@ -589,4 +589,4 @@ the [Test Parity Dashboard](docs/TEST_PARITY.md), regenerated via
 
 (C#, Java, and Scala are not yet tracked in the parity report.)
 
-See [README-test-parity.md](README-test-parity.md) for full documentation.
+Counts are regenerated via `scripts/test-parity.sh`.

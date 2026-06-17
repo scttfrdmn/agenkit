@@ -347,6 +347,11 @@ add_executable(test_reasoning_graph techniques/reasoning/test_reasoning_graph.cp
 target_link_libraries(test_reasoning_graph agenkit gtest_main)
 add_test(NAME reasoning_graph_tests COMMAND test_reasoning_graph)
 
+# Skills tests - AgentSkill, SkillRegistry, SkillEnabledAgent
+add_executable(test_skills skills/test_skills.cpp)
+target_link_libraries(test_skills agenkit gtest_main)
+add_test(NAME skills_tests COMMAND test_skills)
+
 # MCP protocol tests
 add_executable(test_mcp test_mcp.cpp)
 target_link_libraries(test_mcp agenkit GTest::gtest_main)

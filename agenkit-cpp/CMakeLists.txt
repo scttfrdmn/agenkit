@@ -183,6 +183,8 @@ add_library(agenkit
     src/middleware/caching.cpp
     src/middleware/batching.cpp
     src/protocols/mcp.cpp
+    src/skills/skill.cpp
+    src/skills/skill_enabled_agent.cpp
 )
 
 # Add observability sources if enabled

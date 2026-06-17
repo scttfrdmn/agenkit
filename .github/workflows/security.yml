@@ -128,6 +128,14 @@ jobs:
       # version is deterministic regardless of PATH ordering.
       - name: Install + run govulncheck
         working-directory: agenkit-go
+        # GOTOOLCHAIN=auto (overriding the local default) lets `go install`
+        # fetch the toolchain govulncheck@latest needs (go >= 1.25). Under
+        # setup-go@v6, $GOROOT can resolve to the image's preinstalled go1.24,
+        # and with GOTOOLCHAIN=local that older go cannot build govulncheck.
+        # govulncheck keys its stdlib analysis on go.mod's `go` directive, not
+        # the building toolchain, so results are unchanged.
+        env:
+          GOTOOLCHAIN: auto
         run: |
           # Force setup-go's Go ahead of any older system go on the runner PATH,
           # for this step and for govulncheck's own toolchain shell-outs.

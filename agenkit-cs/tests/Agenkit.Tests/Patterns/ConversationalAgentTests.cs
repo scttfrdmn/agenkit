@@ -77,6 +77,6 @@ public class ConversationalAgentTests
         var agent = new ConversationalAgent(new ConversationalAgentConfig(_mockClient, MaxHistory: 4));
         for (int i = 0; i < 10; i++)
             await agent.ProcessAsync(Message.NewMessage("user", $"msg {i}"));
-        agent.GetHistory().Count.Should().BeLessOrEqualTo(4);
+        agent.GetHistory().Count.Should().BeLessThanOrEqualTo(4);
     }
 }

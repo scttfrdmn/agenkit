@@ -179,6 +179,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Set up sbt
+        if: matrix.lang == 'scala'
+        uses: sbt/setup-sbt@v1
       - name: Scala compile (blocking)
         if: matrix.lang == 'scala'
         working-directory: agenkit-scala
@@ -196,13 +199,12 @@ jobs:
         with:
           # Matches build.zig.zon .minimum_zig_version
           version: 0.15.2
-      - name: Zig build (blocking)
+      # `zig build` (default) compiles the examples too, some of which don't
+      # build under 0.15.2 (ignored error unions — pre-existing, tracked
+      # separately). `zig build test` builds the library + test modules, which
+      # is the meaningful compile gate here.
+      - name: Zig build + test (blocking)
         if: matrix.lang == 'zig'
-        working-directory: agenkit-zig
-        run: zig build
-      - name: Zig tests (non-blocking)
-        if: matrix.lang == 'zig'
-        continue-on-error: true
         working-directory: agenkit-zig
         run: zig build test
 

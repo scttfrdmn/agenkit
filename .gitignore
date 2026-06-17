@@ -114,6 +114,9 @@ agenkit-rust/Cargo.lock
 agenkit-zig/zig-cache/
 agenkit-zig/zig-out/
 agenkit-zig/test_arraylist*
+# Zig cache anywhere in the tree (e.g. cross-language harness)
+**/.zig-cache/
+**/zig-out/
 
 # C++ build artifacts
 agenkit-cpp/build/
@@ -131,6 +134,10 @@ agenkit-scala/target/
 
 # Cross-language test harness build artifacts
 tests/cross_language/harness_rust/target/
+tests/cross_language/harness_zig/.zig-cache/
+
+# Stray editor/backup files
+*.old
 
 # Stray tooling artifacts
 =*

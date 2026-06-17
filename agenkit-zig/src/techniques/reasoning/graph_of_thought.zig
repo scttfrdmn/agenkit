@@ -518,7 +518,7 @@ test "GraphOfThought name and capabilities" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -544,7 +544,7 @@ test "GraphOfThought custom config" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -580,7 +580,7 @@ test "GraphOfThought basic functionality" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -613,7 +613,7 @@ test "GraphOfThought max_nodes enforcement" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -645,7 +645,7 @@ test "GraphOfThought path_based aggregation" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -676,7 +676,7 @@ test "GraphOfThought node_based aggregation" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -707,7 +707,7 @@ test "GraphOfThought metadata completeness" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -750,7 +750,7 @@ test "GraphOfThought response role" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

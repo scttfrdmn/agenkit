@@ -171,7 +171,7 @@ pub const Message = struct {
         // Content size validation - max 16MB
         const content_size = switch (self.content) {
             .text => |t| t.len,
-            .structured => |_| blk: {
+            .structured => blk: {
                 // For structured content, we can't easily compute exact size
                 // without serializing. Skip size check for structured content.
                 // In practice, structured content size is validated when

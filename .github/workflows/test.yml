@@ -196,17 +196,11 @@ jobs:
         uses: mlugg/setup-zig@v2
         with:
           # Matches build.zig.zon .minimum_zig_version
-          version: 0.15.2
-      # `zig build` (default) compiles the examples too, some of which don't
-      # build under 0.15.2 (ignored error unions — pre-existing). `zig build
-      # test` builds + runs the library/test modules; it currently has a
-      # failing test (evaluation.prompt_optimizer.sampleRandomConfig), so it's
-      # non-blocking until that's fixed (tracked as a follow-up). build.zig
-      # couples compile and run, so there's no compile-only gate to keep
-      # blocking here.
-      - name: Zig build + test (non-blocking)
+          version: 0.16.0
+      # `zig build test` builds + runs the library/test modules. Migrated to
+      # Zig 0.16.0 (#646), so this is the real compile+test gate.
+      - name: Zig build + test (blocking)
         if: matrix.lang == 'zig'
-        continue-on-error: true
         working-directory: agenkit-zig
         run: zig build test
 

@@ -408,7 +408,7 @@ pub const LeastToMostAgent = struct {
 // Tests
 test "LeastToMostAgent - basic functionality" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -511,7 +511,7 @@ test "LeastToMostAgent - basic functionality" {
 
 test "LeastToMostAgent - name and capabilities" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -587,7 +587,7 @@ test "LeastToMostAgent - name and capabilities" {
 
 test "LeastToMostAgent - decomposition verification" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -687,7 +687,7 @@ test "LeastToMostAgent - decomposition verification" {
 
 test "LeastToMostAgent - sequential solving" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -785,7 +785,7 @@ test "LeastToMostAgent - sequential solving" {
 
 test "LeastToMostAgent - final solution is last" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -880,7 +880,7 @@ test "LeastToMostAgent - final solution is last" {
 
 test "LeastToMostAgent - max subproblems limit" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -978,7 +978,7 @@ test "LeastToMostAgent - max subproblems limit" {
 
 test "LeastToMostAgent - custom decomposer" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -1085,7 +1085,7 @@ test "LeastToMostAgent - custom decomposer" {
 
 test "LeastToMostAgent - compose solutions enabled" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -1179,7 +1179,7 @@ test "LeastToMostAgent - compose solutions enabled" {
 
 test "LeastToMostAgent - compose solutions disabled" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -1273,7 +1273,7 @@ test "LeastToMostAgent - compose solutions disabled" {
 
 test "LeastToMostAgent - parse numbered steps with periods" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -1372,7 +1372,7 @@ test "LeastToMostAgent - parse numbered steps with periods" {
 
 test "LeastToMostAgent - parse numbered steps with parentheses" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -1471,7 +1471,7 @@ test "LeastToMostAgent - parse numbered steps with parentheses" {
 
 test "LeastToMostAgent - skip empty lines" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -1567,7 +1567,7 @@ test "LeastToMostAgent - skip empty lines" {
 
 test "LeastToMostAgent - atomic problem fallback" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -1660,7 +1660,7 @@ test "LeastToMostAgent - atomic problem fallback" {
 
 test "LeastToMostAgent - whitespace trimming" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -1757,7 +1757,7 @@ test "LeastToMostAgent - whitespace trimming" {
 
 test "LeastToMostAgent - metadata includes all fields" {
     const testing = std.testing;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

@@ -402,7 +402,7 @@ pub const MockLLM = struct {
 test "MockAgent basic functionality" {
     const testing = std.testing;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -446,7 +446,7 @@ test "MockAgent basic functionality" {
 test "MockAgent capabilities" {
     const testing = std.testing;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -465,7 +465,7 @@ test "MockAgent capabilities" {
 test "MockAgent reset call count" {
     const testing = std.testing;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -490,7 +490,7 @@ test "MockAgent reset call count" {
 test "FailingMockAgent returns error" {
     const testing = std.testing;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -510,7 +510,7 @@ test "FailingMockAgent returns error" {
 test "MockAgent introspection" {
     const testing = std.testing;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -528,7 +528,7 @@ test "MockAgent introspection" {
 test "MockLLM basic functionality" {
     const testing = std.testing;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -552,7 +552,7 @@ test "MockLLM basic functionality" {
 test "MockLLM LLM parameters" {
     const testing = std.testing;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -575,7 +575,7 @@ test "MockLLM LLM parameters" {
 test "MockLLM failure mode" {
     const testing = std.testing;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -595,7 +595,7 @@ test "MockLLM failure mode" {
 test "MockLLM introspection" {
     const testing = std.testing;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

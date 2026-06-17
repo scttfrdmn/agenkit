@@ -2,7 +2,7 @@
 //!
 //! This example demonstrates:
 //! - Different allocator types in Zig
-//! - GeneralPurposeAllocator for leak detection
+//! - DebugAllocator for leak detection
 //! - ArenaAllocator for bulk cleanup
 //! - Proper defer patterns for cleanup
 //! - Memory ownership in agent processing
@@ -16,10 +16,10 @@ const agenkit = @import("agenkit");
 pub fn main() !void {
     std.debug.print("\n=== AgentKit Memory Management Example ===\n\n", .{});
 
-    // Example 1: GeneralPurposeAllocator with leak detection
-    std.debug.print("--- Example 1: GeneralPurposeAllocator with Leak Detection ---\n", .{});
+    // Example 1: DebugAllocator with leak detection
+    std.debug.print("--- Example 1: DebugAllocator with Leak Detection ---\n", .{});
     {
-        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        var gpa = std.heap.DebugAllocator(.{}){};
         defer {
             const leaked = gpa.deinit();
             if (leaked == .leak) {
@@ -51,7 +51,7 @@ pub fn main() !void {
     // Example 2: ArenaAllocator for bulk cleanup
     std.debug.print("--- Example 2: ArenaAllocator for Bulk Cleanup ---\n", .{});
     {
-        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        var gpa = std.heap.DebugAllocator(.{}){};
         defer _ = gpa.deinit();
         const backing_allocator = gpa.allocator();
 
@@ -81,7 +81,7 @@ pub fn main() !void {
     // Example 3: Memory ownership patterns
     std.debug.print("--- Example 3: Memory Ownership Patterns ---\n", .{});
     {
-        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        var gpa = std.heap.DebugAllocator(.{}){};
         defer _ = gpa.deinit();
         const allocator = gpa.allocator();
 
@@ -125,7 +125,7 @@ pub fn main() !void {
     // Example 4: Memory-efficient agent chains
     std.debug.print("--- Example 4: Memory-Efficient Agent Chains ---\n", .{});
     {
-        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        var gpa = std.heap.DebugAllocator(.{}){};
         defer _ = gpa.deinit();
         const allocator = gpa.allocator();
 
@@ -172,7 +172,7 @@ pub fn main() !void {
     // Example 5: Detecting memory leaks intentionally
     std.debug.print("--- Example 5: Memory Leak Detection ---\n", .{});
     {
-        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        var gpa = std.heap.DebugAllocator(.{}){};
         const allocator = gpa.allocator();
 
         // Create a message but DON'T clean it up (intentional leak for demo)
@@ -194,7 +194,7 @@ pub fn main() !void {
 
     std.debug.print("=== Memory Management Best Practices ===\n", .{});
     std.debug.print("1. Always use defer for cleanup\n", .{});
-    std.debug.print("2. Use GeneralPurposeAllocator during development\n", .{});
+    std.debug.print("2. Use DebugAllocator during development\n", .{});
     std.debug.print("3. Consider ArenaAllocator for short-lived operations\n", .{});
     std.debug.print("4. Clear ownership: who allocates, who frees?\n", .{});
     std.debug.print("5. Clean up intermediate results in chains\n", .{});

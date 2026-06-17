@@ -14,14 +14,16 @@ import (
 
 func TestGRPCBasicCommunication(t *testing.T) {
 	ctx := context.Background()
-	endpoint := "grpc://127.0.0.1:50051"
 
-	// Start gRPC server
+	// Bind an ephemeral port (:0) and read back the real address. Hardcoded
+	// ports collide on the self-hosted runners (6 parallel runners share a
+	// host), so every server in this file uses dynamic allocation.
 	agent := &EchoAgent{}
-	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:50051")
+	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
+	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
@@ -56,14 +58,14 @@ func TestGRPCBasicCommunication(t *testing.T) {
 
 func TestGRPCMultipleRequests(t *testing.T) {
 	ctx := context.Background()
-	endpoint := "grpc://127.0.0.1:50052"
 
-	// Start gRPC server
+	// Start gRPC server on an ephemeral port (see TestGRPCBasicCommunication).
 	agent := &EchoAgent{}
-	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:50052")
+	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
+	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
@@ -96,14 +98,14 @@ func TestGRPCMultipleRequests(t *testing.T) {
 
 func TestGRPCConcurrentRequests(t *testing.T) {
 	ctx := context.Background()
-	endpoint := "grpc://127.0.0.1:50053"
 
-	// Start gRPC server
+	// Start gRPC server on an ephemeral port (see TestGRPCBasicCommunication).
 	agent := &EchoAgent{}
-	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:50053")
+	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
+	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
@@ -155,14 +157,14 @@ func TestGRPCConcurrentRequests(t *testing.T) {
 
 func TestGRPCMultipleClients(t *testing.T) {
 	ctx := context.Background()
-	endpoint := "grpc://127.0.0.1:50054"
 
-	// Start gRPC server
+	// Start gRPC server on an ephemeral port (see TestGRPCBasicCommunication).
 	agent := &EchoAgent{}
-	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:50054")
+	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
+	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
@@ -236,14 +238,14 @@ func TestGRPCConnectionFailure(t *testing.T) {
 
 func TestGRPCLargeMessage(t *testing.T) {
 	ctx := context.Background()
-	endpoint := "grpc://127.0.0.1:50055"
 
-	// Start gRPC server
+	// Start gRPC server on an ephemeral port (see TestGRPCBasicCommunication).
 	agent := &EchoAgent{}
-	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:50055")
+	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
+	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
@@ -276,14 +278,14 @@ func TestGRPCLargeMessage(t *testing.T) {
 
 func TestGRPCMessageMetadataPreserved(t *testing.T) {
 	ctx := context.Background()
-	endpoint := "grpc://127.0.0.1:50056"
 
-	// Start gRPC server
+	// Start gRPC server on an ephemeral port (see TestGRPCBasicCommunication).
 	agent := &EchoAgent{}
-	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:50056")
+	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
+	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
@@ -371,14 +373,14 @@ func TestGRPCServerStartStopMultipleTimes(t *testing.T) {
 
 func TestGRPCStreamingSupport(t *testing.T) {
 	ctx := context.Background()
-	endpoint := "grpc://127.0.0.1:50058"
 
-	// Start gRPC server with streaming agent
+	// Start gRPC server on an ephemeral port (see TestGRPCBasicCommunication).
 	agent := &StreamingEchoAgent{}
-	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:50058")
+	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
+	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
@@ -428,14 +430,14 @@ done:
 
 func TestGRPCErrorHandling(t *testing.T) {
 	ctx := context.Background()
-	endpoint := "grpc://127.0.0.1:50059"
 
-	// Start gRPC server with error agent
+	// Start gRPC server on an ephemeral port (see TestGRPCBasicCommunication).
 	agent := &ErrorAgent{}
-	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:50059")
+	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
+	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
@@ -517,14 +519,14 @@ func TestGRPCParseEndpoint(t *testing.T) {
 
 func TestGRPCTransportTimeout(t *testing.T) {
 	ctx := context.Background()
-	endpoint := "grpc://127.0.0.1:50060"
 
-	// Start gRPC server with slow agent
+	// Start gRPC server on an ephemeral port (see TestGRPCBasicCommunication).
 	agent := &SlowAgent{delay: 3 * time.Second}
-	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:50060")
+	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
+	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
@@ -555,14 +557,16 @@ func TestGRPCTransportTimeout(t *testing.T) {
 
 func TestGRPCTransportReconnect(t *testing.T) {
 	ctx := context.Background()
-	endpoint := "grpc://127.0.0.1:50061"
 
-	// Start gRPC server
+	// Start gRPC server on an ephemeral port. We capture the chosen address so
+	// the restart below can rebind the *same* port (the point of this test).
 	agent := &EchoAgent{}
-	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:50061")
+	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
+	addr := server.Address()
+	endpoint := fmt.Sprintf("grpc://%s", addr)
 
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
@@ -592,8 +596,8 @@ func TestGRPCTransportReconnect(t *testing.T) {
 	_ = server.Stop()
 	time.Sleep(200 * time.Millisecond)
 
-	// Start server again
-	server, err = grpc.NewGRPCServer(agent, "127.0.0.1:50061")
+	// Start server again on the same address to exercise client reconnect.
+	server, err = grpc.NewGRPCServer(agent, addr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -638,14 +642,14 @@ func TestGRPCDefaultPort(t *testing.T) {
 
 func TestGRPCProtocolConversion(t *testing.T) {
 	ctx := context.Background()
-	endpoint := "grpc://127.0.0.1:50062"
 
-	// Start gRPC server
+	// Start gRPC server on an ephemeral port (see TestGRPCBasicCommunication).
 	agent := &EchoAgent{}
-	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:50062")
+	server, err := grpc.NewGRPCServer(agent, "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
+	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
 	if err := server.Start(); err != nil {
 		t.Fatal(err)

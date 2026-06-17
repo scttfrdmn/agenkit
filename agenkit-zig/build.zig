@@ -39,6 +39,10 @@ pub fn build(b: *std.Build) void {
         // Later on we'll use this module as the root module of a test executable
         // which requires us to specify a target.
         .target = target,
+        // libc is required: env_compat reads `std.c.environ`, and the HTTP/LLM
+        // adapters use the C networking stack. On macOS std.c is implicitly
+        // available, but Linux requires it declared explicitly here.
+        .link_libc = true,
     });
 
     // Here we define an executable. An executable needs to have a root module

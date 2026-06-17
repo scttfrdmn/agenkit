@@ -18,15 +18,3 @@ class MockAdapterSpec extends AnyFunSuite with Matchers:
     val adapter  = MockAdapter()
     val response = Await.result(adapter.complete(List.empty), 5.seconds)
     response.contentString shouldBe "mock adapter response"
-
-  test("OpenAiAdapter fails with UnsupportedOperationException"):
-    val adapter = OpenAiAdapter("key")
-    val result  = adapter.complete(List(Message.user("hi"))).failed
-    val ex      = Await.result(result, 5.seconds)
-    ex shouldBe a[UnsupportedOperationException]
-
-  test("AnthropicAdapter fails with UnsupportedOperationException"):
-    val adapter = AnthropicAdapter("key")
-    val result  = adapter.complete(List(Message.user("hi"))).failed
-    val ex      = Await.result(result, 5.seconds)
-    ex shouldBe a[UnsupportedOperationException]

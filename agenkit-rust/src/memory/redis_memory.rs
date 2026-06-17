@@ -47,7 +47,7 @@
 //!   Value: JSON(message, metadata)
 
 use anyhow::{Context, Result};
-use redis::aio::Connection;
+use redis::aio::MultiplexedConnection;
 use redis::{AsyncCommands, Client};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -114,9 +114,9 @@ impl RedisMemory {
     }
 
     /// Get Redis connection.
-    async fn get_connection(&self) -> Result<Connection> {
+    async fn get_connection(&self) -> Result<MultiplexedConnection> {
         self.client
-            .get_async_connection()
+            .get_multiplexed_async_connection()
             .await
             .context("Failed to get Redis connection")
     }

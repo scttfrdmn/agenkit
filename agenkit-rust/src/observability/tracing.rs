@@ -39,13 +39,13 @@ use opentelemetry::{
     KeyValue,
 };
 use opentelemetry_sdk::{
-    trace::{Config, Sampler, TracerProvider},
+    trace::{Sampler, SdkTracerProvider},
     Resource,
 };
 use std::collections::HashMap;
 
 /// Global tracer provider instance.
-static TRACER_PROVIDER: OnceCell<TracerProvider> = OnceCell::new();
+static TRACER_PROVIDER: OnceCell<SdkTracerProvider> = OnceCell::new();
 
 /// Initialize distributed tracing with OpenTelemetry.
 ///
@@ -76,17 +76,18 @@ static TRACER_PROVIDER: OnceCell<TracerProvider> = OnceCell::new();
 /// ```
 pub fn init_tracing(exporter_type: &str, _endpoint: Option<&str>) -> Result<(), AgentError> {
     // Create resource with service name
-    let resource = Resource::new(vec![KeyValue::new("service.name", "agenkit")]);
+    let resource = Resource::builder()
+        .with_attribute(KeyValue::new("service.name", "agenkit"))
+        .build();
 
     // Configure sampling (parent-based with 100% sampling for now)
     let sampler = Sampler::ParentBased(Box::new(Sampler::AlwaysOn));
 
-    // Create tracer provider config
-    let config = Config::default()
+    // Create tracer provider (0.32 moved resource/sampler onto the builder
+    // directly; the standalone trace::Config type was removed).
+    let provider = SdkTracerProvider::builder()
         .with_resource(resource)
         .with_sampler(sampler);
-
-    let provider = TracerProvider::builder().with_config(config);
 
     // Add span processor based on exporter type
     let provider = match exporter_type {
@@ -421,7 +422,9 @@ impl<A: Agent + Send + Sync> Agent for TracingMiddleware<A> {
 /// This should be called before application exit to ensure all spans are
 /// flushed to the exporter.
 pub fn shutdown() {
-    // TracerProvider shutdown is automatic on drop
-    // This function is kept for API compatibility
-    global::shutdown_tracer_provider();
+    // 0.32 removed global::shutdown_tracer_provider(); shut down the stored
+    // provider explicitly instead. Flushes any pending spans to the exporter.
+    if let Some(provider) = TRACER_PROVIDER.get() {
+        let _ = provider.shutdown();
+    }
 }

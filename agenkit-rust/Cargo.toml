@@ -97,12 +97,12 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"], optional = true }
 
 # OpenTelemetry Core
-opentelemetry = { version = "0.23", features = ["trace", "metrics", "logs"], optional = true }
-opentelemetry_sdk = { version = "0.23", features = ["trace", "metrics", "logs", "rt-tokio"], optional = true }
+opentelemetry = { version = "0.32", features = ["trace", "metrics", "logs"], optional = true }
+opentelemetry_sdk = { version = "0.32", features = ["trace", "metrics", "logs", "rt-tokio"], optional = true }
 
 # OpenTelemetry Tracing Integration
-tracing-opentelemetry = { version = "0.24", optional = true }
-opentelemetry-otlp = { version = "0.16", features = ["trace", "metrics", "logs", "grpc-tonic"], optional = true }
+tracing-opentelemetry = { version = "0.33", optional = true }
+opentelemetry-otlp = { version = "0.32", features = ["trace", "metrics", "logs", "grpc-tonic"], optional = true }
 
 # OpenTelemetry Exporters
 # NOTE: opentelemetry-jaeger (deprecated upstream; Jaeger ingests OTLP natively),
@@ -110,7 +110,7 @@ opentelemetry-otlp = { version = "0.16", features = ["trace", "metrics", "logs",
 # removed — they were unused in the code and pulled in vulnerable transitive
 # crates (thrift, protobuf 2.x). The stdout exporter is the only one wired up;
 # OTLP remains for the modern export path.
-opentelemetry-stdout = { version = "0.4", optional = true }
+opentelemetry-stdout = { version = "0.32", optional = true }
 
 # Global state management
 once_cell = { version = "1.19", optional = true }
@@ -135,7 +135,7 @@ aws-sdk-bedrockruntime = { version = "1.135", optional = true, default-features 
 aws-credential-types = { version = "1.2", optional = true }
 
 # Redis for persistent memory
-redis = { version = "0.24", features = ["tokio-comp", "connection-manager"], optional = true }
+redis = { version = "1.0", features = ["tokio-comp", "connection-manager"], optional = true }
 
 [dev-dependencies]
 # Testing

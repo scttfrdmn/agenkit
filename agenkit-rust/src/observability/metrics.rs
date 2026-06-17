@@ -172,17 +172,17 @@ impl<A: Agent> MetricsMiddleware<A> {
         let meter = get_meter("agenkit.observability");
         let agent_name = agent.name().to_string();
 
-        // Create counter for total requests
+        // Create counter for total requests (0.32 renamed .init() -> .build())
         let requests_total = meter
             .u64_counter("agent_requests_total")
             .with_description("Total number of agent requests")
-            .init();
+            .build();
 
         // Create histogram for request duration
         let request_duration = meter
             .f64_histogram("agent_request_duration_seconds")
             .with_description("Agent request duration in seconds")
-            .init();
+            .build();
 
         Self {
             inner: agent,

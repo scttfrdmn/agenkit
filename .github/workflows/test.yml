@@ -74,3 +74,135 @@ jobs:
           # Quick tests without race detector for speed
           go test -short $(go list ./... | grep -v /examples/) -failfast
 
+  # CI coverage for the remaining language implementations. Runs on
+  # GitHub-hosted runners for BOTH push and pull_request: the hosted images
+  # reliably provision every toolchain (the self-hosted janus runners may not
+  # have Rust/Zig/.NET/JVM installed), and these suites touch no secrets, so
+  # there's no fork-safety reason to keep them off hosted runners. Python+Go
+  # stay on the self-hosted runner above for speed.
+  #
+  # Each language has TWO steps:
+  #   - a BLOCKING compile/build gate — catches real regressions (e.g. a dep
+  #     bump that breaks the API surface). This is the gate that would have
+  #     caught the otel/redis breakage that shipped via the cargo group bump.
+  #   - a NON-BLOCKING test run (continue-on-error) — surfaces test results
+  #     without false-failing PRs while the suites are still being hardened
+  #     (several have timing-sensitive / non-hermetic tests; tracked as
+  #     follow-up issues). Flip these to blocking per-language as each suite
+  #     is stabilized.
+  lang-smoke:
+    name: Smoke (${{ matrix.lang }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        lang: [typescript, rust, csharp, java, scala, zig]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # --- TypeScript ---
+      - name: Set up Node
+        if: matrix.lang == 'typescript'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # TS build is currently RED on main (a tsc + @types/node bump via the npm
+      # group broke moduleResolution + tightened Buffer/string[] types). Kept
+      # non-blocking until the dedicated TS-build-fix issue lands; flip to
+      # blocking once green.
+      - name: TypeScript install
+        if: matrix.lang == 'typescript'
+        working-directory: agenkit-ts
+        run: npm ci
+      - name: TypeScript build (non-blocking)
+        if: matrix.lang == 'typescript'
+        continue-on-error: true
+        working-directory: agenkit-ts
+        run: npm run build
+      - name: TypeScript tests (non-blocking)
+        if: matrix.lang == 'typescript'
+        continue-on-error: true
+        working-directory: agenkit-ts
+        run: npm test
+
+      # --- Rust ---
+      - name: Set up Rust
+        if: matrix.lang == 'rust'
+        uses: dtolnay/rust-toolchain@stable
+      - name: Rust build (blocking)
+        if: matrix.lang == 'rust'
+        working-directory: agenkit-rust
+        run: cargo build --quiet
+      - name: Rust tests (non-blocking)
+        if: matrix.lang == 'rust'
+        continue-on-error: true
+        working-directory: agenkit-rust
+        run: cargo test --lib --quiet
+
+      # --- C# / .NET ---
+      - name: Set up .NET
+        if: matrix.lang == 'csharp'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: C# build (blocking)
+        if: matrix.lang == 'csharp'
+        run: dotnet build agenkit-cs/Agenkit.sln --nologo -v q
+      - name: C# tests (non-blocking)
+        if: matrix.lang == 'csharp'
+        continue-on-error: true
+        run: dotnet test agenkit-cs/Agenkit.sln --nologo -q --no-build
+
+      # --- Java ---
+      - name: Set up JDK
+        if: matrix.lang == 'java'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Java compile (blocking)
+        if: matrix.lang == 'java'
+        working-directory: agenkit-java
+        run: mvn -B -q test-compile
+      - name: Java tests (non-blocking)
+        if: matrix.lang == 'java'
+        continue-on-error: true
+        working-directory: agenkit-java
+        run: mvn -B -q test
+
+      # --- Scala ---
+      - name: Set up JDK (Scala)
+        if: matrix.lang == 'scala'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Scala compile (blocking)
+        if: matrix.lang == 'scala'
+        working-directory: agenkit-scala
+        run: sbt -batch "Test/compile"
+      - name: Scala tests (non-blocking)
+        if: matrix.lang == 'scala'
+        continue-on-error: true
+        working-directory: agenkit-scala
+        run: sbt -batch test
+
+      # --- Zig ---
+      - name: Set up Zig
+        if: matrix.lang == 'zig'
+        uses: mlugg/setup-zig@v2
+        with:
+          # Matches build.zig.zon .minimum_zig_version
+          version: 0.15.2
+      - name: Zig build (blocking)
+        if: matrix.lang == 'zig'
+        working-directory: agenkit-zig
+        run: zig build
+      - name: Zig tests (non-blocking)
+        if: matrix.lang == 'zig'
+        continue-on-error: true
+        working-directory: agenkit-zig
+        run: zig build test
+

@@ -419,8 +419,7 @@ After successful build:
 
 1. Run examples to verify installation
 2. Run tests to ensure everything works
-3. Check out the [infrastructure plan](../../docs/cpp_infrastructure_plan.md)
-4. Start implementing core components!
+3. Start implementing core components!
 
 ---
 

@@ -455,7 +455,6 @@ export OTLP_ENDPOINT="http://localhost:4317"
 - **Patterns Guide**: [docs/PATTERNS.md](docs/PATTERNS.md)
 - **Migration Guide**: [docs/MIGRATION.md](docs/MIGRATION.md)
 - **Testing Framework**: [docs/TESTING_FRAMEWORK.md](docs/TESTING_FRAMEWORK.md)
-- **Infrastructure Plan**: [../docs/cpp_infrastructure_plan.md](../docs/cpp_infrastructure_plan.md)
 
 ---
 

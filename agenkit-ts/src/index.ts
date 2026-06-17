@@ -504,3 +504,6 @@ export {
   McpToolAdapter,
   toolsFromClient,
 } from './protocols/mcp/index.js';
+
+// Agent Skills
+export { AgentSkill, SkillRegistry, SkillEnabledAgent } from './skills';

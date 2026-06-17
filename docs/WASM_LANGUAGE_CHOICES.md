@@ -111,6 +111,5 @@ TypeScript doesn't compile to WASM - it compiles to JavaScript, which already ru
 
 ## See Also
 
-- [v0.44.0 Milestone](https://github.com/agenkit/agenkit/milestone/44)
-- [WASM Implementation Plan](WASM_V1_IMPLEMENTATION_PLAN.md)
-- [Language Parity Matrix](PATTERN_PARITY_MATRIX_DECEMBER_2025.md)
+- WASM tracking: see GitHub issues labeled `wasm` (the authoritative source for status/plan)
+- Cross-language parity: regenerated via `scripts/test-parity.sh` and the Parity Validation CI workflow

@@ -8,17 +8,18 @@
 
 This document outlines the development roadmap for agenkit, organized by phases and milestones.
 
-## Current Status (March 2026)
+## Current Status (June 2026)
 
 ### 🚀 Strategic Context: Production Infrastructure Complete
 
-**March 2026** — v0.69.0 shipped. Framework ecosystem coverage complete (14+ frameworks),
-API standardization done across all 6 languages, 1989 tests passing.
+**June 2026** — v0.85.0 shipped. Nine language implementations (Python, Go, TypeScript,
+Rust, C++, Zig, C#, Java, Scala), MCP support, Reasoning Memory, and Agent Skills.
+See GitHub milestones for per-release detail (the authoritative source).
 
-1. **30-Hour Autonomous Operation**: Infrastructure now ready for Claude Sonnet 4.6, OpenAI o3 extended sessions
+1. **30-Hour Autonomous Operation**: Infrastructure ready for extended agent sessions
 2. **Production Infrastructure**: Checkpointing, budget tracking, and memory systems complete
-3. **Cross-Language Parity**: 100% feature parity across Python, Go, TypeScript, Rust, C++, and Zig ✅
-4. **Battle-Tested**: 1989 tests passing across all languages
+3. **Cross-Language Parity**: 100% pattern parity across the six core languages (Python, Go, TypeScript, Rust, C++, Zig); C#/Java/Scala implemented and converging
+4. **Battle-Tested**: comprehensive test suites across all languages (see GitHub for current counts)
 5. **Framework Ecosystem**: 14+ framework examples (LangChain, CrewAI, LlamaIndex, LangGraph, DSPy, OpenAI Agents SDK, etc.) with migration guides and performance benchmarks
 
 **Agenkit's 2026 Mission:** Provide minimal, composable interfaces for **production-scale autonomous agents**.
@@ -806,7 +807,7 @@ Production-ready Kubernetes manifests.
 
 **Why**: Browser-native AI agents unlock massive use cases: client-side privacy-preserving agents, offline-capable web apps, serverless edge computing, browser extensions with AI. Critical for early April conference demo and v1.0 differentiation.
 
-**Implementation Plan**: See [docs/WASM_V1_IMPLEMENTATION_PLAN.md](docs/WASM_V1_IMPLEMENTATION_PLAN.md) for detailed 8-week plan.
+**Implementation Plan**: tracked via GitHub issues labeled `wasm`.
 
 **Expected Deliverables**:
 - ✅ All 18 patterns work in WASM (Rust + C++ + Zig)

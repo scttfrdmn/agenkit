@@ -107,7 +107,7 @@ describe('Middleware', () => {
         },
       });
 
-      const retriedAgent = applyMiddleware(agent, [retry({ maxAttempts: 3, initialDelay: 10 })]);
+      const retriedAgent = applyMiddleware(agent, [retry({ maxRetries: 3, initialDelayMs: 10 })]);
 
       const response = await retriedAgent.process(createMessage('user', 'Hello'));
 
@@ -126,7 +126,7 @@ describe('Middleware', () => {
         },
       });
 
-      const retriedAgent = applyMiddleware(agent, [retry({ maxAttempts: 2, initialDelay: 10 })]);
+      const retriedAgent = applyMiddleware(agent, [retry({ maxRetries: 2, initialDelayMs: 10 })]);
 
       await expect(retriedAgent.process(createMessage('user', 'Hello'))).rejects.toThrow(
         'Network error',
@@ -148,8 +148,8 @@ describe('Middleware', () => {
 
       const retriedAgent = applyMiddleware(agent, [
         retry({
-          maxAttempts: 3,
-          initialDelay: 10,
+          maxRetries: 3,
+          initialDelayMs: 10,
           shouldRetry: (error) => error.message.includes('network'),
         }),
       ]);
@@ -180,7 +180,7 @@ describe('Middleware', () => {
       });
 
       const retriedAgent = applyMiddleware(agent, [
-        retry({ maxAttempts: 3, initialDelay: 50, backoffMultiplier: 2.0 }),
+        retry({ maxRetries: 3, initialDelayMs: 50, backoffMultiplier: 2.0 }),
       ]);
 
       await retriedAgent.process(createMessage('user', 'Hello'));
@@ -219,10 +219,10 @@ describe('Middleware', () => {
 
       const retriedAgent = applyMiddleware(agent, [
         retry({
-          maxAttempts: 4,
-          initialDelay: 100,
+          maxRetries: 4,
+          initialDelayMs: 100,
           backoffMultiplier: 10.0, // Would cause very long delay
-          maxDelay: 200, // Cap at 200ms
+          maxDelayMs: 200, // Cap at 200ms
         }),
       ]);
 
@@ -247,7 +247,7 @@ describe('Middleware', () => {
         },
       });
 
-      const timedAgent = applyMiddleware(agent, [timeout({ timeout: 100 })]);
+      const timedAgent = applyMiddleware(agent, [timeout({ timeoutMs: 100 })]);
 
       await expect(timedAgent.process(createMessage('user', 'Hello'))).rejects.toThrow(
         TimeoutError,
@@ -263,7 +263,7 @@ describe('Middleware', () => {
         },
       });
 
-      const timedAgent = applyMiddleware(agent, [timeout({ timeout: 100 })]);
+      const timedAgent = applyMiddleware(agent, [timeout({ timeoutMs: 100 })]);
 
       const response = await timedAgent.process(createMessage('user', 'Hello'));
 
@@ -279,7 +279,7 @@ describe('Middleware', () => {
         },
       });
 
-      const timedAgent = applyMiddleware(agent, [timeout({ timeout: 50 })]);
+      const timedAgent = applyMiddleware(agent, [timeout({ timeoutMs: 50 })]);
 
       await expect(timedAgent.process(createMessage('user', 'Hello')))
         .rejects.toThrow('Request timeout after 50ms');
@@ -309,8 +309,8 @@ describe('Middleware', () => {
 
       // Apply retry, then timeout
       const robustAgent = applyMiddleware(agent, [
-        retry({ maxAttempts: 2, initialDelay: 10 }),
-        timeout({ timeout: 200 }),
+        retry({ maxRetries: 2, initialDelayMs: 10 }),
+        timeout({ timeoutMs: 200 }),
       ]);
 
       const response = await robustAgent.process(createMessage('user', 'Hello'));
@@ -336,8 +336,8 @@ describe('Middleware', () => {
 
       // Timeout wraps each retry attempt
       const robustAgent = applyMiddleware(agent, [
-        timeout({ timeout: 50 }),
-        retry({ maxAttempts: 3, initialDelay: 10 }),
+        timeout({ timeoutMs: 50 }),
+        retry({ maxRetries: 3, initialDelayMs: 10 }),
       ]);
 
       await expect(robustAgent.process(createMessage('user', 'Hello'))).rejects.toThrow(
@@ -362,8 +362,7 @@ describe('Middleware', () => {
       });
 
       const timedAgent = applyMiddleware(agent, [
-        timeout({
-          timeout: 100, // Default timeout
+        timeout({ timeoutMs: 100, // Default timeout
           methodTimeouts: {
             health_check: 50, // Shorter timeout for health checks
             long_operation: 200, // Longer timeout for long operations
@@ -393,8 +392,7 @@ describe('Middleware', () => {
       });
 
       const timedAgent = applyMiddleware(agent, [
-        timeout({
-          timeout: 100,
+        timeout({ timeoutMs: 100,
           methodTimeouts: {
             special: 300,
           },
@@ -421,7 +419,7 @@ describe('Middleware', () => {
         },
       });
 
-      const timedAgent = applyMiddleware(agent, [timeout({ timeout: 120 })]);
+      const timedAgent = applyMiddleware(agent, [timeout({ timeoutMs: 120 })]);
 
       const chunks: string[] = [];
       let didThrow = false;
@@ -451,7 +449,7 @@ describe('Middleware', () => {
         },
       });
 
-      const timedAgent = applyMiddleware(agent, [timeout({ timeout: 200 })]);
+      const timedAgent = applyMiddleware(agent, [timeout({ timeoutMs: 200 })]);
 
       const chunks: string[] = [];
       for await (const chunk of timedAgent.processStream!(createMessage('user', 'test'))) {
@@ -468,7 +466,7 @@ describe('Middleware', () => {
         // No processStream
       });
 
-      const timedAgent = applyMiddleware(agent, [timeout({ timeout: 100 })]);
+      const timedAgent = applyMiddleware(agent, [timeout({ timeoutMs: 100 })]);
 
       const stream = timedAgent.processStream!(createMessage('user', 'test'));
       await expect(stream.next()).rejects.toThrow('does not support streaming');

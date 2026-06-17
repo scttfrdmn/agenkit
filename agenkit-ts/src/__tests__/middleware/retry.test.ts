@@ -47,7 +47,7 @@ class FailingAgent implements Agent {
 describe('RetryMiddleware: Basic Functionality', () => {
   it('should succeed on first try without retry', async () => {
     const agent = new FailingAgent(0, 'success');
-    const retry = new RetryMiddleware(agent, { maxAttempts: 3, initialDelay: 10 });
+    const retry = new RetryMiddleware(agent, { maxRetries: 3, initialDelayMs: 10 });
 
     const input = createMessage('user', 'test');
     const result = await retry.process(input);
@@ -61,14 +61,16 @@ describe('RetryMiddleware: Basic Functionality', () => {
 
   it('should succeed on retry after failures', async () => {
     const agent = new FailingAgent(2, 'success', 'network error');
-    const retry = new RetryMiddleware(agent, { maxAttempts: 3, initialDelay: 10 });
+    const retry = new RetryMiddleware(agent, { maxRetries: 3, initialDelayMs: 10 });
 
     const input = createMessage('user', 'test');
     const result = await retry.process(input);
 
     expect(result.content).toBe('success');
     expect(agent.getAttemptCount()).toBe(3); // Failed twice, succeeded third time
-    expect(retry.metrics.totalAttempts).toBe(1);
+    // totalAttempts counts every attempt incl. retries (per RetryMetrics docs):
+    // two failures + one success = 3.
+    expect(retry.metrics.totalAttempts).toBe(3);
     expect(retry.metrics.successfulFirstAttempt).toBe(0);
     expect(retry.metrics.successfulOnRetry).toBe(1);
     expect(retry.metrics.totalRetries).toBe(1); // 1 retry attempt (not counting first failure)
@@ -76,7 +78,7 @@ describe('RetryMiddleware: Basic Functionality', () => {
 
   it('should fail after max attempts exceeded', async () => {
     const agent = new FailingAgent(5, 'success', 'network error');
-    const retry = new RetryMiddleware(agent, { maxAttempts: 3, initialDelay: 10 });
+    const retry = new RetryMiddleware(agent, { maxRetries: 3, initialDelayMs: 10 });
 
     const input = createMessage('user', 'test');
 
@@ -92,42 +94,56 @@ describe('RetryMiddleware: Basic Functionality', () => {
 // ============================================
 
 describe('RetryMiddleware: Exponential Backoff', () => {
+  // Fake timers make the backoff assertions deterministic: we measure the
+  // exact simulated time the middleware schedules rather than wall-clock
+  // elapsed (which was flaky on loaded CI and depended on a 250–400ms window).
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** Run process() to completion while advancing fake timers, returning the
+   *  total simulated milliseconds spent in backoff sleeps. */
+  async function runWithSimulatedTime(retry: RetryMiddleware, input: Message): Promise<number> {
+    const start = Date.now();
+    const done = retry.process(input);
+    // Drain all pending timers (the backoff sleeps) until the promise settles.
+    await vi.runAllTimersAsync();
+    await done;
+    return Date.now() - start;
+  }
+
   it('should apply exponential backoff between retries', async () => {
     const agent = new FailingAgent(2, 'success', 'timeout');
     const retry = new RetryMiddleware(agent, {
-      maxAttempts: 3,
-      initialDelay: 100,
+      maxRetries: 3,
+      initialDelayMs: 100,
       backoffMultiplier: 2.0,
     });
 
-    const start = Date.now();
-    const input = createMessage('user', 'test');
-    await retry.process(input);
-    const elapsed = Date.now() - start;
+    const elapsed = await runWithSimulatedTime(retry, createMessage('user', 'test'));
 
-    // First retry: 100ms, Second retry: 200ms = 300ms total
-    // Allow for some timing variance
-    expect(elapsed).toBeGreaterThanOrEqual(250);
-    expect(elapsed).toBeLessThan(400);
+    // First retry: 100ms, second retry: 200ms = exactly 300ms simulated.
+    expect(elapsed).toBe(300);
+    expect(agent.getAttemptCount()).toBe(3);
   });
 
   it('should cap delay at maxDelay', async () => {
     const agent = new FailingAgent(2, 'success', 'timeout');
     const retry = new RetryMiddleware(agent, {
-      maxAttempts: 3,
-      initialDelay: 1000,
-      backoffMultiplier: 10.0, // Would be 1000 * 10 = 10000 without cap
-      maxDelay: 150, // Cap at 150ms
+      maxRetries: 3,
+      initialDelayMs: 1000,
+      backoffMultiplier: 10.0, // Would be 1000, then 10000 without the cap
+      maxDelayMs: 150, // Cap each delay at 150ms
     });
 
-    const start = Date.now();
-    const input = createMessage('user', 'test');
-    await retry.process(input);
-    const elapsed = Date.now() - start;
+    const elapsed = await runWithSimulatedTime(retry, createMessage('user', 'test'));
 
-    // First retry: 150ms (capped), Second retry: 150ms (capped) = 300ms total
-    expect(elapsed).toBeGreaterThanOrEqual(250);
-    expect(elapsed).toBeLessThan(400);
+    // Both retries capped at 150ms = exactly 300ms simulated.
+    expect(elapsed).toBe(300);
+    expect(agent.getAttemptCount()).toBe(3);
   });
 });
 
@@ -139,8 +155,8 @@ describe('RetryMiddleware: Custom Predicates', () => {
   it('should use custom shouldRetry predicate', async () => {
     const agent = new FailingAgent(2, 'success', 'custom error');
     const retry = new RetryMiddleware(agent, {
-      maxAttempts: 3,
-      initialDelay: 10,
+      maxRetries: 3,
+      initialDelayMs: 10,
       shouldRetry: (error: Error) => error.message.includes('custom'),
     });
 
@@ -154,8 +170,8 @@ describe('RetryMiddleware: Custom Predicates', () => {
   it('should not retry on non-retryable errors', async () => {
     const agent = new FailingAgent(3, 'success', 'validation error');
     const retry = new RetryMiddleware(agent, {
-      maxAttempts: 3,
-      initialDelay: 10,
+      maxRetries: 3,
+      initialDelayMs: 10,
       shouldRetry: (error: Error) => error.message.includes('network'),
     });
 
@@ -172,7 +188,7 @@ describe('RetryMiddleware: Custom Predicates', () => {
 
     for (const errorMsg of networkErrors) {
       const agent = new FailingAgent(1, 'success', errorMsg);
-      const retry = new RetryMiddleware(agent, { maxAttempts: 3, initialDelay: 10 });
+      const retry = new RetryMiddleware(agent, { maxRetries: 3, initialDelayMs: 10 });
 
       const input = createMessage('user', 'test');
       const result = await retry.process(input);
@@ -192,21 +208,21 @@ describe('RetryMiddleware: Metrics', () => {
   it('should track metrics correctly across multiple requests', async () => {
     // First request: succeeds immediately
     const retry = new RetryMiddleware(new FailingAgent(0, 'success'), {
-      maxAttempts: 3,
-      initialDelay: 10,
+      maxRetries: 3,
+      initialDelayMs: 10,
     });
     await retry.process(createMessage('user', 'test1'));
     expect(retry.metrics.successfulFirstAttempt).toBe(1);
 
     // Second request: fails once, then succeeds
     const agent2 = new FailingAgent(1, 'success', 'network error');
-    const retry2 = new RetryMiddleware(agent2, { maxAttempts: 3, initialDelay: 10 });
+    const retry2 = new RetryMiddleware(agent2, { maxRetries: 3, initialDelayMs: 10 });
     await retry2.process(createMessage('user', 'test2'));
     expect(retry2.metrics.successfulOnRetry).toBe(1);
 
     // Third request: fails completely
     const agent3 = new FailingAgent(5, 'success', 'network error');
-    const retry3 = new RetryMiddleware(agent3, { maxAttempts: 3, initialDelay: 10 });
+    const retry3 = new RetryMiddleware(agent3, { maxRetries: 3, initialDelayMs: 10 });
     try {
       await retry3.process(createMessage('user', 'test3'));
     } catch {
@@ -217,7 +233,7 @@ describe('RetryMiddleware: Metrics', () => {
 
   it('should return metrics copy to prevent mutation', () => {
     const retry = new RetryMiddleware(new FailingAgent(0, 'success'), {
-      maxAttempts: 3,
+      maxRetries: 3,
     });
 
     const metrics1 = retry.metrics;
@@ -244,10 +260,10 @@ describe('RetryMiddleware: Configuration', () => {
   it('should accept custom config values', () => {
     const agent = new FailingAgent(0, 'success');
     const retry = new RetryMiddleware(agent, {
-      maxAttempts: 5,
-      initialDelay: 500,
+      maxRetries: 5,
+      initialDelayMs: 500,
       backoffMultiplier: 3.0,
-      maxDelay: 10000,
+      maxDelayMs: 10000,
     });
 
     expect(retry).toBeDefined();

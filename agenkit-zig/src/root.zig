@@ -247,6 +247,9 @@ pub const protocols = struct {
     pub const mcp = @import("protocols/mcp.zig");
 };
 
+// Agent Skills
+pub const skills = @import("skills.zig");
+
 // Techniques
 pub const techniques = struct {
     // Reasoning techniques
@@ -319,6 +322,10 @@ test {
     _ = @import("middleware/mod.zig");
     // Also test infrastructure
     _ = @import("infrastructure/mod.zig");
+    // Also test agent skills
+    _ = @import("skills.zig");
+    _ = @import("skills/loader.zig");
+    _ = @import("skills/agent.zig");
     // Also test techniques
     _ = @import("techniques/reasoning/self_consistency.zig");
     _ = @import("techniques/reasoning/chain_of_thought.zig");

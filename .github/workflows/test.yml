@@ -108,17 +108,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      # TS build is currently RED on main (a tsc + @types/node bump via the npm
-      # group broke moduleResolution + tightened Buffer/string[] types). Kept
-      # non-blocking until the dedicated TS-build-fix issue lands; flip to
-      # blocking once green.
       - name: TypeScript install
         if: matrix.lang == 'typescript'
         working-directory: agenkit-ts
         run: npm ci
-      - name: TypeScript build (non-blocking)
+      - name: TypeScript build (blocking)
         if: matrix.lang == 'typescript'
-        continue-on-error: true
         working-directory: agenkit-ts
         run: npm run build
       # Hard 5-min cap: some TS tests connect to Redis and retry until the job

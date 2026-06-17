@@ -54,9 +54,11 @@ export class TCPTransport extends Transport {
           this.socket = null;
         });
 
-        // Setup data handler for buffering
-        this.socket.on('data', (data) => {
-          this.receiveBuffer = Buffer.concat([this.receiveBuffer, data]);
+        // Setup data handler for buffering. The 'data' event payload is typed
+        // string | Buffer; normalize to Buffer before concatenating.
+        this.socket.on('data', (data: Buffer | string) => {
+          const chunk = typeof data === 'string' ? Buffer.from(data) : data;
+          this.receiveBuffer = Buffer.concat([this.receiveBuffer, chunk]);
         });
 
         this.socket.connect(this.port, this.host);

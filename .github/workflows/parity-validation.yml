@@ -100,12 +100,21 @@ jobs:
             📋 See [FEATURE_MATRIX.md](../blob/${process.env.GITHUB_SHA}/docs/parity/FEATURE_MATRIX.md) for details
             `;
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
+            // Dependabot / forked PRs run with a read-only token, so the
+            // create-comment call rejects. Await inside try/catch so the
+            // rejection is handled here and never escapes as an unhandled
+            // promise rejection (which crashes Node and defeats
+            // continue-on-error).
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              core.warning(`Could not post parity comment (read-only token?): ${error.message}`);
+            }
 
   # Optional: Block PR if parity regresses
   parity-gate:

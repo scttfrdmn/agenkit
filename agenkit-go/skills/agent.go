@@ -2,7 +2,6 @@ package skills
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -99,7 +98,7 @@ func (s *SkillEnabledAgent) Process(ctx context.Context, message *agenkit.Messag
 	for k, v := range message.Metadata {
 		enhanced.Metadata[k] = v
 	}
-	enhanced.Metadata["active_skills"] = fmt.Sprintf("%s", strings.Join(activeNames, ","))
+	enhanced.Metadata["active_skills"] = strings.Join(activeNames, ",")
 
 	return s.agent.Process(ctx, enhanced)
 }

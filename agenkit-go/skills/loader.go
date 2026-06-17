@@ -199,3 +199,12 @@ func (r *SkillRegistry) GetSkill(name string) (*AgentSkill, bool) {
 	s, ok := r.skills[name]
 	return s, ok
 }
+
+// All returns all loaded skills as an unordered slice.
+func (r *SkillRegistry) All() []*AgentSkill {
+	out := make([]*AgentSkill, 0, len(r.skills))
+	for _, s := range r.skills {
+		out = append(out, s)
+	}
+	return out
+}

@@ -12,6 +12,23 @@ import (
 	"sync/atomic"
 )
 
+const (
+	mcpProtocolVersion = "2024-11-05"
+	mcpClientVersion   = "0.82.0"
+)
+
+// mcpInitParams returns the serialised params for the MCP initialize request.
+func mcpInitParams() (json.RawMessage, error) {
+	return json.Marshal(map[string]interface{}{
+		"protocolVersion": mcpProtocolVersion,
+		"capabilities":    map[string]interface{}{},
+		"clientInfo": map[string]interface{}{
+			"name":    "agenkit",
+			"version": mcpClientVersion,
+		},
+	})
+}
+
 // StdioConfig holds configuration for StdioClient.
 type StdioConfig struct {
 	// Command is the executable to spawn (e.g. "npx", "python").
@@ -76,14 +93,7 @@ func NewStdioClient(ctx context.Context, cfg StdioConfig) (*StdioClient, error) 
 
 // Initialize sends the MCP initialize request and stores server info.
 func (c *StdioClient) Initialize(ctx context.Context) error {
-	params, err := json.Marshal(map[string]interface{}{
-		"protocolVersion": "2024-11-05",
-		"capabilities":    map[string]interface{}{},
-		"clientInfo": map[string]string{
-			"name":    "agenkit",
-			"version": "0.82.0",
-		},
-	})
+	params, err := mcpInitParams()
 	if err != nil {
 		return fmt.Errorf("mcp: marshal initialize params: %w", err)
 	}
@@ -154,8 +164,17 @@ func (c *StdioClient) Close() error {
 }
 
 // sendRequest encodes a JSON-RPC request and decodes the response.
-// The mutex ensures requests are serialised over the single pipe.
+// The mutex serialises the full write→read cycle so concurrent callers
+// never interleave their request/response pairs on the stdio pipe.
+// Note: stdio I/O is not cancellable mid-operation; ctx is only checked
+// before acquiring the lock.
 func (c *StdioClient) sendRequest(ctx context.Context, method string, params json.RawMessage) (*jsonrpcResponse, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -167,35 +186,17 @@ func (c *StdioClient) sendRequest(ctx context.Context, method string, params jso
 		Params:  params,
 	}
 
-	type result struct {
-		resp *jsonrpcResponse
-		err  error
+	if err := c.encoder.Encode(req); err != nil {
+		return nil, fmt.Errorf("encode request: %w", err)
 	}
-	done := make(chan result, 1)
-
-	go func() {
-		if err := c.encoder.Encode(req); err != nil {
-			done <- result{nil, fmt.Errorf("encode request: %w", err)}
-			return
-		}
-		var resp jsonrpcResponse
-		if err := c.decoder.Decode(&resp); err != nil {
-			done <- result{nil, fmt.Errorf("decode response: %w", err)}
-			return
-		}
-		if resp.Error != nil {
-			done <- result{nil, fmt.Errorf("rpc error %d: %s", resp.Error.Code, resp.Error.Message)}
-			return
-		}
-		done <- result{&resp, nil}
-	}()
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case r := <-done:
-		return r.resp, r.err
+	var resp jsonrpcResponse
+	if err := c.decoder.Decode(&resp); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
 	}
+	if resp.Error != nil {
+		return nil, fmt.Errorf("rpc error %d: %s", resp.Error.Code, resp.Error.Message)
+	}
+	return &resp, nil
 }
 
 // ─── HTTPClient ────────────────────────────────────────────────────────────────
@@ -225,14 +226,7 @@ func NewHTTPClient(ctx context.Context, baseURL string) (*HTTPClient, error) {
 
 // Initialize sends the MCP initialize request to the HTTP server.
 func (c *HTTPClient) Initialize(ctx context.Context) error {
-	params, err := json.Marshal(map[string]interface{}{
-		"protocolVersion": "2024-11-05",
-		"capabilities":    map[string]interface{}{},
-		"clientInfo": map[string]string{
-			"name":    "agenkit",
-			"version": "0.82.0",
-		},
-	})
+	params, err := mcpInitParams()
 	if err != nil {
 		return fmt.Errorf("mcp: marshal initialize params: %w", err)
 	}

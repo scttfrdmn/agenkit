@@ -3,6 +3,8 @@
 /// Provides structured logging of security events with file rotation and severity filtering.
 /// Audit logs are append-only and tamper-evident for compliance and forensics.
 const std = @import("std");
+const ioc = @import("../io_compat.zig");
+const agktime = @import("../time_compat.zig");
 const mem = std.mem;
 const fs = std.fs;
 const Allocator = std.mem.Allocator;
@@ -107,7 +109,7 @@ pub const SecurityAuditLogger = struct {
     max_bytes: usize,
     backup_count: i32,
     current_size: usize,
-    file: ?fs.File,
+    file: ?std.Io.File,
     allocator: Allocator,
 
     pub const Config = struct {
@@ -119,13 +121,13 @@ pub const SecurityAuditLogger = struct {
 
     pub fn init(allocator: Allocator, config: Config) !SecurityAuditLogger {
         // Open or create log file
-        const file = try fs.cwd().createFile(config.log_file_path, .{
+        const file = try std.Io.Dir.cwd().createFile(ioc.io(), config.log_file_path, .{
             .truncate = false,
             .read = true,
         });
 
         // Get current file size
-        const stat = try file.stat();
+        const stat = try file.stat(ioc.io());
         const current_size = stat.size;
 
         return SecurityAuditLogger{
@@ -141,7 +143,7 @@ pub const SecurityAuditLogger = struct {
 
     pub fn deinit(self: *SecurityAuditLogger) void {
         if (self.file) |file| {
-            file.close();
+            file.close(ioc.io());
         }
     }
 
@@ -165,10 +167,9 @@ pub const SecurityAuditLogger = struct {
             try self.rotateLog();
         }
 
-        // Write to file
+        // Write to file (append at the tracked end-of-file offset)
         if (self.file) |file| {
-            try file.seekFromEnd(0);
-            try file.writeAll(log_line);
+            try file.writePositionalAll(ioc.io(), log_line, self.current_size);
             self.current_size += log_line.len;
         }
     }
@@ -176,7 +177,7 @@ pub const SecurityAuditLogger = struct {
     fn rotateLog(self: *SecurityAuditLogger) !void {
         // Close current file
         if (self.file) |file| {
-            file.close();
+            file.close(ioc.io());
             self.file = null;
         }
 
@@ -189,17 +190,17 @@ pub const SecurityAuditLogger = struct {
             const new_name = try std.fmt.allocPrint(self.allocator, "{s}.{d}", .{ self.log_file_path, i + 1 });
             defer self.allocator.free(new_name);
 
-            fs.cwd().rename(old_name, new_name) catch {};
+            std.Io.Dir.cwd().rename(old_name, std.Io.Dir.cwd(), new_name, ioc.io()) catch {};
         }
 
         // Move current to .1
         const backup_name = try std.fmt.allocPrint(self.allocator, "{s}.1", .{self.log_file_path});
         defer self.allocator.free(backup_name);
 
-        fs.cwd().rename(self.log_file_path, backup_name) catch {};
+        std.Io.Dir.cwd().rename(self.log_file_path, std.Io.Dir.cwd(), backup_name, ioc.io()) catch {};
 
         // Create new log file
-        self.file = try fs.cwd().createFile(self.log_file_path, .{
+        self.file = try std.Io.Dir.cwd().createFile(ioc.io(), self.log_file_path, .{
             .truncate = true,
             .read = true,
         });
@@ -217,7 +218,7 @@ pub const SecurityAuditLogger = struct {
             .user_id = user_id,
             .agent_name = agent_name,
             .message = message,
-            .timestamp = std.time.timestamp(),
+            .timestamp = agktime.timestamp(),
         });
     }
 
@@ -231,7 +232,7 @@ pub const SecurityAuditLogger = struct {
             .user_id = user_id,
             .agent_name = agent_name,
             .message = message,
-            .timestamp = std.time.timestamp(),
+            .timestamp = agktime.timestamp(),
         });
     }
 
@@ -245,7 +246,7 @@ pub const SecurityAuditLogger = struct {
             .user_id = user_id,
             .agent_name = agent_name,
             .message = message,
-            .timestamp = std.time.timestamp(),
+            .timestamp = agktime.timestamp(),
         });
     }
 };
@@ -273,7 +274,7 @@ test "SecurityAuditLogger logs events" {
     const allocator = std.testing.allocator;
 
     const log_path = "test_audit.log";
-    defer fs.cwd().deleteFile(log_path) catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), log_path) catch {};
 
     var logger = try SecurityAuditLogger.init(allocator, .{ .log_file_path = log_path });
     defer logger.deinit();
@@ -281,9 +282,9 @@ test "SecurityAuditLogger logs events" {
     try logger.logAccessGranted("user123", "/api/data", "test-agent");
 
     // Verify file was created
-    const file = try fs.cwd().openFile(log_path, .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().openFile(ioc.io(), log_path, .{});
+    defer file.close(ioc.io());
 
-    const stat = try file.stat();
+    const stat = try file.stat(ioc.io());
     try std.testing.expect(stat.size > 0);
 }

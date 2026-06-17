@@ -133,14 +133,14 @@ pub const RedisMemory = struct {
         content: []const u8,
         metadata: std.StringHashMap(std.json.Value),
     ) ![]u8 {
-        var json_obj = std.json.ObjectMap.init(self.allocator);
+        var json_obj = std.json.ObjectMap.empty;
         defer json_obj.deinit();
 
         try json_obj.put("role", std.json.Value{ .string = role });
         try json_obj.put("content", std.json.Value{ .string = content });
 
         // Convert metadata to JSON object
-        var meta_obj = std.json.ObjectMap.init(self.allocator);
+        var meta_obj = std.json.ObjectMap.empty;
         defer meta_obj.deinit();
 
         var iter = metadata.iterator();
@@ -151,7 +151,7 @@ pub const RedisMemory = struct {
         try json_obj.put("metadata", std.json.Value{ .object = meta_obj });
 
         // Serialize to string
-        var string = std.ArrayList(u8).init(self.allocator);
+        var string = std.ArrayList(u8).empty;
         defer string.deinit();
 
         try std.json.stringify(json_obj, .{}, string.writer());
@@ -185,7 +185,7 @@ pub const RedisMemory = struct {
         // 4. Set TTL if configured
         //
         // Example with hiredis:
-        // const timestamp = @as(f64, @floatFromInt(std.time.timestamp()));
+        // const timestamp = @as(f64, @floatFromInt(agktime.timestamp()));
         // const value = try self.serializeMessage(role, content, metadata);
         // defer self.allocator.free(value);
         //
@@ -283,7 +283,7 @@ pub const RedisMemory = struct {
         }
 
         // Build summary
-        var summary = std.ArrayList(u8).init(self.allocator);
+        var summary = std.ArrayList(u8).empty;
         defer summary.deinit();
 
         try summary.writer().print("Session summary ({d} messages):\n", .{messages.len});

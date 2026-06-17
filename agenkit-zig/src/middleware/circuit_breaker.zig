@@ -32,6 +32,8 @@
 /// const metrics = breaker.metrics();
 /// ```
 const std = @import("std");
+const agksync = @import("../sync_compat.zig");
+const agktime = @import("../time_compat.zig");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
@@ -178,7 +180,7 @@ pub const CircuitBreakerDecorator = struct {
     failure_count: u32,
     success_count: u32,
     last_failure_time_ms: ?i64,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(allocator: Allocator, inner_agent: Agent, config: CircuitBreakerConfig) !*CircuitBreakerDecorator {
         // Validate configuration
@@ -194,7 +196,7 @@ pub const CircuitBreakerDecorator = struct {
             .failure_count = 0,
             .success_count = 0,
             .last_failure_time_ms = null,
-            .mutex = std.Thread.Mutex{},
+            .mutex = agksync.Mutex{},
         };
         return self;
     }
@@ -232,7 +234,7 @@ pub const CircuitBreakerDecorator = struct {
         if (self.state != .OPEN) return false;
         if (self.last_failure_time_ms == null) return false;
 
-        const now = std.time.milliTimestamp();
+        const now = agktime.milliTimestamp();
         const elapsed = now - self.last_failure_time_ms.?;
         return elapsed >= @as(i64, @intCast(self.config.recovery_timeout_ms));
     }
@@ -244,7 +246,7 @@ pub const CircuitBreakerDecorator = struct {
 
         self.state = new_state;
         self.metrics_data.current_state = new_state;
-        self.metrics_data.last_state_change_ms = std.time.milliTimestamp();
+        self.metrics_data.last_state_change_ms = agktime.milliTimestamp();
 
         // Record transition
         try self.metrics_data.recordTransition(old_state, new_state, self.allocator);
@@ -276,7 +278,7 @@ pub const CircuitBreakerDecorator = struct {
     /// Record failed request
     fn recordFailure(self: *CircuitBreakerDecorator) !void {
         self.metrics_data.failed_requests += 1;
-        self.last_failure_time_ms = std.time.milliTimestamp();
+        self.last_failure_time_ms = agktime.milliTimestamp();
 
         if (self.state == .HALF_OPEN) {
             // Any failure in HALF_OPEN immediately opens circuit
@@ -355,31 +357,31 @@ pub const CircuitBreakerDecorator = struct {
         var metrics_snapshot = try self.metrics();
         defer metrics_snapshot.state_transitions.deinit();
 
-        var metadata_obj = std.json.ObjectMap.init(allocator);
-        errdefer metadata_obj.deinit();
+        var metadata_obj = std.json.ObjectMap.empty;
+        errdefer metadata_obj.deinit(allocator);
 
-        try metadata_obj.put("total_requests", std.json.Value{ .integer = @intCast(metrics_snapshot.total_requests) });
-        try metadata_obj.put("successful_requests", std.json.Value{ .integer = @intCast(metrics_snapshot.successful_requests) });
-        try metadata_obj.put("failed_requests", std.json.Value{ .integer = @intCast(metrics_snapshot.failed_requests) });
-        try metadata_obj.put("rejected_requests", std.json.Value{ .integer = @intCast(metrics_snapshot.rejected_requests) });
-        try metadata_obj.put("current_state", std.json.Value{ .string = metrics_snapshot.current_state.toString() });
-        try metadata_obj.put("failure_threshold", std.json.Value{ .integer = @intCast(self.config.failure_threshold) });
-        try metadata_obj.put("success_threshold", std.json.Value{ .integer = @intCast(self.config.success_threshold) });
-        try metadata_obj.put("recovery_timeout_ms", std.json.Value{ .integer = @intCast(self.config.recovery_timeout_ms) });
+        try metadata_obj.put(allocator, "total_requests", std.json.Value{ .integer = @intCast(metrics_snapshot.total_requests) });
+        try metadata_obj.put(allocator, "successful_requests", std.json.Value{ .integer = @intCast(metrics_snapshot.successful_requests) });
+        try metadata_obj.put(allocator, "failed_requests", std.json.Value{ .integer = @intCast(metrics_snapshot.failed_requests) });
+        try metadata_obj.put(allocator, "rejected_requests", std.json.Value{ .integer = @intCast(metrics_snapshot.rejected_requests) });
+        try metadata_obj.put(allocator, "current_state", std.json.Value{ .string = metrics_snapshot.current_state.toString() });
+        try metadata_obj.put(allocator, "failure_threshold", std.json.Value{ .integer = @intCast(self.config.failure_threshold) });
+        try metadata_obj.put(allocator, "success_threshold", std.json.Value{ .integer = @intCast(self.config.success_threshold) });
+        try metadata_obj.put(allocator, "recovery_timeout_ms", std.json.Value{ .integer = @intCast(self.config.recovery_timeout_ms) });
 
         // Merge with inner metadata (if it's an object)
         if (inner_result.metadata == .object) {
             var inner_iter = inner_result.metadata.object.iterator();
             while (inner_iter.next()) |entry| {
                 if (!std.mem.startsWith(u8, entry.key_ptr.*, "circuit_")) {
-                    try metadata_obj.put(entry.key_ptr.*, entry.value_ptr.*);
+                    try metadata_obj.put(allocator, entry.key_ptr.*, entry.value_ptr.*);
                 }
             }
         }
 
         return IntrospectionResult{
             .allocator = allocator,
-            .timestamp = std.time.timestamp(),
+            .timestamp = agktime.timestamp(),
             .agent_name = inner_result.agent_name,
             .capabilities = inner_result.capabilities,
             .memory_state = inner_result.memory_state,
@@ -399,12 +401,11 @@ pub const CircuitBreakerDecorator = struct {
 // Tests
 const testing = std.testing;
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "CircuitBreakerConfig validation" {
     var config = CircuitBreakerConfig{};

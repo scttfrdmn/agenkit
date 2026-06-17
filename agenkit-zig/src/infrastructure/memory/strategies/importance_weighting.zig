@@ -21,6 +21,7 @@
 /// defer strategy.deinit();
 /// ```
 const std = @import("std");
+const agktime = @import("../../../time_compat.zig");
 const Allocator = std.mem.Allocator;
 const memory_base = @import("../base.zig");
 const MemoryEntry = memory_base.MemoryEntry;
@@ -86,7 +87,7 @@ pub const ImportanceWeightingStrategy = struct {
         var scored = try self.allocator.alloc(ScoredEntry, entries.len);
         defer self.allocator.free(scored);
 
-        const now = std.time.milliTimestamp();
+        const now = agktime.milliTimestamp();
 
         for (entries, 0..) |entry, i| {
             const age_days = @as(f32, @floatFromInt(now - entry.timestamp)) / (1000.0 * 60.0 * 60.0 * 24.0);

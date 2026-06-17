@@ -21,8 +21,8 @@
 /// // Process message - automatically records metrics
 /// const result = try middleware.agent().process(msg);
 /// ```
-
 const std = @import("std");
+const agktime = @import("../time_compat.zig");
 const Agent = @import("../agent.zig").Agent;
 const Message = @import("../message.zig").Message;
 const AgentError = @import("../agent.zig").AgentError;
@@ -80,7 +80,7 @@ pub const Histogram = struct {
         return Histogram{
             .allocator = allocator,
             .name = try allocator.dupe(u8, name),
-            .observations = std.ArrayList(f64){},
+            .observations = std.ArrayList(f64).empty,
         };
     }
 
@@ -177,9 +177,9 @@ pub const MetricsMiddleware = struct {
     fn process(ptr: *anyopaque, message: Message) AgentError!Result {
         const self: *MetricsMiddleware = @ptrCast(@alignCast(ptr));
 
-        const start_time = std.time.milliTimestamp();
+        const start_time = agktime.milliTimestamp();
         const result = self.inner.process(message);
-        const end_time = std.time.milliTimestamp();
+        const end_time = agktime.milliTimestamp();
 
         const duration_ms = @as(f64, @floatFromInt(end_time - start_time));
         const duration_secs = duration_ms / 1000.0;

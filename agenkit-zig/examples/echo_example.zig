@@ -6,11 +6,12 @@
 /// - Processing messages through the agent
 /// - Handling results and cleanup
 const std = @import("std");
+const agktime = @import("../src/time_compat.zig");
 const agenkit = @import("agenkit");
 
 pub fn main() !void {
     // Setup allocator
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -28,7 +29,7 @@ pub fn main() !void {
 
     // Add metadata to the message
     try user_msg.setMetadata("session_id", std.json.Value{ .string = "zig-example-001" });
-    try user_msg.setMetadata("timestamp", std.json.Value{ .integer = std.time.timestamp() });
+    try user_msg.setMetadata("timestamp", std.json.Value{ .integer = agktime.timestamp() });
 
     // Create an echo agent
     std.debug.print("Creating echo agent...\n", .{});

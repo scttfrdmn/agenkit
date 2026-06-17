@@ -29,6 +29,7 @@
 /// const result = try limiter.agent().process(message);
 /// ```
 const std = @import("std");
+const agksync = @import("../../sync_compat.zig");
 const Agent = @import("../../agent.zig").Agent;
 const AgentError = @import("../../agent.zig").AgentError;
 const StreamCallbacks = @import("../../agent.zig").StreamCallbacks;
@@ -125,7 +126,7 @@ pub const BudgetLimiterDecorator = struct {
     cost_tracker: *CostTracker,
     config: BudgetLimiterConfig,
     metrics_data: BudgetLimiterMetrics,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(
         allocator: Allocator,
@@ -143,7 +144,7 @@ pub const BudgetLimiterDecorator = struct {
             .cost_tracker = cost_tracker,
             .config = config,
             .metrics_data = BudgetLimiterMetrics{},
-            .mutex = std.Thread.Mutex{},
+            .mutex = agksync.Mutex{},
         };
         return self;
     }

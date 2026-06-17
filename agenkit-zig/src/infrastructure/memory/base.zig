@@ -26,13 +26,15 @@
 /// const entries = try mem_store.retrieve("session-123", 10);
 /// ```
 const std = @import("std");
+const ioc = @import("../../io_compat.zig");
+const agktime = @import("../../time_compat.zig");
 const json = std.json;
 const Allocator = std.mem.Allocator;
 
 /// Generate a UUID v4 string.
 fn generateUuid(allocator: Allocator) ![]const u8 {
     var uuid: [16]u8 = undefined;
-    std.crypto.random.bytes(&uuid);
+    ioc.randomBytes(&uuid);
 
     // Set version (4) and variant bits
     uuid[6] = (uuid[6] & 0x0f) | 0x40;
@@ -132,9 +134,9 @@ pub const MemoryEntry = struct {
             .session_id = try allocator.dupe(u8, session_id),
             .role = role,
             .content = try allocator.dupe(u8, content),
-            .timestamp = std.time.milliTimestamp(),
+            .timestamp = agktime.milliTimestamp(),
             .importance = 0.5, // Default neutral importance
-            .metadata = json.Value{ .object = json.ObjectMap.init(allocator) },
+            .metadata = json.Value{ .object = json.ObjectMap.empty },
             .allocator = allocator,
         };
     }
@@ -150,7 +152,7 @@ pub const MemoryEntry = struct {
         while (iter.next()) |entry| {
             self.allocator.free(entry.key_ptr.*);
         }
-        self.metadata.object.deinit();
+        self.metadata.object.deinit(self.allocator);
     }
 
     /// Set importance score.

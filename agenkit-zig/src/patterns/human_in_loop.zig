@@ -49,8 +49,8 @@
 ///
 /// const result = try hitl.agent().process(input_message);
 /// ```
-
 const std = @import("std");
+const agktime = @import("../time_compat.zig");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
@@ -227,7 +227,7 @@ pub const HumanInLoopAgent = struct {
                     .message = response,
                     .confidence = confidence,
                     .context = context,
-                    .timestamp = std.time.timestamp(),
+                    .timestamp = agktime.timestamp(),
                 };
 
                 const approval_response = self.approval_fn(approval_request) catch {
@@ -309,12 +309,11 @@ pub fn confidenceBasedApprove(request: ApprovalRequest) AgentError!ApprovalRespo
 // Tests
 // ============================================================================
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "HumanInLoopAgent: high confidence bypass" {
     // Skip test for now - requires mock infrastructure

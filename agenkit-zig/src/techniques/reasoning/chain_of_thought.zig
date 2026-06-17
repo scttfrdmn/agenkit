@@ -5,7 +5,6 @@
 ///
 /// Reference: "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
 /// Wei et al., 2022 - https://arxiv.org/abs/2201.11903
-
 const std = @import("std");
 const Agent = @import("../../agent.zig").Agent;
 const AgentError = @import("../../agent.zig").AgentError;
@@ -178,7 +177,7 @@ pub const ChainOfThoughtAgent = struct {
 
     /// Extract numbered steps (1. Step or 1) Step)
     fn extractNumberedSteps(self: *ChainOfThoughtAgent, text: []const u8) !?[][]const u8 {
-        var steps = std.ArrayList([]const u8).init(self.allocator);
+        var steps = std.ArrayList([]const u8).empty;
         errdefer {
             for (steps.items) |step| {
                 self.allocator.free(step);
@@ -221,7 +220,7 @@ pub const ChainOfThoughtAgent = struct {
 
     /// Extract bullet point steps (-, *, •)
     fn extractBulletSteps(self: *ChainOfThoughtAgent, text: []const u8) !?[][]const u8 {
-        var steps = std.ArrayList([]const u8).init(self.allocator);
+        var steps = std.ArrayList([]const u8).empty;
         errdefer {
             for (steps.items) |step| {
                 self.allocator.free(step);
@@ -262,7 +261,7 @@ pub const ChainOfThoughtAgent = struct {
 
     /// Extract steps using delimiter
     fn extractDelimiterSteps(self: *ChainOfThoughtAgent, text: []const u8) ![][]const u8 {
-        var steps = std.ArrayList([]const u8).init(self.allocator);
+        var steps = std.ArrayList([]const u8).empty;
         errdefer {
             for (steps.items) |step| {
                 self.allocator.free(step);

@@ -28,6 +28,7 @@
 /// std.debug.print("Selected model: {s}\n", .{model});
 /// ```
 const std = @import("std");
+const agksync = @import("../../sync_compat.zig");
 const ModelPricing = @import("models.zig").ModelPricing;
 const Allocator = std.mem.Allocator;
 
@@ -51,10 +52,10 @@ pub const ComplexityLevel = enum {
 
 /// Model tier based on capability and cost
 pub const ModelTier = enum {
-    economy,      // gpt-4o-mini, claude-haiku
-    standard,     // gpt-4o, claude-sonnet
-    advanced,     // o1, claude-opus
-    reasoning,    // o3, claude-opus-4 (extended thinking)
+    economy, // gpt-4o-mini, claude-haiku
+    standard, // gpt-4o, claude-sonnet
+    advanced, // o1, claude-opus
+    reasoning, // o3, claude-opus-4 (extended thinking)
 
     /// Get recommended models for this tier
     pub fn models(self: ModelTier) []const []const u8 {
@@ -167,7 +168,7 @@ pub const ModelOptimizer = struct {
     model_pricing: *ModelPricing,
     config: ModelOptimizerConfig,
     metrics_data: ModelOptimizerMetrics,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(
         allocator: Allocator,
@@ -183,7 +184,7 @@ pub const ModelOptimizer = struct {
             .model_pricing = model_pricing,
             .config = config,
             .metrics_data = ModelOptimizerMetrics{},
-            .mutex = std.Thread.Mutex{},
+            .mutex = agksync.Mutex{},
         };
         return self;
     }
@@ -450,9 +451,9 @@ test "ModelOptimizer getFallbackModel" {
 test "ModelOptimizerMetrics avgComplexity" {
     var metrics = ModelOptimizerMetrics{
         .total_decisions = 4,
-        .economy_count = 1,   // 25
-        .standard_count = 1,  // 50
-        .advanced_count = 1,  // 75
+        .economy_count = 1, // 25
+        .standard_count = 1, // 50
+        .advanced_count = 1, // 75
         .reasoning_count = 1, // 100
     };
 

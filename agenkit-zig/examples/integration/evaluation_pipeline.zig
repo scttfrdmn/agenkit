@@ -14,6 +14,7 @@
 //! Run with: zig build run-evaluation
 
 const std = @import("std");
+const agktime = agenkit.time_compat;
 const agenkit = @import("agenkit");
 const Message = agenkit.Message;
 const AgentError = agenkit.AgentError;
@@ -29,7 +30,7 @@ const BenchmarkAgent = struct {
 
     pub fn init(allocator: std.mem.Allocator, name: []const u8, delay_ms: u64, success_rate: f32) !*BenchmarkAgent {
         var seed: u64 = undefined;
-        try std.posix.getrandom(std.mem.asBytes(&seed));
+        agenkit.io_compat.randomBytes(std.mem.asBytes(&seed));
 
         const self = try allocator.create(BenchmarkAgent);
         self.* = .{
@@ -80,7 +81,7 @@ const BenchmarkAgent = struct {
         };
 
         // Simulate processing delay
-        std.Thread.sleep(self.delay_ms * std.time.ns_per_ms);
+        agktime.sleep(self.delay_ms * std.time.ns_per_ms);
 
         // Simulate success/failure based on success_rate
         const rand_val = self.prng.random().float(f32);
@@ -187,7 +188,7 @@ fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbac
     callbacks.onError(AgentError.NotImplemented);
 }
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -203,15 +204,15 @@ pub fn main() !void {
         var metrics = EvaluationMetrics.init();
         const num_requests = 10;
 
-        const start = std.time.nanoTimestamp();
+        const start = agktime.nanoTimestamp();
 
         for (0..num_requests) |_| {
             var msg = try agenkit.Message.withText(allocator, .user, "test");
             defer msg.deinit();
 
-            const req_start = std.time.nanoTimestamp();
+            const req_start = agktime.nanoTimestamp();
             const result = try agent.agent().process(msg);
-            const req_end = std.time.nanoTimestamp();
+            const req_end = agktime.nanoTimestamp();
             const duration = @as(u64, @intCast(req_end - req_start));
 
             if (result.isOk()) {
@@ -223,7 +224,7 @@ pub fn main() !void {
             }
         }
 
-        const end = std.time.nanoTimestamp();
+        const end = agktime.nanoTimestamp();
         const total_duration_s = @as(f64, @floatFromInt(end - start)) / @as(f64, @floatFromInt(std.time.ns_per_s));
 
         metrics.print();
@@ -240,15 +241,15 @@ pub fn main() !void {
         var metrics = EvaluationMetrics.init();
         const num_requests = 5;
 
-        const start = std.time.nanoTimestamp();
+        const start = agktime.nanoTimestamp();
 
         for (0..num_requests) |_| {
             var msg = try agenkit.Message.withText(allocator, .user, "test");
             defer msg.deinit();
 
-            const req_start = std.time.nanoTimestamp();
+            const req_start = agktime.nanoTimestamp();
             const result = try agent.agent().process(msg);
-            const req_end = std.time.nanoTimestamp();
+            const req_end = agktime.nanoTimestamp();
             const duration = @as(u64, @intCast(req_end - req_start));
 
             if (result.isOk()) {
@@ -260,7 +261,7 @@ pub fn main() !void {
             }
         }
 
-        const end = std.time.nanoTimestamp();
+        const end = agktime.nanoTimestamp();
         const total_duration_s = @as(f64, @floatFromInt(end - start)) / @as(f64, @floatFromInt(std.time.ns_per_s));
 
         metrics.print();
@@ -277,15 +278,15 @@ pub fn main() !void {
         var metrics = EvaluationMetrics.init();
         const num_requests = 20;
 
-        const start = std.time.nanoTimestamp();
+        const start = agktime.nanoTimestamp();
 
         for (0..num_requests) |_| {
             var msg = try agenkit.Message.withText(allocator, .user, "test");
             defer msg.deinit();
 
-            const req_start = std.time.nanoTimestamp();
+            const req_start = agktime.nanoTimestamp();
             const result = try agent.agent().process(msg);
-            const req_end = std.time.nanoTimestamp();
+            const req_end = agktime.nanoTimestamp();
             const duration = @as(u64, @intCast(req_end - req_start));
 
             if (result.isOk()) {
@@ -297,7 +298,7 @@ pub fn main() !void {
             }
         }
 
-        const end = std.time.nanoTimestamp();
+        const end = agktime.nanoTimestamp();
         const total_duration_s = @as(f64, @floatFromInt(end - start)) / @as(f64, @floatFromInt(std.time.ns_per_s));
 
         metrics.print();

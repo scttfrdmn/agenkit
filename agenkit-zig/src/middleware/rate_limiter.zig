@@ -27,6 +27,8 @@
 /// const metrics = limiter.metrics();
 /// ```
 const std = @import("std");
+const agksync = @import("../sync_compat.zig");
+const agktime = @import("../time_compat.zig");
 const json = std.json;
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
@@ -132,13 +134,13 @@ pub const RateLimiterDecorator = struct {
     metrics_data: RateLimiterMetrics,
     tokens: f64,
     last_update_ms: i64,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(allocator: Allocator, inner_agent: Agent, config: RateLimiterConfig) !*RateLimiterDecorator {
         // Validate configuration
         try config.validate();
 
-        const now_ms = std.time.milliTimestamp();
+        const now_ms = agktime.milliTimestamp();
         const initial_tokens = @as(f64, @floatFromInt(config.capacity));
 
         const self = try allocator.create(RateLimiterDecorator);
@@ -149,7 +151,7 @@ pub const RateLimiterDecorator = struct {
             .metrics_data = RateLimiterMetrics{ .current_tokens = initial_tokens },
             .tokens = initial_tokens,
             .last_update_ms = now_ms,
-            .mutex = std.Thread.Mutex{},
+            .mutex = agksync.Mutex{},
         };
         return self;
     }
@@ -177,7 +179,7 @@ pub const RateLimiterDecorator = struct {
 
     /// Refill tokens based on elapsed time
     fn refillTokens(self: *RateLimiterDecorator) void {
-        const now_ms = std.time.milliTimestamp();
+        const now_ms = agktime.milliTimestamp();
         const elapsed_ms = now_ms - self.last_update_ms;
         const elapsed_sec = @as(f64, @floatFromInt(elapsed_ms)) / 1000.0;
 
@@ -228,7 +230,7 @@ pub const RateLimiterDecorator = struct {
         self.mutex.unlock();
 
         // Wait outside the lock to allow other operations
-        std.Thread.sleep(wait_time_ms * std.time.ns_per_ms);
+        agktime.sleep(wait_time_ms * std.time.ns_per_ms);
 
         // Re-acquire lock and try again
         self.mutex.lock();
@@ -294,27 +296,27 @@ pub const RateLimiterDecorator = struct {
         // Add rate limiter metrics to metadata
         const metrics_snapshot = self.metrics();
 
-        var metadata_map = json.ObjectMap.init(allocator);
-        errdefer metadata_map.deinit();
+        var metadata_map = json.ObjectMap.empty;
+        errdefer metadata_map.deinit(allocator);
 
         // Add metrics as metadata
-        try metadata_map.put("total_requests", json.Value{ .integer = @intCast(metrics_snapshot.total_requests) });
-        try metadata_map.put("allowed_requests", json.Value{ .integer = @intCast(metrics_snapshot.allowed_requests) });
-        try metadata_map.put("rejected_requests", json.Value{ .integer = @intCast(metrics_snapshot.rejected_requests) });
-        try metadata_map.put("total_wait_time_ms", json.Value{ .integer = @intCast(metrics_snapshot.total_wait_time_ms) });
-        try metadata_map.put("current_tokens", json.Value{ .float = metrics_snapshot.current_tokens });
+        try metadata_map.put(allocator, "total_requests", json.Value{ .integer = @intCast(metrics_snapshot.total_requests) });
+        try metadata_map.put(allocator, "allowed_requests", json.Value{ .integer = @intCast(metrics_snapshot.allowed_requests) });
+        try metadata_map.put(allocator, "rejected_requests", json.Value{ .integer = @intCast(metrics_snapshot.rejected_requests) });
+        try metadata_map.put(allocator, "total_wait_time_ms", json.Value{ .integer = @intCast(metrics_snapshot.total_wait_time_ms) });
+        try metadata_map.put(allocator, "current_tokens", json.Value{ .float = metrics_snapshot.current_tokens });
 
         if (metrics_snapshot.avgWaitTime()) |avg| {
-            try metadata_map.put("avg_wait_time_ms", json.Value{ .float = avg });
+            try metadata_map.put(allocator, "avg_wait_time_ms", json.Value{ .float = avg });
         }
         if (metrics_snapshot.rejectionRate()) |rate| {
-            try metadata_map.put("rejection_rate", json.Value{ .float = rate });
+            try metadata_map.put(allocator, "rejection_rate", json.Value{ .float = rate });
         }
 
         // Add configuration
-        try metadata_map.put("rate", json.Value{ .float = self.config.rate });
-        try metadata_map.put("capacity", json.Value{ .integer = @intCast(self.config.capacity) });
-        try metadata_map.put("tokens_per_request", json.Value{ .integer = @intCast(self.config.tokens_per_request) });
+        try metadata_map.put(allocator, "rate", json.Value{ .float = self.config.rate });
+        try metadata_map.put(allocator, "capacity", json.Value{ .integer = @intCast(self.config.capacity) });
+        try metadata_map.put(allocator, "tokens_per_request", json.Value{ .integer = @intCast(self.config.tokens_per_request) });
 
         // Merge with inner metadata (if it's an object)
         if (inner_result.metadata == .object) {
@@ -322,14 +324,14 @@ pub const RateLimiterDecorator = struct {
             while (inner_iter.next()) |entry| {
                 const key = entry.key_ptr.*;
                 if (!std.mem.startsWith(u8, key, "rate_")) {
-                    try metadata_map.put(key, entry.value_ptr.*);
+                    try metadata_map.put(allocator, key, entry.value_ptr.*);
                 }
             }
         }
 
         return IntrospectionResult{
             .allocator = allocator,
-            .timestamp = std.time.timestamp(),
+            .timestamp = agktime.timestamp(),
             .agent_name = inner_result.agent_name,
             .capabilities = inner_result.capabilities,
             .memory_state = inner_result.memory_state,
@@ -348,12 +350,11 @@ pub const RateLimiterDecorator = struct {
 // Tests
 const testing = std.testing;
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "RateLimiterConfig validation" {
     var config = RateLimiterConfig{};

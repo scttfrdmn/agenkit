@@ -8,7 +8,6 @@
 /// - Compression effectiveness tracking
 /// - Percentile-based latency analysis
 /// - Memory-efficient streaming measurement
-
 const std = @import("std");
 const core = @import("core.zig");
 const Allocator = std.mem.Allocator;
@@ -26,7 +25,7 @@ pub const ContextMetric = struct {
         self.* = ContextMetric{
             .name_str = "context_length",
             .allocator = allocator,
-            .measurements = std.ArrayList(f64){},
+            .measurements = std.ArrayList(f64).empty,
         };
         return self;
     }
@@ -197,7 +196,7 @@ pub const CompressionMetric = struct {
     ) !std.ArrayList(CompressionStats) {
         _ = agent;
         _ = session_id;
-        var stats = std.ArrayList(CompressionStats){};
+        var stats = std.ArrayList(CompressionStats).empty;
 
         // For each test length, simulate compression evaluation
         for (self.test_lengths) |length| {
@@ -304,7 +303,7 @@ pub const LatencyMetric = struct {
         self.* = LatencyMetric{
             .name_str = "latency",
             .allocator = allocator,
-            .measurements = std.ArrayList(f64){},
+            .measurements = std.ArrayList(f64).empty,
         };
         return self;
     }
@@ -452,9 +451,9 @@ test "ContextMetric tracking" {
     }
 
     // Simulate multiple measurements
-    try metric.measurements.append(allocator,100.0);
-    try metric.measurements.append(allocator,150.0);
-    try metric.measurements.append(allocator,200.0);
+    try metric.measurements.append(allocator, 100.0);
+    try metric.measurements.append(allocator, 150.0);
+    try metric.measurements.append(allocator, 200.0);
 
     const measurements = metric.measurements.items;
     var aggregated = try metric.asMetric().aggregate(measurements, allocator);

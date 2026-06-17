@@ -20,8 +20,8 @@
 ///     .session_id = "abc123",
 /// });
 /// ```
-
 const std = @import("std");
+const agktime = @import("../time_compat.zig");
 const Allocator = std.mem.Allocator;
 
 /// Log level enumeration
@@ -73,7 +73,7 @@ pub const LogEntry = struct {
 
     pub fn init(allocator: Allocator, level: LogLevel, message: []const u8) !LogEntry {
         return LogEntry{
-            .timestamp = std.time.milliTimestamp(),
+            .timestamp = agktime.milliTimestamp(),
             .level = level,
             .message = try allocator.dupe(u8, message),
             .trace_id = null,
@@ -131,11 +131,11 @@ pub fn shouldLog(level: LogLevel) bool {
 
 /// Format log entry as JSON
 pub fn formatJson(entry: *const LogEntry, allocator: Allocator) ![]const u8 {
-    var buf = std.ArrayList(u8){};
+    var buf = std.ArrayList(u8).empty;
     errdefer buf.deinit(allocator);
 
     try buf.appendSlice(allocator, "{\"timestamp\":");
-    try std.fmt.format(buf.writer(allocator), "{d}", .{entry.timestamp});
+    try buf.print(allocator, "{d}", .{entry.timestamp});
     try buf.appendSlice(allocator, ",\"level\":\"");
     try buf.appendSlice(allocator, entry.level.toString());
     try buf.appendSlice(allocator, "\",\"message\":\"");
@@ -170,17 +170,17 @@ pub fn formatJson(entry: *const LogEntry, allocator: Allocator) ![]const u8 {
 
 /// Format log entry as compact text
 pub fn formatCompact(entry: *const LogEntry, allocator: Allocator) ![]const u8 {
-    var buf = std.ArrayList(u8){};
+    var buf = std.ArrayList(u8).empty;
     errdefer buf.deinit(allocator);
 
-    try std.fmt.format(buf.writer(allocator), "[{d}] {s} {s}", .{
+    try buf.print(allocator, "[{d}] {s} {s}", .{
         entry.timestamp,
         entry.level.toString(),
         entry.message,
     });
 
     if (entry.trace_id) |tid| {
-        try std.fmt.format(buf.writer(allocator), " trace_id={s}", .{tid});
+        try buf.print(allocator, " trace_id={s}", .{tid});
     }
 
     return buf.toOwnedSlice(allocator);
@@ -188,24 +188,24 @@ pub fn formatCompact(entry: *const LogEntry, allocator: Allocator) ![]const u8 {
 
 /// Format log entry as pretty text with indentation
 pub fn formatPretty(entry: *const LogEntry, allocator: Allocator) ![]const u8 {
-    var buf = std.ArrayList(u8){};
+    var buf = std.ArrayList(u8).empty;
     errdefer buf.deinit(allocator);
 
     // Header line
-    try std.fmt.format(buf.writer(allocator), "{s} | {s}\n", .{
+    try buf.print(allocator, "{s} | {s}\n", .{
         entry.level.toString(),
         entry.message,
     });
 
     // Timestamp
-    try std.fmt.format(buf.writer(allocator), "  timestamp: {d}\n", .{entry.timestamp});
+    try buf.print(allocator, "  timestamp: {d}\n", .{entry.timestamp});
 
     // Trace context if present
     if (entry.trace_id) |tid| {
-        try std.fmt.format(buf.writer(allocator), "  trace_id: {s}\n", .{tid});
+        try buf.print(allocator, "  trace_id: {s}\n", .{tid});
     }
     if (entry.span_id) |sid| {
-        try std.fmt.format(buf.writer(allocator), "  span_id: {s}\n", .{sid});
+        try buf.print(allocator, "  span_id: {s}\n", .{sid});
     }
 
     // Fields
@@ -213,7 +213,7 @@ pub fn formatPretty(entry: *const LogEntry, allocator: Allocator) ![]const u8 {
         try buf.appendSlice(allocator, "  fields:\n");
         var iter = entry.fields.iterator();
         while (iter.next()) |field| {
-            try std.fmt.format(buf.writer(allocator), "    {s}: {s}\n", .{
+            try buf.print(allocator, "    {s}: {s}\n", .{
                 field.key_ptr.*,
                 field.value_ptr.*,
             });

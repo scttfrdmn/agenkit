@@ -19,7 +19,7 @@ const Role = agenkit.Role;
 const llm_mod = agenkit.adapter;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -106,7 +106,7 @@ fn creativeWriting(allocator: std.mem.Allocator, llm: llm_mod.LLM) !void {
 
     var options = llm_mod.CallOptions.init(allocator);
     defer options.deinit();
-    options.withTemperature(0.9); // Higher temp for creativity
+    try options.withTemperature(0.9); // Higher temp for creativity
 
     std.debug.print("Request: {s}\n", .{user.content.text});
     std.debug.print("Temperature: 0.9 (creative)\n", .{});
@@ -140,8 +140,8 @@ fn codeGeneration(allocator: std.mem.Allocator, llm: llm_mod.LLM) !void {
 
     var options = llm_mod.CallOptions.init(allocator);
     defer options.deinit();
-    options.withTemperature(0.2); // Low temp for accuracy
-    options.withMaxTokens(500); // Limit response length
+    try options.withTemperature(0.2); // Low temp for accuracy
+    try options.withMaxTokens(500); // Limit response length
 
     std.debug.print("Request: {s}\n", .{user.content.text});
     std.debug.print("Temperature: 0.2 (precise)\n", .{});

@@ -19,7 +19,6 @@
 /// const evaluator = try evaluation.Evaluator.init(allocator, agent, &metrics);
 /// const result = try evaluator.evaluate(&test_cases, "session-1");
 /// ```
-
 const std = @import("std");
 
 // Core evaluation types

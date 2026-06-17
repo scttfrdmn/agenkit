@@ -20,7 +20,6 @@
 ///     defer sequential.deinit();
 ///
 ///     const result = try sequential.agent().process(input_message);
-
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
@@ -197,12 +196,11 @@ pub const SequentialPattern = SequentialAgent;
 // Tests
 // ============================================================================
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "SequentialAgent basic execution" {
     const allocator = std.testing.allocator;
@@ -283,11 +281,7 @@ test "SequentialAgent preserves transformations" {
             };
 
             // Add prefix
-            const new_text = std.fmt.allocPrint(
-                self.allocator,
-                "{s}{s}",
-                .{ self.prefix, text }
-            ) catch {
+            const new_text = std.fmt.allocPrint(self.allocator, "{s}{s}", .{ self.prefix, text }) catch {
                 return Result{ .err = AgentError.ProcessingFailed };
             };
             defer self.allocator.free(new_text);
@@ -298,7 +292,6 @@ test "SequentialAgent preserves transformations" {
 
             return Result{ .ok = response };
         }
-
 
         fn processStreamImplTransform(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
             _ = ptr;
@@ -349,7 +342,7 @@ test "SequentialAgent name and capabilities" {
     var echo1 = try EchoAgent.init(allocator);
     defer echo1.agent().deinit();
 
-    const agents = [_]Agent{ echo1.agent() };
+    const agents = [_]Agent{echo1.agent()};
     var sequential = try SequentialAgent.init(allocator, &agents, "my_pipeline");
     defer sequential.deinit();
 

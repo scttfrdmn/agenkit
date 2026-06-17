@@ -26,7 +26,6 @@
 /// const response = try llm.complete(allocator, &messages, &options);
 /// defer response.deinit();
 /// ```
-
 const std = @import("std");
 const Message = @import("../message.zig").Message;
 const Allocator = std.mem.Allocator;

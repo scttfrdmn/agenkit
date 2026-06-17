@@ -20,7 +20,6 @@
 /// References:
 /// - Reflexion: Language Agents with Verbal Reinforcement Learning
 /// - Self-Refine: Iterative Refinement with Self-Feedback
-
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
@@ -130,7 +129,7 @@ pub const ReflectionAgent = struct {
             .improvement_threshold = improvement_threshold,
             .critique_format = critique_format,
             .verbose = verbose,
-            .history = .{},
+            .history = .empty,
         };
         return self;
     }
@@ -567,7 +566,6 @@ pub const ReflectionAgent = struct {
         return Result{ .ok = result };
     }
 
-
     fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
         const caps = try capabilitiesImpl(ptr, alloc);
         defer {
@@ -600,12 +598,11 @@ pub const ReflectionAgent = struct {
 // Tests
 // ============================================================================
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "ReflectionAgent basic functionality" {
     const allocator = std.testing.allocator;

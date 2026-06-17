@@ -4,6 +4,7 @@
 /// to isolate pattern logic from LLM latency.
 
 const std = @import("std");
+const agktime = agenkit.time_compat;
 const agenkit = @import("agenkit");
 const Agent = agenkit.Agent;
 const StreamCallbacks = agenkit.StreamCallbacks;
@@ -96,12 +97,12 @@ pub fn benchmark(
     }
 
     // Benchmark
-    const start = std.time.nanoTimestamp();
+    const start = agktime.nanoTimestamp();
     i = 0;
     while (i < iterations) : (i += 1) {
         try func(allocator);
     }
-    const end = std.time.nanoTimestamp();
+    const end = agktime.nanoTimestamp();
     const total_ns: u64 = @intCast(end - start);
 
     const avg_us = @as(f64, @floatFromInt(total_ns)) / @as(f64, @floatFromInt(iterations)) / 1000.0;
@@ -204,7 +205,7 @@ fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbac
     callbacks.onError(AgentError.NotImplemented);
 }
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

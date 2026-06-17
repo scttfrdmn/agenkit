@@ -11,7 +11,6 @@
 ///
 /// References:
 /// - ReAct Paper: https://arxiv.org/abs/2210.03629
-
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const Message = @import("../message.zig").Message;
@@ -172,7 +171,7 @@ pub const ToolRegistry = struct {
     }
 
     pub fn listTools(self: *ToolRegistry, allocator: Allocator) ![][]const u8 {
-        var list = std.ArrayList([]const u8){};
+        var list = std.ArrayList([]const u8).empty;
         errdefer list.deinit(allocator);
 
         var iter = self.tools.keyIterator();
@@ -189,7 +188,7 @@ pub const ToolRegistry = struct {
             return try allocator.dupe(u8, "No tools available.");
         }
 
-        var buffer = std.ArrayList(u8){};
+        var buffer = std.ArrayList(u8).empty;
         defer buffer.deinit(allocator);
 
         try buffer.appendSlice(allocator, "Available tools:\n");
@@ -275,7 +274,7 @@ pub const ReActAgent = struct {
             .max_iterations = max_iterations,
             .system_prompt = system_prompt,
             .verbose = verbose,
-            .steps = .{},
+            .steps = .empty,
             .agent_name = try allocator.dupe(u8, "ReActAgent"),
         };
 
@@ -395,7 +394,6 @@ pub const ReActAgent = struct {
         return self.agent_name;
     }
 
-
     fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
         const caps = try capabilitiesImpl(ptr, alloc);
         defer {
@@ -461,7 +459,7 @@ pub const ReActAgent = struct {
     fn formatFinalResponse(self: *ReActAgent, answer: []const u8) !Message {
         if (self.verbose) {
             // Include thought process
-            var buffer = std.ArrayList(u8){};
+            var buffer = std.ArrayList(u8).empty;
             defer buffer.deinit(self.allocator);
 
             for (self.steps.items, 0..) |step, i| {
@@ -505,11 +503,11 @@ pub const ReActAgent = struct {
 
 // Tests
 
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "Tool creation and execution" {
     const allocator = std.testing.allocator;

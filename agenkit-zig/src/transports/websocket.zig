@@ -22,7 +22,7 @@
 ///! var agent = try WebSocketAgent.init(allocator, config);
 ///! defer agent.deinit();
 ///!
-///! var messages = std.ArrayList(Message).init(allocator);
+///! var messages = std.ArrayList(Message).empty;
 ///! defer messages.deinit();
 ///! try messages.append(Message.init("user", "Hello via WebSocket!"));
 ///!
@@ -47,7 +47,6 @@
 ///! - Option 2: zig-websocket library (community)
 ///! - Option 3: Call C WebSocket library via @cImport
 ///! - Option 4: Implement WebSocket protocol from RFC 6455
-
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Message = @import("../message.zig").Message;
@@ -107,7 +106,7 @@ pub const WebSocketAgent = struct {
     // ping_thread: ?std.Thread,
     // receive_thread: ?std.Thread,
     // should_stop: bool,
-    // mutex: std.Thread.Mutex,
+    // mutex: agksync.Mutex,
 
     const Self = @This();
 
@@ -241,7 +240,7 @@ pub const WebSocketAgent = struct {
     ///     const delay = self.config.initial_retry_delay_ms * std.math.pow(u64, 2, attempt);
     ///     const capped_delay = @min(delay, self.config.max_retry_delay_ms);
     ///
-    ///     std.time.sleep(capped_delay * std.time.ns_per_ms);
+    ///     agktime.sleep(capped_delay * std.time.ns_per_ms);
     ///
     ///     if (try self.tryConnect()) {
     ///         self.connected = true;

@@ -15,7 +15,7 @@ const MemoryEntry = agenkit.infrastructure.memory.MemoryEntry;
 const HierarchyMemory = agenkit.infrastructure.memory.HierarchyMemory;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

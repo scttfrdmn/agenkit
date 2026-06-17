@@ -219,7 +219,7 @@ fn processStreamImpl(ptr: *anyopaque, message: agenkit.Message, callbacks: agenk
     callbacks.onError(agenkit.AgentError.NotImplemented);
 }
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

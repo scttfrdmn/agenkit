@@ -7,6 +7,7 @@ const std = @import("std");
 const json = std.json;
 const testing = std.testing;
 const agenkit = @import("agenkit");
+const agktime = agenkit.time_compat;
 const Agent = agenkit.Agent;
 const AgentError = agenkit.AgentError;
 const Message = agenkit.Message;
@@ -67,7 +68,7 @@ const MockRateLimiterAgent = struct {
         const msg = Message{
             .role = .agent,
             .content = .{ .text = response_content },
-            .metadata = json.Value{ .object = json.ObjectMap.init(self.allocator) },
+            .metadata = json.Value{ .object = json.ObjectMap.empty },
             .allocator = self.allocator,
         };
 
@@ -84,12 +85,12 @@ const MockRateLimiterAgent = struct {
         _ = ptr;
         return IntrospectionResult{
             .allocator = allocator,
-            .timestamp = std.time.timestamp(),
+            .timestamp = agktime.timestamp(),
             .agent_name = "mock-rate-limiter-agent",
             .capabilities = try allocator.alloc([]const u8, 0),
             .memory_state = null,
-            .internal_state = json.Value{ .object = json.ObjectMap.init(allocator) },
-            .metadata = json.Value{ .object = json.ObjectMap.init(allocator) },
+            .internal_state = json.Value{ .object = json.ObjectMap.empty },
+            .metadata = json.Value{ .object = json.ObjectMap.empty },
         };
     }
 
@@ -99,10 +100,7 @@ const MockRateLimiterAgent = struct {
 /// Load fixtures from JSON file
 fn loadFixtures(allocator: std.mem.Allocator) !json.Parsed(json.Value) {
     const fixtures_path = "../tests/cross_language/fixtures/rate_limiter_behavior.json";
-    const file = try std.fs.cwd().openFile(fixtures_path, .{});
-    defer file.close();
-
-    const content = try file.readToEndAlloc(allocator, 1024 * 1024);
+    const content = try std.Io.Dir.cwd().readFileAlloc(agenkit.io_compat.io(), fixtures_path, allocator, .limited(1024 * 1024));
     defer allocator.free(content);
 
     return try json.parseFromSlice(json.Value, allocator, content, .{});
@@ -173,7 +171,7 @@ test "rate_limiter_allows_within_capacity" {
     var rate_limiter = try RateLimiterDecorator.init(allocator, mock_agent.agent(), config);
     defer rate_limiter.agent().deinit();
 
-    const start = std.time.nanoTimestamp();
+    const start = agktime.nanoTimestamp();
     var successful: usize = 0;
 
     const requests = test_case.object.get("scenario").?.object.get("requests").?.array;
@@ -189,7 +187,7 @@ test "rate_limiter_allows_within_capacity" {
         } else |_| {}
     }
 
-    const elapsed_ns = std.time.nanoTimestamp() - start;
+    const elapsed_ns = agktime.nanoTimestamp() - start;
     const elapsed_ms: u64 = @intCast(@divTrunc(elapsed_ns, 1_000_000));
 
     const expected = test_case.object.get("expected_behavior").?.object;
@@ -229,11 +227,11 @@ test "rate_limiter_waits_for_tokens" {
         var msg = try Message.withText(allocator, .user, "test");
         defer msg.deinit();
 
-        const start = std.time.nanoTimestamp();
+        const start = agktime.nanoTimestamp();
         const result = try rate_limiter.agent().process(msg);
         var response = try result.unwrap();
         defer response.deinit();
-        const elapsed_ns = std.time.nanoTimestamp() - start;
+        const elapsed_ns = agktime.nanoTimestamp() - start;
         const elapsed_ms: u64 = @intCast(@divTrunc(elapsed_ns, 1_000_000));
         try wait_times.append(allocator, elapsed_ms);
     }
@@ -324,7 +322,7 @@ test "rate_limiter_token_refill" {
             defer response.deinit();
         } else if (std.mem.eql(u8, action, "wait")) {
             const duration_ms = @as(u64, @intFromFloat(getJsonNumber(step.object.get("duration_ms").?)));
-            std.Thread.sleep(duration_ms * std.time.ns_per_ms);
+            agktime.sleep(duration_ms * std.time.ns_per_ms);
         }
     }
 
@@ -352,7 +350,7 @@ test "rate_limiter_burst_capacity" {
     var rate_limiter = try RateLimiterDecorator.init(allocator, mock_agent.agent(), config);
     defer rate_limiter.agent().deinit();
 
-    const start = std.time.nanoTimestamp();
+    const start = agktime.nanoTimestamp();
 
     const requests = test_case.object.get("scenario").?.object.get("requests").?.array;
     for (requests.items) |_| {
@@ -363,7 +361,7 @@ test "rate_limiter_burst_capacity" {
         defer response.deinit();
     }
 
-    const elapsed_ns = std.time.nanoTimestamp() - start;
+    const elapsed_ns = agktime.nanoTimestamp() - start;
     const elapsed_ms: u64 = @intCast(@divTrunc(elapsed_ns, 1_000_000));
 
     const expected = test_case.object.get("expected_behavior").?.object;

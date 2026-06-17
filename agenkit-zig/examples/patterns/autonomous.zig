@@ -30,7 +30,7 @@ fn researchWorker(allocator: std.mem.Allocator, goal: *agenkit.patterns.Goal) ag
 }
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

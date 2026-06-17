@@ -28,8 +28,9 @@
 /// try logger.log(&event);
 /// try logger.flush();
 /// ```
-
 const std = @import("std");
+const agktime = @import("../time_compat.zig");
+const ioc = @import("../io_compat.zig");
 const Allocator = std.mem.Allocator;
 
 /// Audit event types
@@ -92,7 +93,7 @@ pub const AuditEvent = struct {
     ) !AuditEvent {
         // Generate event ID (simplified UUID)
         var event_id_buf: [36]u8 = undefined;
-        const timestamp = std.time.milliTimestamp();
+        const timestamp = agktime.milliTimestamp();
         _ = try std.fmt.bufPrint(&event_id_buf, "{x:0>16}-{x:0>4}-{x:0>4}", .{
             @as(u64, @intCast(timestamp)),
             @as(u16, @truncate(@as(u64, @intCast(timestamp)) >> 16)),
@@ -135,13 +136,13 @@ pub const AuditEvent = struct {
     }
 
     pub fn toJson(self: *const AuditEvent, allocator: Allocator) ![]const u8 {
-        var buf = std.ArrayList(u8){};
+        var buf = std.ArrayList(u8).empty;
         errdefer buf.deinit(allocator);
 
         try buf.appendSlice(allocator, "{\"event_id\":\"");
         try buf.appendSlice(allocator, self.event_id);
         try buf.appendSlice(allocator, "\",\"timestamp\":");
-        try std.fmt.format(buf.writer(allocator), "{d}", .{self.timestamp});
+        try buf.print(allocator, "{d}", .{self.timestamp});
         try buf.appendSlice(allocator, ",\"event_type\":\"");
         try buf.appendSlice(allocator, self.event_type.toString());
         try buf.appendSlice(allocator, "\",\"agent_name\":\"");
@@ -184,21 +185,23 @@ pub const AuditLogger = struct {
     log_path: []const u8,
     buffer: std.ArrayList(AuditEvent),
     buffer_size: usize,
-    file: ?std.fs.File,
+    file: ?std.Io.File,
+    write_offset: u64,
 
     pub fn init(allocator: Allocator, log_path: []const u8) !AuditLogger {
         return AuditLogger{
             .allocator = allocator,
             .log_path = try allocator.dupe(u8, log_path),
-            .buffer = std.ArrayList(AuditEvent){},
+            .buffer = std.ArrayList(AuditEvent).empty,
             .buffer_size = 100,
             .file = null,
+            .write_offset = 0,
         };
     }
 
     pub fn deinit(self: *AuditLogger) void {
         self.flush() catch {};
-        if (self.file) |f| f.close();
+        if (self.file) |f| f.close(ioc.io());
         for (self.buffer.items) |*event| {
             event.deinit(self.allocator);
         }
@@ -234,13 +237,16 @@ pub const AuditLogger = struct {
     pub fn flush(self: *AuditLogger) !void {
         if (self.buffer.items.len == 0) return;
 
+        const io = ioc.io();
+
         // Open file if not already open
         if (self.file == null) {
-            const file = try std.fs.cwd().createFile(self.log_path, .{
+            const file = try std.Io.Dir.cwd().createFile(io, self.log_path, .{
                 .read = false,
                 .truncate = false,
             });
-            try file.seekFromEnd(0); // Append to end
+            // Append to end: start writing at the current end-of-file offset.
+            self.write_offset = (try file.stat(io)).size;
             self.file = file;
         }
 
@@ -251,8 +257,10 @@ pub const AuditLogger = struct {
             const json = try event.toJson(self.allocator);
             defer self.allocator.free(json);
 
-            try file.writeAll(json);
-            try file.writeAll("\n");
+            try file.writePositionalAll(io, json, self.write_offset);
+            self.write_offset += json.len;
+            try file.writePositionalAll(io, "\n", self.write_offset);
+            self.write_offset += 1;
 
             event.deinit(self.allocator);
         }
@@ -261,7 +269,7 @@ pub const AuditLogger = struct {
     }
 
     pub fn query(self: *AuditLogger, allocator: Allocator, session_id: ?[]const u8) !std.ArrayList(AuditEvent) {
-        var results = std.ArrayList(AuditEvent){};
+        var results = std.ArrayList(AuditEvent).empty;
         errdefer {
             for (results.items) |*event| {
                 event.deinit(allocator);
@@ -285,7 +293,7 @@ pub const AuditLogger = struct {
     }
 
     pub fn queryByType(self: *AuditLogger, event_type: AuditEventType) !std.ArrayList(*const AuditEvent) {
-        var results = std.ArrayList(*const AuditEvent){};
+        var results = std.ArrayList(*const AuditEvent).empty;
         errdefer results.deinit(self.allocator);
 
         for (self.buffer.items) |*event| {
@@ -298,7 +306,7 @@ pub const AuditLogger = struct {
     }
 
     pub fn queryBySeverity(self: *AuditLogger, severity: Severity) !std.ArrayList(*const AuditEvent) {
-        var results = std.ArrayList(*const AuditEvent){};
+        var results = std.ArrayList(*const AuditEvent).empty;
         errdefer results.deinit(self.allocator);
 
         for (self.buffer.items) |*event| {
@@ -401,7 +409,7 @@ test "AuditLogger buffering" {
 
     var logger = try AuditLogger.init(allocator, "test_audit_buffer.log");
     defer logger.deinit();
-    defer std.fs.cwd().deleteFile("test_audit_buffer.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), "test_audit_buffer.log") catch {};
 
     var event1 = try AuditEvent.create(allocator, .agent_created, "agent1", null);
     defer event1.deinit(allocator);
@@ -420,7 +428,7 @@ test "AuditLogger flush" {
 
     var logger = try AuditLogger.init(allocator, "test_audit_flush.log");
     defer logger.deinit();
-    defer std.fs.cwd().deleteFile("test_audit_flush.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), "test_audit_flush.log") catch {};
 
     var event = try AuditEvent.create(allocator, .message_processed, "agent", "session");
     defer event.deinit(allocator);
@@ -431,9 +439,9 @@ test "AuditLogger flush" {
     try std.testing.expectEqual(@as(usize, 0), logger.buffer.items.len);
 
     // Verify file was written
-    const file = try std.fs.cwd().openFile("test_audit_flush.log", .{});
-    defer file.close();
-    const stat = try file.stat();
+    const file = try std.Io.Dir.cwd().openFile(ioc.io(), "test_audit_flush.log", .{});
+    defer file.close(ioc.io());
+    const stat = try file.stat(ioc.io());
     try std.testing.expect(stat.size > 0);
 }
 
@@ -442,7 +450,7 @@ test "AuditLogger auto-flush on buffer full" {
 
     var logger = try AuditLogger.init(allocator, "test_audit_autoflush.log");
     defer logger.deinit();
-    defer std.fs.cwd().deleteFile("test_audit_autoflush.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), "test_audit_autoflush.log") catch {};
 
     logger.buffer_size = 3; // Small buffer for testing
 
@@ -462,7 +470,7 @@ test "AuditLogger query by session" {
 
     var logger = try AuditLogger.init(allocator, "test_audit_query.log");
     defer logger.deinit();
-    defer std.fs.cwd().deleteFile("test_audit_query.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), "test_audit_query.log") catch {};
 
     var event1 = try AuditEvent.create(allocator, .message_processed, "agent", "session1");
     defer event1.deinit(allocator);
@@ -539,7 +547,7 @@ test "AuditLogger countEvents" {
 
     var logger = try AuditLogger.init(allocator, "test_count.log");
     defer logger.deinit();
-    defer std.fs.cwd().deleteFile("test_count.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), "test_count.log") catch {};
 
     try std.testing.expectEqual(@as(usize, 0), logger.countEvents());
 
@@ -561,7 +569,7 @@ test "AuditLogger queryByType" {
 
     var logger = try AuditLogger.init(allocator, "test_query_type.log");
     defer logger.deinit();
-    defer std.fs.cwd().deleteFile("test_query_type.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), "test_query_type.log") catch {};
 
     var event1 = try AuditEvent.create(allocator, .agent_created, "agent1", null);
     defer event1.deinit(allocator);
@@ -589,7 +597,7 @@ test "AuditLogger queryBySeverity" {
 
     var logger = try AuditLogger.init(allocator, "test_query_severity.log");
     defer logger.deinit();
-    defer std.fs.cwd().deleteFile("test_query_severity.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), "test_query_severity.log") catch {};
 
     var event1 = try AuditEvent.create(allocator, .message_processed, "agent", null);
     defer event1.deinit(allocator);
@@ -619,7 +627,7 @@ test "AuditLogger clear" {
 
     var logger = try AuditLogger.init(allocator, "test_clear.log");
     defer logger.deinit();
-    defer std.fs.cwd().deleteFile("test_clear.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), "test_clear.log") catch {};
 
     var event = try AuditEvent.create(allocator, .agent_created, "agent", null);
     defer event.deinit(allocator);
@@ -660,7 +668,7 @@ test "AuditLogger multiple event types" {
 
     var logger = try AuditLogger.init(allocator, "test_multi_types.log");
     defer logger.deinit();
-    defer std.fs.cwd().deleteFile("test_multi_types.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), "test_multi_types.log") catch {};
 
     var event1 = try AuditEvent.create(allocator, .agent_created, "agent1", null);
     defer event1.deinit(allocator);

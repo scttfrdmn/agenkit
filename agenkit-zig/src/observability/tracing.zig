@@ -23,8 +23,8 @@
 /// const result = try traced_agent.agent().process(msg);
 /// // Response will include trace context in metadata
 /// ```
-
 const std = @import("std");
+const agktime = @import("../time_compat.zig");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
@@ -50,7 +50,7 @@ pub const SpanContext = struct {
         };
 
         // Generate random trace_id and span_id
-        var prng = std.Random.DefaultPrng.init(@intCast(std.time.timestamp()));
+        var prng = std.Random.DefaultPrng.init(@intCast(agktime.timestamp()));
         const random = prng.random();
         random.bytes(&ctx.trace_id);
         random.bytes(&ctx.span_id);
@@ -68,7 +68,7 @@ pub const SpanContext = struct {
         };
 
         // Generate new span_id
-        var prng = std.Random.DefaultPrng.init(@intCast(std.time.timestamp()));
+        var prng = std.Random.DefaultPrng.init(@intCast(agktime.timestamp()));
         const random = prng.random();
         random.bytes(&ctx.span_id);
 
@@ -110,7 +110,7 @@ pub const SpanContext = struct {
 
     /// Format as W3C traceparent header
     pub fn toTraceparent(self: *const SpanContext, allocator: Allocator) ![]const u8 {
-        var buf = std.ArrayList(u8){};
+        var buf = std.ArrayList(u8).empty;
         defer buf.deinit(allocator);
 
         try buf.appendSlice(allocator, "00-");
@@ -162,7 +162,7 @@ pub const Span = struct {
         self.* = Span{
             .context = context,
             .name = try allocator.dupe(u8, name),
-            .start_time = std.time.nanoTimestamp(),
+            .start_time = agktime.nanoTimestamp(),
             .end_time = null,
             .attributes = std.StringHashMap([]const u8).init(allocator),
             .allocator = allocator,
@@ -172,7 +172,7 @@ pub const Span = struct {
 
     /// End the span
     pub fn end(self: *Span) void {
-        self.end_time = std.time.nanoTimestamp();
+        self.end_time = agktime.nanoTimestamp();
     }
 
     /// Set an attribute
@@ -226,7 +226,6 @@ pub const TracingMiddleware = struct {
     }
 
     /// Convert to Agent interface
-
     fn processStream(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
         _ = ptr;
         _ = message;

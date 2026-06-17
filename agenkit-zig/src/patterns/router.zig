@@ -53,7 +53,6 @@
 ///
 /// const result = try router.agent().process(input_message);
 /// ```
-
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
@@ -411,12 +410,11 @@ pub const SimpleClassifier = struct {
 // Tests
 // ============================================================================
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "RouterAgent: basic routing" {
     // Skip test for now - requires more complex mock infrastructure

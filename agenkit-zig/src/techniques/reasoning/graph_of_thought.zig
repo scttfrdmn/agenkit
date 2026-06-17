@@ -12,7 +12,6 @@
 /// Reference:
 /// - Paper: https://arxiv.org/abs/2308.09687
 /// - "Graph of Thoughts: Solving Elaborate Problems with Large Language Models"
-
 const std = @import("std");
 const Agent = @import("../../agent.zig").Agent;
 const AgentError = @import("../../agent.zig").AgentError;
@@ -179,7 +178,7 @@ pub const GraphOfThoughtAgent = struct {
 
     // Helper: Generate premises
     fn generatePremises(self: *GraphOfThoughtAgent, problem: []const u8) ![][]const u8 {
-        var prompt_buf = std.ArrayList(u8).init(self.allocator);
+        var prompt_buf = std.ArrayList(u8).empty;
         defer prompt_buf.deinit();
 
         const writer = prompt_buf.writer();
@@ -196,7 +195,7 @@ pub const GraphOfThoughtAgent = struct {
 
     // Helper: Generate thoughts
     fn generateThoughts(self: *GraphOfThoughtAgent, problem: []const u8, existing: []const []const u8, max_new: usize) ![][]const u8 {
-        var prompt_buf = std.ArrayList(u8).init(self.allocator);
+        var prompt_buf = std.ArrayList(u8).empty;
         defer prompt_buf.deinit();
 
         const writer = prompt_buf.writer();
@@ -222,7 +221,7 @@ pub const GraphOfThoughtAgent = struct {
 
     // Helper: Identify connection
     fn identifyConnection(self: *GraphOfThoughtAgent, thought1: []const u8, thought2: []const u8) !?EdgeType {
-        var prompt_buf = std.ArrayList(u8).init(self.allocator);
+        var prompt_buf = std.ArrayList(u8).empty;
         defer prompt_buf.deinit();
 
         const writer = prompt_buf.writer();
@@ -262,7 +261,7 @@ pub const GraphOfThoughtAgent = struct {
 
     // Helper: Parse lines from response
     fn parseLines(self: *GraphOfThoughtAgent, text: []const u8, max_lines: usize) ![][]const u8 {
-        var lines = std.ArrayList([]const u8).init(self.allocator);
+        var lines = std.ArrayList([]const u8).empty;
         defer {
             for (lines.items) |line| {
                 self.allocator.free(line);
@@ -311,7 +310,7 @@ pub const GraphOfThoughtAgent = struct {
             self.allocator.free(premises);
         }
 
-        var premise_ids = std.ArrayList(usize).init(self.allocator);
+        var premise_ids = std.ArrayList(usize).empty;
         defer premise_ids.deinit();
 
         for (premises) |premise| {
@@ -320,7 +319,7 @@ pub const GraphOfThoughtAgent = struct {
         }
 
         // Generate intermediate thoughts
-        var all_thoughts = std.ArrayList([]const u8).init(self.allocator);
+        var all_thoughts = std.ArrayList([]const u8).empty;
         defer {
             for (all_thoughts.items) |t| {
                 self.allocator.free(t);
@@ -332,7 +331,7 @@ pub const GraphOfThoughtAgent = struct {
             try all_thoughts.append(try self.allocator.dupe(u8, p));
         }
 
-        var node_ids = std.ArrayList(usize).init(self.allocator);
+        var node_ids = std.ArrayList(usize).empty;
         defer node_ids.deinit();
 
         try node_ids.appendSlice(premise_ids.items);
@@ -382,7 +381,7 @@ pub const GraphOfThoughtAgent = struct {
 
         // Generate conclusion
         if (graph.nodeCount() < self.config.max_nodes) {
-            var conclusion_prompt = std.ArrayList(u8).init(self.allocator);
+            var conclusion_prompt = std.ArrayList(u8).empty;
             defer conclusion_prompt.deinit();
 
             const writer = conclusion_prompt.writer();
@@ -421,7 +420,7 @@ pub const GraphOfThoughtAgent = struct {
         const conclusions = try graph.getConclusions(self.allocator);
         defer self.allocator.free(conclusions);
 
-        var all_paths = std.ArrayList([]usize).init(self.allocator);
+        var all_paths = std.ArrayList([]usize).empty;
         defer {
             for (all_paths.items) |path| {
                 self.allocator.free(path);
@@ -518,7 +517,7 @@ test "GraphOfThought name and capabilities" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -544,7 +543,7 @@ test "GraphOfThought custom config" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -580,7 +579,7 @@ test "GraphOfThought basic functionality" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -613,7 +612,7 @@ test "GraphOfThought max_nodes enforcement" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -645,7 +644,7 @@ test "GraphOfThought path_based aggregation" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -676,7 +675,7 @@ test "GraphOfThought node_based aggregation" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -707,7 +706,7 @@ test "GraphOfThought metadata completeness" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -750,7 +749,7 @@ test "GraphOfThought response role" {
     const testing = std.testing;
     const MockAgent = @import("../../test_utils.zig").MockAgent;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -776,4 +775,3 @@ test "GraphOfThought response role" {
 
     try testing.expectEqual(Message.Role.assistant, result.ok.role);
 }
-

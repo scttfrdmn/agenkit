@@ -8,8 +8,8 @@
 /// - Multiple optimization strategies
 /// - Multi-metric evaluation
 /// - AgentFactory pattern for creating agents from prompts
-
 const std = @import("std");
+const agktime = @import("../time_compat.zig");
 const core = @import("core.zig");
 const Allocator = std.mem.Allocator;
 
@@ -114,7 +114,7 @@ pub const PromptOptimizer = struct {
         evaluation_fn: EvaluationFn,
     ) !*PromptOptimizer {
         const self = try allocator.create(PromptOptimizer);
-        const seed = @as(u64, @intCast(std.time.timestamp()));
+        const seed = @as(u64, @intCast(agktime.timestamp()));
         self.* = PromptOptimizer{
             .prompt_template = try allocator.dupe(u8, prompt_template),
             .variations = variations,
@@ -131,14 +131,14 @@ pub const PromptOptimizer = struct {
         self: *PromptOptimizer,
         test_cases: []const core.TestCase,
     ) !*PromptOptimizationResult {
-        const start_time = std.time.timestamp();
+        const start_time = agktime.timestamp();
 
         const result = try self.allocator.create(PromptOptimizationResult);
         result.* = PromptOptimizationResult{
             .best_prompt = try self.allocator.dupe(u8, ""),
             .best_config = PromptConfig.init(self.allocator),
             .best_scores = PromptScores.init(self.allocator),
-            .history = std.ArrayList(OptimizationEntry).init(self.allocator),
+            .history = std.ArrayList(OptimizationEntry).empty,
             .strategy_used = .grid,
             .total_time_seconds = 0.0,
             .allocator = self.allocator,
@@ -241,7 +241,7 @@ pub const PromptOptimizer = struct {
             scores.deinit();
         }
 
-        const end_time = std.time.timestamp();
+        const end_time = agktime.timestamp();
         result.total_time_seconds = @as(f64, @floatFromInt(end_time - start_time));
 
         return result;
@@ -253,14 +253,14 @@ pub const PromptOptimizer = struct {
         test_cases: []const core.TestCase,
         n_samples: usize,
     ) !*PromptOptimizationResult {
-        const start_time = std.time.timestamp();
+        const start_time = agktime.timestamp();
 
         const result = try self.allocator.create(PromptOptimizationResult);
         result.* = PromptOptimizationResult{
             .best_prompt = try self.allocator.dupe(u8, ""),
             .best_config = PromptConfig.init(self.allocator),
             .best_scores = PromptScores.init(self.allocator),
-            .history = std.ArrayList(OptimizationEntry).init(self.allocator),
+            .history = std.ArrayList(OptimizationEntry).empty,
             .strategy_used = .random,
             .total_time_seconds = 0.0,
             .allocator = self.allocator,
@@ -353,7 +353,7 @@ pub const PromptOptimizer = struct {
             scores.deinit();
         }
 
-        const end_time = std.time.timestamp();
+        const end_time = agktime.timestamp();
         result.total_time_seconds = @as(f64, @floatFromInt(end_time - start_time));
 
         return result;
@@ -367,14 +367,14 @@ pub const PromptOptimizer = struct {
         n_generations: usize,
         mutation_rate: f64,
     ) !*PromptOptimizationResult {
-        const start_time = std.time.timestamp();
+        const start_time = agktime.timestamp();
 
         const result = try self.allocator.create(PromptOptimizationResult);
         result.* = PromptOptimizationResult{
             .best_prompt = try self.allocator.dupe(u8, ""),
             .best_config = PromptConfig.init(self.allocator),
             .best_scores = PromptScores.init(self.allocator),
-            .history = std.ArrayList(OptimizationEntry).init(self.allocator),
+            .history = std.ArrayList(OptimizationEntry).empty,
             .strategy_used = .genetic,
             .total_time_seconds = 0.0,
             .allocator = self.allocator,
@@ -383,7 +383,7 @@ pub const PromptOptimizer = struct {
         var best_avg_score: f64 = -std.math.inf(f64);
 
         // Initialize population
-        var population = std.ArrayList(PromptConfig).init(self.allocator);
+        var population = std.ArrayList(PromptConfig).empty;
         defer {
             for (population.items) |*config| {
                 var it = config.iterator();
@@ -403,7 +403,7 @@ pub const PromptOptimizer = struct {
         // Evolutionary loop
         for (0..n_generations) |_| {
             // Evaluate population
-            var fitness = std.ArrayList(f64).init(self.allocator);
+            var fitness = std.ArrayList(f64).empty;
             defer fitness.deinit();
 
             for (population.items) |*config| {
@@ -454,7 +454,7 @@ pub const PromptOptimizer = struct {
             }
 
             // Selection and crossover
-            var new_population = std.ArrayList(PromptConfig).init(self.allocator);
+            var new_population = std.ArrayList(PromptConfig).empty;
             defer {
                 for (new_population.items) |*config| {
                     var it = config.iterator();
@@ -501,7 +501,7 @@ pub const PromptOptimizer = struct {
             }
         }
 
-        const end_time = std.time.timestamp();
+        const end_time = agktime.timestamp();
         result.total_time_seconds = @as(f64, @floatFromInt(end_time - start_time));
 
         return result;
@@ -509,7 +509,7 @@ pub const PromptOptimizer = struct {
 
     /// Format prompt from configuration
     fn formatPrompt(self: *PromptOptimizer, config: *const PromptConfig) ![]const u8 {
-        var result = std.ArrayList(u8){};
+        var result = std.ArrayList(u8).empty;
         defer result.deinit(self.allocator);
 
         var template_it = std.mem.tokenizeScalar(u8, self.prompt_template, '{');
@@ -519,15 +519,15 @@ pub const PromptOptimizer = struct {
                 const rest = part[close_idx + 1 ..];
 
                 if (config.get(var_name)) |value| {
-                    try result.appendSlice(self.allocator,value);
+                    try result.appendSlice(self.allocator, value);
                 } else {
-                    try result.append(self.allocator,'{');
-                    try result.appendSlice(self.allocator,var_name);
-                    try result.append(self.allocator,'}');
+                    try result.append(self.allocator, '{');
+                    try result.appendSlice(self.allocator, var_name);
+                    try result.append(self.allocator, '}');
                 }
-                try result.appendSlice(self.allocator,rest);
+                try result.appendSlice(self.allocator, rest);
             } else {
-                try result.appendSlice(self.allocator,part);
+                try result.appendSlice(self.allocator, part);
             }
         }
 
@@ -557,12 +557,12 @@ pub const PromptOptimizer = struct {
 
     /// Generate all possible configurations
     fn generateAllConfigs(self: *PromptOptimizer) !std.ArrayList(PromptConfig) {
-        var result = std.ArrayList(PromptConfig).init(self.allocator);
+        var result = std.ArrayList(PromptConfig).empty;
 
-        var var_names = std.ArrayList([]const u8).init(self.allocator);
+        var var_names = std.ArrayList([]const u8).empty;
         defer var_names.deinit();
 
-        var var_options = std.ArrayList(std.ArrayList([]const u8)).init(self.allocator);
+        var var_options = std.ArrayList(std.ArrayList([]const u8)).empty;
         defer var_options.deinit();
 
         var it = self.variations.iterator();
@@ -652,7 +652,7 @@ pub const PromptOptimizer = struct {
         const random = self.rng.random();
 
         // Pick random variable to mutate
-        var var_names = std.ArrayList([]const u8).init(self.allocator);
+        var var_names = std.ArrayList([]const u8).empty;
         defer var_names.deinit();
 
         var it = config.iterator();
@@ -781,7 +781,7 @@ test "PromptOptimizer sampleRandomConfig" {
 
     var variations = std.StringHashMap(std.ArrayList([]const u8)).init(allocator);
 
-    var roles = std.ArrayList([]const u8){};
+    var roles = std.ArrayList([]const u8).empty;
     try roles.append(allocator, try allocator.dupe(u8, "assistant"));
     try roles.append(allocator, try allocator.dupe(u8, "expert"));
     try variations.put(try allocator.dupe(u8, "role"), roles);

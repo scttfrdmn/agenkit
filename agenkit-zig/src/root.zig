@@ -18,7 +18,7 @@
 /// const std = @import("std");
 ///
 /// pub fn main() !void {
-///     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+///     var gpa = std.heap.DebugAllocator(.{}){};
 ///     defer _ = gpa.deinit();
 ///     const allocator = gpa.allocator();
 ///
@@ -56,6 +56,12 @@
 /// - Result types for error handling
 /// - Composable patterns
 const std = @import("std");
+
+// Zig 0.16 compatibility shims (time/sync/env primitives that moved to the Io model)
+pub const time_compat = @import("time_compat.zig");
+pub const sync_compat = @import("sync_compat.zig");
+pub const env_compat = @import("env_compat.zig");
+pub const io_compat = @import("io_compat.zig");
 
 // Core types
 pub const Message = @import("message.zig").Message;

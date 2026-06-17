@@ -15,6 +15,8 @@
 ///   try checkpoint.setState("counter", .{ .integer = 5 });
 ///   const json_str = try checkpoint.toJson();
 const std = @import("std");
+const ioc = @import("../../io_compat.zig");
+const agktime = @import("../../time_compat.zig");
 const json = std.json;
 const Allocator = std.mem.Allocator;
 const Message = @import("../../message.zig").Message;
@@ -40,7 +42,7 @@ fn freeJsonValue(allocator: Allocator, value: json.Value) void {
                 freeJsonValue(allocator, entry.value_ptr.*);
             }
             var mut_obj = obj;
-            mut_obj.deinit();
+            mut_obj.deinit(allocator);
         },
     }
 }
@@ -62,12 +64,12 @@ fn deepCopyJsonValue(allocator: Allocator, value: json.Value) !json.Value {
             return .{ .array = array_copy };
         },
         .object => |obj| {
-            var object_copy = json.ObjectMap.init(allocator);
+            var object_copy = json.ObjectMap.empty;
             var iter = obj.iterator();
             while (iter.next()) |entry| {
                 const key_copy = try allocator.dupe(u8, entry.key_ptr.*);
                 const value_copy = try deepCopyJsonValue(allocator, entry.value_ptr.*);
-                try object_copy.put(key_copy, value_copy);
+                try object_copy.put(allocator, key_copy, value_copy);
             }
             return .{ .object = object_copy };
         },
@@ -118,7 +120,7 @@ pub const Checkpoint = struct {
         const checkpoint_id = try generateUuid(allocator);
 
         // Get current timestamp in milliseconds
-        const timestamp = std.time.milliTimestamp();
+        const timestamp = agktime.milliTimestamp();
 
         return Checkpoint{
             .checkpoint_id = checkpoint_id,
@@ -126,9 +128,9 @@ pub const Checkpoint = struct {
             .agent_name = try allocator.dupe(u8, agent_name),
             .timestamp = timestamp,
             .step_number = step_number,
-            .state = json.Value{ .object = json.ObjectMap.init(allocator) },
+            .state = json.Value{ .object = json.ObjectMap.empty },
             .messages = try allocator.alloc(Message, 0),
-            .metadata = json.Value{ .object = json.ObjectMap.init(allocator) },
+            .metadata = json.Value{ .object = json.ObjectMap.empty },
             .parent_checkpoint_id = null,
             .allocator = allocator,
         };
@@ -173,7 +175,7 @@ pub const Checkpoint = struct {
             self.allocator.free(entry.key_ptr.*);
             freeJsonValue(self.allocator, entry.value_ptr.*);
         }
-        self.state.object.deinit();
+        self.state.object.deinit(self.allocator);
 
         // Free metadata ObjectMap (including all keys and values recursively)
         var metadata_iter = self.metadata.object.iterator();
@@ -181,7 +183,7 @@ pub const Checkpoint = struct {
             self.allocator.free(entry.key_ptr.*);
             freeJsonValue(self.allocator, entry.value_ptr.*);
         }
-        self.metadata.object.deinit();
+        self.metadata.object.deinit(self.allocator);
 
         // Free messages
         for (self.messages) |*msg| {
@@ -207,7 +209,7 @@ pub const Checkpoint = struct {
         } else {
             // Duplicate key and store
             const key_copy = try self.allocator.dupe(u8, key);
-            try self.state.object.put(key_copy, value);
+            try self.state.object.put(self.allocator, key_copy, value);
         }
     }
 
@@ -253,7 +255,7 @@ pub const Checkpoint = struct {
         } else {
             // Duplicate key and store
             const key_copy = try self.allocator.dupe(u8, key);
-            try self.metadata.object.put(key_copy, value);
+            try self.metadata.object.put(self.allocator, key_copy, value);
         }
     }
 
@@ -273,26 +275,26 @@ pub const Checkpoint = struct {
     /// Returns:
     ///   JSON representation as ObjectMap
     pub fn toJsonObject(self: *const Checkpoint) !json.Value {
-        var obj = json.ObjectMap.init(self.allocator);
+        var obj = json.ObjectMap.empty;
 
         // Add checkpoint_id
-        try obj.put("checkpoint_id", json.Value{ .string = self.checkpoint_id });
+        try obj.put(self.allocator, "checkpoint_id", json.Value{ .string = self.checkpoint_id });
 
         // Add session_id
-        try obj.put("session_id", json.Value{ .string = self.session_id });
+        try obj.put(self.allocator, "session_id", json.Value{ .string = self.session_id });
 
         // Add agent_name
-        try obj.put("agent_name", json.Value{ .string = self.agent_name });
+        try obj.put(self.allocator, "agent_name", json.Value{ .string = self.agent_name });
 
         // Add timestamp as RFC3339 string
         const timestamp_str = try formatTimestamp(self.allocator, self.timestamp);
-        try obj.put("timestamp", json.Value{ .string = timestamp_str });
+        try obj.put(self.allocator, "timestamp", json.Value{ .string = timestamp_str });
 
         // Add step_number
-        try obj.put("step_number", json.Value{ .integer = @intCast(self.step_number) });
+        try obj.put(self.allocator, "step_number", json.Value{ .integer = @intCast(self.step_number) });
 
         // Add state
-        try obj.put("state", self.state);
+        try obj.put(self.allocator, "state", self.state);
 
         // Add messages as JSON array
         const messages_array = try self.allocator.alloc(json.Value, self.messages.len);
@@ -300,14 +302,14 @@ pub const Checkpoint = struct {
             messages_array[i] = try msg.toJson(self.allocator);
         }
         const messages_array_list = json.Array.fromOwnedSlice(self.allocator, messages_array);
-        try obj.put("messages", json.Value{ .array = messages_array_list });
+        try obj.put(self.allocator, "messages", json.Value{ .array = messages_array_list });
 
         // Add metadata
-        try obj.put("metadata", self.metadata);
+        try obj.put(self.allocator, "metadata", self.metadata);
 
         // Add parent_checkpoint_id if present
         if (self.parent_checkpoint_id) |parent_id| {
-            try obj.put("parent_checkpoint_id", json.Value{ .string = parent_id });
+            try obj.put(self.allocator, "parent_checkpoint_id", json.Value{ .string = parent_id });
         }
 
         return json.Value{ .object = obj };
@@ -334,7 +336,7 @@ pub const Checkpoint = struct {
                     for (messages_val.array.items) |msg_val| {
                         if (msg_val == .object) {
                             var mut_obj = msg_val.object;
-                            mut_obj.deinit();
+                            mut_obj.deinit(self.allocator);
                         }
                     }
                     // Free the array backing storage
@@ -342,16 +344,16 @@ pub const Checkpoint = struct {
                     mut_array.deinit();
                 }
             }
-            json_obj.object.deinit();
+            json_obj.object.deinit(self.allocator);
         }
 
         var buffer: [16384]u8 = undefined;
         var fba = std.heap.FixedBufferAllocator.init(&buffer);
         const fba_alloc = fba.allocator();
-        var string_list: std.ArrayList(u8) = .{};
+        var string_list: std.ArrayList(u8) = .empty;
         defer string_list.deinit(fba_alloc);
 
-        try std.fmt.format(string_list.writer(fba_alloc), "{f}", .{json.fmt(json_obj, .{})});
+        try string_list.print(fba_alloc, "{f}", .{json.fmt(json_obj, .{})});
         return try self.allocator.dupe(u8, string_list.items);
     }
 
@@ -387,13 +389,13 @@ pub const Checkpoint = struct {
         const step_number: usize = @intCast(step_number_val.integer);
 
         // Parse state (deep copy to avoid dangling pointers after parsed.deinit())
-        var state = json.Value{ .object = json.ObjectMap.init(allocator) };
+        var state = json.Value{ .object = json.ObjectMap.empty };
         if (obj.get("state")) |state_val| {
             state = try deepCopyJsonValue(allocator, state_val);
         }
 
         // Parse messages
-        var messages: std.ArrayList(Message) = .{};
+        var messages: std.ArrayList(Message) = .empty;
         if (obj.get("messages")) |messages_val| {
             for (messages_val.array.items) |msg_val| {
                 const msg = try Message.fromJson(allocator, msg_val);
@@ -402,7 +404,7 @@ pub const Checkpoint = struct {
         }
 
         // Parse metadata (deep copy to avoid dangling pointers after parsed.deinit())
-        var metadata = json.Value{ .object = json.ObjectMap.init(allocator) };
+        var metadata = json.Value{ .object = json.ObjectMap.empty };
         if (obj.get("metadata")) |metadata_val| {
             metadata = try deepCopyJsonValue(allocator, metadata_val);
         }
@@ -434,7 +436,7 @@ pub const Checkpoint = struct {
 ///   UUID string (caller owns memory)
 fn generateUuid(allocator: Allocator) ![]const u8 {
     var uuid: [16]u8 = undefined;
-    std.crypto.random.bytes(&uuid);
+    ioc.randomBytes(&uuid);
 
     // Set version (4) and variant (10)
     uuid[6] = (uuid[6] & 0x0F) | 0x40;
@@ -510,9 +512,9 @@ fn parseTimestamp(timestamp_str: []const u8) !i64 {
     // This is a simplified calculation - for production use std.time epoch calculations
     const days_since_epoch = daysSinceEpoch(year, month, day);
     const seconds: i64 = @as(i64, days_since_epoch) * 86400 +
-                        @as(i64, hour) * 3600 +
-                        @as(i64, minute) * 60 +
-                        @as(i64, second);
+        @as(i64, hour) * 3600 +
+        @as(i64, minute) * 60 +
+        @as(i64, second);
 
     return seconds * 1000 + @as(i64, milliseconds);
 }

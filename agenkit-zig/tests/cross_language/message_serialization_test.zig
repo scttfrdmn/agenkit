@@ -14,10 +14,7 @@ const Role = agenkit.Role;
 fn loadFixtures(allocator: std.mem.Allocator) !json.Parsed(json.Value) {
     // Path from project root (where zig build is run)
     const fixtures_path = "../tests/cross_language/fixtures/messages.json";
-    const file = try std.fs.cwd().openFile(fixtures_path, .{});
-    defer file.close();
-
-    const content = try file.readToEndAlloc(allocator, 1024 * 1024);
+    const content = try std.Io.Dir.cwd().readFileAlloc(agenkit.io_compat.io(), fixtures_path, allocator, .limited(1024 * 1024));
     defer allocator.free(content);
 
     return try json.parseFromSlice(json.Value, allocator, content, .{});
@@ -27,10 +24,7 @@ fn loadFixtures(allocator: std.mem.Allocator) !json.Parsed(json.Value) {
 fn loadSchema(allocator: std.mem.Allocator) !json.Parsed(json.Value) {
     // Path from project root (where zig build is run)
     const schema_path = "../tests/cross_language/schemas/message.schema.json";
-    const file = try std.fs.cwd().openFile(schema_path, .{});
-    defer file.close();
-
-    const content = try file.readToEndAlloc(allocator, 1024 * 1024);
+    const content = try std.Io.Dir.cwd().readFileAlloc(agenkit.io_compat.io(), schema_path, allocator, .limited(1024 * 1024));
     defer allocator.free(content);
 
     return try json.parseFromSlice(json.Value, allocator, content, .{});
@@ -147,7 +141,7 @@ test "simple user message" {
     const serialized = try msg.toJson(allocator);
     defer {
         var mut_serialized = serialized;
-        mut_serialized.object.deinit();
+        mut_serialized.object.deinit(allocator);
     }
     try validateAgainstSchema(serialized, schema.value);
 
@@ -195,13 +189,13 @@ test "assistant message with metadata" {
     const serialized = try msg.toJson(allocator);
     defer {
         var mut_serialized = serialized;
-        mut_serialized.object.deinit();
+        mut_serialized.object.deinit(allocator);
     }
     try validateAgainstSchema(serialized, schema.value);
 
     // Clean up text content and metadata ObjectMap (not the values - owned by fixtures)
     allocator.free(msg.content.text);
-    msg.metadata.object.deinit();
+    msg.metadata.object.deinit(allocator);
 }
 
 test "system message" {
@@ -229,7 +223,7 @@ test "system message" {
     const serialized = try msg.toJson(allocator);
     defer {
         var mut_serialized = serialized;
-        mut_serialized.object.deinit();
+        mut_serialized.object.deinit(allocator);
     }
     try validateAgainstSchema(serialized, schema.value);
 }
@@ -273,11 +267,11 @@ test "tool message structured" {
     const serialized = try msg.toJson(allocator);
     defer {
         var mut_serialized = serialized;
-        mut_serialized.object.deinit();
+        mut_serialized.object.deinit(allocator);
     }
     try validateAgainstSchema(serialized, schema.value);
     // Clean up metadata ObjectMap (content and values are owned by fixtures)
-    msg.metadata.object.deinit();
+    msg.metadata.object.deinit(allocator);
 }
 
 test "empty content" {
@@ -305,7 +299,7 @@ test "empty content" {
     const serialized = try msg.toJson(allocator);
     defer {
         var mut_serialized = serialized;
-        mut_serialized.object.deinit();
+        mut_serialized.object.deinit(allocator);
     }
     try validateAgainstSchema(serialized, schema.value);
 }
@@ -345,13 +339,13 @@ test "large content" {
     const serialized = try msg.toJson(allocator);
     defer {
         var mut_serialized = serialized;
-        mut_serialized.object.deinit();
+        mut_serialized.object.deinit(allocator);
     }
     try validateAgainstSchema(serialized, schema.value);
 
     // Clean up text content and metadata ObjectMap (not the values - owned by fixtures)
     allocator.free(msg.content.text);
-    msg.metadata.object.deinit();
+    msg.metadata.object.deinit(allocator);
 }
 
 test "unicode content" {
@@ -388,13 +382,13 @@ test "unicode content" {
     const serialized = try msg.toJson(allocator);
     defer {
         var mut_serialized = serialized;
-        mut_serialized.object.deinit();
+        mut_serialized.object.deinit(allocator);
     }
     try validateAgainstSchema(serialized, schema.value);
 
     // Clean up text content and metadata ObjectMap (not the values - owned by fixtures)
     allocator.free(msg.content.text);
-    msg.metadata.object.deinit();
+    msg.metadata.object.deinit(allocator);
 }
 
 test "nested metadata" {
@@ -437,13 +431,13 @@ test "nested metadata" {
     const serialized = try msg.toJson(allocator);
     defer {
         var mut_serialized = serialized;
-        mut_serialized.object.deinit();
+        mut_serialized.object.deinit(allocator);
     }
     try validateAgainstSchema(serialized, schema.value);
 
     // Clean up text content and metadata ObjectMap (not the values - owned by fixtures)
     allocator.free(msg.content.text);
-    msg.metadata.object.deinit();
+    msg.metadata.object.deinit(allocator);
 }
 
 test "numeric metadata" {
@@ -483,13 +477,13 @@ test "numeric metadata" {
     const serialized = try msg.toJson(allocator);
     defer {
         var mut_serialized = serialized;
-        mut_serialized.object.deinit();
+        mut_serialized.object.deinit(allocator);
     }
     try validateAgainstSchema(serialized, schema.value);
 
     // Clean up text content and metadata ObjectMap (not the values - owned by fixtures)
     allocator.free(msg.content.text);
-    msg.metadata.object.deinit();
+    msg.metadata.object.deinit(allocator);
 }
 
 test "all fixtures roundtrip" {
@@ -530,7 +524,7 @@ test "all fixtures roundtrip" {
         const serialized = try msg.toJson(allocator);
         defer {
             var mut_serialized = serialized;
-            mut_serialized.object.deinit();
+            mut_serialized.object.deinit(allocator);
         }
         try validateAgainstSchema(serialized, schema.value);
 
@@ -542,6 +536,6 @@ test "all fixtures roundtrip" {
         if (has_text_content) {
             allocator.free(msg.content.text);
         }
-        msg.metadata.object.deinit();
+        msg.metadata.object.deinit(allocator);
     }
 }

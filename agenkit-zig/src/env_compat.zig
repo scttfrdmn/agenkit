@@ -24,8 +24,11 @@ pub fn getEnvVarOwned(allocator: std.mem.Allocator, key: []const u8) GetEnvVarEr
         const val = std.c.getenv(key_z.ptr) orelse return error.EnvironmentVariableNotFound;
         return allocator.dupe(u8, std.mem.sliceTo(val, 0));
     }
-    // Fallback for non-libc targets: scan the POSIX environ block.
-    for (std.os.environ) |entry| {
+    // Non-libc fallback: scan the C `environ` block directly. 0.16 exposes it
+    // as `std.c.environ` (a null-terminated array of optional NUL-terminated
+    // strings); there is no portable std.posix/std.os `environ` in 0.16.
+    var i: usize = 0;
+    while (std.c.environ[i]) |entry| : (i += 1) {
         const pair = std.mem.sliceTo(entry, 0);
         const eq = std.mem.indexOfScalar(u8, pair, '=') orelse continue;
         if (std.mem.eql(u8, pair[0..eq], key)) {

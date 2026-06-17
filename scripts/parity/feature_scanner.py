@@ -1,18 +1,18 @@
 """Main feature scanner orchestrator.
 
 Coordinates all language-specific scanners to generate a comprehensive
-feature manifest showing what's implemented across all 6 languages.
+feature manifest showing what's implemented across all 9 languages.
 """
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 
 def scan_all_languages() -> dict[str, Any]:
-    """Scan all 6 languages and generate feature manifest.
+    """Scan all 9 languages and generate feature manifest.
 
     Returns:
         Complete feature manifest with detected features per language.
@@ -23,7 +23,7 @@ def scan_all_languages() -> dict[str, Any]:
     print()
 
     results: dict[str, Any] = {}
-    languages = ["python", "go", "typescript", "rust", "cpp", "zig"]
+    languages = ["python", "go", "typescript", "rust", "cpp", "zig", "csharp", "java", "scala"]
 
     for lang in languages:
         print(f"Scanning {lang}...", end=" ", flush=True)
@@ -49,7 +49,7 @@ def scan_all_languages() -> dict[str, Any]:
 
     # Build complete manifest
     manifest = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "version": "1.0",
         "languages": results,
         "summary": calculate_summary(results),
@@ -62,7 +62,8 @@ def load_scanner(language: str):
     """Load language-specific scanner module.
 
     Args:
-        language: Language name (python, go, typescript, rust, cpp, zig)
+        language: Language name (python, go, typescript, rust, cpp, zig,
+            csharp, java, scala)
 
     Returns:
         Scanner module with scan() function
@@ -70,32 +71,24 @@ def load_scanner(language: str):
     Raises:
         ImportError: If scanner module not found
     """
-    if language == "python":
-        from scripts.parity.scanners import python_scanner
-
-        return python_scanner
-    elif language == "go":
-        from scripts.parity.scanners import go_scanner
-
-        return go_scanner
-    elif language == "typescript":
-        from scripts.parity.scanners import typescript_scanner
-
-        return typescript_scanner
-    elif language == "rust":
-        from scripts.parity.scanners import rust_scanner
-
-        return rust_scanner
-    elif language == "cpp":
-        from scripts.parity.scanners import cpp_scanner
-
-        return cpp_scanner
-    elif language == "zig":
-        from scripts.parity.scanners import zig_scanner
-
-        return zig_scanner
-    else:
+    # Each language maps to a `<name>_scanner` module exposing scan().
+    known = {
+        "python",
+        "go",
+        "typescript",
+        "rust",
+        "cpp",
+        "zig",
+        "csharp",
+        "java",
+        "scala",
+    }
+    if language not in known:
         raise ValueError(f"Unknown language: {language}")
+
+    import importlib
+
+    return importlib.import_module(f"scripts.parity.scanners.{language}_scanner")
 
 
 def count_features(features: dict[str, Any]) -> int:
@@ -172,7 +165,7 @@ def print_summary(manifest: dict[str, Any]) -> None:
     print("-" * 70)
 
     categories = ["patterns", "middleware", "llm_adapters", "memory", "techniques"]
-    languages = ["python", "go", "typescript", "rust", "cpp", "zig"]
+    languages = ["python", "go", "typescript", "rust", "cpp", "zig", "csharp", "java", "scala"]
 
     # Header
     print(f"{'Category':<20} " + " ".join(f"{lang:>8}" for lang in languages))

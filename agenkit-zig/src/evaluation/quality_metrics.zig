@@ -8,7 +8,6 @@
 /// - LLM-as-judge pattern support
 /// - Classification metrics (precision/recall/F1)
 /// - Configurable thresholds
-
 const std = @import("std");
 const json = std.json;
 const core = @import("core.zig");
@@ -373,7 +372,7 @@ pub const PrecisionRecallMetric = struct {
             .name_str = "precision_recall",
             .allocator = allocator,
             .positive_threshold = positive_threshold,
-            .classifications = std.ArrayList(bool){},
+            .classifications = std.ArrayList(bool).empty,
         };
         return self;
     }
@@ -493,7 +492,7 @@ test "AccuracyMetric case sensitive" {
     // Test exact match
     var output1 = try Message.withText(allocator, .assistant, "Hello");
     defer output1.deinit();
-    try output1.metadata.object.put("expected", json.Value{ .string = "Hello" });
+    try output1.metadata.object.put(allocator, "expected", json.Value{ .string = "Hello" });
 
     // Mock agent and input (not used in accuracy measurement)
     const agent = Agent{ .ptr = undefined, .vtable = undefined };
@@ -506,7 +505,7 @@ test "AccuracyMetric case sensitive" {
     // Test mismatch
     var output2 = try Message.withText(allocator, .assistant, "hello");
     defer output2.deinit();
-    try output2.metadata.object.put("expected", json.Value{ .string = "Hello" });
+    try output2.metadata.object.put(allocator, "expected", json.Value{ .string = "Hello" });
 
     const score2 = try metric.asMetric().measure(agent, input, output2, allocator);
     try std.testing.expectEqual(@as(f64, 0.0), score2);
@@ -520,7 +519,7 @@ test "AccuracyMetric case insensitive" {
 
     var output = try Message.withText(allocator, .assistant, "hello");
     defer output.deinit();
-    try output.metadata.object.put("expected", json.Value{ .string = "HELLO" });
+    try output.metadata.object.put(allocator, "expected", json.Value{ .string = "HELLO" });
 
     const agent = Agent{ .ptr = undefined, .vtable = undefined };
     var input = try Message.withText(allocator, .user, "test");

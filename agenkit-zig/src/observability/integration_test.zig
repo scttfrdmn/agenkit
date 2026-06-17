@@ -4,8 +4,8 @@
 /// - Tracing + Metrics + Logging + Audit
 /// - Middleware composition
 /// - Cross-module data flow
-
 const std = @import("std");
+const ioc = @import("../io_compat.zig");
 const testing = std.testing;
 
 const Agent = @import("../agent.zig").Agent;
@@ -65,7 +65,7 @@ test "Full observability stack" {
     // Create audit logger
     var audit_logger = try audit.AuditLogger.init(allocator, "integration_audit.log");
     defer audit_logger.deinit();
-    defer std.fs.cwd().deleteFile("integration_audit.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), "integration_audit.log") catch {};
 
     // Create agent with full observability
     var echo = try EchoAgent.init(allocator);
@@ -201,7 +201,7 @@ test "Audit events with severity filtering" {
 
     var logger = try audit.AuditLogger.init(allocator, "severity_test.log");
     defer logger.deinit();
-    defer std.fs.cwd().deleteFile("severity_test.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), "severity_test.log") catch {};
 
     // Create events with different severities
     var info_event = try audit.AuditEvent.create(allocator, .message_processed, "agent", null);
@@ -350,7 +350,7 @@ test "Concurrent audit logging" {
 
     var logger = try audit.AuditLogger.init(allocator, "concurrent_test.log");
     defer logger.deinit();
-    defer std.fs.cwd().deleteFile("concurrent_test.log") catch {};
+    defer std.Io.Dir.cwd().deleteFile(ioc.io(), "concurrent_test.log") catch {};
 
     // Simulate concurrent logging (sequential in tests, but validates thread safety design)
     var i: usize = 0;

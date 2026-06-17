@@ -20,6 +20,8 @@
 /// const metrics = timeout_agent.metrics();
 /// ```
 const std = @import("std");
+const agksync = @import("../sync_compat.zig");
+const agktime = @import("../time_compat.zig");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const Result = @import("../agent.zig").Result;
@@ -122,7 +124,7 @@ pub const TimeoutDecorator = struct {
     inner_agent: Agent,
     config: TimeoutConfig,
     metrics_data: TimeoutMetrics,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(allocator: Allocator, inner_agent: Agent, config: TimeoutConfig) !*TimeoutDecorator {
         // Validate configuration
@@ -134,7 +136,7 @@ pub const TimeoutDecorator = struct {
             .inner_agent = inner_agent,
             .config = config,
             .metrics_data = TimeoutMetrics{},
-            .mutex = std.Thread.Mutex{},
+            .mutex = agksync.Mutex{},
         };
         return self;
     }
@@ -202,7 +204,7 @@ pub const TimeoutDecorator = struct {
         self.mutex.unlock();
 
         // Record start time
-        const start_time = std.time.milliTimestamp();
+        const start_time = agktime.milliTimestamp();
         const deadline = start_time + @as(i64, @intCast(timeout_ms));
 
         // Create a thread to execute the operation
@@ -236,7 +238,7 @@ pub const TimeoutDecorator = struct {
 
         // Poll for completion or timeout
         while (!context.completed.load(.acquire)) {
-            const now = std.time.milliTimestamp();
+            const now = agktime.milliTimestamp();
             if (now >= deadline) {
                 // Timeout occurred
                 const duration_ms = @as(u64, @intCast(now - start_time));
@@ -250,11 +252,11 @@ pub const TimeoutDecorator = struct {
             }
 
             // Sleep briefly to avoid busy waiting
-            std.time.sleep(10 * std.time.ns_per_ms); // 10ms poll interval
+            agktime.sleep(10 * std.time.ns_per_ms); // 10ms poll interval
         }
 
         // Calculate duration
-        const end_time = std.time.milliTimestamp();
+        const end_time = agktime.milliTimestamp();
         const duration_ms = @as(u64, @intCast(end_time - start_time));
 
         // Check result
@@ -294,7 +296,7 @@ pub const TimeoutDecorator = struct {
         self.mutex.unlock();
 
         // Record start time and deadline
-        const start_time = std.time.milliTimestamp();
+        const start_time = agktime.milliTimestamp();
         const deadline = start_time + @as(i64, @intCast(timeout_ms));
 
         // Create context for wrapped callbacks
@@ -322,7 +324,7 @@ pub const TimeoutDecorator = struct {
             .on_message_fn = struct {
                 fn callback(ctx_ptr: *anyopaque, msg: Message) void {
                     const ctx: *CallbackContext = @ptrCast(@alignCast(ctx_ptr));
-                    const now = std.time.milliTimestamp();
+                    const now = agktime.milliTimestamp();
 
                     if (now >= ctx.deadline) {
                         // Timeout exceeded - call error callback
@@ -344,7 +346,7 @@ pub const TimeoutDecorator = struct {
             .on_error_fn = struct {
                 fn callback(ctx_ptr: *anyopaque, err: AgentError) void {
                     const ctx: *CallbackContext = @ptrCast(@alignCast(ctx_ptr));
-                    const now = std.time.milliTimestamp();
+                    const now = agktime.milliTimestamp();
                     const duration_ms = @as(u64, @intCast(now - ctx.start_time));
 
                     ctx.decorator.mutex.lock();
@@ -362,7 +364,7 @@ pub const TimeoutDecorator = struct {
             .on_complete_fn = struct {
                 fn callback(ctx_ptr: *anyopaque) void {
                     const ctx: *CallbackContext = @ptrCast(@alignCast(ctx_ptr));
-                    const now = std.time.milliTimestamp();
+                    const now = agktime.milliTimestamp();
                     const duration_ms = @as(u64, @intCast(now - ctx.start_time));
 
                     ctx.decorator.mutex.lock();

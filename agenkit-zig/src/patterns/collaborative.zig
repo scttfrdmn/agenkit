@@ -44,7 +44,6 @@
 /// // Will iterate until consensus or max rounds
 /// const result = try collab.agent().process(input_message);
 /// ```
-
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
@@ -408,12 +407,11 @@ pub fn firstMerge(allocator: Allocator, messages: []const Message) AgentError!Me
 // Tests
 // ============================================================================
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "CollaborativeAgent: basic collaboration" {
     // Skip test for now - requires mock infrastructure

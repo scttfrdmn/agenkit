@@ -1,7 +1,7 @@
 /// Property-based testing framework for Agenkit Zig
 ///
 /// Since the Zig ecosystem lacks a mature property-based testing library,
-/// this module provides a lightweight custom framework built on std.rand.DefaultPrng.
+/// this module provides a lightweight custom framework built on std.Random.DefaultPrng.
 ///
 /// Design:
 /// - runProperty runs a property function N times with a shared advancing PRNG

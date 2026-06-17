@@ -2,7 +2,6 @@
 ///
 /// Provides a tree structure for exploring multiple reasoning paths with
 /// branching, evaluation, pruning, and backtracking capabilities.
-
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
@@ -85,7 +84,7 @@ pub const ReasoningTree = struct {
             .id = node_id,
             .content = try self.allocator.dupe(u8, content),
             .parent_id = null,
-            .children_ids = std.ArrayList(usize).init(self.allocator),
+            .children_ids = std.ArrayList(usize).empty,
             .depth = 0,
             .score = 0.0,
             .state = .open,
@@ -115,7 +114,7 @@ pub const ReasoningTree = struct {
             .id = child_id,
             .content = try self.allocator.dupe(u8, content),
             .parent_id = parent_id,
-            .children_ids = std.ArrayList(usize).init(self.allocator),
+            .children_ids = std.ArrayList(usize).empty,
             .depth = parent_depth + 1,
             .score = score,
             .state = .open,
@@ -141,13 +140,13 @@ pub const ReasoningTree = struct {
 
     /// Get the path from root to a specific node
     pub fn getPath(self: *ReasoningTree, node_id: usize, allocator: Allocator) ![]const *const ReasoningNode {
-        var path = std.ArrayList(*const ReasoningNode).init(allocator);
-        errdefer path.deinit();
+        var path = std.ArrayList(*const ReasoningNode).empty;
+        errdefer path.deinit(allocator);
 
         var current_id: ?usize = node_id;
         while (current_id) |id| {
             if (self.nodes.getPtr(id)) |node| {
-                try path.append(node);
+                try path.append(allocator, node);
                 current_id = node.parent_id;
             } else {
                 break;
@@ -157,7 +156,7 @@ pub const ReasoningTree = struct {
         // Reverse to get root-to-leaf order
         std.mem.reverse(*const ReasoningNode, path.items);
 
-        return try path.toOwnedSlice();
+        return try path.toOwnedSlice(allocator);
     }
 
     /// Get path content as concatenated text

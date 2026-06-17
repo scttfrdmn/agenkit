@@ -8,7 +8,6 @@
 /// - Configurable difficulty levels
 /// - Extreme-scale testing support
 /// - Domain-specific test suites
-
 const std = @import("std");
 const core = @import("core.zig");
 const Allocator = std.mem.Allocator;
@@ -87,7 +86,7 @@ pub const SimpleQABenchmark = struct {
         allocator: Allocator,
     ) anyerror!std.ArrayList(*core.TestCase) {
         _ = ptr;
-        var cases = std.ArrayList(*core.TestCase){};
+        var cases = std.ArrayList(*core.TestCase).empty;
 
         // Math questions
         const tc1 = try core.TestCase.initExact(allocator, "What is 15 + 27?", "42");
@@ -192,7 +191,7 @@ pub const NeedleInHaystackBenchmark = struct {
         allocator: Allocator,
     ) anyerror!std.ArrayList(*core.TestCase) {
         const self: *NeedleInHaystackBenchmark = @ptrCast(@alignCast(ptr));
-        var cases = std.ArrayList(*core.TestCase){};
+        var cases = std.ArrayList(*core.TestCase).empty;
 
         // Generate needles (facts to hide in haystack)
         const needles = [_][]const u8{
@@ -202,7 +201,7 @@ pub const NeedleInHaystackBenchmark = struct {
         };
 
         // Generate haystack (filler content)
-        var haystack = std.ArrayList(u8){};
+        var haystack = std.ArrayList(u8).empty;
         defer haystack.deinit();
 
         const filler = "This is irrelevant information that serves as distraction. ";
@@ -300,7 +299,7 @@ pub const ExtremeScaleBenchmark = struct {
         allocator: Allocator,
     ) anyerror!std.ArrayList(*core.TestCase) {
         const self: *ExtremeScaleBenchmark = @ptrCast(@alignCast(ptr));
-        var cases = std.ArrayList(*core.TestCase){};
+        var cases = std.ArrayList(*core.TestCase).empty;
 
         // Generate massive context
         const tokens_per_char = 4; // Approximate
@@ -392,7 +391,7 @@ pub const InformationRetentionBenchmark = struct {
         allocator: Allocator,
     ) anyerror!std.ArrayList(*core.TestCase) {
         const self: *InformationRetentionBenchmark = @ptrCast(@alignCast(ptr));
-        var cases = std.ArrayList(*core.TestCase){};
+        var cases = std.ArrayList(*core.TestCase).empty;
 
         const facts = [_][]const u8{
             "The Eiffel Tower is 330 meters tall",
@@ -449,7 +448,7 @@ pub const BenchmarkSuite = struct {
         const self = try allocator.create(BenchmarkSuite);
         self.* = BenchmarkSuite{
             .name_str = try allocator.dupe(u8, name_str),
-            .benchmarks = std.ArrayList(Benchmark){},
+            .benchmarks = std.ArrayList(Benchmark).empty,
             .allocator = allocator,
         };
         return self;
@@ -463,7 +462,7 @@ pub const BenchmarkSuite = struct {
         self: *const BenchmarkSuite,
         allocator: Allocator,
     ) !std.ArrayList(*core.TestCase) {
-        var all_cases = std.ArrayList(*core.TestCase){};
+        var all_cases = std.ArrayList(*core.TestCase).empty;
 
         for (self.benchmarks.items) |benchmark| {
             var cases = try benchmark.generateTestCases(allocator);

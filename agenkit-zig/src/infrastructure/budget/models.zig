@@ -12,6 +12,8 @@
 ///   const cost = try pricing.calculate("claude-sonnet-4", 10000, .input);
 ///   std.debug.print("Cost: ${d:.4}\n", .{cost});
 const std = @import("std");
+const agksync = @import("../../sync_compat.zig");
+const agktime = @import("../../time_compat.zig");
 const Allocator = std.mem.Allocator;
 
 /// Direction for cost calculation (input or output tokens).
@@ -39,7 +41,7 @@ pub const Direction = enum {
 ///   const cost = try pricing.calculate("gpt-4o", 100000, .input);
 pub const ModelPricing = struct {
     allocator: Allocator,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
     pricing: std.StringHashMap(PricingData),
 
     pub const PricingData = struct {
@@ -170,7 +172,7 @@ pub const ModelPricing = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        var models = std.ArrayList([]const u8).init(self.allocator);
+        var models = std.ArrayList([]const u8).empty;
         var iter = self.pricing.keyIterator();
         while (iter.next()) |key| {
             if (!std.mem.eql(u8, key.*, "default")) {
@@ -372,8 +374,8 @@ pub const Cost = struct {
             .output_cost = output_cost,
             .thinking_cost = thinking_cost,
             .total_cost = total_cost,
-            .timestamp = std.time.milliTimestamp(),
-            .metadata = std.json.Value{ .object = std.json.ObjectMap.init(allocator) },
+            .timestamp = agktime.milliTimestamp(),
+            .metadata = std.json.Value{ .object = std.json.ObjectMap.empty },
             .allocator = allocator,
         };
     }
@@ -397,7 +399,7 @@ pub const Cost = struct {
     ///   const json_value = try cost.toJson();
     ///   defer json_value.object.deinit();
     pub fn toJson(self: *const Cost) !std.json.Value {
-        var obj = std.json.ObjectMap.init(self.allocator);
+        var obj = std.json.ObjectMap.empty;
 
         try obj.put("session_id", .{ .string = self.session_id });
         try obj.put("agent_name", .{ .string = self.agent_name });

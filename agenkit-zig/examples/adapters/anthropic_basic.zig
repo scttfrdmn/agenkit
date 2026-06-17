@@ -19,7 +19,7 @@ const Role = agenkit.Role;
 const llm_mod = agenkit.adapter;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -65,7 +65,7 @@ fn simpleCompletion(allocator: std.mem.Allocator, llm: llm_mod.LLM) !void {
 
     var options = llm_mod.CallOptions.init(allocator);
     defer options.deinit();
-    options.withMaxTokens(300); // max_tokens is required for Anthropic
+    try options.withMaxTokens(300); // max_tokens is required for Anthropic
 
     std.debug.print("Request: {s}\n", .{msg.content.text});
 
@@ -109,8 +109,8 @@ fn systemMessageExample(allocator: std.mem.Allocator, llm: llm_mod.LLM) !void {
 
     var options = llm_mod.CallOptions.init(allocator);
     defer options.deinit();
-    options.withMaxTokens(500);
-    options.withTemperature(0.3); // Lower temp for technical accuracy
+    try options.withMaxTokens(500);
+    try options.withTemperature(0.3); // Lower temp for technical accuracy
 
     std.debug.print("System: {s}\n", .{system.content.text});
     std.debug.print("Request: {s}\n", .{user.content.text});
@@ -145,9 +145,9 @@ fn creativeWriting(allocator: std.mem.Allocator, llm: llm_mod.LLM) !void {
 
     var options = llm_mod.CallOptions.init(allocator);
     defer options.deinit();
-    options.withMaxTokens(500);
-    options.withTemperature(0.9); // Higher temp for creativity
-    options.withTopP(0.95);
+    try options.withMaxTokens(500);
+    try options.withTemperature(0.9); // Higher temp for creativity
+    try options.withTopP(0.95);
 
     std.debug.print("Request: {s}\n", .{user.content.text});
     std.debug.print("Temperature: 0.9 (creative)\n", .{});

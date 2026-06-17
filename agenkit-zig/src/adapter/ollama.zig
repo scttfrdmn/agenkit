@@ -16,8 +16,8 @@
 /// const response = try llm.complete(allocator, &messages, &options);
 /// defer response.deinit();
 /// ```
-
 const std = @import("std");
+const ioc = @import("../io_compat.zig");
 const llm = @import("llm.zig");
 const Message = @import("../message.zig").Message;
 const Role = @import("../message.zig").Role;
@@ -31,7 +31,7 @@ const OllamaStream = struct {
     current_index: usize,
 
     fn makeStreamRequest(self: *OllamaStream, body: []const u8) !void {
-        var client = std.http.Client{ .allocator = self.allocator };
+        var client = std.http.Client{ .allocator = self.allocator, .io = ioc.io() };
         defer client.deinit();
 
         const uri_str = try std.fmt.allocPrint(self.allocator, "{s}/api/chat", .{self.self.base_url});
@@ -39,7 +39,7 @@ const OllamaStream = struct {
 
         const headers = [_]std.http.Header{.{ .name = "Content-Type", .value = "application/json" }};
 
-        var response_buffer: std.io.Writer.Allocating = .init(self.allocator);
+        var response_buffer: std.Io.Writer.Allocating = .init(self.allocator);
         defer response_buffer.deinit();
 
         const result = try client.fetch(.{
@@ -195,7 +195,7 @@ pub const OllamaLLM = struct {
         stream_impl.* = OllamaStream{
             .allocator = allocator,
             .self = self,
-            .chunks = std.ArrayList([]const u8){},
+            .chunks = std.ArrayList([]const u8).empty,
             .current_index = 0,
         };
 
@@ -230,7 +230,7 @@ pub const OllamaLLM = struct {
         options: *const llm.CallOptions,
         is_stream: bool,
     ) ![]const u8 {
-        var json = std.ArrayList(u8){};
+        var json = std.ArrayList(u8).empty;
         defer json.deinit(allocator);
 
         try json.appendSlice(allocator, "{\"model\":\"");
@@ -300,7 +300,7 @@ pub const OllamaLLM = struct {
 
     /// Make HTTP request to Ollama API
     fn makeRequest(self: *OllamaLLM, allocator: Allocator, body: []const u8) ![]const u8 {
-        var client = std.http.Client{ .allocator = allocator };
+        var client = std.http.Client{ .allocator = allocator, .io = ioc.io() };
         defer client.deinit();
 
         const uri_str = try std.fmt.allocPrint(
@@ -314,7 +314,7 @@ pub const OllamaLLM = struct {
             .{ .name = "Content-Type", .value = "application/json" },
         };
 
-        var response_body: std.io.Writer.Allocating = .init(allocator);
+        var response_body: std.Io.Writer.Allocating = .init(allocator);
         defer response_body.deinit();
 
         const result = try client.fetch(.{

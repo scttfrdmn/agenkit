@@ -7,6 +7,7 @@
 /// 4. Observe batch size and wait time
 
 const std = @import("std");
+const agktime = @import("../../src/time_compat.zig");
 const agenkit = @import("agenkit");
 
 // Slow agent that simulates processing time
@@ -58,7 +59,7 @@ const SlowAgent = struct {
         std.debug.print("  [Slow Agent] Processing request #{d}\\n", .{count + 1});
 
         // Simulate slow processing
-        std.time.sleep(self.delay_ms * std.time.ns_per_ms);
+        agktime.sleep(self.delay_ms * std.time.ns_per_ms);
 
         return agenkit.Result{ .ok = message };
     }
@@ -103,7 +104,7 @@ fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbac
     callbacks.onError(AgentError.NotImplemented);
 }
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -147,7 +148,7 @@ fn basicBatchingExample(allocator: std.mem.Allocator) !void {
     defer batching_agent.stop();
 
     std.debug.print("  Sending 10 requests concurrently...\n", .{});
-    const start_time = std.time.milliTimestamp();
+    const start_time = agktime.milliTimestamp();
 
     // Spawn 10 concurrent threads
     var threads: [10]std.Thread = undefined;
@@ -165,7 +166,7 @@ fn basicBatchingExample(allocator: std.mem.Allocator) !void {
         thread.join();
     }
 
-    const elapsed_ms = std.time.milliTimestamp() - start_time;
+    const elapsed_ms = agktime.milliTimestamp() - start_time;
     std.debug.print("\n  Completed in {d}ms\n", .{elapsed_ms});
 
     const metrics = batching_agent.metrics();
@@ -195,7 +196,7 @@ fn waitTimeBatchingExample(allocator: std.mem.Allocator) !void {
     defer batching_agent.stop();
 
     std.debug.print("  Sending 3 requests with delays...\n", .{});
-    const start_time = std.time.milliTimestamp();
+    const start_time = agktime.milliTimestamp();
 
     // Send 3 requests with 50ms delays between them
     var i: u32 = 0;
@@ -208,14 +209,14 @@ fn waitTimeBatchingExample(allocator: std.mem.Allocator) !void {
         thread.detach();
 
         if (i < 2) {
-            std.time.sleep(50 * std.time.ns_per_ms);
+            agktime.sleep(50 * std.time.ns_per_ms);
         }
     }
 
     // Wait for processing
-    std.time.sleep(300 * std.time.ns_per_ms);
+    agktime.sleep(300 * std.time.ns_per_ms);
 
-    const elapsed_ms = std.time.milliTimestamp() - start_time;
+    const elapsed_ms = agktime.milliTimestamp() - start_time;
     std.debug.print("\n  Completed in {d}ms\n", .{elapsed_ms});
 
     const metrics = batching_agent.metrics();
@@ -245,7 +246,7 @@ fn metricsExample(allocator: std.mem.Allocator) !void {
     defer batching_agent.stop();
 
     std.debug.print("  Sending 25 requests in 5 waves...\n", .{});
-    const start_time = std.time.milliTimestamp();
+    const start_time = agktime.milliTimestamp();
 
     // Send 5 waves of 5 requests
     var wave: u32 = 0;
@@ -263,14 +264,14 @@ fn metricsExample(allocator: std.mem.Allocator) !void {
 
         // Wait between waves
         if (wave < 4) {
-            std.time.sleep(100 * std.time.ns_per_ms);
+            agktime.sleep(100 * std.time.ns_per_ms);
         }
     }
 
     // Wait for all processing
-    std.time.sleep(500 * std.time.ns_per_ms);
+    agktime.sleep(500 * std.time.ns_per_ms);
 
-    const elapsed_ms = std.time.milliTimestamp() - start_time;
+    const elapsed_ms = agktime.milliTimestamp() - start_time;
     const metrics = batching_agent.metrics();
 
     std.debug.print("\n  Final Metrics:\n", .{});

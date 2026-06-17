@@ -6,6 +6,8 @@
 // - Thread-safe for concurrent requests
 
 const std = @import("std");
+const agksync = @import("../sync_compat.zig");
+const agktime = @import("../time_compat.zig");
 const Agent = @import("../agent.zig").Agent;
 const Message = @import("../message.zig").Message;
 
@@ -36,7 +38,7 @@ pub const AgentBackend = struct {
             .active_connections = 0,
             .total_requests = 0,
             .total_failures = 0,
-            .last_health_check = std.time.milliTimestamp(),
+            .last_health_check = agktime.milliTimestamp(),
             .consecutive_failures = 0,
         };
     }
@@ -103,7 +105,7 @@ pub const LoadBalancer = struct {
     config: LoadBalancerConfig,
     metrics: LoadBalancerMetrics,
     current_index: usize,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -144,7 +146,7 @@ pub const LoadBalancer = struct {
             .config = config,
             .metrics = LoadBalancerMetrics.init(allocator),
             .current_index = 0,
-            .mutex = std.Thread.Mutex{},
+            .mutex = agksync.Mutex{},
         };
     }
 
@@ -204,7 +206,7 @@ pub const LoadBalancer = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        var healthy_indices = std.ArrayList(usize).init(self.allocator);
+        var healthy_indices = std.ArrayList(usize).empty;
         defer healthy_indices.deinit();
 
         for (self.backends, 0..) |backend, i| {
@@ -222,7 +224,7 @@ pub const LoadBalancer = struct {
             .least_connections => self.selectLeastConnections(healthy_indices.items),
             .weighted_round_robin => self.selectWeightedRoundRobin(healthy_indices.items),
             .random => blk: {
-                var prng = std.rand.DefaultPrng.init(@intCast(std.time.milliTimestamp()));
+                var prng = std.Random.DefaultPrng.init(@intCast(agktime.milliTimestamp()));
                 const rand = prng.random();
                 const index = rand.intRangeAtMost(usize, 0, healthy_indices.items.len - 1);
                 break :blk healthy_indices.items[index];
@@ -266,7 +268,7 @@ pub const LoadBalancer = struct {
 
     fn selectWeightedRoundRobin(self: *LoadBalancer, healthy_indices: []const usize) !usize {
         // Build weighted list
-        var weighted = std.ArrayList(usize).init(self.allocator);
+        var weighted = std.ArrayList(usize).empty;
         defer weighted.deinit();
 
         for (healthy_indices) |index| {

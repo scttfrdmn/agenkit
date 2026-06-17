@@ -31,6 +31,8 @@
 /// const result = try batching_agent.agent().process(message);
 /// ```
 const std = @import("std");
+const agksync = @import("../sync_compat.zig");
+const agktime = @import("../time_compat.zig");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
@@ -127,15 +129,15 @@ const BatchRequest = struct {
     enqueued_at_ms: i64,
     result: ?Result,
     error_value: ?AgentError,
-    completed: std.Thread.Condition,
+    completed: agksync.Condition,
 
     fn init(message: Message) BatchRequest {
         return BatchRequest{
             .message = message,
-            .enqueued_at_ms = std.time.milliTimestamp(),
+            .enqueued_at_ms = agktime.milliTimestamp(),
             .result = null,
             .error_value = null,
-            .completed = std.Thread.Condition{},
+            .completed = agksync.Condition{},
         };
     }
 };
@@ -147,11 +149,11 @@ pub const BatchingDecorator = struct {
     config: BatchingConfig,
     metrics_data: BatchingMetrics,
     queue: std.ArrayList(*BatchRequest),
-    queue_mutex: std.Thread.Mutex,
-    queue_condition: std.Thread.Condition,
+    queue_mutex: agksync.Mutex,
+    queue_condition: agksync.Condition,
     processor_thread: ?std.Thread,
     shutdown: std.atomic.Value(bool),
-    request_mutex: std.Thread.Mutex, // For coordinating individual requests
+    request_mutex: agksync.Mutex, // For coordinating individual requests
 
     pub fn init(allocator: Allocator, inner_agent: Agent, config: BatchingConfig) !*BatchingDecorator {
         // Validate configuration
@@ -163,12 +165,12 @@ pub const BatchingDecorator = struct {
             .inner_agent = inner_agent,
             .config = config,
             .metrics_data = BatchingMetrics{},
-            .queue = std.ArrayList(*BatchRequest).init(allocator),
-            .queue_mutex = std.Thread.Mutex{},
-            .queue_condition = std.Thread.Condition{},
+            .queue = std.ArrayList(*BatchRequest).empty,
+            .queue_mutex = agksync.Mutex{},
+            .queue_condition = agksync.Condition{},
             .processor_thread = null,
             .shutdown = std.atomic.Value(bool).init(false),
-            .request_mutex = std.Thread.Mutex{},
+            .request_mutex = agksync.Mutex{},
         };
         return self;
     }
@@ -230,7 +232,7 @@ pub const BatchingDecorator = struct {
 
     /// Collect a batch and process it
     fn collectAndProcessBatch(self: *BatchingDecorator) !void {
-        var batch = std.ArrayList(*BatchRequest).init(self.allocator);
+        var batch = std.ArrayList(*BatchRequest).empty;
         defer batch.deinit();
 
         // Wait for first request
@@ -251,11 +253,11 @@ pub const BatchingDecorator = struct {
             try batch.append(first_req);
         }
 
-        const deadline_ms = std.time.milliTimestamp() + @as(i64, @intCast(self.config.max_wait_time_ms));
+        const deadline_ms = agktime.milliTimestamp() + @as(i64, @intCast(self.config.max_wait_time_ms));
 
         // Collect more requests until batch full or timeout
         while (batch.items.len < self.config.max_batch_size) {
-            const now_ms = std.time.milliTimestamp();
+            const now_ms = agktime.milliTimestamp();
             if (now_ms >= deadline_ms) break;
 
             // Check if more requests available
@@ -266,7 +268,7 @@ pub const BatchingDecorator = struct {
                 // Wait for more requests with timeout
                 const remaining_ms = @as(u64, @intCast(deadline_ms - now_ms));
                 self.queue_mutex.unlock();
-                std.time.sleep(remaining_ms * std.time.ns_per_ms);
+                agktime.sleep(remaining_ms * std.time.ns_per_ms);
                 self.queue_mutex.lock();
 
                 // Check again after sleep
@@ -305,7 +307,7 @@ pub const BatchingDecorator = struct {
         }
 
         // Calculate wait times
-        const now_ms = std.time.milliTimestamp();
+        const now_ms = agktime.milliTimestamp();
         for (batch) |req| {
             const wait_time_ms = @as(u64, @intCast(now_ms - req.enqueued_at_ms));
             self.metrics_data.total_wait_time_ms += wait_time_ms;
@@ -475,12 +477,11 @@ pub const BatchingDecorator = struct {
 // Tests
 const testing = std.testing;
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "BatchingConfig validation" {
     var config = BatchingConfig{};

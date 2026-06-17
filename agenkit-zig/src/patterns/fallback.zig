@@ -40,7 +40,6 @@
 /// // Will try primary first, then backup if primary fails
 /// const result = try fallback.agent().process(input_message);
 /// ```
-
 const std = @import("std");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
@@ -193,7 +192,6 @@ pub const FallbackAgent = struct {
         return AgentError.ProcessingFailed;
     }
 
-
     fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
         const caps = try capabilitiesImpl(ptr, alloc);
         defer {
@@ -222,12 +220,11 @@ pub const FallbackAgent = struct {
 // Tests
 // ============================================================================
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "FallbackAgent: first agent success" {
     const allocator = std.testing.allocator;
@@ -247,8 +244,8 @@ test "FallbackAgent: first agent success" {
                     .name = nameImpl,
                     .capabilities = capabilitiesImpl,
                     .process = processImpl,
-                .process_stream = processStreamImpl,
-                .introspect = introspectImpl,
+                    .process_stream = processStreamImpl,
+                    .introspect = introspectImpl,
                     .deinit = deinitImpl,
                 },
             };

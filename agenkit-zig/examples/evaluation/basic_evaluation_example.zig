@@ -13,7 +13,7 @@ const agenkit = @import("agenkit");
 const evaluation = agenkit.evaluation;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -26,7 +26,7 @@ pub fn main() !void {
     // ========================================================================
     std.debug.print("Step 1: Creating test cases...\n", .{});
 
-    var test_cases = std.ArrayList(*evaluation.TestCase){};
+    var test_cases = std.ArrayList(*evaluation.TestCase).empty;
     defer {
         for (test_cases.items) |tc| tc.deinit();
         test_cases.deinit(allocator);

@@ -5,6 +5,8 @@
 // - Prometheus metrics export
 
 const std = @import("std");
+const agksync = @import("../sync_compat.zig");
+const agktime = @import("../time_compat.zig");
 const Agent = @import("../agent.zig").Agent;
 const Message = @import("../message.zig").Message;
 
@@ -105,7 +107,7 @@ pub const HealthMetrics = struct {
             .last_check_time = std.AutoHashMap(ProbeType, i64).init(allocator),
             .last_check_duration = std.AutoHashMap(ProbeType, f64).init(allocator),
             .consecutive_failures = std.AutoHashMap(ProbeType, usize).init(allocator),
-            .uptime_start = std.time.milliTimestamp(),
+            .uptime_start = agktime.milliTimestamp(),
         };
     }
 
@@ -119,7 +121,7 @@ pub const HealthMetrics = struct {
     }
 
     pub fn getUptime(self: *const HealthMetrics) f64 {
-        const now = std.time.milliTimestamp();
+        const now = agktime.milliTimestamp();
         return @as(f64, @floatFromInt(now - self.uptime_start)) / 1000.0;
     }
 };
@@ -133,7 +135,7 @@ pub const HealthChecker = struct {
     is_alive: bool,
     is_ready: bool,
     startup_complete: bool,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -148,7 +150,7 @@ pub const HealthChecker = struct {
             .is_alive = true,
             .is_ready = false,
             .startup_complete = false,
-            .mutex = std.Thread.Mutex{},
+            .mutex = agksync.Mutex{},
         };
     }
 
@@ -163,7 +165,7 @@ pub const HealthChecker = struct {
     }
 
     pub fn checkLiveness(self: *HealthChecker) !HealthCheckResult {
-        const start_time = std.time.milliTimestamp();
+        const start_time = agktime.milliTimestamp();
         const probe_type = ProbeType.liveness;
 
         try self.trackCheckStarted(probe_type);
@@ -174,33 +176,33 @@ pub const HealthChecker = struct {
         self.allocator.free(caps);
 
         // Success
-        const duration = @as(f64, @floatFromInt(std.time.milliTimestamp() - start_time));
+        const duration = @as(f64, @floatFromInt(agktime.milliTimestamp() - start_time));
         try self.trackCheckSuccess(probe_type, duration);
 
         return HealthCheckResult{
             .status = .healthy,
             .probe_type = probe_type,
             .message = "Agent process is alive",
-            .timestamp = std.time.milliTimestamp(),
+            .timestamp = agktime.milliTimestamp(),
             .duration_ms = duration,
         };
     }
 
     pub fn checkReadiness(self: *HealthChecker) !HealthCheckResult {
-        const start_time = std.time.milliTimestamp();
+        const start_time = agktime.milliTimestamp();
         const probe_type = ProbeType.readiness;
 
         try self.trackCheckStarted(probe_type);
 
         // Check if startup completed
         if (self.config.startup_enabled and !self.startup_complete) {
-            const duration = @as(f64, @floatFromInt(std.time.milliTimestamp() - start_time));
+            const duration = @as(f64, @floatFromInt(agktime.milliTimestamp() - start_time));
             try self.trackCheckFailure(probe_type, duration);
             return HealthCheckResult{
                 .status = .unhealthy,
                 .probe_type = probe_type,
                 .message = "Startup not complete",
-                .timestamp = std.time.milliTimestamp(),
+                .timestamp = agktime.milliTimestamp(),
                 .duration_ms = duration,
             };
         }
@@ -213,7 +215,7 @@ pub const HealthChecker = struct {
         };
 
         const result = self.agent.process(test_msg);
-        const duration = @as(f64, @floatFromInt(std.time.milliTimestamp() - start_time));
+        const duration = @as(f64, @floatFromInt(agktime.milliTimestamp() - start_time));
 
         if (result) |response| {
             if (response.content.len == 0) {
@@ -222,7 +224,7 @@ pub const HealthChecker = struct {
                     .status = .unhealthy,
                     .probe_type = probe_type,
                     .message = "Readiness check failed: empty response",
-                    .timestamp = std.time.milliTimestamp(),
+                    .timestamp = agktime.milliTimestamp(),
                     .duration_ms = duration,
                 };
             }
@@ -233,7 +235,7 @@ pub const HealthChecker = struct {
                 .status = .healthy,
                 .probe_type = probe_type,
                 .message = "Agent is ready to handle requests",
-                .timestamp = std.time.milliTimestamp(),
+                .timestamp = agktime.milliTimestamp(),
                 .duration_ms = duration,
             };
         } else |_| {
@@ -242,14 +244,14 @@ pub const HealthChecker = struct {
                 .status = .unhealthy,
                 .probe_type = probe_type,
                 .message = "Readiness check failed",
-                .timestamp = std.time.milliTimestamp(),
+                .timestamp = agktime.milliTimestamp(),
                 .duration_ms = duration,
             };
         }
     }
 
     pub fn checkStartup(self: *HealthChecker) !HealthCheckResult {
-        const start_time = std.time.milliTimestamp();
+        const start_time = agktime.milliTimestamp();
         const probe_type = ProbeType.startup;
 
         try self.trackCheckStarted(probe_type);
@@ -262,26 +264,26 @@ pub const HealthChecker = struct {
             self.startup_complete = true;
             self.mutex.unlock();
 
-            const duration = @as(f64, @floatFromInt(std.time.milliTimestamp() - start_time));
+            const duration = @as(f64, @floatFromInt(agktime.milliTimestamp() - start_time));
             try self.trackCheckSuccess(probe_type, duration);
 
             return HealthCheckResult{
                 .status = .healthy,
                 .probe_type = probe_type,
                 .message = "Startup complete",
-                .timestamp = std.time.milliTimestamp(),
+                .timestamp = agktime.milliTimestamp(),
                 .duration_ms = duration,
             };
         }
 
-        const duration = @as(f64, @floatFromInt(std.time.milliTimestamp() - start_time));
+        const duration = @as(f64, @floatFromInt(agktime.milliTimestamp() - start_time));
         try self.trackCheckFailure(probe_type, duration);
 
         return HealthCheckResult{
             .status = .unhealthy,
             .probe_type = probe_type,
             .message = "Startup checks not passing yet",
-            .timestamp = std.time.milliTimestamp(),
+            .timestamp = agktime.milliTimestamp(),
             .duration_ms = duration,
         };
     }
@@ -309,7 +311,7 @@ pub const HealthChecker = struct {
             entry.value_ptr.* = 1;
         }
 
-        try self.metrics.last_check_time.put(probe_type, std.time.milliTimestamp());
+        try self.metrics.last_check_time.put(probe_type, agktime.milliTimestamp());
         try self.metrics.last_check_duration.put(probe_type, duration_ms);
         try self.metrics.consecutive_failures.put(probe_type, 0);
     }
@@ -325,7 +327,7 @@ pub const HealthChecker = struct {
             entry.value_ptr.* = 1;
         }
 
-        try self.metrics.last_check_time.put(probe_type, std.time.milliTimestamp());
+        try self.metrics.last_check_time.put(probe_type, agktime.milliTimestamp());
         try self.metrics.last_check_duration.put(probe_type, duration_ms);
 
         const failures_entry = try self.metrics.consecutive_failures.getOrPut(probe_type);
@@ -340,7 +342,7 @@ pub const HealthChecker = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        var lines = std.ArrayList([]const u8).init(allocator);
+        var lines = std.ArrayList([]const u8).empty;
         defer lines.deinit();
 
         // Total checks

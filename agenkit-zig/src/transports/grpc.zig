@@ -21,7 +21,7 @@
 ///! var agent = try GrpcAgent.init(allocator, config);
 ///! defer agent.deinit();
 ///!
-///! var messages = std.ArrayList(Message).init(allocator);
+///! var messages = std.ArrayList(Message).empty;
 ///! defer messages.deinit();
 ///! try messages.append(Message.init("user", "Hello via gRPC!"));
 ///!
@@ -49,7 +49,6 @@
 ///! - Option 1: Bind to C++ gRPC library via @cImport
 ///! - Option 2: Implement HTTP/2 client with protobuf encoding
 ///! - Option 3: Use existing zig-http2 + protobuf-zig
-
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Message = @import("../message.zig").Message;
@@ -170,7 +169,7 @@ pub const GrpcAgent = struct {
     /// };
     ///
     /// var context = grpc.ClientContext{};
-    /// context.set_deadline(std.time.timestamp() + config.timeout_secs);
+    /// context.set_deadline(agktime.timestamp() + config.timeout_secs);
     ///
     /// var response: agent.Response = undefined;
     /// const status = stub.Process(&context, &request, &response);

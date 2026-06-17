@@ -9,7 +9,6 @@
 /// - Effect size calculation (Cohen's d)
 /// - Confidence intervals
 /// - Sample size calculation
-
 const std = @import("std");
 const core = @import("core.zig");
 const Allocator = std.mem.Allocator;
@@ -63,7 +62,7 @@ pub const ABVariant = struct {
         const self = try allocator.create(ABVariant);
         self.* = ABVariant{
             .name = try allocator.dupe(u8, name),
-            .samples = std.ArrayList(f64){},
+            .samples = std.ArrayList(f64).empty,
             .mean = 0.0,
             .std_dev = 0.0,
             .sample_size = 0,

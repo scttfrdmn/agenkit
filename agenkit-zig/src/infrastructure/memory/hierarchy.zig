@@ -29,6 +29,7 @@
 /// const entries = try hierarchy.retrieve("session-1", 20);
 /// ```
 const std = @import("std");
+const agksync = @import("../../sync_compat.zig");
 const Allocator = std.mem.Allocator;
 const MemoryEntry = @import("base.zig").MemoryEntry;
 const Memory = @import("base.zig").Memory;
@@ -72,7 +73,7 @@ pub const Tier = enum {
 pub const HierarchyMemory = struct {
     allocator: Allocator,
     config: HierarchyConfig,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
 
     // Three memory tiers
     working: InMemoryMemory,
@@ -166,7 +167,7 @@ pub const HierarchyMemory = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        var result = std.ArrayListUnmanaged(*MemoryEntry){};
+        var result = std.ArrayListUnmanaged(*MemoryEntry).empty;
         defer result.deinit(self.allocator);
 
         var seen = std.StringHashMap(void).init(self.allocator);
@@ -308,7 +309,7 @@ pub const HierarchyMemory = struct {
 
         // Clear tier map entries for this session
         var iter = self.tier_map.iterator();
-        var keys_to_remove = std.ArrayListUnmanaged([]const u8){};
+        var keys_to_remove = std.ArrayListUnmanaged([]const u8).empty;
         defer keys_to_remove.deinit(self.allocator);
 
         while (iter.next()) |entry| {

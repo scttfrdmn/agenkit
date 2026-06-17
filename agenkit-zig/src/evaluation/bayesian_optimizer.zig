@@ -8,8 +8,8 @@
 /// - Multiple acquisition functions (EI, UCB, PI)
 /// - Exploration/exploitation balance
 /// - Integration with SearchSpace
-
 const std = @import("std");
+const agktime = @import("../time_compat.zig");
 const optimizer = @import("optimizer.zig");
 const Allocator = std.mem.Allocator;
 const SearchSpace = optimizer.SearchSpace;
@@ -129,7 +129,7 @@ pub const BayesianOptimizer = struct {
             try result.history.append(self.allocator, step);
         }
 
-        result.end_time = std.time.timestamp();
+        result.end_time = agktime.timestamp();
         return result;
     }
 
@@ -224,7 +224,7 @@ pub const BayesianOptimizer = struct {
         // Simplified GP: weighted average based on similarity
         var weighted_sum: f64 = 0.0;
         var weight_sum: f64 = 0.0;
-        var scores = std.ArrayList(f64){};
+        var scores = std.ArrayList(f64).empty;
         defer scores.deinit(self.allocator);
 
         for (result.history.items) |step| {

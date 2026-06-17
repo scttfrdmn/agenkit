@@ -6,6 +6,7 @@
 /// - Repeated failures
 /// - Unusual input/output sizes
 const std = @import("std");
+const agktime = @import("../time_compat.zig");
 const mem = std.mem;
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
@@ -69,10 +70,10 @@ pub const AnomalyDetector = struct {
             .request_timestamps = StringHashMap(ArrayList(f64)).init(allocator),
             .failure_counts = StringHashMap(i32).init(allocator),
             .request_counts = StringHashMap(i32).init(allocator),
-            .input_sizes = std.ArrayList(f64){},
-            .output_sizes = std.ArrayList(f64){},
-            .processing_times = std.ArrayList(f64){},
-            .recent_content = std.ArrayList([]const u8){},
+            .input_sizes = std.ArrayList(f64).empty,
+            .output_sizes = std.ArrayList(f64).empty,
+            .processing_times = std.ArrayList(f64).empty,
+            .recent_content = std.ArrayList([]const u8).empty,
             .allocator = allocator,
         };
     }
@@ -97,12 +98,12 @@ pub const AnomalyDetector = struct {
     };
 
     pub fn detectRateAnomaly(self: *AnomalyDetector, user_id: []const u8) !?AnomalyResult {
-        const now = @as(f64, @floatFromInt(std.time.timestamp()));
+        const now = @as(f64, @floatFromInt(agktime.timestamp()));
 
         // Get or create timestamp list for this user
         const result = try self.request_timestamps.getOrPut(user_id);
         if (!result.found_existing) {
-            result.value_ptr.* = std.ArrayList(f64){};
+            result.value_ptr.* = std.ArrayList(f64).empty;
         }
 
         var timestamps = result.value_ptr;
@@ -131,11 +132,11 @@ pub const AnomalyDetector = struct {
     }
 
     pub fn detectBurstAnomaly(self: *AnomalyDetector, user_id: []const u8) !?AnomalyResult {
-        const now = @as(f64, @floatFromInt(std.time.timestamp()));
+        const now = @as(f64, @floatFromInt(agktime.timestamp()));
 
         const result = try self.request_timestamps.getOrPut(user_id);
         if (!result.found_existing) {
-            result.value_ptr.* = std.ArrayList(f64){};
+            result.value_ptr.* = std.ArrayList(f64).empty;
         }
 
         const timestamps = result.value_ptr;

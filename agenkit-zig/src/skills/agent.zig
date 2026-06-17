@@ -92,27 +92,26 @@ pub const SkillEnabledAgent = struct {
         const self: *SkillEnabledAgent = @ptrCast(@alignCast(ptr));
 
         const base = try self.inner.capabilities(allocator);
-        defer {
-            for (base) |cap| allocator.free(cap);
-            allocator.free(base);
-        }
+        // Capability strings are borrowed from the inner agent (the array is
+        // owned, the strings are not — matching SequentialAgent/ParallelAgent).
+        defer allocator.free(base);
 
-        var out = std.ArrayList([]const u8).init(allocator);
+        var out = std.ArrayList([]const u8).empty;
         errdefer {
             for (out.items) |cap| allocator.free(cap);
-            out.deinit();
+            out.deinit(allocator);
         }
 
         var has_injection = false;
         for (base) |cap| {
             if (std.mem.eql(u8, cap, "skill_injection")) has_injection = true;
-            try out.append(try allocator.dupe(u8, cap));
+            try out.append(allocator, try allocator.dupe(u8, cap));
         }
         if (!has_injection) {
-            try out.append(try allocator.dupe(u8, "skill_injection"));
+            try out.append(allocator, try allocator.dupe(u8, "skill_injection"));
         }
 
-        return out.toOwnedSlice();
+        return out.toOwnedSlice(allocator);
     }
 
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
@@ -136,19 +135,19 @@ pub const SkillEnabledAgent = struct {
         }
 
         // Build the "<available_skills>...</available_skills>\n\n" + query prefix.
-        var content_buf = std.ArrayList(u8).init(self.allocator);
-        defer content_buf.deinit();
-        content_buf.appendSlice("<available_skills>\n") catch return AgentError.ProcessingFailed;
+        var content_buf = std.ArrayList(u8).empty;
+        defer content_buf.deinit(self.allocator);
+        content_buf.appendSlice(self.allocator, "<available_skills>\n") catch return AgentError.ProcessingFailed;
         for (relevant, 0..) |skill, i| {
-            if (i > 0) content_buf.appendSlice("\n\n") catch return AgentError.ProcessingFailed;
+            if (i > 0) content_buf.appendSlice(self.allocator, "\n\n") catch return AgentError.ProcessingFailed;
             const block = skill.toPrompt(self.allocator) catch return AgentError.ProcessingFailed;
             defer self.allocator.free(block);
-            content_buf.appendSlice(block) catch return AgentError.ProcessingFailed;
+            content_buf.appendSlice(self.allocator, block) catch return AgentError.ProcessingFailed;
         }
-        content_buf.appendSlice("\n</available_skills>\n\n") catch return AgentError.ProcessingFailed;
-        content_buf.appendSlice(query) catch return AgentError.ProcessingFailed;
+        content_buf.appendSlice(self.allocator, "\n</available_skills>\n\n") catch return AgentError.ProcessingFailed;
+        content_buf.appendSlice(self.allocator, query) catch return AgentError.ProcessingFailed;
 
-        const augmented_text = content_buf.toOwnedSlice() catch return AgentError.ProcessingFailed;
+        const augmented_text = content_buf.toOwnedSlice(self.allocator) catch return AgentError.ProcessingFailed;
 
         // Construct the augmented message with active_skills metadata.
         var augmented = Message.withText(self.allocator, message.role, augmented_text) catch {
@@ -156,7 +155,14 @@ pub const SkillEnabledAgent = struct {
             return AgentError.ProcessingFailed;
         };
         self.allocator.free(augmented_text); // withText duped the text
-        defer augmented.deinit();
+        // `augmented` is a transient message: the wrapped agent copies its
+        // metadata by reference into the response (which the caller owns), so we
+        // must not deep-free those values here. Free only `augmented`'s own
+        // allocations (its content text and the metadata map's backing storage).
+        defer {
+            augmented.content.deinit(augmented.allocator);
+            augmented.metadata.object.deinit(augmented.allocator);
+        }
 
         // Copy existing metadata from the source message.
         var meta_it = message.metadata.object.iterator();
@@ -205,19 +211,29 @@ pub const SkillEnabledAgent = struct {
 const testing = std.testing;
 const EchoAgent = @import("../agent.zig").EchoAgent;
 
-fn makeSkillDir(dir: std.fs.Dir, name: []const u8, description: []const u8) !void {
-    try dir.makeDir(name);
-    var sub = try dir.openDir(name, .{});
-    defer sub.close();
+fn makeSkillDir(dir: std.Io.Dir, name: []const u8, description: []const u8) !void {
+    const io = testing.io;
+    try dir.createDir(io, name, .default_dir);
+    var sub = try dir.openDir(io, name, .{});
+    defer sub.close(io);
     var buf: [4096]u8 = undefined;
     const content = try std.fmt.bufPrint(
         &buf,
         "---\nname: {s}\ndescription: {s}\n---\nInstructions here.",
         .{ name, description },
     );
-    const file = try sub.createFile("SKILL.md", .{});
-    defer file.close();
-    try file.writeAll(content);
+    var file = try sub.createFile(io, "SKILL.md", .{});
+    defer file.close(io);
+    try file.writeStreamingAll(io, content);
+}
+
+fn realpathAlloc(dir: std.Io.Dir, allocator: std.mem.Allocator, sub_path: []const u8) ![]u8 {
+    const io = testing.io;
+    var sub = try dir.openDir(io, sub_path, .{});
+    defer sub.close(io);
+    var buf: [std.fs.max_path_bytes]u8 = undefined;
+    const len = try sub.realPath(io, &buf);
+    return allocator.dupe(u8, buf[0..len]);
 }
 
 test "skill agent augments matching message" {
@@ -225,7 +241,7 @@ test "skill agent augments matching message" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "pdf-processing", "Extract text from PDF documents.");
-    const root = try tmp.dir.realpathAlloc(allocator, ".");
+    const root = try realpathAlloc(tmp.dir, allocator, ".");
     defer allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -255,7 +271,7 @@ test "skill agent passthrough when no skills match" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "email-compose", "Compose professional emails.");
-    const root = try tmp.dir.realpathAlloc(allocator, ".");
+    const root = try realpathAlloc(tmp.dir, allocator, ".");
     defer allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -285,7 +301,7 @@ test "skill agent sets active_skills metadata" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "csv-tools", "Handle and transform CSV spreadsheets.");
-    const root = try tmp.dir.realpathAlloc(allocator, ".");
+    const root = try realpathAlloc(tmp.dir, allocator, ".");
     defer allocator.free(root);
 
     const paths = [_][]const u8{root};

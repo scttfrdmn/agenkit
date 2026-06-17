@@ -24,7 +24,7 @@
 /// const agenkit = @import("agenkit");
 ///
 /// pub fn main() !void {
-///     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+///     var gpa = std.heap.DebugAllocator(.{}){};
 ///     defer _ = gpa.deinit();
 ///     const allocator = gpa.allocator();
 ///
@@ -43,7 +43,6 @@
 ///     defer response.deinit();
 /// }
 /// ```
-
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Agent = @import("../agent.zig").Agent;
@@ -95,7 +94,7 @@ pub const PlanStep = struct {
     allocator: Allocator,
 
     pub fn init(allocator: Allocator, description: []const u8, step_number: usize, dependencies: []const usize) !PlanStep {
-        var deps = std.ArrayList(usize){};
+        var deps = std.ArrayList(usize).empty;
         try deps.appendSlice(allocator, dependencies);
 
         return PlanStep{
@@ -167,7 +166,7 @@ pub const Plan = struct {
     pub fn init(allocator: Allocator, goal: []const u8) !Plan {
         return Plan{
             .goal = try allocator.dupe(u8, goal),
-            .steps = std.ArrayList(PlanStep){},
+            .steps = std.ArrayList(PlanStep).empty,
             .allocator = allocator,
         };
     }
@@ -188,7 +187,7 @@ pub const Plan = struct {
     /// Get all steps that can be executed now
     pub fn getNextSteps(self: *const Plan, allocator: Allocator) !std.ArrayList(usize) {
         // Get completed step indices
-        var completed = std.ArrayList(usize){};
+        var completed = std.ArrayList(usize).empty;
         defer completed.deinit(allocator);
 
         for (self.steps.items, 0..) |step, i| {
@@ -198,7 +197,7 @@ pub const Plan = struct {
         }
 
         // Find pending steps with met dependencies
-        var next = std.ArrayList(usize){};
+        var next = std.ArrayList(usize).empty;
         for (self.steps.items) |step| {
             if (step.status == .pending and step.canExecute(completed.items)) {
                 try next.append(allocator, step.step_number);
@@ -427,7 +426,7 @@ pub const PlanningAgent = struct {
 
     /// Execute all steps in the plan
     fn executePlan(self: *PlanningAgent, plan: *Plan) ![]const u8 {
-        var results = std.ArrayList([]const u8){};
+        var results = std.ArrayList([]const u8).empty;
         defer {
             for (results.items) |r| {
                 self.allocator.free(r);
@@ -484,7 +483,7 @@ pub const PlanningAgent = struct {
         }
 
         // Generate summary
-        var summary = std.ArrayList(u8){};
+        var summary = std.ArrayList(u8).empty;
         defer summary.deinit(self.allocator);
 
         for (results.items) |r| {
@@ -588,7 +587,6 @@ pub const PlanningAgent = struct {
         return Result{ .ok = response };
     }
 
-
     fn introspectImpl(ptr: *anyopaque, alloc: Allocator) Allocator.Error!IntrospectionResult {
         const caps = try capabilitiesImpl(ptr, alloc);
         defer {
@@ -623,12 +621,11 @@ pub const PlanningAgent = struct {
 // Tests
 const testing = std.testing;
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "StepStatus toString" {
     try testing.expectEqualStrings("pending", StepStatus.pending.toString());

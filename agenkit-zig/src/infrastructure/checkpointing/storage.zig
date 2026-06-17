@@ -11,6 +11,9 @@
 ///   try storage.save(checkpoint);
 ///   const loaded = try storage.load(checkpoint_id);
 const std = @import("std");
+const ioc = @import("../../io_compat.zig");
+const agksync = @import("../../sync_compat.zig");
+const agktime = @import("../../time_compat.zig");
 const fs = std.fs;
 const Allocator = std.mem.Allocator;
 const Checkpoint = @import("checkpoint.zig").Checkpoint;
@@ -90,7 +93,7 @@ pub const CheckpointStorage = struct {
 ///   try storage.save(&checkpoint);
 pub const InMemoryStorage = struct {
     allocator: Allocator,
-    mutex: std.Thread.Mutex,
+    mutex: agksync.Mutex,
     checkpoints: std.StringHashMap(*Checkpoint),
     session_checkpoints: std.StringHashMap(std.ArrayList([]const u8)),
 
@@ -141,7 +144,7 @@ pub const InMemoryStorage = struct {
         const gop = try self.session_checkpoints.getOrPut(session_id);
 
         if (!gop.found_existing) {
-            gop.value_ptr.* = .{};
+            gop.value_ptr.* = .empty;
         }
 
         // Check if already in list
@@ -270,7 +273,7 @@ pub const InMemoryStorage = struct {
     }
 
     pub fn getCheckpointHistory(self: *InMemoryStorage, checkpoint_id: []const u8, max_depth: usize) ![]const *Checkpoint {
-        var history: std.ArrayList(*Checkpoint) = .{};
+        var history: std.ArrayList(*Checkpoint) = .empty;
         defer history.deinit(self.allocator);
 
         var current_id = checkpoint_id;
@@ -362,12 +365,12 @@ pub const InMemoryStorage = struct {
                 return .{ .array = array_copy };
             },
             .object => |obj| {
-                var object_copy = std.json.ObjectMap.init(self.allocator);
+                var object_copy = std.json.ObjectMap.empty;
                 var iter = obj.iterator();
                 while (iter.next()) |entry| {
                     const key_copy = try self.allocator.dupe(u8, entry.key_ptr.*);
                     const value_copy = try self.copyJsonValue(entry.value_ptr.*);
-                    try object_copy.put(key_copy, value_copy);
+                    try object_copy.put(self.allocator, key_copy, value_copy);
                 }
                 return .{ .object = object_copy };
             },
@@ -376,21 +379,21 @@ pub const InMemoryStorage = struct {
 
     fn copyCheckpoint(self: *InMemoryStorage, checkpoint: *const Checkpoint) !Checkpoint {
         // Deep copy state ObjectMap (including keys and values)
-        var state_copy = std.json.ObjectMap.init(self.allocator);
+        var state_copy = std.json.ObjectMap.empty;
         var state_iter = checkpoint.state.object.iterator();
         while (state_iter.next()) |entry| {
             const key_copy = try self.allocator.dupe(u8, entry.key_ptr.*);
             const value_copy = try self.copyJsonValue(entry.value_ptr.*);
-            try state_copy.put(key_copy, value_copy);
+            try state_copy.put(self.allocator, key_copy, value_copy);
         }
 
         // Deep copy metadata ObjectMap (including keys and values)
-        var metadata_copy = std.json.ObjectMap.init(self.allocator);
+        var metadata_copy = std.json.ObjectMap.empty;
         var metadata_iter = checkpoint.metadata.object.iterator();
         while (metadata_iter.next()) |entry| {
             const key_copy = try self.allocator.dupe(u8, entry.key_ptr.*);
             const value_copy = try self.copyJsonValue(entry.value_ptr.*);
-            try metadata_copy.put(key_copy, value_copy);
+            try metadata_copy.put(self.allocator, key_copy, value_copy);
         }
 
         // Create a deep copy of the checkpoint
@@ -446,7 +449,7 @@ pub const FileStorage = struct {
 
     pub fn init(allocator: Allocator, checkpoint_dir: []const u8) !FileStorage {
         // Create directory if it doesn't exist
-        fs.cwd().makePath(checkpoint_dir) catch |err| switch (err) {
+        std.Io.Dir.cwd().createDirPath(ioc.io(), checkpoint_dir) catch |err| switch (err) {
             error.PathAlreadyExists => {},
             else => return err,
         };
@@ -466,7 +469,7 @@ pub const FileStorage = struct {
         const session_dir = try self.getSessionDir(checkpoint.session_id);
         defer self.allocator.free(session_dir);
 
-        fs.cwd().makePath(session_dir) catch |err| switch (err) {
+        std.Io.Dir.cwd().createDirPath(ioc.io(), session_dir) catch |err| switch (err) {
             error.PathAlreadyExists => {},
             else => return err,
         };
@@ -479,19 +482,19 @@ pub const FileStorage = struct {
         const checkpoint_path = try self.getCheckpointPath(checkpoint.session_id, checkpoint.checkpoint_id);
         defer self.allocator.free(checkpoint_path);
 
-        const file = try fs.cwd().createFile(checkpoint_path, .{});
-        defer file.close();
+        const file = try std.Io.Dir.cwd().createFile(ioc.io(), checkpoint_path, .{});
+        defer file.close(ioc.io());
 
-        try file.writeAll(json_data);
+        try file.writeStreamingAll(ioc.io(), json_data);
     }
 
     pub fn load(self: *FileStorage, checkpoint_id: []const u8) !?*Checkpoint {
         // Search through session directories
-        var checkpoint_dir = try fs.cwd().openDir(self.checkpoint_dir, .{ .iterate = true });
-        defer checkpoint_dir.close();
+        var checkpoint_dir = try std.Io.Dir.cwd().openDir(ioc.io(), self.checkpoint_dir, .{ .iterate = true });
+        defer checkpoint_dir.close(ioc.io());
 
         var dir_iter = checkpoint_dir.iterate();
-        while (try dir_iter.next()) |entry| {
+        while (try dir_iter.next(ioc.io())) |entry| {
             if (entry.kind != .directory) continue;
 
             const checkpoint_filename = try std.fmt.allocPrint(self.allocator, "{s}.json", .{checkpoint_id});
@@ -505,13 +508,10 @@ pub const FileStorage = struct {
             defer self.allocator.free(checkpoint_path);
 
             // Check if file exists
-            const file = fs.cwd().openFile(checkpoint_path, .{}) catch |err| switch (err) {
+            const json_data = std.Io.Dir.cwd().readFileAlloc(ioc.io(), checkpoint_path, self.allocator, .limited(10 * 1024 * 1024)) catch |err| switch (err) {
                 error.FileNotFound => continue,
                 else => return err,
             };
-            defer file.close();
-
-            const json_data = try file.readToEndAlloc(self.allocator, 10 * 1024 * 1024); // 10MB max
             defer self.allocator.free(json_data);
 
             const checkpoint = try self.allocator.create(Checkpoint);
@@ -526,17 +526,17 @@ pub const FileStorage = struct {
         const session_dir_path = try self.getSessionDir(session_id);
         defer self.allocator.free(session_dir_path);
 
-        var session_dir = fs.cwd().openDir(session_dir_path, .{ .iterate = true }) catch |err| switch (err) {
+        var session_dir = std.Io.Dir.cwd().openDir(ioc.io(), session_dir_path, .{ .iterate = true }) catch |err| switch (err) {
             error.FileNotFound => return &[_]*Checkpoint{},
             else => return err,
         };
-        defer session_dir.close();
+        defer session_dir.close(ioc.io());
 
-        var checkpoints: std.ArrayList(*Checkpoint) = .{};
+        var checkpoints: std.ArrayList(*Checkpoint) = .empty;
         defer checkpoints.deinit(self.allocator);
 
         var dir_iter = session_dir.iterate();
-        while (try dir_iter.next()) |entry| {
+        while (try dir_iter.next(ioc.io())) |entry| {
             if (entry.kind != .file) continue;
             if (!std.mem.endsWith(u8, entry.name, ".json")) continue;
 
@@ -547,10 +547,7 @@ pub const FileStorage = struct {
             );
             defer self.allocator.free(file_path);
 
-            const file = fs.cwd().openFile(file_path, .{}) catch continue;
-            defer file.close();
-
-            const json_data = file.readToEndAlloc(self.allocator, 10 * 1024 * 1024) catch continue;
+            const json_data = std.Io.Dir.cwd().readFileAlloc(ioc.io(), file_path, self.allocator, .limited(10 * 1024 * 1024)) catch continue;
             defer self.allocator.free(json_data);
 
             const checkpoint = self.allocator.create(Checkpoint) catch continue;
@@ -601,11 +598,11 @@ pub const FileStorage = struct {
 
     pub fn delete(self: *FileStorage, checkpoint_id: []const u8) !bool {
         // Search through session directories
-        var checkpoint_dir = try fs.cwd().openDir(self.checkpoint_dir, .{ .iterate = true });
-        defer checkpoint_dir.close();
+        var checkpoint_dir = try std.Io.Dir.cwd().openDir(ioc.io(), self.checkpoint_dir, .{ .iterate = true });
+        defer checkpoint_dir.close(ioc.io());
 
         var dir_iter = checkpoint_dir.iterate();
-        while (try dir_iter.next()) |entry| {
+        while (try dir_iter.next(ioc.io())) |entry| {
             if (entry.kind != .directory) continue;
 
             const checkpoint_filename = try std.fmt.allocPrint(self.allocator, "{s}.json", .{checkpoint_id});
@@ -618,7 +615,7 @@ pub const FileStorage = struct {
             );
             defer self.allocator.free(checkpoint_path);
 
-            fs.cwd().deleteFile(checkpoint_path) catch |err| switch (err) {
+            std.Io.Dir.cwd().deleteFile(ioc.io(), checkpoint_path) catch |err| switch (err) {
                 error.FileNotFound => continue,
                 else => return err,
             };
@@ -633,15 +630,15 @@ pub const FileStorage = struct {
         const session_dir_path = try self.getSessionDir(session_id);
         defer self.allocator.free(session_dir_path);
 
-        var session_dir = fs.cwd().openDir(session_dir_path, .{ .iterate = true }) catch |err| switch (err) {
+        var session_dir = std.Io.Dir.cwd().openDir(ioc.io(), session_dir_path, .{ .iterate = true }) catch |err| switch (err) {
             error.FileNotFound => return 0,
             else => return err,
         };
-        defer session_dir.close();
+        defer session_dir.close(ioc.io());
 
         var count: usize = 0;
         var dir_iter = session_dir.iterate();
-        while (try dir_iter.next()) |entry| {
+        while (try dir_iter.next(ioc.io())) |entry| {
             if (entry.kind != .file) continue;
             if (!std.mem.endsWith(u8, entry.name, ".json")) continue;
 
@@ -652,18 +649,18 @@ pub const FileStorage = struct {
             );
             defer self.allocator.free(file_path);
 
-            fs.cwd().deleteFile(file_path) catch continue;
+            std.Io.Dir.cwd().deleteFile(ioc.io(), file_path) catch continue;
             count += 1;
         }
 
         // Try to remove session directory
-        fs.cwd().deleteDir(session_dir_path) catch {};
+        std.Io.Dir.cwd().deleteDir(ioc.io(), session_dir_path) catch {};
 
         return count;
     }
 
     pub fn getCheckpointHistory(self: *FileStorage, checkpoint_id: []const u8, max_depth: usize) ![]const *Checkpoint {
-        var history: std.ArrayList(*Checkpoint) = .{};
+        var history: std.ArrayList(*Checkpoint) = .empty;
         defer history.deinit(self.allocator);
 
         var current_id_buf: [256]u8 = undefined;
@@ -842,7 +839,7 @@ test "InMemoryStorage getLatest" {
     defer checkpoint1.deinit();
     try storage.save(&checkpoint1);
 
-    std.time.sleep(1 * std.time.ns_per_ms); // Small delay to ensure different timestamps
+    agktime.sleep(1 * std.time.ns_per_ms); // Small delay to ensure different timestamps
 
     var checkpoint2 = try Checkpoint.init(allocator, "session-1", "assistant", 2);
     defer checkpoint2.deinit();

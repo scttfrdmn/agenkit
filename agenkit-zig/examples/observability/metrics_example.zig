@@ -22,7 +22,7 @@ const Counter = agenkit.observability.Counter;
 const Histogram = agenkit.observability.Histogram;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

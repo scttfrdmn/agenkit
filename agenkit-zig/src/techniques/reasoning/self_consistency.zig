@@ -5,7 +5,6 @@
 ///
 /// Reference: "Self-Consistency Improves Chain of Thought Reasoning in Language Models"
 /// Wang et al., 2022 - https://arxiv.org/abs/2203.11171
-
 const std = @import("std");
 const Agent = @import("../../agent.zig").Agent;
 const AgentError = @import("../../agent.zig").AgentError;
@@ -135,7 +134,7 @@ pub const SelfConsistencyAgent = struct {
         const self: *SelfConsistencyAgent = @ptrCast(@alignCast(ptr));
 
         // Generate multiple samples
-        var samples = std.ArrayList([]const u8).init(self.allocator);
+        var samples = std.ArrayList([]const u8).empty;
         defer {
             for (samples.items) |sample| {
                 self.allocator.free(sample);
@@ -143,7 +142,7 @@ pub const SelfConsistencyAgent = struct {
             samples.deinit();
         }
 
-        var extracted_answers = std.ArrayList([]const u8).init(self.allocator);
+        var extracted_answers = std.ArrayList([]const u8).empty;
         defer {
             for (extracted_answers.items) |answer| {
                 self.allocator.free(answer);
@@ -224,7 +223,7 @@ pub const SelfConsistencyAgent = struct {
 
         for (answers) |answer| {
             // Normalize (lowercase, trim)
-            var normalized = std.ArrayList(u8).init(self.allocator);
+            var normalized = std.ArrayList(u8).empty;
             defer normalized.deinit();
 
             for (answer) |c| {

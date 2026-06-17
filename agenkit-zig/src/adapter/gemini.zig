@@ -16,8 +16,9 @@
 /// const response = try llm.complete(allocator, &messages, &options);
 /// defer response.deinit();
 /// ```
-
 const std = @import("std");
+const ioc = @import("../io_compat.zig");
+const agkenv = @import("../env_compat.zig");
 const llm = @import("llm.zig");
 const Message = @import("../message.zig").Message;
 const Role = @import("../message.zig").Role;
@@ -31,7 +32,7 @@ const GeminiStream = struct {
     current_index: usize,
 
     fn makeStreamRequest(self: *GeminiStream, body: []const u8) !void {
-        var client = std.http.Client{ .allocator = self.allocator };
+        var client = std.http.Client{ .allocator = self.allocator, .io = ioc.io() };
         defer client.deinit();
 
         // Use streamGenerateContent endpoint
@@ -46,7 +47,7 @@ const GeminiStream = struct {
             .{ .name = "Content-Type", .value = "application/json" },
         };
 
-        var response_buffer: std.io.Writer.Allocating = .init(self.allocator);
+        var response_buffer: std.Io.Writer.Allocating = .init(self.allocator);
         defer response_buffer.deinit();
 
         const result = try client.fetch(.{
@@ -160,7 +161,7 @@ pub const GeminiLLM = struct {
         const key = if (api_key.len > 0)
             try allocator.dupe(u8, api_key)
         else blk: {
-            const env_key = std.process.getEnvVarOwned(allocator, "GEMINI_API_KEY") catch {
+            const env_key = agkenv.getEnvVarOwned(allocator, "GEMINI_API_KEY") catch {
                 return error.MissingAPIKey;
             };
             break :blk env_key;
@@ -240,7 +241,7 @@ pub const GeminiLLM = struct {
         stream_impl.* = GeminiStream{
             .allocator = allocator,
             .self = self,
-            .chunks = std.ArrayList([]const u8){},
+            .chunks = std.ArrayList([]const u8).empty,
             .current_index = 0,
         };
 
@@ -276,7 +277,7 @@ pub const GeminiLLM = struct {
         options: *const llm.CallOptions,
     ) ![]const u8 {
         _ = self;
-        var json = std.ArrayList(u8){};
+        var json = std.ArrayList(u8).empty;
         defer json.deinit(allocator);
 
         try json.appendSlice(allocator, "{\"contents\":[");
@@ -362,7 +363,7 @@ pub const GeminiLLM = struct {
 
     /// Make HTTP request to Gemini API
     fn makeRequest(self: *GeminiLLM, allocator: Allocator, body: []const u8) ![]const u8 {
-        var client = std.http.Client{ .allocator = allocator };
+        var client = std.http.Client{ .allocator = allocator, .io = ioc.io() };
         defer client.deinit();
 
         // Gemini uses query parameter for API key
@@ -377,7 +378,7 @@ pub const GeminiLLM = struct {
             .{ .name = "Content-Type", .value = "application/json" },
         };
 
-        var response_body: std.io.Writer.Allocating = .init(allocator);
+        var response_body: std.Io.Writer.Allocating = .init(allocator);
         defer response_body.deinit();
 
         const result = try client.fetch(.{

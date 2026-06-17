@@ -14,7 +14,7 @@ const Message = agenkit.Message;
 const CallOptions = agenkit.adapter.llm.CallOptions;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -42,11 +42,11 @@ pub fn main() !void {
     // Set up options
     var options = CallOptions.init(allocator);
     defer options.deinit();
-    options.withTemperature(1.0);
-    options.withMaxTokens(1024);
+    try options.withTemperature(1.0);
+    try options.withMaxTokens(1024);
 
     // Stream response
-    var full_response = std.ArrayList(u8).init(allocator);
+    var full_response = std.ArrayList(u8).empty;
     defer full_response.deinit();
 
     var stream_iter = try llm.stream(allocator, &messages, &options);

@@ -15,19 +15,30 @@ const Message = agenkit.Message;
 const EchoAgent = agenkit.EchoAgent;
 
 /// Create a minimal valid skill directory inside `dir`.
-fn makeSkillDir(dir: std.fs.Dir, name: []const u8, description: []const u8) !void {
-    try dir.makeDir(name);
-    var sub = try dir.openDir(name, .{});
-    defer sub.close();
+fn makeSkillDir(dir: std.Io.Dir, name: []const u8, description: []const u8) !void {
+    const io = testing.io;
+    try dir.createDir(io, name, .default_dir);
+    var sub = try dir.openDir(io, name, .{});
+    defer sub.close(io);
     var buf: [4096]u8 = undefined;
     const content = try std.fmt.bufPrint(
         &buf,
         "---\nname: {s}\ndescription: {s}\n---\nInstructions here.",
         .{ name, description },
     );
-    const file = try sub.createFile("SKILL.md", .{});
-    defer file.close();
-    try file.writeAll(content);
+    var file = try sub.createFile(io, "SKILL.md", .{});
+    defer file.close(io);
+    try file.writeStreamingAll(io, content);
+}
+
+/// Resolve `sub_path` (relative to `dir`) to an absolute path the caller owns.
+fn realpathAlloc(dir: std.Io.Dir, allocator: std.mem.Allocator, sub_path: []const u8) ![]u8 {
+    const io = testing.io;
+    var sub = try dir.openDir(io, sub_path, .{});
+    defer sub.close(io);
+    var buf: [std.fs.max_path_bytes]u8 = undefined;
+    const len = try sub.realPath(io, &buf);
+    return allocator.dupe(u8, buf[0..len]);
 }
 
 // ── AgentSkill.fromDirectory / fromContent ────────────────────────────────────
@@ -36,14 +47,14 @@ test "load skill valid" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
     {
-        try tmp.dir.makeDir("pdf-processing");
-        var sub = try tmp.dir.openDir("pdf-processing", .{});
-        defer sub.close();
-        const file = try sub.createFile("SKILL.md", .{});
-        defer file.close();
-        try file.writeAll("---\nname: pdf-processing\ndescription: Extract text from PDFs.\n---\n# PDF\nDo stuff.");
+        try tmp.dir.createDir(testing.io, "pdf-processing", .default_dir);
+        var sub = try tmp.dir.openDir(testing.io, "pdf-processing", .{});
+        defer sub.close(testing.io);
+        const file = try sub.createFile(testing.io, "SKILL.md", .{});
+        defer file.close(testing.io);
+        try file.writeStreamingAll(testing.io, "---\nname: pdf-processing\ndescription: Extract text from PDFs.\n---\n# PDF\nDo stuff.");
     }
-    const path = try tmp.dir.realpathAlloc(testing.allocator, "pdf-processing");
+    const path = try realpathAlloc(tmp.dir, testing.allocator, "pdf-processing");
     defer testing.allocator.free(path);
 
     var skill = try skills.AgentSkill.fromDirectory(testing.allocator, path);
@@ -70,8 +81,8 @@ test "load skill with license and metadata" {
 test "load skill missing SKILL.md" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
-    try tmp.dir.makeDir("empty");
-    const path = try tmp.dir.realpathAlloc(testing.allocator, "empty");
+    try tmp.dir.createDir(testing.io, "empty", .default_dir);
+    const path = try realpathAlloc(tmp.dir, testing.allocator, "empty");
     defer testing.allocator.free(path);
 
     try testing.expectError(skills.SkillError.MissingSkillFile, skills.AgentSkill.fromDirectory(testing.allocator, path));
@@ -122,11 +133,11 @@ test "registry discover skips non-dirs" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
     {
-        const file = try tmp.dir.createFile("not_a_dir.md", .{});
-        defer file.close();
-        try file.writeAll("ignored");
+        const file = try tmp.dir.createFile(testing.io, "not_a_dir.md", .{});
+        defer file.close(testing.io);
+        try file.writeStreamingAll(testing.io, "ignored");
     }
-    const root = try tmp.dir.realpathAlloc(testing.allocator, ".");
+    const root = try realpathAlloc(tmp.dir, testing.allocator, ".");
     defer testing.allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -141,7 +152,7 @@ test "registry discovers valid skills" {
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "skill-a", "Skill A description.");
     try makeSkillDir(tmp.dir, "skill-b", "Skill B description.");
-    const root = try tmp.dir.realpathAlloc(testing.allocator, ".");
+    const root = try realpathAlloc(tmp.dir, testing.allocator, ".");
     defer testing.allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -158,7 +169,7 @@ test "registry find relevant name match" {
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "pdf-processing", "Work with PDF documents.");
     try makeSkillDir(tmp.dir, "csv-tools", "Handle CSV spreadsheets.");
-    const root = try tmp.dir.realpathAlloc(testing.allocator, ".");
+    const root = try realpathAlloc(tmp.dir, testing.allocator, ".");
     defer testing.allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -183,7 +194,7 @@ test "registry find relevant max results" {
         const desc = try std.fmt.bufPrint(&desc_buf, "A skill about document processing number {d}.", .{i});
         try makeSkillDir(tmp.dir, name, desc);
     }
-    const root = try tmp.dir.realpathAlloc(testing.allocator, ".");
+    const root = try realpathAlloc(tmp.dir, testing.allocator, ".");
     defer testing.allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -200,7 +211,7 @@ test "registry get skill" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "email-compose", "Compose professional emails.");
-    const root = try tmp.dir.realpathAlloc(testing.allocator, ".");
+    const root = try realpathAlloc(tmp.dir, testing.allocator, ".");
     defer testing.allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -221,7 +232,7 @@ test "skill agent augments message" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "pdf-processing", "Extract text from PDF documents.");
-    const root = try tmp.dir.realpathAlloc(allocator, ".");
+    const root = try realpathAlloc(tmp.dir, allocator, ".");
     defer allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -251,7 +262,7 @@ test "skill agent no skills passthrough" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "email-compose", "Compose professional emails.");
-    const root = try tmp.dir.realpathAlloc(allocator, ".");
+    const root = try realpathAlloc(tmp.dir, allocator, ".");
     defer allocator.free(root);
 
     const paths = [_][]const u8{root};
@@ -281,7 +292,7 @@ test "skill agent active_skills metadata" {
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
     try makeSkillDir(tmp.dir, "csv-tools", "Handle and transform CSV spreadsheets.");
-    const root = try tmp.dir.realpathAlloc(allocator, ".");
+    const root = try realpathAlloc(tmp.dir, allocator, ".");
     defer allocator.free(root);
 
     const paths = [_][]const u8{root};

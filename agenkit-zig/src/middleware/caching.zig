@@ -5,7 +5,7 @@
 /// - LRU (Least Recently Used) eviction when cache is full
 /// - TTL (Time To Live) based expiration with automatic cleanup
 /// - Cache invalidation (specific entries or entire cache)
-/// - Thread-safe operations with std.Thread.RwLock
+/// - Thread-safe operations with agksync.RwLock
 /// - Comprehensive metrics (hits, misses, hit rate, evictions)
 ///
 /// Example:
@@ -22,6 +22,8 @@
 /// const metrics = caching_agent.metrics();
 /// ```
 const std = @import("std");
+const agksync = @import("../sync_compat.zig");
+const agktime = @import("../time_compat.zig");
 const Agent = @import("../agent.zig").Agent;
 const AgentError = @import("../agent.zig").AgentError;
 const StreamCallbacks = @import("../agent.zig").StreamCallbacks;
@@ -60,7 +62,7 @@ const CacheEntry = struct {
     last_access_ms: i64, // For LRU tracking
 
     fn isExpired(self: *const CacheEntry) bool {
-        return std.time.milliTimestamp() >= self.expires_at_ms;
+        return agktime.milliTimestamp() >= self.expires_at_ms;
     }
 };
 
@@ -116,7 +118,7 @@ pub const CachingDecorator = struct {
     config: CachingConfig,
     metrics_data: CachingMetrics,
     cache: std.StringHashMap(CacheEntry),
-    rwlock: std.Thread.RwLock,
+    rwlock: agksync.RwLock,
     cleanup_counter: u64,
 
     pub fn init(allocator: Allocator, inner_agent: Agent, config: CachingConfig) !*CachingDecorator {
@@ -130,7 +132,7 @@ pub const CachingDecorator = struct {
             .config = config,
             .metrics_data = CachingMetrics{},
             .cache = std.StringHashMap(CacheEntry).init(allocator),
-            .rwlock = std.Thread.RwLock{},
+            .rwlock = agksync.RwLock{},
             .cleanup_counter = 0,
         };
         return self;
@@ -200,7 +202,7 @@ pub const CachingDecorator = struct {
 
     /// Cleanup expired entries
     fn cleanupExpired(self: *CachingDecorator) void {
-        var keys_to_remove = std.ArrayList([]const u8).init(self.allocator);
+        var keys_to_remove = std.ArrayList([]const u8).empty;
         defer keys_to_remove.deinit();
 
         // Find expired entries
@@ -347,7 +349,7 @@ pub const CachingDecorator = struct {
         self.evictLRU();
 
         // Add to cache
-        const now_ms = std.time.milliTimestamp();
+        const now_ms = agktime.milliTimestamp();
         const key_owned = try self.allocator.dupe(u8, cache_key);
         const entry = CacheEntry{
             .response = response,
@@ -418,12 +420,11 @@ pub const CachingDecorator = struct {
 // Tests
 const testing = std.testing;
 
-
-    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
-        _ = ptr;
-        _ = message;
-        callbacks.onError(AgentError.NotImplemented);
-    }
+fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+    _ = ptr;
+    _ = message;
+    callbacks.onError(AgentError.NotImplemented);
+}
 
 test "CachingConfig validation" {
     var config = CachingConfig{};

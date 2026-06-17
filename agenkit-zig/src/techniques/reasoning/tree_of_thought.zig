@@ -5,7 +5,6 @@
 ///
 /// Reference: "Tree of Thoughts: Deliberate Problem Solving with Large Language Models"
 /// Yao et al., 2023 - https://arxiv.org/abs/2305.10601
-
 const std = @import("std");
 const Agent = @import("../../agent.zig").Agent;
 const AgentError = @import("../../agent.zig").AgentError;
@@ -221,7 +220,7 @@ pub const TreeOfThoughtAgent = struct {
 
     /// Generate N varied reasoning branches for a prompt (sequential in Zig)
     fn generateBranches(self: *TreeOfThoughtAgent, prompt: []const u8, n: usize) ![][]const u8 {
-        var branches = std.ArrayList([]const u8).init(self.allocator);
+        var branches = std.ArrayList([]const u8).empty;
         errdefer {
             for (branches.items) |branch| {
                 self.allocator.free(branch);
@@ -273,7 +272,7 @@ pub const TreeOfThoughtAgent = struct {
             self.allocator.free(branches);
         }
 
-        var child_ids = std.ArrayList(usize).init(self.allocator);
+        var child_ids = std.ArrayList(usize).empty;
         errdefer child_ids.deinit();
 
         for (branches) |branch| {
@@ -302,7 +301,7 @@ pub const TreeOfThoughtAgent = struct {
 
     /// Perform breadth-first search on the tree
     fn searchBFS(self: *TreeOfThoughtAgent, tree: *ReasoningTree, root_id: usize) !void {
-        var queue = std.ArrayList(usize).init(self.allocator);
+        var queue = std.ArrayList(usize).empty;
         defer queue.deinit();
 
         try queue.append(root_id);
@@ -330,7 +329,7 @@ pub const TreeOfThoughtAgent = struct {
 
     /// Perform depth-first search on the tree
     fn searchDFS(self: *TreeOfThoughtAgent, tree: *ReasoningTree, root_id: usize) !void {
-        var stack = std.ArrayList(usize).init(self.allocator);
+        var stack = std.ArrayList(usize).empty;
         defer stack.deinit();
 
         try stack.append(root_id);

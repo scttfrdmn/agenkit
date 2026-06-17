@@ -7,6 +7,7 @@
 /// 4. Handle timeout errors
 
 const std = @import("std");
+const agktime = @import("../../src/time_compat.zig");
 const agenkit = @import("agenkit");
 
 // Slow agent that takes variable time to respond
@@ -61,7 +62,7 @@ const SlowAgent = struct {
         std.debug.print("  [Slow Agent] Processing (will take {d}ms)...\n", .{delay_ms});
 
         // Simulate slow processing
-        std.time.sleep(delay_ms * std.time.ns_per_ms);
+        agktime.sleep(delay_ms * std.time.ns_per_ms);
 
         std.debug.print("  [Slow Agent] Done!\n", .{});
 
@@ -87,7 +88,7 @@ fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbac
     callbacks.onError(AgentError.NotImplemented);
 }
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

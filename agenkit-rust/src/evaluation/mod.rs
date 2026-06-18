@@ -40,6 +40,7 @@ pub mod ab_testing;
 pub mod benchmarks;
 pub mod context_metrics;
 pub mod core;
+pub mod error_tracker;
 pub mod metrics;
 pub mod optimizer;
 pub mod prompt_optimizer;
@@ -55,6 +56,7 @@ pub use benchmarks::{
 };
 pub use context_metrics::{CompressionMetrics, CompressionStats, ContextMetrics, LatencyMetric};
 pub use core::{EvaluationResult, Evaluator, Metric};
+pub use error_tracker::{ErrorTracker, StepResult};
 pub use metrics::{
     ErrorRecord, MetricMeasurement, MetricType, MetricsCollector, SessionResult, SessionStatus,
 };

@@ -84,8 +84,14 @@ pub const SearchSpace = struct {
     rng: std.Random.DefaultPrng,
 
     pub fn init(allocator: Allocator) !*SearchSpace {
+        // Production: seed from wall-clock so each run explores differently.
+        return initSeeded(allocator, @as(u64, @intCast(agktime.timestamp())));
+    }
+
+    /// Like `init` but with an explicit RNG seed. Use in tests for
+    /// deterministic, non-flaky behavior; production uses `init` (time-seeded).
+    pub fn initSeeded(allocator: Allocator, seed: u64) !*SearchSpace {
         const self = try allocator.create(SearchSpace);
-        const seed = @as(u64, @intCast(agktime.timestamp()));
         self.* = SearchSpace{
             .parameters = std.ArrayList(Parameter).empty,
             .allocator = allocator,
@@ -385,7 +391,7 @@ pub const RandomSearchOptimizer = struct {
 test "SearchSpace continuous parameter" {
     const allocator = std.testing.allocator;
 
-    const space = try SearchSpace.init(allocator);
+    const space = try SearchSpace.initSeeded(allocator, 42);
     defer space.deinit();
 
     try space.addContinuous("temperature", 0.0, 1.0);
@@ -397,7 +403,7 @@ test "SearchSpace continuous parameter" {
 test "SearchSpace sample" {
     const allocator = std.testing.allocator;
 
-    const space = try SearchSpace.init(allocator);
+    const space = try SearchSpace.initSeeded(allocator, 42);
     defer space.deinit();
 
     try space.addContinuous("x", 0.0, 10.0);
@@ -427,7 +433,7 @@ test "SearchSpace sample" {
 test "SearchSpace validate" {
     const allocator = std.testing.allocator;
 
-    const space = try SearchSpace.init(allocator);
+    const space = try SearchSpace.initSeeded(allocator, 42);
     defer space.deinit();
 
     try space.addContinuous("x", 0.0, 10.0);
@@ -449,7 +455,7 @@ test "SearchSpace validate" {
 test "RandomSearchOptimizer simple" {
     const allocator = std.testing.allocator;
 
-    const space = try SearchSpace.init(allocator);
+    const space = try SearchSpace.initSeeded(allocator, 42);
     defer space.deinit();
 
     try space.addContinuous("x", -10.0, 10.0);

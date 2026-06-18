@@ -237,6 +237,11 @@ add_executable(test_prompt_optimizer unit/test_prompt_optimizer.cpp)
 target_link_libraries(test_prompt_optimizer agenkit gtest_main)
 add_test(NAME prompt_optimizer_tests COMMAND test_prompt_optimizer)
 
+# Evaluation tests - Error Tracker
+add_executable(test_error_tracker unit/test_error_tracker.cpp)
+target_link_libraries(test_error_tracker agenkit gtest_main)
+add_test(NAME error_tracker_tests COMMAND test_error_tracker)
+
 # Technique tests - Chain-of-Thought
 add_executable(test_chain_of_thought techniques/reasoning/test_chain_of_thought.cpp)
 target_link_libraries(test_chain_of_thought agenkit gtest_main)

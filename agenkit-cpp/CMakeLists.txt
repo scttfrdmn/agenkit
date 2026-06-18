@@ -150,6 +150,7 @@ add_library(agenkit
     src/evaluation/benchmarks.cpp
     src/evaluation/bayesian_optimizer.cpp
     src/evaluation/prompt_optimizer.cpp
+    src/evaluation/error_tracker.cpp
     src/techniques/reasoning/self_consistency.cpp
     src/techniques/reasoning/chain_of_thought.cpp
     src/techniques/reasoning/least_to_most.cpp

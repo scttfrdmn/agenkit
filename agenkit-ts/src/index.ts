@@ -250,6 +250,11 @@ export {
   compressionStatsToDict,
 } from './evaluation/context-metrics';
 export {
+  ErrorTracker,
+  StepResult,
+  RecordStepOptions,
+} from './evaluation/error-tracker';
+export {
   SessionRecorder,
   SessionReplay,
   RecordingStorage,

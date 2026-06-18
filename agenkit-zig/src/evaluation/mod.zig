@@ -116,6 +116,11 @@ pub const AgentFactory = prompt_optimizer.AgentFactory;
 pub const EvaluationFn = prompt_optimizer.EvaluationFn;
 pub const PromptOptimizer = prompt_optimizer.PromptOptimizer;
 
+// Error tracking (per-step error rate + failure compounding)
+pub const error_tracker = @import("error_tracker.zig");
+pub const StepResult = error_tracker.StepResult;
+pub const ErrorTracker = error_tracker.ErrorTracker;
+
 test {
     std.testing.refAllDecls(@This());
 }

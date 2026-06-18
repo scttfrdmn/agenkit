@@ -200,6 +200,13 @@ export {
   CompressionMetrics,
 } from './context-metrics';
 
+// Error tracking
+export {
+  type StepResult,
+  type RecordStepOptions,
+  ErrorTracker,
+} from './error-tracker';
+
 // A/B testing
 export {
   SignificanceLevel,

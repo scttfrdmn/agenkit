@@ -1,0 +1,78 @@
+{
+  "version": "1.0",
+  "description": "Cross-language ErrorTracker behavior fixtures (#321). p_a = failed/total; P_error = 1 - (1 - p_a)^n. Each language's ErrorTracker must produce these exact values for the given step sequence, confirming behavioral parity.",
+  "test_cases": [
+    {
+      "id": "empty",
+      "name": "No steps recorded",
+      "steps": [],
+      "expected": {
+        "total_steps": 0,
+        "failed_steps": 0,
+        "per_step_error_rate": 0.0,
+        "cumulative_failure_probability_observed": 0.0,
+        "cumulative_failure_probability_steps": { "10": 0.0 }
+      }
+    },
+    {
+      "id": "all_success",
+      "name": "Five successful steps",
+      "steps": [true, true, true, true, true],
+      "expected": {
+        "total_steps": 5,
+        "failed_steps": 0,
+        "per_step_error_rate": 0.0,
+        "cumulative_failure_probability_observed": 0.0,
+        "cumulative_failure_probability_steps": { "1000": 0.0 }
+      }
+    },
+    {
+      "id": "all_fail",
+      "name": "Four failed steps",
+      "steps": [false, false, false, false],
+      "expected": {
+        "total_steps": 4,
+        "failed_steps": 4,
+        "per_step_error_rate": 1.0,
+        "cumulative_failure_probability_observed": 1.0,
+        "cumulative_failure_probability_steps": { "5": 1.0 }
+      }
+    },
+    {
+      "id": "mixed_quarter",
+      "name": "2 of 8 fail -> p_a = 0.25",
+      "steps": [true, false, true, true, false, true, true, true],
+      "expected": {
+        "total_steps": 8,
+        "failed_steps": 2,
+        "per_step_error_rate": 0.25,
+        "cumulative_failure_probability_observed": 0.8998870849609375,
+        "cumulative_failure_probability_steps": { "8": 0.8998870849609375 }
+      }
+    },
+    {
+      "id": "half_two_steps",
+      "name": "1 of 2 fail -> p_a = 0.5, observed n=2",
+      "steps": [true, false],
+      "expected": {
+        "total_steps": 2,
+        "failed_steps": 1,
+        "per_step_error_rate": 0.5,
+        "cumulative_failure_probability_observed": 0.75,
+        "cumulative_failure_probability_steps": { "10": 0.9990234375 }
+      }
+    },
+    {
+      "id": "compounding_one_percent",
+      "name": "1 fail in 100 -> p_a = 0.01, compounds over 100 steps ~= 0.634",
+      "steps_spec": { "fail": 1, "success": 99 },
+      "expected": {
+        "total_steps": 100,
+        "failed_steps": 1,
+        "per_step_error_rate": 0.01,
+        "cumulative_failure_probability_steps": { "100": 0.6339676587267709 },
+        "tolerance": 1e-9
+      }
+    }
+  ]
+}

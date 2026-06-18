@@ -56,6 +56,7 @@ except ImportError:
 from .benchmarks import Benchmark, BenchmarkSuite
 from .context_metrics import CompressionMetrics, ContextMetrics, LatencyMetric
 from .core import EvaluationResult, Evaluator, Metric
+from .error_tracker import ErrorTracker, StepResult
 from .optimizer import OptimizationResult, Optimizer, RandomSearchOptimizer, SearchSpace
 from .pattern_benchmarks import PatternBenchmark, PatternBenchmarkSuite, YAMLBenchmarkLoader
 from .prompt_optimizer import OptimizationStrategy, PromptOptimizationResult, PromptOptimizer
@@ -78,6 +79,8 @@ __all__ = [
     "CompressionMetrics",
     # Context tracking
     "ContextMetrics",
+    # Error tracking
+    "ErrorTracker",
     "EvaluationResult",
     "Evaluator",
     "LatencyMetric",
@@ -105,6 +108,7 @@ __all__ = [
     "SessionReplay",
     "SignificanceLevel",
     "StatisticalTestType",
+    "StepResult",
     "YAMLBenchmarkLoader",
     "calculate_sample_size",
 ]

@@ -400,7 +400,7 @@ test "PerformanceEstimate basic" {
 test "BayesianOptimizer initialization" {
     const allocator = std.testing.allocator;
 
-    const space = try SearchSpace.init(allocator);
+    const space = try SearchSpace.initSeeded(allocator, 42);
     defer space.deinit();
 
     try space.addContinuous("x", 0.0, 10.0);
@@ -423,7 +423,7 @@ test "BayesianOptimizer initialization" {
 test "BayesianOptimizer optimize simple" {
     const allocator = std.testing.allocator;
 
-    const space = try SearchSpace.init(allocator);
+    const space = try SearchSpace.initSeeded(allocator, 42);
     defer space.deinit();
 
     try space.addContinuous("x", -10.0, 10.0);
@@ -458,7 +458,7 @@ test "BayesianOptimizer optimize simple" {
 test "BayesianOptimizer similarity calculation" {
     const allocator = std.testing.allocator;
 
-    const space = try SearchSpace.init(allocator);
+    const space = try SearchSpace.initSeeded(allocator, 42);
     defer space.deinit();
 
     const config = BayesianConfig{
@@ -500,7 +500,7 @@ test "BayesianOptimizer similarity calculation" {
 test "BayesianOptimizer acquisition functions" {
     const allocator = std.testing.allocator;
 
-    const space = try SearchSpace.init(allocator);
+    const space = try SearchSpace.initSeeded(allocator, 42);
     defer space.deinit();
 
     const config_ei = BayesianConfig{
@@ -551,7 +551,7 @@ test "normalPDF approximation" {
 test "BayesianOptimizer estimatePerformance" {
     const allocator = std.testing.allocator;
 
-    const space = try SearchSpace.init(allocator);
+    const space = try SearchSpace.initSeeded(allocator, 42);
     defer space.deinit();
 
     try space.addContinuous("x", 0.0, 10.0);

@@ -16,6 +16,7 @@ from .audit import (
     FileAuditAdapter,
     StructuredAuditAdapter,
 )
+from .error_metrics import ErrorMetrics
 from .logging import configure_logging, get_logger_with_trace
 from .metrics import MetricsMiddleware, get_meter, init_metrics, init_resource_metrics
 from .tracing import TracingMiddleware, get_tracer, init_tracing
@@ -28,6 +29,8 @@ __all__ = [
     "AuditLogger",
     "AuditSeverity",
     "ConsoleAuditAdapter",
+    # Error metrics
+    "ErrorMetrics",
     "FileAuditAdapter",
     # Metrics
     "MetricsMiddleware",

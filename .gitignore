@@ -68,14 +68,38 @@ credentials.json
 .research/
 checkpoints/
 *.exe
-agenkit-go/basic
-agenkit-go/batching_example
-agenkit-go/timeout_example
-agenkit-go/rate_limiter_example
 
 # Go build artifacts
 *.test
 *.out
+*.prof
+
+# Compiled Go example/pattern/harness binaries (built from sibling main.go;
+# never commit these — they are arch-specific and bloat the repo + the
+# agenkit-go distribution mirror). Build them on demand instead.
+agenkit-go/main
+agenkit-go/router
+agenkit-go/router_pattern
+agenkit-go/sequential_pattern
+agenkit-go/parallel_pattern
+agenkit-go/fallback_pattern
+agenkit-go/advanced_approval
+agenkit-go/basic_hitl
+agenkit-go/websocket
+agenkit-go/sse_transport
+agenkit-go/examples/protocols/agui/advanced_approval/advanced_approval
+agenkit-go/examples/techniques/graph_of_thought/graph_of_thought
+agenkit-go/tests/cross_language_harness
+agenkit-zig/tests/cross_language_harness
+tests/cross_language/harness_go_bin
+tests/cross_language/harness_go/main
+tests/cross_language/harness_go/cross_language_harness
+tests/cross_language/harness_rust/harness_rust
+tests/cross_language/harness_zig/harness_zig
+agenkit-go/basic
+agenkit-go/batching_example
+agenkit-go/timeout_example
+agenkit-go/rate_limiter_example
 agenkit-go/test_client
 agenkit-go/memory_hierarchy
 

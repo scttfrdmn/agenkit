@@ -3,6 +3,13 @@
 
 set -e
 
+cd "$(dirname "$0")"
+
+# Build the harness binary (no longer committed — see .gitignore).
+echo "Building Go harness..."
+( cd harness_go && go build -o ../harness_go_bin . )
+echo ""
+
 echo "Testing Go harness with stdin..."
 echo ""
 

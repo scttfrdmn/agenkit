@@ -32,6 +32,19 @@ find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 cp -r "$TEMP_COPY"/* .
 cp -r "$TEMP_COPY"/.* . 2>/dev/null || true
 
+# Transform import paths for the standalone repository (.go, go.mod, .md docs).
+# Without this the mirror ships the monorepo path and `go get` breaks.
+echo "🔧 Transforming import paths..."
+grep -rl 'github.com/scttfrdmn/agenkit/agenkit-go' . \
+  --include='*.go' --include='*.mod' --include='*.md' \
+  | xargs -r sed -i '' 's|github.com/scttfrdmn/agenkit/agenkit-go|github.com/scttfrdmn/agenkit-go|g'
+
+if grep -rq 'github.com/scttfrdmn/agenkit/agenkit-go' . --include='*.go' --include='*.mod' --include='*.md'; then
+    echo "❌ Stale references to monorepo path remain after transform"
+    grep -rl 'github.com/scttfrdmn/agenkit/agenkit-go' . --include='*.go' --include='*.mod' --include='*.md'
+    exit 1
+fi
+
 # Show changes
 echo "📊 Changes to be synced:"
 git status --short

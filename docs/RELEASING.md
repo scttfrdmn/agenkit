@@ -13,8 +13,12 @@ This will:
 1. ✅ Update version in `pyproject.toml`
 2. ✅ Run tests
 3. ✅ Tag and release monorepo
-4. ✅ Automatically release agenkit-go standalone repo
+4. ✅ Push the `vX.Y.Z` tag, which triggers the `sync-agenkit-go.yml` workflow to
+      sync, tag, and release the agenkit-go standalone repo automatically
 5. ✅ Keep both repos in sync
+
+> The agenkit-go mirror is released by CI in response to the tag push — not by the
+> release script directly. See [RELEASING_AGENKIT_GO.md](./RELEASING_AGENKIT_GO.md).
 
 **Release only monorepo:**
 ```bash

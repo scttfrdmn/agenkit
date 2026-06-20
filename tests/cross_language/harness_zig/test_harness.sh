@@ -3,7 +3,14 @@
 
 set -e
 
+cd "$(dirname "$0")"
+
 HARNESS="./harness_zig"
+
+# Build the harness binary (no longer committed — see .gitignore).
+echo "Building Zig harness..."
+zig build
+echo ""
 
 echo "Testing Zig harness..."
 

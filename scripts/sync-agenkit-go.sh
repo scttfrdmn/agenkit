@@ -19,13 +19,18 @@ git clone . "$TEMP_DIR" --branch main --single-branch
 cd "$TEMP_DIR"
 git checkout "$SPLIT_COMMIT"
 
-# 4. Transform import paths for standalone repository
+# 4. Transform import paths for standalone repository (.go, go.mod, and .md docs)
 echo "Transforming import paths..."
-find . -type f -name "*.go" -exec sed -i '' \
-  's|github.com/scttfrdmn/agenkit/agenkit-go|github.com/scttfrdmn/agenkit-go|g' {} +
+grep -rl 'github.com/scttfrdmn/agenkit/agenkit-go' . \
+  --include='*.go' --include='*.mod' --include='*.md' \
+  | xargs -r sed -i '' 's|github.com/scttfrdmn/agenkit/agenkit-go|github.com/scttfrdmn/agenkit-go|g'
 
-# 5. Update go.mod
-sed -i '' 's|module github.com/scttfrdmn/agenkit/agenkit-go|module github.com/scttfrdmn/agenkit-go|g' go.mod
+# 5. Verify no stale references remain
+if grep -rq 'github.com/scttfrdmn/agenkit/agenkit-go' . --include='*.go' --include='*.mod' --include='*.md'; then
+  echo "Error: stale references to monorepo path remain after transform"
+  grep -rl 'github.com/scttfrdmn/agenkit/agenkit-go' . --include='*.go' --include='*.mod' --include='*.md'
+  exit 1
+fi
 
 # 6. Commit the transformation
 git add -A

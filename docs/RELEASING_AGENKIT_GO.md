@@ -4,15 +4,15 @@ This guide covers releasing the Go SDK to the standalone repository.
 
 ## Release Philosophy
 
-**Releases are separate from code syncing:**
-- **Sync** = Automatic, happens on every push to `agenkit-go/**`
-- **Release** = Manual, happens when you want to cut a versioned release
+**Syncing is automatic; releases are driven by tags:**
+- **Sync** = Automatic. On every push to `main` that touches `agenkit-go/**`, the
+  [`sync-agenkit-go.yml`](../.github/workflows/sync-agenkit-go.yml) workflow updates
+  the mirror's `main` (so `go get ...@latest` stays current).
+- **Release** = Automatic on tag. When a `vX.Y.Z` tag is pushed to the monorepo, the
+  same workflow syncs the mirror and creates the matching tag + GitHub release on it.
 
-This separation provides flexibility:
-- Test changes in standalone repo before releasing
-- Release on your schedule, not tied to every commit
-- Write proper release notes
-- Follow semantic versioning
+This means you do **not** run a separate Go release step — releasing the monorepo
+(`./scripts/release.sh vX.Y.Z`, which pushes the tag) releases the mirror too.
 
 ## When to Release
 
@@ -24,29 +24,38 @@ Release when you have:
 
 ## Release Process
 
-### Option 1: GitHub Actions (Recommended)
+### Option 1: Tag the monorepo (Recommended)
 
-1. Go to [Actions → Release agenkit-go](https://github.com/scttfrdmn/agenkit/actions/workflows/release-agenkit-go.yml)
-2. Click "Run workflow"
-3. Enter version (e.g., `v0.10.1`)
-4. Optionally add release notes
-5. Click "Run workflow"
-
-The workflow will:
-- Validate version format
-- Sync latest code to standalone repo
-- Create tag and GitHub release
-- Make it available via `go get`
-
-### Option 2: Manual Script
+Releasing the monorepo automatically releases the mirror. Push a `vX.Y.Z` tag
+(the unified release script does this for you):
 
 ```bash
-./scripts/release-agenkit-go.sh v0.10.1 "Release notes here"
+./scripts/release.sh v0.11.0
+```
+
+When the tag lands, [`sync-agenkit-go.yml`](../.github/workflows/sync-agenkit-go.yml):
+- Syncs `agenkit-go/` into the mirror (transforming import paths)
+- Creates the matching `vX.Y.Z` tag on the mirror
+- Publishes a GitHub release, making it available via `go get ...@vX.Y.Z`
+
+### Option 2: Manual workflow run
+
+To re-sync `main` without cutting a release, trigger the workflow manually:
+
+1. Go to [Actions → Sync agenkit-go to Standalone Repository](https://github.com/scttfrdmn/agenkit/actions/workflows/sync-agenkit-go.yml)
+2. Click "Run workflow" on `main`
+
+### Option 3: Local script (fallback)
+
+If CI is unavailable, run the local equivalents from a clean `main` checkout:
+
+```bash
+./scripts/release-agenkit-go.sh v0.11.0 "Release notes here"
 ```
 
 **What it does:**
 1. Validates you're on main with no uncommitted changes
-2. Syncs latest code to standalone repo
+2. Syncs latest code to standalone repo (transforming import paths)
 3. Creates annotated tag
 4. Creates GitHub release
 5. Outputs installation instructions

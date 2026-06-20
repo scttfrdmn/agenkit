@@ -184,26 +184,27 @@ See commit history for detailed changes." \
 echo "   ✓ GitHub release created"
 echo ""
 
-# 7. Release agenkit-go to standalone repository
+# 7. agenkit-go standalone repository
+# The sync-agenkit-go.yml workflow triggers on the tag pushed above and
+# automatically syncs the mirror, tags it, and publishes its GitHub release.
+# We don't release it from here to avoid a double-release race with CI.
 if [ "$SKIP_GO" = false ]; then
-    echo "🔧 Releasing agenkit-go to standalone repository..."
+    echo "🔧 agenkit-go standalone repository..."
     echo ""
-
-    ./scripts/release-agenkit-go.sh "$VERSION" "agenkit-go $VERSION
-
-This release is synchronized with the main agenkit $VERSION release.
-
-**Installation:**
-\`\`\`bash
-go get github.com/scttfrdmn/agenkit-go@$VERSION
-\`\`\`
-
-**Main Release:** https://github.com/scttfrdmn/agenkit/releases/tag/$VERSION"
-
-    echo "   ✓ agenkit-go released to standalone repository"
+    echo "   The sync-agenkit-go.yml workflow will release the mirror automatically"
+    echo "   in response to the $VERSION tag push above."
+    echo ""
+    echo "   Watch:  gh run watch --repo scttfrdmn/agenkit \\"
+    echo "             \$(gh run list --repo scttfrdmn/agenkit \\"
+    echo "                 --workflow sync-agenkit-go.yml --limit 1 --json databaseId \\"
+    echo "                 --jq '.[0].databaseId')"
+    echo ""
+    echo "   Fallback (if CI is unavailable):"
+    echo "     ./scripts/release-agenkit-go.sh $VERSION"
     echo ""
 else
     echo "⏭️  Skipping agenkit-go release (--skip-go flag)"
+    echo "    Note: a vX.Y.Z tag still triggers the mirror sync workflow."
     echo ""
 fi
 

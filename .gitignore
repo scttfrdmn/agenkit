@@ -97,11 +97,13 @@ tests/cross_language/harness_go/cross_language_harness
 tests/cross_language/harness_rust/harness_rust
 tests/cross_language/harness_zig/harness_zig
 agenkit-go/basic
-agenkit-go/batching_example
-agenkit-go/timeout_example
-agenkit-go/rate_limiter_example
 agenkit-go/test_client
 agenkit-go/memory_hierarchy
+# All compiled Go example binaries (built from examples/*; never commit).
+agenkit-go/*_example
+# Compiled Rust artifacts (also covered by target/ rules, belt-and-suspenders).
+*.rlib
+*.rmeta
 
 # Zig cache
 agenkit-zig/.zig-cache/

@@ -249,11 +249,21 @@ func (b *BedrockLLM) Complete(ctx context.Context, messages []*agenkit.Message, 
 
 	// Add usage if available
 	if output.Usage != nil {
-		response.Metadata["usage"] = map[string]interface{}{
+		usage := map[string]interface{}{
 			"prompt_tokens":     aws.ToInt32(output.Usage.InputTokens),
 			"completion_tokens": aws.ToInt32(output.Usage.OutputTokens),
 			"total_tokens":      aws.ToInt32(output.Usage.TotalTokens),
 		}
+		// Prompt-cache token counts (Anthropic-on-Bedrock). Billed at very
+		// different rates from normal input tokens, so surface them when the
+		// provider reports them. Only present when prompt caching is active.
+		if n := aws.ToInt32(output.Usage.CacheReadInputTokens); n > 0 {
+			usage["cache_read_tokens"] = n
+		}
+		if n := aws.ToInt32(output.Usage.CacheWriteInputTokens); n > 0 {
+			usage["cache_creation_tokens"] = n
+		}
+		response.Metadata["usage"] = usage
 	}
 
 	// Add stop reason

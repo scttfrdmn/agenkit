@@ -116,6 +116,8 @@ export {
 export { OpenAIAgent, OpenAIConfig } from './llm/openai';
 export { AnthropicAgent, AnthropicConfig } from './llm/anthropic';
 export { OpenAICompatibleAgent, OpenAICompatibleConfig } from './llm/openai-compatible';
+export { usageFromMessage } from './llm/usage';
+export type { Usage, UsageReporter } from './llm/usage';
 
 // Composition Patterns
 export { SequentialAgent } from './composition/sequential';

@@ -200,6 +200,14 @@ export class BedrockAdapter implements Agent {
           prompt_tokens: response.usage?.inputTokens || 0,
           completion_tokens: response.usage?.outputTokens || 0,
           total_tokens: response.usage?.totalTokens || 0,
+          // Prompt-cache token counts (Anthropic-on-Bedrock), billed at a
+          // reduced rate. Only present when prompt caching is active.
+          ...(response.usage?.cacheReadInputTokens
+            ? { cache_read_tokens: response.usage.cacheReadInputTokens }
+            : {}),
+          ...(response.usage?.cacheWriteInputTokens
+            ? { cache_creation_tokens: response.usage.cacheWriteInputTokens }
+            : {}),
         },
         stop_reason: response.stopReason || 'end_turn',
       },
@@ -366,6 +374,14 @@ export class BedrockAdapter implements Agent {
           prompt_tokens: response.usage?.inputTokens || 0,
           completion_tokens: response.usage?.outputTokens || 0,
           total_tokens: response.usage?.totalTokens || 0,
+          // Prompt-cache token counts (Anthropic-on-Bedrock), billed at a
+          // reduced rate. Only present when prompt caching is active.
+          ...(response.usage?.cacheReadInputTokens
+            ? { cache_read_tokens: response.usage.cacheReadInputTokens }
+            : {}),
+          ...(response.usage?.cacheWriteInputTokens
+            ? { cache_creation_tokens: response.usage.cacheWriteInputTokens }
+            : {}),
         },
         stop_reason: response.stopReason || 'end_turn',
       },

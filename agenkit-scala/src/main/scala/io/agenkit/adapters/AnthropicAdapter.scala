@@ -43,5 +43,24 @@ class AnthropicAdapter(
         val content = json("content").arr
         if content.isEmpty then throw new RuntimeException("Anthropic response contained no content")
         val text = content(0)("text").str
-        Message.of("assistant", text)
+
+        // Surface token usage so metering layers can read it via
+        // TokenUsage.fromMessage. Anthropic uses the input/output_tokens convention.
+        val usageMeta = json.obj.get("usage").map(_.obj).map { u =>
+          val inputTokens = u.get("input_tokens").map(_.num.toLong).getOrElse(0L)
+          val outputTokens = u.get("output_tokens").map(_.num.toLong).getOrElse(0L)
+          val base = Map[String, Any](
+            "input_tokens" -> inputTokens,
+            "output_tokens" -> outputTokens,
+            "total_tokens" -> (inputTokens + outputTokens)
+          )
+          val withRead = u.get("cache_read_input_tokens")
+            .map(v => base + ("cache_read_tokens" -> v.num.toLong)).getOrElse(base)
+          u.get("cache_creation_input_tokens")
+            .map(v => withRead + ("cache_creation_tokens" -> v.num.toLong)).getOrElse(withRead)
+        }
+
+        usageMeta match
+          case Some(meta) => Message.of("assistant", text).copy(metadata = Map("usage" -> meta))
+          case None       => Message.of("assistant", text)
       }

@@ -13,7 +13,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -82,7 +84,31 @@ public final class AnthropicAdapter implements LlmClient {
                         try {
                             JsonNode root = objectMapper.readTree(response.body());
                             String content = root.at("/content/0/text").asText("");
-                            return Message.of("assistant", content);
+                            Message message = Message.of("assistant", content);
+
+                            // Surface token usage so metering layers can read it
+                            // via TokenUsage.fromMessage. Anthropic uses the
+                            // input_tokens/output_tokens convention.
+                            JsonNode usage = root.get("usage");
+                            if (usage != null && usage.isObject()) {
+                                Map<String, Object> usageMeta = new HashMap<>();
+                                long inputTokens = usage.path("input_tokens").asLong(0);
+                                long outputTokens = usage.path("output_tokens").asLong(0);
+                                usageMeta.put("input_tokens", inputTokens);
+                                usageMeta.put("output_tokens", outputTokens);
+                                usageMeta.put("total_tokens", inputTokens + outputTokens);
+                                // Prompt-cache token counts, when present.
+                                if (usage.has("cache_read_input_tokens")) {
+                                    usageMeta.put("cache_read_tokens",
+                                            usage.path("cache_read_input_tokens").asLong(0));
+                                }
+                                if (usage.has("cache_creation_input_tokens")) {
+                                    usageMeta.put("cache_creation_tokens",
+                                            usage.path("cache_creation_input_tokens").asLong(0));
+                                }
+                                message = message.withMetadata("usage", usageMeta);
+                            }
+                            return message;
                         } catch (Exception e) {
                             log.error("failed to parse Anthropic response: {}", e.getMessage());
                             return Message.of("assistant", "Error: failed to parse response");

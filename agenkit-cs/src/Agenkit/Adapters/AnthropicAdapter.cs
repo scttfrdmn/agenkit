@@ -73,7 +73,29 @@ public class AnthropicAdapter : ILlmClient, IDisposable
             .GetProperty("text")
             .GetString() ?? "";
 
-        return Message.NewMessage("assistant", text);
+        var message = Message.NewMessage("assistant", text);
+
+        // Surface token usage so metering layers can read it via
+        // TokenUsage.FromMessage. Anthropic uses the input/output_tokens convention.
+        if (doc.RootElement.TryGetProperty("usage", out var usage) &&
+            usage.ValueKind == JsonValueKind.Object)
+        {
+            long inputTokens = usage.TryGetProperty("input_tokens", out var it) ? it.GetInt64() : 0;
+            long outputTokens = usage.TryGetProperty("output_tokens", out var ot) ? ot.GetInt64() : 0;
+            var usageMeta = new Dictionary<string, object>
+            {
+                ["input_tokens"] = inputTokens,
+                ["output_tokens"] = outputTokens,
+                ["total_tokens"] = inputTokens + outputTokens
+            };
+            if (usage.TryGetProperty("cache_read_input_tokens", out var cr))
+                usageMeta["cache_read_tokens"] = cr.GetInt64();
+            if (usage.TryGetProperty("cache_creation_input_tokens", out var cc))
+                usageMeta["cache_creation_tokens"] = cc.GetInt64();
+            message = message.WithMetadata("usage", usageMeta);
+        }
+
+        return message;
     }
 
     /// <inheritdoc />

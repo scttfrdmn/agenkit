@@ -74,6 +74,19 @@ jobs:
           # Quick tests without race detector for speed
           go test -short $(go list ./... | grep -v /examples/) -failfast
 
+      - name: Build Go cross-language harness (blocking)
+        working-directory: tests/cross_language/harness_go
+        # These harnesses build against the agenkit-go core via a local `replace`.
+        # They are NOT exercised by the smoke tests above, so an API change in the
+        # core (e.g. Message.Content string -> any) can silently break them — which
+        # is exactly what happened while a prebuilt binary masked it (see #662).
+        # A compile gate here catches that class of rot. go vet also runs the build.
+        env:
+          GOTOOLCHAIN: auto
+        run: |
+          go vet ./...
+          go build -o /dev/null .
+
   # CI coverage for the remaining language implementations. Runs on
   # GitHub-hosted runners for BOTH push and pull_request: the hosted images
   # reliably provision every toolchain (the self-hosted janus runners may not

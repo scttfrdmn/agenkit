@@ -83,14 +83,14 @@ func (m *MockAgent) Chat(ctx context.Context, messages []*agenkit.Message) (*age
 		return agenkit.NewMessage("assistant", "No messages"), nil
 	}
 	lastMessage := messages[len(messages)-1]
-	contentLower := strings.ToLower(lastMessage.Content)
+	contentLower := strings.ToLower(lastMessage.ContentString())
 
 	// Check if asking about name - extract from history
 	if strings.Contains(contentLower, "name") {
 		for i := 0; i < len(messages)-1; i++ {
 			msg := messages[i]
 			re := regexp.MustCompile(`(?i)(?:name is|I'm|I am)\s+(\w+)`)
-			if match := re.FindStringSubmatch(msg.Content); match != nil {
+			if match := re.FindStringSubmatch(msg.ContentString()); match != nil {
 				name := match[1]
 				return agenkit.NewMessage("assistant", fmt.Sprintf("Your name is %s", name)), nil
 			}
@@ -104,17 +104,17 @@ func (m *MockAgent) Chat(ctx context.Context, messages []*agenkit.Message) (*age
 }
 
 func (m *MockAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	contentLower := strings.ToLower(message.Content)
+	contentLower := strings.ToLower(message.ContentString())
 
 	// ReAct pattern - calculation (15 * 24 = 360)
-	isCalcQuery := (strings.Contains(message.Content, "15 * 24") || strings.Contains(message.Content, "What is 15")) &&
+	isCalcQuery := (strings.Contains(message.ContentString(), "15 * 24") || strings.Contains(message.ContentString(), "What is 15")) &&
 		!strings.Contains(contentLower, "color")
-	isCalcFollowup := strings.Contains(message.Content, "What's your next thought/action?") &&
-		strings.Contains(message.Content, "360")
+	isCalcFollowup := strings.Contains(message.ContentString(), "What's your next thought/action?") &&
+		strings.Contains(message.ContentString(), "360")
 
 	if isCalcQuery || isCalcFollowup {
-		hasActualObservation := strings.Contains(message.Content, "Observation: 360") ||
-			strings.Contains(message.Content, "What's your next thought/action?")
+		hasActualObservation := strings.Contains(message.ContentString(), "Observation: 360") ||
+			strings.Contains(message.ContentString(), "What's your next thought/action?")
 
 		if hasActualObservation {
 			return agenkit.NewMessage("assistant",
@@ -130,17 +130,17 @@ Action Input: {"a": 15, "b": 24}`), nil
 	isWeatherQuery := strings.Contains(contentLower, "weather") &&
 		strings.Contains(contentLower, "paris") &&
 		(strings.Contains(contentLower, "fahrenheit") || strings.Contains(contentLower, "convert"))
-	isWeatherFollowup := strings.Contains(message.Content, "What's your next thought/action?") &&
+	isWeatherFollowup := strings.Contains(message.ContentString(), "What's your next thought/action?") &&
 		(strings.Contains(contentLower, "paris") || strings.Contains(contentLower, "temperature") ||
 			strings.Contains(contentLower, "20°c") || strings.Contains(contentLower, "68°f"))
 
 	if isWeatherQuery || isWeatherFollowup {
-		if !strings.Contains(message.Content, "What's your next thought/action?") {
+		if !strings.Contains(message.ContentString(), "What's your next thought/action?") {
 			return agenkit.NewMessage("assistant",
 				`Thought: First I need to search for the current weather in Paris
 Action: search
 Action Input: {"query": "weather Paris"}`), nil
-		} else if strings.Contains(message.Content, "Temperature in Paris: 20°C") || strings.Contains(contentLower, "20°c") {
+		} else if strings.Contains(message.ContentString(), "Temperature in Paris: 20°C") || strings.Contains(contentLower, "20°c") {
 			return agenkit.NewMessage("assistant",
 				`Thought: Now I need to convert the temperature from Celsius to Fahrenheit
 Action: unit_converter
@@ -164,7 +164,7 @@ Action Input: {"from_unit": "celsius", "to_unit": "fahrenheit", "value": 20}`), 
 	// Task pattern - email extraction
 	if strings.Contains(contentLower, "extract") && strings.Contains(contentLower, "email") {
 		re := regexp.MustCompile(`\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b`)
-		emails := re.FindAllString(message.Content, -1)
+		emails := re.FindAllString(message.ContentString(), -1)
 		if len(emails) > 0 {
 			return agenkit.NewMessage("assistant",
 				fmt.Sprintf("Extracted email addresses: %s", strings.Join(emails, ", "))), nil
@@ -184,16 +184,16 @@ Action Input: {"from_unit": "celsius", "to_unit": "fahrenheit", "value": 20}`), 
 	}
 
 	// Default response for generic ReAct queries
-	isGenericReactQuery := (strings.Contains(message.Content, "You are a helpful assistant that uses tools") ||
-		strings.Contains(message.Content, "Available tools:")) &&
-		!strings.Contains(message.Content, "15") &&
+	isGenericReactQuery := (strings.Contains(message.ContentString(), "You are a helpful assistant that uses tools") ||
+		strings.Contains(message.ContentString(), "Available tools:")) &&
+		!strings.Contains(message.ContentString(), "15") &&
 		!strings.Contains(contentLower, "weather") &&
 		!strings.Contains(contentLower, "sky")
-	isGenericReactFollowup := strings.Contains(message.Content, "What's your next thought/action?") &&
+	isGenericReactFollowup := strings.Contains(message.ContentString(), "What's your next thought/action?") &&
 		strings.Contains(contentLower, "mock result")
 
 	if isGenericReactQuery || isGenericReactFollowup {
-		obsCount := strings.Count(message.Content, "What's your next thought/action?")
+		obsCount := strings.Count(message.ContentString(), "What's your next thought/action?")
 		if obsCount == 0 {
 			return agenkit.NewMessage("assistant",
 				"Thought: Let me try using a tool\nAction: tool1\nAction Input: {}"), nil
@@ -430,7 +430,7 @@ func executeSequential(ctx context.Context, mockAgent *MockAgent, message *agenk
 		for _, agentConfig := range agentConfigs {
 			agentMap := agentConfig.(map[string]interface{})
 			agentName, _ := agentMap["name"].(string)
-			agents = append(agents, NewMockAgent(agentName, []string{message.Content}))
+			agents = append(agents, NewMockAgent(agentName, []string{message.ContentString()}))
 		}
 	} else {
 		agents = []agenkit.Agent{mockAgent, mockAgent}
@@ -450,7 +450,7 @@ func executeParallel(ctx context.Context, mockAgent *MockAgent, message *agenkit
 		for _, agentConfig := range agentConfigs {
 			agentMap := agentConfig.(map[string]interface{})
 			agentName, _ := agentMap["name"].(string)
-			agents = append(agents, NewMockAgent(agentName, []string{message.Content}))
+			agents = append(agents, NewMockAgent(agentName, []string{message.ContentString()}))
 		}
 	} else {
 		agents = []agenkit.Agent{mockAgent, mockAgent}
@@ -462,7 +462,7 @@ func executeParallel(ctx context.Context, mockAgent *MockAgent, message *agenkit
 		}
 		var contents []string
 		for _, msg := range messages {
-			contents = append(contents, msg.Content)
+			contents = append(contents, msg.ContentString())
 		}
 		result := agenkit.NewMessage("assistant", strings.Join(contents, " "))
 		result.Metadata["aggregated"] = true

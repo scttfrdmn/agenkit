@@ -156,4 +156,3 @@ func TestSequentialPattern(t *testing.T) {
 		fmt.Printf("Sequential test response:\n%s\n", string(output))
 	}
 }
-

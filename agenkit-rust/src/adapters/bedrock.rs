@@ -277,14 +277,26 @@ impl BedrockAdapter {
             .insert("model".to_string(), json!(self.config.model));
 
         if let Some(usage) = output.usage {
-            msg.metadata.insert(
-                "usage".to_string(),
-                json!({
-                    "prompt_tokens": usage.input_tokens,
-                    "completion_tokens": usage.output_tokens,
-                    "total_tokens": usage.total_tokens,
-                }),
-            );
+            let mut usage_json = json!({
+                "prompt_tokens": usage.input_tokens,
+                "completion_tokens": usage.output_tokens,
+                "total_tokens": usage.total_tokens,
+            });
+            // Prompt-cache token counts (Anthropic-on-Bedrock), billed at a
+            // reduced rate. Only present when prompt caching is active.
+            if let Some(obj) = usage_json.as_object_mut() {
+                if let Some(n) = usage.cache_read_input_tokens() {
+                    if n > 0 {
+                        obj.insert("cache_read_tokens".to_string(), json!(n));
+                    }
+                }
+                if let Some(n) = usage.cache_write_input_tokens() {
+                    if n > 0 {
+                        obj.insert("cache_creation_tokens".to_string(), json!(n));
+                    }
+                }
+            }
+            msg.metadata.insert("usage".to_string(), usage_json);
         }
 
         msg.metadata.insert(

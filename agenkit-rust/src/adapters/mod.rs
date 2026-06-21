@@ -4,6 +4,11 @@
 ///! including OpenAI, Anthropic, Ollama, LiteLLM, Gemini, Bedrock, and
 ///! OpenAI-compatible services (vLLM, llama.cpp, SGLang, etc.).
 
+/// Typed token usage normalization. No provider SDK dependency, so it is
+/// available regardless of the `native` feature.
+pub mod usage;
+pub use usage::{usage_from_message, Usage};
+
 #[cfg(feature = "native")]
 pub mod openai;
 

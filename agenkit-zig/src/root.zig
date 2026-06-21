@@ -231,6 +231,10 @@ pub const adapter = struct {
 
     // OpenAI-compatible adapter (vLLM, llama.cpp, SGLang, etc.)
     pub const OpenAICompatibleLLM = @import("adapter/openai_compatible.zig").OpenAICompatibleLLM;
+
+    // Typed token usage normalization
+    pub const Usage = @import("adapter/usage.zig").Usage;
+    pub const usageFromMessage = @import("adapter/usage.zig").usageFromMessage;
 };
 
 // Evaluation framework
@@ -320,6 +324,7 @@ test {
     _ = @import("adapter/litellm.zig");
     _ = @import("adapter/bedrock.zig");
     _ = @import("adapter/openai_compatible.zig");
+    _ = @import("adapter/usage.zig");
     // Also test observability
     _ = @import("observability/mod.zig");
     // Also test safety

@@ -200,6 +200,15 @@ BedrockAgent::call_converse_api(const core::Message& message) {
             usage_metadata["prompt_tokens"] = result.GetUsage().GetInputTokens();
             usage_metadata["completion_tokens"] = result.GetUsage().GetOutputTokens();
             usage_metadata["total_tokens"] = result.GetUsage().GetTotalTokens();
+            // Prompt-cache token counts (Anthropic-on-Bedrock), billed at a
+            // reduced rate. Only present when prompt caching is active.
+            if (result.GetUsage().CacheReadInputTokensHasBeenSet()) {
+                usage_metadata["cache_read_tokens"] = result.GetUsage().GetCacheReadInputTokens();
+            }
+            if (result.GetUsage().CacheWriteInputTokensHasBeenSet()) {
+                usage_metadata["cache_creation_tokens"] =
+                    result.GetUsage().GetCacheWriteInputTokens();
+            }
             response_msg.with_metadata("usage", usage_metadata);
         }
 

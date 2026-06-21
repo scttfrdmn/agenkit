@@ -37,6 +37,11 @@ add_executable(test_message test_message.cpp)
 target_link_libraries(test_message agenkit gtest_main)
 add_test(NAME message_tests COMMAND test_message)
 
+# Token usage normalization tests
+add_executable(test_usage test_usage.cpp)
+target_link_libraries(test_usage agenkit gtest_main)
+add_test(NAME usage_tests COMMAND test_usage)
+
 # Cross-language message serialization tests
 add_executable(test_cross_language_message_serialization test_cross_language_message_serialization.cpp)
 target_link_libraries(test_cross_language_message_serialization agenkit gtest_main)

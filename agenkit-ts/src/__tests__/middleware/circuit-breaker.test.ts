@@ -4,7 +4,7 @@
  * Tests CircuitBreakerMiddleware for preventing cascading failures.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { Agent, Message } from '../../core/interfaces';
 import { createMessage } from '../../core/interfaces';
 import {
@@ -122,6 +122,16 @@ describe('CircuitBreakerMiddleware: Basic Functionality', () => {
 // ============================================
 
 describe('CircuitBreakerMiddleware: State Transitions', () => {
+  // These tests only need the recovery timeout to elapse; the breaker reads
+  // Date.now(), so fake timers drive the transitions deterministically and
+  // instantly (no real 150ms recovery waits). The agents here have no delay.
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('should transition to HALF_OPEN after timeout', async () => {
     const agent = new UnreliableAgent([true, true, false]); // Fail twice, then succeed
     const cb = new CircuitBreakerMiddleware(agent, {
@@ -142,8 +152,10 @@ describe('CircuitBreakerMiddleware: State Transitions', () => {
 
     expect(cb.getState()).toBe(CircuitState.OPEN);
 
-    // Wait for timeout
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    // Advance past the recovery timeout (simulated). The breaker keys recovery
+    // off Date.now() >= nextAttempt, so advancing the fake clock triggers the
+    // same OPEN->HALF_OPEN transition without a real 150ms wait.
+    await vi.advanceTimersByTimeAsync(150);
 
     // Next request should transition to HALF_OPEN
     const result = await cb.process(input);
@@ -173,8 +185,10 @@ describe('CircuitBreakerMiddleware: State Transitions', () => {
 
     expect(cb.getState()).toBe(CircuitState.OPEN);
 
-    // Wait for timeout
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    // Advance past the recovery timeout (simulated). The breaker keys recovery
+    // off Date.now() >= nextAttempt, so advancing the fake clock triggers the
+    // same OPEN->HALF_OPEN transition without a real 150ms wait.
+    await vi.advanceTimersByTimeAsync(150);
 
     // Succeed twice to close circuit
     await cb.process(input);
@@ -205,8 +219,10 @@ describe('CircuitBreakerMiddleware: State Transitions', () => {
 
     expect(cb.getState()).toBe(CircuitState.OPEN);
 
-    // Wait for timeout
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    // Advance past the recovery timeout (simulated). The breaker keys recovery
+    // off Date.now() >= nextAttempt, so advancing the fake clock triggers the
+    // same OPEN->HALF_OPEN transition without a real 150ms wait.
+    await vi.advanceTimersByTimeAsync(150);
 
     // Succeed once (transition to HALF_OPEN)
     await cb.process(input);
@@ -238,7 +254,17 @@ describe('CircuitBreakerMiddleware: Request Timeout', () => {
 
     const input = createMessage('user', 'test');
 
-    await expect(cb.process(input)).rejects.toThrow(RequestTimeoutError);
+    // Fake timers: the 100ms request-timeout race fires before the 500ms agent.
+    // Behavior assertion only (RequestTimeoutError + metric), so advancing the
+    // simulated clock is equivalent and instant.
+    vi.useFakeTimers();
+    try {
+      const a = expect(cb.process(input)).rejects.toThrow(RequestTimeoutError);
+      await vi.advanceTimersByTimeAsync(100);
+      await a;
+    } finally {
+      vi.useRealTimers();
+    }
     expect(cb.metrics.failedRequests).toBe(1);
   });
 
@@ -251,13 +277,18 @@ describe('CircuitBreakerMiddleware: Request Timeout', () => {
 
     const input = createMessage('user', 'test');
 
-    // Timeout twice to open circuit
-    for (let i = 0; i < 2; i++) {
-      try {
-        await cb.process(input);
-      } catch {
-        // Expected timeout
+    vi.useFakeTimers();
+    try {
+      // Timeout twice to open circuit
+      for (let i = 0; i < 2; i++) {
+        const p = cb.process(input).catch(() => {
+          // Expected timeout
+        });
+        await vi.advanceTimersByTimeAsync(100);
+        await p;
       }
+    } finally {
+      vi.useRealTimers();
     }
 
     expect(cb.getState()).toBe(CircuitState.OPEN);
@@ -280,20 +311,27 @@ describe('CircuitBreakerMiddleware: Metrics', () => {
 
     const input = createMessage('user', 'test');
 
-    // Open circuit
-    for (let i = 0; i < 2; i++) {
-      try {
-        await cb.process(input);
-      } catch {
-        // Expected
+    // Fake timers: recovery timeout is driven via Date.now(); advancing the
+    // simulated clock replaces the real 150ms wait. Same transitions asserted.
+    vi.useFakeTimers();
+    try {
+      // Open circuit
+      for (let i = 0; i < 2; i++) {
+        try {
+          await cb.process(input);
+        } catch {
+          // Expected
+        }
       }
+
+      await vi.advanceTimersByTimeAsync(150);
+
+      // Close circuit
+      await cb.process(input);
+      await cb.process(input);
+    } finally {
+      vi.useRealTimers();
     }
-
-    await new Promise((resolve) => setTimeout(resolve, 150));
-
-    // Close circuit
-    await cb.process(input);
-    await cb.process(input);
 
     const metrics = cb.metrics;
 

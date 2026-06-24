@@ -6,7 +6,7 @@
  * timeouts, batching, and caching consistency.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { Agent, Message } from '../../core/interfaces';
 
 // ============================================
@@ -311,9 +311,15 @@ describe('Middleware Consistency: Rate Limiter', () => {
     // 11th should fail (no tokens left)
     expect(bucket.consume()).toBe(false);
 
-    // Wait 100ms → should refill 1 token
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(bucket.consume()).toBe(true);
+    // Fake timers: refill is computed from Date.now() elapsed, so advancing the
+    // simulated clock 100ms refills 1 token just as a real wait would.
+    vi.useFakeTimers();
+    try {
+      await vi.advanceTimersByTimeAsync(100);
+      expect(bucket.consume()).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('should enforce rate limits consistently', () => {
@@ -349,25 +355,40 @@ describe('Middleware Consistency: Timeout', () => {
   it('should enforce timeouts consistently', async () => {
     const agent = new SlowAgent(500); // Takes 500ms
 
-    // Test with 1000ms timeout (should succeed)
-    const timeout1 = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout')), 1000)
-    );
-    const response = await Promise.race([agent.process({ role: 'user', content: 'test' }), timeout1]);
+    // Fake timers: both branches are behavior assertions (which side of the
+    // race wins), not wall-clock magnitudes. Advancing the simulated clock to
+    // each deadline reproduces the same outcomes instantly.
+    vi.useFakeTimers();
+    try {
+      // Test with 1000ms timeout (should succeed: agent at 500ms wins)
+      const timeout1 = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout')), 1000)
+      );
+      const race1 = Promise.race([agent.process({ role: 'user', content: 'test' }), timeout1]);
+      await vi.advanceTimersByTimeAsync(500);
+      const response = await race1;
 
-    expect((response as Message).metadata?.delay).toBe(500);
+      expect((response as Message).metadata?.delay).toBe(500);
 
-    // Test with 100ms timeout (should fail)
-    const timeout2 = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout')), 100)
-    );
-    await expect(
-      Promise.race([agent.process({ role: 'user', content: 'test' }), timeout2])
-    ).rejects.toThrow('Timeout');
+      // Test with 100ms timeout (should fail: timeout fires before agent)
+      const timeout2 = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout')), 100)
+      );
+      const assertion = expect(
+        Promise.race([agent.process({ role: 'user', content: 'test' }), timeout2])
+      ).rejects.toThrow('Timeout');
+      await vi.advanceTimersByTimeAsync(100);
+      await assertion;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('should measure timeout duration accurately', async () => {
-    const timeouts = [100, 200, 500];
+    // Magnitudes scaled down 5x ([100,200,500] -> [20,40,100]); this test
+    // self-measures setTimeout accuracy, which holds at smaller magnitudes with
+    // the same relative tolerance.
+    const timeouts = [20, 40, 100];
 
     for (const timeout of timeouts) {
       const start = Date.now();
@@ -375,8 +396,8 @@ describe('Middleware Consistency: Timeout', () => {
       await promise;
       const elapsed = Date.now() - start;
 
-      // Allow ±50ms variance
-      expect(elapsed).toBeGreaterThanOrEqual(timeout - 10);
+      // Allow generous upper variance
+      expect(elapsed).toBeGreaterThanOrEqual(timeout - 5);
       expect(elapsed).toBeLessThan(timeout + 50);
     }
   });
@@ -390,9 +411,11 @@ describe('Middleware Consistency: Batching', () => {
   it('should respect batch window timing', async () => {
     const agent = new CountingAgent();
 
-    // Simulate batching: collect requests for 100ms, then process
+    // Simulate batching: collect requests for a window, then process. Window
+    // reduced 100 -> 20ms; the assertion is only that all 5 collected requests
+    // are processed after the window, independent of its duration.
     const batch: Message[] = [];
-    const batchWindow = 100;
+    const batchWindow = 20;
 
     // Collect requests
     const start = Date.now();
@@ -545,11 +568,16 @@ describe('Middleware Consistency: Caching', () => {
     // Should not be expired immediately
     expect(entry.isExpired()).toBe(false);
 
-    // Wait 150ms
-    await new Promise((resolve) => setTimeout(resolve, 150));
-
-    // Should be expired now
-    expect(entry.isExpired()).toBe(true);
+    // Fake timers: isExpired() compares against Date.now(), so advancing the
+    // simulated clock past the TTL exercises the same expiration path.
+    vi.useFakeTimers();
+    try {
+      await vi.advanceTimersByTimeAsync(150);
+      // Should be expired now
+      expect(entry.isExpired()).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

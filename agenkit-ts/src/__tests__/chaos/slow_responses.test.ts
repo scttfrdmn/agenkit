@@ -11,7 +11,7 @@
  * gracefully and respects timeout policies.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { Message } from '../../core/interfaces';
 import { ChaosAgent, ChaosMode, SimpleAgent } from './chaos_agents';
 
@@ -22,7 +22,10 @@ import { ChaosAgent, ChaosMode, SimpleAgent } from './chaos_agents';
 describe('Slow Responses', () => {
   it('should complete slow response within timeout', async () => {
     const baseAgent = new SimpleAgent();
-    const slowAgent = new ChaosAgent(baseAgent, 0, 100, ChaosMode.SLOW_RESPONSE);
+    // Delay magnitude reduced 100ms -> 30ms: the test asserts the response
+    // arrives no sooner than the injected delay (real wall-clock latency is
+    // respected), which holds at any positive magnitude.
+    const slowAgent = new ChaosAgent(baseAgent, 0, 30, ChaosMode.SLOW_RESPONSE);
 
     const message: Message = { role: 'user', content: 'Test' };
 
@@ -31,7 +34,7 @@ describe('Slow Responses', () => {
     const elapsed = Date.now() - start;
 
     expect(response.content).toBe('Processed: Test');
-    expect(elapsed).toBeGreaterThanOrEqual(100);
+    expect(elapsed).toBeGreaterThanOrEqual(30);
   });
 
   it('should timeout on excessively slow response', async () => {
@@ -40,18 +43,29 @@ describe('Slow Responses', () => {
 
     const message: Message = { role: 'user', content: 'Test' };
 
-    // Simulate timeout middleware (200ms timeout)
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Request timeout')), 200)
-    );
+    // Pure behavior assertion (timeout fires before the slow agent resolves),
+    // so fake timers make this instant without changing what is asserted.
+    vi.useFakeTimers();
+    try {
+      // Simulate timeout middleware (200ms timeout)
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 200)
+      );
 
-    await expect(Promise.race([slowAgent.process(message), timeout])).rejects.toThrow(
-      'Request timeout'
-    );
+      const assertion = expect(
+        Promise.race([slowAgent.process(message), timeout])
+      ).rejects.toThrow('Request timeout');
+      await vi.advanceTimersByTimeAsync(200);
+      await assertion;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('should measure response time accurately', async () => {
-    const delays = [50, 100, 200];
+    // Magnitudes scaled down 5x ([50,100,200] -> [10,20,40]); the test still
+    // proves measured latency tracks the injected delay within tolerance.
+    const delays = [10, 20, 40];
 
     for (const delay of delays) {
       const baseAgent = new SimpleAgent();
@@ -63,8 +77,9 @@ describe('Slow Responses', () => {
       await slowAgent.process(message);
       const elapsed = Date.now() - start;
 
-      // Allow ±30ms variance
-      expect(elapsed).toBeGreaterThanOrEqual(delay - 10);
+      // Allow generous upper variance (scheduling jitter is a larger fraction
+      // of these smaller delays).
+      expect(elapsed).toBeGreaterThanOrEqual(delay - 5);
       expect(elapsed).toBeLessThan(delay + 30);
     }
   });
@@ -79,8 +94,10 @@ describe('Gradual Performance Degradation', () => {
     const message: Message = { role: 'user', content: 'Test' };
     const measurements: number[] = [];
 
-    // Simulate gradual degradation: 10ms → 50ms → 150ms
-    const degradationStages = [10, 50, 150];
+    // Simulate gradual degradation. Magnitudes scaled down (10/50/150 ->
+    // 10/30/60); the assertion is purely that each stage is slower than the
+    // last, which the ordering preserves while spacing stays > jitter.
+    const degradationStages = [10, 30, 60];
 
     for (const delay of degradationStages) {
       const baseAgent = new SimpleAgent();
@@ -103,10 +120,14 @@ describe('Gradual Performance Degradation', () => {
     const message: Message = { role: 'user', content: 'Test' };
     const latencies: number[] = [];
 
-    // Collect 100 samples with varying delays
+    // Collect 100 samples with varying delays. Tiers scaled down from
+    // 10/50/200 to 1/20/60 to cut ~3s of real sleeps; the percentile logic
+    // under test is unchanged. Tier gaps are kept wide (1 vs 20 vs 60ms) so
+    // that scheduling jitter (a few ms) cannot blur one tier into the next and
+    // the median stays cleanly below the slow tail.
     for (let i = 0; i < 100; i++) {
       // Simulate realistic latency distribution: mostly fast, some slow
-      const delay = i < 50 ? 10 : i < 95 ? 50 : 200;
+      const delay = i < 50 ? 1 : i < 95 ? 20 : 60;
       const slowAgent = new ChaosAgent(baseAgent, 0, delay, ChaosMode.SLOW_RESPONSE);
 
       const start = Date.now();
@@ -120,9 +141,9 @@ describe('Gradual Performance Degradation', () => {
     const p95 = latencies[94];
     const p99 = latencies[98];
 
-    expect(p50).toBeLessThan(50); // Median should be fast
-    expect(p95).toBeGreaterThan(50); // p95 includes slow requests
-    expect(p99).toBeGreaterThan(100); // p99 includes slowest
+    expect(p50).toBeLessThan(15); // Median in fast tier (~1ms + jitter margin)
+    expect(p95).toBeGreaterThanOrEqual(20); // p95 includes the mid tier (20ms)
+    expect(p99).toBeGreaterThanOrEqual(60); // p99 includes the slowest tier
     expect(p99).toBeGreaterThan(p95);
     expect(p95).toBeGreaterThan(p50);
   });
@@ -137,14 +158,17 @@ describe('Latency Spikes', () => {
     const baseAgent = new SimpleAgent();
     const message: Message = { role: 'user', content: 'Test' };
 
-    // Normal latency (10ms)
-    const normalAgent = new ChaosAgent(baseAgent, 0, 10, ChaosMode.SLOW_RESPONSE);
+    // Normal latency (5ms). Spike reduced 500 -> 200; the assertion is only
+    // that the spike is >10x the normal latency. The spike is kept at 200ms so
+    // that even if the ~5ms normal request jitters up to ~15ms, 10x (~150ms)
+    // still sits below the spike.
+    const normalAgent = new ChaosAgent(baseAgent, 0, 5, ChaosMode.SLOW_RESPONSE);
     const start1 = Date.now();
     await normalAgent.process(message);
     const normal = Date.now() - start1;
 
-    // Latency spike (500ms)
-    const spikeAgent = new ChaosAgent(baseAgent, 0, 500, ChaosMode.SLOW_RESPONSE);
+    // Latency spike (200ms)
+    const spikeAgent = new ChaosAgent(baseAgent, 0, 200, ChaosMode.SLOW_RESPONSE);
     const start2 = Date.now();
     await spikeAgent.process(message);
     const spike = Date.now() - start2;
@@ -159,34 +183,45 @@ describe('Latency Spikes', () => {
 
     const message: Message = { role: 'user', content: 'Test' };
 
-    // Timeout before spike completes
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Spike timeout')), 100)
-    );
+    // Pure behavior assertion (timeout fires before the spike resolves) ->
+    // fake timers, no real wait, same assertion.
+    vi.useFakeTimers();
+    try {
+      // Timeout before spike completes
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Spike timeout')), 100)
+      );
 
-    await expect(Promise.race([spikeAgent.process(message), timeout])).rejects.toThrow(
-      'Spike timeout'
-    );
+      const assertion = expect(
+        Promise.race([spikeAgent.process(message), timeout])
+      ).rejects.toThrow('Spike timeout');
+      await vi.advanceTimersByTimeAsync(100);
+      await assertion;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('should recover after latency spike', async () => {
     const baseAgent = new SimpleAgent();
     const message: Message = { role: 'user', content: 'Test' };
 
-    // Spike
-    const spikeAgent = new ChaosAgent(baseAgent, 0, 300, ChaosMode.SLOW_RESPONSE);
+    // Spike reduced 300 -> 100, recovery delay 10 -> 5. Thresholds adjusted to
+    // match while still proving the spike is far slower than the recovered
+    // request (spike > 50ms, recovered < 30ms).
+    const spikeAgent = new ChaosAgent(baseAgent, 0, 100, ChaosMode.SLOW_RESPONSE);
     const start1 = Date.now();
     await spikeAgent.process(message);
     const spike = Date.now() - start1;
 
     // Recovery
-    const normalAgent = new ChaosAgent(baseAgent, 0, 10, ChaosMode.SLOW_RESPONSE);
+    const normalAgent = new ChaosAgent(baseAgent, 0, 5, ChaosMode.SLOW_RESPONSE);
     const start2 = Date.now();
     await normalAgent.process(message);
     const recovered = Date.now() - start2;
 
-    expect(spike).toBeGreaterThan(200);
-    expect(recovered).toBeLessThan(50);
+    expect(spike).toBeGreaterThan(50);
+    expect(recovered).toBeLessThan(30);
   });
 });
 
@@ -197,7 +232,9 @@ describe('Latency Spikes', () => {
 describe('Concurrent Slow Requests', () => {
   it('should handle multiple concurrent slow requests', async () => {
     const baseAgent = new SimpleAgent();
-    const slowAgent = new ChaosAgent(baseAgent, 0, 100, ChaosMode.SLOW_RESPONSE);
+    // Delay reduced 100 -> 50; the test proves the 10 requests run
+    // concurrently (total ~one delay, not ten), which holds at any magnitude.
+    const slowAgent = new ChaosAgent(baseAgent, 0, 50, ChaosMode.SLOW_RESPONSE);
 
     const message: Message = { role: 'user', content: 'Test' };
 
@@ -212,13 +249,16 @@ describe('Concurrent Slow Requests', () => {
     expect(results).toHaveLength(10);
     results.forEach((r) => expect(r.content).toBe('Processed: Test'));
 
-    // Should complete in ~100ms (concurrent), not 1000ms (sequential)
-    expect(elapsed).toBeLessThan(200);
+    // Should complete in ~50ms (concurrent), not ~500ms (sequential)
+    expect(elapsed).toBeLessThan(150);
   });
 
   it('should timeout some concurrent requests based on timeout policy', async () => {
     const baseAgent = new SimpleAgent();
-    const slowAgent = new ChaosAgent(baseAgent, 0, 150, ChaosMode.SLOW_RESPONSE);
+    // Magnitudes scaled down ~2.5x (agent 150 -> 60, timeouts 100/200 ->
+    // 40/80). The ordering — and thus which races resolve vs reject — is
+    // preserved: the 80ms timeout beats the 60ms agent, the 40ms ones don't.
+    const slowAgent = new ChaosAgent(baseAgent, 0, 60, ChaosMode.SLOW_RESPONSE);
 
     const message: Message = { role: 'user', content: 'Test' };
 
@@ -226,15 +266,15 @@ describe('Concurrent Slow Requests', () => {
     const requests = [
       Promise.race([
         slowAgent.process(message),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 100)),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 40)),
       ]),
       Promise.race([
         slowAgent.process(message),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 200)),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 80)),
       ]),
       Promise.race([
         slowAgent.process(message),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 100)),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 40)),
       ]),
     ];
 
@@ -243,14 +283,15 @@ describe('Concurrent Slow Requests', () => {
     const successes = results.filter((r) => r.status === 'fulfilled');
     const timeouts = results.filter((r) => r.status === 'rejected');
 
-    // Requests with 200ms timeout should succeed, 100ms should timeout
+    // Requests with 80ms timeout should succeed, 40ms should timeout
     expect(successes).toHaveLength(1);
     expect(timeouts).toHaveLength(2);
   });
 
   it('should not exhaust resources with many slow concurrent requests', async () => {
     const baseAgent = new SimpleAgent();
-    const slowAgent = new ChaosAgent(baseAgent, 0, 50, ChaosMode.SLOW_RESPONSE);
+    // Delay reduced 50 -> 25; still proves 100 requests run concurrently.
+    const slowAgent = new ChaosAgent(baseAgent, 0, 25, ChaosMode.SLOW_RESPONSE);
 
     const message: Message = { role: 'user', content: 'Test' };
 
@@ -263,7 +304,7 @@ describe('Concurrent Slow Requests', () => {
 
     expect(results).toHaveLength(100);
     // Should complete reasonably fast (concurrent execution)
-    expect(elapsed).toBeLessThan(200);
+    expect(elapsed).toBeLessThan(150);
   });
 });
 
@@ -274,14 +315,17 @@ describe('Concurrent Slow Requests', () => {
 describe('Adaptive Timeout Behavior', () => {
   it('should increase timeout for consistently slow responses', async () => {
     const baseAgent = new SimpleAgent();
-    const slowAgent = new ChaosAgent(baseAgent, 0, 150, ChaosMode.SLOW_RESPONSE);
+    // Magnitudes scaled down ~2.5x (agent 150 -> 60, timeout window
+    // 100/50/300 -> 40/20/120). The adaptive loop still must raise the timeout
+    // at least once before the 60ms agent fits, preserving the assertion.
+    const slowAgent = new ChaosAgent(baseAgent, 0, 60, ChaosMode.SLOW_RESPONSE);
 
     const message: Message = { role: 'user', content: 'Test' };
 
     // Start with aggressive timeout
-    let timeout = 100;
-    const timeoutIncrement = 50;
-    const maxTimeout = 300;
+    let timeout = 40;
+    const timeoutIncrement = 20;
+    const maxTimeout = 120;
 
     let response: Message | null = null;
 
@@ -298,7 +342,7 @@ describe('Adaptive Timeout Behavior', () => {
     }
 
     expect(response).not.toBeNull();
-    expect(timeout).toBeGreaterThan(100); // Timeout was increased
+    expect(timeout).toBeGreaterThan(40); // Timeout was increased
     expect(timeout).toBeLessThanOrEqual(maxTimeout);
   });
 
@@ -338,7 +382,8 @@ describe('Adaptive Timeout Behavior', () => {
 describe('Slow Response Queueing', () => {
   it('should queue requests when agent is slow', async () => {
     const baseAgent = new SimpleAgent();
-    const slowAgent = new ChaosAgent(baseAgent, 0, 100, ChaosMode.SLOW_RESPONSE);
+    // Delay reduced 100 -> 50; still proves concurrent (~one delay) execution.
+    const slowAgent = new ChaosAgent(baseAgent, 0, 50, ChaosMode.SLOW_RESPONSE);
 
     const message: Message = { role: 'user', content: 'Test' };
 
@@ -353,13 +398,16 @@ describe('Slow Response Queueing', () => {
     await Promise.all(queue);
     const elapsed = Date.now() - start;
 
-    // Should process concurrently (~100ms), not sequentially (~500ms)
-    expect(elapsed).toBeLessThan(200);
+    // Should process concurrently (~50ms), not sequentially (~250ms)
+    expect(elapsed).toBeLessThan(150);
   });
 
   it('should detect queue buildup from slow responses', async () => {
     const baseAgent = new SimpleAgent();
-    const slowAgent = new ChaosAgent(baseAgent, 0, 200, ChaosMode.SLOW_RESPONSE);
+    // Magnitudes scaled down 2x (agent 200 -> 100, final drain 300 -> 150;
+    // inter-enqueue gap kept at 10ms). The assertion compares early vs late
+    // queue wait times with a 1ms tolerance, which the relative buildup keeps.
+    const slowAgent = new ChaosAgent(baseAgent, 0, 100, ChaosMode.SLOW_RESPONSE);
 
     const message: Message = { role: 'user', content: 'Test' };
 
@@ -380,7 +428,7 @@ describe('Slow Response Queueing', () => {
     }
 
     // Wait for all to complete
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 150));
 
     // Calculate queue wait times
     const waitTimes = queue

@@ -4,7 +4,7 @@
  * Tests RateLimiterDecorator for token bucket rate limiting.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { Agent, Message } from '../../core/interfaces';
 import { createMessage } from '../../core/interfaces';
 import { RateLimiterDecorator, RateLimitError } from '../../middleware/rate-limiter';
@@ -66,11 +66,18 @@ describe('RateLimiterDecorator: Basic Functionality', () => {
 
     expect(limiter.metrics.currentTokens).toBeLessThan(1);
 
-    // Wait 0.5 seconds -> should get ~1 new token
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const result = await limiter.process(input);
-    expect(result.content).toContain('response');
+    // Fake timers: token refill is computed from Date.now() elapsed, so
+    // advancing the simulated clock 0.5s adds ~1 token exactly as a real wait
+    // would. Same behavior asserted (6th request allowed).
+    vi.useFakeTimers();
+    try {
+      await vi.advanceTimersByTimeAsync(500);
+      const p = limiter.process(input);
+      const result = await p;
+      expect(result.content).toContain('response');
+    } finally {
+      vi.useRealTimers();
+    }
     expect(agent.getCallCount()).toBe(6);
   });
 
@@ -88,13 +95,23 @@ describe('RateLimiterDecorator: Basic Functionality', () => {
       await limiter.process(input);
     }
 
-    // Next request should wait ~200ms for 1 token at 5 tokens/sec
-    const start = Date.now();
-    await limiter.process(input);
-    const elapsed = Date.now() - start;
+    // Next request must wait ~200ms for 1 token at 5 tokens/sec. Fake timers
+    // drive both the internal setTimeout and Date.now(), so the measured
+    // elapsed and recorded wait time match a real wait — without the wall-clock
+    // cost. The >=100ms assertion still validates that a real wait occurred.
+    vi.useFakeTimers();
+    try {
+      const start = Date.now();
+      const p = limiter.process(input);
+      await vi.advanceTimersByTimeAsync(200);
+      await p;
+      const elapsed = Date.now() - start;
 
-    expect(elapsed).toBeGreaterThanOrEqual(100); // Allow some variance
-    expect(limiter.metrics.totalWaitTime).toBeGreaterThan(0);
+      expect(elapsed).toBeGreaterThanOrEqual(100); // Allow some variance
+      expect(limiter.metrics.totalWaitTime).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

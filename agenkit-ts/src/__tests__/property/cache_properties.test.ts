@@ -9,7 +9,7 @@
  * - Idempotency (same key returns same cached result)
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import * as fc from 'fast-check';
 import type { Message } from '../../core/interfaces';
 import { shortContentArbitrary, smallPositiveIntArbitrary } from './strategies';
@@ -226,14 +226,17 @@ describe('Cache Properties: LRU Ordering', () => {
 // ============================================
 
 describe('Cache Properties: TTL Expiration', () => {
-  it(
-    'should never return expired entries',
-    { timeout: 10000 },
-    async () => {
-      await fc.assert(
-        fc.asyncProperty(
+  it('should never return expired entries', () => {
+    // Fake timers replace the per-run real sleep (previously (ttl+0.05)s ×
+    // numRuns ≈ 2–4s of wall-clock) with deterministic clock advancement. The
+    // cache keys expiry off Date.now(), so advancing the fake clock past the
+    // TTL exercises exactly the same expiration path. numRuns is unchanged.
+    vi.useFakeTimers();
+    try {
+      fc.assert(
+        fc.property(
           fc.float({ min: Math.fround(0.05), max: Math.fround(0.15), noNaN: true }),
-          async (ttl) => {
+          (ttl) => {
             const cache = new SimpleCache(10, ttl);
 
             // Put entry with short TTL
@@ -243,8 +246,8 @@ describe('Cache Properties: TTL Expiration', () => {
             const result1 = cache.get('key');
             expect(result1).not.toBeNull();
 
-            // Wait for expiration
-            await new Promise((resolve) => setTimeout(resolve, (ttl + 0.05) * 1000));
+            // Advance past expiration (TTL + margin), in simulated time
+            vi.advanceTimersByTime((ttl + 0.05) * 1000);
 
             // Property: Expired entry should not be returned
             const result2 = cache.get('key');
@@ -253,8 +256,10 @@ describe('Cache Properties: TTL Expiration', () => {
         ),
         { numRuns: 20 }
       );
+    } finally {
+      vi.useRealTimers();
     }
-  ); // 10 second timeout
+  });
 });
 
 // ============================================

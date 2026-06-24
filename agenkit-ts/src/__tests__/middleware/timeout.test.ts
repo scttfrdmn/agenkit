@@ -4,7 +4,7 @@
  * Tests TimeoutMiddleware for request timeout enforcement.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { Agent, Message } from '../../core/interfaces';
 import { createMessage } from '../../core/interfaces';
 import { TimeoutMiddleware, TimeoutError } from '../../middleware/timeout';
@@ -90,8 +90,23 @@ describe('TimeoutMiddleware: Basic Functionality', () => {
 
     const input = createMessage('user', 'test');
 
-    await expect(middleware.process(input)).rejects.toThrow(TimeoutError);
-    await expect(middleware.process(input)).rejects.toThrow(/Request timeout after 100ms/);
+    // Fake timers: the assertions are about behavior (TimeoutError, message,
+    // metric counts), not wall-clock magnitude, so advancing the simulated
+    // clock past the 100ms deadline is equivalent and instant.
+    vi.useFakeTimers();
+    try {
+      const a1 = expect(middleware.process(input)).rejects.toThrow(TimeoutError);
+      await vi.advanceTimersByTimeAsync(100);
+      await a1;
+
+      const a2 = expect(middleware.process(input)).rejects.toThrow(
+        /Request timeout after 100ms/
+      );
+      await vi.advanceTimersByTimeAsync(100);
+      await a2;
+    } finally {
+      vi.useRealTimers();
+    }
 
     expect(middleware.metrics.totalRequests).toBe(2);
     expect(middleware.metrics.successfulRequests).toBe(0);
@@ -141,7 +156,17 @@ describe('TimeoutMiddleware: Method-Specific Timeouts', () => {
     const input = createMessage('user', 'test');
     input.metadata = { method: 'slow_operation' };
 
-    const result = await middleware.process(input);
+    // Fake timers: agent finishes at 150ms, under the 200ms method timeout.
+    // Advancing simulated time exercises the same success path instantly.
+    vi.useFakeTimers();
+    let result;
+    try {
+      const p = middleware.process(input);
+      await vi.advanceTimersByTimeAsync(150);
+      result = await p;
+    } finally {
+      vi.useRealTimers();
+    }
 
     expect(result.content).toBe('slow response');
     expect(middleware.metrics.successfulRequests).toBe(1);
@@ -158,7 +183,15 @@ describe('TimeoutMiddleware: Method-Specific Timeouts', () => {
     const input = createMessage('user', 'test');
     input.metadata = { method: 'unknown_method' };
 
-    await expect(middleware.process(input)).rejects.toThrow(TimeoutError);
+    // Unknown method -> default 100ms timeout fires before the 150ms agent.
+    vi.useFakeTimers();
+    try {
+      const a = expect(middleware.process(input)).rejects.toThrow(TimeoutError);
+      await vi.advanceTimersByTimeAsync(100);
+      await a;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('should support operation field in metadata', async () => {
@@ -172,7 +205,15 @@ describe('TimeoutMiddleware: Method-Specific Timeouts', () => {
     const input = createMessage('user', 'test');
     input.metadata = { operation: 'long_task' };
 
-    const result = await middleware.process(input);
+    vi.useFakeTimers();
+    let result;
+    try {
+      const p = middleware.process(input);
+      await vi.advanceTimersByTimeAsync(150);
+      result = await p;
+    } finally {
+      vi.useRealTimers();
+    }
 
     expect(result.content).toBe('slow response');
   });
@@ -234,8 +275,11 @@ describe('TimeoutMiddleware: Streaming', () => {
   });
 
   it('should timeout streaming if deadline exceeded', async () => {
-    const agent = new StreamingAgent(150, 4); // 4 chunks * 150ms = 600ms total
-    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 300 });
+    // Magnitudes scaled down 5x (4×150ms total vs 300ms timeout -> 4×30ms vs
+    // 60ms). The deadline is still crossed mid-stream, so the TimeoutError
+    // behavior under test is identical; only the wall-clock wait shrinks.
+    const agent = new StreamingAgent(30, 4); // 4 chunks * 30ms = 120ms total
+    const middleware = new TimeoutMiddleware(agent, { timeoutMs: 60 });
 
     const input = createMessage('user', 'test');
 
@@ -304,10 +348,18 @@ describe('TimeoutMiddleware: Metrics', () => {
 
     const input = createMessage('user', 'test');
 
+    // Fake timers: the middleware records duration as Date.now()-startTime, so
+    // advancing exactly to the 100ms deadline yields a recorded duration >=100,
+    // satisfying the same assertions without a real 100ms wait.
+    vi.useFakeTimers();
     try {
-      await middleware.process(input);
-    } catch {
-      // Expected timeout
+      const p = middleware.process(input).catch(() => {
+        // Expected timeout
+      });
+      await vi.advanceTimersByTimeAsync(100);
+      await p;
+    } finally {
+      vi.useRealTimers();
     }
 
     const metrics = middleware.metrics;

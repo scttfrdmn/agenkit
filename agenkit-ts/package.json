@@ -42,7 +42,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.104.2",
+    "@anthropic-ai/sdk": "^0.107.0",
     "@aws-sdk/client-bedrock-runtime": "^3.709.0",
     "@google/generative-ai": "^0.24.1",
     "@grpc/grpc-js": "^1.14.1",
@@ -57,7 +57,7 @@
     "@opentelemetry/sdk-trace-node": "^2.8.0",
     "@opentelemetry/semantic-conventions": "^1.41.1",
     "chromadb": "^3.4.3",
-    "js-yaml": "^4.1.0",
+    "js-yaml": "^5.2.0",
     "openai": "^6.43.0",
     "redis": "^6.0.0",
     "uuid": "^14.0.0",
@@ -67,7 +67,7 @@
     "@types/google-protobuf": "^3.15.12",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.0.1",
     "@types/redis": "^4.0.11",
     "@types/uuid": "^11.0.0",
     "@types/ws": "^8.5.10",

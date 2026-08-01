@@ -226,7 +226,15 @@ const DEFAULT_BROWSER_BASE_URL = '/wasm';
  */
 export function getModulePath(moduleName: string, baseUrl?: string): string {
   if (baseUrl) {
-    return `${baseUrl.replace(/\/+$/, '')}/${moduleName}.wasm`;
+    // Trailing slashes are trimmed with a linear scan rather than
+    // `replace(/\/+$/, '')`: the regex form is a polynomial-ReDoS vector on a
+    // caller-supplied string ('/'.repeat(n) forces quadratic backtracking), and
+    // CodeQL flags it as such (js/polynomial-redos).
+    let end = baseUrl.length;
+    while (end > 0 && baseUrl.charCodeAt(end - 1) === 47 /* '/' */) {
+      end -= 1;
+    }
+    return `${baseUrl.slice(0, end)}/${moduleName}.wasm`;
   }
 
   const isNode =

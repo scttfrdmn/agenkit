@@ -4,6 +4,7 @@
  */
 
 #include "agenkit/middleware/retry.hpp"
+#include <cmath>
 #include <algorithm>
 
 namespace agenkit {

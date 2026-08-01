@@ -9,6 +9,7 @@
 #ifndef AGENKIT_UTILS_SIMD_HPP
 #define AGENKIT_UTILS_SIMD_HPP
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <algorithm>

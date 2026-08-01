@@ -55,7 +55,7 @@
 
 use crate::core::{Agent, AgentError, Message};
 use chrono::Utc;
-use rand::Rng;
+use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::future::Future;
@@ -272,11 +272,11 @@ impl PromptOptimizer {
 
     /// Samples a random configuration.
     fn sample_config(&self) -> HashMap<String, String> {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let mut config = HashMap::new();
 
         for (key, values) in &self.variations {
-            let idx = rng.gen_range(0..values.len());
+            let idx = rng.random_range(0..values.len());
             config.insert(key.clone(), values[idx].clone());
         }
 
@@ -457,7 +457,7 @@ impl PromptOptimizer {
         let start_time = Utc::now().timestamp_millis();
         self.history.clear();
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         // Initialize population with random configurations
         let mut population: Vec<HashMap<String, String>> =
@@ -484,10 +484,10 @@ impl PromptOptimizer {
             // Selection: Tournament selection
             let mut new_population = Vec::new();
             for _ in 0..population_size {
-                let idx1 = rng.gen_range(0..population_size);
-                let mut idx2 = rng.gen_range(0..population_size);
+                let idx1 = rng.random_range(0..population_size);
+                let mut idx2 = rng.random_range(0..population_size);
                 while idx2 == idx1 {
-                    idx2 = rng.gen_range(0..population_size);
+                    idx2 = rng.random_range(0..population_size);
                 }
 
                 // Choose fitter one
@@ -503,9 +503,9 @@ impl PromptOptimizer {
             // Mutation
             for config in &mut new_population {
                 for key in config.clone().keys() {
-                    if rng.gen::<f64>() < mutation_rate {
+                    if rng.random::<f64>() < mutation_rate {
                         let values = &self.variations[key];
-                        let idx = rng.gen_range(0..values.len());
+                        let idx = rng.random_range(0..values.len());
                         config.insert(key.clone(), values[idx].clone());
                     }
                 }

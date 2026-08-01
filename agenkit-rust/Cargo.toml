@@ -78,7 +78,7 @@ regex = "1.10"
 uuid = { version = "1.6", features = ["v4", "js"] }
 
 # Random number generation
-rand = "0.9"
+rand = "0.10"
 getrandom = { version = "0.2", features = ["js"], optional = true }
 
 # Statistical functions for evaluation

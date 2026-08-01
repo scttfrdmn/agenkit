@@ -42,7 +42,7 @@
 
 use crate::core::{Agent, AgentError, Message};
 use crate::evaluation::TestCase as EvalTestCase;
-use rand::{thread_rng, Rng};
+use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use statrs::distribution::{ContinuousCDF, Normal, StudentsT};
 use statrs::statistics::{OrderStatistics, Statistics};
@@ -466,7 +466,7 @@ impl ABTest {
     fn bootstrap_p_value(&self, sample1: &[f64], sample2: &[f64]) -> Result<f64, AgentError> {
         let observed_diff = sample1.to_vec().mean() - sample2.to_vec().mean();
         let n_resamples = 10000;
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
 
         // Combine samples for permutation test
         let combined: Vec<f64> = sample1.iter().chain(sample2.iter()).copied().collect();
@@ -478,7 +478,7 @@ impl ABTest {
             // Shuffle and split
             let mut shuffled = combined.clone();
             for i in (1..shuffled.len()).rev() {
-                let j = rng.gen_range(0..=i);
+                let j = rng.random_range(0..=i);
                 shuffled.swap(i, j);
             }
 
@@ -522,16 +522,16 @@ impl ABTest {
         confidence: f64,
     ) -> Result<(f64, f64), AgentError> {
         let n_resamples = 10000;
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         let mut diffs = Vec::with_capacity(n_resamples);
 
         for _ in 0..n_resamples {
             // Resample with replacement
             let resample1: Vec<f64> = (0..sample1.len())
-                .map(|_| sample1[rng.gen_range(0..sample1.len())])
+                .map(|_| sample1[rng.random_range(0..sample1.len())])
                 .collect();
             let resample2: Vec<f64> = (0..sample2.len())
-                .map(|_| sample2[rng.gen_range(0..sample2.len())])
+                .map(|_| sample2[rng.random_range(0..sample2.len())])
                 .collect();
 
             let diff = resample2.clone().mean() - resample1.clone().mean();

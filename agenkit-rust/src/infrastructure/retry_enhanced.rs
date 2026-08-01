@@ -7,7 +7,7 @@
 
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
-use rand::Rng;
+use rand::RngExt;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -255,17 +255,17 @@ impl EnhancedRetryDecorator {
 
     fn calculate_backoff(&self, base_backoff: Duration, attempt: usize) -> Duration {
         let base_ms = base_backoff.as_millis() as f64;
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         let jittered_ms = match self.config.jitter_type {
             JitterType::None => base_ms,
             JitterType::Full => {
-                let jittered = rng.gen::<f64>() * base_ms;
+                let jittered = rng.random::<f64>() * base_ms;
                 jittered
             }
             JitterType::Equal => {
                 let min_backoff = base_ms * self.config.jitter_min_ratio;
-                min_backoff + rng.gen::<f64>() * (base_ms - min_backoff)
+                min_backoff + rng.random::<f64>() * (base_ms - min_backoff)
             }
             JitterType::Decorrelated => {
                 if attempt == 1 {
@@ -273,7 +273,7 @@ impl EnhancedRetryDecorator {
                 } else {
                     let previous = self.calculate_backoff(base_backoff, attempt - 1);
                     let previous_ms = previous.as_millis() as f64;
-                    let jittered = rng.gen::<f64>() * previous_ms * 3.0 + base_ms;
+                    let jittered = rng.random::<f64>() * previous_ms * 3.0 + base_ms;
                     let max_ms = self.config.max_backoff.as_millis() as f64;
                     if jittered > max_ms {
                         max_ms

@@ -8,7 +8,7 @@ use agenkit::evaluation::ab_testing::{
     ABTest, ABVariant, SignificanceLevel, StatisticalTestType, TestCase,
 };
 use async_trait::async_trait;
-use rand::Rng;
+use rand::RngExt;
 use std::sync::Arc;
 
 /// Mock agent that returns a metric value with optional variance
@@ -36,14 +36,14 @@ impl Agent for MockMetricAgent {
         // Add random variance if specified
         let mut metric_value = self.base_metric;
         if self.variance > 0.0 {
-            let mut rng = rand::thread_rng();
-            let noise: f64 = rng.gen_range(-self.variance..self.variance);
+            let mut rng = rand::rng();
+            let noise: f64 = rng.random_range(-self.variance..self.variance);
             metric_value += noise;
         }
 
         // Simulate accuracy: return "expected" if random value < accuracy
-        let mut rng = rand::thread_rng();
-        let score: f64 = rng.gen_range(0.0..1.0);
+        let mut rng = rand::rng();
+        let score: f64 = rng.random_range(0.0..1.0);
 
         let content = if score < metric_value {
             // Correct - return the expected text (all test cases use "expected")

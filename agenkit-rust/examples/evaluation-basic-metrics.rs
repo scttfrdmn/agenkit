@@ -14,21 +14,21 @@
 use agenkit::evaluation::{
     ErrorRecord, MetricMeasurement, MetricType, MetricsCollector, SessionResult, SessionStatus,
 };
-use rand::Rng;
+use rand::RngExt;
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
 /// Simulates running an agent session and collecting metrics.
 fn simulate_agent_session(session_id: &str, agent_name: &str) -> SessionResult {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut result = SessionResult::new(session_id, agent_name);
 
     // Simulate some processing time
-    thread::sleep(Duration::from_millis(10 + rng.gen_range(0..50)));
+    thread::sleep(Duration::from_millis(10 + rng.random_range(0..50)));
 
     // Add quality metrics
-    let quality_score = 0.7 + rng.gen::<f64>() * 0.3; // 0.7-1.0
+    let quality_score = 0.7 + rng.random::<f64>() * 0.3; // 0.7-1.0
     let mut metadata = HashMap::new();
     metadata.insert("evaluator".to_string(), serde_json::json!("rule_based"));
     metadata.insert(
@@ -43,7 +43,7 @@ fn simulate_agent_session(session_id: &str, agent_name: &str) -> SessionResult {
     result.add_metric_measurement(quality_metric);
 
     // Add cost metrics
-    let tokens_used = 100 + rng.gen_range(0..400);
+    let tokens_used = 100 + rng.random_range(0..400);
     let cost_per_token = 0.00001;
     let total_cost = tokens_used as f64 * cost_per_token;
     let mut cost_metadata = HashMap::new();
@@ -55,7 +55,7 @@ fn simulate_agent_session(session_id: &str, agent_name: &str) -> SessionResult {
     result.add_metric_measurement(cost_metric);
 
     // Add duration metrics
-    let duration_seconds = 0.5 + rng.gen::<f64>() * 2.0; // 0.5-2.5 seconds
+    let duration_seconds = 0.5 + rng.random::<f64>() * 2.0; // 0.5-2.5 seconds
     let mut duration_metadata = HashMap::new();
     duration_metadata.insert(
         "duration_hours".to_string(),
@@ -68,7 +68,7 @@ fn simulate_agent_session(session_id: &str, agent_name: &str) -> SessionResult {
     result.add_metric_measurement(duration_metric);
 
     // Add custom success rate metric
-    let success = rng.gen::<f64>() > 0.2; // 80% success rate
+    let success = rng.random::<f64>() > 0.2; // 80% success rate
     let success_value = if success { 1.0 } else { 0.0 };
 
     if success {

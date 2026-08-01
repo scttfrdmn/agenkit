@@ -245,7 +245,12 @@ SelfConsistencyAgent::process(core::Message message) {
 
             // Vote for consensus answer
             std::string consensus_answer;
-            double consistency_score;
+            // Initialized: the switch below covers every VotingStrategy, but
+            // that is not something the compiler can prove (an out-of-range
+            // enum value would fall through every case), so GCC reports
+            // -Wmaybe-uninitialized at the use site below and -Werror turns it
+            // into a hard error.
+            double consistency_score = 0.0;
 
             switch (voting_strategy_) {
                 case VotingStrategy::Majority:

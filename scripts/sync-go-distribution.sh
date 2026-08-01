@@ -3,18 +3,12 @@ set -e
 
 MAIN_REPO="/Users/scttfrdmn/src/agenkit"
 DIST_REPO="/tmp/agenkit-go-dist"
-TEMP_COPY="/tmp/agenkit-go-sync"
 
 echo "🔄 Syncing Go distribution repository..."
 
 # Get current commit hash from main repo
 cd "$MAIN_REPO"
 COMMIT_HASH=$(git rev-parse --short HEAD)
-
-# Create fresh copy
-echo "📦 Creating fresh copy of Go code..."
-rm -rf "$TEMP_COPY"
-cp -r "$MAIN_REPO/agenkit-go" "$TEMP_COPY"
 
 # Update distribution repo
 echo "📤 Updating distribution repository..."
@@ -28,9 +22,19 @@ git pull origin main
 # Remove old content, keep .git
 find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 
-# Copy new content
-cp -r "$TEMP_COPY"/* .
-cp -r "$TEMP_COPY"/.* . 2>/dev/null || true
+# Copy new content.
+#
+# `git archive` rather than `cp -r`: cp copies the *working tree*, which includes
+# every gitignored build artifact sitting in agenkit-go/ — compiled example
+# binaries, coverage.out, and so on. .gitignore does not protect the mirror,
+# because the mirror has its own, so the `git add -A` below would commit them.
+# That is how ~50 MB of dead binaries reached the mirror and pushed its module
+# zip to 37.5 MB (#660). Exporting from HEAD makes it structurally impossible:
+# only tracked files exist to copy. It also drops the previous staging directory
+# and its two-step `cp -r .../*` + `cp -r .../.*`, where the second glob matched
+# `.` and `..` and had to be silenced with `|| true`.
+echo "📦 Exporting tracked Go source from HEAD..."
+git -C "$MAIN_REPO" archive HEAD:agenkit-go | tar -x -C .
 
 # Transform import paths for the standalone repository (.go, go.mod, .md docs).
 # Without this the mirror ships the monorepo path and `go get` breaks.
@@ -51,7 +55,7 @@ git status --short
 
 # Prompt for commit
 echo ""
-read -p "Enter commit message (or 'skip' to abort): " COMMIT_MSG
+read -r -p "Enter commit message (or 'skip' to abort): " COMMIT_MSG
 
 if [ "$COMMIT_MSG" = "skip" ]; then
     echo "❌ Sync aborted"

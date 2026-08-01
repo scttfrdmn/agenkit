@@ -2,6 +2,7 @@
 // Implements the JSON protocol for executing pattern tests
 
 const std = @import("std");
+const builtin = @import("builtin");
 const json = std.json;
 
 // Protocol constants
@@ -137,24 +138,24 @@ fn executeReflection(
     const final_quality_score: f64 = 0.5;
     const total_improvement: f64 = if (has_poem and has_technology) 0.0 else -0.19999999999999996;
 
-    var metadata = std.json.ObjectMap.init(allocator);
-    try metadata.put("iterations", .{ .integer = iterations });
-    try metadata.put("reflection_iterations", .{ .integer = iterations });
-    try metadata.put("final_quality_score", .{ .float = final_quality_score });
-    try metadata.put("initial_quality_score", .{ .float = initial_quality_score });
-    try metadata.put("stop_reason", .{ .string = "minimal_improvement" });
-    try metadata.put("total_improvement", .{ .float = total_improvement });
+    var metadata = std.json.ObjectMap.empty;
+    try metadata.put(allocator, "iterations", .{ .integer = iterations });
+    try metadata.put(allocator, "reflection_iterations", .{ .integer = iterations });
+    try metadata.put(allocator, "final_quality_score", .{ .float = final_quality_score });
+    try metadata.put(allocator, "initial_quality_score", .{ .float = initial_quality_score });
+    try metadata.put(allocator, "stop_reason", .{ .string = "minimal_improvement" });
+    try metadata.put(allocator, "total_improvement", .{ .float = total_improvement });
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
 
     const response_content = try std.fmt.allocPrint(
         allocator,
         "Reflected response to: {s}",
         .{content},
     );
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -200,29 +201,29 @@ fn executeSequential(
 
             try agent_names.append(.{ .string = agent_name });
 
-            var stage_obj = std.json.ObjectMap.init(allocator);
-            try stage_obj.put("agent", .{ .string = agent_name });
-            try stage_obj.put("stage", .{ .integer = @intCast(i) });
+            var stage_obj = std.json.ObjectMap.empty;
+            try stage_obj.put(allocator, "agent", .{ .string = agent_name });
+            try stage_obj.put(allocator, "stage", .{ .integer = @intCast(i) });
             try pipeline_stages.append(.{ .object = stage_obj });
         }
     }
 
-    var metadata = std.json.ObjectMap.init(allocator);
-    try metadata.put("agent_count", .{ .integer = agent_count });
-    try metadata.put("pipeline_length", .{ .integer = agent_count });
-    try metadata.put("execution_order", .{ .array = agent_names });
-    try metadata.put("pipeline_stages", .{ .array = pipeline_stages });
+    var metadata = std.json.ObjectMap.empty;
+    try metadata.put(allocator, "agent_count", .{ .integer = agent_count });
+    try metadata.put(allocator, "pipeline_length", .{ .integer = agent_count });
+    try metadata.put(allocator, "execution_order", .{ .array = agent_names });
+    try metadata.put(allocator, "pipeline_stages", .{ .array = pipeline_stages });
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
 
     const response_content = try std.fmt.allocPrint(
         allocator,
         "Sequential result: {s}",
         .{content},
     );
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -267,22 +268,22 @@ fn executeParallel(
         }
     }
 
-    var metadata = std.json.ObjectMap.init(allocator);
-    try metadata.put("agent_count", .{ .integer = agent_count });
-    try metadata.put("parallel_agents", .{ .integer = agent_count });
-    try metadata.put("successful_agents", .{ .integer = agent_count });
-    try metadata.put("aggregated", .{ .bool = true });
+    var metadata = std.json.ObjectMap.empty;
+    try metadata.put(allocator, "agent_count", .{ .integer = agent_count });
+    try metadata.put(allocator, "parallel_agents", .{ .integer = agent_count });
+    try metadata.put(allocator, "successful_agents", .{ .integer = agent_count });
+    try metadata.put(allocator, "aggregated", .{ .bool = true });
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
 
     const response_content = try std.fmt.allocPrint(
         allocator,
         "Parallel result: {s}",
         .{content},
     );
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -463,15 +464,15 @@ fn executeRouter(
         available_routes += 1;
     }
 
-    var metadata = std.json.ObjectMap.init(allocator);
-    try metadata.put("routed_category", .{ .string = category });
-    try metadata.put("routed_agent", .{ .string = routed_agent });
-    try metadata.put("available_routes", .{ .integer = available_routes });
+    var metadata = std.json.ObjectMap.empty;
+    try metadata.put(allocator, "routed_category", .{ .string = category });
+    try metadata.put(allocator, "routed_agent", .{ .string = routed_agent });
+    try metadata.put(allocator, "available_routes", .{ .integer = available_routes });
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -521,16 +522,16 @@ fn executeFallback(
         success_agent = agent_name;
         success_index = @as(i64, @intCast(i));
 
-        var metadata = std.json.ObjectMap.init(allocator);
-        try metadata.put("fallback_attempts", .{ .integer = attempts });
-        try metadata.put("fallback_success_index", .{ .integer = success_index });
-        try metadata.put("fallback_success_agent", .{ .string = success_agent });
-        try metadata.put("fallback_total_agents", .{ .integer = @as(i64, @intCast(agents.items.len)) });
+        var metadata = std.json.ObjectMap.empty;
+        try metadata.put(allocator, "fallback_attempts", .{ .integer = attempts });
+        try metadata.put(allocator, "fallback_success_index", .{ .integer = success_index });
+        try metadata.put(allocator, "fallback_success_agent", .{ .string = success_agent });
+        try metadata.put(allocator, "fallback_total_agents", .{ .integer = @as(i64, @intCast(agents.items.len)) });
 
-        var result = std.json.ObjectMap.init(allocator);
-        try result.put("role", .{ .string = "assistant" });
-        try result.put("content", .{ .string = content });
-        try result.put("metadata", .{ .object = metadata });
+        var result = std.json.ObjectMap.empty;
+        try result.put(allocator, "role", .{ .string = "assistant" });
+        try result.put(allocator, "content", .{ .string = content });
+        try result.put(allocator, "metadata", .{ .object = metadata });
 
         return .{ .object = result };
     }
@@ -559,12 +560,12 @@ fn executeTask(
         return error.TaskFailed;
     }
 
-    const metadata = std.json.ObjectMap.init(allocator);
+    const metadata = std.json.ObjectMap.empty;
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -581,31 +582,31 @@ fn executeSupervisor(
 
     var execution_order = std.json.Array.init(allocator);
 
-    var order_item_1 = std.json.ObjectMap.init(allocator);
-    try order_item_1.put("index", .{ .integer = 0 });
-    try order_item_1.put("type", .{ .string = "default" });
-    try order_item_1.put("specialist", .{ .string = "mock_agent" });
+    var order_item_1 = std.json.ObjectMap.empty;
+    try order_item_1.put(allocator, "index", .{ .integer = 0 });
+    try order_item_1.put(allocator, "type", .{ .string = "default" });
+    try order_item_1.put(allocator, "specialist", .{ .string = "mock_agent" });
     try execution_order.append(.{ .object = order_item_1 });
 
-    var order_item_2 = std.json.ObjectMap.init(allocator);
-    try order_item_2.put("index", .{ .integer = 1 });
-    try order_item_2.put("type", .{ .string = "default" });
-    try order_item_2.put("specialist", .{ .string = "mock_agent" });
+    var order_item_2 = std.json.ObjectMap.empty;
+    try order_item_2.put(allocator, "index", .{ .integer = 1 });
+    try order_item_2.put(allocator, "type", .{ .string = "default" });
+    try order_item_2.put(allocator, "specialist", .{ .string = "mock_agent" });
     try execution_order.append(.{ .object = order_item_2 });
 
-    var metadata = std.json.ObjectMap.init(allocator);
-    try metadata.put("synthesized", .{ .bool = true });
-    try metadata.put("result_count", .{ .integer = 2 });
-    try metadata.put("supervisor_subtasks", .{ .integer = 2 });
-    try metadata.put("supervisor_specialists", .{ .integer = 1 });
-    try metadata.put("execution_order", .{ .array = execution_order });
+    var metadata = std.json.ObjectMap.empty;
+    try metadata.put(allocator, "synthesized", .{ .bool = true });
+    try metadata.put(allocator, "result_count", .{ .integer = 2 });
+    try metadata.put(allocator, "supervisor_subtasks", .{ .integer = 2 });
+    try metadata.put(allocator, "supervisor_specialists", .{ .integer = 1 });
+    try metadata.put(allocator, "execution_order", .{ .array = execution_order });
 
     const response_content = "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42 - Alternative method: work backwards.\n- Apply the formula.\n- Answer: 42";
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -623,37 +624,37 @@ fn executeAgentsAsTools(
     const content_lower = std.ascii.lowerString(&content_lower_buf, content);
 
     var response_content: []const u8 = undefined;
-    var metadata = std.json.ObjectMap.init(allocator);
+    var metadata = std.json.ObjectMap.empty;
 
     if (std.mem.indexOf(u8, content_lower, "calculate") != null and
         std.mem.indexOf(u8, content_lower, "multiply") != null)
     {
         // Scenario 1: Basic agent delegation - calculator operations
-        try metadata.put("agents_called", .{ .integer = 2 });
+        try metadata.put(allocator, "agents_called", .{ .integer = 2 });
         var delegation_chain = std.json.Array.init(allocator);
         try delegation_chain.append(.{ .string = "calculator" });
         try delegation_chain.append(.{ .string = "calculator" });
-        try metadata.put("delegation_chain", .{ .array = delegation_chain });
+        try metadata.put(allocator, "delegation_chain", .{ .array = delegation_chain });
         var sub_agents = std.json.Array.init(allocator);
         try sub_agents.append(.{ .string = "calculator" });
-        try metadata.put("sub_agents", .{ .array = sub_agents });
+        try metadata.put(allocator, "sub_agents", .{ .array = sub_agents });
         response_content = "16";
     } else if (std.mem.indexOf(u8, content_lower, "weather") != null) {
         // Scenario 2: Specialized agent selection - weather query
-        try metadata.put("selection_reason", .{ .string = "weather query" });
+        try metadata.put(allocator, "selection_reason", .{ .string = "weather query" });
         var sub_agents = std.json.Array.init(allocator);
         try sub_agents.append(.{ .string = "weather_agent" });
-        try metadata.put("sub_agents", .{ .array = sub_agents });
+        try metadata.put(allocator, "sub_agents", .{ .array = sub_agents });
         response_content = "The weather in Tokyo is sunny with a temperature of 22°C";
     } else if (std.mem.indexOf(u8, content_lower, "search") != null and
         std.mem.indexOf(u8, content_lower, "summarize") != null)
     {
         // Scenario 3: Multiple delegations in sequence
-        try metadata.put("delegation_count", .{ .integer = 2 });
+        try metadata.put(allocator, "delegation_count", .{ .integer = 2 });
         var sub_agents = std.json.Array.init(allocator);
         try sub_agents.append(.{ .string = "search_agent" });
         try sub_agents.append(.{ .string = "summarizer_agent" });
-        try metadata.put("sub_agents", .{ .array = sub_agents });
+        try metadata.put(allocator, "sub_agents", .{ .array = sub_agents });
         response_content = "Found Python tutorials. Summary: Python is a versatile programming language.";
     } else if (std.mem.indexOf(u8, content_lower, "hello") != null or
         std.mem.indexOf(u8, content_lower, "how are you") != null)
@@ -664,10 +665,10 @@ fn executeAgentsAsTools(
         response_content = content;
     }
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -681,12 +682,12 @@ fn executeMultiagent(
     const content_obj = message.object.get("content") orelse return error.MissingContent;
     const content = content_obj.string;
 
-    const metadata = std.json.ObjectMap.init(allocator);
+    const metadata = std.json.ObjectMap.empty;
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -704,43 +705,43 @@ fn executeOrchestration(
     const content_lower = std.ascii.lowerString(&content_lower_buf, content);
 
     var response_content: []const u8 = undefined;
-    var metadata = std.json.ObjectMap.init(allocator);
+    var metadata = std.json.ObjectMap.empty;
 
     if (std.mem.indexOf(u8, content_lower, "workflow with multiple stages") != null) {
         // Scenario 1: Mixed sequential and parallel execution
-        try metadata.put("stages_completed", .{ .integer = 3 });
+        try metadata.put(allocator, "stages_completed", .{ .integer = 3 });
         var execution_pattern = std.json.Array.init(allocator);
         try execution_pattern.append(.{ .string = "sequential" });
         try execution_pattern.append(.{ .string = "parallel" });
         try execution_pattern.append(.{ .string = "sequential" });
-        try metadata.put("execution_pattern", .{ .array = execution_pattern });
-        try metadata.put("total_agents", .{ .integer = 7 });
+        try metadata.put(allocator, "execution_pattern", .{ .array = execution_pattern });
+        try metadata.put(allocator, "total_agents", .{ .integer = 7 });
         response_content = "Workflow completed with sequential, parallel, and sequential stages";
     } else if (std.mem.indexOf(u8, content_lower, "conditional logic") != null) {
         // Scenario 2: Conditional branching
-        try metadata.put("branch_taken", .{ .string = "then" });
-        try metadata.put("agent_executed", .{ .string = "json_processor" });
+        try metadata.put(allocator, "branch_taken", .{ .string = "then" });
+        try metadata.put(allocator, "agent_executed", .{ .string = "json_processor" });
         response_content = "Data processed with json_processor based on condition";
     } else if (std.mem.indexOf(u8, content_lower, "quality threshold") != null) {
         // Scenario 3: Iterative loops
-        try metadata.put("loop_iterations", .{ .integer = 3 });
-        try metadata.put("break_condition_met", .{ .bool = true });
+        try metadata.put(allocator, "loop_iterations", .{ .integer = 3 });
+        try metadata.put(allocator, "break_condition_met", .{ .bool = true });
         response_content = "Quality threshold met after 3 iterations";
     } else if (std.mem.indexOf(u8, content_lower, "potential failures") != null) {
         // Scenario 4: Error handling
-        try metadata.put("stages_attempted", .{ .integer = 3 });
-        try metadata.put("stages_succeeded", .{ .integer = 2 });
-        try metadata.put("errors_handled", .{ .integer = 1 });
+        try metadata.put(allocator, "stages_attempted", .{ .integer = 3 });
+        try metadata.put(allocator, "stages_succeeded", .{ .integer = 2 });
+        try metadata.put(allocator, "errors_handled", .{ .integer = 1 });
         response_content = "Workflow completed with error handling";
     } else {
-        try metadata.put("stages_completed", .{ .integer = 1 });
+        try metadata.put(allocator, "stages_completed", .{ .integer = 1 });
         response_content = content;
     }
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -758,60 +759,60 @@ fn executeMemory(
     const content_lower = std.ascii.lowerString(&content_lower_buf, content);
 
     var response_content: []const u8 = undefined;
-    var metadata = std.json.ObjectMap.init(allocator);
+    var metadata = std.json.ObjectMap.empty;
 
     if (std.mem.indexOf(u8, content_lower, "store") != null and std.mem.indexOf(u8, content_lower, "retrieve") != null) {
         var retrieved = std.json.Array.init(allocator);
-        var mem_obj = std.json.ObjectMap.init(allocator);
-        try mem_obj.put("content", .{ .string = "User prefers dark mode" });
-        try mem_obj.put("relevance", .{ .float = 0.9 });
+        var mem_obj = std.json.ObjectMap.empty;
+        try mem_obj.put(allocator, "content", .{ .string = "User prefers dark mode" });
+        try mem_obj.put(allocator, "relevance", .{ .float = 0.9 });
         try retrieved.append(.{ .object = mem_obj });
-        try metadata.put("retrieved_memories", .{ .array = retrieved });
+        try metadata.put(allocator, "retrieved_memories", .{ .array = retrieved });
         response_content = "Memory stored and retrieved successfully";
     } else if (std.mem.indexOf(u8, content_lower, "importance") != null) {
         var stored = std.json.Array.init(allocator);
         try stored.append(.{ .string = "High importance fact" });
         try stored.append(.{ .string = "Medium importance fact" });
-        try metadata.put("stored_memories", .{ .array = stored });
+        try metadata.put(allocator, "stored_memories", .{ .array = stored });
         var dropped = std.json.Array.init(allocator);
         try dropped.append(.{ .string = "Low importance fact" });
-        try metadata.put("dropped_memories", .{ .array = dropped });
+        try metadata.put(allocator, "dropped_memories", .{ .array = dropped });
         response_content = "Memories prioritized by importance";
     } else if (std.mem.indexOf(u8, content_lower, "recency") != null) {
         var stored = std.json.Array.init(allocator);
         try stored.append(.{ .string = "Recent memory" });
         try stored.append(.{ .string = "Old memory" });
-        try metadata.put("stored_memories", .{ .array = stored });
+        try metadata.put(allocator, "stored_memories", .{ .array = stored });
         response_content = "Memories prioritized by recency";
     } else if (std.mem.indexOf(u8, content_lower, "semantic") != null or std.mem.indexOf(u8, content_lower, "similarity") != null) {
         var retrieved = std.json.Array.init(allocator);
-        var mem1 = std.json.ObjectMap.init(allocator);
-        try mem1.put("content", .{ .string = "The user likes Python programming" });
-        try mem1.put("similarity", .{ .float = 0.85 });
+        var mem1 = std.json.ObjectMap.empty;
+        try mem1.put(allocator, "content", .{ .string = "The user likes Python programming" });
+        try mem1.put(allocator, "similarity", .{ .float = 0.85 });
         try retrieved.append(.{ .object = mem1 });
-        var mem2 = std.json.ObjectMap.init(allocator);
-        try mem2.put("content", .{ .string = "The user enjoys coding" });
-        try mem2.put("similarity", .{ .float = 0.72 });
+        var mem2 = std.json.ObjectMap.empty;
+        try mem2.put(allocator, "content", .{ .string = "The user enjoys coding" });
+        try mem2.put(allocator, "similarity", .{ .float = 0.72 });
         try retrieved.append(.{ .object = mem2 });
-        try metadata.put("retrieved_memories", .{ .array = retrieved });
+        try metadata.put(allocator, "retrieved_memories", .{ .array = retrieved });
         response_content = "Memories retrieved by semantic similarity";
     } else if (std.mem.indexOf(u8, content_lower, "summarization") != null or std.mem.indexOf(u8, content_lower, "summarize") != null) {
-        try metadata.put("stored_memories_count", .{ .integer = 5 });
-        try metadata.put("summaries_created", .{ .integer = 1 });
+        try metadata.put(allocator, "stored_memories_count", .{ .integer = 5 });
+        try metadata.put(allocator, "summaries_created", .{ .integer = 1 });
         var summary = std.json.Array.init(allocator);
         try summary.append(.{ .string = "mem1" });
         try summary.append(.{ .string = "mem2" });
-        try metadata.put("summary_contains", .{ .array = summary });
+        try metadata.put(allocator, "summary_contains", .{ .array = summary });
         response_content = "Old memories summarized";
     } else {
-        try metadata.put("memories_stored", .{ .integer = 0 });
+        try metadata.put(allocator, "memories_stored", .{ .integer = 0 });
         response_content = content;
     }
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -829,27 +830,27 @@ fn executeConversational(
     const content_lower = std.ascii.lowerString(&content_lower_buf, content);
 
     var response_content: []const u8 = undefined;
-    var metadata = std.json.ObjectMap.init(allocator);
+    var metadata = std.json.ObjectMap.empty;
 
     if (std.mem.indexOf(u8, content_lower, "what's my name") != null or
         std.mem.indexOf(u8, content_lower, "what is my name") != null)
     {
         // Scenario 1: Maintains conversation context
-        try metadata.put("history_length", .{ .integer = 3 });
+        try metadata.put(allocator, "history_length", .{ .integer = 3 });
         response_content = "Your name is Alice";
     } else if (std.mem.indexOf(u8, content_lower, "message 3") != null) {
         // Scenario 2: Respects maximum history limit
-        try metadata.put("history_length", .{ .integer = 3 });
-        try metadata.put("oldest_message", .{ .string = "Message 2" });
+        try metadata.put(allocator, "history_length", .{ .integer = 3 });
+        try metadata.put(allocator, "oldest_message", .{ .string = "Message 2" });
         response_content = "Response 3";
     } else if (std.mem.indexOf(u8, content_lower, "long conversation") != null) {
         // Scenario 3: Memory summarization
-        try metadata.put("has_summary", .{ .bool = true });
-        try metadata.put("summary_count", .{ .integer = 1 });
+        try metadata.put(allocator, "has_summary", .{ .bool = true });
+        try metadata.put(allocator, "summary_count", .{ .integer = 1 });
         response_content = "Continuing long conversation";
     } else if (std.mem.indexOf(u8, content_lower, "hello") != null and content_lower.len < 10) {
         // Scenario 4: Works without prior history
-        try metadata.put("history_length", .{ .integer = 1 });
+        try metadata.put(allocator, "history_length", .{ .integer = 1 });
         response_content = "Hello! How can I help you?";
     } else {
         // Default behavior
@@ -857,14 +858,14 @@ fn executeConversational(
             mh.integer
         else
             10;
-        try metadata.put("history_length", .{ .integer = if (max_history > 0) max_history else 1 });
+        try metadata.put(allocator, "history_length", .{ .integer = if (max_history > 0) max_history else 1 });
         response_content = content;
     }
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -882,26 +883,26 @@ fn executeReAct(
     const content_lower = std.ascii.lowerString(&content_lower_buf, content);
 
     var response_content: []const u8 = undefined;
-    var metadata = std.json.ObjectMap.init(allocator);
+    var metadata = std.json.ObjectMap.empty;
 
     if (std.mem.indexOf(u8, content_lower, "15 * 24") != null or
         std.mem.indexOf(u8, content_lower, "what is 15 * 24") != null)
     {
         // Scenario 1: Basic ReAct with tool calls
-        try metadata.put("tool_calls_made", .{ .integer = 1 });
-        try metadata.put("iterations", .{ .integer = 1 });
+        try metadata.put(allocator, "tool_calls_made", .{ .integer = 1 });
+        try metadata.put(allocator, "iterations", .{ .integer = 1 });
         response_content = "Thought: I need to calculate 15 * 24\nAction: calculator\nObservation: 360\nFinal Answer: 360";
     } else if (std.mem.indexOf(u8, content_lower, "weather") != null and
         std.mem.indexOf(u8, content_lower, "convert") != null)
     {
         // Scenario 2: Multi-step reasoning with multiple tools
-        try metadata.put("tool_calls_made", .{ .integer = 2 });
-        try metadata.put("iterations", .{ .integer = 2 });
+        try metadata.put(allocator, "tool_calls_made", .{ .integer = 2 });
+        try metadata.put(allocator, "iterations", .{ .integer = 2 });
         response_content = "Thought: First I need to search for weather\nAction: search\nObservation: Temperature is 20°C\nThought: Now convert to Fahrenheit\nAction: unit_converter\nObservation: 68°F";
     } else if (std.mem.indexOf(u8, content_lower, "what color is the sky") != null) {
         // Scenario 3: Direct answer without tools
-        try metadata.put("tool_calls_made", .{ .integer = 0 });
-        try metadata.put("iterations", .{ .integer = 1 });
+        try metadata.put(allocator, "tool_calls_made", .{ .integer = 0 });
+        try metadata.put(allocator, "iterations", .{ .integer = 1 });
         response_content = "Thought: I can answer this directly\nFinal Answer: The sky is blue";
     } else if (std.mem.indexOf(u8, content_lower, "complex multi-step") != null) {
         // Scenario 4: Respects maximum iterations
@@ -909,19 +910,19 @@ fn executeReAct(
             mi.integer
         else
             5;
-        try metadata.put("iterations", .{ .integer = max_iterations });
+        try metadata.put(allocator, "iterations", .{ .integer = max_iterations });
         response_content = "Thought: Working on complex task\nAction: tool1\nObservation: Result";
     } else {
         // Default behavior
-        try metadata.put("iterations", .{ .integer = 1 });
-        try metadata.put("tool_calls_made", .{ .integer = 0 });
+        try metadata.put(allocator, "iterations", .{ .integer = 1 });
+        try metadata.put(allocator, "tool_calls_made", .{ .integer = 0 });
         response_content = content;
     }
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -939,38 +940,38 @@ fn executeReasoningWithTools(
     const content_lower = std.ascii.lowerString(&content_lower_buf, content);
 
     var response_content: []const u8 = undefined;
-    var metadata = std.json.ObjectMap.init(allocator);
+    var metadata = std.json.ObjectMap.empty;
 
     if (std.mem.indexOf(u8, content_lower, "analyze") != null and std.mem.indexOf(u8, content_lower, "sales data") != null) {
         // Scenario 1: Basic reasoning with tool integration
-        try metadata.put("reasoning_steps", .{ .integer = 6 });
+        try metadata.put(allocator, "reasoning_steps", .{ .integer = 6 });
         var tools = std.json.Array.init(allocator);
         try tools.append(.{ .string = "data_analyzer" });
         try tools.append(.{ .string = "statistical_calculator" });
-        try metadata.put("tools_used_during_reasoning", .{ .array = tools });
-        try metadata.put("tool_calls_in_reasoning", .{ .integer = 3 });
+        try metadata.put(allocator, "tools_used_during_reasoning", .{ .array = tools });
+        try metadata.put(allocator, "tool_calls_in_reasoning", .{ .integer = 3 });
         response_content = "After analyzing the trend using data_analyzer and statistical_calculator, I predict next quarter will show 15% growth";
     } else if (std.mem.indexOf(u8, content_lower, "launch product") != null and std.mem.indexOf(u8, content_lower, "market data") != null) {
         // Scenario 2: Complex multi-step reasoning with tools
-        try metadata.put("reasoning_trace", .{ .bool = true });
+        try metadata.put(allocator, "reasoning_trace", .{ .bool = true });
         var tools = std.json.Array.init(allocator);
         try tools.append(.{ .string = "market_research" });
         try tools.append(.{ .string = "competitor_analysis" });
         try tools.append(.{ .string = "financial_calculator" });
-        try metadata.put("tools_integrated", .{ .array = tools });
-        try metadata.put("decision_made", .{ .bool = true });
-        try metadata.put("confidence", .{ .float = 0.85 });
+        try metadata.put(allocator, "tools_integrated", .{ .array = tools });
+        try metadata.put(allocator, "decision_made", .{ .bool = true });
+        try metadata.put(allocator, "confidence", .{ .float = 0.85 });
         response_content = "Based on market research, competitor analysis, and financial calculations, I recommend launching Product A";
     } else if (std.mem.indexOf(u8, content_lower, "optimize inventory") != null) {
         // Scenario 3: Iterative reasoning refinement with tools
-        try metadata.put("reasoning_iterations", .{ .integer = 3 });
-        try metadata.put("tool_calls_per_iteration", .{ .integer = 2 });
-        try metadata.put("refinement_occurred", .{ .bool = true });
+        try metadata.put(allocator, "reasoning_iterations", .{ .integer = 3 });
+        try metadata.put(allocator, "tool_calls_per_iteration", .{ .integer = 2 });
+        try metadata.put(allocator, "refinement_occurred", .{ .bool = true });
         response_content = "After 3 iterations of checking inventory and forecasting demand, optimal levels are: 500 units";
     } else if (std.mem.indexOf(u8, content_lower, "simple question") != null) {
         // Scenario 4: Conditional tool use in reasoning
-        try metadata.put("tools_used", .{ .integer = 0 });
-        try metadata.put("reasoning_steps", .{ .integer = 1 });
+        try metadata.put(allocator, "tools_used", .{ .integer = 0 });
+        try metadata.put(allocator, "reasoning_steps", .{ .integer = 1 });
         response_content = "This can be answered directly without tools";
     } else if (std.mem.indexOf(u8, content_lower, "roi") != null and std.mem.indexOf(u8, content_lower, "project") != null) {
         // Scenario 5: Chain-of-thought with tool augmentation
@@ -978,23 +979,23 @@ fn executeReasoningWithTools(
         try thinking.append(.{ .string = "Step 1: Calculate initial investment" });
         try thinking.append(.{ .string = "Step 2: Estimate returns" });
         try thinking.append(.{ .string = "Step 3: Compute ROI" });
-        try metadata.put("thinking_steps", .{ .array = thinking });
+        try metadata.put(allocator, "thinking_steps", .{ .array = thinking });
         var tools = std.json.Array.init(allocator);
         try tools.append(.{ .string = "financial_calculator" });
-        try metadata.put("tools_used", .{ .array = tools });
-        try metadata.put("tool_results_incorporated", .{ .bool = true });
+        try metadata.put(allocator, "tools_used", .{ .array = tools });
+        try metadata.put(allocator, "tool_results_incorporated", .{ .bool = true });
         response_content = "Step 1: Initial investment is $100k\nStep 2: Expected returns $150k\nStep 3: ROI is 50%";
     } else {
         // Default behavior
-        try metadata.put("reasoning_steps", .{ .integer = 1 });
-        try metadata.put("tools_used", .{ .integer = 0 });
+        try metadata.put(allocator, "reasoning_steps", .{ .integer = 1 });
+        try metadata.put(allocator, "tools_used", .{ .integer = 0 });
         response_content = content;
     }
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -1012,40 +1013,40 @@ fn executePlanning(
     const content_lower = std.ascii.lowerString(&content_lower_buf, content);
 
     var response_content: []const u8 = undefined;
-    var metadata = std.json.ObjectMap.init(allocator);
+    var metadata = std.json.ObjectMap.empty;
 
     if (std.mem.indexOf(u8, content_lower, "birthday party") != null) {
-        try metadata.put("plan_created", .{ .bool = true });
-        try metadata.put("steps_count", .{ .integer = 3 });
-        try metadata.put("all_steps_executed", .{ .bool = true });
+        try metadata.put(allocator, "plan_created", .{ .bool = true });
+        try metadata.put(allocator, "steps_count", .{ .integer = 3 });
+        try metadata.put(allocator, "all_steps_executed", .{ .bool = true });
         response_content = "Plan: 1) Book venue 2) Send invitations 3) Order food";
     } else if (std.mem.indexOf(u8, content_lower, "web application") != null and std.mem.indexOf(u8, content_lower, "authentication") != null) {
-        try metadata.put("plan_created", .{ .bool = true });
-        try metadata.put("steps_count", .{ .integer = 5 });
-        try metadata.put("dependencies_resolved", .{ .bool = true });
+        try metadata.put(allocator, "plan_created", .{ .bool = true });
+        try metadata.put(allocator, "steps_count", .{ .integer = 5 });
+        try metadata.put(allocator, "dependencies_resolved", .{ .bool = true });
         response_content = "Plan: 1) Setup database 2) Create user model 3) Implement auth logic 4) Build frontend 5) Deploy";
     } else if (std.mem.indexOf(u8, content_lower, "potential failures") != null) {
-        try metadata.put("replanning_occurred", .{ .bool = true });
-        try metadata.put("replan_count", .{ .integer = 1 });
+        try metadata.put(allocator, "replanning_occurred", .{ .bool = true });
+        try metadata.put(allocator, "replan_count", .{ .integer = 1 });
         response_content = "Plan failed at step 2, replanned: 1) Retry with alternative approach 2) Continue execution";
     } else if (std.mem.indexOf(u8, content_lower, "very complex") != null) {
         const max_steps: i64 = if (config.object.get("max_steps")) |ms|
             ms.integer
         else
             10;
-        try metadata.put("steps_count", .{ .integer = max_steps });
-        try metadata.put("plan_completed", .{ .bool = false });
+        try metadata.put(allocator, "steps_count", .{ .integer = max_steps });
+        try metadata.put(allocator, "plan_completed", .{ .bool = false });
         response_content = "Plan: Created 3 steps (max reached), task not fully completed";
     } else {
-        try metadata.put("plan_created", .{ .bool = true });
-        try metadata.put("steps_count", .{ .integer = 1 });
+        try metadata.put(allocator, "plan_created", .{ .bool = true });
+        try metadata.put(allocator, "steps_count", .{ .integer = 1 });
         response_content = content;
     }
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -1064,49 +1065,49 @@ fn executeCollaborative(
     const content_lower = std.ascii.lowerString(&content_lower_buf, content);
 
     var response_content: []const u8 = undefined;
-    var metadata = std.json.ObjectMap.init(allocator);
+    var metadata = std.json.ObjectMap.empty;
 
     if (std.mem.indexOf(u8, content_lower, "business proposal") != null and
         std.mem.indexOf(u8, content_lower, "perspectives") != null) {
         // Scenario 1: Basic collaboration between agents
-        try metadata.put("agents_participated", .{ .integer = 3 });
+        try metadata.put(allocator, "agents_participated", .{ .integer = 3 });
 
         var perspectives = std.json.Array.init(allocator);
         try perspectives.append(.{ .string = "financial" });
         try perspectives.append(.{ .string = "marketing" });
         try perspectives.append(.{ .string = "technical" });
-        try metadata.put("perspectives", .{ .array = perspectives });
+        try metadata.put(allocator, "perspectives", .{ .array = perspectives });
 
-        try metadata.put("collaboration_rounds", .{ .integer = 1 });
+        try metadata.put(allocator, "collaboration_rounds", .{ .integer = 1 });
         response_content = "Financial: Looks profitable. Marketing: Good market fit. Technical: Feasible to implement.";
     } else if (std.mem.indexOf(u8, content_lower, "product feature") != null) {
         // Scenario 2: Iterative collaboration rounds
-        try metadata.put("collaboration_rounds", .{ .integer = 3 });
-        try metadata.put("refinements_made", .{ .bool = true });
-        try metadata.put("consensus_reached", .{ .bool = true });
+        try metadata.put(allocator, "collaboration_rounds", .{ .integer = 3 });
+        try metadata.put(allocator, "refinements_made", .{ .bool = true });
+        try metadata.put(allocator, "consensus_reached", .{ .bool = true });
         response_content = "After 3 rounds of collaboration, agreed on feature design with refinements from all agents";
     } else if (std.mem.indexOf(u8, content_lower, "architecture approach") != null) {
         // Scenario 3: Reaching consensus
-        try metadata.put("consensus_reached", .{ .bool = true });
-        try metadata.put("agreement_percentage", .{ .float = 0.66 });
+        try metadata.put(allocator, "consensus_reached", .{ .bool = true });
+        try metadata.put(allocator, "agreement_percentage", .{ .float = 0.66 });
         response_content = "Consensus reached: 2 out of 3 architects agree on microservices architecture";
     } else if (std.mem.indexOf(u8, content_lower, "technology stack") != null) {
         // Scenario 4: Handles conflicting opinions
-        try metadata.put("conflicts_detected", .{ .bool = true });
-        try metadata.put("resolution_method", .{ .string = "voting" });
-        try metadata.put("final_decision", .{ .bool = true });
+        try metadata.put(allocator, "conflicts_detected", .{ .bool = true });
+        try metadata.put(allocator, "resolution_method", .{ .string = "voting" });
+        try metadata.put(allocator, "final_decision", .{ .bool = true });
         response_content = "Agents had conflicting views, resolved via voting: Go selected as primary language";
     } else {
         // Default behavior
-        try metadata.put("agents_participated", .{ .integer = 1 });
-        try metadata.put("collaboration_rounds", .{ .integer = 1 });
+        try metadata.put(allocator, "agents_participated", .{ .integer = 1 });
+        try metadata.put(allocator, "collaboration_rounds", .{ .integer = 1 });
         response_content = content;
     }
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -1125,56 +1126,56 @@ fn executeHumanInLoop(
     const content_lower = std.ascii.lowerString(&content_lower_buf, content);
 
     var response_content: []const u8 = undefined;
-    var metadata = std.json.ObjectMap.init(allocator);
+    var metadata = std.json.ObjectMap.empty;
 
     if (std.mem.indexOf(u8, content_lower, "delete") != null and
         std.mem.indexOf(u8, content_lower, "user data") != null) {
         // Scenario 1: Requests human approval for destructive operations
-        try metadata.put("approval_requested", .{ .bool = true });
-        try metadata.put("approval_reason", .{ .string = "destructive_operation" });
-        try metadata.put("paused_for_human", .{ .bool = true });
+        try metadata.put(allocator, "approval_requested", .{ .bool = true });
+        try metadata.put(allocator, "approval_reason", .{ .string = "destructive_operation" });
+        try metadata.put(allocator, "paused_for_human", .{ .bool = true });
         response_content = "Waiting for approval to delete user data";
     } else if (std.mem.indexOf(u8, content_lower, "book") != null and
         std.mem.indexOf(u8, content_lower, "flight") != null) {
         // Scenario 2: Requests human input for missing information
-        try metadata.put("input_requested", .{ .bool = true });
+        try metadata.put(allocator, "input_requested", .{ .bool = true });
 
         var fields_needed = std.json.Array.init(allocator);
         try fields_needed.append(.{ .string = "destination" });
         try fields_needed.append(.{ .string = "departure_date" });
         try fields_needed.append(.{ .string = "return_date" });
-        try metadata.put("fields_needed", .{ .array = fields_needed });
+        try metadata.put(allocator, "fields_needed", .{ .array = fields_needed });
 
         response_content = "Please provide destination, departure_date, and return_date";
     } else if (std.mem.indexOf(u8, content_lower, "optimize") != null and
         std.mem.indexOf(u8, content_lower, "database") != null) {
         // Scenario 3: Human makes decision between options
-        try metadata.put("options_presented", .{ .integer = 3 });
-        try metadata.put("decision_requested", .{ .bool = true });
-        try metadata.put("awaiting_choice", .{ .bool = true });
+        try metadata.put(allocator, "options_presented", .{ .integer = 3 });
+        try metadata.put(allocator, "decision_requested", .{ .bool = true });
+        try metadata.put(allocator, "awaiting_choice", .{ .bool = true });
         response_content = "Options: 1) Add indexes 2) Partition tables 3) Optimize queries. Please choose.";
     } else if (std.mem.indexOf(u8, content_lower, "diagnose") != null and
         std.mem.indexOf(u8, content_lower, "unusual") != null) {
         // Scenario 4: Escalates on uncertainty
-        try metadata.put("escalated", .{ .bool = true });
-        try metadata.put("confidence", .{ .float = 0.6 });
-        try metadata.put("escalation_reason", .{ .string = "low_confidence" });
+        try metadata.put(allocator, "escalated", .{ .bool = true });
+        try metadata.put(allocator, "confidence", .{ .float = 0.6 });
+        try metadata.put(allocator, "escalation_reason", .{ .string = "low_confidence" });
         response_content = "Escalating to human expert due to low confidence";
     } else if (std.mem.indexOf(u8, content_lower, "requiring approval") != null) {
         // Scenario 5: Handles human response timeout
-        try metadata.put("timeout_configured", .{ .bool = true });
-        try metadata.put("max_wait_time", .{ .integer = 300 });
+        try metadata.put(allocator, "timeout_configured", .{ .bool = true });
+        try metadata.put(allocator, "max_wait_time", .{ .integer = 300 });
         response_content = "Waiting for approval (timeout: 300s)";
     } else {
         // Default behavior
-        try metadata.put("human_interaction_available", .{ .bool = true });
+        try metadata.put(allocator, "human_interaction_available", .{ .bool = true });
         response_content = content;
     }
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -1193,26 +1194,26 @@ fn executeAutonomous(
     const content_lower = std.ascii.lowerString(&content_lower_buf, content);
 
     var response_content: []const u8 = undefined;
-    var metadata = std.json.ObjectMap.init(allocator);
+    var metadata = std.json.ObjectMap.empty;
 
     if (std.mem.indexOf(u8, content_lower, "monitor") != null and
         std.mem.indexOf(u8, content_lower, "health") != null) {
         // Scenario 1: Basic autonomous operation
-        try metadata.put("autonomous_session_started", .{ .bool = true });
-        try metadata.put("checkpoint_enabled", .{ .bool = true });
-        try metadata.put("iterations_completed", .{ .integer = 10 });
+        try metadata.put(allocator, "autonomous_session_started", .{ .bool = true });
+        try metadata.put(allocator, "checkpoint_enabled", .{ .bool = true });
+        try metadata.put(allocator, "iterations_completed", .{ .integer = 10 });
         response_content = "Autonomous monitoring session completed 10 iterations";
     } else if (std.mem.indexOf(u8, content_lower, "long-running") != null and
         std.mem.indexOf(u8, content_lower, "processing") != null) {
         // Scenario 2: Creates checkpoints
-        try metadata.put("checkpoints_created", .{ .integer = 4 });
+        try metadata.put(allocator, "checkpoints_created", .{ .integer = 4 });
 
         var checkpoint_locations = std.json.Array.init(allocator);
         try checkpoint_locations.append(.{ .string = "checkpoint_0" });
         try checkpoint_locations.append(.{ .string = "checkpoint_5" });
         try checkpoint_locations.append(.{ .string = "checkpoint_10" });
         try checkpoint_locations.append(.{ .string = "checkpoint_15" });
-        try metadata.put("checkpoint_locations", .{ .array = checkpoint_locations });
+        try metadata.put(allocator, "checkpoint_locations", .{ .array = checkpoint_locations });
 
         response_content = "Created 4 checkpoints during processing";
     } else if (std.mem.indexOf(u8, content_lower, "resume") != null and
@@ -1226,31 +1227,31 @@ fn executeAutonomous(
         else
             "checkpoint_10";
 
-        try metadata.put("resumed_from", .{ .string = checkpoint_id });
-        try metadata.put("iterations_remaining", .{ .integer = 10 });
-        try metadata.put("state_restored", .{ .bool = true });
+        try metadata.put(allocator, "resumed_from", .{ .string = checkpoint_id });
+        try metadata.put(allocator, "iterations_remaining", .{ .integer = 10 });
+        try metadata.put(allocator, "state_restored", .{ .bool = true });
         response_content = "Resumed from checkpoint_10";  // Simplified for now
     } else if (std.mem.indexOf(u8, content_lower, "until complete") != null) {
         // Scenario 4: Stops on condition
-        try metadata.put("stopped_early", .{ .bool = true });
-        try metadata.put("stop_reason", .{ .string = "condition_met" });
-        try metadata.put("iterations_completed", .{ .integer = 15 });
+        try metadata.put(allocator, "stopped_early", .{ .bool = true });
+        try metadata.put(allocator, "stop_reason", .{ .string = "condition_met" });
+        try metadata.put(allocator, "iterations_completed", .{ .integer = 15 });
         response_content = "Stopped early after 15 iterations when condition met";
     } else if (std.mem.indexOf(u8, content_lower, "never-ending") != null) {
         // Scenario 5: Respects maximum iterations
-        try metadata.put("iterations_completed", .{ .integer = 50 });
-        try metadata.put("reached_max_iterations", .{ .bool = true });
+        try metadata.put(allocator, "iterations_completed", .{ .integer = 50 });
+        try metadata.put(allocator, "reached_max_iterations", .{ .bool = true });
         response_content = "Reached maximum of 50 iterations";
     } else {
         // Default behavior
-        try metadata.put("autonomous_mode", .{ .bool = true });
+        try metadata.put(allocator, "autonomous_mode", .{ .bool = true });
         response_content = content;
     }
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -1291,8 +1292,8 @@ fn executeChainOfThought(
         }
     };
 
-    var metadata = std.json.ObjectMap.init(allocator);
-    try metadata.put("technique", .{ .string = "chain_of_thought" });
+    var metadata = std.json.ObjectMap.empty;
+    try metadata.put(allocator, "technique", .{ .string = "chain_of_thought" });
 
     if (parse_steps) {
         var steps = std.json.Array.init(allocator);
@@ -1307,14 +1308,14 @@ fn executeChainOfThought(
             try steps.append(.{ .string = "Result: 42" });
         }
 
-        try metadata.put("reasoning_steps", .{ .array = steps });
-        try metadata.put("num_steps", .{ .integer = @as(i64, @intCast(steps.items.len)) });
+        try metadata.put(allocator, "reasoning_steps", .{ .array = steps });
+        try metadata.put(allocator, "num_steps", .{ .integer = @as(i64, @intCast(steps.items.len)) });
     }
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -1394,27 +1395,27 @@ fn executeTreeOfThought(
         }
     }
 
-    var tree_stats = std.json.ObjectMap.init(allocator);
-    try tree_stats.put("total_nodes", .{ .integer = total_nodes });
-    try tree_stats.put("max_depth", .{ .integer = 1 }); // Python creates shallow tree in mock
-    try tree_stats.put("num_leaves", .{ .integer = num_leaves });
-    try tree_stats.put("num_evaluated", .{ .integer = num_evaluated });
-    try tree_stats.put("num_pruned", .{ .integer = num_pruned });
-    try tree_stats.put("avg_score", .{ .float = avg_score });
-    try tree_stats.put("best_score", .{ .float = best_score });
+    var tree_stats = std.json.ObjectMap.empty;
+    try tree_stats.put(allocator, "total_nodes", .{ .integer = total_nodes });
+    try tree_stats.put(allocator, "max_depth", .{ .integer = 1 }); // Python creates shallow tree in mock
+    try tree_stats.put(allocator, "num_leaves", .{ .integer = num_leaves });
+    try tree_stats.put(allocator, "num_evaluated", .{ .integer = num_evaluated });
+    try tree_stats.put(allocator, "num_pruned", .{ .integer = num_pruned });
+    try tree_stats.put(allocator, "avg_score", .{ .float = avg_score });
+    try tree_stats.put(allocator, "best_score", .{ .float = best_score });
 
-    var metadata = std.json.ObjectMap.init(allocator);
-    try metadata.put("technique", .{ .string = "tree_of_thought" });
-    try metadata.put("search_strategy", .{ .string = strategy });
-    try metadata.put("reasoning_tree_stats", .{ .object = tree_stats });
-    try metadata.put("reasoning_path", .{ .array = reasoning_path });
-    try metadata.put("num_steps", .{ .integer = @as(i64, @intCast(reasoning_path.items.len)) });
-    try metadata.put("best_score", .{ .float = best_score });
+    var metadata = std.json.ObjectMap.empty;
+    try metadata.put(allocator, "technique", .{ .string = "tree_of_thought" });
+    try metadata.put(allocator, "search_strategy", .{ .string = strategy });
+    try metadata.put(allocator, "reasoning_tree_stats", .{ .object = tree_stats });
+    try metadata.put(allocator, "reasoning_path", .{ .array = reasoning_path });
+    try metadata.put(allocator, "num_steps", .{ .integer = @as(i64, @intCast(reasoning_path.items.len)) });
+    try metadata.put(allocator, "best_score", .{ .float = best_score });
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = response_content });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = response_content });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -1555,26 +1556,26 @@ fn executeSelfConsistency(
     }
 
     // Convert answer_counts to JSON object
-    var answer_counts_json = std.json.ObjectMap.init(allocator);
+    var answer_counts_json = std.json.ObjectMap.empty;
     var counts_it = answer_counts.iterator();
     while (counts_it.next()) |entry| {
-        try answer_counts_json.put(entry.key_ptr.*, .{ .integer = entry.value_ptr.* });
+        try answer_counts_json.put(allocator, entry.key_ptr.*, .{ .integer = entry.value_ptr.* });
     }
 
-    var metadata = std.json.ObjectMap.init(allocator);
-    try metadata.put("technique", .{ .string = "self_consistency" });
-    try metadata.put("num_samples", .{ .integer = num_samples });
-    try metadata.put("voting_strategy", .{ .string = voting_strategy });
-    try metadata.put("consistency_score", .{ .float = consistency_score });
-    try metadata.put("samples", .{ .array = samples });
-    try metadata.put("extracted_answers", .{ .array = extracted_answers });
-    try metadata.put("answer_counts", .{ .object = answer_counts_json });
-    try metadata.put("base_agent", .{ .string = "mock_agent" });
+    var metadata = std.json.ObjectMap.empty;
+    try metadata.put(allocator, "technique", .{ .string = "self_consistency" });
+    try metadata.put(allocator, "num_samples", .{ .integer = num_samples });
+    try metadata.put(allocator, "voting_strategy", .{ .string = voting_strategy });
+    try metadata.put(allocator, "consistency_score", .{ .float = consistency_score });
+    try metadata.put(allocator, "samples", .{ .array = samples });
+    try metadata.put(allocator, "extracted_answers", .{ .array = extracted_answers });
+    try metadata.put(allocator, "answer_counts", .{ .object = answer_counts_json });
+    try metadata.put(allocator, "base_agent", .{ .string = "mock_agent" });
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("role", .{ .string = "assistant" });
-    try result.put("content", .{ .string = final_answer });
-    try result.put("metadata", .{ .object = metadata });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "role", .{ .string = "assistant" });
+    try result.put(allocator, "content", .{ .string = final_answer });
+    try result.put(allocator, "metadata", .{ .object = metadata });
 
     return .{ .object = result };
 }
@@ -1634,20 +1635,20 @@ fn executePattern(
         return try executeSelfConsistency(allocator, message, config);
     } else {
         // Mock response for other patterns
-        var metadata = std.json.ObjectMap.init(allocator);
-        try metadata.put("pattern", .{ .string = pattern_name });
-        try metadata.put("mock", .{ .bool = true });
+        var metadata = std.json.ObjectMap.empty;
+        try metadata.put(allocator, "pattern", .{ .string = pattern_name });
+        try metadata.put(allocator, "mock", .{ .bool = true });
 
-        var result = std.json.ObjectMap.init(allocator);
-        try result.put("role", .{ .string = "assistant" });
+        var result = std.json.ObjectMap.empty;
+        try result.put(allocator, "role", .{ .string = "assistant" });
 
         const response_content = try std.fmt.allocPrint(
             allocator,
             "Mock response for {s} pattern",
             .{pattern_name},
         );
-        try result.put("content", .{ .string = response_content });
-        try result.put("metadata", .{ .object = metadata });
+        try result.put(allocator, "content", .{ .string = response_content });
+        try result.put(allocator, "metadata", .{ .object = metadata });
 
         return .{ .object = result };
     }
@@ -1678,14 +1679,14 @@ fn executeTest(
 
     // Get config or create empty object
     const config = if (input.get("config")) |c| c else blk: {
-        const empty_obj = std.json.ObjectMap.init(allocator);
+        const empty_obj = std.json.ObjectMap.empty;
         break :blk std.json.Value{ .object = empty_obj };
     };
 
     // Execute pattern
-    const start_time = std.time.milliTimestamp();
+    const start_time = milliTimestamp();
     const output_message = try executePattern(allocator, pattern, message_data, config);
-    const end_time = std.time.milliTimestamp();
+    const end_time = milliTimestamp();
     const duration = end_time - start_time;
 
     // Determine turns based on pattern and metadata
@@ -1739,26 +1740,26 @@ fn executeTest(
     }
 
     // Build behavior
-    var behavior = std.json.ObjectMap.init(allocator);
-    try behavior.put("turns", .{ .integer = turns });
-    try behavior.put("tool_calls", .{ .array = std.json.Array.init(allocator) });
-    try behavior.put("sub_agents", .{ .array = sub_agents });
+    var behavior = std.json.ObjectMap.empty;
+    try behavior.put(allocator, "turns", .{ .integer = turns });
+    try behavior.put(allocator, "tool_calls", .{ .array = std.json.Array.init(allocator) });
+    try behavior.put(allocator, "sub_agents", .{ .array = sub_agents });
 
     // Build output
-    var output = std.json.ObjectMap.init(allocator);
-    try output.put("message", output_message);
-    try output.put("behavior", .{ .object = behavior });
+    var output = std.json.ObjectMap.empty;
+    try output.put(allocator, "message", output_message);
+    try output.put(allocator, "behavior", .{ .object = behavior });
 
     // Build execution info
-    var execution_info = std.json.ObjectMap.init(allocator);
-    try execution_info.put("duration_ms", .{ .integer = duration });
-    try execution_info.put("llm_calls", .{ .integer = 0 });
-    try execution_info.put("tokens_used", .{ .integer = 0 });
+    var execution_info = std.json.ObjectMap.empty;
+    try execution_info.put(allocator, "duration_ms", .{ .integer = duration });
+    try execution_info.put(allocator, "llm_calls", .{ .integer = 0 });
+    try execution_info.put(allocator, "tokens_used", .{ .integer = 0 });
 
     // Build result
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("output", .{ .object = output });
-    try result.put("execution_info", .{ .object = execution_info });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "output", .{ .object = output });
+    try result.put(allocator, "execution_info", .{ .object = execution_info });
 
     return .{ .object = result };
 }
@@ -1773,24 +1774,24 @@ fn getInfo(allocator: std.mem.Allocator) !std.json.Value {
     try providers_array.append(.{ .string = "openai" });
     try providers_array.append(.{ .string = "anthropic" });
 
-    var capabilities = std.json.ObjectMap.init(allocator);
-    try capabilities.put("streaming", .{ .bool = true });
-    try capabilities.put("async", .{ .bool = true });
-    try capabilities.put("llm_providers", .{ .array = providers_array });
+    var capabilities = std.json.ObjectMap.empty;
+    try capabilities.put(allocator, "streaming", .{ .bool = true });
+    try capabilities.put(allocator, "async", .{ .bool = true });
+    try capabilities.put(allocator, "llm_providers", .{ .array = providers_array });
 
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("language", .{ .string = "zig" });
-    try result.put("version", .{ .string = VERSION });
-    try result.put("patterns_supported", .{ .array = patterns_array });
-    try result.put("capabilities", .{ .object = capabilities });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "language", .{ .string = "zig" });
+    try result.put(allocator, "version", .{ .string = VERSION });
+    try result.put(allocator, "patterns_supported", .{ .array = patterns_array });
+    try result.put(allocator, "capabilities", .{ .object = capabilities });
 
     return .{ .object = result };
 }
 
 fn healthCheck(allocator: std.mem.Allocator) !std.json.Value {
-    var result = std.json.ObjectMap.init(allocator);
-    try result.put("healthy", .{ .bool = true });
-    try result.put("uptime_seconds", .{ .float = 0.0 });
+    var result = std.json.ObjectMap.empty;
+    try result.put(allocator, "healthy", .{ .bool = true });
+    try result.put(allocator, "uptime_seconds", .{ .float = 0.0 });
 
     return .{ .object = result };
 }
@@ -1801,15 +1802,15 @@ fn createErrorResponse(
     error_type: []const u8,
     message: []const u8,
 ) !std.json.Value {
-    var error_obj = std.json.ObjectMap.init(allocator);
-    try error_obj.put("type", .{ .string = error_type });
-    try error_obj.put("message", .{ .string = message });
+    var error_obj = std.json.ObjectMap.empty;
+    try error_obj.put(allocator, "type", .{ .string = error_type });
+    try error_obj.put(allocator, "message", .{ .string = message });
 
-    var response = std.json.ObjectMap.init(allocator);
-    try response.put("protocol_version", .{ .string = PROTOCOL_VERSION });
-    try response.put("request_id", .{ .string = request_id });
-    try response.put("status", .{ .string = "error" });
-    try response.put("error", .{ .object = error_obj });
+    var response = std.json.ObjectMap.empty;
+    try response.put(allocator, "protocol_version", .{ .string = PROTOCOL_VERSION });
+    try response.put(allocator, "request_id", .{ .string = request_id });
+    try response.put(allocator, "status", .{ .string = "error" });
+    try response.put(allocator, "error", .{ .object = error_obj });
 
     return .{ .object = response };
 }
@@ -1819,11 +1820,11 @@ fn createSuccessResponse(
     request_id: []const u8,
     result: std.json.Value,
 ) !std.json.Value {
-    var response = std.json.ObjectMap.init(allocator);
-    try response.put("protocol_version", .{ .string = PROTOCOL_VERSION });
-    try response.put("request_id", .{ .string = request_id });
-    try response.put("status", .{ .string = "success" });
-    try response.put("result", result);
+    var response = std.json.ObjectMap.empty;
+    try response.put(allocator, "protocol_version", .{ .string = PROTOCOL_VERSION });
+    try response.put(allocator, "request_id", .{ .string = request_id });
+    try response.put(allocator, "status", .{ .string = "success" });
+    try response.put(allocator, "result", result);
 
     return .{ .object = response };
 }
@@ -1875,7 +1876,7 @@ fn handleRequest(allocator: std.mem.Allocator, request: std.json.Value) !std.jso
 
     // Get payload or create empty object
     const payload = if (request.object.get("payload")) |p| p else blk: {
-        const empty_obj = std.json.ObjectMap.init(allocator);
+        const empty_obj = std.json.ObjectMap.empty;
         break :blk std.json.Value{ .object = empty_obj };
     };
 
@@ -1905,17 +1906,53 @@ fn handleRequest(allocator: std.mem.Allocator, request: std.json.Value) !std.jso
     return try createSuccessResponse(allocator, request_id, result);
 }
 
+/// Milliseconds since the Unix epoch.
+///
+/// Zig 0.16 removed `std.time.milliTimestamp` in favour of the `Io`-based
+/// `std.Io.Clock.now`. This harness is a standalone executable that does not
+/// link agenkit-zig, so it cannot reuse `src/time_compat.zig`; it reads the
+/// real-time clock directly the same way that module does. Only used to report
+/// `duration_ms`, so a coarse wall clock is fine.
+fn milliTimestamp() i64 {
+    if (builtin.os.tag == .windows) {
+        const epoch_adj = std.time.epoch.windows * (std.time.ns_per_s / 100);
+        const ticks: i128 = std.os.windows.ntdll.RtlGetSystemTimePrecise();
+        return @intCast(@divFloor((ticks + epoch_adj) * 100, std.time.ns_per_ms));
+    }
+    var ts: std.posix.timespec = undefined;
+    switch (std.posix.errno(std.posix.system.clock_gettime(.REALTIME, &ts))) {
+        .SUCCESS => {},
+        else => return 0,
+    }
+    return @as(i64, ts.sec) * std.time.ms_per_s +
+        @as(i64, @intCast(@divFloor(ts.nsec, std.time.ns_per_ms)));
+}
+
+/// Write `bytes` to stdout. Zig 0.16 routes file I/O through an `Io` instance,
+/// so the old argument-free `File.writeAll` is gone; stdout here is a pipe the
+/// test runner reads, hence the streaming (non-positional) variant.
+fn writeStdout(io: std.Io, bytes: []const u8) !void {
+    try std.Io.File.stdout().writeStreamingAll(io, bytes);
+}
+
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    const stdin_file = std.fs.File.stdin();
-    const stdout_file = std.fs.File.stdout();
+    // Zig 0.16 moved `std.fs.File` to `std.Io.File` and made every operation
+    // take an `Io`. This harness does plain blocking I/O, so a single
+    // `Io.Threaded` for the whole process is enough — the same approach
+    // agenkit-zig/src/io_compat.zig takes for the library.
+    var threaded = std.Io.Threaded.init(std.mem.Allocator.failing, .{});
+    defer threaded.deinit();
+    const io = threaded.io();
 
     // Read entire stdin
     const max_size = 10 * 1024 * 1024; // 10MB max
-    const input = stdin_file.readToEndAlloc(allocator, max_size) catch |err| {
+    var stdin_buf: [4096]u8 = undefined;
+    var stdin_reader = std.Io.File.stdin().readerStreaming(io, &stdin_buf);
+    const input = stdin_reader.interface.allocRemaining(allocator, .limited(max_size)) catch |err| {
         const error_msg = try std.fmt.allocPrint(
             allocator,
             "Failed to read stdin: {any}",
@@ -1929,8 +1966,8 @@ pub fn main() !void {
         );
         const json_str = try std.fmt.allocPrint(allocator, "{f}", .{json.fmt(error_response, .{})});
         defer allocator.free(json_str);
-        try stdout_file.writeAll(json_str);
-        try stdout_file.writeAll("\n");
+        try writeStdout(io, json_str);
+        try writeStdout(io, "\n");
         std.process.exit(HARNESS_EXIT_INTERNAL_ERROR);
     };
     defer allocator.free(input);
@@ -1955,8 +1992,8 @@ pub fn main() !void {
         );
         const json_str = try std.fmt.allocPrint(allocator, "{f}", .{json.fmt(error_response, .{})});
         defer allocator.free(json_str);
-        try stdout_file.writeAll(json_str);
-        try stdout_file.writeAll("\n");
+        try writeStdout(io, json_str);
+        try writeStdout(io, "\n");
         std.process.exit(HARNESS_EXIT_PROTOCOL_ERROR);
     };
     defer parsed.deinit();
@@ -1982,16 +2019,16 @@ pub fn main() !void {
         );
         const json_str = try std.fmt.allocPrint(allocator, "{f}", .{json.fmt(error_response, .{})});
         defer allocator.free(json_str);
-        try stdout_file.writeAll(json_str);
-        try stdout_file.writeAll("\n");
+        try writeStdout(io, json_str);
+        try writeStdout(io, "\n");
         return; // Exit normally with code 0 - error response is a valid response
     };
 
     // Write response
     const json_str = try std.fmt.allocPrint(allocator, "{f}", .{json.fmt(response, .{})});
     defer allocator.free(json_str);
-    try stdout_file.writeAll(json_str);
-    try stdout_file.writeAll("\n");
+    try writeStdout(io, json_str);
+    try writeStdout(io, "\n");
 
     // Exit with appropriate code
     const status_obj = response.object.get("status").?;

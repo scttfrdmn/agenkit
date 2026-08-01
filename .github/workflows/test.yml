@@ -217,6 +217,99 @@ jobs:
         working-directory: agenkit-zig
         run: zig build test
 
+  # Compile gates for the remaining cross-language test harnesses. The Go
+  # harness is gated in the smoke-test job above; these are the other four.
+  #
+  # Every harness builds against its language's agenkit core via a local path
+  # dependency, and none of them is exercised by any test suite, so a core API
+  # change breaks them silently. That has already happened twice: #662 (a Go
+  # API change, masked by a prebuilt binary) and #686 (harness_rust's committed
+  # Cargo.lock stale at otel 0.22 for ~50 releases). Compile-only is the right
+  # depth here — the harnesses are driven by the Python cross-language suite,
+  # which runs locally via `make test`; CI just needs to prove they still build.
+  #
+  # Blocking, unlike the lang-smoke test steps: a harness either compiles or it
+  # doesn't, so there is no flakiness to absorb.
+  harness-gate:
+    name: Harness Build (${{ matrix.harness }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        harness: [typescript, rust, cpp, zig]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      # --- TypeScript harness ---
+      # Depends on agenkit-ts via `file:../../../agenkit-ts`, so the core has to
+      # be built first — npm links the source tree, not a published tarball.
+      - name: Set up Node
+        if: matrix.harness == 'typescript'
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Build agenkit-ts core
+        if: matrix.harness == 'typescript'
+        working-directory: agenkit-ts
+        run: |
+          npm ci
+          npm run build
+      - name: Build TypeScript harness (blocking)
+        if: matrix.harness == 'typescript'
+        working-directory: tests/cross_language/harness_ts
+        # `npm ci` rather than `npm install`: the harness has a committed
+        # package-lock.json, and ci fails loudly if it has drifted from
+        # package.json instead of silently rewriting it.
+        run: |
+          npm ci
+          npm run build
+
+      # --- Rust harness ---
+      - name: Set up Rust
+        if: matrix.harness == 'rust'
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build Rust harness (blocking)
+        if: matrix.harness == 'rust'
+        working-directory: tests/cross_language/harness_rust
+        # --locked so a stale committed Cargo.lock fails the build instead of
+        # being silently regenerated — that silence is exactly what let #686
+        # sit at otel 0.22.1 while agenkit-rust moved to 0.32.
+        run: cargo build --locked --quiet
+
+      # --- C++ harness ---
+      # agenkit-cpp has no CI of its own (cpp-ci.yml is .disabled), so this is
+      # currently the only place the C++ library is compiled in CI. The harness
+      # CMakeLists falls back to building agenkit from source when no prebuilt
+      # libagenkit is present, which is what happens here.
+      - name: Install C++ dependencies
+        if: matrix.harness == 'cpp'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake nlohmann-json3-dev
+      - name: Build C++ harness (blocking)
+        if: matrix.harness == 'cpp'
+        working-directory: tests/cross_language/harness_cpp
+        # Only the harness target: the agenkit-cpp subproject also defines
+        # examples, tests and benchmarks, and building those here would
+        # duplicate work for no added signal.
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target harness_cpp -j"$(nproc)"
+
+      # --- Zig harness ---
+      - name: Set up Zig
+        if: matrix.harness == 'zig'
+        uses: mlugg/setup-zig@v2
+        with:
+          # Matches agenkit-zig's build.zig.zon .minimum_zig_version
+          version: 0.16.0
+      - name: Build Zig harness (blocking)
+        if: matrix.harness == 'zig'
+        working-directory: tests/cross_language/harness_zig
+        run: zig build
+
   # Redis-backed tests (Python + TypeScript RedisMemory). These suites skip
   # themselves when no Redis server is reachable, so they never gated anything
   # in CI. A redis:7-alpine service container makes them actually run. Hosted

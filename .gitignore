@@ -117,7 +117,16 @@ site/
 
 # Node.js
 node_modules/
+# Lockfiles are ignored for examples (where they'd churn without adding value),
+# but committed for the published packages and the test harnesses, where a
+# reproducible dependency set is the point. agenkit-ts and packages/wasm predate
+# this rule and stay tracked because .gitignore does not affect already-tracked
+# paths; the harness needs an explicit negation. Its CI gate runs `npm ci`,
+# which requires the lockfile to be present (#736).
 package-lock.json
+!agenkit-ts/package-lock.json
+!packages/wasm/package-lock.json
+!tests/cross_language/harness_ts/package-lock.json
 .npm/
 
 # Astro generated type cache (astro 7+)

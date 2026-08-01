@@ -6,6 +6,7 @@
 #ifdef AGENKIT_WITH_OBSERVABILITY
 
 #include "agenkit/observability/audit.hpp"
+#include <mutex>
 #include <fstream>
 #include <sstream>
 #include <iomanip>

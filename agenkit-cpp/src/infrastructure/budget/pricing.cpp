@@ -1,5 +1,6 @@
 #include "agenkit/infrastructure/budget/pricing.hpp"
 #include <algorithm>
+#include <mutex>
 #include <shared_mutex>
 
 namespace agenkit {

@@ -106,11 +106,15 @@ jobs:
   lang-smoke:
     name: Smoke (${{ matrix.lang }})
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 30 rather than 20 for the cpp leg: a from-scratch libagenkit.a plus 68 test
+    # executables is by far the slowest build here (~6 min in a container
+    # locally, and hosted runners are slower). The other legs finish well inside
+    # this and the timeout only bounds a hang.
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        lang: [typescript, rust, csharp, java, scala, zig]
+        lang: [typescript, rust, cpp, csharp, java, scala, zig]
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -151,6 +155,47 @@ jobs:
         continue-on-error: true
         working-directory: agenkit-rust
         run: cargo test --lib --quiet
+
+      # --- C++ ---
+      # agenkit-cpp had no CI at all until #742: cpp-ci.yml was caught in a
+      # blanket *.disabled rename in Jan 2026 (c1e1c41a) and never re-enabled,
+      # and cpp was missing from this matrix. The library was therefore only
+      # ever compiled by Apple clang, and the first GCC build failed on three
+      # separate latent defects — a maybe-uninitialized double and missing
+      # <mutex>/<cmath> includes that libc++ supplies transitively but
+      # libstdc++ does not. This leg is what keeps that from recurring.
+      - name: Install C++ dependencies
+        if: matrix.lang == 'cpp'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake nlohmann-json3-dev
+      - name: C++ configure
+        if: matrix.lang == 'cpp'
+        working-directory: agenkit-cpp
+        # Examples and benchmarks off: the build is the slowest in the repo and
+        # neither adds signal the library+tests don't already give. Integration
+        # tests are already OFF by default (they need live services).
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DAGENKIT_BUILD_TESTS=ON \
+            -DAGENKIT_BUILD_EXAMPLES=OFF \
+            -DAGENKIT_BUILD_BENCHMARKS=OFF
+      - name: C++ build (blocking)
+        if: matrix.lang == 'cpp'
+        working-directory: agenkit-cpp
+        run: cmake --build build -j"$(nproc)"
+      - name: C++ tests (non-blocking)
+        if: matrix.lang == 'cpp'
+        continue-on-error: true
+        working-directory: agenkit-cpp/build
+        # Non-blocking to match every other language here. All 68 executables
+        # pass under GCC 13.3/libstdc++ locally (verified in a ubuntu:24.04
+        # container), so this should be green — but it's the first time the C++
+        # suite has ever run in CI and a few tests are timing-sensitive, so
+        # treat the results as informational until it's proven itself on hosted
+        # runners. Flip to blocking once it has.
+        run: ctest --output-on-failure
 
       # --- C# / .NET ---
       - name: Set up .NET
@@ -279,10 +324,11 @@ jobs:
         run: cargo build --locked --quiet
 
       # --- C++ harness ---
-      # agenkit-cpp has no CI of its own (cpp-ci.yml is .disabled), so this is
-      # currently the only place the C++ library is compiled in CI. The harness
-      # CMakeLists falls back to building agenkit from source when no prebuilt
-      # libagenkit is present, which is what happens here.
+      # The harness CMakeLists falls back to building agenkit from source when
+      # no prebuilt libagenkit is present, which is what happens here. The
+      # library itself is gated by the cpp leg of lang-smoke above (#742); this
+      # leg only proves the harness's own translation unit still compiles
+      # against it.
       - name: Install C++ dependencies
         if: matrix.harness == 'cpp'
         run: |

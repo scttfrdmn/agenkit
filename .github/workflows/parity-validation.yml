@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # uv provisions Python — works on both hosted and self-hosted runners
       # (actions/setup-python only ships CPython for hosted images).

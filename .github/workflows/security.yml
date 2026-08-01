@@ -58,24 +58,24 @@ jobs:
           - language: java
             build-mode: autobuild
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       # Go autobuild compiles agenkit-go, whose go.mod requires Go 1.25.12.
       # Provision that toolchain (and put it first on PATH) so autobuild on the
       # self-hosted runner doesn't fall back to an older system Go.
       - name: Set up Go (for go autobuild)
         if: matrix.language == 'go'
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version: "1.25.12"
           cache: false
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@v4.37.3
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           queries: security-extended
       - name: Analyze
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@v4.37.3
         with:
           category: "/language:${{ matrix.language }}"
 
@@ -88,7 +88,7 @@ jobs:
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Trivy filesystem scan (SARIF)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -100,7 +100,7 @@ jobs:
           ignore-unfixed: true
       - name: Upload Trivy SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v4.37.3
         with:
           sarif_file: trivy-results.sarif
           category: trivy-fs
@@ -114,8 +114,8 @@ jobs:
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         id: setup-go
         with:
           go-version: "1.25.12"
@@ -153,7 +153,7 @@ jobs:
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       # Run semgrep via `docker run --user` rather than a `container:` job, so
       # output files are owned by the runner user. A `container:` job runs as
       # root and litters the shared self-hosted `_work` dir with root-owned
@@ -169,7 +169,7 @@ jobs:
             semgrep scan --config auto --sarif --output semgrep.sarif
       - name: Upload Semgrep SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v4.37.3
         with:
           sarif_file: semgrep.sarif
           category: semgrep

@@ -11,6 +11,7 @@ These tests validate graceful degradation and partial success handling.
 """
 
 import asyncio
+import random
 import time
 from collections.abc import AsyncIterator
 
@@ -26,6 +27,26 @@ except ImportError:
     class StreamingAgent(Agent):
         async def stream(self, message: Message) -> AsyncIterator[Message]:
             raise NotImplementedError
+
+
+@pytest.fixture(autouse=True)
+def _seeded_chaos_rng():
+    """Make the chaos agents' failure draws deterministic.
+
+    ChaosAgent injects failures via the global `random.random()`, so these
+    tests are Bernoulli trials and their assertions are inherently
+    probabilistic. `test_partial_failure_with_retry` asserted >=15 successes
+    out of 20 with a per-trial success rate of 1 - 0.7^5 = 0.832, which fails
+    ~10.5% of the time (exact binomial); the 5..15 window in
+    `test_some_requests_succeed_others_fail` fails ~1.2% of the time. Seeding
+    keeps the assertions exactly as strict while making the outcome
+    reproducible, rather than widening the bounds until flakes are rare but
+    the test no longer checks much.
+    """
+    state = random.getstate()
+    random.seed(20260801)
+    yield
+    random.setstate(state)
 
 
 class SimpleAgent(Agent):

@@ -23,6 +23,44 @@ def find_free_port() -> int:
     return port
 
 
+def wait_for_port(
+    port: int,
+    process: subprocess.Popen | None = None,
+    timeout: float = 30.0,
+    interval: float = 0.05,
+) -> bool:
+    """Block until a TCP port accepts connections.
+
+    The synchronous counterpart to :func:`wait_for_server`, for fixtures that
+    start a server before an event loop is available. Use this instead of a
+    fixed ``time.sleep()``: a ``go run`` server has to compile first, which can
+    take far longer than any sleep worth hardcoding when the machine is loaded.
+
+    Args:
+        port: Port the server is expected to listen on.
+        process: Optional server subprocess. If given, polling stops early when
+            the process exits, so a crashed server fails fast instead of
+            burning the full timeout.
+        timeout: Maximum time to wait in seconds.
+        interval: Time between connection attempts in seconds.
+
+    Returns:
+        bool: True once the port accepts a connection, False on timeout or if
+        the process exited.
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if process is not None and process.poll() is not None:
+            return False
+        try:
+            with socket.create_connection(("localhost", port), timeout=1.0):
+                return True
+        except OSError:
+            pass
+        time.sleep(interval)
+    return False
+
+
 async def wait_for_server(
     url: str,
     timeout: float = 10.0,

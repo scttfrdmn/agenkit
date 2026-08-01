@@ -2,13 +2,14 @@
 
 OpenTelemetry's meter provider is process-global and only the first
 ``set_meter_provider`` wins, so (like tests/observability/test_metrics.py) we
-use a single module-scoped reader. To keep tests independent despite the shared
+use a single module-scoped reader installed via
+``tests.otel_helpers.isolated_meter_provider``, which clears and restores that
+first-writer-wins latch. To keep tests independent despite the shared
 histograms, each test tags its recording with a unique ``case`` attribute and
 asserts on the data point carrying that attribute.
 """
 
 import pytest
-from opentelemetry import metrics as otel_metrics
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
@@ -18,14 +19,15 @@ from agenkit.observability.error_metrics import (
     PER_STEP_ERROR_RATE_METRIC,
     ErrorMetrics,
 )
+from tests.otel_helpers import isolated_meter_provider
 
 
 @pytest.fixture(scope="module")
 def metric_reader():
     reader = InMemoryMetricReader()
     provider = MeterProvider(metric_readers=[reader])
-    otel_metrics.set_meter_provider(provider)
-    return reader
+    with isolated_meter_provider(provider):
+        yield reader
 
 
 def _data_point(reader, metric_name, case):

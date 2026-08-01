@@ -15,6 +15,7 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 from agenkit.adapters.python.remote_agent import RemoteAgent
 from agenkit.interfaces import Agent, Message
 from agenkit.observability.tracing import TracingMiddleware, inject_trace_context
+from tests.otel_helpers import isolated_tracer_provider
 
 from .helpers import go_grpc_server, go_http_server
 
@@ -37,14 +38,14 @@ def tracing_setup():
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(span_exporter))
 
-    # Set as global provider
-    trace.set_tracer_provider(provider)
-
-    yield provider, span_exporter
-
-    # Cleanup - force flush and shutdown provider
-    provider.force_flush()
-    provider.shutdown()
+    # Install as the global provider and restore on teardown. Without the
+    # restore, a bare `set_tracer_provider` here silently no-ops whenever
+    # another module already tripped the Once, and this module's spans go
+    # nowhere.
+    with isolated_tracer_provider(provider):
+        yield provider, span_exporter
+        provider.force_flush()
+        provider.shutdown()
 
 
 @pytest.fixture(autouse=True)

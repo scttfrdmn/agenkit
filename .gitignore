@@ -120,6 +120,9 @@ node_modules/
 package-lock.json
 .npm/
 
+# Astro generated type cache (astro 7+)
+.astro/
+
 # Deployment artifacts
 deploy/**/node_modules/
 deploy/**/.terraform/

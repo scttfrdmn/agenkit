@@ -118,7 +118,7 @@
         placeholder="Type your message here..."
         disabled={processing}
         rows="4"
-      />
+      ></textarea>
     </div>
 
     <button

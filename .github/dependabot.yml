@@ -3,10 +3,23 @@
 # Security alerts + automated security fixes are enabled at the repo level
 # (Settings > Code security). This file adds scheduled *version* updates.
 #
-# Updates are weekly and GROUPED (one PR per ecosystem per run) to keep PR
-# volume low — CI here is intentionally light (see CLAUDE.md: local testing
-# is the primary gate). Security updates are not affected by the grouping or
-# open-PR limits below; they always land as soon as an advisory is published.
+# Updates are weekly and GROUPED to keep PR volume low — CI here is
+# intentionally light (see CLAUDE.md: local testing is the primary gate).
+# Security updates are not affected by the grouping or open-PR limits below;
+# they always land as soon as an advisory is published.
+#
+# Each ecosystem is grouped into TWO PRs rather than one, split by update-type:
+# minor+patch in one, major in another. A single grouped PR bundling everything
+# means one unmergeable major poisons every other update as a unit, and the
+# group is then re-offered — and re-fails — every week. That has now happened
+# three times:
+#   - #604  otel + redis majors broke the Rust API surface
+#   - #707  rand 0.9 -> 0.10 removed thread_rng/gen/gen_range (fixed in #721)
+#   - #696  typescript 7 has no compatible @typescript-eslint (see below)
+# Splitting keeps the routine minor/patch group mergeable and confines a bad
+# major to the majors PR. Majors are infrequent, so the extra PR only appears
+# in weeks where there is a major to review — which is when you want it
+# isolated anyway.
 #
 # Note: Dependabot has no support for sbt (agenkit-scala) or Zig
 # (agenkit-zig); those ecosystems are necessarily excluded.
@@ -18,8 +31,12 @@ updates:
     schedule:
       interval: weekly
     groups:
-      actions:
+      actions-minor-patch:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
+      actions-major:
+        patterns: ["*"]
+        update-types: ["major"]
 
   # Python (core, reference implementation)
   - package-ecosystem: pip
@@ -28,8 +45,12 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
-      python:
+      python-minor-patch:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
+      python-major:
+        patterns: ["*"]
+        update-types: ["major"]
 
   # Go
   - package-ecosystem: gomod
@@ -38,8 +59,12 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
-      go:
+      go-minor-patch:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
+      go-major:
+        patterns: ["*"]
+        update-types: ["major"]
 
   # TypeScript / Node
   - package-ecosystem: npm
@@ -47,9 +72,21 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # typescript 7 is held back deliberately: no published @typescript-eslint
+    # accepts it. The peer range is `typescript >=4.8.4 <6.1.0` on both the
+    # latest (8.65.0) and canary (8.65.1-alpha.19) channels, so `npm ci` hard
+    # fails ERESOLVE with TS 7 present. Revisit — and delete this block — once
+    # typescript-eslint widens that range. See #722.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
-      npm:
+      npm-minor-patch:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
+      npm-major:
+        patterns: ["*"]
+        update-types: ["major"]
 
   # Rust
   - package-ecosystem: cargo
@@ -58,8 +95,12 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
-      cargo:
+      cargo-minor-patch:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
+      cargo-major:
+        patterns: ["*"]
+        update-types: ["major"]
 
   # C# / .NET
   - package-ecosystem: nuget
@@ -68,8 +109,12 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
-      nuget:
+      nuget-minor-patch:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
+      nuget-major:
+        patterns: ["*"]
+        update-types: ["major"]
 
   # Java / Maven
   - package-ecosystem: maven
@@ -78,5 +123,9 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
-      maven:
+      maven-minor-patch:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
+      maven-major:
+        patterns: ["*"]
+        update-types: ["major"]

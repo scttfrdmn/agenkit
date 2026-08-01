@@ -1,4 +1,4 @@
-.PHONY: help test test-quick test-lint security clean coverage
+.PHONY: help test test-quick test-lint security clean coverage check-artifacts
 
 # Default target
 .DEFAULT_GOAL := help
@@ -18,6 +18,9 @@ test-lint: ## Run tests with linting (slower, CI-equivalent)
 
 test-verbose: ## Run tests with verbose output
 	@./scripts/test-local.sh -v
+
+check-artifacts: ## Fail if compiled binaries or oversize files are tracked (#660)
+	@./scripts/check-tracked-artifacts.sh
 
 security: ## Run local security scans (trivy + govulncheck + semgrep)
 	@echo "=== Trivy (filesystem: deps, misconfig, secrets) ==="

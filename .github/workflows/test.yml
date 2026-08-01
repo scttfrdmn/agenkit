@@ -262,6 +262,27 @@ jobs:
         working-directory: agenkit-zig
         run: zig build test
 
+  # Guard against build artifacts re-entering the tracked tree.
+  #
+  # Between v0.82.0 and v0.85.0 this repo tracked ~1 GB of compiled output: 20 MB
+  # Go example binaries (`main`, `websocket`, `router_pattern`, … — no extensions,
+  # so no filename pattern would have caught them), Rust incremental-compilation
+  # caches, Zig object files. That made the published Go module un-`go get`-able
+  # against the proxy's 500 MB zip ceiling (#660). They were removed by hand in
+  # v0.86.0 — 1052.6 MB -> 48.9 MB — but nothing stopped a recurrence.
+  #
+  # Seconds to run and needs no toolchain, so it's blocking: a tracked ELF/Mach-O
+  # binary is never a judgement call.
+  artifact-guard:
+    name: Tracked Artifact Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Check for tracked build artifacts
+        run: ./scripts/check-tracked-artifacts.sh
+
   # Compile gates for the remaining cross-language test harnesses. The Go
   # harness is gated in the smoke-test job above; these are the other four.
   #

@@ -70,7 +70,30 @@ git commit -m "chore: bump version to X.Y.Z"
 
 # Create annotated tag
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
+
+# ALSO tag the Go submodule — see below. Both tags point at the same commit.
+git tag -a agenkit-go/vX.Y.Z -m "agenkit-go vX.Y.Z"
 ```
+
+#### Why the Go module needs a second tag
+
+`agenkit-go/go.mod` declares `module github.com/scttfrdmn/agenkit/agenkit-go`. Go
+resolves a module living in a subdirectory using a **directory-prefixed** tag, so
+the bare `vX.Y.Z` tag is invisible to it:
+
+```console
+$ go list -m github.com/scttfrdmn/agenkit/agenkit-go@v0.87.0
+invalid version: unknown revision agenkit-go/v0.87.0
+```
+
+Without `agenkit-go/vX.Y.Z`, `@latest` falls back to a pseudo-version
+(`v0.0.0-20260801161442-a85ea7322b98`) which consumers cannot meaningfully pin and
+which may resolve to an older commit than the release. `go list -m -versions`
+returns nothing at all. Tagging both is the whole fix — the prefix is a Go
+convention, not a separate release. See #660.
+
+No other language needs this: Python/npm/crates/Maven/NuGet all publish from
+their own manifests and ignore git tags.
 
 ### 5. Create Release Notes
 
@@ -106,6 +129,20 @@ gh release create vX.Y.Z --generate-notes
 - Test installation from GitHub
 - Update documentation links if needed
 - Announce release (if applicable)
+
+Verify the Go module resolves at the new version. This is worth doing explicitly
+because the failure is silent — a missing `agenkit-go/vX.Y.Z` tag doesn't error,
+it just leaves consumers on a pseudo-version (#660):
+
+```bash
+# Should print vX.Y.Z, not v0.0.0-<timestamp>-<sha>
+go list -m github.com/scttfrdmn/agenkit/agenkit-go@vX.Y.Z
+
+# Should list every tagged version
+go list -m -versions github.com/scttfrdmn/agenkit/agenkit-go
+```
+
+The proxy caches on first request, so allow a few minutes after pushing tags.
 
 ---
 
@@ -184,6 +221,7 @@ Before creating any release:
 - [ ] **Release notes prepared** (REQUIRED)
 - [ ] Breaking changes documented (if MAJOR)
 - [ ] Migration guide provided (if breaking changes)
+- [ ] No build artifacts tracked (`make check-artifacts`)
 
 ## Post-Release Checklist
 
@@ -191,6 +229,8 @@ After creating release:
 
 - [ ] Release appears on GitHub
 - [ ] Tag pushed successfully
+- [ ] `agenkit-go/vX.Y.Z` tag pushed too (required for the Go module — see step 4)
+- [ ] `go list -m github.com/scttfrdmn/agenkit/agenkit-go@vX.Y.Z` returns the version
 - [ ] Release notes published
 - [ ] Installation tested
 - [ ] Documentation links work
@@ -216,6 +256,7 @@ For critical security or bug fixes:
 
 - **Release notes are MANDATORY** - Never release without them
 - Always use annotated tags (`git tag -a`)
+- Every release needs **two** tags: `vX.Y.Z` and `agenkit-go/vX.Y.Z` (step 4)
 - Follow Keep a Changelog format strictly
 - Test everything before releasing
 - Be conservative with MAJOR version bumps

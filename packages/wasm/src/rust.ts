@@ -4,7 +4,7 @@
  * Provides a JavaScript interface to Rust-compiled WASM agents using wasm-bindgen.
  */
 
-import { loadWasmModule } from './loader';
+import { loadWasmModule, getModulePath } from './loader';
 import { Agent, Message, AgentResult, WasmModule } from './types';
 
 export class RustAgent implements Agent {
@@ -28,9 +28,13 @@ export class RustAgent implements Agent {
    * await agent.load();
    * ```
    */
-  async load(debug = false): Promise<void> {
-    // Rust WASM is a single unified library, not separate modules like Zig
-    const wasmPath = 'wasm/agenkit_rust.wasm';
+  async load(debug = false, baseUrl?: string): Promise<void> {
+    // Rust WASM is a single unified library, not separate modules like Zig.
+    // Routed through getModulePath for the same reason as the Zig agent: the
+    // old bare relative 'wasm/agenkit_rust.wasm' resolved against the process
+    // working directory in Node and the page URL in a browser, so it only ever
+    // worked when run from exactly the right place (#735).
+    const wasmPath = getModulePath('agenkit_rust', baseUrl);
     this.module = await loadWasmModule({ wasmPath, debug });
   }
 
@@ -122,9 +126,10 @@ export class RustAgent implements Agent {
 export async function createRustAgent(
   agentName: string,
   capabilities: string[] = [],
-  debug = false
+  debug = false,
+  baseUrl?: string
 ): Promise<RustAgent> {
   const agent = new RustAgent(agentName, capabilities);
-  await agent.load(debug);
+  await agent.load(debug, baseUrl);
   return agent;
 }

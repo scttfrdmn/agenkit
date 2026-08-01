@@ -10,11 +10,13 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Load @agenkit/wasm from local package -->
+    <!-- Exposes createZigAgent on window for the app component, which declares
+         it rather than importing it. Uses the '@agenkit/wasm' alias from the
+         vite config: the previous '../../packages/wasm/dist/index.mjs' was off
+         by one directory level (it resolved to examples/packages/wasm/...) and
+         so failed even once the package had been built (#735). -->
     <script type="module">
-      // In development, load from local package
-      // In production, this would be bundled by Vite
-      import { createZigAgent } from '../../packages/wasm/dist/index.mjs';
+      import { createZigAgent } from '@agenkit/wasm';
       window.createZigAgent = createZigAgent;
     </script>
   </body>

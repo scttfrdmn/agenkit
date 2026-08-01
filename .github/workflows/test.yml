@@ -356,6 +356,53 @@ jobs:
         working-directory: tests/cross_language/harness_zig
         run: zig build
 
+  # Build gate for the browser examples (examples/browser/*).
+  #
+  # These four could never have worked: @agenkit/wasm had a static top-level
+  # `import ... from 'fs'` that no bundler can resolve for a browser target, and
+  # getModulePath() built paths from `__dirname`, which doesn't exist in an ES
+  # module or a browser. On top of that, all four vite/astro aliases were
+  # filesystem-absolute ('/../../packages/wasm/...'), three index.html imports
+  # were off by a directory level, and react-example referenced an uncommitted
+  # tsconfig.node.json. Nothing caught any of it because wasm-ci.yml — the only
+  # workflow referencing examples/browser/** — has been .disabled since Jan 2026
+  # (see #742). Fixed in #735.
+  #
+  # A build gate rather than wasm-ci.yml's 7 jobs of Playwright across three
+  # browsers: every defect above was a build failure, so this catches the whole
+  # class at a fraction of the cost. Browser-runtime testing can come later.
+  #
+  # `npm run build` triggers each example's prebuild -> prepare-wasm, which
+  # builds packages/wasm and copies the .wasm binaries into public/wasm, so this
+  # exercises the documented reader path end to end.
+  browser-examples:
+    name: Browser Example (${{ matrix.example }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [react, svelte, vue, astro]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      # `npm install`, not `npm ci`: these examples have no committed lockfiles
+      # (they're gitignored for examples — see .gitignore), so there is nothing
+      # for `ci` to install from.
+      - name: Install packages/wasm dependencies
+        working-directory: packages/wasm
+        run: npm ci
+      - name: Install example dependencies
+        working-directory: examples/browser/${{ matrix.example }}-example
+        run: npm install
+      - name: Build example (blocking)
+        working-directory: examples/browser/${{ matrix.example }}-example
+        run: npm run build
+
   # Redis-backed tests (Python + TypeScript RedisMemory). These suites skip
   # themselves when no Redis server is reachable, so they never gated anything
   # in CI. A redis:7-alpine service container makes them actually run. Hosted

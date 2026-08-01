@@ -4,6 +4,8 @@
  * Run with: node --loader ts-node/esm examples/basic.ts
  */
 
+import { fileURLToPath } from 'node:url';
+
 import { createZigAgent, getAvailableModules } from '../src/index';
 
 async function main() {
@@ -13,9 +15,15 @@ async function main() {
   console.log('Available modules:', getAvailableModules());
   console.log('');
 
-  // Create an echo agent
+  // Create an echo agent.
+  //
+  // The explicit base is required because this example runs as an ES module,
+  // where `__dirname` does not exist. CommonJS consumers can omit it and a
+  // browser defaults to /wasm — see getModulePath in src/loader.ts.
+  const wasmDir = fileURLToPath(new URL('../wasm', import.meta.url));
+
   console.log('Creating echo agent...');
-  const agent = await createZigAgent('echo_example', 'demo-agent', ['echo', 'demo'], true);
+  const agent = await createZigAgent('echo_example', 'demo-agent', ['echo', 'demo'], true, wasmDir);
 
   console.log(`\nAgent created: ${agent.name}`);
   console.log(`Capabilities: ${agent.capabilities.join(', ')}`);

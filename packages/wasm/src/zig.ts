@@ -22,15 +22,21 @@ export class ZigAgent implements Agent {
    *
    * @param moduleName - Name of the module (e.g., 'echo_example')
    * @param debug - Enable debug logging
+   * @param baseUrl - Directory containing the .wasm files. See
+   *   {@link getModulePath} for the per-environment defaults; a browser needs
+   *   this to point at wherever the host app serves the files.
    *
    * @example
    * ```typescript
    * const agent = new ZigAgent('echo', ['echo', 'demo']);
    * await agent.load('echo_example');
+   *
+   * // Browser, assets served from /assets/wasm/
+   * await agent.load('echo_example', false, '/assets/wasm');
    * ```
    */
-  async load(moduleName: string, debug = false): Promise<void> {
-    const wasmPath = getModulePath(moduleName);
+  async load(moduleName: string, debug = false, baseUrl?: string): Promise<void> {
+    const wasmPath = getModulePath(moduleName, baseUrl);
     this.module = await loadWasmModule({ wasmPath, debug });
   }
 
@@ -101,6 +107,8 @@ export class ZigAgent implements Agent {
  * @param agentName - Name for the agent instance
  * @param capabilities - Agent capabilities
  * @param debug - Enable debug logging
+ * @param baseUrl - Directory containing the .wasm files. See
+ *   {@link getModulePath} for the per-environment defaults.
  * @returns Initialized agent
  *
  * @example
@@ -119,9 +127,10 @@ export async function createZigAgent(
   moduleName: string,
   agentName: string,
   capabilities: string[] = [],
-  debug = false
+  debug = false,
+  baseUrl?: string
 ): Promise<ZigAgent> {
   const agent = new ZigAgent(agentName, capabilities);
-  await agent.load(moduleName, debug);
+  await agent.load(moduleName, debug, baseUrl);
   return agent;
 }

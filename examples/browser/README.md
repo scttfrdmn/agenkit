@@ -96,6 +96,35 @@ All examples include these WASM agent modules:
 - Node.js ≥18.0.0
 - npm or pnpm or yarn
 
+No manual build step is needed for `@agenkit/wasm`. Each example's `predev` and
+`prebuild` scripts run `prepare-wasm`, which builds `packages/wasm` and copies
+the `.wasm` binaries into that example's `public/wasm/` — so `npm install &&
+npm run dev` is genuinely all you need from a fresh clone.
+
+### How the WASM binaries are served
+
+A browser fetches modules over HTTP rather than reading them from disk, and a
+published package cannot know where the host application serves its static
+assets. The convention these examples follow is `<publicDir>/wasm/`, which is
+what `getModulePath()` defaults to in a browser:
+
+```typescript
+// Default: fetches /wasm/echo_example.wasm
+const agent = await createZigAgent('echo_example', 'my-agent');
+
+// Explicit base, for any other asset layout
+const agent = await createZigAgent('echo_example', 'my-agent', [], false, '/assets/wasm');
+```
+
+In Node the same call reads from the filesystem instead. Under CommonJS it
+resolves relative to the installed package; **under ES modules you must pass a
+base**, because `__dirname` does not exist there:
+
+```typescript
+const base = new URL('../wasm', import.meta.url).pathname;
+const path = getModulePath('echo_example', base);
+```
+
 ### Run All Examples
 
 ```bash

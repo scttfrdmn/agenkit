@@ -14,7 +14,18 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    // Mirrors the '@agenkit/wasm' alias in vite.config.ts. Vite resolves that
+    // for the bundle, but tsc knows nothing about it, so `import type { ZigAgent }
+    // from '@agenkit/wasm'` in App.tsx failed to typecheck (TS2307) even when the
+    // build succeeded. Points at the emitted declarations, not src/: the package
+    // is authored against Node types, and pulling its sources into this
+    // DOM-only, noUnusedLocals config would surface errors that belong to
+    // packages/wasm's own tsconfig. This is also what a real consumer resolves.
+    // Requires `npm run prepare-wasm` first, which prebuild/predev handle.
+    "paths": {
+      "@agenkit/wasm": ["../../../packages/wasm/dist/index.d.ts"]
+    }
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

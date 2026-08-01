@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare-wasm": "npm --prefix ../../../packages/wasm run build && node ../copy-wasm.mjs",
+    "predev": "npm run prepare-wasm",
     "dev": "astro dev",
+    "prebuild": "npm run prepare-wasm",
     "build": "astro build",
     "preview": "astro preview"
   },

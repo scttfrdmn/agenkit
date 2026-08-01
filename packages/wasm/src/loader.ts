@@ -2,7 +2,6 @@
  * WASM Module Loader with WASI support
  */
 
-import { readFileSync } from 'fs';
 import { LoaderOptions, WasmModule } from './types';
 
 /**
@@ -32,8 +31,24 @@ export async function loadWasmModule(options: LoaderOptions): Promise<WasmModule
   let wasmBinary: BufferSource;
 
   if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-    // Node.js environment
+    // Node.js environment.
+    //
+    // `node:fs` is loaded dynamically, through a variable specifier, rather than
+    // with a static top-level import. Two reasons, in order of severity (#735):
+    //
+    //  1. A static `import { readFileSync } from 'fs'` is resolved by the
+    //     bundler regardless of which branch actually runs, so it made this
+    //     package impossible to bundle for a browser at all ("Could not resolve
+    //     'fs'") even though the guard above would never have executed there.
+    //  2. A *literal* dynamic import is still statically analyzable, so
+    //     bundlers replace it with an externalized stub module and emit a
+    //     "Module 'fs' has been externalized for browser compatibility"
+    //     warning. Harmless at runtime, but it appears in every consumer's
+    //     build output. A variable specifier defers resolution to runtime,
+    //     where only Node ever reaches it.
     try {
+      const nodeFs = 'node:fs';
+      const { readFileSync } = await import(/* @vite-ignore */ nodeFs);
       wasmBinary = readFileSync(wasmPath);
     } catch (error) {
       throw new Error(`Failed to read WASM file: ${wasmPath}`, { cause: error });
@@ -169,11 +184,69 @@ export function getAvailableModules(): string[] {
 }
 
 /**
+ * Default base for browser module resolution.
+ *
+ * A bundled package cannot know where the host application serves static
+ * assets, so this is a convention: copy `node_modules/@agenkit/wasm/wasm/` to
+ * `<publicDir>/wasm/` and the default works. Pass an explicit `baseUrl` for any
+ * other layout.
+ */
+const DEFAULT_BROWSER_BASE_URL = '/wasm';
+
+/**
  * Get the path to a bundled WASM module
  *
+ * Resolution depends on the environment, because there is no single answer:
+ * Node reads from the filesystem, a browser fetches over HTTP, and the package
+ * has no way to discover the host app's public asset path. `baseUrl` overrides
+ * the default in every environment.
+ *
+ * Previously this returned `` `${__dirname}/../wasm/${moduleName}.wasm` ``,
+ * which was wrong in two of the three cases: `__dirname` does not exist in an ES
+ * module (so the ESM build produced a runtime ReferenceError) and does not exist
+ * in a browser at all. Since `createZigAgent()` reaches this on its only code
+ * path, the browser examples could never have worked (#735).
+ *
  * @param moduleName - Name of the module (without .wasm extension)
+ * @param baseUrl - Directory containing the .wasm files, without a trailing
+ *   slash. Required for ES-module Node consumers; defaults to
+ *   `/wasm` in a browser and to this package's bundled `wasm/` directory under
+ *   CommonJS.
  * @returns Path to the WASM file
+ *
+ * @example
+ * ```typescript
+ * // Browser, assets served from /assets/wasm/
+ * const path = getModulePath('echo_example', '/assets/wasm');
+ *
+ * // Node ESM
+ * const base = new URL('../wasm', import.meta.url).pathname;
+ * const path = getModulePath('echo_example', base);
+ * ```
  */
-export function getModulePath(moduleName: string): string {
-  return `${__dirname}/../wasm/${moduleName}.wasm`;
+export function getModulePath(moduleName: string, baseUrl?: string): string {
+  if (baseUrl) {
+    return `${baseUrl.replace(/\/+$/, '')}/${moduleName}.wasm`;
+  }
+
+  const isNode =
+    typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
+
+  if (!isNode) {
+    return `${DEFAULT_BROWSER_BASE_URL}/${moduleName}.wasm`;
+  }
+
+  // CommonJS build: resolve relative to this file, inside the installed package.
+  if (typeof __dirname !== 'undefined') {
+    return `${__dirname}/../wasm/${moduleName}.wasm`;
+  }
+
+  // Node, but no __dirname — an ES module. `import.meta.url` is the correct
+  // answer, but referencing it here would break the CommonJS build of this same
+  // source, so the caller has to supply it. Failing loudly beats returning a
+  // path that silently resolves against the process working directory.
+  throw new Error(
+    `getModulePath('${moduleName}') requires an explicit baseUrl in an ES module. ` +
+      "Pass one derived from import.meta.url, e.g. new URL('../wasm', import.meta.url).pathname"
+  );
 }

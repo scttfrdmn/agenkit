@@ -132,6 +132,11 @@ package-lock.json
 # Astro generated type cache (astro 7+)
 .astro/
 
+# WASM binaries copied into the browser examples by examples/browser/copy-wasm.mjs
+# (run from each example's predev/prebuild). Build inputs, not source — the
+# originals live in packages/wasm/wasm/.
+examples/browser/*/public/wasm/
+
 # Deployment artifacts
 deploy/**/node_modules/
 deploy/**/.terraform/

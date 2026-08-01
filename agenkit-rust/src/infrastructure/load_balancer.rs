@@ -9,7 +9,7 @@
 
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
-use rand::Rng;
+use rand::RngExt;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -261,8 +261,8 @@ impl LoadBalancer {
                 self.select_weighted_round_robin(&healthy_indices).await
             }
             LoadBalancingStrategy::Random => {
-                let mut rng = rand::thread_rng();
-                let index = rng.gen_range(0..healthy_indices.len());
+                let mut rng = rand::rng();
+                let index = rng.random_range(0..healthy_indices.len());
                 Ok(healthy_indices[index])
             }
         }

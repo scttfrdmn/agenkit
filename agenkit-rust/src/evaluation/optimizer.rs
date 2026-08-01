@@ -24,7 +24,7 @@
 //! ```
 
 use chrono::{DateTime, Utc};
-use rand::Rng;
+use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::future::Future;
@@ -132,7 +132,7 @@ impl SearchSpace {
 
     /// Samples a random configuration from the search space.
     pub fn sample(&self) -> HashMap<String, serde_json::Value> {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let mut config = HashMap::new();
 
         for (name, spec) in &self.parameters {
@@ -140,17 +140,17 @@ impl SearchSpace {
                 ParameterType::Continuous => {
                     let low = spec.low.unwrap_or(0.0);
                     let high = spec.high.unwrap_or(1.0);
-                    serde_json::json!(rng.gen_range(low..high))
+                    serde_json::json!(rng.random_range(low..high))
                 }
                 ParameterType::Integer => {
                     let low = spec.low.unwrap_or(0.0) as i64;
                     let high = spec.high.unwrap_or(10.0) as i64;
-                    serde_json::json!(rng.gen_range(low..=high))
+                    serde_json::json!(rng.random_range(low..=high))
                 }
                 ParameterType::Discrete | ParameterType::Categorical => {
                     if let Some(values) = &spec.values {
                         if !values.is_empty() {
-                            let idx = rng.gen_range(0..values.len());
+                            let idx = rng.random_range(0..values.len());
                             values[idx].clone()
                         } else {
                             serde_json::Value::Null

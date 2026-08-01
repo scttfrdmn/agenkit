@@ -12,7 +12,7 @@ use agenkit::evaluation::{
 };
 use async_trait::async_trait;
 use chrono::Utc;
-use rand::Rng;
+use rand::RngExt;
 use std::collections::HashMap;
 use std::time::Duration;
 use tokio::time::sleep;
@@ -30,8 +30,8 @@ impl Agent for ProductionAgent {
         // Simulate processing. Scope the (non-Send) RNG so it is dropped
         // before the await point — the Agent future must be Send.
         let jitter = {
-            let mut rng = rand::thread_rng();
-            rng.gen_range(0..200)
+            let mut rng = rand::rng();
+            rng.random_range(0..200)
         };
         sleep(Duration::from_millis(50 + jitter)).await;
 
@@ -99,7 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("--------------------------------------");
     println!("Processing 50 user requests...\n");
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     for i in 0..50 {
         let session_id = format!("prod-session-{:03}", i + 1);
@@ -128,7 +128,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 result.set_status(SessionStatus::Completed);
 
                 // Add quality metric
-                let quality_score = 0.85 + rng.gen::<f64>() * 0.15;
+                let quality_score = 0.85 + rng.random::<f64>() * 0.15;
                 let mut quality_metadata = HashMap::new();
                 quality_metadata.insert(
                     "raw_score".to_string(),
@@ -160,7 +160,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 result.add_metric_measurement(duration_measurement);
 
                 // Add cost metric (simulate token usage)
-                let tokens = 100 + rng.gen_range(0..300);
+                let tokens = 100 + rng.random_range(0..300);
                 let cost = tokens as f64 * 0.00001;
                 let mut cost_metadata = HashMap::new();
                 cost_metadata.insert("currency".to_string(), serde_json::json!("USD"));

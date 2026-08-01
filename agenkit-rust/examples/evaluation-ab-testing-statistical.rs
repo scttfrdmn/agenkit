@@ -14,7 +14,7 @@
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::evaluation::ab_testing::{ABTest, SignificanceLevel, StatisticalTestType, TestCase};
 use async_trait::async_trait;
-use rand::Rng;
+use rand::RngExt;
 use std::sync::Arc;
 
 /// Control agent (baseline version)
@@ -37,8 +37,8 @@ impl Agent for ControlAgent {
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         // Simulate accuracy with randomness
-        let mut rng = rand::thread_rng();
-        let score: f64 = rng.gen_range(0.0..1.0);
+        let mut rng = rand::rng();
+        let score: f64 = rng.random_range(0.0..1.0);
 
         let content = message.content_as_str().unwrap_or("");
 
@@ -79,8 +79,8 @@ impl Agent for TreatmentAgent {
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         // Simulate improved accuracy
-        let mut rng = rand::thread_rng();
-        let score: f64 = rng.gen_range(0.0..1.0);
+        let mut rng = rand::rng();
+        let score: f64 = rng.random_range(0.0..1.0);
 
         let content = message.content_as_str().unwrap_or("");
 

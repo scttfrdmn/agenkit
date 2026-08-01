@@ -154,8 +154,13 @@ fi
 echo -e "${BLUE}=== C# / .NET Tests ===${NC}"
 cd "$REPO_ROOT"
 if command -v dotnet &>/dev/null && [ -f "agenkit-cs/Agenkit.sln" ]; then
+    # Use `-v q`, not `-q`. `-q` is not a valid `dotnet test` switch: the .NET 10
+    # CLI forwards it to MSBuild, which surfaces the benign MSB3492 "could not
+    # read existing file ... Overwriting it" incremental-build notice as a hard
+    # error and fails the step. Reproducible 100% of the time; `-v q` is the
+    # documented spelling and is quiet and green.
     run_step "dotnet test (C#)" \
-        dotnet test agenkit-cs/Agenkit.sln --nologo -q
+        dotnet test agenkit-cs/Agenkit.sln --nologo -v q
 else
     echo -e "${YELLOW}  ⚠ dotnet not found, skipping C# tests${NC}"
     echo ""

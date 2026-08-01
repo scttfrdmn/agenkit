@@ -328,8 +328,23 @@ async def test_exponential_growth_formula(max_retries, initial_delay, multiplier
     async def always_fails():
         raise RuntimeError("Always fails")
 
-    with contextlib.suppress(RuntimeError):
-        await policy.execute(always_fails)
+    # Don't actually sleep. This test asserts the *formula* behind the recorded
+    # delays, and `execute` appends to `_delays` before awaiting, so the
+    # assertions are unaffected. Sleeping for real made 20 hypothesis examples
+    # take ~31s against a 60s timeout — enough headroom to pass alone and to
+    # fail under full-suite load. Patched inline rather than via monkeypatch
+    # because hypothesis rejects function-scoped fixtures (they are not reset
+    # between examples).
+    async def no_sleep(_delay):
+        return None
+
+    real_sleep = asyncio.sleep
+    asyncio.sleep = no_sleep
+    try:
+        with contextlib.suppress(RuntimeError):
+            await policy.execute(always_fails)
+    finally:
+        asyncio.sleep = real_sleep
 
     delays = policy.get_delays()
 

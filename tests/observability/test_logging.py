@@ -11,6 +11,7 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from agenkit.observability import configure_logging, get_logger_with_trace
+from tests.otel_helpers import isolated_tracer_provider
 
 # Mark all tests in this module to run on the same xdist worker to avoid
 # OpenTelemetry global state conflicts between parallel workers
@@ -20,22 +21,14 @@ pytestmark = pytest.mark.xdist_group(name="observability_logging")
 @pytest.fixture
 def tracer_provider():
     """Create a tracer provider for testing (function-scoped for test isolation)."""
-    # Save the current tracer provider to restore later
-    original_provider = trace.get_tracer_provider()
-
     exporter = InMemorySpanExporter()
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(exporter))
-    trace.set_tracer_provider(provider)
 
-    yield provider
-
-    # Clean up
-    provider.force_flush()
-    provider.shutdown()
-
-    # Restore original provider to avoid polluting other tests
-    trace.set_tracer_provider(original_provider)
+    with isolated_tracer_provider(provider):
+        yield provider
+        provider.force_flush()
+        provider.shutdown()
 
 
 @pytest.fixture

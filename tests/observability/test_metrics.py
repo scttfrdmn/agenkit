@@ -7,6 +7,7 @@ from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
 from agenkit.interfaces import Agent, Message
 from agenkit.observability import MetricsMiddleware, init_metrics, init_resource_metrics
+from tests.otel_helpers import isolated_meter_provider
 
 
 class SimpleAgent(Agent):
@@ -52,12 +53,12 @@ def metric_reader():
     """Create an in-memory metric reader for testing (module-scoped)."""
     reader = InMemoryMetricReader()
     provider = MeterProvider(metric_readers=[reader])
-    otel_metrics.set_meter_provider(provider)
 
-    yield reader
-
-    # Shutdown at end of module
-    provider.shutdown()
+    # A bare `set_meter_provider` no-ops whenever another module set one first,
+    # leaving `reader.get_metrics_data()` returning None.
+    with isolated_meter_provider(provider):
+        yield reader
+        provider.shutdown()
 
 
 @pytest.mark.asyncio

@@ -9,6 +9,7 @@ from opentelemetry.trace import StatusCode
 
 from agenkit.interfaces import Agent, Message
 from agenkit.observability import TracingMiddleware, init_tracing
+from tests.otel_helpers import cleared_tracer_provider, isolated_tracer_provider
 
 
 class SimpleAgent(Agent):
@@ -52,30 +53,14 @@ class ErrorAgent(Agent):
 @pytest.fixture
 def span_exporter():
     """Create an in-memory span exporter for testing (function-scoped for isolation)."""
-    # Save original provider
-    original_provider = trace.get_tracer_provider()
-
-    # Create provider with in-memory exporter
     exporter = InMemorySpanExporter()
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(exporter))
 
-    # Reset the internal flag to allow setting a new provider
-    trace._TRACER_PROVIDER = None
-    trace._TRACER_PROVIDER_SET_ONCE._done = False
-    trace.set_tracer_provider(provider)
-
-    yield exporter
-
-    # Cleanup after each test for proper isolation
-    provider.force_flush()
-    provider.shutdown()
-
-    # Restore original provider
-    trace._TRACER_PROVIDER = None
-    trace._TRACER_PROVIDER_SET_ONCE._done = False
-    if original_provider is not None:
-        trace.set_tracer_provider(original_provider)
+    with isolated_tracer_provider(provider):
+        yield exporter
+        provider.force_flush()
+        provider.shutdown()
 
 
 @pytest.mark.asyncio
@@ -240,14 +225,7 @@ async def test_tracing_middleware_custom_span_name(span_exporter):
 @pytest.mark.asyncio
 async def test_tracing_init_with_console_export():
     """Test init_tracing with console export."""
-    # Save original provider
-    original_provider = trace.get_tracer_provider()
-
-    # Reset flag to allow init_tracing to set a new provider
-    trace._TRACER_PROVIDER = None
-    trace._TRACER_PROVIDER_SET_ONCE._done = False
-
-    try:
+    with cleared_tracer_provider():
         provider = init_tracing(service_name="test-service", console_export=True)
         assert isinstance(provider, TracerProvider)
 
@@ -256,15 +234,8 @@ async def test_tracing_init_with_console_export():
         with tracer.start_as_current_span("test-span") as span:
             assert span.is_recording()
 
-        # Cleanup
         provider.force_flush()
         provider.shutdown()
-    finally:
-        # Restore original provider
-        trace._TRACER_PROVIDER = None
-        trace._TRACER_PROVIDER_SET_ONCE._done = False
-        if original_provider is not None:
-            trace.set_tracer_provider(original_provider)
 
 
 @pytest.mark.asyncio

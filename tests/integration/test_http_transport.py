@@ -17,7 +17,7 @@ from agenkit.adapters.python.local_agent import LocalAgent
 from agenkit.adapters.python.remote_agent import RemoteAgent
 from agenkit.interfaces import Agent, Message
 
-from .helpers import find_free_port
+from .helpers import find_free_port, wait_for_port
 
 # ============================================
 # Test Fixtures
@@ -129,14 +129,15 @@ asyncio.run(main())
             cwd=working_dir,
         )
 
-        # Wait for server to be ready
-        time.sleep(2)
-
-        # Check if process is still running
-        if self.process.poll() is not None:
+        # Poll until the port is accepting connections rather than sleeping a
+        # fixed interval. The Go server is launched via `go run`, so it has to
+        # compile before it listens — under full-suite parallelism that
+        # regularly exceeds a 2s sleep, which is what made these tests flaky.
+        if not wait_for_port(self.port, process=self.process):
             stdout, stderr = self.process.communicate()
             raise RuntimeError(
-                f"{self.language} server failed to start:\nstdout: {stdout}\nstderr: {stderr}"
+                f"{self.language} server failed to start on port {self.port}:\n"
+                f"stdout: {stdout}\nstderr: {stderr}"
             )
 
     def stop(self):

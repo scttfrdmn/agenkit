@@ -1,5 +1,6 @@
 #include "agenkit/infrastructure/budget/tracker.hpp"
 #include <algorithm>
+#include <mutex>
 #include <map>
 
 namespace agenkit {

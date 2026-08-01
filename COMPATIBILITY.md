@@ -26,11 +26,10 @@ Comprehensive compatibility information for AgentKit across languages, platforms
 
 | Python Version | Support Status | Notes |
 |----------------|---------------|-------|
-| **3.12** | ✅ **Recommended** | Latest features, best performance |
-| **3.11** | ✅ **Recommended** | Stable, well-tested |
-| **3.10** | ✅ Supported | Minimum supported version |
-| 3.9 | ⚠️ Works but deprecated | End of life Oct 2025 |
-| < 3.9 | ❌ Not supported | Missing async/typing features |
+| **3.13** | ✅ **Recommended** | CI default; full suite verified |
+| **3.12** | ✅ Supported | Minimum supported version (`requires-python = ">=3.12"`) |
+| 3.14 | ✅ Verified | Full suite passes; not yet the CI default |
+| < 3.12 | ❌ Not supported | Below `requires-python` floor |
 
 **Key Dependencies**:
 ```
@@ -403,7 +402,7 @@ github.com/redis/go-redis/v9 v9.0.5         // Redis memory
 | Dependency | Minimum | Recommended | Maximum Tested |
 |------------|---------|-------------|----------------|
 | **Python** |
-| Python | 3.10 | 3.11-3.12 | 3.12 |
+| Python | 3.12 | 3.13 | 3.14 |
 | aiohttp | 3.9.0 | 3.9.x | 3.9.5 |
 | grpcio | 1.60.0 | 1.60.x | 1.66.0 |
 | websockets | 12.0 | 12.0 | 13.0 |
@@ -531,11 +530,11 @@ go get github.com/scttfrdmn/agenkit-go@v1.0.0
 
 ### CI/CD Testing Matrix
 
-**GitHub Actions**:
-- Python: 3.10, 3.11, 3.12
-- Go: 1.20, 1.21, 1.22
-- OS: Ubuntu, macOS, Windows
-- Total combinations: 27 (3 Python × 3 OS + 3 Go × 3 OS)
+**GitHub Actions** (single configuration, not a matrix — local `make test` is the
+primary gate and CI is a safety net; see CLAUDE.md):
+- Python: 3.13
+- Go: 1.25
+- OS: Ubuntu (`ubuntu-latest` for pull requests, self-hosted Linux for push/schedule)
 
 **Test Execution**:
 - Average runtime: ~5-8 minutes

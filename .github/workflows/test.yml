@@ -29,7 +29,7 @@ jobs:
       - name: Set up Go 1.25
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25.11'
+          go-version: '1.25.12'
           # cache disabled on persistent self-hosted runner (tar restore collides
           # with the on-disk module cache); see govulncheck job in security.yml.
           cache: false
@@ -61,11 +61,11 @@ jobs:
       - name: Run Go smoke tests
         working-directory: agenkit-go
         # The self-hosted runner has an older system `go` (1.22) earlier on PATH
-        # than setup-go's 1.25.11. setup-go@v6 no longer guarantees its Go wins
+        # than setup-go's 1.25.12. setup-go@v6 no longer guarantees its Go wins
         # PATH (v5 did), so the shadowing system go ran and — with the job-level
-        # GOTOOLCHAIN=local — could not satisfy go.mod's `go >= 1.25.11`.
+        # GOTOOLCHAIN=local — could not satisfy go.mod's `go >= 1.25.12`.
         # GOTOOLCHAIN=auto here lets whichever go runs fetch the required
-        # toolchain; the tests still execute against 1.25.11. Mirrors the
+        # toolchain; the tests still execute against 1.25.12. Mirrors the
         # govulncheck step's fix in security.yml.
         env:
           GOTOOLCHAIN: auto

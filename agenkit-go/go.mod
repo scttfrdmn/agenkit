@@ -1,6 +1,6 @@
 module github.com/scttfrdmn/agenkit/agenkit-go
 
-go 1.25.11
+go 1.25.12
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.42.0
@@ -25,10 +25,10 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
 	golang.org/x/net v0.56.0
-	golang.org/x/text v0.38.0
+	golang.org/x/text v0.39.0
 	gonum.org/v1/gonum v0.17.0
 	google.golang.org/api v0.285.0
-	google.golang.org/grpc v1.81.1
+	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
 	pgregory.net/rapid v1.3.0

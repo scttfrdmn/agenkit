@@ -125,52 +125,63 @@ class RateLimiterDecorator(Agent):
         Raises:
             RateLimitError: If wait=False and insufficient tokens available
         """
-        async with self._lock:
-            await self._refill_tokens()
+        # Wait-and-retry loop. A single wait is not enough, for two independent
+        # reasons, and the old code raised from a branch it labelled "should not
+        # happen" when either bit:
+        #
+        # 1. _refill_tokens credits elapsed * rate from the wall clock, so a
+        #    busy event loop can return from the sleep having credited
+        #    marginally less than tokens_needed.
+        # 2. The lock is released across the sleep, so a concurrent waiter can
+        #    acquire it first and drain the tokens this one was waiting for --
+        #    a lost wakeup. With capacity=1 and 8 concurrent callers this
+        #    raised on every single run (#750), despite max_wait_ms being set.
+        #
+        # Re-checking instead of raising makes the outcome depend on the token
+        # math rather than on scheduler order. max_wait_ms still bounds the
+        # total, measured against cumulative wait so repeated short retries
+        # cannot outlast the budget, so this cannot spin forever when the
+        # configured rate genuinely cannot satisfy the request.
+        total_waited = 0.0
 
-            if self._tokens >= tokens_needed:
-                # Sufficient tokens available
-                self._tokens -= tokens_needed
-                self._metrics.current_tokens = self._tokens
-                return True
+        while True:
+            async with self._lock:
+                await self._refill_tokens()
 
-            if not wait:
-                # Insufficient tokens and not waiting
-                raise RateLimitError(
-                    f"Rate limit exceeded: need {tokens_needed} tokens, "
-                    f"only {self._tokens:.2f} available"
-                )
+                if self._tokens >= tokens_needed:
+                    # Sufficient tokens available
+                    self._tokens -= tokens_needed
+                    self._metrics.current_tokens = self._tokens
+                    if total_waited > 0:
+                        self._metrics.total_wait_time += total_waited
+                    return True
 
-            # Calculate wait time for tokens (in seconds for asyncio.sleep)
-            tokens_deficit = tokens_needed - self._tokens
-            wait_time = tokens_deficit / self._config.rate
-
-            # Check if wait time exceeds max_wait_ms
-            if self._config.max_wait_ms is not None:
-                max_wait_seconds = self._config.max_wait_ms / 1000.0
-                if wait_time > max_wait_seconds:
-                    wait_time_ms = int(wait_time * 1000)
+                if not wait:
+                    # Insufficient tokens and not waiting
                     raise RateLimitError(
-                        f"Rate limit exceeded: would need to wait {wait_time_ms}ms "
-                        f"for {tokens_needed} tokens, but max_wait_ms is "
-                        f"{self._config.max_wait_ms}ms"
+                        f"Rate limit exceeded: need {tokens_needed} tokens, "
+                        f"only {self._tokens:.2f} available"
                     )
 
-        # Wait outside the lock to allow other operations
-        await asyncio.sleep(wait_time)
+                # Calculate wait time for the outstanding deficit (in seconds
+                # for asyncio.sleep).
+                tokens_deficit = tokens_needed - self._tokens
+                wait_time = tokens_deficit / self._config.rate
 
-        # Re-acquire lock and try again
-        async with self._lock:
-            await self._refill_tokens()
+                # Check if the cumulative wait would exceed max_wait_ms.
+                if self._config.max_wait_ms is not None:
+                    max_wait_seconds = self._config.max_wait_ms / 1000.0
+                    if total_waited + wait_time > max_wait_seconds:
+                        wait_time_ms = int((total_waited + wait_time) * 1000)
+                        raise RateLimitError(
+                            f"Rate limit exceeded: would need to wait {wait_time_ms}ms "
+                            f"for {tokens_needed} tokens, but max_wait_ms is "
+                            f"{self._config.max_wait_ms}ms"
+                        )
 
-            if self._tokens >= tokens_needed:
-                self._tokens -= tokens_needed
-                self._metrics.current_tokens = self._tokens
-                self._metrics.total_wait_time += wait_time
-                return True
-
-            # Should not happen, but handle defensively
-            raise RateLimitError(f"Failed to acquire {tokens_needed} tokens after waiting")
+            # Wait outside the lock to allow other operations
+            await asyncio.sleep(wait_time)
+            total_waited += wait_time
 
     async def process(self, message: Message) -> Message:
         """Process message with rate limiting.

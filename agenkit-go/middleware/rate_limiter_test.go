@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -9,8 +10,20 @@ import (
 )
 
 // SimpleAgent always succeeds immediately.
+//
+// callCount is mutex-guarded because middleware under test may invoke Process
+// from several goroutines at once; every existing test drove it sequentially, so
+// the unsynchronized increment went unnoticed until a concurrent test was added.
 type SimpleAgent struct {
+	mu        sync.Mutex
 	callCount int
+}
+
+// CallCount returns the number of times Process has been invoked.
+func (s *SimpleAgent) CallCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.callCount
 }
 
 func (s *SimpleAgent) Name() string {
@@ -26,7 +39,9 @@ func (s *SimpleAgent) Introspect() *agenkit.IntrospectionResult {
 }
 
 func (s *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	s.mu.Lock()
 	s.callCount++
+	s.mu.Unlock()
 	return agenkit.NewMessage("agent", "success"), nil
 }
 
@@ -52,8 +67,8 @@ func TestRateLimiterBasic(t *testing.T) {
 		}
 	}
 
-	if agent.callCount != 10 {
-		t.Errorf("Expected 10 calls to agent, got %d", agent.callCount)
+	if agent.CallCount() != 10 {
+		t.Errorf("Expected 10 calls to agent, got %d", agent.CallCount())
 	}
 
 	metrics := rl.Metrics()
@@ -166,8 +181,8 @@ func TestRateLimiterBurst(t *testing.T) {
 		}
 	}
 
-	if agent.callCount != 10 {
-		t.Errorf("Expected 10 calls in burst, got %d", agent.callCount)
+	if agent.CallCount() != 10 {
+		t.Errorf("Expected 10 calls in burst, got %d", agent.CallCount())
 	}
 }
 
@@ -193,8 +208,8 @@ func TestRateLimiterMultipleTokens(t *testing.T) {
 		}
 	}
 
-	if agent.callCount != 2 {
-		t.Errorf("Expected 2 calls, got %d", agent.callCount)
+	if agent.CallCount() != 2 {
+		t.Errorf("Expected 2 calls, got %d", agent.CallCount())
 	}
 }
 
@@ -297,12 +312,51 @@ func TestRateLimiterHighThroughput(t *testing.T) {
 		t.Errorf("Expected to complete within 1s, took %v", elapsed)
 	}
 
-	if agent.callCount != 100 {
-		t.Errorf("Expected 100 calls, got %d", agent.callCount)
+	if agent.CallCount() != 100 {
+		t.Errorf("Expected 100 calls, got %d", agent.CallCount())
 	}
 
 	metrics := rl.Metrics()
 	if metrics.AllowedRequests != 100 {
 		t.Errorf("Expected 100 allowed requests, got %d", metrics.AllowedRequests)
+	}
+}
+
+// TestConcurrentWaitersDoNotSpuriouslyFail is a regression test for #750.
+//
+// acquireTokens releases the mutex across its wait, so a concurrent caller can
+// take the lock first and drain the tokens this one was waiting for. The old
+// single-wait implementation then returned a RateLimitError from a branch
+// commented "should not happen" -- with capacity 1 and 8 concurrent callers it
+// did so on 25 out of 25 runs, despite MaxWaitTimeout being generous enough for
+// all of them. With the wait-and-retry loop it is 0 out of 25.
+func TestConcurrentWaitersDoNotSpuriouslyFail(t *testing.T) {
+	const trials = 25
+	const callers = 8
+
+	for i := 0; i < trials; i++ {
+		rl := NewRateLimiterDecorator(&SimpleAgent{}, RateLimiterConfig{
+			Rate:             50.0,
+			Capacity:         1,
+			TokensPerRequest: 1,
+			MaxWaitTimeout:   5 * time.Second,
+		})
+
+		var wg sync.WaitGroup
+		errs := make([]error, callers)
+		for c := 0; c < callers; c++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				_, errs[idx] = rl.Process(context.Background(), agenkit.NewMessage("user", "test"))
+			}(c)
+		}
+		wg.Wait()
+
+		for idx, err := range errs {
+			if err != nil {
+				t.Fatalf("trial %d, caller %d: unexpected error with a 5s wait budget: %v", i, idx, err)
+			}
+		}
 	}
 }

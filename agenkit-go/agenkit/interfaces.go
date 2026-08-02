@@ -254,15 +254,101 @@ type StreamingAgent interface {
 	Stream(ctx context.Context, message *Message) (<-chan *Message, <-chan error)
 }
 
+// Verdict is the outcome of a verification, as a three-state enum.
+//
+// VerdictNotAssessed is a genuine third state and must not be collapsed into
+// VerdictFailed. "We did not check" and "we checked and it was wrong" support
+// opposite decisions: the first says the answer might be fine and it is worth
+// spending budget to verify, the second says the answer is wrong and to stop or
+// retry differently. A bool destroys that distinction at the point of creation,
+// so no downstream consumer can recover it.
+//
+// The string values are exactly the three specified for the
+// agenkit.verifier.verdict span attribute in docs/OTEL_CONVENTION.md, so a
+// verdict can be recorded on a span without translation.
+type Verdict string
+
+const (
+	// VerdictNotAssessed means no verification was attempted. Not the same as
+	// VerdictFailed. It is deliberately the empty string so that it is also the
+	// zero value of Verdict: a VerificationResult{} claims nothing rather than
+	// claiming failure.
+	VerdictNotAssessed Verdict = ""
+
+	// VerdictPassed means verified and correct.
+	VerdictPassed Verdict = "passed"
+
+	// VerdictFailed means verified and incorrect.
+	VerdictFailed Verdict = "failed"
+)
+
+// String returns the wire value, spelling the zero value out as
+// "not_assessed" rather than "". Use this when emitting the verdict as a span
+// attribute or log field; comparisons should use the constants directly.
+func (v Verdict) String() string {
+	if v == VerdictNotAssessed {
+		return "not_assessed"
+	}
+	return string(v)
+}
+
 // VerificationResult is the outcome of a Verifier check.
+//
+// Read Verdict, not Passed, wherever the difference between "failed" and "not
+// assessed" changes the decision — Passed is false for both.
 type VerificationResult struct {
+	// Verdict is the three-state outcome. The zero value is
+	// VerdictNotAssessed, so a VerificationResult{} asserts nothing.
+	Verdict Verdict
+
+	// Passed reports whether the answer is correct. Retained for the
+	// two-state callers that predate Verdict, and false for a not-assessed
+	// result: a caller asking a yes/no question about an unverified answer
+	// cannot be told "yes".
+	//
+	// Set both fields consistently. Prefer the NewVerificationResult /
+	// NotAssessed constructors, which cannot disagree with themselves.
 	Passed bool
-	Score  float64 // 0.0–1.0; 1.0 = fully correct
+
+	// Score is confidence in 0.0–1.0; 1.0 = fully correct. Meaningless when
+	// Verdict is VerdictNotAssessed — 0.0 is both the zero value and a
+	// legitimate score, so it cannot be used to detect "unset". Read Verdict.
+	Score float64
+
+	// Reason is a human-readable explanation of the verdict.
 	Reason string
 }
 
+// NewVerificationResult builds an assessed result from a two-state outcome,
+// keeping Verdict and Passed consistent.
+func NewVerificationResult(passed bool, score float64, reason string) VerificationResult {
+	verdict := VerdictFailed
+	if passed {
+		verdict = VerdictPassed
+	}
+	return VerificationResult{Verdict: verdict, Passed: passed, Score: score, Reason: reason}
+}
+
+// NotAssessed builds a result recording that verification was not attempted.
+// Prefer this over VerificationResult{Passed: false}, which asserts the answer
+// is wrong.
+func NotAssessed(reason string) VerificationResult {
+	return VerificationResult{Verdict: VerdictNotAssessed, Passed: false, Reason: reason}
+}
+
+// Assessed reports whether verification was actually attempted.
+func (r VerificationResult) Assessed() bool {
+	return r.Verdict != VerdictNotAssessed
+}
+
 // Verifier checks a candidate answer against ground truth.
-// Unlike EvaluatorFunc (heuristic float64), Verifier is exact and binary.
+// Unlike EvaluatorFunc (heuristic float64), Verifier is exact — though its
+// verdict has three states, not two.
+//
+// An implementation that cannot reach a conclusion — no ground truth
+// available, the check itself was skipped — should return NotAssessed(reason)
+// rather than a zero VerificationResult with Passed false, which asserts the
+// answer is wrong.
 type Verifier interface {
 	Verify(ctx context.Context, question, answer string) (VerificationResult, error)
 }

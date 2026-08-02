@@ -261,21 +261,41 @@ decisions: the first says spend more budget, the second says stop. A boolean
 here destroys that distinction irrecoverably — the value is already lost by the
 time it reaches the collector.
 
-> **Agenkit's own `Verifier` cannot currently express this.**
-> `agenkit/reasoning/verifier.py:27` defines
-> `VerificationResult.passed: bool` — two states, with `score: float` and
-> `reason: str` alongside; Go matches it exactly at
-> `agenkit-go/agenkit/interfaces.go:257`. There is no representation for "not
-> assessed", and both docstrings describe verification as "exact and binary". So a
-> consumer that has a three-state verdict (quarry does) cannot round-trip it
-> through agenkit's verifier types, and an unverified artifact is
-> indistinguishable from a failed one.
->
-> This attribute is specified with three states anyway, because the span is
-> where the distinction matters most and because widening
-> `VerificationResult` later is source-compatible for readers of `passed`.
-> Consumers should emit `agenkit.verifier.verdict` directly rather than deriving
-> it from a `VerificationResult`. Tracked in #769.
+Agenkit's own `Verifier` produces these three states directly (#769), so the
+attribute can be derived from a result rather than emitted alongside it:
+
+```python
+from agenkit.reasoning import Verdict, VerificationResult
+
+result = await verifier.verify(question, answer)
+span.set_attribute("agenkit.verifier.verdict", result.verdict.value)
+
+if not result.assessed:
+    ...  # nothing was checked; this is not a failure
+```
+
+```go
+result, err := verifier.Verify(ctx, question, answer)
+span.SetAttributes(attribute.String("agenkit.verifier.verdict", result.Verdict.String()))
+```
+
+The enum values are exactly the three above, so no translation is needed. Two
+notes on reading a result:
+
+- **`passed` is `false` for `not_assessed`**, because a caller asking a yes/no
+  question about an unverified answer cannot be told "yes". So
+  `if not result.passed` treats not-assessed as failed — compare `verdict`
+  explicitly wherever the difference changes the decision, or use
+  `result.assessed` / `result.Assessed()`.
+- **`score` cannot stand in for the verdict.** `0.0` is both the default and a
+  legitimate score, so "unset" and "scored zero" collide. Read the verdict.
+
+In Go, `Verdict.String()` spells the zero value out as `"not_assessed"` rather
+than emitting an empty attribute; `VerdictNotAssessed` is the empty string
+precisely so that a zero-valued `VerificationResult{}` claims nothing instead of
+claiming failure. Prefer the `NewVerificationResult` / `NotAssessed`
+constructors over a bare struct literal, which leaves `Verdict` at its zero
+value and can therefore disagree with `Passed`.
 
 ## Collector endpoint
 
@@ -324,7 +344,7 @@ Documented so consumers do not plan around capabilities that do not exist:
 - #711 — the consumer request this document answers
 - #715 — the remaining implementation work: GenAI attributes on spans, tree-node helper, Go semconv bump
 - #771 — documented env vars that no implementation reads
-- #769 — `VerificationResult.passed` cannot express `not_assessed`
+- #769 — `VerificationResult.passed` could not express `not_assessed` (fixed: `Verdict`)
 - #768 — Rust OTLP export, `service.name`, and span status (fixed)
 - #772 — Rust `init_metrics` installed no exporter (fixed)
 - #664 — typed `Usage` (prerequisite for emitting token attributes)

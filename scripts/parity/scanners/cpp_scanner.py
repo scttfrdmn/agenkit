@@ -8,6 +8,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from ._paths import scan_techniques_by_filename
+
 
 def scan() -> dict[str, Any]:
     """Scan C++ codebase for all features.
@@ -47,7 +49,7 @@ def scan_patterns(root: Path) -> list[str]:
     # Matches: class FooAgent, class FooAgent : public Agent
     agent_pattern = re.compile(r"class\s+(\w*Agent)")
 
-    for hpp_file in patterns_dir.glob("*.hpp"):
+    for hpp_file in patterns_dir.rglob("*.hpp"):
         if hpp_file.name.startswith("_"):
             continue
 
@@ -58,11 +60,13 @@ def scan_patterns(root: Path) -> list[str]:
             for match in agent_pattern.finditer(content):
                 name = match.group(1)
                 # Skip private types, mocks, base classes, and test utilities
-                if (not name.startswith("_")
+                if (
+                    not name.startswith("_")
                     and "mock" not in name.lower()
                     and name not in ["Agent", "MultiAgent"]
                     and "Dummy" not in name
-                    and "NoConfidence" not in name):
+                    and "NoConfidence" not in name
+                ):
                     patterns.append(name)
 
         except (UnicodeDecodeError, PermissionError):
@@ -95,7 +99,7 @@ def scan_middleware(root: Path) -> list[str]:
         r"(Config|Middleware|Decorator)?"
     )
 
-    for hpp_file in middleware_dir.glob("*.hpp"):
+    for hpp_file in middleware_dir.rglob("*.hpp"):
         if hpp_file.name == "middleware.hpp":  # Skip base interface
             continue
 
@@ -138,7 +142,7 @@ def scan_llm_adapters(root: Path) -> list[str]:
         r"class\s+(OpenAI|Anthropic|Bedrock|Gemini|Ollama|LiteLLM)(Adapter|LLM|Client)?"
     )
 
-    for hpp_file in adapters_dir.glob("*.hpp"):
+    for hpp_file in adapters_dir.rglob("*.hpp"):
         try:
             content = hpp_file.read_text()
 
@@ -167,7 +171,7 @@ def scan_memory(root: Path) -> list[str]:
         Sorted list of memory backend names
     """
     memory_backends = []
-    memory_dir = root / "memory"
+    memory_dir = root / "infrastructure" / "memory"
 
     if not memory_dir.exists():
         return memory_backends
@@ -178,7 +182,7 @@ def scan_memory(root: Path) -> list[str]:
         r"class\s+(InMemory|Redis|Vector|Hierarchy|Endless)(Memory|Backend)?"
     )
 
-    for hpp_file in memory_dir.glob("*.hpp"):
+    for hpp_file in memory_dir.rglob("*.hpp"):
         try:
             content = hpp_file.read_text()
 
@@ -206,31 +210,8 @@ def scan_techniques(root: Path) -> list[str]:
     Returns:
         Sorted list of technique names
     """
-    techniques = []
     techniques_dir = root / "techniques"
-
-    if not techniques_dir.exists():
-        return techniques
-
-    # Pattern for technique classes
-    technique_pattern = re.compile(r"class\s+(\w+Technique|\w+Strategy)")
-
-    for hpp_file in techniques_dir.glob("*.hpp"):
-        if hpp_file.name.startswith("_"):
-            continue
-
-        try:
-            content = hpp_file.read_text()
-
-            for match in technique_pattern.finditer(content):
-                name = match.group(1)
-                if not name.startswith("_") and "mock" not in name.lower():
-                    techniques.append(name)
-
-        except (UnicodeDecodeError, PermissionError):
-            continue
-
-    return sorted(set(techniques))
+    return scan_techniques_by_filename(techniques_dir, "*.hpp")
 
 
 if __name__ == "__main__":

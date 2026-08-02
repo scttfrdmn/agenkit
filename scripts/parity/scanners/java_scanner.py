@@ -8,6 +8,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from ._paths import scan_techniques_by_filename
+
 
 def scan() -> dict[str, Any]:
     """Scan Java codebase for all features.
@@ -49,7 +51,7 @@ def scan_patterns(root: Path) -> list[str]:
         r"public\s+(?:final\s+|abstract\s+)?class\s+(\w*(?:Agent|Orchestrator))\b"
     )
 
-    for java_file in patterns_dir.glob("*.java"):
+    for java_file in patterns_dir.rglob("*.java"):
         if java_file.name.startswith("_"):
             continue
 
@@ -97,7 +99,7 @@ def scan_middleware(root: Path) -> list[str]:
         r"(Middleware|Decorator|Config)?\b"
     )
 
-    for java_file in middleware_dir.glob("*.java"):
+    for java_file in middleware_dir.rglob("*.java"):
         if java_file.name.startswith("_"):
             continue
 
@@ -141,7 +143,7 @@ def scan_llm_adapters(root: Path) -> list[str]:
         r"(OpenAi|Anthropic|Bedrock|Gemini|Ollama|LiteLLM|Mock)(Adapter|LLM|Client)?\b"
     )
 
-    for java_file in adapters_dir.glob("*.java"):
+    for java_file in adapters_dir.rglob("*.java"):
         try:
             content = java_file.read_text()
 
@@ -182,7 +184,7 @@ def scan_memory(root: Path) -> list[str]:
         r"(InMemory|Ephemeral|Redis|Vector|Memory)(Memory|Backend|Hierarchy)?\b"
     )
 
-    for java_file in memory_dir.glob("*.java"):
+    for java_file in memory_dir.rglob("*.java"):
         try:
             content = java_file.read_text()
 
@@ -210,33 +212,10 @@ def scan_techniques(root: Path) -> list[str]:
     Returns:
         Sorted list of technique names
     """
-    techniques = []
     techniques_dir = root / "techniques"
-
-    if not techniques_dir.exists():
-        return techniques
-
-    # Pattern for technique classes
-    technique_pattern = re.compile(
-        r"public\s+(?:final\s+|abstract\s+)?class\s+(\w+Technique|\w+Strategy)\b"
-    )
-
-    for java_file in techniques_dir.glob("*.java"):
-        if java_file.name.startswith("_"):
-            continue
-
-        try:
-            content = java_file.read_text()
-
-            for match in technique_pattern.finditer(content):
-                name = match.group(1)
-                if not name.startswith("_") and "mock" not in name.lower():
-                    techniques.append(name)
-
-        except (UnicodeDecodeError, PermissionError):
-            continue
-
-    return sorted(set(techniques))
+    # No techniques subsystem in this language yet -- declared gap, not a
+    # stale path. See #754.
+    return scan_techniques_by_filename(techniques_dir, "*.java", required=False)
 
 
 if __name__ == "__main__":

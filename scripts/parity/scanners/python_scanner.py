@@ -8,6 +8,8 @@ import ast
 from pathlib import Path
 from typing import Any
 
+from ._paths import scan_techniques_by_filename
+
 
 def scan() -> dict[str, Any]:
     """Scan Python codebase for all features.
@@ -43,7 +45,7 @@ def scan_patterns(root: Path) -> list[str]:
     if not patterns_dir.exists():
         return patterns
 
-    for py_file in patterns_dir.glob("*.py"):
+    for py_file in patterns_dir.rglob("*.py"):
         if py_file.name.startswith("_"):  # Skip __init__.py, etc.
             continue
 
@@ -93,7 +95,7 @@ def scan_middleware(root: Path) -> list[str]:
         "PerUserRateLimiterDecorator",
     ]
 
-    for py_file in middleware_dir.glob("*.py"):
+    for py_file in middleware_dir.rglob("*.py"):
         if py_file.name.startswith("_"):
             continue
 
@@ -131,7 +133,7 @@ def scan_llm_adapters(root: Path) -> list[str]:
     if not adapters_dir.exists():
         return adapters
 
-    for py_file in adapters_dir.glob("*.py"):
+    for py_file in adapters_dir.rglob("*.py"):
         if py_file.name in ["__init__.py", "base.py"]:  # Skip base classes
             continue
 
@@ -171,7 +173,7 @@ def scan_memory(root: Path) -> list[str]:
     if not memory_dir.exists():
         return memory_backends
 
-    for py_file in memory_dir.glob("*.py"):
+    for py_file in memory_dir.rglob("*.py"):
         if py_file.name in ["__init__.py", "base.py"]:  # Skip base classes
             continue
 
@@ -205,29 +207,8 @@ def scan_techniques(root: Path) -> list[str]:
     Returns:
         Sorted list of technique names
     """
-    techniques = []
     techniques_dir = root / "techniques"
-
-    if not techniques_dir.exists():
-        return techniques
-
-    for py_file in techniques_dir.glob("*.py"):
-        if py_file.name.startswith("_"):
-            continue
-
-        try:
-            tree = ast.parse(py_file.read_text())
-
-            for node in ast.walk(tree):
-                if isinstance(node, ast.ClassDef):
-                    # Look for technique classes (any non-private class in techniques/)
-                    if not node.name.startswith("_"):
-                        techniques.append(node.name)
-
-        except SyntaxError:
-            continue
-
-    return sorted(set(techniques))
+    return scan_techniques_by_filename(techniques_dir, "*.py")
 
 
 if __name__ == "__main__":

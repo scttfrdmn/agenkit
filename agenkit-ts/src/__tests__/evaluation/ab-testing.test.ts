@@ -9,12 +9,29 @@ import type { Agent, Message } from '../../core/interfaces';
 import { createMessage } from '../../core/interfaces';
 import { ABVariant, ABTest, SignificanceLevel, calculateSampleSize } from '../../evaluation/ab-testing';
 
-// Mock agent for testing
+// Mock agent for testing.
+//
+// The failure token is 'wrong', not 'incorrect'. ABTest scores accuracy with
+// `actual.includes(expected)` — deliberate, since a real agent may embed the
+// expected answer in prose — and `'incorrect'.includes('correct')` is **true**.
+// Every response therefore scored 1.0 regardless of the configured accuracy,
+// both variant means came out identically 1, and so effectSize and
+// improvementPercent were deterministically 0. That is why three tests here
+// were skipped: they failed 40/40 runs, not intermittently. (#752)
+//
+// Accuracy is also drawn from a deterministic per-instance sequence rather than
+// Math.random(). These tests assert that a treatment with a higher configured
+// accuracy actually measures better, which with random draws only holds
+// probabilistically — the sampling error at n=20..30 is wide enough to flip the
+// comparison. The sequence keeps the exact requested rate over any whole
+// multiple of its length while leaving the library's statistics the real
+// subject of the test.
 class MockAgent implements Agent {
   name: string;
   capabilities = [];
   private accuracy: number;
   private latencyMs: number;
+  private callIndex = 0;
 
   constructor(accuracy: number = 0.8, latencyMs: number = 100) {
     this.accuracy = accuracy;
@@ -26,11 +43,14 @@ class MockAgent implements Agent {
     // Simulate latency
     await new Promise((resolve) => setTimeout(resolve, this.latencyMs));
 
-    // Simulate success/failure based on accuracy
-    const success = Math.random() < this.accuracy;
-    const content = success ? 'correct' : 'incorrect';
+    // Deterministic success pattern hitting `accuracy` exactly: succeed when
+    // the running success ratio is still below target.
+    const succeeded = Math.round(this.callIndex * this.accuracy);
+    const nextSucceeded = Math.round((this.callIndex + 1) * this.accuracy);
+    this.callIndex++;
+    const success = nextSucceeded > succeeded;
 
-    return createMessage('assistant', content);
+    return createMessage('assistant', success ? 'correct' : 'wrong');
   }
 }
 
@@ -155,7 +175,7 @@ describe('ABTest', () => {
     expect(results.accuracy.treatmentVariant.sampleSize).toBe(20);
   });
 
-  it.skip('should calculate improvement percent', async () => {
+  it('should calculate improvement percent', async () => {
     const controlAgent = new MockAgent(0.5, 5);
     const treatmentAgent = new MockAgent(0.75, 5);
 
@@ -242,7 +262,7 @@ describe('ABTest', () => {
     expect(results.accuracy.pValue).toBeLessThanOrEqual(1);
   });
 
-  it.skip('should detect statistical significance', async () => {
+  it('should detect statistical significance', async () => {
     const controlAgent = new MockAgent(0.4, 10);
     const treatmentAgent = new MockAgent(0.95, 10);
 
@@ -265,7 +285,7 @@ describe('ABTest', () => {
     expect(results.accuracy.winner).toBe('treatment');
   });
 
-  it.skip('should calculate effect size', async () => {
+  it('should calculate effect size', async () => {
     const controlAgent = new MockAgent(0.6, 10);
     const treatmentAgent = new MockAgent(0.9, 10);
 

@@ -228,9 +228,9 @@
         "failed_requests": 3,
         "rejected_requests": 1,
         "state_changes": {
-          "closed_to_open": 1,
-          "open_to_half_open": 1,
-          "half_open_to_closed": 1
+          "closed->open": 1,
+          "open->half_open": 1,
+          "half_open->closed": 1
         },
         "final_state": "closed"
       }

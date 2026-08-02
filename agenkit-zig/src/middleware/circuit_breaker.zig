@@ -56,6 +56,25 @@ pub const CircuitState = enum {
             .HALF_OPEN => "HALF_OPEN",
         };
     }
+
+    /// Cross-language wire name for this state.
+    ///
+    /// This is the *protocol* spelling, deliberately separate from `toString`, which is
+    /// the human-facing one. Keying state changes off `toString` is what let Zig drift to
+    /// `CLOSED_to_OPEN` while Python and Go produced `closed->open` (#791): a display
+    /// choice silently became protocol. Anything crossing a language boundary uses this;
+    /// anything shown to a person can use `toString`.
+    ///
+    /// Canonical form is lowercase, matching Python (`CircuitState.CLOSED = "closed"`)
+    /// and Go (`CircuitState.String()`), the shared fixtures, and every cross-language
+    /// harness — all of which already downcase before comparing.
+    pub fn wireName(self: CircuitState) []const u8 {
+        return switch (self) {
+            .CLOSED => "closed",
+            .OPEN => "open",
+            .HALF_OPEN => "half_open",
+        };
+    }
 };
 
 /// Configuration for circuit breaker behavior
@@ -104,8 +123,13 @@ pub const CircuitBreakerMetrics = struct {
     /// Number of rejected requests (circuit open)
     rejected_requests: u64 = 0,
 
-    /// Map of state transition counts
-    state_transitions: std.StringHashMap(u64),
+    /// State transition counts, keyed `"{from}->{to}"` using `CircuitState.wireName`
+    /// (e.g. `"closed->open"`).
+    ///
+    /// The key format and the field name are both a cross-language contract shared with
+    /// the other cores and the `circuit_breaker_behavior.json` fixture — see #791. This
+    /// was `state_transitions` keyed `CLOSED_to_OPEN`, matching nothing else.
+    state_changes: std.StringHashMap(u64),
 
     /// Timestamp of last state change (milliseconds since epoch)
     last_state_change_ms: ?i64 = null,
@@ -115,39 +139,39 @@ pub const CircuitBreakerMetrics = struct {
 
     pub fn init(allocator: Allocator) CircuitBreakerMetrics {
         return CircuitBreakerMetrics{
-            .state_transitions = std.StringHashMap(u64).init(allocator),
+            .state_changes = std.StringHashMap(u64).init(allocator),
         };
     }
 
     pub fn deinit(self: *CircuitBreakerMetrics) void {
         // Free all keys before deinitializing the hashmap
-        var iter = self.state_transitions.keyIterator();
+        var iter = self.state_changes.keyIterator();
         while (iter.next()) |key| {
-            self.state_transitions.allocator.free(key.*);
+            self.state_changes.allocator.free(key.*);
         }
-        self.state_transitions.deinit();
+        self.state_changes.deinit();
     }
 
     /// Increment state transition count
     pub fn recordTransition(self: *CircuitBreakerMetrics, from: CircuitState, to: CircuitState, allocator: Allocator) !void {
-        const key = try std.fmt.allocPrint(allocator, "{s}_to_{s}", .{ from.toString(), to.toString() });
+        const key = try std.fmt.allocPrint(allocator, "{s}->{s}", .{ from.wireName(), to.wireName() });
 
         // Check if key already exists
-        if (self.state_transitions.getKey(key)) |existing_key| {
+        if (self.state_changes.getKey(key)) |existing_key| {
             // Key exists, use existing key and free our temporary one
-            const count = self.state_transitions.get(existing_key).?;
-            try self.state_transitions.put(existing_key, count + 1);
+            const count = self.state_changes.get(existing_key).?;
+            try self.state_changes.put(existing_key, count + 1);
             allocator.free(key);
         } else {
             // Key doesn't exist, store it (don't free - hashmap will own it)
-            try self.state_transitions.put(key, 1);
+            try self.state_changes.put(key, 1);
         }
     }
 
     /// Create a snapshot of metrics (allocates new hash map)
     pub fn snapshot(self: *const CircuitBreakerMetrics, allocator: Allocator) !CircuitBreakerMetrics {
         var new_transitions = std.StringHashMap(u64).init(allocator);
-        var iter = self.state_transitions.iterator();
+        var iter = self.state_changes.iterator();
         while (iter.next()) |entry| {
             const key_copy = try allocator.dupe(u8, entry.key_ptr.*);
             try new_transitions.put(key_copy, entry.value_ptr.*);
@@ -158,7 +182,7 @@ pub const CircuitBreakerMetrics = struct {
             .successful_requests = self.successful_requests,
             .failed_requests = self.failed_requests,
             .rejected_requests = self.rejected_requests,
-            .state_transitions = new_transitions,
+            .state_changes = new_transitions,
             .last_state_change_ms = self.last_state_change_ms,
             .current_state = self.current_state,
         };
@@ -355,7 +379,7 @@ pub const CircuitBreakerDecorator = struct {
 
         // Add circuit breaker metrics to metadata as JSON object
         var metrics_snapshot = try self.metrics();
-        defer metrics_snapshot.state_transitions.deinit();
+        defer metrics_snapshot.state_changes.deinit();
 
         var metadata_obj = std.json.ObjectMap.empty;
         errdefer metadata_obj.deinit(allocator);
@@ -432,6 +456,14 @@ test "CircuitState toString" {
     try testing.expectEqualStrings("HALF_OPEN", CircuitState.HALF_OPEN.toString());
 }
 
+test "CircuitState wireName is the lowercase cross-language form" {
+    // Distinct from toString on purpose: this is the protocol spelling shared with the
+    // other eight cores and the fixtures (#791).
+    try testing.expectEqualStrings("closed", CircuitState.CLOSED.wireName());
+    try testing.expectEqualStrings("open", CircuitState.OPEN.wireName());
+    try testing.expectEqualStrings("half_open", CircuitState.HALF_OPEN.wireName());
+}
+
 test "CircuitBreakerMetrics transitions" {
     const allocator = testing.allocator;
     var metrics = CircuitBreakerMetrics.init(allocator);
@@ -442,10 +474,10 @@ test "CircuitBreakerMetrics transitions" {
     try metrics.recordTransition(.CLOSED, .OPEN, allocator);
     try metrics.recordTransition(.OPEN, .HALF_OPEN, allocator);
 
-    // Verify counts
-    const closed_to_open = metrics.state_transitions.get("CLOSED_to_OPEN").?;
+    // Verify counts. Keys are the cross-language wire form, lowercase with `->` (#791).
+    const closed_to_open = metrics.state_changes.get("closed->open").?;
     try testing.expectEqual(@as(u64, 2), closed_to_open);
 
-    const open_to_half = metrics.state_transitions.get("OPEN_to_HALF_OPEN").?;
+    const open_to_half = metrics.state_changes.get("open->half_open").?;
     try testing.expectEqual(@as(u64, 1), open_to_half);
 }

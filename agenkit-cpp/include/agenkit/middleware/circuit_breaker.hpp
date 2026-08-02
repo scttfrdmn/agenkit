@@ -38,6 +38,9 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+#include <map>
+#include <string>
+#include <utility>
 
 namespace agenkit {
 namespace middleware {
@@ -57,6 +60,31 @@ inline const char* state_to_string(CircuitState state) {
         case CircuitState::HALF_OPEN: return "HALF_OPEN";
         default: return "UNKNOWN";
     }
+}
+
+/// Cross-language wire name for a circuit state.
+///
+/// This is the *protocol* spelling, deliberately separate from state_to_string(), which
+/// is the human-facing one. Keying state-change counts off a display representation is
+/// what let four cores drift to four different key formats (#791). Anything crossing a
+/// language boundary uses this; anything shown to a person can use state_to_string().
+///
+/// Canonical form is lowercase, matching Python (`CircuitState.CLOSED = "closed"`) and
+/// Go (`CircuitState::String()`), the shared fixtures, and every cross-language harness
+/// — including this one's own state_to_lower() helper, which existed precisely because
+/// the fixture is lowercase.
+inline const char* state_to_wire_name(CircuitState state) {
+    switch (state) {
+        case CircuitState::CLOSED: return "closed";
+        case CircuitState::OPEN: return "open";
+        case CircuitState::HALF_OPEN: return "half_open";
+        default: return "unknown";
+    }
+}
+
+/// Build the cross-language transition key for a state change, e.g. "closed->open".
+inline std::string transition_key(CircuitState from, CircuitState to) {
+    return std::string(state_to_wire_name(from)) + "->" + state_to_wire_name(to);
 }
 
 /// Circuit breaker error
@@ -149,8 +177,31 @@ struct CircuitBreakerMetrics {
     std::atomic<uint64_t> successful_requests{0};
     std::atomic<uint64_t> failed_requests{0};
     std::atomic<uint64_t> rejected_requests{0};
+
+    /// Total number of state transitions, regardless of which.
     std::atomic<uint64_t> state_transitions{0};
+
     std::atomic<uint64_t> last_state_change_ms{0};
+
+    /// Per-transition counts, keyed "{from}->{to}" via transition_key(),
+    /// e.g. {"closed->open": 1}.
+    ///
+    /// The other five cores that track state changes key them this way; this core used
+    /// to expose only the scalar `state_transitions` above, so it could not answer "how
+    /// many closed->open transitions?" at all and no cross-language check could compare
+    /// it (#791). Guarded by `state_changes_mutex_` rather than atomic because a map
+    /// cannot be.
+    std::map<std::string, uint64_t> state_changes;
+
+    /// Guards `state_changes` only. Mutable so snapshot() stays const.
+    mutable std::mutex state_changes_mutex;
+
+    /// Record one state transition, bumping both the scalar and the keyed count.
+    void record_state_change(CircuitState from, CircuitState to) {
+        state_transitions++;
+        std::lock_guard<std::mutex> lock(state_changes_mutex);
+        state_changes[transition_key(from, to)]++;
+    }
 
     /// Get snapshot of current metrics
     struct Snapshot {
@@ -163,12 +214,19 @@ struct CircuitBreakerMetrics {
         CircuitState current_state;
         double success_rate;
         double rejection_rate;
+        std::map<std::string, uint64_t> state_changes;
     };
 
     Snapshot snapshot(CircuitState current_state) const {
         auto total = total_requests.load();
         auto success = successful_requests.load();
         auto rejected = rejected_requests.load();
+
+        std::map<std::string, uint64_t> changes_copy;
+        {
+            std::lock_guard<std::mutex> lock(state_changes_mutex);
+            changes_copy = state_changes;
+        }
 
         return Snapshot{
             total,
@@ -179,7 +237,8 @@ struct CircuitBreakerMetrics {
             last_state_change_ms.load(),
             current_state,
             total > 0 ? static_cast<double>(success) / total : 0.0,
-            total > 0 ? static_cast<double>(rejected) / total : 0.0
+            total > 0 ? static_cast<double>(rejected) / total : 0.0,
+            std::move(changes_copy)
         };
     }
 };

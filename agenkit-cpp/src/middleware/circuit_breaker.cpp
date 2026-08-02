@@ -75,8 +75,11 @@ void CircuitBreakerMiddleware::record_failure() {
 
 void CircuitBreakerMiddleware::transition_to_state(CircuitState new_state) {
     if (state_ != new_state) {
+        auto old_state = state_;
         state_ = new_state;
-        metrics_.state_transitions++;
+
+        // Bumps both the scalar total and the keyed per-transition count (#791).
+        metrics_.record_state_change(old_state, new_state);
 
         auto now = std::chrono::system_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(

@@ -18,6 +18,32 @@ export enum CircuitState {
 }
 
 /**
+ * Cross-language wire names for circuit states.
+ *
+ * This is the *protocol* spelling, deliberately separate from the enum values above,
+ * which are the local/human-facing ones. Keying `stateChanges` off the enum value is
+ * what let TypeScript drift to `CLOSED->OPEN` while Python and Go produced
+ * `closed->open` (#791): a display choice silently became protocol. Anything crossing a
+ * language boundary uses this map; anything local can use the enum value.
+ *
+ * Canonical form is lowercase, matching Python (`CircuitState.CLOSED = "closed"`) and
+ * Go (`CircuitState.String()`), the shared fixtures, and every cross-language harness —
+ * all of which already downcase before comparing.
+ */
+const CIRCUIT_STATE_WIRE_NAMES: Record<CircuitState, string> = {
+  [CircuitState.CLOSED]: 'closed',
+  [CircuitState.OPEN]: 'open',
+  [CircuitState.HALF_OPEN]: 'half_open',
+};
+
+/**
+ * Returns the cross-language wire name for a circuit state.
+ */
+export function circuitStateWireName(state: CircuitState): string {
+  return CIRCUIT_STATE_WIRE_NAMES[state];
+}
+
+/**
  * Circuit breaker configuration.
  */
 export interface CircuitBreakerConfig {
@@ -73,7 +99,14 @@ export interface CircuitBreakerMetrics {
   /** Number of requests rejected due to open circuit */
   rejectedRequests: number;
 
-  /** State transition counts (e.g., "CLOSED->OPEN": 3) */
+  /**
+   * State transition counts, keyed `"{from}->{to}"` using
+   * {@link circuitStateWireName} (e.g., `"closed->open": 3`).
+   *
+   * The key format is a cross-language contract shared with the other cores and the
+   * `circuit_breaker_behavior.json` fixture — see #791. Do not derive it from the
+   * `CircuitState` enum values, which are uppercase.
+   */
   stateChanges: Record<string, number>;
 
   /** Timestamp of last state change */
@@ -142,7 +175,7 @@ export class CircuitBreakerMiddleware extends BaseMiddleware {
   }
 
   private recordStateChange(from: CircuitState, to: CircuitState): void {
-    const key = `${from}->${to}`;
+    const key = `${circuitStateWireName(from)}->${circuitStateWireName(to)}`;
     this._metrics.stateChanges[key] = (this._metrics.stateChanges[key] || 0) + 1;
     this._metrics.lastStateChange = Date.now();
     this._metrics.currentState = to;

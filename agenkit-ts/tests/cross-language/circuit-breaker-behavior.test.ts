@@ -140,6 +140,22 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Assert every named transition was taken at least once.
+ *
+ * Final-state checks alone are weak: a breaker that opened and never probed half-open ends
+ * OPEN just like one that reopened after a failed probe, and one that never opened at all
+ * ends CLOSED just like one that fully recovered. Checking the path distinguishes them.
+ * These assertions replace `expect(expected.some_flag).toBe(true)`, which only proved the
+ * fixture contained `true` and passed with the middleware deleted (#791).
+ */
+function expectTransitions(changes: Record<string, number>, expected: string[]): void {
+  for (const key of expected) {
+    expect(changes[key] ?? 0, `transition ${key} never happened: ${JSON.stringify(changes)}`)
+      .toBeGreaterThanOrEqual(1);
+  }
+}
+
 describe('Cross-Language Circuit Breaker Behavior', () => {
   let fixtures: CircuitBreakerFixtures;
 
@@ -179,6 +195,9 @@ describe('Cross-Language Circuit Breaker Behavior', () => {
     expect(circuitBreaker.metrics.failedRequests).toBe(expected.failed_requests);
     expect(circuitBreaker.metrics.rejectedRequests).toBe(expected.rejected_requests);
     expect(successful).toBe(expected.total_requests);
+
+    // A circuit that never leaves CLOSED records no transitions at all.
+    expect(circuitBreaker.metrics.stateChanges).toEqual({});
   });
 
   it('should open after failure threshold is reached', async () => {
@@ -196,16 +215,15 @@ describe('Cross-Language Circuit Breaker Behavior', () => {
     };
     const circuitBreaker = new CircuitBreakerMiddleware(mockAgent, config);
 
-    // Execute requests
-    let rejected = 0;
+    // Execute requests, recording each outcome so per-request claims can be checked
+    const outcomes: string[] = [];
     for (let i = 0; i < testCase.scenario.agent_responses!.length; i++) {
       const message: Message = { role: 'user', content: 'test' };
       try {
         await circuitBreaker.process(message);
-      } catch (error: any) {
-        if (error instanceof CircuitBreakerError) {
-          rejected++;
-        }
+        outcomes.push('ok');
+      } catch (error: unknown) {
+        outcomes.push(error instanceof CircuitBreakerError ? 'rejected' : 'failed');
       }
     }
 
@@ -215,7 +233,16 @@ describe('Cross-Language Circuit Breaker Behavior', () => {
     expect(circuitBreaker.metrics.totalRequests).toBe(expected.total_requests);
     expect(circuitBreaker.metrics.failedRequests).toBe(expected.failed_requests);
     expect(circuitBreaker.metrics.rejectedRequests).toBe(expected.rejected_requests);
-    expect(expected.fourth_request_rejected).toBe(true);
+
+    // `expect(expected.fourth_request_rejected).toBe(true)` was a tautology (#791). Check
+    // the actual claim — the fourth request was rejected by the open circuit, not merely
+    // failed by the inner agent (whose fourth scripted response is a success).
+    if (expected.fourth_request_rejected) {
+      expect(outcomes).toHaveLength(4);
+      expect(outcomes[3], `expected 4th request rejected, got ${outcomes.join(',')}`).toBe(
+        'rejected'
+      );
+    }
   });
 
   it('should transition to half-open after recovery timeout', async () => {
@@ -254,7 +281,13 @@ describe('Cross-Language Circuit Breaker Behavior', () => {
     // Verify expected behavior
     const expected = testCase.expected_behavior!;
     expect(circuitBreaker.state).toBe(CircuitState.CLOSED);
-    expect(expected.recovery_successful).toBe(true);
+    if (expected.recovery_successful) {
+      expectTransitions(circuitBreaker.metrics.stateChanges, [
+        'closed->open',
+        'open->half_open',
+        'half_open->closed',
+      ]);
+    }
   });
 
   it('should close after success threshold in half-open state', async () => {
@@ -293,7 +326,12 @@ describe('Cross-Language Circuit Breaker Behavior', () => {
     // Verify expected behavior
     const expected = testCase.expected_behavior!;
     expect(circuitBreaker.state).toBe(CircuitState.CLOSED);
-    expect(expected.circuit_fully_recovered).toBe(true);
+    if (expected.circuit_fully_recovered) {
+      expectTransitions(circuitBreaker.metrics.stateChanges, [
+        'open->half_open',
+        'half_open->closed',
+      ]);
+    }
   });
 
   it('should reopen on failure in half-open state', async () => {
@@ -332,7 +370,13 @@ describe('Cross-Language Circuit Breaker Behavior', () => {
     // Verify expected behavior
     const expected = testCase.expected_behavior!;
     expect(circuitBreaker.state).toBe(CircuitState.OPEN);
-    expect(expected.reopened_after_partial_recovery).toBe(true);
+    if (expected.reopened_after_partial_recovery) {
+      expectTransitions(circuitBreaker.metrics.stateChanges, [
+        'closed->open',
+        'open->half_open',
+        'half_open->open',
+      ]);
+    }
   });
 
   it('should reject all requests when open', async () => {
@@ -410,5 +454,10 @@ describe('Cross-Language Circuit Breaker Behavior', () => {
     expect(circuitBreaker.metrics.failedRequests).toBe(expected.failed_requests);
     expect(circuitBreaker.metrics.rejectedRequests).toBe(expected.rejected_requests);
     expect(circuitBreaker.state).toBe(CircuitState.CLOSED);
+
+    // Assert the stateChanges map itself, not just the scalar counters. This field is the
+    // cross-language transition-key contract; it went unasserted in all five harnesses long
+    // enough for four different key formats to appear (#791).
+    expect(circuitBreaker.metrics.stateChanges).toEqual(expected.state_changes);
   });
 });

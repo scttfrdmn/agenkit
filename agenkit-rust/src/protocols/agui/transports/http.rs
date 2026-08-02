@@ -38,7 +38,6 @@
 ///! # Ok(())
 ///! # }
 ///! ```
-
 use crate::core::Message;
 use crate::protocols::agui::adapter::AGUIAdapter;
 use crate::protocols::agui::events::AGUIEvent;
@@ -177,7 +176,11 @@ impl AGUISSEStream {
     /// * `adapter` - AG-UI adapter wrapping the agent
     /// * `message` - Input message to process
     /// * `config` - Stream configuration
-    pub async fn with_config(adapter: AGUIAdapter, message: Message, config: SSEStreamConfig) -> Self {
+    pub async fn with_config(
+        adapter: AGUIAdapter,
+        message: Message,
+        config: SSEStreamConfig,
+    ) -> Self {
         // Start streaming events
         let event_stream = adapter.stream_events(message, None, true).await;
 
@@ -279,14 +282,8 @@ impl SSEResponseConfig {
                     || self.cors_origins.contains(&origin.to_string())
                 {
                     headers.push(("Access-Control-Allow-Origin", origin.to_string()));
-                    headers.push((
-                        "Access-Control-Allow-Methods",
-                        "POST, OPTIONS".to_string(),
-                    ));
-                    headers.push((
-                        "Access-Control-Allow-Headers",
-                        "Content-Type".to_string(),
-                    ));
+                    headers.push(("Access-Control-Allow-Methods", "POST, OPTIONS".to_string()));
+                    headers.push(("Access-Control-Allow-Headers", "Content-Type".to_string()));
                 }
             }
         }
@@ -339,7 +336,10 @@ mod tests {
         }
 
         async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-            Ok(Message::new("assistant", serde_json::json!(self.response.clone())))
+            Ok(Message::new(
+                "assistant",
+                serde_json::json!(self.response.clone()),
+            ))
         }
     }
 
@@ -419,8 +419,9 @@ mod tests {
         let headers = config.headers(None);
 
         // Check required SSE headers
-        assert!(headers.iter().any(|(k, v)| k == &"Content-Type"
-            && v == "text/event-stream"));
+        assert!(headers
+            .iter()
+            .any(|(k, v)| k == &"Content-Type" && v == "text/event-stream"));
         assert!(headers
             .iter()
             .any(|(k, v)| k == &"Cache-Control" && v == "no-cache"));
@@ -439,8 +440,7 @@ mod tests {
         // Should include CORS headers
         assert!(headers
             .iter()
-            .any(|(k, v)| k == &"Access-Control-Allow-Origin"
-                && v == "http://localhost:3000"));
+            .any(|(k, v)| k == &"Access-Control-Allow-Origin" && v == "http://localhost:3000"));
     }
 
     #[test]

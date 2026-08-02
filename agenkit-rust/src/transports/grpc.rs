@@ -283,7 +283,7 @@ impl Agent for GrpcAgent {
         // })
 
         Err(AgentError::Internal(
-            "gRPC transport not fully implemented. See implementation notes in source.".to_string()
+            "gRPC transport not fully implemented. See implementation notes in source.".to_string(),
         ))
     }
 

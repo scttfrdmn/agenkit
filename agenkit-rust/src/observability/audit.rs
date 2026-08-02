@@ -100,11 +100,7 @@ impl AuditEvent {
     ///     Some("session-123".to_string()),
     /// );
     /// ```
-    pub fn new(
-        event_type: AuditEventType,
-        agent_name: String,
-        session_id: Option<String>,
-    ) -> Self {
+    pub fn new(event_type: AuditEventType, agent_name: String, session_id: Option<String>) -> Self {
         Self {
             event_id: Uuid::new_v4().to_string(),
             timestamp: chrono::Utc::now(),

@@ -8,7 +8,6 @@
 ///! export ANTHROPIC_API_KEY="your-key-here"
 ///! cargo run --example anthropic_streaming --features native
 ///! ```
-
 use agenkit::adapters::anthropic::{AnthropicAgent, AnthropicConfig};
 use agenkit::core::Message;
 use futures::stream::StreamExt;

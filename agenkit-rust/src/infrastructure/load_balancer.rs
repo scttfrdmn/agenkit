@@ -200,12 +200,8 @@ impl LoadBalancer {
                     backend.consecutive_failures = 0;
                     if !backend.healthy && backend.consecutive_failures == 0 {
                         backend.healthy = true;
-                        Self::track_health_change(
-                            metrics,
-                            &backend.agent.name(),
-                            "recovered",
-                        )
-                        .await;
+                        Self::track_health_change(metrics, &backend.agent.name(), "recovered")
+                            .await;
                     }
                 }
                 _ => {
@@ -215,12 +211,8 @@ impl LoadBalancer {
 
                     if backend.healthy && backend.consecutive_failures >= failure_threshold {
                         backend.healthy = false;
-                        Self::track_health_change(
-                            metrics,
-                            &backend.agent.name(),
-                            "unhealthy",
-                        )
-                        .await;
+                        Self::track_health_change(metrics, &backend.agent.name(), "unhealthy")
+                            .await;
                     }
                 }
             }
@@ -287,7 +279,10 @@ impl LoadBalancer {
             .ok_or_else(|| AgentError::ExecutionError("No healthy backends".to_string()))
     }
 
-    async fn select_least_connections(&self, healthy_indices: &[usize]) -> Result<usize, AgentError> {
+    async fn select_least_connections(
+        &self,
+        healthy_indices: &[usize],
+    ) -> Result<usize, AgentError> {
         let backends = self.backends.read().await;
 
         healthy_indices
@@ -297,7 +292,10 @@ impl LoadBalancer {
             .ok_or_else(|| AgentError::ExecutionError("No healthy backends".to_string()))
     }
 
-    async fn select_weighted_round_robin(&self, healthy_indices: &[usize]) -> Result<usize, AgentError> {
+    async fn select_weighted_round_robin(
+        &self,
+        healthy_indices: &[usize],
+    ) -> Result<usize, AgentError> {
         let backends = self.backends.read().await;
         let mut current_index = self.current_index.write().await;
 
@@ -310,7 +308,9 @@ impl LoadBalancer {
         }
 
         if weighted.is_empty() {
-            return Err(AgentError::ExecutionError("No healthy backends".to_string()));
+            return Err(AgentError::ExecutionError(
+                "No healthy backends".to_string(),
+            ));
         }
 
         *current_index = (*current_index + 1) % weighted.len();
@@ -354,8 +354,12 @@ impl Agent for LoadBalancer {
 
             // Avoid retrying same backend
             if attempted.contains(&backend_name) {
-                if !self.config.enable_failover || attempted.len() >= self.backends.read().await.len() {
-                    return Err(AgentError::ExecutionError("All backends attempted".to_string()));
+                if !self.config.enable_failover
+                    || attempted.len() >= self.backends.read().await.len()
+                {
+                    return Err(AgentError::ExecutionError(
+                        "All backends attempted".to_string(),
+                    ));
                 }
                 continue;
             }
@@ -402,19 +406,19 @@ impl Agent for LoadBalancer {
                     // Check if should mark unhealthy
                     {
                         let mut backends = self.backends.write().await;
-                        if backends[backend_index].total_failures >= self.config.failure_threshold as u64 {
+                        if backends[backend_index].total_failures
+                            >= self.config.failure_threshold as u64
+                        {
                             backends[backend_index].healthy = false;
-                            Self::track_health_change(
-                                &self.metrics,
-                                &backend_name,
-                                "unhealthy",
-                            )
-                            .await;
+                            Self::track_health_change(&self.metrics, &backend_name, "unhealthy")
+                                .await;
                         }
                     }
 
                     // Try failover if enabled
-                    if self.config.enable_failover && attempted.len() < self.backends.read().await.len() {
+                    if self.config.enable_failover
+                        && attempted.len() < self.backends.read().await.len()
+                    {
                         let mut metrics = self.metrics.write().await;
                         metrics.failover_attempts += 1;
                         continue;

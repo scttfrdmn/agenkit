@@ -3,7 +3,6 @@
 ///! Integrates the HumanInLoopAgent pattern with AG-UI protocol using Interrupt events.
 ///! Provides streaming approval workflow where agents can request human approval via
 ///! Interrupt events, and frontends can respond with InterruptResponse messages.
-
 use crate::core::{Agent, AgentError, Message};
 use crate::patterns::human_in_loop::HumanInLoopAgent;
 use crate::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};
@@ -219,24 +218,27 @@ impl AGUIHumanInLoopAdapter {
                     let mut complete_event =
                         TextMessageComplete::new(content, "stop", Some(msg_id.clone()))
                             .with_metadata("agent_name", serde_json::json!(agent_name))
-                            .with_metadata("approval_requested", serde_json::json!(approval_needed));
+                            .with_metadata(
+                                "approval_requested",
+                                serde_json::json!(approval_needed),
+                            );
 
                     // Add response metadata
                     if let Some(metadata) = serde_json::to_value(&response.metadata).ok() {
-                        complete_event = complete_event.with_metadata("response_metadata", metadata);
+                        complete_event =
+                            complete_event.with_metadata("response_metadata", metadata);
                     }
 
                     // Add approval details if present
                     if approval_needed {
-                        complete_event = complete_event
-                            .with_metadata(
-                                "approval_details",
-                                serde_json::json!({
-                                    "confidence": confidence,
-                                    "threshold": approval_threshold,
-                                    "status": approval_status,
-                                }),
-                            );
+                        complete_event = complete_event.with_metadata(
+                            "approval_details",
+                            serde_json::json!({
+                                "confidence": confidence,
+                                "threshold": approval_threshold,
+                                "status": approval_status,
+                            }),
+                        );
                     }
 
                     let _ = tx.send(Box::new(complete_event)).await;
@@ -255,8 +257,9 @@ impl AGUIHumanInLoopAdapter {
                     let _ = tx.send(Box::new(error_event)).await;
 
                     // Emit complete with error finish reason
-                    let complete_event = TextMessageComplete::new("", "error", Some(msg_id.clone()))
-                        .with_metadata("error", serde_json::json!(error.to_string()));
+                    let complete_event =
+                        TextMessageComplete::new("", "error", Some(msg_id.clone()))
+                            .with_metadata("error", serde_json::json!(error.to_string()));
                     let _ = tx.send(Box::new(complete_event)).await;
                 }
             }
@@ -284,18 +287,9 @@ impl AGUIHumanInLoopAdapter {
 /// Create metadata event with HITL capabilities.
 fn create_hitl_metadata_event(agent_name: &str, agent: &dyn Agent) -> MetadataEvent {
     let mut data = HashMap::new();
-    data.insert(
-        "agent_name".to_string(),
-        serde_json::json!(agent_name),
-    );
-    data.insert(
-        "protocol".to_string(),
-        serde_json::json!("ag-ui"),
-    );
-    data.insert(
-        "protocol_version".to_string(),
-        serde_json::json!("1.0"),
-    );
+    data.insert("agent_name".to_string(), serde_json::json!(agent_name));
+    data.insert("protocol".to_string(), serde_json::json!("ag-ui"));
+    data.insert("protocol_version".to_string(), serde_json::json!("1.0"));
 
     let caps = agent.capabilities();
     let is_hitl = caps.contains(&"human-in-loop".to_string());
@@ -330,8 +324,7 @@ fn create_hitl_metadata_event(agent_name: &str, agent: &dyn Agent) -> MetadataEv
     if !introspection.capabilities.is_empty() {
         data.insert(
             "agent_capabilities".to_string(),
-            serde_json::to_value(&introspection.capabilities)
-                .unwrap_or(serde_json::Value::Null),
+            serde_json::to_value(&introspection.capabilities).unwrap_or(serde_json::Value::Null),
         );
     }
 
@@ -351,10 +344,7 @@ fn create_approval_interrupt(
 
     // Create interrupt message
     let message = if approved {
-        format!(
-            "Agent action approved (confidence: {:.2})",
-            confidence
-        )
+        format!("Agent action approved (confidence: {:.2})", confidence)
     } else if approval_status == "rejected" {
         format!(
             "Agent action rejected (confidence: {:.2}, threshold: {:.2})",
@@ -427,7 +417,7 @@ fn create_approval_interrupt(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::patterns::human_in_loop::{HumanInLoopConfig, simple_approval_func};
+    use crate::patterns::human_in_loop::{simple_approval_func, HumanInLoopConfig};
     use async_trait::async_trait;
 
     struct MockAgent {
@@ -442,8 +432,10 @@ mod tests {
         }
 
         async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-            Ok(Message::new("assistant", serde_json::json!(self.response.clone()))
-                .with_metadata("confidence", serde_json::json!(self.confidence)))
+            Ok(
+                Message::new("assistant", serde_json::json!(self.response.clone()))
+                    .with_metadata("confidence", serde_json::json!(self.confidence)),
+            )
         }
     }
 
@@ -462,10 +454,8 @@ mod tests {
         })
         .unwrap();
 
-        let adapter = AGUIHumanInLoopAdapter::new(
-            Arc::new(hil_agent),
-            AGUIHumanInLoopConfig::default(),
-        );
+        let adapter =
+            AGUIHumanInLoopAdapter::new(Arc::new(hil_agent), AGUIHumanInLoopConfig::default());
 
         let message = Message::new("user", serde_json::json!("test"));
         let mut stream = adapter.stream_events(message, None, false).await;
@@ -496,10 +486,8 @@ mod tests {
         })
         .unwrap();
 
-        let adapter = AGUIHumanInLoopAdapter::new(
-            Arc::new(hil_agent),
-            AGUIHumanInLoopConfig::default(),
-        );
+        let adapter =
+            AGUIHumanInLoopAdapter::new(Arc::new(hil_agent), AGUIHumanInLoopConfig::default());
 
         let message = Message::new("user", serde_json::json!("test"));
         let mut stream = adapter.stream_events(message, None, true).await;
@@ -528,10 +516,8 @@ mod tests {
         })
         .unwrap();
 
-        let adapter = AGUIHumanInLoopAdapter::new(
-            Arc::new(hil_agent),
-            AGUIHumanInLoopConfig::default(),
-        );
+        let adapter =
+            AGUIHumanInLoopAdapter::new(Arc::new(hil_agent), AGUIHumanInLoopConfig::default());
 
         let message = Message::new("user", serde_json::json!("test"));
         let mut stream = adapter.stream_events(message, None, false).await;
@@ -554,10 +540,7 @@ mod tests {
             confidence: 0.5,
         });
 
-        let adapter = AGUIHumanInLoopAdapter::new(
-            agent,
-            AGUIHumanInLoopConfig::default(),
-        );
+        let adapter = AGUIHumanInLoopAdapter::new(agent, AGUIHumanInLoopConfig::default());
 
         let message = Message::new("user", serde_json::json!("test"));
         let mut stream = adapter.stream_events(message, None, false).await;

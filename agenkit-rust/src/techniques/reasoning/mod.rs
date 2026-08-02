@@ -11,7 +11,9 @@ pub mod tree_of_thought;
 pub use chain_of_thought::{ChainOfThoughtAgent, ChainOfThoughtConfig};
 pub use graph_of_thought::{AggregatorType, GraphOfThoughtAgent, GraphOfThoughtConfig};
 pub use least_to_most::{DecomposerFn, LeastToMostAgent, LeastToMostConfig, Subproblem};
-pub use plan_and_solve::{Plan, PlanAndSolveAgent, PlanAndSolveConfig, PlanStep, PlannerFn, SolverFn};
+pub use plan_and_solve::{
+    Plan, PlanAndSolveAgent, PlanAndSolveConfig, PlanStep, PlannerFn, SolverFn,
+};
 pub use reasoning_graph::{
     EdgeType, GraphStatistics, LogicalEdge, NodeType, ReasoningGraph, ThoughtNode,
 };

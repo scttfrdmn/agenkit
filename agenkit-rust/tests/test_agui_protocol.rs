@@ -8,15 +8,14 @@
 ///! - WebSocket transport
 ///! - Error handling
 ///! - Edge cases
-
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::patterns::human_in_loop::{
-    ApprovalRequest, ApprovalResponse, HumanInLoopAgent, HumanInLoopConfig, simple_approval_func,
+    simple_approval_func, ApprovalRequest, ApprovalResponse, HumanInLoopAgent, HumanInLoopConfig,
 };
 use agenkit::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};
 use agenkit::protocols::agui::events::*;
 use agenkit::protocols::agui::hitl::{AGUIHumanInLoopAdapter, AGUIHumanInLoopConfig};
-use agenkit::protocols::agui::transports::http::{SSEFormatter, AGUISSEStream, SSEStreamConfig};
+use agenkit::protocols::agui::transports::http::{AGUISSEStream, SSEFormatter, SSEStreamConfig};
 use agenkit::protocols::agui::transports::websocket::{
     AGUIWebSocketHandler, WebSocketHandlerConfig, WebSocketMessageFormat,
 };
@@ -71,8 +70,10 @@ impl Agent for MockAgent {
             return Err(AgentError::ProcessingError("Test error".to_string()));
         }
 
-        Ok(Message::new("assistant", serde_json::json!(self.response.clone()))
-            .with_metadata("confidence", serde_json::json!(self.confidence)))
+        Ok(
+            Message::new("assistant", serde_json::json!(self.response.clone()))
+                .with_metadata("confidence", serde_json::json!(self.confidence)),
+        )
     }
 }
 
@@ -116,14 +117,20 @@ async fn test_event_serialization_completeness() {
         json.get("event_type"),
         Some(&serde_json::json!("interrupt"))
     );
-    assert_eq!(json.get("reason"), Some(&serde_json::json!("approval_required")));
+    assert_eq!(
+        json.get("reason"),
+        Some(&serde_json::json!("approval_required"))
+    );
 }
 
 #[tokio::test]
 async fn test_event_metadata_preservation() {
     // Ensure metadata is preserved through serialization
     let mut metadata = std::collections::HashMap::new();
-    metadata.insert("custom_field".to_string(), serde_json::json!("custom_value"));
+    metadata.insert(
+        "custom_field".to_string(),
+        serde_json::json!("custom_value"),
+    );
     metadata.insert("nested".to_string(), serde_json::json!({"key": "value"}));
 
     let event = TextMessageChunk::new("Test".to_string(), Some("msg_1".to_string()));
@@ -175,7 +182,10 @@ async fn test_adapter_error_handling() {
         if event.event_type() == EventType::Error {
             has_error = true;
             let json = event.to_json();
-            assert_eq!(json.get("error_code"), Some(&serde_json::json!("agent_error")));
+            assert_eq!(
+                json.get("error_code"),
+                Some(&serde_json::json!("agent_error"))
+            );
         }
     }
 
@@ -264,10 +274,8 @@ async fn test_hitl_high_confidence_no_interrupt() {
     })
     .unwrap();
 
-    let adapter = AGUIHumanInLoopAdapter::new(
-        Arc::new(hil_agent),
-        AGUIHumanInLoopConfig::default(),
-    );
+    let adapter =
+        AGUIHumanInLoopAdapter::new(Arc::new(hil_agent), AGUIHumanInLoopConfig::default());
 
     let message = Message::with_text("user", "test");
     let mut stream = adapter.stream_events(message, None, false).await;
@@ -297,10 +305,8 @@ async fn test_hitl_low_confidence_with_interrupt() {
     })
     .unwrap();
 
-    let adapter = AGUIHumanInLoopAdapter::new(
-        Arc::new(hil_agent),
-        AGUIHumanInLoopConfig::default(),
-    );
+    let adapter =
+        AGUIHumanInLoopAdapter::new(Arc::new(hil_agent), AGUIHumanInLoopConfig::default());
 
     let message = Message::with_text("user", "test");
     let mut stream = adapter.stream_events(message, None, false).await;
@@ -338,10 +344,8 @@ async fn test_hitl_rejection_flow() {
     })
     .unwrap();
 
-    let adapter = AGUIHumanInLoopAdapter::new(
-        Arc::new(hil_agent),
-        AGUIHumanInLoopConfig::default(),
-    );
+    let adapter =
+        AGUIHumanInLoopAdapter::new(Arc::new(hil_agent), AGUIHumanInLoopConfig::default());
 
     let message = Message::with_text("user", "test");
     let mut stream = adapter.stream_events(message, None, false).await;
@@ -517,10 +521,7 @@ async fn test_websocket_handler_invalid_json() {
     assert_eq!(responses.len(), 1);
 
     let parsed: serde_json::Value = serde_json::from_str(&responses[0]).unwrap();
-    assert_eq!(
-        parsed.get("event_type"),
-        Some(&serde_json::json!("error"))
-    );
+    assert_eq!(parsed.get("event_type"), Some(&serde_json::json!("error")));
     assert_eq!(
         parsed.get("error_code"),
         Some(&serde_json::json!("invalid_json"))
@@ -598,10 +599,8 @@ async fn test_end_to_end_hitl_flow() {
     })
     .unwrap();
 
-    let adapter = AGUIHumanInLoopAdapter::new(
-        Arc::new(hil_agent),
-        AGUIHumanInLoopConfig::default(),
-    );
+    let adapter =
+        AGUIHumanInLoopAdapter::new(Arc::new(hil_agent), AGUIHumanInLoopConfig::default());
 
     let message = Message::with_text("user", "test");
     let mut stream = adapter.stream_events(message, None, true).await;

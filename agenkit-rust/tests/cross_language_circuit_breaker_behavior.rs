@@ -5,16 +5,16 @@
  */
 
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
 
 use serde::Deserialize;
 use serde_json::json;
 use tokio::time::sleep;
 
+use agenkit::middleware::{CircuitBreakerConfig, CircuitBreakerMiddleware, CircuitState};
 use agenkit::{Agent, AgentError, Message};
-use agenkit::middleware::{CircuitBreakerMiddleware, CircuitBreakerConfig, CircuitState};
 
 /// Agent response from fixture
 #[derive(Debug, Clone, Deserialize)]
@@ -143,7 +143,9 @@ impl Agent for MockCircuitBreakerAgent {
         let count = self.call_count.fetch_add(1, Ordering::SeqCst);
 
         if count >= self.responses.len() {
-            return Err(AgentError::ProcessingError("No more responses available".to_string()));
+            return Err(AgentError::ProcessingError(
+                "No more responses available".to_string(),
+            ));
         }
 
         let response = &self.responses[count];
@@ -201,9 +203,8 @@ async fn test_circuit_breaker_closed_success() {
     let test_case = find_test_case(&fixtures, "circuit_breaker_closed_success");
 
     // Create mock agent
-    let (mock_agent, _call_count) = MockCircuitBreakerAgent::new(
-        test_case.scenario.agent_responses.clone()
-    );
+    let (mock_agent, _call_count) =
+        MockCircuitBreakerAgent::new(test_case.scenario.agent_responses.clone());
 
     // Create circuit breaker
     let config = CircuitBreakerConfig::builder()
@@ -238,9 +239,8 @@ async fn test_circuit_breaker_opens_on_failures() {
     let test_case = find_test_case(&fixtures, "circuit_breaker_opens_on_failures");
 
     // Create mock agent
-    let (mock_agent, _call_count) = MockCircuitBreakerAgent::new(
-        test_case.scenario.agent_responses.clone()
-    );
+    let (mock_agent, _call_count) =
+        MockCircuitBreakerAgent::new(test_case.scenario.agent_responses.clone());
 
     // Create circuit breaker
     let config = CircuitBreakerConfig::builder()
@@ -278,7 +278,9 @@ async fn test_circuit_breaker_half_open_transition() {
     let test_case = find_test_case(&fixtures, "circuit_breaker_half_open_transition");
 
     // Extract responses from steps
-    let responses: Vec<AgentResponse> = test_case.scenario.steps
+    let responses: Vec<AgentResponse> = test_case
+        .scenario
+        .steps
         .iter()
         .filter_map(|step| {
             if step.action == "request" {
@@ -324,7 +326,9 @@ async fn test_circuit_breaker_half_open_to_closed() {
     let test_case = find_test_case(&fixtures, "circuit_breaker_half_open_to_closed");
 
     // Extract responses from steps
-    let responses: Vec<AgentResponse> = test_case.scenario.steps
+    let responses: Vec<AgentResponse> = test_case
+        .scenario
+        .steps
         .iter()
         .filter_map(|step| {
             if step.action == "request" {
@@ -370,7 +374,9 @@ async fn test_circuit_breaker_half_open_reopens() {
     let test_case = find_test_case(&fixtures, "circuit_breaker_half_open_reopens");
 
     // Extract responses from steps
-    let responses: Vec<AgentResponse> = test_case.scenario.steps
+    let responses: Vec<AgentResponse> = test_case
+        .scenario
+        .steps
         .iter()
         .filter_map(|step| {
             if step.action == "request" {
@@ -416,9 +422,8 @@ async fn test_circuit_breaker_rejects_when_open() {
     let test_case = find_test_case(&fixtures, "circuit_breaker_rejects_when_open");
 
     // Create mock agent
-    let (mock_agent, _call_count) = MockCircuitBreakerAgent::new(
-        test_case.scenario.agent_responses.clone()
-    );
+    let (mock_agent, _call_count) =
+        MockCircuitBreakerAgent::new(test_case.scenario.agent_responses.clone());
 
     // Create circuit breaker
     let config = CircuitBreakerConfig::builder()
@@ -455,7 +460,9 @@ async fn test_circuit_breaker_metrics_tracking() {
     let test_case = find_test_case(&fixtures, "circuit_breaker_metrics_tracking");
 
     // Extract responses from steps
-    let responses: Vec<AgentResponse> = test_case.scenario.steps
+    let responses: Vec<AgentResponse> = test_case
+        .scenario
+        .steps
         .iter()
         .filter_map(|step| {
             if step.action == "request" {
@@ -493,7 +500,10 @@ async fn test_circuit_breaker_metrics_tracking() {
     let metrics = circuit_breaker.get_metrics().await;
 
     assert_eq!(metrics.total_requests, expected.total_requests as u64);
-    assert_eq!(metrics.successful_requests, expected.successful_requests as u64);
+    assert_eq!(
+        metrics.successful_requests,
+        expected.successful_requests as u64
+    );
     assert_eq!(metrics.failed_requests, expected.failed_requests as u64);
     assert_eq!(metrics.rejected_requests, expected.rejected_requests as u64);
     assert_eq!(state_to_string(metrics.current_state), expected.final_state);

@@ -277,10 +277,7 @@ impl Agent for PlanAndSolveAgent {
         metadata.insert("execution_steps".to_string(), json!(execution_results));
         metadata.insert("num_steps".to_string(), json!(plan.steps.len()));
         metadata.insert("validated".to_string(), json!(plan.validated));
-        metadata.insert(
-            "validation_notes".to_string(),
-            json!(plan.validation_notes),
-        );
+        metadata.insert("validation_notes".to_string(), json!(plan.validation_notes));
         metadata.insert("allow_replanning".to_string(), json!(self.allow_replanning));
         if let Some(strategy) = &plan.strategy {
             metadata.insert("strategy".to_string(), json!(strategy));
@@ -364,7 +361,10 @@ mod tests {
         let response = agent.process(message).await.unwrap();
 
         assert!(!response.content.to_string().is_empty());
-        assert_eq!(response.metadata.get("technique").unwrap(), "plan_and_solve");
+        assert_eq!(
+            response.metadata.get("technique").unwrap(),
+            "plan_and_solve"
+        );
         assert_eq!(response.metadata.get("num_steps").unwrap(), 4);
     }
 
@@ -386,7 +386,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_plan() {
         let mock_agent = Arc::new(MockAgent::new(vec![
-            "1. Step one\n2. Step two\n3. Step three".to_string()
+            "1. Step one\n2. Step two\n3. Step three".to_string(),
         ]));
 
         let config = PlanAndSolveConfig {
@@ -404,7 +404,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_parse_steps_correctly() {
-        let mock_agent = Arc::new(MockAgent::new(vec!["1. First step\n2. Second step".to_string()]));
+        let mock_agent = Arc::new(MockAgent::new(vec![
+            "1. First step\n2. Second step".to_string()
+        ]));
 
         let config = PlanAndSolveConfig {
             validate_plan: false,
@@ -434,10 +436,7 @@ mod tests {
         };
 
         let agent = PlanAndSolveAgent::new(mock_agent, config);
-        let message = Message::new(
-            "user",
-            serde_json::Value::String("Problem".to_string()),
-        );
+        let message = Message::new("user", serde_json::Value::String("Problem".to_string()));
 
         let response = agent.process(message).await.unwrap();
 
@@ -491,10 +490,7 @@ mod tests {
         };
 
         let agent = PlanAndSolveAgent::new(mock_agent, config);
-        let message = Message::new(
-            "user",
-            serde_json::Value::String("Problem".to_string()),
-        );
+        let message = Message::new("user", serde_json::Value::String("Problem".to_string()));
 
         let response = agent.process(message).await.unwrap();
 
@@ -522,10 +518,7 @@ mod tests {
         };
 
         let agent = PlanAndSolveAgent::new(mock_agent, config);
-        let message = Message::new(
-            "user",
-            serde_json::Value::String("Problem".to_string()),
-        );
+        let message = Message::new("user", serde_json::Value::String("Problem".to_string()));
 
         let response = agent.process(message).await.unwrap();
         let execution_steps = response
@@ -554,10 +547,7 @@ mod tests {
         };
 
         let agent = PlanAndSolveAgent::new(mock_agent, config);
-        let message = Message::new(
-            "user",
-            serde_json::Value::String("Problem".to_string()),
-        );
+        let message = Message::new("user", serde_json::Value::String("Problem".to_string()));
 
         let response = agent.process(message).await.unwrap();
 
@@ -734,10 +724,7 @@ mod tests {
         };
 
         let agent = PlanAndSolveAgent::new(mock_agent, config);
-        let message = Message::new(
-            "user",
-            serde_json::Value::String("Simple task".to_string()),
-        );
+        let message = Message::new("user", serde_json::Value::String("Simple task".to_string()));
 
         let response = agent.process(message).await.unwrap();
 
@@ -748,7 +735,7 @@ mod tests {
     #[tokio::test]
     async fn test_parse_period_numbering() {
         let mock_agent = Arc::new(MockAgent::new(vec![
-            "1. Step one\n2. Step two\n3. Step three".to_string()
+            "1. Step one\n2. Step two\n3. Step three".to_string(),
         ]));
 
         let config = PlanAndSolveConfig {
@@ -819,7 +806,10 @@ mod tests {
         let response = agent.process(message).await.unwrap();
 
         assert!(response.metadata.contains_key("technique"));
-        assert_eq!(response.metadata.get("technique").unwrap(), "plan_and_solve");
+        assert_eq!(
+            response.metadata.get("technique").unwrap(),
+            "plan_and_solve"
+        );
         assert!(response.metadata.contains_key("num_steps"));
         assert_eq!(response.metadata.get("num_steps").unwrap(), 2);
         assert!(response.metadata.contains_key("plan_steps"));
@@ -857,10 +847,7 @@ mod tests {
         };
 
         let agent = PlanAndSolveAgent::new(mock_agent, config);
-        let message = Message::new(
-            "user",
-            serde_json::Value::String("Problem".to_string()),
-        );
+        let message = Message::new("user", serde_json::Value::String("Problem".to_string()));
 
         let response = agent.process(message).await.unwrap();
 

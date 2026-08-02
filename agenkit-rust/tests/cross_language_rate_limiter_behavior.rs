@@ -189,7 +189,10 @@ async fn test_rate_limiter_allows_within_capacity() {
     let metrics = rate_limiter.get_metrics().await;
     assert_eq!(metrics.total_requests as usize, expected.total_requests);
     assert_eq!(metrics.allowed_requests as usize, expected.allowed_requests);
-    assert_eq!(metrics.rejected_requests as usize, expected.rejected_requests);
+    assert_eq!(
+        metrics.rejected_requests as usize,
+        expected.rejected_requests
+    );
     assert_eq!(successful, expected.total_requests);
 
     let elapsed_ms = elapsed.as_millis() as u64;
@@ -219,14 +222,27 @@ async fn test_rate_limiter_waits_for_tokens() {
     assert!(expected.all_successful);
 
     let metrics = rate_limiter.get_metrics().await;
-    eprintln!("Rust metrics: total={}, allowed={}, rejected={}, waited={}",
-        metrics.total_requests, metrics.allowed_requests, metrics.rejected_requests, metrics.waited_requests);
-    eprintln!("Expected: total={}, allowed={}, rejected={}",
-        expected.total_requests, expected.allowed_requests, expected.rejected_requests);
+    eprintln!(
+        "Rust metrics: total={}, allowed={}, rejected={}, waited={}",
+        metrics.total_requests,
+        metrics.allowed_requests,
+        metrics.rejected_requests,
+        metrics.waited_requests
+    );
+    eprintln!(
+        "Expected: total={}, allowed={}, rejected={}",
+        expected.total_requests, expected.allowed_requests, expected.rejected_requests
+    );
     assert_eq!(metrics.total_requests as usize, expected.total_requests);
     // Rust tracks allowed_requests differently - it's (allowed_requests + waited_requests)
-    assert_eq!((metrics.allowed_requests + metrics.waited_requests) as usize, expected.allowed_requests);
-    assert_eq!(metrics.rejected_requests as usize, expected.rejected_requests);
+    assert_eq!(
+        (metrics.allowed_requests + metrics.waited_requests) as usize,
+        expected.allowed_requests
+    );
+    assert_eq!(
+        metrics.rejected_requests as usize,
+        expected.rejected_requests
+    );
     assert!(expected.sixth_request_waited);
 
     // Sixth request (index 5) should have waited
@@ -262,7 +278,10 @@ async fn test_rate_limiter_rejects_on_timeout() {
     let metrics = rate_limiter.get_metrics().await;
     assert_eq!(metrics.total_requests as usize, expected.total_requests);
     assert_eq!(metrics.allowed_requests as usize, expected.allowed_requests);
-    assert_eq!(metrics.rejected_requests as usize, expected.rejected_requests);
+    assert_eq!(
+        metrics.rejected_requests as usize,
+        expected.rejected_requests
+    );
     assert_eq!(rejected, expected.rejected_requests);
     assert!(expected.third_request_rejected);
 }
@@ -291,7 +310,10 @@ async fn test_rate_limiter_token_refill() {
     let metrics = rate_limiter.get_metrics().await;
     assert_eq!(metrics.total_requests as usize, expected.total_requests);
     assert_eq!(metrics.allowed_requests as usize, expected.allowed_requests);
-    assert_eq!(metrics.rejected_requests as usize, expected.rejected_requests);
+    assert_eq!(
+        metrics.rejected_requests as usize,
+        expected.rejected_requests
+    );
     assert!(expected.tokens_refilled);
 }
 
@@ -317,7 +339,10 @@ async fn test_rate_limiter_burst_capacity() {
     let metrics = rate_limiter.get_metrics().await;
     assert_eq!(metrics.total_requests as usize, expected.total_requests);
     assert_eq!(metrics.allowed_requests as usize, expected.allowed_requests);
-    assert_eq!(metrics.rejected_requests as usize, expected.rejected_requests);
+    assert_eq!(
+        metrics.rejected_requests as usize,
+        expected.rejected_requests
+    );
     assert!(expected.burst_handled);
 
     let elapsed_ms = elapsed.as_millis() as u64;
@@ -344,7 +369,10 @@ async fn test_rate_limiter_multiple_tokens_per_request() {
     let metrics = rate_limiter.get_metrics().await;
     assert_eq!(metrics.total_requests as usize, expected.total_requests);
     assert_eq!(metrics.allowed_requests as usize, expected.allowed_requests);
-    assert_eq!(metrics.rejected_requests as usize, expected.rejected_requests);
+    assert_eq!(
+        metrics.rejected_requests as usize,
+        expected.rejected_requests
+    );
 }
 
 #[tokio::test]
@@ -370,15 +398,19 @@ async fn test_rate_limiter_metrics_tracking() {
     // up to 1 higher than expected due to this timing variance.
     let total_allowed = (metrics.allowed_requests + metrics.waited_requests) as usize;
     assert!(
-        total_allowed >= expected.allowed_requests && total_allowed <= expected.allowed_requests + 1,
+        total_allowed >= expected.allowed_requests
+            && total_allowed <= expected.allowed_requests + 1,
         "allowed_requests + waited_requests = {} should be {} or {}",
-        total_allowed, expected.allowed_requests, expected.allowed_requests + 1
+        total_allowed,
+        expected.allowed_requests,
+        expected.allowed_requests + 1
     );
     // Correspondingly, rejected may be 1 lower than expected
     assert!(
         metrics.rejected_requests as usize >= expected.rejected_requests.saturating_sub(1),
         "rejected_requests = {} should be >= {}",
-        metrics.rejected_requests, expected.rejected_requests.saturating_sub(1)
+        metrics.rejected_requests,
+        expected.rejected_requests.saturating_sub(1)
     );
     assert!(metrics.total_wait_time_ms >= expected.total_wait_time_greater_than);
 }

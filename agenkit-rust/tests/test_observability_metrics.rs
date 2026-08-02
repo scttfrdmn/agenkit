@@ -59,7 +59,10 @@ async fn test_init_metrics_otlp_without_endpoint_defers_to_env() {
     // OTEL_EXPORTER_OTLP_METRICS_ENDPOINT / OTEL_EXPORTER_OTLP_ENDPOINT itself,
     // so passing nothing is how a caller opts into environment configuration.
     let result = init_metrics("otlp", None);
-    assert!(result.is_ok(), "None endpoint should defer to the environment");
+    assert!(
+        result.is_ok(),
+        "None endpoint should defer to the environment"
+    );
 }
 
 #[tokio::test]
@@ -85,7 +88,10 @@ async fn test_shutdown_metrics_returns_promptly() {
     let agent = SimpleAgent::new("reader-agent", "ok");
     let metered = MetricsMiddleware::new(agent);
     let response = metered.process(Message::with_text("user", "hi")).await;
-    assert!(response.is_ok(), "metered agent should process successfully");
+    assert!(
+        response.is_ok(),
+        "metered agent should process successfully"
+    );
 
     agenkit::observability::shutdown_metrics();
 }

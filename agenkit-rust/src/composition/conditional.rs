@@ -1,7 +1,6 @@
 ///! Conditional agent composition pattern.
 ///!
 ///! Routes messages to different agents based on conditions.
-
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use serde_json::json;
@@ -134,9 +133,10 @@ impl Agent for ConditionalAgent {
                 match route.agent.process(message).await {
                     Ok(mut result) => {
                         // Add metadata about routing decision
-                        result
-                            .metadata
-                            .insert("conditional_agent_used".to_string(), json!(route.agent.name()));
+                        result.metadata.insert(
+                            "conditional_agent_used".to_string(),
+                            json!(route.agent.name()),
+                        );
                         result
                             .metadata
                             .insert("conditional_route".to_string(), json!(i + 1));
@@ -307,10 +307,7 @@ mod tests {
             result.metadata.get("conditional_agent_used").unwrap(),
             "default-agent"
         );
-        assert_eq!(
-            result.metadata.get("conditional_route").unwrap(),
-            "default"
-        );
+        assert_eq!(result.metadata.get("conditional_route").unwrap(), "default");
     }
 
     #[tokio::test]

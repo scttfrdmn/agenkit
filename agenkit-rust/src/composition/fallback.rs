@@ -2,7 +2,6 @@
 ///!
 ///! Tries agents in order until one succeeds.
 ///! This implements the Fallback/Retry pattern for reliability.
-
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use serde_json::json;
@@ -178,10 +177,7 @@ mod tests {
 
         async fn process(&self, _message: Message) -> Result<Message, AgentError> {
             if self.should_fail {
-                Err(AgentError::ProcessingError(format!(
-                    "{} failed",
-                    self.name
-                )))
+                Err(AgentError::ProcessingError(format!("{} failed", self.name)))
             } else {
                 Ok(Message::with_text(
                     "agent",

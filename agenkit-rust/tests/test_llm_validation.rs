@@ -1,8 +1,7 @@
-///! Tests for LLM parameter validation across all adapters
-
-use agenkit::adapters::openai::{OpenAIAgent, OpenAIConfig};
 use agenkit::adapters::anthropic::{AnthropicAgent, AnthropicConfig};
 use agenkit::adapters::gemini::{GeminiAdapter, GeminiConfig};
+///! Tests for LLM parameter validation across all adapters
+use agenkit::adapters::openai::{OpenAIAgent, OpenAIConfig};
 use agenkit::adapters::openai_compatible::{OpenAICompatibleAgent, OpenAICompatibleConfig};
 
 #[cfg(test)]

@@ -62,7 +62,9 @@ impl Agent for NamedAgent {
 
 #[tokio::test]
 async fn test_message_role_preserved_through_agent() {
-    let agent = EchoAgent { name: "echo".to_string() };
+    let agent = EchoAgent {
+        name: "echo".to_string(),
+    };
     let msg = Message::with_text("user", "hello");
     assert_eq!(msg.role, "user");
     let resp = agent.process(msg).await.unwrap();
@@ -81,7 +83,10 @@ async fn test_message_metadata_round_trip() {
         .with_metadata("key1", json!("value1"))
         .with_metadata("key2", json!(42))
         .with_metadata("key3", json!(true));
-    assert_eq!(msg.metadata.get("key1").unwrap().as_str().unwrap(), "value1");
+    assert_eq!(
+        msg.metadata.get("key1").unwrap().as_str().unwrap(),
+        "value1"
+    );
     assert_eq!(msg.metadata.get("key2").unwrap().as_i64().unwrap(), 42);
     assert!(msg.metadata.get("key3").unwrap().as_bool().unwrap());
 }
@@ -110,8 +115,8 @@ async fn test_message_content_as_str_non_string_returns_none() {
 
 #[tokio::test]
 async fn test_message_json_round_trip() {
-    let msg = Message::with_text("user", "serializable message")
-        .with_metadata("id", json!("msg-123"));
+    let msg =
+        Message::with_text("user", "serializable message").with_metadata("id", json!("msg-123"));
     let json_str = serde_json::to_string(&msg).unwrap();
     let restored: Message = serde_json::from_str(&json_str).unwrap();
     assert_eq!(restored.role, msg.role);
@@ -148,7 +153,9 @@ async fn test_message_unicode_content() {
 
 #[tokio::test]
 async fn test_agent_name_stable_across_calls() {
-    let agent = EchoAgent { name: "stable-name".to_string() };
+    let agent = EchoAgent {
+        name: "stable-name".to_string(),
+    };
     for _ in 0..10 {
         assert_eq!(agent.name(), "stable-name");
     }
@@ -156,7 +163,9 @@ async fn test_agent_name_stable_across_calls() {
 
 #[tokio::test]
 async fn test_agent_process_multiple_times() {
-    let agent = EchoAgent { name: "multi".to_string() };
+    let agent = EchoAgent {
+        name: "multi".to_string(),
+    };
     for i in 0..5 {
         let msg = Message::with_text("user", format!("msg {}", i));
         let result = agent.process(msg).await;
@@ -166,13 +175,17 @@ async fn test_agent_process_multiple_times() {
 
 #[tokio::test]
 async fn test_agent_capabilities_non_empty() {
-    let agent = EchoAgent { name: "capable".to_string() };
+    let agent = EchoAgent {
+        name: "capable".to_string(),
+    };
     assert!(!agent.capabilities().is_empty());
 }
 
 #[tokio::test]
 async fn test_agent_introspect_returns_result() {
-    let agent = EchoAgent { name: "introspectable".to_string() };
+    let agent = EchoAgent {
+        name: "introspectable".to_string(),
+    };
     let result = agent.introspect();
     // introspect() should return a valid IntrospectionResult
     assert!(!result.agent_name.is_empty());
@@ -180,12 +193,15 @@ async fn test_agent_introspect_returns_result() {
 
 #[tokio::test]
 async fn test_agent_concurrent_process_safe() {
-    let agent = Arc::new(EchoAgent { name: "concurrent".to_string() });
+    let agent = Arc::new(EchoAgent {
+        name: "concurrent".to_string(),
+    });
     let handles: Vec<_> = (0..10)
         .map(|i| {
             let a = Arc::clone(&agent);
             tokio::spawn(async move {
-                a.process(Message::with_text("user", format!("msg {}", i))).await
+                a.process(Message::with_text("user", format!("msg {}", i)))
+                    .await
             })
         })
         .collect();
@@ -202,9 +218,14 @@ async fn test_agent_process_after_error() {
     }
     #[async_trait]
     impl Agent for FlakyAgent {
-        fn name(&self) -> &str { "flaky" }
+        fn name(&self) -> &str {
+            "flaky"
+        }
         async fn process(&self, msg: Message) -> Result<Message, AgentError> {
-            if self.fail_first.swap(false, std::sync::atomic::Ordering::SeqCst) {
+            if self
+                .fail_first
+                .swap(false, std::sync::atomic::Ordering::SeqCst)
+            {
                 Err(AgentError::ProcessingError("first call fails".to_string()))
             } else {
                 Ok(Message::with_text("assistant", "ok"))
@@ -223,21 +244,29 @@ async fn test_agent_process_after_error() {
 #[tokio::test]
 async fn test_agent_name_uniqueness_not_required() {
     // Two agents can have the same name — no uniqueness constraint
-    let a1 = EchoAgent { name: "duplicate".to_string() };
-    let a2 = EchoAgent { name: "duplicate".to_string() };
+    let a1 = EchoAgent {
+        name: "duplicate".to_string(),
+    };
+    let a2 = EchoAgent {
+        name: "duplicate".to_string(),
+    };
     assert_eq!(a1.name(), a2.name());
 }
 
 #[tokio::test]
 async fn test_agent_empty_message_processed() {
-    let agent = EchoAgent { name: "echo".to_string() };
+    let agent = EchoAgent {
+        name: "echo".to_string(),
+    };
     let result = agent.process(Message::with_text("user", "")).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn test_agent_metadata_only_message() {
-    let agent = EchoAgent { name: "echo".to_string() };
+    let agent = EchoAgent {
+        name: "echo".to_string(),
+    };
     let msg = Message::with_text("user", "")
         .with_metadata("action", json!("process"))
         .with_metadata("version", json!("1.0"));
@@ -286,7 +315,9 @@ impl Tool for FailingTool {
         &self,
         _params: HashMap<String, serde_json::Value>,
     ) -> Result<ToolResult, AgentError> {
-        Err(AgentError::ProcessingError("tool execution failed".to_string()))
+        Err(AgentError::ProcessingError(
+            "tool execution failed".to_string(),
+        ))
     }
 }
 
@@ -418,13 +449,20 @@ async fn test_agent_error_propagates_through_process() {
     struct ErrorPropagator;
     #[async_trait]
     impl Agent for ErrorPropagator {
-        fn name(&self) -> &str { "propagator" }
+        fn name(&self) -> &str {
+            "propagator"
+        }
         async fn process(&self, _msg: Message) -> Result<Message, AgentError> {
-            Err(AgentError::Internal("downstream error preserved".to_string()))
+            Err(AgentError::Internal(
+                "downstream error preserved".to_string(),
+            ))
         }
     }
     let agent = ErrorPropagator;
-    let err = agent.process(Message::with_text("user", "test")).await.unwrap_err();
+    let err = agent
+        .process(Message::with_text("user", "test"))
+        .await
+        .unwrap_err();
     let msg = format!("{}", err);
     assert!(msg.contains("downstream"), "error message: {}", msg);
 }

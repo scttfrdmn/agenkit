@@ -97,6 +97,20 @@ if [ "$LINT" = true ]; then
     run_step "go vet" \
         bash -c 'go vet $(go list ./... | grep -v /examples/)'
 
+    # Rust lint (#773). --all-targets matters: without it clippy skips tests/ and
+    # examples/, which is exactly where the six deny-by-default errors found in
+    # #773 had accumulated unseen.
+    if command -v cargo &>/dev/null; then
+        cd "$REPO_ROOT/agenkit-rust"
+        run_step "cargo fmt --check (Rust formatter)" \
+            cargo fmt --check
+        run_step "cargo clippy (Rust linter)" \
+            cargo clippy --all-targets
+    else
+        echo -e "${YELLOW}  ⚠ cargo not found, skipping Rust lint${NC}"
+        echo ""
+    fi
+
     cd "$REPO_ROOT"
 fi
 
@@ -148,6 +162,30 @@ else
     # Full test with race detector
     run_step "go test (with race detector)" \
         go test -race "${GO_TEST_ARGS[@]}" $PACKAGES
+fi
+
+# Rust Tests
+echo -e "${BLUE}=== Rust Tests ===${NC}"
+cd "$REPO_ROOT"
+if command -v cargo &>/dev/null && [ -f "agenkit-rust/Cargo.toml" ]; then
+    cd "$REPO_ROOT/agenkit-rust"
+    # --all-targets, NOT --lib. `--lib` runs only the unit tests inside src/ and
+    # never builds tests/, so the 40+ integration files there (every
+    # cross_language_*.rs, every observability test) went unexecuted by any gate
+    # until #773. ~11s warm, ~60s from cold.
+    run_step "cargo test (Rust, all targets)" \
+        cargo test --all-targets --quiet
+    # Doctests are a separate invocation because --all-targets excludes them.
+    # Skipped under --quick: they rebuild against the public API surface, which is
+    # the slowest part of the Rust leg.
+    if [ "$QUICK" = false ]; then
+        run_step "cargo test --doc (Rust doctests)" \
+            cargo test --doc --features opentelemetry --quiet
+    fi
+    cd "$REPO_ROOT"
+else
+    echo -e "${YELLOW}  ⚠ cargo not found or agenkit-rust missing, skipping Rust tests${NC}"
+    echo ""
 fi
 
 # C# Tests

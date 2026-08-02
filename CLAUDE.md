@@ -175,12 +175,16 @@ make test-lint
 | Python     | `make test`                          | 2:08  |
 | Go         | `cd agenkit-go && go test ./...`     | ~10s  |
 | TypeScript | `cd agenkit-ts && npm test`          | 4.5s  |
-| Rust       | `cd agenkit-rust && cargo test`      | 0.4s  |
+| Rust       | `cd agenkit-rust && cargo test --all-targets` | ~11s |
 | C++        | `cd agenkit-cpp/build && ctest`      | 50s   |
 | Zig        | `cd agenkit-zig && zig build test`   | 0.16s |
 | C#         | `cd agenkit-cs && dotnet test`       | ~5s   |
 | Java       | `cd agenkit-java && mvn test`        | ~15s  |
 | Scala      | `cd agenkit-scala && sbt test`       | ~20s  |
+
+For Rust use `--all-targets`, not a bare `cargo test`: `--lib` alone skips
+everything in `agenkit-rust/tests/` (#773). Doctests need their own run —
+`cargo test --doc --features opentelemetry`; `--all-targets` excludes them.
 
 **Local testing is your ONLY validation** - No CI/CD available currently.
 

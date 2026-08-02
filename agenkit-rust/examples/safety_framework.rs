@@ -13,8 +13,8 @@ use agenkit::{
     core::{Agent, AgentError, Message},
     safety::{
         AnomalyDetectionMiddleware, AuditEvent, AuditEventType, AuditSeverity,
-        InputValidationMiddleware, OutputValidationMiddleware, PermissionMiddleware, Role,
-        Sandbox, SchemaValidator, SecurityAuditLogger, SecurityAuditLoggerConfig,
+        InputValidationMiddleware, OutputValidationMiddleware, PermissionMiddleware, Role, Sandbox,
+        SchemaValidator, SecurityAuditLogger, SecurityAuditLoggerConfig,
     },
 };
 use async_trait::async_trait;
@@ -132,11 +132,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Configure schema validator
     let mut schema_config = SchemaValidatorConfig::default();
-    schema_config.expected_fields.insert("original".to_string(), "string".to_string());
-    schema_config.expected_fields.insert("processed".to_string(), "string".to_string());
-    schema_config.expected_fields.insert("agent".to_string(), "string".to_string());
+    schema_config
+        .expected_fields
+        .insert("original".to_string(), "string".to_string());
+    schema_config
+        .expected_fields
+        .insert("processed".to_string(), "string".to_string());
+    schema_config
+        .expected_fields
+        .insert("agent".to_string(), "string".to_string());
     schema_config.required_fields.insert("original".to_string());
-    schema_config.required_fields.insert("processed".to_string());
+    schema_config
+        .required_fields
+        .insert("processed".to_string());
 
     let schema = SchemaValidator::new(schema_config);
 

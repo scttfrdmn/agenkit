@@ -465,7 +465,10 @@ mod tests {
 
         // All user permissions should be in admin permissions
         for perm in user_perms {
-            assert!(admin_perms.contains(&perm), "Admin should have all User permissions");
+            assert!(
+                admin_perms.contains(&perm),
+                "Admin should have all User permissions"
+            );
         }
     }
 
@@ -479,57 +482,43 @@ mod tests {
 
     #[test]
     fn test_sandbox_builder_allow_path() {
-        let sandbox = Sandbox::builder()
-            .allow_path("/home/user")
-            .build();
+        let sandbox = Sandbox::builder().allow_path("/home/user").build();
         assert!(sandbox.is_path_allowed("/home/user/file.txt"));
     }
 
     #[test]
     fn test_sandbox_builder_deny_path() {
-        let sandbox = Sandbox::builder()
-            .deny_path("/secrets")
-            .build();
+        let sandbox = Sandbox::builder().deny_path("/secrets").build();
         assert!(!sandbox.is_path_allowed("/secrets/key.pem"));
     }
 
     #[test]
     fn test_sandbox_builder_allow_command() {
-        let sandbox = Sandbox::builder()
-            .allow_command("rustc")
-            .build();
+        let sandbox = Sandbox::builder().allow_command("rustc").build();
         assert!(sandbox.is_command_allowed("rustc"));
     }
 
     #[test]
     fn test_sandbox_builder_deny_command() {
-        let sandbox = Sandbox::builder()
-            .deny_command("curl")
-            .build();
+        let sandbox = Sandbox::builder().deny_command("curl").build();
         assert!(!sandbox.is_command_allowed("curl"));
     }
 
     #[test]
     fn test_sandbox_builder_allow_domain() {
-        let sandbox = Sandbox::builder()
-            .allow_domain("api.example.com")
-            .build();
+        let sandbox = Sandbox::builder().allow_domain("api.example.com").build();
         assert!(sandbox.is_domain_allowed("api.example.com"));
     }
 
     #[test]
     fn test_sandbox_builder_max_file_size() {
-        let sandbox = Sandbox::builder()
-            .max_file_size(1024)
-            .build();
+        let sandbox = Sandbox::builder().max_file_size(1024).build();
         assert_eq!(sandbox.max_file_size, 1024);
     }
 
     #[test]
     fn test_sandbox_builder_max_execution_time() {
-        let sandbox = Sandbox::builder()
-            .max_execution_time(120)
-            .build();
+        let sandbox = Sandbox::builder().max_execution_time(120).build();
         assert_eq!(sandbox.max_execution_time, 120);
     }
 

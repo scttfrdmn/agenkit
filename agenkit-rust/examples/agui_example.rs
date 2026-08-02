@@ -15,11 +15,10 @@
 ///! ```bash
 ///! cargo run --example agui_example
 ///! ```
-
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};
 use agenkit::protocols::agui::events::{AGUIEvent, EventType};
-use agenkit::protocols::agui::transports::http::{SSEFormatter, AGUISSEStream};
+use agenkit::protocols::agui::transports::http::{AGUISSEStream, SSEFormatter};
 use agenkit::protocols::agui::transports::websocket::WebSocketMessageFormat;
 use async_trait::async_trait;
 use futures::stream::StreamExt;
@@ -32,9 +31,7 @@ struct EchoAgent {
 
 impl EchoAgent {
     fn new(name: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-        }
+        Self { name: name.into() }
     }
 }
 
@@ -45,10 +42,7 @@ impl Agent for EchoAgent {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec![
-            "echo".to_string(),
-            "streaming".to_string(),
-        ]
+        vec!["echo".to_string(), "streaming".to_string()]
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
@@ -230,7 +224,11 @@ async fn websocket_formatting_example(
         let json: serde_json::Value = serde_json::from_str(&ws_message)?;
 
         println!("  WebSocket Message #{}:", message_count);
-        println!("    Type: {}", json.get("event_type").unwrap_or(&serde_json::json!("unknown")));
+        println!(
+            "    Type: {}",
+            json.get("event_type")
+                .unwrap_or(&serde_json::json!("unknown"))
+        );
 
         // Show content if it's a text chunk
         if let Some(content) = json.get("content") {

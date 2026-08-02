@@ -1,7 +1,6 @@
 ///! Bridge MCP tools to the agenkit Tool trait.
-
 use crate::core::{AgentError, Tool, ToolResult};
-use crate::protocols::mcp::{McpClient, McpTool, text_content};
+use crate::protocols::mcp::{text_content, McpClient, McpTool};
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;

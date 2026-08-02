@@ -142,8 +142,8 @@ fn load_fixtures() -> Fixtures {
         env!("CARGO_MANIFEST_DIR"),
         "/../tests/cross_language/fixtures/timeout_behavior.json"
     );
-    let fixtures_str = std::fs::read_to_string(fixtures_path)
-        .expect("Failed to read timeout_behavior.json");
+    let fixtures_str =
+        std::fs::read_to_string(fixtures_path).expect("Failed to read timeout_behavior.json");
     serde_json::from_str(&fixtures_str).expect("Failed to parse timeout_behavior.json")
 }
 
@@ -163,7 +163,8 @@ async fn test_success_within_limit() {
 
     // Create mock agent
     let response = test_case.scenario.agent_response.as_ref().unwrap().clone();
-    let (mock_agent, _call_count) = MockTimeoutAgent::new(test_case.scenario.agent_delay_ms, response);
+    let (mock_agent, _call_count) =
+        MockTimeoutAgent::new(test_case.scenario.agent_delay_ms, response);
 
     // Wrap with timeout
     let timeout = Duration::from_millis(test_case.config.timeout_ms);
@@ -205,7 +206,8 @@ async fn test_timeout_exceeded() {
 
     // Create mock agent
     let response = test_case.scenario.agent_response.as_ref().unwrap().clone();
-    let (mock_agent, _call_count) = MockTimeoutAgent::new(test_case.scenario.agent_delay_ms, response);
+    let (mock_agent, _call_count) =
+        MockTimeoutAgent::new(test_case.scenario.agent_delay_ms, response);
 
     // Wrap with timeout
     let timeout = Duration::from_millis(test_case.config.timeout_ms);
@@ -244,7 +246,8 @@ async fn test_timeout_exactly_at_limit() {
 
     // Create mock agent
     let response = test_case.scenario.agent_response.as_ref().unwrap().clone();
-    let (mock_agent, _call_count) = MockTimeoutAgent::new(test_case.scenario.agent_delay_ms, response);
+    let (mock_agent, _call_count) =
+        MockTimeoutAgent::new(test_case.scenario.agent_delay_ms, response);
 
     // Wrap with timeout
     let timeout = Duration::from_millis(test_case.config.timeout_ms);
@@ -286,7 +289,8 @@ async fn test_zero_delay() {
 
     // Create mock agent
     let response = test_case.scenario.agent_response.as_ref().unwrap().clone();
-    let (mock_agent, _call_count) = MockTimeoutAgent::new(test_case.scenario.agent_delay_ms, response);
+    let (mock_agent, _call_count) =
+        MockTimeoutAgent::new(test_case.scenario.agent_delay_ms, response);
 
     // Wrap with timeout
     let timeout = Duration::from_millis(test_case.config.timeout_ms);
@@ -322,7 +326,8 @@ async fn test_agent_error() {
 
     // Create mock agent
     let response = test_case.scenario.agent_response.as_ref().unwrap().clone();
-    let (mock_agent, _call_count) = MockTimeoutAgent::new(test_case.scenario.agent_delay_ms, response);
+    let (mock_agent, _call_count) =
+        MockTimeoutAgent::new(test_case.scenario.agent_delay_ms, response);
 
     // Wrap with timeout
     let timeout = Duration::from_millis(test_case.config.timeout_ms);
@@ -371,7 +376,8 @@ async fn test_very_short_timeout() {
 
     // Create mock agent
     let response = test_case.scenario.agent_response.as_ref().unwrap().clone();
-    let (mock_agent, _call_count) = MockTimeoutAgent::new(test_case.scenario.agent_delay_ms, response);
+    let (mock_agent, _call_count) =
+        MockTimeoutAgent::new(test_case.scenario.agent_delay_ms, response);
 
     // Wrap with timeout
     let timeout = Duration::from_millis(test_case.config.timeout_ms);
@@ -417,10 +423,8 @@ async fn test_metrics_tracking() {
     let mut timed_out = 0;
 
     for request in &test_case.scenario.requests {
-        let (mock_agent, _call_count) = MockTimeoutAgent::new(
-            request.agent_delay_ms,
-            request.agent_response.clone(),
-        );
+        let (mock_agent, _call_count) =
+            MockTimeoutAgent::new(request.agent_delay_ms, request.agent_response.clone());
 
         let message = Message::new("user", json!("test"));
         let result = tokio::time::timeout(timeout, mock_agent.process(message)).await;

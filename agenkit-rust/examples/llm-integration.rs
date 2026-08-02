@@ -82,7 +82,10 @@ async fn example_anthropic() {
 
     println!("  Asking Claude: \"What makes a good AI agent framework?\"");
 
-    let msg = Message::with_text("user", "What makes a good AI agent framework? One sentence.");
+    let msg = Message::with_text(
+        "user",
+        "What makes a good AI agent framework? One sentence.",
+    );
 
     match agent.process(msg).await {
         Ok(response) => {

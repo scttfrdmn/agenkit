@@ -135,7 +135,8 @@ impl Agent for FormatterAgent {
         details.insert("format_type".to_string(), serde_json::json!("report"));
         log_agent_event("pipeline.format", &details);
 
-        Ok(Message::with_text("formatter", &formatted).with_metadata("formatted", serde_json::json!(true)))
+        Ok(Message::with_text("formatter", &formatted)
+            .with_metadata("formatted", serde_json::json!(true)))
     }
 }
 

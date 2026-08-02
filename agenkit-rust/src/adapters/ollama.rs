@@ -225,12 +225,8 @@ impl OllamaAgent {
         let ollama_message = self.message_to_ollama_message(&message);
 
         match self.stream_api_impl(vec![ollama_message]).await {
-            Ok(chunks) => {
-                Box::pin(futures::stream::iter(chunks.into_iter().map(Ok)))
-            }
-            Err(e) => {
-                Box::pin(futures::stream::once(async move { Err(e) }))
-            }
+            Ok(chunks) => Box::pin(futures::stream::iter(chunks.into_iter().map(Ok))),
+            Err(e) => Box::pin(futures::stream::once(async move { Err(e) })),
         }
     }
 
@@ -296,8 +292,7 @@ impl OllamaAgent {
                 continue;
             }
 
-            let chunk_json: serde_json::Value = serde_json::from_str(line)
-                ?;
+            let chunk_json: serde_json::Value = serde_json::from_str(line)?;
 
             // Extract text from message.content
             if let Some(message) = chunk_json["message"].as_object() {

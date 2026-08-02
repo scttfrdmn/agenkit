@@ -228,7 +228,10 @@ async fn test_init_tracing_with_config_clamps_sample_rate() {
 #[tokio::test]
 async fn test_init_tracing_with_config_rejects_unknown_exporter() {
     let result = init_tracing_with_config("nope", None, Some("svc"), 1.0);
-    assert!(result.is_err(), "should reject an unsupported exporter type");
+    assert!(
+        result.is_err(),
+        "should reject an unsupported exporter type"
+    );
 }
 
 #[tokio::test]

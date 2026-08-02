@@ -2,7 +2,6 @@
 ///!
 ///! Validates that Agenkit messages serialize/deserialize consistently
 ///! with the canonical JSON schema across all language implementations.
-
 use agenkit::core::Message;
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -44,8 +43,7 @@ fn load_fixtures() -> MessageFixtures {
     let content = fs::read_to_string(&fixtures_path)
         .unwrap_or_else(|e| panic!("Failed to load fixtures from {:?}: {}", fixtures_path, e));
 
-    serde_json::from_str(&content)
-        .unwrap_or_else(|e| panic!("Failed to parse fixtures: {}", e))
+    serde_json::from_str(&content).unwrap_or_else(|e| panic!("Failed to parse fixtures: {}", e))
 }
 
 fn load_schema() -> Value {
@@ -57,8 +55,7 @@ fn load_schema() -> Value {
     let content = fs::read_to_string(&schema_path)
         .unwrap_or_else(|e| panic!("Failed to load schema from {:?}: {}", schema_path, e));
 
-    serde_json::from_str(&content)
-        .unwrap_or_else(|e| panic!("Failed to parse schema: {}", e))
+    serde_json::from_str(&content).unwrap_or_else(|e| panic!("Failed to parse schema: {}", e))
 }
 
 fn validate_against_schema(message_json: &Value, _schema: &Value) {
@@ -71,7 +68,10 @@ fn validate_against_schema(message_json: &Value, _schema: &Value) {
 
     // Check required fields
     assert!(obj.contains_key("role"), "Message must have 'role' field");
-    assert!(obj.contains_key("content"), "Message must have 'content' field");
+    assert!(
+        obj.contains_key("content"),
+        "Message must have 'content' field"
+    );
 
     // Validate role is valid enum value
     let role = obj.get("role").unwrap().as_str().unwrap();
@@ -255,10 +255,7 @@ fn test_agent_message() {
 
     assert_eq!(msg.role, "agent");
     assert!(msg.content.as_str().unwrap().contains("reasoning steps"));
-    assert_eq!(
-        msg.metadata.get("technique").unwrap(),
-        "chain_of_thought"
-    );
+    assert_eq!(msg.metadata.get("technique").unwrap(), "chain_of_thought");
 
     let serialized = message_to_json(&msg);
     validate_against_schema(&serialized, &schema);
@@ -305,7 +302,11 @@ fn test_large_content() {
     msg.metadata = test_case.message.metadata.clone();
 
     let validation = test_case.validation.as_object().unwrap();
-    let min_length = validation.get("min_content_length").unwrap().as_u64().unwrap();
+    let min_length = validation
+        .get("min_content_length")
+        .unwrap()
+        .as_u64()
+        .unwrap();
 
     let content_str = msg.content.as_str().unwrap();
     assert!(content_str.len() >= min_length as usize);
@@ -374,6 +375,13 @@ fn test_nested_metadata() {
     validate_against_schema(&serialized, &schema);
 }
 
+// 3.14159 is the literal `score` value in
+// tests/cross_language/fixtures/messages.json, which Python, TypeScript, C++,
+// and Zig all assert against too. Substituting `std::f64::consts::PI` as clippy
+// suggests would change the expected value and desynchronise this core from the
+// shared fixture — the number is a fixture constant that happens to look like
+// pi, not an approximation of it.
+#[allow(clippy::approx_constant)]
 #[test]
 fn test_numeric_metadata() {
     let fixtures = load_fixtures();
@@ -421,10 +429,7 @@ fn test_all_fixtures_roundtrip() {
         validate_against_schema(&serialized, &schema);
 
         // Verify core properties match
-        assert_eq!(
-            serialized["role"].as_str().unwrap(),
-            test_case.message.role
-        );
+        assert_eq!(serialized["role"].as_str().unwrap(), test_case.message.role);
         assert!(serialized.get("content").is_some());
     }
 }

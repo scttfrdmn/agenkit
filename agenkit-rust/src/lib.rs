@@ -95,8 +95,8 @@ pub mod runtime;
 pub mod transports;
 
 pub mod budget;
-pub mod composition;
 pub mod checkpointing;
+pub mod composition;
 pub mod evaluation;
 pub mod infrastructure;
 pub mod memory;

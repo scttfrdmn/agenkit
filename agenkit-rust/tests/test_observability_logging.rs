@@ -143,11 +143,14 @@ fn test_logging_with_complex_details() {
     let _ = configure_logging("json", "info");
 
     let mut details = HashMap::new();
-    details.insert("nested".to_string(), serde_json::json!({
-        "key1": "value1",
-        "key2": 42,
-        "key3": true
-    }));
+    details.insert(
+        "nested".to_string(),
+        serde_json::json!({
+            "key1": "value1",
+            "key2": 42,
+            "key3": true
+        }),
+    );
     details.insert("array".to_string(), serde_json::json!([1, 2, 3]));
 
     // Should handle complex JSON structures

@@ -75,19 +75,19 @@
 
 #![cfg(feature = "opentelemetry")]
 
-pub mod tracing;
-pub mod metrics;
-pub mod logging;
 pub mod audit;
+pub mod logging;
+pub mod metrics;
+pub mod tracing;
 
 // Re-export common types
-pub use tracing::{
-    extract_trace_context, inject_trace_context, inject_trace_context_from, init_tracing,
-    init_tracing_with_config, shutdown as shutdown_tracing, TracingMiddleware,
-};
-pub use metrics::{init_metrics, shutdown_metrics, MetricsMiddleware};
-pub use logging::{configure_logging, log_agent_error, log_agent_event, log_with_level};
 pub use audit::{AuditEvent, AuditEventType, AuditLogger, AuditSeverity};
+pub use logging::{configure_logging, log_agent_error, log_agent_event, log_with_level};
+pub use metrics::{init_metrics, shutdown_metrics, MetricsMiddleware};
+pub use tracing::{
+    extract_trace_context, init_tracing, init_tracing_with_config, inject_trace_context,
+    inject_trace_context_from, shutdown as shutdown_tracing, TracingMiddleware,
+};
 
 use crate::core::AgentError;
 

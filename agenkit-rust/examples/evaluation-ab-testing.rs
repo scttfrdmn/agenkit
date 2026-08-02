@@ -152,10 +152,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nStep 4: Statistical Analysis");
     println!("----------------------------");
 
-    let v1_avg_length =
-        rows.iter().map(|r| r.1.len()).sum::<usize>() as f64 / rows.len() as f64;
-    let v2_avg_length =
-        rows.iter().map(|r| r.2.len()).sum::<usize>() as f64 / rows.len() as f64;
+    let v1_avg_length = rows.iter().map(|r| r.1.len()).sum::<usize>() as f64 / rows.len() as f64;
+    let v2_avg_length = rows.iter().map(|r| r.2.len()).sum::<usize>() as f64 / rows.len() as f64;
 
     println!("Response Length Analysis:");
     println!("  V1 Average: {:.0} characters", v1_avg_length);

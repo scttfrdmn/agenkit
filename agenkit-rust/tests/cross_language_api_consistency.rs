@@ -12,9 +12,7 @@ use std::fs;
 use std::path::PathBuf;
 
 // Import agenkit types
-use agenkit::middleware::{
-    CircuitBreakerConfig, RateLimiterConfig, RetryConfig, TimeoutConfig,
-};
+use agenkit::middleware::{CircuitBreakerConfig, RateLimiterConfig, RetryConfig, TimeoutConfig};
 
 #[derive(Debug, Deserialize)]
 struct APIFixtures {
@@ -84,11 +82,9 @@ fn load_api_fixtures() -> APIFixtures {
         .join("fixtures")
         .join("api_consistency.json");
 
-    let data = fs::read_to_string(fixtures_path)
-        .expect("Failed to read API consistency fixtures");
+    let data = fs::read_to_string(fixtures_path).expect("Failed to read API consistency fixtures");
 
-    serde_json::from_str(&data)
-        .expect("Failed to parse API consistency fixtures")
+    serde_json::from_str(&data).expect("Failed to parse API consistency fixtures")
 }
 
 #[cfg(test)]
@@ -315,10 +311,7 @@ mod default_values_tests {
         );
 
         // Check timeout (request timeout)
-        let expected_timeout_ms = *test_case.defaults["timeout"]
-            .value_ms
-            .as_ref()
-            .unwrap() as i64;
+        let expected_timeout_ms = *test_case.defaults["timeout"].value_ms.as_ref().unwrap() as i64;
         assert_eq!(
             config.timeout.as_millis() as i64,
             expected_timeout_ms,
@@ -387,10 +380,7 @@ mod interface_signature_tests {
             vec![]
         }
 
-        async fn process(
-            &self,
-            _message: Message,
-        ) -> Result<Message, AgentError> {
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
             Ok(Message::new("agent", serde_json::json!("response")))
         }
     }
@@ -457,10 +447,7 @@ mod rust_specific_features_tests {
         };
 
         assert_eq!(config.max_retries, 5);
-        assert_eq!(
-            config.initial_delay,
-            std::time::Duration::from_millis(200)
-        );
+        assert_eq!(config.initial_delay, std::time::Duration::from_millis(200));
         assert_eq!(config.max_delay, std::time::Duration::from_millis(5000));
         assert_eq!(config.multiplier, 1.5);
     }

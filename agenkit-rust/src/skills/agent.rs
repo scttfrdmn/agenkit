@@ -58,13 +58,11 @@ impl<A: Agent> Agent for SkillEnabledAgent<A> {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        let query = message
-            .content
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let query = message.content.as_str().unwrap_or("").to_string();
 
-        let relevant = self.registry.find_relevant_skills(&query, self.max_active_skills);
+        let relevant = self
+            .registry
+            .find_relevant_skills(&query, self.max_active_skills);
 
         if relevant.is_empty() {
             return self.inner.process(message).await;
@@ -132,7 +130,11 @@ mod tests {
     #[tokio::test]
     async fn test_skill_agent_augments_message() {
         let tmp = TempDir::new().unwrap();
-        make_skill_dir(tmp.path(), "pdf-processing", "Extract text from PDF documents.");
+        make_skill_dir(
+            tmp.path(),
+            "pdf-processing",
+            "Extract text from PDF documents.",
+        );
 
         let mut registry = SkillRegistry::new(vec![tmp.path().to_path_buf()]);
         registry.discover_skills();

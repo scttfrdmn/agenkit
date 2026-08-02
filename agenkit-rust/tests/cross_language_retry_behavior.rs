@@ -125,10 +125,7 @@ impl Agent for MockRetryAgent {
     }
 }
 
-fn find_test_case<'a>(
-    fixtures: &'a RetryBehaviorFixtures,
-    id: &str,
-) -> &'a RetryBehaviorTestCase {
+fn find_test_case<'a>(fixtures: &'a RetryBehaviorFixtures, id: &str) -> &'a RetryBehaviorTestCase {
     fixtures
         .test_cases
         .iter()

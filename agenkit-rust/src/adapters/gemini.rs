@@ -180,27 +180,30 @@ impl GeminiAdapter {
         // Validate temperature (0-2)
         if let Some(temp) = config.temperature {
             if !(0.0..=2.0).contains(&temp) {
-                return Err(AgentError::InvalidInput(
-                    format!("temperature must be between 0 and 2, got {}", temp)
-                ));
+                return Err(AgentError::InvalidInput(format!(
+                    "temperature must be between 0 and 2, got {}",
+                    temp
+                )));
             }
         }
 
         // Validate max_tokens (must be positive)
         if let Some(max_tok) = config.max_tokens {
             if max_tok == 0 {
-                return Err(AgentError::InvalidInput(
-                    format!("max_tokens must be positive, got {}", max_tok)
-                ));
+                return Err(AgentError::InvalidInput(format!(
+                    "max_tokens must be positive, got {}",
+                    max_tok
+                )));
             }
         }
 
         // Validate top_p (0-1)
         if let Some(tp) = config.top_p {
             if !(0.0..=1.0).contains(&tp) {
-                return Err(AgentError::InvalidInput(
-                    format!("top_p must be between 0 and 1, got {}", tp)
-                ));
+                return Err(AgentError::InvalidInput(format!(
+                    "top_p must be between 0 and 1, got {}",
+                    tp
+                )));
             }
         }
 

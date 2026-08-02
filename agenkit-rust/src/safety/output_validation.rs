@@ -445,7 +445,10 @@ mod tests {
         let redacted = redactor.redact_text(text);
 
         // Should redact email and SSN at minimum
-        assert!(!redacted.contains("user@test.com"), "Email should be redacted");
+        assert!(
+            !redacted.contains("user@test.com"),
+            "Email should be redacted"
+        );
         assert!(!redacted.contains("123-45-6789"), "SSN should be redacted");
 
         // Should have multiple redactions

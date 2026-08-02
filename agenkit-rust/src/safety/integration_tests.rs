@@ -5,8 +5,8 @@ mod tests {
     use crate::core::{Agent, AgentError, IntrospectionResult, Message};
     use crate::safety::{
         AnomalyDetectionMiddleware, ContentFilterConfig, InputValidationMiddleware,
-        OutputValidationMiddleware, PermissionMiddleware, Role, Sandbox,
-        SchemaValidator, SchemaValidatorConfig,
+        OutputValidationMiddleware, PermissionMiddleware, Role, Sandbox, SchemaValidator,
+        SchemaValidatorConfig,
     };
     use async_trait::async_trait;
     use serde_json::json;
@@ -180,7 +180,10 @@ mod tests {
         let msg = Message::with_text("user", "Read some data");
         let result = agent.process(msg).await;
 
-        assert!(result.is_ok(), "Read request should succeed for ReadOnly role");
+        assert!(
+            result.is_ok(),
+            "Read request should succeed for ReadOnly role"
+        );
 
         // Multiple rapid requests (testing rate limiting)
         for i in 0..5 {
@@ -199,10 +202,8 @@ mod tests {
         let agent = PermissionMiddleware::new(agent, Role::User);
 
         let mut msg = Message::with_text("user", "Hello");
-        msg.metadata.insert(
-            "session_id".to_string(),
-            serde_json::json!("session-123"),
-        );
+        msg.metadata
+            .insert("session_id".to_string(), serde_json::json!("session-123"));
         msg.metadata
             .insert("user_id".to_string(), serde_json::json!("user-456"));
 
@@ -277,7 +278,10 @@ mod tests {
 
         let response = result.unwrap();
         let content: &str = response.content_as_str().unwrap();
-        assert!(content.contains("***REDACTED***"), "Output should be redacted");
+        assert!(
+            content.contains("***REDACTED***"),
+            "Output should be redacted"
+        );
 
         // Test 2: Banned word is blocked
         let msg = Message::with_text("user", "How to exploit this vulnerability?");
@@ -384,10 +388,19 @@ mod tests {
         let msg = Message::with_text("user", "");
         let result = agent.process(msg).await;
 
-        // Should succeed or fail gracefully
+        // Should succeed or fail gracefully. If it succeeds, the empty input must
+        // have reached MockAgent and come back as its echo — an empty *response*
+        // would mean a middleware swallowed the body.
+        //
+        // This previously read `assert!(content.len() >= 0)`, which is vacuous:
+        // `len()` is `usize`, so it held for every possible value, including the
+        // `unwrap_or("")` fallback that fires when there is no text content at
+        // all. The test could not fail.
         if let Ok(response) = result {
-            let content: &str = response.content_as_str().unwrap_or("");
-            assert!(content.len() >= 0); // Response exists
+            let content = response
+                .content_as_str()
+                .expect("response should carry text content");
+            assert_eq!(content, "Echo: ");
         }
     }
 

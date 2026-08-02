@@ -1,0 +1,8 @@
+# Pinned so that `rustfmt <file>` and `cargo fmt` agree.
+#
+# `cargo fmt` reads the edition from Cargo.toml; `rustfmt` invoked directly on a
+# path does not, and defaults to edition 2015 — where `async fn` and `async move`
+# are not valid syntax. Without this file, `rustfmt --check src/runtime.rs` fails
+# to *parse* the file (E0670) rather than reporting a formatting diff, which is
+# easy to misread as drift. This makes the two entry points equivalent (#773).
+edition = "2021"

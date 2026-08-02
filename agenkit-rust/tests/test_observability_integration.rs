@@ -4,8 +4,8 @@
 
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::observability::{
-    init_metrics, init_tracing, configure_logging, log_agent_event,
-    AuditEvent, AuditEventType, AuditLogger, MetricsMiddleware, TracingMiddleware,
+    configure_logging, init_metrics, init_tracing, log_agent_event, AuditEvent, AuditEventType,
+    AuditLogger, MetricsMiddleware, TracingMiddleware,
 };
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -124,7 +124,10 @@ async fn test_all_observability_modules() {
     audit_logger.flush().await.unwrap();
 
     // Verify audit events were logged
-    let events = audit_logger.query(Some("session-123".to_string())).await.unwrap();
+    let events = audit_logger
+        .query(Some("session-123".to_string()))
+        .await
+        .unwrap();
     assert_eq!(events.len(), 2);
 }
 
@@ -242,7 +245,10 @@ async fn test_multi_agent_workflow_with_observability() {
 
     // Flush and verify audit trail
     audit_logger.flush().await.unwrap();
-    let events = audit_logger.query(Some("workflow-1".to_string())).await.unwrap();
+    let events = audit_logger
+        .query(Some("workflow-1".to_string()))
+        .await
+        .unwrap();
     assert_eq!(events.len(), 3);
 }
 
@@ -335,7 +341,10 @@ async fn test_concurrent_agents_with_observability() {
 
     // Verify all audit events
     audit_logger.flush().await.unwrap();
-    let events = audit_logger.query(Some("concurrent-test".to_string())).await.unwrap();
+    let events = audit_logger
+        .query(Some("concurrent-test".to_string()))
+        .await
+        .unwrap();
     assert_eq!(events.len(), 5);
 }
 
@@ -373,7 +382,10 @@ async fn test_session_tracking_across_modules() {
     audit_logger.flush().await.unwrap();
 
     // Query by session - should get all 3 events
-    let events = audit_logger.query(Some(session_id.to_string())).await.unwrap();
+    let events = audit_logger
+        .query(Some(session_id.to_string()))
+        .await
+        .unwrap();
     assert_eq!(events.len(), 3);
 }
 

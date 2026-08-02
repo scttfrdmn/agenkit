@@ -321,9 +321,7 @@ async def test_circuit_breaker_half_open_reopens():
         changes = circuit_breaker.metrics.state_changes
         assert changes.get("closed->open", 0) >= 1, f"never opened: {changes}"
         assert changes.get("open->half_open", 0) >= 1, f"never probed half-open: {changes}"
-        assert changes.get("half_open->open", 0) >= 1, (
-            f"never reopened from half-open: {changes}"
-        )
+        assert changes.get("half_open->open", 0) >= 1, f"never reopened from half-open: {changes}"
 
 
 @pytest.mark.asyncio

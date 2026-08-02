@@ -5,9 +5,10 @@ file structure and using regex patterns to find type definitions.
 """
 
 import re
-import subprocess
 from pathlib import Path
 from typing import Any
+
+from ._paths import scan_techniques_by_filename
 
 
 def scan() -> dict[str, Any]:
@@ -48,7 +49,7 @@ def scan_patterns(root: Path) -> list[str]:
     # Matches: type FooAgent struct, type FooAgent interface
     agent_pattern = re.compile(r"type\s+(\w*Agent)\s+(struct|interface)")
 
-    for go_file in patterns_dir.glob("*.go"):
+    for go_file in patterns_dir.rglob("*.go"):
         if go_file.name.startswith("_"):
             continue
 
@@ -92,7 +93,7 @@ def scan_middleware(root: Path) -> list[str]:
         r"(Middleware|Decorator|Config)?\s+(struct|interface)"
     )
 
-    for go_file in middleware_dir.glob("*.go"):
+    for go_file in middleware_dir.rglob("*.go"):
         if go_file.name.startswith("_") or go_file.name.endswith("_test.go"):
             continue
 
@@ -132,9 +133,11 @@ def scan_llm_adapters(root: Path) -> list[str]:
 
     # Pattern for LLM adapters
     # Matches: type OpenAI, type OpenAILLM, type OpenAIAdapter
-    adapter_pattern = re.compile(r"type\s+(OpenAI|Anthropic|Bedrock|Gemini|Ollama|LiteLLM|OpenAICompatible)(LLM|Adapter)?\s+struct")
+    adapter_pattern = re.compile(
+        r"type\s+(OpenAI|Anthropic|Bedrock|Gemini|Ollama|LiteLLM|OpenAICompatible)(LLM|Adapter)?\s+struct"
+    )
 
-    for go_file in adapters_dir.glob("*.go"):
+    for go_file in adapters_dir.rglob("*.go"):
         if go_file.name in ["llm.go"] or go_file.name.endswith("_test.go"):
             continue
 
@@ -173,9 +176,11 @@ def scan_memory(root: Path) -> list[str]:
 
     # Pattern for memory backends
     # Matches: type InMemory, type InMemoryMemory, type RedisBackend
-    memory_pattern = re.compile(r"type\s+(InMemory|Ephemeral|Redis|Vector|Hierarchy|Endless)(Memory|Backend)?\s+struct")
+    memory_pattern = re.compile(
+        r"type\s+(InMemory|Ephemeral|Redis|Vector|Hierarchy|Endless)(Memory|Backend)?\s+struct"
+    )
 
-    for go_file in memory_dir.glob("*.go"):
+    for go_file in memory_dir.rglob("*.go"):
         if go_file.name in ["memory.go"] or go_file.name.endswith("_test.go"):
             continue
 
@@ -206,31 +211,8 @@ def scan_techniques(root: Path) -> list[str]:
     Returns:
         Sorted list of technique names
     """
-    techniques = []
     techniques_dir = root / "techniques"
-
-    if not techniques_dir.exists():
-        return techniques
-
-    # Pattern for technique types
-    technique_pattern = re.compile(r"type\s+(\w+Technique|\w+Strategy)\s+(struct|interface)")
-
-    for go_file in techniques_dir.glob("*.go"):
-        if go_file.name.startswith("_") or go_file.name.endswith("_test.go"):
-            continue
-
-        try:
-            content = go_file.read_text()
-
-            for match in technique_pattern.finditer(content):
-                name = match.group(1)
-                if not name.startswith("_"):
-                    techniques.append(name)
-
-        except (UnicodeDecodeError, PermissionError):
-            continue
-
-    return sorted(set(techniques))
+    return scan_techniques_by_filename(techniques_dir, "*.go")
 
 
 if __name__ == "__main__":

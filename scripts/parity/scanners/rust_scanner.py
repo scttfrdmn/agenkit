@@ -8,6 +8,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from ._paths import scan_techniques_by_filename
+
 
 def scan() -> dict[str, Any]:
     """Scan Rust codebase for all features.
@@ -47,7 +49,7 @@ def scan_patterns(root: Path) -> list[str]:
     # Matches: pub struct FooAgent, struct FooAgent
     agent_pattern = re.compile(r"(?:pub\s+)?struct\s+(\w*Agent)")
 
-    for rs_file in patterns_dir.glob("*.rs"):
+    for rs_file in patterns_dir.rglob("*.rs"):
         if rs_file.name.startswith("_"):
             continue
 
@@ -58,11 +60,13 @@ def scan_patterns(root: Path) -> list[str]:
             for match in agent_pattern.finditer(content):
                 name = match.group(1)
                 # Skip private types, mocks, base classes, and test utilities
-                if (not name.startswith("_")
+                if (
+                    not name.startswith("_")
                     and "mock" not in name.lower()
                     and name not in ["Agent", "MultiAgent"]
                     and "Dummy" not in name
-                    and "NoConfidence" not in name):
+                    and "NoConfidence" not in name
+                ):
                     patterns.append(name)
 
         except (UnicodeDecodeError, PermissionError):
@@ -95,7 +99,7 @@ def scan_middleware(root: Path) -> list[str]:
         r"(Config|Middleware|Decorator)?"
     )
 
-    for rs_file in middleware_dir.glob("*.rs"):
+    for rs_file in middleware_dir.rglob("*.rs"):
         if rs_file.name.startswith("_"):
             continue
 
@@ -138,7 +142,7 @@ def scan_llm_adapters(root: Path) -> list[str]:
         r"(?:pub\s+)?struct\s+(OpenAI|Anthropic|Bedrock|Gemini|Ollama|LiteLLM)(Adapter|LLM|Client)?"
     )
 
-    for rs_file in adapters_dir.glob("*.rs"):
+    for rs_file in adapters_dir.rglob("*.rs"):
         if rs_file.name in ["mod.rs"]:
             continue
 
@@ -181,7 +185,7 @@ def scan_memory(root: Path) -> list[str]:
         r"(?:pub\s+)?struct\s+(InMemory|Redis|Vector|Hierarchy|Endless)(Memory|Backend)?"
     )
 
-    for rs_file in memory_dir.glob("*.rs"):
+    for rs_file in memory_dir.rglob("*.rs"):
         if rs_file.name in ["mod.rs"]:
             continue
 
@@ -212,31 +216,8 @@ def scan_techniques(root: Path) -> list[str]:
     Returns:
         Sorted list of technique names
     """
-    techniques = []
     techniques_dir = root / "techniques"
-
-    if not techniques_dir.exists():
-        return techniques
-
-    # Pattern for technique structs
-    technique_pattern = re.compile(r"(?:pub\s+)?struct\s+(\w+Technique|\w+Strategy)")
-
-    for rs_file in techniques_dir.glob("*.rs"):
-        if rs_file.name.startswith("_"):
-            continue
-
-        try:
-            content = rs_file.read_text()
-
-            for match in technique_pattern.finditer(content):
-                name = match.group(1)
-                if not name.startswith("_") and "mock" not in name.lower():
-                    techniques.append(name)
-
-        except (UnicodeDecodeError, PermissionError):
-            continue
-
-    return sorted(set(techniques))
+    return scan_techniques_by_filename(techniques_dir, "*.rs")
 
 
 if __name__ == "__main__":

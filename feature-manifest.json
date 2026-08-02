@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-17T03:32:22.245305+00:00",
+  "generated_at": "2026-08-02T02:45:47.336498+00:00",
   "version": "1.0",
   "languages": {
     "python": {
@@ -55,7 +55,18 @@
         "RedisMemory",
         "VectorMemory"
       ],
-      "techniques": []
+      "techniques": [
+        "ActorCriticVariation",
+        "ChainOfThought",
+        "ExplorationStrategy",
+        "GraphOfThought",
+        "LeastToMost",
+        "PlanAndSolve",
+        "ReasoningGraph",
+        "ReasoningTree",
+        "SelfConsistency",
+        "TreeOfThought"
+      ]
     },
     "go": {
       "patterns": [
@@ -109,7 +120,16 @@
         "RedisMemory",
         "VectorMemory"
       ],
-      "techniques": []
+      "techniques": [
+        "ChainOfThought",
+        "GraphOfThought",
+        "LeastToMost",
+        "PlanAndSolveAgent",
+        "ReasoningGraph",
+        "ReasoningTree",
+        "SelfConsistency",
+        "TreeOfThought"
+      ]
     },
     "typescript": {
       "patterns": [
@@ -156,7 +176,16 @@
         "RedisMemory",
         "VectorMemory"
       ],
-      "techniques": []
+      "techniques": [
+        "ChainOfThought",
+        "GraphOfThought",
+        "LeastToMost",
+        "PlanAndSolve",
+        "ReasoningGraph",
+        "ReasoningTree",
+        "SelfConsistencyAgent",
+        "TreeOfThought"
+      ]
     },
     "rust": {
       "patterns": [
@@ -205,7 +234,16 @@
         "RedisMemory",
         "VectorMemory"
       ],
-      "techniques": []
+      "techniques": [
+        "ChainOfThoughtAgent",
+        "GraphOfThoughtAgent",
+        "LeastToMostAgent",
+        "PlanAndSolveAgent",
+        "ReasoningGraph",
+        "ReasoningTree",
+        "SelfConsistencyAgent",
+        "TreeOfThoughtAgent"
+      ]
     },
     "cpp": {
       "patterns": [
@@ -251,8 +289,20 @@
         "OllamaAdapter",
         "OpenAIAdapter"
       ],
-      "memory": [],
-      "techniques": []
+      "memory": [
+        "HierarchyMemory",
+        "RedisMemory"
+      ],
+      "techniques": [
+        "ChainOfThoughtAgent",
+        "GraphOfThoughtAgent",
+        "LeastToMostAgent",
+        "PlanAndSolveAgent",
+        "ReasoningGraph",
+        "ReasoningTree",
+        "SelfConsistencyAgent",
+        "TreeOfThoughtAgent"
+      ]
     },
     "zig": {
       "patterns": [
@@ -286,9 +336,29 @@
         "TimeoutConfig",
         "TimeoutDecorator"
       ],
-      "llm_adapters": [],
-      "memory": [],
-      "techniques": []
+      "llm_adapters": [
+        "AnthropicLLM",
+        "BedrockLLM",
+        "GeminiLLM",
+        "LiteLLMLLM",
+        "OllamaLLM",
+        "OpenAILLM"
+      ],
+      "memory": [
+        "HierarchyMemory",
+        "InMemoryMemory",
+        "RedisMemory"
+      ],
+      "techniques": [
+        "ChainOfThoughtAgent",
+        "GraphOfThoughtAgent",
+        "LeastToMostAgent",
+        "PlanAndSolveAgent",
+        "ReasoningGraph",
+        "ReasoningTree",
+        "SelfConsistencyAgent",
+        "TreeOfThoughtAgent"
+      ]
     },
     "csharp": {
       "patterns": [
@@ -440,7 +510,7 @@
       "typescript": 7,
       "rust": 6,
       "cpp": 5,
-      "zig": 0,
+      "zig": 6,
       "csharp": 3,
       "java": 3,
       "scala": 3
@@ -450,30 +520,30 @@
       "go": 5,
       "typescript": 5,
       "rust": 3,
-      "cpp": 0,
-      "zig": 0,
+      "cpp": 2,
+      "zig": 3,
       "csharp": 3,
       "java": 3,
       "scala": 3
     },
     "techniques": {
-      "python": 0,
-      "go": 0,
-      "typescript": 0,
-      "rust": 0,
-      "cpp": 0,
-      "zig": 0,
+      "python": 10,
+      "go": 8,
+      "typescript": 8,
+      "rust": 8,
+      "cpp": 8,
+      "zig": 8,
       "csharp": 0,
       "java": 0,
       "scala": 0
     },
     "total": {
-      "python": 44,
-      "go": 43,
-      "typescript": 36,
-      "rust": 38,
-      "cpp": 37,
-      "zig": 27,
+      "python": 54,
+      "go": 51,
+      "typescript": 44,
+      "rust": 46,
+      "cpp": 47,
+      "zig": 44,
       "csharp": 29,
       "java": 29,
       "scala": 29

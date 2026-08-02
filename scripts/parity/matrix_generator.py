@@ -6,7 +6,7 @@ parity matrix showing feature coverage across all 6 languages.
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -164,7 +164,7 @@ def build_matrix_data(
         category_summaries.append({"category": category, "counts": category_counts})
 
     return {
-        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "generated_at": datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC"),
         "languages": languages,
         "categories": categories,
         "matrix_rows": matrix_rows,
@@ -207,9 +207,7 @@ def generate_gap_analysis(feature_manifest: dict[str, Any]) -> str:
 
     gap_analysis = []
     gap_analysis.append("# Feature Gap Analysis\n")
-    gap_analysis.append(
-        f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
-    )
+    gap_analysis.append(f"Generated: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
     gap_analysis.append("\n")
     gap_analysis.append(
         "This report shows features present in Python (baseline) but missing in other languages.\n"
@@ -297,7 +295,7 @@ def main() -> int:
         print("✓ Matrix generation complete!")
         print("=" * 70)
         print()
-        print(f"View reports:")
+        print("View reports:")
         print(f"  - {matrix_path}")
         print(f"  - {gap_path}")
         print()

@@ -5,10 +5,68 @@ feature manifest showing what's implemented across all 9 languages.
 """
 
 import json
+import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+# Categories a language genuinely does not implement, so a missing directory is
+# expected rather than a stale path. Anything NOT listed here whose configured
+# path is absent is a scanner bug and fails validation.
+#
+# C#/Java/Scala have no techniques subsystem: only ReActAgent exists, filed under
+# patterns/. Tracked in #754 -- remove entries here as they are implemented.
+KNOWN_MISSING: dict[str, set[str]] = {
+    "csharp": {"techniques"},
+    "java": {"techniques"},
+    "scala": {"techniques"},
+}
+
+
+def validate_scan_paths() -> list[str]:
+    """Verify every directory the scanners are configured to read exists.
+
+    A scanner that globs a path which has since moved returns an empty list,
+    which is indistinguishable from "this language implements nothing". That is
+    how the manifest came to report 0 LLM adapters for Zig while 7 were
+    implemented, and 0 techniques for all nine languages while Python has 33.
+    Checking up front turns a silent understatement into a loud failure.
+
+    Returns:
+        List of human-readable errors; empty when every path resolves.
+    """
+    errors: list[str] = []
+    scanners_dir = Path(__file__).parent / "scanners"
+    languages = ["python", "go", "typescript", "rust", "cpp", "zig", "csharp", "java", "scala"]
+
+    for lang in languages:
+        source = (scanners_dir / f"{lang}_scanner.py").read_text()
+
+        root_match = re.search(r'root\s*=\s*Path\("([^"]+)"\)', source)
+        if root_match is None:
+            errors.append(f"{lang}: could not determine scan root")
+            continue
+        root = Path(root_match.group(1))
+
+        if not root.exists():
+            errors.append(f"{lang}: scan root does not exist: {root}")
+            continue
+
+        # Each category resolves `<category>_dir = root / "a" / "b"`.
+        for category, path_expr in re.findall(r'(\w+)_dir\s*=\s*root((?:\s*/\s*"[^"]+")+)', source):
+            parts = re.findall(r'"([^"]+)"', path_expr)
+            resolved = root.joinpath(*parts)
+            if resolved.exists():
+                continue
+            if category in KNOWN_MISSING.get(lang, set()):
+                continue  # Declared gap, not a stale path.
+            errors.append(
+                f"{lang}/{category}: configured path does not exist: {resolved} "
+                f"(a missing path silently reports 0 features)"
+            )
+
+    return errors
 
 
 def scan_all_languages() -> dict[str, Any]:
@@ -20,6 +78,19 @@ def scan_all_languages() -> dict[str, Any]:
     print("=" * 70)
     print("Agenkit Feature Parity Scanner")
     print("=" * 70)
+    print()
+
+    path_errors = validate_scan_paths()
+    if path_errors:
+        print("✗ Scan path validation failed:")
+        for error in path_errors:
+            print(f"   - {error}")
+        print()
+        raise RuntimeError(
+            f"{len(path_errors)} configured scan path(s) do not exist; "
+            f"fix the scanner or declare the gap in KNOWN_MISSING"
+        )
+    print("✓ All scan paths resolve")
     print()
 
     results: dict[str, Any] = {}
@@ -34,8 +105,11 @@ def scan_all_languages() -> dict[str, Any]:
             print(f"✓ ({count_features(results[lang])} features)")
 
         except Exception as e:
+            # A scan failure degrades to zeros, which reads identically to "this
+            # language implements nothing" once the manifest is published. Record
+            # the error and re-raise rather than shipping a manifest that
+            # understates parity -- see validate_scan_paths.
             print(f"✗ (error: {e})")
-            # Provide empty results for failed scans
             results[lang] = {
                 "patterns": [],
                 "middleware": [],
@@ -44,6 +118,7 @@ def scan_all_languages() -> dict[str, Any]:
                 "techniques": [],
                 "error": str(e),
             }
+            raise
 
     print()
 

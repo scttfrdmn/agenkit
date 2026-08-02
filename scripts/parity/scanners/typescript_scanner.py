@@ -8,6 +8,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from ._paths import scan_techniques_by_filename
+
 
 def scan() -> dict[str, Any]:
     """Scan TypeScript codebase for all features.
@@ -47,7 +49,7 @@ def scan_patterns(root: Path) -> list[str]:
     # Matches: class FooAgent, interface FooAgent, export class FooAgent
     agent_pattern = re.compile(r"(?:export\s+)?(?:class|interface)\s+(\w*Agent)")
 
-    for ts_file in patterns_dir.glob("*.ts"):
+    for ts_file in patterns_dir.rglob("*.ts"):
         if ts_file.name.startswith("_") or ts_file.name.endswith(".test.ts"):
             continue
 
@@ -95,7 +97,7 @@ def scan_middleware(root: Path) -> list[str]:
         r"(Middleware|Decorator)?"
     )
 
-    for ts_file in middleware_dir.glob("*.ts"):
+    for ts_file in middleware_dir.rglob("*.ts"):
         if ts_file.name.startswith("_") or ts_file.name.endswith(".test.ts"):
             continue
 
@@ -139,7 +141,7 @@ def scan_llm_adapters(root: Path) -> list[str]:
         r"(LLM|Adapter|Agent)?"
     )
 
-    for ts_file in adapters_dir.glob("*.ts"):
+    for ts_file in adapters_dir.rglob("*.ts"):
         if ts_file.name in ["index.ts"] or ts_file.name.endswith(".test.ts"):
             continue
 
@@ -182,7 +184,7 @@ def scan_memory(root: Path) -> list[str]:
         r"(?:export\s+)?class\s+(InMemory|Redis|Vector|Hierarchy|Endless)(Memory|Backend)?"
     )
 
-    for ts_file in memory_dir.glob("*.ts"):
+    for ts_file in memory_dir.rglob("*.ts"):
         if ts_file.name in ["index.ts", "base.ts"] or ts_file.name.endswith(".test.ts"):
             continue
 
@@ -213,31 +215,8 @@ def scan_techniques(root: Path) -> list[str]:
     Returns:
         Sorted list of technique names
     """
-    techniques = []
     techniques_dir = root / "techniques"
-
-    if not techniques_dir.exists():
-        return techniques
-
-    # Pattern for technique classes
-    technique_pattern = re.compile(r"(?:export\s+)?class\s+(\w+Technique|\w+Strategy)")
-
-    for ts_file in techniques_dir.glob("*.ts"):
-        if ts_file.name.startswith("_") or ts_file.name.endswith(".test.ts"):
-            continue
-
-        try:
-            content = ts_file.read_text()
-
-            for match in technique_pattern.finditer(content):
-                name = match.group(1)
-                if not name.startswith("_") and "mock" not in name.lower():
-                    techniques.append(name)
-
-        except (UnicodeDecodeError, PermissionError):
-            continue
-
-    return sorted(set(techniques))
+    return scan_techniques_by_filename(techniques_dir, "*.ts")
 
 
 if __name__ == "__main__":

@@ -10,7 +10,8 @@ from pathlib import Path
 import pytest
 
 # Import scanners
-from scripts.parity.scanners import go_scanner, python_scanner, typescript_scanner
+from scripts.parity import feature_scanner
+from scripts.parity.scanners import _paths, go_scanner, python_scanner, typescript_scanner
 
 
 @pytest.fixture
@@ -332,3 +333,63 @@ def test_scanner_min_feature_count(scanner, expected_count):
     assert total_features >= expected_count, (
         f"{scanner.__name__} found {total_features} features, expected >= {expected_count}"
     )
+
+
+class TestScanPathValidation:
+    """Guard the failure mode that made the manifest untrustworthy.
+
+    Every configured scan path used to be resolved with
+    ``if not d.exists(): return []``, so a path that drifted reported 0 features
+    -- indistinguishable from "this language implements nothing". Three paths had
+    drifted (Zig ``adapters`` vs ``adapter``, C++/Zig memory moving under
+    ``infrastructure/``), and ``techniques`` was 0 for all nine languages because
+    the glob was non-recursive. The manifest claimed Zig had 0 LLM adapters while
+    7 were implemented. See #753.
+    """
+
+    def test_all_configured_scan_paths_exist(self):
+        """Every path a scanner reads must exist, or be a declared gap."""
+        errors = feature_scanner.validate_scan_paths()
+
+        assert errors == [], "configured scan path(s) missing:\n  " + "\n  ".join(errors)
+
+    def test_missing_path_raises_rather_than_reporting_zero(self, tmp_path):
+        """A non-existent directory must raise, not yield an empty list."""
+        with pytest.raises(_paths.MissingScanPathError):
+            list(_paths.iter_sources(tmp_path / "does-not-exist", "*.py"))
+
+    def test_missing_path_is_silent_only_when_explicitly_optional(self, tmp_path):
+        """required=False is the one way to opt into an empty result."""
+        assert list(_paths.iter_sources(tmp_path / "nope", "*.py", required=False)) == []
+
+    def test_source_discovery_is_recursive(self, tmp_path):
+        """Nested files must be found; techniques/ nests one level deeper."""
+        nested = tmp_path / "reasoning"
+        nested.mkdir()
+        (nested / "chain_of_thought.py").write_text("class ChainOfThought: pass\n")
+
+        found = list(_paths.iter_sources(tmp_path, "*.py"))
+
+        assert [p.name for p in found] == ["chain_of_thought.py"]
+
+    @pytest.mark.parametrize(
+        "language",
+        ["python", "go", "typescript", "rust", "cpp", "zig"],
+    )
+    def test_techniques_are_detected(self, language):
+        """Techniques must not be zero for languages that implement them.
+
+        The old per-language regexes required a ``Technique``/``Strategy`` name
+        suffix. Nothing in this repo is named that way -- techniques are
+        ``ChainOfThought``, ``LeastToMost``, ``GraphOfThought`` -- so the count
+        was 0 even once the paths were correct.
+        """
+        scanner = feature_scanner.load_scanner(language)
+        techniques = scanner.scan()["techniques"]
+
+        assert len(techniques) >= 8, (
+            f"{language} reported {len(techniques)} techniques: {techniques}"
+        )
+        assert "ChainOfThought" in " ".join(techniques), (
+            f"{language} is missing chain-of-thought: {techniques}"
+        )

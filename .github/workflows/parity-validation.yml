@@ -53,6 +53,18 @@ jobs:
         run: |
           uv run python scripts/parity/check_regression.py
 
+      # Rendered by check_regression.py so the language list and thresholds come
+      # from MIN_FEATURE_COUNTS rather than being duplicated in this workflow.
+      - name: Render parity table
+        id: parity_table
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo 'table<<PARITY_EOF'
+            uv run python scripts/parity/check_regression.py --markdown
+            echo 'PARITY_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Upload parity reports
         if: always()
         uses: actions/upload-artifact@v7
@@ -74,31 +86,18 @@ jobs:
           script: |
             const fs = require('fs');
 
-            // Read feature manifest
             const manifest = JSON.parse(fs.readFileSync('feature-manifest.json', 'utf8'));
-            const summary = manifest.summary.total;
 
-            // Calculate parity percentages
-            const pythonTotal = summary.python;
-            const parityPct = (lang) => ((summary[lang] / pythonTotal) * 100).toFixed(1);
-
-            // Build comment
-            const comment = `## 🔍 Feature Parity Report
-
-            | Language | Features | Parity % | Status |
-            |----------|----------|----------|--------|
-            | Python | ${summary.python} | 100.0% | ✅ Baseline |
-            | Go | ${summary.go} | ${parityPct('go')}% | ${summary.go >= 43 ? '✅' : '⚠️'} |
-            | TypeScript | ${summary.typescript} | ${parityPct('typescript')}% | ${summary.typescript >= 35 ? '✅' : '⚠️'} |
-            | Rust | ${summary.rust} | ${parityPct('rust')}% | ${summary.rust >= 35 ? '✅' : '⚠️'} |
-            | C++ | ${summary.cpp} | ${parityPct('cpp')}% | ${summary.cpp >= 35 ? '✅' : '⚠️'} |
-            | Zig | ${summary.zig} | ${parityPct('zig')}% | ${summary.zig >= 25 ? '✅' : '⚠️'} |
-
-            **Generated**: ${manifest.generated_at}
-
-            📊 View full reports in workflow artifacts
-            📋 See [FEATURE_MATRIX.md](../blob/${process.env.GITHUB_SHA}/docs/parity/FEATURE_MATRIX.md) for details
-            `;
+            const comment = [
+              '## 🔍 Feature Parity Report',
+              '',
+              `${{ steps.parity_table.outputs.table }}`,
+              '',
+              `**Generated**: ${manifest.generated_at}`,
+              '',
+              '📊 View full reports in workflow artifacts',
+              `📋 See [FEATURE_MATRIX.md](../blob/${process.env.GITHUB_SHA}/docs/parity/FEATURE_MATRIX.md) for details`,
+            ].join('\n');
 
             // Dependabot / forked PRs run with a read-only token, so the
             // create-comment call rejects. Await inside try/catch so the

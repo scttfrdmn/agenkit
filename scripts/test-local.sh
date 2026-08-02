@@ -99,7 +99,9 @@ if [ "$LINT" = true ]; then
 
     # Rust lint (#773). --all-targets matters: without it clippy skips tests/ and
     # examples/, which is exactly where the six deny-by-default errors found in
-    # #773 had accumulated unseen.
+    # #773 had accumulated unseen. No `-D warnings` yet — 365 unique warnings
+    # remain; the sweep and the flip are tracked in #778. Keep this in step with
+    # the clippy invocation in .github/workflows/test.yml.
     if command -v cargo &>/dev/null; then
         cd "$REPO_ROOT/agenkit-rust"
         run_step "cargo fmt --check (Rust formatter)" \

@@ -25,8 +25,9 @@
 
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::observability::{
-    configure_logging, init_metrics, init_tracing, log_agent_error, log_agent_event, AuditEvent,
-    AuditEventType, AuditLogger, AuditSeverity, MetricsMiddleware, TracingMiddleware,
+    configure_logging, init_metrics, init_tracing, init_tracing_with_config, log_agent_error,
+    log_agent_event, AuditEvent, AuditEventType, AuditLogger, AuditSeverity, MetricsMiddleware,
+    TracingMiddleware,
 };
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -75,6 +76,8 @@ impl Agent for ProductionAgent {
 struct Config {
     otlp_endpoint: String,
     metrics_endpoint: String,
+    service_name: String,
+    sample_rate: f64,
     log_level: String,
     audit_path: PathBuf,
 }
@@ -86,6 +89,15 @@ impl Config {
                 .unwrap_or_else(|_| "http://localhost:4317".to_string()),
             metrics_endpoint: env::var("OTEL_EXPORTER_METRICS_ENDPOINT")
                 .unwrap_or_else(|_| "http://localhost:4317".to_string()),
+            // OTEL_SERVICE_NAME is the spec-named variable; the SDK reads it too,
+            // but we pass it explicitly so the value is visible in the printout.
+            service_name: env::var("OTEL_SERVICE_NAME")
+                .unwrap_or_else(|_| "agenkit-production-example".to_string()),
+            // Production deployments sample well below 1.0; 1% is a common floor.
+            sample_rate: env::var("OTEL_TRACES_SAMPLER_ARG")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(1.0),
             log_level: env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string()),
             audit_path: PathBuf::from(
                 env::var("AUDIT_LOG_PATH").unwrap_or_else(|_| "/tmp/agenkit-audit.log".to_string()),
@@ -97,6 +109,8 @@ impl Config {
         println!("Configuration:");
         println!("  OTLP Endpoint: {}", self.otlp_endpoint);
         println!("  Metrics Endpoint: {}", self.metrics_endpoint);
+        println!("  Service Name: {}", self.service_name);
+        println!("  Sample Rate: {}", self.sample_rate);
         println!("  Log Level: {}", self.log_level);
         println!("  Audit Path: {:?}", self.audit_path);
         println!();
@@ -114,20 +128,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize observability stack
     println!("Initializing production observability...");
 
-    // Note: OTLP exporter requires a running collector
-    // Falls back to console if connection fails
-    match init_tracing("otlp", Some(&config.otlp_endpoint)) {
+    // The OTLP gRPC channel is built lazily, so this succeeds even when no
+    // collector is listening — an unreachable collector shows up as a failed
+    // export later, not as an Err here. The Err arm therefore covers exporter
+    // *construction* failure (e.g. a malformed endpoint), not connectivity.
+    // Use init_tracing_with_config to set service.name: without it the SDK
+    // falls back to OTEL_SERVICE_NAME, then "unknown_service:<exe>", and spans
+    // from different services cannot be told apart in a shared collector.
+    match init_tracing_with_config(
+        "otlp",
+        Some(&config.otlp_endpoint),
+        Some(&config.service_name),
+        config.sample_rate,
+    ) {
         Ok(_) => println!("✓ Tracing initialized (OTLP)"),
-        Err(_) => {
-            println!("⚠ OTLP unavailable, using console exporter");
+        Err(e) => {
+            println!("⚠ OTLP exporter could not be built ({e}), using console exporter");
             init_tracing("console", None)?;
         }
     }
 
+    // NOTE: init_metrics installs no exporter for any exporter type today, so
+    // neither arm below actually ships metrics anywhere — tracked in #772. The
+    // call is kept so the example still shows where metrics init belongs.
     match init_metrics("otlp", Some(&config.metrics_endpoint)) {
-        Ok(_) => println!("✓ Metrics initialized (OTLP)"),
-        Err(_) => {
-            println!("⚠ OTLP unavailable, using stdout exporter");
+        Ok(_) => println!("✓ Metrics initialized (OTLP — not yet exported, see #772)"),
+        Err(e) => {
+            println!("⚠ OTLP metrics init failed ({e}), using stdout exporter");
             init_metrics("stdout", None)?;
         }
     }
@@ -285,6 +312,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  2. Check audit log: {:?}", config.audit_path);
     println!("  3. Query metrics from your metrics backend");
     println!("  4. Set up alerting on error rates and latency");
+
+    // Flush and shut down before exit. This is not optional with the OTLP
+    // exporter: the span processor batches, so exiting without it drops every
+    // span still in the buffer — with no error and nothing in the collector.
+    println!("\nFlushing traces...");
+    agenkit::observability::shutdown_observability();
+    println!("✓ Traces flushed");
 
     Ok(())
 }

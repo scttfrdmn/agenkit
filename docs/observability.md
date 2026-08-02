@@ -423,9 +423,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Your application...
 
-    // 5. Cleanup on shutdown
+    // 5. Cleanup on shutdown — REQUIRED with the OTLP exporter. The span
+    //    processor batches, so exiting without this drops every unflushed span
+    //    silently: no error, and nothing arrives at the collector.
     audit_logger.flush().await?;
-    shutdown_observability().await?;
+    shutdown_observability();
 
     Ok(())
 }
@@ -477,7 +479,14 @@ kind: ConfigMap
 metadata:
   name: observability-config
 data:
+  # Honoured by the Rust OTLP exporter when init_tracing is called with a None
+  # endpoint (it resolves OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, then this, then the
+  # spec default). Passing an endpoint explicitly overrides it. Note that the
+  # other languages do not read this variable — see docs/OTEL_CONVENTION.md.
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  # Read by the OTel SDK's resource detector, unless
+  # init_tracing_with_config passes a service name explicitly.
+  OTEL_SERVICE_NAME: "agenkit-app"
   RUST_LOG: "info"
 
 ---
@@ -556,8 +565,13 @@ let events = logger.query_by_session("session-123").await?;
 ```rust
 // Always flush and shutdown on application exit
 audit_logger.flush().await?;
-shutdown_observability().await?;
+shutdown_observability();
 ```
+
+`shutdown_observability()` is synchronous and idempotent. Skipping it is the
+single most common way to lose production traces: the OTLP span processor
+batches, so unflushed spans are dropped at exit without an error. Nothing
+distinguishes "traces were lost at shutdown" from "the code never ran".
 
 ### 6. Testing
 
@@ -596,7 +610,11 @@ if get_tracer_if_initialized().is_none() {
 1. ✅ Is OTLP collector running? `curl http://localhost:4317`
 2. ✅ Is endpoint correct in `init_tracing()`?
 3. ✅ Are spans being created? (Check logs for span output)
-4. ✅ Is sampling enabled? (We use `Sampler::AlwaysOn`)
+4. ✅ Is sampling enabled? (`ParentBased(TraceIdRatioBased(rate))`, where `rate`
+   defaults to `1.0` — sample everything — and is settable via
+   `init_tracing_with_config`)
+5. ✅ **Did you call `shutdown_observability()` before exit?** Without it, batched
+   spans are silently dropped and Jaeger stays empty.
 
 **Debug:**
 
@@ -690,7 +708,8 @@ cargo run --example observability_production --features=native
 ```
 
 Demonstrates:
-- OTLP tracing (with fallback to console)
+- OTLP tracing (no fallback to console — the tonic channel connects lazily, so
+  an unreachable collector does not surface as an error at init)
 - Prometheus metrics
 - Structured JSON logging
 - Audit logging with session tracking

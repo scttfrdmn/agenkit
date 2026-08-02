@@ -35,9 +35,10 @@ use async_trait::async_trait;
 use once_cell::sync::OnceCell;
 use opentelemetry::{
     global,
-    trace::{Span, SpanKind, Status, Tracer, TracerProvider as _},
+    trace::{Span, SpanKind, Status, Tracer},
     KeyValue,
 };
+use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::{
     trace::{Sampler, SdkTracerProvider},
     Resource,
@@ -54,14 +55,34 @@ static TRACER_PROVIDER: OnceCell<SdkTracerProvider> = OnceCell::new();
 ///
 /// # Supported Exporters
 ///
-/// - `"otlp"` - OTLP gRPC exporter (requires endpoint)
-/// - `"jaeger"` - Jaeger exporter (requires endpoint)
+/// - `"otlp"` / `"jaeger"` - OTLP gRPC exporter. Jaeger ingests OTLP natively,
+///   so both names select the same exporter.
 /// - `"console"` - Console/stdout exporter (for debugging)
+///
+/// # Service name
+///
+/// This function does **not** set `service.name` itself, so the SDK's
+/// `OTEL_SERVICE_NAME` / `OTEL_RESOURCE_ATTRIBUTES` detection applies. To set it
+/// programmatically, use [`init_tracing_with_config`].
+///
+/// # Endpoint resolution
+///
+/// When `endpoint` is `None`, the OTLP exporter resolves the endpoint itself
+/// from `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, then `OTEL_EXPORTER_OTLP_ENDPOINT`,
+/// then the spec default (`http://localhost:4317`). Passing an endpoint
+/// explicitly overrides all three.
+///
+/// # Tokio runtime requirement
+///
+/// The OTLP gRPC transport requires a Tokio runtime. Call this from within a
+/// runtime context (e.g. under `#[tokio::main]`) and keep that runtime alive for
+/// as long as spans are being exported — see [`init_tracing_with_config`] for
+/// details. The `"console"` exporter has no such requirement.
 ///
 /// # Arguments
 ///
 /// * `exporter_type` - Type of exporter to use
-/// * `endpoint` - Optional endpoint URL (required for otlp and jaeger)
+/// * `endpoint` - Optional endpoint URL for otlp/jaeger; ignored by `"console"`
 ///
 /// # Example
 ///
@@ -74,14 +95,81 @@ static TRACER_PROVIDER: OnceCell<SdkTracerProvider> = OnceCell::new();
 /// init_tracing("console", None)?;
 /// # Ok::<(), agenkit::core::AgentError>(())
 /// ```
-pub fn init_tracing(exporter_type: &str, _endpoint: Option<&str>) -> Result<(), AgentError> {
-    // Create resource with service name
-    let resource = Resource::builder()
-        .with_attribute(KeyValue::new("service.name", "agenkit"))
-        .build();
+pub fn init_tracing(exporter_type: &str, endpoint: Option<&str>) -> Result<(), AgentError> {
+    init_tracing_with_config(exporter_type, endpoint, None, 1.0)
+}
 
-    // Configure sampling (parent-based with 100% sampling for now)
-    let sampler = Sampler::ParentBased(Box::new(Sampler::AlwaysOn));
+/// Initialize distributed tracing, setting `service.name` and the sample rate.
+///
+/// Same as [`init_tracing`], with control over the two things a production
+/// deployment almost always needs to set.
+///
+/// # Arguments
+///
+/// * `exporter_type` - `"otlp"`, `"jaeger"`, or `"console"`
+/// * `endpoint` - Optional OTLP endpoint. `None` defers to the
+///   `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` / `OTEL_EXPORTER_OTLP_ENDPOINT`
+///   environment variables, then the spec default.
+/// * `service_name` - Optional `service.name` resource attribute. `None` leaves
+///   the SDK's own detection in place, which reads `OTEL_SERVICE_NAME` and
+///   `OTEL_RESOURCE_ATTRIBUTES` and otherwise falls back to
+///   `unknown_service:<exe>`. Set this to **your** service name, not `agenkit` —
+///   spans from a shared collector cannot be told apart otherwise.
+/// * `sample_rate` - Root-span sampling ratio in `0.0..=1.0`. Child spans follow
+///   the parent's decision (`ParentBased`). Values outside the range are clamped.
+///
+/// # Tokio runtime requirement
+///
+/// The `"otlp"`/`"jaeger"` transport is gRPC over tonic, which requires a Tokio
+/// runtime. The channel is built lazily, so this function does not perform
+/// network I/O and does not fail if the collector is unreachable — an
+/// unreachable collector surfaces as a failed export later, not as an `Err`
+/// here. If you construct the runtime yourself rather than using
+/// `#[tokio::main]`, it must outlive the tracer provider, or exports will fail
+/// once it is dropped.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// # use agenkit::observability::init_tracing_with_config;
+/// // Production: name the service, sample 1% of root spans.
+/// init_tracing_with_config("otlp", Some("http://collector:4317"), Some("my-service"), 0.01)?;
+/// # Ok::<(), agenkit::core::AgentError>(())
+/// ```
+pub fn init_tracing_with_config(
+    exporter_type: &str,
+    endpoint: Option<&str>,
+    service_name: Option<&str>,
+    sample_rate: f64,
+) -> Result<(), AgentError> {
+    // Validate the exporter type before building anything, so an unsupported
+    // type cannot leave a half-initialized global provider behind.
+    match exporter_type {
+        "console" | "otlp" | "jaeger" => {}
+        _ => {
+            return Err(AgentError::ProcessingError(format!(
+                "Unsupported exporter type: {}",
+                exporter_type
+            )));
+        }
+    }
+
+    // Resource::builder() runs the SDK's own detectors, which read
+    // OTEL_SERVICE_NAME and OTEL_RESOURCE_ATTRIBUTES. Only override
+    // service.name when the caller asked for one — hardcoding it (as this
+    // function used to) silently defeats that environment configuration.
+    let resource = match service_name {
+        Some(name) => Resource::builder()
+            .with_attribute(KeyValue::new("service.name", name.to_string()))
+            .build(),
+        None => Resource::builder().build(),
+    };
+
+    // ParentBased: a child span follows its parent's sampling decision, so a
+    // sampled trace is never truncated mid-way. Root spans use the ratio.
+    let sampler = Sampler::ParentBased(Box::new(Sampler::TraceIdRatioBased(
+        sample_rate.clamp(0.0, 1.0),
+    )));
 
     // Create tracer provider (0.32 moved resource/sampler onto the builder
     // directly; the standalone trace::Config type was removed).
@@ -95,17 +183,23 @@ pub fn init_tracing(exporter_type: &str, _endpoint: Option<&str>) -> Result<(), 
             let exporter = opentelemetry_stdout::SpanExporter::default();
             provider.with_simple_exporter(exporter)
         }
-        "otlp" | "jaeger" => {
-            // For now, use console exporter as placeholder
-            // Full OTLP/Jaeger support requires additional configuration
-            let exporter = opentelemetry_stdout::SpanExporter::default();
-            provider.with_simple_exporter(exporter)
-        }
+        // Jaeger ingests OTLP natively and opentelemetry-jaeger is deprecated
+        // upstream (see the note in Cargo.toml), so "jaeger" is an alias.
         _ => {
-            return Err(AgentError::ProcessingError(format!(
-                "Unsupported exporter type: {}",
-                exporter_type
-            )));
+            let mut builder = opentelemetry_otlp::SpanExporter::builder().with_tonic();
+            // Only call with_endpoint when we have one: an explicit value
+            // overrides the environment, so passing an empty string would
+            // suppress OTEL_EXPORTER_OTLP_ENDPOINT rather than defer to it.
+            if let Some(endpoint) = endpoint.filter(|e| !e.is_empty()) {
+                builder = builder.with_endpoint(endpoint);
+            }
+            let exporter = builder.build().map_err(|e| {
+                AgentError::ProcessingError(format!("failed to build OTLP span exporter: {}", e))
+            })?;
+            // Batch, not simple: a simple processor exports synchronously on
+            // every span end, which serializes a gRPC round trip into the
+            // request path.
+            provider.with_batch_exporter(exporter)
         }
     };
 
@@ -118,9 +212,7 @@ pub fn init_tracing(exporter_type: &str, _endpoint: Option<&str>) -> Result<(), 
     let _ = TRACER_PROVIDER.set(provider);
 
     // Set W3C Trace Context propagator
-    global::set_text_map_propagator(
-        opentelemetry_sdk::propagation::TraceContextPropagator::new(),
-    );
+    global::set_text_map_propagator(opentelemetry_sdk::propagation::TraceContextPropagator::new());
 
     Ok(())
 }
@@ -349,9 +441,6 @@ impl<A: Agent + Send + Sync> Agent for TracingMiddleware<A> {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        use opentelemetry::propagation::TextMapPropagator;
-        use opentelemetry::trace::TraceContextExt;
-
         let tracer = get_tracer("agenkit.observability");
 
         // Extract parent context from message metadata
@@ -397,8 +486,23 @@ impl<A: Agent + Send + Sync> Agent for TracingMiddleware<A> {
         // Process message
         let result = self.inner.process(message).await;
 
-        // Inject trace context into response if span context is valid
-        let mut response = result?;
+        // Record the outcome on the span before propagating it. This used to be
+        // `let mut response = result?;`, which returned early and dropped the
+        // span with an Unset status — so a failed agent call was
+        // indistinguishable from a successful one in the trace, even though this
+        // middleware's docs promise errors are recorded.
+        let mut response = match result {
+            Ok(response) => {
+                span.set_status(Status::Ok);
+                response
+            }
+            Err(e) => {
+                span.set_status(Status::error(e.to_string()));
+                span.set_attribute(KeyValue::new("error", true));
+                span.end();
+                return Err(e);
+            }
+        };
 
         if span_context.is_valid() {
             // Manually create W3C traceparent format
@@ -412,6 +516,11 @@ impl<A: Agent + Send + Sync> Agent for TracingMiddleware<A> {
             trace_ctx.insert("traceparent".to_string(), serde_json::json!(traceparent));
             response.metadata.insert("trace_context".to_string(), serde_json::json!(trace_ctx));
         }
+
+        // End explicitly rather than relying on Drop, to match the error path
+        // above and to keep the span's duration from including the metadata
+        // injection that happens after the inner agent has returned.
+        span.end();
 
         Ok(response)
     }

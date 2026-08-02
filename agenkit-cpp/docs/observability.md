@@ -624,8 +624,16 @@ service:
 ### 2. Configure Application
 
 **Environment Variables:**
+
+> These are read by **your application**, as the C++ snippet below shows —
+> `init_tracing` does not read the environment itself. `OTLP_ENDPOINT` is an
+> agenkit-doc name, not the OTel spec name; prefer the spec's
+> `OTEL_EXPORTER_OTLP_ENDPOINT` for new deployments so the same variable works
+> for sidecars and other SDKs. See
+> [docs/OTEL_CONVENTION.md](../../docs/OTEL_CONVENTION.md#collector-endpoint).
+
 ```bash
-export OTLP_ENDPOINT="http://otel-collector:4317"
+export OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4317"
 export LOG_FORMAT="json"
 export LOG_LEVEL="info"
 export AUDIT_LOG_PATH="/var/log/agenkit/audit.log"
@@ -635,7 +643,7 @@ export AUDIT_BUFFER_SIZE="100"
 **C++ Code:**
 ```cpp
 // Read from environment
-const char* endpoint = std::getenv("OTLP_ENDPOINT");
+const char* endpoint = std::getenv("OTEL_EXPORTER_OTLP_ENDPOINT");
 const char* log_format = std::getenv("LOG_FORMAT");
 const char* log_level = std::getenv("LOG_LEVEL");
 
@@ -655,7 +663,7 @@ kind: ConfigMap
 metadata:
   name: agenkit-observability-config
 data:
-  OTLP_ENDPOINT: "http://otel-collector.observability.svc.cluster.local:4317"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability.svc.cluster.local:4317"
   LOG_FORMAT: "json"
   LOG_LEVEL: "info"
   AUDIT_LOG_PATH: "/var/log/agenkit/audit.log"
@@ -917,7 +925,7 @@ Multi-agent workflow showing trace context propagation.
 Production-ready configuration with OTLP exporters and error handling.
 
 ```bash
-export OTLP_ENDPOINT="http://localhost:4317"
+export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
 ./examples/observability_production
 ```
 

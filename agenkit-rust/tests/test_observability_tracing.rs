@@ -1,10 +1,12 @@
 //! Tests for OpenTelemetry tracing module.
 
 use agenkit::core::{Agent, AgentError, Message};
-use agenkit::observability::{extract_trace_context, init_tracing, TracingMiddleware};
+use agenkit::observability::{
+    extract_trace_context, init_tracing, init_tracing_with_config, TracingMiddleware,
+};
 use async_trait::async_trait;
-use std::collections::HashMap;
 use serde_json::json;
+use std::collections::HashMap;
 
 /// Simple test agent for testing tracing middleware.
 struct SimpleAgent {
@@ -202,4 +204,63 @@ async fn test_tracing_middleware_with_metadata() {
 async fn test_unsupported_exporter_type() {
     let result = init_tracing("invalid_exporter", None);
     assert!(result.is_err(), "Should fail with unsupported exporter");
+}
+
+#[tokio::test]
+async fn test_init_tracing_with_config_accepts_service_name() {
+    // #768: service.name used to be hardcoded to "agenkit" with no override, so
+    // every consumer's spans were indistinguishable in a shared collector.
+    let result = init_tracing_with_config("console", None, Some("my-service"), 1.0);
+    assert!(
+        result.is_ok(),
+        "should accept a caller-supplied service name"
+    );
+}
+
+#[tokio::test]
+async fn test_init_tracing_with_config_clamps_sample_rate() {
+    // Out-of-range rates are clamped rather than rejected: a bad rate should not
+    // take down tracing initialization for the whole process.
+    assert!(init_tracing_with_config("console", None, None, 5.0).is_ok());
+    assert!(init_tracing_with_config("console", None, None, -1.0).is_ok());
+}
+
+#[tokio::test]
+async fn test_init_tracing_with_config_rejects_unknown_exporter() {
+    let result = init_tracing_with_config("nope", None, Some("svc"), 1.0);
+    assert!(result.is_err(), "should reject an unsupported exporter type");
+}
+
+#[tokio::test]
+async fn test_tracing_middleware_error_is_propagated_not_swallowed() {
+    // The span's status is recorded on the error path now (it used to be dropped
+    // Unset by an early `?`, making a failure look like a success in the trace).
+    // Asserting on the exported span's status would need a span exporter this
+    // suite does not install — that is covered at the transport level in
+    // test_observability_otlp_export.rs. Here we assert the error still reaches
+    // the caller unchanged, which is what the added span.end() could have broken.
+    init_tracing("console", None).unwrap();
+
+    struct FailingAgent;
+
+    #[async_trait]
+    impl Agent for FailingAgent {
+        fn name(&self) -> &str {
+            "failing-agent"
+        }
+
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
+            Err(AgentError::ProcessingError("boom".to_string()))
+        }
+    }
+
+    let traced = TracingMiddleware::new(FailingAgent, None);
+    let err = traced
+        .process(Message::with_text("user", "test"))
+        .await
+        .expect_err("failing agent should surface its error");
+    assert!(
+        err.to_string().contains("boom"),
+        "error message should be preserved verbatim, got: {err}"
+    );
 }

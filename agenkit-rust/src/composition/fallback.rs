@@ -1,7 +1,7 @@
-///! Fallback agent composition pattern.
-///!
-///! Tries agents in order until one succeeds.
-///! This implements the Fallback/Retry pattern for reliability.
+//! Fallback agent composition pattern.
+//!
+//! Tries agents in order until one succeeds.
+//! This implements the Fallback/Retry pattern for reliability.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use serde_json::json;

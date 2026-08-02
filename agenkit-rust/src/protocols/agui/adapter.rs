@@ -1,6 +1,6 @@
-///! AG-UI Adapter - Wraps agents for AG-UI event streaming
-///!
-///! Converts agent responses into AG-UI event streams for frontend consumption.
+//! AG-UI Adapter - Wraps agents for AG-UI event streaming
+//!
+//! Converts agent responses into AG-UI event streams for frontend consumption.
 use crate::core::{Agent, AgentError, Message};
 use crate::protocols::agui::events::*;
 use futures::stream::{Stream, StreamExt};

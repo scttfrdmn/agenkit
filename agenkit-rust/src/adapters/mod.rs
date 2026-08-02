@@ -1,8 +1,8 @@
-///! Agent adapters for LLM providers.
-///!
-///! This module provides adapters for connecting to various LLM providers
-///! including OpenAI, Anthropic, Ollama, LiteLLM, Gemini, Bedrock, and
-///! OpenAI-compatible services (vLLM, llama.cpp, SGLang, etc.).
+//! Agent adapters for LLM providers.
+//!
+//! This module provides adapters for connecting to various LLM providers
+//! including OpenAI, Anthropic, Ollama, LiteLLM, Gemini, Bedrock, and
+//! OpenAI-compatible services (vLLM, llama.cpp, SGLang, etc.).
 
 /// Typed token usage normalization. No provider SDK dependency, so it is
 /// available regardless of the `native` feature.

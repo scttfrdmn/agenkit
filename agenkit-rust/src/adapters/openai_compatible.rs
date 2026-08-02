@@ -1,59 +1,59 @@
-///! OpenAI-Compatible API adapter.
-///!
-///! This module provides a generic adapter for OpenAI-compatible inference services
-///! like vLLM, llama.cpp, SGLang, TensorRT-LLM, and others.
-///!
-///! This adapter enables Agenkit to work with any service implementing the
-///! OpenAI Chat Completions API by configuring the HTTP client with a custom
-///! base URL. This provides a consistent interface across different local and
-///! self-hosted inference engines.
-///!
-///! # Supported Services
-///! - vLLM: High-throughput batch inference
-///! - llama.cpp: Lightweight C++ implementation (CPU-friendly)
-///! - SGLang: Optimized for complex prompts
-///! - TensorRT-LLM: NVIDIA GPU optimized
-///! - OpenLLM: Multi-model serving platform
-///! - MLC LLM: Mobile and edge deployment
-///! - Text Generation Inference (TGI): HuggingFace inference server
-///! - Inferflow: High-performance inference
-///!
-///! # Example - vLLM
-///! ```no_run
-///! use agenkit::adapters::openai_compatible::{OpenAICompatibleAgent, OpenAICompatibleConfig};
-///! use agenkit::core::{Agent, Message};
-///!
-///! #[tokio::main]
-///! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-///!     let config = OpenAICompatibleConfig {
-///!         base_url: "http://localhost:8000/v1".to_string(),
-///!         model: "meta-llama/Llama-2-7b-chat-hf".to_string(),
-///!         provider: Some("vllm".to_string()),
-///!         ..Default::default()
-///!     };
-///!
-///!     let agent = OpenAICompatibleAgent::new(config);
-///!     let msg = Message::with_text("user", "What is machine learning?");
-///!     let response = agent.process(msg).await?;
-///!
-///!     println!("{}", response.content_as_str().unwrap_or(""));
-///!     Ok(())
-///! }
-///! ```
-///!
-///! # Example - llama.cpp
-///! ```no_run
-///! use agenkit::adapters::openai_compatible::{OpenAICompatibleAgent, OpenAICompatibleConfig};
-///!
-///! let config = OpenAICompatibleConfig {
-///!     base_url: "http://localhost:8080/v1".to_string(),
-///!     model: "llama-2-7b-chat".to_string(),
-///!     provider: Some("llamacpp".to_string()),
-///!     ..Default::default()
-///! };
-///!
-///! let agent = OpenAICompatibleAgent::new(config);
-///! ```
+//! OpenAI-Compatible API adapter.
+//!
+//! This module provides a generic adapter for OpenAI-compatible inference services
+//! like vLLM, llama.cpp, SGLang, TensorRT-LLM, and others.
+//!
+//! This adapter enables Agenkit to work with any service implementing the
+//! OpenAI Chat Completions API by configuring the HTTP client with a custom
+//! base URL. This provides a consistent interface across different local and
+//! self-hosted inference engines.
+//!
+//! # Supported Services
+//! - vLLM: High-throughput batch inference
+//! - llama.cpp: Lightweight C++ implementation (CPU-friendly)
+//! - SGLang: Optimized for complex prompts
+//! - TensorRT-LLM: NVIDIA GPU optimized
+//! - OpenLLM: Multi-model serving platform
+//! - MLC LLM: Mobile and edge deployment
+//! - Text Generation Inference (TGI): HuggingFace inference server
+//! - Inferflow: High-performance inference
+//!
+//! # Example - vLLM
+//! ```no_run
+//! use agenkit::adapters::openai_compatible::{OpenAICompatibleAgent, OpenAICompatibleConfig};
+//! use agenkit::core::{Agent, Message};
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     let config = OpenAICompatibleConfig {
+//!         base_url: "http://localhost:8000/v1".to_string(),
+//!         model: "meta-llama/Llama-2-7b-chat-hf".to_string(),
+//!         provider: Some("vllm".to_string()),
+//!         ..Default::default()
+//!     };
+//!
+//!     let agent = OpenAICompatibleAgent::new(config);
+//!     let msg = Message::with_text("user", "What is machine learning?");
+//!     let response = agent.process(msg).await?;
+//!
+//!     println!("{}", response.content_as_str().unwrap_or(""));
+//!     Ok(())
+//! }
+//! ```
+//!
+//! # Example - llama.cpp
+//! ```no_run
+//! use agenkit::adapters::openai_compatible::{OpenAICompatibleAgent, OpenAICompatibleConfig};
+//!
+//! let config = OpenAICompatibleConfig {
+//!     base_url: "http://localhost:8080/v1".to_string(),
+//!     model: "llama-2-7b-chat".to_string(),
+//!     provider: Some("llamacpp".to_string()),
+//!     ..Default::default()
+//! };
+//!
+//! let agent = OpenAICompatibleAgent::new(config);
+//! ```
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};

@@ -1,7 +1,7 @@
-///! Ollama API adapter.
-///!
-///! This module provides an adapter for calling Ollama's local LLM API.
-///! Supports all Ollama models including Llama, Mistral, and others.
+//! Ollama API adapter.
+//!
+//! This module provides an adapter for calling Ollama's local LLM API.
+//! Supports all Ollama models including Llama, Mistral, and others.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use futures::Stream;

@@ -1,39 +1,39 @@
-///! AG-UI WebSocket Transport
-///!
-///! Implements bidirectional WebSocket transport for AG-UI protocol.
-///! Provides lower latency and bidirectional communication compared to HTTP/SSE.
-///!
-///! # WebSocket Message Format
-///!
-///! Messages are JSON objects with event data:
-///! ```json
-///! {"event_type": "text_message_chunk", "content": "Hello", ...}
-///! ```
-///!
-///! Client messages:
-///! ```json
-///! {"type": "message", "content": "User message"}
-///! {"type": "ping"}
-///! ```
-///!
-///! # Example (Framework-Agnostic)
-///! ```no_run
-///! use agenkit::core::{Agent, Message};
-///! use agenkit::protocols::agui::{AGUIAdapter, AGUIAdapterConfig};
-///! use agenkit::protocols::agui::transports::websocket::WebSocketMessageFormat;
-///! use std::sync::Arc;
-///!
-///! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-///! # let agent: Arc<dyn Agent> = todo!();
-///! let adapter = AGUIAdapter::new(agent, AGUIAdapterConfig::default());
-///!
-///! // Format event for WebSocket transmission
-///! // let event = ...;
-///! // let json = WebSocketMessageFormat::format_event(&event);
-///! // websocket.send(json).await?;
-///! # Ok(())
-///! # }
-///! ```
+//! AG-UI WebSocket Transport
+//!
+//! Implements bidirectional WebSocket transport for AG-UI protocol.
+//! Provides lower latency and bidirectional communication compared to HTTP/SSE.
+//!
+//! # WebSocket Message Format
+//!
+//! Messages are JSON objects with event data:
+//! ```json
+//! {"event_type": "text_message_chunk", "content": "Hello", ...}
+//! ```
+//!
+//! Client messages:
+//! ```json
+//! {"type": "message", "content": "User message"}
+//! {"type": "ping"}
+//! ```
+//!
+//! # Example (Framework-Agnostic)
+//! ```no_run
+//! use agenkit::core::{Agent, Message};
+//! use agenkit::protocols::agui::{AGUIAdapter, AGUIAdapterConfig};
+//! use agenkit::protocols::agui::transports::websocket::WebSocketMessageFormat;
+//! use std::sync::Arc;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! # let agent: Arc<dyn Agent> = todo!();
+//! let adapter = AGUIAdapter::new(agent, AGUIAdapterConfig::default());
+//!
+//! // Format event for WebSocket transmission
+//! // let event = ...;
+//! // let json = WebSocketMessageFormat::format_event(&event);
+//! // websocket.send(json).await?;
+//! # Ok(())
+//! # }
+//! ```
 use crate::core::{Agent, Message};
 use crate::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};
 use crate::protocols::agui::events::{AGUIEvent, ErrorEvent, HeartbeatEvent, MetadataEvent};

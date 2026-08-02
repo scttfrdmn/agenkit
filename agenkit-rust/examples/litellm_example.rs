@@ -1,27 +1,27 @@
-///! LiteLLM adapter example.
-///!
-///! Demonstrates how to use the LiteLLM adapter to connect to various LLM providers
-///! through the LiteLLM proxy.
-///!
-///! # Setup
-///!
-///! 1. Install LiteLLM:
-///!    ```bash
-///!    pip install litellm[proxy]
-///!    ```
-///!
-///! 2. Start the LiteLLM proxy:
-///!    ```bash
-///!    litellm --model gpt-3.5-turbo
-///!    # Or for other models:
-///!    # litellm --model claude-3-5-sonnet-20241022
-///!    # litellm --model bedrock/anthropic.claude-v2
-///!    ```
-///!
-///! 3. Run this example:
-///!    ```bash
-///!    cargo run --example litellm_example --features native
-///!    ```
+//! LiteLLM adapter example.
+//!
+//! Demonstrates how to use the LiteLLM adapter to connect to various LLM providers
+//! through the LiteLLM proxy.
+//!
+//! # Setup
+//!
+//! 1. Install LiteLLM:
+//!    ```bash
+//!    pip install litellm[proxy]
+//!    ```
+//!
+//! 2. Start the LiteLLM proxy:
+//!    ```bash
+//!    litellm --model gpt-3.5-turbo
+//!    # Or for other models:
+//!    # litellm --model claude-3-5-sonnet-20241022
+//!    # litellm --model bedrock/anthropic.claude-v2
+//!    ```
+//!
+//! 3. Run this example:
+//!    ```bash
+//!    cargo run --example litellm_example --features native
+//!    ```
 use agenkit::adapters::litellm::{LiteLLMAdapter, LiteLLMConfig};
 use agenkit::core::{Agent, Message};
 

@@ -1,22 +1,22 @@
-///! Google Gemini adapter example.
-///!
-///! Demonstrates how to use the Gemini adapter to interact with Google's Gemini models.
-///!
-///! # Setup
-///!
-///! 1. Get a Google API key from https://makersuite.google.com/app/apikey
-///!
-///! 2. Set the API key as an environment variable:
-///!    ```bash
-///!    export GEMINI_API_KEY="your-api-key"
-///!    # Or:
-///!    export GOOGLE_API_KEY="your-api-key"
-///!    ```
-///!
-///! 3. Run this example:
-///!    ```bash
-///!    cargo run --example gemini_example --features native
-///!    ```
+//! Google Gemini adapter example.
+//!
+//! Demonstrates how to use the Gemini adapter to interact with Google's Gemini models.
+//!
+//! # Setup
+//!
+//! 1. Get a Google API key from https://makersuite.google.com/app/apikey
+//!
+//! 2. Set the API key as an environment variable:
+//!    ```bash
+//!    export GEMINI_API_KEY="your-api-key"
+//!    # Or:
+//!    export GOOGLE_API_KEY="your-api-key"
+//!    ```
+//!
+//! 3. Run this example:
+//!    ```bash
+//!    cargo run --example gemini_example --features native
+//!    ```
 use agenkit::adapters::gemini::{GeminiAdapter, GeminiConfig};
 use agenkit::core::{Agent, Message};
 

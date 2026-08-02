@@ -1,7 +1,7 @@
-///! Anthropic Claude API adapter.
-///!
-///! This module provides an adapter for calling Anthropic's Claude API via HTTP.
-///! Supports Claude 3 Opus, Sonnet, and Haiku models with both completion and streaming.
+//! Anthropic Claude API adapter.
+//!
+//! This module provides an adapter for calling Anthropic's Claude API via HTTP.
+//! Supports Claude 3 Opus, Sonnet, and Haiku models with both completion and streaming.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use futures::stream::Stream;

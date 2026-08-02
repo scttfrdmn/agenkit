@@ -1,4 +1,4 @@
-///! Reasoning techniques for AI agents.
+//! Reasoning techniques for AI agents.
 pub mod chain_of_thought;
 pub mod graph_of_thought;
 pub mod least_to_most;

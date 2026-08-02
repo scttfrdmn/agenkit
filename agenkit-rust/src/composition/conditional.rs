@@ -1,6 +1,6 @@
-///! Conditional agent composition pattern.
-///!
-///! Routes messages to different agents based on conditions.
+//! Conditional agent composition pattern.
+//!
+//! Routes messages to different agents based on conditions.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use serde_json::json;

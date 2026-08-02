@@ -1,7 +1,7 @@
-///! Agent trait and core abstractions.
-///!
-///! This module defines the core Agent trait that all agents must implement,
-///! following the same design as TypeScript and Go implementations.
+//! Agent trait and core abstractions.
+//!
+//! This module defines the core Agent trait that all agents must implement,
+//! following the same design as TypeScript and Go implementations.
 use super::introspection::IntrospectionResult;
 use super::message::{Message, ToolResult};
 use async_trait::async_trait;

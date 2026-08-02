@@ -1,7 +1,7 @@
-///! Cross-language message serialization tests for Rust.
-///!
-///! Validates that Agenkit messages serialize/deserialize consistently
-///! with the canonical JSON schema across all language implementations.
+//! Cross-language message serialization tests for Rust.
+//!
+//! Validates that Agenkit messages serialize/deserialize consistently
+//! with the canonical JSON schema across all language implementations.
 use agenkit::core::Message;
 use serde_json::{json, Value};
 use std::collections::HashMap;

@@ -1,7 +1,7 @@
-///! HTTP transport for remote agent communication.
-///!
-///! This module provides HTTP client and server implementations for
-///! communicating with remote agents over HTTP.
+//! HTTP transport for remote agent communication.
+//!
+//! This module provides HTTP client and server implementations for
+//! communicating with remote agents over HTTP.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use axum::{

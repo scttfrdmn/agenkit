@@ -1,43 +1,44 @@
-///! AG-UI HTTP/SSE Transport
-///!
-///! Implements Server-Sent Events (SSE) transport for AG-UI protocol over HTTP.
-///! Provides framework-agnostic SSE formatting and helpers for popular web frameworks.
-///!
-///! # SSE Format
-///!
-///! Events are formatted as:
-///! ```text
-///! data: {"event_type": "text_message_chunk", ...}\n\n
-///! ```
-///!
-///! Or with event names:
-///! ```text
-///! event: text_message_chunk
-///! data: {...}\n\n
-///! ```
-///!
-///! # Example (Framework-Agnostic)
-///! ```no_run
-///! use agenkit::core::{Agent, Message};
-///! use agenkit::protocols::agui::{AGUIAdapter, AGUIAdapterConfig};
-///! use agenkit::protocols::agui::transports::http::{SSEFormatter, AGUISSEStream};
-///! use futures::stream::StreamExt;
-///! use std::sync::Arc;
-///!
-///! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-///! # let agent: Arc<dyn Agent> = todo!();
-///! let adapter = AGUIAdapter::new(agent, AGUIAdapterConfig::default());
-///! let message = Message::with_text("user", "Hello!");
-///!
-///! let mut stream = AGUISSEStream::new(adapter, message);
-///!
-///! while let Some(sse_chunk) = stream.next().await {
-///!     // Write sse_chunk to HTTP response
-///!     println!("{}", sse_chunk);
-///! }
-///! # Ok(())
-///! # }
-///! ```
+//! AG-UI HTTP/SSE Transport
+//!
+//! Implements Server-Sent Events (SSE) transport for AG-UI protocol over HTTP.
+//! Provides framework-agnostic SSE formatting and helpers for popular web frameworks.
+//!
+//! # SSE Format
+//!
+//! Events are formatted as:
+//! ```text
+//! data: {"event_type": "text_message_chunk", ...}\n\n
+//! ```
+//!
+//! Or with event names:
+//! ```text
+//! event: text_message_chunk
+//! data: {...}\n\n
+//! ```
+//!
+//! # Example (Framework-Agnostic)
+//! ```no_run
+//! use agenkit::core::{Agent, Message};
+//! use agenkit::protocols::agui::{AGUIAdapter, AGUIAdapterConfig};
+//! use agenkit::protocols::agui::transports::http::AGUISSEStream;
+//! use futures::stream::StreamExt;
+//! use std::sync::Arc;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! # let agent: Arc<dyn Agent> = todo!();
+//! let adapter = AGUIAdapter::new(agent, AGUIAdapterConfig::default());
+//! let message = Message::with_text("user", "Hello!");
+//!
+//! // `new` is async — it drives the adapter to produce the first events.
+//! let mut stream = AGUISSEStream::new(adapter, message).await;
+//!
+//! while let Some(sse_chunk) = stream.next().await {
+//!     // Write sse_chunk to HTTP response
+//!     println!("{}", sse_chunk);
+//! }
+//! # Ok(())
+//! # }
+//! ```
 use crate::core::Message;
 use crate::protocols::agui::adapter::AGUIAdapter;
 use crate::protocols::agui::events::AGUIEvent;

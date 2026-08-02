@@ -1,4 +1,4 @@
-///! Bridge MCP tools to the agenkit Tool trait.
+//! Bridge MCP tools to the agenkit Tool trait.
 use crate::core::{AgentError, Tool, ToolResult};
 use crate::protocols::mcp::{text_content, McpClient, McpTool};
 use async_trait::async_trait;

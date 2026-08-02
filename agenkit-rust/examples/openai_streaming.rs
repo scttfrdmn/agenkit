@@ -1,13 +1,13 @@
-///! Example demonstrating OpenAI GPT streaming support.
-///!
-///! This example shows how to stream responses from OpenAI models in real-time,
-///! displaying text as it arrives from the API.
-///!
-///! Run with:
-///! ```bash
-///! export OPENAI_API_KEY="your-key-here"
-///! cargo run --example openai_streaming --features native
-///! ```
+//! Example demonstrating OpenAI GPT streaming support.
+//!
+//! This example shows how to stream responses from OpenAI models in real-time,
+//! displaying text as it arrives from the API.
+//!
+//! Run with:
+//! ```bash
+//! export OPENAI_API_KEY="your-key-here"
+//! cargo run --example openai_streaming --features native
+//! ```
 use agenkit::adapters::openai::{OpenAIAgent, OpenAIConfig};
 use agenkit::core::Message;
 use futures::stream::StreamExt;

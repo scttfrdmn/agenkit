@@ -238,10 +238,13 @@ async def test_intermittent_connectivity():
 async def test_intermittent_with_retry_succeeds():
     """Test that retries eventually succeed with intermittent failures."""
     base_agent = SimpleAgent()
+    # Seeded (#787): this was the flakiest assertion in the chaos suite. See the
+    # corrected arithmetic below -- unseeded, it failed ~1 run in 50.
     chaos_agent = ChaosAgent(
         base_agent,
         chaos_mode=ChaosMode.INTERMITTENT,
         failure_rate=0.7,  # 70% failure rate
+        seed=787,
     )
 
     message = Message(role="user", content="Test")
@@ -260,9 +263,12 @@ async def test_intermittent_with_retry_succeeds():
                 await asyncio.sleep(0.01)
             continue
     else:
-        # If we got here, all retries failed (very unlikely with 70% failure rate over 11 attempts)
-        # Probability of all failing: 0.7^11 = 0.002 (~0.2%)
-        pytest.fail(f"All {max_retries + 1} attempts failed (extremely unlikely)")
+        # All 11 attempts failed. This is NOT as unlikely as it looks:
+        # 0.7**11 = 0.0198, i.e. ~2%, not the 0.2% an earlier version of this
+        # comment claimed (0.7**11 is 1.98e-2; 0.002 would be 0.7**17). At ~2%
+        # this was the single most likely flake in tests/chaos/, which is why
+        # the agent above is seeded.
+        pytest.fail(f"All {max_retries + 1} attempts failed (p=0.7**11 = 2%)")
 
 
 # ============================================

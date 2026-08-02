@@ -278,10 +278,15 @@ async def test_shutdown_rejects_new_requests():
 async def test_service_overload():
     """Test service behavior under overload."""
     base_agent = SimpleAgent()
+    # Seeded (#787): `failures >= 15` out of 20 draws at p=0.9 fails on exactly
+    # 1.13% of unseeded runs by the binomial CDF, which matched the observed rate
+    # of ~1 in 20 suite runs. Seeding keeps the assertion exactly as strict
+    # instead of widening it until the flake is rare but the test checks less.
     overloaded_agent = OverloadedAgent(
         base_agent,
         overload_threshold=5,  # Overload after 5 requests
         overload_failure_rate=0.9,  # 90% failure when overloaded
+        seed=787,
     )
 
     message = Message(role="user", content="Test")

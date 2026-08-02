@@ -152,32 +152,48 @@ async fn example_stop_condition() -> Result<(), Box<dyn std::error::Error>> {
 async fn example_manual_stop() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n=== Example 5: Manual Stop ===\n");
 
-    let agent_arc = Arc::new(tokio::sync::Mutex::new(AutonomousAgent::new(
-        "Continuous monitoring",
-        1000,
-    )));
+    const MAX_ITERATIONS: usize = 1000;
+    const STOP_AFTER: usize = 25;
 
-    let mut agent = agent_arc.lock().await;
+    let mut agent = AutonomousAgent::new("Continuous monitoring", MAX_ITERATIONS);
     agent.add_goal("Monitor system health", 10);
-    drop(agent);
 
-    let agent_clone = agent_arc.clone();
+    // Obtained *before* run(), which borrows the agent for as long as it runs. The
+    // earlier shape of this example wrapped the agent in a Mutex and had the stopper
+    // task call `agent.stop()` through it -- but run() holds that same lock for the
+    // whole run, so the stopper blocked forever and silently never fired. The example
+    // still printed "manually stopped" because the goal happened to complete on its
+    // own after 5 iterations.
+    let stopper = agent.stop_handle();
 
-    // Spawn task to stop agent after 200ms
-    tokio::spawn(async move {
-        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
-        println!("  [External trigger] Stopping agent...");
-        agent_clone.lock().await.stop();
-    });
+    // A goal that never finishes, so the run can only end by being stopped, and a
+    // worker that trips the stopper after a fixed number of checks. Counting
+    // iterations rather than sleeping keeps the example deterministic -- a wall-clock
+    // stopper races the loop, which spins through all 1000 iterations in well under a
+    // millisecond.
+    let checks = Arc::new(AtomicUsize::new(0));
+    agent.set_worker(Arc::new(move |goal| {
+        goal.progress = 0.0;
+        if checks.fetch_add(1, Ordering::SeqCst) + 1 >= STOP_AFTER {
+            println!("  [External trigger] Stopping agent...");
+            stopper.stop();
+        }
+        Ok(format!("checked: {}", goal.description))
+    }));
 
     println!("Starting continuous monitoring...");
-    println!("(will be stopped externally after 200ms)\n");
+    println!("(will be stopped externally after {STOP_AFTER} checks)\n");
 
-    let mut agent = agent_arc.lock().await;
     let result = agent.run().await?;
 
     println!("\nAgent stopped after {} iterations", result.iterations);
-    println!("(manually stopped before reaching max_iterations=1000)\n");
+    if result.iterations < MAX_ITERATIONS {
+        println!("(manually stopped before reaching max_iterations={MAX_ITERATIONS})\n");
+    } else {
+        // Kept as a real branch rather than an unconditional claim: the old version
+        // asserted it had been stopped no matter what actually happened.
+        println!("(ran to max_iterations={MAX_ITERATIONS}: stop() had no effect)\n");
+    }
 
     Ok(())
 }

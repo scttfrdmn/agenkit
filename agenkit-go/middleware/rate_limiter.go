@@ -159,78 +159,84 @@ func (r *RateLimiterDecorator) refillTokens() {
 }
 
 // acquireTokens acquires tokens from the bucket.
+// Wait-and-retry loop. A single wait is not enough, for two independent
+// reasons, and the old code returned an error from a branch it labelled
+// "should not happen" when either bit:
+//
+//  1. refillTokens credits elapsed*rate from the wall clock, and waitDuration
+//     is truncated to whole milliseconds, so the sleep can return having
+//     credited marginally less than tokensNeeded.
+//  2. The lock is released across the wait, so a concurrent goroutine can
+//     acquire it first and drain the tokens this caller was waiting for -- a
+//     lost wakeup. The equivalent Python path raised on every run with
+//     capacity=1 and 8 concurrent callers (#750), despite a wait budget.
+//
+// Both sites previously papered over (1) with an epsilon on the comparison,
+// which narrowed the jitter window, did nothing for (2), and let a caller take
+// tokens it had not earned. Re-checking instead makes the outcome depend on the
+// token math rather than on goroutine scheduling. MaxWaitTimeout still bounds
+// the total, measured against cumulative wait, so this cannot spin forever when
+// the configured rate genuinely cannot satisfy the request.
 func (r *RateLimiterDecorator) acquireTokens(ctx context.Context, tokensNeeded int, wait bool) error {
-	r.mu.Lock()
-	r.refillTokens()
+	var totalWaited time.Duration
 
-	if r.tokens >= float64(tokensNeeded) {
-		// Sufficient tokens available
-		r.tokens -= float64(tokensNeeded)
-		r.metrics.mu.Lock()
-		r.metrics.CurrentTokens = r.tokens
-		r.metrics.mu.Unlock()
-		r.mu.Unlock()
-		return nil
-	}
+	for {
+		r.mu.Lock()
+		r.refillTokens()
 
-	if !wait {
-		// Insufficient tokens and not waiting
-		tokensAvailable := r.tokens
-		r.mu.Unlock()
-		return &RateLimitError{
-			TokensNeeded:    tokensNeeded,
-			TokensAvailable: tokensAvailable,
+		if r.tokens >= float64(tokensNeeded) {
+			// Sufficient tokens available
+			r.tokens -= float64(tokensNeeded)
+			r.metrics.mu.Lock()
+			r.metrics.CurrentTokens = r.tokens
+			if totalWaited > 0 {
+				r.metrics.TotalWaitTime += totalWaited
+			}
+			r.metrics.mu.Unlock()
+			r.mu.Unlock()
+			return nil
 		}
-	}
 
-	// Calculate wait time for tokens
-	tokensDeficit := float64(tokensNeeded) - r.tokens
-	waitDuration := time.Duration(tokensDeficit/r.config.Rate*1000) * time.Millisecond
-
-	// Apply max wait timeout if configured
-	if r.config.MaxWaitTimeout > 0 && waitDuration > r.config.MaxWaitTimeout {
-		tokensAvailable := r.tokens
-		r.mu.Unlock()
-		return &RateLimitError{
-			TokensNeeded:    tokensNeeded,
-			TokensAvailable: tokensAvailable,
+		if !wait {
+			// Insufficient tokens and not waiting
+			tokensAvailable := r.tokens
+			r.mu.Unlock()
+			return &RateLimitError{
+				TokensNeeded:    tokensNeeded,
+				TokensAvailable: tokensAvailable,
+			}
 		}
-	}
 
-	r.mu.Unlock()
+		// Calculate wait time for the outstanding deficit. Floored at 1ms: a
+		// sub-millisecond residual deficit would otherwise truncate to a
+		// zero-length wait and spin hot until the wall clock caught up.
+		tokensDeficit := float64(tokensNeeded) - r.tokens
+		waitDuration := time.Duration(tokensDeficit/r.config.Rate*1000) * time.Millisecond
+		if waitDuration < time.Millisecond {
+			waitDuration = time.Millisecond
+		}
 
-	// Wait outside the lock to allow other operations
-	waitStart := time.Now()
-	select {
-	case <-time.After(waitDuration):
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-	actualWaitDuration := time.Since(waitStart)
+		// Apply max wait timeout if configured, against the cumulative wait so
+		// repeated short retries cannot outlast the budget.
+		if r.config.MaxWaitTimeout > 0 && totalWaited+waitDuration > r.config.MaxWaitTimeout {
+			tokensAvailable := r.tokens
+			r.mu.Unlock()
+			return &RateLimitError{
+				TokensNeeded:    tokensNeeded,
+				TokensAvailable: tokensAvailable,
+			}
+		}
 
-	// Re-acquire lock and try again
-	r.mu.Lock()
-	defer r.mu.Unlock()
+		r.mu.Unlock()
 
-	// Refill tokens based on actual elapsed time
-	r.refillTokens()
-
-	// Use small epsilon for floating point comparison to avoid precision issues
-	// Need epsilon >= 0.005 since error message uses %.2f formatting
-	const epsilon = 0.01
-	if r.tokens >= float64(tokensNeeded)-epsilon {
-		r.tokens -= float64(tokensNeeded)
-		r.metrics.mu.Lock()
-		r.metrics.CurrentTokens = r.tokens
-		r.metrics.TotalWaitTime += actualWaitDuration
-		r.metrics.mu.Unlock()
-		return nil
-	}
-
-	// Should not happen, but handle defensively
-	return &RateLimitError{
-		TokensNeeded:    tokensNeeded,
-		TokensAvailable: r.tokens,
+		// Wait outside the lock to allow other operations
+		waitStart := time.Now()
+		select {
+		case <-time.After(waitDuration):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+		totalWaited += time.Since(waitStart)
 	}
 }
 
@@ -492,75 +498,71 @@ func (r *PerUserRateLimiterDecorator) refillUserTokens(bucket *userBucket) {
 }
 
 // acquireUserTokens acquires tokens from a specific user's bucket.
+// See acquireTokens for why this is a loop rather than a single wait: the
+// wall-clock refill can undershoot, and releasing the lock across the wait lets
+// a concurrent caller for the same user drain the refilled tokens (#750).
 func (r *PerUserRateLimiterDecorator) acquireUserTokens(ctx context.Context, userID string, tokensNeeded int, wait bool) error {
-	r.mu.Lock()
+	var totalWaited time.Duration
 
-	bucket := r.getUserBucket(userID)
-	r.refillUserTokens(bucket)
+	for {
+		r.mu.Lock()
 
-	if bucket.tokens >= float64(tokensNeeded) {
-		// Sufficient tokens available
-		bucket.tokens -= float64(tokensNeeded)
-		r.mu.Unlock()
-		return nil
-	}
+		// Re-fetch under the lock on every pass rather than reusing a pointer
+		// captured before the wait, so this stays correct if bucket eviction is
+		// ever added.
+		bucket := r.getUserBucket(userID)
+		r.refillUserTokens(bucket)
 
-	if !wait {
-		// Insufficient tokens and not waiting
-		tokensAvailable := bucket.tokens
-		r.mu.Unlock()
-		return &RateLimitError{
-			TokensNeeded:    tokensNeeded,
-			TokensAvailable: tokensAvailable,
+		if bucket.tokens >= float64(tokensNeeded) {
+			// Sufficient tokens available
+			bucket.tokens -= float64(tokensNeeded)
+			if totalWaited > 0 {
+				r.metrics.mu.Lock()
+				r.metrics.TotalWaitTime += totalWaited
+				r.metrics.mu.Unlock()
+			}
+			r.mu.Unlock()
+			return nil
 		}
-	}
 
-	// Calculate wait time for tokens
-	tokensDeficit := float64(tokensNeeded) - bucket.tokens
-	waitDuration := time.Duration(tokensDeficit/r.config.Rate*1000) * time.Millisecond
-
-	// Apply max wait timeout if configured
-	if r.config.MaxWaitTimeout > 0 && waitDuration > r.config.MaxWaitTimeout {
-		tokensAvailable := bucket.tokens
-		r.mu.Unlock()
-		return &RateLimitError{
-			TokensNeeded:    tokensNeeded,
-			TokensAvailable: tokensAvailable,
+		if !wait {
+			// Insufficient tokens and not waiting
+			tokensAvailable := bucket.tokens
+			r.mu.Unlock()
+			return &RateLimitError{
+				TokensNeeded:    tokensNeeded,
+				TokensAvailable: tokensAvailable,
+			}
 		}
-	}
 
-	r.mu.Unlock()
+		// Calculate wait time for the outstanding deficit, floored at 1ms so a
+		// sub-millisecond residual cannot spin hot.
+		tokensDeficit := float64(tokensNeeded) - bucket.tokens
+		waitDuration := time.Duration(tokensDeficit/r.config.Rate*1000) * time.Millisecond
+		if waitDuration < time.Millisecond {
+			waitDuration = time.Millisecond
+		}
 
-	// Wait outside the lock to allow other operations
-	waitStart := time.Now()
-	select {
-	case <-time.After(waitDuration):
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-	actualWaitDuration := time.Since(waitStart)
+		// Apply max wait timeout if configured, against the cumulative wait.
+		if r.config.MaxWaitTimeout > 0 && totalWaited+waitDuration > r.config.MaxWaitTimeout {
+			tokensAvailable := bucket.tokens
+			r.mu.Unlock()
+			return &RateLimitError{
+				TokensNeeded:    tokensNeeded,
+				TokensAvailable: tokensAvailable,
+			}
+		}
 
-	// Re-acquire lock and try again
-	r.mu.Lock()
-	defer r.mu.Unlock()
+		r.mu.Unlock()
 
-	// Refill tokens based on actual elapsed time
-	r.refillUserTokens(bucket)
-
-	// Use small epsilon for floating point comparison
-	const epsilon = 0.01
-	if bucket.tokens >= float64(tokensNeeded)-epsilon {
-		bucket.tokens -= float64(tokensNeeded)
-		r.metrics.mu.Lock()
-		r.metrics.TotalWaitTime += actualWaitDuration
-		r.metrics.mu.Unlock()
-		return nil
-	}
-
-	// Should not happen, but handle defensively
-	return &RateLimitError{
-		TokensNeeded:    tokensNeeded,
-		TokensAvailable: bucket.tokens,
+		// Wait outside the lock to allow other operations
+		waitStart := time.Now()
+		select {
+		case <-time.After(waitDuration):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+		totalWaited += time.Since(waitStart)
 	}
 }
 

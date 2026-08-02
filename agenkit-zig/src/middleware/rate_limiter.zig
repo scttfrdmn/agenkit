@@ -193,63 +193,75 @@ pub const RateLimiterDecorator = struct {
         self.metrics_data.current_tokens = self.tokens;
     }
 
-    /// Acquire tokens from the bucket
+    /// Acquire tokens from the bucket.
+    ///
+    /// Wait-and-retry loop. A single wait is not enough, for two independent
+    /// reasons, and the old code returned an error from a branch it labelled
+    /// "should not happen" when either bit:
+    ///
+    ///   1. refillTokens credits elapsed*rate from the wall clock, and
+    ///      wait_time_ms truncates toward zero, so the sleep can return having
+    ///      credited marginally less than tokens_needed.
+    ///   2. The mutex is released across the sleep, so another thread can take
+    ///      it first and drain the tokens this caller was waiting for -- a lost
+    ///      wakeup. The equivalent Python path raised on every run with
+    ///      capacity=1 and 8 concurrent callers (#750), despite a wait budget.
+    ///
+    /// This previously papered over (1) with an epsilon on the comparison, which
+    /// narrowed the jitter window, did nothing for (2), and let a caller take
+    /// tokens it had not earned. max_wait_timeout_ms still bounds the total,
+    /// measured against cumulative wait, so this cannot spin forever when the
+    /// configured rate genuinely cannot satisfy the request.
     fn acquireTokens(self: *RateLimiterDecorator, tokens_needed: u32, wait: bool) !void {
         const tokens_needed_f64 = @as(f64, @floatFromInt(tokens_needed));
+        var total_waited_ms: u64 = 0;
 
-        self.mutex.lock();
-        self.refillTokens();
+        while (true) {
+            self.mutex.lock();
+            self.refillTokens();
 
-        if (self.tokens >= tokens_needed_f64) {
-            // Sufficient tokens available
-            self.tokens -= tokens_needed_f64;
-            self.metrics_data.current_tokens = self.tokens;
-            self.mutex.unlock();
-            return;
-        }
+            if (self.tokens >= tokens_needed_f64) {
+                // Sufficient tokens available
+                self.tokens -= tokens_needed_f64;
+                self.metrics_data.current_tokens = self.tokens;
+                if (total_waited_ms > 0) {
+                    self.metrics_data.total_wait_time_ms += total_waited_ms;
+                }
+                self.mutex.unlock();
+                return;
+            }
 
-        if (!wait) {
-            // Insufficient tokens and not waiting
-            self.mutex.unlock();
-            return RateLimitError.RateLimitExceeded;
-        }
-
-        // Calculate wait time for tokens
-        const tokens_deficit = tokens_needed_f64 - self.tokens;
-        const wait_time_sec = tokens_deficit / self.config.rate;
-        const wait_time_ms = @as(u64, @intFromFloat(wait_time_sec * 1000.0));
-
-        // Check if wait time exceeds max_wait_timeout
-        if (self.config.max_wait_timeout_ms) |max_timeout| {
-            if (wait_time_ms > max_timeout) {
+            if (!wait) {
+                // Insufficient tokens and not waiting
                 self.mutex.unlock();
                 return RateLimitError.RateLimitExceeded;
             }
+
+            // Calculate wait time for the outstanding deficit. Floored at 1ms:
+            // a sub-millisecond residual would otherwise truncate to a
+            // zero-length sleep and spin hot until the wall clock caught up.
+            const tokens_deficit = tokens_needed_f64 - self.tokens;
+            const wait_time_sec = tokens_deficit / self.config.rate;
+            var wait_time_ms = @as(u64, @intFromFloat(wait_time_sec * 1000.0));
+            if (wait_time_ms < 1) {
+                wait_time_ms = 1;
+            }
+
+            // Check the cumulative wait against max_wait_timeout so repeated
+            // short retries cannot outlast the budget.
+            if (self.config.max_wait_timeout_ms) |max_timeout| {
+                if (total_waited_ms + wait_time_ms > max_timeout) {
+                    self.mutex.unlock();
+                    return RateLimitError.RateLimitExceeded;
+                }
+            }
+
+            self.mutex.unlock();
+
+            // Wait outside the lock to allow other operations
+            agktime.sleep(wait_time_ms * std.time.ns_per_ms);
+            total_waited_ms += wait_time_ms;
         }
-
-        self.mutex.unlock();
-
-        // Wait outside the lock to allow other operations
-        agktime.sleep(wait_time_ms * std.time.ns_per_ms);
-
-        // Re-acquire lock and try again
-        self.mutex.lock();
-        defer self.mutex.unlock();
-
-        // Refill tokens based on actual elapsed time
-        self.refillTokens();
-
-        // Use epsilon for floating point comparison
-        const epsilon = 0.01;
-        if (self.tokens >= tokens_needed_f64 - epsilon) {
-            self.tokens -= tokens_needed_f64;
-            self.metrics_data.current_tokens = self.tokens;
-            self.metrics_data.total_wait_time_ms += wait_time_ms;
-            return;
-        }
-
-        // Should not happen, but handle defensively
-        return RateLimitError.RateLimitExceeded;
     }
 
     fn nameImpl(ptr: *anyopaque) []const u8 {

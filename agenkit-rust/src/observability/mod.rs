@@ -107,10 +107,11 @@ use crate::core::AgentError;
 /// detection applies. To set it programmatically, call
 /// [`init_tracing_with_config`] instead of using this convenience wrapper.
 ///
-/// # Metrics are not yet exported
+/// # Shutdown is mandatory
 ///
-/// `init_metrics` currently installs no exporter for any exporter type, so the
-/// `metrics_endpoint` argument has no effect — see #772. Tracing does export.
+/// Both signals batch: spans via a batch span processor, metrics via a periodic
+/// reader on a 60-second interval. Exiting without
+/// [`shutdown_observability`] silently drops whatever has not been flushed.
 ///
 /// # Example
 ///

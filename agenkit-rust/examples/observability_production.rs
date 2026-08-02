@@ -148,11 +148,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // NOTE: init_metrics installs no exporter for any exporter type today, so
-    // neither arm below actually ships metrics anywhere — tracked in #772. The
-    // call is kept so the example still shows where metrics init belongs.
+    // Metrics export on a 60s interval, so shutdown_observability() at the end of
+    // main is what delivers the final interval — see the flush below.
     match init_metrics("otlp", Some(&config.metrics_endpoint)) {
-        Ok(_) => println!("✓ Metrics initialized (OTLP — not yet exported, see #772)"),
+        Ok(_) => println!("✓ Metrics initialized (OTLP → {})", config.metrics_endpoint),
         Err(e) => {
             println!("⚠ OTLP metrics init failed ({e}), using stdout exporter");
             init_metrics("stdout", None)?;

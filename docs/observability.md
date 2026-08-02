@@ -18,14 +18,14 @@ Comprehensive guide to distributed tracing, metrics, logging, and audit logging 
 The Agenkit Rust observability module provides four integrated components for production agent monitoring:
 
 - **Distributed Tracing**: W3C Trace Context propagation across agents with OpenTelemetry
-- **Metrics Collection**: Counters, histograms, and gauges for monitoring with Prometheus/OTLP
+- **Metrics Collection**: Counters, histograms, and gauges exported over OTLP
 - **Structured Logging**: JSON logging with trace correlation
 - **Audit Logging**: Compliance-friendly event logging with querying
 
 ### Key Features
 
 ✅ **Cross-Language Compatible**: Uses message metadata for trace propagation (not thread-local storage)
-✅ **Multiple Exporters**: OTLP, Jaeger, Zipkin, Console, Prometheus
+✅ **Multiple Exporters**: OTLP (traces + metrics), Jaeger (via OTLP), Console
 ✅ **Zero-Config Middleware**: Automatic span creation and metric recording
 ✅ **Production-Ready**: Buffered audit logging, graceful degradation, thread-safe
 
@@ -53,7 +53,7 @@ use agenkit::core::Agent;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize observability
     init_tracing("console", None)?;
-    init_metrics("prometheus", None)?;
+    init_metrics("stdout", None)?;
     configure_logging("json", "info")?;
 
     // Wrap your agent with middleware
@@ -82,8 +82,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // OTLP for distributed tracing
     init_tracing("otlp", Some("http://localhost:4317"))?;
 
-    // Prometheus metrics on port 9464
-    init_metrics("prometheus", None)?;
+    // OTLP metrics to the same collector
+    init_metrics("otlp", Some("http://localhost:4317"))?;
 
     // JSON logging for production
     configure_logging("json", "info")?;
@@ -183,15 +183,27 @@ Metrics collection with automatic counters and histograms.
 ```rust
 use agenkit::observability::init_metrics;
 
-// Prometheus (pull-based on port 9464)
-init_metrics("prometheus", None)?;
-
-// Prometheus on custom port
-init_metrics("prometheus", Some("0.0.0.0:8080"))?;
-
 // OTLP (push-based)
 init_metrics("otlp", Some("http://localhost:4317"))?;
+
+// OTLP using OTEL_EXPORTER_OTLP_ENDPOINT from the environment
+init_metrics("otlp", None)?;
+
+// Console, for debugging
+init_metrics("stdout", None)?;
 ```
+
+> **`"prometheus"` returns an error.** The `opentelemetry-prometheus` and
+> `prometheus` crates were removed from `Cargo.toml` over vulnerable transitive
+> dependencies (thrift, protobuf 2.x), so there is no exporter to install. It
+> previously returned `Ok(())` and exported nothing — worse than failing, since a
+> scrape endpoint that never appears is indistinguishable from a misconfigured
+> scrape target. To get Prometheus, export OTLP to a collector and let the
+> collector expose the scrape endpoint.
+
+Metrics are exported by a periodic reader on a 60-second interval (the OTel spec
+default), so **call `shutdown_observability()` before exit** or the last interval
+of metrics is lost.
 
 #### MetricsMiddleware
 
@@ -231,8 +243,12 @@ histogram.record(1.5, &[KeyValue::new("key", "value")]);
 
 #### Accessing Prometheus Metrics
 
+Agenkit Rust does not serve a scrape endpoint — see the note above. Export OTLP
+to a collector configured with a `prometheus` exporter, and scrape the
+collector:
+
 ```bash
-curl http://localhost:9464/metrics
+curl http://otel-collector:8889/metrics
 ```
 
 ### 3. Logging Module
@@ -403,8 +419,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(e) => eprintln!("Failed to initialize tracing: {}", e),
     }
 
-    // 2. Initialize metrics with Prometheus
-    match init_metrics("prometheus", None) {
+    // 2. Initialize metrics with OTLP
+    match init_metrics("otlp", Some("http://localhost:4317")) {
         Ok(_) => println!("Metrics initialized"),
         Err(e) => eprintln!("Failed to initialize metrics: {}", e),
     }
@@ -628,20 +644,24 @@ init_tracing("console", None)?;
 
 ### Issue: Prometheus metrics not scraping
 
+Agenkit Rust exposes no scrape endpoint. `init_metrics("prometheus", ...)`
+returns an error rather than pretending to. Route metrics through a collector:
+
 **Checklist:**
 
-1. ✅ Is metrics endpoint accessible? `curl http://localhost:9464/metrics`
-2. ✅ Is Prometheus configured to scrape? Check `prometheus.yml`
-3. ✅ Are metrics being recorded? (Check logs)
+1. ✅ Are you calling `init_metrics("otlp", ...)`, not `"prometheus"`?
+2. ✅ Did you call `shutdown_observability()` before exit? The reader exports on a
+   60s interval, so a short-lived process delivers nothing without it.
+3. ✅ Is the collector's `prometheus` exporter configured and its port scraped?
 
-**Prometheus configuration:**
+**Prometheus configuration — scrape the collector, not the app:**
 
 ```yaml
 scrape_configs:
-  - job_name: 'agenkit'
+  - job_name: 'agenkit-via-collector'
     scrape_interval: 15s
     static_configs:
-      - targets: ['localhost:9464']
+      - targets: ['otel-collector:8889']
 ```
 
 ### Issue: Audit log file not created

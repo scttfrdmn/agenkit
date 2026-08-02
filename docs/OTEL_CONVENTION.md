@@ -314,8 +314,10 @@ Documented so consumers do not plan around capabilities that do not exist:
    "start a span for node N parented to node P" API.
 3. **Go's semconv pin is `v1.17.0`** (`agenkit-go/observability/tracing.go`),
    predating the GenAI conventions.
-4. **`init_metrics` exports nothing in Rust**, for any exporter type, while
-   returning success (#772).
+4. **No Prometheus scrape endpoint in Rust.** `init_metrics("prometheus", ...)`
+   returns an error — `opentelemetry-prometheus` was removed over vulnerable
+   transitive dependencies. Export OTLP to a collector and let the collector
+   expose the scrape endpoint (#772).
 
 ## Cross-references
 
@@ -324,6 +326,6 @@ Documented so consumers do not plan around capabilities that do not exist:
 - #771 — documented env vars that no implementation reads
 - #769 — `VerificationResult.passed` cannot express `not_assessed`
 - #768 — Rust OTLP export, `service.name`, and span status (fixed)
-- #772 — Rust `init_metrics` installs no exporter
+- #772 — Rust `init_metrics` installed no exporter (fixed)
 - #664 — typed `Usage` (prerequisite for emitting token attributes)
 - #665 — Bedrock prompt-cache token counts

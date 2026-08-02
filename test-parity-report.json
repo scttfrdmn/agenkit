@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-06-14T22:50:22Z",
+  "generated_at": "2026-08-02T03:20:25Z",
   "languages": {
     "python": {
-      "total": 2044,
+      "total": 2117,
       "categories": {
         "patterns": 443,
         "techniques": 240,
         "safety": 162,
         "adapters": 141,
-        "evaluation": 116,
+        "evaluation": 134,
         "middleware": 92,
         "memory": 101,
         "routing": 34,
         "chaos": 53,
         "property": 37,
         "budget": 51,
-        "observability": 41,
+        "observability": 48,
         "integration": 90,
         "tools": 32,
         "composition": 40
       }
     },
     "go": {
-      "total": 1244,
+      "total": 1265,
       "categories": {
         "patterns": 362,
         "techniques": 107,
         "safety": 94,
-        "adapters": 89,
-        "evaluation": 127,
-        "middleware": 91,
+        "adapters": 90,
+        "evaluation": 146,
+        "middleware": 92,
         "memory": 18,
         "routing": 0,
         "chaos": 0,
@@ -40,12 +40,12 @@
       }
     },
     "cpp": {
-      "total": 1034,
+      "total": 1076,
       "note": "C++ counts individual TEST() macros",
       "categories": {
         "patterns": 310,
         "techniques": 116,
-        "unit": 112,
+        "unit": 130,
         "integration": 65,
         "safety": 0,
         "adapters": 50,
@@ -55,12 +55,12 @@
       }
     },
     "rust": {
-      "total": 1253,
+      "total": 1274,
       "categories": {
         "patterns": 133,
         "techniques": 95,
-        "adapters": 48,
-        "evaluation": 73,
+        "adapters": 54,
+        "evaluation": 88,
         "observability": 66,
         "safety": 60,
         "routing": 0,
@@ -69,24 +69,78 @@
       }
     },
     "zig": {
-      "total": 214,
-      "note": "Zig uses in-code tests with no clear category separation",
+      "total": 496,
+      "note": "Counted from the summary line of zig build test --summary all; in-code tests have no clear category separation",
       "categories": {}
     },
     "typescript": {
-      "total": 928,
-      "test_files": 116,
+      "total": 968,
+      "test_files": 121,
       "note": "Counts may be estimated from test files",
       "categories": {
         "patterns": 16,
         "techniques": 216,
         "safety": 135,
         "adapters": 79,
-        "evaluation": 98,
+        "evaluation": 101,
         "routing": 0,
         "chaos": 61,
         "property": 42,
         "integration": 45
+      }
+    },
+    "csharp": {
+      "total": 272,
+      "note": "Counted from [Fact]/[Theory] annotations; a [Theory] expands to multiple cases at runtime, so this slightly undercounts",
+      "categories": {
+        "patterns": 87,
+        "techniques": 0,
+        "middleware": 38,
+        "memory": 23,
+        "safety": 20,
+        "adapters": 11,
+        "evaluation": 8,
+        "observability": 9,
+        "budget": 10,
+        "routing": 0,
+        "chaos": 0,
+        "property": 0
+      }
+    },
+    "java": {
+      "total": 358,
+      "note": "Counted from @Test/@ParameterizedTest/@Property annotations (jqwik + JUnit 5)",
+      "categories": {
+        "patterns": 135,
+        "techniques": 0,
+        "middleware": 33,
+        "memory": 14,
+        "safety": 10,
+        "adapters": 16,
+        "evaluation": 9,
+        "observability": 10,
+        "budget": 10,
+        "property": 35,
+        "routing": 0,
+        "chaos": 0
+      }
+    },
+    "scala": {
+      "total": 363,
+      "note": "Counted from munit test(...) / ScalaCheck property(...) declarations",
+      "categories": {
+        "patterns": 135,
+        "techniques": 0,
+        "middleware": 55,
+        "memory": 24,
+        "safety": 13,
+        "adapters": 11,
+        "evaluation": 6,
+        "observability": 8,
+        "budget": 9,
+        "property": 0,
+        "routing": 0,
+        "chaos": 0
       }
     }
   }

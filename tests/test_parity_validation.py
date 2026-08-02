@@ -20,13 +20,26 @@ import pytest
 # regressions without breaking on Python test growth. When Python's total
 # rises, every other language's percentage falls mechanically — recalibrate
 # floors (not the implementations) and refresh the baselines below.
-# Baselines reflect the 2026-06 regenerated report (Python total = 2044).
+# Baselines reflect the 2026-08 regenerated report (Python total = 2117).
+#
+# Zig's floor was raised from 10.0 in #757. `zig build test` prints no aggregate
+# count, so the old parse never matched and the script fell back to a hardcoded
+# "214" on every run -- Zig's real total is 496, understated by 2.3x. The floor
+# had been calibrated against the fabricated number.
 TOTAL_PARITY_THRESHOLDS = {
-    "go": 50.0,  # Currently 60.9% (1244/2044)
-    "cpp": 40.0,  # Currently 50.6% (1034/2044)
-    "rust": 35.0,  # Currently 61.3% (1253/2044)
-    "typescript": 25.0,  # Currently 45.4% (928/2044)
-    "zig": 10.0,  # Currently 10.5% (214/2044)
+    "go": 50.0,  # Currently 59.8% (1265/2117)
+    "cpp": 40.0,  # Currently 50.8% (1076/2117)
+    "rust": 35.0,  # Currently 60.2% (1274/2117)
+    "typescript": 25.0,  # Currently 45.7% (968/2117)
+    "zig": 20.0,  # Currently 23.4% (496/2117)
+    # C#/Java/Scala had no floor at all before #757, and were absent from the
+    # report entirely, so test_total_parity_threshold skipped them -- they could
+    # have lost every test without failing anything. They trail the older
+    # implementations because they are newer (v0.71.0-v0.73.0), not because they
+    # are less complete: all three are full-parity on features (#753).
+    "csharp": 10.0,  # Currently 12.8% (272/2117)
+    "java": 14.0,  # Currently 16.9% (358/2117)
+    "scala": 14.0,  # Currently 17.1% (363/2117)
 }
 
 # Category-specific thresholds (percentage of Python category tests)
@@ -63,6 +76,29 @@ CATEGORY_THRESHOLDS = {
         "safety": 0.0,  # Zig has no category breakdown - can't enforce
         "adapters": 0.0,  # Zig has no category breakdown - can't enforce
     },
+    # C#/Java/Scala floors, added in #757. Percentages are of Python's count for
+    # the same category. `techniques` is deliberately absent for all three rather
+    # than set to 0.0: they have no techniques subsystem (#754), and a 0.0 floor
+    # would silently "pass" if the subsystem were added and then broke.
+    "csharp": {
+        "patterns": 15.0,  # 19.6% (87/443)
+        "middleware": 35.0,  # 41.3% (38/92)
+        "memory": 18.0,  # 22.8% (23/101)
+        "adapters": 5.0,  # 7.8% (11/141)
+    },
+    "java": {
+        "patterns": 25.0,  # 30.5% (135/443)
+        "middleware": 30.0,  # 35.9% (33/92)
+        "memory": 10.0,  # 13.9% (14/101)
+        "adapters": 8.0,  # 11.3% (16/141)
+        "property": 80.0,  # 94.6% (35/37) - jqwik property tests
+    },
+    "scala": {
+        "patterns": 25.0,  # 30.5% (135/443)
+        "middleware": 50.0,  # 59.8% (55/92)
+        "memory": 18.0,  # 23.8% (24/101)
+        "adapters": 5.0,  # 7.8% (11/141)
+    },
 }
 
 
@@ -86,7 +122,7 @@ def python_total(parity_report: dict[str, Any]) -> int:
 
 @pytest.mark.parametrize(
     "language",
-    ["go", "cpp", "rust", "typescript", "zig"],
+    ["go", "cpp", "rust", "typescript", "zig", "csharp", "java", "scala"],
 )
 def test_total_parity_threshold(
     parity_report: dict[str, Any],
@@ -100,7 +136,16 @@ def test_total_parity_threshold(
     """
     lang_data = parity_report["languages"].get(language)
     if not lang_data:
-        pytest.skip(f"Language '{language}' not found in parity report (may not be generated yet)")
+        # Absent-means-skip is why C#/Java/Scala were unguarded for three
+        # releases: they had no floor AND no report entry, so this test passed
+        # by skipping. Every language in TOTAL_PARITY_THRESHOLDS is now written
+        # by scripts/test-parity.sh, so absence is a generator bug, not a
+        # not-yet-implemented language. See #757.
+        pytest.fail(
+            f"Language '{language}' has a parity threshold but is missing from the "
+            f"report. Regenerate with scripts/test-parity.sh; if it genuinely has "
+            f"no tests, remove its threshold rather than leaving it unmeasured."
+        )
 
     lang_total = lang_data["total"]
     required_threshold = TOTAL_PARITY_THRESHOLDS[language]
@@ -142,6 +187,22 @@ def test_total_parity_threshold(
         ("zig", "patterns"),
         ("zig", "safety"),
         ("zig", "adapters"),
+        # C# categories
+        ("csharp", "patterns"),
+        ("csharp", "middleware"),
+        ("csharp", "memory"),
+        ("csharp", "adapters"),
+        # Java categories
+        ("java", "patterns"),
+        ("java", "middleware"),
+        ("java", "memory"),
+        ("java", "adapters"),
+        ("java", "property"),
+        # Scala categories
+        ("scala", "patterns"),
+        ("scala", "middleware"),
+        ("scala", "memory"),
+        ("scala", "adapters"),
     ],
 )
 def test_category_parity_threshold(
@@ -169,7 +230,13 @@ def test_category_parity_threshold(
     # Get language category count
     lang_data = parity_report["languages"].get(language)
     if not lang_data:
-        pytest.skip(f"Language '{language}' not found in parity report (may not be generated yet)")
+        # Same absent-means-skip hole as test_total_parity_threshold had: a
+        # language with a threshold but no report entry passed by skipping. If a
+        # language has a category floor here, it is expected in the report. See #757.
+        pytest.fail(
+            f"Language '{language}' has a {category} threshold but is missing from "
+            f"the report. Regenerate with scripts/test-parity.sh."
+        )
 
     lang_category_total = lang_data.get("categories", {}).get(category, 0)
 
@@ -186,27 +253,38 @@ def test_category_parity_threshold(
 
 
 def test_no_missing_languages(parity_report: dict[str, Any]) -> None:
-    """Verify all expected languages are present in the report.
+    """Verify all nine implementations are present in the report.
 
-    In CI, all languages must be present. During development, we warn
-    if languages are missing but don't fail the test.
+    C#, Java and Scala were absent from ``expected_languages`` until #757, so
+    this test would not have failed if ``agenkit-cs``, ``agenkit-java`` or
+    ``agenkit-scala`` had disappeared entirely.
+
+    All nine are shipped, full-parity implementations that
+    ``scripts/test-parity.sh`` writes on every run, so a missing language means
+    the generator broke -- not that the language is still being developed. The
+    old "warn but skip during development" branch is gone: a skip here is
+    indistinguishable from a pass in CI output, which is how three languages went
+    unmeasured for three releases.
     """
-    expected_languages = {"python", "go", "cpp", "rust", "typescript", "zig"}
+    expected_languages = {
+        "python",
+        "go",
+        "cpp",
+        "rust",
+        "typescript",
+        "zig",
+        "csharp",
+        "java",
+        "scala",
+    }
     actual_languages = set(parity_report["languages"].keys())
 
     missing = expected_languages - actual_languages
 
-    # Always require Python, Go, and C++ (core languages)
-    required_languages = {"python", "go", "cpp"}
-    missing_required = missing & required_languages
-
-    if missing_required:
-        pytest.fail(f"Missing required languages in parity report: {missing_required}")
-
-    # Warn about other missing languages but don't fail
     if missing:
-        pytest.skip(
-            f"Some languages not yet in parity report: {missing}. This is OK during development."
+        pytest.fail(
+            f"Missing languages in parity report: {sorted(missing)}. "
+            f"Regenerate with scripts/test-parity.sh."
         )
 
 
@@ -253,16 +331,23 @@ def test_all_languages_have_patterns(parity_report: dict[str, Any]) -> None:
         "rust": 30.0,  # Solid implementation (30.0%)
         "typescript": 1.0,  # Early stage (3.6%)
         "zig": 0.0,  # No category breakdown available
+        # Added in #757 -- these three were unguarded despite being full-parity
+        # implementations since v0.71.0-v0.73.0.
+        "csharp": 15.0,  # Currently 19.6% (87/443)
+        "java": 25.0,  # Currently 30.5% (135/443)
+        "scala": 25.0,  # Currently 30.5% (135/443)
     }
 
-    for language in ["go", "cpp", "rust", "typescript", "zig"]:
+    for language in ["go", "cpp", "rust", "typescript", "zig", "csharp", "java", "scala"]:
         lang_data = parity_report["languages"].get(language)
         if not lang_data:
-            continue
+            pytest.fail(f"{language} is missing from the parity report")
 
         pattern_tests = lang_data.get("categories", {}).get("patterns", 0)
 
-        # Skip Zig since it has no category breakdown
+        # Zig reports one aggregate count with no category breakdown, so there is
+        # no patterns figure to compare. Its total is guarded by
+        # test_zig_infrastructure_complete instead.
         if language == "zig":
             continue
 
@@ -319,29 +404,36 @@ def test_zig_infrastructure_complete(parity_report: dict[str, Any]) -> None:
     - Budget tracking (15+ tests)
 
     This should be reflected in the parity report.
+
+    Both floors here were recalibrated in #757. `zig build test` prints no
+    aggregate count, so the old parse never matched and the script substituted a
+    hardcoded 214 on every run. Zig's real total is 496 -- understated by 2.3x --
+    and these floors (210 tests, 10.0% parity) had been set just below the
+    fabricated number, so they could not have caught even a halving of Zig's
+    suite. The count now comes from `zig build test --summary all`.
     """
     zig_data = parity_report["languages"].get("zig")
     if not zig_data:
-        pytest.skip("Zig not in parity report yet")
+        pytest.fail("Zig is missing from the parity report")
 
     zig_total = zig_data["total"]
 
-    # After Phase 1, Zig should have at least 210 tests (the absolute floor;
-    # this is the meaningful regression guard — see below for why the ratio
-    # check is a soft floor).
-    assert zig_total >= 210, (
-        f"Zig total ({zig_total}) is below Phase 1 completion count (210). "
-        "Infrastructure implementation may be missing."
+    # 450 sits just below the measured 496. The old 210 was below a number the
+    # script invented, not a number it measured.
+    assert zig_total >= 450, (
+        f"Zig total ({zig_total}) is below the floor (450; measured 496). "
+        "Infrastructure implementation may be missing, or the "
+        "'zig build test --summary all' parse in scripts/test-parity.sh broke."
     )
 
     # Verify Zig parity stays above its floor. This is a percentage of the
-    # Python baseline, which keeps growing (now 2044), so the floor tracks
-    # below the current ratio (10.5%) rather than pinning a fixed target.
+    # Python baseline, which keeps growing (now 2117), so the floor tracks
+    # below the current ratio (23.4%) rather than pinning a fixed target.
     python_total = parity_report["languages"]["python"]["total"]
     zig_parity = (zig_total / python_total) * 100
 
-    assert zig_parity >= 10.0, (
-        f"Zig parity ({zig_parity:.1f}%) below floor (10.0%). "
+    assert zig_parity >= 20.0, (
+        f"Zig parity ({zig_parity:.1f}%) below floor (20.0%). "
         "Expected improvement after infrastructure work."
     )
 
@@ -444,8 +536,10 @@ def test_zzz_parity_summary(parity_report: dict[str, Any]) -> None:
     # Always show Python first
     print(f"{'PYTHON':<12} {python_total:>8} {'100.0%':>8} {'baseline':>10} {'✅':>8}")
 
-    # Show all other languages that are present
-    for lang in ["go", "cpp", "rust", "typescript", "zig"]:
+    # Driven off TOTAL_PARITY_THRESHOLDS rather than a second hardcoded list, so
+    # adding a language in one place can't leave it out of the summary -- which is
+    # how C#/Java/Scala stayed invisible here through v0.71.0-v0.73.0.
+    for lang in TOTAL_PARITY_THRESHOLDS:
         lang_data = parity_report["languages"].get(lang)
         if not lang_data:
             # Language not in report yet

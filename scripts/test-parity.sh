@@ -1,6 +1,6 @@
 #!/bin/bash
 # Test Parity Tracking Script
-# Runs all test suites across 6 languages and generates parity report
+# Runs all test suites across 9 languages and generates parity report
 #
 # PERFORMANCE OPTIMIZATION (v0.49.0):
 # - Rust counting now uses grep on source files instead of cargo test
@@ -33,6 +33,25 @@ EOF
 # Update timestamp
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 jq --arg ts "$TIMESTAMP" '.generated_at = $ts' "$REPORT_JSON" > "$REPORT_JSON.tmp" && mv "$REPORT_JSON.tmp" "$REPORT_JSON"
+
+# require_language <name>
+# Assert a language actually landed in the report.
+#
+# `set -e` does NOT fire on the left-hand side of `&&`, so every
+# `jq ... > tmp && mv tmp $REPORT_JSON` block below can fail -- a jq syntax
+# error, a bad --arg -- while the script sails on and exits 0. That is exactly
+# how Zig silently vanished from the report during #757: jq rejected the filter,
+# `mv` never ran, and the only evidence was one line of stderr in a 700-line log.
+# Call this after each write so a dropped language is fatal and named.
+require_language() {
+    local lang="$1"
+    if ! jq -e --arg l "$lang" 'has("languages") and (.languages | has($l))' \
+            "$REPORT_JSON" > /dev/null 2>&1; then
+        echo "ERROR: '$lang' is missing from $REPORT_JSON after its write step." >&2
+        echo "       The jq filter for $lang failed (check stderr above)." >&2
+        exit 1
+    fi
+}
 
 #==============================================================================
 # PYTHON
@@ -114,6 +133,7 @@ jq --arg total "$PYTHON_TOTAL" \
        composition: ($composition | tonumber)
      }
    }' "$REPORT_JSON" > "$REPORT_JSON.tmp" && mv "$REPORT_JSON.tmp" "$REPORT_JSON"
+require_language python
 
 #==============================================================================
 # GO
@@ -193,6 +213,7 @@ jq --arg total "$GO_TOTAL" \
        composition: ($composition | tonumber)
      }
    }' "$REPORT_JSON" > "$REPORT_JSON.tmp" && mv "$REPORT_JSON.tmp" "$REPORT_JSON"
+require_language go
 
 #==============================================================================
 # C++
@@ -248,6 +269,7 @@ if [ -d "agenkit-cpp/tests" ]; then
            property: 0
          }
        }' "$REPORT_JSON" > "$REPORT_JSON.tmp" && mv "$REPORT_JSON.tmp" "$REPORT_JSON"
+    require_language cpp
 else
     echo "C++ build directory not found. Skipping C++ tests."
     echo ""
@@ -310,6 +332,7 @@ jq --arg total "$RUST_TOTAL" \
        property: 0
      }
    }' "$REPORT_JSON" > "$REPORT_JSON.tmp" && mv "$REPORT_JSON.tmp" "$REPORT_JSON"
+require_language rust
 
 #==============================================================================
 # ZIG
@@ -317,10 +340,18 @@ jq --arg total "$RUST_TOTAL" \
 echo "=== Zig Test Counts ==="
 
 cd agenkit-zig
-ZIG_OUTPUT=$(zig build test 2>&1 || true)
-ZIG_TOTAL=$(echo "$ZIG_OUTPUT" | grep -oE "[0-9]+ tests? passed" | grep -oE "[0-9]+" | head -1)
+# `--summary all` is required: plain `zig build test` prints no aggregate count,
+# so the old grep for "N tests passed" never matched and silently fell back to a
+# hardcoded "214". Zig's real total is 496 -- the report understated it by 2.3x
+# for as long as that fallback existed, and because 214 was a plausible value
+# there was no way to tell from the report that counting was broken. See #757.
+ZIG_OUTPUT=$(zig build test --summary all 2>&1 || true)
+ZIG_TOTAL=$(echo "$ZIG_OUTPUT" | grep -oE "[0-9]+/[0-9]+ tests passed" | head -1 | cut -d/ -f1)
 if [ -z "$ZIG_TOTAL" ]; then
-    ZIG_TOTAL="214"
+    echo "ERROR: could not parse a test count from 'zig build test --summary all'." >&2
+    echo "       The build failed or its summary format changed. Output was:" >&2
+    echo "$ZIG_OUTPUT" | tail -20 >&2
+    exit 1
 fi
 echo "Total: $ZIG_TOTAL"
 
@@ -334,9 +365,10 @@ echo ""
 jq --arg total "$ZIG_TOTAL" \
    '.languages.zig = {
      total: ($total | tonumber),
-     note: "Zig uses in-code tests with no clear category separation",
+     note: "Counted from the summary line of zig build test --summary all; in-code tests have no clear category separation",
      categories: {}
    }' "$REPORT_JSON" > "$REPORT_JSON.tmp" && mv "$REPORT_JSON.tmp" "$REPORT_JSON"
+require_language zig
 
 #==============================================================================
 # TYPESCRIPT
@@ -417,6 +449,239 @@ jq --arg total "$TS_TOTAL" \
        integration: ($integration | tonumber)
      }
    }' "$REPORT_JSON" > "$REPORT_JSON.tmp" && mv "$REPORT_JSON.tmp" "$REPORT_JSON"
+require_language typescript
+
+#==============================================================================
+# C# / JAVA / SCALA
+#==============================================================================
+# These three were absent from the report entirely, which made every threshold
+# in tests/test_parity_validation.py inert for them: test_total_parity_threshold
+# calls pytest.skip when a language is missing, so C#/Java/Scala could have lost
+# every test without failing anything. See #757.
+#
+# Counted by grep rather than by building, matching the Rust approach above (see
+# the v0.49.0 note on speed and OOM avoidance). Verified against real runs:
+# Java 358 = grep 358, Scala 363 = grep 363, C# 276 real vs 272 grep. The C#
+# delta is one [Theory] whose InlineData rows expand into several cases at
+# runtime; undercounting is the safe direction for a regression floor.
+
+# count_annotations <extended-regex> <dir>...
+# Emits the number of matches across the given directories, 0 if none exist.
+count_annotations() {
+    local pattern="$1"
+    shift
+    local dirs=()
+    local d
+    for d in "$@"; do
+        [ -d "$d" ] && dirs+=("$d")
+    done
+    if [ ${#dirs[@]} -eq 0 ]; then
+        echo "0"
+        return
+    fi
+    grep -rhoE "$pattern" "${dirs[@]}" 2>/dev/null | wc -l | tr -d ' '
+}
+
+echo "=== C# Test Counts ==="
+
+CS_TEST_ROOT="agenkit-cs/tests"
+CS_ANNOTATION='\[(Fact|Theory)\]'
+CS_TOTAL=$(count_annotations "$CS_ANNOTATION" "$CS_TEST_ROOT")
+
+# A zero here means the layout moved, not that the tests vanished -- C# has had
+# 241+ tests since v0.71.0. Fail loudly rather than recording a bogus 0 that
+# every downstream threshold would then validate against.
+if [ "$CS_TOTAL" -eq 0 ]; then
+    echo "ERROR: counted 0 C# tests under $CS_TEST_ROOT -- layout moved or annotation style changed" >&2
+    exit 1
+fi
+echo "Total: $CS_TOTAL"
+
+CS_PATTERNS=$(count_annotations "$CS_ANNOTATION" "$CS_TEST_ROOT/Agenkit.Tests/Patterns")
+CS_TECHNIQUES=$(count_annotations "$CS_ANNOTATION" "$CS_TEST_ROOT/Agenkit.Tests/Techniques")
+CS_MIDDLEWARE=$(count_annotations "$CS_ANNOTATION" "$CS_TEST_ROOT/Agenkit.Tests/Middleware")
+CS_MEMORY=$(count_annotations "$CS_ANNOTATION" "$CS_TEST_ROOT/Agenkit.Tests/Memory")
+CS_SAFETY=$(count_annotations "$CS_ANNOTATION" "$CS_TEST_ROOT/Agenkit.Tests/Safety")
+CS_ADAPTERS=$(count_annotations "$CS_ANNOTATION" "$CS_TEST_ROOT/Agenkit.Tests/Adapters")
+CS_EVALUATION=$(count_annotations "$CS_ANNOTATION" "$CS_TEST_ROOT/Agenkit.Tests/Evaluation")
+CS_OBSERVABILITY=$(count_annotations "$CS_ANNOTATION" "$CS_TEST_ROOT/Agenkit.Tests/Observability")
+CS_BUDGET=$(count_annotations "$CS_ANNOTATION" "$CS_TEST_ROOT/Agenkit.Tests/Budget")
+
+echo "  Patterns: $CS_PATTERNS"
+echo "  Techniques: $CS_TECHNIQUES (no techniques subsystem -- see #754)"
+echo "  Middleware: $CS_MIDDLEWARE"
+echo "  Memory: $CS_MEMORY"
+echo "  Safety: $CS_SAFETY"
+echo "  Adapters: $CS_ADAPTERS"
+echo "  Evaluation: $CS_EVALUATION"
+echo "  Observability: $CS_OBSERVABILITY"
+echo "  Budget: $CS_BUDGET"
+echo ""
+
+jq --arg total "$CS_TOTAL" \
+   --arg patterns "$CS_PATTERNS" \
+   --arg techniques "$CS_TECHNIQUES" \
+   --arg middleware "$CS_MIDDLEWARE" \
+   --arg memory "$CS_MEMORY" \
+   --arg safety "$CS_SAFETY" \
+   --arg adapters "$CS_ADAPTERS" \
+   --arg evaluation "$CS_EVALUATION" \
+   --arg observability "$CS_OBSERVABILITY" \
+   --arg budget "$CS_BUDGET" \
+   '.languages.csharp = {
+     total: ($total | tonumber),
+     note: "Counted from [Fact]/[Theory] annotations; a [Theory] expands to multiple cases at runtime, so this slightly undercounts",
+     categories: {
+       patterns: ($patterns | tonumber),
+       techniques: ($techniques | tonumber),
+       middleware: ($middleware | tonumber),
+       memory: ($memory | tonumber),
+       safety: ($safety | tonumber),
+       adapters: ($adapters | tonumber),
+       evaluation: ($evaluation | tonumber),
+       observability: ($observability | tonumber),
+       budget: ($budget | tonumber),
+       routing: 0,
+       chaos: 0,
+       property: 0
+     }
+   }' "$REPORT_JSON" > "$REPORT_JSON.tmp" && mv "$REPORT_JSON.tmp" "$REPORT_JSON"
+require_language csharp
+
+echo "=== Java Test Counts ==="
+
+JAVA_TEST_ROOT="agenkit-java/src/test/java/io/agenkit"
+JAVA_ANNOTATION='@(Test|ParameterizedTest|Property)\b'
+JAVA_TOTAL=$(count_annotations "$JAVA_ANNOTATION" "$JAVA_TEST_ROOT")
+
+if [ "$JAVA_TOTAL" -eq 0 ]; then
+    echo "ERROR: counted 0 Java tests under $JAVA_TEST_ROOT -- layout moved or annotation style changed" >&2
+    exit 1
+fi
+echo "Total: $JAVA_TOTAL"
+
+JAVA_PATTERNS=$(count_annotations "$JAVA_ANNOTATION" "$JAVA_TEST_ROOT/patterns")
+JAVA_TECHNIQUES=$(count_annotations "$JAVA_ANNOTATION" "$JAVA_TEST_ROOT/techniques")
+JAVA_MIDDLEWARE=$(count_annotations "$JAVA_ANNOTATION" "$JAVA_TEST_ROOT/middleware")
+JAVA_MEMORY=$(count_annotations "$JAVA_ANNOTATION" "$JAVA_TEST_ROOT/memory")
+JAVA_SAFETY=$(count_annotations "$JAVA_ANNOTATION" "$JAVA_TEST_ROOT/safety")
+JAVA_ADAPTERS=$(count_annotations "$JAVA_ANNOTATION" "$JAVA_TEST_ROOT/adapters")
+JAVA_EVALUATION=$(count_annotations "$JAVA_ANNOTATION" "$JAVA_TEST_ROOT/evaluation")
+JAVA_OBSERVABILITY=$(count_annotations "$JAVA_ANNOTATION" "$JAVA_TEST_ROOT/observability")
+JAVA_BUDGET=$(count_annotations "$JAVA_ANNOTATION" "$JAVA_TEST_ROOT/budget")
+JAVA_PROPERTY=$(count_annotations '@Property\b' "$JAVA_TEST_ROOT")
+
+echo "  Patterns: $JAVA_PATTERNS"
+echo "  Techniques: $JAVA_TECHNIQUES (no techniques subsystem -- see #754)"
+echo "  Middleware: $JAVA_MIDDLEWARE"
+echo "  Memory: $JAVA_MEMORY"
+echo "  Safety: $JAVA_SAFETY"
+echo "  Adapters: $JAVA_ADAPTERS"
+echo "  Evaluation: $JAVA_EVALUATION"
+echo "  Observability: $JAVA_OBSERVABILITY"
+echo "  Budget: $JAVA_BUDGET"
+echo "  Property: $JAVA_PROPERTY"
+echo ""
+
+jq --arg total "$JAVA_TOTAL" \
+   --arg patterns "$JAVA_PATTERNS" \
+   --arg techniques "$JAVA_TECHNIQUES" \
+   --arg middleware "$JAVA_MIDDLEWARE" \
+   --arg memory "$JAVA_MEMORY" \
+   --arg safety "$JAVA_SAFETY" \
+   --arg adapters "$JAVA_ADAPTERS" \
+   --arg evaluation "$JAVA_EVALUATION" \
+   --arg observability "$JAVA_OBSERVABILITY" \
+   --arg budget "$JAVA_BUDGET" \
+   --arg property "$JAVA_PROPERTY" \
+   '.languages.java = {
+     total: ($total | tonumber),
+     note: "Counted from @Test/@ParameterizedTest/@Property annotations (jqwik + JUnit 5)",
+     categories: {
+       patterns: ($patterns | tonumber),
+       techniques: ($techniques | tonumber),
+       middleware: ($middleware | tonumber),
+       memory: ($memory | tonumber),
+       safety: ($safety | tonumber),
+       adapters: ($adapters | tonumber),
+       evaluation: ($evaluation | tonumber),
+       observability: ($observability | tonumber),
+       budget: ($budget | tonumber),
+       property: ($property | tonumber),
+       routing: 0,
+       chaos: 0
+     }
+   }' "$REPORT_JSON" > "$REPORT_JSON.tmp" && mv "$REPORT_JSON.tmp" "$REPORT_JSON"
+require_language java
+
+echo "=== Scala Test Counts ==="
+
+SCALA_TEST_ROOT="agenkit-scala/src/test/scala/io/agenkit"
+# munit/ScalaCheck declare cases as `test("...")` / `property("...")` at the
+# start of a line, so anchor to avoid matching the words inside comments or
+# nested helper calls.
+SCALA_ANNOTATION='^[[:space:]]*(test|property)[[:space:]]*\('
+SCALA_TOTAL=$(count_annotations "$SCALA_ANNOTATION" "$SCALA_TEST_ROOT")
+
+if [ "$SCALA_TOTAL" -eq 0 ]; then
+    echo "ERROR: counted 0 Scala tests under $SCALA_TEST_ROOT -- layout moved or test style changed" >&2
+    exit 1
+fi
+echo "Total: $SCALA_TOTAL"
+
+SCALA_PATTERNS=$(count_annotations "$SCALA_ANNOTATION" "$SCALA_TEST_ROOT/patterns")
+SCALA_TECHNIQUES=$(count_annotations "$SCALA_ANNOTATION" "$SCALA_TEST_ROOT/techniques")
+SCALA_MIDDLEWARE=$(count_annotations "$SCALA_ANNOTATION" "$SCALA_TEST_ROOT/middleware")
+SCALA_MEMORY=$(count_annotations "$SCALA_ANNOTATION" "$SCALA_TEST_ROOT/memory")
+SCALA_SAFETY=$(count_annotations "$SCALA_ANNOTATION" "$SCALA_TEST_ROOT/safety")
+SCALA_ADAPTERS=$(count_annotations "$SCALA_ANNOTATION" "$SCALA_TEST_ROOT/adapters")
+SCALA_EVALUATION=$(count_annotations "$SCALA_ANNOTATION" "$SCALA_TEST_ROOT/evaluation")
+SCALA_OBSERVABILITY=$(count_annotations "$SCALA_ANNOTATION" "$SCALA_TEST_ROOT/observability")
+SCALA_BUDGET=$(count_annotations "$SCALA_ANNOTATION" "$SCALA_TEST_ROOT/budget")
+SCALA_PROPERTY=$(count_annotations '^[[:space:]]*property[[:space:]]*\(' "$SCALA_TEST_ROOT")
+
+echo "  Patterns: $SCALA_PATTERNS"
+echo "  Techniques: $SCALA_TECHNIQUES (no techniques subsystem -- see #754)"
+echo "  Middleware: $SCALA_MIDDLEWARE"
+echo "  Memory: $SCALA_MEMORY"
+echo "  Safety: $SCALA_SAFETY"
+echo "  Adapters: $SCALA_ADAPTERS"
+echo "  Evaluation: $SCALA_EVALUATION"
+echo "  Observability: $SCALA_OBSERVABILITY"
+echo "  Budget: $SCALA_BUDGET"
+echo "  Property: $SCALA_PROPERTY"
+echo ""
+
+jq --arg total "$SCALA_TOTAL" \
+   --arg patterns "$SCALA_PATTERNS" \
+   --arg techniques "$SCALA_TECHNIQUES" \
+   --arg middleware "$SCALA_MIDDLEWARE" \
+   --arg memory "$SCALA_MEMORY" \
+   --arg safety "$SCALA_SAFETY" \
+   --arg adapters "$SCALA_ADAPTERS" \
+   --arg evaluation "$SCALA_EVALUATION" \
+   --arg observability "$SCALA_OBSERVABILITY" \
+   --arg budget "$SCALA_BUDGET" \
+   --arg property "$SCALA_PROPERTY" \
+   '.languages.scala = {
+     total: ($total | tonumber),
+     note: "Counted from munit test(...) / ScalaCheck property(...) declarations",
+     categories: {
+       patterns: ($patterns | tonumber),
+       techniques: ($techniques | tonumber),
+       middleware: ($middleware | tonumber),
+       memory: ($memory | tonumber),
+       safety: ($safety | tonumber),
+       adapters: ($adapters | tonumber),
+       evaluation: ($evaluation | tonumber),
+       observability: ($observability | tonumber),
+       budget: ($budget | tonumber),
+       property: ($property | tonumber),
+       routing: 0,
+       chaos: 0
+     }
+   }' "$REPORT_JSON" > "$REPORT_JSON.tmp" && mv "$REPORT_JSON.tmp" "$REPORT_JSON"
+require_language scala
 
 #==============================================================================
 # GENERATE MARKDOWN REPORT
@@ -427,7 +692,7 @@ cat > "$REPORT_MD" << 'MDHEADER'
 # Test Parity Dashboard
 
 **Last Updated:** AUTO_TIMESTAMP
-**Status:** Tracking test parity across 6 language implementations
+**Status:** Tracking test parity across 9 language implementations
 
 ## Overview
 
@@ -458,6 +723,9 @@ CPP_TOTAL_VAL=$(jq -r '.languages.cpp.total' "$REPORT_JSON")
 RUST_TOTAL_VAL=$(jq -r '.languages.rust.total' "$REPORT_JSON")
 ZIG_TOTAL_VAL=$(jq -r '.languages.zig.total' "$REPORT_JSON")
 TS_TOTAL_VAL=$(jq -r '.languages.typescript.total' "$REPORT_JSON")
+CS_TOTAL_VAL=$(jq -r '.languages.csharp.total' "$REPORT_JSON")
+JAVA_TOTAL_VAL=$(jq -r '.languages.java.total' "$REPORT_JSON")
+SCALA_TOTAL_VAL=$(jq -r '.languages.scala.total' "$REPORT_JSON")
 
 # Calculate parity percentages
 GO_PARITY=$(echo "scale=1; ($GO_TOTAL_VAL * 100) / $PYTHON_TOTAL_VAL" | bc)
@@ -465,6 +733,9 @@ CPP_PARITY=$(echo "scale=1; (($CPP_TOTAL_VAL * 15) * 100) / $PYTHON_TOTAL_VAL" |
 RUST_PARITY=$(echo "scale=1; ($RUST_TOTAL_VAL * 100) / $PYTHON_TOTAL_VAL" | bc)
 ZIG_PARITY=$(echo "scale=1; ($ZIG_TOTAL_VAL * 100) / $PYTHON_TOTAL_VAL" | bc)
 TS_PARITY=$(echo "scale=1; ($TS_TOTAL_VAL * 100) / $PYTHON_TOTAL_VAL" | bc)
+CS_PARITY=$(echo "scale=1; ($CS_TOTAL_VAL * 100) / $PYTHON_TOTAL_VAL" | bc)
+JAVA_PARITY=$(echo "scale=1; ($JAVA_TOTAL_VAL * 100) / $PYTHON_TOTAL_VAL" | bc)
+SCALA_PARITY=$(echo "scale=1; ($SCALA_TOTAL_VAL * 100) / $PYTHON_TOTAL_VAL" | bc)
 
 # Status indicators
 get_status() {
@@ -489,9 +760,13 @@ cat >> "$REPORT_MD" << MDDATA
 | **Rust** | $RUST_TOTAL_VAL | -$(($PYTHON_TOTAL_VAL - $RUST_TOTAL_VAL)) | ${RUST_PARITY}% | $(get_status $RUST_PARITY) |
 | **Zig** | $ZIG_TOTAL_VAL | -$(($PYTHON_TOTAL_VAL - $ZIG_TOTAL_VAL)) | ${ZIG_PARITY}% | $(get_status $ZIG_PARITY) |
 | **TypeScript** | $TS_TOTAL_VAL² | —² | ${TS_PARITY}% | $(get_status $TS_PARITY) |
+| **C#** | $CS_TOTAL_VAL³ | -$(($PYTHON_TOTAL_VAL - $CS_TOTAL_VAL)) | ${CS_PARITY}% | $(get_status $CS_PARITY) |
+| **Java** | $JAVA_TOTAL_VAL | -$(($PYTHON_TOTAL_VAL - $JAVA_TOTAL_VAL)) | ${JAVA_PARITY}% | $(get_status $JAVA_PARITY) |
+| **Scala** | $SCALA_TOTAL_VAL | -$(($PYTHON_TOTAL_VAL - $SCALA_TOTAL_VAL)) | ${SCALA_PARITY}% | $(get_status $SCALA_PARITY) |
 
 ¹ C++ reports test suites not individual tests. Estimated ≈15 tests/suite = $(($CPP_TOTAL_VAL * 15)) total tests.
 ² TypeScript count may be estimated from test files.
+³ C# counts \`[Fact]\`/\`[Theory]\` annotations; a \`[Theory]\` expands to several cases at runtime, so this slightly undercounts (272 counted vs 276 actual).
 
 MDDATA
 

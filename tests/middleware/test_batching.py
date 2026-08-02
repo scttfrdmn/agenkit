@@ -189,8 +189,20 @@ class TestBatchingDecorator:
             results = await asyncio.gather(*[batching_agent.process(msg) for msg in messages])
             elapsed = time.time() - start_time
 
-            # Should wait for timeout (plus processing time)
-            assert 0.04 < elapsed < 0.15
+            # The lower bound is the assertion that matters: it proves the batch
+            # did not flush before max_wait_time, i.e. the timeout path fired
+            # rather than the size threshold (3 < max_batch_size=10 anyway).
+            # Expressed against the config so it tracks a change to it.
+            assert elapsed > config.max_wait_time * 0.8
+
+            # No upper bound. This used to read `elapsed < 0.15` — asserting that
+            # ~60ms of real work (50ms wait + 10ms agent) completes inside 150ms
+            # of wall clock. Under `pytest -n auto` this worker competes with 7
+            # others, and a >90ms scheduling delay is ordinary: observed at
+            # 0.158s (#776). That bound measured the machine, not the batching
+            # logic. What it was trying to prove — "only one timeout cycle
+            # elapsed" — is already asserted deterministically by
+            # `total_batches == 1` below, which a second cycle would break.
             assert len(results) == 3
 
             # Should be 1 batch triggered by timeout

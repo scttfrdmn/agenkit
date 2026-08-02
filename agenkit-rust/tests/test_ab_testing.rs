@@ -32,7 +32,7 @@ impl Agent for MockMetricAgent {
         "mock_metric_agent"
     }
 
-    async fn process(&self, message: Message) -> Result<Message, AgentError> {
+    async fn process(&self, _message: Message) -> Result<Message, AgentError> {
         // Add random variance if specified
         let mut metric_value = self.base_metric;
         if self.variance > 0.0 {
@@ -343,7 +343,7 @@ async fn test_control_winner_when_higher_mean() {
     let result = test.run(control, treatment, &test_cases, "accuracy").await;
 
     assert!(result.is_ok());
-    let result = result.unwrap();
+    let _result = result.unwrap();
 
     // With 20% difference favoring control, control should win (if significant)
     // Note: Due to mock implementation, this tests the logic, not actual agent performance

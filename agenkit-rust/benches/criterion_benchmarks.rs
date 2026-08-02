@@ -346,7 +346,7 @@ fn bench_concurrency_optimizations(c: &mut Criterion) {
     group.bench_function("sequential_reduce_1000", |b| {
         b.iter(|| {
             let items: Vec<i32> = (0..1000).collect();
-            let _sum: i32 = items.into_iter().fold(0, |a, b| a + b);
+            let _sum: i32 = items.into_iter().sum();
         });
     });
 

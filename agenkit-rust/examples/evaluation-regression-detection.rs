@@ -5,7 +5,7 @@
 //!
 //! Run with: cargo run --example evaluation-regression-detection
 
-use agenkit::evaluation::{EvaluationResult, RegressionDetector, Severity};
+use agenkit::evaluation::{EvaluationResult, RegressionDetector};
 use chrono::Utc;
 
 fn create_evaluation_result(

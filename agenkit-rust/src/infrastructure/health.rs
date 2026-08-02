@@ -4,7 +4,7 @@
 // - Startup: Has initialization completed?
 // - Prometheus metrics export
 
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{Agent, Message};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -251,7 +251,7 @@ impl HealthChecker {
         let duration = start_time.elapsed().as_secs_f64() * 1000.0;
 
         match result {
-            Ok(Ok(response)) if response.content_as_str().map_or(false, |s| !s.is_empty()) => {
+            Ok(Ok(response)) if response.content_as_str().is_some_and(|s| !s.is_empty()) => {
                 // Success
                 self.track_check_success(probe_type, duration).await;
 

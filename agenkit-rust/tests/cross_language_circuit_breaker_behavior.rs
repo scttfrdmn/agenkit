@@ -175,7 +175,7 @@ fn find_test_case<'a>(fixtures: &'a Fixtures, id: &str) -> &'a TestCase {
         .test_cases
         .iter()
         .find(|tc| tc.id == id)
-        .expect(&format!("Test case not found: {}", id))
+        .unwrap_or_else(|| panic!("Test case not found: {}", id))
 }
 
 /// Convert state string to CircuitState

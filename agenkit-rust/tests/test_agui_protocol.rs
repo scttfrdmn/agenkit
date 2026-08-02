@@ -10,12 +10,12 @@
 //! - Edge cases
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::patterns::human_in_loop::{
-    simple_approval_func, ApprovalRequest, ApprovalResponse, HumanInLoopAgent, HumanInLoopConfig,
+    simple_approval_func, HumanInLoopAgent, HumanInLoopConfig,
 };
 use agenkit::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};
 use agenkit::protocols::agui::events::*;
 use agenkit::protocols::agui::hitl::{AGUIHumanInLoopAdapter, AGUIHumanInLoopConfig};
-use agenkit::protocols::agui::transports::http::{AGUISSEStream, SSEFormatter, SSEStreamConfig};
+use agenkit::protocols::agui::transports::http::{AGUISSEStream, SSEFormatter};
 use agenkit::protocols::agui::transports::websocket::{
     AGUIWebSocketHandler, WebSocketHandlerConfig, WebSocketMessageFormat,
 };

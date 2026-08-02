@@ -788,7 +788,7 @@ mod tests {
         let message = Message::new("user", serde_json::Value::String("Test".to_string()));
         let response = agent.process(message).await.unwrap();
 
-        assert_eq!(response.metadata["allow_cycles"].as_bool().unwrap(), true);
+        assert!(response.metadata["allow_cycles"].as_bool().unwrap());
     }
 
     #[tokio::test]
@@ -809,7 +809,7 @@ mod tests {
         let message = Message::new("user", serde_json::Value::String("Test".to_string()));
         let response = agent.process(message).await.unwrap();
 
-        assert_eq!(response.metadata["allow_cycles"].as_bool().unwrap(), false);
+        assert!(!response.metadata["allow_cycles"].as_bool().unwrap());
     }
 
     #[tokio::test]
@@ -901,6 +901,6 @@ mod tests {
         assert_eq!(config.max_nodes, 20);
         assert_eq!(config.max_edges, 40);
         assert_eq!(config.aggregator, AggregatorType::PathBased);
-        assert_eq!(config.allow_cycles, false);
+        assert!(!config.allow_cycles);
     }
 }

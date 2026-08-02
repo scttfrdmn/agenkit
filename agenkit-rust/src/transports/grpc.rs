@@ -72,7 +72,7 @@
 //! Build dependencies needed:
 //! - tonic-build = "0.11"
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use std::pin::Pin;
 

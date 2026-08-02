@@ -179,7 +179,7 @@ impl LiteLLMAdapter {
             req = req.header("Authorization", format!("Bearer {}", api_key));
         }
 
-        let response = req.send().await.map_err(|e| AgentError::Http(e))?;
+        let response = req.send().await.map_err(AgentError::Http)?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -196,7 +196,7 @@ impl LiteLLMAdapter {
         response
             .json::<LiteLLMResponse>()
             .await
-            .map_err(|e| AgentError::Http(e))
+            .map_err(AgentError::Http)
     }
 
     /// Convert Agent message to LiteLLM format.

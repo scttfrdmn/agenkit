@@ -19,7 +19,6 @@ use agenkit::{
 };
 use async_trait::async_trait;
 use serde_json::json;
-use std::collections::{HashMap, HashSet};
 
 /// Simple echo agent for demonstration.
 #[derive(Debug, Clone)]
@@ -53,7 +52,7 @@ impl Agent for EchoAgent {
             "timestamp": chrono::Utc::now().to_rfc3339(),
         });
 
-        Ok(Message::with_text("assistant", &response.to_string()))
+        Ok(Message::with_text("assistant", response.to_string()))
     }
 }
 
@@ -101,7 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ========================================================================
     println!("📝 Step 3: Adding input validation layer...");
 
-    use agenkit::safety::{ContentFilterConfig, PromptInjectionConfig};
+    use agenkit::safety::ContentFilterConfig;
     use std::collections::HashSet;
 
     // Configure content filter
@@ -261,7 +260,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut blocked_count = 0;
 
     for i in 1..=12 {
-        let msg = Message::with_text("user", &format!("Request {}", i));
+        let msg = Message::with_text("user", format!("Request {}", i));
         match safe_agent.process(msg).await {
             Ok(_) => success_count += 1,
             Err(_) => blocked_count += 1,

@@ -1,7 +1,6 @@
 //! Tests for audit logging module.
 
 use agenkit::observability::{AuditEvent, AuditEventType, AuditLogger, AuditSeverity};
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 /// Helper to create a temporary audit log file

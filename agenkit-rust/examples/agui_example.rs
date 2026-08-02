@@ -18,7 +18,7 @@
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};
 use agenkit::protocols::agui::events::{AGUIEvent, EventType};
-use agenkit::protocols::agui::transports::http::{AGUISSEStream, SSEFormatter};
+use agenkit::protocols::agui::transports::http::AGUISSEStream;
 use agenkit::protocols::agui::transports::websocket::WebSocketMessageFormat;
 use async_trait::async_trait;
 use futures::stream::StreamExt;

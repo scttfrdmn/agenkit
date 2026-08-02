@@ -42,7 +42,7 @@
 use crate::core::Message;
 use crate::protocols::agui::adapter::AGUIAdapter;
 use crate::protocols::agui::events::AGUIEvent;
-use futures::stream::{Stream, StreamExt};
+use futures::stream::Stream;
 use std::pin::Pin;
 
 /// Formats AG-UI events as Server-Sent Events (SSE).
@@ -324,6 +324,9 @@ mod tests {
     use crate::protocols::agui::adapter::AGUIAdapterConfig;
     use crate::protocols::agui::events::{EventType, TextMessageChunk};
     use async_trait::async_trait;
+    // Brings `.next()` into scope for the stream assertions below. Only the tests
+    // consume the stream, so this is test-scoped rather than file-scoped (#778).
+    use futures::stream::StreamExt;
     use std::sync::Arc;
 
     struct MockAgent {

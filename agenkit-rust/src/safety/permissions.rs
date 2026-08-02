@@ -1,7 +1,6 @@
 //! Permission-based access control (RBAC) and sandboxing.
 
 use crate::core::{Agent, AgentError, IntrospectionResult, Message};
-use crate::safety::errors::PermissionDeniedError;
 use async_trait::async_trait;
 use std::collections::HashSet;
 use std::path::Path;
@@ -556,7 +555,7 @@ mod tests {
 
         for perm in perms {
             // Just checking they exist and can be created
-            assert!(format!("{:?}", perm).len() > 0);
+            assert!(!format!("{:?}", perm).is_empty());
         }
     }
 }

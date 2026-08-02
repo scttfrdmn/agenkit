@@ -10,7 +10,6 @@
 //! Run: cargo run --example pattern-supervisor-usage
 
 use agenkit::core::{Agent, AgentError, Message};
-use agenkit::patterns::supervisor::*;
 use async_trait::async_trait;
 use serde_json::json;
 use std::error::Error;
@@ -50,9 +49,9 @@ impl Agent for SimpleAgent {
 async fn main() -> Result<(), Box<dyn Error>> {
     println!("=== Supervisor Pattern Demo ===\n");
 
-    let agent1 = SimpleAgent::new("Agent1");
-    let agent2 = SimpleAgent::new("Agent2");
-    let agent3 = SimpleAgent::new("Agent3");
+    let _agent1 = SimpleAgent::new("Agent1");
+    let _agent2 = SimpleAgent::new("Agent2");
+    let _agent3 = SimpleAgent::new("Agent3");
 
     // Create pattern (adjust based on pattern type)
     // let pattern = SupervisorAgent::new(...)?;

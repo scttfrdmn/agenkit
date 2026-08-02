@@ -48,7 +48,7 @@
 
 use crate::core::{Agent, AgentError, IntrospectionResult, Message};
 use async_trait::async_trait;
-use futures::stream::{Stream, StreamExt};
+use futures::stream::Stream;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::{Duration, Instant};

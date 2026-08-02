@@ -24,7 +24,7 @@ impl Agent for EchoAgent {
         let content = message.content_as_str().unwrap_or("").to_string();
         Ok(Message::with_text(
             "assistant",
-            &format!("Echo: {}", content),
+            format!("Echo: {}", content),
         ))
     }
 }

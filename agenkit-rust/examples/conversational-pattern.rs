@@ -126,16 +126,14 @@ async fn example_multi_topic() -> Result<(), AgentError> {
         include_system: true,
     })?;
 
-    let turns = vec![
-        ("User", "I like pizza"),
+    let turns = [("User", "I like pizza"),
         ("Assistant", ""),
         ("User", "My favorite color is blue"),
         ("Assistant", ""),
         ("User", "What's my favorite food?"),
         ("Assistant", ""),
         ("User", "What did we talk about so far?"),
-        ("Assistant", ""),
-    ];
+        ("Assistant", "")];
 
     for (i, (role, input)) in turns.iter().enumerate() {
         if *role == "User" {
@@ -272,12 +270,10 @@ async fn example_customer_support() -> Result<(), AgentError> {
         include_system: true,
     })?;
 
-    let conversation = vec![
-        "I need help with my order",
+    let conversation = ["I need help with my order",
         "The order number is 123",
         "When will it ship?",
-        "Thank you!",
-    ];
+        "Thank you!"];
 
     for (i, user_input) in conversation.iter().enumerate() {
         println!("User: {}", user_input);

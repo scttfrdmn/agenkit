@@ -304,7 +304,7 @@ impl CompressionMetrics {
 
             let query = Message::with_text(
                 "user",
-                &format!("Recall: What was mentioned about {}?", needle_preview),
+                format!("Recall: What was mentioned about {}?", needle_preview),
             );
 
             match agent.process(query).await {

@@ -229,8 +229,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// let metric = DistanceMetric::Euclidean;
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum DistanceMetric {
     /// Cosine similarity - best for text embeddings
+    #[default]
     Cosine,
     /// Euclidean distance - best for spatial data
     Euclidean,
@@ -238,11 +240,6 @@ pub enum DistanceMetric {
     DotProduct,
 }
 
-impl Default for DistanceMetric {
-    fn default() -> Self {
-        DistanceMetric::Cosine
-    }
-}
 
 /// Trait for embedding providers.
 ///
@@ -564,7 +561,7 @@ impl VectorStore for InMemoryVectorStore {
 
         storage
             .entry(session_id.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(entry);
 
         Ok(())

@@ -252,7 +252,7 @@ impl GeminiAdapter {
             .json(&request)
             .send()
             .await
-            .map_err(|e| AgentError::Http(e))?;
+            .map_err(AgentError::Http)?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -269,7 +269,7 @@ impl GeminiAdapter {
         response
             .json::<GeminiResponse>()
             .await
-            .map_err(|e| AgentError::Http(e))
+            .map_err(AgentError::Http)
     }
 
     /// Convert Agent messages to Gemini format.
@@ -381,7 +381,7 @@ impl GeminiAdapter {
             .json(&request)
             .send()
             .await
-            .map_err(|e| AgentError::Http(e))?;
+            .map_err(AgentError::Http)?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -396,7 +396,7 @@ impl GeminiAdapter {
         }
 
         // Parse newline-delimited JSON chunks
-        let bytes = response.bytes().await.map_err(|e| AgentError::Http(e))?;
+        let bytes = response.bytes().await.map_err(AgentError::Http)?;
         let text = String::from_utf8_lossy(&bytes);
 
         let mut chunks = Vec::new();

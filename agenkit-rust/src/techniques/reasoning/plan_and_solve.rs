@@ -267,7 +267,7 @@ impl Agent for PlanAndSolveAgent {
         let final_solution = execution_results
             .last()
             .cloned()
-            .unwrap_or_else(|| String::new());
+            .unwrap_or_else(String::new);
 
         let plan_steps: Vec<String> = plan.steps.iter().map(|s| s.description.clone()).collect();
 

@@ -3,7 +3,7 @@
 //! Validates that Agenkit messages serialize/deserialize consistently
 //! with the canonical JSON schema across all language implementations.
 use agenkit::core::Message;
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -114,7 +114,7 @@ fn test_schema_validates_fixtures() {
 
     for test_case in &fixtures.test_cases {
         let message_json = serde_json::to_value(&test_case.message)
-            .expect(&format!("Failed to serialize test case: {}", test_case.id));
+            .unwrap_or_else(|_| panic!("Failed to serialize test case: {}", test_case.id));
 
         validate_against_schema(&message_json, &schema);
     }

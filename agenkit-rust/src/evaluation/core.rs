@@ -32,7 +32,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use uuid::Uuid;
 
 use crate::core::{Agent, AgentError, Message};
@@ -350,7 +350,7 @@ impl Evaluator {
                         result
                             .metrics
                             .entry(metric.name().to_string())
-                            .or_insert_with(Vec::new)
+                            .or_default()
                             .push(value);
                     }
                 }

@@ -245,7 +245,7 @@ impl TreeOfThoughtAgent {
             // Add child to tree
             let child_id = tree
                 .add_child(node_id, branch, score)
-                .map_err(|e| AgentError::Internal(e))?;
+                .map_err(AgentError::Internal)?;
             child_ids.push(child_id);
 
             if let Some(child) = tree.get_node_mut(child_id) {
@@ -504,7 +504,7 @@ mod tests {
     #[test]
     fn test_default_evaluator_score_range() {
         let score = default_evaluator("some text here");
-        assert!(score >= 0.0 && score <= 1.0);
+        assert!((0.0..=1.0).contains(&score));
     }
 
     #[test]

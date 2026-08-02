@@ -275,12 +275,10 @@ async fn test_agent_performance_measurement() {
 /// Test 14: Session status all variants
 #[tokio::test]
 async fn test_session_status_variants() {
-    let statuses = vec![
-        SessionStatus::Running,
+    let statuses = [SessionStatus::Running,
         SessionStatus::Completed,
         SessionStatus::Failed,
-        SessionStatus::Timeout,
-    ];
+        SessionStatus::Timeout];
 
     assert_eq!(statuses.len(), 4);
 

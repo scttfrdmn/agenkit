@@ -201,7 +201,7 @@ impl SecureProductionSession {
         // ====================================================================
 
         // 8. Create checkpoint every 3 messages
-        if self.step % 3 == 0 {
+        if self.step.is_multiple_of(3) {
             let messages = self.memory.retrieve("", 100, None).await?;
             let state = serde_json::json!({
                 "step": self.step,

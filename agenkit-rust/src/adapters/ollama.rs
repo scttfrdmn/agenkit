@@ -157,7 +157,7 @@ impl OllamaAgent {
             .json(&request)
             .send()
             .await
-            .map_err(|e| AgentError::Http(e))?;
+            .map_err(AgentError::Http)?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -174,7 +174,7 @@ impl OllamaAgent {
         response
             .json::<ChatResponse>()
             .await
-            .map_err(|e| AgentError::Http(e))
+            .map_err(AgentError::Http)
     }
 
     /// Convert Agent message to Ollama format.

@@ -353,7 +353,7 @@ impl AnthropicAgent {
             .json(&request)
             .send()
             .await
-            .map_err(|e| AgentError::Http(e))?;
+            .map_err(AgentError::Http)?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -370,7 +370,7 @@ impl AnthropicAgent {
         response
             .json::<MessagesResponse>()
             .await
-            .map_err(|e| AgentError::Http(e))
+            .map_err(AgentError::Http)
     }
 
     /// Stream completion from Anthropic API.
@@ -424,7 +424,7 @@ impl AnthropicAgent {
             .json(&request)
             .send()
             .await
-            .map_err(|e| AgentError::Http(e))?;
+            .map_err(AgentError::Http)?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -439,7 +439,7 @@ impl AnthropicAgent {
         }
 
         // Parse Server-Sent Events (SSE)
-        let bytes = response.bytes().await.map_err(|e| AgentError::Http(e))?;
+        let bytes = response.bytes().await.map_err(AgentError::Http)?;
         let text = String::from_utf8_lossy(&bytes);
 
         let mut chunks = Vec::new();

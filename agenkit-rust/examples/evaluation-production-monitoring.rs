@@ -38,7 +38,7 @@ impl Agent for ProductionAgent {
         let content = message.content_as_str().unwrap_or("");
         Ok(Message::with_text(
             "assistant",
-            &format!("Response to: {}", content),
+            format!("Response to: {}", content),
         ))
     }
 }
@@ -108,7 +108,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut result = SessionResult::new(&session_id, agent.name());
 
         // Process message
-        let message = Message::with_text("user", &format!("User query {}", i + 1))
+        let message = Message::with_text("user", format!("User query {}", i + 1))
             .with_metadata("session_id", serde_json::json!(session_id));
 
         let start = std::time::Instant::now();

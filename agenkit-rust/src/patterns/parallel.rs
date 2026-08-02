@@ -212,7 +212,7 @@ impl Agent for ParallelAgent {
 
         for task_result in results {
             match task_result {
-                Ok((agent_name, Ok(msg))) => {
+                Ok((_agent_name, Ok(msg))) => {
                     successes.push(msg);
                 }
                 Ok((agent_name, Err(err))) => {

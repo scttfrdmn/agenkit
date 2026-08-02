@@ -34,12 +34,10 @@ impl Agent for VariedMockAgent {
     async fn process(&self, _message: Message) -> Result<Message, AgentError> {
         let count = self.call_count.fetch_add(1, Ordering::SeqCst);
 
-        let responses = vec![
-            format!("Branch A: Analyze systematically (call {}).", count + 1),
+        let responses = [format!("Branch A: Analyze systematically (call {}).", count + 1),
             format!("Branch B: Break into parts (call {}).", count + 1),
             format!("Branch C: Consider edge cases (call {}).", count + 1),
-            format!("Step {}: Continue with details.", count + 1),
-        ];
+            format!("Step {}: Continue with details.", count + 1)];
 
         let response = responses[count % responses.len()].clone();
         Ok(Message::with_text("assistant", response))
@@ -81,7 +79,7 @@ async fn test_basic_functionality() {
     // Check reasoning path
     assert!(metadata.contains_key("reasoning_path"));
     let path = metadata.get("reasoning_path").unwrap().as_array().unwrap();
-    assert!(path.len() > 0);
+    assert!(!path.is_empty());
 
     // Check num_steps
     assert!(metadata.contains_key("num_steps"));
@@ -226,7 +224,7 @@ async fn test_tree_statistics() {
     assert!(stats.get("max_depth").unwrap().as_u64().unwrap() <= 2);
     assert!(stats.get("num_leaves").unwrap().as_u64().unwrap() >= 1);
     let best_score = stats.get("best_score").unwrap().as_f64().unwrap();
-    assert!(best_score >= 0.0 && best_score <= 1.0);
+    assert!((0.0..=1.0).contains(&best_score));
 }
 
 #[tokio::test]
@@ -276,7 +274,7 @@ async fn test_pruning() {
     let selective_evaluator = Arc::new(move |_text: &str| -> f64 {
         let count = call_count_clone.fetch_add(1, Ordering::SeqCst);
         // Return low scores for some branches to trigger pruning
-        if count % 3 == 0 {
+        if count.is_multiple_of(3) {
             0.1
         } else {
             0.6
@@ -336,7 +334,7 @@ async fn test_reasoning_path_structure() {
     let metadata = &response.metadata;
     let path = metadata.get("reasoning_path").unwrap().as_array().unwrap();
 
-    assert!(path.len() > 0);
+    assert!(!path.is_empty());
 
     // First element should be the query (root node)
     assert_eq!(path[0].as_str().unwrap(), query);
@@ -368,7 +366,7 @@ async fn test_max_depth_limit() {
     let path = metadata.get("reasoning_path").unwrap().as_array().unwrap();
 
     // Root + max_depth levels = max_depth + 1 nodes max
-    assert!(path.len() <= (max_depth + 1) as usize);
+    assert!(path.len() <= (max_depth + 1));
 }
 
 // ============================================================================
@@ -434,7 +432,7 @@ fn test_reasoning_tree_get_best_leaf() {
     let mut tree = ReasoningTree::new();
     let root_id = tree.create_root("Root".to_string());
     let child1 = tree.add_child(root_id, "Child 1".to_string(), 0.8).unwrap();
-    let child2 = tree.add_child(root_id, "Child 2".to_string(), 0.6).unwrap();
+    let _child2 = tree.add_child(root_id, "Child 2".to_string(), 0.6).unwrap();
 
     let best = tree.get_best_leaf().unwrap();
     assert_eq!(best.id, child1); // Higher score

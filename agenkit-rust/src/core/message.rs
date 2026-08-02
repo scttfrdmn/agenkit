@@ -173,7 +173,7 @@ impl Message {
 
         // Content size validation - max 16MB
         let content_str = self.content.to_string();
-        let content_size = content_str.as_bytes().len();
+        let content_size = content_str.len();
         let max_content_size = 16 * 1024 * 1024; // 16MB
 
         if content_size > max_content_size {
@@ -209,7 +209,7 @@ impl Message {
 
                 // Value size validation
                 let value_str = value.to_string();
-                let value_size = value_str.as_bytes().len();
+                let value_size = value_str.len();
 
                 if value_size > max_value_size {
                     return Err(MessageError::MetadataValueTooLarge {

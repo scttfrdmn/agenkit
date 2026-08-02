@@ -10,7 +10,6 @@
 //! Run: cargo run --example pattern-collaborative-usage
 
 use agenkit::core::{Agent, AgentError, Message};
-use agenkit::patterns::collaborative::*;
 use async_trait::async_trait;
 use std::error::Error;
 
@@ -53,9 +52,9 @@ impl Agent for SimpleAgent {
 async fn main() -> Result<(), Box<dyn Error>> {
     println!("=== Collaborative Pattern Demo ===\n");
 
-    let agent1 = SimpleAgent::new("Agent1");
-    let agent2 = SimpleAgent::new("Agent2");
-    let agent3 = SimpleAgent::new("Agent3");
+    let _agent1 = SimpleAgent::new("Agent1");
+    let _agent2 = SimpleAgent::new("Agent2");
+    let _agent3 = SimpleAgent::new("Agent3");
 
     // Create pattern (adjust based on pattern type)
     // let pattern = CollaborativeAgent::new(...)?;

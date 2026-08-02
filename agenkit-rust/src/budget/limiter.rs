@@ -164,7 +164,7 @@ impl<A: Agent + 'static> BudgetLimiter<A> {
                 .tracker
                 .get_session_cost(session_id)
                 .await
-                .map_err(|e| BudgetError::TrackingError(e))?;
+                .map_err(BudgetError::TrackingError)?;
 
             if session_cost >= session_limit {
                 return Err(BudgetError::SessionLimitExceeded(
@@ -188,7 +188,7 @@ impl<A: Agent + 'static> BudgetLimiter<A> {
                 .tracker
                 .get_agent_cost(&self.agent_name)
                 .await
-                .map_err(|e| BudgetError::TrackingError(e))?;
+                .map_err(BudgetError::TrackingError)?;
 
             if agent_cost >= agent_limit {
                 return Err(BudgetError::AgentLimitExceeded(agent_cost, agent_limit));
@@ -209,7 +209,7 @@ impl<A: Agent + 'static> BudgetLimiter<A> {
                 .tracker
                 .get_global_cost()
                 .await
-                .map_err(|e| BudgetError::TrackingError(e))?;
+                .map_err(BudgetError::TrackingError)?;
 
             if global_cost >= global_limit {
                 return Err(BudgetError::GlobalLimitExceeded(global_cost, global_limit));
@@ -307,7 +307,7 @@ mod tests {
             "test"
         }
 
-        async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
             Ok(Message::with_text("assistant", "response"))
         }
     }

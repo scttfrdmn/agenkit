@@ -169,11 +169,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("✓ Pipeline created: Preprocessor → Analyzer → Formatter\n");
 
     // Process messages through the pipeline
-    let test_messages = vec![
-        "  Hello, World!  How are you today?  ",
+    let test_messages = ["  Hello, World!  How are you today?  ",
         "Distributed tracing is AWESOME for debugging microservices",
-        "  SHORT  ",
-    ];
+        "  SHORT  "];
 
     for (i, input) in test_messages.iter().enumerate() {
         println!("--- Request {} ---", i + 1);

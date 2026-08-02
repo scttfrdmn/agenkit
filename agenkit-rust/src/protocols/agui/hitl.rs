@@ -3,8 +3,7 @@
 //! Integrates the HumanInLoopAgent pattern with AG-UI protocol using Interrupt events.
 //! Provides streaming approval workflow where agents can request human approval via
 //! Interrupt events, and frontends can respond with InterruptResponse messages.
-use crate::core::{Agent, AgentError, Message};
-use crate::patterns::human_in_loop::HumanInLoopAgent;
+use crate::core::{Agent, Message};
 use crate::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};
 use crate::protocols::agui::events::*;
 use futures::stream::{Stream, StreamExt};
@@ -224,7 +223,7 @@ impl AGUIHumanInLoopAdapter {
                             );
 
                     // Add response metadata
-                    if let Some(metadata) = serde_json::to_value(&response.metadata).ok() {
+                    if let Ok(metadata) = serde_json::to_value(&response.metadata) {
                         complete_event =
                             complete_event.with_metadata("response_metadata", metadata);
                     }
@@ -417,7 +416,12 @@ fn create_approval_interrupt(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::patterns::human_in_loop::{simple_approval_func, HumanInLoopConfig};
+    // AgentError and HumanInLoopAgent are used only by these tests, so they are
+    // imported here rather than at file scope (#778).
+    use crate::core::AgentError;
+    use crate::patterns::human_in_loop::{
+        simple_approval_func, HumanInLoopAgent, HumanInLoopConfig,
+    };
     use async_trait::async_trait;
 
     struct MockAgent {

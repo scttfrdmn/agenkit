@@ -154,12 +154,10 @@ async fn test_reflection_pattern_capabilities() {
 /// Test 5: Stop reason enum
 #[tokio::test]
 async fn test_stop_reason_values() {
-    let reasons = vec![
-        StopReason::QualityThresholdMet,
+    let reasons = [StopReason::QualityThresholdMet,
         StopReason::MinimalImprovement,
         StopReason::MaxIterations,
-        StopReason::PerfectScore,
-    ];
+        StopReason::PerfectScore];
 
     assert_eq!(reasons.len(), 4);
 }
@@ -167,7 +165,7 @@ async fn test_stop_reason_values() {
 /// Test 6: Critique format enum
 #[tokio::test]
 async fn test_critique_format_values() {
-    let formats = vec![CritiqueFormat::Structured, CritiqueFormat::FreeForm];
+    let formats = [CritiqueFormat::Structured, CritiqueFormat::FreeForm];
 
     assert_eq!(formats.len(), 2);
 }
@@ -270,7 +268,7 @@ async fn test_reflection_config_parameters() {
 
     let config = ReflectionConfig {
         generator: generator.clone(),
-        critic: critic,
+        critic,
         max_iterations: 5,
         quality_threshold: 0.95,
         improvement_threshold: 0.02,
@@ -295,7 +293,7 @@ async fn test_multiple_pattern_instances() {
         name: "gen2".to_string(),
     });
 
-    let critic = Arc::new(ScorerAgent);
+    let _critic = Arc::new(ScorerAgent);
 
     let config1 = ReflectionConfig {
         generator: generator1,

@@ -4,7 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{self, Read, Write};
+use std::io::{self, Read};
 use std::process;
 use std::time::Instant;
 
@@ -400,7 +400,7 @@ fn execute_test(
 
         // Each tool call involves Thought + Action/Observation
         // Plus final answer = 1
-        (tool_calls_made as u32 * 2 + 1)
+        tool_calls_made as u32 * 2 + 1
     } else {
         // For other patterns, default to 1 turn
         1
@@ -745,7 +745,7 @@ fn execute_parallel(
     let agent_count = agents.len();
 
     // Extract agent names
-    let agent_names: Vec<String> = agents
+    let _agent_names: Vec<String> = agents
         .iter()
         .enumerate()
         .map(|(i, agent)| {
@@ -1026,8 +1026,8 @@ fn execute_task(
 }
 
 fn execute_supervisor(
-    message: &Message,
-    config: &serde_json::Map<String, serde_json::Value>,
+    _message: &Message,
+    _config: &serde_json::Map<String, serde_json::Value>,
 ) -> Result<Message, String> {
     // Mock implementation matching Python's Supervisor pattern metadata
     // Python always returns: synthesized=true, result_count=2, supervisor_subtasks=2, supervisor_specialists=1
@@ -2086,7 +2086,7 @@ fn execute_tree_of_thought(
     let content = format!("{}\n{}", message.content, mock_response);
 
     // Build reasoning path: [input, mock_response]
-    let reasoning_path = vec![message.content.clone(), mock_response.to_string()];
+    let reasoning_path = [message.content.clone(), mock_response.to_string()];
 
     // Mock tree statistics matching Python's structure
     // Python creates branching_factor nodes from root, then prunes all children
@@ -2184,7 +2184,7 @@ fn execute_tree_of_thought(
 }
 
 fn execute_self_consistency(
-    message: &Message,
+    _message: &Message,
     config: &serde_json::Map<String, serde_json::Value>,
 ) -> Message {
     // Mock implementation that simulates Python's SelfConsistency pattern behavior
@@ -2204,11 +2204,9 @@ fn execute_self_consistency(
 
     // Generate mock samples that match Python's MockAgent responses
     // Python's MockAgent cycles through 3 response templates
-    let sample_templates = vec![
-        "1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
+    let sample_templates = ["1. First approach: analyze directly.\n2. Calculate step by step.\n3. Result: 42",
         "- Alternative method: work backwards.\n- Apply the formula.\n- Answer: 42",
-        "Step 1: Identify key variables.\nStep 2: Solve systematically.\nStep 3: Verify result is 42",
-    ];
+        "Step 1: Identify key variables.\nStep 2: Solve systematically.\nStep 3: Verify result is 42"];
 
     let samples: Vec<String> = (0..num_samples)
         .map(|i| sample_templates[i as usize % sample_templates.len()].to_string())

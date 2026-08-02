@@ -270,11 +270,10 @@ impl ReasoningGraph {
         let mut rec_stack = HashSet::new();
 
         for &node_id in self.nodes.keys() {
-            if !visited.contains(&node_id) {
-                if self.has_cycle_dfs(node_id, &mut visited, &mut rec_stack) {
+            if !visited.contains(&node_id)
+                && self.has_cycle_dfs(node_id, &mut visited, &mut rec_stack) {
                     return true;
                 }
-            }
         }
 
         false

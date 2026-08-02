@@ -75,13 +75,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let agent_v1 = std::sync::Arc::new(AgentV1);
     let agent_v2 = std::sync::Arc::new(AgentV2);
 
-    let test_inputs = vec![
-        "What's the weather like today?",
+    let test_inputs = ["What's the weather like today?",
         "Can you help me?",
         "I need assistance with my order",
         "Tell me about your capabilities",
-        "How do I reset my password?",
-    ];
+        "How do I reset my password?"];
 
     println!("Agent A (Control): {}", agent_v1.name());
     println!("Agent B (Variant): {}", agent_v2.name());

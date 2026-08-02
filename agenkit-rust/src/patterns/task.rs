@@ -62,6 +62,7 @@ use async_trait::async_trait;
 
 /// Configuration for Task execution.
 #[derive(Clone)]
+#[derive(Default)]
 pub struct TaskConfig {
     /// Timeout for task execution (None means no timeout)
     pub timeout: Option<Duration>,
@@ -69,14 +70,6 @@ pub struct TaskConfig {
     pub retries: usize,
 }
 
-impl Default for TaskConfig {
-    fn default() -> Self {
-        Self {
-            timeout: None,
-            retries: 0,
-        }
-    }
-}
 
 /// One-shot agent execution with lifecycle management.
 ///

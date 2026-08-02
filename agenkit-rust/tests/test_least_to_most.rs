@@ -296,14 +296,13 @@ async fn test_compose_solutions_enabled() {
     assert!(result.is_ok());
     let response = result.unwrap();
 
-    assert_eq!(
+    assert!(
         response
             .metadata
             .get("compose_solutions")
             .unwrap()
             .as_bool()
-            .unwrap(),
-        true
+            .unwrap()
     );
 }
 
@@ -328,14 +327,13 @@ async fn test_compose_solutions_disabled() {
     assert!(result.is_ok());
     let response = result.unwrap();
 
-    assert_eq!(
-        response
+    assert!(
+        !response
             .metadata
             .get("compose_solutions")
             .unwrap()
             .as_bool()
-            .unwrap(),
-        false
+            .unwrap()
     );
 }
 

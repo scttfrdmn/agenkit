@@ -166,7 +166,7 @@ impl UsageStats {
         let model_stats = self
             .by_model
             .entry(record.model.clone())
-            .or_insert_with(ModelStats::new);
+            .or_default();
         model_stats.add_record(record);
 
         // Update agent stats if tracking

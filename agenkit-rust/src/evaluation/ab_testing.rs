@@ -41,11 +41,10 @@
 //! ```
 
 use crate::core::{Agent, AgentError, Message};
-use crate::evaluation::TestCase as EvalTestCase;
 use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use statrs::distribution::{ContinuousCDF, Normal, StudentsT};
-use statrs::statistics::{OrderStatistics, Statistics};
+use statrs::statistics::Statistics;
 use std::sync::Arc;
 
 /// Statistical test types for A/B testing

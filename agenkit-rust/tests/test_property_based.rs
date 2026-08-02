@@ -6,7 +6,7 @@
 use agenkit::composition::{FallbackAgent, SequentialAgent};
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::middleware::{
-    CachingConfig, CachingMiddleware, CircuitBreakerConfig, CircuitBreakerMiddleware, RetryConfig,
+    CachingConfig, CachingMiddleware, CircuitBreakerConfig, RetryConfig,
     RetryMiddleware, TimeoutConfig, TimeoutMiddleware,
 };
 use async_trait::async_trait;
@@ -234,7 +234,7 @@ proptest! {
     #[test]
     fn prop_sequential_preserves_agent_count(n_agents in 1usize..=8usize) {
         let agents: Vec<Arc<dyn Agent>> = (0..n_agents)
-            .map(|i| Arc::new(EchoAgent) as Arc<dyn Agent>)
+            .map(|_i| Arc::new(EchoAgent) as Arc<dyn Agent>)
             .collect();
         let seq = SequentialAgent::new("seq", agents).unwrap();
         prop_assert_eq!(seq.agents().len(), n_agents);

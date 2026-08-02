@@ -6,7 +6,6 @@ use agenkit::{
     core::{Agent, AgentError, Message},
     safety::{
         InputValidationMiddleware, OutputValidationMiddleware, PermissionMiddleware, Role,
-        SchemaValidator,
     },
 };
 use async_trait::async_trait;
@@ -201,7 +200,7 @@ async fn test_multiple_messages_through_security_stack() {
 
     // Process multiple messages
     for i in 1..=5 {
-        let msg = Message::with_text("user", &format!("Test message {}", i));
+        let msg = Message::with_text("user", format!("Test message {}", i));
         let result = safe_agent.process(msg).await;
         assert!(result.is_ok(), "Message {} should pass", i);
     }

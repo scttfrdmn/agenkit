@@ -6,18 +6,12 @@ use std::collections::HashMap;
 
 /// Checkpoint manager configuration.
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct CheckpointManagerConfig {
     /// Auto-checkpoint interval (number of steps)
     pub auto_checkpoint_interval: Option<usize>,
 }
 
-impl Default for CheckpointManagerConfig {
-    fn default() -> Self {
-        Self {
-            auto_checkpoint_interval: None,
-        }
-    }
-}
 
 /// High-level checkpoint manager.
 pub struct CheckpointManager {
@@ -179,7 +173,7 @@ impl CheckpointManager {
             return Ok(0);
         }
 
-        let to_delete = checkpoints.len() - keep_last;
+        let _to_delete = checkpoints.len() - keep_last;
         let mut deleted = 0;
 
         // Delete oldest checkpoints

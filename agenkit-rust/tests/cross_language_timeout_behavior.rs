@@ -9,7 +9,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 use tokio::time::sleep;
 
@@ -153,7 +153,7 @@ fn find_test_case<'a>(fixtures: &'a Fixtures, id: &str) -> &'a TestCase {
         .test_cases
         .iter()
         .find(|tc| tc.id == id)
-        .expect(&format!("Test case not found: {}", id))
+        .unwrap_or_else(|| panic!("Test case not found: {}", id))
 }
 
 #[tokio::test]

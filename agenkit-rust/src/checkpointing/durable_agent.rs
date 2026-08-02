@@ -84,7 +84,7 @@ impl<A: Agent + 'static> DurableAgent<A> {
     ) -> Result<Message, AgentError> {
         // Auto-resume on first call
         if self.config.auto_resume {
-            let mut resumed = self.session_resumed.lock().await;
+            let resumed = self.session_resumed.lock().await;
             if !resumed.contains_key(session_id) {
                 drop(resumed); // Release lock before resuming
                 if let Err(e) = self.resume(session_id, None).await {
@@ -260,7 +260,7 @@ impl<A: Agent + 'static> DurableAgent<A> {
         limit: Option<usize>,
     ) -> Result<Vec<crate::checkpointing::Checkpoint>, Box<dyn std::error::Error>> {
         let manager = self.manager.lock().await;
-        Ok(manager.list_checkpoints(session_id, limit).await?)
+        manager.list_checkpoints(session_id, limit).await
     }
 
     /// Delete all checkpoints for a session.
@@ -269,7 +269,7 @@ impl<A: Agent + 'static> DurableAgent<A> {
         session_id: &str,
     ) -> Result<usize, Box<dyn std::error::Error>> {
         let mut manager = self.manager.lock().await;
-        Ok(manager.delete_session(session_id).await?)
+        manager.delete_session(session_id).await
     }
 
     /// Get session statistics.
@@ -278,7 +278,7 @@ impl<A: Agent + 'static> DurableAgent<A> {
         session_id: &str,
     ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
         let manager = self.manager.lock().await;
-        Ok(manager.get_session_stats(session_id).await?)
+        manager.get_session_stats(session_id).await
     }
 
     /// Update state based on message exchange.

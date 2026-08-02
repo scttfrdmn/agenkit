@@ -298,7 +298,7 @@ mod adapter_tests {
         let agent = OpenAICompatibleAgent::new(config);
 
         // Test that agent role converts to assistant
-        let msg = Message::with_text("agent", "Previous response");
+        let _msg = Message::with_text("agent", "Previous response");
         // Note: We can't test the internal conversion directly,
         // but we verify the agent was created successfully
         assert_eq!(agent.name(), "openai_compatible");

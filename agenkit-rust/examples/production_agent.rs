@@ -117,7 +117,7 @@ impl ProductionSession {
             .await?;
 
         // 8. Create checkpoint every 3 messages
-        if self.step % 3 == 0 {
+        if self.step.is_multiple_of(3) {
             let messages = self.memory.retrieve("", 100, None).await?;
             let state = serde_json::json!({
                 "step": self.step,
@@ -297,13 +297,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("📝 Step 5: Running conversation with full integration...");
     println!("{}", "=".repeat(60));
 
-    let messages = vec![
-        "Hello! I'm starting a new conversation.",
+    let messages = ["Hello! I'm starting a new conversation.",
         "Please remember that I prefer detailed explanations.",
         "What can you tell me about AI agents?",
         "That's interesting. Can you analyze the benefits?",
-        "Thank you for the help!",
-    ];
+        "Thank you for the help!"];
 
     for (i, msg_text) in messages.iter().enumerate() {
         println!("\n💬 Message {}: \"{}\"", i + 1, msg_text);

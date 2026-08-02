@@ -36,7 +36,7 @@ impl Agent for MockRateLimiterAgent {
     async fn process(&self, _message: Message) -> Result<Message, AgentError> {
         let mut count = self.call_count.lock().unwrap();
         *count += 1;
-        Ok(Message::with_text("agent", &format!("Response {}", *count)))
+        Ok(Message::with_text("agent", format!("Response {}", *count)))
     }
 
     fn capabilities(&self) -> Vec<String> {
@@ -176,10 +176,7 @@ async fn test_rate_limiter_allows_within_capacity() {
     let mut successful = 0;
     for _ in &test_case.scenario.requests {
         let msg = Message::with_text("user", "test");
-        match rate_limiter.process(msg).await {
-            Ok(_) => successful += 1,
-            Err(_) => {}
-        }
+        if let Ok(_) = rate_limiter.process(msg).await { successful += 1 }
     }
     let elapsed = start.elapsed();
 

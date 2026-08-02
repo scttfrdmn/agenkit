@@ -9,7 +9,7 @@ mod tests {
         SchemaValidatorConfig,
     };
     use async_trait::async_trait;
-    use serde_json::json;
+    
     use std::collections::{HashMap, HashSet};
 
     /// Mock agent for testing that echoes input and adds metadata.
@@ -187,7 +187,7 @@ mod tests {
 
         // Multiple rapid requests (testing rate limiting)
         for i in 0..5 {
-            let msg = Message::with_text("user", &format!("Request {}", i));
+            let msg = Message::with_text("user", format!("Request {}", i));
             let _ = agent.process(msg).await;
         }
     }
@@ -244,7 +244,7 @@ mod tests {
         match err {
             AgentError::InvalidInput(_) | AgentError::ProcessingError(_) => {
                 // Expected error types - verify error message is meaningful
-                assert!(err.to_string().len() > 0);
+                assert!(!err.to_string().is_empty());
                 assert!(
                     err.to_string().contains("Prompt injection")
                         || err.to_string().contains("validation"),
@@ -315,7 +315,7 @@ mod tests {
 
         // Introspection should show middleware metadata
         let info = agent.introspect();
-        assert!(info.agent_name.len() > 0);
+        assert!(!info.agent_name.is_empty());
     }
 
     #[tokio::test]

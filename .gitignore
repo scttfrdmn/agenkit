@@ -94,6 +94,9 @@ agenkit-zig/tests/cross_language_harness
 tests/cross_language/harness_go_bin
 tests/cross_language/harness_go/main
 tests/cross_language/harness_go/cross_language_harness
+# What `go build .` produces by default in that directory (Go names the binary
+# after the directory), matching the harness_rust/harness_zig entries below.
+tests/cross_language/harness_go/harness_go
 tests/cross_language/harness_rust/harness_rust
 tests/cross_language/harness_zig/harness_zig
 agenkit-go/basic

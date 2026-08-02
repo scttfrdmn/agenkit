@@ -1,2 +1,2 @@
-///! AI reasoning techniques.
+//! AI reasoning techniques.
 pub mod reasoning;

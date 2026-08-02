@@ -1,13 +1,13 @@
-///! Example demonstrating Anthropic Claude streaming support.
-///!
-///! This example shows how to stream responses from Claude in real-time,
-///! displaying text as it arrives from the API.
-///!
-///! Run with:
-///! ```bash
-///! export ANTHROPIC_API_KEY="your-key-here"
-///! cargo run --example anthropic_streaming --features native
-///! ```
+//! Example demonstrating Anthropic Claude streaming support.
+//!
+//! This example shows how to stream responses from Claude in real-time,
+//! displaying text as it arrives from the API.
+//!
+//! Run with:
+//! ```bash
+//! export ANTHROPIC_API_KEY="your-key-here"
+//! cargo run --example anthropic_streaming --features native
+//! ```
 use agenkit::adapters::anthropic::{AnthropicAgent, AnthropicConfig};
 use agenkit::core::Message;
 use futures::stream::StreamExt;

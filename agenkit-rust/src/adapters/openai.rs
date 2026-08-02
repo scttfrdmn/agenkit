@@ -1,7 +1,7 @@
-///! OpenAI API adapter.
-///!
-///! This module provides an adapter for calling OpenAI's GPT API via HTTP.
-///! Supports GPT-4, GPT-4 Turbo, GPT-3.5 Turbo, and other OpenAI models.
+//! OpenAI API adapter.
+//!
+//! This module provides an adapter for calling OpenAI's GPT API via HTTP.
+//! Supports GPT-4, GPT-4 Turbo, GPT-3.5 Turbo, and other OpenAI models.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use futures::Stream;

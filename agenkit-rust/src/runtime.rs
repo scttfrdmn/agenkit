@@ -1,23 +1,23 @@
-///! Runtime abstraction layer for native (tokio) and WASM (wasm-bindgen-futures).
-///!
-///! This module provides a unified async runtime interface that works on both
-///! native platforms (using tokio) and in the browser (using wasm-bindgen-futures).
-///!
-///! # Usage
-///!
-///! ```
-///! use agenkit::runtime;
-///!
-///! async fn my_function() {
-///!     // Sleep for 1 second (works on both native and WASM)
-///!     runtime::sleep(std::time::Duration::from_secs(1)).await;
-///!
-///!     // Spawn a task (works on both native and WASM)
-///!     runtime::spawn(async {
-///!         // ...
-///!     });
-///! }
-///! ```
+//! Runtime abstraction layer for native (tokio) and WASM (wasm-bindgen-futures).
+//!
+//! This module provides a unified async runtime interface that works on both
+//! native platforms (using tokio) and in the browser (using wasm-bindgen-futures).
+//!
+//! # Usage
+//!
+//! ```
+//! use agenkit::runtime;
+//!
+//! async fn my_function() {
+//!     // Sleep for 1 second (works on both native and WASM)
+//!     runtime::sleep(std::time::Duration::from_secs(1)).await;
+//!
+//!     // Spawn a task (works on both native and WASM)
+//!     runtime::spawn(async {
+//!         // ...
+//!     });
+//! }
+//! ```
 use std::future::Future;
 use std::pin::Pin;
 use std::time::Duration;

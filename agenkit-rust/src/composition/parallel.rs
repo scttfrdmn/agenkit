@@ -1,6 +1,6 @@
-///! Parallel agent composition pattern.
-///!
-///! Executes multiple agents concurrently and combines their results.
+//! Parallel agent composition pattern.
+//!
+//! Executes multiple agents concurrently and combines their results.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use futures::future::join_all;

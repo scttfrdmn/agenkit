@@ -1,40 +1,40 @@
-///! OpenAI-Compatible LLM Adapter Example
-///!
-///! This example demonstrates using Agenkit with OpenAI-compatible inference services
-///! like vLLM, llama.cpp, SGLang, and TensorRT-LLM.
-///!
-///! # Setup Instructions
-///!
-///! ## 1. vLLM (recommended for production):
-///! ```bash
-///! docker run --gpus all -p 8000:8000 vllm/vllm-openai \
-///!   --model meta-llama/Llama-2-7b-chat-hf
-///! ```
-///!
-///! ## 2. llama.cpp (lightweight, CPU-friendly):
-///! ```bash
-///! git clone https://github.com/ggerganov/llama.cpp
-///! cd llama.cpp && make
-///! ./server -m models/llama-2-7b-chat.gguf -c 2048 --port 8080
-///! ```
-///!
-///! ## 3. SGLang (optimized for complex prompts):
-///! ```bash
-///! pip install sglang
-///! python -m sglang.launch_server \
-///!   --model-path meta-llama/Llama-2-7b-chat-hf --port 30000
-///! ```
-///!
-///! # Benefits
-///! - Run LLMs locally (no cloud API costs)
-///! - Keep data private (on-premises)
-///! - Same code works with all services
-///! - Easy migration between providers
-///!
-///! # Usage
-///! ```bash
-///! cargo run --example openai_compatible_example --features native
-///! ```
+//! OpenAI-Compatible LLM Adapter Example
+//!
+//! This example demonstrates using Agenkit with OpenAI-compatible inference services
+//! like vLLM, llama.cpp, SGLang, and TensorRT-LLM.
+//!
+//! # Setup Instructions
+//!
+//! ## 1. vLLM (recommended for production):
+//! ```bash
+//! docker run --gpus all -p 8000:8000 vllm/vllm-openai \
+//!   --model meta-llama/Llama-2-7b-chat-hf
+//! ```
+//!
+//! ## 2. llama.cpp (lightweight, CPU-friendly):
+//! ```bash
+//! git clone https://github.com/ggerganov/llama.cpp
+//! cd llama.cpp && make
+//! ./server -m models/llama-2-7b-chat.gguf -c 2048 --port 8080
+//! ```
+//!
+//! ## 3. SGLang (optimized for complex prompts):
+//! ```bash
+//! pip install sglang
+//! python -m sglang.launch_server \
+//!   --model-path meta-llama/Llama-2-7b-chat-hf --port 30000
+//! ```
+//!
+//! # Benefits
+//! - Run LLMs locally (no cloud API costs)
+//! - Keep data private (on-premises)
+//! - Same code works with all services
+//! - Easy migration between providers
+//!
+//! # Usage
+//! ```bash
+//! cargo run --example openai_compatible_example --features native
+//! ```
 use agenkit::adapters::openai_compatible::{
     providers, OpenAICompatibleAgent, OpenAICompatibleConfig,
 };

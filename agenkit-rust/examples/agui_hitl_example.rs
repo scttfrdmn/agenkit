@@ -1,20 +1,20 @@
-///! AG-UI Human-in-the-Loop Example
-///!
-///! Demonstrates AG-UI protocol integration with the human-in-the-loop pattern.
-///! Shows how agents can request human approval via Interrupt events.
-///!
-///! This example shows:
-///! - Creating a HumanInLoopAgent
-///! - Wrapping it with AGUIHumanInLoopAdapter
-///! - Streaming events with approval requests
-///! - Interrupt events for low-confidence responses
-///! - Approval workflow visualization
-///!
-///! # Running
-///!
-///! ```bash
-///! cargo run --example agui_hitl_example
-///! ```
+//! AG-UI Human-in-the-Loop Example
+//!
+//! Demonstrates AG-UI protocol integration with the human-in-the-loop pattern.
+//! Shows how agents can request human approval via Interrupt events.
+//!
+//! This example shows:
+//! - Creating a HumanInLoopAgent
+//! - Wrapping it with AGUIHumanInLoopAdapter
+//! - Streaming events with approval requests
+//! - Interrupt events for low-confidence responses
+//! - Approval workflow visualization
+//!
+//! # Running
+//!
+//! ```bash
+//! cargo run --example agui_hitl_example
+//! ```
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::patterns::human_in_loop::{simple_approval_func, HumanInLoopAgent, HumanInLoopConfig};
 use agenkit::protocols::agui::adapter::AGUIAdapterConfig;

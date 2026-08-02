@@ -1,7 +1,7 @@
-///! Amazon Bedrock LLM adapter for foundation models.
-///!
-///! Provides integration with Amazon Bedrock's foundation models including
-///! Claude, Llama, Mistral, and Titan. Supports both completion and streaming modes.
+//! Amazon Bedrock LLM adapter for foundation models.
+//!
+//! Provides integration with Amazon Bedrock's foundation models including
+//! Claude, Llama, Mistral, and Titan. Supports both completion and streaming modes.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use futures::stream::Stream;

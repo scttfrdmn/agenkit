@@ -1,38 +1,40 @@
-///! Model Context Protocol (MCP) support for agenkit agents.
-///!
-///! MCP is a JSON-RPC 2.0 based protocol for AI tool integrations used by
-///! Claude Code, Cursor, and thousands of community tools. This module
-///! provides both client and server implementations using only crate
-///! dependencies already in scope (`serde_json`, `tokio`, `async-trait`).
-///!
-///! # Client usage — stdio
-///!
-///! ```no_run
-///! use agenkit::protocols::mcp::{StdioClient, tools_from_client};
-///!
-///! #[tokio::main]
-///! async fn main() {
-///!     let mut client = StdioClient::new("npx", &["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]);
-///!     client.initialize().await.unwrap();
-///!     let tools = tools_from_client(&client).await.unwrap();
-///! }
-///! ```
-///!
-///! # Server usage
-///!
-///! ```no_run
-///! use agenkit::protocols::mcp::{McpServer, ServerConfig};
-///!
-///! #[tokio::main]
-///! async fn main() {
-///!     let server = McpServer::new(ServerConfig {
-///!         name: "my-agent".into(),
-///!         version: "1.0.0".into(),
-///!         tools: vec![],
-///!     });
-///!     server.serve_stdio().await.unwrap();
-///! }
-///! ```
+//! Model Context Protocol (MCP) support for agenkit agents.
+//!
+//! MCP is a JSON-RPC 2.0 based protocol for AI tool integrations used by
+//! Claude Code, Cursor, and thousands of community tools. This module
+//! provides both client and server implementations using only crate
+//! dependencies already in scope (`serde_json`, `tokio`, `async-trait`).
+//!
+//! # Client usage — stdio
+//!
+//! ```no_run
+//! use std::sync::Arc;
+//! use agenkit::protocols::mcp::{McpClient, StdioClient, tools_from_client};
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     let mut client = StdioClient::new("npx", &["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]);
+//!     client.initialize().await.unwrap();
+//!     // Takes ownership: the adapters share one connection via the `Arc`.
+//!     let tools = tools_from_client(Arc::new(client)).await.unwrap();
+//! }
+//! ```
+//!
+//! # Server usage
+//!
+//! ```no_run
+//! use agenkit::protocols::mcp::{McpServer, ServerConfig};
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     let server = McpServer::new(ServerConfig {
+//!         name: "my-agent".into(),
+//!         version: "1.0.0".into(),
+//!         tools: vec![],
+//!     });
+//!     server.serve_stdio().await.unwrap();
+//! }
+//! ```
 pub mod client;
 pub mod server;
 pub mod tool_adapter;

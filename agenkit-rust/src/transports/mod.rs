@@ -1,7 +1,7 @@
-///! Transport layers for remote agent communication.
-///!
-///! This module provides HTTP, gRPC, and WebSocket transports for
-///! communicating with agents over the network.
+//! Transport layers for remote agent communication.
+//!
+//! This module provides HTTP, gRPC, and WebSocket transports for
+//! communicating with agents over the network.
 mod http;
 
 #[cfg(feature = "native")]

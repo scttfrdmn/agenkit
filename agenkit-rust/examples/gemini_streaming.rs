@@ -1,13 +1,13 @@
-///! Example demonstrating Google Gemini streaming support.
-///!
-///! This example shows how to stream responses from Gemini in real-time,
-///! displaying text as it arrives from the API.
-///!
-///! Run with:
-///! ```bash
-///! export GEMINI_API_KEY="your-key-here"
-///! cargo run --example gemini_streaming --features native
-///! ```
+//! Example demonstrating Google Gemini streaming support.
+//!
+//! This example shows how to stream responses from Gemini in real-time,
+//! displaying text as it arrives from the API.
+//!
+//! Run with:
+//! ```bash
+//! export GEMINI_API_KEY="your-key-here"
+//! cargo run --example gemini_streaming --features native
+//! ```
 use agenkit::adapters::gemini::{GeminiAdapter, GeminiConfig};
 use agenkit::core::Message;
 use futures::stream::StreamExt;

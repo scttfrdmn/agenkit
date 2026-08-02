@@ -1,12 +1,12 @@
-///! Protocol implementations for agent communication.
-///!
-///! Provides standardized protocols for agent-to-frontend communication
-///! and other agent interaction patterns.
-///!
-///! # Available Protocols
-///!
-///! - **AG-UI**: Agent-User Interaction protocol for streaming agent responses
-///!   to frontends over HTTP/SSE and WebSocket.
+//! Protocol implementations for agent communication.
+//!
+//! Provides standardized protocols for agent-to-frontend communication
+//! and other agent interaction patterns.
+//!
+//! # Available Protocols
+//!
+//! - **AG-UI**: Agent-User Interaction protocol for streaming agent responses
+//!   to frontends over HTTP/SSE and WebSocket.
 pub mod agui;
 pub mod mcp;
 

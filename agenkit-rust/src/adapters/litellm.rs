@@ -1,8 +1,8 @@
-///! LiteLLM proxy adapter for universal LLM access.
-///!
-///! Provides integration with LiteLLM, a universal LLM gateway that offers
-///! an OpenAI-compatible API for 100+ LLM providers. Supports both completion
-///! and streaming modes.
+//! LiteLLM proxy adapter for universal LLM access.
+//!
+//! Provides integration with LiteLLM, a universal LLM gateway that offers
+//! an OpenAI-compatible API for 100+ LLM providers. Supports both completion
+//! and streaming modes.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use futures::Stream;

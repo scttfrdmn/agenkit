@@ -1,17 +1,17 @@
-///! Example demonstrating Ollama streaming support.
-///!
-///! This example shows how to stream responses from local Ollama models
-///! in real-time, displaying text as it arrives from the API.
-///!
-///! Prerequisites:
-///! - Install Ollama: https://ollama.ai
-///! - Pull a model: `ollama pull llama2`
-///! - Start Ollama server (usually runs automatically)
-///!
-///! Run with:
-///! ```bash
-///! cargo run --example ollama_streaming --features native
-///! ```
+//! Example demonstrating Ollama streaming support.
+//!
+//! This example shows how to stream responses from local Ollama models
+//! in real-time, displaying text as it arrives from the API.
+//!
+//! Prerequisites:
+//! - Install Ollama: https://ollama.ai
+//! - Pull a model: `ollama pull llama2`
+//! - Start Ollama server (usually runs automatically)
+//!
+//! Run with:
+//! ```bash
+//! cargo run --example ollama_streaming --features native
+//! ```
 use agenkit::adapters::ollama::{OllamaAgent, OllamaConfig};
 use agenkit::core::Message;
 use futures::stream::StreamExt;

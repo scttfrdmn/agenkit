@@ -1,8 +1,8 @@
-///! AG-UI (Agent-User Interaction) Protocol
-///!
-///! Provides streaming agent-to-frontend communication using the AG-UI protocol.
-///!
-///! Reference: https://docs.ag-ui.com
+//! AG-UI (Agent-User Interaction) Protocol
+//!
+//! Provides streaming agent-to-frontend communication using the AG-UI protocol.
+//!
+//! Reference: https://docs.ag-ui.com
 pub mod adapter;
 pub mod events;
 pub mod hitl;

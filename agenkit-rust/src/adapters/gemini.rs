@@ -1,7 +1,7 @@
-///! Google Gemini LLM adapter.
-///!
-///! Provides integration with Google's Gemini models (Gemini 2.0, Gemini 1.5 Pro, etc.).
-///! Supports both completion and streaming modes via the Gemini REST API.
+//! Google Gemini LLM adapter.
+//!
+//! Provides integration with Google's Gemini models (Gemini 2.0, Gemini 1.5 Pro, etc.).
+//! Supports both completion and streaming modes via the Gemini REST API.
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use futures::stream::Stream;

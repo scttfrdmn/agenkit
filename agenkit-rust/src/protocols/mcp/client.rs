@@ -1,7 +1,7 @@
-///! MCP client implementations.
-///!
-///! `StdioClient` — spawn a subprocess and speak JSON-RPC 2.0 over stdin/stdout.
-///! `HttpClient`  — POST JSON-RPC 2.0 to a running MCP HTTP server.
+//! MCP client implementations.
+//!
+//! `StdioClient` — spawn a subprocess and speak JSON-RPC 2.0 over stdin/stdout.
+//! `HttpClient`  — POST JSON-RPC 2.0 to a running MCP HTTP server.
 use crate::core::AgentError;
 use crate::protocols::mcp::{
     JsonRpcRequest, JsonRpcResponse, McpClient, McpServerInfo, McpTool, McpToolResult,

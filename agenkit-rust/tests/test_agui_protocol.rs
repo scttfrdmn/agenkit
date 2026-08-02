@@ -1,13 +1,13 @@
-///! Comprehensive AG-UI Protocol Integration Tests
-///!
-///! Tests the complete AG-UI protocol implementation including:
-///! - Event streaming and serialization
-///! - Adapter functionality
-///! - Human-in-the-loop integration
-///! - HTTP/SSE transport
-///! - WebSocket transport
-///! - Error handling
-///! - Edge cases
+//! Comprehensive AG-UI Protocol Integration Tests
+//!
+//! Tests the complete AG-UI protocol implementation including:
+//! - Event streaming and serialization
+//! - Adapter functionality
+//! - Human-in-the-loop integration
+//! - HTTP/SSE transport
+//! - WebSocket transport
+//! - Error handling
+//! - Edge cases
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::patterns::human_in_loop::{
     simple_approval_func, ApprovalRequest, ApprovalResponse, HumanInLoopAgent, HumanInLoopConfig,

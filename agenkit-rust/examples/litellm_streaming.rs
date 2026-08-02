@@ -1,18 +1,18 @@
-///! Example demonstrating LiteLLM streaming support.
-///!
-///! This example shows how to stream responses through LiteLLM proxy
-///! in real-time, displaying text as it arrives from the API.
-///!
-///! Prerequisites:
-///! - Install LiteLLM: `pip install litellm[proxy]`
-///! - Start LiteLLM proxy: `litellm --model gpt-3.5-turbo`
-///! - Or use Docker: `docker run -p 4000:4000 ghcr.io/berriai/litellm:main-latest`
-///!
-///! Run with:
-///! ```bash
-///! export LITELLM_API_KEY="your-key-here"  # Optional for local proxy
-///! cargo run --example litellm_streaming --features native
-///! ```
+//! Example demonstrating LiteLLM streaming support.
+//!
+//! This example shows how to stream responses through LiteLLM proxy
+//! in real-time, displaying text as it arrives from the API.
+//!
+//! Prerequisites:
+//! - Install LiteLLM: `pip install litellm[proxy]`
+//! - Start LiteLLM proxy: `litellm --model gpt-3.5-turbo`
+//! - Or use Docker: `docker run -p 4000:4000 ghcr.io/berriai/litellm:main-latest`
+//!
+//! Run with:
+//! ```bash
+//! export LITELLM_API_KEY="your-key-here"  # Optional for local proxy
+//! cargo run --example litellm_streaming --features native
+//! ```
 use agenkit::adapters::litellm::{LiteLLMAdapter, LiteLLMConfig};
 use agenkit::core::Message;
 use futures::stream::StreamExt;

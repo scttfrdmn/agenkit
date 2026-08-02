@@ -1,15 +1,15 @@
-///! Example demonstrating Amazon Bedrock streaming support.
-///!
-///! This example shows how to stream responses from Bedrock foundation models
-///! in real-time, displaying text as it arrives from the API.
-///!
-///! Run with:
-///! ```bash
-///! export AWS_REGION="us-east-1"
-///! export AWS_ACCESS_KEY_ID="your-key-id"
-///! export AWS_SECRET_ACCESS_KEY="your-secret-key"
-///! cargo run --example bedrock_streaming --features native
-///! ```
+//! Example demonstrating Amazon Bedrock streaming support.
+//!
+//! This example shows how to stream responses from Bedrock foundation models
+//! in real-time, displaying text as it arrives from the API.
+//!
+//! Run with:
+//! ```bash
+//! export AWS_REGION="us-east-1"
+//! export AWS_ACCESS_KEY_ID="your-key-id"
+//! export AWS_SECRET_ACCESS_KEY="your-secret-key"
+//! cargo run --example bedrock_streaming --features native
+//! ```
 use agenkit::adapters::bedrock::{BedrockAdapter, BedrockConfig};
 use agenkit::core::Message;
 use futures::stream::StreamExt;

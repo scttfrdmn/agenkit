@@ -1,7 +1,7 @@
-///! Message types for agent communication.
-///!
-///! This module provides the core Message type for agent communication,
-///! following the same design as TypeScript and Go implementations.
+//! Message types for agent communication.
+//!
+//! This module provides the core Message type for agent communication,
+//! following the same design as TypeScript and Go implementations.
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

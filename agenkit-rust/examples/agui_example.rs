@@ -1,20 +1,20 @@
-///! AG-UI Protocol Example
-///!
-///! Demonstrates the AG-UI (Agent-User Interaction) protocol for streaming
-///! agent responses to frontends.
-///!
-///! This example shows:
-///! - Creating an AG-UI adapter
-///! - Streaming events from an agent
-///! - Different event types (metadata, text messages, errors)
-///! - SSE formatting for HTTP transport
-///! - WebSocket message formatting
-///!
-///! # Running
-///!
-///! ```bash
-///! cargo run --example agui_example
-///! ```
+//! AG-UI Protocol Example
+//!
+//! Demonstrates the AG-UI (Agent-User Interaction) protocol for streaming
+//! agent responses to frontends.
+//!
+//! This example shows:
+//! - Creating an AG-UI adapter
+//! - Streaming events from an agent
+//! - Different event types (metadata, text messages, errors)
+//! - SSE formatting for HTTP transport
+//! - WebSocket message formatting
+//!
+//! # Running
+//!
+//! ```bash
+//! cargo run --example agui_example
+//! ```
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};
 use agenkit::protocols::agui::events::{AGUIEvent, EventType};

@@ -1,8 +1,8 @@
-///! AG-UI (Agent-User Interaction) Protocol Events
-///!
-///! Provides event types for streaming agent-to-frontend communication.
-///!
-///! Reference: https://docs.ag-ui.com
+//! AG-UI (Agent-User Interaction) Protocol Events
+//!
+//! Provides event types for streaming agent-to-frontend communication.
+//!
+//! Reference: https://docs.ag-ui.com
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

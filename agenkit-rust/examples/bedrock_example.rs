@@ -1,27 +1,27 @@
-///! Amazon Bedrock adapter example.
-///!
-///! Demonstrates how to use the Bedrock adapter to interact with AWS Bedrock foundation models.
-///!
-///! # Setup
-///!
-///! 1. Configure AWS credentials (one of the following):
-///!    - Set environment variables:
-///!      ```bash
-///!      export AWS_ACCESS_KEY_ID="your-access-key"
-///!      export AWS_SECRET_ACCESS_KEY="your-secret-key"
-///!      export AWS_REGION="us-east-1"
-///!      ```
-///!    - Configure AWS CLI: `aws configure`
-///!    - Use IAM role (if running on EC2/ECS/Lambda)
-///!
-///! 2. Enable model access in AWS Bedrock console:
-///!    - Go to AWS Bedrock console
-///!    - Request access to models (e.g., Claude, Llama, Mistral)
-///!
-///! 3. Run this example:
-///!    ```bash
-///!    cargo run --example bedrock_example --features native
-///!    ```
+//! Amazon Bedrock adapter example.
+//!
+//! Demonstrates how to use the Bedrock adapter to interact with AWS Bedrock foundation models.
+//!
+//! # Setup
+//!
+//! 1. Configure AWS credentials (one of the following):
+//!    - Set environment variables:
+//!      ```bash
+//!      export AWS_ACCESS_KEY_ID="your-access-key"
+//!      export AWS_SECRET_ACCESS_KEY="your-secret-key"
+//!      export AWS_REGION="us-east-1"
+//!      ```
+//!    - Configure AWS CLI: `aws configure`
+//!    - Use IAM role (if running on EC2/ECS/Lambda)
+//!
+//! 2. Enable model access in AWS Bedrock console:
+//!    - Go to AWS Bedrock console
+//!    - Request access to models (e.g., Claude, Llama, Mistral)
+//!
+//! 3. Run this example:
+//!    ```bash
+//!    cargo run --example bedrock_example --features native
+//!    ```
 use agenkit::adapters::bedrock::{BedrockAdapter, BedrockConfig};
 use agenkit::core::{Agent, Message};
 

@@ -1,8 +1,8 @@
-///! AG-UI Human-in-the-Loop Integration
-///!
-///! Integrates the HumanInLoopAgent pattern with AG-UI protocol using Interrupt events.
-///! Provides streaming approval workflow where agents can request human approval via
-///! Interrupt events, and frontends can respond with InterruptResponse messages.
+//! AG-UI Human-in-the-Loop Integration
+//!
+//! Integrates the HumanInLoopAgent pattern with AG-UI protocol using Interrupt events.
+//! Provides streaming approval workflow where agents can request human approval via
+//! Interrupt events, and frontends can respond with InterruptResponse messages.
 use crate::core::{Agent, AgentError, Message};
 use crate::patterns::human_in_loop::HumanInLoopAgent;
 use crate::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};

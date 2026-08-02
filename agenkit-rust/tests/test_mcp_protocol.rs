@@ -1,12 +1,12 @@
-///! MCP (Model Context Protocol) protocol tests.
-///!
-///! Tests the complete MCP implementation:
-///! - Wire type serialization (JSON-RPC 2.0)
-///! - McpTool / McpContent / McpToolResult types
-///! - text_content helper
-///! - McpToolAdapter (name, description, execute success/error)
-///! - tools_from_client factory
-///! - McpServer handle_request (initialize, tools/list, tools/call)
+//! MCP (Model Context Protocol) protocol tests.
+//!
+//! Tests the complete MCP implementation:
+//! - Wire type serialization (JSON-RPC 2.0)
+//! - McpTool / McpContent / McpToolResult types
+//! - text_content helper
+//! - McpToolAdapter (name, description, execute success/error)
+//! - tools_from_client factory
+//! - McpServer handle_request (initialize, tools/list, tools/call)
 use agenkit::core::{AgentError, Tool, ToolResult};
 use agenkit::protocols::mcp::{
     text_content, tools_from_client, HttpClient, McpClient, McpContent, McpServer, McpServerInfo,

@@ -1,8 +1,8 @@
-///! HTTP transport example.
-///!
-///! This example demonstrates how to:
-///! 1. Create an agent server that exposes an agent over HTTP
-///! 2. Create an HTTP client that communicates with the remote agent
+//! HTTP transport example.
+//!
+//! This example demonstrates how to:
+//! 1. Create an agent server that exposes an agent over HTTP
+//! 2. Create an HTTP client that communicates with the remote agent
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::transports::{HttpAgent, HttpServer, HttpTransportConfig};
 use async_trait::async_trait;

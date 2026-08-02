@@ -34,7 +34,7 @@ use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use once_cell::sync::OnceCell;
 use opentelemetry::{
-    metrics::{Counter, Histogram, Meter, MeterProvider as _},
+    metrics::{Counter, Histogram, Meter},
     KeyValue,
 };
 use opentelemetry_sdk::metrics::SdkMeterProvider;

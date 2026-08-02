@@ -23,8 +23,9 @@ than defining a synonym.
 |---|---|---|
 | [Span naming](#span-naming) | **Stable in Python/Go/TS/Rust** | C++ defaults to a different name; Zig hand-rolls spans — see the caveats |
 | [Trace propagation](#trace-propagation) | **Stable in Python/Go/TS/Rust/C++** | The cross-language primitive, and the most reliable part of the current implementation. Zig does not participate. |
-| [Resource attributes](#resource-attributes) | **Stable in Python/Go only** | Rust hardcodes it, C++ sets none — see the caveats |
+| [Resource attributes](#resource-attributes) | **Stable in Python/Go/Rust** | C++ sets none — see the caveats |
 | [Agent span attributes](#agent-span-attributes) | **Stable** | Emitted today |
+| [Span status](#span-status) | **Stable in Python/Go/TS/Rust/C++** | Ok / Error set by every implementation. The error *event* is Python/Go/TS only. |
 | [GenAI attributes](#genai-attributes) | **Planned** | Not emitted by any language yet — see [Gaps](#known-gaps) |
 | [Tree-node spans](#tree-node-spans) | **Planned** | No helper exists in any language yet |
 
@@ -109,14 +110,16 @@ promotion described below, so it never appears as a span attribute.
 |---|---|---|
 | `service.name` | caller-supplied | Set it to **your** service name, not `agenkit` |
 
-Python (`init_tracing(service_name=...)`) and Go
-(`InitTracing(serviceName, ...)`) accept it.
+Python (`init_tracing(service_name=...)`), Go (`InitTracing(serviceName, ...)`),
+and Rust (`init_tracing_with_config(exporter, endpoint, service_name, sample_rate)`)
+accept it.
 
-> **Known defect — Rust.** `agenkit-rust`'s `init_tracing` hardcodes
-> `service.name = "agenkit"` and provides no way to override it, so Rust
-> consumers' spans cannot be distinguished in a shared collector. Tracked in
-> #768. Rust consumers should set resource attributes on their own
-> `TracerProvider` until that lands.
+Rust's two-argument `init_tracing` does **not** set `service.name`, which leaves
+the SDK's own `OTEL_SERVICE_NAME` / `OTEL_RESOURCE_ATTRIBUTES` detection in
+place. That is deliberate: the previous behaviour hardcoded
+`service.name = "agenkit"`, which silently defeated the environment variable a
+deployment had already set. Use `init_tracing_with_config` to set it in code
+(#768).
 
 > **Known gap — C++.** `agenkit-cpp/src/observability/tracing.cpp` sets no
 > resource attributes at all, so `service.name` falls back to whatever the SDK
@@ -135,6 +138,30 @@ Emitted today on every `agent.{name}.process` span:
 
 Note `message.content_length` is a character count and is **not** a substitute
 for token usage. See [Gaps](#known-gaps).
+
+### Span status
+
+Every implementation sets the span status: `Ok` when the agent returns
+successfully, `Error` with the error message as the description when it does not.
+Consumers should filter failures on **span status**, not on an attribute.
+
+Python (`record_exception`), Go (`RecordError`), and TypeScript
+(`recordException`) also record the error as a span event. Rust and C++ do not;
+Rust instead sets an `error=true` attribute. Do not rely on either the event or
+the attribute cross-language — the status is the portable signal.
+
+**A failed verification is not an error status.** These are different claims and
+must map to different signals:
+
+| Situation | Span status | Rationale |
+|---|---|---|
+| The operation did not complete (exception, timeout, truncated/unreturnable node) | `Error` | Nothing produced a result. This is what OTel's error status means. |
+| The operation completed and returned an unfavourable verdict (`agenkit.verifier.verdict = failed`) | `Ok` | The check ran and worked. The *answer* was bad, not the *run*. |
+
+Setting `Error` on a failed verification makes a functioning verifier
+indistinguishable from a broken pipeline, and inflates every error-rate alert in
+proportion to how well the verifier is doing its job. Record the verdict in
+`agenkit.verifier.verdict` and leave the status `Ok`.
 
 ## GenAI attributes
 
@@ -158,7 +185,13 @@ Agenkit extensions, for concepts GenAI semconv does not cover:
 | `agenkit.usage.cache_read_tokens` | int | Prompt-cache tokens read (see #665) |
 | `agenkit.usage.cache_creation_tokens` | int | Prompt-cache tokens written |
 | `agenkit.cost.micro_units` | int64 | Integer micro-units, **not** a float. Float currency accumulates rounding error across a large span tree. State the currency out of band. |
-| `agenkit.retry.count` | int | Retries attempted for this operation |
+| `agenkit.retry.count` | int | **Transport** retries — a call failed and was reissued. |
+| `agenkit.verify.retries` | int | **Quality** retries — a call succeeded, its output was rejected by a verifier, and it was reissued. |
+
+Those last two are deliberately separate keys. Both cost money and latency, but
+they mean opposite things about the system: transport retries indicate an
+unreliable dependency, quality retries indicate a model that is not meeting the
+bar. Summing them into one counter makes neither diagnosable.
 
 ## Tree-node spans
 
@@ -172,6 +205,26 @@ node's span parented to its parent node's span. Do not flatten a tree into
 sibling spans and reconstruct it from attributes — the parent/child linkage is
 what makes the trace readable in Jaeger without a custom view.
 
+### Live, not post-hoc
+
+The helper should start the span when the node *starts*, while the parent context
+is in hand — not build the tree after the run from buffered nodes. Buffering is
+tempting when a workload's completion callback fires child-before-parent (so the
+nesting does not exist yet at emission time), but it costs two things worth more
+than the convenience: nothing appears in the trace backend until the whole run
+ends, and the spans carry no measured durations, only fabricated or absent ones.
+A consumer cannot tell an invented duration from a measured one.
+
+The API shape that supports both orders:
+
+```
+StartNode(ctx, parentSpanCtx, nodeID) (ctx, span)
+```
+
+Taking the parent explicitly, rather than only implicitly from `ctx`, lets a
+caller whose completion order is inverted still produce correct parentage without
+buffering the whole tree.
+
 | Attribute | Type | Meaning |
 |---|---|---|
 | `agenkit.node.id` | string | Stable id for this node |
@@ -179,6 +232,17 @@ what makes the trace readable in Jaeger without a custom view.
 | `agenkit.node.depth` | int | 0 at the root |
 | `agenkit.node.state` | string | Node lifecycle state |
 | `agenkit.node.base_case_reason` | string | Why recursion stopped at this node. Absent on non-terminal nodes. |
+| `agenkit.node.gap` | string | Why this node produced no usable result (truncated, unreturnable). A node with a gap **also** sets span status `Error` — unlike a failed verification. |
+
+### Flush obligation
+
+Any tree helper that buffers spans must make the final flush impossible to
+forget, or make forgetting it loud. A buffering exporter whose flush is never
+called is total silent failure: every span is held, nothing is exported, and no
+error is raised anywhere. Prefer a live-wrapped design that holds the parent
+context and needs no buffer at all; where buffering is unavoidable, the flush
+belongs in a guard type whose `Drop` runs it, not in a method the caller is
+trusted to remember.
 
 ### Verifier outcome
 
@@ -221,22 +285,21 @@ Agenkit **should** honour the spec-named environment variable:
 OTEL_EXPORTER_OTLP_ENDPOINT
 ```
 
-> **Current behaviour differs from that recommendation.** No language reads any
-> environment variable in `init_tracing`/`InitTracing` — the endpoint is a
-> positional parameter in every implementation, and if it is empty no OTLP
-> exporter is constructed at all. **Pass it explicitly; do not rely on the
-> environment.**
->
-> Four doc sites currently claim otherwise, and disagree with each other on the
-> name: `docs/observability.md:480` and `INSTALLATION.md:386` use the spec name
-> `OTEL_EXPORTER_OTLP_ENDPOINT` (and `INSTALLATION.md:389` adds
-> `OTEL_SERVICE_NAME`), while `agenkit-rust/docs/OBSERVABILITY.md:736` and
-> `agenkit-cpp/docs/OBSERVABILITY.md:628` use a non-spec `OTLP_ENDPOINT`. None
-> of the three variables is read by any implementation. Tracked in #771.
+**Rust honours it.** Passing `None` as the endpoint defers to the OTLP exporter's
+own resolution: `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, then
+`OTEL_EXPORTER_OTLP_ENDPOINT`, then the spec default `http://localhost:4317`. An
+explicitly passed endpoint overrides all three.
 
-> **Known defect — Rust.** `init_tracing("otlp", endpoint)` **discards the
-> endpoint and exports spans to stdout**, returning success. Rust cannot
-> currently deliver spans to a collector through this API. Tracked in #768.
+> **Python, Go, TypeScript, and C++ do not.** In those languages the endpoint is
+> a positional/config parameter, and if it is absent no OTLP exporter is
+> constructed at all — no environment variable is consulted. **Pass it
+> explicitly there.**
+>
+> Several doc sites claim otherwise and disagree on the name:
+> `docs/observability.md:480` and `INSTALLATION.md:386` use the spec name
+> `OTEL_EXPORTER_OTLP_ENDPOINT` (and `INSTALLATION.md:389` adds
+> `OTEL_SERVICE_NAME`), while `agenkit-cpp/docs/OBSERVABILITY.md:628` uses a
+> non-spec `OTLP_ENDPOINT`. Tracked in #771.
 
 ## Known gaps
 
@@ -249,9 +312,10 @@ Documented so consumers do not plan around capabilities that do not exist:
 2. **No tree/DAG span helper exists.** `TracingMiddleware` wraps a single
    `Agent.Process` and derives the span name from the agent name; there is no
    "start a span for node N parented to node P" API.
-3. **Rust cannot export to a collector, and hardcodes `service.name`** (#768).
-4. **Go's semconv pin is `v1.17.0`** (`agenkit-go/observability/tracing.go`),
+3. **Go's semconv pin is `v1.17.0`** (`agenkit-go/observability/tracing.go`),
    predating the GenAI conventions.
+4. **`init_metrics` exports nothing in Rust**, for any exporter type, while
+   returning success (#772).
 
 ## Cross-references
 
@@ -259,6 +323,7 @@ Documented so consumers do not plan around capabilities that do not exist:
 - #715 — the remaining implementation work: GenAI attributes on spans, tree-node helper, Go semconv bump
 - #771 — documented env vars that no implementation reads
 - #769 — `VerificationResult.passed` cannot express `not_assessed`
-- #768 — Rust exports to stdout and ignores `service.name`
+- #768 — Rust OTLP export, `service.name`, and span status (fixed)
+- #772 — Rust `init_metrics` installs no exporter
 - #664 — typed `Usage` (prerequisite for emitting token attributes)
 - #665 — Bedrock prompt-cache token counts

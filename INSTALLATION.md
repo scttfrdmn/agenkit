@@ -382,15 +382,23 @@ export GOOGLE_API_KEY="..."
 ### Optional (for observability)
 
 ```bash
-# OpenTelemetry exporter endpoint
-export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
-
-# Service name for tracing
-export OTEL_SERVICE_NAME="my-agenkit-service"
-
 # Redis connection (if using RedisMemory)
 export REDIS_URL="redis://localhost:6379"
 ```
+
+> **`OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_SERVICE_NAME` are not read by
+> `init_tracing` in Python, Go, TypeScript, or C++.** In those languages the
+> endpoint and service name are parameters — exporting the variables has no
+> effect. Pass them explicitly:
+>
+> ```python
+> init_tracing(service_name="my-agenkit-service", otlp_endpoint="http://localhost:4317")
+> ```
+>
+> Rust is the exception: its OTLP exporter resolves
+> `OTEL_EXPORTER_OTLP_ENDPOINT` itself when no endpoint is passed, and the SDK
+> reads `OTEL_SERVICE_NAME` unless `init_tracing_with_config` overrides it. See
+> [docs/OTEL_CONVENTION.md](docs/OTEL_CONVENTION.md#collector-endpoint) (#771).
 
 ---
 

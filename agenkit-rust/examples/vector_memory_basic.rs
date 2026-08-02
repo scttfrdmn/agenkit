@@ -84,7 +84,11 @@ async fn main() -> Result<(), AgentError> {
     for msg in messages {
         memory.store(session_id, msg.clone(), None).await?;
         let content = msg.content.as_str().unwrap_or("");
-        println!("   ✓ {}: {}...", msg.role, &content[..content.len().min(50)]);
+        println!(
+            "   ✓ {}: {}...",
+            msg.role,
+            &content[..content.len().min(50)]
+        );
     }
 
     // Basic retrieval (most recent)
@@ -94,7 +98,10 @@ async fn main() -> Result<(), AgentError> {
         .retrieve(session_id, None, 3, &Default::default())
         .await?;
 
-    println!("   Retrieved {} most recent messages:", recent_messages.len());
+    println!(
+        "   Retrieved {} most recent messages:",
+        recent_messages.len()
+    );
     for msg in &recent_messages {
         let content = msg.content.as_str().unwrap_or("");
         println!("   - [{}] {}", msg.role, &content[..content.len().min(60)]);

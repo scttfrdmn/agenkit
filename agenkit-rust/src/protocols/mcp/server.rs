@@ -2,7 +2,6 @@
 ///!
 ///! Reads JSON-RPC 2.0 requests from stdin, writes responses to stdout.
 ///! Handles: `initialize`, `tools/list`, `tools/call`.
-
 use crate::core::{AgentError, Tool};
 use crate::protocols::mcp::{
     JsonRpcError, JsonRpcRequest, JsonRpcResponse, McpContent, McpServerInfo, McpToolResult,
@@ -227,4 +226,3 @@ impl McpServer {
         }
     }
 }
-

@@ -102,8 +102,7 @@ impl RedisMemory {
     /// # }
     /// ```
     pub async fn new(redis_url: &str, ttl: u64, key_prefix: &str) -> Result<Self> {
-        let client =
-            Client::open(redis_url).context("Failed to create Redis client")?;
+        let client = Client::open(redis_url).context("Failed to create Redis client")?;
 
         Ok(Self {
             redis_url: redis_url.to_string(),
@@ -300,9 +299,7 @@ impl RedisMemory {
                     })
                     .unwrap_or_default();
 
-                let has_tag = required_tags
-                    .iter()
-                    .any(|tag| message_tags.contains(tag));
+                let has_tag = required_tags.iter().any(|tag| message_tags.contains(tag));
 
                 if !has_tag {
                     continue;
@@ -501,13 +498,9 @@ mod tests {
     #[tokio::test]
     #[ignore] // Requires Redis server
     async fn test_basic_store_and_retrieve() {
-        let memory = RedisMemory::new(
-            "redis://localhost:6379",
-            3600,
-            "agenkit:test:memory",
-        )
-        .await
-        .unwrap();
+        let memory = RedisMemory::new("redis://localhost:6379", 3600, "agenkit:test:memory")
+            .await
+            .unwrap();
 
         let session_id = "test-session-1";
 
@@ -534,13 +527,9 @@ mod tests {
     #[tokio::test]
     #[ignore] // Requires Redis server
     async fn test_capabilities() {
-        let memory = RedisMemory::new(
-            "redis://localhost:6379",
-            3600,
-            "agenkit:test:memory",
-        )
-        .await
-        .unwrap();
+        let memory = RedisMemory::new("redis://localhost:6379", 3600, "agenkit:test:memory")
+            .await
+            .unwrap();
 
         let capabilities = memory.capabilities();
         assert!(capabilities.contains(&"basic_retrieval"));

@@ -329,7 +329,11 @@ impl EnhancedRetryDecorator {
         }
 
         // Calculate failure rate
-        let failures = metrics.recent_results.iter().filter(|&&success| !success).count();
+        let failures = metrics
+            .recent_results
+            .iter()
+            .filter(|&&success| !success)
+            .count();
         let failure_rate = failures as f64 / metrics.recent_results.len() as f64;
 
         failure_rate > self.config.backpressure_threshold
@@ -444,8 +448,8 @@ impl Agent for EnhancedRetryDecorator {
                     }
 
                     // Calculate backoff with jitter
-                    let base_backoff_ms =
-                        strategy.initial_backoff.as_millis() as f64 * strategy.backoff_multiplier.powi(attempt as i32 - 1);
+                    let base_backoff_ms = strategy.initial_backoff.as_millis() as f64
+                        * strategy.backoff_multiplier.powi(attempt as i32 - 1);
                     let mut base_backoff = Duration::from_millis(base_backoff_ms as u64);
                     if base_backoff > strategy.max_backoff {
                         base_backoff = strategy.max_backoff;

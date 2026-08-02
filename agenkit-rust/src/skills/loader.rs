@@ -102,9 +102,7 @@ impl AgentSkill {
         // File must begin with "---"; split into at most 3 parts on "---".
         let parts: Vec<&str> = raw.splitn(3, "---").collect();
         if parts.len() < 3 {
-            return Err(SkillError::InvalidFormat(
-                "missing frontmatter delimiters",
-            ));
+            return Err(SkillError::InvalidFormat("missing frontmatter delimiters"));
         }
 
         let frontmatter_text = parts[1].trim();
@@ -254,9 +252,7 @@ mod tests {
     fn make_skill_dir(parent: &Path, name: &str, description: &str, body: &str) -> PathBuf {
         let skill_dir = parent.join(name);
         fs::create_dir_all(&skill_dir).unwrap();
-        let content = format!(
-            "---\nname: {name}\ndescription: {description}\n---\n{body}"
-        );
+        let content = format!("---\nname: {name}\ndescription: {description}\n---\n{body}");
         fs::write(skill_dir.join("SKILL.md"), content).unwrap();
         skill_dir
     }
@@ -264,7 +260,12 @@ mod tests {
     #[test]
     fn test_load_skill_valid() {
         let tmp = TempDir::new().unwrap();
-        let skill_dir = make_skill_dir(tmp.path(), "pdf-processing", "Extract text from PDFs.", "# PDF\nDo stuff.");
+        let skill_dir = make_skill_dir(
+            tmp.path(),
+            "pdf-processing",
+            "Extract text from PDFs.",
+            "# PDF\nDo stuff.",
+        );
 
         let skill = AgentSkill::from_directory(&skill_dir).unwrap();
         assert_eq!(skill.name, "pdf-processing");
@@ -289,7 +290,11 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let skill_dir = tmp.path().join("noname");
         fs::create_dir_all(&skill_dir).unwrap();
-        fs::write(skill_dir.join("SKILL.md"), "---\ndescription: A skill.\n---\nInstructions.").unwrap();
+        fs::write(
+            skill_dir.join("SKILL.md"),
+            "---\ndescription: A skill.\n---\nInstructions.",
+        )
+        .unwrap();
 
         let err = AgentSkill::from_directory(&skill_dir).unwrap_err();
         assert!(matches!(err, SkillError::MissingField("name")));
@@ -300,7 +305,11 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let skill_dir = tmp.path().join("nodesc");
         fs::create_dir_all(&skill_dir).unwrap();
-        fs::write(skill_dir.join("SKILL.md"), "---\nname: nodesc\n---\nInstructions.").unwrap();
+        fs::write(
+            skill_dir.join("SKILL.md"),
+            "---\nname: nodesc\n---\nInstructions.",
+        )
+        .unwrap();
 
         let err = AgentSkill::from_directory(&skill_dir).unwrap_err();
         assert!(matches!(err, SkillError::MissingField("description")));
@@ -309,7 +318,12 @@ mod tests {
     #[test]
     fn test_to_prompt_format() {
         let tmp = TempDir::new().unwrap();
-        let skill_dir = make_skill_dir(tmp.path(), "csv-tools", "Handle CSV files.", "Parse and write CSV.");
+        let skill_dir = make_skill_dir(
+            tmp.path(),
+            "csv-tools",
+            "Handle CSV files.",
+            "Parse and write CSV.",
+        );
         let skill = AgentSkill::from_directory(&skill_dir).unwrap();
         let prompt = skill.to_prompt();
 
@@ -350,7 +364,12 @@ mod tests {
     #[test]
     fn test_find_no_match() {
         let tmp = TempDir::new().unwrap();
-        make_skill_dir(tmp.path(), "email-compose", "Compose professional emails.", "");
+        make_skill_dir(
+            tmp.path(),
+            "email-compose",
+            "Compose professional emails.",
+            "",
+        );
 
         let mut registry = SkillRegistry::new(vec![tmp.path().to_path_buf()]);
         registry.discover_skills();

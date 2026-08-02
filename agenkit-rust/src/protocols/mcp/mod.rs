@@ -33,14 +33,13 @@
 ///!     server.serve_stdio().await.unwrap();
 ///! }
 ///! ```
-
 pub mod client;
 pub mod server;
 pub mod tool_adapter;
 
 pub use client::{HttpClient, StdioClient};
 pub use server::{McpServer, ServerConfig};
-pub use tool_adapter::{McpToolAdapter, tools_from_client};
+pub use tool_adapter::{tools_from_client, McpToolAdapter};
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

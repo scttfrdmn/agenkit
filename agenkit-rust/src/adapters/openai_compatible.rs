@@ -280,11 +280,7 @@ impl OpenAICompatibleAgent {
 
         let url = format!("{}/chat/completions", self.config.base_url);
 
-        let api_key = self
-            .config
-            .api_key
-            .as_deref()
-            .unwrap_or("not-needed");
+        let api_key = self.config.api_key.as_deref().unwrap_or("not-needed");
 
         let response = self
             .client
@@ -351,8 +347,7 @@ impl OpenAICompatibleAgent {
         // Add metadata with provider information
         msg.metadata
             .insert("model".to_string(), json!(response.model));
-        msg.metadata
-            .insert("id".to_string(), json!(response.id));
+        msg.metadata.insert("id".to_string(), json!(response.id));
 
         // Add usage metadata if available
         if let Some(usage) = response.usage {
@@ -380,8 +375,7 @@ impl OpenAICompatibleAgent {
             .provider
             .as_deref()
             .unwrap_or("openai_compatible");
-        msg.metadata
-            .insert("provider".to_string(), json!(provider));
+        msg.metadata.insert("provider".to_string(), json!(provider));
         msg.metadata
             .insert("base_url".to_string(), json!(self.config.base_url));
 

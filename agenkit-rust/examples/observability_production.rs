@@ -209,17 +209,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_metadata("request_id", serde_json::json!(i + 1));
 
         // Alternate between agents
-        let agent = if i % 2 == 0 {
-            &observed1
-        } else {
-            &observed2
-        };
+        let agent = if i % 2 == 0 { &observed1 } else { &observed2 };
 
-        let agent_name = if i % 2 == 0 {
-            "worker-1"
-        } else {
-            "worker-2"
-        };
+        let agent_name = if i % 2 == 0 { "worker-1" } else { "worker-2" };
 
         // Log processing start
         let mut details = HashMap::new();
@@ -270,8 +262,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\n\nWorkload Summary:");
     println!("  Requests: 20");
-    println!("  Success: {} ({:.1}%)", success_count, (success_count as f64 / 20.0) * 100.0);
-    println!("  Errors: {} ({:.1}%)", error_count, (error_count as f64 / 20.0) * 100.0);
+    println!(
+        "  Success: {} ({:.1}%)",
+        success_count,
+        (success_count as f64 / 20.0) * 100.0
+    );
+    println!(
+        "  Errors: {} ({:.1}%)",
+        error_count,
+        (error_count as f64 / 20.0) * 100.0
+    );
     println!();
 
     // Flush audit logs
@@ -287,10 +287,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let session_events = audit_logger
         .query(Some("prod-session-001".to_string()))
         .await?;
-    println!(
-        "  Session events: {}",
-        session_events.len()
-    );
+    println!("  Session events: {}", session_events.len());
 
     let errors = session_events
         .iter()

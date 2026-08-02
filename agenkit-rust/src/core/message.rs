@@ -35,7 +35,9 @@ pub enum MessageError {
         actual: usize,
     },
 
-    #[error("metadata value for key '{key}' exceeds maximum size of {max} bytes (got {actual} bytes)")]
+    #[error(
+        "metadata value for key '{key}' exceeds maximum size of {max} bytes (got {actual} bytes)"
+    )]
     MetadataValueTooLarge {
         key: String,
         max: usize,
@@ -371,10 +373,7 @@ mod tests {
     #[test]
     fn test_validate_invalid_role() {
         let msg = Message::new("invalid_role", json!("Hello"));
-        assert!(matches!(
-            msg.validate(),
-            Err(MessageError::InvalidRole(_))
-        ));
+        assert!(matches!(msg.validate(), Err(MessageError::InvalidRole(_))));
     }
 
     #[test]

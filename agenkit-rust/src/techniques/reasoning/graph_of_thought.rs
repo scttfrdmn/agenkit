@@ -146,7 +146,9 @@ impl GraphOfThoughtAgent {
                 if !trimmed.is_empty() && !trimmed.starts_with('#') {
                     // Remove numbering and bullets
                     let cleaned = trimmed
-                        .trim_start_matches(|c: char| c.is_numeric() || c == '.' || c == '-' || c == '*' || c == '•')
+                        .trim_start_matches(|c: char| {
+                            c.is_numeric() || c == '.' || c == '-' || c == '*' || c == '•'
+                        })
                         .trim();
                     if !cleaned.is_empty() {
                         Some(cleaned.to_string())
@@ -203,7 +205,9 @@ impl GraphOfThoughtAgent {
                 let trimmed = line.trim();
                 if !trimmed.is_empty() && !trimmed.starts_with('#') {
                     let cleaned = trimmed
-                        .trim_start_matches(|c: char| c.is_numeric() || c == '.' || c == '-' || c == '*' || c == '•')
+                        .trim_start_matches(|c: char| {
+                            c.is_numeric() || c == '.' || c == '-' || c == '*' || c == '•'
+                        })
                         .trim();
                     if !cleaned.is_empty() {
                         Some(cleaned.to_string())
@@ -278,7 +282,9 @@ impl GraphOfThoughtAgent {
                 break;
             }
 
-            let new_thoughts = self.generate_thoughts(problem, &all_thoughts, max_new).await?;
+            let new_thoughts = self
+                .generate_thoughts(problem, &all_thoughts, max_new)
+                .await?;
 
             if new_thoughts.is_empty() {
                 break;
@@ -341,7 +347,8 @@ impl GraphOfThoughtAgent {
             );
 
             let conclusion = self.llm_call(&conclusion_prompt).await?;
-            let conclusion_id = graph.add_node(conclusion.trim().to_string(), NodeType::Conclusion, 0.8);
+            let conclusion_id =
+                graph.add_node(conclusion.trim().to_string(), NodeType::Conclusion, 0.8);
 
             // Connect conclusion to recent thoughts
             let recent_ids: Vec<usize> = node_ids.iter().rev().take(3).copied().collect();
@@ -481,7 +488,10 @@ impl Agent for GraphOfThoughtAgent {
         metadata.insert("has_cycles".to_string(), json!(stats.has_cycles));
         metadata.insert("node_types".to_string(), json!(stats.node_types));
         metadata.insert("edge_types".to_string(), json!(stats.edge_types));
-        metadata.insert("num_reasoning_paths".to_string(), json!(reasoning_paths.len()));
+        metadata.insert(
+            "num_reasoning_paths".to_string(),
+            json!(reasoning_paths.len()),
+        );
         metadata.insert(
             "aggregator".to_string(),
             json!(match self.aggregator {
@@ -532,7 +542,10 @@ mod tests {
             let response = responses[*count % responses.len()].clone();
             *count += 1;
 
-            Ok(Message::new("assistant", serde_json::Value::String(response)))
+            Ok(Message::new(
+                "assistant",
+                serde_json::Value::String(response),
+            ))
         }
     }
 
@@ -570,7 +583,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_generate_premises() {
-        let mock = Arc::new(MockAgent::new(vec!["1. Premise A\n2. Premise B".to_string()]));
+        let mock = Arc::new(MockAgent::new(vec![
+            "1. Premise A\n2. Premise B".to_string()
+        ]));
         let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
 
         let premises = agent.generate_premises("Test problem").await.unwrap();
@@ -581,7 +596,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_generate_thoughts() {
-        let mock = Arc::new(MockAgent::new(vec!["1. Thought 1\n2. Thought 2".to_string()]));
+        let mock = Arc::new(MockAgent::new(vec![
+            "1. Thought 1\n2. Thought 2".to_string()
+        ]));
         let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
 
         let existing = vec!["Premise A".to_string()];
@@ -617,7 +634,10 @@ mod tests {
         };
         let agent = GraphOfThoughtAgent::new(mock, config);
 
-        let message = Message::new("user", serde_json::Value::String("Test problem".to_string()));
+        let message = Message::new(
+            "user",
+            serde_json::Value::String("Test problem".to_string()),
+        );
 
         let response = agent.process(message).await.unwrap();
         assert_eq!(response.role, "assistant");
@@ -691,7 +711,10 @@ mod tests {
         let message = Message::new("user", serde_json::Value::String("Test".to_string()));
         let response = agent.process(message).await.unwrap();
 
-        assert_eq!(response.metadata["aggregator"].as_str().unwrap(), "path_based");
+        assert_eq!(
+            response.metadata["aggregator"].as_str().unwrap(),
+            "path_based"
+        );
         assert!(matches!(response.content, serde_json::Value::String(_)));
     }
 
@@ -713,7 +736,10 @@ mod tests {
         let message = Message::new("user", serde_json::Value::String("Test".to_string()));
         let response = agent.process(message).await.unwrap();
 
-        assert_eq!(response.metadata["aggregator"].as_str().unwrap(), "node_based");
+        assert_eq!(
+            response.metadata["aggregator"].as_str().unwrap(),
+            "node_based"
+        );
         assert!(matches!(response.content, serde_json::Value::String(_)));
     }
 
@@ -733,7 +759,10 @@ mod tests {
 
         // Check all required metadata fields
         assert!(response.metadata.contains_key("technique"));
-        assert_eq!(response.metadata["technique"].as_str().unwrap(), "graph_of_thought");
+        assert_eq!(
+            response.metadata["technique"].as_str().unwrap(),
+            "graph_of_thought"
+        );
         assert!(response.metadata.contains_key("num_nodes"));
         assert!(response.metadata.contains_key("num_edges"));
         assert!(response.metadata.contains_key("has_cycles"));
@@ -838,7 +867,7 @@ mod tests {
     #[tokio::test]
     async fn test_generate_thoughts_with_limit() {
         let mock = Arc::new(MockAgent::new(vec![
-            "1. Thought 1\n2. Thought 2\n3. Thought 3\n4. Thought 4".to_string()
+            "1. Thought 1\n2. Thought 2\n3. Thought 3\n4. Thought 4".to_string(),
         ]));
         let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
 
@@ -875,4 +904,3 @@ mod tests {
         assert_eq!(config.allow_cycles, false);
     }
 }
-

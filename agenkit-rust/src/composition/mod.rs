@@ -8,7 +8,6 @@
 ///!
 ///! These are minimal composition primitives. For richer agent patterns
 ///! with advanced features, see the `patterns` module.
-
 pub mod conditional;
 pub mod fallback;
 pub mod parallel;

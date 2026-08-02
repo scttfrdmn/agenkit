@@ -60,7 +60,10 @@ async fn test_otlp_metrics_reach_the_configured_endpoint() {
     // Record a metric through the middleware, the path a real caller uses.
     let metered = MetricsMiddleware::new(SimpleAgent);
     let response = metered.process(Message::with_text("user", "hello")).await;
-    assert!(response.is_ok(), "metered agent should process successfully");
+    assert!(
+        response.is_ok(),
+        "metered agent should process successfully"
+    );
 
     // Force the export now rather than waiting out the 60s interval. This is
     // also the flush a real caller must perform before exit.

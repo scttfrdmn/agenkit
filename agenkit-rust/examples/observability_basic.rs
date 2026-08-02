@@ -106,7 +106,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let message = Message::with_text("user", *content);
         let response = observed_agent.process(message).await?;
 
-        println!("   Response: \"{}\"", response.content_as_str().unwrap_or(""));
+        println!(
+            "   Response: \"{}\"",
+            response.content_as_str().unwrap_or("")
+        );
 
         // Log audit event
         let audit_event = AuditEvent::new(
@@ -126,10 +129,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Step 9: Query audit events
     println!("8. Querying audit events...");
-    let events = audit_logger
-        .query(Some("demo-session".to_string()))
-        .await?;
-    println!("   ✓ Found {} audit events for session 'demo-session'", events.len());
+    let events = audit_logger.query(Some("demo-session".to_string())).await?;
+    println!(
+        "   ✓ Found {} audit events for session 'demo-session'",
+        events.len()
+    );
 
     for (i, event) in events.iter().enumerate() {
         println!(

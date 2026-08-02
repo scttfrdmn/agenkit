@@ -410,7 +410,10 @@ impl HealthChecker {
         let mut lines = Vec::new();
 
         // Total checks
-        lines.push("# HELP agenkit_health_checks_total Total number of health checks performed".to_string());
+        lines.push(
+            "# HELP agenkit_health_checks_total Total number of health checks performed"
+                .to_string(),
+        );
         lines.push("# TYPE agenkit_health_checks_total counter".to_string());
         for (probe_type, count) in &metrics.total_checks {
             lines.push(format!(
@@ -422,7 +425,10 @@ impl HealthChecker {
 
         // Failed checks
         lines.push("".to_string());
-        lines.push("# HELP agenkit_health_check_failures_total Total number of failed health checks".to_string());
+        lines.push(
+            "# HELP agenkit_health_check_failures_total Total number of failed health checks"
+                .to_string(),
+        );
         lines.push("# TYPE agenkit_health_check_failures_total counter".to_string());
         for (probe_type, count) in &metrics.failed_checks {
             lines.push(format!(
@@ -434,7 +440,10 @@ impl HealthChecker {
 
         // Duration
         lines.push("".to_string());
-        lines.push("# HELP agenkit_health_check_duration_ms Duration of last health check in milliseconds".to_string());
+        lines.push(
+            "# HELP agenkit_health_check_duration_ms Duration of last health check in milliseconds"
+                .to_string(),
+        );
         lines.push("# TYPE agenkit_health_check_duration_ms gauge".to_string());
         for (probe_type, duration) in &metrics.last_check_duration {
             lines.push(format!(
@@ -455,7 +464,9 @@ impl HealthChecker {
 
         // Health status
         lines.push("".to_string());
-        lines.push("# HELP agenkit_agent_healthy Agent health status (1=healthy, 0=unhealthy)".to_string());
+        lines.push(
+            "# HELP agenkit_agent_healthy Agent health status (1=healthy, 0=unhealthy)".to_string(),
+        );
         lines.push("# TYPE agenkit_agent_healthy gauge".to_string());
         let health_value = if self.is_healthy().await { 1 } else { 0 };
         lines.push(format!("agenkit_agent_healthy {}", health_value));

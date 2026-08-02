@@ -1,7 +1,6 @@
 ///! Parallel agent composition pattern.
 ///!
 ///! Executes multiple agents concurrently and combines their results.
-
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use futures::future::join_all;
@@ -164,11 +163,7 @@ impl Agent for ParallelAgent {
         // Check for errors
         let errors: Vec<String> = results
             .iter()
-            .filter_map(|r| {
-                r.error
-                    .as_ref()
-                    .map(|e| format!("{}: {}", r.agent_name, e))
-            })
+            .filter_map(|r| r.error.as_ref().map(|e| format!("{}: {}", r.agent_name, e)))
             .collect();
 
         if !errors.is_empty() {

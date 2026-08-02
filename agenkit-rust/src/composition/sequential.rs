@@ -2,7 +2,6 @@
 ///!
 ///! Executes multiple agents in sequence where the output of one agent
 ///! becomes the input to the next agent.
-
 use crate::core::{Agent, AgentError, Message};
 use async_trait::async_trait;
 use std::sync::Arc;

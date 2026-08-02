@@ -2,7 +2,6 @@
 ///!
 ///! `StdioClient` — spawn a subprocess and speak JSON-RPC 2.0 over stdin/stdout.
 ///! `HttpClient`  — POST JSON-RPC 2.0 to a running MCP HTTP server.
-
 use crate::core::AgentError;
 use crate::protocols::mcp::{
     JsonRpcRequest, JsonRpcResponse, McpClient, McpServerInfo, McpTool, McpToolResult,
@@ -27,8 +26,16 @@ fn parse_server_info(result: &serde_json::Value) -> McpServerInfo {
     result
         .get("serverInfo")
         .map(|info| McpServerInfo {
-            name: info.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-            version: info.get("version").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+            name: info
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
+            version: info
+                .get("version")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
         })
         .unwrap_or_default()
 }
@@ -161,7 +168,10 @@ impl McpClient for StdioClient {
 
         self.inner = Some(StdioInner {
             _child: child,
-            io: Mutex::new(StdioIo { stdin, stdout: BufReader::new(stdout) }),
+            io: Mutex::new(StdioIo {
+                stdin,
+                stdout: BufReader::new(stdout),
+            }),
         });
 
         let resp = self.send_request("initialize", Some(init_params())).await?;
@@ -174,7 +184,10 @@ impl McpClient for StdioClient {
         let resp = self.send_request("tools/list", None).await?;
         let result = resp.result.unwrap_or_default();
         let tools: Vec<McpTool> = serde_json::from_value(
-            result.get("tools").cloned().unwrap_or(serde_json::Value::Array(vec![])),
+            result
+                .get("tools")
+                .cloned()
+                .unwrap_or(serde_json::Value::Array(vec![])),
         )
         .map_err(AgentError::Serialization)?;
         Ok(tools)
@@ -264,9 +277,7 @@ impl HttpClient {
 #[async_trait]
 impl McpClient for HttpClient {
     async fn initialize(&mut self) -> Result<(), AgentError> {
-        let resp = self
-            .send_request("initialize", Some(init_params()))
-            .await?;
+        let resp = self.send_request("initialize", Some(init_params())).await?;
         let result = resp.result.unwrap_or_default();
         self.server_info = parse_server_info(&result);
         Ok(())
@@ -276,7 +287,10 @@ impl McpClient for HttpClient {
         let resp = self.send_request("tools/list", None).await?;
         let result = resp.result.unwrap_or_default();
         let tools: Vec<McpTool> = serde_json::from_value(
-            result.get("tools").cloned().unwrap_or(serde_json::Value::Array(vec![])),
+            result
+                .get("tools")
+                .cloned()
+                .unwrap_or(serde_json::Value::Array(vec![])),
         )
         .map_err(AgentError::Serialization)?;
         Ok(tools)

@@ -441,7 +441,6 @@ impl Agent for TreeOfThoughtAgent {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -487,8 +486,7 @@ mod tests {
 
     #[test]
     fn test_agent_name_and_capabilities() {
-        let agent =
-            TreeOfThoughtAgent::new(MockAgent::new("ok"), TreeOfThoughtConfig::default());
+        let agent = TreeOfThoughtAgent::new(MockAgent::new("ok"), TreeOfThoughtConfig::default());
         assert_eq!(agent.name(), "tree_of_thought");
         let caps = agent.capabilities();
         assert!(caps.contains(&"tree_of_thought".to_string()));

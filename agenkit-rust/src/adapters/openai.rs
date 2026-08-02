@@ -329,12 +329,8 @@ impl OpenAIAgent {
         let chat_message = self.message_to_chat_message(&message);
 
         match self.stream_api_impl(vec![chat_message]).await {
-            Ok(chunks) => {
-                Box::pin(futures::stream::iter(chunks.into_iter().map(Ok)))
-            }
-            Err(e) => {
-                Box::pin(futures::stream::once(async move { Err(e) }))
-            }
+            Ok(chunks) => Box::pin(futures::stream::iter(chunks.into_iter().map(Ok))),
+            Err(e) => Box::pin(futures::stream::once(async move { Err(e) })),
         }
     }
 
@@ -369,8 +365,7 @@ impl OpenAIAgent {
             top_p: Some(self.config.top_p),
             frequency_penalty: Some(self.config.frequency_penalty),
             presence_penalty: Some(self.config.presence_penalty),
-        })
-        ?;
+        })?;
 
         // Add stream parameter
         request_body["stream"] = json!(true);
@@ -412,8 +407,7 @@ impl OpenAIAgent {
                 break;
             }
 
-            let chunk_json: Value = serde_json::from_str(json_str)
-                ?;
+            let chunk_json: Value = serde_json::from_str(json_str)?;
 
             // Extract text from choices[0].delta.content
             if let Some(choices) = chunk_json["choices"].as_array() {
@@ -526,7 +520,8 @@ mod tests {
             .mock("POST", "/v1/chat/completions")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(r#"{
+            .with_body(
+                r#"{
                 "id": "chatcmpl-test123",
                 "object": "chat.completion",
                 "model": "gpt-4o",
@@ -540,7 +535,8 @@ mod tests {
                     "completion_tokens": 10,
                     "total_tokens": 25
                 }
-            }"#)
+            }"#,
+            )
             .create_async()
             .await;
 
@@ -589,7 +585,9 @@ mod tests {
         let mock = server
             .mock("POST", "/v1/chat/completions")
             .with_status(429)
-            .with_body(r#"{"error": {"type": "rate_limit_exceeded", "message": "Rate limit exceeded"}}"#)
+            .with_body(
+                r#"{"error": {"type": "rate_limit_exceeded", "message": "Rate limit exceeded"}}"#,
+            )
             .create_async()
             .await;
 
@@ -612,7 +610,8 @@ mod tests {
             .mock("POST", "/v1/chat/completions")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(r#"{
+            .with_body(
+                r#"{
                 "id": "chatcmpl-abc",
                 "object": "chat.completion",
                 "model": "gpt-4o",
@@ -622,7 +621,8 @@ mod tests {
                     "index": 0
                 }],
                 "usage": {"prompt_tokens": 5, "completion_tokens": 2, "total_tokens": 7}
-            }"#)
+            }"#,
+            )
             .create_async()
             .await;
 
@@ -632,7 +632,10 @@ mod tests {
             ..Default::default()
         };
         let agent = OpenAIAgent::new(config);
-        let response = agent.process(Message::with_text("user", "What is 6*7?")).await.unwrap();
+        let response = agent
+            .process(Message::with_text("user", "What is 6*7?"))
+            .await
+            .unwrap();
 
         assert!(response.metadata.contains_key("openai_message_id"));
         assert!(response.metadata.contains_key("model"));
@@ -653,7 +656,8 @@ mod tests {
             .mock("POST", "/v1/chat/completions")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(r#"{
+            .with_body(
+                r#"{
                 "id": "chatcmpl-role",
                 "object": "chat.completion",
                 "model": "gpt-4o",
@@ -663,7 +667,8 @@ mod tests {
                     "index": 0
                 }],
                 "usage": {"prompt_tokens": 3, "completion_tokens": 2, "total_tokens": 5}
-            }"#)
+            }"#,
+            )
             .create_async()
             .await;
 
@@ -673,7 +678,10 @@ mod tests {
             ..Default::default()
         };
         let agent = OpenAIAgent::new(config);
-        let response = agent.process(Message::with_text("user", "Hello")).await.unwrap();
+        let response = agent
+            .process(Message::with_text("user", "Hello"))
+            .await
+            .unwrap();
         assert_eq!(response.role, "assistant");
     }
 }

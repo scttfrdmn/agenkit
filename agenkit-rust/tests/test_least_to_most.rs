@@ -58,20 +58,27 @@ async fn test_basic_functionality() {
     let response = result.unwrap();
 
     // Check final solution
-    assert_eq!(
-        response.content_as_str().unwrap(),
-        "22"
-    );
+    assert_eq!(response.content_as_str().unwrap(), "22");
 
     // Check technique metadata
     assert_eq!(
-        response.metadata.get("technique").unwrap().as_str().unwrap(),
+        response
+            .metadata
+            .get("technique")
+            .unwrap()
+            .as_str()
+            .unwrap(),
         "least_to_most"
     );
 
     // Check num_subproblems
     assert_eq!(
-        response.metadata.get("num_subproblems").unwrap().as_u64().unwrap(),
+        response
+            .metadata
+            .get("num_subproblems")
+            .unwrap()
+            .as_u64()
+            .unwrap(),
         3
     );
 
@@ -218,7 +225,12 @@ async fn test_max_subproblems_limit() {
     let response = result.unwrap();
 
     assert_eq!(
-        response.metadata.get("num_subproblems").unwrap().as_u64().unwrap(),
+        response
+            .metadata
+            .get("num_subproblems")
+            .unwrap()
+            .as_u64()
+            .unwrap(),
         3
     );
 
@@ -285,7 +297,12 @@ async fn test_compose_solutions_enabled() {
     let response = result.unwrap();
 
     assert_eq!(
-        response.metadata.get("compose_solutions").unwrap().as_bool().unwrap(),
+        response
+            .metadata
+            .get("compose_solutions")
+            .unwrap()
+            .as_bool()
+            .unwrap(),
         true
     );
 }
@@ -312,7 +329,12 @@ async fn test_compose_solutions_disabled() {
     let response = result.unwrap();
 
     assert_eq!(
-        response.metadata.get("compose_solutions").unwrap().as_bool().unwrap(),
+        response
+            .metadata
+            .get("compose_solutions")
+            .unwrap()
+            .as_bool()
+            .unwrap(),
         false
     );
 }
@@ -335,7 +357,12 @@ async fn test_skip_empty_lines() {
     let response = result.unwrap();
 
     assert_eq!(
-        response.metadata.get("num_subproblems").unwrap().as_u64().unwrap(),
+        response
+            .metadata
+            .get("num_subproblems")
+            .unwrap()
+            .as_u64()
+            .unwrap(),
         3
     );
 }
@@ -356,7 +383,12 @@ async fn test_atomic_problem_fallback() {
     let response = result.unwrap();
 
     assert_eq!(
-        response.metadata.get("num_subproblems").unwrap().as_u64().unwrap(),
+        response
+            .metadata
+            .get("num_subproblems")
+            .unwrap()
+            .as_u64()
+            .unwrap(),
         1
     );
 
@@ -437,7 +469,12 @@ async fn test_empty_problem_string() {
     let response = result.unwrap();
 
     assert_eq!(
-        response.metadata.get("technique").unwrap().as_str().unwrap(),
+        response
+            .metadata
+            .get("technique")
+            .unwrap()
+            .as_str()
+            .unwrap(),
         "least_to_most"
     );
 }
@@ -463,7 +500,12 @@ async fn test_max_subproblems_one() {
     let response = result.unwrap();
 
     assert_eq!(
-        response.metadata.get("num_subproblems").unwrap().as_u64().unwrap(),
+        response
+            .metadata
+            .get("num_subproblems")
+            .unwrap()
+            .as_u64()
+            .unwrap(),
         1
     );
 
@@ -517,7 +559,12 @@ async fn test_multiline_content_parsing() {
 
     // Should only parse lines starting with numbers
     assert_eq!(
-        response.metadata.get("num_subproblems").unwrap().as_u64().unwrap(),
+        response
+            .metadata
+            .get("num_subproblems")
+            .unwrap()
+            .as_u64()
+            .unwrap(),
         2
     );
 }
@@ -555,7 +602,12 @@ async fn test_custom_decomposer_with_max_limit() {
 
     // Should be limited to 3 even though custom decomposer returned 5
     assert_eq!(
-        response.metadata.get("num_subproblems").unwrap().as_u64().unwrap(),
+        response
+            .metadata
+            .get("num_subproblems")
+            .unwrap()
+            .as_u64()
+            .unwrap(),
         3
     );
 }

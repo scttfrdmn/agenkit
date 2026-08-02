@@ -118,7 +118,10 @@ enum StreamEvent {
     #[serde(rename = "message_start")]
     MessageStart { message: MessageStart },
     #[serde(rename = "content_block_start")]
-    ContentBlockStart { index: i32, content_block: ContentBlockStart },
+    ContentBlockStart {
+        index: i32,
+        content_block: ContentBlockStart,
+    },
     #[serde(rename = "content_block_delta")]
     ContentBlockDelta { index: i32, delta: Delta },
     #[serde(rename = "content_block_stop")]
@@ -293,12 +296,8 @@ impl AnthropicAgent {
         let (system, messages) = self.message_to_claude_message(&message);
 
         match self.stream_api_impl(messages, system).await {
-            Ok(chunks) => {
-                Box::pin(futures::stream::iter(chunks.into_iter().map(Ok)))
-            }
-            Err(e) => {
-                Box::pin(futures::stream::once(async move { Err(e) }))
-            }
+            Ok(chunks) => Box::pin(futures::stream::iter(chunks.into_iter().map(Ok))),
+            Err(e) => Box::pin(futures::stream::once(async move { Err(e) })),
         }
     }
 
@@ -459,8 +458,7 @@ impl AnthropicAgent {
                 {
                     if let Delta::TextDelta { text } = delta {
                         let mut msg = Message::with_text("agent", &text);
-                        msg.metadata
-                            .insert("streaming".to_string(), json!(true));
+                        msg.metadata.insert("streaming".to_string(), json!(true));
                         msg.metadata
                             .insert("model".to_string(), json!(self.config.model));
                         chunks.push(msg);
@@ -615,7 +613,8 @@ mod tests {
             .mock("POST", "/v1/messages")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(r#"{
+            .with_body(
+                r#"{
                 "id": "msg_test123",
                 "type": "message",
                 "role": "assistant",
@@ -623,7 +622,8 @@ mod tests {
                 "model": "claude-sonnet-4-6",
                 "stop_reason": "end_turn",
                 "usage": {"input_tokens": 15, "output_tokens": 10}
-            }"#)
+            }"#,
+            )
             .create_async()
             .await;
 
@@ -650,7 +650,9 @@ mod tests {
         let mock = server
             .mock("POST", "/v1/messages")
             .with_status(401)
-            .with_body(r#"{"error": {"type": "authentication_error", "message": "Invalid API key"}}"#)
+            .with_body(
+                r#"{"error": {"type": "authentication_error", "message": "Invalid API key"}}"#,
+            )
             .create_async()
             .await;
 
@@ -672,7 +674,9 @@ mod tests {
         let mock = server
             .mock("POST", "/v1/messages")
             .with_status(429)
-            .with_body(r#"{"error": {"type": "rate_limit_error", "message": "Rate limit exceeded"}}"#)
+            .with_body(
+                r#"{"error": {"type": "rate_limit_error", "message": "Rate limit exceeded"}}"#,
+            )
             .create_async()
             .await;
 
@@ -695,7 +699,8 @@ mod tests {
             .mock("POST", "/v1/messages")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(r#"{
+            .with_body(
+                r#"{
                 "id": "msg_abc",
                 "type": "message",
                 "role": "assistant",
@@ -703,7 +708,8 @@ mod tests {
                 "model": "claude-sonnet-4-6",
                 "stop_reason": "end_turn",
                 "usage": {"input_tokens": 5, "output_tokens": 2}
-            }"#)
+            }"#,
+            )
             .create_async()
             .await;
 
@@ -713,7 +719,10 @@ mod tests {
             ..Default::default()
         };
         let agent = AnthropicAgent::new(config);
-        let response = agent.process(Message::with_text("user", "What is 6*7?")).await.unwrap();
+        let response = agent
+            .process(Message::with_text("user", "What is 6*7?"))
+            .await
+            .unwrap();
 
         assert!(response.metadata.contains_key("claude_message_id"));
         assert!(response.metadata.contains_key("model"));
@@ -734,7 +743,8 @@ mod tests {
             .mock("POST", "/v1/messages")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(r#"{
+            .with_body(
+                r#"{
                 "id": "msg_sys",
                 "type": "message",
                 "role": "assistant",
@@ -742,7 +752,8 @@ mod tests {
                 "model": "claude-sonnet-4-6",
                 "stop_reason": "end_turn",
                 "usage": {"input_tokens": 20, "output_tokens": 8}
-            }"#)
+            }"#,
+            )
             .create_async()
             .await;
 

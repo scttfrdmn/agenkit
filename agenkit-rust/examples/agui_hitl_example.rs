@@ -15,14 +15,11 @@
 ///! ```bash
 ///! cargo run --example agui_hitl_example
 ///! ```
-
 use agenkit::core::{Agent, AgentError, Message};
-use agenkit::patterns::human_in_loop::{
-    HumanInLoopAgent, HumanInLoopConfig, simple_approval_func,
-};
-use agenkit::protocols::agui::hitl::{AGUIHumanInLoopAdapter, AGUIHumanInLoopConfig};
+use agenkit::patterns::human_in_loop::{simple_approval_func, HumanInLoopAgent, HumanInLoopConfig};
 use agenkit::protocols::agui::adapter::AGUIAdapterConfig;
 use agenkit::protocols::agui::events::{AGUIEvent, EventType};
+use agenkit::protocols::agui::hitl::{AGUIHumanInLoopAdapter, AGUIHumanInLoopConfig};
 use async_trait::async_trait;
 use futures::stream::StreamExt;
 use std::sync::Arc;
@@ -51,9 +48,7 @@ impl Agent for ConfidenceAgent {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec![
-            "confidence-based".to_string(),
-        ]
+        vec!["confidence-based".to_string()]
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {

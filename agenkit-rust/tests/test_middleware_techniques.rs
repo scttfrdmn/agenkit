@@ -56,7 +56,10 @@ impl Agent for CountingAgent {
         if call <= self.fail_until {
             Err(AgentError::ProcessingError(format!("call {} failed", call)))
         } else {
-            Ok(Message::with_text("assistant", format!("success on call {}", call)))
+            Ok(Message::with_text(
+                "assistant",
+                format!("success on call {}", call),
+            ))
         }
     }
 }
@@ -202,9 +205,7 @@ async fn test_retry_introspect_contains_middleware() {
 
 #[tokio::test]
 async fn test_circuit_breaker_closed_passes_through() {
-    let config = CircuitBreakerConfig::builder()
-        .failure_threshold(5)
-        .build();
+    let config = CircuitBreakerConfig::builder().failure_threshold(5).build();
     let agent = CircuitBreakerMiddleware::new(EchoAgent, config);
     let result = agent.process(Message::with_text("user", "hello")).await;
     assert!(result.is_ok());
@@ -267,7 +268,11 @@ async fn test_circuit_breaker_builder_configuration() {
 #[tokio::test]
 async fn test_circuit_breaker_state_variants() {
     use agenkit::middleware::CircuitState;
-    let states = [CircuitState::Closed, CircuitState::Open, CircuitState::HalfOpen];
+    let states = [
+        CircuitState::Closed,
+        CircuitState::Open,
+        CircuitState::HalfOpen,
+    ];
     assert_eq!(states.len(), 3);
     assert_eq!(CircuitState::Closed, CircuitState::Closed);
     assert_ne!(CircuitState::Closed, CircuitState::Open);
@@ -371,7 +376,9 @@ async fn test_timeout_metrics_timeout_count() {
 
 #[tokio::test]
 async fn test_timeout_name_preserved() {
-    let config = TimeoutConfig::builder().timeout(Duration::from_secs(5)).build();
+    let config = TimeoutConfig::builder()
+        .timeout(Duration::from_secs(5))
+        .build();
     let agent = TimeoutMiddleware::new(EchoAgent, config);
     assert_eq!(agent.name(), "echo");
 }

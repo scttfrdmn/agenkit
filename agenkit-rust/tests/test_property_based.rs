@@ -3,12 +3,12 @@
 //! Tests invariants that should hold for arbitrary inputs:
 //! message properties, middleware invariants, and composition properties.
 
+use agenkit::composition::{FallbackAgent, SequentialAgent};
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::middleware::{
     CachingConfig, CachingMiddleware, CircuitBreakerConfig, CircuitBreakerMiddleware, RetryConfig,
     RetryMiddleware, TimeoutConfig, TimeoutMiddleware,
 };
-use agenkit::composition::{FallbackAgent, SequentialAgent};
 use async_trait::async_trait;
 use proptest::prelude::*;
 use serde_json::json;
@@ -22,9 +22,14 @@ struct EchoAgent;
 
 #[async_trait]
 impl Agent for EchoAgent {
-    fn name(&self) -> &str { "echo" }
+    fn name(&self) -> &str {
+        "echo"
+    }
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        Ok(Message::with_text("assistant", message.content_as_str().unwrap_or("")))
+        Ok(Message::with_text(
+            "assistant",
+            message.content_as_str().unwrap_or(""),
+        ))
     }
 }
 
@@ -32,7 +37,9 @@ struct FailingAgent;
 
 #[async_trait]
 impl Agent for FailingAgent {
-    fn name(&self) -> &str { "failing" }
+    fn name(&self) -> &str {
+        "failing"
+    }
     async fn process(&self, _message: Message) -> Result<Message, AgentError> {
         Err(AgentError::ProcessingError("always fails".to_string()))
     }

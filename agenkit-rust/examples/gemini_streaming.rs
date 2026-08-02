@@ -8,7 +8,6 @@
 ///! export GEMINI_API_KEY="your-key-here"
 ///! cargo run --example gemini_streaming --features native
 ///! ```
-
 use agenkit::adapters::gemini::{GeminiAdapter, GeminiConfig};
 use agenkit::core::Message;
 use futures::stream::StreamExt;
@@ -37,7 +36,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", "-".repeat(60));
 
     // Create messages
-    let messages = vec![Message::with_text("user", "Count to 10, one number per line.")];
+    let messages = vec![Message::with_text(
+        "user",
+        "Count to 10, one number per line.",
+    )];
 
     // Stream response
     let mut stream = adapter.stream(messages).await;

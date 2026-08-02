@@ -128,7 +128,13 @@ async fn filtering_example() -> Result<()> {
     // Filter by tags
     println!("\n🔍 Question messages:");
     let questions = memory
-        .retrieve(session_id, 10, None, None, Some(vec!["question".to_string()]))
+        .retrieve(
+            session_id,
+            10,
+            None,
+            None,
+            Some(vec!["question".to_string()]),
+        )
         .await?;
     for msg in &questions {
         println!("  {}", msg.content);
@@ -227,7 +233,8 @@ async fn production_example() -> Result<()> {
     println!("{}", "=".repeat(60));
 
     // Production configuration
-    let redis_url = std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
+    let redis_url =
+        std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
     let memory = RedisMemory::new(&redis_url, 7 * 24 * 3600, "prod:agenkit:memory").await?;
 
     println!("\n✅ Production features:");

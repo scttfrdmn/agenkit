@@ -27,11 +27,10 @@ impl Agent for EchoAgent {
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         let content = message.content_as_str().unwrap_or("").to_string();
-        Ok(Message::with_text(
-            "assistant",
-            format!("{}:{}", self.name, content),
+        Ok(
+            Message::with_text("assistant", format!("{}:{}", self.name, content))
+                .with_metadata("processed_by", json!(self.name.clone())),
         )
-        .with_metadata("processed_by", json!(self.name.clone())))
     }
 
     fn capabilities(&self) -> Vec<String> {
@@ -48,12 +47,16 @@ impl Agent for ErrorAgent {
     }
 
     async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-        Err(AgentError::ProcessingError("intentional failure".to_string()))
+        Err(AgentError::ProcessingError(
+            "intentional failure".to_string(),
+        ))
     }
 }
 
 fn echo(name: &str) -> Arc<dyn Agent> {
-    Arc::new(EchoAgent { name: name.to_string() })
+    Arc::new(EchoAgent {
+        name: name.to_string(),
+    })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,7 +86,11 @@ async fn test_sequential_all_succeed_in_order() {
     let resp = result.unwrap();
     // Second agent processes output of first agent: "second:first:data"
     let text = resp.content_as_str().unwrap_or("");
-    assert!(text.contains("second"), "expected output from 'second', got: {}", text);
+    assert!(
+        text.contains("second"),
+        "expected output from 'second', got: {}",
+        text
+    );
 }
 
 #[tokio::test]
@@ -141,7 +148,11 @@ async fn test_sequential_error_identifies_step() {
         .unwrap_err();
     let msg = format!("{}", err);
     // Error should mention step number (2) or agent name
-    assert!(msg.contains("2") || msg.contains("error"), "unexpected error: {}", msg);
+    assert!(
+        msg.contains("2") || msg.contains("error"),
+        "unexpected error: {}",
+        msg
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -192,7 +203,10 @@ async fn test_parallel_single_agent() {
 async fn test_parallel_metadata_includes_agent_count() {
     let agents = vec![echo("a"), echo("b"), echo("c")];
     let par = ParallelAgent::new("ensemble", agents).unwrap();
-    let result = par.process(Message::with_text("user", "test")).await.unwrap();
+    let result = par
+        .process(Message::with_text("user", "test"))
+        .await
+        .unwrap();
     // Should have metadata about parallel execution
     assert!(!result.metadata.is_empty());
 }
@@ -227,7 +241,11 @@ async fn test_conditional_routes_to_matching_agent() {
         .await;
     assert!(result.is_ok());
     let text = result.unwrap().content_as_str().unwrap_or("").to_string();
-    assert!(text.contains("tech"), "expected tech agent response, got: {}", text);
+    assert!(
+        text.contains("tech"),
+        "expected tech agent response, got: {}",
+        text
+    );
 }
 
 #[tokio::test]
@@ -243,7 +261,11 @@ async fn test_conditional_falls_back_to_default() {
         .await;
     assert!(result.is_ok());
     let text = result.unwrap().content_as_str().unwrap_or("").to_string();
-    assert!(text.contains("default"), "expected default agent, got: {}", text);
+    assert!(
+        text.contains("default"),
+        "expected default agent, got: {}",
+        text
+    );
 }
 
 #[tokio::test]
@@ -252,7 +274,11 @@ async fn test_conditional_no_routes_uses_default() {
     let cond = ConditionalAgent::new("router", default_agent);
     let result = cond.process(Message::with_text("user", "anything")).await;
     assert!(result.is_ok());
-    assert!(result.unwrap().content_as_str().unwrap_or("").contains("default"));
+    assert!(result
+        .unwrap()
+        .content_as_str()
+        .unwrap_or("")
+        .contains("default"));
 }
 
 #[tokio::test]
@@ -270,7 +296,11 @@ async fn test_conditional_multiple_routes_first_match_wins() {
     assert!(result.is_ok());
     // First match (agent-a) should win
     let text = result.unwrap().content_as_str().unwrap_or("").to_string();
-    assert!(text.contains("agent-a"), "first match should win, got: {}", text);
+    assert!(
+        text.contains("agent-a"),
+        "first match should win, got: {}",
+        text
+    );
 }
 
 #[tokio::test]
@@ -306,7 +336,11 @@ async fn test_conditional_condition_receives_message_content() {
         .with_metadata("priority", serde_json::json!("high"));
     let result = cond.process(msg).await.unwrap();
     let text = result.content_as_str().unwrap_or("");
-    assert!(text.contains("target"), "metadata condition should route to target, got: {}", text);
+    assert!(
+        text.contains("target"),
+        "metadata condition should route to target, got: {}",
+        text
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -336,7 +370,11 @@ async fn test_fallback_primary_succeeds_no_fallback() {
     assert!(result.is_ok());
     let text = result.unwrap().content_as_str().unwrap_or("").to_string();
     // Primary succeeded, so "primary" should be in output
-    assert!(text.contains("primary"), "primary should handle it, got: {}", text);
+    assert!(
+        text.contains("primary"),
+        "primary should handle it, got: {}",
+        text
+    );
 }
 
 #[tokio::test]
@@ -347,13 +385,20 @@ async fn test_fallback_primary_fails_uses_fallback() {
     let result = agent.process(Message::with_text("user", "test")).await;
     assert!(result.is_ok());
     let text = result.unwrap().content_as_str().unwrap_or("").to_string();
-    assert!(text.contains("fallback"), "fallback should handle it, got: {}", text);
+    assert!(
+        text.contains("fallback"),
+        "fallback should handle it, got: {}",
+        text
+    );
 }
 
 #[tokio::test]
 async fn test_fallback_all_fail_returns_last_error() {
-    let agents: Vec<Arc<dyn Agent>> =
-        vec![Arc::new(ErrorAgent), Arc::new(ErrorAgent), Arc::new(ErrorAgent)];
+    let agents: Vec<Arc<dyn Agent>> = vec![
+        Arc::new(ErrorAgent),
+        Arc::new(ErrorAgent),
+        Arc::new(ErrorAgent),
+    ];
     let agent = FallbackAgent::new("all-fail", agents).unwrap();
     let result = agent.process(Message::with_text("user", "test")).await;
     assert!(result.is_err());
@@ -369,7 +414,11 @@ async fn test_fallback_chain_of_three() {
     let result = agent.process(Message::with_text("user", "test")).await;
     assert!(result.is_ok());
     let text = result.unwrap().content_as_str().unwrap_or("").to_string();
-    assert!(text.contains("last-resort"), "last resort should handle it, got: {}", text);
+    assert!(
+        text.contains("last-resort"),
+        "last resort should handle it, got: {}",
+        text
+    );
 }
 
 #[tokio::test]
@@ -394,7 +443,9 @@ async fn test_fallback_not_called_on_primary_success() {
     }
     #[async_trait]
     impl Agent for TrackingAgent {
-        fn name(&self) -> &str { "tracker" }
+        fn name(&self) -> &str {
+            "tracker"
+        }
         async fn process(&self, _msg: Message) -> Result<Message, AgentError> {
             self.calls.fetch_add(1, Ordering::SeqCst);
             Ok(Message::with_text("assistant", "tracked"))
@@ -402,7 +453,9 @@ async fn test_fallback_not_called_on_primary_success() {
     }
 
     let fallback_calls = Arc::new(AtomicUsize::new(0));
-    let tracker = Arc::new(TrackingAgent { calls: Arc::clone(&fallback_calls) });
+    let tracker = Arc::new(TrackingAgent {
+        calls: Arc::clone(&fallback_calls),
+    });
     let agents: Vec<Arc<dyn Agent>> = vec![echo("primary"), tracker];
     let agent = FallbackAgent::new("reliable", agents).unwrap();
     let _ = agent.process(Message::with_text("user", "test")).await;
@@ -440,8 +493,7 @@ async fn test_composition_composition_of_compositions() {
         c.add_route(content_contains("tech"), echo("tech"));
         c
     };
-    let pipeline: Vec<Arc<dyn Agent>> =
-        vec![Arc::new(fallback), Arc::new(cond)];
+    let pipeline: Vec<Arc<dyn Agent>> = vec![Arc::new(fallback), Arc::new(cond)];
     let seq = SequentialAgent::new("composed", pipeline).unwrap();
     let result = seq.process(Message::with_text("user", "tech query")).await;
     assert!(result.is_ok());

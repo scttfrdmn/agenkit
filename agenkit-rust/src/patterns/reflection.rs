@@ -355,7 +355,12 @@ Refined Output:"#,
         let mut score = 0.5; // Default if no score found
 
         // Use pre-compiled regex patterns for performance
-        let patterns = [&*SCORE_PATTERN, &*RATING_PATTERN, &*SLASH_10_PATTERN, &*SLASH_1_PATTERN];
+        let patterns = [
+            &*SCORE_PATTERN,
+            &*RATING_PATTERN,
+            &*SLASH_10_PATTERN,
+            &*SLASH_1_PATTERN,
+        ];
 
         for pattern in &patterns {
             if let Some(captures) = pattern.captures(content) {
@@ -437,7 +442,12 @@ Refined Output:"#,
     }
 
     /// Format final result with metadata.
-    fn format_result(&self, output: Message, stop_reason: StopReason, history: &[ReflectionStep]) -> Message {
+    fn format_result(
+        &self,
+        output: Message,
+        stop_reason: StopReason,
+        history: &[ReflectionStep],
+    ) -> Message {
         let mut metadata = output.metadata.clone();
 
         // Add reflection metadata

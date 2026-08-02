@@ -314,7 +314,11 @@ pub fn inject_trace_context_from(
     // Manually create W3C traceparent format
     let trace_id = format!("{:032x}", span_context.trace_id());
     let span_id = format!("{:016x}", span_context.span_id());
-    let flags = if span_context.is_sampled() { "01" } else { "00" };
+    let flags = if span_context.is_sampled() {
+        "01"
+    } else {
+        "00"
+    };
     let traceparent = format!("00-{}-{}-{}", trace_id, span_id, flags);
 
     // Inject into metadata
@@ -461,13 +465,19 @@ impl<A: Agent + Send + Sync> Agent for TracingMiddleware<A> {
 
         // Add content length attribute
         let content_str = message.content.to_string();
-        span.set_attribute(KeyValue::new("message.content_length", content_str.len() as i64));
+        span.set_attribute(KeyValue::new(
+            "message.content_length",
+            content_str.len() as i64,
+        ));
 
         // Add metadata as attributes (only basic types)
         for (key, value) in &message.metadata {
             match value {
                 serde_json::Value::String(s) => {
-                    span.set_attribute(KeyValue::new(format!("message.metadata.{}", key), s.clone()));
+                    span.set_attribute(KeyValue::new(
+                        format!("message.metadata.{}", key),
+                        s.clone(),
+                    ));
                 }
                 serde_json::Value::Number(n) => {
                     if let Some(i) = n.as_i64() {
@@ -508,13 +518,19 @@ impl<A: Agent + Send + Sync> Agent for TracingMiddleware<A> {
             // Manually create W3C traceparent format
             let trace_id = format!("{:032x}", span_context.trace_id());
             let span_id = format!("{:016x}", span_context.span_id());
-            let flags = if span_context.is_sampled() { "01" } else { "00" };
+            let flags = if span_context.is_sampled() {
+                "01"
+            } else {
+                "00"
+            };
             let traceparent = format!("00-{}-{}-{}", trace_id, span_id, flags);
 
             // Inject into metadata
             let mut trace_ctx = HashMap::new();
             trace_ctx.insert("traceparent".to_string(), serde_json::json!(traceparent));
-            response.metadata.insert("trace_context".to_string(), serde_json::json!(trace_ctx));
+            response
+                .metadata
+                .insert("trace_context".to_string(), serde_json::json!(trace_ctx));
         }
 
         // End explicitly rather than relying on Drop, to match the error path

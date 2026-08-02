@@ -35,7 +35,6 @@
 ///! ```bash
 ///! cargo run --example openai_compatible_example --features native
 ///! ```
-
 use agenkit::adapters::openai_compatible::{
     providers, OpenAICompatibleAgent, OpenAICompatibleConfig,
 };
@@ -80,10 +79,7 @@ async fn vllm_example() {
             if let Some(provider) = response.metadata.get("provider") {
                 println!("\n📊 Metadata:");
                 println!("  Provider: {}", provider);
-                println!(
-                    "  Base URL: {}",
-                    response.metadata.get("base_url").unwrap()
-                );
+                println!("  Base URL: {}", response.metadata.get("base_url").unwrap());
                 println!("  Model: {}", response.metadata.get("model").unwrap());
                 if let Some(usage) = response.metadata.get("usage") {
                     println!("  Usage: {}", usage);
@@ -142,15 +138,9 @@ async fn multi_service_example() {
     println!("\nThis example shows how the same code works with different services.\n");
 
     let services = vec![
-        (
-            "vLLM",
-            providers::vllm("meta-llama/Llama-2-7b-chat-hf"),
-        ),
+        ("vLLM", providers::vllm("meta-llama/Llama-2-7b-chat-hf")),
         ("llama.cpp", providers::llamacpp("llama-2-7b-chat")),
-        (
-            "SGLang",
-            providers::sglang("meta-llama/Llama-2-7b-chat-hf"),
-        ),
+        ("SGLang", providers::sglang("meta-llama/Llama-2-7b-chat-hf")),
     ];
 
     let msg = Message::with_text("user", "What is a GPU in one sentence?");
@@ -249,10 +239,7 @@ async fn main() {
     println!("╔{}╗", "=".repeat(78));
     println!(
         "║{}║",
-        format!(
-            "{:^78}",
-            "OpenAI-Compatible LLM Adapter Examples"
-        )
+        format!("{:^78}", "OpenAI-Compatible LLM Adapter Examples")
     );
     println!("╚{}╝", "=".repeat(78));
     println!();

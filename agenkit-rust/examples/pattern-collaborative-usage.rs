@@ -40,7 +40,11 @@ impl Agent for SimpleAgent {
 
         Ok(Message::with_text(
             "agent",
-            format!("{} processed: {}", self.name, message.content_as_str().unwrap_or("")),
+            format!(
+                "{} processed: {}",
+                self.name,
+                message.content_as_str().unwrap_or("")
+            ),
         ))
     }
 }

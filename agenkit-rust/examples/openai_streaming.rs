@@ -8,7 +8,6 @@
 ///! export OPENAI_API_KEY="your-key-here"
 ///! cargo run --example openai_streaming --features native
 ///! ```
-
 use agenkit::adapters::openai::{OpenAIAgent, OpenAIConfig};
 use agenkit::core::Message;
 use futures::stream::StreamExt;

@@ -56,7 +56,10 @@ async fn test_audit_event_add_detail() {
     .add_detail("key2".to_string(), serde_json::json!(42));
 
     assert_eq!(event.details.len(), 2);
-    assert_eq!(event.details.get("key1"), Some(&serde_json::json!("value1")));
+    assert_eq!(
+        event.details.get("key1"),
+        Some(&serde_json::json!("value1"))
+    );
     assert_eq!(event.details.get("key2"), Some(&serde_json::json!(42)));
 }
 
@@ -64,11 +67,7 @@ async fn test_audit_event_add_detail() {
 async fn test_log_audit_event() {
     let (logger, _temp_dir) = create_temp_logger();
 
-    let event = AuditEvent::new(
-        AuditEventType::AgentCreated,
-        "agent".to_string(),
-        None,
-    );
+    let event = AuditEvent::new(AuditEventType::AgentCreated, "agent".to_string(), None);
 
     let result = logger.log(event).await;
     assert!(result.is_ok());
@@ -187,7 +186,10 @@ async fn test_query_by_session_id() {
     logger.flush().await.unwrap();
 
     // Query by specific session
-    let even_events = logger.query(Some("session-even".to_string())).await.unwrap();
+    let even_events = logger
+        .query(Some("session-even".to_string()))
+        .await
+        .unwrap();
     assert_eq!(even_events.len(), 3); // 0, 2, 4
 
     let odd_events = logger.query(Some("session-odd".to_string())).await.unwrap();
@@ -204,7 +206,7 @@ async fn test_query_empty_log() {
     // Should handle empty file gracefully (might fail with file not found)
     match events {
         Ok(evts) => assert_eq!(evts.len(), 0),
-        Err(_) => {}, // File doesn't exist yet - acceptable
+        Err(_) => {} // File doesn't exist yet - acceptable
     }
 }
 
@@ -333,4 +335,3 @@ async fn test_buffer_management() {
     }
     assert_eq!(logger.buffer_len().await, 0); // Auto-flushed
 }
-

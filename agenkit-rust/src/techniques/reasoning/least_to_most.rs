@@ -234,15 +234,13 @@ impl LeastToMostAgent {
         };
 
         let prompt_message = Message::with_text("user", prompt);
-        let response = self.agent.process(prompt_message).await.map_err(|e| {
-            AgentError::Internal(format!("Subproblem solving failed: {}", e))
-        })?;
+        let response = self
+            .agent
+            .process(prompt_message)
+            .await
+            .map_err(|e| AgentError::Internal(format!("Subproblem solving failed: {}", e)))?;
 
-        Ok(response
-            .content_as_str()
-            .unwrap_or("")
-            .trim()
-            .to_string())
+        Ok(response.content_as_str().unwrap_or("").trim().to_string())
     }
 }
 
@@ -295,9 +293,10 @@ impl Agent for LeastToMostAgent {
         result
             .metadata
             .insert("subproblem_solutions".to_string(), json!(solutions));
-        result
-            .metadata
-            .insert("compose_solutions".to_string(), json!(self.compose_solutions));
+        result.metadata.insert(
+            "compose_solutions".to_string(),
+            json!(self.compose_solutions),
+        );
 
         Ok(result)
     }

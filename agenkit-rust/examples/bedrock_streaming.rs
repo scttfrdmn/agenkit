@@ -10,7 +10,6 @@
 ///! export AWS_SECRET_ACCESS_KEY="your-secret-key"
 ///! cargo run --example bedrock_streaming --features native
 ///! ```
-
 use agenkit::adapters::bedrock::{BedrockAdapter, BedrockConfig};
 use agenkit::core::Message;
 use futures::stream::StreamExt;
@@ -34,7 +33,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", "-".repeat(60));
 
     // Create messages
-    let messages = vec![Message::with_text("user", "Count to 10, one number per line.")];
+    let messages = vec![Message::with_text(
+        "user",
+        "Count to 10, one number per line.",
+    )];
 
     // Stream response
     let mut stream = adapter.stream(messages).await;
@@ -100,7 +102,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Using a system message for behavior control...\n");
 
     let messages = vec![
-        Message::with_text("system", "You are a helpful math tutor. Keep responses concise."),
+        Message::with_text(
+            "system",
+            "You are a helpful math tutor. Keep responses concise.",
+        ),
         Message::with_text("user", "What's 15 * 23?"),
     ];
 

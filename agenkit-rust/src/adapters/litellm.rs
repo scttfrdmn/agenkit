@@ -257,12 +257,8 @@ impl LiteLLMAdapter {
         let litellm_message = self.message_to_litellm_message(&message);
 
         match self.stream_api_impl(vec![litellm_message]).await {
-            Ok(chunks) => {
-                Box::pin(futures::stream::iter(chunks.into_iter().map(Ok)))
-            }
-            Err(e) => {
-                Box::pin(futures::stream::once(async move { Err(e) }))
-            }
+            Ok(chunks) => Box::pin(futures::stream::iter(chunks.into_iter().map(Ok))),
+            Err(e) => Box::pin(futures::stream::once(async move { Err(e) })),
         }
     }
 
@@ -348,8 +344,7 @@ impl LiteLLMAdapter {
                 break;
             }
 
-            let chunk_json: serde_json::Value = serde_json::from_str(json_str)
-                ?;
+            let chunk_json: serde_json::Value = serde_json::from_str(json_str)?;
 
             // Extract text from choices[0].delta.content
             if let Some(choices) = chunk_json["choices"].as_array() {

@@ -222,15 +222,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Quality metrics (aggregate_by_name returns mean/min/max/sum/std/count)
     let quality_stats = collector.aggregate_by_name("response_quality");
     println!("Quality Metrics:");
-    println!("  Mean: {:.3}", quality_stats.get("mean").copied().unwrap_or(0.0));
-    println!("  Min: {:.3}", quality_stats.get("min").copied().unwrap_or(0.0));
-    println!("  Max: {:.3}\n", quality_stats.get("max").copied().unwrap_or(0.0));
+    println!(
+        "  Mean: {:.3}",
+        quality_stats.get("mean").copied().unwrap_or(0.0)
+    );
+    println!(
+        "  Min: {:.3}",
+        quality_stats.get("min").copied().unwrap_or(0.0)
+    );
+    println!(
+        "  Max: {:.3}\n",
+        quality_stats.get("max").copied().unwrap_or(0.0)
+    );
 
     // Cost metrics
     let cost_stats = collector.aggregate_by_name("total_cost");
     println!("Cost Metrics:");
-    println!("  Total: ${:.4}", cost_stats.get("sum").copied().unwrap_or(0.0));
-    println!("  Average: ${:.4}\n", cost_stats.get("mean").copied().unwrap_or(0.0));
+    println!(
+        "  Total: ${:.4}",
+        cost_stats.get("sum").copied().unwrap_or(0.0)
+    );
+    println!(
+        "  Average: ${:.4}\n",
+        cost_stats.get("mean").copied().unwrap_or(0.0)
+    );
 
     // Step 5: Regression detection
     println!("Step 5: Checking for Regressions");

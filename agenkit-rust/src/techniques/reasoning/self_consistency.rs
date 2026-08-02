@@ -398,11 +398,14 @@ mod tests {
 
     #[test]
     fn test_vote_majority_picks_most_common() {
-        let agent = SelfConsistencyAgent::new(
-            MockAgent::new(vec!["a"]),
-            SelfConsistencyConfig::default(),
-        );
-        let answers = vec!["42".to_string(), "7".to_string(), "42".to_string(), "42".to_string()];
+        let agent =
+            SelfConsistencyAgent::new(MockAgent::new(vec!["a"]), SelfConsistencyConfig::default());
+        let answers = vec![
+            "42".to_string(),
+            "7".to_string(),
+            "42".to_string(),
+            "42".to_string(),
+        ];
         let (winner, score) = agent.vote_majority(&answers);
         assert_eq!(winner.to_lowercase(), "42");
         assert!(score > 0.5);
@@ -410,10 +413,8 @@ mod tests {
 
     #[test]
     fn test_vote_first_returns_first() {
-        let agent = SelfConsistencyAgent::new(
-            MockAgent::new(vec!["a"]),
-            SelfConsistencyConfig::default(),
-        );
+        let agent =
+            SelfConsistencyAgent::new(MockAgent::new(vec!["a"]), SelfConsistencyConfig::default());
         let answers = vec!["first".to_string(), "second".to_string()];
         let (winner, score) = agent.vote_first(&answers);
         assert_eq!(winner, "first");
@@ -422,21 +423,21 @@ mod tests {
 
     #[test]
     fn test_vote_first_empty() {
-        let agent = SelfConsistencyAgent::new(
-            MockAgent::new(vec!["a"]),
-            SelfConsistencyConfig::default(),
-        );
+        let agent =
+            SelfConsistencyAgent::new(MockAgent::new(vec!["a"]), SelfConsistencyConfig::default());
         let (winner, _) = agent.vote_first(&[]);
         assert!(winner.is_empty());
     }
 
     #[test]
     fn test_count_answers_case_insensitive() {
-        let agent = SelfConsistencyAgent::new(
-            MockAgent::new(vec!["a"]),
-            SelfConsistencyConfig::default(),
-        );
-        let answers = vec!["Paris".to_string(), "paris".to_string(), "PARIS".to_string()];
+        let agent =
+            SelfConsistencyAgent::new(MockAgent::new(vec!["a"]), SelfConsistencyConfig::default());
+        let answers = vec![
+            "Paris".to_string(),
+            "paris".to_string(),
+            "PARIS".to_string(),
+        ];
         let counts = agent.count_answers(&answers);
         assert_eq!(counts.get("paris"), Some(&3));
     }
@@ -449,7 +450,11 @@ mod tests {
             ..Default::default()
         };
         let agent = SelfConsistencyAgent::new(
-            MockAgent::new(vec!["The answer is 42", "The answer is 42", "The answer is 7"]),
+            MockAgent::new(vec![
+                "The answer is 42",
+                "The answer is 42",
+                "The answer is 7",
+            ]),
             config,
         );
         let msg = Message::with_text("user", "What is 6*7?");
@@ -466,10 +471,7 @@ mod tests {
             voting_strategy: VotingStrategy::First,
             ..Default::default()
         };
-        let agent = SelfConsistencyAgent::new(
-            MockAgent::new(vec!["First response"]),
-            config,
-        );
+        let agent = SelfConsistencyAgent::new(MockAgent::new(vec!["First response"]), config);
         let msg = Message::with_text("user", "test");
         let result = agent.process(msg).await.unwrap();
         assert_eq!(result.metadata["voting_strategy"], "first");
@@ -479,7 +481,10 @@ mod tests {
     async fn test_process_metadata_completeness() {
         let agent = SelfConsistencyAgent::new(
             MockAgent::new(vec!["response"]),
-            SelfConsistencyConfig { num_samples: 2, ..Default::default() },
+            SelfConsistencyConfig {
+                num_samples: 2,
+                ..Default::default()
+            },
         );
         let msg = Message::with_text("user", "test");
         let result = agent.process(msg).await.unwrap();

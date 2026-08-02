@@ -1,7 +1,6 @@
 ///! AG-UI Adapter - Wraps agents for AG-UI event streaming
 ///!
 ///! Converts agent responses into AG-UI event streams for frontend consumption.
-
 use crate::core::{Agent, AgentError, Message};
 use crate::protocols::agui::events::*;
 use futures::stream::{Stream, StreamExt};
@@ -131,7 +130,8 @@ impl AGUIAdapter {
 
                     // Add response metadata
                     if let Some(metadata) = serde_json::to_value(&response.metadata).ok() {
-                        complete_event = complete_event.with_metadata("response_metadata", metadata);
+                        complete_event =
+                            complete_event.with_metadata("response_metadata", metadata);
                     }
 
                     let _ = tx.send(Box::new(complete_event)).await;
@@ -150,8 +150,9 @@ impl AGUIAdapter {
                     let _ = tx.send(Box::new(error_event)).await;
 
                     // Emit complete with error finish reason
-                    let complete_event = TextMessageComplete::new("", "error", Some(msg_id.clone()))
-                        .with_metadata("error", serde_json::json!(error.to_string()));
+                    let complete_event =
+                        TextMessageComplete::new("", "error", Some(msg_id.clone()))
+                            .with_metadata("error", serde_json::json!(error.to_string()));
                     let _ = tx.send(Box::new(complete_event)).await;
                 }
             }
@@ -173,18 +174,9 @@ impl AGUIAdapter {
 /// Create metadata event with agent capabilities.
 fn create_metadata_event(agent_name: &str, agent: &dyn Agent) -> MetadataEvent {
     let mut data = HashMap::new();
-    data.insert(
-        "agent_name".to_string(),
-        serde_json::json!(agent_name),
-    );
-    data.insert(
-        "protocol".to_string(),
-        serde_json::json!("ag-ui"),
-    );
-    data.insert(
-        "protocol_version".to_string(),
-        serde_json::json!("1.0"),
-    );
+    data.insert("agent_name".to_string(), serde_json::json!(agent_name));
+    data.insert("protocol".to_string(), serde_json::json!("ag-ui"));
+    data.insert("protocol_version".to_string(), serde_json::json!("1.0"));
 
     let mut capabilities = HashMap::new();
     capabilities.insert("streaming", serde_json::Value::Bool(true));
@@ -202,8 +194,7 @@ fn create_metadata_event(agent_name: &str, agent: &dyn Agent) -> MetadataEvent {
     if !introspection.capabilities.is_empty() {
         data.insert(
             "agent_capabilities".to_string(),
-            serde_json::to_value(&introspection.capabilities)
-                .unwrap_or(serde_json::Value::Null),
+            serde_json::to_value(&introspection.capabilities).unwrap_or(serde_json::Value::Null),
         );
     }
 
@@ -227,7 +218,10 @@ mod tests {
         }
 
         async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-            Ok(Message::new("assistant", serde_json::json!(self.response.clone())))
+            Ok(Message::new(
+                "assistant",
+                serde_json::json!(self.response.clone()),
+            ))
         }
     }
 

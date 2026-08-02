@@ -34,7 +34,6 @@
 ///! # Ok(())
 ///! # }
 ///! ```
-
 use crate::core::{Agent, Message};
 use crate::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};
 use crate::protocols::agui::events::{AGUIEvent, ErrorEvent, HeartbeatEvent, MetadataEvent};
@@ -193,18 +192,9 @@ impl AGUIWebSocketHandler {
                 .clone()
                 .unwrap_or_else(|| self.agent.name().to_string())),
         );
-        data.insert(
-            "protocol".to_string(),
-            serde_json::json!("ag-ui"),
-        );
-        data.insert(
-            "protocol_version".to_string(),
-            serde_json::json!("1.0"),
-        );
-        data.insert(
-            "transport".to_string(),
-            serde_json::json!("websocket"),
-        );
+        data.insert("protocol".to_string(), serde_json::json!("ag-ui"));
+        data.insert("protocol_version".to_string(), serde_json::json!("1.0"));
+        data.insert("transport".to_string(), serde_json::json!("websocket"));
 
         let mut capabilities = HashMap::new();
         capabilities.insert("streaming", serde_json::Value::Bool(true));
@@ -275,12 +265,8 @@ impl AGUIWebSocketHandler {
         let message_data = match WebSocketMessageFormat::parse_message(message_str) {
             Ok(data) => data,
             Err(e) => {
-                let error = ErrorEvent::new(
-                    "invalid_json",
-                    format!("Invalid JSON: {}", e),
-                    true,
-                    None,
-                );
+                let error =
+                    ErrorEvent::new("invalid_json", format!("Invalid JSON: {}", e), true, None);
                 responses.push(WebSocketMessageFormat::format_event(&error));
                 return responses;
             }
@@ -304,10 +290,7 @@ impl AGUIWebSocketHandler {
                 let message = Message::with_text("user", content);
 
                 // Stream response events
-                let mut event_stream = self
-                    .adapter
-                    .stream_events(message, None, false)
-                    .await;
+                let mut event_stream = self.adapter.stream_events(message, None, false).await;
 
                 while let Some(event) = event_stream.next().await {
                     responses.push(WebSocketMessageFormat::format_event(event.as_ref()));
@@ -341,9 +324,7 @@ impl AGUIWebSocketHandler {
     /// # Returns
     /// Duration between heartbeats, or None if disabled
     pub fn heartbeat_interval(&self) -> Option<Duration> {
-        self.config
-            .heartbeat_interval
-            .map(Duration::from_secs)
+        self.config.heartbeat_interval.map(Duration::from_secs)
     }
 
     /// Get the underlying adapter.
@@ -369,7 +350,10 @@ mod tests {
         }
 
         async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-            Ok(Message::new("assistant", serde_json::json!(self.response.clone())))
+            Ok(Message::new(
+                "assistant",
+                serde_json::json!(self.response.clone()),
+            ))
         }
     }
 
@@ -393,10 +377,7 @@ mod tests {
         let json = r#"{"type": "message", "content": "Hello"}"#;
         let parsed = WebSocketMessageFormat::parse_message(json).unwrap();
 
-        assert_eq!(
-            parsed.get("type").and_then(|v| v.as_str()),
-            Some("message")
-        );
+        assert_eq!(parsed.get("type").and_then(|v| v.as_str()), Some("message"));
         assert_eq!(
             parsed.get("content").and_then(|v| v.as_str()),
             Some("Hello")
@@ -423,10 +404,7 @@ mod tests {
 
         let json = metadata.to_json();
         assert_eq!(json.get("protocol"), Some(&serde_json::json!("ag-ui")));
-        assert_eq!(
-            json.get("transport"),
-            Some(&serde_json::json!("websocket"))
-        );
+        assert_eq!(json.get("transport"), Some(&serde_json::json!("websocket")));
     }
 
     #[tokio::test]

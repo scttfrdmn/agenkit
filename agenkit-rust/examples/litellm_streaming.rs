@@ -13,7 +13,6 @@
 ///! export LITELLM_API_KEY="your-key-here"  # Optional for local proxy
 ///! cargo run --example litellm_streaming --features native
 ///! ```
-
 use agenkit::adapters::litellm::{LiteLLMAdapter, LiteLLMConfig};
 use agenkit::core::Message;
 use futures::stream::StreamExt;

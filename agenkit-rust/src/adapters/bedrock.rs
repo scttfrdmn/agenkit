@@ -12,7 +12,10 @@ use std::pin::Pin;
 use {
     aws_config::{BehaviorVersion, Region},
     aws_sdk_bedrockruntime::{
-        types::{ContentBlock, ConversationRole, ConverseOutput, ConverseStreamOutput, Message as BedrockMessage},
+        types::{
+            ContentBlock, ConversationRole, ConverseOutput, ConverseStreamOutput,
+            Message as BedrockMessage,
+        },
         Client as BedrockClient,
     },
     futures::stream::StreamExt,
@@ -372,11 +375,15 @@ impl BedrockAdapter {
                     match output {
                         ConverseStreamOutput::ContentBlockDelta(delta) => {
                             // Extract text from delta
-                            if let Some(aws_sdk_bedrockruntime::types::ContentBlockDelta::Text(text)) = delta.delta {
+                            if let Some(aws_sdk_bedrockruntime::types::ContentBlockDelta::Text(
+                                text,
+                            )) = delta.delta
+                            {
                                 if !text.is_empty() {
                                     let mut msg = Message::with_text("assistant", &text);
                                     msg.metadata.insert("streaming".to_string(), json!(true));
-                                    msg.metadata.insert("model".to_string(), json!(self.config.model));
+                                    msg.metadata
+                                        .insert("model".to_string(), json!(self.config.model));
                                     chunks.push(msg);
                                 }
                             }

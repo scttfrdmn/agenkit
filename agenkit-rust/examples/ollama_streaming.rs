@@ -12,7 +12,6 @@
 ///! ```bash
 ///! cargo run --example ollama_streaming --features native
 ///! ```
-
 use agenkit::adapters::ollama::{OllamaAgent, OllamaConfig};
 use agenkit::core::Message;
 use futures::stream::StreamExt;

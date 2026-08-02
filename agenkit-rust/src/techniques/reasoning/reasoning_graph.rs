@@ -215,7 +215,14 @@ impl ReasoningGraph {
         let mut visited = HashSet::new();
         let mut current_path = Vec::new();
 
-        self.dfs_paths(start, end, max_length, &mut visited, &mut current_path, &mut paths);
+        self.dfs_paths(
+            start,
+            end,
+            max_length,
+            &mut visited,
+            &mut current_path,
+            &mut paths,
+        );
 
         paths
     }

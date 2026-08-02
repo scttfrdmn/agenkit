@@ -7,11 +7,10 @@
 ///! - McpToolAdapter (name, description, execute success/error)
 ///! - tools_from_client factory
 ///! - McpServer handle_request (initialize, tools/list, tools/call)
-
 use agenkit::core::{AgentError, Tool, ToolResult};
 use agenkit::protocols::mcp::{
-    HttpClient, McpClient, McpContent, McpServer, McpServerInfo, McpTool, McpToolAdapter,
-    McpToolResult, ServerConfig, StdioClient, text_content, tools_from_client,
+    text_content, tools_from_client, HttpClient, McpClient, McpContent, McpServer, McpServerInfo,
+    McpTool, McpToolAdapter, McpToolResult, ServerConfig, StdioClient,
 };
 use agenkit::protocols::mcp::{JsonRpcRequest, JsonRpcResponse};
 use async_trait::async_trait;

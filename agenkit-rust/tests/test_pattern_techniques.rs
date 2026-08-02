@@ -33,8 +33,10 @@ impl Agent for EchoAgent {
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
         let content = message.content_as_str().unwrap_or("").to_string();
-        Ok(Message::with_text("assistant", format!("{}:{}", self.name, content))
-            .with_metadata("agent", json!(self.name.clone())))
+        Ok(
+            Message::with_text("assistant", format!("{}:{}", self.name, content))
+                .with_metadata("agent", json!(self.name.clone())),
+        )
     }
 
     fn capabilities(&self) -> Vec<String> {
@@ -73,7 +75,9 @@ impl Agent for ErrorAgent {
     }
 
     async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-        Err(AgentError::ProcessingError("deliberate failure".to_string()))
+        Err(AgentError::ProcessingError(
+            "deliberate failure".to_string(),
+        ))
     }
 }
 
@@ -117,7 +121,9 @@ fn make_reflection_config(
 
 #[tokio::test]
 async fn test_reflection_creation() {
-    let gen = Arc::new(EchoAgent { name: "gen".to_string() });
+    let gen = Arc::new(EchoAgent {
+        name: "gen".to_string(),
+    });
     let crit = Arc::new(ScorerAgent { score: 0.85 });
     let cfg = make_reflection_config(gen, crit, 3, 0.9, CritiqueFormat::Structured);
     assert!(ReflectionAgent::new(cfg).is_ok());
@@ -125,10 +131,16 @@ async fn test_reflection_creation() {
 
 #[tokio::test]
 async fn test_reflection_name_non_empty() {
-    let gen = Arc::new(EchoAgent { name: "gen".to_string() });
+    let gen = Arc::new(EchoAgent {
+        name: "gen".to_string(),
+    });
     let crit = Arc::new(ScorerAgent { score: 0.85 });
     let agent = ReflectionAgent::new(make_reflection_config(
-        gen, crit, 2, 0.9, CritiqueFormat::Structured,
+        gen,
+        crit,
+        2,
+        0.9,
+        CritiqueFormat::Structured,
     ))
     .unwrap();
     assert!(!agent.name().is_empty());
@@ -136,10 +148,16 @@ async fn test_reflection_name_non_empty() {
 
 #[tokio::test]
 async fn test_reflection_capabilities_non_empty() {
-    let gen = Arc::new(EchoAgent { name: "gen".to_string() });
+    let gen = Arc::new(EchoAgent {
+        name: "gen".to_string(),
+    });
     let crit = Arc::new(ScorerAgent { score: 0.85 });
     let agent = ReflectionAgent::new(make_reflection_config(
-        gen, crit, 2, 0.9, CritiqueFormat::Structured,
+        gen,
+        crit,
+        2,
+        0.9,
+        CritiqueFormat::Structured,
     ))
     .unwrap();
     assert!(!agent.capabilities().is_empty());
@@ -148,10 +166,16 @@ async fn test_reflection_capabilities_non_empty() {
 #[tokio::test]
 async fn test_reflection_high_score_stops_early() {
     // Critic returns 0.99 — above default threshold 0.9, so loop stops at 1st iter
-    let gen = Arc::new(EchoAgent { name: "gen".to_string() });
+    let gen = Arc::new(EchoAgent {
+        name: "gen".to_string(),
+    });
     let crit = Arc::new(ScorerAgent { score: 0.99 });
     let agent = ReflectionAgent::new(make_reflection_config(
-        gen, crit, 5, 0.9, CritiqueFormat::Structured,
+        gen,
+        crit,
+        5,
+        0.9,
+        CritiqueFormat::Structured,
     ))
     .unwrap();
     let result = agent.process(Message::with_text("user", "hello")).await;
@@ -167,10 +191,16 @@ async fn test_reflection_high_score_stops_early() {
 #[tokio::test]
 async fn test_reflection_max_iterations_enforced() {
     // Critic returns 0.5 — below threshold, so should reach max iterations
-    let gen = Arc::new(EchoAgent { name: "gen".to_string() });
+    let gen = Arc::new(EchoAgent {
+        name: "gen".to_string(),
+    });
     let crit = Arc::new(ScorerAgent { score: 0.5 });
     let agent = ReflectionAgent::new(make_reflection_config(
-        gen, crit, 2, 0.9, CritiqueFormat::Structured,
+        gen,
+        crit,
+        2,
+        0.9,
+        CritiqueFormat::Structured,
     ))
     .unwrap();
     let result = agent.process(Message::with_text("user", "hello")).await;
@@ -180,10 +210,16 @@ async fn test_reflection_max_iterations_enforced() {
 
 #[tokio::test]
 async fn test_reflection_metadata_present() {
-    let gen = Arc::new(EchoAgent { name: "gen".to_string() });
+    let gen = Arc::new(EchoAgent {
+        name: "gen".to_string(),
+    });
     let crit = Arc::new(ScorerAgent { score: 0.95 });
     let agent = ReflectionAgent::new(make_reflection_config(
-        gen, crit, 2, 0.9, CritiqueFormat::Structured,
+        gen,
+        crit,
+        2,
+        0.9,
+        CritiqueFormat::Structured,
     ))
     .unwrap();
     let result = agent.process(Message::with_text("user", "test")).await;
@@ -195,10 +231,16 @@ async fn test_reflection_metadata_present() {
 
 #[tokio::test]
 async fn test_reflection_freeform_format() {
-    let gen = Arc::new(EchoAgent { name: "gen".to_string() });
+    let gen = Arc::new(EchoAgent {
+        name: "gen".to_string(),
+    });
     let crit = Arc::new(ScorerAgent { score: 0.95 });
     let agent = ReflectionAgent::new(make_reflection_config(
-        gen, crit, 2, 0.9, CritiqueFormat::FreeForm,
+        gen,
+        crit,
+        2,
+        0.9,
+        CritiqueFormat::FreeForm,
     ))
     .unwrap();
     let result = agent.process(Message::with_text("user", "freeform")).await;
@@ -233,13 +275,17 @@ fn make_react_config(agent: Arc<dyn Agent>, max_steps: usize) -> ReActConfig {
 
 #[tokio::test]
 async fn test_react_creation() {
-    let inner = Arc::new(EchoAgent { name: "react-inner".to_string() });
+    let inner = Arc::new(EchoAgent {
+        name: "react-inner".to_string(),
+    });
     assert!(ReActAgent::new(make_react_config(inner, 5)).is_ok());
 }
 
 #[tokio::test]
 async fn test_react_name_non_empty() {
-    let inner = Arc::new(EchoAgent { name: "react-inner".to_string() });
+    let inner = Arc::new(EchoAgent {
+        name: "react-inner".to_string(),
+    });
     let agent = ReActAgent::new(make_react_config(inner, 5)).unwrap();
     assert!(!agent.name().is_empty());
 }
@@ -247,7 +293,9 @@ async fn test_react_name_non_empty() {
 #[tokio::test]
 async fn test_react_has_name() {
     // ReActAgent has a fixed name "ReActAgent"
-    let inner = Arc::new(EchoAgent { name: "react-inner".to_string() });
+    let inner = Arc::new(EchoAgent {
+        name: "react-inner".to_string(),
+    });
     let agent = ReActAgent::new(make_react_config(inner, 5)).unwrap();
     assert!(!agent.name().is_empty());
     // ReAct delegates capabilities to inner agent
@@ -260,14 +308,18 @@ async fn test_react_final_answer_response() {
     struct FinalAnswerAgent;
     #[async_trait]
     impl Agent for FinalAnswerAgent {
-        fn name(&self) -> &str { "final-answer" }
+        fn name(&self) -> &str {
+            "final-answer"
+        }
         async fn process(&self, _msg: Message) -> Result<Message, AgentError> {
             Ok(Message::with_text("assistant", "Final Answer: 42"))
         }
     }
     let inner = Arc::new(FinalAnswerAgent);
     let agent = ReActAgent::new(make_react_config(inner, 5)).unwrap();
-    let result = agent.process(Message::with_text("user", "what is 6*7?")).await;
+    let result = agent
+        .process(Message::with_text("user", "what is 6*7?"))
+        .await;
     assert!(result.is_ok());
 }
 
@@ -277,9 +329,14 @@ async fn test_react_max_steps_enforced() {
     struct ThinkingAgent;
     #[async_trait]
     impl Agent for ThinkingAgent {
-        fn name(&self) -> &str { "thinker" }
+        fn name(&self) -> &str {
+            "thinker"
+        }
         async fn process(&self, _msg: Message) -> Result<Message, AgentError> {
-            Ok(Message::with_text("assistant", "Thought: still thinking\nAction: search\nAction Input: query"))
+            Ok(Message::with_text(
+                "assistant",
+                "Thought: still thinking\nAction: search\nAction Input: query",
+            ))
         }
     }
     let inner = Arc::new(ThinkingAgent);
@@ -291,7 +348,9 @@ async fn test_react_max_steps_enforced() {
 
 #[tokio::test]
 async fn test_react_zero_max_steps() {
-    let inner = Arc::new(EchoAgent { name: "inner".to_string() });
+    let inner = Arc::new(EchoAgent {
+        name: "inner".to_string(),
+    });
     // max_steps = 0 means no steps allowed — should error or return immediately
     let agent = ReActAgent::new(make_react_config(inner, 0)).unwrap();
     let result = agent.process(Message::with_text("user", "test")).await;
@@ -319,7 +378,9 @@ async fn test_react_with_prompt_template() {
     struct FinalAnswerAgent;
     #[async_trait]
     impl Agent for FinalAnswerAgent {
-        fn name(&self) -> &str { "final-answer" }
+        fn name(&self) -> &str {
+            "final-answer"
+        }
         async fn process(&self, _msg: Message) -> Result<Message, AgentError> {
             Ok(Message::with_text("assistant", "Final Answer: done"))
         }
@@ -351,35 +412,47 @@ fn make_planning_config(llm: Arc<dyn Agent>) -> PlanningConfig {
 
 #[tokio::test]
 async fn test_planning_creation() {
-    let llm = Arc::new(EchoAgent { name: "planner-llm".to_string() });
+    let llm = Arc::new(EchoAgent {
+        name: "planner-llm".to_string(),
+    });
     assert!(PlanningAgent::new(make_planning_config(llm)).is_ok());
 }
 
 #[tokio::test]
 async fn test_planning_name_non_empty() {
-    let llm = Arc::new(EchoAgent { name: "planner-llm".to_string() });
+    let llm = Arc::new(EchoAgent {
+        name: "planner-llm".to_string(),
+    });
     let agent = PlanningAgent::new(make_planning_config(llm)).unwrap();
     assert!(!agent.name().is_empty());
 }
 
 #[tokio::test]
 async fn test_planning_capabilities_non_empty() {
-    let llm = Arc::new(EchoAgent { name: "planner-llm".to_string() });
+    let llm = Arc::new(EchoAgent {
+        name: "planner-llm".to_string(),
+    });
     let agent = PlanningAgent::new(make_planning_config(llm)).unwrap();
     assert!(!agent.capabilities().is_empty());
 }
 
 #[tokio::test]
 async fn test_planning_processes_message() {
-    let llm = Arc::new(EchoAgent { name: "planner-llm".to_string() });
+    let llm = Arc::new(EchoAgent {
+        name: "planner-llm".to_string(),
+    });
     let agent = PlanningAgent::new(make_planning_config(llm)).unwrap();
-    let result = agent.process(Message::with_text("user", "organize a party")).await;
+    let result = agent
+        .process(Message::with_text("user", "organize a party"))
+        .await;
     assert!(result.is_ok() || result.is_err());
 }
 
 #[tokio::test]
 async fn test_planning_allow_replanning_flag() {
-    let llm = Arc::new(EchoAgent { name: "planner-llm".to_string() });
+    let llm = Arc::new(EchoAgent {
+        name: "planner-llm".to_string(),
+    });
     let config = PlanningConfig {
         llm,
         executor: None,
@@ -452,7 +525,11 @@ async fn test_autonomous_no_goals() {
 #[tokio::test]
 async fn test_autonomous_goal_status_variants() {
     use agenkit::patterns::GoalStatus;
-    let statuses = [GoalStatus::Active, GoalStatus::Completed, GoalStatus::Abandoned];
+    let statuses = [
+        GoalStatus::Active,
+        GoalStatus::Completed,
+        GoalStatus::Abandoned,
+    ];
     assert_eq!(statuses.len(), 3);
 }
 
@@ -463,8 +540,12 @@ async fn test_autonomous_goal_status_variants() {
 #[tokio::test]
 async fn test_sequential_pattern_creation() {
     let agents: Vec<Arc<dyn Agent>> = vec![
-        Arc::new(EchoAgent { name: "a".to_string() }),
-        Arc::new(EchoAgent { name: "b".to_string() }),
+        Arc::new(EchoAgent {
+            name: "a".to_string(),
+        }),
+        Arc::new(EchoAgent {
+            name: "b".to_string(),
+        }),
     ];
     assert!(SequentialAgent::new(agents).is_ok());
 }
@@ -478,8 +559,12 @@ async fn test_sequential_pattern_empty_fails() {
 #[tokio::test]
 async fn test_sequential_pattern_runs_in_order() {
     let agents: Vec<Arc<dyn Agent>> = vec![
-        Arc::new(EchoAgent { name: "first".to_string() }),
-        Arc::new(EchoAgent { name: "second".to_string() }),
+        Arc::new(EchoAgent {
+            name: "first".to_string(),
+        }),
+        Arc::new(EchoAgent {
+            name: "second".to_string(),
+        }),
     ];
     let agent = SequentialAgent::new(agents).unwrap();
     let result = agent.process(Message::with_text("user", "input")).await;
@@ -493,7 +578,9 @@ async fn test_sequential_pattern_runs_in_order() {
 async fn test_sequential_pattern_error_short_circuits() {
     let agents: Vec<Arc<dyn Agent>> = vec![
         Arc::new(ErrorAgent),
-        Arc::new(EchoAgent { name: "b".to_string() }),
+        Arc::new(EchoAgent {
+            name: "b".to_string(),
+        }),
     ];
     let agent = SequentialAgent::new(agents).unwrap();
     let result = agent.process(Message::with_text("user", "test")).await;
@@ -502,7 +589,9 @@ async fn test_sequential_pattern_error_short_circuits() {
 
 #[tokio::test]
 async fn test_sequential_pattern_single_agent() {
-    let agents: Vec<Arc<dyn Agent>> = vec![Arc::new(EchoAgent { name: "solo".to_string() })];
+    let agents: Vec<Arc<dyn Agent>> = vec![Arc::new(EchoAgent {
+        name: "solo".to_string(),
+    })];
     let agent = SequentialAgent::new(agents).unwrap();
     let result = agent.process(Message::with_text("user", "solo test")).await;
     assert!(result.is_ok());
@@ -511,8 +600,12 @@ async fn test_sequential_pattern_single_agent() {
 #[tokio::test]
 async fn test_sequential_pattern_capabilities_merged() {
     let agents: Vec<Arc<dyn Agent>> = vec![
-        Arc::new(EchoAgent { name: "a".to_string() }),
-        Arc::new(EchoAgent { name: "b".to_string() }),
+        Arc::new(EchoAgent {
+            name: "a".to_string(),
+        }),
+        Arc::new(EchoAgent {
+            name: "b".to_string(),
+        }),
     ];
     let agent = SequentialAgent::new(agents).unwrap();
     let caps = agent.capabilities();
@@ -526,8 +619,12 @@ async fn test_sequential_pattern_capabilities_merged() {
 #[tokio::test]
 async fn test_parallel_pattern_creation() {
     let agents: Vec<Arc<dyn Agent>> = vec![
-        Arc::new(EchoAgent { name: "a".to_string() }),
-        Arc::new(EchoAgent { name: "b".to_string() }),
+        Arc::new(EchoAgent {
+            name: "a".to_string(),
+        }),
+        Arc::new(EchoAgent {
+            name: "b".to_string(),
+        }),
     ];
     assert!(ParallelAgent::new(agents, DefaultAggregators::concatenate).is_ok());
 }
@@ -541,9 +638,15 @@ async fn test_parallel_pattern_empty_fails() {
 #[tokio::test]
 async fn test_parallel_pattern_runs_concurrently() {
     let agents: Vec<Arc<dyn Agent>> = vec![
-        Arc::new(EchoAgent { name: "m1".to_string() }),
-        Arc::new(EchoAgent { name: "m2".to_string() }),
-        Arc::new(EchoAgent { name: "m3".to_string() }),
+        Arc::new(EchoAgent {
+            name: "m1".to_string(),
+        }),
+        Arc::new(EchoAgent {
+            name: "m2".to_string(),
+        }),
+        Arc::new(EchoAgent {
+            name: "m3".to_string(),
+        }),
     ];
     let agent = ParallelAgent::new(agents, DefaultAggregators::concatenate).unwrap();
     let result = agent.process(Message::with_text("user", "analyze")).await;
@@ -553,9 +656,15 @@ async fn test_parallel_pattern_runs_concurrently() {
 #[tokio::test]
 async fn test_parallel_pattern_majority_vote() {
     let agents: Vec<Arc<dyn Agent>> = vec![
-        Arc::new(EchoAgent { name: "v1".to_string() }),
-        Arc::new(EchoAgent { name: "v2".to_string() }),
-        Arc::new(EchoAgent { name: "v3".to_string() }),
+        Arc::new(EchoAgent {
+            name: "v1".to_string(),
+        }),
+        Arc::new(EchoAgent {
+            name: "v2".to_string(),
+        }),
+        Arc::new(EchoAgent {
+            name: "v3".to_string(),
+        }),
     ];
     let agent = ParallelAgent::new(agents, DefaultAggregators::majority_vote).unwrap();
     let result = agent.process(Message::with_text("user", "vote")).await;
@@ -565,7 +674,9 @@ async fn test_parallel_pattern_majority_vote() {
 #[tokio::test]
 async fn test_parallel_pattern_partial_failure() {
     let agents: Vec<Arc<dyn Agent>> = vec![
-        Arc::new(EchoAgent { name: "ok".to_string() }),
+        Arc::new(EchoAgent {
+            name: "ok".to_string(),
+        }),
         Arc::new(ErrorAgent),
     ];
     let agent = ParallelAgent::new(agents, DefaultAggregators::first).unwrap();
@@ -576,7 +687,9 @@ async fn test_parallel_pattern_partial_failure() {
 
 #[tokio::test]
 async fn test_parallel_pattern_capabilities() {
-    let agents: Vec<Arc<dyn Agent>> = vec![Arc::new(EchoAgent { name: "a".to_string() })];
+    let agents: Vec<Arc<dyn Agent>> = vec![Arc::new(EchoAgent {
+        name: "a".to_string(),
+    })];
     let agent = ParallelAgent::new(agents, DefaultAggregators::concatenate).unwrap();
     let caps = agent.capabilities();
     assert!(caps.contains(&"parallel".to_string()) || caps.contains(&"ensemble".to_string()));
@@ -588,14 +701,18 @@ async fn test_parallel_pattern_capabilities() {
 
 #[tokio::test]
 async fn test_task_creation() {
-    let agent: Arc<dyn Agent> = Arc::new(EchoAgent { name: "task-agent".to_string() });
+    let agent: Arc<dyn Agent> = Arc::new(EchoAgent {
+        name: "task-agent".to_string(),
+    });
     let _task = Task::new(agent, TaskConfig::default());
     // No panic — task created successfully
 }
 
 #[tokio::test]
 async fn test_task_execute_succeeds() {
-    let agent: Arc<dyn Agent> = Arc::new(EchoAgent { name: "task-agent".to_string() });
+    let agent: Arc<dyn Agent> = Arc::new(EchoAgent {
+        name: "task-agent".to_string(),
+    });
     let task = Task::new(agent, TaskConfig::default());
     let result = task.execute(Message::with_text("user", "do this")).await;
     assert!(result.is_ok());
@@ -603,15 +720,22 @@ async fn test_task_execute_succeeds() {
 
 #[tokio::test]
 async fn test_task_execute_returns_response() {
-    let agent: Arc<dyn Agent> = Arc::new(EchoAgent { name: "task-agent".to_string() });
+    let agent: Arc<dyn Agent> = Arc::new(EchoAgent {
+        name: "task-agent".to_string(),
+    });
     let task = Task::new(agent, TaskConfig::default());
-    let result = task.execute(Message::with_text("user", "hello")).await.unwrap();
+    let result = task
+        .execute(Message::with_text("user", "hello"))
+        .await
+        .unwrap();
     assert_eq!(result.role, "assistant");
 }
 
 #[tokio::test]
 async fn test_task_with_retries_config() {
-    let agent: Arc<dyn Agent> = Arc::new(EchoAgent { name: "task-agent".to_string() });
+    let agent: Arc<dyn Agent> = Arc::new(EchoAgent {
+        name: "task-agent".to_string(),
+    });
     let config = TaskConfig {
         timeout: None,
         retries: 2,
@@ -623,7 +747,9 @@ async fn test_task_with_retries_config() {
 
 #[tokio::test]
 async fn test_task_with_timeout_config() {
-    let agent: Arc<dyn Agent> = Arc::new(EchoAgent { name: "task-agent".to_string() });
+    let agent: Arc<dyn Agent> = Arc::new(EchoAgent {
+        name: "task-agent".to_string(),
+    });
     let config = TaskConfig {
         timeout: Some(Duration::from_secs(30)),
         retries: 0,
@@ -636,7 +762,10 @@ async fn test_task_with_timeout_config() {
 #[tokio::test]
 async fn test_task_failure_propagates() {
     let agent: Arc<dyn Agent> = Arc::new(ErrorAgent);
-    let config = TaskConfig { timeout: None, retries: 0 };
+    let config = TaskConfig {
+        timeout: None,
+        retries: 0,
+    };
     let task = Task::new(agent, config);
     let result = task.execute(Message::with_text("user", "fail")).await;
     assert!(result.is_err());
@@ -658,7 +787,9 @@ fn make_conversational(llm: Arc<dyn Agent>, max_history: usize) -> Conversationa
 
 #[tokio::test]
 async fn test_conversational_creation() {
-    let llm = Arc::new(EchoAgent { name: "chat-llm".to_string() });
+    let llm = Arc::new(EchoAgent {
+        name: "chat-llm".to_string(),
+    });
     let result = ConversationalAgent::new(ConversationalConfig {
         llm,
         max_history: 10,
@@ -670,14 +801,18 @@ async fn test_conversational_creation() {
 
 #[tokio::test]
 async fn test_conversational_name_non_empty() {
-    let llm = Arc::new(EchoAgent { name: "chat-llm".to_string() });
+    let llm = Arc::new(EchoAgent {
+        name: "chat-llm".to_string(),
+    });
     let agent = make_conversational(llm, 10);
     assert!(!agent.name().is_empty());
 }
 
 #[tokio::test]
 async fn test_conversational_first_turn() {
-    let llm = Arc::new(EchoAgent { name: "chat-llm".to_string() });
+    let llm = Arc::new(EchoAgent {
+        name: "chat-llm".to_string(),
+    });
     let agent = make_conversational(llm, 10);
     let result = agent.process(Message::with_text("user", "Hello!")).await;
     assert!(result.is_ok());
@@ -685,7 +820,9 @@ async fn test_conversational_first_turn() {
 
 #[tokio::test]
 async fn test_conversational_multiple_turns() {
-    let llm = Arc::new(EchoAgent { name: "chat-llm".to_string() });
+    let llm = Arc::new(EchoAgent {
+        name: "chat-llm".to_string(),
+    });
     let agent = make_conversational(llm, 10);
     let _ = agent.process(Message::with_text("user", "Turn 1")).await;
     let result = agent.process(Message::with_text("user", "Turn 2")).await;
@@ -694,7 +831,9 @@ async fn test_conversational_multiple_turns() {
 
 #[tokio::test]
 async fn test_conversational_with_system_prompt() {
-    let llm = Arc::new(EchoAgent { name: "chat-llm".to_string() });
+    let llm = Arc::new(EchoAgent {
+        name: "chat-llm".to_string(),
+    });
     let result = ConversationalAgent::new(ConversationalConfig {
         llm,
         max_history: 5,
@@ -706,7 +845,9 @@ async fn test_conversational_with_system_prompt() {
 
 #[tokio::test]
 async fn test_conversational_small_history_limit() {
-    let llm = Arc::new(EchoAgent { name: "chat-llm".to_string() });
+    let llm = Arc::new(EchoAgent {
+        name: "chat-llm".to_string(),
+    });
     let agent = make_conversational(llm, 2);
     // Process more messages than max_history — should not panic
     for i in 0..5 {
@@ -723,7 +864,9 @@ async fn test_conversational_small_history_limit() {
 #[tokio::test]
 async fn test_multiagent_sequential_creation() {
     let mut orch = MultiAgentOrchestrator::new(OrchestrationStrategy::Sequential);
-    let agent: Arc<dyn Agent> = Arc::new(EchoAgent { name: "worker".to_string() });
+    let agent: Arc<dyn Agent> = Arc::new(EchoAgent {
+        name: "worker".to_string(),
+    });
     orch.register_agent("worker", agent);
     // Verify strategy is preserved
     assert_eq!(orch.strategy(), OrchestrationStrategy::Sequential);
@@ -732,7 +875,9 @@ async fn test_multiagent_sequential_creation() {
 #[tokio::test]
 async fn test_multiagent_parallel_creation() {
     let mut orch = MultiAgentOrchestrator::new(OrchestrationStrategy::Parallel);
-    let agent: Arc<dyn Agent> = Arc::new(EchoAgent { name: "worker".to_string() });
+    let agent: Arc<dyn Agent> = Arc::new(EchoAgent {
+        name: "worker".to_string(),
+    });
     orch.register_agent("worker", agent);
     assert_eq!(orch.strategy(), OrchestrationStrategy::Parallel);
 }
@@ -740,8 +885,18 @@ async fn test_multiagent_parallel_creation() {
 #[tokio::test]
 async fn test_multiagent_sequential_processes() {
     let mut orch = MultiAgentOrchestrator::new(OrchestrationStrategy::Sequential);
-    orch.register_agent("a", Arc::new(EchoAgent { name: "a".to_string() }) as Arc<dyn Agent>);
-    orch.register_agent("b", Arc::new(EchoAgent { name: "b".to_string() }) as Arc<dyn Agent>);
+    orch.register_agent(
+        "a",
+        Arc::new(EchoAgent {
+            name: "a".to_string(),
+        }) as Arc<dyn Agent>,
+    );
+    orch.register_agent(
+        "b",
+        Arc::new(EchoAgent {
+            name: "b".to_string(),
+        }) as Arc<dyn Agent>,
+    );
     let result = orch.process(Message::with_text("user", "test")).await;
     assert!(result.is_ok());
 }
@@ -749,8 +904,18 @@ async fn test_multiagent_sequential_processes() {
 #[tokio::test]
 async fn test_multiagent_parallel_processes() {
     let mut orch = MultiAgentOrchestrator::new(OrchestrationStrategy::Parallel);
-    orch.register_agent("a", Arc::new(EchoAgent { name: "a".to_string() }) as Arc<dyn Agent>);
-    orch.register_agent("b", Arc::new(EchoAgent { name: "b".to_string() }) as Arc<dyn Agent>);
+    orch.register_agent(
+        "a",
+        Arc::new(EchoAgent {
+            name: "a".to_string(),
+        }) as Arc<dyn Agent>,
+    );
+    orch.register_agent(
+        "b",
+        Arc::new(EchoAgent {
+            name: "b".to_string(),
+        }) as Arc<dyn Agent>,
+    );
     let result = orch.process(Message::with_text("user", "test")).await;
     assert!(result.is_ok());
 }
@@ -765,8 +930,18 @@ async fn test_multiagent_no_agents() {
 #[tokio::test]
 async fn test_multiagent_list_agents() {
     let mut orch = MultiAgentOrchestrator::new(OrchestrationStrategy::Sequential);
-    orch.register_agent("a", Arc::new(EchoAgent { name: "a".to_string() }) as Arc<dyn Agent>);
-    orch.register_agent("b", Arc::new(EchoAgent { name: "b".to_string() }) as Arc<dyn Agent>);
+    orch.register_agent(
+        "a",
+        Arc::new(EchoAgent {
+            name: "a".to_string(),
+        }) as Arc<dyn Agent>,
+    );
+    orch.register_agent(
+        "b",
+        Arc::new(EchoAgent {
+            name: "b".to_string(),
+        }) as Arc<dyn Agent>,
+    );
     let agents = orch.list_agents();
     assert_eq!(agents.len(), 2);
 }

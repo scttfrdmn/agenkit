@@ -320,7 +320,8 @@ impl Agent for WebSocketAgent {
         // Ok(response)
 
         Err(AgentError::Internal(
-            "WebSocket transport not fully implemented. See implementation notes in source.".to_string()
+            "WebSocket transport not fully implemented. See implementation notes in source."
+                .to_string(),
         ))
     }
 

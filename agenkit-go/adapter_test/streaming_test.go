@@ -454,23 +454,36 @@ func TestNonStreamingAgentError(t *testing.T) {
 	messageChan, errorChan := client.Stream(ctx, msg)
 
 	gotError := false
-	done := false
-	for !done {
+
+	// Drain until *both* channels are closed, tracking each independently.
+	// Exiting on the first close, as this previously did, loses the error:
+	// Stream sends on a buffered errorChan (cap 1) and then closes both
+	// channels, so once its goroutine has returned both cases are ready and
+	// `select` picks uniformly at random — a coin flip on whether the error is
+	// observed before the closed messageChan ends the loop. That is a 50%
+	// failure rate whenever the producer wins the start, which is what happens
+	// on a loaded CI runner; locally the consumer reaches select while
+	// messageChan is still open, so it passed 200/200. (#748)
+	//
+	// This is the same idiom TestStreamingErrorInStream already uses, and it
+	// does not depend on the order Stream happens to close the two channels in.
+	messagesOpen := true
+	errorsOpen := true
+	for messagesOpen || errorsOpen {
 		select {
 		case _, ok := <-messageChan:
 			if !ok {
-				done = true
+				messagesOpen = false
 			}
 		case err, ok := <-errorChan:
-			if ok && err != nil {
+			if !ok {
+				errorsOpen = false
+			} else if err != nil {
 				gotError = true
 				// Verify it's a "not implemented" error
 				if err.Error() == "" {
 					t.Error("Expected non-empty error message")
 				}
-			}
-			if !ok {
-				done = true
 			}
 		}
 	}

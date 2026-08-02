@@ -108,8 +108,7 @@ impl AgentTask {
 }
 
 /// Orchestration strategy for coordinating multiple agents.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum OrchestrationStrategy {
     /// Execute agents one after another
     #[default]
@@ -120,10 +119,8 @@ pub enum OrchestrationStrategy {
     Delegate,
 }
 
-
 /// Voting strategy for consensus building.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum VotingStrategy {
     /// Use majority vote
     #[default]
@@ -133,7 +130,6 @@ pub enum VotingStrategy {
     /// Use weighted voting
     Weighted,
 }
-
 
 /// Orchestrates multiple agents working together.
 ///

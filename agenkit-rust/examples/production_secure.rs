@@ -23,6 +23,8 @@ struct SecureSession {
     prompt_detector: PromptInjectionDetector,
     output_redactor: SensitiveDataRedactor,
     session_id: String,
+    // Part of the example's session shape; not consulted by any step below.
+    #[allow(dead_code)]
     user_id: String,
     step: usize,
 }
@@ -244,7 +246,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Run conversation
-    let messages = vec![
+    let messages = [
         "Hello! Starting a secure conversation.",
         "Remember that I prefer detailed answers.",
         "What can you tell me about AI?",

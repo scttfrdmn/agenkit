@@ -491,8 +491,10 @@ mod tests {
             response: "Test".to_string(),
         });
 
-        let mut config = WebSocketHandlerConfig::default();
-        config.max_message_size = 10; // Very small limit
+        let config = WebSocketHandlerConfig {
+            max_message_size: 10, // Very small limit
+            ..Default::default()
+        };
 
         let handler = AGUIWebSocketHandler::new(agent, config);
 

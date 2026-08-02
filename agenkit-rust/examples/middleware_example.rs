@@ -30,10 +30,6 @@ impl EchoAgent {
             call_count: Arc::new(AtomicU32::new(0)),
         }
     }
-
-    fn calls(&self) -> u32 {
-        self.call_count.load(Ordering::SeqCst)
-    }
 }
 
 #[async_trait]

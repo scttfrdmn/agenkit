@@ -322,7 +322,7 @@ mod tests {
     use super::*;
     use crate::core::{Agent, AgentError};
     use crate::protocols::agui::adapter::AGUIAdapterConfig;
-    use crate::protocols::agui::events::{EventType, TextMessageChunk};
+    use crate::protocols::agui::events::TextMessageChunk;
     use async_trait::async_trait;
     // Brings `.next()` into scope for the stream assertions below. Only the tests
     // consume the stream, so this is test-scoped rather than file-scoped (#778).
@@ -436,8 +436,10 @@ mod tests {
 
     #[test]
     fn test_sse_response_config_cors() {
-        let mut config = SSEResponseConfig::default();
-        config.cors_origins = vec!["http://localhost:3000".to_string()];
+        let config = SSEResponseConfig {
+            cors_origins: vec!["http://localhost:3000".to_string()],
+            ..Default::default()
+        };
 
         let headers = config.headers(Some("http://localhost:3000"));
 

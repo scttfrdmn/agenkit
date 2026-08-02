@@ -4,9 +4,7 @@
 
 use agenkit::{
     core::{Agent, AgentError, Message},
-    safety::{
-        InputValidationMiddleware, OutputValidationMiddleware, PermissionMiddleware, Role,
-    },
+    safety::{InputValidationMiddleware, OutputValidationMiddleware, PermissionMiddleware, Role},
 };
 use async_trait::async_trait;
 

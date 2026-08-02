@@ -9,7 +9,7 @@ mod tests {
         SchemaValidatorConfig,
     };
     use async_trait::async_trait;
-    
+
     use std::collections::{HashMap, HashSet};
 
     /// Mock agent for testing that echoes input and adds metadata.
@@ -106,8 +106,10 @@ mod tests {
 
         // Use custom config with lower threshold to ensure detection
         use crate::safety::PromptInjectionConfig;
-        let mut config = PromptInjectionConfig::default();
-        config.threshold = 5; // Lower threshold for more sensitive detection
+        let config = PromptInjectionConfig {
+            threshold: 5, // Lower threshold for more sensitive detection
+            ..Default::default()
+        };
 
         let agent = InputValidationMiddleware::new(agent)
             .with_prompt_injection_detector_config(config)
@@ -221,8 +223,10 @@ mod tests {
 
         // Use lower threshold to ensure detection
         use crate::safety::PromptInjectionConfig;
-        let mut config = PromptInjectionConfig::default();
-        config.threshold = 5;
+        let config = PromptInjectionConfig {
+            threshold: 5,
+            ..Default::default()
+        };
 
         let agent = InputValidationMiddleware::new(agent)
             .with_prompt_injection_detector_config(config)
@@ -260,10 +264,12 @@ mod tests {
         // Test banned words in input and sensitive data in output
         let agent = MockAgent::with_sensitive_data("test-agent");
 
-        let mut config = ContentFilterConfig::default();
-        config.banned_words = HashSet::from(["exploit".to_string(), "malware".to_string()]);
-        config.max_size = 10000;
-        config.min_size = 1;
+        let config = ContentFilterConfig {
+            banned_words: HashSet::from(["exploit".to_string(), "malware".to_string()]),
+            max_size: 10000,
+            min_size: 1,
+            ..Default::default()
+        };
 
         let agent = InputValidationMiddleware::new(agent)
             .with_content_filter_config(config)
@@ -297,10 +303,12 @@ mod tests {
         // Test sandbox constraints with multiple middleware layers
         let agent = MockAgent::new("test-agent");
 
-        let mut sandbox = Sandbox::default();
-        sandbox.allowed_paths = HashSet::from(["/tmp".to_string()]);
-        sandbox.denied_commands = HashSet::from(["rm".to_string(), "sudo".to_string()]);
-        sandbox.max_file_size = 1024 * 1024; // 1MB
+        let sandbox = Sandbox {
+            allowed_paths: HashSet::from(["/tmp".to_string()]),
+            denied_commands: HashSet::from(["rm".to_string(), "sudo".to_string()]),
+            max_file_size: 1024 * 1024, // 1MB
+            ..Default::default()
+        };
 
         let agent = InputValidationMiddleware::new(agent).with_content_filter();
 

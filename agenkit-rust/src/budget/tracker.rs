@@ -131,6 +131,8 @@ impl CostTracker {
     }
 
     /// Record a cost with automatic calculation.
+    // Mirrors `CostRecord::new`'s field list; see the note there (#778).
+    #[allow(clippy::too_many_arguments)]
     pub async fn record_cost(
         &self,
         session_id: &str,
@@ -180,6 +182,8 @@ impl CostTracker {
     }
 
     /// Record a cost with explicit cost value.
+    // Mirrors `CostRecord::new`'s field list; see the note there (#778).
+    #[allow(clippy::too_many_arguments)]
     pub async fn record_cost_explicit(
         &self,
         session_id: &str,

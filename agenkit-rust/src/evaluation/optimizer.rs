@@ -679,9 +679,7 @@ mod tests {
             result.metadata.get("n_initial").unwrap().as_u64().unwrap(),
             3
         );
-        assert!(
-            result.metadata.get("maximize").unwrap().as_bool().unwrap()
-        );
+        assert!(result.metadata.get("maximize").unwrap().as_bool().unwrap());
         assert!(result.metadata.contains_key("acquisition"));
     }
 

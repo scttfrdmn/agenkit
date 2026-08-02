@@ -41,21 +41,6 @@ impl Agent for EchoAgent {
     }
 }
 
-struct NamedAgent {
-    agent_name: String,
-}
-
-#[async_trait]
-impl Agent for NamedAgent {
-    fn name(&self) -> &str {
-        &self.agent_name
-    }
-
-    async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-        Ok(Message::with_text("assistant", "response"))
-    }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Message invariant tests
 // ─────────────────────────────────────────────────────────────────────────────
@@ -442,10 +427,6 @@ async fn test_agent_error_display_non_empty() {
 
 #[tokio::test]
 async fn test_agent_error_propagates_through_process() {
-    struct PropagatingAgent {
-        inner_error: AgentError,
-    }
-    // Can't easily clone AgentError, so use a string to create it
     struct ErrorPropagator;
     #[async_trait]
     impl Agent for ErrorPropagator {

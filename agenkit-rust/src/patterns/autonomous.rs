@@ -580,11 +580,13 @@ mod tests {
         // exactly that writing this. Yielding once instead makes the handoff
         // deterministic: `run()` awaits `yield_now()` at the end of each iteration,
         // which is where this task gets polled.
-        runtime::spawn(async move {
+        // Dropping the handle is the point: the task must run anyway. That is the
+        // exact contract #778 broke, so drop it explicitly rather than binding it.
+        drop(runtime::spawn(async move {
             runtime::yield_now().await;
             stopper.stop();
             stop_calls_clone.fetch_add(1, Ordering::SeqCst);
-        });
+        }));
 
         let result = agent.run().await.unwrap();
 

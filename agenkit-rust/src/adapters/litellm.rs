@@ -203,7 +203,7 @@ impl LiteLLMAdapter {
     fn message_to_litellm_message(&self, message: &Message) -> LiteLLMMessage {
         let role = match message.role.as_str() {
             "system" | "user" => message.role.clone(),
-            "assistant" | "agent" | _ => "assistant".to_string(),
+            _ => "assistant".to_string(),
         };
 
         LiteLLMMessage {

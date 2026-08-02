@@ -9,7 +9,11 @@ use std::fs;
 use std::path::PathBuf;
 
 /// Test fixtures loaded from shared JSON file
+// The fixture-schema structs below deserialize `version`/`description`/`name`
+// documentation fields that this harness does not assert on. Kept because removing a
+// field from a `Deserialize` struct changes which JSON shapes parse (#778).
 #[derive(Debug, serde::Deserialize)]
+#[allow(dead_code)]
 struct MessageFixtures {
     version: String,
     description: String,
@@ -17,6 +21,7 @@ struct MessageFixtures {
 }
 
 #[derive(Debug, serde::Deserialize)]
+#[allow(dead_code)]
 struct MessageTestCase {
     id: String,
     name: String,

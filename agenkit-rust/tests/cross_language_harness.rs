@@ -939,8 +939,6 @@ fn execute_fallback(
 
     let mut attempts = 0;
     let mut failures: Vec<String> = Vec::new();
-    let mut success_agent = String::new();
-    let mut success_index = -1i32;
 
     // Try each agent in order until one succeeds
     for (i, agent) in agents.iter().enumerate() {
@@ -956,9 +954,10 @@ fn execute_fallback(
                 continue;
             }
 
-            // Agent succeeded
-            success_agent = agent_name.to_string();
-            success_index = i as i32;
+            // Agent succeeded. These were pre-declared above with initial values that
+            // no path ever read -- every use is inside this iteration (#778).
+            let success_agent = agent_name.to_string();
+            let success_index = i as i32;
 
             let mut metadata = HashMap::new();
             metadata.insert(

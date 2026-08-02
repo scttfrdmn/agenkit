@@ -176,7 +176,9 @@ async fn test_rate_limiter_allows_within_capacity() {
     let mut successful = 0;
     for _ in &test_case.scenario.requests {
         let msg = Message::with_text("user", "test");
-        if let Ok(_) = rate_limiter.process(msg).await { successful += 1 }
+        if rate_limiter.process(msg).await.is_ok() {
+            successful += 1
+        }
     }
     let elapsed = start.elapsed();
 

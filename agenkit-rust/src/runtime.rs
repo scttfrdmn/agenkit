@@ -95,10 +95,7 @@ where
     // the handle silently discarded the work (#778). `tests/runtime_spawn.rs` pins
     // this; three of those tests fail if the call moves back inside.
     let task = tokio::spawn(future);
-    Box::pin(async move {
-        task.await
-            .expect("spawned task panicked or was cancelled")
-    })
+    Box::pin(async move { task.await.expect("spawned task panicked or was cancelled") })
 }
 
 #[cfg(feature = "native")]

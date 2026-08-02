@@ -154,10 +154,12 @@ async fn test_reflection_pattern_capabilities() {
 /// Test 5: Stop reason enum
 #[tokio::test]
 async fn test_stop_reason_values() {
-    let reasons = [StopReason::QualityThresholdMet,
+    let reasons = [
+        StopReason::QualityThresholdMet,
         StopReason::MinimalImprovement,
         StopReason::MaxIterations,
-        StopReason::PerfectScore];
+        StopReason::PerfectScore,
+    ];
 
     assert_eq!(reasons.len(), 4);
 }

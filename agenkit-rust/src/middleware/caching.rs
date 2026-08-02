@@ -298,10 +298,6 @@ impl LruCache {
         }
     }
 
-    fn size(&self) -> usize {
-        self.entries.len()
-    }
-
     fn get_metrics(&self) -> CachingMetrics {
         self.metrics.clone()
     }

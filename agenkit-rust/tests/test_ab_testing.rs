@@ -171,9 +171,13 @@ fn test_calculate_sample_size_larger_effect() {
 
 #[test]
 fn test_ab_test_constructor() {
+    // `drop` here was a no-op: ABTest implements no Drop, so it asserted nothing
+    // beyond what construction already did. Assert on the constructed value instead
+    // (#778).
     let test = ABTest::new(StatisticalTestType::TTest, SignificanceLevel::P005);
-    // Should construct without error
-    drop(test);
+    assert_eq!(test.test_type(), StatisticalTestType::TTest);
+    assert_eq!(test.significance_level(), SignificanceLevel::P005);
+    assert_eq!(test.significance_level().alpha(), 0.05);
 }
 
 #[test]

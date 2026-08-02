@@ -3,7 +3,7 @@
 //! Converts agent responses into AG-UI event streams for frontend consumption.
 use crate::core::{Agent, Message};
 use crate::protocols::agui::events::*;
-use futures::stream::{Stream, StreamExt};
+use futures::stream::Stream;
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -204,10 +204,12 @@ fn create_metadata_event(agent_name: &str, agent: &dyn Agent) -> MetadataEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // AgentError is used only by the mock below, so it belongs here rather than at
-    // file scope where it is genuinely unused (#778).
+    // AgentError is used only by the mock below, and StreamExt only by the `.next()`
+    // calls in the assertions, so both belong here rather than at file scope where
+    // they are genuinely unused (#778).
     use crate::core::{AgentError, Message};
     use async_trait::async_trait;
+    use futures::stream::StreamExt;
 
     struct MockAgent {
         response: String,

@@ -131,6 +131,10 @@ impl Default for GrpcConfig {
 /// efficient binary communication with Protocol Buffers.
 pub struct GrpcAgent {
     name: String,
+    // Unread while this transport is a stub -- see the commented-out client wiring in
+    // `with_config`. The real implementation reads timeouts and TLS settings from it
+    // (#778).
+    #[allow(dead_code)]
     config: GrpcConfig,
     // In full implementation:
     // client: AgentServiceClient<tonic::transport::Channel>,
@@ -153,9 +157,11 @@ impl GrpcAgent {
     /// # }
     /// ```
     pub async fn new(url: &str) -> Result<Self> {
-        let mut config = GrpcConfig::default();
-        config.url = url.to_string();
-        config.use_tls = url.starts_with("grpcs://");
+        let config = GrpcConfig {
+            url: url.to_string(),
+            use_tls: url.starts_with("grpcs://"),
+            ..Default::default()
+        };
         Self::with_config(config).await
     }
 

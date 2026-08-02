@@ -89,6 +89,8 @@ struct MessagesRequest {
 struct MessagesResponse {
     id: String,
     #[serde(rename = "type")]
+    // Not consumed: present to document the wire format (#778).
+    #[allow(dead_code)]
     response_type: String,
     role: String,
     content: Vec<ContentBlock>,
@@ -100,6 +102,8 @@ struct MessagesResponse {
 #[derive(Debug, Deserialize)]
 struct ContentBlock {
     #[serde(rename = "type")]
+    // Not consumed: present to document the wire format (#778).
+    #[allow(dead_code)]
     block_type: String,
     text: String,
 }
@@ -135,6 +139,10 @@ enum StreamEvent {
 }
 
 #[derive(Debug, Deserialize)]
+// Fields present in the API's JSON but not consumed here. Kept because they
+// document the wire format and because removing them from a `Deserialize` struct
+// changes what shapes are accepted. `StreamEvent` above carries the same allow.
+#[allow(dead_code)]
 struct MessageStart {
     id: String,
     #[serde(rename = "type")]
@@ -146,6 +154,9 @@ struct MessageStart {
 }
 
 #[derive(Debug, Deserialize)]
+// Only reached via `StreamEvent::ContentBlockStart`, which this adapter skips; the
+// fields document the wire format (#778).
+#[allow(dead_code)]
 struct ContentBlockStart {
     #[serde(rename = "type")]
     block_type: String,
@@ -160,6 +171,9 @@ enum Delta {
 }
 
 #[derive(Debug, Deserialize)]
+// Only reached via `StreamEvent::MessageDelta`, which this adapter skips; the fields
+// document the wire format (#778).
+#[allow(dead_code)]
 struct MessageDeltaData {
     stop_reason: Option<String>,
     usage: Option<Usage>,
@@ -453,16 +467,19 @@ impl AnthropicAgent {
                 }
 
                 // Parse JSON event
-                if let Ok(StreamEvent::ContentBlockDelta { delta, .. }) =
-                    serde_json::from_str::<StreamEvent>(data)
+                // `Delta` has a single variant, so destructuring it in the outer
+                // pattern is equivalent and drops both an irrefutable inner `if let`
+                // and the nesting clippy flagged (#778).
+                if let Ok(StreamEvent::ContentBlockDelta {
+                    delta: Delta::TextDelta { text },
+                    ..
+                }) = serde_json::from_str::<StreamEvent>(data)
                 {
-                    if let Delta::TextDelta { text } = delta {
-                        let mut msg = Message::with_text("agent", &text);
-                        msg.metadata.insert("streaming".to_string(), json!(true));
-                        msg.metadata
-                            .insert("model".to_string(), json!(self.config.model));
-                        chunks.push(msg);
-                    }
+                    let mut msg = Message::with_text("agent", &text);
+                    msg.metadata.insert("streaming".to_string(), json!(true));
+                    msg.metadata
+                        .insert("model".to_string(), json!(self.config.model));
+                    chunks.push(msg);
                 }
             }
         }

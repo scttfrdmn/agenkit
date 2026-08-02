@@ -237,10 +237,7 @@ fn print_setup_instructions() {
 #[tokio::main]
 async fn main() {
     println!("╔{}╗", "=".repeat(78));
-    println!(
-        "║{}║",
-        format!("{:^78}", "OpenAI-Compatible LLM Adapter Examples")
-    );
+    println!("║{:^78}║", "OpenAI-Compatible LLM Adapter Examples");
     println!("╚{}╝", "=".repeat(78));
     println!();
     println!("This example demonstrates using Agenkit with OpenAI-compatible");

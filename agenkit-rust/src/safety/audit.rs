@@ -133,9 +133,7 @@ impl SecurityAuditLogger {
         }
 
         // Format event as JSON
-        let json = event
-            .to_json()
-            .map_err(std::io::Error::other)?;
+        let json = event.to_json().map_err(std::io::Error::other)?;
 
         // Write to file
         {

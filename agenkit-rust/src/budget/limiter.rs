@@ -3,6 +3,7 @@
 use crate::budget::tracker::CostTracker;
 use crate::core::{Agent, AgentError, IntrospectionResult, Message};
 use async_trait::async_trait;
+use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::warn;
@@ -34,9 +35,18 @@ pub enum BudgetAction {
     SwitchModel(String),
 }
 
-impl BudgetAction {
+impl FromStr for BudgetAction {
+    type Err = String;
+
     /// Parse action from string.
-    pub fn from_str(s: &str) -> Result<Self, String> {
+    ///
+    /// Accepts `"error"`, `"warning"`, or `"switch:<model>"`.
+    ///
+    /// This was an inherent `BudgetAction::from_str` shadowing the standard trait
+    /// method (#778). The signature is unchanged, so `BudgetAction::from_str(s)` still
+    /// compiles for callers with `std::str::FromStr` in scope, and `s.parse()` now
+    /// works too.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "error" => Ok(BudgetAction::Error),
             "warning" => Ok(BudgetAction::Warning),
@@ -112,9 +122,15 @@ impl BudgetConfigBuilder {
     }
 
     /// Set action.
+    ///
+    /// An unrecognised action string is ignored and the previous action kept. That is
+    /// deliberate for a builder that cannot return an error, but it is silent, so it
+    /// is logged -- otherwise a typo like `"warn"` leaves the default `Error` action
+    /// in place with no indication (#778).
     pub fn action(mut self, action: &str) -> Self {
-        if let Ok(action) = BudgetAction::from_str(action) {
-            self.config.action = action;
+        match action.parse::<BudgetAction>() {
+            Ok(parsed) => self.config.action = parsed,
+            Err(err) => warn!("ignoring invalid budget action: {}", err),
         }
         self
     }

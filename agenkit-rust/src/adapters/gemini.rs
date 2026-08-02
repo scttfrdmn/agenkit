@@ -279,7 +279,7 @@ impl GeminiAdapter {
             .map(|msg| {
                 let role = match msg.role.as_str() {
                     "user" | "system" => "user",
-                    "assistant" | "agent" | _ => "model",
+                    _ => "model",
                 };
 
                 let text = msg.content_as_str().unwrap_or("").to_string();

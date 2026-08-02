@@ -297,11 +297,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("📝 Step 5: Running conversation with full integration...");
     println!("{}", "=".repeat(60));
 
-    let messages = ["Hello! I'm starting a new conversation.",
+    let messages = [
+        "Hello! I'm starting a new conversation.",
         "Please remember that I prefer detailed explanations.",
         "What can you tell me about AI agents?",
         "That's interesting. Can you analyze the benefits?",
-        "Thank you for the help!"];
+        "Thank you for the help!",
+    ];
 
     for (i, msg_text) in messages.iter().enumerate() {
         println!("\n💬 Message {}: \"{}\"", i + 1, msg_text);

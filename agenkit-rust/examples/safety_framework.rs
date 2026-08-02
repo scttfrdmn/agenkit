@@ -67,9 +67,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ========================================================================
     println!("📝 Step 1: Setting up security audit logging...");
 
-    let mut audit_config = SecurityAuditLoggerConfig::default();
-    audit_config.log_file = std::path::PathBuf::from("./logs/security_audit.log");
-    audit_config.console_logging = true;
+    let audit_config = SecurityAuditLoggerConfig {
+        log_file: std::path::PathBuf::from("./logs/security_audit.log"),
+        console_logging: true,
+        ..Default::default()
+    };
 
     let audit_logger = SecurityAuditLogger::new(audit_config)?;
 
@@ -104,14 +106,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     use std::collections::HashSet;
 
     // Configure content filter
-    let mut content_config = ContentFilterConfig::default();
-    content_config.banned_words = HashSet::from([
-        "malware".to_string(),
-        "hack".to_string(),
-        "exploit".to_string(),
-    ]);
-    content_config.max_size = 10000;
-    content_config.min_size = 1;
+    let content_config = ContentFilterConfig {
+        banned_words: HashSet::from([
+            "malware".to_string(),
+            "hack".to_string(),
+            "exploit".to_string(),
+        ]),
+        max_size: 10000,
+        min_size: 1,
+        ..Default::default()
+    };
 
     let input_validated_agent = InputValidationMiddleware::new(base_agent)
         .with_prompt_injection_detector()
@@ -161,11 +165,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ========================================================================
     println!("📝 Step 5: Adding permission-based access control...");
 
-    let mut sandbox = Sandbox::default();
-    sandbox.allowed_paths = HashSet::from(["/tmp".to_string(), "/home/user/safe".to_string()]);
-    sandbox.denied_commands =
-        HashSet::from(["rm".to_string(), "sudo".to_string(), "chmod".to_string()]);
-    sandbox.max_file_size = 10 * 1024 * 1024; // 10MB
+    let sandbox = Sandbox {
+        allowed_paths: HashSet::from(["/tmp".to_string(), "/home/user/safe".to_string()]),
+        denied_commands: HashSet::from(["rm".to_string(), "sudo".to_string(), "chmod".to_string()]),
+        max_file_size: 10 * 1024 * 1024, // 10MB
+        ..Default::default()
+    };
 
     let permission_agent =
         PermissionMiddleware::new(validated_agent, Role::User).with_sandbox(sandbox);

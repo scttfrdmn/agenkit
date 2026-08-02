@@ -107,14 +107,12 @@ async fn test_message_serialization() {
             .abs()
             < 0.01
     );
-    assert!(
-        deserialized
-            .metadata
-            .get("bool")
-            .unwrap()
-            .as_bool()
-            .unwrap()
-    );
+    assert!(deserialized
+        .metadata
+        .get("bool")
+        .unwrap()
+        .as_bool()
+        .unwrap());
 }
 
 /// Test 3: Agent basic processing

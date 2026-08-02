@@ -138,7 +138,7 @@ impl CheckpointStorage for InMemoryCheckpointStorage {
                 .collect();
 
             // Sort by timestamp (most recent first)
-            result.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+            result.sort_by_key(|c| std::cmp::Reverse(c.timestamp));
 
             if let Some(limit) = limit {
                 result.truncate(limit);
@@ -336,7 +336,7 @@ impl CheckpointStorage for FileCheckpointStorage {
         }
 
         // Sort by timestamp (most recent first)
-        checkpoints.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        checkpoints.sort_by_key(|c| std::cmp::Reverse(c.timestamp));
 
         if let Some(limit) = limit {
             checkpoints.truncate(limit);

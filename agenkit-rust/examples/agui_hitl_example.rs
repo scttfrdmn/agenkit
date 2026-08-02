@@ -18,7 +18,7 @@
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::patterns::human_in_loop::{simple_approval_func, HumanInLoopAgent, HumanInLoopConfig};
 use agenkit::protocols::agui::adapter::AGUIAdapterConfig;
-use agenkit::protocols::agui::events::{AGUIEvent, EventType};
+use agenkit::protocols::agui::events::EventType;
 use agenkit::protocols::agui::hitl::{AGUIHumanInLoopAdapter, AGUIHumanInLoopConfig};
 use async_trait::async_trait;
 use futures::stream::StreamExt;

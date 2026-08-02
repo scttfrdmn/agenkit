@@ -9,9 +9,7 @@
 //! - Error handling
 //! - Edge cases
 use agenkit::core::{Agent, AgentError, Message};
-use agenkit::patterns::human_in_loop::{
-    simple_approval_func, HumanInLoopAgent, HumanInLoopConfig,
-};
+use agenkit::patterns::human_in_loop::{simple_approval_func, HumanInLoopAgent, HumanInLoopConfig};
 use agenkit::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};
 use agenkit::protocols::agui::events::*;
 use agenkit::protocols::agui::hitl::{AGUIHumanInLoopAdapter, AGUIHumanInLoopConfig};
@@ -531,8 +529,10 @@ async fn test_websocket_handler_invalid_json() {
 #[tokio::test]
 async fn test_websocket_handler_message_size_limit() {
     let agent = Arc::new(MockAgent::new("TestAgent", "Test"));
-    let mut config = WebSocketHandlerConfig::default();
-    config.max_message_size = 10; // Very small
+    let config = WebSocketHandlerConfig {
+        max_message_size: 10, // Very small
+        ..Default::default()
+    };
 
     let handler = AGUIWebSocketHandler::new(agent, config);
 

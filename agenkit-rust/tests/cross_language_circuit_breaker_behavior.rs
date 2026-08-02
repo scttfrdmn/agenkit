@@ -46,7 +46,14 @@ struct Scenario {
 }
 
 /// Expected behavior from fixture
+//
+// Several fields here are expectations the fixture states that this harness does not
+// assert -- `state_transitions` (no core records transition *order*), and the
+// `all_requests_completed` / `total_successful_in_half_open` / `all_rejected_while_open`
+// flags. See #791: making them live requires deciding the canonical transition-key
+// format first, since the fixture's format matches no implementation.
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct ExpectedBehavior {
     final_state: String,
     #[serde(default)]
@@ -76,7 +83,13 @@ struct ExpectedBehavior {
 }
 
 /// Expected metrics from fixture
+//
+// `state_changes` is unasserted, and that is the bug in #791: Python/Go key transitions
+// `closed->open`, Rust/TypeScript key them `CLOSED->OPEN`, and this fixture expects a
+// third form, `closed_to_open`. Nothing reads the field, so nothing caught the drift.
+// Asserting it is blocked on picking the canonical format.
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct ExpectedMetrics {
     total_requests: usize,
     successful_requests: usize,
@@ -97,6 +110,7 @@ struct Config {
 
 /// Test case from fixture
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct TestCase {
     id: String,
     name: String,
@@ -110,6 +124,7 @@ struct TestCase {
 
 /// Fixtures file structure
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct Fixtures {
     version: String,
     description: String,
@@ -179,6 +194,9 @@ fn find_test_case<'a>(fixtures: &'a Fixtures, id: &str) -> &'a TestCase {
 }
 
 /// Convert state string to CircuitState
+// Kept for symmetry with the other harnesses' state parsers; this file compares
+// state names as strings and never needs the enum (#778).
+#[allow(dead_code)]
 fn state_from_string(s: &str) -> CircuitState {
     match s {
         "closed" => CircuitState::Closed,

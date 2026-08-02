@@ -6,8 +6,8 @@
 use agenkit::composition::{FallbackAgent, SequentialAgent};
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::middleware::{
-    CachingConfig, CachingMiddleware, CircuitBreakerConfig, RetryConfig,
-    RetryMiddleware, TimeoutConfig, TimeoutMiddleware,
+    CachingConfig, CachingMiddleware, CircuitBreakerConfig, RetryConfig, RetryMiddleware,
+    TimeoutConfig, TimeoutMiddleware,
 };
 use async_trait::async_trait;
 use proptest::prelude::*;

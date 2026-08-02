@@ -6,7 +6,7 @@
 use crate::core::{Agent, Message};
 use crate::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};
 use crate::protocols::agui::events::*;
-use futures::stream::{Stream, StreamExt};
+use futures::stream::Stream;
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -416,13 +416,14 @@ fn create_approval_interrupt(
 #[cfg(test)]
 mod tests {
     use super::*;
-    // AgentError and HumanInLoopAgent are used only by these tests, so they are
-    // imported here rather than at file scope (#778).
+    // AgentError, HumanInLoopAgent and StreamExt are used only by these tests, so
+    // they are imported here rather than at file scope (#778).
     use crate::core::AgentError;
     use crate::patterns::human_in_loop::{
         simple_approval_func, HumanInLoopAgent, HumanInLoopConfig,
     };
     use async_trait::async_trait;
+    use futures::stream::StreamExt;
 
     struct MockAgent {
         response: String,

@@ -34,10 +34,12 @@ impl Agent for VariedMockAgent {
     async fn process(&self, _message: Message) -> Result<Message, AgentError> {
         let count = self.call_count.fetch_add(1, Ordering::SeqCst);
 
-        let responses = [format!("Branch A: Analyze systematically (call {}).", count + 1),
+        let responses = [
+            format!("Branch A: Analyze systematically (call {}).", count + 1),
             format!("Branch B: Break into parts (call {}).", count + 1),
             format!("Branch C: Consider edge cases (call {}).", count + 1),
-            format!("Step {}: Continue with details.", count + 1)];
+            format!("Step {}: Continue with details.", count + 1),
+        ];
 
         let response = responses[count % responses.len()].clone();
         Ok(Message::with_text("assistant", response))

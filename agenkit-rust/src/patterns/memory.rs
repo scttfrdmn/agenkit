@@ -269,7 +269,7 @@ impl ShortTermMemory {
 
         // Sort by timestamp (most recent first)
         let mut sorted = messages.clone();
-        sorted.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        sorted.sort_by_key(|m| std::cmp::Reverse(m.timestamp));
 
         // Take top limit
         let results: Vec<MemoryEntry> = sorted.into_iter().take(limit).collect();

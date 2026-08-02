@@ -470,8 +470,8 @@ async fn test_fallback_not_called_on_primary_success() {
 #[tokio::test]
 async fn test_composition_exports_accessible() {
     use agenkit::composition::{
-        content_contains, metadata_has_key, role_equals, ConditionalAgent,
-        FallbackAgent, ParallelAgent, SequentialAgent,
+        content_contains, metadata_has_key, role_equals, ConditionalAgent, FallbackAgent,
+        ParallelAgent, SequentialAgent,
     };
     // All types should be importable and usable
     let _: Option<ConditionalAgent> = None;

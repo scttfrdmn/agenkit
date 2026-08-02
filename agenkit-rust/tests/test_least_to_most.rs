@@ -296,14 +296,12 @@ async fn test_compose_solutions_enabled() {
     assert!(result.is_ok());
     let response = result.unwrap();
 
-    assert!(
-        response
-            .metadata
-            .get("compose_solutions")
-            .unwrap()
-            .as_bool()
-            .unwrap()
-    );
+    assert!(response
+        .metadata
+        .get("compose_solutions")
+        .unwrap()
+        .as_bool()
+        .unwrap());
 }
 
 #[tokio::test]
@@ -327,14 +325,12 @@ async fn test_compose_solutions_disabled() {
     assert!(result.is_ok());
     let response = result.unwrap();
 
-    assert!(
-        !response
-            .metadata
-            .get("compose_solutions")
-            .unwrap()
-            .as_bool()
-            .unwrap()
-    );
+    assert!(!response
+        .metadata
+        .get("compose_solutions")
+        .unwrap()
+        .as_bool()
+        .unwrap());
 }
 
 #[tokio::test]

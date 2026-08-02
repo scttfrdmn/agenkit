@@ -424,7 +424,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("📝 Step 7: Running secure conversation...");
     println!("{}", "=".repeat(70));
 
-    let messages = vec![
+    let messages = [
         "Hello! I'm starting a new secure conversation.",
         "Please remember that I prefer detailed explanations.",
         "What can you tell me about AI agents?",

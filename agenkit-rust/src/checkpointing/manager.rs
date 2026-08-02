@@ -5,13 +5,11 @@ use crate::core::Message;
 use std::collections::HashMap;
 
 /// Checkpoint manager configuration.
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct CheckpointManagerConfig {
     /// Auto-checkpoint interval (number of steps)
     pub auto_checkpoint_interval: Option<usize>,
 }
-
 
 /// High-level checkpoint manager.
 pub struct CheckpointManager {
@@ -46,6 +44,9 @@ impl CheckpointManager {
     }
 
     /// Create a checkpoint.
+    // Eight arguments matching `Checkpoint`'s fields plus the optional parent id. All
+    // are independent inputs the caller must provide (#778).
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_checkpoint(
         &mut self,
         session_id: String,

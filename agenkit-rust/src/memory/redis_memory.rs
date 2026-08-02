@@ -73,6 +73,9 @@ pub struct Message {
 /// Provides persistent storage for agent conversations with automatic
 /// expiration, multi-instance support, and filtering capabilities.
 pub struct RedisMemory {
+    // Retained for diagnostics/`Debug`-style introspection; the connection itself is
+    // held by `client`, which is what all operations use (#778).
+    #[allow(dead_code)]
     redis_url: String,
     ttl: u64,
     key_prefix: String,

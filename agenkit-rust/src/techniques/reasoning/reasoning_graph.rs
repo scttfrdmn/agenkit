@@ -271,9 +271,10 @@ impl ReasoningGraph {
 
         for &node_id in self.nodes.keys() {
             if !visited.contains(&node_id)
-                && self.has_cycle_dfs(node_id, &mut visited, &mut rec_stack) {
-                    return true;
-                }
+                && self.has_cycle_dfs(node_id, &mut visited, &mut rec_stack)
+            {
+                return true;
+            }
         }
 
         false

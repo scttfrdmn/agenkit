@@ -161,6 +161,11 @@ impl Benchmark for SimpleQABenchmark {
 pub struct NeedleInHaystackBenchmark {
     context_length: usize,
     needle_count: usize,
+    /// Accepted and stored but never read: the haystack is sized from
+    /// `context_length` alone. C++ *does* use its equivalent, so the two
+    /// implementations disagree given identical arguments. Tracked in #790, which owns
+    /// the decision (implement / remove / document as inert) across all languages.
+    #[allow(dead_code)]
     haystack_multiplier: usize,
 }
 

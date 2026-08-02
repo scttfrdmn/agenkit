@@ -33,7 +33,13 @@ struct TimeoutRequest {
 }
 
 /// Expected behavior from fixture
+//
+// `error_type` (`"TimeoutError"` / `"AgentError"`) is an expectation the fixture states
+// that no harness asserts -- and it is not clear what a conforming Rust value would be,
+// since Rust has `AgentError::Timeout` and no `TimeoutError`. Tracked in #791; the
+// harness checks `error_message_contains` instead.
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct ExpectedBehavior {
     successful: bool,
     timed_out: bool,
@@ -48,7 +54,12 @@ struct ExpectedBehavior {
 }
 
 /// Expected metrics from fixture
+//
+// `success_rate` is unasserted: the fixture carries `0.67`, which looks like a 2dp
+// rounding of 2/3, so an exact-equality assert would fail and the tolerance needs
+// specifying first (#791).
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct ExpectedMetrics {
     total_requests: usize,
     successful_requests: usize,
@@ -75,6 +86,7 @@ struct Config {
 
 /// Test case from fixture
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct TestCase {
     id: String,
     name: String,
@@ -88,6 +100,7 @@ struct TestCase {
 
 /// Fixtures file structure
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct Fixtures {
     version: String,
     description: String,

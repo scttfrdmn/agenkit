@@ -7,7 +7,6 @@
 mod cross_language_tests {
     use agenkit::core::Message;
     use serde_json::json;
-    
 
     /// Test 1: Message JSON schema compatibility
     #[test]

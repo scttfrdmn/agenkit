@@ -69,10 +69,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("--------------------------------");
     let session_id = "demo-session-001";
 
-    let interactions = ["Hello, how are you?",
+    let interactions = [
+        "Hello, how are you?",
         "What's the weather like today?",
         "Tell me a joke",
-        "Thank you!"];
+        "Thank you!",
+    ];
 
     println!("Recording session: {}", session_id);
     println!("Interactions:");

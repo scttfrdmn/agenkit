@@ -228,8 +228,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// // Use euclidean for spatial data
 /// let metric = DistanceMetric::Euclidean;
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum DistanceMetric {
     /// Cosine similarity - best for text embeddings
     #[default]
@@ -239,7 +238,6 @@ pub enum DistanceMetric {
     /// Dot product - best for pre-normalized vectors
     DotProduct,
 }
-
 
 /// Trait for embedding providers.
 ///
@@ -379,6 +377,9 @@ pub trait VectorStore: Send + Sync {
 /// Entry stored in vector store.
 #[derive(Debug, Clone)]
 struct VectorEntry {
+    // Written on insert as the entry's identity but never read back: lookups go by
+    // session and similarity, not by id (#778).
+    #[allow(dead_code)]
     message_id: String,
     embedding: Vec<f64>,
     message: Message,
@@ -858,25 +859,33 @@ impl VectorMemory {
             embeddings.push(embedding);
         }
 
-        // Prepare batch items with unique timestamps
-        let mut batch_items = Vec::new();
-        let mut counter = self.id_counter.lock().unwrap();
+        // Prepare batch items with unique timestamps.
+        //
+        // The counter lock is scoped to this block rather than released with an explicit
+        // `drop` at the end of the function body. Both release it before the await below,
+        // but the block makes that structural: `clippy::await_holding_lock` fires at the
+        // await point, so a trailing `drop` leaves the lint firing (and an `#[allow]` on
+        // the `let` does not suppress it, because the lint is not reported there) (#778).
+        let batch_items = {
+            let mut batch_items = Vec::new();
+            let mut counter = self.id_counter.lock().unwrap();
 
-        for (idx, item) in items.into_iter().enumerate() {
-            *counter += 1;
-            let message_id = format!("msg-{}", *counter);
-            let timestamp = Self::get_timestamp() + (idx as f64) * 0.000001; // Ensure unique timestamps
+            for (idx, item) in items.into_iter().enumerate() {
+                *counter += 1;
+                let message_id = format!("msg-{}", *counter);
+                let timestamp = Self::get_timestamp() + (idx as f64) * 0.000001; // Ensure unique timestamps
 
-            batch_items.push(VectorStoreItem {
-                message_id,
-                embedding: embeddings[idx].clone(),
-                message: item.message,
-                metadata: item.metadata.unwrap_or_default(),
-                timestamp,
-            });
-        }
+                batch_items.push(VectorStoreItem {
+                    message_id,
+                    embedding: embeddings[idx].clone(),
+                    message: item.message,
+                    metadata: item.metadata.unwrap_or_default(),
+                    timestamp,
+                });
+            }
 
-        drop(counter); // Release lock before await
+            batch_items
+        };
 
         // Store all items in batch
         self.vector_store.add_batch(session_id, batch_items).await

@@ -14,7 +14,12 @@ use std::path::PathBuf;
 // Import agenkit types
 use agenkit::middleware::{CircuitBreakerConfig, RateLimiterConfig, RetryConfig, TimeoutConfig};
 
+// The fixture-schema structs below carry `version`/`description`/`name`/`component`
+// documentation fields that this harness deserializes but does not assert on. They are
+// kept because removing a field from a `Deserialize` struct changes which JSON shapes
+// parse, and because they document the shared cross-language contract (#778).
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct APIFixtures {
     version: String,
     description: String,
@@ -28,12 +33,14 @@ struct TestCategories {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct ParameterNamingCategory {
     description: String,
     test_cases: Vec<ParameterTestCase>,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct ParameterTestCase {
     id: String,
     name: String,
@@ -42,6 +49,7 @@ struct ParameterTestCase {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct Parameter {
     description: String,
     #[serde(default)]
@@ -51,12 +59,14 @@ struct Parameter {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct DefaultValuesCategory {
     description: String,
     test_cases: Vec<DefaultTestCase>,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct DefaultTestCase {
     id: String,
     name: String,
@@ -65,6 +75,7 @@ struct DefaultTestCase {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct DefaultValue {
     #[serde(default)]
     value: Option<serde_json::Value>,
@@ -112,7 +123,6 @@ mod parameter_naming_tests {
             initial_delay: std::time::Duration::from_millis(100),
             max_delay: std::time::Duration::from_secs(10),
             multiplier: 2.0,
-            ..Default::default()
         };
 
         assert_eq!(config.max_retries, 3);
@@ -411,23 +421,92 @@ mod interface_signature_tests {
 
 #[cfg(test)]
 mod error_types_tests {
+    // These two tests were `assert!(true)` with a comment claiming compile-time
+    // validation. They validated nothing: both would still pass if the middleware
+    // returned `Ok` on timeout or swallowed retry exhaustion. They now drive the
+    // error paths and assert on the variant that actually comes back (#778).
+    use agenkit::core::{Agent, AgentError, Message};
+    use agenkit::middleware::{RetryConfig, RetryMiddleware, TimeoutConfig, TimeoutMiddleware};
+    use async_trait::async_trait;
+    use std::time::Duration;
 
-    #[test]
-    fn test_timeout_error_exists() {
-        // Rust may use Result types with error enums
-        // Verify the concept of timeout errors exists
+    struct SlowAgent;
 
-        // This is validated at compile time - if TimeoutError doesn't exist,
-        // the middleware won't compile
-        assert!(true);
+    #[async_trait]
+    impl Agent for SlowAgent {
+        fn name(&self) -> &str {
+            "slow-agent"
+        }
+
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
+            tokio::time::sleep(Duration::from_secs(30)).await;
+            Ok(Message::new("agent", serde_json::json!("too late")))
+        }
     }
 
-    #[test]
-    fn test_max_retries_exceeded_error_concept() {
-        // Verify the concept of max retries exceeded error exists
-        // Rust uses Result types with error enums
+    struct AlwaysFailsAgent;
 
-        assert!(true);
+    #[async_trait]
+    impl Agent for AlwaysFailsAgent {
+        fn name(&self) -> &str {
+            "always-fails-agent"
+        }
+
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
+            Err(AgentError::ProcessingError("permanent failure".to_string()))
+        }
+    }
+
+    #[tokio::test]
+    async fn test_timeout_error_exists() {
+        let middleware = TimeoutMiddleware::new(
+            SlowAgent,
+            TimeoutConfig {
+                timeout: Duration::from_millis(10),
+                ..Default::default()
+            },
+        );
+
+        let result = middleware
+            .process(Message::new("user", serde_json::json!("test")))
+            .await;
+
+        // The distinguishing claim: a timeout surfaces as AgentError::Timeout, not as
+        // some generic error and certainly not as Ok.
+        match result {
+            Err(AgentError::Timeout(_)) => {}
+            other => panic!("expected AgentError::Timeout, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_max_retries_exceeded_error_concept() {
+        let middleware = RetryMiddleware::new(
+            AlwaysFailsAgent,
+            RetryConfig {
+                max_retries: 2,
+                initial_delay: Duration::from_millis(1),
+                max_delay: Duration::from_millis(2),
+                ..Default::default()
+            },
+        );
+
+        let result = middleware
+            .process(Message::new("user", serde_json::json!("test")))
+            .await;
+
+        // Rust has no dedicated MaxRetriesExceeded variant: exhaustion propagates the
+        // last underlying error. Pinning that is the point -- it is the cross-language
+        // difference this file exists to document.
+        match result {
+            Err(AgentError::ProcessingError(msg)) => {
+                assert_eq!(msg, "permanent failure");
+            }
+            other => panic!("expected the last underlying error, got {:?}", other),
+        }
+
+        let metrics = middleware.get_metrics().await;
+        assert_eq!(metrics.failed_after_retries, 1);
     }
 }
 
@@ -443,7 +522,6 @@ mod rust_specific_features_tests {
             initial_delay: std::time::Duration::from_millis(200),
             max_delay: std::time::Duration::from_millis(5000),
             multiplier: 1.5,
-            ..Default::default()
         };
 
         assert_eq!(config.max_retries, 5);

@@ -137,6 +137,9 @@ impl Default for WebSocketConfig {
 /// bidirectional real-time communication.
 pub struct WebSocketAgent {
     name: String,
+    // Unread while this transport is a stub -- see the commented-out stream wiring
+    // below. The real implementation reads the url and ping interval from it (#778).
+    #[allow(dead_code)]
     config: WebSocketConfig,
     connected: Arc<RwLock<bool>>,
     // In full implementation:
@@ -162,8 +165,10 @@ impl WebSocketAgent {
     /// # }
     /// ```
     pub async fn new(url: &str) -> Result<Self> {
-        let mut config = WebSocketConfig::default();
-        config.url = url.to_string();
+        let config = WebSocketConfig {
+            url: url.to_string(),
+            ..Default::default()
+        };
         Self::with_config(config).await
     }
 

@@ -66,6 +66,9 @@ struct ChatOptions {
 struct ChatResponse {
     model: String,
     message: ResponseMessage,
+    // Not consumed: non-streaming responses are always complete. Kept because it
+    // documents the wire format (#778).
+    #[allow(dead_code)]
     done: bool,
     #[serde(default)]
     total_duration: Option<u64>,

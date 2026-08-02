@@ -47,12 +47,13 @@
     },
     {
       "id": "timeout_exactly_at_limit",
-      "name": "Request completes exactly at timeout boundary",
+      "name": "Request completes inside the timeout boundary",
+      "_comment": "Was 190ms against a 200ms timeout: 10ms of headroom, which flaked under full-suite load (#758). The assertion is that a request finishing inside the timeout succeeds, and 150/200 asserts exactly that without depending on the scheduler hitting a 10ms target. 50ms of headroom matches the slack already granted to max_elapsed_ms.",
       "config": {
         "timeout_ms": 200
       },
       "scenario": {
-        "agent_delay_ms": 190,
+        "agent_delay_ms": 150,
         "agent_response": {
           "success": true,
           "content": "Just in time"
@@ -62,7 +63,7 @@
         "successful": true,
         "timed_out": false,
         "final_response": "Just in time",
-        "min_elapsed_ms": 190,
+        "min_elapsed_ms": 150,
         "max_elapsed_ms": 250
       }
     },

@@ -161,15 +161,64 @@ TEST(NeedleInHaystackBenchmarkTest, ValidateRetrieval) {
 }
 
 TEST(NeedleInHaystackBenchmarkTest, ContextLength) {
-    NeedleInHaystackBenchmark benchmark(5000, 3);
+    constexpr int kTarget = 5000;
+    NeedleInHaystackBenchmark benchmark(kTarget, 3);
     auto cases = benchmark.generate_test_cases().get();
 
-    // Check that context_length is in metadata
+    // Check that context_length is in metadata, and that it actually approximates the
+    // requested target.
+    //
+    // `EXPECT_GT(context_length, 0)` was all this asserted, which is why the benchmark
+    // could advertise a 5000-token context and build ~1155 for years: the multiplier was
+    // read *instead of* context_length, so the size didn't track the request at all (#790).
+    // A ±20% band is generous enough for the 4-chars-per-token estimate and the
+    // whole-sentence granularity of the filler, but tight enough to catch a wrong formula.
     for (const auto& tc : cases) {
         EXPECT_TRUE(tc.metadata.find("context_length") != tc.metadata.end());
         int context_length = std::any_cast<int>(tc.metadata.at("context_length"));
-        EXPECT_GT(context_length, 0);
+        EXPECT_GT(context_length, kTarget * 0.8)
+            << "context far below the requested " << kTarget;
+        EXPECT_LT(context_length, kTarget * 1.2)
+            << "context far above the requested " << kTarget;
     }
+}
+
+TEST(NeedleInHaystackBenchmarkTest, ContextScalesWithRequestedLength) {
+    // A tenfold larger request must produce a substantially larger context. Under the old
+    // formula both sizes were derived from the needles alone, so this ratio was ~1.0
+    // regardless of what the caller asked for (#790).
+    auto small = NeedleInHaystackBenchmark(1000, 3).generate_test_cases().get();
+    auto large = NeedleInHaystackBenchmark(10000, 3).generate_test_cases().get();
+
+    ASSERT_FALSE(small.empty());
+    ASSERT_FALSE(large.empty());
+
+    auto tokens = [](const TestCase& tc) {
+        return std::any_cast<int>(tc.metadata.at("context_length"));
+    };
+    EXPECT_GT(tokens(large[0]), tokens(small[0]) * 5)
+        << "context size does not track the requested length";
+}
+
+TEST(NeedleInHaystackBenchmarkTest, MultiplierHasNoEffect) {
+    // Documented as accepted-for-parity-only (#790). Pin that so a future change to give
+    // it meaning has to be a deliberate, visible one rather than a silent behaviour shift.
+    //
+    // Compares sizes rather than the strings themselves: the filler sentences are drawn at
+    // random, so two constructions never produce identical text even at an identical size.
+    // Under the old formula a 100x multiplier produced a ~100x larger context, so a 5% band
+    // is far tighter than needed to catch a multiplier that is being read again.
+    auto low = NeedleInHaystackBenchmark(5000, 3, 1).generate_test_cases().get();
+    auto high = NeedleInHaystackBenchmark(5000, 3, 100).generate_test_cases().get();
+
+    ASSERT_FALSE(low.empty());
+    ASSERT_FALSE(high.empty());
+
+    auto tokens = [](const TestCase& tc) {
+        return std::any_cast<int>(tc.metadata.at("context_length"));
+    };
+    EXPECT_NEAR(tokens(low[0]), tokens(high[0]), tokens(low[0]) * 0.05)
+        << "haystack_multiplier changed the context size; it is documented as inert (#790)";
 }
 
 // ============================================================================

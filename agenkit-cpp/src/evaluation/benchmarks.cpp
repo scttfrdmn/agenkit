@@ -179,11 +179,12 @@ std::future<std::vector<TestCase>> SimpleQABenchmark::generate_test_cases() {
 NeedleInHaystackBenchmark::NeedleInHaystackBenchmark(
     size_t context_length,
     size_t needle_count,
-    size_t haystack_multiplier
+    [[maybe_unused]] size_t haystack_multiplier
 )
     : context_length_(context_length),
-      needle_count_(needle_count),
-      haystack_multiplier_(haystack_multiplier) {}
+      needle_count_(needle_count) {
+    // haystack_multiplier is deliberately not stored — see the header and #790.
+}
 
 std::string NeedleInHaystackBenchmark::name() const {
     return "needle_in_haystack_" + std::to_string(context_length_ / 1000) + "k";
@@ -206,12 +207,22 @@ std::future<std::vector<TestCase>> NeedleInHaystackBenchmark::generate_test_case
             needles.push_back(generate_needle(i));
         }
 
-        // Calculate tokens per section
+        // Calculate tokens per section.
+        //
+        // The budget is `context_length_`, which is what the parameter is documented as
+        // ("Target context length in tokens") and what name() and description() advertise.
+        // This used to be `total_needle_tokens * haystack_multiplier_`, ignoring
+        // `context_length_` for sizing entirely and using it only for the label — so a
+        // benchmark calling itself "needle_in_haystack_10k" over a "10000 token context"
+        // actually built ~1155 tokens, 11.6% of the advertised figure, while the other
+        // five cores built ~10000 (#790). Filler is whatever the needles don't occupy.
         size_t total_needle_tokens = 0;
         for (const auto& needle : needles) {
             total_needle_tokens += estimate_tokens(needle);
         }
-        size_t haystack_tokens = total_needle_tokens * haystack_multiplier_;
+        size_t haystack_tokens = context_length_ > total_needle_tokens
+            ? context_length_ - total_needle_tokens
+            : 0;
         size_t tokens_per_section = haystack_tokens / (needle_count_ + 1);
 
         // Build context by interleaving haystack and needles

@@ -246,16 +246,10 @@ public:
      *
      * @param context_length Target context length in tokens (approximate)
      * @param needle_count Number of needles to embed in haystack
-     * @param haystack_multiplier Accepted for cross-language signature parity; currently
-     *        has no effect. The haystack is sized from @p context_length, matching Python,
-     *        Go, Rust, Zig and TypeScript. This core used to be the only one that read the
-     *        multiplier, and did so *instead of* @p context_length — see #790, which tracks
-     *        the open decision on whether to give the parameter a shared meaning or drop it.
      */
     explicit NeedleInHaystackBenchmark(
         size_t context_length = 10000,
-        size_t needle_count = 5,
-        size_t haystack_multiplier = 10
+        size_t needle_count = 5
     );
 
     std::string name() const override;
@@ -265,12 +259,6 @@ public:
 private:
     size_t context_length_;
     size_t needle_count_;
-
-    // No `haystack_multiplier_` member: the constructor parameter is accepted for
-    // cross-language signature parity but has no effect, so storing it would just be a
-    // field nothing reads — which is the whole complaint in #790. `-Wunused-private-field`
-    // agrees. If the multiplier is ever given a shared cross-language meaning, add the
-    // member back at the same time as the code that reads it.
 
     /**
      * @brief Generate haystack text of approximately target_tokens length

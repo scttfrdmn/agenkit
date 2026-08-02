@@ -81,21 +81,21 @@ describe('ReasoningBenchmark', () => {
 
 describe('NeedleInHaystackBenchmark', () => {
   it('should create needle-in-haystack benchmark', () => {
-    const benchmark = new NeedleInHaystackBenchmark(1000, 3);
+    const benchmark = new NeedleInHaystackBenchmark({ contextLength: 1000, needleCount: 3 });
 
     expect(benchmark.name).toContain('needle_in_haystack');
     expect(benchmark.description).toContain('1000');
   });
 
   it('should generate correct number of test cases', async () => {
-    const benchmark = new NeedleInHaystackBenchmark(1000, 3);
+    const benchmark = new NeedleInHaystackBenchmark({ contextLength: 1000, needleCount: 3 });
     const testCases = await benchmark.generateTestCases();
 
     expect(testCases).toHaveLength(3); // One test per needle
   });
 
   it('should embed needles in haystack', async () => {
-    const benchmark = new NeedleInHaystackBenchmark(1000, 2);
+    const benchmark = new NeedleInHaystackBenchmark({ contextLength: 1000, needleCount: 2 });
     const testCases = await benchmark.generateTestCases();
 
     // Check that expected value appears in input
@@ -105,7 +105,7 @@ describe('NeedleInHaystackBenchmark', () => {
   });
 
   it('should tag cases with retrieval and context', async () => {
-    const benchmark = new NeedleInHaystackBenchmark(1000, 2);
+    const benchmark = new NeedleInHaystackBenchmark({ contextLength: 1000, needleCount: 2 });
     const testCases = await benchmark.generateTestCases();
 
     expect(testCases.every((tc) => tc.tags?.includes('retrieval'))).toBe(true);
@@ -114,7 +114,7 @@ describe('NeedleInHaystackBenchmark', () => {
 
   it('should generate haystack of specified length', async () => {
     const contextLength = 500;
-    const benchmark = new NeedleInHaystackBenchmark(contextLength, 1);
+    const benchmark = new NeedleInHaystackBenchmark({ contextLength, needleCount: 1 });
     const testCases = await benchmark.generateTestCases();
 
     // Input should be approximately the context length (within 20%)

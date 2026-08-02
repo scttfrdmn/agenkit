@@ -154,19 +154,19 @@ impl Benchmark for SimpleQABenchmark {
 /// ```
 /// use agenkit::evaluation::benchmarks::{Benchmark, NeedleInHaystackBenchmark};
 ///
-/// let benchmark = NeedleInHaystackBenchmark::new(10000, 5, 10);
+/// let benchmark = NeedleInHaystackBenchmark::new(10000, 5);
 /// let cases = benchmark.generate_test_cases();
 /// assert_eq!(cases.len(), 5);
 /// ```
 pub struct NeedleInHaystackBenchmark {
     context_length: usize,
     needle_count: usize,
-    /// Accepted and stored but never read: the haystack is sized from
-    /// `context_length` alone. C++ *does* use its equivalent, so the two
-    /// implementations disagree given identical arguments. Tracked in #790, which owns
-    /// the decision (implement / remove / document as inert) across all languages.
-    #[allow(dead_code)]
-    haystack_multiplier: usize,
+    /// Precomputed `needle_in_haystack_{context_length}`.
+    ///
+    /// Held as a field because [`Benchmark::name`] returns `&str` and so cannot format
+    /// on demand. The name is a registry key in some cores, so it has to encode
+    /// `context_length` to match them — see #790.
+    name: String,
 }
 
 impl NeedleInHaystackBenchmark {
@@ -176,12 +176,11 @@ impl NeedleInHaystackBenchmark {
     ///
     /// * `context_length` - Target context length in tokens
     /// * `needle_count` - Number of needles to hide
-    /// * `haystack_multiplier` - How much filler per needle
-    pub fn new(context_length: usize, needle_count: usize, haystack_multiplier: usize) -> Self {
+    pub fn new(context_length: usize, needle_count: usize) -> Self {
         Self {
             context_length,
             needle_count,
-            haystack_multiplier,
+            name: format!("needle_in_haystack_{context_length}"),
         }
     }
 
@@ -237,7 +236,7 @@ impl NeedleInHaystackBenchmark {
 
 impl Benchmark for NeedleInHaystackBenchmark {
     fn name(&self) -> &str {
-        "needle_in_haystack"
+        &self.name
     }
 
     fn description(&self) -> &str {
@@ -342,7 +341,7 @@ impl Benchmark for ExtremeScaleBenchmark {
 
         for &length in &self.test_lengths {
             // Create needle-in-haystack tests at this scale
-            let benchmark = NeedleInHaystackBenchmark::new(length, self.needles_per_length, 10);
+            let benchmark = NeedleInHaystackBenchmark::new(length, self.needles_per_length);
             let mut cases = benchmark.generate_test_cases();
 
             // Tag with scale
@@ -395,9 +394,16 @@ mod tests {
 
     #[test]
     fn test_needle_in_haystack_benchmark() {
-        let benchmark = NeedleInHaystackBenchmark::new(1000, 3, 10);
+        let benchmark = NeedleInHaystackBenchmark::new(1000, 3);
 
-        assert_eq!(benchmark.name(), "needle_in_haystack");
+        // Encodes context_length to match Python, Go, C++ and TypeScript; this core used
+        // to return a bare "needle_in_haystack" for every size (#790).
+        assert_eq!(benchmark.name(), "needle_in_haystack_1000");
+        assert_ne!(
+            NeedleInHaystackBenchmark::new(500, 2).name(),
+            NeedleInHaystackBenchmark::new(900, 2).name(),
+            "benchmarks of different sizes must not share a registry key"
+        );
 
         let cases = benchmark.generate_test_cases();
         assert_eq!(cases.len(), 3);
@@ -428,7 +434,7 @@ mod tests {
 
     #[test]
     fn test_haystack_generation() {
-        let benchmark = NeedleInHaystackBenchmark::new(100, 2, 10);
+        let benchmark = NeedleInHaystackBenchmark::new(100, 2);
         let haystack = benchmark.generate_haystack(100);
 
         // Should generate some content
@@ -438,7 +444,7 @@ mod tests {
 
     #[test]
     fn test_needle_embedding() {
-        let benchmark = NeedleInHaystackBenchmark::new(100, 2, 10);
+        let benchmark = NeedleInHaystackBenchmark::new(100, 2);
         let haystack = "one two three four five six seven eight nine ten";
         let needles = vec!["NEEDLE1".to_string(), "NEEDLE2".to_string()];
 

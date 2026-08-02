@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### BREAKING — `NeedleInHaystackBenchmark` signature and name converged across cores (Issue #790)
+
+The six cores that implement this benchmark disagreed on both its constructor and
+its `name()`. Neither divergence was visible from any single language.
+
+**`haystack_multiplier` removed from the constructor** (Python, Go, Rust, C++).
+The parameter was accepted by four cores, absent in two (Zig, TypeScript), and
+read by **zero** — every core stored or ignored it, and none used it to size the
+haystack. C++ came closest to using it, and that was the bug fixed separately in
+#796. A parameter that changes nothing is worse than a missing one: callers
+tuned it expecting an effect.
+
+- Python: `NeedleInHaystackBenchmark(context_length=10_000, needle_count=5)`
+- Go: `NewNeedleInHaystackBenchmark(contextLength, needleCount int)`
+- Rust: `NeedleInHaystackBenchmark::new(context_length, needle_count)`
+- C++: `NeedleInHaystackBenchmark(size_t context_length = 10000, size_t needle_count = 5)`
+
+Migration: drop the third argument. No behaviour changes, because nothing read it.
+
+**`name()` now returns `needle_in_haystack_{context_length}` in all six cores.**
+This string is a registry key (e.g. C++ `BenchmarkSuite::add_benchmark`, keyed by
+name), so the divergence was not cosmetic:
+
+- C++ returned `needle_in_haystack_10k` — an integer division that made *every*
+  context under 1000 tokens `needle_in_haystack_0k`, so a 500-token and a
+  900-token benchmark silently overwrote each other in the same suite
+- Rust returned a bare `needle_in_haystack` for every size — all sizes collided
+- Zig returned the constant display string `Needle in Haystack`
+- Python, Go and TypeScript already used the canonical form
+
+Rust and Zig now hold a precomputed name field, since their `name` accessors
+return `&str` / `[]const u8` and cannot format on demand.
+
+**TypeScript defaults changed from 1000/3 to 10000/5** to match the other five
+cores. The same "default" benchmark previously measured a context an order of
+magnitude smaller in TypeScript than everywhere else.
+
+Also fixed, found while doing the above:
+
+- `agenkit-ts/src/__tests__/evaluation/benchmarks.test.ts` passed **positional**
+  arguments to a constructor that takes a single config object, so all five call
+  sites silently received the defaults. Every assertion in the file was testing
+  default config while appearing to test custom config — including a
+  `contextLength: 500` case whose bound was computed against 500 but which
+  actually ran at 1000. All call sites converted to object form.
+- Zig's `NeedleInHaystackBenchmark.generateImpl` did not compile under Zig
+  0.16's unmanaged `ArrayList` API. Nothing referenced it, so it had never been
+  type-checked; adding a test that calls `asBenchmark()` materializes the vtable
+  and exposed it. The Zig suite grows 425 → 497 tests as a result.
+- Zig's benchmark now has a public `deinit()` that frees the owned name;
+  `allocator.destroy` alone would leak it.
+
 ## [v0.85.0] - 2026-03-18
 
 ### Agent Skills — AgentSkill, SkillRegistry, SkillEnabledAgent (Issue #498, Milestone #91)

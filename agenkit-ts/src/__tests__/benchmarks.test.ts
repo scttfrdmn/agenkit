@@ -92,9 +92,10 @@ describe('NeedleInHaystackBenchmark', () => {
   it('should have correct default configuration', () => {
     const benchmark = new NeedleInHaystackBenchmark();
 
-    expect(benchmark.contextLength).toBe(1000);
-    expect(benchmark.needleCount).toBe(3);
-    expect(benchmark.name).toBe('needle_in_haystack_1000');
+    // 10000/5 matches Python, Go, Rust and C++ (#790).
+    expect(benchmark.contextLength).toBe(10_000);
+    expect(benchmark.needleCount).toBe(5);
+    expect(benchmark.name).toBe('needle_in_haystack_10000');
   });
 
   it('should accept custom configuration', () => {
@@ -140,7 +141,7 @@ describe('NeedleInHaystackBenchmark', () => {
     for (const testCase of testCases) {
       expect(testCase.metadata).toBeDefined();
       expect(testCase.metadata?.needlePosition).toBeDefined();
-      expect(testCase.metadata?.totalNeedles).toBe(3);
+      expect(testCase.metadata?.totalNeedles).toBe(5);
     }
   });
 

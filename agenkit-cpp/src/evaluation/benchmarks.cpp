@@ -178,16 +178,18 @@ std::future<std::vector<TestCase>> SimpleQABenchmark::generate_test_cases() {
 
 NeedleInHaystackBenchmark::NeedleInHaystackBenchmark(
     size_t context_length,
-    size_t needle_count,
-    [[maybe_unused]] size_t haystack_multiplier
+    size_t needle_count
 )
     : context_length_(context_length),
-      needle_count_(needle_count) {
-    // haystack_multiplier is deliberately not stored — see the header and #790.
-}
+      needle_count_(needle_count) {}
 
 std::string NeedleInHaystackBenchmark::name() const {
-    return "needle_in_haystack_" + std::to_string(context_length_ / 1000) + "k";
+    // The full token count, not a "10k"-style abbreviation. This name is a registry key
+    // (see BenchmarkSuite::add_benchmark) and has to match Python, Go, Rust and
+    // TypeScript. Abbreviating also collided: integer division made every context below
+    // 1000 tokens "needle_in_haystack_0k", so a 500-token and a 900-token benchmark
+    // overwrote each other in the suite (#790).
+    return "needle_in_haystack_" + std::to_string(context_length_);
 }
 
 std::string NeedleInHaystackBenchmark::description() const {
@@ -213,9 +215,9 @@ std::future<std::vector<TestCase>> NeedleInHaystackBenchmark::generate_test_case
         // ("Target context length in tokens") and what name() and description() advertise.
         // This used to be `total_needle_tokens * haystack_multiplier_`, ignoring
         // `context_length_` for sizing entirely and using it only for the label — so a
-        // benchmark calling itself "needle_in_haystack_10k" over a "10000 token context"
-        // actually built ~1155 tokens, 11.6% of the advertised figure, while the other
-        // five cores built ~10000 (#790). Filler is whatever the needles don't occupy.
+        // benchmark calling itself a "10000 token context" actually built ~1155 tokens,
+        // 11.6% of the advertised figure, while the other five cores built ~10000 (#796).
+        // Filler is whatever the needles don't occupy.
         size_t total_needle_tokens = 0;
         for (const auto& needle : needles) {
             total_needle_tokens += estimate_tokens(needle);
@@ -345,7 +347,7 @@ std::future<std::vector<TestCase>> ExtremeScaleBenchmark::generate_test_cases() 
 
 std::vector<TestCase> ExtremeScaleBenchmark::generate_for_length(size_t length) {
     // For extreme scale, we use NeedleInHaystack as a building block
-    NeedleInHaystackBenchmark needle_benchmark(length, needles_per_length_, 10);
+    NeedleInHaystackBenchmark needle_benchmark(length, needles_per_length_);
     auto future = needle_benchmark.generate_test_cases();
     auto cases = future.get();
 

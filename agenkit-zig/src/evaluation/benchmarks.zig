@@ -149,17 +149,31 @@ pub const NeedleInHaystackBenchmark = struct {
     allocator: Allocator,
     context_length: usize,
     needle_count: usize,
+    /// Owned `needle_in_haystack_{context_length}`, freed in deinit.
+    ///
+    /// Precomputed because the vtable's `name` returns `[]const u8` with no allocator to
+    /// format with. The name is a registry key in some cores, so it has to encode
+    /// `context_length` to match Python, Go, Rust, C++ and TypeScript — see #790.
+    name: []const u8,
 
     pub fn init(
         allocator: Allocator,
         context_length: usize,
         needle_count: usize,
     ) !*NeedleInHaystackBenchmark {
+        const name = try std.fmt.allocPrint(
+            allocator,
+            "needle_in_haystack_{d}",
+            .{context_length},
+        );
+        errdefer allocator.free(name);
+
         const self = try allocator.create(NeedleInHaystackBenchmark);
         self.* = NeedleInHaystackBenchmark{
             .allocator = allocator,
             .context_length = context_length,
             .needle_count = needle_count,
+            .name = name,
         };
         return self;
     }
@@ -177,8 +191,8 @@ pub const NeedleInHaystackBenchmark = struct {
     }
 
     fn nameImpl(ptr: *anyopaque) []const u8 {
-        _ = ptr;
-        return "Needle in Haystack";
+        const self: *NeedleInHaystackBenchmark = @ptrCast(@alignCast(ptr));
+        return self.name;
     }
 
     fn descriptionImpl(ptr: *anyopaque) []const u8 {
@@ -202,20 +216,20 @@ pub const NeedleInHaystackBenchmark = struct {
 
         // Generate haystack (filler content)
         var haystack = std.ArrayList(u8).empty;
-        defer haystack.deinit();
+        defer haystack.deinit(allocator);
 
         const filler = "This is irrelevant information that serves as distraction. ";
         const filler_reps = self.context_length / filler.len;
 
         for (0..filler_reps) |_| {
-            try haystack.appendSlice(filler);
+            try haystack.appendSlice(allocator, filler);
         }
 
         // Embed needles at different positions
         for (needles[0..@min(needles.len, self.needle_count)]) |needle| {
-            try haystack.appendSlice("\n");
-            try haystack.appendSlice(needle);
-            try haystack.appendSlice("\n");
+            try haystack.appendSlice(allocator, "\n");
+            try haystack.appendSlice(allocator, needle);
+            try haystack.appendSlice(allocator, "\n");
         }
 
         // Create test case for each needle
@@ -252,9 +266,18 @@ pub const NeedleInHaystackBenchmark = struct {
         return cases;
     }
 
+    /// Frees the benchmark and its owned `name`.
+    ///
+    /// Callers must use this rather than `allocator.destroy` directly, which would leak
+    /// the name.
+    pub fn deinit(self: *NeedleInHaystackBenchmark) void {
+        self.allocator.free(self.name);
+        self.allocator.destroy(self);
+    }
+
     fn deinitImpl(ptr: *anyopaque) void {
         const self: *NeedleInHaystackBenchmark = @ptrCast(@alignCast(ptr));
-        self.allocator.destroy(self);
+        self.deinit();
     }
 };
 
@@ -544,10 +567,14 @@ test "NeedleInHaystackBenchmark configuration" {
     const allocator = std.testing.allocator;
 
     const benchmark = try NeedleInHaystackBenchmark.init(allocator, 1000, 3);
-    defer allocator.destroy(benchmark);
+    defer benchmark.deinit();
 
     try std.testing.expectEqual(@as(usize, 1000), benchmark.context_length);
     try std.testing.expectEqual(@as(usize, 3), benchmark.needle_count);
+
+    // Encodes context_length, matching Python, Go, Rust, C++ and TypeScript. This core
+    // used to return a constant "Needle in Haystack" for every size (#790).
+    try std.testing.expectEqualStrings("needle_in_haystack_1000", benchmark.asBenchmark().name());
 }
 
 test "ExtremeScaleBenchmark target tokens" {

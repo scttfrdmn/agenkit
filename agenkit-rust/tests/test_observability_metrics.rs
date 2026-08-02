@@ -209,7 +209,7 @@ async fn test_metrics_middleware_multiple_requests() {
 
     // Process multiple messages
     for i in 0..5 {
-        let message = Message::with_text("user", &format!("test {}", i));
+        let message = Message::with_text("user", format!("test {}", i));
         let result = metrics_agent.process(message).await;
         assert!(result.is_ok());
     }

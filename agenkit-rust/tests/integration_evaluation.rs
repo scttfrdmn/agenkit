@@ -275,7 +275,7 @@ async fn test_agent_performance_measurement() {
 /// Test 14: Session status all variants
 #[tokio::test]
 async fn test_session_status_variants() {
-    let statuses = vec![
+    let statuses = [
         SessionStatus::Running,
         SessionStatus::Completed,
         SessionStatus::Failed,

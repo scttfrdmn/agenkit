@@ -41,11 +41,10 @@
 //! ```
 
 use crate::core::{Agent, AgentError, Message};
-use crate::evaluation::TestCase as EvalTestCase;
 use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use statrs::distribution::{ContinuousCDF, Normal, StudentsT};
-use statrs::statistics::{OrderStatistics, Statistics};
+use statrs::statistics::Statistics;
 use std::sync::Arc;
 
 /// Statistical test types for A/B testing
@@ -206,6 +205,16 @@ impl ABTest {
     /// * `alpha` - Significance level
     pub fn new(test_type: StatisticalTestType, alpha: SignificanceLevel) -> Self {
         Self { test_type, alpha }
+    }
+
+    /// Get the configured statistical test type.
+    pub fn test_type(&self) -> StatisticalTestType {
+        self.test_type
+    }
+
+    /// Get the configured significance level.
+    pub fn significance_level(&self) -> SignificanceLevel {
+        self.alpha
     }
 
     /// Run A/B test comparing two agents
@@ -402,8 +411,8 @@ impl ABTest {
                 j += 1;
             }
             let avg_rank = ((i + 1) + j) as f64 / 2.0;
-            for k in i..j {
-                ranks[k] = avg_rank;
+            for rank in ranks[i..j].iter_mut() {
+                *rank = avg_rank;
             }
             i = j;
         }
@@ -459,7 +468,7 @@ impl ABTest {
         // Approximate using normal distribution
         let p_value = 1.0 - (chi2 / 2.0).exp();
 
-        Ok(p_value.max(0.0).min(1.0))
+        Ok(p_value.clamp(0.0, 1.0))
     }
 
     /// Bootstrap p-value

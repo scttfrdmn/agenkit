@@ -31,8 +31,7 @@ mod adapter_tests {
         let result = agent.process(msg).await;
 
         // Should succeed if Ollama is running
-        if result.is_ok() {
-            let response = result.unwrap();
+        if let Ok(response) = result {
             assert_eq!(response.role, "assistant");
             assert!(!response.content_as_str().unwrap_or("").is_empty());
         }
@@ -174,8 +173,7 @@ mod adapter_tests {
         let result = agent.process(msg).await;
 
         // Should succeed if vLLM is running
-        if result.is_ok() {
-            let response = result.unwrap();
+        if let Ok(response) = result {
             assert_eq!(response.role, "assistant");
             assert!(!response.content_as_str().unwrap_or("").is_empty());
 
@@ -207,8 +205,7 @@ mod adapter_tests {
         let result = agent.process(msg).await;
 
         // Should succeed if llama.cpp is running
-        if result.is_ok() {
-            let response = result.unwrap();
+        if let Ok(response) = result {
             assert_eq!(response.role, "assistant");
             assert!(!response.content_as_str().unwrap_or("").is_empty());
         }
@@ -298,7 +295,7 @@ mod adapter_tests {
         let agent = OpenAICompatibleAgent::new(config);
 
         // Test that agent role converts to assistant
-        let msg = Message::with_text("agent", "Previous response");
+        let _msg = Message::with_text("agent", "Previous response");
         // Note: We can't test the internal conversion directly,
         // but we verify the agent was created successfully
         assert_eq!(agent.name(), "openai_compatible");

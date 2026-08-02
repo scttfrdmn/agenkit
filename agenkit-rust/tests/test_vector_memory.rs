@@ -365,7 +365,7 @@ async fn test_filter_by_time_range() {
         .await
         .unwrap();
 
-    assert!(messages.len() > 0);
+    assert!(!messages.is_empty());
     assert!(messages[0]
         .content
         .as_str()
@@ -408,7 +408,7 @@ async fn test_combined_filters() {
 
 #[tokio::test]
 async fn test_cosine_similarity_calculation() {
-    let embeddings = Box::new(MockEmbeddingProvider::new(3));
+    let _embeddings = Box::new(MockEmbeddingProvider::new(3));
     let store = InMemoryVectorStore::new();
 
     let embedding1 = vec![1.0, 0.0, 0.0];
@@ -465,7 +465,7 @@ async fn test_cosine_similarity_calculation() {
 
 #[tokio::test]
 async fn test_zero_magnitude_vectors() {
-    let embeddings = Box::new(MockEmbeddingProvider::new(3));
+    let _embeddings = Box::new(MockEmbeddingProvider::new(3));
     let store = InMemoryVectorStore::new();
 
     let zero_vector = vec![0.0, 0.0, 0.0];
@@ -494,7 +494,7 @@ async fn test_zero_magnitude_vectors() {
 
 #[tokio::test]
 async fn test_min_similarity_threshold() {
-    let embeddings = Box::new(MockEmbeddingProvider::new(3));
+    let _embeddings = Box::new(MockEmbeddingProvider::new(3));
     let store = InMemoryVectorStore::new();
 
     let embedding1 = vec![1.0, 0.0, 0.0];
@@ -563,7 +563,7 @@ async fn test_summarization() {
         memory
             .store(
                 "session-1",
-                Message::with_text("user", &format!("Message {}: This is some content", i)),
+                Message::with_text("user", format!("Message {}: This is some content", i)),
                 None,
             )
             .await
@@ -601,7 +601,7 @@ async fn test_limit_parameter() {
         memory
             .store(
                 "session-1",
-                Message::with_text("user", &format!("Message {}", i)),
+                Message::with_text("user", format!("Message {}", i)),
                 None,
             )
             .await

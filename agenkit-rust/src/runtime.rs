@@ -12,12 +12,27 @@
 //!     // Sleep for 1 second (works on both native and WASM)
 //!     runtime::sleep(std::time::Duration::from_secs(1)).await;
 //!
-//!     // Spawn a task (works on both native and WASM)
-//!     runtime::spawn(async {
-//!         // ...
-//!     });
+//!     // Spawn a task. It starts running immediately; awaiting the handle waits
+//!     // for the result, and dropping the handle leaves the task running.
+//!     let handle = runtime::spawn(async { 6 * 7 });
+//!     assert_eq!(handle.await, 42);
 //! }
 //! ```
+//!
+//! # Platform differences
+//!
+//! `spawn` is not perfectly symmetric across the two arms, and callers writing
+//! cross-platform code need to know it:
+//!
+//! | | native | WASM |
+//! |---|---|---|
+//! | returns | [`JoinHandle<T>`] | `()` |
+//! | task output | any `Send` type | must be `()` |
+//! | `Send` bound | required | not required (single-threaded) |
+//!
+//! So `spawn(async { 42 })` compiles on native and not on WASM, and code that
+//! awaits the handle has no WASM equivalent. Only `spawn(async { ... })` returning
+//! `()`, with the handle discarded, means the same thing on both.
 use std::future::Future;
 use std::pin::Pin;
 use std::time::Duration;
@@ -29,13 +44,58 @@ pub type JoinHandle<T> = Pin<Box<dyn Future<Output = T> + Send>>;
 // Native (tokio) implementation
 // ============================================================================
 
+/// Spawn a task onto the runtime.
+///
+/// The task is submitted **immediately**, before this function returns. Dropping
+/// the returned handle does not cancel it — like `tokio::spawn`, and unlike a bare
+/// future, spawning is fire-and-forget.
+///
+/// # Panics
+///
+/// Awaiting the returned handle panics if the task panicked, propagating it to the
+/// awaiting task. A task that panics while its handle has been dropped is
+/// unobserved, again matching `tokio::spawn`.
+///
+/// # Examples
+///
+/// The handle yields the task's output:
+///
+/// ```
+/// # #[tokio::main] async fn main() {
+/// let handle = agenkit::runtime::spawn(async { 6 * 7 });
+/// assert_eq!(handle.await, 42);
+/// # }
+/// ```
+///
+/// The task runs even if the handle is discarded:
+///
+/// ```
+/// use std::sync::atomic::{AtomicBool, Ordering};
+/// use std::sync::Arc;
+///
+/// # #[tokio::main] async fn main() {
+/// let ran = Arc::new(AtomicBool::new(false));
+/// let flag = ran.clone();
+/// drop(agenkit::runtime::spawn(async move { flag.store(true, Ordering::SeqCst) }));
+///
+/// agenkit::runtime::sleep(std::time::Duration::from_millis(50)).await;
+/// assert!(ran.load(Ordering::SeqCst));
+/// # }
+/// ```
 #[cfg(feature = "native")]
 pub fn spawn<F>(future: F) -> JoinHandle<F::Output>
 where
     F: Future + Send + 'static,
     F::Output: Send + 'static,
 {
-    Box::pin(async move { tokio::spawn(future).await.unwrap() })
+    // `tokio::spawn` is called here, *outside* the returned future, so the task is
+    // on the runtime before this function returns. It used to sit inside the async
+    // block, which meant nothing was submitted until the caller awaited the handle
+    // -- and since `JoinHandle` is a bare boxed future with no `Drop`, discarding
+    // the handle silently discarded the work (#778). `tests/runtime_spawn.rs` pins
+    // this; three of those tests fail if the call moves back inside.
+    let task = tokio::spawn(future);
+    Box::pin(async move { task.await.expect("spawned task panicked or was cancelled") })
 }
 
 #[cfg(feature = "native")]

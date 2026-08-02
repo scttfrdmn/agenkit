@@ -32,7 +32,7 @@ impl Agent for MockMetricAgent {
         "mock_metric_agent"
     }
 
-    async fn process(&self, message: Message) -> Result<Message, AgentError> {
+    async fn process(&self, _message: Message) -> Result<Message, AgentError> {
         // Add random variance if specified
         let mut metric_value = self.base_metric;
         if self.variance > 0.0 {
@@ -171,9 +171,13 @@ fn test_calculate_sample_size_larger_effect() {
 
 #[test]
 fn test_ab_test_constructor() {
+    // `drop` here was a no-op: ABTest implements no Drop, so it asserted nothing
+    // beyond what construction already did. Assert on the constructed value instead
+    // (#778).
     let test = ABTest::new(StatisticalTestType::TTest, SignificanceLevel::P005);
-    // Should construct without error
-    drop(test);
+    assert_eq!(test.test_type(), StatisticalTestType::TTest);
+    assert_eq!(test.significance_level(), SignificanceLevel::P005);
+    assert_eq!(test.significance_level().alpha(), 0.05);
 }
 
 #[test]
@@ -343,7 +347,7 @@ async fn test_control_winner_when_higher_mean() {
     let result = test.run(control, treatment, &test_cases, "accuracy").await;
 
     assert!(result.is_ok());
-    let result = result.unwrap();
+    let _result = result.unwrap();
 
     // With 20% difference favoring control, control should win (if significant)
     // Note: Due to mock implementation, this tests the logic, not actual agent performance

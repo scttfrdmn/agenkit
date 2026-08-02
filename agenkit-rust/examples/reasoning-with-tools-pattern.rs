@@ -191,7 +191,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Steps taken: Multiple reasoning steps with tool calls");
     println!("Answer: {:?}", result.content);
 
-    if let Some(trace_json) = result.metadata.get("reasoning_trace") {
+    if let Some(_trace_json) = result.metadata.get("reasoning_trace") {
         println!("✓ Reasoning trace captured:");
         println!("  - Thinking steps");
         println!("  - Tool calls with parameters");
@@ -220,7 +220,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let agent = ReasoningWithToolsAgent::new(llm.clone(), tools, config);
     let message = Message::with_text("user", "Find population and calculate");
-    let result = agent.process(message).await?;
+    let _result = agent.process(message).await?;
 
     println!("Question: Find population and calculate");
     println!("Process:");

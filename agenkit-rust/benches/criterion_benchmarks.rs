@@ -6,7 +6,10 @@
 use agenkit::core::{Agent, AgentError, Message};
 use agenkit::patterns::*;
 use async_trait::async_trait;
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+// `criterion::black_box` is deprecated in favour of the std one, which criterion now
+// just re-exports (#778). Importing it here keeps the 18 call sites below unchanged.
+use std::hint::black_box;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
 
@@ -346,7 +349,7 @@ fn bench_concurrency_optimizations(c: &mut Criterion) {
     group.bench_function("sequential_reduce_1000", |b| {
         b.iter(|| {
             let items: Vec<i32> = (0..1000).collect();
-            let _sum: i32 = items.into_iter().fold(0, |a, b| a + b);
+            let _sum: i32 = items.into_iter().sum();
         });
     });
 

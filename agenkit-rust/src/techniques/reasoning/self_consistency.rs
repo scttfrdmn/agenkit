@@ -94,6 +94,9 @@ pub struct SelfConsistencyAgent {
     agent: Arc<dyn Agent>,
     num_samples: usize,
     voting_strategy: VotingStrategy,
+    /// Never read. Python and Go carry the same TODO. #790 owns the cross-language
+    /// decision; until then the value the caller passes has no effect.
+    #[allow(dead_code)]
     temperature: Option<f64>,
     answer_extractor: AnswerExtractor,
 }

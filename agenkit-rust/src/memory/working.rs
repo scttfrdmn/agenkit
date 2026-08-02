@@ -42,7 +42,7 @@ impl WorkingMemory {
     }
 
     /// Store a memory entry (FIFO eviction if over capacity).
-    pub async fn store(&self, mut entry: MemoryEntry) -> WorkingMemoryResult<String> {
+    pub async fn store(&self, entry: MemoryEntry) -> WorkingMemoryResult<String> {
         let mut messages = self.messages.write().await;
 
         // FIFO eviction: remove oldest if at capacity

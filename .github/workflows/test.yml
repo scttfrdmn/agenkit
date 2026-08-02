@@ -176,16 +176,21 @@ jobs:
         working-directory: agenkit-rust
         run: cargo build --quiet
       # --all-targets so lints apply to tests/ and examples/ too — that is where
-      # every error found in #773 lived. Warnings stay warnings for now: the
-      # crate emits 365 unique ones across all targets (the "~200" written here
-      # in #773 was an eyeball estimate off unfiltered output), so `-D warnings`
-      # would fail the build on day one. The sweep and the flip to `-D warnings`
-      # are tracked in #778; the errors are what this gate holds the line on
-      # until then.
+      # every error found in #773 lived. `-D warnings` as of #778, which cleared
+      # the backlog that made the flip impossible: 365 unique warnings across all
+      # targets when #773 landed (the "~200" written here then was an eyeball
+      # estimate off unfiltered output, which double-counts across lib/test
+      # targets — count with --message-format=json deduped on code+location).
+      #
+      # Deliberately not --all-features. `native` and `wasm` are mutually
+      # exclusive, so enabling both fails to compile with 11 errors — that
+      # predates #778 and is why this gate uses the default feature set. The
+      # consequence is that wasm-gated code is not warning-clean and is not
+      # checked here.
       - name: Rust clippy (blocking)
         if: matrix.lang == 'rust'
         working-directory: agenkit-rust
-        run: cargo clippy --all-targets
+        run: cargo clippy --all-targets -- -D warnings
       # --all-targets, not --lib: this is the step that actually runs the
       # integration suite (1269 tests).
       - name: Rust tests (blocking)

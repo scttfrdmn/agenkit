@@ -1,9 +1,9 @@
 //! AG-UI Adapter - Wraps agents for AG-UI event streaming
 //!
 //! Converts agent responses into AG-UI event streams for frontend consumption.
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{Agent, Message};
 use crate::protocols::agui::events::*;
-use futures::stream::{Stream, StreamExt};
+use futures::stream::Stream;
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -129,7 +129,7 @@ impl AGUIAdapter {
                             .with_metadata("agent_name", serde_json::json!(agent_name));
 
                     // Add response metadata
-                    if let Some(metadata) = serde_json::to_value(&response.metadata).ok() {
+                    if let Ok(metadata) = serde_json::to_value(&response.metadata) {
                         complete_event =
                             complete_event.with_metadata("response_metadata", metadata);
                     }
@@ -204,8 +204,12 @@ fn create_metadata_event(agent_name: &str, agent: &dyn Agent) -> MetadataEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::Message;
+    // AgentError is used only by the mock below, and StreamExt only by the `.next()`
+    // calls in the assertions, so both belong here rather than at file scope where
+    // they are genuinely unused (#778).
+    use crate::core::{AgentError, Message};
     use async_trait::async_trait;
+    use futures::stream::StreamExt;
 
     struct MockAgent {
         response: String,

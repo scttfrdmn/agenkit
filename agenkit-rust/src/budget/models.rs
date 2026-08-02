@@ -46,6 +46,10 @@ pub struct CostRecord {
 
 impl CostRecord {
     /// Create a new cost record.
+    // Eight arguments, all of them required and none groupable: this is a flat record
+    // constructor whose fields the caller must supply. A params struct would just be
+    // `CostRecord` minus the generated id (#778).
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         session_id: String,
         agent_name: String,
@@ -163,10 +167,7 @@ impl UsageStats {
         self.total_calls += 1;
 
         // Update model stats
-        let model_stats = self
-            .by_model
-            .entry(record.model.clone())
-            .or_insert_with(ModelStats::new);
+        let model_stats = self.by_model.entry(record.model.clone()).or_default();
         model_stats.add_record(record);
 
         // Update agent stats if tracking

@@ -126,7 +126,7 @@ async fn example_multi_topic() -> Result<(), AgentError> {
         include_system: true,
     })?;
 
-    let turns = vec![
+    let turns = [
         ("User", "I like pizza"),
         ("Assistant", ""),
         ("User", "My favorite color is blue"),
@@ -272,7 +272,7 @@ async fn example_customer_support() -> Result<(), AgentError> {
         include_system: true,
     })?;
 
-    let conversation = vec![
+    let conversation = [
         "I need help with my order",
         "The order number is 123",
         "When will it ship?",

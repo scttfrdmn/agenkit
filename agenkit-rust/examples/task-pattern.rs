@@ -262,7 +262,7 @@ async fn example_convenience_function() -> Result<(), AgentError> {
 async fn example_batch_processing() -> Result<(), AgentError> {
     println!("\n=== Example 6: Batch Processing ===\n");
 
-    let documents = vec![
+    let documents = [
         "Process document 1 about machine learning",
         "Process document 2 about neural networks",
         "Process document 3 about deep learning",

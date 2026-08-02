@@ -174,6 +174,9 @@ pub struct PromptOptimizer {
     template: String,
     variations: HashMap<String, Vec<String>>,
     agent_factory: AgentFactory,
+    // Only `objective_metric` (derived from this list in `new`) drives optimisation;
+    // the full list is stored but never read (#778).
+    #[allow(dead_code)]
     metrics: Vec<String>,
     objective_metric: String,
     maximize: bool,

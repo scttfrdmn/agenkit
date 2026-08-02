@@ -266,7 +266,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let all = stats_memory.retrieve("", 100, None).await?;
-    let working_count = all
+    let _working_count = all
         .iter()
         .filter(|e| e.timestamp > chrono::Utc::now() - chrono::Duration::seconds(1))
         .count();
@@ -282,7 +282,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let ranking_memory = MemoryHierarchy::new(WorkingMemory::new(20)?, None, None);
 
-    let importances = vec![0.3, 0.9, 0.5, 0.8, 0.4];
+    let importances = [0.3, 0.9, 0.5, 0.8, 0.4];
     for (i, importance) in importances.iter().enumerate() {
         ranking_memory
             .store(

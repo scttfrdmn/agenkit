@@ -108,7 +108,7 @@ impl ShortTermMemory {
         }
 
         // Sort by timestamp (most recent first)
-        messages.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        messages.sort_by_key(|m| std::cmp::Reverse(m.timestamp));
 
         // Return top N
         Ok(messages.iter().take(limit).cloned().collect())

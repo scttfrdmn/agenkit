@@ -18,7 +18,6 @@ use {
         },
         Client as BedrockClient,
     },
-    futures::stream::StreamExt,
 };
 
 /// Configuration for Bedrock adapter.
@@ -234,7 +233,7 @@ impl BedrockAdapter {
 
             let role = match msg.role.as_str() {
                 "user" => ConversationRole::User,
-                "assistant" | "agent" | _ => ConversationRole::Assistant,
+                _ => ConversationRole::Assistant,
             };
 
             let content_block = ContentBlock::Text(content_str);

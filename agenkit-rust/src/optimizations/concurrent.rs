@@ -87,6 +87,11 @@ pub struct BoundedChannel<T> {
 
 impl<T> BoundedChannel<T> {
     /// Create a new bounded channel with specified capacity
+    // `BoundedChannel` is a namespace, not a value: it is uninhabited apart from a
+    // `PhantomData` and is never constructed, so `new` returning the `(Sender,
+    // Receiver)` pair is the point. Renaming it would break the documented
+    // `BoundedChannel::new(10)` call form (#778).
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(capacity: usize) -> (Sender<T>, Receiver<T>) {
         bounded(capacity)
     }

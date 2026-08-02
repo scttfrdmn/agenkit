@@ -118,7 +118,7 @@ impl LoadBalancer {
         // Create backends
         let backends: Vec<AgentBackend> = agents
             .into_iter()
-            .zip(final_weights.into_iter())
+            .zip(final_weights)
             .map(|(agent, weight)| AgentBackend {
                 agent,
                 weight,
@@ -200,8 +200,7 @@ impl LoadBalancer {
                     backend.consecutive_failures = 0;
                     if !backend.healthy && backend.consecutive_failures == 0 {
                         backend.healthy = true;
-                        Self::track_health_change(metrics, &backend.agent.name(), "recovered")
-                            .await;
+                        Self::track_health_change(metrics, backend.agent.name(), "recovered").await;
                     }
                 }
                 _ => {
@@ -211,8 +210,7 @@ impl LoadBalancer {
 
                     if backend.healthy && backend.consecutive_failures >= failure_threshold {
                         backend.healthy = false;
-                        Self::track_health_change(metrics, &backend.agent.name(), "unhealthy")
-                            .await;
+                        Self::track_health_change(metrics, backend.agent.name(), "unhealthy").await;
                     }
                 }
             }

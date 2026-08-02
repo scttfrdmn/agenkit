@@ -201,7 +201,7 @@ impl SecureProductionSession {
         // ====================================================================
 
         // 8. Create checkpoint every 3 messages
-        if self.step % 3 == 0 {
+        if self.step.is_multiple_of(3) {
             let messages = self.memory.retrieve("", 100, None).await?;
             let state = serde_json::json!({
                 "step": self.step,
@@ -424,7 +424,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("📝 Step 7: Running secure conversation...");
     println!("{}", "=".repeat(70));
 
-    let messages = vec![
+    let messages = [
         "Hello! I'm starting a new secure conversation.",
         "Please remember that I prefer detailed explanations.",
         "What can you tell me about AI agents?",

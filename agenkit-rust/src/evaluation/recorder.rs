@@ -286,7 +286,7 @@ impl RecordingStorage for FileRecordingStorage {
             .collect();
 
         // Sort by modification time (most recent first)
-        files.sort_by(|a, b| b.1.cmp(&a.1));
+        files.sort_by_key(|f| std::cmp::Reverse(f.1));
 
         // Apply pagination
         let start = offset;
@@ -368,7 +368,7 @@ impl RecordingStorage for InMemoryRecordingStorage {
         let mut list: Vec<_> = recordings.values().cloned().collect();
 
         // Sort by start time (most recent first)
-        list.sort_by(|a, b| b.start_time.cmp(&a.start_time));
+        list.sort_by_key(|r| std::cmp::Reverse(r.start_time));
 
         // Apply pagination
         let start = offset;

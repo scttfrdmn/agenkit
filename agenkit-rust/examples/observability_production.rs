@@ -205,7 +205,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut error_count = 0;
 
     for i in 0..20 {
-        let message = Message::with_text("user", &format!("Request {}", i + 1))
+        let message = Message::with_text("user", format!("Request {}", i + 1))
             .with_metadata("request_id", serde_json::json!(i + 1));
 
         // Alternate between agents

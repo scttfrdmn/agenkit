@@ -48,7 +48,7 @@ impl MemoryEntry {
             timestamp: Utc::now(),
             access_count: 0,
             last_accessed: None,
-            importance: importance.max(0.0).min(1.0), // Clamp to 0.0-1.0
+            importance: importance.clamp(0.0, 1.0),
             session_id,
         }
     }

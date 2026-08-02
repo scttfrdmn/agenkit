@@ -350,7 +350,7 @@ impl<A: Agent + 'static> BatchingMiddleware<A> {
             return;
         }
 
-        let batch_start = Instant::now();
+        let _batch_start = Instant::now();
         let mut successes = 0;
         let mut failures = 0;
         let mut total_wait_time_ms = 0u64;

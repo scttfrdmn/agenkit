@@ -243,7 +243,7 @@ impl EnhancedRetryDecorator {
             .error_strategies
             .get(&error_class)
             .cloned()
-            .unwrap_or_else(|| ErrorStrategy {
+            .unwrap_or(ErrorStrategy {
                 error_class,
                 max_retries: self.config.max_retries,
                 initial_backoff: self.config.initial_backoff,
@@ -259,10 +259,7 @@ impl EnhancedRetryDecorator {
 
         let jittered_ms = match self.config.jitter_type {
             JitterType::None => base_ms,
-            JitterType::Full => {
-                let jittered = rng.random::<f64>() * base_ms;
-                jittered
-            }
+            JitterType::Full => rng.random::<f64>() * base_ms,
             JitterType::Equal => {
                 let min_backoff = base_ms * self.config.jitter_min_ratio;
                 min_backoff + rng.random::<f64>() * (base_ms - min_backoff)
@@ -367,12 +364,10 @@ impl Agent for EnhancedRetryDecorator {
             }
 
             // Check budget before attempt
-            if self.config.enable_budget {
-                if !self.check_budget(0.0).await {
-                    return Err(AgentError::ExecutionError(
-                        "Retry budget exceeded".to_string(),
-                    ));
-                }
+            if self.config.enable_budget && !self.check_budget(0.0).await {
+                return Err(AgentError::ExecutionError(
+                    "Retry budget exceeded".to_string(),
+                ));
             }
 
             // Check backpressure

@@ -1,7 +1,6 @@
 //! Tests for audit logging module.
 
 use agenkit::observability::{AuditEvent, AuditEventType, AuditLogger, AuditSeverity};
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 /// Helper to create a temporary audit log file
@@ -204,9 +203,9 @@ async fn test_query_empty_log() {
     let events = logger.query(None).await;
 
     // Should handle empty file gracefully (might fail with file not found)
-    match events {
-        Ok(evts) => assert_eq!(evts.len(), 0),
-        Err(_) => {} // File doesn't exist yet - acceptable
+    // Err is acceptable here: the log file does not exist until the first write.
+    if let Ok(evts) = events {
+        assert_eq!(evts.len(), 0);
     }
 }
 

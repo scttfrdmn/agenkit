@@ -91,7 +91,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Step 7: Process messages
     println!("6. Processing messages with full observability...\n");
 
-    let messages = vec!["Hello, World!", "How are you?", "Testing observability"];
+    let messages = ["Hello, World!", "How are you?", "Testing observability"];
 
     for (i, content) in messages.iter().enumerate() {
         println!("   Message {}: \"{}\"", i + 1, content);

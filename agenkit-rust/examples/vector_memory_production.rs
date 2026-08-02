@@ -339,7 +339,7 @@ async fn main() -> Result<(), AgentError> {
     println!("   • OpenAI: text-embedding-3-small (1536d, $0.02/1M tokens)");
     println!("   • Anthropic: Claude embeddings via API");
     println!("   • Local models: sentence-transformers, BERT variants");
-    println!("");
+    println!();
     println!("   For persistent storage, integrate with:");
     println!("   • PostgreSQL with pgvector extension");
     println!("   • ChromaDB (open-source vector database)");

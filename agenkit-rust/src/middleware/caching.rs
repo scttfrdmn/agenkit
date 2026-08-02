@@ -226,10 +226,9 @@ impl LruCache {
 
     fn get(&mut self, key: u64) -> Option<Message> {
         // Check if entry exists and is not expired
-        let is_expired = if let Some(entry) = self.entries.get(&key) {
+        let is_expired = {
+            let entry = self.entries.get(&key)?;
             entry.is_expired(self.ttl)
-        } else {
-            return None;
         };
 
         if is_expired {
@@ -297,10 +296,6 @@ impl LruCache {
             self.metrics.evictions += 1;
             self.metrics.current_size = self.entries.len();
         }
-    }
-
-    fn size(&self) -> usize {
-        self.entries.len()
     }
 
     fn get_metrics(&self) -> CachingMetrics {
@@ -422,7 +417,7 @@ mod tests {
             "counting"
         }
 
-        async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
             let count = self.attempts.fetch_add(1, Ordering::SeqCst);
             Ok(Message::with_text(
                 "assistant",

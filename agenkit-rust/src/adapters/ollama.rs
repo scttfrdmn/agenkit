@@ -66,6 +66,9 @@ struct ChatOptions {
 struct ChatResponse {
     model: String,
     message: ResponseMessage,
+    // Not consumed: non-streaming responses are always complete. Kept because it
+    // documents the wire format (#778).
+    #[allow(dead_code)]
     done: bool,
     #[serde(default)]
     total_duration: Option<u64>,
@@ -157,7 +160,7 @@ impl OllamaAgent {
             .json(&request)
             .send()
             .await
-            .map_err(|e| AgentError::Http(e))?;
+            .map_err(AgentError::Http)?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -174,7 +177,7 @@ impl OllamaAgent {
         response
             .json::<ChatResponse>()
             .await
-            .map_err(|e| AgentError::Http(e))
+            .map_err(AgentError::Http)
     }
 
     /// Convert Agent message to Ollama format.

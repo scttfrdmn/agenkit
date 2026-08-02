@@ -39,7 +39,7 @@ async fn test_message_creation() {
 
     assert_eq!(msg.role, "user");
     assert_eq!(msg.content_as_str().unwrap(), "Hello");
-    assert_eq!(msg.metadata.get("test").unwrap().as_bool().unwrap(), true);
+    assert!(msg.metadata.get("test").unwrap().as_bool().unwrap());
     assert!(!msg.timestamp.to_rfc3339().is_empty());
 }
 
@@ -107,15 +107,12 @@ async fn test_message_serialization() {
             .abs()
             < 0.01
     );
-    assert_eq!(
-        deserialized
-            .metadata
-            .get("bool")
-            .unwrap()
-            .as_bool()
-            .unwrap(),
-        true
-    );
+    assert!(deserialized
+        .metadata
+        .get("bool")
+        .unwrap()
+        .as_bool()
+        .unwrap());
 }
 
 /// Test 3: Agent basic processing

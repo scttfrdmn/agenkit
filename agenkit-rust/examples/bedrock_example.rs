@@ -121,7 +121,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if config.access_key_id.is_some() && config.secret_access_key.is_some() {
         println!("Using explicit AWS credentials from environment variables");
-        if let Ok(adapter) = BedrockAdapter::new(config).await {
+        if let Ok(_adapter) = BedrockAdapter::new(config).await {
             println!("Adapter created successfully with explicit credentials");
         }
     } else {

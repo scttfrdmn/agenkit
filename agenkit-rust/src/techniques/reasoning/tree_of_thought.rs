@@ -100,7 +100,10 @@ struct ScoredNode {
 
 impl PartialEq for ScoredNode {
     fn eq(&self, other: &Self) -> bool {
-        self.score == other.score
+        // Via `total_cmp` rather than `==` so this agrees with `Ord` below. With `==`,
+        // a NaN score compared to itself was `false`, which breaks the reflexivity
+        // `Eq` promises and makes the `BinaryHeap` ordering unsound.
+        self.cmp(other).is_eq()
     }
 }
 
@@ -108,13 +111,20 @@ impl Eq for ScoredNode {}
 
 impl PartialOrd for ScoredNode {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.score.partial_cmp(&other.score)
+        Some(self.cmp(other))
     }
 }
 
 impl Ord for ScoredNode {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.partial_cmp(other).unwrap_or(std::cmp::Ordering::Equal)
+        // `Ord` is the real implementation and `PartialOrd` delegates to it, not the
+        // other way round -- that is what makes the two agree, which `Ord`'s contract
+        // requires. The previous pair had `cmp` call `partial_cmp`, so applying
+        // clippy's suggested `Some(self.cmp(other))` naively would have recursed
+        // forever (#778). `total_cmp` gives a total order over f64 including NaN,
+        // where the old `unwrap_or(Equal)` silently reported NaN as equal to
+        // everything -- a score of NaN could previously tie with any other node.
+        self.score.total_cmp(&other.score)
     }
 }
 
@@ -245,7 +255,7 @@ impl TreeOfThoughtAgent {
             // Add child to tree
             let child_id = tree
                 .add_child(node_id, branch, score)
-                .map_err(|e| AgentError::Internal(e))?;
+                .map_err(AgentError::Internal)?;
             child_ids.push(child_id);
 
             if let Some(child) = tree.get_node_mut(child_id) {
@@ -504,7 +514,7 @@ mod tests {
     #[test]
     fn test_default_evaluator_score_range() {
         let score = default_evaluator("some text here");
-        assert!(score >= 0.0 && score <= 1.0);
+        assert!((0.0..=1.0).contains(&score));
     }
 
     #[test]

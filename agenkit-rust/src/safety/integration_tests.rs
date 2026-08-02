@@ -9,7 +9,7 @@ mod tests {
         SchemaValidatorConfig,
     };
     use async_trait::async_trait;
-    use serde_json::json;
+
     use std::collections::{HashMap, HashSet};
 
     /// Mock agent for testing that echoes input and adds metadata.
@@ -106,8 +106,10 @@ mod tests {
 
         // Use custom config with lower threshold to ensure detection
         use crate::safety::PromptInjectionConfig;
-        let mut config = PromptInjectionConfig::default();
-        config.threshold = 5; // Lower threshold for more sensitive detection
+        let config = PromptInjectionConfig {
+            threshold: 5, // Lower threshold for more sensitive detection
+            ..Default::default()
+        };
 
         let agent = InputValidationMiddleware::new(agent)
             .with_prompt_injection_detector_config(config)
@@ -187,7 +189,7 @@ mod tests {
 
         // Multiple rapid requests (testing rate limiting)
         for i in 0..5 {
-            let msg = Message::with_text("user", &format!("Request {}", i));
+            let msg = Message::with_text("user", format!("Request {}", i));
             let _ = agent.process(msg).await;
         }
     }
@@ -221,8 +223,10 @@ mod tests {
 
         // Use lower threshold to ensure detection
         use crate::safety::PromptInjectionConfig;
-        let mut config = PromptInjectionConfig::default();
-        config.threshold = 5;
+        let config = PromptInjectionConfig {
+            threshold: 5,
+            ..Default::default()
+        };
 
         let agent = InputValidationMiddleware::new(agent)
             .with_prompt_injection_detector_config(config)
@@ -244,7 +248,7 @@ mod tests {
         match err {
             AgentError::InvalidInput(_) | AgentError::ProcessingError(_) => {
                 // Expected error types - verify error message is meaningful
-                assert!(err.to_string().len() > 0);
+                assert!(!err.to_string().is_empty());
                 assert!(
                     err.to_string().contains("Prompt injection")
                         || err.to_string().contains("validation"),
@@ -260,10 +264,12 @@ mod tests {
         // Test banned words in input and sensitive data in output
         let agent = MockAgent::with_sensitive_data("test-agent");
 
-        let mut config = ContentFilterConfig::default();
-        config.banned_words = HashSet::from(["exploit".to_string(), "malware".to_string()]);
-        config.max_size = 10000;
-        config.min_size = 1;
+        let config = ContentFilterConfig {
+            banned_words: HashSet::from(["exploit".to_string(), "malware".to_string()]),
+            max_size: 10000,
+            min_size: 1,
+            ..Default::default()
+        };
 
         let agent = InputValidationMiddleware::new(agent)
             .with_content_filter_config(config)
@@ -297,10 +303,12 @@ mod tests {
         // Test sandbox constraints with multiple middleware layers
         let agent = MockAgent::new("test-agent");
 
-        let mut sandbox = Sandbox::default();
-        sandbox.allowed_paths = HashSet::from(["/tmp".to_string()]);
-        sandbox.denied_commands = HashSet::from(["rm".to_string(), "sudo".to_string()]);
-        sandbox.max_file_size = 1024 * 1024; // 1MB
+        let sandbox = Sandbox {
+            allowed_paths: HashSet::from(["/tmp".to_string()]),
+            denied_commands: HashSet::from(["rm".to_string(), "sudo".to_string()]),
+            max_file_size: 1024 * 1024, // 1MB
+            ..Default::default()
+        };
 
         let agent = InputValidationMiddleware::new(agent).with_content_filter();
 
@@ -315,7 +323,7 @@ mod tests {
 
         // Introspection should show middleware metadata
         let info = agent.introspect();
-        assert!(info.agent_name.len() > 0);
+        assert!(!info.agent_name.is_empty());
     }
 
     #[tokio::test]

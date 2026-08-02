@@ -9,7 +9,6 @@ use agenkit::observability::{
 };
 use async_trait::async_trait;
 use std::collections::HashMap;
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 /// Simple test agent
@@ -324,7 +323,7 @@ async fn test_concurrent_agents_with_observability() {
             logger_clone.log(audit_event).await.unwrap();
 
             // Process message
-            let message = Message::with_text("user", &format!("test-{}", i));
+            let message = Message::with_text("user", format!("test-{}", i));
             observed.process(message).await.unwrap()
         });
 
@@ -365,7 +364,7 @@ async fn test_session_tracking_across_modules() {
         let observed = MetricsMiddleware::new(traced);
 
         // Add session_id to message metadata
-        let message = Message::with_text("user", &format!("message-{}", i))
+        let message = Message::with_text("user", format!("message-{}", i))
             .with_metadata("session_id", serde_json::json!(session_id));
 
         observed.process(message).await.unwrap();
@@ -423,7 +422,7 @@ async fn test_performance_with_full_observability() {
     let start = std::time::Instant::now();
 
     for i in 0..100 {
-        let message = Message::with_text("user", &format!("msg-{}", i));
+        let message = Message::with_text("user", format!("msg-{}", i));
         observed.process(message).await.unwrap();
     }
 

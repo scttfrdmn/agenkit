@@ -15,7 +15,11 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 /// Test fixtures loaded from shared JSON file
+// The fixture-schema structs below deserialize `version`/`description`/`name`
+// documentation fields that this harness does not assert on. Kept because removing a
+// field from a `Deserialize` struct changes which JSON shapes parse (#778).
 #[derive(Debug, serde::Deserialize)]
+#[allow(dead_code)]
 struct RetryBehaviorFixtures {
     version: String,
     description: String,
@@ -23,6 +27,7 @@ struct RetryBehaviorFixtures {
 }
 
 #[derive(Debug, serde::Deserialize)]
+#[allow(dead_code)]
 struct RetryBehaviorTestCase {
     id: String,
     name: String,

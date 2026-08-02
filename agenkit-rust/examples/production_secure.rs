@@ -23,6 +23,8 @@ struct SecureSession {
     prompt_detector: PromptInjectionDetector,
     output_redactor: SensitiveDataRedactor,
     session_id: String,
+    // Part of the example's session shape; not consulted by any step below.
+    #[allow(dead_code)]
     user_id: String,
     step: usize,
 }
@@ -124,7 +126,7 @@ impl SecureSession {
             .await?;
 
         // CHECKPOINTING: Save state every 3 messages
-        if self.step % 3 == 0 {
+        if self.step.is_multiple_of(3) {
             let messages = self.memory.retrieve("", 100, None).await?;
             let state = serde_json::json!({"step": self.step, "messages": messages.len()});
             let checkpoint_id = self
@@ -244,7 +246,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Run conversation
-    let messages = vec![
+    let messages = [
         "Hello! Starting a secure conversation.",
         "Remember that I prefer detailed answers.",
         "What can you tell me about AI?",

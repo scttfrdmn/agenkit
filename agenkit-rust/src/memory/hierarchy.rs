@@ -130,11 +130,12 @@ impl MemoryHierarchy {
         }
 
         // Query short-term memory
-        if (search_all || tiers.contains(&"short_term".to_string())) && self.short_term.is_some() {
-            let short_term_results = self
-                .short_term
-                .as_ref()
-                .unwrap()
+        if let Some(short_term) = self
+            .short_term
+            .as_ref()
+            .filter(|_| search_all || tiers.contains(&"short_term".to_string()))
+        {
+            let short_term_results = short_term
                 .retrieve(limit)
                 .await
                 .map_err(|e| HierarchyError::ShortTermMemoryError(e.to_string()))?;
@@ -147,11 +148,12 @@ impl MemoryHierarchy {
         }
 
         // Query long-term memory
-        if (search_all || tiers.contains(&"long_term".to_string())) && self.long_term.is_some() {
-            let long_term_results = self
-                .long_term
-                .as_ref()
-                .unwrap()
+        if let Some(long_term) = self
+            .long_term
+            .as_ref()
+            .filter(|_| search_all || tiers.contains(&"long_term".to_string()))
+        {
+            let long_term_results = long_term
                 .retrieve(query, limit)
                 .await
                 .map_err(|e| HierarchyError::LongTermMemoryError(e.to_string()))?;

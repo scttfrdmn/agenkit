@@ -97,17 +97,22 @@ if [ "$LINT" = true ]; then
     run_step "go vet" \
         bash -c 'go vet $(go list ./... | grep -v /examples/)'
 
-    # Rust lint (#773). --all-targets matters: without it clippy skips tests/ and
-    # examples/, which is exactly where the six deny-by-default errors found in
-    # #773 had accumulated unseen. No `-D warnings` yet — 365 unique warnings
-    # remain; the sweep and the flip are tracked in #778. Keep this in step with
-    # the clippy invocation in .github/workflows/test.yml.
+    # Rust lint (#773, #778). --all-targets matters: without it clippy skips
+    # tests/ and examples/, which is exactly where the six deny-by-default errors
+    # found in #773 had accumulated unseen. `-D warnings` as of #778, which
+    # cleared the 365-warning backlog that had made the flip impossible.
+    #
+    # Not --all-features: `native` and `wasm` are mutually exclusive, so enabling
+    # both fails to compile (11 errors, predating #778). Warnings only gated under
+    # the default feature set as a result.
+    #
+    # Keep this in step with the clippy invocation in .github/workflows/test.yml.
     if command -v cargo &>/dev/null; then
         cd "$REPO_ROOT/agenkit-rust"
         run_step "cargo fmt --check (Rust formatter)" \
             cargo fmt --check
         run_step "cargo clippy (Rust linter)" \
-            cargo clippy --all-targets
+            cargo clippy --all-targets -- -D warnings
     else
         echo -e "${YELLOW}  ⚠ cargo not found, skipping Rust lint${NC}"
         echo ""

@@ -10,7 +10,6 @@
 //! Run: cargo run --example pattern-parallel-usage
 
 use agenkit::core::{Agent, AgentError, Message};
-use agenkit::patterns::parallel::*;
 use async_trait::async_trait;
 use std::error::Error;
 

@@ -377,7 +377,7 @@ mod tests {
         assert!(config.contains_key("count"));
 
         let temp = config.get("temp").unwrap().as_f64().unwrap();
-        assert!(temp >= 0.0 && temp <= 1.0);
+        assert!((0.0..=1.0).contains(&temp));
     }
 
     #[test]
@@ -416,7 +416,7 @@ mod tests {
 
         // Check that best_config has x close to 5.0
         let best_x = result.best_config.get("x").unwrap().as_f64().unwrap();
-        assert!(best_x >= 0.0 && best_x <= 10.0);
+        assert!((0.0..=10.0).contains(&best_x));
     }
 
     #[tokio::test]
@@ -496,7 +496,7 @@ mod tests {
 
         // Best x should be reasonably close to 5.0
         let best_x = result.best_config.get("x").unwrap().as_f64().unwrap();
-        assert!(best_x >= 0.0 && best_x <= 10.0);
+        assert!((0.0..=10.0).contains(&best_x));
     }
 
     #[tokio::test]
@@ -596,8 +596,8 @@ mod tests {
         // Both x and y should be in valid range
         let best_x = result.best_config.get("x").unwrap().as_f64().unwrap();
         let best_y = result.best_config.get("y").unwrap().as_f64().unwrap();
-        assert!(best_x >= 0.0 && best_x <= 10.0);
-        assert!(best_y >= 0.0 && best_y <= 10.0);
+        assert!((0.0..=10.0).contains(&best_x));
+        assert!((0.0..=10.0).contains(&best_y));
     }
 
     #[tokio::test]
@@ -679,10 +679,7 @@ mod tests {
             result.metadata.get("n_initial").unwrap().as_u64().unwrap(),
             3
         );
-        assert_eq!(
-            result.metadata.get("maximize").unwrap().as_bool().unwrap(),
-            true
-        );
+        assert!(result.metadata.get("maximize").unwrap().as_bool().unwrap());
         assert!(result.metadata.contains_key("acquisition"));
     }
 

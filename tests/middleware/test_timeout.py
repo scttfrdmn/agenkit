@@ -378,7 +378,8 @@ async def test_timeout_streaming_not_supported():
 async def test_timeout_metrics_duration_tracking():
     """Test that metrics correctly track request durations."""
     agent = FastAgent(delay=0.05)  # 50ms delay
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=1000))
+    config = TimeoutConfig(timeout_ms=1000)
+    timeout_agent = TimeoutDecorator(agent, config)
 
     # Send 3 requests
     for i in range(3):
@@ -390,15 +391,25 @@ async def test_timeout_metrics_duration_tracking():
     assert metrics.max_duration is not None
     assert metrics.avg_duration > 0
 
-    # Duration should be approximately 50ms per request
-    assert 0.04 < metrics.avg_duration < 0.1  # Allow for timing variance
+    # The bound that matters is that avg_duration reflects the agent's own 50ms
+    # rather than the 1000ms timeout — i.e. the duration is measured on the
+    # success path, not filled in from the configured timeout. Stated against
+    # both constants so it tracks a change to either.
+    #
+    # The upper bound used to be a hardcoded 0.1, leaving 50ms of slack. Under
+    # `pytest -n auto` a >90ms scheduling delay is ordinary, which is what made
+    # the sibling assertion in test_batching.py flake (#776). Half the timeout
+    # keeps the full discriminating power (0.05 vs 1.0) with 10x the headroom.
+    assert metrics.avg_duration > agent.delay * 0.8
+    assert metrics.avg_duration < config.timeout_ms / 1000 / 2
 
 
 @pytest.mark.asyncio
 async def test_timeout_metrics_tracks_timeout_duration():
     """Test that timeout duration is recorded even for timed-out requests."""
     agent = SlowAgent(delay=10.0)
-    timeout_agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=100))
+    config = TimeoutConfig(timeout_ms=100)
+    timeout_agent = TimeoutDecorator(agent, config)
 
     msg = Message(role="user", content="test")
 
@@ -408,8 +419,18 @@ async def test_timeout_metrics_tracks_timeout_duration():
     metrics = timeout_agent.metrics
     assert metrics.timed_out_requests == 1
 
-    # Duration should be approximately the timeout duration
-    assert 0.09 < metrics.avg_duration < 0.2  # ~100ms timeout + overhead
+    # Here the upper bound is the discriminating one, and it points the opposite
+    # way from the success-path test above: it proves the recorded duration is
+    # the 100ms timeout rather than the agent's own 10s delay — i.e. that the
+    # call was abandoned at the deadline and not awaited to completion.
+    #
+    # The gap between the two candidates is 100ms vs 10s, so a generous ceiling
+    # loses nothing. It used to be 0.2, only 100ms of slack, close enough to the
+    # >90ms scheduling delays seen under `pytest -n auto` to flake for the same
+    # reason #776 did.
+    timeout_s = config.timeout_ms / 1000
+    assert metrics.avg_duration > timeout_s * 0.9
+    assert metrics.avg_duration < agent.delay / 10
 
 
 # ============================================

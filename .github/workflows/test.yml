@@ -177,9 +177,11 @@ jobs:
         run: cargo build --quiet
       # --all-targets so lints apply to tests/ and examples/ too — that is where
       # every error found in #773 lived. Warnings stay warnings for now: the
-      # crate emits ~200 across all targets, so `-D warnings` would fail the
-      # build on day one. Tracked for a follow-up sweep; the errors are what this
-      # gate holds the line on.
+      # crate emits 365 unique ones across all targets (the "~200" written here
+      # in #773 was an eyeball estimate off unfiltered output), so `-D warnings`
+      # would fail the build on day one. The sweep and the flip to `-D warnings`
+      # are tracked in #778; the errors are what this gate holds the line on
+      # until then.
       - name: Rust clippy (blocking)
         if: matrix.lang == 'rust'
         working-directory: agenkit-rust

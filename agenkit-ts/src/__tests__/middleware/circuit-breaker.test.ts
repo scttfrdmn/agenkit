@@ -196,7 +196,7 @@ describe('CircuitBreakerMiddleware: State Transitions', () => {
 
     await cb.process(input);
     expect(cb.getState()).toBe(CircuitState.CLOSED);
-    expect(cb.metrics.stateChanges['HALF_OPEN->CLOSED']).toBe(1);
+    expect(cb.metrics.stateChanges['half_open->closed']).toBe(1);
   });
 
   it('should reopen circuit on failure in HALF_OPEN', async () => {
@@ -236,7 +236,7 @@ describe('CircuitBreakerMiddleware: State Transitions', () => {
     }
 
     expect(cb.getState()).toBe(CircuitState.OPEN);
-    expect(cb.metrics.stateChanges['HALF_OPEN->OPEN']).toBe(1);
+    expect(cb.metrics.stateChanges['half_open->open']).toBe(1);
   });
 });
 
@@ -335,9 +335,9 @@ describe('CircuitBreakerMiddleware: Metrics', () => {
 
     const metrics = cb.metrics;
 
-    expect(metrics.stateChanges['CLOSED->OPEN']).toBe(1);
-    expect(metrics.stateChanges['OPEN->HALF_OPEN']).toBe(1);
-    expect(metrics.stateChanges['HALF_OPEN->CLOSED']).toBe(1);
+    expect(metrics.stateChanges['closed->open']).toBe(1);
+    expect(metrics.stateChanges['open->half_open']).toBe(1);
+    expect(metrics.stateChanges['half_open->closed']).toBe(1);
     expect(metrics.currentState).toBe(CircuitState.CLOSED);
     expect(metrics.lastStateChange).toBeGreaterThan(0);
   });

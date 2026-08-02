@@ -164,7 +164,7 @@ fn circuitOpensExample(allocator: std.mem.Allocator) !void {
     }
 
     const metrics = try breaker.metrics();
-    defer metrics.state_transitions.deinit();
+    defer metrics.state_changes.deinit();
     std.debug.print("  Final state: {s}\n", .{breaker.getState().toString()});
     std.debug.print("  Metrics: {d} failed, {d} rejected\n", .{metrics.failed_requests, metrics.rejected_requests});
 }
@@ -212,10 +212,10 @@ fn circuitRecoveryExample(allocator: std.mem.Allocator) !void {
     }
 
     const metrics = try breaker.metrics();
-    defer metrics.state_transitions.deinit();
+    defer metrics.state_changes.deinit();
     std.debug.print("  Final state: {s}\n", .{breaker.getState().toString()});
     std.debug.print("  State transitions:\n", .{});
-    var iter = metrics.state_transitions.iterator();
+    var iter = metrics.state_changes.iterator();
     while (iter.next()) |entry| {
         std.debug.print("    {s}: {d}\n", .{ entry.key_ptr.*, entry.value_ptr.* });
     }
@@ -261,7 +261,7 @@ fn halfOpenFailureExample(allocator: std.mem.Allocator) !void {
     std.debug.print("    State: {s} (should be OPEN again)\n", .{breaker.getState().toString()});
 
     const metrics = try breaker.metrics();
-    defer metrics.state_transitions.deinit();
+    defer metrics.state_changes.deinit();
     std.debug.print("  Final state: {s}\n", .{breaker.getState().toString()});
 }
 
@@ -302,7 +302,7 @@ fn metricsExample(allocator: std.mem.Allocator) !void {
     }
 
     const metrics = try breaker.metrics();
-    defer metrics.state_transitions.deinit();
+    defer metrics.state_changes.deinit();
     std.debug.print("\n  Final Metrics:\n", .{});
     std.debug.print("    Total requests:      {d}\n", .{metrics.total_requests});
     std.debug.print("    Successful:          {d}\n", .{metrics.successful_requests});

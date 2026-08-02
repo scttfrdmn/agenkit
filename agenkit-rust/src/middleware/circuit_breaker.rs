@@ -85,6 +85,25 @@ pub enum CircuitState {
     HalfOpen,
 }
 
+impl CircuitState {
+    /// Cross-language wire name for this state.
+    ///
+    /// This is the *protocol* spelling, deliberately separate from [`Display`], which is
+    /// the human-facing one. Keying `state_changes` off `Display` is what let Rust drift
+    /// to `CLOSED->OPEN` while Python and Go produced `closed->open` (#791): a display
+    /// choice silently became protocol. Anything crossing a language boundary uses this;
+    /// anything shown to a person can use [`Display`].
+    ///
+    /// [`Display`]: std::fmt::Display
+    pub fn as_wire_str(&self) -> &'static str {
+        match self {
+            CircuitState::Closed => "closed",
+            CircuitState::Open => "open",
+            CircuitState::HalfOpen => "half_open",
+        }
+    }
+}
+
 impl std::fmt::Display for CircuitState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -110,7 +129,16 @@ pub struct CircuitBreakerMetrics {
     /// Number of requests rejected due to open circuit.
     pub rejected_requests: u64,
 
-    /// State transition counts (e.g., "CLOSED->OPEN": 3).
+    /// State transition counts, keyed `"{from}->{to}"` in the cross-language wire form
+    /// (e.g. `"closed->open": 3`).
+    ///
+    /// The key format is a cross-language contract, shared with the other cores and the
+    /// `circuit_breaker_behavior.json` fixtures. Build keys from
+    /// [`CircuitState::as_wire_str`]; do not derive them from [`Display`], which is the
+    /// human-facing spelling and diverged from every other core for exactly that reason
+    /// (#791).
+    ///
+    /// [`Display`]: std::fmt::Display
     pub state_changes: HashMap<String, u64>,
 
     /// Timestamp of last state change.
@@ -230,7 +258,8 @@ struct CircuitBreakerState {
 
 impl CircuitBreakerState {
     fn record_state_change(&mut self, from: CircuitState, to: CircuitState) {
-        let key = format!("{}->{}", from, to);
+        // Wire form, not Display — see `CircuitBreakerMetrics::state_changes` (#791).
+        let key = format!("{}->{}", from.as_wire_str(), to.as_wire_str());
         *self.metrics.state_changes.entry(key).or_insert(0) += 1;
         self.metrics.last_state_change = Some(Instant::now());
         self.metrics.current_state = to;

@@ -47,11 +47,12 @@ struct Scenario {
 
 /// Expected behavior from fixture
 //
-// Several fields here are expectations the fixture states that this harness does not
-// assert -- `state_transitions` (no core records transition *order*), and the
-// `all_requests_completed` / `total_successful_in_half_open` / `all_rejected_while_open`
-// flags. See #791: making them live requires deciding the canonical transition-key
-// format first, since the fixture's format matches no implementation.
+// The `fourth_request_rejected` / `recovery_successful` / `circuit_fully_recovered` /
+// `reopened_after_partial_recovery` flags are now genuinely asserted (#791) -- they used
+// to be read and then `assert!`ed directly, which only proved the fixture contained
+// `true`. Still unasserted: `state_transitions` (no core records transition *order*, only
+// counts, so nothing can check it yet) and the `all_requests_completed` /
+// `all_rejected_while_open` flags, which restate what the counters already cover.
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 struct ExpectedBehavior {
@@ -84,12 +85,11 @@ struct ExpectedBehavior {
 
 /// Expected metrics from fixture
 //
-// `state_changes` is unasserted, and that is the bug in #791: Python/Go key transitions
-// `closed->open`, Rust/TypeScript key them `CLOSED->OPEN`, and this fixture expects a
-// third form, `closed_to_open`. Nothing reads the field, so nothing caught the drift.
-// Asserting it is blocked on picking the canonical format.
+// Every field here is asserted, including `state_changes` -- which was the bug in #791.
+// Five key formats had drifted apart (Python/Go `closed->open`, Rust/TS `CLOSED->OPEN`,
+// Zig `CLOSED_to_OPEN`, this fixture `closed_to_open`, and C++ not keyed at all) purely
+// because no harness read the field. The canonical form is now lowercase with `->`.
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)]
 struct ExpectedMetrics {
     total_requests: usize,
     successful_requests: usize,
@@ -215,6 +215,23 @@ fn state_to_string(state: CircuitState) -> String {
     }
 }
 
+/// Assert every named transition was taken at least once.
+///
+/// Final-state checks alone are weak: a breaker that opened and never probed half-open
+/// ends "open" just like one that reopened after a failed probe, and one that never
+/// opened at all ends "closed" just like one that fully recovered. Checking the path is
+/// what distinguishes them (#791).
+fn assert_transitions(changes: &HashMap<String, u64>, expected: &[&str]) {
+    for key in expected {
+        assert!(
+            changes.get(*key).copied().unwrap_or(0) >= 1,
+            "transition {} never happened: {:?}",
+            key,
+            changes
+        );
+    }
+}
+
 #[tokio::test]
 async fn test_circuit_breaker_closed_success() {
     let fixtures = load_fixtures();
@@ -248,7 +265,34 @@ async fn test_circuit_breaker_closed_success() {
     let expected = test_case.expected_behavior.as_ref().unwrap();
     let metrics = circuit_breaker.get_metrics().await;
     assert_eq!(state_to_string(metrics.current_state), expected.final_state);
-    assert_eq!(successful, expected.total_requests.unwrap());
+
+    // The counters, not just the final state — Python and Go both check all four here, and
+    // `successful` is compared against `successful_requests` rather than `total_requests`
+    // so the assertion still means something in a scenario that isn't all-success.
+    assert_eq!(
+        metrics.total_requests,
+        expected.total_requests.unwrap() as u64
+    );
+    assert_eq!(
+        metrics.successful_requests,
+        expected.successful_requests.unwrap() as u64
+    );
+    assert_eq!(
+        metrics.failed_requests,
+        expected.failed_requests.unwrap() as u64
+    );
+    assert_eq!(
+        metrics.rejected_requests,
+        expected.rejected_requests.unwrap() as u64
+    );
+    assert_eq!(successful, expected.successful_requests.unwrap());
+
+    // A closed circuit records no transitions at all.
+    assert!(
+        metrics.state_changes.is_empty(),
+        "circuit should never have left CLOSED: {:?}",
+        metrics.state_changes
+    );
 }
 
 #[tokio::test]
@@ -270,15 +314,18 @@ async fn test_circuit_breaker_opens_on_failures() {
 
     let circuit_breaker = CircuitBreakerMiddleware::new(mock_agent, config);
 
-    // Execute requests
+    // Execute requests, recording each outcome so per-request claims can be checked
     let mut rejected = 0;
+    let mut outcomes = Vec::new();
     for _ in 0..test_case.scenario.agent_responses.len() {
         let message = Message::new("user", json!("test"));
-        let result = circuit_breaker.process(message).await;
-        if let Err(AgentError::ProcessingError(msg)) = result {
-            if msg.contains("circuit breaker is open") {
+        match circuit_breaker.process(message).await {
+            Ok(_) => outcomes.push("ok"),
+            Err(AgentError::ProcessingError(msg)) if msg.contains("circuit breaker is open") => {
                 rejected += 1;
+                outcomes.push("rejected");
             }
+            Err(_) => outcomes.push("failed"),
         }
     }
 
@@ -286,8 +333,21 @@ async fn test_circuit_breaker_opens_on_failures() {
     let expected = test_case.expected_behavior.as_ref().unwrap();
     let metrics = circuit_breaker.get_metrics().await;
     assert_eq!(state_to_string(metrics.current_state), expected.final_state);
-    assert!(expected.fourth_request_rejected.unwrap());
     assert!(rejected > 0);
+
+    // `assert!(expected.fourth_request_rejected.unwrap())` was a tautology: it asserted a
+    // `true` literal read out of the fixture, so it passed with the middleware deleted
+    // (#791). Check the actual claim -- the fourth request was rejected by the open
+    // circuit, not merely failed by the inner agent (whose fourth scripted response is a
+    // success).
+    if expected.fourth_request_rejected == Some(true) {
+        assert_eq!(
+            outcomes.get(3),
+            Some(&"rejected"),
+            "expected 4th request rejected, got {:?}",
+            outcomes
+        );
+    }
 }
 
 #[tokio::test]
@@ -335,7 +395,16 @@ async fn test_circuit_breaker_half_open_transition() {
     let expected = test_case.expected_behavior.as_ref().unwrap();
     let metrics = circuit_breaker.get_metrics().await;
     assert_eq!(state_to_string(metrics.current_state), expected.final_state);
-    assert!(expected.recovery_successful.unwrap());
+
+    // `assert!(expected.recovery_successful.unwrap())` was a tautology (#791). The real
+    // claim is that the circuit opened, then recovered *through* half-open -- a breaker
+    // that never opened would also end "closed" and pass the final-state check.
+    if expected.recovery_successful == Some(true) {
+        assert_transitions(
+            &metrics.state_changes,
+            &["closed->open", "open->half_open", "half_open->closed"],
+        );
+    }
 }
 
 #[tokio::test]
@@ -383,7 +452,15 @@ async fn test_circuit_breaker_half_open_to_closed() {
     let expected = test_case.expected_behavior.as_ref().unwrap();
     let metrics = circuit_breaker.get_metrics().await;
     assert_eq!(state_to_string(metrics.current_state), expected.final_state);
-    assert!(expected.circuit_fully_recovered.unwrap());
+
+    // `assert!(expected.circuit_fully_recovered.unwrap())` was a tautology (#791). Check
+    // the real claim: the circuit did close from half-open rather than skipping the probe.
+    if expected.circuit_fully_recovered == Some(true) {
+        assert_transitions(
+            &metrics.state_changes,
+            &["open->half_open", "half_open->closed"],
+        );
+    }
 }
 
 #[tokio::test]
@@ -431,7 +508,16 @@ async fn test_circuit_breaker_half_open_reopens() {
     let expected = test_case.expected_behavior.as_ref().unwrap();
     let metrics = circuit_breaker.get_metrics().await;
     assert_eq!(state_to_string(metrics.current_state), expected.final_state);
-    assert!(expected.reopened_after_partial_recovery.unwrap());
+
+    // `assert!(expected.reopened_after_partial_recovery.unwrap())` was a tautology (#791).
+    // The real claim is the full path closed -> open -> half_open -> open: a breaker that
+    // opened once and never probed would also end "open" and pass the final-state check.
+    if expected.reopened_after_partial_recovery == Some(true) {
+        assert_transitions(
+            &metrics.state_changes,
+            &["closed->open", "open->half_open", "half_open->open"],
+        );
+    }
 }
 
 #[tokio::test]
@@ -525,4 +611,14 @@ async fn test_circuit_breaker_metrics_tracking() {
     assert_eq!(metrics.failed_requests, expected.failed_requests as u64);
     assert_eq!(metrics.rejected_requests, expected.rejected_requests as u64);
     assert_eq!(state_to_string(metrics.current_state), expected.final_state);
+
+    // Assert the state_changes map itself, not just the scalar counters. This field is the
+    // cross-language transition-key contract; it went unasserted in all five harnesses long
+    // enough for four different key formats to appear (#791).
+    let want_changes: HashMap<String, u64> = expected
+        .state_changes
+        .iter()
+        .map(|(k, v)| (k.clone(), *v as u64))
+        .collect();
+    assert_eq!(metrics.state_changes, want_changes);
 }

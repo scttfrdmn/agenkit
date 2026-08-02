@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -191,15 +192,20 @@ func TestCircuitBreakerOpensOnFailures(t *testing.T) {
 	}
 	circuitBreaker := middleware.NewCircuitBreakerDecorator(mockAgent, config)
 
-	// Execute requests
+	// Execute requests, recording each outcome so per-request claims can be checked
 	rejected := 0
+	outcomes := make([]string, 0, len(testCase.Scenario.AgentResponses))
 	for i := 0; i < len(testCase.Scenario.AgentResponses); i++ {
 		msg := agenkit.NewMessage("user", "test")
 		_, err := circuitBreaker.Process(context.Background(), msg)
-		if err != nil {
-			if _, ok := err.(*middleware.CircuitBreakerError); ok {
-				rejected++
-			}
+		switch {
+		case err == nil:
+			outcomes = append(outcomes, "ok")
+		case errors.As(err, new(*middleware.CircuitBreakerError)):
+			rejected++
+			outcomes = append(outcomes, "rejected")
+		default:
+			outcomes = append(outcomes, "failed")
 		}
 	}
 
@@ -211,7 +217,16 @@ func TestCircuitBreakerOpensOnFailures(t *testing.T) {
 	assert.Equal(t, int64(expected.TotalRequests), metrics.TotalRequests)
 	assert.Equal(t, int64(expected.FailedRequests), metrics.FailedRequests)
 	assert.Equal(t, int64(expected.RejectedRequests), metrics.RejectedRequests)
-	assert.True(t, expected.FourthRequestRejected)
+
+	// `assert.True(t, expected.FourthRequestRejected)` was a tautology: it asserted a
+	// `true` literal read out of the fixture, so it passed with the middleware deleted
+	// (#791). Check the actual claim — the fourth request was rejected by the open
+	// circuit, not merely failed by the inner agent (whose fourth scripted response is a
+	// success).
+	if expected.FourthRequestRejected {
+		require.Len(t, outcomes, 4)
+		assert.Equal(t, "rejected", outcomes[3], "expected 4th request rejected, got %v", outcomes)
+	}
 }
 
 func TestCircuitBreakerHalfOpenTransition(t *testing.T) {
@@ -253,7 +268,16 @@ func TestCircuitBreakerHalfOpenTransition(t *testing.T) {
 	// Verify expected behavior
 	expected := testCase.ExpectedBehavior
 	assert.Equal(t, expected.FinalState, circuitBreaker.State().String())
-	assert.True(t, expected.RecoverySuccessful)
+
+	// `assert.True(t, expected.RecoverySuccessful)` was a tautology (#791). The real
+	// claim is that the circuit opened, then recovered *through* half-open — a breaker
+	// that never opened at all would also end "closed" and pass the final-state check.
+	if expected.RecoverySuccessful {
+		changes := circuitBreaker.Metrics().StateChanges
+		assert.GreaterOrEqual(t, changes["closed->open"], int64(1), "never opened: %v", changes)
+		assert.GreaterOrEqual(t, changes["open->half_open"], int64(1), "never probed half-open: %v", changes)
+		assert.GreaterOrEqual(t, changes["half_open->closed"], int64(1), "never closed from half-open: %v", changes)
+	}
 }
 
 func TestCircuitBreakerHalfOpenToClosed(t *testing.T) {
@@ -295,7 +319,14 @@ func TestCircuitBreakerHalfOpenToClosed(t *testing.T) {
 	// Verify expected behavior
 	expected := testCase.ExpectedBehavior
 	assert.Equal(t, expected.FinalState, circuitBreaker.State().String())
-	assert.True(t, expected.CircuitFullyRecovered)
+
+	// `assert.True(t, expected.CircuitFullyRecovered)` was a tautology (#791). Check the
+	// real claim: the circuit did close from half-open rather than skipping that probe.
+	if expected.CircuitFullyRecovered {
+		changes := circuitBreaker.Metrics().StateChanges
+		assert.GreaterOrEqual(t, changes["open->half_open"], int64(1), "never probed half-open: %v", changes)
+		assert.GreaterOrEqual(t, changes["half_open->closed"], int64(1), "never closed from half-open: %v", changes)
+	}
 }
 
 func TestCircuitBreakerHalfOpenReopens(t *testing.T) {
@@ -337,7 +368,16 @@ func TestCircuitBreakerHalfOpenReopens(t *testing.T) {
 	// Verify expected behavior
 	expected := testCase.ExpectedBehavior
 	assert.Equal(t, expected.FinalState, circuitBreaker.State().String())
-	assert.True(t, expected.ReopenedAfterPartialRecovery)
+
+	// `assert.True(t, expected.ReopenedAfterPartialRecovery)` was a tautology (#791). The
+	// real claim is the full path closed -> open -> half_open -> open: a breaker that
+	// opened once and never probed would also end "open" and pass the final-state check.
+	if expected.ReopenedAfterPartialRecovery {
+		changes := circuitBreaker.Metrics().StateChanges
+		assert.GreaterOrEqual(t, changes["closed->open"], int64(1), "never opened: %v", changes)
+		assert.GreaterOrEqual(t, changes["open->half_open"], int64(1), "never probed half-open: %v", changes)
+		assert.GreaterOrEqual(t, changes["half_open->open"], int64(1), "never reopened from half-open: %v", changes)
+	}
 }
 
 func TestCircuitBreakerRejectsWhenOpen(t *testing.T) {
@@ -425,4 +465,13 @@ func TestCircuitBreakerMetricsTracking(t *testing.T) {
 	assert.Equal(t, int64(expected.FailedRequests), metrics.FailedRequests)
 	assert.Equal(t, int64(expected.RejectedRequests), metrics.RejectedRequests)
 	assert.Equal(t, expected.FinalState, circuitBreaker.State().String())
+
+	// Assert the StateChanges map itself, not just the scalar counters. This field is the
+	// cross-language transition-key contract; it went unasserted in all five harnesses
+	// long enough for four different key formats to appear (#791).
+	wantChanges := make(map[string]int64, len(expected.StateChanges))
+	for k, v := range expected.StateChanges {
+		wantChanges[k] = int64(v)
+	}
+	assert.Equal(t, wantChanges, metrics.StateChanges)
 }

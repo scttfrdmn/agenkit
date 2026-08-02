@@ -129,6 +129,36 @@ protected:
         }
     }
 
+    /// Render a state_changes map for assertion messages.
+    static std::string describe(const std::map<std::string, uint64_t>& changes) {
+        std::string out = "{";
+        for (const auto& [key, count] : changes) {
+            if (out.size() > 1) out += ", ";
+            out += key + ": " + std::to_string(count);
+        }
+        return out + "}";
+    }
+
+    /// Expect every named transition was taken at least once.
+    ///
+    /// Final-state checks alone are weak: a breaker that opened and never probed half-open
+    /// ends "open" just like one that reopened after a failed probe, and one that never
+    /// opened at all ends "closed" just like one that fully recovered. Checking the path
+    /// distinguishes them. These replace `EXPECT_TRUE(expected["some_flag"].get<bool>())`,
+    /// which only proved the fixture contained `true` and passed with the middleware
+    /// deleted (#791).
+    static void expect_transitions(
+        const std::map<std::string, uint64_t>& changes,
+        const std::vector<std::string>& expected
+    ) {
+        for (const auto& key : expected) {
+            auto it = changes.find(key);
+            uint64_t count = it == changes.end() ? 0 : it->second;
+            EXPECT_GE(count, 1u) << "transition " << key << " never happened: "
+                                 << describe(changes);
+        }
+    }
+
     json fixtures_;
 };
 
@@ -163,6 +193,10 @@ TEST_F(CrossLanguageCircuitBreakerTest, ClosedSuccess) {
     EXPECT_EQ(metrics.failed_requests, expected["failed_requests"].get<uint64_t>());
     EXPECT_EQ(metrics.rejected_requests, expected["rejected_requests"].get<uint64_t>());
     EXPECT_EQ(successful, expected["total_requests"].get<size_t>());
+
+    // A circuit that never leaves CLOSED records no transitions at all.
+    EXPECT_TRUE(metrics.state_changes.empty()) << describe(metrics.state_changes);
+    EXPECT_EQ(metrics.state_transitions, 0u);
 }
 
 TEST_F(CrossLanguageCircuitBreakerTest, OpensOnFailures) {
@@ -176,17 +210,23 @@ TEST_F(CrossLanguageCircuitBreakerTest, OpensOnFailures) {
     auto config = create_config(test_case["config"]);
     auto circuit_breaker = std::make_shared<CircuitBreakerMiddleware>(mock_agent, config);
 
-    // Execute requests
+    // Execute requests, recording each outcome so per-request claims can be checked
     size_t rejected = 0;
+    std::vector<std::string> outcomes;
     for (size_t i = 0; i < responses.size(); i++) {
         Message msg("user", "test");
         auto result = circuit_breaker->process(msg).get();
-        if (result.is_err()) {
-            auto error = result.unwrap_err();
-            if (error.type() == AgentErrorType::ProcessingError &&
-                error.message().find("Circuit breaker is OPEN") != std::string::npos) {
-                rejected++;
-            }
+        if (result.is_ok()) {
+            outcomes.push_back("ok");
+            continue;
+        }
+        auto error = result.unwrap_err();
+        if (error.type() == AgentErrorType::ProcessingError &&
+            error.message().find("Circuit breaker is OPEN") != std::string::npos) {
+            rejected++;
+            outcomes.push_back("rejected");
+        } else {
+            outcomes.push_back("failed");
         }
     }
 
@@ -198,8 +238,15 @@ TEST_F(CrossLanguageCircuitBreakerTest, OpensOnFailures) {
     EXPECT_EQ(metrics.total_requests, expected["total_requests"].get<uint64_t>());
     EXPECT_EQ(metrics.failed_requests, expected["failed_requests"].get<uint64_t>());
     EXPECT_EQ(metrics.rejected_requests, expected["rejected_requests"].get<uint64_t>());
-    EXPECT_TRUE(expected["fourth_request_rejected"].get<bool>());
     EXPECT_GT(rejected, 0u);
+
+    // `EXPECT_TRUE(expected["fourth_request_rejected"].get<bool>())` was a tautology (#791).
+    // Check the actual claim — the fourth request was rejected by the open circuit, not
+    // merely failed by the inner agent (whose fourth scripted response is a success).
+    if (expected.value("fourth_request_rejected", false)) {
+        ASSERT_EQ(outcomes.size(), 4u);
+        EXPECT_EQ(outcomes[3], "rejected") << "expected 4th request rejected";
+    }
 }
 
 TEST_F(CrossLanguageCircuitBreakerTest, HalfOpenTransition) {
@@ -233,8 +280,12 @@ TEST_F(CrossLanguageCircuitBreakerTest, HalfOpenTransition) {
 
     // Verify expected behavior
     const auto& expected = test_case["expected_behavior"];
+    auto metrics = circuit_breaker->metrics().snapshot(circuit_breaker->state());
     EXPECT_EQ(state_to_lower(circuit_breaker->state()), expected["final_state"].get<std::string>());
-    EXPECT_TRUE(expected["recovery_successful"].get<bool>());
+    if (expected.value("recovery_successful", false)) {
+        expect_transitions(metrics.state_changes,
+                           {"closed->open", "open->half_open", "half_open->closed"});
+    }
 }
 
 TEST_F(CrossLanguageCircuitBreakerTest, HalfOpenToClosed) {
@@ -267,8 +318,11 @@ TEST_F(CrossLanguageCircuitBreakerTest, HalfOpenToClosed) {
 
     // Verify expected behavior
     const auto& expected = test_case["expected_behavior"];
+    auto metrics = circuit_breaker->metrics().snapshot(circuit_breaker->state());
     EXPECT_EQ(state_to_lower(circuit_breaker->state()), expected["final_state"].get<std::string>());
-    EXPECT_TRUE(expected["circuit_fully_recovered"].get<bool>());
+    if (expected.value("circuit_fully_recovered", false)) {
+        expect_transitions(metrics.state_changes, {"open->half_open", "half_open->closed"});
+    }
 }
 
 TEST_F(CrossLanguageCircuitBreakerTest, HalfOpenReopens) {
@@ -301,8 +355,12 @@ TEST_F(CrossLanguageCircuitBreakerTest, HalfOpenReopens) {
 
     // Verify expected behavior
     const auto& expected = test_case["expected_behavior"];
+    auto metrics = circuit_breaker->metrics().snapshot(circuit_breaker->state());
     EXPECT_EQ(state_to_lower(circuit_breaker->state()), expected["final_state"].get<std::string>());
-    EXPECT_TRUE(expected["reopened_after_partial_recovery"].get<bool>());
+    if (expected.value("reopened_after_partial_recovery", false)) {
+        expect_transitions(metrics.state_changes,
+                           {"closed->open", "open->half_open", "half_open->open"});
+    }
 }
 
 TEST_F(CrossLanguageCircuitBreakerTest, RejectsWhenOpen) {
@@ -376,4 +434,22 @@ TEST_F(CrossLanguageCircuitBreakerTest, MetricsTracking) {
     EXPECT_EQ(metrics.failed_requests, expected["failed_requests"].get<uint64_t>());
     EXPECT_EQ(metrics.rejected_requests, expected["rejected_requests"].get<uint64_t>());
     EXPECT_EQ(state_to_lower(circuit_breaker->state()), expected["final_state"].get<std::string>());
+
+    // Assert the state_changes map itself, not just the scalar counters. This field is the
+    // cross-language transition-key contract; it went unasserted in all five harnesses long
+    // enough for four different key formats to appear — and this core did not have a keyed
+    // map at all, only the `state_transitions` total (#791).
+    std::map<std::string, uint64_t> want_changes;
+    for (const auto& [key, count] : expected["state_changes"].items()) {
+        want_changes[key] = count.get<uint64_t>();
+    }
+    EXPECT_EQ(metrics.state_changes, want_changes) << "got " << describe(metrics.state_changes);
+
+    // The scalar total must stay consistent with the keyed map it now derives from.
+    uint64_t keyed_total = 0;
+    for (const auto& [key, count] : metrics.state_changes) {
+        (void)key;
+        keyed_total += count;
+    }
+    EXPECT_EQ(metrics.state_transitions, keyed_total);
 }

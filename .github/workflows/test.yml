@@ -148,18 +148,56 @@ jobs:
         run: npm test
 
       # --- Rust ---
+      # All four steps are blocking as of #773. Previously this leg was
+      # `cargo build` plus `cargo test --lib` under continue-on-error, with no
+      # fmt or clippy anywhere in the repo. That combination attested to far less
+      # than "Rust tests passed":
+      #   - `--lib` runs only the unit tests inside `src/`. It does not build
+      #     `tests/` or `examples/`, so 40+ integration files — every
+      #     `cross_language_*.rs`, every observability test — were never compiled
+      #     or run by any gate.
+      #   - `continue-on-error: true` meant even the `--lib` half could not fail
+      #     the build.
+      # The cost of that was measurable: `cargo clippy --all-targets` failed with
+      # six deny-by-default errors that had accumulated invisibly, two of them
+      # real defects (a `never_loop` example that ran one of its four advertised
+      # phases, and two assertions that were vacuous on unsigned types).
       - name: Set up Rust
         if: matrix.lang == 'rust'
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Rust format check (blocking)
+        if: matrix.lang == 'rust'
+        working-directory: agenkit-rust
+        run: cargo fmt --check
       - name: Rust build (blocking)
         if: matrix.lang == 'rust'
         working-directory: agenkit-rust
         run: cargo build --quiet
-      - name: Rust tests (non-blocking)
+      # --all-targets so lints apply to tests/ and examples/ too — that is where
+      # every error found in #773 lived. Warnings stay warnings for now: the
+      # crate emits ~200 across all targets, so `-D warnings` would fail the
+      # build on day one. Tracked for a follow-up sweep; the errors are what this
+      # gate holds the line on.
+      - name: Rust clippy (blocking)
         if: matrix.lang == 'rust'
-        continue-on-error: true
         working-directory: agenkit-rust
-        run: cargo test --lib --quiet
+        run: cargo clippy --all-targets
+      # --all-targets, not --lib: this is the step that actually runs the
+      # integration suite (1269 tests).
+      - name: Rust tests (blocking)
+        if: matrix.lang == 'rust'
+        working-directory: agenkit-rust
+        run: cargo test --all-targets --quiet
+      # `--all-targets` silently excludes doctests, so this is a separate step,
+      # not a flag. 165 of them document the public API and 6 were wrong as
+      # recently as #772. Runs with `opentelemetry` because the observability
+      # doctests are feature-gated out of the default build.
+      - name: Rust doctests (blocking)
+        if: matrix.lang == 'rust'
+        working-directory: agenkit-rust
+        run: cargo test --doc --features opentelemetry --quiet
 
       # --- C++ ---
       # agenkit-cpp had no CI at all until #742: cpp-ci.yml was caught in a

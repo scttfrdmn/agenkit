@@ -35,6 +35,21 @@ repos:
         args: [-w]
         files: ^agenkit-go/
 
+  # Rust formatting (#773). Python and Go had formatter hooks here from the
+  # start; Rust had none, and 99 of 224 .rs files had drifted out of format by
+  # the time anyone checked. A local hook rather than a mirror repo so it uses
+  # the toolchain already installed, and so it picks up agenkit-rust/rustfmt.toml
+  # (which pins edition 2021 — without it, bare `rustfmt` assumes 2015 and cannot
+  # even parse `async fn`).
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt (Rust formatter)
+        entry: bash -c 'cd agenkit-rust && cargo fmt'
+        language: system
+        files: ^agenkit-rust/.*\.rs$
+        pass_filenames: false
+
   # General checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

@@ -287,9 +287,13 @@ impl Benchmark for NeedleInHaystackBenchmark {
 /// ```
 /// use agenkit::evaluation::benchmarks::{Benchmark, ExtremeScaleBenchmark};
 ///
-/// let benchmark = ExtremeScaleBenchmark::new(None, 10);
+/// // Pass explicit lengths in a doctest. `None` defaults to 1M/10M/25M tokens,
+/// // and `generate_test_cases()` materialises those haystacks for real — that
+/// // one line took ~9 minutes and dominated the entire doctest suite, which is
+/// // why doctests could not be a CI gate before #773.
+/// let benchmark = ExtremeScaleBenchmark::new(Some(vec![1_000]), 2);
 /// let cases = benchmark.generate_test_cases();
-/// // Tests at 1M, 10M, 25M tokens by default
+/// assert!(!cases.is_empty());
 /// ```
 pub struct ExtremeScaleBenchmark {
     test_lengths: Vec<usize>,

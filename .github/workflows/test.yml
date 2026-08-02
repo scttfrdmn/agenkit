@@ -133,14 +133,19 @@ jobs:
         if: matrix.lang == 'typescript'
         working-directory: agenkit-ts
         run: npm run build
-      # Hard 5-min cap: some TS tests connect to Redis and retry until the job
-      # timeout when it's absent. Non-blocking + bounded so it can't stall the
-      # matrix (suite hardening tracked as a follow-up).
-      - name: TypeScript tests (non-blocking)
+      # Blocking as of #658. This was `timeout 300 npm test || true` under
+      # continue-on-error, on the belief that TS tests hung retrying an absent
+      # Redis. Both halves of that were wrong: the Redis suite self-skips after a
+      # 1.5s probe (#648), and the real hang was an async-iterator mock in the
+      # Anthropic adapter tests that never reported done. The crutch is what hid
+      # it — the run was killed at exactly 300s and `|| true` discarded the
+      # result, so a permanently hanging test read as "the TS leg is slow".
+      # The suite now completes in ~6s, so a cap buys nothing that
+      # timeout-minutes doesn't already provide.
+      - name: TypeScript tests (blocking)
         if: matrix.lang == 'typescript'
-        continue-on-error: true
         working-directory: agenkit-ts
-        run: timeout 300 npm test || true
+        run: npm test
 
       # --- Rust ---
       - name: Set up Rust

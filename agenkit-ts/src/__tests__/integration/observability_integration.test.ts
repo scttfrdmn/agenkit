@@ -7,6 +7,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { Agent, Message } from '../../core/interfaces';
+import { atLeastMs } from '../support/timing';
 
 // ============================================
 // Test Agents
@@ -258,8 +259,8 @@ describe('Observability Integration: Metrics', () => {
 
     const durations = agent.getDurations();
     expect(durations).toHaveLength(2);
-    expect(durations[0]).toBeGreaterThanOrEqual(10);
-    expect(durations[1]).toBeGreaterThanOrEqual(10);
+    expect(durations[0]).toBeGreaterThanOrEqual(atLeastMs(10));
+    expect(durations[1]).toBeGreaterThanOrEqual(atLeastMs(10));
   });
 
   it('should track success and error rates', async () => {

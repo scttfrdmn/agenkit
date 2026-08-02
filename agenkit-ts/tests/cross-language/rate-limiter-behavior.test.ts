@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Agent, Message } from '../../src/core/interfaces';
 import { RateLimiterConfig, RateLimiterDecorator, RateLimitError } from '../../src/middleware/rate-limiter';
+import { atLeastMs } from '../../src/__tests__/support/timing';
 
 /**
  * Mock agent for rate limiter testing.
@@ -121,7 +122,7 @@ describe('Rate Limiter Behavior', () => {
     expect(rateLimiter.metrics.allowedRequests).toBe(expected.allowed_requests);
     expect(rateLimiter.metrics.rejectedRequests).toBe(expected.rejected_requests);
     expect(successful).toBe(expected.total_requests);
-    expect(elapsed).toBeGreaterThanOrEqual(expected.min_total_time_ms!);
+    expect(elapsed).toBeGreaterThanOrEqual(atLeastMs(expected.min_total_time_ms!));
     expect(elapsed).toBeLessThanOrEqual(expected.max_total_time_ms!);
   });
 
@@ -149,7 +150,7 @@ describe('Rate Limiter Behavior', () => {
 
     // Sixth request (index 5) should have waited
     const sixthWait = waitTimes[5];
-    expect(sixthWait).toBeGreaterThanOrEqual(expected.min_wait_time_ms!);
+    expect(sixthWait).toBeGreaterThanOrEqual(atLeastMs(expected.min_wait_time_ms!));
     expect(sixthWait).toBeLessThanOrEqual(expected.max_wait_time_ms!);
   });
 

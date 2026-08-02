@@ -282,6 +282,12 @@ describe('Partial Responses', () => {
     const step2 = new ChaosAgent(new SimpleAgent('step-2'), 0.5, 0, ChaosMode.INTERMITTENT);
     const step3 = new SimpleAgent('step-3');
 
+    // Fail a fixed 3 of the 6 attempts below rather than each with probability
+    // 0.5. The assertion is that the retry loop recovers, and with random
+    // failures "all six fail" has probability 0.5^6 — so this test failed
+    // outright 1 run in 64 (#658).
+    step2.setFailFirstN(3);
+
     const message: Message = { role: 'user', content: 'Test' };
 
     // Try multi-step process with retries on step 2

@@ -179,50 +179,57 @@ export class RateLimiterDecorator implements Agent {
    */
   private async acquireTokens(tokensNeeded: number, wait: boolean = true): Promise<boolean> {
     return await this.withLock(async () => {
-      this.refillTokens();
+      let totalWaited = 0;
 
-      if (this.tokens >= tokensNeeded) {
-        // Sufficient tokens available
-        this.tokens -= tokensNeeded;
-        this.metricsData.currentTokens = this.tokens;
-        return true;
+      // Wait-and-retry loop. A single wait + refill is not enough: refillTokens()
+      // credits tokens from elapsed wall-clock, so if the event loop is busy the
+      // sleep can return having credited marginally less than tokensNeeded, and
+      // the old code threw "Failed to acquire N tokens after waiting" — a branch
+      // it labelled "should not happen". It happened: under a loaded event loop
+      // this failed roughly 1 run in 3 (#658). Re-checking instead of throwing
+      // makes the outcome depend on the token math rather than on scheduler
+      // jitter. maxWaitTimeoutMs still bounds the total, so this cannot spin
+      // forever when the rate genuinely can't satisfy the request.
+      for (;;) {
+        this.refillTokens();
+
+        if (this.tokens >= tokensNeeded) {
+          this.tokens -= tokensNeeded;
+          this.metricsData.currentTokens = this.tokens;
+          if (totalWaited > 0) {
+            this.metricsData.totalWaitTime += totalWaited;
+          }
+          return true;
+        }
+
+        if (!wait) {
+          // Insufficient tokens and not waiting
+          throw new RateLimitError(
+            `Rate limit exceeded: need ${tokensNeeded} tokens, ` +
+              `only ${this.tokens.toFixed(2)} available`,
+          );
+        }
+
+        // Calculate wait time for the outstanding deficit.
+        const tokensDeficit = tokensNeeded - this.tokens;
+        const waitTime = (tokensDeficit / this.config.rate) * 1000; // Convert to milliseconds
+
+        // Check if wait time exceeds max wait timeout. Measured against the
+        // cumulative wait so repeated short retries can't outlast the budget.
+        if (
+          this.config.maxWaitTimeoutMs > 0 &&
+          totalWaited + waitTime > this.config.maxWaitTimeoutMs
+        ) {
+          throw new RateLimitError(
+            `Rate limit exceeded: would need to wait ${(totalWaited + waitTime).toFixed(0)}ms, ` +
+              `but max wait timeout is ${this.config.maxWaitTimeoutMs}ms`,
+          );
+        }
+
+        // Wait for tokens (outside the lock would be better, but keep simple for now)
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+        totalWaited += waitTime;
       }
-
-      if (!wait) {
-        // Insufficient tokens and not waiting
-        throw new RateLimitError(
-          `Rate limit exceeded: need ${tokensNeeded} tokens, ` +
-            `only ${this.tokens.toFixed(2)} available`,
-        );
-      }
-
-      // Calculate wait time for tokens
-      const tokensDeficit = tokensNeeded - this.tokens;
-      const waitTime = (tokensDeficit / this.config.rate) * 1000; // Convert to milliseconds
-
-      // Check if wait time exceeds max wait timeout
-      if (this.config.maxWaitTimeoutMs > 0 && waitTime > this.config.maxWaitTimeoutMs) {
-        throw new RateLimitError(
-          `Rate limit exceeded: would need to wait ${waitTime.toFixed(0)}ms, ` +
-            `but max wait timeout is ${this.config.maxWaitTimeoutMs}ms`,
-        );
-      }
-
-      // Wait for tokens (outside the lock would be better, but keep simple for now)
-      await new Promise((resolve) => setTimeout(resolve, waitTime));
-
-      // Refill and try again
-      this.refillTokens();
-
-      if (this.tokens >= tokensNeeded) {
-        this.tokens -= tokensNeeded;
-        this.metricsData.currentTokens = this.tokens;
-        this.metricsData.totalWaitTime += waitTime;
-        return true;
-      }
-
-      // Should not happen, but handle defensively
-      throw new RateLimitError(`Failed to acquire ${tokensNeeded} tokens after waiting`);
     });
   }
 

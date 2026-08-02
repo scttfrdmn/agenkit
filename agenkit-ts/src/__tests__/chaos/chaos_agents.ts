@@ -38,6 +38,7 @@ export class ChaosAgent implements Agent {
   private requestCount = 0;
   private failureCount = 0;
   private crashAfter: number | null = null;
+  private failFirstN: number | null = null;
 
   constructor(
     private readonly agent: Agent,
@@ -57,6 +58,22 @@ export class ChaosAgent implements Agent {
 
   setCrashAfter(count: number): void {
     this.crashAfter = count;
+  }
+
+  /**
+   * Make INTERMITTENT failures deterministic: fail exactly the first `count`
+   * requests, then succeed. Overrides `failureRate` for that mode.
+   *
+   * Use this for any test whose *assertion* is "a retry loop eventually
+   * succeeds". With `Math.random()` such a test only passes probabilistically —
+   * a 6-attempt loop against a 0.5 rate fails outright 1 run in 64, and an
+   * 11-attempt loop against 0.7 fails 1 in 50. Both were live flakes,
+   * unnoticed because the TS suite's result was being discarded in CI (#658).
+   * Tests that genuinely assert on the failure *distribution* should keep using
+   * `failureRate`; the randomness is the subject there, not an obstacle.
+   */
+  setFailFirstN(count: number): void {
+    this.failFirstN = count;
   }
 
   getStats(): ChaosStats {
@@ -103,8 +120,13 @@ export class ChaosAgent implements Agent {
         break;
 
       case ChaosMode.INTERMITTENT:
-        // Randomly fail or succeed
-        if (Math.random() < this.failureRate) {
+        // Deterministic schedule when one is set, otherwise randomly fail.
+        if (this.failFirstN !== null) {
+          if (this.requestCount <= this.failFirstN) {
+            this.failureCount++;
+            throw new Error('ECONNRESET: Intermittent failure (simulated)');
+          }
+        } else if (Math.random() < this.failureRate) {
           this.failureCount++;
           throw new Error('ECONNRESET: Intermittent failure (simulated)');
         }

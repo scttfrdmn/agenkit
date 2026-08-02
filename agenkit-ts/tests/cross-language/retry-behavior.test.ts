@@ -10,6 +10,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { RetryMiddleware, RetryConfig } from '../../src/middleware/retry.js';
 import type { Agent, Message } from '../../src/core/interfaces.js';
+import { atLeastMs } from '../../src/__tests__/support/timing.js';
 
 interface RetryBehaviorFixtures {
   version: string;
@@ -151,15 +152,18 @@ describe('Cross-Language Retry Behavior', () => {
     expect(agent.callCount).toBe(testCase.expected_behavior!.total_attempts);
     expect(response.content).toBe(testCase.expected_behavior!.final_response);
 
-    // Verify delay within expected range. The lower bound is exact (backoff
-    // sleeps can only push elapsed higher, never lower). The upper bound uses
-    // a generous multiplier rather than a fixed +50ms: a loaded/parallel CI
-    // runner can add hundreds of ms of scheduling latency, so a tight cap was
-    // flaky. This still catches gross regressions (e.g. config ignored → 10x
-    // the configured delay).
+    // Verify delay within expected range. The lower bound is NOT exact: it was
+    // previously asserted as such, on the reasoning that "backoff sleeps can
+    // only push elapsed higher, never lower". They can push it lower — Node
+    // fires a setTimeout up to ~1ms before its deadline (see atLeastMs), which
+    // made this fail on `expected 99 to be >= 100` about 1 run in 10. The upper
+    // bound uses a generous multiplier rather than a fixed +50ms: a
+    // loaded/parallel CI runner can add hundreds of ms of scheduling latency,
+    // so a tight cap was flaky. This still catches gross regressions (e.g.
+    // config ignored → 10x the configured delay).
     const minDelay = testCase.expected_behavior!.min_total_delay_ms!;
     const maxDelay = testCase.expected_behavior!.max_total_delay_ms!;
-    expect(elapsed).toBeGreaterThanOrEqual(minDelay);
+    expect(elapsed).toBeGreaterThanOrEqual(atLeastMs(minDelay));
     expect(elapsed).toBeLessThanOrEqual(maxDelay * 3 + 500);
   });
 
@@ -211,7 +215,7 @@ describe('Cross-Language Retry Behavior', () => {
     // Verify exponential backoff timing: 100ms + 200ms + 400ms = 700ms
     const minDelay = testCase.expected_behavior!.min_total_delay_ms!;
     const maxDelay = testCase.expected_behavior!.max_total_delay_ms!;
-    expect(elapsed).toBeGreaterThanOrEqual(minDelay);
+    expect(elapsed).toBeGreaterThanOrEqual(atLeastMs(minDelay));
     expect(elapsed).toBeLessThanOrEqual(maxDelay * 3 + 500); // generous: CI scheduling latency
   });
 
@@ -242,7 +246,7 @@ describe('Cross-Language Retry Behavior', () => {
     // Verify capped backoff
     const minDelay = testCase.expected_behavior!.min_total_delay_ms!;
     const maxDelay = testCase.expected_behavior!.max_total_delay_ms!;
-    expect(elapsed).toBeGreaterThanOrEqual(minDelay);
+    expect(elapsed).toBeGreaterThanOrEqual(atLeastMs(minDelay));
     expect(elapsed).toBeLessThanOrEqual(maxDelay * 3 + 500); // generous: CI scheduling latency
     expect(response.content).toBe('Success');
   });

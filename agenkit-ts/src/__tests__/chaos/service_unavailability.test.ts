@@ -255,8 +255,13 @@ describe('Health Checks', () => {
 
     const message: Message = { role: 'user', content: 'Test' };
 
-    // Process requests to collect stats
-    for (let i = 0; i < 20; i++) {
+    // 50 samples, and the threshold sits well below the configured 0.8 rate.
+    // Both matter: this asserted `> 0.6` over 20 samples, which needs 13+ of 20
+    // failures and so failed 3.2% of runs by binomial chance alone — observed
+    // twice in 40 full-suite runs (#658). At n=50 with a 0.5 threshold the same
+    // assertion fails about 1 run in 480,000, and it still distinguishes an
+    // 80%-failing agent from a healthy one, which is all the test claims.
+    for (let i = 0; i < 50; i++) {
       try {
         await unhealthyAgent.process(message);
       } catch {
@@ -265,7 +270,7 @@ describe('Health Checks', () => {
     }
 
     const stats = unhealthyAgent.getStats();
-    expect(stats.failureRate).toBeGreaterThan(0.6); // Above unhealthy threshold
+    expect(stats.failureRate).toBeGreaterThan(0.5); // Above unhealthy threshold
   });
 
   it('should mark agent as healthy when failure rate is low', async () => {
@@ -274,8 +279,11 @@ describe('Health Checks', () => {
 
     const message: Message = { role: 'user', content: 'Test' };
 
-    // Process requests
-    for (let i = 0; i < 20; i++) {
+    // 50 samples for the same reason as the test above: `< 0.2` over 20 samples
+    // trips whenever 4 of 20 happen to fail, which at a 0.05 rate is 1.6% of
+    // runs (#658). At n=50 the sample rate concentrates near 0.05 and this fails
+    // roughly 1 run in 6,000.
+    for (let i = 0; i < 50; i++) {
       try {
         await healthyAgent.process(message);
       } catch {

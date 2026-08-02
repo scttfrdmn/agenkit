@@ -392,9 +392,23 @@ export class InformationRetentionBenchmark implements Benchmark {
     const testCases: TestCase[] = [];
     const facts: Array<{ turn: number; fact: string; key: string }> = [];
 
+    // A fact must be planted before each requested recall point, otherwise that
+    // recall point yields no test case at all. Planting is otherwise random at
+    // 10% per turn, so a short conversation could produce zero facts and hence
+    // zero recall tests despite recallPoints being non-empty — for an 80-turn
+    // conversation that is 0.9^80, about 1 generation in 4,600, and for 50 turns
+    // 1 in 194. Guaranteeing one plant in the run-up to each recall point makes
+    // the benchmark honour its arguments; the remaining turns stay random so the
+    // distribution of filler and extra facts is unchanged. (#658)
+    const guaranteedPlantTurns = new Set(
+      this.recallPoints
+        .filter((point) => point > 0 && point < this.conversationLength)
+        .map((point) => Math.floor(point / 2))
+    );
+
     // Generate fact-planting test cases
     for (let turn = 0; turn < this.conversationLength; turn++) {
-      if (Math.random() < 0.1) {
+      if (guaranteedPlantTurns.has(turn) || Math.random() < 0.1) {
         // Plant a fact
         const key = `fact_${facts.length + 1}`;
         const value = `value_${Math.random().toString(36).substring(7)}`;
@@ -428,9 +442,16 @@ export class InformationRetentionBenchmark implements Benchmark {
 
     // Generate recall test cases at specified points
     for (const recallPoint of this.recallPoints) {
-      if (recallPoint < this.conversationLength && facts.length > 0) {
+      // Only facts planted *before* the recall point are recallable. Selecting
+      // from all facts, as this previously did, could ask the agent to recall
+      // something it had not been told yet — an unanswerable case scored as a
+      // retention failure. The guaranteed plant above ensures this is non-empty
+      // for every in-range recall point.
+      const plantedEarlier = facts.filter((f) => f.turn < recallPoint);
+
+      if (recallPoint < this.conversationLength && plantedEarlier.length > 0) {
         // Pick a random fact to recall
-        const fact = facts[Math.floor(Math.random() * facts.length)];
+        const fact = plantedEarlier[Math.floor(Math.random() * plantedEarlier.length)];
         const expectedValue = fact.fact.split('= ')[1];
 
         testCases.push({

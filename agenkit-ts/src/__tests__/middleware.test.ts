@@ -8,6 +8,7 @@ import { CircuitBreakerMiddleware, RequestTimeoutError } from '../middleware/cir
 import { RateLimiterDecorator, RateLimitError } from '../middleware/rate-limiter';
 import { BatchingDecorator } from '../middleware/batching';
 import { Message } from '../core/interfaces';
+import { atLeastMs } from './support/timing';
 
 describe('Middleware', () => {
   describe('BaseMiddleware', () => {
@@ -589,7 +590,7 @@ describe('Middleware', () => {
       const elapsed = Date.now() - start;
 
       // Should have waited ~400ms (2 tokens at 5/sec)
-      expect(elapsed).toBeGreaterThanOrEqual(300); // Allow for some timing variability
+      expect(elapsed).toBeGreaterThanOrEqual(atLeastMs(300)); // Allow for timing variability
       expect(elapsed).toBeLessThan(600);
 
       const metrics = rateLimiter.metrics;

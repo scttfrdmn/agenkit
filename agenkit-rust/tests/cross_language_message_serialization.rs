@@ -375,6 +375,13 @@ fn test_nested_metadata() {
     validate_against_schema(&serialized, &schema);
 }
 
+// 3.14159 is the literal `score` value in
+// tests/cross_language/fixtures/messages.json, which Python, TypeScript, C++,
+// and Zig all assert against too. Substituting `std::f64::consts::PI` as clippy
+// suggests would change the expected value and desynchronise this core from the
+// shared fixture — the number is a fixture constant that happens to look like
+// pi, not an approximation of it.
+#[allow(clippy::approx_constant)]
 #[test]
 fn test_numeric_metadata() {
     let fixtures = load_fixtures();

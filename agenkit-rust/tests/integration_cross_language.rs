@@ -43,6 +43,14 @@ mod cross_language_tests {
     }
 
     /// Test 3: Metadata type compatibility
+    ///
+    /// The 3.14 below is a shared test vector, not an approximation of pi. C++'s
+    /// `CoreIntegrationTest.MessageCreationAndSerialization`
+    /// (agenkit-cpp/tests/integration/test_core.cpp) builds the same
+    /// `string_key`/`float_key`/`bool_key`/`null_key` metadata map, so taking
+    /// clippy's `std::f64::consts::PI` suggestion would widen a cross-language
+    /// divergence to satisfy a lint.
+    #[allow(clippy::approx_constant)]
     #[test]
     fn test_metadata_type_compatibility() {
         let msg = Message::with_text("user", "Test")
@@ -64,7 +72,7 @@ mod cross_language_tests {
         );
         assert_eq!(metadata.get("number_key").unwrap().as_i64().unwrap(), 42);
         assert!((metadata.get("float_key").unwrap().as_f64().unwrap() - 3.14).abs() < 0.01);
-        assert_eq!(metadata.get("bool_key").unwrap().as_bool().unwrap(), true);
+        assert!(metadata.get("bool_key").unwrap().as_bool().unwrap());
         assert!(metadata.get("null_key").unwrap().is_null());
         assert_eq!(
             metadata.get("array_key").unwrap().as_array().unwrap().len(),

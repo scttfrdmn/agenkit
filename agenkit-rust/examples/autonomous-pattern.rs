@@ -195,28 +195,25 @@ async fn example_progress_tracking() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Tracking progress during execution:\n");
 
-    // Run for a few iterations and check progress
-    for phase in 1..=4 {
-        // Check if there are active goals
-        let goals = agent.goals();
-        let has_active = goals.iter().any(|g| g.status == GoalStatus::Active);
+    // `run()` drives the agent to completion in one call — it does not yield
+    // between goals — so progress is sampled before and after, not per phase.
+    // This was previously written as `for phase in 1..=4 { ...; break; }`, which
+    // printed "Phase 1" and stopped: the loop implied a multi-phase API that
+    // does not exist. `run()` is the only entry point; there is no
+    // step-at-a-time variant to interleave with.
+    println!("Before: {:.1}% complete", agent.get_progress());
 
-        if !has_active {
-            break;
-        }
-
-        // Run agent to completion
+    let has_active = agent.goals().iter().any(|g| g.status == GoalStatus::Active);
+    if has_active {
         let result = agent.run().await?;
 
-        // Agent runs to completion, so just report final state
-        println!("Phase {}: {:.1}% complete", phase, agent.get_progress());
+        println!("After:  {:.1}% complete", agent.get_progress());
         println!("  Iterations: {}", result.iterations);
         println!(
             "  Goals completed: {}/{}",
             result.goals_completed,
             agent.goals().len()
         );
-        break;
     }
 
     println!("\n✓ Release complete!\n");

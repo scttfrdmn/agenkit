@@ -679,9 +679,13 @@ mod tests {
 
         // Only special characters (should increase score if many)
         let special_chars = "!@#$%^&*()_+{}[]|\\:;<>?,./";
-        let (_, score, _) = detector.detect(special_chars);
-        // May or may not trigger depending on heuristics
-        assert!(score >= 0);
+        let (is_safe, score, _) = detector.detect(special_chars);
+        // Whether the heuristics fire on punctuation alone is deliberately not
+        // pinned here. What is checked is the invariant that ties the two return
+        // values together: `is_safe` must be exactly `score < threshold`.
+        // This previously read `assert!(score >= 0)`, which is vacuous — `score`
+        // is `u32`, so it asserted nothing at all.
+        assert_eq!(is_safe, score < detector.config.threshold);
     }
 
     #[test]

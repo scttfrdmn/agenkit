@@ -44,6 +44,14 @@ async fn test_message_creation() {
 }
 
 /// Test 2: Message serialization and deserialization
+///
+/// The 3.14 below is hand-mirrored across cores: Go's
+/// `TestMessageSerialization` (agenkit-go/tests/integration/basic_integration_test.go)
+/// and Python's `test_message_serialization` (tests/integration/test_basic_integration.py)
+/// build the identical metadata map. Taking clippy's suggestion and substituting
+/// `std::f64::consts::PI` would silently break that correspondence for the sake
+/// of a lint — the value is a shared test vector, not an approximation of pi.
+#[allow(clippy::approx_constant)]
 #[tokio::test]
 async fn test_message_serialization() {
     let mut metadata = HashMap::new();

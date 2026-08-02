@@ -388,10 +388,19 @@ mod tests {
         let msg = Message::with_text("user", "");
         let result = agent.process(msg).await;
 
-        // Should succeed or fail gracefully
+        // Should succeed or fail gracefully. If it succeeds, the empty input must
+        // have reached MockAgent and come back as its echo — an empty *response*
+        // would mean a middleware swallowed the body.
+        //
+        // This previously read `assert!(content.len() >= 0)`, which is vacuous:
+        // `len()` is `usize`, so it held for every possible value, including the
+        // `unwrap_or("")` fallback that fires when there is no text content at
+        // all. The test could not fail.
         if let Ok(response) = result {
-            let content: &str = response.content_as_str().unwrap_or("");
-            assert!(content.len() >= 0); // Response exists
+            let content = response
+                .content_as_str()
+                .expect("response should carry text content");
+            assert_eq!(content, "Echo: ");
         }
     }
 

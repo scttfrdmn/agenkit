@@ -773,12 +773,26 @@ def execute_test(
         elif pattern_name == "ReAct":
             from agenkit.patterns.react import ReActConfig
 
-            # Create mock tools for different scenarios
+            # Mock tools for different scenarios.
+            #
+            # These take a single positional `params` dict, NOT **kwargs. ReAct
+            # calls tools as `tool.execute(params)` (react.py:319) against the
+            # Tool protocol it declares at react.py:31. `**kwargs` mocks raise
+            # "takes 1 positional argument but 2 were given" on every call; the
+            # ReAct loop records that as an observation, retries until max_steps,
+            # and returns "I couldn't complete the task...". That made all four
+            # ReAct equivalence scenarios diverge from TypeScript and Zig -- which
+            # agree with each other -- for as long as the mocks were wrong. See #762.
+            #
+            # Note ReasoningWithTools below deliberately keeps **kwargs: that
+            # pattern calls `tool.execute(**parameters)`. The two conventions
+            # coexist in the toolkit today, so this harness has to implement both;
+            # #762 tracks unifying them.
             class MockCalculator:
                 name = "calculator"
                 description = "Performs calculations"
 
-                async def execute(self, **kwargs):
+                async def execute(self, params: dict[str, Any]) -> Any:
                     # Return 360 for the 15 * 24 calculation
                     return "360"
 
@@ -786,14 +800,14 @@ def execute_test(
                 name = "search"
                 description = "Searches the web"
 
-                async def execute(self, **kwargs):
+                async def execute(self, params: dict[str, Any]) -> Any:
                     return "Temperature in Paris: 20°C"
 
             class MockUnitConverter:
                 name = "unit_converter"
                 description = "Converts units"
 
-                async def execute(self, **kwargs):
+                async def execute(self, params: dict[str, Any]) -> Any:
                     return "68°F"
 
             # Get tools from config or use defaults
@@ -808,12 +822,12 @@ def execute_test(
                 elif tool_name == "unit_converter":
                     tools.append(MockUnitConverter())
                 else:
-                    # Generic mock tool
+                    # Generic mock tool -- positional `params`, as above.
                     class GenericTool:
                         name = tool_name
                         description = tool_spec.get("description", "")
 
-                        async def execute(self, **kwargs):
+                        async def execute(self, params: dict[str, Any]) -> Any:
                             return "mock result"
 
                     tools.append(GenericTool())
@@ -932,7 +946,15 @@ def execute_test(
                 "error": None,
             }
         elif pattern_name == "ReasoningWithTools":
-            # Create mock tool
+            # Create mock tool.
+            #
+            # **kwargs here is correct and deliberate, unlike the ReAct mocks
+            # above: ReasoningWithTools calls `tool.execute(**parameters)`
+            # (reasoning_with_tools.py:265) where ReAct calls
+            # `tool.execute(params)`. The toolkit has both conventions and no
+            # shared Tool base, so a tool is not portable between the two
+            # patterns; #762 tracks unifying them. Do not "fix" this to match the
+            # ReAct mocks without changing the pattern first.
             class MockTool:
                 name = "search"
                 description = "Searches for information"

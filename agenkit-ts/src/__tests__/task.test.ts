@@ -5,6 +5,7 @@
 import { Task, TimeoutError, executeTask } from '../patterns/task';
 import { Agent, Message, createMessage } from '../core/interfaces';
 import { vi } from 'vitest';
+import { atLeastMs } from './support/timing';
 
 /**
  * Mock agent for testing.
@@ -187,7 +188,7 @@ describe('Task', () => {
       const duration = Date.now() - start;
 
       // Should have at least 100ms backoff (first retry)
-      expect(duration).toBeGreaterThanOrEqual(100);
+      expect(duration).toBeGreaterThanOrEqual(atLeastMs(100));
     });
 
     it('should work with retries=0', async () => {

@@ -129,14 +129,23 @@ describe('Anthropic Adapter: Unit Tests', () => {
   });
 
   it('should handle streaming chunks', async () => {
-    // Mock streaming response
+    // Mock streaming response.
+    //
+    // The generator is created once, outside next(). Creating it *inside* next()
+    // — as this previously did — returns the first event on every call and never
+    // reports done, so the `for await` below spun forever and the whole file
+    // hung. It never failed, which is why nothing noticed: CI runs
+    // `timeout 300 npm test || true`, so the hang looked like a slow 5-minute
+    // suite rather than a broken test (#658).
     const streamMock = vi.fn().mockReturnValue({
-      [Symbol.asyncIterator]: () => ({
-        async next() {
-          const gen = getMockAnthropicStreamEvents();
-          return gen.next();
-        },
-      }),
+      [Symbol.asyncIterator]: () => {
+        const gen = getMockAnthropicStreamEvents();
+        return {
+          async next() {
+            return gen.next();
+          },
+        };
+      },
     });
 
     mockClient.messages.create = streamMock;

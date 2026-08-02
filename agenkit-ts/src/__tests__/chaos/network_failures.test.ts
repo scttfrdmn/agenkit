@@ -14,6 +14,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Message } from '../../core/interfaces';
 import { ChaosAgent, ChaosMode, SimpleAgent } from './chaos_agents';
+import { atLeastMs } from '../support/timing';
 
 // ============================================
 // Connection Timeout Tests
@@ -71,7 +72,7 @@ describe('Connection Timeout', () => {
     const elapsed = Date.now() - start;
 
     expect(response.content).toBe('Processed: Test');
-    expect(elapsed).toBeGreaterThanOrEqual(50);
+    expect(elapsed).toBeGreaterThanOrEqual(atLeastMs(50));
     expect(elapsed).toBeLessThan(200);
   });
 });
@@ -190,6 +191,12 @@ describe('Intermittent Connectivity', () => {
     const baseAgent = new SimpleAgent();
     const chaosAgent = new ChaosAgent(baseAgent, 0.7, 0, ChaosMode.INTERMITTENT);
 
+    // Fail a fixed 8 of the 11 attempts below rather than each with probability
+    // 0.7. The assertion is that the retry loop eventually succeeds, which under
+    // random failures is only probabilistic — see the corrected arithmetic
+    // below (#658).
+    chaosAgent.setFailFirstN(8);
+
     const message: Message = { role: 'user', content: 'Test' };
 
     // Retry up to 10 times - should eventually succeed
@@ -207,7 +214,9 @@ describe('Intermittent Connectivity', () => {
       }
     }
 
-    // Should eventually succeed (probability of all failing: 0.7^11 ≈ 0.2%)
+    // Now guaranteed. This previously relied on chance and justified it as
+    // "probability of all failing: 0.7^11 ≈ 0.2%" — the arithmetic was off by a
+    // factor of ten: 0.7^11 is 1.98%, i.e. roughly 1 run in 50, not 1 in 500.
     expect(response).not.toBeNull();
     expect(response?.content).toBe('Processed: Test');
   });

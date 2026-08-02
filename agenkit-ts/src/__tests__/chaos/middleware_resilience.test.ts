@@ -149,7 +149,13 @@ describe('Circuit Breaker Resilience', () => {
 
   it('should handle overloaded agent with circuit breaker', async () => {
     const baseAgent = new SimpleAgent();
-    const overloadedAgent = new OverloadedAgent(baseAgent, 5, 0.9);
+    // Once overloaded, fail every request rather than 90% of them. The breaker
+    // below needs 3 *consecutive* failures, and the 10 post-threshold requests
+    // at a 0.9 rate leave it closed about 1 run in 194 — a single lucky success
+    // resets the streak. Observed once in 45 full-suite runs (#658). The test is
+    // about the breaker tripping under sustained overload, not about the
+    // agent's failure distribution.
+    const overloadedAgent = new OverloadedAgent(baseAgent, 5, 1.0);
 
     const message: Message = { role: 'user', content: 'Test' };
 

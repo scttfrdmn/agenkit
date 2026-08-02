@@ -10,6 +10,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { TimeoutMiddleware, TimeoutConfig } from '../../src/middleware/timeout.js';
 import type { Agent, Message } from '../../src/core/interfaces.js';
+import { atLeastMs } from '../../src/__tests__/support/timing.js';
 
 interface TimeoutBehaviorFixtures {
   version: string;
@@ -158,7 +159,7 @@ describe('Cross-Language Timeout Behavior', () => {
     expect(expected.timed_out).toBe(false);
     expect(result.content).toBe(expected.final_response);
 
-    expect(elapsed).toBeGreaterThanOrEqual(expected.min_elapsed_ms);
+    expect(elapsed).toBeGreaterThanOrEqual(atLeastMs(expected.min_elapsed_ms));
     expect(elapsed).toBeLessThanOrEqual(expected.max_elapsed_ms);
   });
 
@@ -189,7 +190,7 @@ describe('Cross-Language Timeout Behavior', () => {
     expect(expected.successful).toBe(false);
     expect(expected.timed_out).toBe(true);
 
-    expect(elapsed).toBeGreaterThanOrEqual(expected.min_elapsed_ms);
+    expect(elapsed).toBeGreaterThanOrEqual(atLeastMs(expected.min_elapsed_ms));
     expect(elapsed).toBeLessThanOrEqual(expected.max_elapsed_ms);
   });
 
@@ -221,7 +222,7 @@ describe('Cross-Language Timeout Behavior', () => {
     expect(expected.timed_out).toBe(false);
     expect(result.content).toBe(expected.final_response);
 
-    expect(elapsed).toBeGreaterThanOrEqual(expected.min_elapsed_ms);
+    expect(elapsed).toBeGreaterThanOrEqual(atLeastMs(expected.min_elapsed_ms));
     expect(elapsed).toBeLessThanOrEqual(expected.max_elapsed_ms);
   });
 
@@ -287,7 +288,7 @@ describe('Cross-Language Timeout Behavior', () => {
     }
 
     const elapsed = Date.now() - start;
-    expect(elapsed).toBeGreaterThanOrEqual(expected.min_elapsed_ms);
+    expect(elapsed).toBeGreaterThanOrEqual(atLeastMs(expected.min_elapsed_ms));
     expect(elapsed).toBeLessThanOrEqual(expected.max_elapsed_ms);
   });
 
@@ -318,7 +319,7 @@ describe('Cross-Language Timeout Behavior', () => {
     expect(expected.successful).toBe(false);
     expect(expected.timed_out).toBe(true);
 
-    expect(elapsed).toBeGreaterThanOrEqual(expected.min_elapsed_ms);
+    expect(elapsed).toBeGreaterThanOrEqual(atLeastMs(expected.min_elapsed_ms));
     // Very short timeouts get wider tolerance
     expect(elapsed).toBeLessThanOrEqual(expected.max_elapsed_ms + 20);
   });

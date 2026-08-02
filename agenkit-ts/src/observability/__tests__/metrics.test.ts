@@ -10,6 +10,7 @@ import {
   createMonitoredAgent,
 } from '../metrics';
 import { Agent, Message } from '../../core/interfaces';
+import { atLeastMs } from '../../__tests__/support/timing';
 
 class MockAgent implements Agent {
   public readonly name = 'mock-agent';
@@ -147,7 +148,8 @@ describe('Metrics', () => {
       await monitoredAgent.process(message);
       const duration = Date.now() - start;
 
-      expect(duration).toBeGreaterThanOrEqual(100);
+      // SlowAgent sleeps 100ms; setTimeout can fire ~1ms early (see atLeastMs).
+      expect(duration).toBeGreaterThanOrEqual(atLeastMs(100));
       // Latency histogram should have recorded this value
     });
 

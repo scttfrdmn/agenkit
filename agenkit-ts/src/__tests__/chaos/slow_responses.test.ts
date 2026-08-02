@@ -14,6 +14,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Message } from '../../core/interfaces';
 import { ChaosAgent, ChaosMode, SimpleAgent } from './chaos_agents';
+import { atLeastMs } from '../support/timing';
 
 // ============================================
 // Basic Slow Response Tests
@@ -34,7 +35,7 @@ describe('Slow Responses', () => {
     const elapsed = Date.now() - start;
 
     expect(response.content).toBe('Processed: Test');
-    expect(elapsed).toBeGreaterThanOrEqual(30);
+    expect(elapsed).toBeGreaterThanOrEqual(atLeastMs(30));
   });
 
   it('should timeout on excessively slow response', async () => {
@@ -123,11 +124,16 @@ describe('Gradual Performance Degradation', () => {
     // Collect 100 samples with varying delays. Tiers scaled down from
     // 10/50/200 to 1/20/60 to cut ~3s of real sleeps; the percentile logic
     // under test is unchanged. Tier gaps are kept wide (1 vs 20 vs 60ms) so
-    // that scheduling jitter (a few ms) cannot blur one tier into the next and
-    // the median stays cleanly below the slow tail.
+    // that scheduling jitter (a few ms) cannot blur one tier into the next.
+    //
+    // The fast tier holds 60 of the 100 samples, not 50. With an even 50 the
+    // median landed on the *last* fast sample, so a single fast request that
+    // jittered above 20ms displaced it and p50 became a mid-tier 20 — `expected
+    // 20 to be less than 15`, seen once in 40 full-suite runs (#658). At 60 the
+    // median has ten samples of slack.
     for (let i = 0; i < 100; i++) {
       // Simulate realistic latency distribution: mostly fast, some slow
-      const delay = i < 50 ? 1 : i < 95 ? 20 : 60;
+      const delay = i < 60 ? 1 : i < 95 ? 20 : 60;
       const slowAgent = new ChaosAgent(baseAgent, 0, delay, ChaosMode.SLOW_RESPONSE);
 
       const start = Date.now();
@@ -142,8 +148,8 @@ describe('Gradual Performance Degradation', () => {
     const p99 = latencies[98];
 
     expect(p50).toBeLessThan(15); // Median in fast tier (~1ms + jitter margin)
-    expect(p95).toBeGreaterThanOrEqual(20); // p95 includes the mid tier (20ms)
-    expect(p99).toBeGreaterThanOrEqual(60); // p99 includes the slowest tier
+    expect(p95).toBeGreaterThanOrEqual(atLeastMs(20)); // p95 includes the mid tier (20ms)
+    expect(p99).toBeGreaterThanOrEqual(atLeastMs(60)); // p99 includes the slowest tier
     expect(p99).toBeGreaterThan(p95);
     expect(p95).toBeGreaterThan(p50);
   });
@@ -404,42 +410,49 @@ describe('Slow Response Queueing', () => {
 
   it('should detect queue buildup from slow responses', async () => {
     const baseAgent = new SimpleAgent();
-    // Magnitudes scaled down 2x (agent 200 -> 100, final drain 300 -> 150;
-    // inter-enqueue gap kept at 10ms). The assertion compares early vs late
-    // queue wait times with a 1ms tolerance, which the relative buildup keeps.
-    const slowAgent = new ChaosAgent(baseAgent, 0, 100, ChaosMode.SLOW_RESPONSE);
+    const agentDelayMs = 20;
+    const enqueueGapMs = 5;
+    const requestCount = 8;
+    const slowAgent = new ChaosAgent(baseAgent, 0, agentDelayMs, ChaosMode.SLOW_RESPONSE);
 
     const message: Message = { role: 'user', content: 'Test' };
 
-    // Simulate queue with timestamps
-    const queue: Array<{ enqueued: number; completed?: number }> = [];
+    // Requests are drained by a single serialized worker. This matters: the
+    // previous version fired all ten concurrently, so there was no queue and no
+    // buildup to detect — every request waited one agent delay and nothing else.
+    // Worse, the bias ran against the assertion, because the early entries were
+    // enqueued while the loop was still running and so measured *longer* than
+    // the late ones. It compensated with a 1ms fudge and still failed ~1 run in
+    // 4 (#658). Serializing the drain is what makes wait time actually grow:
+    // request i waits agentDelay*(i+1) to be served but was enqueued at
+    // gap*i, so its wait grows by (agentDelay - gap) per position.
+    const queue: Array<{ enqueued: number; completed: number }> = [];
+    let worker: Promise<void> = Promise.resolve();
 
-    // Enqueue rapidly
-    for (let i = 0; i < 10; i++) {
-      const entry = { enqueued: Date.now() };
-      queue.push(entry);
-
-      // Process slowly
-      slowAgent.process(message).then(() => {
-        entry.completed = Date.now();
+    for (let i = 0; i < requestCount; i++) {
+      const enqueued = Date.now();
+      worker = worker.then(async () => {
+        await slowAgent.process(message);
+        queue.push({ enqueued, completed: Date.now() });
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 10)); // 10ms between enqueues
+      await new Promise((resolve) => setTimeout(resolve, enqueueGapMs));
     }
 
-    // Wait for all to complete
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    // Await the drain rather than sleeping a fixed interval. The old fixed wait
+    // could expire before the queue emptied, and the entries that had not
+    // completed were silently filtered out of the measurement.
+    await worker;
+    expect(queue).toHaveLength(requestCount);
 
-    // Calculate queue wait times
-    const waitTimes = queue
-      .filter((e) => e.completed !== undefined)
-      .map((e) => e.completed! - e.enqueued);
+    const waitTimes = queue.map((e) => e.completed - e.enqueued);
 
-    // Later requests should have longer wait times (queue buildup)
+    // Later requests should have longer wait times (queue buildup).
     const earlyWait = waitTimes.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
     const lateWait = waitTimes.slice(-3).reduce((a, b) => a + b, 0) / 3;
 
-    // Allow 1ms tolerance for timing variance in test environment
-    expect(lateWait).toBeGreaterThanOrEqual(earlyWait - 1);
+    // Expected separation is (agentDelay - enqueueGap) * 5 = 75ms, so this is a
+    // wide margin rather than a fudge factor.
+    expect(lateWait).toBeGreaterThan(earlyWait);
   });
 });

@@ -699,8 +699,9 @@ impl ObservabilityStack {
             otlp_endpoint,
         )?;
 
-        // 2. Initialize Prometheus metrics
-        init_metrics("prometheus", None)?;
+        // 2. Initialize metrics. "prometheus" is not available in this build —
+        //    export OTLP and let a collector expose the scrape endpoint.
+        init_metrics("otlp", otlp_endpoint)?;
 
         // 3. Initialize structured logging
         configure_logging("json", "info")?;

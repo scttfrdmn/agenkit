@@ -31,10 +31,19 @@ impl Agent for SimpleAgent {
 }
 
 #[tokio::test]
-async fn test_init_metrics_prometheus() {
-    // Initialize metrics with Prometheus exporter
+async fn test_init_metrics_prometheus_is_rejected() {
+    // #772: this used to assert `is_ok()`, which locked in the bug. There is no
+    // prometheus exporter in this build — opentelemetry-prometheus was removed
+    // over vulnerable transitive deps — so accepting "prometheus" and returning
+    // Ok(()) promised a scrape endpoint that would never exist. An error is the
+    // only honest answer; a missing endpoint is indistinguishable from a
+    // misconfigured scrape target otherwise.
     let result = init_metrics("prometheus", None);
-    assert!(result.is_ok(), "Failed to initialize Prometheus metrics");
+    let err = result.expect_err("prometheus has no exporter in this build");
+    assert!(
+        err.to_string().contains("prometheus"),
+        "the error should name the unavailable exporter, got: {err}"
+    );
 }
 
 #[tokio::test]
@@ -45,10 +54,40 @@ async fn test_init_metrics_otlp() {
 }
 
 #[tokio::test]
+async fn test_init_metrics_otlp_without_endpoint_defers_to_env() {
+    // A None endpoint must not be an error: the OTLP exporter resolves
+    // OTEL_EXPORTER_OTLP_METRICS_ENDPOINT / OTEL_EXPORTER_OTLP_ENDPOINT itself,
+    // so passing nothing is how a caller opts into environment configuration.
+    let result = init_metrics("otlp", None);
+    assert!(result.is_ok(), "None endpoint should defer to the environment");
+}
+
+#[tokio::test]
 async fn test_init_metrics_stdout() {
     // Initialize metrics with stdout exporter
     let result = init_metrics("stdout", None);
     assert!(result.is_ok(), "Failed to initialize stdout metrics");
+}
+
+#[tokio::test]
+async fn test_shutdown_metrics_returns_promptly() {
+    // Installing a PeriodicReader is what the old no-op implementation avoided,
+    // with the comment "avoids test hangs". That reasoning was stale — the
+    // reader exports from its own thread — but the constraint is worth a test
+    // rather than a claim, since a shutdown that blocks on an unreachable
+    // collector would hang every suite that initializes metrics.
+    //
+    // Note this does NOT verify anything is exported: a provider with no reader
+    // also returns promptly. Export is covered at the transport level in
+    // test_observability_metrics_export.rs.
+    init_metrics("stdout", None).expect("stdout metrics should initialize");
+
+    let agent = SimpleAgent::new("reader-agent", "ok");
+    let metered = MetricsMiddleware::new(agent);
+    let response = metered.process(Message::with_text("user", "hi")).await;
+    assert!(response.is_ok(), "metered agent should process successfully");
+
+    agenkit::observability::shutdown_metrics();
 }
 
 #[tokio::test]

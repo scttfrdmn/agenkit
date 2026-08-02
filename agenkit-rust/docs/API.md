@@ -1019,7 +1019,7 @@ use agenkit::observability::{init_tracing, init_metrics, configure_logging};
 
 // Initialize once at startup
 init_tracing("otlp", Some("http://localhost:4317"))?;
-init_metrics("prometheus", None)?;
+init_metrics("otlp", Some("http://localhost:4317"))?;
 configure_logging("json", "info")?;
 ```
 

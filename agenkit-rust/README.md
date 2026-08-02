@@ -183,7 +183,7 @@ use agenkit::observability::{TracingMiddleware, MetricsMiddleware, AuditLogger};
 
 // Initialize observability stack
 init_tracing("otlp", Some("http://localhost:4317"))?;
-init_metrics("prometheus", None)?;
+init_metrics("otlp", Some("http://localhost:4317"))?;
 configure_logging("json", "info")?;
 
 // Wrap agent with automatic tracing and metrics

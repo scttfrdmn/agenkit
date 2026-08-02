@@ -16,8 +16,8 @@
 //! #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> { Ok(msg) }
 //! # }
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! // Initialize metrics with Prometheus exporter
-//! init_metrics("prometheus", None)?;
+//! // Initialize metrics with the OTLP exporter
+//! init_metrics("otlp", Some("http://localhost:4317"))?;
 //!
 //! // Wrap agent with metrics
 //! let agent = MyAgent;
@@ -37,11 +37,18 @@ use opentelemetry::{
     metrics::{Counter, Histogram, Meter},
     KeyValue,
 };
-use opentelemetry_sdk::metrics::SdkMeterProvider;
-use std::time::Instant;
+use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider};
+use std::time::{Duration, Instant};
 
 /// Global meter provider instance.
 static METER_PROVIDER: OnceCell<SdkMeterProvider> = OnceCell::new();
+
+/// How often the periodic reader exports.
+///
+/// Matches the OTel spec default for `OTEL_METRIC_EXPORT_INTERVAL`. Stated
+/// explicitly so the delivery latency is visible here rather than inherited.
+const EXPORT_INTERVAL: Duration = Duration::from_secs(60);
 
 /// Initialize metrics collection with OpenTelemetry.
 ///
@@ -50,22 +57,35 @@ static METER_PROVIDER: OnceCell<SdkMeterProvider> = OnceCell::new();
 ///
 /// # Supported Exporters
 ///
-/// - `"prometheus"` - Prometheus exporter (default port 9464)
-/// - `"otlp"` - OTLP gRPC exporter (requires endpoint)
-/// - `"stdout"` - Console/stdout exporter (for debugging)
+/// - `"otlp"` - OTLP gRPC exporter. Uses `endpoint` when given; otherwise defers
+///   to the exporter's own resolution of `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`,
+///   then `OTEL_EXPORTER_OTLP_ENDPOINT`, then the spec default.
+/// - `"stdout"` - Console exporter, for debugging.
+///
+/// `"prometheus"` is **rejected**. The `opentelemetry-prometheus` and
+/// `prometheus` crates were removed from `Cargo.toml` because they pulled in
+/// vulnerable transitive dependencies (thrift, protobuf 2.x), so there is no
+/// exporter to install. Returning an error is deliberate: this function used to
+/// accept `"prometheus"` and return `Ok(())` while exporting nothing, which is
+/// strictly worse than failing — a scrape endpoint that never appears looks
+/// identical to a misconfigured scrape target. Use `"otlp"` and let a collector
+/// expose Prometheus.
 ///
 /// # Arguments
 ///
 /// * `exporter_type` - Type of exporter to use
-/// * `endpoint` - Optional endpoint URL (required for otlp)
+/// * `endpoint` - Optional endpoint URL; only meaningful for `"otlp"`
+///
+/// # Shutdown
+///
+/// The reader exports on an interval, so metrics recorded shortly before exit
+/// are only delivered if [`shutdown_metrics`] runs. Prefer
+/// [`shutdown_observability`](super::shutdown_observability).
 ///
 /// # Example
 ///
 /// ```rust,no_run
 /// # use agenkit::observability::init_metrics;
-/// // Prometheus exporter
-/// init_metrics("prometheus", None)?;
-///
 /// // OTLP exporter
 /// init_metrics("otlp", Some("http://localhost:4317"))?;
 ///
@@ -73,10 +93,60 @@ static METER_PROVIDER: OnceCell<SdkMeterProvider> = OnceCell::new();
 /// init_metrics("stdout", None)?;
 /// # Ok::<(), agenkit::core::AgentError>(())
 /// ```
-pub fn init_metrics(exporter_type: &str, _endpoint: Option<&str>) -> Result<(), AgentError> {
-    // For now, use a simple in-memory provider without periodic export
-    // This avoids test hangs while still allowing metrics to be collected
-    let provider = SdkMeterProvider::builder().build();
+pub fn init_metrics(exporter_type: &str, endpoint: Option<&str>) -> Result<(), AgentError> {
+    let builder = SdkMeterProvider::builder();
+
+    // A PeriodicReader is what actually exports. The previous implementation
+    // installed no reader at all and returned Ok(()) for every exporter type,
+    // so nothing was ever exported for any configuration (#772).
+    //
+    // The interval is set explicitly rather than left at the SDK default: the
+    // reader spawns a thread that exports on a timer, and a long default turns
+    // "metrics are missing" into "metrics are late", which is much harder to
+    // diagnose from the consumer side.
+    let builder = match exporter_type {
+        "stdout" => {
+            let exporter = opentelemetry_stdout::MetricExporter::default();
+            builder.with_reader(
+                PeriodicReader::builder(exporter)
+                    .with_interval(EXPORT_INTERVAL)
+                    .build(),
+            )
+        }
+        "otlp" => {
+            let mut exporter_builder = opentelemetry_otlp::MetricExporter::builder().with_tonic();
+            // Only set the endpoint when we have one: an explicit value
+            // overrides the environment, so passing an empty string would
+            // suppress OTEL_EXPORTER_OTLP_ENDPOINT rather than defer to it.
+            if let Some(endpoint) = endpoint.filter(|e| !e.is_empty()) {
+                exporter_builder = exporter_builder.with_endpoint(endpoint);
+            }
+            let exporter = exporter_builder.build().map_err(|e| {
+                AgentError::ProcessingError(format!("failed to build OTLP metric exporter: {}", e))
+            })?;
+            builder.with_reader(
+                PeriodicReader::builder(exporter)
+                    .with_interval(EXPORT_INTERVAL)
+                    .build(),
+            )
+        }
+        "prometheus" => {
+            return Err(AgentError::ProcessingError(
+                "the prometheus metrics exporter is not available in this build \
+                 (opentelemetry-prometheus was removed over vulnerable transitive \
+                 dependencies); use \"otlp\" and expose Prometheus from a collector"
+                    .to_string(),
+            ))
+        }
+        _ => {
+            return Err(AgentError::ProcessingError(format!(
+                "Unsupported exporter type: {}",
+                exporter_type
+            )))
+        }
+    };
+
+    let provider = builder.build();
 
     // Set global meter provider
     opentelemetry::global::set_meter_provider(provider.clone());
@@ -84,13 +154,7 @@ pub fn init_metrics(exporter_type: &str, _endpoint: Option<&str>) -> Result<(), 
     // Store in global for cleanup (ignore if already set)
     let _ = METER_PROVIDER.set(provider);
 
-    match exporter_type {
-        "prometheus" | "otlp" | "stdout" => Ok(()),
-        _ => Err(AgentError::ProcessingError(format!(
-            "Unsupported exporter type: {}",
-            exporter_type
-        ))),
-    }
+    Ok(())
 }
 
 /// Get a meter instance from the global provider.
@@ -130,7 +194,7 @@ pub fn get_meter(name: &'static str) -> Meter {
 /// #     async fn process(&self, msg: Message) -> Result<Message, agenkit::core::AgentError> { Ok(msg) }
 /// # }
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-/// init_metrics("prometheus", None)?;
+/// init_metrics("otlp", Some("http://localhost:4317"))?;
 ///
 /// let agent = MyAgent;
 /// let metrics_agent = MetricsMiddleware::new(agent);

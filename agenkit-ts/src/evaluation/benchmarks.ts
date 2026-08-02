@@ -172,8 +172,11 @@ export class NeedleInHaystackBenchmark implements Benchmark {
   readonly needleCount: number;
 
   constructor(config: NeedleInHaystackConfig = {}) {
-    this.contextLength = config.contextLength || 1000;
-    this.needleCount = config.needleCount || 3;
+    // Defaults match Python, Go, Rust and C++ (10000/5). They were 1000/3 here, so the
+    // same "default" benchmark measured a context an order of magnitude smaller in
+    // TypeScript than everywhere else — see #790.
+    this.contextLength = config.contextLength ?? 10_000;
+    this.needleCount = config.needleCount ?? 5;
   }
 
   get name(): string {

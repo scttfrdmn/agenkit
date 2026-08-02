@@ -108,9 +108,8 @@ func (b *SimpleQABenchmark) GenerateTestCases() ([]*TestCase, error) {
 // Tests ability to retrieve specific information from large contexts.
 // Essential for extreme-scale systems like endless.
 type NeedleInHaystackBenchmark struct {
-	contextLength      int
-	needleCount        int
-	haystackMultiplier int
+	contextLength int
+	needleCount   int
 }
 
 // NewNeedleInHaystackBenchmark creates a new needle-in-haystack benchmark.
@@ -119,16 +118,14 @@ type NeedleInHaystackBenchmark struct {
 //
 //	contextLength: Target context length in tokens
 //	needleCount: Number of needles to hide
-//	haystackMultiplier: How much filler per needle
 //
 // Example:
 //
-//	benchmark := NewNeedleInHaystackBenchmark(10000, 5, 10)
-func NewNeedleInHaystackBenchmark(contextLength, needleCount, haystackMultiplier int) *NeedleInHaystackBenchmark {
+//	benchmark := NewNeedleInHaystackBenchmark(10000, 5)
+func NewNeedleInHaystackBenchmark(contextLength, needleCount int) *NeedleInHaystackBenchmark {
 	return &NeedleInHaystackBenchmark{
-		contextLength:      contextLength,
-		needleCount:        needleCount,
-		haystackMultiplier: haystackMultiplier,
+		contextLength: contextLength,
+		needleCount:   needleCount,
 	}
 }
 
@@ -281,7 +278,7 @@ func (b *ExtremeScaleBenchmark) GenerateTestCases() ([]*TestCase, error) {
 
 	for _, length := range b.testLengths {
 		// Create needle-in-haystack tests at this scale
-		benchmark := NewNeedleInHaystackBenchmark(length, b.needlesPerLength, 10)
+		benchmark := NewNeedleInHaystackBenchmark(length, b.needlesPerLength)
 
 		cases, err := benchmark.GenerateTestCases()
 		if err != nil {
@@ -458,7 +455,7 @@ func NewBenchmarkSuite(benchmarks []Benchmark, name string) *BenchmarkSuite {
 func BenchmarkSuiteStandard() *BenchmarkSuite {
 	return NewBenchmarkSuite([]Benchmark{
 		NewSimpleQABenchmark(),
-		NewNeedleInHaystackBenchmark(10_000, 5, 10),
+		NewNeedleInHaystackBenchmark(10_000, 5),
 		NewInformationRetentionBenchmark(50, nil),
 	}, "standard")
 }
@@ -479,7 +476,7 @@ func BenchmarkSuiteExtremeScale() *BenchmarkSuite {
 func BenchmarkSuiteQuick() *BenchmarkSuite {
 	return NewBenchmarkSuite([]Benchmark{
 		NewSimpleQABenchmark(),
-		NewNeedleInHaystackBenchmark(1_000, 3, 10),
+		NewNeedleInHaystackBenchmark(1_000, 3),
 	}, "quick")
 }
 

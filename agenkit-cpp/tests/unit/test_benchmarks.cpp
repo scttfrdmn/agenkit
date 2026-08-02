@@ -125,7 +125,7 @@ TEST(SimpleQABenchmarkTest, TestCaseValidation) {
 TEST(NeedleInHaystackBenchmarkTest, NameAndDescription) {
     NeedleInHaystackBenchmark benchmark(10000, 5);
 
-    EXPECT_EQ(benchmark.name(), "needle_in_haystack_10k");
+    EXPECT_EQ(benchmark.name(), "needle_in_haystack_10000");
     EXPECT_FALSE(benchmark.description().empty());
     EXPECT_NE(benchmark.description().find("10000"), std::string::npos);
 }
@@ -170,7 +170,7 @@ TEST(NeedleInHaystackBenchmarkTest, ContextLength) {
     //
     // `EXPECT_GT(context_length, 0)` was all this asserted, which is why the benchmark
     // could advertise a 5000-token context and build ~1155 for years: the multiplier was
-    // read *instead of* context_length, so the size didn't track the request at all (#790).
+    // read *instead of* context_length, so the size didn't track the request at all (#796).
     // A ±20% band is generous enough for the 4-chars-per-token estimate and the
     // whole-sentence granularity of the filler, but tight enough to catch a wrong formula.
     for (const auto& tc : cases) {
@@ -186,7 +186,7 @@ TEST(NeedleInHaystackBenchmarkTest, ContextLength) {
 TEST(NeedleInHaystackBenchmarkTest, ContextScalesWithRequestedLength) {
     // A tenfold larger request must produce a substantially larger context. Under the old
     // formula both sizes were derived from the needles alone, so this ratio was ~1.0
-    // regardless of what the caller asked for (#790).
+    // regardless of what the caller asked for (#796).
     auto small = NeedleInHaystackBenchmark(1000, 3).generate_test_cases().get();
     auto large = NeedleInHaystackBenchmark(10000, 3).generate_test_cases().get();
 
@@ -200,25 +200,16 @@ TEST(NeedleInHaystackBenchmarkTest, ContextScalesWithRequestedLength) {
         << "context size does not track the requested length";
 }
 
-TEST(NeedleInHaystackBenchmarkTest, MultiplierHasNoEffect) {
-    // Documented as accepted-for-parity-only (#790). Pin that so a future change to give
-    // it meaning has to be a deliberate, visible one rather than a silent behaviour shift.
-    //
-    // Compares sizes rather than the strings themselves: the filler sentences are drawn at
-    // random, so two constructions never produce identical text even at an identical size.
-    // Under the old formula a 100x multiplier produced a ~100x larger context, so a 5% band
-    // is far tighter than needed to catch a multiplier that is being read again.
-    auto low = NeedleInHaystackBenchmark(5000, 3, 1).generate_test_cases().get();
-    auto high = NeedleInHaystackBenchmark(5000, 3, 100).generate_test_cases().get();
-
-    ASSERT_FALSE(low.empty());
-    ASSERT_FALSE(high.empty());
-
-    auto tokens = [](const TestCase& tc) {
-        return std::any_cast<int>(tc.metadata.at("context_length"));
-    };
-    EXPECT_NEAR(tokens(low[0]), tokens(high[0]), tokens(low[0]) * 0.05)
-        << "haystack_multiplier changed the context size; it is documented as inert (#790)";
+TEST(NeedleInHaystackBenchmarkTest, NameEncodesFullContextLength) {
+    // The name is a registry key (BenchmarkSuite::add_benchmark) and must match the form
+    // Python, Go, Rust and TypeScript use. It previously abbreviated to "_10k" via integer
+    // division, which both diverged from the other cores and collided: every context under
+    // 1000 tokens became "needle_in_haystack_0k" (#790).
+    EXPECT_EQ(NeedleInHaystackBenchmark(10000, 5).name(), "needle_in_haystack_10000");
+    EXPECT_EQ(NeedleInHaystackBenchmark(500, 2).name(), "needle_in_haystack_500");
+    EXPECT_NE(NeedleInHaystackBenchmark(500, 2).name(),
+              NeedleInHaystackBenchmark(900, 2).name())
+        << "sub-1000 contexts must not collide in the suite registry";
 }
 
 // ============================================================================
@@ -372,7 +363,7 @@ TEST(BenchmarkSuiteTest, GetSummary) {
     auto summary = future.get();
 
     EXPECT_TRUE(summary.contains("simple_qa"));
-    EXPECT_TRUE(summary.contains("needle_in_haystack_0k"));
+    EXPECT_TRUE(summary.contains("needle_in_haystack_500"));
     EXPECT_TRUE(summary.contains("total_test_cases"));
     EXPECT_TRUE(summary.contains("benchmark_count"));
 

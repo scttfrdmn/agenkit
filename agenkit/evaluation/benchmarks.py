@@ -110,20 +110,16 @@ class NeedleInHaystackBenchmark(Benchmark):
     Essential for extreme-scale systems like endless.
     """
 
-    def __init__(
-        self, context_length: int = 10_000, needle_count: int = 5, haystack_multiplier: int = 10
-    ):
+    def __init__(self, context_length: int = 10_000, needle_count: int = 5):
         """
         Initialize needle-in-haystack benchmark.
 
         Args:
             context_length: Target context length in tokens
             needle_count: Number of needles to hide
-            haystack_multiplier: How much filler per needle
         """
         self.context_length = context_length
         self.needle_count = needle_count
-        self.haystack_multiplier = haystack_multiplier
 
     @property
     def name(self) -> str:

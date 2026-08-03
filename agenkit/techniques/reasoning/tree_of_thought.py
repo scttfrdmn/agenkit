@@ -44,7 +44,7 @@ Example:
 from collections import deque
 from collections.abc import Callable
 
-from agenkit import Agent, Message
+from agenkit import Agent, CallOptions, Message
 
 from ._llm_call import complete_text
 from .reasoning_tree import NodeState, ReasoningTree
@@ -149,13 +149,19 @@ class TreeOfThought(Agent):
 
         return min(length_score + structure_bonus, 1.0)
 
-    async def _generate_branches(self, prompt: str, n: int) -> list[str]:
+    async def _generate_branches(
+        self, prompt: str, n: int, options: CallOptions | None = None
+    ) -> list[str]:
         """
         Generate N alternative reasoning branches.
 
         Args:
             prompt: Prompt to generate from
             n: Number of branches to generate
+            options: Optional per-call inference options to forward (#801). When a
+                temperature is set, it is the mechanism producing branch diversity;
+                the prompt variation below predates the options channel and is kept
+                because it still helps when no temperature is supplied.
 
         Returns:
             List of generated reasoning texts
@@ -168,11 +174,17 @@ class TreeOfThought(Agent):
             varied_prompt = f"{prompt}\n\nAlternative approach #{i + 1}:"
 
             # Get response from LLM
-            branches.append(await complete_text(self.llm, varied_prompt))
+            branches.append(await complete_text(self.llm, varied_prompt, options))
 
         return branches
 
-    async def _expand_node(self, tree: ReasoningTree, node_id: int, query: str) -> list[int]:
+    async def _expand_node(
+        self,
+        tree: ReasoningTree,
+        node_id: int,
+        query: str,
+        options: CallOptions | None = None,
+    ) -> list[int]:
         """
         Expand a node by generating child branches.
 
@@ -195,7 +207,7 @@ class TreeOfThought(Agent):
         )
 
         # Generate branches
-        branches = await self._generate_branches(prompt, self.branching_factor)
+        branches = await self._generate_branches(prompt, self.branching_factor, options)
 
         # Add branches as children
         child_ids = []
@@ -218,7 +230,13 @@ class TreeOfThought(Agent):
 
         return child_ids
 
-    async def _search_bfs(self, tree: ReasoningTree, root_id: int, query: str) -> None:
+    async def _search_bfs(
+        self,
+        tree: ReasoningTree,
+        root_id: int,
+        query: str,
+        options: CallOptions | None = None,
+    ) -> None:
         """
         Breadth-first search through reasoning tree.
 
@@ -242,10 +260,16 @@ class TreeOfThought(Agent):
                 continue
 
             # Expand node
-            child_ids = await self._expand_node(tree, node_id, query)
+            child_ids = await self._expand_node(tree, node_id, query, options)
             queue.extend(child_ids)
 
-    async def _search_dfs(self, tree: ReasoningTree, root_id: int, query: str) -> None:
+    async def _search_dfs(
+        self,
+        tree: ReasoningTree,
+        root_id: int,
+        query: str,
+        options: CallOptions | None = None,
+    ) -> None:
         """
         Depth-first search through reasoning tree.
 
@@ -269,10 +293,16 @@ class TreeOfThought(Agent):
                 continue
 
             # Expand node
-            child_ids = await self._expand_node(tree, node_id, query)
+            child_ids = await self._expand_node(tree, node_id, query, options)
             stack.extend(reversed(child_ids))  # Reverse to maintain left-to-right order
 
-    async def _search_best_first(self, tree: ReasoningTree, root_id: int, query: str) -> None:
+    async def _search_best_first(
+        self,
+        tree: ReasoningTree,
+        root_id: int,
+        query: str,
+        options: CallOptions | None = None,
+    ) -> None:
         """
         Best-first search - always expand highest scoring node.
 
@@ -303,18 +333,34 @@ class TreeOfThought(Agent):
                 continue
 
             # Expand node
-            child_ids = await self._expand_node(tree, node_id, query)
+            child_ids = await self._expand_node(tree, node_id, query, options)
             open_nodes.extend(child_ids)
 
     async def process(self, message: Message) -> Message:
         """
         Process message with Tree-of-Thought reasoning.
 
-        Builds a reasoning tree, explores multiple paths using the configured
-        search strategy, and returns the best complete reasoning path.
+        Equivalent to :meth:`process_with` with no options set.
 
         Args:
             message: Input message with query content
+
+        Returns:
+            Message with best reasoning path and metadata.
+        """
+        return await self.process_with(message, CallOptions())
+
+    async def process_with(self, message: Message, options: CallOptions) -> Message:
+        """
+        Process message with Tree-of-Thought reasoning and per-call options.
+
+        Builds a reasoning tree, explores multiple paths using the configured
+        search strategy, and returns the best complete reasoning path. The options
+        are forwarded to every branch generation.
+
+        Args:
+            message: Input message with query content
+            options: Per-call inference options forwarded to the LLM (#801)
 
         Returns:
             Message with best reasoning path and metadata. Metadata includes:
@@ -342,11 +388,11 @@ class TreeOfThought(Agent):
 
         # Run search strategy
         if self.strategy == "bfs":
-            await self._search_bfs(tree, root_id, query)
+            await self._search_bfs(tree, root_id, query, options)
         elif self.strategy == "dfs":
-            await self._search_dfs(tree, root_id, query)
+            await self._search_dfs(tree, root_id, query, options)
         elif self.strategy == "best-first":
-            await self._search_best_first(tree, root_id, query)
+            await self._search_best_first(tree, root_id, query, options)
         else:
             raise ValueError(f"Invalid strategy: {self.strategy}")
 

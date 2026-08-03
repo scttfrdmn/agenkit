@@ -34,7 +34,7 @@ Example:
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from agenkit import Agent, Message
+from agenkit import Agent, CallOptions, Message
 
 from ._llm_call import complete_text
 
@@ -130,19 +130,20 @@ class PlanAndSolve(Agent):
         """Return agent name."""
         return "plan_and_solve"
 
-    async def _llm_call(self, prompt: str) -> str:
+    async def _llm_call(self, prompt: str, options: CallOptions | None = None) -> str:
         """
         Call LLM with prompt.
 
         Args:
             prompt: Prompt to send to LLM
+            options: Optional per-call inference options to forward (#801)
 
         Returns:
             LLM response text
         """
-        return await complete_text(self.llm, prompt)
+        return await complete_text(self.llm, prompt, options)
 
-    async def create_plan(self, problem: str) -> Plan:
+    async def create_plan(self, problem: str, options: CallOptions | None = None) -> Plan:
         """
         Create a solution plan for the problem.
 
@@ -165,7 +166,7 @@ Problem: {problem}
 
 Solution Plan:"""
 
-        response = await self._llm_call(planning_prompt)
+        response = await self._llm_call(planning_prompt, options)
 
         # Parse plan from response
         steps = []
@@ -186,7 +187,7 @@ Solution Plan:"""
 
         return Plan(steps=steps, problem=problem)
 
-    async def validate(self, plan: Plan) -> Plan:
+    async def validate(self, plan: Plan, options: CallOptions | None = None) -> Plan:
         """
         Validate that a plan is complete and feasible.
 
@@ -206,7 +207,7 @@ Plan:
 
 Validation (answer "VALID" or describe issues):"""
 
-        response = await self._llm_call(validation_prompt)
+        response = await self._llm_call(validation_prompt, options)
 
         # Check if plan is valid
         is_valid = "VALID" in response.upper() or "YES" in response.upper()
@@ -224,7 +225,12 @@ Validation (answer "VALID" or describe issues):"""
             lines.append(f"{i}. [{status}] {step.description}")
         return "\\n".join(lines)
 
-    async def execute_step(self, step: PlanStep, previous_results: list[str]) -> str:
+    async def execute_step(
+        self,
+        step: PlanStep,
+        previous_results: list[str],
+        options: CallOptions | None = None,
+    ) -> str:
         """
         Execute a single plan step.
 
@@ -263,10 +269,10 @@ Step: {step.description}
 
 Execution Result:"""
 
-        result = await self._llm_call(prompt)
+        result = await self._llm_call(prompt, options)
         return result.strip()
 
-    async def execute_plan(self, plan: Plan) -> list[str]:
+    async def execute_plan(self, plan: Plan, options: CallOptions | None = None) -> list[str]:
         """
         Execute all steps in the plan sequentially.
 
@@ -279,7 +285,7 @@ Execution Result:"""
         results = []
 
         for step in plan.steps:
-            result = await self.execute_step(step, results)
+            result = await self.execute_step(step, results, options)
             step.result = result
             step.executed = True
             results.append(result)
@@ -290,11 +296,28 @@ Execution Result:"""
         """
         Process message with Plan-and-Solve prompting.
 
-        Creates a plan first, validates it (if enabled), then executes
-        the plan step-by-step.
+        Equivalent to :meth:`process_with` with no options set.
 
         Args:
             message: Input message with problem
+
+        Returns:
+            Message with final solution and metadata.
+        """
+        return await self.process_with(message, CallOptions())
+
+    async def process_with(self, message: Message, options: CallOptions) -> Message:
+        """
+        Process message with Plan-and-Solve prompting and per-call options.
+
+        Creates a plan first, validates it (if enabled), then executes
+        the plan step-by-step. The options are forwarded to every phase, so a
+        caller varying temperature gets diversity in planning as well as
+        execution.
+
+        Args:
+            message: Input message with problem
+            options: Per-call inference options forwarded to the LLM (#801)
 
         Returns:
             Message with final solution and metadata. Metadata includes:
@@ -316,11 +339,11 @@ Execution Result:"""
         problem = message.content
 
         # Phase 1: Create plan
-        plan = await self.create_plan(problem)
+        plan = await self.create_plan(problem, options)
 
         # Phase 2: Validate plan (if enabled)
         if self.validate_plan_flag:
-            plan = await self.validate(plan)
+            plan = await self.validate(plan, options)
 
             # If validation failed and replanning is allowed
             if not plan.validated and self.allow_replanning:
@@ -334,12 +357,12 @@ Previous Plan Issues:
 
 Improved Plan:"""
 
-                await self._llm_call(improved_prompt)
-                plan = await self.create_plan(problem)
-                plan = await self.validate(plan)
+                await self._llm_call(improved_prompt, options)
+                plan = await self.create_plan(problem, options)
+                plan = await self.validate(plan, options)
 
         # Phase 3: Execute plan
-        execution_results = await self.execute_plan(plan)
+        execution_results = await self.execute_plan(plan, options)
 
         # Final solution is the last step's result
         final_solution = execution_results[-1] if execution_results else ""

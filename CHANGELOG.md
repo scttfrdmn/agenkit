@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `CallOptions` and the optional `Agent.process_with()` capability; `SelfConsistency.temperature` now works (Issue #801)
+
+`SelfConsistency` accepted a `temperature` in six of the nine cores and applied it
+in **none**. Python's carried a literal `# TODO: If temperature supported, pass it
+to agent`; Rust and C++ documented the field as *"not used yet"*. The technique
+works by sampling one prompt N times and taking a majority vote, so sample
+diversity is not a nicety — it is the mechanism. A `temperature` that silently does
+nothing makes the technique quietly weaker while the API claims otherwise.
+
+Unlike `haystack_multiplier` (removed in #800 because nothing could ever read it),
+this parameter is meaningful, so it was made to work rather than deleted.
+
+**New `CallOptions`** (`agenkit.CallOptions`) — a frozen, validated per-call
+options object: `temperature`, `max_tokens`, `top_p`, `seed`, `stop`, plus `extra`
+for provider-specific keys. Field names and bounds deliberately match
+`LLM._validate_llm_params`, so options reach a provider without translation.
+`None` means "unset", not a default, and `to_kwargs()` omits unset fields — an
+option the caller never set cannot override the agent's or provider's own
+configuration.
+
+**New optional `Agent.process_with(message, options)`** — the core contract stays
+`process(message)`. The default implementation ignores the options and delegates to
+`process()`, so existing agents keep working untouched; agents that can honour
+options override it. `Agent.supports_options` reports which, checked structurally
+so it cannot fall out of sync with the implementation.
+
+Widening `process()` itself was rejected: roughly 500 implementations across the
+nine cores would have had to change — every one of Go's ~185 breaking at compile
+time — to add something most agents have no use for. The chosen shape uses each
+core's existing optional-capability idiom (Go extension interface, TypeScript
+optional method, Python/Rust default method), the same way `stream`/`processStream`
+already works.
+
+- All five reasoning techniques that own an LLM (`ChainOfThought`, `TreeOfThought`,
+  `PlanAndSolve`, `LeastToMost`, `GraphOfThought`) implement `process_with` and
+  thread options through **every** internal LLM call path — planning and execution,
+  premises and conclusion — so the feature is not silently partial.
+- Their public step methods (`create_plan`, `validate`, `execute_step`,
+  `execute_plan`, `decompose`, `solve_subproblem`, `generate_premises`,
+  `generate_thoughts`, `identify_connections`, `build_graph`, `aggregate_paths`)
+  gained an optional trailing `options` parameter. No existing call breaks.
+- `SelfConsistency` now forwards its `temperature` per sample. Options are passed
+  as an argument, never stashed on the agent: samples run concurrently through
+  `asyncio.gather` on the *same* agent instance, so shared mutable state would race
+  and some samples would run at another sample's temperature.
+- **New `SelfConsistency.temperature_applied`** and matching response metadata —
+  reports `False` when a temperature is set but the wrapped agent lacks the
+  capability. The optional-capability design reintroduces the risk of a silently
+  dropped value, so it is made reportable rather than left implicit.
+- Invalid temperatures now fail at construction rather than on the first sample.
+
+44 new tests (`tests/test_call_options.py`, 26;
+`tests/techniques/reasoning/test_temperature_plumbing.py`, 18), asserting on the
+value the **LLM** received rather than anything the wrapper recorded on the way
+past — a test that only checks the wrapper's own state would pass even if the
+plumbing stopped one layer short, which was the bug.
+
+This lands in Python first as the reference. The other eight cores still accept an
+inert `temperature` (or lack the field entirely, in C#/Java/Scala); tracked on #801.
+
 ### Fixed — Python reasoning techniques called `LLM.complete()` with the wrong type (Issue #802)
 
 The five reasoning techniques that own an LLM — `ChainOfThought`, `TreeOfThought`,

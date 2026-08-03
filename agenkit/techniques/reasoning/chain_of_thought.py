@@ -31,7 +31,7 @@ Example:
 
 import re
 
-from agenkit import Agent, Message
+from agenkit import Agent, CallOptions, Message
 
 from ._llm_call import complete_text
 
@@ -104,11 +104,28 @@ class ChainOfThought(Agent):
         """
         Process message with Chain-of-Thought reasoning.
 
+        Equivalent to :meth:`process_with` with no options set.
+
+        Args:
+            message: Input message with query content
+
+        Returns:
+            Message with response content and metadata.
+        """
+        return await self.process_with(message, CallOptions())
+
+    async def process_with(self, message: Message, options: CallOptions) -> Message:
+        """
+        Process message with Chain-of-Thought reasoning and per-call options.
+
         Applies the CoT prompt template to the input message, generates a
         response using the LLM, and optionally parses reasoning steps.
 
         Args:
             message: Input message with query content
+            options: Per-call inference options (e.g. temperature) forwarded to
+                the LLM. Unset options are omitted rather than defaulted, so the
+                LLM's own configuration stands (#801).
 
         Returns:
             Message with response content and metadata. If parse_steps=True,
@@ -130,7 +147,7 @@ class ChainOfThought(Agent):
         cot_prompt = self.prompt_template.format(query=message.content)
 
         # Get response from LLM (supports both complete() and process() methods)
-        response_text = await complete_text(self.llm, cot_prompt)
+        response_text = await complete_text(self.llm, cot_prompt, options)
 
         # Parse steps if requested
         if self.parse_steps:

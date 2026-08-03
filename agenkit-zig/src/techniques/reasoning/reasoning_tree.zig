@@ -19,7 +19,7 @@ pub const ReasoningNode = struct {
     id: usize,
     content: []const u8,
     parent_id: ?usize,
-    children_ids: std.ArrayList(usize),
+    children_ids: std.ArrayListUnmanaged(usize),
     depth: usize,
     score: f64,
     state: NodeState,
@@ -34,7 +34,7 @@ pub const ReasoningNode = struct {
 
     pub fn deinit(self: *ReasoningNode, allocator: Allocator) void {
         allocator.free(self.content);
-        self.children_ids.deinit();
+        self.children_ids.deinit(allocator);
     }
 };
 
@@ -84,7 +84,7 @@ pub const ReasoningTree = struct {
             .id = node_id,
             .content = try self.allocator.dupe(u8, content),
             .parent_id = null,
-            .children_ids = std.ArrayList(usize).empty,
+            .children_ids = std.ArrayListUnmanaged(usize).empty,
             .depth = 0,
             .score = 0.0,
             .state = .open,
@@ -114,7 +114,7 @@ pub const ReasoningTree = struct {
             .id = child_id,
             .content = try self.allocator.dupe(u8, content),
             .parent_id = parent_id,
-            .children_ids = std.ArrayList(usize).empty,
+            .children_ids = std.ArrayListUnmanaged(usize).empty,
             .depth = parent_depth + 1,
             .score = score,
             .state = .open,
@@ -128,7 +128,7 @@ pub const ReasoningTree = struct {
 
         // Add child to parent's children list
         const parent_ptr = self.nodes.getPtr(parent_id).?;
-        try parent_ptr.children_ids.append(child_id);
+        try parent_ptr.children_ids.append(self.allocator, child_id);
 
         return child_id;
     }
@@ -140,7 +140,7 @@ pub const ReasoningTree = struct {
 
     /// Get the path from root to a specific node
     pub fn getPath(self: *ReasoningTree, node_id: usize, allocator: Allocator) ![]const *const ReasoningNode {
-        var path = std.ArrayList(*const ReasoningNode).empty;
+        var path = std.ArrayListUnmanaged(*const ReasoningNode).empty;
         errdefer path.deinit(allocator);
 
         var current_id: ?usize = node_id;
@@ -223,8 +223,8 @@ pub const ReasoningTree = struct {
     fn pruneRecursive(self: *ReasoningTree, node_id: usize) void {
         if (self.nodes.getPtr(node_id)) |node| {
             // Make a copy of children IDs before marking as pruned
-            const children_copy = node.children_ids.clone() catch return;
-            defer children_copy.deinit();
+            var children_copy = node.children_ids.clone(self.allocator) catch return;
+            defer children_copy.deinit(self.allocator);
 
             // Mark this node as pruned
             node.state = .pruned;
@@ -279,3 +279,176 @@ pub const ReasoningTree = struct {
         };
     }
 };
+
+// ============================================================================
+// Tests
+// ============================================================================
+//
+// This file previously had no test blocks at all, which in Zig means it was
+// never type-checked: `_ = @import(...)` only forces analysis of a file's test
+// declarations, and a file with none is analysed not at all (#811).
+
+test "ReasoningTree createRoot" {
+    const testing = std.testing;
+
+    var tree = ReasoningTree.init(testing.allocator);
+    defer tree.deinit();
+
+    const root_id = try tree.createRoot("the question");
+
+    try testing.expectEqual(@as(?usize, root_id), tree.root_id);
+    const root = tree.getNode(root_id).?;
+    try testing.expectEqualStrings("the question", root.content);
+    try testing.expectEqual(@as(usize, 0), root.depth);
+    try testing.expect(root.isRoot());
+    try testing.expect(root.isLeaf());
+    try testing.expectEqual(NodeState.open, root.state);
+}
+
+test "ReasoningTree addChild tracks depth and parentage" {
+    const testing = std.testing;
+
+    var tree = ReasoningTree.init(testing.allocator);
+    defer tree.deinit();
+
+    const root_id = try tree.createRoot("root");
+    const child_id = try tree.addChild(root_id, "child", 0.5);
+    const grandchild_id = try tree.addChild(child_id, "grandchild", 0.7);
+
+    const child = tree.getNode(child_id).?;
+    try testing.expectEqual(@as(?usize, root_id), child.parent_id);
+    try testing.expectEqual(@as(usize, 1), child.depth);
+    try testing.expect(!child.isLeaf());
+
+    const grandchild = tree.getNode(grandchild_id).?;
+    try testing.expectEqual(@as(usize, 2), grandchild.depth);
+    try testing.expectEqual(@as(f64, 0.7), grandchild.score);
+
+    // The parent's children list is updated, not just the child's parent_id.
+    const root = tree.getNode(root_id).?;
+    try testing.expectEqual(@as(usize, 1), root.children_ids.items.len);
+    try testing.expectEqual(child_id, root.children_ids.items[0]);
+
+    try testing.expectEqual(@as(usize, 2), tree.max_depth);
+}
+
+test "ReasoningTree addChild rejects a missing parent" {
+    const testing = std.testing;
+
+    var tree = ReasoningTree.init(testing.allocator);
+    defer tree.deinit();
+
+    try testing.expectError(error.ParentNotFound, tree.addChild(99, "orphan", 0.5));
+}
+
+test "ReasoningTree getPath is root-to-leaf" {
+    const testing = std.testing;
+
+    var tree = ReasoningTree.init(testing.allocator);
+    defer tree.deinit();
+
+    const root_id = try tree.createRoot("a");
+    const child_id = try tree.addChild(root_id, "b", 0.5);
+    const leaf_id = try tree.addChild(child_id, "c", 0.9);
+
+    const path = try tree.getPath(leaf_id, testing.allocator);
+    defer testing.allocator.free(path);
+
+    // Walked parent-ward then reversed, so the order must be root-first.
+    try testing.expectEqual(@as(usize, 3), path.len);
+    try testing.expectEqualStrings("a", path[0].content);
+    try testing.expectEqualStrings("b", path[1].content);
+    try testing.expectEqualStrings("c", path[2].content);
+}
+
+test "ReasoningTree getPathText joins with the delimiter" {
+    const testing = std.testing;
+
+    var tree = ReasoningTree.init(testing.allocator);
+    defer tree.deinit();
+
+    const root_id = try tree.createRoot("first");
+    const child_id = try tree.addChild(root_id, "second", 0.5);
+
+    const text = try tree.getPathText(child_id, " -> ", testing.allocator);
+    defer testing.allocator.free(text);
+    try testing.expectEqualStrings("first -> second", text);
+
+    // A single node gets no trailing delimiter.
+    const root_text = try tree.getPathText(root_id, " -> ", testing.allocator);
+    defer testing.allocator.free(root_text);
+    try testing.expectEqualStrings("first", root_text);
+}
+
+test "ReasoningTree getBestLeaf skips pruned and non-leaf nodes" {
+    const testing = std.testing;
+
+    var tree = ReasoningTree.init(testing.allocator);
+    defer tree.deinit();
+
+    const root_id = try tree.createRoot("root");
+    const mid_id = try tree.addChild(root_id, "middle", 0.99);
+    _ = try tree.addChild(mid_id, "weak leaf", 0.2);
+    const strong_id = try tree.addChild(root_id, "strong leaf", 0.8);
+    const pruned_id = try tree.addChild(root_id, "pruned leaf", 0.95);
+    tree.pruneNode(pruned_id);
+
+    // "middle" scores highest but is not a leaf; "pruned leaf" scores higher
+    // still but is pruned.
+    const best = tree.getBestLeaf().?;
+    try testing.expectEqual(strong_id, best.id);
+    try testing.expectEqualStrings("strong leaf", best.content);
+}
+
+test "ReasoningTree getBestLeaf returns null on an empty tree" {
+    const testing = std.testing;
+
+    var tree = ReasoningTree.init(testing.allocator);
+    defer tree.deinit();
+
+    try testing.expectEqual(@as(?*ReasoningNode, null), tree.getBestLeaf());
+}
+
+test "ReasoningTree pruneNode prunes descendants too" {
+    const testing = std.testing;
+
+    var tree = ReasoningTree.init(testing.allocator);
+    defer tree.deinit();
+
+    const root_id = try tree.createRoot("root");
+    const branch_id = try tree.addChild(root_id, "branch", 0.5);
+    const leaf_a = try tree.addChild(branch_id, "leaf a", 0.6);
+    const leaf_b = try tree.addChild(branch_id, "leaf b", 0.7);
+    const sibling_id = try tree.addChild(root_id, "sibling", 0.4);
+
+    tree.pruneNode(branch_id);
+
+    try testing.expectEqual(NodeState.pruned, tree.getNode(branch_id).?.state);
+    try testing.expectEqual(NodeState.pruned, tree.getNode(leaf_a).?.state);
+    try testing.expectEqual(NodeState.pruned, tree.getNode(leaf_b).?.state);
+    // The unrelated subtree is untouched.
+    try testing.expectEqual(NodeState.open, tree.getNode(sibling_id).?.state);
+}
+
+test "ReasoningTree getStatistics excludes the root from scores" {
+    const testing = std.testing;
+
+    var tree = ReasoningTree.init(testing.allocator);
+    defer tree.deinit();
+
+    const root_id = try tree.createRoot("root");
+    _ = try tree.addChild(root_id, "a", 0.4);
+    const b_id = try tree.addChild(root_id, "b", 0.8);
+    const pruned_id = try tree.addChild(b_id, "c", 0.6);
+    tree.pruneNode(pruned_id);
+
+    const stats = tree.getStatistics();
+    try testing.expectEqual(@as(usize, 4), stats.total_nodes);
+    try testing.expectEqual(@as(usize, 2), stats.max_depth);
+    // Leaves: "a" and "c". "b" has a child, root has two.
+    try testing.expectEqual(@as(usize, 2), stats.num_leaves);
+    try testing.expectEqual(@as(usize, 1), stats.num_pruned);
+    try testing.expectEqual(@as(f64, 0.8), stats.best_score);
+    // (0.4 + 0.8 + 0.6) / 3 — the root's 0.0 must not drag the mean down.
+    try testing.expectApproxEqAbs(@as(f64, 0.6), stats.avg_score, 1e-9);
+}

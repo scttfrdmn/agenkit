@@ -129,60 +129,13 @@ pub const LLM = struct {
 };
 
 /// Call options for LLM requests
-pub const CallOptions = struct {
-    /// Sampling temperature (typically 0.0-2.0)
-    temperature: ?f64 = null,
-
-    /// Maximum tokens to generate
-    max_tokens: ?usize = null,
-
-    /// Nucleus sampling parameter
-    top_p: ?f64 = null,
-
-    /// Provider-specific options
-    extra: std.StringHashMap([]const u8),
-
-    /// Initialize call options
-    pub fn init(allocator: Allocator) CallOptions {
-        return CallOptions{
-            .extra = std.StringHashMap([]const u8).init(allocator),
-        };
-    }
-
-    /// Set temperature (must be between 0 and 2)
-    pub fn withTemperature(self: *CallOptions, temperature: f64) !void {
-        if (temperature < 0.0 or temperature > 2.0) {
-            return error.InvalidTemperature;
-        }
-        self.temperature = temperature;
-    }
-
-    /// Set max tokens (must be positive)
-    pub fn withMaxTokens(self: *CallOptions, max_tokens: usize) !void {
-        if (max_tokens == 0) {
-            return error.InvalidMaxTokens;
-        }
-        self.max_tokens = max_tokens;
-    }
-
-    /// Set top_p (must be between 0 and 1)
-    pub fn withTopP(self: *CallOptions, top_p: f64) !void {
-        if (top_p < 0.0 or top_p > 1.0) {
-            return error.InvalidTopP;
-        }
-        self.top_p = top_p;
-    }
-
-    /// Add provider-specific option
-    pub fn withExtra(self: *CallOptions, key: []const u8, value: []const u8) !void {
-        try self.extra.put(key, value);
-    }
-
-    /// Clean up resources
-    pub fn deinit(self: *CallOptions) void {
-        self.extra.deinit();
-    }
-};
+///
+/// Re-exported from `call_options.zig`, which is core rather than adapter-level:
+/// `agent.zig` needs this type for the optional `processWith` capability that
+/// wrappers use to vary inference settings per call (#801), and core cannot
+/// depend on `adapter/`. Every adapter keeps referring to it as
+/// `llm.CallOptions`, so nothing at this layer changed.
+pub const CallOptions = @import("../call_options.zig").CallOptions;
 
 /// Stream iterator for streaming responses
 pub const StreamIterator = struct {
@@ -229,193 +182,200 @@ pub const LLMError = error{
     InvalidTopP,
 };
 
+// ============================================================================
 // Tests
-test "CallOptions initialization" {
-    const allocator = std.testing.allocator;
-
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    try std.testing.expect(options.temperature == null);
-    try std.testing.expect(options.max_tokens == null);
-    try std.testing.expect(options.top_p == null);
-}
-
-test "CallOptions with values" {
-    const allocator = std.testing.allocator;
-
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    try options.withTemperature(0.7);
-    try options.withMaxTokens(1024);
-    try options.withTopP(0.9);
-
-    try std.testing.expectEqual(@as(f64, 0.7), options.temperature.?);
-    try std.testing.expectEqual(@as(usize, 1024), options.max_tokens.?);
-    try std.testing.expectEqual(@as(f64, 0.9), options.top_p.?);
-}
-
-test "CallOptions with extra" {
-    const allocator = std.testing.allocator;
-
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    try options.withExtra("frequency_penalty", "0.5");
-    try options.withExtra("presence_penalty", "0.3");
-
-    try std.testing.expect(options.extra.contains("frequency_penalty"));
-    try std.testing.expect(options.extra.contains("presence_penalty"));
-}
-
 // ============================================================================
-// Temperature Validation Tests
-// ============================================================================
+//
+// The CallOptions tests moved with the type to `call_options.zig`. What is left
+// here is the part of this file no test had ever exercised: the `LLM` and
+// `StreamIterator` interface wrappers. Their bodies are one-line vtable
+// forwards, and Zig only analyses functions it reaches — the #811 lesson — so
+// they have to be called through the interface, not merely referenced.
 
-test "CallOptions valid temperature 0" {
+/// LLM stub that records what it was handed and replays scripted chunks.
+const RecordingLLM = struct {
+    allocator: Allocator,
+    /// The options pointer of the most recent complete()/stream() call.
+    last_temperature: ?f64 = null,
+    complete_calls: usize = 0,
+    stream_calls: usize = 0,
+    deinit_calls: usize = 0,
+
+    fn asLLM(self: *RecordingLLM) LLM {
+        return LLM{
+            .ptr = self,
+            .vtable = &.{
+                .complete = completeImpl,
+                .stream = streamImpl,
+                .model = modelImpl,
+                .deinit = deinitImpl,
+            },
+        };
+    }
+
+    fn completeImpl(
+        ptr: *anyopaque,
+        allocator: Allocator,
+        messages: []const *Message,
+        options: *const CallOptions,
+    ) anyerror!*Message {
+        const self: *RecordingLLM = @ptrCast(@alignCast(ptr));
+        self.complete_calls += 1;
+        self.last_temperature = options.temperature;
+
+        const text = if (messages.len > 0) try messages[0].contentAsText() else "";
+        const msg = try allocator.create(Message);
+        errdefer allocator.destroy(msg);
+        msg.* = try Message.withText(allocator, .assistant, text);
+        return msg;
+    }
+
+    fn streamImpl(
+        ptr: *anyopaque,
+        allocator: Allocator,
+        messages: []const *Message,
+        options: *const CallOptions,
+    ) anyerror!StreamIterator {
+        const self: *RecordingLLM = @ptrCast(@alignCast(ptr));
+        self.stream_calls += 1;
+        self.last_temperature = options.temperature;
+        _ = messages;
+
+        const iter = try allocator.create(ChunkIterator);
+        iter.* = ChunkIterator{ .allocator = allocator, .remaining = 2 };
+        return iter.asIterator();
+    }
+
+    fn modelImpl(ptr: *anyopaque) []const u8 {
+        _ = ptr;
+        return "recording-llm";
+    }
+
+    fn deinitImpl(ptr: *anyopaque) void {
+        const self: *RecordingLLM = @ptrCast(@alignCast(ptr));
+        self.deinit_calls += 1;
+    }
+};
+
+/// Stream that yields a fixed number of chunks, then null.
+const ChunkIterator = struct {
+    allocator: Allocator,
+    remaining: usize,
+
+    fn asIterator(self: *ChunkIterator) StreamIterator {
+        return StreamIterator{
+            .ptr = self,
+            .vtable = &.{ .next = nextImpl, .deinit = deinitImpl },
+        };
+    }
+
+    fn nextImpl(ptr: *anyopaque, allocator: Allocator) anyerror!?*Message {
+        const self: *ChunkIterator = @ptrCast(@alignCast(ptr));
+        if (self.remaining == 0) return null;
+        self.remaining -= 1;
+
+        const msg = try allocator.create(Message);
+        errdefer allocator.destroy(msg);
+        msg.* = try Message.withText(allocator, .assistant, "chunk");
+        return msg;
+    }
+
+    fn deinitImpl(ptr: *anyopaque) void {
+        const self: *ChunkIterator = @ptrCast(@alignCast(ptr));
+        self.allocator.destroy(self);
+    }
+};
+
+test "LLM.complete forwards messages and options through the vtable" {
     const allocator = std.testing.allocator;
+
+    var impl = RecordingLLM{ .allocator = allocator };
+    const llm = impl.asLLM();
+
+    var prompt = try Message.withText(allocator, .user, "hello");
+    defer prompt.deinit();
+
     var options = CallOptions.init(allocator);
     defer options.deinit();
+    try options.withTemperature(0.4);
 
-    try options.withTemperature(0.0);
-    try std.testing.expectEqual(@as(f64, 0.0), options.temperature.?);
+    const messages = [_]*Message{&prompt};
+    const response = try llm.complete(allocator, &messages, &options);
+    defer {
+        response.deinit();
+        allocator.destroy(response);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), impl.complete_calls);
+    // The options must arrive as configured, not as a default.
+    try std.testing.expectEqual(@as(f64, 0.4), impl.last_temperature.?);
+    try std.testing.expectEqualStrings("hello", try response.contentAsText());
 }
 
-test "CallOptions valid temperature 1" {
+test "LLM.complete forwards an unset temperature as unset" {
     const allocator = std.testing.allocator;
+
+    var impl = RecordingLLM{ .allocator = allocator };
+    const llm = impl.asLLM();
+
+    var prompt = try Message.withText(allocator, .user, "hi");
+    defer prompt.deinit();
+
     var options = CallOptions.init(allocator);
     defer options.deinit();
 
-    try options.withTemperature(1.0);
-    try std.testing.expectEqual(@as(f64, 1.0), options.temperature.?);
+    const messages = [_]*Message{&prompt};
+    const response = try llm.complete(allocator, &messages, &options);
+    defer {
+        response.deinit();
+        allocator.destroy(response);
+    }
+
+    // Substituting a default here is the #801 failure mode one layer down: the
+    // adapter would send a temperature the caller never asked for.
+    try std.testing.expect(impl.last_temperature == null);
 }
 
-test "CallOptions valid temperature 2" {
+test "LLM.stream yields every chunk and then null" {
     const allocator = std.testing.allocator;
+
+    var impl = RecordingLLM{ .allocator = allocator };
+    const llm = impl.asLLM();
+
+    var prompt = try Message.withText(allocator, .user, "go");
+    defer prompt.deinit();
+
     var options = CallOptions.init(allocator);
     defer options.deinit();
+    try options.withTopP(0.8);
 
-    try options.withTemperature(2.0);
-    try std.testing.expectEqual(@as(f64, 2.0), options.temperature.?);
+    const messages = [_]*Message{&prompt};
+    var iter = try llm.stream(allocator, &messages, &options);
+    defer iter.deinit();
+
+    var count: usize = 0;
+    while (try iter.next(allocator)) |chunk| {
+        defer {
+            chunk.deinit();
+            allocator.destroy(chunk);
+        }
+        try std.testing.expectEqualStrings("chunk", try chunk.contentAsText());
+        count += 1;
+    }
+
+    try std.testing.expectEqual(@as(usize, 2), count);
+    try std.testing.expectEqual(@as(usize, 1), impl.stream_calls);
 }
 
-test "CallOptions invalid temperature negative" {
+test "LLM.model and LLM.deinit reach the implementation" {
     const allocator = std.testing.allocator;
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
 
-    const result = options.withTemperature(-0.5);
-    try std.testing.expectError(error.InvalidTemperature, result);
-}
+    var impl = RecordingLLM{ .allocator = allocator };
+    const llm = impl.asLLM();
 
-test "CallOptions invalid temperature too high" {
-    const allocator = std.testing.allocator;
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
+    try std.testing.expectEqualStrings("recording-llm", llm.model());
 
-    const result = options.withTemperature(3.0);
-    try std.testing.expectError(error.InvalidTemperature, result);
-}
-
-// ============================================================================
-// Max Tokens Validation Tests
-// ============================================================================
-
-test "CallOptions valid max_tokens" {
-    const allocator = std.testing.allocator;
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    try options.withMaxTokens(1024);
-    try std.testing.expectEqual(@as(usize, 1024), options.max_tokens.?);
-}
-
-test "CallOptions invalid max_tokens zero" {
-    const allocator = std.testing.allocator;
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    const result = options.withMaxTokens(0);
-    try std.testing.expectError(error.InvalidMaxTokens, result);
-}
-
-// ============================================================================
-// Top P Validation Tests
-// ============================================================================
-
-test "CallOptions valid top_p" {
-    const allocator = std.testing.allocator;
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    try options.withTopP(0.9);
-    try std.testing.expectEqual(@as(f64, 0.9), options.top_p.?);
-}
-
-test "CallOptions invalid top_p negative" {
-    const allocator = std.testing.allocator;
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    const result = options.withTopP(-0.1);
-    try std.testing.expectError(error.InvalidTopP, result);
-}
-
-test "CallOptions invalid top_p too high" {
-    const allocator = std.testing.allocator;
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    const result = options.withTopP(1.5);
-    try std.testing.expectError(error.InvalidTopP, result);
-}
-
-// ============================================================================
-// Boundary Value Tests
-// ============================================================================
-
-test "CallOptions boundary temperature exactly 0" {
-    const allocator = std.testing.allocator;
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    try options.withTemperature(0.0);
-    try std.testing.expectEqual(@as(f64, 0.0), options.temperature.?);
-}
-
-test "CallOptions boundary temperature exactly 2" {
-    const allocator = std.testing.allocator;
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    try options.withTemperature(2.0);
-    try std.testing.expectEqual(@as(f64, 2.0), options.temperature.?);
-}
-
-test "CallOptions boundary max_tokens exactly 1" {
-    const allocator = std.testing.allocator;
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    try options.withMaxTokens(1);
-    try std.testing.expectEqual(@as(usize, 1), options.max_tokens.?);
-}
-
-test "CallOptions boundary top_p exactly 0" {
-    const allocator = std.testing.allocator;
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    try options.withTopP(0.0);
-    try std.testing.expectEqual(@as(f64, 0.0), options.top_p.?);
-}
-
-test "CallOptions boundary top_p exactly 1" {
-    const allocator = std.testing.allocator;
-    var options = CallOptions.init(allocator);
-    defer options.deinit();
-
-    try options.withTopP(1.0);
-    try std.testing.expectEqual(@as(f64, 1.0), options.top_p.?);
+    try std.testing.expectEqual(@as(usize, 0), impl.deinit_calls);
+    llm.deinit();
+    try std.testing.expectEqual(@as(usize, 1), impl.deinit_calls);
 }

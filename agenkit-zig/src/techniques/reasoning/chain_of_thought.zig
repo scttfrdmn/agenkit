@@ -10,6 +10,7 @@ const Agent = @import("../../agent.zig").Agent;
 const AgentError = @import("../../agent.zig").AgentError;
 const Result = @import("../../agent.zig").Result;
 const Message = @import("../../message.zig").Message;
+const CallOptions = @import("../../call_options.zig").CallOptions;
 const Allocator = std.mem.Allocator;
 
 /// Bullet markers recognised at the start of a reasoning step.
@@ -67,6 +68,7 @@ pub const ChainOfThoughtAgent = struct {
                 .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
+                .process_with = processWithImpl,
             },
         };
     }
@@ -89,10 +91,28 @@ pub const ChainOfThoughtAgent = struct {
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
         const self: *ChainOfThoughtAgent = @ptrCast(@alignCast(ptr));
 
-        // Allocation failures are mapped to ProcessingFailed rather than
-        // propagated: the vtable signature is AgentError!Result, which does not
-        // include Allocator.Error.
-        return self.processInner(message) catch |err| switch (err) {
+        var empty = CallOptions.init(self.allocator);
+        defer empty.deinit();
+        return self.run(message, &empty);
+    }
+
+    /// Implements the optional `processWith` capability (#801).
+    ///
+    /// This technique owns no LLM of its own, so honouring options means passing
+    /// them to the agent that does. Accepting them and stopping here would be a
+    /// claim of support the caller could not distinguish from real support.
+    fn processWithImpl(ptr: *anyopaque, message: Message, options: *const CallOptions) AgentError!Result {
+        const self: *ChainOfThoughtAgent = @ptrCast(@alignCast(ptr));
+        return self.run(message, options);
+    }
+
+    /// Shared body for both entry points.
+    ///
+    /// Allocation failures are mapped to ProcessingFailed rather than
+    /// propagated: the vtable signature is AgentError!Result, which does not
+    /// include Allocator.Error.
+    fn run(self: *ChainOfThoughtAgent, message: Message, options: *const CallOptions) AgentError!Result {
+        return self.processInner(message, options) catch |err| switch (err) {
             error.OutOfMemory => Result{ .err = AgentError.ProcessingFailed },
             else => |e| Result{ .err = e },
         };
@@ -102,7 +122,7 @@ pub const ChainOfThoughtAgent = struct {
     ///
     /// Split out so `try` can be used on allocating calls; processImpl narrows
     /// the error set back down to what the Agent vtable declares.
-    fn processInner(self: *ChainOfThoughtAgent, message: Message) (AgentError || Allocator.Error)!Result {
+    fn processInner(self: *ChainOfThoughtAgent, message: Message, options: *const CallOptions) (AgentError || Allocator.Error)!Result {
         // Validate template contains {query}
         if (std.mem.indexOf(u8, self.config.prompt_template, "{query}") == null) {
             return Result{ .err = AgentError.InvalidInput };
@@ -121,8 +141,10 @@ pub const ChainOfThoughtAgent = struct {
         var prompt_msg = try Message.withText(self.allocator, .user, cot_prompt);
         defer prompt_msg.deinit();
 
-        // Get response from agent
-        const result = self.base_agent.process(prompt_msg) catch {
+        // Get response from agent, under the caller's options where it can
+        // honour them. Dropping them here would make a requested temperature
+        // silently ineffective (#801).
+        const result = self.base_agent.processWithOptions(prompt_msg, options) catch {
             return Result{ .err = AgentError.ProcessingFailed };
         };
 
@@ -663,3 +685,72 @@ const TestSink = struct {
         };
     }
 };
+
+// ============================================================================
+// Per-call options forwarding (#801)
+// ============================================================================
+
+const OptionsAwareMockAgent = @import("../../test_utils.zig").OptionsAwareMockAgent;
+
+test "ChainOfThought forwards call options to the wrapped agent" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"Step 1\nStep 2"});
+    defer mock.deinit();
+
+    const cot = try ChainOfThoughtAgent.init(allocator, mock.agent(), .{});
+    const cot_agent = cot.agent();
+    defer cot_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "q");
+    defer msg.deinit();
+
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+    try options.withTemperature(0.65);
+
+    var response = try (try cot_agent.processWith(msg, &options)).unwrap();
+    defer response.deinit();
+
+    // This technique owns no LLM, so honouring options means the wrapped agent
+    // saw them. Asserting on the config would pass against a version that
+    // accepts them and drops them.
+    try testing.expect(mock.allTemperaturesEqual(0.65));
+}
+
+test "ChainOfThought sends no options when called through process" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"Step 1"});
+    defer mock.deinit();
+
+    const cot = try ChainOfThoughtAgent.init(allocator, mock.agent(), .{});
+    const cot_agent = cot.agent();
+    defer cot_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "q");
+    defer msg.deinit();
+
+    var response = try (try cot_agent.process(msg)).unwrap();
+    defer response.deinit();
+
+    // The empty option set takes the plain path, so the wrapped agent is not
+    // handed an all-null options object that looks like a request.
+    try testing.expect(mock.allTemperaturesEqual(null));
+}
+
+test "ChainOfThought advertises the options capability" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"Step 1"});
+    defer mock.deinit();
+
+    const cot = try ChainOfThoughtAgent.init(allocator, mock.agent(), .{});
+    const cot_agent = cot.agent();
+    defer cot_agent.deinit();
+
+    try testing.expect(cot_agent.supportsOptions());
+}

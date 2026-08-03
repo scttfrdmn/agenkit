@@ -18,6 +18,7 @@ const AgentError = @import("../../agent.zig").AgentError;
 const Result = @import("../../agent.zig").Result;
 const StreamCallbacks = @import("../../agent.zig").StreamCallbacks;
 const Message = @import("../../message.zig").Message;
+const CallOptions = @import("../../call_options.zig").CallOptions;
 const Role = @import("../../message.zig").Role;
 const IntrospectionResult = @import("../../introspection.zig").IntrospectionResult;
 const createDefaultIntrospectionResult = @import("../../introspection.zig").createDefaultIntrospectionResult;
@@ -71,6 +72,7 @@ pub const GraphOfThoughtAgent = struct {
                 .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
+                .process_with = processWithImpl,
             },
         };
     }
@@ -94,10 +96,29 @@ pub const GraphOfThoughtAgent = struct {
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
         const self: *GraphOfThoughtAgent = @ptrCast(@alignCast(ptr));
 
-        // Allocation failures are mapped to ProcessingFailed rather than
-        // propagated: the vtable signature is AgentError!Result, which does not
-        // include Allocator.Error.
-        return self.processInner(message) catch |err| switch (err) {
+        var empty = CallOptions.init(self.allocator);
+        defer empty.deinit();
+        return self.run(message, &empty);
+    }
+
+    /// Implements the optional `processWith` capability (#801).
+    ///
+    /// The options reach every one of this technique's LLM calls, not just the
+    /// first: premise generation, thought expansion, connection classification
+    /// and the final conclusion all go through `llmCall`, which takes them as a
+    /// parameter so a new call site cannot forget to pass them.
+    fn processWithImpl(ptr: *anyopaque, message: Message, options: *const CallOptions) AgentError!Result {
+        const self: *GraphOfThoughtAgent = @ptrCast(@alignCast(ptr));
+        return self.run(message, options);
+    }
+
+    /// Shared body for both entry points.
+    ///
+    /// Allocation failures are mapped to ProcessingFailed rather than
+    /// propagated: the vtable signature is AgentError!Result, which does not
+    /// include Allocator.Error.
+    fn run(self: *GraphOfThoughtAgent, message: Message, options: *const CallOptions) AgentError!Result {
+        return self.processInner(message, options) catch |err| switch (err) {
             error.OutOfMemory => Result{ .err = AgentError.ProcessingFailed },
             else => |e| Result{ .err = e },
         };
@@ -105,15 +126,15 @@ pub const GraphOfThoughtAgent = struct {
 
     /// The real body, allowed to fail with Allocator.Error.
     ///
-    /// Split out so `try` can be used on allocating calls; processImpl narrows
-    /// the error set back down to what the Agent vtable declares.
-    fn processInner(self: *GraphOfThoughtAgent, message: Message) (AgentError || Allocator.Error)!Result {
+    /// Split out so `try` can be used on allocating calls; `run` narrows the
+    /// error set back down to what the Agent vtable declares.
+    fn processInner(self: *GraphOfThoughtAgent, message: Message, options: *const CallOptions) (AgentError || Allocator.Error)!Result {
         const problem = message.contentAsText() catch {
             return Result{ .err = AgentError.InvalidInput };
         };
 
         // Build reasoning graph
-        var graph = self.buildGraph(problem) catch {
+        var graph = self.buildGraph(problem, options) catch {
             return Result{ .err = AgentError.ProcessingFailed };
         };
         defer graph.deinit();
@@ -192,11 +213,11 @@ pub const GraphOfThoughtAgent = struct {
     /// from the response Message, which is freed here, so the text must be
     /// duped — the previous version returned the borrowed slice, which callers
     /// then read and freed: a use-after-free followed by a double free.
-    fn llmCall(self: *GraphOfThoughtAgent, prompt: []const u8) ![]const u8 {
+    fn llmCall(self: *GraphOfThoughtAgent, prompt: []const u8, options: *const CallOptions) ![]const u8 {
         var msg = try Message.withText(self.allocator, .user, prompt);
         defer msg.deinit();
 
-        const result = try self.base_agent.process(msg);
+        const result = try self.base_agent.processWithOptions(msg, options);
         var response_msg = try result.unwrap();
         defer response_msg.deinit();
 
@@ -205,7 +226,7 @@ pub const GraphOfThoughtAgent = struct {
     }
 
     // Helper: Generate premises
-    fn generatePremises(self: *GraphOfThoughtAgent, problem: []const u8) ![][]const u8 {
+    fn generatePremises(self: *GraphOfThoughtAgent, problem: []const u8, options: *const CallOptions) ![][]const u8 {
         var prompt_buf = std.ArrayListUnmanaged(u8).empty;
         defer prompt_buf.deinit(self.allocator);
 
@@ -214,14 +235,14 @@ pub const GraphOfThoughtAgent = struct {
         try prompt_buf.print(self.allocator, "Problem: {s}\n\n", .{problem});
         try prompt_buf.appendSlice(self.allocator, "Premises:");
 
-        const response = try self.llmCall(prompt_buf.items);
+        const response = try self.llmCall(prompt_buf.items, options);
         defer self.allocator.free(response);
 
         return try self.parseLines(response, 4);
     }
 
     // Helper: Generate thoughts
-    fn generateThoughts(self: *GraphOfThoughtAgent, problem: []const u8, existing: []const []const u8, max_new: usize) ![][]const u8 {
+    fn generateThoughts(self: *GraphOfThoughtAgent, problem: []const u8, existing: []const []const u8, max_new: usize, options: *const CallOptions) ![][]const u8 {
         var prompt_buf = std.ArrayListUnmanaged(u8).empty;
         defer prompt_buf.deinit(self.allocator);
 
@@ -239,14 +260,14 @@ pub const GraphOfThoughtAgent = struct {
             try prompt_buf.appendSlice(self.allocator, "Thoughts (one per line):");
         }
 
-        const response = try self.llmCall(prompt_buf.items);
+        const response = try self.llmCall(prompt_buf.items, options);
         defer self.allocator.free(response);
 
         return try self.parseLines(response, max_new);
     }
 
     // Helper: Identify connection
-    fn identifyConnection(self: *GraphOfThoughtAgent, thought1: []const u8, thought2: []const u8) !?EdgeType {
+    fn identifyConnection(self: *GraphOfThoughtAgent, thought1: []const u8, thought2: []const u8, options: *const CallOptions) !?EdgeType {
         var prompt_buf = std.ArrayListUnmanaged(u8).empty;
         defer prompt_buf.deinit(self.allocator);
 
@@ -261,7 +282,7 @@ pub const GraphOfThoughtAgent = struct {
         try prompt_buf.appendSlice(self.allocator, "- NO_RELATION (no clear logical connection)\n\n");
         try prompt_buf.appendSlice(self.allocator, "Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION");
 
-        const response = try self.llmCall(prompt_buf.items);
+        const response = try self.llmCall(prompt_buf.items, options);
         defer self.allocator.free(response);
 
         // Convert to uppercase for comparison
@@ -329,12 +350,12 @@ pub const GraphOfThoughtAgent = struct {
     }
 
     // Build reasoning graph
-    fn buildGraph(self: *GraphOfThoughtAgent, problem: []const u8) !ReasoningGraph {
+    fn buildGraph(self: *GraphOfThoughtAgent, problem: []const u8, options: *const CallOptions) !ReasoningGraph {
         var graph = ReasoningGraph.init(self.allocator);
         errdefer graph.deinit();
 
         // Generate premises
-        const premises = try self.generatePremises(problem);
+        const premises = try self.generatePremises(problem, options);
         defer {
             for (premises) |p| {
                 self.allocator.free(p);
@@ -367,7 +388,7 @@ pub const GraphOfThoughtAgent = struct {
             const max_new = @min(3, self.config.max_nodes - graph.nodeCount());
             if (max_new == 0) break;
 
-            const new_thoughts = self.generateThoughts(problem, all_thoughts.items, max_new) catch break;
+            const new_thoughts = self.generateThoughts(problem, all_thoughts.items, max_new, options) catch break;
             defer {
                 for (new_thoughts) |t| {
                     self.allocator.free(t);
@@ -399,7 +420,7 @@ pub const GraphOfThoughtAgent = struct {
 
                 // The edge type is resolved before addEdge runs, so no node
                 // pointer is held across a graph mutation.
-                const maybe_edge = self.identifyConnection(node1.content, node2.content) catch continue;
+                const maybe_edge = self.identifyConnection(node1.content, node2.content, options) catch continue;
                 const edge_type = maybe_edge orelse continue;
 
                 graph.addEdge(id1, id2, edge_type, 0.8) catch continue;
@@ -420,7 +441,7 @@ pub const GraphOfThoughtAgent = struct {
             }
             try conclusion_prompt.appendSlice(self.allocator, "\nFinal conclusion:");
 
-            if (self.llmCall(conclusion_prompt.items)) |conclusion| {
+            if (self.llmCall(conclusion_prompt.items, options)) |conclusion| {
                 defer self.allocator.free(conclusion);
 
                 const trimmed = std.mem.trim(u8, conclusion, " \t\r\n");
@@ -927,7 +948,10 @@ test "GraphOfThought identifyConnection maps each keyword" {
         var got = try GraphOfThoughtAgent.init(allocator, mock.agent(), .{});
         defer got.agent().deinit();
 
-        try testing.expectEqual(case.want, try got.identifyConnection("a", "b"));
+        var options = CallOptions.init(allocator);
+        defer options.deinit();
+
+        try testing.expectEqual(case.want, try got.identifyConnection("a", "b", &options));
     }
 }
 
@@ -1172,4 +1196,74 @@ test "GraphOfThought introspection reports name and capabilities" {
     try testing.expectEqualStrings("graph_of_thought", info.agent_name);
     try testing.expectEqual(@as(usize, 5), info.capabilities.len);
     try testing.expectEqualStrings("graph_of_thought", info.capabilities[4]);
+}
+
+// ============================================================================
+// Per-call options forwarding (#801)
+// ============================================================================
+
+const OptionsAwareMockAgent = @import("../../test_utils.zig").OptionsAwareMockAgent;
+
+test "GraphOfThought forwards call options through every LLM phase" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // The same script the end-to-end tests use: premises, thoughts, an empty
+    // reply to stop graph growth, a connection classification, and the
+    // conclusion. All four phases go through llmCall, so all four must see the
+    // options — the conclusion in particular is gated on the node cap and is the
+    // one an incremental change would miss.
+    var mock = try OptionsAwareMockAgent.init(allocator, &script);
+    defer mock.deinit();
+
+    const got = try GraphOfThoughtAgent.init(allocator, mock.agent(), .{});
+    const got_agent = got.agent();
+    defer got_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "A problem");
+    defer msg.deinit();
+
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+    try options.withTemperature(0.35);
+
+    var response = try (try got_agent.processWith(msg, &options)).unwrap();
+    defer response.deinit();
+
+    try testing.expect(mock.getCallCount() > 2);
+    try testing.expect(mock.allTemperaturesEqual(0.35));
+}
+
+test "GraphOfThought sends no options when called through process" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &script);
+    defer mock.deinit();
+
+    const got = try GraphOfThoughtAgent.init(allocator, mock.agent(), .{});
+    const got_agent = got.agent();
+    defer got_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "q");
+    defer msg.deinit();
+
+    var response = try (try got_agent.process(msg)).unwrap();
+    defer response.deinit();
+
+    try testing.expect(mock.allTemperaturesEqual(null));
+}
+
+test "GraphOfThought advertises the options capability" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &script);
+    defer mock.deinit();
+
+    const got = try GraphOfThoughtAgent.init(allocator, mock.agent(), .{});
+    const got_agent = got.agent();
+    defer got_agent.deinit();
+
+    try testing.expect(got_agent.supportsOptions());
 }

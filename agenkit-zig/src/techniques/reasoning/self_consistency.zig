@@ -10,6 +10,7 @@ const Agent = @import("../../agent.zig").Agent;
 const AgentError = @import("../../agent.zig").AgentError;
 const Result = @import("../../agent.zig").Result;
 const Message = @import("../../message.zig").Message;
+const CallOptions = @import("../../call_options.zig").CallOptions;
 const Allocator = std.mem.Allocator;
 
 /// Voting strategy for answer aggregation
@@ -123,6 +124,35 @@ pub fn defaultAnswerExtractor(allocator: Allocator, text: []const u8) ![]const u
     return try allocator.dupe(u8, trimmed);
 }
 
+/// Configuration for Self-Consistency.
+///
+/// Introduced so the sampling temperature has somewhere to live that is not a
+/// positional parameter, matching the other cores' `SelfConsistencyConfig`.
+pub const SelfConsistencyConfig = struct {
+    /// Number of independent samples to generate.
+    num_samples: usize = 5,
+
+    /// Voting strategy for answer aggregation.
+    voting_strategy: VotingStrategy = .majority,
+
+    /// Sampling temperature, forwarded to the wrapped agent on every sample.
+    ///
+    /// `null` means unset — no temperature is sent, rather than one being
+    /// invented. Sample diversity is the mechanism this technique depends on:
+    /// N samples at temperature 0 are the same answer N times, and voting over
+    /// identical answers decides nothing. That is why the field exists at all,
+    /// and why accepting it without forwarding it was a bug (#801) rather than
+    /// an unused field.
+    ///
+    /// Reaching the provider also requires the wrapped agent to honour per-call
+    /// options; `SelfConsistencyAgent.temperatureApplied()` reports whether it
+    /// does, so a dropped temperature is visible instead of silent.
+    temperature: ?f64 = null,
+
+    /// Custom answer extraction function.
+    answer_extractor: AnswerExtractor = defaultAnswerExtractor,
+};
+
 /// Self-Consistency agent
 pub const SelfConsistencyAgent = struct {
     allocator: Allocator,
@@ -133,23 +163,70 @@ pub const SelfConsistencyAgent = struct {
     answer_extractor: AnswerExtractor,
     agent_name: []const u8,
 
+    /// Construct a Self-Consistency agent.
+    ///
+    /// Fails with `error.InvalidTemperature` when `config.temperature` is set
+    /// and out of range. Validated here rather than at the first sample so a
+    /// misconfiguration surfaces at construction, and validated through
+    /// `CallOptions.validate` so these bounds cannot drift from the ones the
+    /// options themselves enforce.
     pub fn init(
         allocator: Allocator,
         base_agent: Agent,
-        num_samples: usize,
-        voting_strategy: VotingStrategy,
+        config: SelfConsistencyConfig,
     ) !*SelfConsistencyAgent {
+        var probe = CallOptions.init(allocator);
+        defer probe.deinit();
+        probe.temperature = config.temperature;
+        try probe.validate();
+
         const self = try allocator.create(SelfConsistencyAgent);
         self.* = SelfConsistencyAgent{
             .allocator = allocator,
             .base_agent = base_agent,
-            .num_samples = num_samples,
-            .voting_strategy = voting_strategy,
-            .temperature = null,
-            .answer_extractor = defaultAnswerExtractor,
+            .num_samples = config.num_samples,
+            .voting_strategy = config.voting_strategy,
+            .temperature = config.temperature,
+            .answer_extractor = config.answer_extractor,
             .agent_name = "self_consistency",
         };
         return self;
+    }
+
+    /// Whether a configured temperature actually reaches the wrapped agent.
+    ///
+    /// True when no temperature is configured — there is nothing to drop — and
+    /// when one is configured and the wrapped agent honours per-call options.
+    /// False in the one case that matters: a temperature was asked for and the
+    /// wrapped agent only implements `process()`, so the samples are all
+    /// generated at whatever settings that agent already had. The samples then
+    /// tend to agree because they are near-identical, not because the answer is
+    /// reliable, and a consistency score computed from them overstates its own
+    /// confidence.
+    ///
+    /// Public rather than internal because that failure is otherwise invisible:
+    /// the technique still returns a plausible answer with a plausible score.
+    pub fn temperatureApplied(self: *const SelfConsistencyAgent) bool {
+        if (self.temperature == null) return true;
+        return self.base_agent.supportsOptions();
+    }
+
+    /// Overlay the configured temperature on the caller's options.
+    ///
+    /// The configured temperature wins over the caller's. Sampling diversity is
+    /// what makes this technique correct, so it is not something a caller can
+    /// flatten by accident by forwarding options with a temperature of its own.
+    /// Every other option the caller set survives — `CallOptions.merge` is
+    /// field-by-field.
+    ///
+    /// The result borrows an `extra` map from one of the inputs and must not be
+    /// deinited; both inputs must outlive it.
+    fn sampleOptions(self: *const SelfConsistencyAgent, caller: CallOptions) CallOptions {
+        if (self.temperature == null) return caller;
+
+        var own = CallOptions.init(self.allocator);
+        own.temperature = self.temperature;
+        return caller.merge(own);
     }
 
     pub fn agent(self: *SelfConsistencyAgent) Agent {
@@ -162,6 +239,7 @@ pub const SelfConsistencyAgent = struct {
                 .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
+                .process_with = processWithImpl,
             },
         };
     }
@@ -185,10 +263,28 @@ pub const SelfConsistencyAgent = struct {
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
         const self: *SelfConsistencyAgent = @ptrCast(@alignCast(ptr));
 
-        // Allocation failures are mapped to ProcessingFailed rather than
-        // propagated: the vtable signature is AgentError!Result, which does not
-        // include Allocator.Error.
-        return self.processInner(message) catch |err| switch (err) {
+        var empty = CallOptions.init(self.allocator);
+        defer empty.deinit();
+        return self.run(message, &empty);
+    }
+
+    /// Implements the optional `processWith` capability (#801).
+    ///
+    /// This technique both consumes options — it imposes its own temperature on
+    /// each sample — and forwards them, so a caller can stack it under another
+    /// options-aware wrapper.
+    fn processWithImpl(ptr: *anyopaque, message: Message, options: *const CallOptions) AgentError!Result {
+        const self: *SelfConsistencyAgent = @ptrCast(@alignCast(ptr));
+        return self.run(message, options);
+    }
+
+    /// Shared body for both entry points.
+    ///
+    /// Allocation failures are mapped to ProcessingFailed rather than
+    /// propagated: the vtable signature is AgentError!Result, which does not
+    /// include Allocator.Error.
+    fn run(self: *SelfConsistencyAgent, message: Message, options: *const CallOptions) AgentError!Result {
+        return self.processInner(message, options) catch |err| switch (err) {
             error.OutOfMemory => Result{ .err = AgentError.ProcessingFailed },
             else => |e| Result{ .err = e },
         };
@@ -196,9 +292,9 @@ pub const SelfConsistencyAgent = struct {
 
     /// The real body, allowed to fail with Allocator.Error.
     ///
-    /// Split out so `try` can be used on allocating calls; processImpl narrows
-    /// the error set back down to what the Agent vtable declares.
-    fn processInner(self: *SelfConsistencyAgent, message: Message) (AgentError || Allocator.Error)!Result {
+    /// Split out so `try` can be used on allocating calls; `run` narrows the
+    /// error set back down to what the Agent vtable declares.
+    fn processInner(self: *SelfConsistencyAgent, message: Message, caller_options: *const CallOptions) (AgentError || Allocator.Error)!Result {
         var samples = std.ArrayListUnmanaged([]const u8).empty;
         defer {
             for (samples.items) |sample| {
@@ -215,10 +311,15 @@ pub const SelfConsistencyAgent = struct {
             extracted_answers.deinit(self.allocator);
         }
 
+        // Merged once, outside the loop: the result is the same for every
+        // sample, and it borrows an `extra` map from `caller_options`, which
+        // outlives this call.
+        const sample_options = self.sampleOptions(caller_options.*);
+
         // Generate samples
         var i: usize = 0;
         while (i < self.num_samples) : (i += 1) {
-            const result = self.base_agent.process(message) catch {
+            const result = self.base_agent.processWithOptions(message, &sample_options) catch {
                 return Result{ .err = AgentError.ProcessingFailed };
             };
 
@@ -265,6 +366,17 @@ pub const SelfConsistencyAgent = struct {
         };
         try response.setMetadata("voting_strategy", .{ .string = strategy_str });
         try response.setMetadata("consistency_score", .{ .float = consensus.score });
+
+        // Both are reported so a reader can tell "no temperature requested"
+        // from "requested and dropped" — a distinction temperature_applied
+        // alone cannot express, and the one that says whether the consistency
+        // score above was computed over genuinely independent samples.
+        if (self.temperature) |t| {
+            try response.setMetadata("temperature", .{ .float = t });
+        } else {
+            try response.setMetadata("temperature", .null);
+        }
+        try response.setMetadata("temperature_applied", .{ .bool = self.temperatureApplied() });
 
         return Result{ .ok = response };
     }
@@ -454,7 +566,7 @@ test "SelfConsistency name and capabilities" {
     var mock = try MockAgent.init(allocator, &[_][]const u8{"answer"});
     defer mock.deinit();
 
-    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .majority);
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 3, .voting_strategy = .majority });
     const sc_agent = sc.agent();
     defer sc_agent.deinit();
 
@@ -480,7 +592,7 @@ test "SelfConsistency samples the wrapped agent num_samples times" {
     var mock = try MockAgent.init(allocator, &[_][]const u8{"The answer is 42"});
     defer mock.deinit();
 
-    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 5, .majority);
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 5, .voting_strategy = .majority });
     const sc_agent = sc.agent();
     defer sc_agent.deinit();
 
@@ -509,7 +621,7 @@ test "SelfConsistency majority vote picks the most common answer" {
     var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
     defer mock.deinit();
 
-    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .majority);
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 3, .voting_strategy = .majority });
     defer sc.agent().deinit();
 
     // "blue" wins 3-2 despite appearing after "red".
@@ -531,7 +643,7 @@ test "SelfConsistency majority vote normalizes case and whitespace" {
     var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
     defer mock.deinit();
 
-    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .majority);
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 3, .voting_strategy = .majority });
     defer sc.agent().deinit();
 
     // These are three spellings of one answer, so it must beat the singleton.
@@ -555,7 +667,7 @@ test "SelfConsistency weighted vote favors longer reasoning" {
     var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
     defer mock.deinit();
 
-    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .weighted);
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 3, .voting_strategy = .weighted });
     defer sc.agent().deinit();
 
     // "b" appears once but with far more reasoning behind it, so it outweighs
@@ -579,7 +691,7 @@ test "SelfConsistency first vote takes sample one" {
     var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
     defer mock.deinit();
 
-    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .first);
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 3, .voting_strategy = .first });
     defer sc.agent().deinit();
 
     const answers = [_][]const u8{ "first", "second", "second" };
@@ -600,7 +712,7 @@ test "SelfConsistency voting on zero samples yields an empty answer" {
     var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
     defer mock.deinit();
 
-    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .majority);
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 3, .voting_strategy = .majority });
     defer sc.agent().deinit();
 
     for ([_]VotingStrategy{ .majority, .weighted, .first }) |strategy| {
@@ -630,7 +742,7 @@ test "SelfConsistency reports the configured voting strategy" {
         var mock = try MockAgent.init(allocator, &[_][]const u8{"answer"});
         defer mock.deinit();
 
-        var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 2, case.strategy);
+        var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 2, .voting_strategy = case.strategy });
         const sc_agent = sc.agent();
         defer sc_agent.deinit();
 
@@ -728,7 +840,7 @@ test "SelfConsistency process_stream is not implemented" {
     var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
     defer mock.deinit();
 
-    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .majority);
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 3, .voting_strategy = .majority });
     const sc_agent = sc.agent();
     defer sc_agent.deinit();
 
@@ -753,7 +865,7 @@ test "SelfConsistency introspection reports name and capabilities" {
     var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
     defer mock.deinit();
 
-    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .majority);
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 3, .voting_strategy = .majority });
     const sc_agent = sc.agent();
     defer sc_agent.deinit();
 
@@ -794,3 +906,323 @@ const TestSink = struct {
         };
     }
 };
+
+// ============================================================================
+// Temperature wiring (#801)
+// ============================================================================
+//
+// The bug this technique had: it accepted a temperature and applied it to
+// nothing. Every test below asserts on what the *wrapped agent* received, not
+// on what the config holds — a field that is stored and never read passes any
+// test written against the field itself.
+
+const OptionsAwareMockAgent = @import("../../test_utils.zig").OptionsAwareMockAgent;
+
+test "SelfConsistency forwards the configured temperature on every sample" {
+    const allocator = std.testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"The answer is 42"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{
+        .num_samples = 4,
+        .voting_strategy = .majority,
+        .temperature = 0.9,
+    });
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "What is 6 * 7?");
+    defer msg.deinit();
+
+    var response = try (try sc_agent.process(msg)).unwrap();
+    defer response.deinit();
+
+    // Every sample, not just the first: sampling diversity is the technique, so
+    // a temperature that reaches sample 1 and not samples 2-4 is still broken.
+    try std.testing.expectEqual(@as(usize, 4), mock.getCallCount());
+    try std.testing.expect(mock.allTemperaturesEqual(0.9));
+}
+
+test "SelfConsistency sends no temperature when none is configured" {
+    const allocator = std.testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"The answer is 42"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 3 });
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "q");
+    defer msg.deinit();
+
+    var response = try (try sc_agent.process(msg)).unwrap();
+    defer response.deinit();
+
+    // Unset must stay unset. Substituting a "sensible" default would override
+    // whatever the wrapped agent was configured with, on the caller's behalf and
+    // without being asked.
+    try std.testing.expect(mock.allTemperaturesEqual(null));
+}
+
+test "SelfConsistency forwards a temperature of 0 rather than treating it as unset" {
+    const allocator = std.testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"The answer is 42"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{
+        .num_samples = 2,
+        .temperature = 0.0,
+    });
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "q");
+    defer msg.deinit();
+
+    var response = try (try sc_agent.process(msg)).unwrap();
+    defer response.deinit();
+
+    // A deliberate request for greedy decoding. It makes the technique useless,
+    // but that is the caller's call to make and it must be honoured verbatim —
+    // a truthiness check on the value would silently discard it.
+    try std.testing.expect(mock.allTemperaturesEqual(0.0));
+}
+
+test "SelfConsistency rejects an out-of-range temperature at construction" {
+    const allocator = std.testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"x"});
+    defer mock.deinit();
+
+    // Caught at init, not at the first sample: a misconfigured temperature that
+    // only surfaces mid-run has already produced partial work.
+    try std.testing.expectError(
+        error.InvalidTemperature,
+        SelfConsistencyAgent.init(allocator, mock.agent(), .{ .temperature = 2.5 }),
+    );
+    try std.testing.expectError(
+        error.InvalidTemperature,
+        SelfConsistencyAgent.init(allocator, mock.agent(), .{ .temperature = -0.1 }),
+    );
+
+    // The boundaries are valid.
+    for ([_]f64{ 0.0, 2.0 }) |t| {
+        const sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .temperature = t });
+        sc.agent().deinit();
+    }
+}
+
+test "SelfConsistency temperatureApplied is true when no temperature is configured" {
+    const allocator = std.testing.allocator;
+
+    // MockAgent has no processWith, but there is nothing to drop, so the honest
+    // answer is still true.
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"answer"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 2 });
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    try std.testing.expect(sc.temperatureApplied());
+}
+
+test "SelfConsistency temperatureApplied is false when the wrapped agent cannot honour options" {
+    const allocator = std.testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"answer"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{
+        .num_samples = 3,
+        .temperature = 0.9,
+    });
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    // This is the case the whole change exists for. The technique still runs and
+    // still returns an answer with a consistency score, but the samples were not
+    // generated with the diversity that score assumes — so it says so.
+    try std.testing.expect(!sc.temperatureApplied());
+}
+
+test "SelfConsistency temperatureApplied is true when the temperature reaches the agent" {
+    const allocator = std.testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"answer"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{
+        .num_samples = 3,
+        .temperature = 0.9,
+    });
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    try std.testing.expect(sc.temperatureApplied());
+}
+
+test "SelfConsistency reports the temperature and whether it applied in its metadata" {
+    const allocator = std.testing.allocator;
+
+    // Applied.
+    {
+        var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"The answer is 42"});
+        defer mock.deinit();
+
+        var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{
+            .num_samples = 2,
+            .temperature = 0.7,
+        });
+        const sc_agent = sc.agent();
+        defer sc_agent.deinit();
+
+        var msg = try Message.withText(allocator, .user, "q");
+        defer msg.deinit();
+
+        var response = try (try sc_agent.process(msg)).unwrap();
+        defer response.deinit();
+
+        try std.testing.expectEqual(@as(f64, 0.7), response.getMetadata("temperature").?.float);
+        try std.testing.expectEqual(true, response.getMetadata("temperature_applied").?.bool);
+    }
+
+    // Requested and dropped — reported as such, not omitted.
+    {
+        var mock = try MockAgent.init(allocator, &[_][]const u8{"The answer is 42"});
+        defer mock.deinit();
+
+        var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{
+            .num_samples = 2,
+            .temperature = 0.7,
+        });
+        const sc_agent = sc.agent();
+        defer sc_agent.deinit();
+
+        var msg = try Message.withText(allocator, .user, "q");
+        defer msg.deinit();
+
+        var response = try (try sc_agent.process(msg)).unwrap();
+        defer response.deinit();
+
+        try std.testing.expectEqual(@as(f64, 0.7), response.getMetadata("temperature").?.float);
+        try std.testing.expectEqual(false, response.getMetadata("temperature_applied").?.bool);
+    }
+
+    // Never requested. `temperature` is present and null, which is a different
+    // statement from the key being absent.
+    {
+        var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"The answer is 42"});
+        defer mock.deinit();
+
+        var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 2 });
+        const sc_agent = sc.agent();
+        defer sc_agent.deinit();
+
+        var msg = try Message.withText(allocator, .user, "q");
+        defer msg.deinit();
+
+        var response = try (try sc_agent.process(msg)).unwrap();
+        defer response.deinit();
+
+        try std.testing.expect(response.getMetadata("temperature").? == .null);
+        try std.testing.expectEqual(true, response.getMetadata("temperature_applied").?.bool);
+    }
+}
+
+test "SelfConsistency's own temperature wins over the caller's" {
+    const allocator = std.testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"The answer is 42"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{
+        .num_samples = 3,
+        .temperature = 1.2,
+    });
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "q");
+    defer msg.deinit();
+
+    var caller = CallOptions.init(allocator);
+    defer caller.deinit();
+    try caller.withTemperature(0.0);
+    try caller.withMaxTokens(256);
+
+    var response = try (try sc_agent.processWith(msg, &caller)).unwrap();
+    defer response.deinit();
+
+    // The caller's 0.0 would collapse the samples to one repeated answer, making
+    // the vote meaningless. Diversity is what makes this technique correct, so it
+    // is not something a caller can flatten in passing.
+    try std.testing.expect(mock.allTemperaturesEqual(1.2));
+}
+
+test "SelfConsistency passes the caller's temperature through when it configures none" {
+    const allocator = std.testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"The answer is 42"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{ .num_samples = 2 });
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "q");
+    defer msg.deinit();
+
+    var caller = CallOptions.init(allocator);
+    defer caller.deinit();
+    try caller.withTemperature(1.5);
+
+    var response = try (try sc_agent.processWith(msg, &caller)).unwrap();
+    defer response.deinit();
+
+    // Nothing to override, so the caller's request stands. Overriding it with
+    // "unset" would be the same silent discard in the other direction.
+    try std.testing.expect(mock.allTemperaturesEqual(1.5));
+}
+
+test "SelfConsistency advertises the options capability" {
+    const allocator = std.testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"answer"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{});
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    // So this technique can itself be wrapped by another options-aware agent.
+    try std.testing.expect(sc_agent.supportsOptions());
+}
+
+test "SelfConsistency still works when the wrapped agent ignores options" {
+    const allocator = std.testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"The answer is 42"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), .{
+        .num_samples = 3,
+        .temperature = 0.9,
+    });
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "q");
+    defer msg.deinit();
+
+    // Degraded, not broken: the fallback runs the samples plainly rather than
+    // erroring, and temperatureApplied() is how a caller learns which happened.
+    var response = try (try sc_agent.process(msg)).unwrap();
+    defer response.deinit();
+
+    try std.testing.expectEqual(@as(usize, 3), mock.getCallCount());
+    try std.testing.expectEqualStrings("42", try response.contentAsText());
+}

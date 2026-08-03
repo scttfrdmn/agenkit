@@ -24,11 +24,18 @@ import (
 )
 
 // MockLLMClient generates plans for different scenarios.
+//
+// Complete has the same signature as every shipped adapter (adapter/llm), so
+// swapping this for llm.NewAnthropicLLM(...) is a one-line change.
 type MockLLMClient struct {
 	scenario string
 }
 
-func (m *MockLLMClient) Chat(_ context.Context, messages []*agenkit.Message) (*agenkit.Message, error) {
+func (m *MockLLMClient) Complete(
+	_ context.Context,
+	messages []*agenkit.Message,
+	_ ...agenkit.CallOption,
+) (*agenkit.Message, error) {
 	// Collect all message content for scenario detection
 	var combined strings.Builder
 	for _, msg := range messages {

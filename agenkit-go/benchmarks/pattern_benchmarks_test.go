@@ -39,10 +39,14 @@ func (e *echoAgent) Introspect() *agenkit.IntrospectionResult {
 	}
 }
 
-// echoLLMClient implements LLMClient for Conversational and Planning patterns
+// echoLLMClient implements patterns.LLMClient for Conversational and Planning
 type echoLLMClient struct{}
 
-func (e *echoLLMClient) Chat(ctx context.Context, messages []*agenkit.Message) (*agenkit.Message, error) {
+func (e *echoLLMClient) Complete(
+	ctx context.Context,
+	messages []*agenkit.Message,
+	opts ...agenkit.CallOption,
+) (*agenkit.Message, error) {
 	if len(messages) > 0 {
 		return agenkit.NewMessage("assistant", messages[len(messages)-1].ContentString()), nil
 	}

@@ -43,19 +43,14 @@ import (
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
-// LLMClient is the interface for conversational agents.
-//
-// Implementations must provide a Chat method that accepts a conversation
-// history and returns a response.
-type LLMClient interface {
-	// Chat generates a response given a conversation history.
-	Chat(ctx context.Context, messages []*agenkit.Message) (*agenkit.Message, error)
-}
-
 // ConversationalAgentConfig configures a ConversationalAgent.
 type ConversationalAgentConfig struct {
-	// LLMClient that implements the chat interface
-	LLMClient LLMClient
+	// LLMClient generates responses. Any of the three contracts in llmclient.go
+	// is accepted: Complete (every shipped adapter), Process (any agent), or the
+	// deprecated Chat. Typed as any because Go cannot express that as one
+	// interface; an unrecognized client is rejected by NewConversationalAgent
+	// rather than at the first Process call.
+	LLMClient any
 	// MaxHistory is the maximum number of messages to retain (default: 10)
 	MaxHistory int
 	// SystemPrompt is an optional system prompt to prepend to conversations
@@ -76,7 +71,7 @@ type ConversationalAgentConfig struct {
 //   - Both input and response messages are added to history
 type ConversationalAgent struct {
 	name          string
-	llmClient     LLMClient
+	llmClient     any
 	maxHistory    int
 	systemPrompt  string
 	includeSystem bool
@@ -90,6 +85,12 @@ func NewConversationalAgent(config *ConversationalAgentConfig) (*ConversationalA
 	}
 	if config.LLMClient == nil {
 		return nil, fmt.Errorf("llmClient is required")
+	}
+	// Reject an unusable client here rather than at the first Process call: the
+	// construction site is where the caller can still fix it, and a client with
+	// none of the three contracts can never work (#805).
+	if err := checkLLMClient(config.LLMClient); err != nil {
+		return nil, err
 	}
 
 	maxHistory := config.MaxHistory
@@ -153,9 +154,9 @@ func (c *ConversationalAgent) Process(ctx context.Context, message *agenkit.Mess
 	historyCopy := make([]*agenkit.Message, len(c.history))
 	copy(historyCopy, c.history)
 
-	response, err := c.llmClient.Chat(ctx, historyCopy)
+	response, err := completeMessages(ctx, c.llmClient, historyCopy)
 	if err != nil {
-		return nil, fmt.Errorf("llm chat failed: %w", err)
+		return nil, fmt.Errorf("llm completion failed: %w", err)
 	}
 
 	// Add response to history

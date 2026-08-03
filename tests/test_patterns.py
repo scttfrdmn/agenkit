@@ -473,15 +473,20 @@ class CountingAgent(Agent):
 
 
 class MockLLMClient:
-    """Mock LLM client for testing conversational patterns."""
+    """Mock LLM client for testing conversational patterns.
+
+    Implements ``complete(messages, **kwargs)`` — the contract in
+    ``agenkit.adapters.llm.base.LLM`` that all seven shipped adapters implement,
+    not the ``chat()`` that no adapter has (#805).
+    """
 
     def __init__(self, responses: list[str] | None = None):
         self.responses = responses or ["Default response"]
         self.call_count = 0
         self.last_messages = []
 
-    async def chat(self, messages: list[Message]) -> Message:
-        """Simulate LLM chat completion."""
+    async def complete(self, messages: list[Message], **kwargs: object) -> Message:
+        """Simulate an LLM completion."""
         self.last_messages = messages
         response_text = self.responses[min(self.call_count, len(self.responses) - 1)]
         self.call_count += 1
@@ -668,7 +673,7 @@ async def test_conversational_llm_failure():
     from agenkit.patterns import ConversationalAgent
 
     class FailingLLM:
-        async def chat(self, messages):
+        async def complete(self, messages, **kwargs):
             raise RuntimeError("LLM error")
 
     llm = FailingLLM()
@@ -953,9 +958,6 @@ async def test_react_basic():
         async def process(self, message: Message) -> Message:
             return Message(role="assistant", content="Final Answer: Test complete", metadata={})
 
-        async def chat(self, messages: list) -> Message:
-            return Message(role="assistant", content="Final Answer: Test complete", metadata={})
-
     tools = [SimpleTool()]
     llm = SimpleLLM()
     agent = ReActAgent(agent=llm, tools=tools)
@@ -981,9 +983,6 @@ async def test_react_name_property():
             return ["chat"]
 
         async def process(self, message: Message) -> Message:
-            return Message(role="assistant", content="Done", metadata={})
-
-        async def chat(self, messages: list) -> Message:
             return Message(role="assistant", content="Done", metadata={})
 
     agent = ReActAgent(agent=SimpleLLM(), tools=[])
@@ -1016,13 +1015,6 @@ async def test_planning_basic():
                 metadata={},
             )
 
-        async def chat(self, messages: list) -> Message:
-            return Message(
-                role="assistant",
-                content="Goal: Complete task\nSteps:\n1. First step\n2. Second step",
-                metadata={},
-            )
-
     llm = SimplePlanningLLM()
     agent = PlanningAgent(planner=llm)
 
@@ -1047,9 +1039,6 @@ async def test_planning_name_property():
             return ["planning"]
 
         async def process(self, message: Message) -> Message:
-            return Message(role="assistant", content="Plan", metadata={})
-
-        async def chat(self, messages: list) -> Message:
             return Message(role="assistant", content="Plan", metadata={})
 
     agent = PlanningAgent(planner=SimpleLLM())

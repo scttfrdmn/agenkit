@@ -278,8 +278,15 @@ class MockAgent(Agent):
         self._call_count += 1
         return Message(role="assistant", content=response_text)
 
-    async def chat(self, messages: list[Message]) -> Message:
-        """Chat method for LLMClient compatibility."""
+    async def complete(self, messages: list[Message], **kwargs: object) -> Message:
+        """Complete the conversation — the contract every shipped adapter implements.
+
+        Named ``complete`` rather than ``chat`` (#805) for two reasons: it is the
+        real ``agenkit.adapters.llm.LLM`` contract, and ``MockAgent`` also defines
+        ``process``, so a ``chat``-only double would now be driven through the
+        Agent contract instead — receiving one flattened message rather than the
+        list the name-extraction below walks.
+        """
         # Check if asking about name - extract from history
         last_message = messages[-1] if messages else None
         if last_message and "name" in last_message.content.lower():

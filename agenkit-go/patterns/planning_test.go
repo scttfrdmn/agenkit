@@ -11,12 +11,19 @@ import (
 )
 
 // planningMockLLMClient is a mock LLM client for planning tests.
+//
+// Implements Complete, the contract every shipped adapter has — see the note on
+// mockLLMClient in conversational_test.go (#805).
 type planningMockLLMClient struct {
 	response string
 	err      error
 }
 
-func (m *planningMockLLMClient) Chat(ctx context.Context, messages []*agenkit.Message) (*agenkit.Message, error) {
+func (m *planningMockLLMClient) Complete(
+	ctx context.Context,
+	messages []*agenkit.Message,
+	opts ...agenkit.CallOption,
+) (*agenkit.Message, error) {
 	if m.err != nil {
 		return nil, m.err
 	}

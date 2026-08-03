@@ -21,6 +21,16 @@ export {
   validateIntrospectionResult,
 } from './core/introspection';
 
+// LLM client protocol (#805)
+export {
+  AnyLLMClient,
+  ChatClient,
+  CompletionClient,
+  ProcessClient,
+  completeMessages,
+  flattenHistory,
+} from './core/llm-protocol';
+
 // Adapters
 export {
   LocalAgent,

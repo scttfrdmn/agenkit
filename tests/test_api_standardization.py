@@ -25,14 +25,19 @@ from agenkit.patterns.memory import MemoryHierarchy, WorkingMemory
 # ---------------------------------------------------------------------------
 
 
-class MockChatLLM:
-    """Minimal mock implementing the LLMClient protocol (chat method)."""
+class MockCompletionLLM:
+    """Minimal mock implementing the LLM adapter contract.
+
+    ``complete(messages, **kwargs)`` is what all seven shipped adapters implement
+    (``agenkit.adapters.llm.base.LLM``). Named ``MockChatLLM`` with a ``chat()``
+    method until #805 — a spelling no adapter ever had.
+    """
 
     def __init__(self, response: str = "mock response") -> None:
         self._response = response
         self.calls: list[list[Message]] = []
 
-    async def chat(self, messages: list[Message]) -> Message:
+    async def complete(self, messages: list[Message], **kwargs: object) -> Message:
         self.calls.append(list(messages))
         return Message(role="assistant", content=self._response)
 
@@ -47,7 +52,7 @@ class TestConversationalAgentConfig:
 
     def test_config_instantiation_defaults(self) -> None:
         """Config can be created with only the required llm_client."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(llm_client=llm)
         assert config.llm_client is llm
         assert config.max_history == 10
@@ -56,7 +61,7 @@ class TestConversationalAgentConfig:
 
     def test_config_instantiation_custom(self) -> None:
         """Config accepts all optional parameters."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(
             llm_client=llm,
             max_history=20,
@@ -69,7 +74,7 @@ class TestConversationalAgentConfig:
 
     def test_config_based_constructor_no_warning(self) -> None:
         """ConversationalAgent(config) must not emit any deprecation warning."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(llm_client=llm)
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
@@ -78,7 +83,7 @@ class TestConversationalAgentConfig:
 
     def test_config_fields_propagated(self) -> None:
         """Agent constructed from config has correct attribute values."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(
             llm_client=llm,
             max_history=5,
@@ -92,7 +97,7 @@ class TestConversationalAgentConfig:
 
     def test_system_prompt_in_history_when_include_system(self) -> None:
         """System prompt is added to history when include_system=True."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(
             llm_client=llm,
             system_prompt="Be concise.",
@@ -106,7 +111,7 @@ class TestConversationalAgentConfig:
 
     def test_clear_and_get_history(self) -> None:
         """clear_history() and get_history() work on config-constructed agent."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(llm_client=llm, system_prompt="sys")
         agent = ConversationalAgent(config)
         agent.clear_history(keep_system=False)
@@ -114,7 +119,7 @@ class TestConversationalAgentConfig:
 
     def test_new_and_old_form_produce_identical_state(self) -> None:
         """New config-based form and deprecated kwargs form yield identical state."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(
             llm_client=llm,
             max_history=7,
@@ -148,19 +153,19 @@ class TestDeprecationWarnings:
 
     def test_direct_llm_client_emits_deprecation(self) -> None:
         """ConversationalAgent(llm_client=...) triggers a DeprecationWarning."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         with pytest.warns(DeprecationWarning):
             ConversationalAgent(llm_client=llm)
 
     def test_deprecation_message_mentions_config(self) -> None:
         """Deprecation message references ConversationalAgentConfig."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         with pytest.warns(DeprecationWarning, match="ConversationalAgentConfig"):
             ConversationalAgent(llm_client=llm)
 
     def test_config_form_no_deprecation(self) -> None:
         """Config-based form does NOT emit a deprecation warning."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(llm_client=llm)
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
@@ -169,7 +174,7 @@ class TestDeprecationWarnings:
 
     def test_deprecated_form_still_works(self) -> None:
         """Old kwargs form still constructs a functional agent."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
             agent = ConversationalAgent(llm_client=llm, max_history=3)
@@ -233,34 +238,34 @@ class TestCanonicalDefaults:
 
     def test_conversational_agent_max_history_default(self) -> None:
         """ConversationalAgent max_history defaults to 10."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(llm_client=llm)
         agent = ConversationalAgent(config)
         assert agent.max_history == 10
 
     def test_conversational_agent_include_system_default(self) -> None:
         """ConversationalAgent include_system defaults to True."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(llm_client=llm)
         agent = ConversationalAgent(config)
         assert agent.include_system is True
 
     def test_conversational_agent_system_prompt_default(self) -> None:
         """ConversationalAgent system_prompt defaults to None."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(llm_client=llm)
         agent = ConversationalAgent(config)
         assert agent.system_prompt is None
 
     def test_conversational_agent_config_max_history_default(self) -> None:
         """ConversationalAgentConfig max_history field defaults to 10."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(llm_client=llm)
         assert config.max_history == 10
 
     def test_conversational_agent_config_include_system_default(self) -> None:
         """ConversationalAgentConfig include_system field defaults to True."""
-        llm = MockChatLLM()
+        llm = MockCompletionLLM()
         config = ConversationalAgentConfig(llm_client=llm)
         assert config.include_system is True
 

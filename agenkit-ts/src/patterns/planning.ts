@@ -38,6 +38,7 @@
  */
 
 import { Agent, Message, createMessage } from '../core/interfaces';
+import { AnyLLMClient, completeMessages } from '../core/llm-protocol';
 
 /**
  * Status of a plan step.
@@ -167,10 +168,12 @@ export function getPlanProgress(plan: Plan): number {
 
 /**
  * Protocol for LLM clients that can be used with PlanningAgent.
+ *
+ * Accepts `complete(messages)` (the contract all shipped adapters implement),
+ * `process(message)` (the Agent contract), or the deprecated `chat(messages)`.
+ * Until v0.86.0 only `chat()` was accepted, which no shipped adapter has (#805).
  */
-export interface LLMClient {
-  chat(messages: Message[]): Promise<Message>;
-}
+export type LLMClient = AnyLLMClient;
 
 /**
  * Protocol for executing individual plan steps.
@@ -301,7 +304,7 @@ Guidelines:
       createMessage('user', `Create a plan for: ${task}`),
     ];
 
-    const response = await this.llm.chat(messages);
+    const response = await completeMessages(this.llm, messages);
 
     // Parse the plan
     const plan = this.parsePlan(String(response.content), task);
@@ -434,7 +437,7 @@ Guidelines:
       ),
     ];
 
-    await this.llm.chat(messages);
+    await completeMessages(this.llm, messages);
 
     // For simplicity, mark failed steps as skipped
     for (const step of failedSteps) {

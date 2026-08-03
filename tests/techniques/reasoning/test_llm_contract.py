@@ -160,9 +160,16 @@ async def test_agent_style_llm_still_supported():
 
 
 @pytest.mark.asyncio
-async def test_llm_without_either_method_raises():
-    """An object with neither complete() nor process() must fail loudly."""
+async def test_llm_without_any_contract_raises():
+    """An object with none of the accepted contracts must fail loudly.
+
+    Since #805 the techniques and the patterns share one dispatch point, so the
+    accepted set is three contracts rather than two, and the error names all of
+    them — the caller needs to know what to implement, not just what failed.
+    """
     cot = ChainOfThought(llm=object())
 
-    with pytest.raises(AttributeError, match="complete\\(\\) or process\\(\\)"):
+    with pytest.raises(
+        AttributeError, match=r"complete\(messages.*process\(message\).*chat\(messages\)"
+    ):
         await cot.process(Message(role="user", content="Q"))

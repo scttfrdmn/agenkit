@@ -239,7 +239,7 @@ type PlanningAgentConfig struct {
 //	})
 type PlanningAgent struct {
 	name            string
-	llm             LLMClient
+	llm             any
 	executor        StepExecutor
 	maxSteps        int
 	allowReplanning bool
@@ -248,7 +248,12 @@ type PlanningAgent struct {
 }
 
 // NewPlanningAgent creates a new planning agent.
-func NewPlanningAgent(llmClient LLMClient, stepExecutor StepExecutor, config *PlanningAgentConfig) *PlanningAgent {
+//
+// llmClient may implement any of the three contracts in llmclient.go: Complete
+// (every shipped adapter), Process (any agent), or the deprecated Chat. It is not
+// validated here because this constructor returns no error; an unrecognized client
+// surfaces as a named error from Process (#805).
+func NewPlanningAgent(llmClient any, stepExecutor StepExecutor, config *PlanningAgentConfig) *PlanningAgent {
 	if config == nil {
 		config = &PlanningAgentConfig{}
 	}
@@ -345,9 +350,9 @@ func (p *PlanningAgent) createPlan(ctx context.Context, task string) (Plan, erro
 		{Role: "user", Content: fmt.Sprintf("Create a plan for: %s", task)},
 	}
 
-	response, err := p.llm.Chat(ctx, messages)
+	response, err := completeMessages(ctx, p.llm, messages)
 	if err != nil {
-		return Plan{}, fmt.Errorf("LLM chat failed: %w", err)
+		return Plan{}, fmt.Errorf("LLM completion failed: %w", err)
 	}
 
 	// Parse the plan
@@ -494,7 +499,7 @@ func (p *PlanningAgent) replan(ctx context.Context, failedPlan *Plan) error {
 		{Role: "user", Content: fmt.Sprintf("The following steps failed:\n%s\n\nCreate alternative steps to accomplish the goal: %s", strings.Join(failedDescriptions, "\n"), failedPlan.Goal)},
 	}
 
-	_, err := p.llm.Chat(ctx, messages)
+	_, err := completeMessages(ctx, p.llm, messages)
 	if err != nil {
 		return fmt.Errorf("replanning LLM call failed: %w", err)
 	}

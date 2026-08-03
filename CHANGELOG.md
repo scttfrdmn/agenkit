@@ -109,6 +109,93 @@ Migration: if you passed a custom `llm` object to any of these five techniques, 
 `complete()` must now accept `list[Message]` and may return either a `Message` or a
 `str`. Objects implementing `process()` are unaffected.
 
+### Fixed — `ConversationalAgent` and `PlanningAgent` could not be used with any shipped LLM adapter (Issue #805)
+
+Python, TypeScript and Go each declared an `LLMClient` requiring a `chat(messages)`
+method. **Not one shipped adapter has a `chat` method** — all of them implement
+`complete(messages)` (Python 7 adapters, TypeScript 6, Go 7 plus vLLM and SGLang,
+which inherit it by embedding `*OpenAICompatibleLLM`). Passing a real adapter
+to `ConversationalAgent` raised
+
+```
+AttributeError: 'AnthropicLLM' object has no attribute 'chat'
+```
+
+and in Go it did not compile at all. Go had a *third*, separate spelling in
+`budget.LLMClient` — `Complete(ctx, []agenkit.Message, map[string]any)`, a value
+slice and a kwargs map — whose only implementor in the module was `ModelOptimizer`
+itself, so an optimizer could be nested inside an optimizer but never given a real
+LLM.
+
+This is the same failure mode as #802: **every test double implemented `chat()`**,
+because each was written against the call site rather than against the contract. The
+seam had thorough-looking coverage in all three cores and none of it could ever have
+caught this. A protocol whose only conformers are its own test doubles is not a
+protocol.
+
+The three cores now dispatch in contract-priority order, in one place per core:
+
+1. `complete(messages, **kwargs)` — the adapter contract, what every shipped
+   adapter implements;
+2. `process(message)` — the `Agent` contract, so any agent (a reasoning technique,
+   another pattern) can be a backend, which is what Rust and C++ already did. The
+   history is flattened to `"{role}: {content}"` lines, matching Rust;
+3. `chat(messages)` — **deprecated**, kept for one release cycle so published
+   example code does not break outright. Warns on use.
+
+A client implementing none of the three raises an error naming all three rather than
+failing on an attribute lookup — and in Go's `NewConversationalAgent` it is rejected
+at construction, where the caller can still fix it.
+
+- **New `agenkit/_llm_protocol.py`**, **`agenkit-ts/src/core/llm-protocol.ts`**,
+  **`agenkit-go/patterns/llmclient.go`** — one dispatch point per core.
+  `agenkit/techniques/reasoning/_llm_call.py` (added in #802) is now a thin
+  re-export of it, so techniques and patterns cannot drift apart.
+- `PlanningAgent` had the identical defect in TypeScript and Go and was outside the
+  issue's original scope; fixed in the same pass.
+- Per-call options (#801) are forwarded when the client can carry them. When it
+  cannot — the `Agent` contract has no options parameter, and the deprecated
+  `chat()` never declared one — the call **raises** rather than dropping them
+  silently. `ConversationalAgent.supports_options` reports which case applies.
+- Streaming dispatches on the contract, not on `hasattr(llm, "stream")`:
+  `Agent.stream` takes one `Message` while `LLM.stream` takes a list, and
+  `Agent`'s base class declares a raising `stream()` default, so `hasattr` is true
+  for *every* agent. Dispatching on the name alone would have handed an agent a
+  list — recreating #802 inside the fix.
+- **Go: `CallOptions`, `CallOption` and the six `With*` builders moved from
+  `adapter/llm` to the core `agenkit` package**, with true type aliases left behind
+  (`type CallOptions = agenkit.CallOptions`) so no existing code changes.
+  `patterns` and `budget` must name the option type in an interface, and
+  `adapter/llm` transitively imports the whole AWS SDK (~20 packages) via the
+  Bedrock adapter — making every importer of a pattern depend on a cloud SDK was
+  not acceptable.
+- **Go: `budget.LLMClient` converged** onto the adapter signature
+  `Complete(ctx, []*agenkit.Message, ...agenkit.CallOption)`. `ModelOptimizer.Complete`
+  and `CompleteWithFallback` now take functional options instead of a kwargs map,
+  which also means a `ModelOptimizer` satisfies `LLMClient` and can be another
+  optimizer's backend.
+- 55 new tests (Python 30, TypeScript 11, Go 14), each driving a pattern with
+  a client shaped like a real adapter and asserting on what the **adapter** received
+  — the roles and ordering of the history, not just that the call returned.
+- Every test double across the three cores was converted from `chat()` to
+  `complete()`, so the contract adapters implement is now the one under test. Two
+  Python doubles were previously wrong in *both* directions at once —
+  `tests/helpers/mock_llm.py` had the #802 `complete(prompt: str)` shape and a
+  `chat()`. Four vestigial `chat()` methods on `Agent` subclasses were dead code and
+  are deleted. The "no contract" error text now names three contracts instead of
+  two, so the two `ChainOfThought` tests asserting on that wording were updated.
+
+Rust and C++ needed no change: both already take an `Agent` (`Arc<dyn Agent>` /
+`shared_ptr<core::Agent>`). Java and Scala already declare `complete(List<Message>)`.
+C#'s `ILlmClient.ChatAsync` is off-name but internally consistent — its three
+adapters do implement it — so it is a naming question, not a broken seam, and is
+tracked separately.
+
+Migration: if you wrote a custom client with `chat()`, rename it to `complete()`
+(the signature is otherwise identical). `chat()` keeps working with a deprecation
+warning until v2.0. Go callers of `ModelOptimizer.Complete(ctx, msgs, nil)` drop the
+trailing `nil`; those passing a kwargs map use `agenkit.WithTemperature(...)` etc.
+
 ### BREAKING — `NeedleInHaystackBenchmark` signature and name converged across cores (Issue #790)
 
 The six cores that implement this benchmark disagreed on both its constructor and

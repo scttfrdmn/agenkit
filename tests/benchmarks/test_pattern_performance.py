@@ -104,8 +104,12 @@ class MockLLMClient(Agent):
         """Return simple response."""
         return Message(role="assistant", content="response")
 
-    async def chat(self, messages: list[Message]) -> Message:
-        """Return simple response."""
+    async def complete(self, messages: list[Message], **kwargs: object) -> Message:
+        """Return simple response.
+
+        The LLM adapter contract, which the patterns dispatch to in preference to
+        ``process`` — see ``agenkit/_llm_protocol.py`` (#805).
+        """
         return Message(role="assistant", content="response")
 
 

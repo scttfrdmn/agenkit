@@ -27,7 +27,14 @@ import {
 } from '../../patterns/planning';
 import { Message, createMessage } from '../../core/interfaces';
 
-/** Mock LLM client that returns a plan */
+/**
+ * Mock LLM client that returns a plan.
+ *
+ * Implements `complete(messages)` — the contract the shipped adapters in
+ * `src/adapters/` implement. Was `chat(messages)` until #805, a method no
+ * adapter has, so this suite passed while `PlanningAgent` could not be used
+ * with a real LLM. Do not rename it back.
+ */
 class MockLLMClient implements LLMClient {
   private response: string;
   callCount = 0;
@@ -36,7 +43,7 @@ class MockLLMClient implements LLMClient {
     this.response = response;
   }
 
-  async chat(messages: Message[]): Promise<Message> {
+  async complete(messages: Message[]): Promise<Message> {
     this.callCount++;
     return createMessage('assistant', this.response);
   }
@@ -44,7 +51,7 @@ class MockLLMClient implements LLMClient {
 
 /** LLM that returns a structured plan */
 class StructuredPlanLLM implements LLMClient {
-  async chat(messages: Message[]): Promise<Message> {
+  async complete(messages: Message[]): Promise<Message> {
     return createMessage(
       'assistant',
       'Goal: Complete the task\nSteps:\n1. First step\n2. Second step\n3. Third step'

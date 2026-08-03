@@ -13,6 +13,7 @@
 #define AGENKIT_TECHNIQUES_REASONING_CHAIN_OF_THOUGHT_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include "agenkit/core/result.hpp"
 #include <string>
@@ -71,7 +72,7 @@ struct ChainOfThoughtConfig {
  * }
  * @endcode
  */
-class ChainOfThoughtAgent : public core::Agent {
+class ChainOfThoughtAgent : public core::Agent, public core::OptionsAgent {
 public:
     /**
      * @brief Create a new Chain-of-Thought agent
@@ -111,6 +112,19 @@ public:
      */
     std::future<core::Result<core::Message, core::AgentError>>
     process(core::Message message) override;
+
+    /**
+     * @brief Process a message, forwarding per-call options to the wrapped agent
+     *
+     * Same as process(), except that `options` reaches the wrapped agent if it
+     * honours them. process() is this method with an empty option set.
+     *
+     * @param message Input message with query content
+     * @param options Per-call options to forward
+     * @return Future with result containing response with metadata (see process())
+     */
+    std::future<core::Result<core::Message, core::AgentError>>
+    process_with(core::Message message, const core::CallOptions& options) override;
 
 private:
     std::shared_ptr<core::Agent> agent_;

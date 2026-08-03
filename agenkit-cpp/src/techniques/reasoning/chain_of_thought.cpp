@@ -34,7 +34,14 @@ std::vector<std::string> ChainOfThoughtAgent::capabilities() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 ChainOfThoughtAgent::process(core::Message message) {
-    return infrastructure::global_thread_pool().enqueue([this, msg = std::move(message)]() -> core::Result<core::Message, core::AgentError> {
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>>
+ChainOfThoughtAgent::process_with(core::Message message, const core::CallOptions& options) {
+    // Copied into the task rather than captured by reference: the caller's
+    // CallOptions may be a temporary that is gone by the time the pool runs this.
+    return infrastructure::global_thread_pool().enqueue([this, msg = std::move(message), options]() -> core::Result<core::Message, core::AgentError> {
         // Validate prompt template
         if (config_.prompt_template.find("{query}") == std::string::npos) {
             return core::Result<core::Message, core::AgentError>::err(
@@ -52,7 +59,7 @@ ChainOfThoughtAgent::process(core::Message message) {
 
         // Get response from agent
         auto prompt_msg = core::Message::with_text("user", cot_prompt);
-        auto response_future = agent_->process(std::move(prompt_msg));
+        auto response_future = core::process_with_options(agent_, std::move(prompt_msg), options);
         auto response_result = response_future.get();
 
         if (!response_result.is_ok()) {

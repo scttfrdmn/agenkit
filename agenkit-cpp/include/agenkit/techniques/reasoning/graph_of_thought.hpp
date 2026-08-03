@@ -20,6 +20,7 @@
 #define AGENKIT_TECHNIQUES_REASONING_GRAPH_OF_THOUGHT_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include "agenkit/core/result.hpp"
 #include "agenkit/techniques/reasoning/reasoning_graph.hpp"
@@ -81,7 +82,7 @@ struct GraphOfThoughtConfig {
  * // Access reasoning graph and paths from metadata
  * @endcode
  */
-class GraphOfThoughtAgent : public core::Agent {
+class GraphOfThoughtAgent : public core::Agent, public core::OptionsAgent {
 public:
     /**
      * @brief Constructor
@@ -95,6 +96,21 @@ public:
     std::vector<std::string> capabilities() const override;
     std::future<core::Result<core::Message, core::AgentError>> process(core::Message message) override;
 
+    /**
+     * @brief Process a message, forwarding per-call options to the wrapped agent
+     *
+     * Same as process(), except that `options` reaches the wrapped agent if it
+     * honours them — on premise generation, thought expansion, every edge
+     * identification, and the final conclusion call (which is gated on the node
+     * cap). process() is this method with an empty option set.
+     *
+     * @param message Input message with problem content
+     * @param options Per-call options to forward
+     * @return Future with result containing response with metadata (see process())
+     */
+    std::future<core::Result<core::Message, core::AgentError>>
+    process_with(core::Message message, const core::CallOptions& options) override;
+
 private:
     std::shared_ptr<core::Agent> agent_;
     size_t max_nodes_;
@@ -103,20 +119,28 @@ private:
     bool allow_cycles_;
 
     // Helper methods
-    std::future<core::Result<std::string, core::AgentError>> llm_call(const std::string& prompt);
+    std::future<core::Result<std::string, core::AgentError>> llm_call(
+        const std::string& prompt,
+        const core::CallOptions& options);
 
-    std::future<core::Result<std::vector<std::string>, core::AgentError>> generate_premises(const std::string& problem);
+    std::future<core::Result<std::vector<std::string>, core::AgentError>> generate_premises(
+        const std::string& problem,
+        const core::CallOptions& options);
 
     std::future<core::Result<std::vector<std::string>, core::AgentError>> generate_thoughts(
         const std::string& problem,
         const std::vector<std::string>& existing_thoughts,
-        size_t max_new);
+        size_t max_new,
+        const core::CallOptions& options);
 
     std::future<core::Result<std::optional<EdgeType>, core::AgentError>> identify_connection(
         const std::string& thought1,
-        const std::string& thought2);
+        const std::string& thought2,
+        const core::CallOptions& options);
 
-    std::future<core::Result<ReasoningGraph, core::AgentError>> build_graph(const std::string& problem);
+    std::future<core::Result<ReasoningGraph, core::AgentError>> build_graph(
+        const std::string& problem,
+        const core::CallOptions& options);
 
     std::vector<std::vector<size_t>> find_reasoning_paths(const ReasoningGraph& graph);
 

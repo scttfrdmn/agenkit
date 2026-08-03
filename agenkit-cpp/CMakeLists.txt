@@ -106,6 +106,7 @@ endif()
 add_library(agenkit
     src/core/message.cpp
     src/core/errors.cpp
+    src/core/call_options.cpp
     src/adapters/echo_agent.cpp
     src/adapters/claude_agent.cpp
     src/adapters/ollama_agent.cpp

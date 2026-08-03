@@ -13,6 +13,7 @@
 #define AGENKIT_TECHNIQUES_REASONING_TREE_OF_THOUGHT_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include "agenkit/core/result.hpp"
 #include "agenkit/techniques/reasoning/reasoning_tree.hpp"
@@ -92,7 +93,7 @@ struct TreeOfThoughtConfig {
  * }
  * @endcode
  */
-class TreeOfThoughtAgent : public core::Agent {
+class TreeOfThoughtAgent : public core::Agent, public core::OptionsAgent {
 public:
     /**
      * @brief Create a new Tree-of-Thought agent
@@ -141,6 +142,20 @@ public:
     std::future<core::Result<core::Message, core::AgentError>>
     process(core::Message message) override;
 
+    /**
+     * @brief Process a message, forwarding per-call options to the wrapped agent
+     *
+     * Same as process(), except that `options` reaches the wrapped agent if it
+     * honours them — on every branch generated at every depth, under all three
+     * search strategies. process() is this method with an empty option set.
+     *
+     * @param message Input message with query content
+     * @param options Per-call options to forward
+     * @return Future with result containing response with metadata (see process())
+     */
+    std::future<core::Result<core::Message, core::AgentError>>
+    process_with(core::Message message, const core::CallOptions& options) override;
+
 private:
     std::shared_ptr<core::Agent> agent_;
     TreeOfThoughtConfig config_;
@@ -168,7 +183,11 @@ private:
      * @param n Number of branches to generate
      * @return Vector of generated branch texts
      */
-    std::vector<std::string> generate_branches(const std::string& prompt, int n);
+    std::vector<std::string> generate_branches(
+        const std::string& prompt,
+        int n,
+        const core::CallOptions& options
+    );
 
     /**
      * @brief Expand a tree node by generating and adding children
@@ -184,7 +203,8 @@ private:
     std::vector<int> expand_node(
         ReasoningTree& tree,
         int node_id,
-        const std::string& query
+        const std::string& query,
+        const core::CallOptions& options
     );
 
     /**
@@ -199,7 +219,8 @@ private:
     void search_bfs(
         ReasoningTree& tree,
         int root_id,
-        const std::string& query
+        const std::string& query,
+        const core::CallOptions& options
     );
 
     /**
@@ -214,7 +235,8 @@ private:
     void search_dfs(
         ReasoningTree& tree,
         int root_id,
-        const std::string& query
+        const std::string& query,
+        const core::CallOptions& options
     );
 
     /**
@@ -229,7 +251,8 @@ private:
     void search_best_first(
         ReasoningTree& tree,
         int root_id,
-        const std::string& query
+        const std::string& query,
+        const core::CallOptions& options
     );
 
     /**

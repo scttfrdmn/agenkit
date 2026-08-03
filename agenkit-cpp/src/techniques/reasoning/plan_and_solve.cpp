@@ -36,11 +36,16 @@ std::vector<std::string> PlanAndSolveAgent::capabilities() const {
     };
 }
 
-std::future<core::Result<std::string, core::AgentError>> PlanAndSolveAgent::llm_call(const std::string& prompt) {
-    return std::async(std::launch::async, [this, prompt]() -> core::Result<std::string, core::AgentError> {
+std::future<core::Result<std::string, core::AgentError>> PlanAndSolveAgent::llm_call(
+    const std::string& prompt,
+    const core::CallOptions& options) {
+    // Options are copied into every task below rather than captured by
+    // reference: the caller's CallOptions may be a temporary that is gone by
+    // the time the async task runs.
+    return std::async(std::launch::async, [this, prompt, options]() -> core::Result<std::string, core::AgentError> {
         auto message = core::Message::with_text("user", prompt);
 
-        auto result_future = agent_->process(message);
+        auto result_future = core::process_with_options(agent_, message, options);
         auto result = result_future.get();
 
         if (!result.is_ok()) {
@@ -51,8 +56,10 @@ std::future<core::Result<std::string, core::AgentError>> PlanAndSolveAgent::llm_
     });
 }
 
-std::future<core::Result<Plan, core::AgentError>> PlanAndSolveAgent::create_plan(const std::string& problem) {
-    return std::async(std::launch::async, [this, problem]() -> core::Result<Plan, core::AgentError> {
+std::future<core::Result<Plan, core::AgentError>> PlanAndSolveAgent::create_plan(
+    const std::string& problem,
+    const core::CallOptions& options) {
+    return std::async(std::launch::async, [this, problem, options]() -> core::Result<Plan, core::AgentError> {
         if (planner_) {
             return core::Result<Plan, core::AgentError>::ok((*planner_)(problem));
         }
@@ -64,7 +71,7 @@ std::future<core::Result<Plan, core::AgentError>> PlanAndSolveAgent::create_plan
                << "Problem: " << problem << "\n\n"
                << "Solution Plan:";
 
-        auto result_future = llm_call(prompt.str());
+        auto result_future = llm_call(prompt.str(), options);
         auto result = result_future.get();
 
         if (!result.is_ok()) {
@@ -99,8 +106,10 @@ std::future<core::Result<Plan, core::AgentError>> PlanAndSolveAgent::create_plan
     });
 }
 
-std::future<core::Result<void, core::AgentError>> PlanAndSolveAgent::validate(Plan& plan) {
-    return std::async(std::launch::async, [this, &plan]() -> core::Result<void, core::AgentError> {
+std::future<core::Result<void, core::AgentError>> PlanAndSolveAgent::validate(
+    Plan& plan,
+    const core::CallOptions& options) {
+    return std::async(std::launch::async, [this, &plan, options]() -> core::Result<void, core::AgentError> {
         std::ostringstream prompt;
         prompt << "Review this solution plan for completeness and feasibility.\n"
                << "Is this plan sufficient to solve the problem? Are there any missing steps or issues?\n\n"
@@ -108,7 +117,7 @@ std::future<core::Result<void, core::AgentError>> PlanAndSolveAgent::validate(Pl
                << "Plan:\n" << format_plan(plan) << "\n\n"
                << "Validation (answer \"VALID\" or describe issues):";
 
-        auto result_future = llm_call(prompt.str());
+        auto result_future = llm_call(prompt.str(), options);
         auto result = result_future.get();
 
         if (!result.is_ok()) {
@@ -155,9 +164,10 @@ std::string PlanAndSolveAgent::format_plan(const Plan& plan) {
 
 std::future<core::Result<std::string, core::AgentError>> PlanAndSolveAgent::execute_step(
     const PlanStep& step,
-    const std::vector<std::string>& previous_results) {
+    const std::vector<std::string>& previous_results,
+    const core::CallOptions& options) {
 
-    return std::async(std::launch::async, [this, step, previous_results]() -> core::Result<std::string, core::AgentError> {
+    return std::async(std::launch::async, [this, step, previous_results, options]() -> core::Result<std::string, core::AgentError> {
         if (solver_) {
             return core::Result<std::string, core::AgentError>::ok((*solver_)(step, previous_results));
         }
@@ -178,7 +188,7 @@ std::future<core::Result<std::string, core::AgentError>> PlanAndSolveAgent::exec
             prompt << "Execution Result:";
         }
 
-        auto result_future = llm_call(prompt.str());
+        auto result_future = llm_call(prompt.str(), options);
         auto result = result_future.get();
 
         if (!result.is_ok()) {
@@ -195,12 +205,14 @@ std::future<core::Result<std::string, core::AgentError>> PlanAndSolveAgent::exec
     });
 }
 
-std::future<core::Result<std::vector<std::string>, core::AgentError>> PlanAndSolveAgent::execute_plan(Plan& plan) {
-    return std::async(std::launch::async, [this, &plan]() -> core::Result<std::vector<std::string>, core::AgentError> {
+std::future<core::Result<std::vector<std::string>, core::AgentError>> PlanAndSolveAgent::execute_plan(
+    Plan& plan,
+    const core::CallOptions& options) {
+    return std::async(std::launch::async, [this, &plan, options]() -> core::Result<std::vector<std::string>, core::AgentError> {
         std::vector<std::string> results;
 
         for (auto& step : plan.steps) {
-            auto result_future = execute_step(step, results);
+            auto result_future = execute_step(step, results, options);
             auto result = result_future.get();
 
             if (!result.is_ok()) {
@@ -218,11 +230,17 @@ std::future<core::Result<std::vector<std::string>, core::AgentError>> PlanAndSol
 }
 
 std::future<core::Result<core::Message, core::AgentError>> PlanAndSolveAgent::process(core::Message message) {
-    return std::async(std::launch::async, [this, message]() -> core::Result<core::Message, core::AgentError> {
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>> PlanAndSolveAgent::process_with(
+    core::Message message,
+    const core::CallOptions& options) {
+    return std::async(std::launch::async, [this, message, options]() -> core::Result<core::Message, core::AgentError> {
         std::string problem = message.content_as_str();
 
         // Create plan
-        auto plan_future = create_plan(problem);
+        auto plan_future = create_plan(problem, options);
         auto plan_result = plan_future.get();
 
         if (!plan_result.is_ok()) {
@@ -233,7 +251,7 @@ std::future<core::Result<core::Message, core::AgentError>> PlanAndSolveAgent::pr
 
         // Validate plan if configured
         if (validate_plan_) {
-            auto validate_future = validate(plan);
+            auto validate_future = validate(plan, options);
             auto validate_result = validate_future.get();
 
             if (!validate_result.is_ok()) {
@@ -249,7 +267,7 @@ std::future<core::Result<core::Message, core::AgentError>> PlanAndSolveAgent::pr
                 improved_prompt << plan.validation_notes.value_or("") << "\n\n";
                 improved_prompt << "Improved Plan:";
 
-                auto llm_future = llm_call(improved_prompt.str());
+                auto llm_future = llm_call(improved_prompt.str(), options);
                 auto llm_result = llm_future.get();
 
                 if (!llm_result.is_ok()) {
@@ -257,7 +275,7 @@ std::future<core::Result<core::Message, core::AgentError>> PlanAndSolveAgent::pr
                 }
 
                 // Create new plan
-                plan_future = create_plan(problem);
+                plan_future = create_plan(problem, options);
                 plan_result = plan_future.get();
 
                 if (!plan_result.is_ok()) {
@@ -267,7 +285,7 @@ std::future<core::Result<core::Message, core::AgentError>> PlanAndSolveAgent::pr
                 plan = plan_result.unwrap();
 
                 // Validate new plan
-                validate_future = validate(plan);
+                validate_future = validate(plan, options);
                 validate_result = validate_future.get();
 
                 if (!validate_result.is_ok()) {
@@ -277,7 +295,7 @@ std::future<core::Result<core::Message, core::AgentError>> PlanAndSolveAgent::pr
         }
 
         // Execute plan
-        auto execution_future = execute_plan(plan);
+        auto execution_future = execute_plan(plan, options);
         auto execution_result = execution_future.get();
 
         if (!execution_result.is_ok()) {

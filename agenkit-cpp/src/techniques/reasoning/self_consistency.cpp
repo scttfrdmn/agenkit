@@ -70,7 +70,13 @@ SelfConsistencyAgent::SelfConsistencyAgent(
     voting_strategy_(config.voting_strategy),
     temperature_(config.temperature),
     answer_extractor_(config.answer_extractor.value_or(default_answer_extractor))
-{}
+{
+    // Validated through the shared CallOptions type so the bounds cannot drift
+    // apart from the ones the options themselves enforce.
+    core::CallOptions probe;
+    probe.temperature = config.temperature;
+    probe.validate();
+}
 
 std::string SelfConsistencyAgent::name() const {
     return "self_consistency";
@@ -97,13 +103,37 @@ std::string SelfConsistencyAgent::normalize_string(const std::string& str) {
     return result;
 }
 
+bool SelfConsistencyAgent::temperature_applied() const {
+    if (!temperature_.has_value()) {
+        return true;
+    }
+    return core::supports_options(agent_.get());
+}
+
+core::CallOptions
+SelfConsistencyAgent::call_options(const core::CallOptions& caller) const {
+    if (!temperature_.has_value()) {
+        return caller;
+    }
+
+    // The configured temperature overrides the caller's: sampling diversity is
+    // what makes the technique correct, so it is not something a caller can
+    // flatten by accident. Every other option the caller set survives.
+    core::CallOptions own;
+    own.temperature = temperature_;
+    return caller.merge(own);
+}
+
 std::vector<SelfConsistencyAgent::Sample>
-SelfConsistencyAgent::generate_samples(const core::Message& message) {
+SelfConsistencyAgent::generate_samples(
+    const core::Message& message,
+    const core::CallOptions& options
+) {
     // Generate samples in parallel
     std::vector<std::future<core::Result<core::Message, core::AgentError>>> futures;
 
     for (size_t i = 0; i < num_samples_; ++i) {
-        futures.push_back(agent_->process(message));
+        futures.push_back(core::process_with_options(agent_, message, options));
     }
 
     // Collect results
@@ -230,10 +260,22 @@ SelfConsistencyAgent::count_answers(const std::vector<std::string>& answers) {
 
 std::future<core::Result<core::Message, core::AgentError>>
 SelfConsistencyAgent::process(core::Message message) {
-    return infrastructure::global_thread_pool().enqueue([this, message]() -> core::Result<core::Message, core::AgentError> {
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>>
+SelfConsistencyAgent::process_with(core::Message message, const core::CallOptions& options) {
+    // Merged up front and copied into the task: the caller's CallOptions may be
+    // a temporary that is gone by the time the pool runs this, and the samples
+    // below run concurrently against the same wrapped agent — so the options are
+    // passed as an argument rather than stashed on this object, where concurrent
+    // samples would race over them.
+    auto sample_options = call_options(options);
+
+    return infrastructure::global_thread_pool().enqueue([this, message, sample_options]() -> core::Result<core::Message, core::AgentError> {
         try {
             // Generate multiple samples
-            auto samples = generate_samples(message);
+            auto samples = generate_samples(message, sample_options);
 
             // Extract full responses and answers
             std::vector<std::string> full_responses;
@@ -284,6 +326,21 @@ SelfConsistencyAgent::process(core::Message message) {
             response.with_metadata("extracted_answers", nlohmann::json(extracted_answers));
             response.with_metadata("answer_counts", nlohmann::json(answer_counts));
             response.with_metadata("base_agent", nlohmann::json(agent_->name()));
+
+            // Report the temperature and whether it reached the wrapped agent,
+            // matching the Python core. temperature is null when unset — a
+            // caller must be able to tell "not requested" from "requested and
+            // dropped", which temperature_applied alone cannot express.
+            response.with_metadata(
+                "temperature",
+                temperature_.has_value()
+                    ? nlohmann::json(temperature_.value())
+                    : nlohmann::json(nullptr)
+            );
+            response.with_metadata(
+                "temperature_applied",
+                nlohmann::json(temperature_applied())
+            );
 
             return core::Result<core::Message, core::AgentError>::ok(response);
 

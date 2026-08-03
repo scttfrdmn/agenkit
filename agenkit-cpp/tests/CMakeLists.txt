@@ -277,6 +277,11 @@ add_executable(test_self_consistency techniques/reasoning/test_self_consistency.
 target_link_libraries(test_self_consistency agenkit gtest_main)
 add_test(NAME self_consistency_tests COMMAND test_self_consistency)
 
+# Core tests - CallOptions and the optional OptionsAgent capability
+add_executable(test_call_options techniques/reasoning/test_call_options.cpp)
+target_link_libraries(test_call_options agenkit gtest_main)
+add_test(NAME call_options_tests COMMAND test_call_options)
+
 # Adapter tests - Claude
 add_executable(test_claude_adapter test_claude_adapter.cpp)
 target_link_libraries(test_claude_adapter agenkit gtest_main)

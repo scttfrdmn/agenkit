@@ -10,15 +10,26 @@ import (
 )
 
 // mockLLMClient is a mock LLM client for testing.
+//
+// It implements Complete with the signature the shipped adapters have, not a
+// double-only spelling. This double used to implement Chat(ctx, messages), which
+// no adapter had — so it kept the seam green while the pattern was unusable with
+// any real LLM (#805).
 type mockLLMClient struct {
 	responses []string
 	callCount int
 	lastInput []*agenkit.Message
+	lastOpts  []agenkit.CallOption
 }
 
-func (m *mockLLMClient) Chat(ctx context.Context, messages []*agenkit.Message) (*agenkit.Message, error) {
+func (m *mockLLMClient) Complete(
+	ctx context.Context,
+	messages []*agenkit.Message,
+	opts ...agenkit.CallOption,
+) (*agenkit.Message, error) {
 	// Store the input for verification
 	m.lastInput = messages
+	m.lastOpts = opts
 
 	if m.callCount >= len(m.responses) {
 		return nil, fmt.Errorf("no more mock responses available")

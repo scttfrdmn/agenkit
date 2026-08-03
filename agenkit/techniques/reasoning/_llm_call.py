@@ -1,87 +1,20 @@
 """
-Shared LLM invocation for reasoning techniques.
+LLM invocation for reasoning techniques.
 
 The five reasoning techniques that own an LLM (`ChainOfThought`, `TreeOfThought`,
 `PlanAndSolve`, `LeastToMost`, `GraphOfThought`) all need the same thing: turn a
-prompt string into response text. Each one used to carry its own copy of the
-dispatch block, and all five copies drifted the same way — they called
-``complete(prompt)`` with a bare ``str`` where the LLM contract
-(:meth:`agenkit.adapters.llm.base.LLM.complete`) and all seven shipped adapters
-declare ``messages: list[Message]``. Against any real adapter that raised
-``AttributeError: 'str' object has no attribute 'role'``, because the adapter
-iterated the string's characters looking for ``.role``.
+prompt string into response text.
 
-It survived because the call was guarded by ``hasattr(llm, "complete")``, which is
-satisfied by any object with a method of that name — so test doubles shaped like the
-*call site* rather than the *contract* passed cleanly and the seam was never checked
-against a real adapter. See #802.
+The dispatch itself now lives in :mod:`agenkit._llm_protocol`, shared with the
+patterns, because the techniques were not the only place that had invented its own
+answer to "what does this LLM object respond to" — `ConversationalAgent` had a third
+(#805) and `budget` a fourth. This module re-exports the prompt-shaped entry point
+so the technique call sites stay unchanged.
 
-This module is the single dispatch point, so the next divergence has one place to
-happen instead of five.
+See #802 for why the dispatch was consolidated in the first place, and #805 for why
+it then had to move somewhere the patterns could import from.
 """
 
-from typing import Any
+from agenkit._llm_protocol import complete_text
 
-from agenkit import CallOptions, Message
-
-
-async def complete_text(llm: Any, prompt: str, options: CallOptions | None = None) -> str:
-    """
-    Send a prompt to an LLM (or agent) and return the response as text.
-
-    Calls ``complete()`` per the declared LLM contract — a ``list[Message]`` in,
-    a ``Message`` out — falling back to ``process()`` for objects that implement
-    the ``Agent`` interface instead.
-
-    Args:
-        llm: LLM client or agent. Must provide either ``complete()`` (preferred,
-            the :class:`~agenkit.adapters.llm.base.LLM` contract) or
-            ``process()`` (the :class:`~agenkit.Agent` contract).
-        prompt: Prompt text to send.
-        options: Optional per-call inference options (#801). Set options are passed
-            as keyword arguments to ``complete()``, which every shipped adapter
-            accepts. On the ``process()`` path they are forwarded via
-            ``process_with()`` when the object advertises it, and dropped otherwise
-            — an ``Agent`` has nowhere else to put them.
-
-    Returns:
-        Response text.
-
-    Raises:
-        AttributeError: If ``llm`` provides neither ``complete()`` nor ``process()``.
-    """
-    message = Message(role="user", content=prompt)
-    kwargs = options.to_kwargs() if options is not None else {}
-
-    if hasattr(llm, "complete"):
-        response = await llm.complete([message], **kwargs)
-    elif hasattr(llm, "process"):
-        if kwargs and getattr(llm, "supports_options", False):
-            response = await llm.process_with(message, options)
-        else:
-            response = await llm.process(message)
-    else:
-        raise AttributeError("LLM must have either complete() or process() method")
-
-    return _as_text(response)
-
-
-def _as_text(response: Any) -> str:
-    """
-    Normalize an LLM/agent response to text.
-
-    The LLM contract returns a ``Message``, but the reasoning techniques have always
-    documented their ``llm`` parameter as needing a method "that returns text". Both
-    are therefore honoured: a ``Message`` is unwrapped, a plain string passes through.
-    Unlike the argument type this is not ambiguous — the two are trivially
-    distinguishable and both were documented — so accepting either does not recreate
-    the silent mismatch #802 was about.
-
-    Args:
-        response: A ``Message``, a ``str``, or anything with a ``content`` attribute.
-
-    Returns:
-        The response text.
-    """
-    content = getattr(response, "content", response)
-    return content if isinstance(content, str) else str(content)
+__all__ = ["complete_text"]

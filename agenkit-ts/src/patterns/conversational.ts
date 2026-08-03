@@ -32,22 +32,22 @@
  */
 
 import { Agent, Message, createMessage } from '../core/interfaces';
+import { AnyLLMClient, completeMessages } from '../core/llm-protocol';
 
 /**
  * LLM client interface for conversational agents.
  *
- * Implementations must provide a chat method that accepts a conversation
- * history and returns a response.
+ * Accepts any of:
+ * - `complete(messages)` — the contract all six shipped adapters implement
+ * - `process(message)` — the Agent contract, so any agent can be a backend
+ * - `chat(messages)` — deprecated (#805), warns on use
+ *
+ * Until v0.86.0 this interface declared only `chat()`, which **no** shipped
+ * adapter had, so `ConversationalAgent` could not be used with any real LLM.
+ * Every test double implemented `chat()` because each was written against the
+ * call site rather than the contract, so the tests could never have caught it.
  */
-export interface LLMClient {
-  /**
-   * Generate a response given a conversation history.
-   *
-   * @param messages Full conversation history
-   * @returns Agent's response message
-   */
-  chat(messages: Message[]): Promise<Message>;
-}
+export type LLMClient = AnyLLMClient;
 
 /**
  * Configuration for ConversationalAgent.
@@ -121,8 +121,9 @@ export class ConversationalAgent implements Agent {
     // Prune history if needed (keep system prompt if present)
     this.pruneHistory();
 
-    // Generate response with full context
-    const response = await this.llmClient.chat([...this.history]);
+    // Generate response with full context. Dispatch is shared so a client that
+    // works with one pattern works with the others (#805).
+    const response = await completeMessages(this.llmClient, [...this.history]);
 
     // Add response to history
     this.history.push(response);

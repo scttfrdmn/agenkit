@@ -24,7 +24,7 @@ type ComplexityDetector interface {
 	//
 	// Returns:
 	//   Complexity level: "simple", "medium", or "complex"
-	Detect(ctx context.Context, messages []agenkit.Message) (string, error)
+	Detect(ctx context.Context, messages []*agenkit.Message) (string, error)
 }
 
 // HeuristicComplexityDetector detects complexity using heuristics.
@@ -69,7 +69,7 @@ func NewHeuristicComplexityDetector(longQueryThreshold, longHistoryThreshold int
 }
 
 // Detect analyzes messages using heuristics to determine complexity.
-func (h *HeuristicComplexityDetector) Detect(ctx context.Context, messages []agenkit.Message) (string, error) {
+func (h *HeuristicComplexityDetector) Detect(ctx context.Context, messages []*agenkit.Message) (string, error) {
 	if len(messages) == 0 {
 		return "simple", nil
 	}
@@ -102,9 +102,25 @@ func (h *HeuristicComplexityDetector) Detect(ctx context.Context, messages []age
 	return "simple", nil
 }
 
-// LLMClient is the interface for LLM clients used by complexity detection.
+// LLMClient is the interface for LLM clients used by complexity detection and
+// model routing.
+//
+// The signature is exactly the one every shipped adapter has, so *llm.AnthropicLLM
+// and the rest satisfy it structurally without an import of adapter/llm — which
+// patterns cannot have either, because adapter/llm transitively pulls in the AWS
+// SDK via Bedrock.
+//
+// Until v0.86.0 this declared:
+//
+//	Complete(ctx context.Context, messages []agenkit.Message, kwargs map[string]any) (*agenkit.Message, error)
+//
+// — a value slice instead of a pointer slice, and a kwargs map instead of
+// functional options. No adapter had it. The only type in the module that did was
+// ModelOptimizer itself, meaning a ModelOptimizer could be nested inside another
+// ModelOptimizer but could never be given a real LLM. See #805.
 type LLMClient interface {
-	Complete(ctx context.Context, messages []agenkit.Message, kwargs map[string]interface{}) (*agenkit.Message, error)
+	// Complete generates a response given a conversation history.
+	Complete(ctx context.Context, messages []*agenkit.Message, opts ...agenkit.CallOption) (*agenkit.Message, error)
 }
 
 // LLMBasedComplexityDetector uses an LLM to analyze query complexity.
@@ -136,7 +152,7 @@ func NewLLMBasedComplexityDetector(llm LLMClient) *LLMBasedComplexityDetector {
 }
 
 // Detect analyzes messages using an LLM to determine complexity.
-func (l *LLMBasedComplexityDetector) Detect(ctx context.Context, messages []agenkit.Message) (string, error) {
+func (l *LLMBasedComplexityDetector) Detect(ctx context.Context, messages []*agenkit.Message) (string, error) {
 	if len(messages) == 0 {
 		return "simple", nil
 	}
@@ -154,7 +170,7 @@ Classify as:
 
 Respond with only one word: simple, medium, or complex.`, latest)
 
-	response, err := l.llm.Complete(ctx, []agenkit.Message{{Role: "user", Content: prompt}}, nil)
+	response, err := l.llm.Complete(ctx, []*agenkit.Message{{Role: "user", Content: prompt}})
 	if err != nil {
 		return "medium", err
 	}
@@ -250,7 +266,7 @@ func NewModelOptimizer(
 //
 //	ctx: Context
 //	messages: Conversation messages
-//	kwargs: Additional arguments for LLM
+//	opts: Per-call inference options, forwarded to the selected model
 //
 // Returns:
 //
@@ -261,11 +277,15 @@ func NewModelOptimizer(
 //
 // Example:
 //
-//	response, _ := optimizer.Complete(ctx, messages, nil)
+//	response, _ := optimizer.Complete(ctx, messages)
 //	fmt.Printf("Used %s for %s query\n",
 //	    response.Metadata["selected_model"],
 //	    response.Metadata["complexity"])
-func (m *ModelOptimizer) Complete(ctx context.Context, messages []agenkit.Message, kwargs map[string]interface{}) (*agenkit.Message, error) {
+//
+// The signature matches LLMClient, so a ModelOptimizer can itself be used
+// wherever an LLM client is expected — including as one of another optimizer's
+// backends.
+func (m *ModelOptimizer) Complete(ctx context.Context, messages []*agenkit.Message, opts ...agenkit.CallOption) (*agenkit.Message, error) {
 	// Detect complexity
 	complexity, err := m.detector.Detect(ctx, messages)
 	if err != nil {
@@ -295,10 +315,16 @@ func (m *ModelOptimizer) Complete(ctx context.Context, messages []agenkit.Messag
 	log.Printf("INFO: Routing to %s: %s", modelName, reason)
 
 	// Get LLM client
-	llm := m.llmClients[modelName]
+	llm, ok := m.llmClients[modelName]
+	if !ok {
+		// NewModelOptimizer validates the three configured names, but a caller
+		// that mutated the map or a future routing branch could still miss.
+		// A named error beats a nil-map deref.
+		return nil, fmt.Errorf("no LLM client configured for model %s", modelName)
+	}
 
 	// Complete
-	response, err := llm.Complete(ctx, messages, kwargs)
+	response, err := llm.Complete(ctx, messages, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +349,7 @@ func (m *ModelOptimizer) Complete(ctx context.Context, messages []agenkit.Messag
 //	ctx: Context
 //	messages: Conversation messages
 //	maxAttempts: Maximum fallback attempts
-//	kwargs: Additional arguments
+//	opts: Per-call inference options, forwarded to each attempted model
 //
 // Returns:
 //
@@ -331,8 +357,8 @@ func (m *ModelOptimizer) Complete(ctx context.Context, messages []agenkit.Messag
 //
 // Example:
 //
-//	response, _ := optimizer.CompleteWithFallback(ctx, messages, 3, nil)
-func (m *ModelOptimizer) CompleteWithFallback(ctx context.Context, messages []agenkit.Message, maxAttempts int, kwargs map[string]interface{}) (*agenkit.Message, error) {
+//	response, _ := optimizer.CompleteWithFallback(ctx, messages, 3)
+func (m *ModelOptimizer) CompleteWithFallback(ctx context.Context, messages []*agenkit.Message, maxAttempts int, opts ...agenkit.CallOption) (*agenkit.Message, error) {
 	// Detect complexity
 	complexity, err := m.detector.Detect(ctx, messages)
 	if err != nil {
@@ -365,7 +391,7 @@ func (m *ModelOptimizer) CompleteWithFallback(ctx context.Context, messages []ag
 			continue
 		}
 
-		response, err := llm.Complete(ctx, messages, kwargs)
+		response, err := llm.Complete(ctx, messages, opts...)
 		if err != nil {
 			log.Printf("WARNING: Failed with %s: %v", modelName, err)
 			lastError = err
@@ -439,7 +465,7 @@ func (m *ModelOptimizer) GetModelForComplexity(complexity string) (string, error
 //	for model, cost := range estimates {
 //	    fmt.Printf("%s: $%.4f\n", model, cost)
 //	}
-func (m *ModelOptimizer) EstimateCost(ctx context.Context, messages []agenkit.Message, inputTokens, outputTokens int) (map[string]float64, error) {
+func (m *ModelOptimizer) EstimateCost(ctx context.Context, messages []*agenkit.Message, inputTokens, outputTokens int) (map[string]float64, error) {
 	pricing := NewModelPricing()
 
 	estimates := make(map[string]float64)

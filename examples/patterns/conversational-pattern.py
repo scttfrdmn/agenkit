@@ -18,16 +18,17 @@ class MockLLMClient:
     """
     Mock LLM client for demonstration.
 
-    In production, replace this with a real LLM client:
-    - OpenAI: from openai import AsyncOpenAI
-    - Anthropic: from anthropic import AsyncAnthropic
-    - LiteLLM: from litellm import acompletion
+    In production, replace this with a shipped adapter, which has this exact
+    ``complete(messages, **kwargs)`` signature:
+    - ``from agenkit.adapters.llm import AnthropicLLM``
+    - ``from agenkit.adapters.llm import OpenAILLM``
+    - ``from agenkit.adapters.llm import LiteLLMLLM``
     """
 
     def __init__(self):
         self.call_count = 0
 
-    async def chat(self, messages: list[Message]) -> Message:
+    async def complete(self, messages: list[Message], **kwargs: object) -> Message:
         """Generate a mock response based on conversation context."""
         self.call_count += 1
 
@@ -198,9 +199,9 @@ async def streaming_example():
     # In production, use an LLM client that supports streaming
 
     class MockStreamingLLM(MockLLMClient):
-        async def stream(self, messages: list[Message]):
+        async def stream(self, messages: list[Message], **kwargs: object):
             """Simulate streaming response by yielding chunks."""
-            response = await self.chat(messages)
+            response = await self.complete(messages)
             # Split response into chunks
             words = response.content.split()
             for word in words:

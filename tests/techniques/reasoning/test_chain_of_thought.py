@@ -294,14 +294,19 @@ async def test_cot_invalid_llm():
     """Test error handling for LLM without required methods."""
 
     class InvalidLLM:
-        """LLM without complete() or process() method."""
+        """LLM without complete(), process(), or chat()."""
 
         pass
 
     llm = InvalidLLM()
     cot = ChainOfThought(llm=llm)
 
-    with pytest.raises(AttributeError, match="complete\\(\\) or process\\(\\)"):
+    # The error must name every contract the caller could implement. Since #805
+    # that is three, not two — dispatch is shared with the patterns, which also
+    # accept the deprecated chat().
+    with pytest.raises(
+        AttributeError, match=r"complete\(messages.*process\(message\).*chat\(messages\)"
+    ):
         await cot.process(Message(role="user", content="Question"))
 
 

@@ -7,7 +7,6 @@ package llm
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
@@ -163,97 +162,40 @@ type LLM interface {
 }
 
 // CallOptions holds provider-specific options for LLM calls.
-type CallOptions struct {
-	// Common options
-	Temperature *float64
-	MaxTokens   *int
-	TopP        *float64
-
-	// Provider-specific options
-	Extra map[string]interface{}
-}
+//
+// Aliased from the core agenkit package, where the types now live so that the
+// patterns can name them in an interface without importing adapter/llm — which
+// transitively pulls in the AWS SDK via the Bedrock adapter (#805). Existing code
+// using llm.CallOptions / llm.WithTemperature is unaffected: these are true
+// aliases, not conversions, so llm.CallOption and agenkit.CallOption are the same
+// type and satisfy each other's interfaces.
+type CallOptions = agenkit.CallOptions
 
 // CallOption is a functional option for configuring LLM calls.
-type CallOption func(*CallOptions)
+type CallOption = agenkit.CallOption
 
 // WithTemperature sets the sampling temperature (0.0-2.0).
 // Panics if temperature is outside the valid range.
-func WithTemperature(temperature float64) CallOption {
-	if temperature < 0.0 || temperature > 2.0 {
-		panic(fmt.Sprintf("temperature must be between 0 and 2, got %v", temperature))
-	}
-	return func(opts *CallOptions) {
-		opts.Temperature = &temperature
-	}
-}
+var WithTemperature = agenkit.WithTemperature
 
 // WithMaxTokens sets the maximum number of tokens to generate.
 // Panics if maxTokens is not positive.
-func WithMaxTokens(maxTokens int) CallOption {
-	if maxTokens <= 0 {
-		panic(fmt.Sprintf("max_tokens must be positive, got %d", maxTokens))
-	}
-	return func(opts *CallOptions) {
-		opts.MaxTokens = &maxTokens
-	}
-}
+var WithMaxTokens = agenkit.WithMaxTokens
 
 // WithTopP sets the nucleus sampling parameter (0.0-1.0).
 // Panics if topP is outside the valid range.
-func WithTopP(topP float64) CallOption {
-	if topP < 0.0 || topP > 1.0 {
-		panic(fmt.Sprintf("top_p must be between 0 and 1, got %v", topP))
-	}
-	return func(opts *CallOptions) {
-		opts.TopP = &topP
-	}
-}
+var WithTopP = agenkit.WithTopP
 
 // WithFrequencyPenalty sets the frequency penalty (-2.0 to 2.0).
 // Panics if frequencyPenalty is outside the valid range.
-func WithFrequencyPenalty(frequencyPenalty float64) CallOption {
-	if frequencyPenalty < -2.0 || frequencyPenalty > 2.0 {
-		panic(fmt.Sprintf("frequency_penalty must be between -2 and 2, got %v", frequencyPenalty))
-	}
-	return func(opts *CallOptions) {
-		if opts.Extra == nil {
-			opts.Extra = make(map[string]interface{})
-		}
-		opts.Extra["frequency_penalty"] = frequencyPenalty
-	}
-}
+var WithFrequencyPenalty = agenkit.WithFrequencyPenalty
 
 // WithPresencePenalty sets the presence penalty (-2.0 to 2.0).
 // Panics if presencePenalty is outside the valid range.
-func WithPresencePenalty(presencePenalty float64) CallOption {
-	if presencePenalty < -2.0 || presencePenalty > 2.0 {
-		panic(fmt.Sprintf("presence_penalty must be between -2 and 2, got %v", presencePenalty))
-	}
-	return func(opts *CallOptions) {
-		if opts.Extra == nil {
-			opts.Extra = make(map[string]interface{})
-		}
-		opts.Extra["presence_penalty"] = presencePenalty
-	}
-}
+var WithPresencePenalty = agenkit.WithPresencePenalty
 
 // WithExtra adds a provider-specific option.
-func WithExtra(key string, value interface{}) CallOption {
-	return func(opts *CallOptions) {
-		if opts.Extra == nil {
-			opts.Extra = make(map[string]interface{})
-		}
-		opts.Extra[key] = value
-	}
-}
+var WithExtra = agenkit.WithExtra
 
 // BuildCallOptions creates CallOptions from functional options.
-func BuildCallOptions(opts ...CallOption) *CallOptions {
-	options := &CallOptions{
-		Extra: make(map[string]interface{}),
-	}
-	for _, opt := range opts {
-		opt(options)
-	}
-	return options
-}
+var BuildCallOptions = agenkit.BuildCallOptions

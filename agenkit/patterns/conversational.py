@@ -12,16 +12,34 @@ Key Features:
 """
 
 import warnings
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol, runtime_checkable
 
-from agenkit import Agent, Message
+from agenkit import Agent, CallOptions, Message
+from agenkit._llm_protocol import can_carry_options, complete_messages, stream_messages
 
 
+@runtime_checkable
 class LLMClient(Protocol):
-    """Protocol for LLM clients that can be used with ConversationalAgent."""
+    """
+    Protocol for LLM clients usable with :class:`ConversationalAgent`.
 
-    async def chat(self, messages: list[Message]) -> Message:
+    Declares ``complete()`` — the :class:`~agenkit.adapters.llm.LLM` contract that
+    every shipped adapter implements. Until v0.86.0 this protocol declared
+    ``chat()`` instead, which **no** shipped adapter had, so
+    :class:`ConversationalAgent` could not be used with any real LLM (#805).
+
+    An :class:`~agenkit.Agent` (``process()``) is also accepted, so any agent — a
+    reasoning technique, another pattern — can serve as a conversational backend.
+    ``chat()`` is still accepted for one deprecation cycle and warns.
+
+    Typed as a ``Protocol`` rather than an ABC because adapters must not be forced
+    to inherit from a pattern module, and because the accepted set is deliberately
+    wider than any single protocol can express.
+    """
+
+    async def complete(self, messages: list[Message], **kwargs: Any) -> Message:
         """Generate a response given a conversation history."""
         ...
 
@@ -174,12 +192,22 @@ class ConversationalAgent(Agent):
         """Return the agent's name."""
         return "ConversationalAgent"
 
+    @property
+    def supports_options(self) -> bool:
+        """
+        Whether per-call options can reach the underlying LLM (#801).
+
+        False for a ``chat()``-only client: the deprecated protocol has no parameter
+        to carry them. Reported rather than silently ignored so a caller can tell
+        the difference between "applied" and "accepted and dropped".
+        """
+        return can_carry_options(self.llm)
+
     async def process(self, message: Message) -> Message:
         """
         Process a message with full conversation context.
 
-        The message is added to history, and the LLM generates a response
-        considering all previous messages within the history limit.
+        Equivalent to :meth:`process_with` with no options set.
 
         Args:
             message: The incoming user message
@@ -191,14 +219,32 @@ class ConversationalAgent(Agent):
             Both the input message and the response are added to history.
             If history exceeds max_history, oldest non-system messages are removed.
         """
+        return await self.process_with(message, CallOptions())
+
+    async def process_with(self, message: Message, options: CallOptions) -> Message:
+        """
+        Process a message with full conversation context and per-call options.
+
+        The message is added to history, and the LLM generates a response
+        considering all previous messages within the history limit.
+
+        Args:
+            message: The incoming user message
+            options: Per-call inference options forwarded to the LLM (#801).
+                Check :attr:`supports_options` to know whether they can be applied.
+
+        Returns:
+            The agent's response message
+        """
         # Add user message to history
         self.history.append(message)
 
         # Prune history if needed (keep system prompt if present)
         self._prune_history()
 
-        # Generate response with full context
-        response = await self.llm.chat(self.history)
+        # Generate response with full context. Dispatch is shared with the reasoning
+        # techniques so a client that works with one works with the other (#805).
+        response = await complete_messages(self.llm, self.history, options)
 
         # Add response to history
         self.history.append(response)
@@ -311,15 +357,24 @@ class StreamingConversationalAgent(ConversationalAgent):
         ```
     """
 
-    async def stream(self, message: Message):
+    async def stream(
+        self, message: Message, options: CallOptions | None = None
+    ) -> AsyncIterator[Message]:
         """
         Process message and stream response chunks.
 
         Args:
             message: The incoming user message
+            options: Optional per-call inference options forwarded to the LLM (#801)
 
         Yields:
             Message chunks as they are generated
+
+        Raises:
+            AttributeError: If the client does not implement ``stream()``. Only the
+                :class:`~agenkit.adapters.llm.LLM` contract declares it — a
+                ``chat()``-only or ``process()``-only client cannot stream, and
+                before #805 that failed with a bare missing-attribute error.
 
         Note:
             The complete response is added to history after streaming completes.
@@ -332,7 +387,7 @@ class StreamingConversationalAgent(ConversationalAgent):
         response_chunks = []
 
         # Stream response
-        async for chunk in self.llm.stream(self.history):
+        async for chunk in stream_messages(self.llm, self.history, options):
             response_chunks.append(chunk)
             yield chunk
 

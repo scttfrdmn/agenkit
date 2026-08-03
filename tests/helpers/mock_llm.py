@@ -67,12 +67,16 @@ class MockLLMClient:
             raise self._fail_with
         return self._responses[idx % len(self._responses)]
 
-    async def complete(self, prompt: str) -> str:
-        """LLM technique interface (prompt → string)."""
-        return self._next_response(prompt)
+    async def complete(self, messages: list[Message], **kwargs: object) -> Message:
+        """LLM adapter interface (``list[Message]`` → ``Message``).
 
-    async def chat(self, messages: list[Message]) -> Message:
-        """Pattern interface (messages → Message)."""
+        This is the contract in ``agenkit.adapters.llm.base.LLM`` that all seven
+        shipped adapters implement. It used to be spelled two wrong ways here at
+        once: ``complete(prompt: str)`` (the #802 shape — no adapter takes a bare
+        string) and ``chat(messages)`` (the #805 shape — no adapter has a ``chat``).
+        Prefer ``tests.techniques.reasoning.conftest.ContractLLM`` when a test needs
+        a double that actively rejects the wrong argument type.
+        """
         content = self._next_response(messages)
         return Message(role="assistant", content=content)
 
@@ -85,7 +89,7 @@ class MockLLMClient:
 class MockStreamingLLMClient(MockLLMClient):
     """Mock LLM that supports async streaming."""
 
-    async def stream(self, messages: list[Message]) -> AsyncIterator[Message]:
+    async def stream(self, messages: list[Message], **kwargs: object) -> AsyncIterator[Message]:
         """Yield response word-by-word for streaming tests."""
         content = self._next_response(messages)
         for word in content.split():

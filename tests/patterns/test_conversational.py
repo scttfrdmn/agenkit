@@ -9,14 +9,21 @@ from agenkit.patterns import ConversationalAgent, StreamingConversationalAgent
 
 
 class MockLLM:
-    """Mock LLM client for testing."""
+    """Mock LLM client for testing.
+
+    Implements ``complete(messages, **kwargs)`` — the contract in
+    ``agenkit.adapters.llm.base.LLM`` that all seven shipped adapters implement.
+    This double used to implement ``chat(messages)``, which no adapter has, so it
+    kept this file green while ``ConversationalAgent`` was unusable with any real
+    LLM (#805).
+    """
 
     def __init__(self, response: str = "Test response"):
         self.response = response
         self.call_count = 0
         self.last_messages = None
 
-    async def chat(self, messages):
+    async def complete(self, messages, **kwargs):
         """Generate a mock response."""
         self.call_count += 1
         # Store a copy to avoid reference issues
@@ -27,7 +34,7 @@ class MockLLM:
 class MockStreamingLLM(MockLLM):
     """Mock streaming LLM client."""
 
-    async def stream(self, messages):
+    async def stream(self, messages, **kwargs):
         """Generate a mock streaming response."""
         self.call_count += 1
         self.last_messages = messages

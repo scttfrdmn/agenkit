@@ -18,7 +18,14 @@ import {
 import { Message, createMessage } from '../../core/interfaces';
 import { validateMessage } from './test-helpers';
 
-/** Mock LLM client for testing */
+/**
+ * Mock LLM client for testing.
+ *
+ * Implements `complete(messages)` — the contract all six shipped adapters in
+ * `src/adapters/` implement. Doubles here used to implement `chat(messages)`,
+ * which no adapter has, so this file stayed green while `ConversationalAgent`
+ * could not be used with any real LLM (#805). Do not rename it back.
+ */
 class MockLLMClient implements LLMClient {
   private response: string;
   lastMessages?: Message[];
@@ -28,7 +35,7 @@ class MockLLMClient implements LLMClient {
     this.response = response;
   }
 
-  async chat(messages: Message[]): Promise<Message> {
+  async complete(messages: Message[]): Promise<Message> {
     this.lastMessages = messages;
     this.callCount++;
     return createMessage('assistant', this.response);
@@ -37,7 +44,7 @@ class MockLLMClient implements LLMClient {
 
 /** LLM client that echoes the last user message */
 class EchoLLMClient implements LLMClient {
-  async chat(messages: Message[]): Promise<Message> {
+  async complete(messages: Message[]): Promise<Message> {
     const lastUser = messages.filter(m => m.role === 'user').pop();
     return createMessage('assistant', `Echo: ${String(lastUser?.content ?? '')}`);
   }

@@ -24,6 +24,10 @@ import { Message, createMessage } from '../core/interfaces';
 // Mock Implementations
 // ============================================================================
 
+/**
+ * Implements `complete(messages)` — the real adapter contract. Was `chat()`
+ * until #805, a method no shipped adapter has. Do not rename it back.
+ */
 class MockLLMClient implements LLMClient {
   private responses: string[];
   private callCount: number;
@@ -33,7 +37,7 @@ class MockLLMClient implements LLMClient {
     this.callCount = 0;
   }
 
-  async chat(messages: Message[]): Promise<Message> {
+  async complete(messages: Message[]): Promise<Message> {
     const response = this.responses[this.callCount] || this.responses[0];
     this.callCount++;
     return createMessage('assistant', response);

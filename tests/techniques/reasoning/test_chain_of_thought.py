@@ -1,5 +1,7 @@
 """Tests for Chain-of-Thought reasoning technique."""
 
+from typing import Any
+
 import pytest
 
 from agenkit import Message
@@ -9,7 +11,11 @@ from agenkit.techniques.reasoning import ChainOfThought
 class MockLLM:
     """Mock LLM for testing CoT."""
 
-    async def complete(self, prompt: str) -> str:
+    async def complete(self, messages: list[Message], **kwargs: Any) -> Message:
+        prompt = "\n".join(m.content for m in messages)
+        return Message(role="agent", content=self._respond(prompt))
+
+    def _respond(self, prompt: str) -> str:
         """Return mock response based on prompt."""
         if "step by step" in prompt.lower() or "solve" in prompt.lower():
             # Return numbered steps format
@@ -23,7 +29,11 @@ Therefore, 15 * 24 = 360"""
 class MockLLMWithBullets:
     """Mock LLM that returns bullet-point format."""
 
-    async def complete(self, prompt: str) -> str:
+    async def complete(self, messages: list[Message], **kwargs: Any) -> Message:
+        prompt = "\n".join(m.content for m in messages)
+        return Message(role="agent", content=self._respond(prompt))
+
+    def _respond(self, prompt: str) -> str:
         """Return bullet-point formatted response."""
         return """- First step is to analyze the problem
 - Second step is to break it down
@@ -143,7 +153,11 @@ async def test_cot_delimiter_fallback():
     """Test fallback to delimiter-based parsing."""
 
     class SimpleLLM:
-        async def complete(self, prompt: str) -> str:
+        async def complete(self, messages: list[Message], **kwargs: Any) -> Message:
+            prompt = "\n".join(m.content for m in messages)
+            return Message(role="agent", content=self._respond(prompt))
+
+        def _respond(self, prompt: str) -> str:
             # Response without numbers or bullets
             return "First thought\nSecond thought\nThird thought"
 
@@ -163,7 +177,11 @@ async def test_cot_empty_response():
     """Test handling of empty/whitespace response."""
 
     class EmptyLLM:
-        async def complete(self, prompt: str) -> str:
+        async def complete(self, messages: list[Message], **kwargs: Any) -> Message:
+            prompt = "\n".join(m.content for m in messages)
+            return Message(role="agent", content=self._respond(prompt))
+
+        def _respond(self, prompt: str) -> str:
             return "   \n  \n   "
 
     llm = EmptyLLM()
@@ -181,7 +199,11 @@ async def test_cot_single_step():
     """Test response with only one step."""
 
     class SingleStepLLM:
-        async def complete(self, prompt: str) -> str:
+        async def complete(self, messages: list[Message], **kwargs: Any) -> Message:
+            prompt = "\n".join(m.content for m in messages)
+            return Message(role="agent", content=self._respond(prompt))
+
+        def _respond(self, prompt: str) -> str:
             return "1. This is the only step"
 
     llm = SingleStepLLM()
@@ -221,7 +243,11 @@ async def test_cot_with_parentheses_numbers():
     """Test parsing numbered steps with parentheses (1) 2) 3))."""
 
     class ParenLLM:
-        async def complete(self, prompt: str) -> str:
+        async def complete(self, messages: list[Message], **kwargs: Any) -> Message:
+            prompt = "\n".join(m.content for m in messages)
+            return Message(role="agent", content=self._respond(prompt))
+
+        def _respond(self, prompt: str) -> str:
             return """1) First step with parenthesis
 2) Second step
 3) Third step"""
@@ -241,7 +267,11 @@ async def test_cot_mixed_format():
     """Test response with mixed formatting."""
 
     class MixedLLM:
-        async def complete(self, prompt: str) -> str:
+        async def complete(self, messages: list[Message], **kwargs: Any) -> Message:
+            prompt = "\n".join(m.content for m in messages)
+            return Message(role="agent", content=self._respond(prompt))
+
+        def _respond(self, prompt: str) -> str:
             return """Let me think about this:
 1. First numbered step
 2. Second numbered step
@@ -280,7 +310,11 @@ async def test_cot_template_with_missing_key():
     """Test error handling for template with undefined placeholder."""
 
     class SimpleLLM:
-        async def complete(self, prompt: str) -> str:
+        async def complete(self, messages: list[Message], **kwargs: Any) -> Message:
+            prompt = "\n".join(m.content for m in messages)
+            return Message(role="agent", content=self._respond(prompt))
+
+        def _respond(self, prompt: str) -> str:
             return "Response"
 
     llm = SimpleLLM()

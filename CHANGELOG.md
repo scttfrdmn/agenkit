@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — Python reasoning techniques called `LLM.complete()` with the wrong type (Issue #802)
+
+The five reasoning techniques that own an LLM — `ChainOfThought`, `TreeOfThought`,
+`PlanAndSolve`, `LeastToMost`, `GraphOfThought` — each carried its own copy of the
+same dispatch block, and all five copies called `llm.complete(prompt)` with a bare
+`str`. The `LLM` contract (`agenkit/adapters/llm/base.py`) and all seven shipped
+adapters declare `messages: list[Message]`. Against any real adapter this raised
+`AttributeError: 'str' object has no attribute 'role'`, because the adapter iterated
+the string's characters looking for `.role`. **None of the five techniques worked
+with a shipped adapter.**
+
+Two things hid it:
+
+- the call was guarded by `hasattr(llm, "complete")`, which any object with a method
+  of that name satisfies, so nothing checked the signature; and
+- every test double in `tests/techniques/reasoning/` was written against the *call
+  site* (`async def complete(self, prompt: str) -> str`) rather than the contract.
+  The seam therefore had thorough-looking coverage that never once exercised it
+  against something adapter-shaped.
+
+The techniques now call `complete([Message(role="user", content=prompt)])` and
+unwrap the returned `Message`. Both `complete()` and `process()` objects remain
+supported, as documented.
+
+- **New `agenkit/techniques/reasoning/_llm_call.py`** — `complete_text(llm, prompt)`
+  is now the single dispatch point for all five techniques, so a future divergence
+  has one place to happen instead of five.
+- **New `tests/techniques/reasoning/conftest.py`** — `ContractLLM` subclasses the
+  real `LLM` and rejects a non-list argument the way an adapter does, so a double
+  cannot silently diverge from the contract again. Prefer it in new tests.
+- **New `tests/techniques/reasoning/test_llm_contract.py`** — 10 tests, including
+  one parametrized across all five techniques.
+- The 15 existing hand-rolled doubles across 6 test files were converted to the
+  contract signature.
+
+This is Python-only. Go, TypeScript and Rust techniques wrap an `Agent` and already
+pass real `Message` objects; the remaining cores are tracked on #802.
+
+Migration: if you passed a custom `llm` object to any of these five techniques, its
+`complete()` must now accept `list[Message]` and may return either a `Message` or a
+`str`. Objects implementing `process()` are unaffected.
+
 ### BREAKING — `NeedleInHaystackBenchmark` signature and name converged across cores (Issue #790)
 
 The six cores that implement this benchmark disagreed on both its constructor and

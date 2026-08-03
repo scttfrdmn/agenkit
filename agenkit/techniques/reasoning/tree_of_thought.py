@@ -46,6 +46,7 @@ from collections.abc import Callable
 
 from agenkit import Agent, Message
 
+from ._llm_call import complete_text
 from .reasoning_tree import NodeState, ReasoningTree
 
 
@@ -167,15 +168,7 @@ class TreeOfThought(Agent):
             varied_prompt = f"{prompt}\n\nAlternative approach #{i + 1}:"
 
             # Get response from LLM
-            if hasattr(self.llm, "complete"):
-                response = await self.llm.complete(varied_prompt)
-            elif hasattr(self.llm, "process"):
-                llm_response = await self.llm.process(Message(role="user", content=varied_prompt))
-                response = llm_response.content
-            else:
-                raise AttributeError("LLM must have either complete() or process() method")
-
-            branches.append(response)
+            branches.append(await complete_text(self.llm, varied_prompt))
 
         return branches
 

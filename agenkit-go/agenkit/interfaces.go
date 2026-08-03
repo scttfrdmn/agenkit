@@ -254,6 +254,42 @@ type StreamingAgent interface {
 	Stream(ctx context.Context, message *Message) (<-chan *Message, <-chan error)
 }
 
+// OptionsAgent extends Agent to support per-call inference options.
+//
+// This is an optional capability, in the same spirit as StreamingAgent: the core
+// contract stays Process(ctx, message), and an agent that can honour per-call
+// options advertises that by implementing this interface. Widening Process itself
+// was rejected — roughly 500 implementations across the nine cores would have had
+// to change, every one of Go's at compile time, to add something most agents have
+// no use for (#801).
+//
+// The extension-interface shape is what makes it additive: existing agents keep
+// compiling untouched, and a caller type-asserts to discover the capability.
+//
+// A caller must not assume its options took effect just because the call
+// succeeded. Assert first:
+//
+//	if oa, ok := agent.(agenkit.OptionsAgent); ok {
+//	    response, err = oa.ProcessWith(ctx, message, opts...)
+//	} else {
+//	    response, err = agent.Process(ctx, message) // options cannot be applied
+//	}
+//
+// The alternative — calling ProcessWith on every agent and having the default
+// discard the options — is the silent-drop failure this issue was filed about.
+type OptionsAgent interface {
+	Agent
+
+	// ProcessWith handles a message with per-call inference options.
+	//
+	// Unset options must be omitted from the downstream call rather than
+	// forwarded as zero values, so an option the caller did not set does not
+	// override whatever the agent or provider was configured with. See
+	// CallOptions. A Temperature of 0.0 is a real request (greedy decoding) and
+	// must still be forwarded.
+	ProcessWith(ctx context.Context, message *Message, opts ...CallOption) (*Message, error)
+}
+
 // Verdict is the outcome of a verification, as a three-state enum.
 //
 // VerdictNotAssessed is a genuine third state and must not be collapsed into

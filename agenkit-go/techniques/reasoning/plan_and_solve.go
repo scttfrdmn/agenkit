@@ -90,14 +90,21 @@ func (a *PlanAndSolveAgent) Capabilities() []string {
 	}
 }
 
-// llmCall calls the underlying LLM with a prompt
-func (a *PlanAndSolveAgent) llmCall(ctx context.Context, prompt string) (string, error) {
+// llmCall calls the underlying LLM with a prompt.
+//
+// Options are variadic so every existing call site keeps compiling; they are
+// forwarded to the wrapped agent when it can honour them (#801).
+func (a *PlanAndSolveAgent) llmCall(
+	ctx context.Context,
+	prompt string,
+	opts ...agenkit.CallOption,
+) (string, error) {
 	message := &agenkit.Message{
 		Role:    "user",
 		Content: prompt,
 	}
 
-	response, err := a.agent.Process(ctx, message)
+	response, err := agenkit.ProcessWithOptions(ctx, a.agent, message, opts...)
 	if err != nil {
 		return "", err
 	}
@@ -106,7 +113,11 @@ func (a *PlanAndSolveAgent) llmCall(ctx context.Context, prompt string) (string,
 }
 
 // CreatePlan creates a solution plan for the problem
-func (a *PlanAndSolveAgent) CreatePlan(ctx context.Context, problem string) (*Plan, error) {
+func (a *PlanAndSolveAgent) CreatePlan(
+	ctx context.Context,
+	problem string,
+	opts ...agenkit.CallOption,
+) (*Plan, error) {
 	if a.planner != nil {
 		return a.planner(ctx, problem)
 	}
@@ -120,7 +131,7 @@ Problem: %s
 
 Solution Plan:`, problem)
 
-	response, err := a.llmCall(ctx, prompt)
+	response, err := a.llmCall(ctx, prompt, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +167,11 @@ Solution Plan:`, problem)
 }
 
 // Validate validates that a plan is complete and feasible
-func (a *PlanAndSolveAgent) Validate(ctx context.Context, plan *Plan) (*Plan, error) {
+func (a *PlanAndSolveAgent) Validate(
+	ctx context.Context,
+	plan *Plan,
+	opts ...agenkit.CallOption,
+) (*Plan, error) {
 	prompt := fmt.Sprintf(`Review this solution plan for completeness and feasibility.
 Is this plan sufficient to solve the problem? Are there any missing steps or issues?
 
@@ -167,7 +182,7 @@ Plan:
 
 Validation (answer "VALID" or describe issues):`, plan.Problem, a.formatPlan(plan))
 
-	response, err := a.llmCall(ctx, prompt)
+	response, err := a.llmCall(ctx, prompt, opts...)
 	if err != nil {
 		return plan, err
 	}
@@ -196,7 +211,12 @@ func (a *PlanAndSolveAgent) formatPlan(plan *Plan) string {
 }
 
 // ExecuteStep executes a single plan step
-func (a *PlanAndSolveAgent) ExecuteStep(ctx context.Context, step *PlanStep, previousResults []string) (string, error) {
+func (a *PlanAndSolveAgent) ExecuteStep(
+	ctx context.Context,
+	step *PlanStep,
+	previousResults []string,
+	opts ...agenkit.CallOption,
+) (string, error) {
 	if a.solver != nil {
 		return a.solver(ctx, step, previousResults)
 	}
@@ -227,7 +247,7 @@ Step: %s
 Execution Result:`, step.Description)
 	}
 
-	result, err := a.llmCall(ctx, prompt)
+	result, err := a.llmCall(ctx, prompt, opts...)
 	if err != nil {
 		return "", err
 	}
@@ -236,11 +256,15 @@ Execution Result:`, step.Description)
 }
 
 // ExecutePlan executes all steps in the plan sequentially
-func (a *PlanAndSolveAgent) ExecutePlan(ctx context.Context, plan *Plan) ([]string, error) {
+func (a *PlanAndSolveAgent) ExecutePlan(
+	ctx context.Context,
+	plan *Plan,
+	opts ...agenkit.CallOption,
+) ([]string, error) {
 	results := make([]string, 0, len(plan.Steps))
 
 	for _, step := range plan.Steps {
-		result, err := a.ExecuteStep(ctx, step, results)
+		result, err := a.ExecuteStep(ctx, step, results, opts...)
 		if err != nil {
 			return results, err
 		}
@@ -255,17 +279,31 @@ func (a *PlanAndSolveAgent) ExecutePlan(ctx context.Context, plan *Plan) ([]stri
 
 // Process processes a message with Plan-and-Solve prompting
 func (a *PlanAndSolveAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	return a.ProcessWith(ctx, message)
+}
+
+// ProcessWith processes a message with Plan-and-Solve prompting and per-call options.
+//
+// Implements agenkit.OptionsAgent. The options are threaded through every phase —
+// planning, validation, replanning and step execution — because a temperature that
+// reaches only some of the LLM calls in a multi-phase technique is not the
+// temperature the caller asked for (#801).
+func (a *PlanAndSolveAgent) ProcessWith(
+	ctx context.Context,
+	message *agenkit.Message,
+	opts ...agenkit.CallOption,
+) (*agenkit.Message, error) {
 	problem := message.ContentString()
 
 	// Phase 1: Create plan
-	plan, err := a.CreatePlan(ctx, problem)
+	plan, err := a.CreatePlan(ctx, problem, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	// Phase 2: Validate plan (if enabled)
 	if a.validatePlan {
-		plan, err = a.Validate(ctx, plan)
+		plan, err = a.Validate(ctx, plan, opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -281,12 +319,12 @@ Previous Plan Issues:
 
 Improved Plan:`, problem, plan.ValidationNotes)
 
-			_, _ = a.llmCall(ctx, improvedPrompt)
-			plan, err = a.CreatePlan(ctx, problem)
+			_, _ = a.llmCall(ctx, improvedPrompt, opts...)
+			plan, err = a.CreatePlan(ctx, problem, opts...)
 			if err != nil {
 				return nil, err
 			}
-			plan, err = a.Validate(ctx, plan)
+			plan, err = a.Validate(ctx, plan, opts...)
 			if err != nil {
 				return nil, err
 			}
@@ -294,7 +332,7 @@ Improved Plan:`, problem, plan.ValidationNotes)
 	}
 
 	// Phase 3: Execute plan
-	executionResults, err := a.ExecutePlan(ctx, plan)
+	executionResults, err := a.ExecutePlan(ctx, plan, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -326,4 +364,9 @@ Improved Plan:`, problem, plan.ValidationNotes)
 		Content:  finalSolution,
 		Metadata: metadata,
 	}, nil
+}
+
+// Introspect returns a snapshot of the agent's state.
+func (a *PlanAndSolveAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
 }

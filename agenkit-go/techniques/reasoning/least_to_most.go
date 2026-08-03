@@ -117,7 +117,11 @@ func (ltm *LeastToMost) Capabilities() []string {
 // decompose breaks down a problem into subproblems.
 //
 // Uses custom decomposer if provided, otherwise uses LLM.
-func (ltm *LeastToMost) decompose(ctx context.Context, problem string) ([]Subproblem, error) {
+func (ltm *LeastToMost) decompose(
+	ctx context.Context,
+	problem string,
+	opts ...agenkit.CallOption,
+) ([]Subproblem, error) {
 	if ltm.decomposer != nil {
 		// Use custom decomposer
 		subproblemTexts, err := ltm.decomposer(problem)
@@ -153,7 +157,7 @@ Subproblems (from simplest to most complex):`, problem)
 		Metadata: make(map[string]interface{}),
 	}
 
-	response, err := ltm.agent.Process(ctx, promptMessage)
+	response, err := agenkit.ProcessWithOptions(ctx, ltm.agent, promptMessage, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("decomposition failed: %w", err)
 	}
@@ -212,6 +216,7 @@ func (ltm *LeastToMost) solveSubproblem(
 	ctx context.Context,
 	subproblem Subproblem,
 	previousSolutions []string,
+	opts ...agenkit.CallOption,
 ) (string, error) {
 	var prompt string
 
@@ -246,7 +251,7 @@ Solution:`, subproblem.Content)
 		Metadata: make(map[string]interface{}),
 	}
 
-	response, err := ltm.agent.Process(ctx, promptMessage)
+	response, err := agenkit.ProcessWithOptions(ctx, ltm.agent, promptMessage, opts...)
 	if err != nil {
 		return "", fmt.Errorf("subproblem solving failed: %w", err)
 	}
@@ -266,10 +271,23 @@ Solution:`, subproblem.Content)
 //   - subproblem_solutions: []string
 //   - compose_solutions: bool
 func (ltm *LeastToMost) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	return ltm.ProcessWith(ctx, message)
+}
+
+// ProcessWith processes a message with Least-to-Most reasoning and per-call options.
+//
+// Implements agenkit.OptionsAgent. The options reach both the decomposition and
+// every subproblem solve, since a temperature applied to only some of the calls in
+// a multi-stage technique is not the temperature the caller asked for (#801).
+func (ltm *LeastToMost) ProcessWith(
+	ctx context.Context,
+	message *agenkit.Message,
+	opts ...agenkit.CallOption,
+) (*agenkit.Message, error) {
 	problem := message.ContentString()
 
 	// Step 1: Decompose problem
-	subproblems, err := ltm.decompose(ctx, problem)
+	subproblems, err := ltm.decompose(ctx, problem, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("least to most decomposition failed: %w", err)
 	}
@@ -277,7 +295,7 @@ func (ltm *LeastToMost) Process(ctx context.Context, message *agenkit.Message) (
 	// Step 2: Solve subproblems sequentially
 	solutions := make([]string, 0, len(subproblems))
 	for _, subproblem := range subproblems {
-		solution, err := ltm.solveSubproblem(ctx, subproblem, solutions)
+		solution, err := ltm.solveSubproblem(ctx, subproblem, solutions, opts...)
 		if err != nil {
 			return nil, fmt.Errorf("subproblem solving failed: %w", err)
 		}

@@ -152,14 +152,21 @@ func (got *GraphOfThought) Capabilities() []string {
 }
 
 // llmCall calls the underlying LLM with a prompt.
-func (got *GraphOfThought) llmCall(ctx context.Context, prompt string) (string, error) {
+//
+// Options are variadic so every existing call site keeps compiling; they are
+// forwarded to the wrapped agent when it can honour them (#801).
+func (got *GraphOfThought) llmCall(
+	ctx context.Context,
+	prompt string,
+	opts ...agenkit.CallOption,
+) (string, error) {
 	msg := &agenkit.Message{
 		Role:     "user",
 		Content:  prompt,
 		Metadata: make(map[string]interface{}),
 	}
 
-	response, err := got.agent.Process(ctx, msg)
+	response, err := agenkit.ProcessWithOptions(ctx, got.agent, msg, opts...)
 	if err != nil {
 		return "", fmt.Errorf("llm call failed: %w", err)
 	}
@@ -168,7 +175,11 @@ func (got *GraphOfThought) llmCall(ctx context.Context, prompt string) (string, 
 }
 
 // GeneratePremises generates initial premises/facts for the problem.
-func (got *GraphOfThought) GeneratePremises(ctx context.Context, problem string) ([]string, error) {
+func (got *GraphOfThought) GeneratePremises(
+	ctx context.Context,
+	problem string,
+	opts ...agenkit.CallOption,
+) ([]string, error) {
 	prompt := fmt.Sprintf(`Identify the key facts and premises for this problem.
 List 2-4 foundational facts or assumptions, one per line.
 
@@ -176,7 +187,7 @@ Problem: %s
 
 Premises:`, problem)
 
-	response, err := got.llmCall(ctx, prompt)
+	response, err := got.llmCall(ctx, prompt, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +211,13 @@ Premises:`, problem)
 }
 
 // GenerateThoughts generates new intermediate thoughts based on existing ones.
-func (got *GraphOfThought) GenerateThoughts(ctx context.Context, problem string, existingThoughts []string, maxNew int) ([]string, error) {
+func (got *GraphOfThought) GenerateThoughts(
+	ctx context.Context,
+	problem string,
+	existingThoughts []string,
+	maxNew int,
+	opts ...agenkit.CallOption,
+) ([]string, error) {
 	var prompt string
 
 	if len(existingThoughts) > 0 {
@@ -225,7 +242,7 @@ Problem: %s
 Thoughts (one per line):`, maxNew, problem)
 	}
 
-	response, err := got.llmCall(ctx, prompt)
+	response, err := got.llmCall(ctx, prompt, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +265,11 @@ Thoughts (one per line):`, maxNew, problem)
 }
 
 // IdentifyConnections identifies the logical connection between two thoughts.
-func (got *GraphOfThought) IdentifyConnections(ctx context.Context, thought1, thought2 string) (EdgeType, error) {
+func (got *GraphOfThought) IdentifyConnections(
+	ctx context.Context,
+	thought1, thought2 string,
+	opts ...agenkit.CallOption,
+) (EdgeType, error) {
 	prompt := fmt.Sprintf(`Analyze the logical relationship between these two statements.
 
 Statement 1: %s
@@ -264,7 +285,7 @@ Does statement 2:
 
 Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION`, thought1, thought2)
 
-	response, err := got.llmCall(ctx, prompt)
+	response, err := got.llmCall(ctx, prompt, opts...)
 	if err != nil {
 		return "", err
 	}
@@ -286,11 +307,15 @@ Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION`, thou
 }
 
 // BuildGraph builds the reasoning graph for the problem.
-func (got *GraphOfThought) BuildGraph(ctx context.Context, problem string) (*ReasoningGraph, error) {
+func (got *GraphOfThought) BuildGraph(
+	ctx context.Context,
+	problem string,
+	opts ...agenkit.CallOption,
+) (*ReasoningGraph, error) {
 	graph := NewReasoningGraph()
 
 	// Step 1: Generate premises
-	premises, err := got.GeneratePremises(ctx, problem)
+	premises, err := got.GeneratePremises(ctx, problem, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate premises: %w", err)
 	}
@@ -317,7 +342,7 @@ func (got *GraphOfThought) BuildGraph(ctx context.Context, problem string) (*Rea
 			break
 		}
 
-		newThoughts, err := got.GenerateThoughts(ctx, problem, allThoughts, maxNew)
+		newThoughts, err := got.GenerateThoughts(ctx, problem, allThoughts, maxNew, opts...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate thoughts: %w", err)
 		}
@@ -349,7 +374,7 @@ func (got *GraphOfThought) BuildGraph(ctx context.Context, problem string) (*Rea
 			node2 := graph.GetNode(node2ID)
 
 			// Check connection from node1 to node2
-			edgeType, err := got.IdentifyConnections(ctx, node1.Content, node2.Content)
+			edgeType, err := got.IdentifyConnections(ctx, node1.Content, node2.Content, opts...)
 			if err == nil {
 				if err := graph.AddEdge(node1ID, node2ID, edgeType, 0.8, nil); err == nil {
 					edgeCount++
@@ -374,7 +399,7 @@ Thoughts:
 
 Final conclusion:`, problem, thoughtsText)
 
-		conclusion, err := got.llmCall(ctx, conclusionPrompt)
+		conclusion, err := got.llmCall(ctx, conclusionPrompt, opts...)
 		if err == nil {
 			conclusionID := graph.AddNode(strings.TrimSpace(conclusion), NodeTypeConclusion, 0.8, nil)
 
@@ -500,10 +525,24 @@ func (got *GraphOfThought) AggregatePaths(graph *ReasoningGraph, paths [][]int) 
 //	}
 //	fmt.Printf("Nodes: %v\n", response.Metadata["num_nodes"])
 func (got *GraphOfThought) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	return got.ProcessWith(ctx, message)
+}
+
+// ProcessWith processes a message with Graph-of-Thought reasoning and per-call options.
+//
+// Implements agenkit.OptionsAgent. The options reach every LLM call in the graph
+// build — premises, thought expansion, edge identification and the conclusion —
+// since a temperature applied to only some of them is not what the caller asked
+// for (#801).
+func (got *GraphOfThought) ProcessWith(
+	ctx context.Context,
+	message *agenkit.Message,
+	opts ...agenkit.CallOption,
+) (*agenkit.Message, error) {
 	problem := message.ContentString()
 
 	// Step 1: Build reasoning graph
-	graph, err := got.BuildGraph(ctx, problem)
+	graph, err := got.BuildGraph(ctx, problem, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build graph: %w", err)
 	}
@@ -582,4 +621,9 @@ func (got *GraphOfThought) Process(ctx context.Context, message *agenkit.Message
 	}
 
 	return response, nil
+}
+
+// Introspect returns a snapshot of the agent's state.
+func (got *GraphOfThought) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(got)
 }

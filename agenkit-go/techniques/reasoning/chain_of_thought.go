@@ -143,6 +143,23 @@ func (cot *ChainOfThought) Capabilities() []string {
 //   - reasoning_steps: []string (if parseSteps is true)
 //   - num_steps: int (if parseSteps is true)
 func (cot *ChainOfThought) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	return cot.ProcessWith(ctx, message)
+}
+
+// ProcessWith processes the message with Chain-of-Thought and per-call options.
+//
+// Implements agenkit.OptionsAgent, so a wrapper such as SelfConsistency can vary
+// the sampling temperature per call. The options are forwarded to the wrapped
+// agent when that agent can honour them and dropped when it cannot — this
+// technique owns no LLM of its own, so it can only pass them along (#801).
+//
+// Unset options are omitted rather than defaulted: passing no options makes this
+// identical to Process.
+func (cot *ChainOfThought) ProcessWith(
+	ctx context.Context,
+	message *agenkit.Message,
+	opts ...agenkit.CallOption,
+) (*agenkit.Message, error) {
 	// Validate prompt template
 	if !strings.Contains(cot.promptTemplate, "{query}") {
 		return nil, fmt.Errorf("prompt template must contain {query} placeholder")
@@ -158,7 +175,7 @@ func (cot *ChainOfThought) Process(ctx context.Context, message *agenkit.Message
 		Metadata: make(map[string]interface{}),
 	}
 
-	response, err := cot.agent.Process(ctx, promptMessage)
+	response, err := agenkit.ProcessWithOptions(ctx, cot.agent, promptMessage, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("chain of thought processing failed: %w", err)
 	}
@@ -260,4 +277,13 @@ func (cot *ChainOfThought) limitSteps(steps []string) []string {
 		return steps[:*cot.maxSteps]
 	}
 	return steps
+}
+
+// Introspect returns a snapshot of the agent's state.
+//
+// Required by agenkit.Agent, and therefore by agenkit.OptionsAgent. Without it
+// this technique is not an Agent at all, so it can neither be wrapped by another
+// technique nor advertise that it honours per-call options (#801).
+func (cot *ChainOfThought) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(cot)
 }

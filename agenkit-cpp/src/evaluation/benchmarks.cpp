@@ -6,6 +6,7 @@
 #include "agenkit/evaluation/benchmarks.hpp"
 #include "agenkit/infrastructure/thread_pool.hpp"
 #include <algorithm>
+#include <cctype>
 #include <sstream>
 #include <random>
 #include <cmath>
@@ -17,10 +18,32 @@ namespace evaluation {
 // TestCase Implementation
 // ============================================================================
 
+namespace {
+
+std::string to_lower(const std::string& str) {
+    std::string result = str;
+    std::transform(result.begin(), result.end(), result.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    return result;
+}
+
+}  // namespace
+
 bool TestCase::validate(const std::string& actual) const {
     if (std::holds_alternative<std::string>(expected)) {
-        // Exact string match
-        return std::get<std::string>(expected) == actual;
+        // Case-insensitive substring match.
+        //
+        // `expected` is the fragment to find in the output, not the whole output: an
+        // agent answering "The answer is 42." matches expected = "42". This used to be
+        // `==`, which disagreed with this core's own AccuracyMetric (which has always
+        // done `actual.find(expected) != npos`) — the same value passed via the metric
+        // and failed here (#820). Python, Go, TypeScript, Rust and Zig all do a
+        // case-insensitive substring check.
+        //
+        // Callers needing exact or case-sensitive comparison use the
+        // std::function variant.
+        return to_lower(actual).find(to_lower(std::get<std::string>(expected))) !=
+               std::string::npos;
     } else {
         // Custom validation function
         auto validator = std::get<std::function<bool(const std::string&)>>(expected);
@@ -71,8 +94,17 @@ TestCase TestCase::from_json(const nlohmann::json& j) {
 
     if (expected_type == "string") {
         tc.expected = j.at("expected").get<std::string>();
+    } else {
+        // Functions can't be deserialized. This used to leave the empty string, which
+        // under the old exact comparison failed everything — wrong, but conservatively
+        // so. Now that a string `expected` is a substring check, an empty one matches
+        // *everything* (as it does in Python, Go and TypeScript), so leaving it would
+        // turn every round-tripped functional case into an unconditional pass. An
+        // always-false validator keeps the safe direction and is not mistakable for a
+        // real expectation (#820).
+        tc.expected = std::function<bool(const std::string&)>(
+            [](const std::string&) { return false; });
     }
-    // Note: functions can't be deserialized, will remain as empty string
 
     // Deserialize metadata
     if (j.contains("metadata")) {

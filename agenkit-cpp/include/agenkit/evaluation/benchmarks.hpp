@@ -77,10 +77,16 @@ struct TestCase {
     std::string input;
 
     /**
-     * @brief Expected output (string for exact match, or validation function)
+     * @brief Expected output (fragment to find in the output, or validation function)
      *
-     * If this is a string, validation is done via exact match (case-sensitive).
+     * If this is a string, validation is a **case-insensitive substring** check: the
+     * string is a fragment expected to appear somewhere in the agent's output, so an
+     * agent answering "The answer is 42." matches an expected value of "42". This is
+     * the cross-language contract, shared with Python, Go, TypeScript, Rust and Zig,
+     * and with this core's own AccuracyMetric.
+     *
      * If this is a function, it receives the agent's output and returns true if valid.
+     * Use it for exact or case-sensitive comparison, or any other rule.
      */
     std::variant<std::string, std::function<bool(const std::string&)>> expected;
 

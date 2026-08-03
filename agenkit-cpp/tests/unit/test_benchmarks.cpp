@@ -12,11 +12,55 @@ using namespace agenkit::evaluation;
 // TestCase Tests
 // ============================================================================
 
-TEST(TestCaseTest, ValidateExactMatch) {
+TEST(TestCaseTest, ValidateSubstringMatch) {
     TestCase tc("input", "expected");
     EXPECT_TRUE(tc.validate("expected"));
     EXPECT_FALSE(tc.validate("wrong"));
-    EXPECT_FALSE(tc.validate("Expected"));  // Case-sensitive
+}
+
+TEST(TestCaseTest, ValidateMatchesFragmentInProse) {
+    // A string `expected` is the fragment to find in the output, not the whole output.
+    // This used to be `==`, which disagreed with this core's own AccuracyMetric and
+    // scored every realistic agent reply zero (#820).
+    TestCase tc("What is 15 + 27?", "42");
+
+    EXPECT_TRUE(tc.validate("42"));
+    EXPECT_TRUE(tc.validate("The answer is 42."));
+    EXPECT_TRUE(tc.validate("15 + 27 = 42, so the total is 42 items."));
+    EXPECT_FALSE(tc.validate("The answer is 41."));
+
+    // The fragment must appear whole — a prefix of it is not a match.
+    TestCase paris("Capital of France?", "Paris");
+    EXPECT_FALSE(paris.validate("Par"));
+    EXPECT_TRUE(paris.validate("It is Paris, in northern France."));
+}
+
+TEST(TestCaseTest, ValidateIgnoresCase) {
+    // Case-insensitive by default, matching Python, Go, TypeScript, Rust and Zig, and
+    // the case_sensitive = false default of every core's AccuracyMetric. Callers
+    // needing case sensitivity use the std::function variant.
+    TestCase tc("Capital of France?", "Paris");
+
+    EXPECT_TRUE(tc.validate("paris"));
+    EXPECT_TRUE(tc.validate("PARIS"));
+    EXPECT_TRUE(tc.validate("The capital is PaRiS."));
+    EXPECT_FALSE(tc.validate("Lyon"));
+}
+
+TEST(TestCaseTest, ValidateSubstringEdgeCases) {
+    // An empty expected value matches anything: nothing was asked for.
+    TestCase empty("input", "");
+    EXPECT_TRUE(empty.validate(""));
+    EXPECT_TRUE(empty.validate("anything at all"));
+
+    // An expected value longer than the output cannot match.
+    TestCase long_expected("input", "a very long expected value");
+    EXPECT_FALSE(long_expected.validate("short"));
+    EXPECT_FALSE(long_expected.validate(""));
+
+    // A match at the very end of the output still counts.
+    TestCase tail("input", "end");
+    EXPECT_TRUE(tail.validate("this is the end"));
 }
 
 TEST(TestCaseTest, ValidateWithFunction) {
@@ -73,6 +117,24 @@ TEST(TestCaseTest, ToJsonFromJson) {
     EXPECT_TRUE(tc2.has_tag("easy"));
     EXPECT_EQ(std::any_cast<std::string>(tc2.metadata["difficulty"]), "easy");
     EXPECT_EQ(std::any_cast<int>(tc2.metadata["score"]), 100);
+}
+
+TEST(TestCaseTest, FromJsonFunctionalCaseDoesNotBecomeAlwaysPass) {
+    // A std::function expected value can't be serialized. from_json used to leave the
+    // empty string, which failed everything under the old exact comparison — wrong, but
+    // safely so. An empty string is now a substring check that matches *everything*, so
+    // without care every round-tripped functional case would pass unconditionally (#820).
+    TestCase tc("What is the answer?", [](const std::string& output) {
+        return output.find("42") != std::string::npos;
+    });
+
+    auto json = tc.to_json();
+    EXPECT_EQ(json["expected_type"], "function");
+
+    auto restored = TestCase::from_json(json);
+    EXPECT_FALSE(restored.validate("42"));
+    EXPECT_FALSE(restored.validate("anything at all"));
+    EXPECT_FALSE(restored.validate(""));
 }
 
 // ============================================================================

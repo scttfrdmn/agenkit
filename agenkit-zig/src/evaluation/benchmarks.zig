@@ -89,18 +89,18 @@ pub const SimpleQABenchmark = struct {
         var cases = std.ArrayList(*core.TestCase).empty;
 
         // Math questions
-        const tc1 = try core.TestCase.initExact(allocator, "What is 15 + 27?", "42");
+        const tc1 = try core.TestCase.initContains(allocator, "What is 15 + 27?", "42");
         try tc1.addMetadata("category", "math");
         try tc1.addMetadata("difficulty", "easy");
         try cases.append(allocator, tc1);
 
-        const tc2 = try core.TestCase.initExact(allocator, "What is 144 ÷ 12?", "12");
+        const tc2 = try core.TestCase.initContains(allocator, "What is 144 ÷ 12?", "12");
         try tc2.addMetadata("category", "math");
         try tc2.addMetadata("difficulty", "easy");
         try cases.append(allocator, tc2);
 
         // Knowledge questions
-        const tc3 = try core.TestCase.initExact(
+        const tc3 = try core.TestCase.initContains(
             allocator,
             "What is the capital of France?",
             "Paris",
@@ -126,7 +126,7 @@ pub const SimpleQABenchmark = struct {
         try cases.append(allocator, tc4);
 
         // Logic question
-        const tc5 = try core.TestCase.initExact(
+        const tc5 = try core.TestCase.initContains(
             allocator,
             "If all roses are flowers and some flowers fade quickly, can all roses fade quickly?",
             "Not necessarily",
@@ -261,7 +261,7 @@ pub const NeedleInHaystackBenchmark = struct {
             const expected = try std.fmt.allocPrint(allocator, "ALPHA-{d:0>4}-OMEGA", .{i});
             defer allocator.free(expected);
 
-            const tc = try core.TestCase.initExact(allocator, input, expected);
+            const tc = try core.TestCase.initContains(allocator, input, expected);
             errdefer tc.deinit();
 
             try tc.addMetadata("category", "retrieval");
@@ -575,6 +575,34 @@ test "SimpleQABenchmark generates test cases" {
     try std.testing.expectEqualStrings("What is 15 + 27?", cases.items[0].input);
 }
 
+test "SimpleQABenchmark cases accept realistic agent prose" {
+    const allocator = std.testing.allocator;
+
+    const benchmark = try SimpleQABenchmark.init(allocator);
+    defer allocator.destroy(benchmark);
+
+    var cases = try benchmark.asBenchmark().generateTestCases(allocator);
+    defer {
+        for (cases.items) |tc| tc.deinit();
+        cases.deinit(allocator);
+    }
+
+    // This benchmark's expected values are fragments — "42", "12", "Paris", "Not
+    // necessarily". Under the old `mem.eql` comparison an agent had to emit the fragment
+    // and nothing else, so a correct agent answering in a sentence scored zero on four
+    // of the five cases and the benchmark measured near-zero accuracy (#820).
+    try std.testing.expect(cases.items[0].validate("15 + 27 = 42"));
+    try std.testing.expect(!cases.items[0].validate("15 + 27 = 43"));
+
+    try std.testing.expect(cases.items[1].validate("144 divided by 12 is 12."));
+
+    try std.testing.expect(cases.items[2].validate("The capital of France is Paris."));
+    try std.testing.expect(cases.items[2].validate("paris"));
+    try std.testing.expect(!cases.items[2].validate("The capital of France is Lyon."));
+
+    try std.testing.expect(cases.items[4].validate("No, not necessarily — some roses may not."));
+}
+
 test "NeedleInHaystackBenchmark configuration" {
     const allocator = std.testing.allocator;
 
@@ -632,7 +660,7 @@ test "NeedleInHaystackBenchmark asks for each needle by its own vault" {
 
         const code = try std.fmt.allocPrint(allocator, "ALPHA-{d:0>4}-OMEGA", .{i});
         defer allocator.free(code);
-        try std.testing.expectEqualStrings(code, tc.expected.exact);
+        try std.testing.expectEqualStrings(code, tc.expected.contains);
 
         // Every needle is embedded in the shared context, so each case can be answered
         // from its own input.

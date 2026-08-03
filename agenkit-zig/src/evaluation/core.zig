@@ -30,12 +30,19 @@ pub const TestCase = struct {
     allocator: Allocator,
 
     pub const Expected = union(enum) {
-        exact: []const u8,
+        /// A fragment that must appear somewhere in the output, compared
+        /// case-insensitively. Named `contains` rather than `exact` because that is
+        /// what it means — see `validate` (#820).
+        contains: []const u8,
         functional: *const fn ([]const u8) bool,
     };
 
-    /// Create a new test case with exact match validation
-    pub fn initExact(
+    /// Create a new test case matched by a case-insensitive substring check.
+    ///
+    /// `expected` is a fragment to find in the output, not the whole output: an agent
+    /// answering "The answer is 42." passes `expected = "42"`. This is the
+    /// cross-language contract — see `validate`.
+    pub fn initContains(
         allocator: Allocator,
         input: []const u8,
         expected: []const u8,
@@ -43,7 +50,7 @@ pub const TestCase = struct {
         const self = try allocator.create(TestCase);
         self.* = TestCase{
             .input = try allocator.dupe(u8, input),
-            .expected = .{ .exact = try allocator.dupe(u8, expected) },
+            .expected = .{ .contains = try allocator.dupe(u8, expected) },
             .metadata = std.StringHashMap([]const u8).init(allocator),
             .tags = &[_][]const u8{},
             .allocator = allocator,
@@ -68,12 +75,42 @@ pub const TestCase = struct {
         return self;
     }
 
-    /// Validate output against expected result
+    /// Validate output against expected result.
+    ///
+    /// A string `expected` is a **case-insensitive substring** of the output, matching
+    /// Python (`expected.lower() in output.lower()`), Go, TypeScript, and every core's
+    /// `AccuracyMetric`. This used to be `mem.eql`, which failed any realistic agent
+    /// reply: `SimpleQABenchmark` expects "42", "Paris", "Not necessarily", and an
+    /// agent answering "The answer is 42." scored zero (#820).
+    ///
+    /// Case-insensitive rather than exact-case because that is what the other cores
+    /// default to; theirs is a `case_sensitive` toggle defaulting to false, and this
+    /// type has no config to hang a toggle on. Callers needing case sensitivity or any
+    /// other rule use `initFunctional`.
     pub fn validate(self: *const TestCase, output: []const u8) bool {
         return switch (self.expected) {
-            .exact => |expected| std.mem.eql(u8, output, expected),
+            .contains => |expected| containsIgnoreCase(output, expected),
             .functional => |validator| validator(output),
         };
+    }
+
+    /// Case-insensitive `indexOf`, allocation-free.
+    ///
+    /// `std.ascii.lowerString` needs a destination buffer, and `validate` has no
+    /// allocator, so the comparison is done in place a byte at a time. ASCII-only, like
+    /// the `lowerString`-based paths elsewhere in this subsystem.
+    fn containsIgnoreCase(haystack: []const u8, needle: []const u8) bool {
+        if (needle.len == 0) return true;
+        if (needle.len > haystack.len) return false;
+
+        var start: usize = 0;
+        while (start + needle.len <= haystack.len) : (start += 1) {
+            var i: usize = 0;
+            while (i < needle.len) : (i += 1) {
+                if (std.ascii.toLower(haystack[start + i]) != std.ascii.toLower(needle[i])) break;
+            } else return true;
+        }
+        return false;
     }
 
     /// Add metadata to test case
@@ -96,7 +133,7 @@ pub const TestCase = struct {
     pub fn deinit(self: *TestCase) void {
         self.allocator.free(self.input);
         switch (self.expected) {
-            .exact => |expected| self.allocator.free(expected),
+            .contains => |expected| self.allocator.free(expected),
             .functional => {},
         }
 
@@ -368,14 +405,73 @@ pub const Evaluator = struct {
 };
 
 // Tests
-test "TestCase with exact match" {
+test "TestCase with substring match" {
     const allocator = std.testing.allocator;
 
-    const test_case = try TestCase.initExact(allocator, "input", "expected");
+    const test_case = try TestCase.initContains(allocator, "input", "expected");
     defer test_case.deinit();
 
     try std.testing.expect(test_case.validate("expected"));
     try std.testing.expect(!test_case.validate("wrong"));
+}
+
+test "TestCase matches an expected fragment inside agent prose" {
+    const allocator = std.testing.allocator;
+
+    // The reason this is a substring check and not `mem.eql`: benchmarks store the
+    // *fragment* to look for, and agents answer in sentences. Under the old exact
+    // comparison every one of these scored zero (#820).
+    const test_case = try TestCase.initContains(allocator, "What is 15 + 27?", "42");
+    defer test_case.deinit();
+
+    try std.testing.expect(test_case.validate("42"));
+    try std.testing.expect(test_case.validate("The answer is 42."));
+    try std.testing.expect(test_case.validate("15 + 27 = 42, so the total is 42 items."));
+    try std.testing.expect(!test_case.validate("The answer is 41."));
+
+    // A prefix of the expected fragment is not a match — the needle must appear whole.
+    const paris = try TestCase.initContains(allocator, "Capital of France?", "Paris");
+    defer paris.deinit();
+    try std.testing.expect(!paris.validate("Par"));
+    try std.testing.expect(paris.validate("It is Paris, in northern France."));
+}
+
+test "TestCase substring match ignores case" {
+    const allocator = std.testing.allocator;
+
+    // Case-insensitive by default, matching Python's `expected.lower() in
+    // output.lower()` and the `case_sensitive = false` default of every core's
+    // AccuracyMetric.
+    const test_case = try TestCase.initContains(allocator, "Capital of France?", "Paris");
+    defer test_case.deinit();
+
+    try std.testing.expect(test_case.validate("paris"));
+    try std.testing.expect(test_case.validate("PARIS"));
+    try std.testing.expect(test_case.validate("The capital is PaRiS."));
+    try std.testing.expect(!test_case.validate("Lyon"));
+}
+
+test "TestCase substring match edge cases" {
+    const allocator = std.testing.allocator;
+
+    // An empty expected value matches anything: nothing was asked for. Guarding this
+    // explicitly because the naive loop bound would read past the end otherwise.
+    const empty = try TestCase.initContains(allocator, "input", "");
+    defer empty.deinit();
+    try std.testing.expect(empty.validate(""));
+    try std.testing.expect(empty.validate("anything at all"));
+
+    // An expected value longer than the output cannot match.
+    const long = try TestCase.initContains(allocator, "input", "a very long expected value");
+    defer long.deinit();
+    try std.testing.expect(!long.validate("short"));
+    try std.testing.expect(!long.validate(""));
+
+    // A match at the very end of the output still counts — an off-by-one in the loop
+    // bound would miss it.
+    const tail = try TestCase.initContains(allocator, "input", "end");
+    defer tail.deinit();
+    try std.testing.expect(tail.validate("this is the end"));
 }
 
 test "TestCase with functional validator" {

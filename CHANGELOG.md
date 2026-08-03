@@ -67,6 +67,68 @@ plumbing stopped one layer short, which was the bug.
 This lands in Python first as the reference. The other eight cores still accept an
 inert `temperature` (or lack the field entirely, in C#/Java/Scala); tracked on #801.
 
+#### Go (`agenkit-go`)
+
+Go's `reasoning.WithTemperature()` was the most urgent of the eight: a public,
+documented builder option that could not take effect, sitting next to a
+`// TODO: If temperature supported, pass it to agent` in `sampleOnce`.
+
+- **New `agenkit.OptionsAgent`** — an extension interface (`Agent` plus
+  `ProcessWith(ctx, message, opts ...CallOption)`), the same shape as the existing
+  `StreamingAgent`. Additive: every existing agent keeps compiling untouched.
+- **New `agenkit.SupportsOptions(agent)` and `agenkit.ProcessWithOptions(ctx,
+  agent, message, opts...)`** — the type assertion is spelled one way in one place
+  rather than re-derived at each wrapper call site. `ProcessWithOptions` with no
+  options takes the plain `Process` path, so an `OptionsAgent` is never handed an
+  empty `CallOptions` just because the helper was used.
+- All six reasoning techniques implement `ProcessWith` and thread options through
+  **every** internal LLM call — including the branches an obvious test never
+  reaches: Plan-and-Solve's replanning path (3 further calls, entered only when
+  validation rejects a plan), Tree-of-Thought's recursive expansion under all three
+  search strategies, and Graph-of-Thought's conclusion call (gated on the node cap).
+- Internal helpers took a **variadic** `opts ...agenkit.CallOption` rather than a
+  struct field. Variadic parameters are backward-compatible for every existing
+  caller, and read-only — `SelfConsistency` samples and `TreeOfThought` branches
+  both run in parallel goroutines, where a shared `*CallOptions` would be written
+  by all of them.
+- `SelfConsistency` gained `ProcessWith` as well as consuming options, so the
+  capability composes in both directions; a technique that only consumes options
+  breaks the chain at the first wrapper above it. Its own configured temperature
+  wins over a caller's, since sampling diversity is what makes the technique
+  correct.
+- **New `SelfConsistency.TemperatureApplied()`** plus `temperature` and
+  `temperature_applied` response metadata, matching Python. `temperature` is
+  reported even when it was dropped, so "asked for 0.8 and did not get it" is
+  distinguishable from "never asked".
+- `reasoning.WithTemperature` now validates eagerly and panics on an out-of-range
+  value, mirroring `agenkit.WithTemperature` so the two spellings cannot disagree.
+- **Five techniques were not `agenkit.Agent` at all** — `ChainOfThought`,
+  `SelfConsistency`, `TreeOfThought`, `GraphOfThought` and `PlanAndSolveAgent` were
+  missing `Introspect()`, so `SelfConsistency` could not wrap a `ChainOfThought`:
+  the canonical composition, and the one where temperature matters most. Fixed by
+  adding `Introspect()` to all five; only `LeastToMost` had it.
+
+17 new tests (`agenkit/calloptions_agent_test.go`, 4;
+`techniques/reasoning/calloptions_test.go`, 13), 22 cases counting subtests. They
+assert on which path each call *arrived by*, not just on the returned message: a
+phase that drops its options still produces a response, so the entry path is the
+only thing that distinguishes it from a working one. Compile-time
+`var _ agenkit.OptionsAgent` assertions cover all six techniques, so a new
+technique that forgets `ProcessWith` fails the build rather than silently dropping
+options at runtime.
+
+Two of the assertions guard against a *vacuous* pass rather than a wrong value: a
+gated phase that never runs makes "every call forwarded" trivially true, so the
+Graph-of-Thought and Tree-of-Thought tests also assert that the conclusion call and
+the sub-root expansion actually happened. Both were needed — the first drafts of
+those two tests passed against a deliberately broken forward.
+
+Verified by mutation: 17 mutations across the core helper and all six techniques —
+14 single-site reverts of a forwarding site (including one per search strategy and
+one per replanning call), plus `SupportsOptions` forced true, an unset temperature
+forwarded as `0.0`, and the Graph-of-Thought conclusion phase made unreachable —
+each produce at least one test failure.
+
 ### Fixed — Python reasoning techniques called `LLM.complete()` with the wrong type (Issue #802)
 
 The five reasoning techniques that own an LLM — `ChainOfThought`, `TreeOfThought`,

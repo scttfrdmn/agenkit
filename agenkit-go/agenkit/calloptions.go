@@ -1,6 +1,9 @@
 package agenkit
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 // CallOptions holds per-call inference options for an LLM call.
 //
@@ -124,4 +127,42 @@ func BuildCallOptions(opts ...CallOption) *CallOptions {
 		opt(options)
 	}
 	return options
+}
+
+// SupportsOptions reports whether an agent honours per-call options.
+//
+// A caller that needs its options to actually take effect should check this
+// rather than assume, since a plain Agent has no way to apply them. Exposed as a
+// helper so the type assertion is spelled one way everywhere and callers do not
+// each reinvent it.
+func SupportsOptions(agent Agent) bool {
+	_, ok := agent.(OptionsAgent)
+	return ok
+}
+
+// ProcessWithOptions forwards a message to an agent, applying options if it can.
+//
+// The single place that resolves "can this agent take options", so the pattern is
+// not re-derived at each of the wrapper call sites in techniques/reasoning. When
+// the agent is not an OptionsAgent the options are dropped — deliberately, since
+// a plain Agent has nowhere to put them — so a caller that needs to know whether
+// that happened must check SupportsOptions first. That is exactly why the
+// reasoning techniques expose a TemperatureApplied accessor (#801).
+//
+// Passing no options skips the assertion entirely: an empty options set is
+// indistinguishable from not asking, and an OptionsAgent should not be handed an
+// empty CallOptions just because the helper was used.
+func ProcessWithOptions(
+	ctx context.Context,
+	agent Agent,
+	message *Message,
+	opts ...CallOption,
+) (*Message, error) {
+	if len(opts) == 0 {
+		return agent.Process(ctx, message)
+	}
+	if oa, ok := agent.(OptionsAgent); ok {
+		return oa.ProcessWith(ctx, message, opts...)
+	}
+	return agent.Process(ctx, message)
 }

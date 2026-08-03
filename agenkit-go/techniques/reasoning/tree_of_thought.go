@@ -195,7 +195,12 @@ func defaultEvaluator(text string) float64 {
 }
 
 // generateBranches generates N alternative reasoning branches in parallel.
-func (tot *TreeOfThought) generateBranches(ctx context.Context, prompt string, n int) ([]string, error) {
+func (tot *TreeOfThought) generateBranches(
+	ctx context.Context,
+	prompt string,
+	n int,
+	opts ...agenkit.CallOption,
+) ([]string, error) {
 	results := make(chan string, n)
 	errors := make(chan error, n)
 	var wg sync.WaitGroup
@@ -215,7 +220,7 @@ func (tot *TreeOfThought) generateBranches(ctx context.Context, prompt string, n
 				Metadata: make(map[string]interface{}),
 			}
 
-			response, err := tot.agent.Process(ctx, msg)
+			response, err := agenkit.ProcessWithOptions(ctx, tot.agent, msg, opts...)
 			if err != nil {
 				errors <- err
 				return
@@ -245,7 +250,13 @@ func (tot *TreeOfThought) generateBranches(ctx context.Context, prompt string, n
 }
 
 // expandNode expands a node by generating child branches.
-func (tot *TreeOfThought) expandNode(ctx context.Context, tree *ReasoningTree, nodeID int, query string) ([]int, error) {
+func (tot *TreeOfThought) expandNode(
+	ctx context.Context,
+	tree *ReasoningTree,
+	nodeID int,
+	query string,
+	opts ...agenkit.CallOption,
+) ([]int, error) {
 	node := tree.GetNode(nodeID)
 	if node == nil {
 		return nil, nil
@@ -256,7 +267,7 @@ func (tot *TreeOfThought) expandNode(ctx context.Context, tree *ReasoningTree, n
 	prompt := fmt.Sprintf("Original question: %s\n\nReasoning so far:\n%s\n\nContinue reasoning:", query, pathText)
 
 	// Generate branches
-	branches, err := tot.generateBranches(ctx, prompt, tot.branchingFactor)
+	branches, err := tot.generateBranches(ctx, prompt, tot.branchingFactor, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate branches: %w", err)
 	}
@@ -289,7 +300,13 @@ func (tot *TreeOfThought) expandNode(ctx context.Context, tree *ReasoningTree, n
 }
 
 // searchBFS performs breadth-first search through the reasoning tree.
-func (tot *TreeOfThought) searchBFS(ctx context.Context, tree *ReasoningTree, rootID int, query string) error {
+func (tot *TreeOfThought) searchBFS(
+	ctx context.Context,
+	tree *ReasoningTree,
+	rootID int,
+	query string,
+	opts ...agenkit.CallOption,
+) error {
 	queue := []int{rootID}
 
 	for len(queue) > 0 {
@@ -309,7 +326,7 @@ func (tot *TreeOfThought) searchBFS(ctx context.Context, tree *ReasoningTree, ro
 		}
 
 		// Expand node
-		childIDs, err := tot.expandNode(ctx, tree, nodeID, query)
+		childIDs, err := tot.expandNode(ctx, tree, nodeID, query, opts...)
 		if err != nil {
 			return fmt.Errorf("bfs expansion failed: %w", err)
 		}
@@ -322,7 +339,13 @@ func (tot *TreeOfThought) searchBFS(ctx context.Context, tree *ReasoningTree, ro
 }
 
 // searchDFS performs depth-first search through the reasoning tree.
-func (tot *TreeOfThought) searchDFS(ctx context.Context, tree *ReasoningTree, rootID int, query string) error {
+func (tot *TreeOfThought) searchDFS(
+	ctx context.Context,
+	tree *ReasoningTree,
+	rootID int,
+	query string,
+	opts ...agenkit.CallOption,
+) error {
 	stack := []int{rootID}
 
 	for len(stack) > 0 {
@@ -342,7 +365,7 @@ func (tot *TreeOfThought) searchDFS(ctx context.Context, tree *ReasoningTree, ro
 		}
 
 		// Expand node
-		childIDs, err := tot.expandNode(ctx, tree, nodeID, query)
+		childIDs, err := tot.expandNode(ctx, tree, nodeID, query, opts...)
 		if err != nil {
 			return fmt.Errorf("dfs expansion failed: %w", err)
 		}
@@ -357,7 +380,13 @@ func (tot *TreeOfThought) searchDFS(ctx context.Context, tree *ReasoningTree, ro
 }
 
 // searchBestFirst performs best-first search - always expand highest scoring node.
-func (tot *TreeOfThought) searchBestFirst(ctx context.Context, tree *ReasoningTree, rootID int, query string) error {
+func (tot *TreeOfThought) searchBestFirst(
+	ctx context.Context,
+	tree *ReasoningTree,
+	rootID int,
+	query string,
+	opts ...agenkit.CallOption,
+) error {
 	openNodes := []int{rootID}
 
 	for len(openNodes) > 0 {
@@ -390,7 +419,7 @@ func (tot *TreeOfThought) searchBestFirst(ctx context.Context, tree *ReasoningTr
 		}
 
 		// Expand node
-		childIDs, err := tot.expandNode(ctx, tree, nodeID, query)
+		childIDs, err := tot.expandNode(ctx, tree, nodeID, query, opts...)
 		if err != nil {
 			return fmt.Errorf("best-first expansion failed: %w", err)
 		}
@@ -415,6 +444,20 @@ func (tot *TreeOfThought) searchBestFirst(ctx context.Context, tree *ReasoningTr
 //   - num_steps: int
 //   - best_score: float64
 func (tot *TreeOfThought) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	return tot.ProcessWith(ctx, message)
+}
+
+// ProcessWith processes a message with Tree-of-Thought reasoning and per-call options.
+//
+// Implements agenkit.OptionsAgent. The options reach every branch generation in the
+// search, whichever strategy is configured — a temperature that applies to only
+// some branches is not the temperature the caller asked for, and branch diversity
+// is the whole point of the technique (#801).
+func (tot *TreeOfThought) ProcessWith(
+	ctx context.Context,
+	message *agenkit.Message,
+	opts ...agenkit.CallOption,
+) (*agenkit.Message, error) {
 	query := message.ContentString()
 
 	// Create reasoning tree
@@ -425,11 +468,11 @@ func (tot *TreeOfThought) Process(ctx context.Context, message *agenkit.Message)
 	var err error
 	switch tot.strategy {
 	case SearchStrategyBFS:
-		err = tot.searchBFS(ctx, tree, rootID, query)
+		err = tot.searchBFS(ctx, tree, rootID, query, opts...)
 	case SearchStrategyDFS:
-		err = tot.searchDFS(ctx, tree, rootID, query)
+		err = tot.searchDFS(ctx, tree, rootID, query, opts...)
 	case SearchStrategyBestFirst:
-		err = tot.searchBestFirst(ctx, tree, rootID, query)
+		err = tot.searchBestFirst(ctx, tree, rootID, query, opts...)
 	default:
 		return nil, fmt.Errorf("invalid strategy: %s", tot.strategy)
 	}
@@ -518,4 +561,9 @@ func (tot *TreeOfThought) Process(ctx context.Context, message *agenkit.Message)
 	}
 
 	return response, nil
+}
+
+// Introspect returns a snapshot of the agent's state.
+func (tot *TreeOfThought) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(tot)
 }

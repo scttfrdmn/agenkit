@@ -62,7 +62,19 @@ func WithVotingStrategy(strategy VotingStrategy) SelfConsistencyOption {
 }
 
 // WithTemperature sets the sampling temperature for diversity.
+//
+// Forwarded per sample to the wrapped agent when that agent implements
+// agenkit.OptionsAgent. An agent that does not generates its samples at whatever
+// temperature it was configured with, so the diversity this technique depends on
+// may not materialize — TemperatureApplied reports which case applies. Until
+// v0.88.0 this option was accepted and silently discarded (#801).
+//
+// Panics if temp is outside 0.0-2.0, mirroring agenkit.WithTemperature: a bad
+// value should fail at construction, not on the first sample.
 func WithTemperature(temp float64) SelfConsistencyOption {
+	if temp < 0.0 || temp > 2.0 {
+		panic(fmt.Sprintf("temperature must be between 0 and 2, got %v", temp))
+	}
 	return func(sc *SelfConsistency) {
 		sc.temperature = &temp
 	}
@@ -129,6 +141,45 @@ func (sc *SelfConsistency) Name() string {
 	return "self_consistency"
 }
 
+// TemperatureApplied reports whether the configured temperature reaches the LLM.
+//
+// False when a temperature is set but the wrapped agent does not implement
+// agenkit.OptionsAgent — the samples are then generated at whatever temperature
+// the agent is configured with.
+//
+// Exposed rather than left implicit because a silently ignored temperature is
+// precisely the failure this fixes: the value was accepted and dropped for as long
+// as the type existed, and a public WithTemperature builder is an explicit
+// invitation to set it (#801).
+//
+// Returns true when no temperature is set — there is nothing to apply, so nothing
+// was dropped.
+func (sc *SelfConsistency) TemperatureApplied() bool {
+	if sc.temperature == nil {
+		return true
+	}
+	return agenkit.SupportsOptions(sc.agent)
+}
+
+// callOptions merges the caller's options with the configured temperature.
+//
+// Returns nil when there is nothing to send, so the no-options path stays a plain
+// Process call rather than an empty-options one.
+//
+// The configured temperature is appended last and therefore wins over a
+// temperature in the caller's options. That is deliberate: this technique's
+// correctness depends on sampling diversity, so a caller reaching through it must
+// not silently flatten the samples. Every other option passes through untouched.
+func (sc *SelfConsistency) callOptions(callerOpts ...agenkit.CallOption) []agenkit.CallOption {
+	if sc.temperature == nil {
+		return callerOpts
+	}
+	merged := make([]agenkit.CallOption, 0, len(callerOpts)+1)
+	merged = append(merged, callerOpts...)
+	merged = append(merged, agenkit.WithTemperature(*sc.temperature))
+	return merged
+}
+
 // Capabilities returns the agent capabilities.
 func (sc *SelfConsistency) Capabilities() []string {
 	return []string{
@@ -183,9 +234,16 @@ type sample struct {
 }
 
 // sampleOnce generates one sample from the base agent.
-func (sc *SelfConsistency) sampleOnce(ctx context.Context, message *agenkit.Message) (string, string, error) {
-	// TODO: If temperature supported, pass it to agent
-	response, err := sc.agent.Process(ctx, message)
+//
+// The options are rebuilt per call rather than stored on sc: samples run
+// concurrently in generateSamples, and a shared *CallOptions would be written by
+// every goroutine. Functional options are read-only, so passing them is safe.
+func (sc *SelfConsistency) sampleOnce(
+	ctx context.Context,
+	message *agenkit.Message,
+	opts ...agenkit.CallOption,
+) (string, string, error) {
+	response, err := agenkit.ProcessWithOptions(ctx, sc.agent, message, sc.callOptions(opts...)...)
 	if err != nil {
 		return "", "", err
 	}
@@ -196,7 +254,11 @@ func (sc *SelfConsistency) sampleOnce(ctx context.Context, message *agenkit.Mess
 }
 
 // generateSamples generates multiple samples in parallel.
-func (sc *SelfConsistency) generateSamples(ctx context.Context, message *agenkit.Message) ([]string, []string, error) {
+func (sc *SelfConsistency) generateSamples(
+	ctx context.Context,
+	message *agenkit.Message,
+	opts ...agenkit.CallOption,
+) ([]string, []string, error) {
 	var wg sync.WaitGroup
 	samples := make([]sample, sc.numSamples)
 
@@ -204,7 +266,7 @@ func (sc *SelfConsistency) generateSamples(ctx context.Context, message *agenkit
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			fullResp, answer, err := sc.sampleOnce(ctx, message)
+			fullResp, answer, err := sc.sampleOnce(ctx, message, opts...)
 			samples[idx] = sample{
 				fullResponse:    fullResp,
 				extractedAnswer: answer,
@@ -329,8 +391,24 @@ func (sc *SelfConsistency) voteFirst(answers []string) (string, float64) {
 // It generates multiple independent samples, extracts answers, and uses
 // voting to determine the most consistent answer.
 func (sc *SelfConsistency) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	return sc.ProcessWith(ctx, message)
+}
+
+// ProcessWith processes the message with Self-Consistency and per-call options.
+//
+// Implements agenkit.OptionsAgent, so this technique can itself be wrapped by
+// another that varies options — the capability has to run in both directions or
+// the chain breaks at the first link that only consumes options (#801).
+//
+// The caller's options are merged with the configured temperature, which wins on
+// conflict; see callOptions.
+func (sc *SelfConsistency) ProcessWith(
+	ctx context.Context,
+	message *agenkit.Message,
+	opts ...agenkit.CallOption,
+) (*agenkit.Message, error) {
 	// Generate multiple samples
-	fullResponses, extractedAnswers, err := sc.generateSamples(ctx, message)
+	fullResponses, extractedAnswers, err := sc.generateSamples(ctx, message, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -408,6 +486,13 @@ func (sc *SelfConsistency) Process(ctx context.Context, message *agenkit.Message
 	response.Metadata["base_agent"] = sc.agent.Name()
 	response.Metadata["reasoning_artifact"] = artifact
 
+	// Report the temperature and whether it reached the LLM, matching the Python
+	// core. temperature is nil when unset — a caller must be able to tell "not
+	// requested" from "requested and dropped", which temperature_applied alone
+	// cannot express.
+	response.Metadata["temperature"] = sc.temperature
+	response.Metadata["temperature_applied"] = sc.TemperatureApplied()
+
 	if sc.mem != nil {
 		if rm, ok := sc.mem.(memory.ReasoningMemory); ok {
 			_ = rm.StoreArtifact(ctx, sc.sessionID, artifact)
@@ -419,4 +504,9 @@ func (sc *SelfConsistency) Process(ctx context.Context, message *agenkit.Message
 	}
 
 	return response, nil
+}
+
+// Introspect returns a snapshot of the agent's state.
+func (sc *SelfConsistency) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(sc)
 }

@@ -9,6 +9,9 @@
  */
 
 import { IntrospectionResult } from './introspection.js';
+// Type-only: call-options.ts imports Agent from here, so a value import would
+// close a runtime cycle between the two modules.
+import type { CallOptions } from './call-options.js';
 
 /**
  * Universal message format for agent communication.
@@ -107,6 +110,7 @@ export interface Tool {
  * Design decisions:
  * - Only 2 required methods (name, process)
  * - Optional streaming support via processStream
+ * - Optional per-call inference options via processWith
  * - No state in interface (agents manage their own state)
  * - Async process (agents typically do I/O)
  *
@@ -146,6 +150,26 @@ export interface Agent {
    * @returns Async iterator of response chunks
    */
   processStream?(message: Message): AsyncGenerator<Message, void, undefined>;
+
+  /**
+   * Process a message with per-call inference options (optional).
+   *
+   * An optional capability rather than a widening of `process()`: adding a
+   * parameter there would touch every agent implementation in the toolkit, and
+   * most agents have nothing to do with inference options. Callers should go
+   * through `processWithOptions`, which falls back to `process()` when this is
+   * absent, and check `supportsOptions` when they need to know whether the
+   * options can actually take effect (#801).
+   *
+   * An implementation must treat an unset field as "not asked for" and leave the
+   * corresponding provider setting alone — never substitute a default, since
+   * `temperature: 0` is a real request that must be forwarded.
+   *
+   * @param message Input message
+   * @param options Per-call inference options
+   * @returns Response message
+   */
+  processWith?(message: Message, options: CallOptions): Promise<Message>;
 
   /**
    * What this agent can do (optional).

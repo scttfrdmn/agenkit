@@ -11,6 +11,8 @@
  */
 
 import type { Agent, Message } from '../../core/interfaces';
+import type { CallOptions } from '../../core/call-options';
+import { processWithOptions } from '../../core/call-options';
 
 export interface PlanStep {
   description: string;
@@ -62,12 +64,22 @@ export class PlanAndSolve implements Agent {
     return ['reasoning', 'planning', 'plan_and_solve', 'strategic_thinking', 'step_by_step_execution'];
   }
 
-  private async llmCall(prompt: string): Promise<string> {
-    const response = await this.llm.process({ role: 'user', content: prompt });
+  /**
+   * Call the underlying LLM with a prompt.
+   *
+   * Options are optional so every existing call site keeps compiling; they are
+   * forwarded to the wrapped agent when it can honour them (#801).
+   */
+  private async llmCall(prompt: string, options?: CallOptions): Promise<string> {
+    const response = await processWithOptions(
+      this.llm,
+      { role: 'user', content: prompt },
+      options,
+    );
     return typeof response.content === 'string' ? response.content : String(response.content);
   }
 
-  private async createPlan(problem: string): Promise<Plan> {
+  private async createPlan(problem: string, options?: CallOptions): Promise<Plan> {
     if (this.planner) {
       return this.planner(problem);
     }
@@ -80,7 +92,7 @@ Problem: ${problem}
 
 Solution Plan:`;
 
-    const response = await this.llmCall(prompt);
+    const response = await this.llmCall(prompt, options);
     const steps: PlanStep[] = [];
     const lines = response.trim().split('\n');
 
@@ -103,7 +115,7 @@ Solution Plan:`;
     return { steps, problem, validated: false };
   }
 
-  private async validatePlan(plan: Plan): Promise<Plan> {
+  private async validatePlan(plan: Plan, options?: CallOptions): Promise<Plan> {
     const prompt = `Review this solution plan for completeness and feasibility.
 Is this plan sufficient to solve the problem? Are there any missing steps or issues?
 
@@ -114,7 +126,7 @@ ${this.formatPlan(plan)}
 
 Validation (answer "VALID" or describe issues):`;
 
-    const response = await this.llmCall(prompt);
+    const response = await this.llmCall(prompt, options);
     const responseUpper = response.toUpperCase();
     // Check for INVALID first to avoid matching "VALID" inside "INVALID"
     const isValid = !responseUpper.includes('INVALID') &&
@@ -136,7 +148,11 @@ Validation (answer "VALID" or describe issues):`;
       .join('\n');
   }
 
-  private async executeStep(step: PlanStep, previousResults: string[]): Promise<string> {
+  private async executeStep(
+    step: PlanStep,
+    previousResults: string[],
+    options?: CallOptions,
+  ): Promise<string> {
     if (this.solver) {
       return this.solver(step, previousResults);
     }
@@ -163,15 +179,15 @@ Step: ${step.description}
 Execution Result:`;
     }
 
-    const result = await this.llmCall(prompt);
+    const result = await this.llmCall(prompt, options);
     return result.trim();
   }
 
-  private async executePlan(plan: Plan): Promise<string[]> {
+  private async executePlan(plan: Plan, options?: CallOptions): Promise<string[]> {
     const results: string[] = [];
 
     for (const step of plan.steps) {
-      const result = await this.executeStep(step, results);
+      const result = await this.executeStep(step, results, options);
       step.result = result;
       step.executed = true;
       results.push(result);
@@ -181,11 +197,23 @@ Execution Result:`;
   }
 
   async process(message: Message): Promise<Message> {
+    return this.processWith(message, {});
+  }
+
+  /**
+   * Process a message with Plan-and-Solve prompting and per-call options.
+   *
+   * Implements the optional `processWith` capability. The options are threaded
+   * through every phase — planning, validation, replanning and step execution —
+   * because a temperature that reaches only some of the LLM calls in a multi-phase
+   * technique is not the temperature the caller asked for (#801).
+   */
+  async processWith(message: Message, options: CallOptions): Promise<Message> {
     const problem = typeof message.content === 'string' ? message.content : String(message.content);
-    let plan = await this.createPlan(problem);
+    let plan = await this.createPlan(problem, options);
 
     if (this.validatePlanFlag) {
-      plan = await this.validatePlan(plan);
+      plan = await this.validatePlan(plan, options);
 
       if (!plan.validated && this.allowReplanning) {
         const improvedPrompt = `The previous plan had issues. Create an improved plan.
@@ -197,13 +225,13 @@ ${plan.validationNotes}
 
 Improved Plan:`;
 
-        await this.llmCall(improvedPrompt);
-        plan = await this.createPlan(problem);
-        plan = await this.validatePlan(plan);
+        await this.llmCall(improvedPrompt, options);
+        plan = await this.createPlan(problem, options);
+        plan = await this.validatePlan(plan, options);
       }
     }
 
-    const executionResults = await this.executePlan(plan);
+    const executionResults = await this.executePlan(plan, options);
     const finalSolution = executionResults.length > 0 ? executionResults[executionResults.length - 1] : '';
 
     return {

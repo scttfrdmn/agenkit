@@ -14,6 +14,17 @@ export {
   validateMessage,
 } from './core/interfaces';
 
+// Per-call inference options (#801)
+export {
+  CallOptions,
+  callOptionsToParams,
+  isCallOptionsEmpty,
+  mergeCallOptions,
+  processWithOptions,
+  supportsOptions,
+  validateCallOptions,
+} from './core/call-options';
+
 // Introspection
 export {
   IntrospectionResult,

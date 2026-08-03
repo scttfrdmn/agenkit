@@ -46,6 +46,8 @@
  */
 
 import type { Agent, Message } from '../../core/interfaces';
+import type { CallOptions } from '../../core/call-options';
+import { processWithOptions } from '../../core/call-options';
 
 /**
  * Represents a subproblem in the decomposition.
@@ -169,9 +171,10 @@ export class LeastToMost implements Agent {
    * Uses custom decomposer if provided, otherwise uses LLM.
    *
    * @param problem Original problem to decompose
+   * @param options Per-call inference options, forwarded to the wrapped agent
    * @returns List of Subproblem objects ordered from easiest to hardest
    */
-  private async decompose(problem: string): Promise<Subproblem[]> {
+  private async decompose(problem: string, options?: CallOptions): Promise<Subproblem[]> {
     if (this.config.decomposer) {
       // Use custom decomposer
       const subproblemTexts = await Promise.resolve(this.config.decomposer(problem));
@@ -190,11 +193,15 @@ Problem: ${problem}
 
 Subproblems (from simplest to most complex):`;
 
-    const response = await this.agent.process({
-      role: 'user',
-      content: decompositionPrompt,
-      metadata: {},
-    });
+    const response = await processWithOptions(
+      this.agent,
+      {
+        role: 'user',
+        content: decompositionPrompt,
+        metadata: {},
+      },
+      options,
+    );
 
     // Parse subproblems from response
     const subproblems: Subproblem[] = [];
@@ -237,11 +244,13 @@ Subproblems (from simplest to most complex):`;
    *
    * @param subproblem Subproblem to solve
    * @param previousSolutions Solutions to previous (easier) subproblems
+   * @param options Per-call inference options, forwarded to the wrapped agent
    * @returns Solution to this subproblem
    */
   private async solveSubproblem(
     subproblem: Subproblem,
     previousSolutions: string[],
+    options?: CallOptions,
   ): Promise<string> {
     let prompt: string;
 
@@ -268,11 +277,15 @@ ${subproblem.content}
 Solution:`;
     }
 
-    const response = await this.agent.process({
-      role: 'user',
-      content: prompt,
-      metadata: {},
-    });
+    const response = await processWithOptions(
+      this.agent,
+      {
+        role: 'user',
+        content: prompt,
+        metadata: {},
+      },
+      options,
+    );
 
     return String(response.content).trim();
   }
@@ -303,15 +316,31 @@ Solution:`;
    * ```
    */
   async process(message: Message): Promise<Message> {
+    return this.processWith(message, {});
+  }
+
+  /**
+   * Process message with Least-to-Most prompting and per-call options.
+   *
+   * Implements the optional `processWith` capability. The options reach both
+   * phases — decomposition and every subproblem solve — because a temperature
+   * that reaches only some of the LLM calls in a multi-phase technique is not the
+   * temperature the caller asked for (#801).
+   *
+   * @param message Input message with problem
+   * @param options Per-call inference options
+   * @returns Message with final solution and metadata
+   */
+  async processWith(message: Message, options: CallOptions): Promise<Message> {
     const problem = String(message.content);
 
     // Step 1: Decompose problem
-    const subproblems = await this.decompose(problem);
+    const subproblems = await this.decompose(problem, options);
 
     // Step 2: Solve subproblems sequentially
     const solutions: string[] = [];
     for (const subproblem of subproblems) {
-      const solution = await this.solveSubproblem(subproblem, solutions);
+      const solution = await this.solveSubproblem(subproblem, solutions, options);
       solutions.push(solution);
     }
 

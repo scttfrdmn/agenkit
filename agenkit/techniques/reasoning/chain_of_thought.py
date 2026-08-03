@@ -33,6 +33,8 @@ import re
 
 from agenkit import Agent, Message
 
+from ._llm_call import complete_text
+
 
 class ChainOfThought(Agent):
     """
@@ -127,14 +129,8 @@ class ChainOfThought(Agent):
         # Apply CoT prompting
         cot_prompt = self.prompt_template.format(query=message.content)
 
-        # Get response from LLM (support both complete() and process() methods)
-        if hasattr(self.llm, "complete"):
-            response_text = await self.llm.complete(cot_prompt)
-        elif hasattr(self.llm, "process"):
-            llm_response = await self.llm.process(Message(role="user", content=cot_prompt))
-            response_text = llm_response.content
-        else:
-            raise AttributeError("LLM must have either complete() or process() method")
+        # Get response from LLM (supports both complete() and process() methods)
+        response_text = await complete_text(self.llm, cot_prompt)
 
         # Parse steps if requested
         if self.parse_steps:

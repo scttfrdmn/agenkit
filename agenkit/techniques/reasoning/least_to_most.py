@@ -35,6 +35,8 @@ from dataclasses import dataclass
 
 from agenkit import Agent, Message
 
+from ._llm_call import complete_text
+
 
 @dataclass
 class Subproblem:
@@ -118,13 +120,7 @@ class LeastToMost(Agent):
         Returns:
             LLM response text
         """
-        if hasattr(self.llm, "complete"):
-            return await self.llm.complete(prompt)
-        elif hasattr(self.llm, "process"):
-            response = await self.llm.process(Message(role="user", content=prompt))
-            return response.content
-        else:
-            raise AttributeError("LLM must have either complete() or process() method")
+        return await complete_text(self.llm, prompt)
 
     async def decompose(self, problem: str) -> list[Subproblem]:
         """

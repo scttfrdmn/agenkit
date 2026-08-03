@@ -39,6 +39,7 @@ Example:
 
 from agenkit import Agent, Message
 
+from ._llm_call import complete_text
 from .reasoning_graph import EdgeType, NodeType, ReasoningGraph
 
 
@@ -114,13 +115,7 @@ class GraphOfThought(Agent):
         Returns:
             LLM response text
         """
-        if hasattr(self.llm, "complete"):
-            return await self.llm.complete(prompt)
-        elif hasattr(self.llm, "process"):
-            response = await self.llm.process(Message(role="user", content=prompt))
-            return response.content
-        else:
-            raise AttributeError("LLM must have either complete() or process() method")
+        return await complete_text(self.llm, prompt)
 
     async def generate_premises(self, problem: str) -> list[str]:
         """

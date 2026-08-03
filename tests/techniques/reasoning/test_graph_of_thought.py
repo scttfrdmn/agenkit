@@ -1,5 +1,7 @@
 """Tests for Graph-of-Thought reasoning technique."""
 
+from typing import Any
+
 import pytest
 
 from agenkit import Message
@@ -273,7 +275,11 @@ class MockLLM:
     def __init__(self):
         self.call_count = 0
 
-    async def complete(self, prompt: str) -> str:
+    async def complete(self, messages: list[Message], **kwargs: Any) -> Message:
+        prompt = "\n".join(m.content for m in messages)
+        return Message(role="agent", content=self._respond(prompt))
+
+    def _respond(self, prompt: str) -> str:
         """Return mock responses based on prompt type."""
         self.call_count += 1
 

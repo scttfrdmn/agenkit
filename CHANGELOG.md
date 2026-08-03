@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### BREAKING — `TestCase.expected` is a case-insensitive substring in C++ and Zig, as it already was elsewhere (Issue #820)
+
+A string `TestCase.expected` was compared **three different ways** across the cores
+that have an evaluation subsystem, so the same benchmark and the same agent output
+produced different pass/fail results depending on the language.
+
+Substring is now the contract everywhere, documented in
+[`docs/DEFAULTS.md`](docs/DEFAULTS.md#testcaseexpected-matching-semantics). It is
+what the reference implementation always did, and what its own benchmark data
+depends on — `agenkit/evaluation/benchmarks.py` carries
+`expected="5",  # "5pm" or "5:00pm" both match`, a comment that is only true under
+substring matching.
+
+**C++ contradicted itself.** `TestCase::validate` did `expected == actual` while
+this core's own `AccuracyMetric` has always done
+`actual.find(expected) != npos` — the same value passed via the metric and failed
+via the test case. `TestCase::validate` now does a case-insensitive substring
+check, and the `benchmarks.hpp` doc comment promising "exact match
+(case-sensitive)" is corrected.
+
+**Zig was the one outlier at both sites.** `TestCase.validate` used `mem.eql`, and
+so did `AccuracyMetric` (on lowercased strings) — the only `AccuracyMetric` of the
+six not doing a substring check. The concrete cost: `SimpleQABenchmark`'s expected
+values are `"42"`, `"12"`, `"Paris"`, `"Not necessarily"`, so a correct agent
+answering *"The answer is 42."* scored **zero on four of its five cases**, and the
+Zig Q&A benchmark measured near-zero accuracy for a working agent.
+
+- `TestCase.Expected.exact` → `.contains`, and `initExact` → **`initContains`**.
+  The old names advertised semantics the type no longer has. Migration: rename the
+  call; behaviour becomes substring.
+- `TestCase.validate` uses a new allocation-free `containsIgnoreCase` helper —
+  `std.ascii.lowerString` needs a destination buffer and `validate` has no
+  allocator.
+- `AccuracyMetric` uses `indexOf` instead of `eql` on both its case-sensitive and
+  case-insensitive paths.
+
+Both cores' benchmarks had been working around their own semantics by using the
+validator-function variant with a `find()` lambda, which is why the divergence
+stayed hidden — the string path was effectively unusable for anything but
+single-token answers.
+
+**One hazard the change introduces, and its fix.** An empty `expected` now matches
+*everything* (as `"" in x` does in Python, Go and TypeScript — the contract follows
+suit rather than special-casing). C++'s `TestCase::from_json` had been relying on
+the empty string to represent a `std::function` it cannot deserialize, which under
+exact matching failed everything: wrong, but conservatively so. It now substitutes
+an always-false validator, so a round-tripped functional case cannot become an
+unconditional pass.
+
+Callers needing exact or case-sensitive comparison use the validator-function
+variant (`initFunctional` in Zig, the `std::function` alternative in C++).
+`AccuracyMetric`'s `case_sensitive` flag controls **case only** — it does not
+restore whole-string comparison.
+
+Tests: Zig 665 → 671 (+6), C++ `test_benchmarks` 31 → 35 (+4); full C++ suite
+69/69 ctest targets pass. Negative-verified with 11 mutations — both original
+comparisons restored, case-insensitivity dropped at each site, four edge cases of
+the hand-rolled Zig helper (empty needle, off-by-one bound, prefix-only scan,
+unconditional true), and the `from_json` empty-string regression — each failing
+the suite through a test assertion, none merely through the compiler.
+
+Scoped deliberately: **Rust's `ab_testing.rs` uses a fourth semantics** (trimmed
+case-sensitive equality) and **neither Go nor Rust has a `TestCase.validate()` at
+all**, with no core wiring `TestCase.expected` into `AccuracyMetric`. Filed as
+#822 and #823 rather than folded in.
+
 ### Added — `CallOptions` and the optional `Agent.process_with()` capability; `SelfConsistency.temperature` now works (Issue #801)
 
 `SelfConsistency` accepted a `temperature` in six of the nine cores and applied it

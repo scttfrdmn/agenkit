@@ -202,6 +202,45 @@ Rust callers filter with `!entry.is_expired(ttl)`.
 The boundary condition (`age == ttl` exactly) is treated as expired in all languages:
 Python and Go use `<` (strict), Rust uses `>=` for the expired check (equivalent).
 
+## `TestCase.expected` Matching Semantics
+
+When `TestCase.expected` is a **string**, it is a **fragment to find in the agent's
+output**, compared **case-insensitively** — not the whole expected output.
+
+An agent answering `"The answer is 42."` **passes** `expected = "42"`. This is
+deliberate: benchmarks store the fact to look for, and agents answer in prose. The
+reference implementation's own data depends on it — `agenkit/evaluation/benchmarks.py`
+carries `expected="5",  # "5pm" or "5:00pm" both match`.
+
+| Core | Site | Comparison |
+|------|------|-----------|
+| Python | `_check_test` / `AccuracyMetric` | `expected.lower() in actual.lower()` |
+| Go | `AccuracyMetric` | `strings.Contains`, lowered unless `caseSensitive` |
+| TypeScript | `checkTest` / `AccuracyMetric` | `actual.includes(expected)`, lowered |
+| Rust | `AccuracyMetric` | `actual.contains(expected)`, lowered unless `case_sensitive` |
+| C++ | `TestCase::validate` / `AccuracyMetric` | `actual.find(expected) != npos`, lowered |
+| Zig | `TestCase.validate` / `AccuracyMetric` | case-insensitive `indexOf` |
+
+### Notes
+
+- **An empty `expected` matches everything.** `"" in x`, `strings.Contains(x, "")`,
+  `x.includes("")` are all true, so the contract follows suit rather than special-casing.
+  C++'s `TestCase::from_json` therefore substitutes an always-false validator for a
+  function-variant `expected` it cannot deserialize — leaving the empty string it used
+  to leave would make every round-tripped case pass unconditionally.
+- **Need exact or case-sensitive matching?** Use the validator-function variant
+  (`initFunctional` in Zig, the `std::function` alternative in C++, a callable
+  `expected` in Python/TypeScript, `validator` in Go/Rust).
+- `AccuracyMetric` exposes a `case_sensitive` flag (default `false`) in every core. It
+  controls **case only** — it does not restore whole-string comparison.
+- C++ and Zig previously compared with `==` / `mem.eql` at the `TestCase::validate`
+  site. C++ thereby contradicted its own `AccuracyMetric`, and Zig's `SimpleQABenchmark`
+  — whose expected values are `"42"`, `"Paris"`, `"Not necessarily"` — scored a correct
+  agent near zero. Fixed in #820.
+- **Not covered by this contract:** Rust's `ab_testing.rs` scores with trimmed
+  case-sensitive equality, and neither Go nor Rust has a `TestCase.validate()` method at
+  all. Both are tracked separately.
+
 ## Related Documentation
 
 - [Migration Guides](migrations/) — step-by-step upgrade instructions

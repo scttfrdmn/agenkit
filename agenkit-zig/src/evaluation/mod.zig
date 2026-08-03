@@ -9,7 +9,7 @@
 /// const evaluation = @import("evaluation/mod.zig");
 ///
 /// // Create test cases
-/// const test_case = try evaluation.TestCase.initExact(allocator, "input", "expected");
+/// const test_case = try evaluation.TestCase.initContains(allocator, "input", "expected");
 ///
 /// // Set up metrics
 /// const accuracy = try evaluation.AccuracyMetric.init(allocator, true);

@@ -15,7 +15,12 @@ const Allocator = std.mem.Allocator;
 const Agent = @import("../agent.zig").Agent;
 const Message = @import("../message.zig").Message;
 
-/// Accuracy metric - measures exact match rate
+/// Accuracy metric - measures how often the expected fragment appears in the output.
+///
+/// `expected` is matched as a **substring**, case-insensitively unless
+/// `case_sensitive` is set. This used to be a whole-string comparison, which made this
+/// the only one of the nine cores' `AccuracyMetric` implementations not to do a
+/// substring check (#820).
 pub const AccuracyMetric = struct {
     name_str: []const u8,
     allocator: Allocator,
@@ -82,8 +87,12 @@ pub const AccuracyMetric = struct {
             return 0.0;
         }
 
+        // Substring, not whole-string: `expected` is the fragment to find in the
+        // output, so an agent replying "The answer is 42." matches "42". Python, Go,
+        // TypeScript, Rust and C++ all do `in` / `Contains` / `includes` / `contains` /
+        // `find` here; this core did `mem.eql` and scored such a reply zero (#820).
         const matches = if (self.case_sensitive)
-            std.mem.eql(u8, actual, expected)
+            std.mem.indexOf(u8, actual, expected) != null
         else blk: {
             const actual_lower = try allocator.alloc(u8, actual.len);
             defer allocator.free(actual_lower);
@@ -93,7 +102,7 @@ pub const AccuracyMetric = struct {
             defer allocator.free(expected_lower);
             _ = std.ascii.lowerString(expected_lower, expected);
 
-            break :blk std.mem.eql(u8, actual_lower, expected_lower);
+            break :blk std.mem.indexOf(u8, actual_lower, expected_lower) != null;
         };
 
         return if (matches) 1.0 else 0.0;
@@ -527,6 +536,75 @@ test "AccuracyMetric case insensitive" {
 
     const score = try metric.asMetric().measure(agent, input, output, allocator);
     try std.testing.expectEqual(@as(f64, 1.0), score);
+}
+
+test "AccuracyMetric matches an expected fragment inside a longer reply" {
+    const allocator = std.testing.allocator;
+
+    // The two tests above compare whole strings, so they pass under either semantics.
+    // This one distinguishes them: `expected` is a fragment to find in the output, which
+    // is what Python (`in`), Go (`Contains`), TypeScript (`includes`), Rust
+    // (`contains`) and C++ (`find`) all do. This core used `mem.eql` and scored a reply
+    // like "The answer is 42." zero (#820).
+    const metric = try AccuracyMetric.init(allocator, false);
+    defer metric.allocator.destroy(metric);
+
+    const agent = Agent{ .ptr = undefined, .vtable = undefined };
+    var input = try Message.withText(allocator, .user, "What is 15 + 27?");
+    defer input.deinit();
+
+    var hit = try Message.withText(allocator, .assistant, "The answer is 42.");
+    defer hit.deinit();
+    try hit.metadata.object.put(allocator, "expected", json.Value{ .string = "42" });
+    try std.testing.expectEqual(
+        @as(f64, 1.0),
+        try metric.asMetric().measure(agent, input, hit, allocator),
+    );
+
+    // Substring, but still case-insensitive, and still a miss when absent.
+    var mixed_case = try Message.withText(allocator, .assistant, "The capital is PaRiS, in France.");
+    defer mixed_case.deinit();
+    try mixed_case.metadata.object.put(allocator, "expected", json.Value{ .string = "paris" });
+    try std.testing.expectEqual(
+        @as(f64, 1.0),
+        try metric.asMetric().measure(agent, input, mixed_case, allocator),
+    );
+
+    var miss = try Message.withText(allocator, .assistant, "The answer is 41.");
+    defer miss.deinit();
+    try miss.metadata.object.put(allocator, "expected", json.Value{ .string = "42" });
+    try std.testing.expectEqual(
+        @as(f64, 0.0),
+        try metric.asMetric().measure(agent, input, miss, allocator),
+    );
+}
+
+test "AccuracyMetric case_sensitive still matches a fragment" {
+    const allocator = std.testing.allocator;
+
+    // `case_sensitive` controls case only — it does not restore whole-string matching.
+    const metric = try AccuracyMetric.init(allocator, true);
+    defer metric.allocator.destroy(metric);
+
+    const agent = Agent{ .ptr = undefined, .vtable = undefined };
+    var input = try Message.withText(allocator, .user, "Capital of France?");
+    defer input.deinit();
+
+    var hit = try Message.withText(allocator, .assistant, "It is Paris, in the north.");
+    defer hit.deinit();
+    try hit.metadata.object.put(allocator, "expected", json.Value{ .string = "Paris" });
+    try std.testing.expectEqual(
+        @as(f64, 1.0),
+        try metric.asMetric().measure(agent, input, hit, allocator),
+    );
+
+    var wrong_case = try Message.withText(allocator, .assistant, "It is paris, in the north.");
+    defer wrong_case.deinit();
+    try wrong_case.metadata.object.put(allocator, "expected", json.Value{ .string = "Paris" });
+    try std.testing.expectEqual(
+        @as(f64, 0.0),
+        try metric.asMetric().measure(agent, input, wrong_case, allocator),
+    );
 }
 
 test "AccuracyMetric aggregate" {

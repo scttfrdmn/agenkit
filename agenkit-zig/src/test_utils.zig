@@ -6,8 +6,25 @@ const agktime = @import("time_compat.zig");
 const Agent = @import("agent.zig").Agent;
 const AgentError = @import("agent.zig").AgentError;
 const Result = @import("agent.zig").Result;
+const StreamCallbacks = @import("agent.zig").StreamCallbacks;
 const Message = @import("message.zig").Message;
+const IntrospectionResult = @import("introspection.zig").IntrospectionResult;
 const Allocator = std.mem.Allocator;
+
+/// Build the IntrospectionResult every mock starts from.
+///
+/// Wraps createDefaultIntrospectionResult so each mock only has to add its own
+/// internal_state entries.
+fn introspectBase(allocator: Allocator, name: []const u8, self_agent: Agent) Allocator.Error!IntrospectionResult {
+    const caps = try self_agent.capabilities(allocator);
+    defer allocator.free(caps);
+    return @import("introspection.zig").createDefaultIntrospectionResult(allocator, name, caps);
+}
+
+/// Put a usize into a JSON object as an integer.
+fn putInt(allocator: Allocator, value: *std.json.Value, key: []const u8, n: usize) Allocator.Error!void {
+    try value.object.put(allocator, key, .{ .integer = @as(i64, @intCast(n)) });
+}
 
 /// Mock agent for testing
 ///
@@ -83,39 +100,35 @@ pub const MockAgent = struct {
 
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
         const self: *MockAgent = @ptrCast(@alignCast(ptr));
+        // The request is ignored on purpose: responses are scripted.
+        _ = message;
 
         // Get response (cycle through responses)
         const response_text = self.responses[self.call_count % self.responses.len];
         self.call_count += 1;
 
         // Create response message
-        var response = Message.withText(self.allocator, .assistant, response_text) catch {
+        const response = Message.withText(self.allocator, .assistant, response_text) catch {
             return Result{ .err = AgentError.ProcessingFailed };
         };
 
         return Result{ .ok = response };
     }
 
-    fn processStreamImpl(
-        ptr: *anyopaque,
-        message: Message,
-        stream_callback: *const fn (chunk: []const u8, userdata: ?*anyopaque) void,
-        userdata: ?*anyopaque,
-    ) AgentError!void {
+    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
         _ = ptr;
         _ = message;
-        _ = stream_callback;
-        _ = userdata;
+        _ = callbacks;
         return AgentError.NotImplemented;
     }
 
-    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const u8 {
+    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult {
         const self: *MockAgent = @ptrCast(@alignCast(ptr));
-        return std.fmt.allocPrint(
-            allocator,
-            "MockAgent(name={s}, responses={d}, calls={d})",
-            .{ self.agent_name, self.responses.len, self.call_count },
-        );
+        var result = try introspectBase(allocator, self.agent_name, self.agent());
+        errdefer result.deinit();
+        try putInt(allocator, &result.internal_state, "responses", self.responses.len);
+        try putInt(allocator, &result.internal_state, "calls", self.call_count);
+        return result;
     }
 
     fn deinitImpl(ptr: *anyopaque) void {
@@ -178,26 +191,25 @@ pub const FailingMockAgent = struct {
         return Result{ .err = self.error_to_return };
     }
 
-    fn processStreamImpl(
-        ptr: *anyopaque,
-        message: Message,
-        stream_callback: *const fn (chunk: []const u8, userdata: ?*anyopaque) void,
-        userdata: ?*anyopaque,
-    ) AgentError!void {
+    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
         _ = ptr;
         _ = message;
-        _ = stream_callback;
-        _ = userdata;
+        _ = callbacks;
         return AgentError.NotImplemented;
     }
 
-    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const u8 {
+    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult {
         const self: *FailingMockAgent = @ptrCast(@alignCast(ptr));
-        return std.fmt.allocPrint(
+        var result = try introspectBase(allocator, self.agent_name, self.agent());
+        errdefer result.deinit();
+        // @errorName yields a comptime string literal, so no copy is needed and
+        // IntrospectionResult.deinit must not free it (it does not).
+        try result.internal_state.object.put(
             allocator,
-            "FailingMockAgent(name={s}, error={s})",
-            .{ self.agent_name, @tagName(self.error_to_return) },
+            "error",
+            .{ .string = @errorName(self.error_to_return) },
         );
+        return result;
     }
 
     fn deinitImpl(ptr: *anyopaque) void {
@@ -335,6 +347,8 @@ pub const MockLLM = struct {
 
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
         const self: *MockLLM = @ptrCast(@alignCast(ptr));
+        // The request is ignored on purpose: responses are scripted.
+        _ = message;
 
         // Simulate network delay if configured
         if (self.delay_ms > 0) {
@@ -351,7 +365,7 @@ pub const MockLLM = struct {
         self.call_count += 1;
 
         // Create response message
-        var response = Message.withText(self.allocator, .assistant, response_text) catch {
+        const response = Message.withText(self.allocator, .assistant, response_text) catch {
             return Result{ .err = AgentError.ProcessingFailed };
         };
 
@@ -361,35 +375,31 @@ pub const MockLLM = struct {
         return Result{ .ok = response };
     }
 
-    fn processStreamImpl(
-        ptr: *anyopaque,
-        message: Message,
-        stream_callback: *const fn (chunk: []const u8, userdata: ?*anyopaque) void,
-        userdata: ?*anyopaque,
-    ) AgentError!void {
+    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
         _ = ptr;
         _ = message;
-        _ = stream_callback;
-        _ = userdata;
+        _ = callbacks;
         return AgentError.NotImplemented;
     }
 
-    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const u8 {
+    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult {
         const self: *MockLLM = @ptrCast(@alignCast(ptr));
+        var result = try introspectBase(allocator, self.model_name, self.agent());
+        errdefer result.deinit();
 
+        const state = &result.internal_state;
+        try putInt(allocator, state, "responses", self.responses.len);
+        try putInt(allocator, state, "calls", self.call_count);
+        try state.object.put(allocator, "temperature", .{ .float = self.temperature });
+        // max_tokens and top_p are optional: absent means the caller never set
+        // one, which is not the same as setting it to zero.
         if (self.max_tokens) |tokens| {
-            return std.fmt.allocPrint(
-                allocator,
-                "MockLLM(model={s}, responses={d}, calls={d}, temperature={d:.2}, max_tokens={d})",
-                .{ self.model_name, self.responses.len, self.call_count, self.temperature, tokens },
-            );
-        } else {
-            return std.fmt.allocPrint(
-                allocator,
-                "MockLLM(model={s}, responses={d}, calls={d}, temperature={d:.2})",
-                .{ self.model_name, self.responses.len, self.call_count, self.temperature },
-            );
+            try putInt(allocator, state, "max_tokens", tokens);
         }
+        if (self.top_p) |p| {
+            try state.object.put(allocator, "top_p", .{ .float = p });
+        }
+        return result;
     }
 
     fn deinitImpl(ptr: *anyopaque) void {
@@ -413,33 +423,33 @@ test "MockAgent basic functionality" {
     try testing.expectEqualStrings("mock_agent", agent_impl.name());
 
     // Test first response
-    const msg1 = try Message.withText(allocator, .user, "Test 1");
+    var msg1 = try Message.withText(allocator, .user, "Test 1");
     defer msg1.deinit();
 
-    const result1 = try agent_impl.process(msg1);
-    defer result1.ok.deinit();
+    var response1 = try (try agent_impl.process(msg1)).unwrap();
+    defer response1.deinit();
 
-    try testing.expectEqualStrings("Response 1", result1.ok.content.string);
+    try testing.expectEqualStrings("Response 1", try response1.contentAsText());
     try testing.expectEqual(@as(usize, 1), mock.getCallCount());
 
     // Test second response
-    const msg2 = try Message.withText(allocator, .user, "Test 2");
+    var msg2 = try Message.withText(allocator, .user, "Test 2");
     defer msg2.deinit();
 
-    const result2 = try agent_impl.process(msg2);
-    defer result2.ok.deinit();
+    var response2 = try (try agent_impl.process(msg2)).unwrap();
+    defer response2.deinit();
 
-    try testing.expectEqualStrings("Response 2", result2.ok.content.string);
+    try testing.expectEqualStrings("Response 2", try response2.contentAsText());
     try testing.expectEqual(@as(usize, 2), mock.getCallCount());
 
     // Test cycling back to first response
-    const msg3 = try Message.withText(allocator, .user, "Test 3");
+    var msg3 = try Message.withText(allocator, .user, "Test 3");
     defer msg3.deinit();
 
-    const result3 = try agent_impl.process(msg3);
-    defer result3.ok.deinit();
+    var response3 = try (try agent_impl.process(msg3)).unwrap();
+    defer response3.deinit();
 
-    try testing.expectEqualStrings("Response 1", result3.ok.content.string);
+    try testing.expectEqualStrings("Response 1", try response3.contentAsText());
     try testing.expectEqual(@as(usize, 3), mock.getCallCount());
 }
 
@@ -475,10 +485,10 @@ test "MockAgent reset call count" {
     const agent_impl = mock.agent();
 
     // Make some calls
-    const msg1 = try Message.withText(allocator, .user, "Test 1");
+    var msg1 = try Message.withText(allocator, .user, "Test 1");
     defer msg1.deinit();
-    const result1 = try agent_impl.process(msg1);
-    defer result1.ok.deinit();
+    var response1 = try (try agent_impl.process(msg1)).unwrap();
+    defer response1.deinit();
 
     try testing.expectEqual(@as(usize, 1), mock.getCallCount());
 
@@ -500,11 +510,28 @@ test "FailingMockAgent returns error" {
     const agent_impl = failing.agent();
     try testing.expectEqualStrings("failing_mock_agent", agent_impl.name());
 
-    const msg = try Message.withText(allocator, .user, "Test");
+    var msg = try Message.withText(allocator, .user, "Test");
     defer msg.deinit();
 
     const result = try agent_impl.process(msg);
     try testing.expectEqual(AgentError.ProcessingFailed, result.err);
+}
+
+test "FailingMockAgent introspection reports its error" {
+    const testing = std.testing;
+
+    var gpa = std.heap.DebugAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var failing = try FailingMockAgent.init(allocator, AgentError.Timeout);
+    defer failing.deinit();
+
+    var info = try failing.agent().introspect(allocator);
+    defer info.deinit();
+
+    try testing.expectEqualStrings("failing_mock_agent", info.agent_name);
+    try testing.expectEqualStrings("Timeout", info.internal_state.object.get("error").?.string);
 }
 
 test "MockAgent introspection" {
@@ -518,11 +545,12 @@ test "MockAgent introspection" {
     defer mock.deinit();
 
     const agent_impl = mock.agent();
-    const info = try agent_impl.introspect(allocator);
-    defer allocator.free(info);
+    var info = try agent_impl.introspect(allocator);
+    defer info.deinit();
 
-    try testing.expect(std.mem.indexOf(u8, info, "MockAgent") != null);
-    try testing.expect(std.mem.indexOf(u8, info, "responses=2") != null);
+    try testing.expectEqualStrings("mock_agent", info.agent_name);
+    try testing.expectEqual(@as(i64, 2), info.internal_state.object.get("responses").?.integer);
+    try testing.expectEqual(@as(i64, 0), info.internal_state.object.get("calls").?.integer);
 }
 
 test "MockLLM basic functionality" {
@@ -539,13 +567,13 @@ test "MockLLM basic functionality" {
     try testing.expectEqualStrings("mock-gpt-4", agent_impl.name());
 
     // Test first response
-    const msg1 = try Message.withText(allocator, .user, "What is AI?");
+    var msg1 = try Message.withText(allocator, .user, "What is AI?");
     defer msg1.deinit();
 
-    const result1 = try agent_impl.process(msg1);
-    defer result1.ok.deinit();
+    var response1 = try (try agent_impl.process(msg1)).unwrap();
+    defer response1.deinit();
 
-    try testing.expectEqualStrings("LLM Response 1", result1.ok.content.string);
+    try testing.expectEqualStrings("LLM Response 1", try response1.contentAsText());
     try testing.expectEqual(@as(usize, 1), mock_llm.getCallCount());
 }
 
@@ -585,7 +613,7 @@ test "MockLLM failure mode" {
     mock_llm.setFailureMode(true, AgentError.Timeout);
 
     const agent_impl = mock_llm.agent();
-    const msg = try Message.withText(allocator, .user, "Test");
+    var msg = try Message.withText(allocator, .user, "Test");
     defer msg.deinit();
 
     const result = try agent_impl.process(msg);
@@ -606,11 +634,12 @@ test "MockLLM introspection" {
     mock_llm.setMaxTokens(150);
 
     const agent_impl = mock_llm.agent();
-    const info = try agent_impl.introspect(allocator);
-    defer allocator.free(info);
+    var info = try agent_impl.introspect(allocator);
+    defer info.deinit();
 
-    try testing.expect(std.mem.indexOf(u8, info, "MockLLM") != null);
-    try testing.expect(std.mem.indexOf(u8, info, "mock-gpt-4") != null);
-    try testing.expect(std.mem.indexOf(u8, info, "temperature=") != null);
-    try testing.expect(std.mem.indexOf(u8, info, "max_tokens=150") != null);
+    try testing.expectEqualStrings("mock-gpt-4", info.agent_name);
+    try testing.expectEqual(@as(f64, 0.8), info.internal_state.object.get("temperature").?.float);
+    try testing.expectEqual(@as(i64, 150), info.internal_state.object.get("max_tokens").?.integer);
+    // top_p was never set, so it must be absent rather than reported as 0.
+    try testing.expect(info.internal_state.object.get("top_p") == null);
 }

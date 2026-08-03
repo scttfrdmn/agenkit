@@ -22,17 +22,66 @@ pub const VotingStrategy = enum {
 /// Answer extractor function type
 pub const AnswerExtractor = *const fn (allocator: Allocator, text: []const u8) Allocator.Error![]const u8;
 
+/// An answer marker and how it must be terminated to count as a match.
+const AnswerMarker = struct {
+    text: []const u8,
+    /// Whether the marker must be followed by an optional comma and at least
+    /// one space. True for prose markers, false for the ones ending in ':'.
+    needs_separator: bool,
+};
+
+/// Whether `lower[idx..]` begins a marker match rather than continuing a word.
+///
+/// Without this check "so" matched inside "Some reasoning" and returned
+/// "me reasoning" as the answer — a plausible-looking string that was never an
+/// answer at all. The reference core's regex requires `,?\s+` after the marker
+/// (agenkit/techniques/reasoning/self_consistency.py:164), which is what this
+/// reproduces.
+fn markerMatchesAt(lower: []const u8, idx: usize, marker: AnswerMarker) ?usize {
+    if (!std.mem.startsWith(u8, lower[idx..], marker.text)) return null;
+
+    // Must start a word, not land mid-word ("also" must not match "so").
+    if (idx > 0 and (std.ascii.isAlphanumeric(lower[idx - 1]) or lower[idx - 1] == '_')) {
+        return null;
+    }
+
+    var after = idx + marker.text.len;
+    if (!marker.needs_separator) {
+        while (after < lower.len and std.ascii.isWhitespace(lower[after])) after += 1;
+        return after;
+    }
+
+    if (after < lower.len and lower[after] == ',') after += 1;
+
+    // At least one space must separate the marker from the answer.
+    if (after >= lower.len or !std.ascii.isWhitespace(lower[after])) return null;
+    while (after < lower.len and std.ascii.isWhitespace(lower[after])) after += 1;
+
+    // "therefore, the answer is 42" — the nested marker is skipped so the
+    // answer is "42", not "the answer is 42", matching the reference core.
+    const nested = "the answer is";
+    if (std.mem.startsWith(u8, lower[after..], nested)) {
+        var nested_end = after + nested.len;
+        if (nested_end < lower.len and std.ascii.isWhitespace(lower[nested_end])) {
+            while (nested_end < lower.len and std.ascii.isWhitespace(lower[nested_end])) nested_end += 1;
+            return nested_end;
+        }
+    }
+
+    return after;
+}
+
 /// Default answer extractor that looks for common answer patterns
 pub fn defaultAnswerExtractor(allocator: Allocator, text: []const u8) ![]const u8 {
-    // Try explicit answer markers
-    const patterns = [_][]const u8{
-        "therefore",
-        "thus",
-        "so",
-        "the answer is",
-        "answer:",
-        "conclusion:",
-        "result:",
+    // Try explicit answer markers, in the reference core's precedence order.
+    const markers = [_]AnswerMarker{
+        .{ .text = "therefore", .needs_separator = true },
+        .{ .text = "thus", .needs_separator = true },
+        .{ .text = "so", .needs_separator = true },
+        .{ .text = "the answer is", .needs_separator = true },
+        .{ .text = "answer:", .needs_separator = false },
+        .{ .text = "conclusion:", .needs_separator = false },
+        .{ .text = "result:", .needs_separator = false },
     };
 
     // Simple pattern matching (case-insensitive)
@@ -42,20 +91,21 @@ pub fn defaultAnswerExtractor(allocator: Allocator, text: []const u8) ![]const u
         lower_text[i] = std.ascii.toLower(c);
     }
 
-    for (patterns) |pattern| {
-        if (std.mem.indexOf(u8, lower_text, pattern)) |start_idx| {
-            const after_pattern = start_idx + pattern.len;
-            if (after_pattern < text.len) {
-                // Find end of line or sentence
-                var end_idx = after_pattern;
-                while (end_idx < text.len and text[end_idx] != '.' and text[end_idx] != '\n') {
-                    end_idx += 1;
-                }
+    for (markers) |marker| {
+        var idx: usize = 0;
+        while (idx < lower_text.len) : (idx += 1) {
+            const after_pattern = markerMatchesAt(lower_text, idx, marker) orelse continue;
+            if (after_pattern >= text.len) break;
 
-                // Extract and trim
-                const answer = std.mem.trim(u8, text[after_pattern..end_idx], &std.ascii.whitespace);
-                return try allocator.dupe(u8, answer);
+            // Find end of line or sentence
+            var end_idx = after_pattern;
+            while (end_idx < text.len and text[end_idx] != '.' and text[end_idx] != '\n') {
+                end_idx += 1;
             }
+
+            // Extract and trim
+            const answer = std.mem.trim(u8, text[after_pattern..end_idx], &std.ascii.whitespace);
+            return try allocator.dupe(u8, answer);
         }
     }
 
@@ -109,6 +159,8 @@ pub const SelfConsistencyAgent = struct {
                 .name = nameImpl,
                 .capabilities = capabilitiesImpl,
                 .process = processImpl,
+                .process_stream = processStreamImpl,
+                .introspect = introspectImpl,
                 .deinit = deinitImpl,
             },
         };
@@ -133,21 +185,34 @@ pub const SelfConsistencyAgent = struct {
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
         const self: *SelfConsistencyAgent = @ptrCast(@alignCast(ptr));
 
-        // Generate multiple samples
-        var samples = std.ArrayList([]const u8).empty;
+        // Allocation failures are mapped to ProcessingFailed rather than
+        // propagated: the vtable signature is AgentError!Result, which does not
+        // include Allocator.Error.
+        return self.processInner(message) catch |err| switch (err) {
+            error.OutOfMemory => Result{ .err = AgentError.ProcessingFailed },
+            else => |e| Result{ .err = e },
+        };
+    }
+
+    /// The real body, allowed to fail with Allocator.Error.
+    ///
+    /// Split out so `try` can be used on allocating calls; processImpl narrows
+    /// the error set back down to what the Agent vtable declares.
+    fn processInner(self: *SelfConsistencyAgent, message: Message) (AgentError || Allocator.Error)!Result {
+        var samples = std.ArrayListUnmanaged([]const u8).empty;
         defer {
             for (samples.items) |sample| {
                 self.allocator.free(sample);
             }
-            samples.deinit();
+            samples.deinit(self.allocator);
         }
 
-        var extracted_answers = std.ArrayList([]const u8).empty;
+        var extracted_answers = std.ArrayListUnmanaged([]const u8).empty;
         defer {
             for (extracted_answers.items) |answer| {
                 self.allocator.free(answer);
             }
-            extracted_answers.deinit();
+            extracted_answers.deinit(self.allocator);
         }
 
         // Generate samples
@@ -157,9 +222,10 @@ pub const SelfConsistencyAgent = struct {
                 return Result{ .err = AgentError.ProcessingFailed };
             };
 
-            const response_msg = result.unwrap() catch {
+            var response_msg = result.unwrap() catch {
                 return Result{ .err = AgentError.ProcessingFailed };
             };
+            defer response_msg.deinit();
 
             const full_response = response_msg.contentAsText() catch {
                 return Result{ .err = AgentError.InvalidInput };
@@ -169,8 +235,12 @@ pub const SelfConsistencyAgent = struct {
                 return Result{ .err = AgentError.ProcessingFailed };
             };
 
-            try samples.append(try self.allocator.dupe(u8, full_response));
-            try extracted_answers.append(extracted);
+            // Duped before append: full_response borrows from response_msg,
+            // which is freed at the end of this iteration.
+            const owned_response = try self.allocator.dupe(u8, full_response);
+            errdefer self.allocator.free(owned_response);
+            try samples.append(self.allocator, owned_response);
+            try extracted_answers.append(self.allocator, extracted);
         }
 
         // Vote for consensus
@@ -199,6 +269,20 @@ pub const SelfConsistencyAgent = struct {
         return Result{ .ok = response };
     }
 
+    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: @import("../../agent.zig").StreamCallbacks) AgentError!void {
+        _ = ptr;
+        _ = message;
+        _ = callbacks;
+        return AgentError.NotImplemented;
+    }
+
+    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error!@import("../../introspection.zig").IntrospectionResult {
+        const self: *SelfConsistencyAgent = @ptrCast(@alignCast(ptr));
+        const caps = try self.agent().capabilities(allocator);
+        defer allocator.free(caps);
+        return @import("../../introspection.zig").createDefaultIntrospectionResult(allocator, self.agent_name, caps);
+    }
+
     fn deinitImpl(ptr: *anyopaque) void {
         const self: *SelfConsistencyAgent = @ptrCast(@alignCast(ptr));
         self.allocator.destroy(self);
@@ -215,30 +299,43 @@ pub const SelfConsistencyAgent = struct {
         }
 
         // Count occurrences
+        // The maps own their keys, so both are freed here. Previously the
+        // normalized key was freed at the end of each loop iteration while the
+        // map kept pointing at it, and original_case's duped keys leaked.
         var counts = std.StringHashMap(usize).init(self.allocator);
-        defer counts.deinit();
+        defer {
+            var key_it = counts.keyIterator();
+            while (key_it.next()) |key| {
+                self.allocator.free(key.*);
+            }
+            counts.deinit();
+        }
 
         var original_case = std.StringHashMap([]const u8).init(self.allocator);
         defer original_case.deinit();
 
         for (answers) |answer| {
-            // Normalize (lowercase, trim)
-            var normalized = std.ArrayList(u8).empty;
-            defer normalized.deinit();
+            // Normalize (lowercase, drop whitespace)
+            var normalized = std.ArrayListUnmanaged(u8).empty;
+            defer normalized.deinit(self.allocator);
 
             for (answer) |c| {
                 if (!std.ascii.isWhitespace(c)) {
-                    try normalized.append(std.ascii.toLower(c));
+                    try normalized.append(self.allocator, std.ascii.toLower(c));
                 }
             }
 
-            const normalized_str = try normalized.toOwnedSlice();
-            defer self.allocator.free(normalized_str);
+            const normalized_str = try normalized.toOwnedSlice(self.allocator);
 
             const entry = try counts.getOrPut(normalized_str);
-            if (!entry.found_existing) {
+            if (entry.found_existing) {
+                // counts already owns an equal key; this one would leak.
+                self.allocator.free(normalized_str);
+            } else {
                 entry.value_ptr.* = 0;
-                try original_case.put(try self.allocator.dupe(u8, normalized_str), answer);
+                // Borrows counts' key, which outlives this function's use of
+                // the map, so no second dupe is needed.
+                try original_case.put(entry.key_ptr.*, answer);
             }
             entry.value_ptr.* += 1;
         }
@@ -267,9 +364,17 @@ pub const SelfConsistencyAgent = struct {
             return VoteResult{ .answer = try self.allocator.dupe(u8, ""), .score = 0.0 };
         }
 
-        // Group by answer, weight by response length
+        // Group by answer, weight by response length. As in voteMajority, the
+        // map owns its keys: freeing them per-iteration left the map holding
+        // dangling pointers, and original_case's dupes leaked.
         var weights = std.StringHashMap(usize).init(self.allocator);
-        defer weights.deinit();
+        defer {
+            var key_it = weights.keyIterator();
+            while (key_it.next()) |key| {
+                self.allocator.free(key.*);
+            }
+            weights.deinit();
+        }
 
         var original_case = std.StringHashMap([]const u8).init(self.allocator);
         defer original_case.deinit();
@@ -278,12 +383,13 @@ pub const SelfConsistencyAgent = struct {
 
         for (answers, 0..) |answer, i| {
             const normalized = try self.allocator.dupe(u8, answer);
-            defer self.allocator.free(normalized);
 
             const entry = try weights.getOrPut(normalized);
-            if (!entry.found_existing) {
+            if (entry.found_existing) {
+                self.allocator.free(normalized);
+            } else {
                 entry.value_ptr.* = 0;
-                try original_case.put(try self.allocator.dupe(u8, normalized), answer);
+                try original_case.put(entry.key_ptr.*, answer);
             }
             const weight = responses[i].len;
             entry.value_ptr.* += weight;
@@ -320,6 +426,371 @@ pub const SelfConsistencyAgent = struct {
         return VoteResult{
             .answer = try self.allocator.dupe(u8, answers[0]),
             .score = 1.0,
+        };
+    }
+};
+
+// ============================================================================
+// Tests
+// ============================================================================
+//
+// This file previously had no test blocks at all, which in Zig means it was
+// never type-checked: `_ = @import(...)` only forces analysis of a file's test
+// declarations, and a file with none is analysed not at all — which is how
+// agent() shipped without compiling (#811). The end-to-end tests below must go
+// through the Agent vtable, not merely reference `agent()`, or the rot recurs.
+
+const MockAgent = @import("../../test_utils.zig").MockAgent;
+const Role = @import("../../message.zig").Role;
+const StreamCallbacks = @import("../../agent.zig").StreamCallbacks;
+
+test "SelfConsistency name and capabilities" {
+    const testing = std.testing;
+
+    var gpa = std.heap.DebugAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"answer"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .majority);
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    try testing.expectEqualStrings("self_consistency", sc_agent.name());
+
+    const caps = try sc_agent.capabilities(allocator);
+    defer allocator.free(caps);
+    try testing.expectEqual(@as(usize, 5), caps.len);
+    try testing.expectEqualStrings("reasoning", caps[0]);
+    try testing.expectEqualStrings("self_consistency", caps[1]);
+    try testing.expectEqualStrings("majority_voting", caps[2]);
+    try testing.expectEqualStrings("reliability", caps[3]);
+    try testing.expectEqualStrings("consensus", caps[4]);
+}
+
+test "SelfConsistency samples the wrapped agent num_samples times" {
+    const testing = std.testing;
+
+    var gpa = std.heap.DebugAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"The answer is 42"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 5, .majority);
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "What is the answer?");
+    defer msg.deinit();
+
+    var response = try (try sc_agent.process(msg)).unwrap();
+    defer response.deinit();
+
+    try testing.expectEqual(@as(usize, 5), mock.call_count);
+    try testing.expectEqual(Role.assistant, response.role);
+    try testing.expectEqualStrings("self_consistency", response.getMetadata("technique").?.string);
+    try testing.expectEqual(@as(i64, 5), response.getMetadata("num_samples").?.integer);
+    try testing.expectEqualStrings("majority", response.getMetadata("voting_strategy").?.string);
+    // All five samples agreed, so consistency is perfect.
+    try testing.expectApproxEqAbs(@as(f64, 1.0), response.getMetadata("consistency_score").?.float, 1e-9);
+}
+
+test "SelfConsistency majority vote picks the most common answer" {
+    const testing = std.testing;
+
+    var gpa = std.heap.DebugAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .majority);
+    defer sc.agent().deinit();
+
+    // "blue" wins 3-2 despite appearing after "red".
+    const answers = [_][]const u8{ "red", "blue", "red", "blue", "blue" };
+    const vote = try sc.voteMajority(&answers);
+    defer allocator.free(vote.answer);
+
+    try testing.expectEqualStrings("blue", vote.answer);
+    try testing.expectApproxEqAbs(@as(f64, 3.0 / 5.0), vote.score, 1e-9);
+}
+
+test "SelfConsistency majority vote normalizes case and whitespace" {
+    const testing = std.testing;
+
+    var gpa = std.heap.DebugAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .majority);
+    defer sc.agent().deinit();
+
+    // These are three spellings of one answer, so it must beat the singleton.
+    const answers = [_][]const u8{ "Forty Two", "forty two", "FORTYTWO", "seven" };
+    const vote = try sc.voteMajority(&answers);
+    defer allocator.free(vote.answer);
+
+    // The original casing of the first occurrence is returned, not the
+    // normalized key.
+    try testing.expectEqualStrings("Forty Two", vote.answer);
+    try testing.expectApproxEqAbs(@as(f64, 3.0 / 4.0), vote.score, 1e-9);
+}
+
+test "SelfConsistency weighted vote favors longer reasoning" {
+    const testing = std.testing;
+
+    var gpa = std.heap.DebugAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .weighted);
+    defer sc.agent().deinit();
+
+    // "b" appears once but with far more reasoning behind it, so it outweighs
+    // "a"'s two terse samples — a plain count would pick "a".
+    const answers = [_][]const u8{ "a", "a", "b" };
+    const responses = [_][]const u8{ "x", "y", "a very long chain of reasoning indeed" };
+    const vote = try sc.voteWeighted(&answers, &responses);
+    defer allocator.free(vote.answer);
+
+    try testing.expectEqualStrings("b", vote.answer);
+    try testing.expect(vote.score > 0.5);
+}
+
+test "SelfConsistency first vote takes sample one" {
+    const testing = std.testing;
+
+    var gpa = std.heap.DebugAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .first);
+    defer sc.agent().deinit();
+
+    const answers = [_][]const u8{ "first", "second", "second" };
+    const vote = try sc.voteFirst(&answers);
+    defer allocator.free(vote.answer);
+
+    try testing.expectEqualStrings("first", vote.answer);
+    try testing.expectEqual(@as(f64, 1.0), vote.score);
+}
+
+test "SelfConsistency voting on zero samples yields an empty answer" {
+    const testing = std.testing;
+
+    var gpa = std.heap.DebugAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .majority);
+    defer sc.agent().deinit();
+
+    for ([_]VotingStrategy{ .majority, .weighted, .first }) |strategy| {
+        const vote = switch (strategy) {
+            .majority => try sc.voteMajority(&[_][]const u8{}),
+            .weighted => try sc.voteWeighted(&[_][]const u8{}, &[_][]const u8{}),
+            .first => try sc.voteFirst(&[_][]const u8{}),
+        };
+        defer allocator.free(vote.answer);
+        try testing.expectEqualStrings("", vote.answer);
+        try testing.expectEqual(@as(f64, 0.0), vote.score);
+    }
+}
+
+test "SelfConsistency reports the configured voting strategy" {
+    const testing = std.testing;
+
+    for ([_]struct { strategy: VotingStrategy, name: []const u8 }{
+        .{ .strategy = .majority, .name = "majority" },
+        .{ .strategy = .weighted, .name = "weighted" },
+        .{ .strategy = .first, .name = "first" },
+    }) |case| {
+        var gpa = std.heap.DebugAllocator(.{}){};
+        defer _ = gpa.deinit();
+        const allocator = gpa.allocator();
+
+        var mock = try MockAgent.init(allocator, &[_][]const u8{"answer"});
+        defer mock.deinit();
+
+        var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 2, case.strategy);
+        const sc_agent = sc.agent();
+        defer sc_agent.deinit();
+
+        var msg = try Message.withText(allocator, .user, "q");
+        defer msg.deinit();
+
+        var response = try (try sc_agent.process(msg)).unwrap();
+        defer response.deinit();
+
+        try testing.expectEqualStrings(case.name, response.getMetadata("voting_strategy").?.string);
+    }
+}
+
+test "defaultAnswerExtractor picks up an explicit answer marker" {
+    const testing = std.testing;
+
+    const answer = try defaultAnswerExtractor(testing.allocator, "Some reasoning. The answer is 42. Done.");
+    defer testing.allocator.free(answer);
+    try testing.expectEqualStrings("42", answer);
+}
+
+test "defaultAnswerExtractor does not match a marker inside a word" {
+    const testing = std.testing;
+
+    // "so" occurs inside "Some" and "also"; neither is an answer marker. The
+    // byte-substring version returned "me reasoning" here.
+    const answer = try defaultAnswerExtractor(testing.allocator, "Some reasoning, also nested\nlast line");
+    defer testing.allocator.free(answer);
+    try testing.expectEqualStrings("last line", answer);
+}
+
+test "defaultAnswerExtractor requires a separator after a prose marker" {
+    const testing = std.testing;
+
+    // "thus" must be followed by optional comma plus whitespace, so "thusly"
+    // is not a marker.
+    const answer = try defaultAnswerExtractor(testing.allocator, "thusly concluded\nfinal");
+    defer testing.allocator.free(answer);
+    try testing.expectEqualStrings("final", answer);
+}
+
+test "defaultAnswerExtractor handles each prose marker" {
+    const testing = std.testing;
+
+    for ([_][]const u8{
+        "Therefore, the sky is blue.",
+        "Thus the sky is blue.",
+        "So, the sky is blue.",
+    }) |text| {
+        const answer = try defaultAnswerExtractor(testing.allocator, text);
+        defer testing.allocator.free(answer);
+        try testing.expectEqualStrings("the sky is blue", answer);
+    }
+}
+
+test "defaultAnswerExtractor strips a nested answer-is marker" {
+    const testing = std.testing;
+
+    // Matches the reference core, whose regex consumes an optional
+    // "the answer is" after therefore/thus/so.
+    const answer = try defaultAnswerExtractor(testing.allocator, "Therefore, the answer is 7.");
+    defer testing.allocator.free(answer);
+    try testing.expectEqualStrings("7", answer);
+}
+
+test "defaultAnswerExtractor handles the colon markers" {
+    const testing = std.testing;
+
+    for ([_][]const u8{
+        "Answer: blue",
+        "Conclusion: blue",
+        "Result: blue",
+    }) |text| {
+        const answer = try defaultAnswerExtractor(testing.allocator, text);
+        defer testing.allocator.free(answer);
+        try testing.expectEqualStrings("blue", answer);
+    }
+}
+
+test "defaultAnswerExtractor falls back to the last non-empty line" {
+    const testing = std.testing;
+
+    const answer = try defaultAnswerExtractor(testing.allocator, "first line\nsecond line\n\n");
+    defer testing.allocator.free(answer);
+    try testing.expectEqualStrings("second line", answer);
+}
+
+test "SelfConsistency process_stream is not implemented" {
+    const testing = std.testing;
+
+    var gpa = std.heap.DebugAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .majority);
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "q");
+    defer msg.deinit();
+
+    var sink = TestSink{};
+    try testing.expectError(
+        AgentError.NotImplemented,
+        sc_agent.processStream(msg, sink.callbacks()),
+    );
+    try testing.expectEqual(@as(usize, 0), sink.calls);
+}
+
+test "SelfConsistency introspection reports name and capabilities" {
+    const testing = std.testing;
+
+    var gpa = std.heap.DebugAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"unused"});
+    defer mock.deinit();
+
+    var sc = try SelfConsistencyAgent.init(allocator, mock.agent(), 3, .majority);
+    const sc_agent = sc.agent();
+    defer sc_agent.deinit();
+
+    var info = try sc_agent.introspect(allocator);
+    defer info.deinit();
+
+    try testing.expectEqualStrings("self_consistency", info.agent_name);
+    try testing.expectEqual(@as(usize, 5), info.capabilities.len);
+}
+
+/// Callback sink that records that it was never invoked.
+const TestSink = struct {
+    calls: usize = 0,
+
+    fn onMessage(ptr: *anyopaque, message: Message) void {
+        _ = message;
+        const self: *TestSink = @ptrCast(@alignCast(ptr));
+        self.calls += 1;
+    }
+
+    fn onError(ptr: *anyopaque, err: AgentError) void {
+        const self: *TestSink = @ptrCast(@alignCast(ptr));
+        self.calls += 1;
+        std.debug.assert(err != AgentError.Cancelled);
+    }
+
+    fn onComplete(ptr: *anyopaque) void {
+        const self: *TestSink = @ptrCast(@alignCast(ptr));
+        self.calls += 1;
+    }
+
+    fn callbacks(self: *TestSink) StreamCallbacks {
+        return StreamCallbacks{
+            .ptr = self,
+            .on_message_fn = onMessage,
+            .on_error_fn = onError,
+            .on_complete_fn = onComplete,
         };
     }
 };

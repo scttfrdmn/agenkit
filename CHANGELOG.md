@@ -331,6 +331,121 @@ branch text needed the `+0.2` structure bonus (two numbered markers each at the
 every depth-1 branch was pruned and the recursive expansion — where a dropped
 forward would actually hide — went untested.
 
+### Fixed — Five of six Zig reasoning technique agents did not compile; 34 of their tests never ran (Issue #811)
+
+`zig build test` reported 497/497 green while **five of the six Zig reasoning
+technique `agent()` constructors failed to compile**, and 34 test blocks sat in
+files the compiler never analysed. Nothing was failing — nothing was being checked.
+
+Zig only type-checks functions it actually *reaches*. `root.zig`'s test block did
+`_ = @import("techniques/reasoning/self_consistency.zig")`, which pulls in that
+file's `test` declarations — but that file had **zero** test blocks, so importing it
+analysed nothing at all. `refAllDecls` references decls without descending into
+method bodies, so `SelfConsistencyAgent.agent()` was never instantiated and never
+compiled. `least_to_most.zig` was the one that built, and it is the only one whose
+tests called `agent()`. That is the whole mechanism, not a coincidence.
+
+Repaired all eight files (`self_consistency`, `chain_of_thought`, `tree_of_thought`,
+`plan_and_solve`, `graph_of_thought`, `reasoning_graph`, `reasoning_tree`,
+`test_utils`): stale 4-of-6 vtables missing `process_stream`/`introspect`, the
+managed→unmanaged `std.ArrayList` migration, removed APIs (`std.mem.split`,
+`Message.init`), `AgentError.ProcessingError` (which does not exist; the member is
+`ProcessingFailed`), and `applyTemplate` returning a set wider than `AgentError`.
+Vtable methods now delegate to a `processInner` returning
+`(AgentError || Allocator.Error)!Result`, mapping `error.OutOfMemory` to
+`ProcessingFailed`, since the vtable signature excludes `Allocator.Error`.
+
+`PlanAndSolveAgent` and `GraphOfThoughtAgent` are now exported from `root.zig` —
+`feature-manifest.json` claimed all eight under `languages.zig.techniques`, but a
+user could not name those two at all, and could not call `.agent()` on five of six.
+
+**The anti-rot guard is the point.** Wiring the files into `root.zig`'s test block
+is *not* sufficient protection: a file with no test blocks is still analysed not at
+all, so four of them would have rotted straight back. Every technique file now
+contains tests that construct the agent and call **through the vtable** —
+`agent().process(...)`, not `_ = agent()` — and a new `root.zig` test references
+`agent()` for all six agents through the *public* namespace, which is what a
+consumer's build does.
+
+Test blocks per file (measured, not estimated):
+
+| File | before | after |
+|---|---|---|
+| `chain_of_thought.zig` | 0 | 12 |
+| `self_consistency.zig` | 0 | 17 |
+| `tree_of_thought.zig` | 0 | 15 |
+| `reasoning_tree.zig` | 0 | 9 |
+| `graph_of_thought.zig` | 10 (never ran) | 22 |
+| `plan_and_solve.zig` | 19 (never ran) | 21 |
+| `reasoning_graph.zig` | 5 (never ran) | 7 |
+| `test_utils.zig` | 9 | 10 |
+| `root.zig` | — | +1 |
+
+`zig build test`: **497 → 611 passing.**
+
+**Latent runtime defects the compiler could never have flagged**, each surfaced only
+once the files were actually compiled and exercised — the strongest evidence that
+#811 was masking real bugs rather than cosmetic rot:
+
+- **`'•'` compared against a `u8` in three files.** U+2022 is three UTF-8 bytes, so
+  `line[0] == '•'` compares byte 226 against codepoint 8226 and is *always false*.
+  This silently dropped every `•`-bulleted list in Chain-of-Thought step extraction,
+  scored every `•`-bulleted branch as unstructured in Tree-of-Thought's
+  `defaultEvaluator` (below the 0.3 prune threshold), and left raw bullet bytes in
+  Graph-of-Thought's parsed thoughts. All three now match with `std.mem.startsWith`.
+- **`"so"` matched inside `"Some"`.** `defaultAnswerExtractor` took the first
+  `indexOf` hit with no word boundary and no separator requirement, so
+  `"Some reasoning. The answer is 42."` extracted `"me reasoning"` — a
+  plausible-looking string that was never an answer. Rewritten to require a word
+  start and `,?\s+`, matching the reference regex at
+  `agenkit/techniques/reasoning/self_consistency.py:164`.
+- **Best-first search was a min-heap.** `ScoredNode.compare` returned
+  `a.score < b.score` while its comment claimed a max-heap, so Tree-of-Thought's
+  `.best_first` strategy expanded the *worst* node first.
+- **Node-based aggregation answered with node 0.** Graph-of-Thought seeded
+  `best_score = -1.0` and `best_node_id = 0`, so when no path node resolved it
+  returned node 0's content instead of admitting defeat. Now guarded by `found_any`.
+- **Use-after-free plus double-free in `llmCall`.** It returned a slice borrowed
+  from a `Message` it had already freed; callers then read *and* freed it. Now dupes.
+- **Leaks:** every inner path in `findReasoningPaths` (only the outer slice was
+  freed); both `Message`s per branch in `generateBranches` and per call in
+  Chain-of-Thought; the replanning feedback string in Plan-and-Solve; the
+  normalized key in `voteMajority`/`voteWeighted`, which was freed while the map
+  still pointed at it — a use-after-free *and* a leak of `original_case`'s keys.
+- **`step.result` aliased the caller-owned result slice** in `executePlan`, so
+  `Plan.deinit` and the caller both freed it.
+- **`edge_count` advanced on failed `addEdge` calls**, so `max_edges` cut the graph
+  short after failures that added nothing.
+- **`ReasoningGraph.addNode`/`addEdge` were not atomic.** `addNode` duped the
+  content before `nodes.put`, leaking the copy if the put failed — and `next_id`
+  advanced anyway, burning an id. `addEdge` appended to `edges` before the adjacency
+  lists, so a later failure left an edge recorded but invisible to traversal, making
+  `statistics` and `findPaths` disagree about the graph's shape. Both now reserve
+  capacity for every collection up front, then mutate infallibly. Covered by
+  `checkAllAllocationFailures` and a swept-fail-index invariant test, since neither
+  is observable without an allocation failure.
+- **Three vacuously-passing Plan-and-Solve tests**, including one whose replanning
+  branch had never executed even once.
+
+Every fix above was negative-verified: reverted in place, the file's tests re-run,
+and a failure required. Twenty-two mutations were applied in total. One — replacing
+`putAssumeCapacity` with `try put` while leaving the reserves in place — is
+behaviour-preserving by construction and is not counted as a gap; the reserve itself
+is what the suite catches.
+
+**Documented cross-language divergence:** Plan-and-Solve omits the `validation_notes`
+and `strategy` metadata keys, and Graph-of-Thought omits `graph` and
+`reasoning_paths`, that the Python core exposes. `Message.deinit` deliberately does
+not free *top-level* metadata strings (they may be static literals), so a
+dynamically allocated one would leak. Plan-and-Solve routes `plan_steps` and
+`execution_steps` through JSON **arrays**, whose nested strings *are* freed; the
+remaining keys have no array-shaped equivalent and were left out rather than leaked.
+
+This blocked #801's Zig core: `SelfConsistencyAgent.temperature` is the worst
+instance of #801 in any core — set to `null` in `init`, with no config parameter and
+no setter, so it was not even reachable, let alone forwarded. It could not be wired
+until the file compiled.
+
 ### Fixed — Python reasoning techniques called `LLM.complete()` with the wrong type (Issue #802)
 
 The five reasoning techniques that own an LLM — `ChainOfThought`, `TreeOfThought`,

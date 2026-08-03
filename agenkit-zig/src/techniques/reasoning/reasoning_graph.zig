@@ -62,19 +62,19 @@ pub const GraphStatistics = struct {
 pub const ReasoningGraph = struct {
     allocator: Allocator,
     nodes: std.AutoHashMap(usize, ThoughtNode),
-    edges: std.ArrayList(LogicalEdge),
+    edges: std.ArrayListUnmanaged(LogicalEdge),
     next_id: usize,
-    outgoing: std.AutoHashMap(usize, std.ArrayList(usize)),
-    incoming: std.AutoHashMap(usize, std.ArrayList(usize)),
+    outgoing: std.AutoHashMap(usize, std.ArrayListUnmanaged(usize)),
+    incoming: std.AutoHashMap(usize, std.ArrayListUnmanaged(usize)),
 
     pub fn init(allocator: Allocator) ReasoningGraph {
         return ReasoningGraph{
             .allocator = allocator,
             .nodes = std.AutoHashMap(usize, ThoughtNode).init(allocator),
-            .edges = std.ArrayList(LogicalEdge).empty,
+            .edges = std.ArrayListUnmanaged(LogicalEdge).empty,
             .next_id = 0,
-            .outgoing = std.AutoHashMap(usize, std.ArrayList(usize)).init(allocator),
-            .incoming = std.AutoHashMap(usize, std.ArrayList(usize)).init(allocator),
+            .outgoing = std.AutoHashMap(usize, std.ArrayListUnmanaged(usize)).init(allocator),
+            .incoming = std.AutoHashMap(usize, std.ArrayListUnmanaged(usize)).init(allocator),
         };
     }
 
@@ -85,29 +85,34 @@ pub const ReasoningGraph = struct {
             mutable_node.deinit(self.allocator);
         }
         self.nodes.deinit();
-        self.edges.deinit();
+        self.edges.deinit(self.allocator);
 
         var out_iter = self.outgoing.valueIterator();
         while (out_iter.next()) |list| {
-            var mutable_list = list.*;
-            mutable_list.deinit();
+            list.deinit(self.allocator);
         }
         self.outgoing.deinit();
 
         var in_iter = self.incoming.valueIterator();
         while (in_iter.next()) |list| {
-            var mutable_list = list.*;
-            mutable_list.deinit();
+            list.deinit(self.allocator);
         }
         self.incoming.deinit();
     }
 
     /// Add a thought node to the graph
     pub fn addNode(self: *ReasoningGraph, content: []const u8, node_type: NodeType, confidence: f64) !usize {
-        const node_id = self.next_id;
-        self.next_id += 1;
+        // Every fallible step happens before the first mutation, so a failure
+        // leaves the graph exactly as it was. Previously the content dupe came
+        // first and `nodes.put` could fail after it, leaking the copy — and
+        // next_id advanced even then, so a failed add burned an id.
+        try self.nodes.ensureUnusedCapacity(1);
+        try self.outgoing.ensureUnusedCapacity(1);
+        try self.incoming.ensureUnusedCapacity(1);
 
         const content_copy = try self.allocator.dupe(u8, content);
+
+        const node_id = self.next_id;
         const node = ThoughtNode{
             .id = node_id,
             .content = content_copy,
@@ -115,9 +120,10 @@ pub const ReasoningGraph = struct {
             .confidence = confidence,
         };
 
-        try self.nodes.put(node_id, node);
-        try self.outgoing.put(node_id, std.ArrayList(usize).empty);
-        try self.incoming.put(node_id, std.ArrayList(usize).empty);
+        self.nodes.putAssumeCapacity(node_id, node);
+        self.outgoing.putAssumeCapacity(node_id, std.ArrayListUnmanaged(usize).empty);
+        self.incoming.putAssumeCapacity(node_id, std.ArrayListUnmanaged(usize).empty);
+        self.next_id += 1;
 
         return node_id;
     }
@@ -128,20 +134,25 @@ pub const ReasoningGraph = struct {
             return error.NodeNotFound;
         }
 
-        const edge = LogicalEdge{
+        const out_list = self.outgoing.getPtr(from_node).?;
+        const in_list = self.incoming.getPtr(to_node).?;
+
+        // Reserve all three slots up front. The previous version appended to
+        // `edges` first, so a failure in either adjacency list left the edge
+        // recorded in `edges` but invisible to traversal — statistics and
+        // findPaths would then disagree about the graph's shape.
+        try self.edges.ensureUnusedCapacity(self.allocator, 1);
+        try out_list.ensureUnusedCapacity(self.allocator, 1);
+        try in_list.ensureUnusedCapacity(self.allocator, 1);
+
+        self.edges.appendAssumeCapacity(LogicalEdge{
             .from_node = from_node,
             .to_node = to_node,
             .edge_type = edge_type,
             .strength = strength,
-        };
-
-        try self.edges.append(edge);
-
-        var out_list = self.outgoing.getPtr(from_node).?;
-        try out_list.append(to_node);
-
-        var in_list = self.incoming.getPtr(to_node).?;
-        try in_list.append(from_node);
+        });
+        out_list.appendAssumeCapacity(to_node);
+        in_list.appendAssumeCapacity(from_node);
     }
 
     /// Get node by ID
@@ -151,53 +162,55 @@ pub const ReasoningGraph = struct {
 
     /// Get all premise nodes
     pub fn getPremises(self: *const ReasoningGraph, allocator: Allocator) ![]const *const ThoughtNode {
-        var premises = std.ArrayList(*const ThoughtNode).empty;
-        defer premises.deinit();
+        var premises = std.ArrayListUnmanaged(*const ThoughtNode).empty;
+        defer premises.deinit(allocator);
 
         var iter = self.nodes.valueIterator();
         while (iter.next()) |node| {
             if (node.node_type == .premise) {
-                try premises.append(node);
+                try premises.append(allocator, node);
             }
         }
 
-        return try premises.toOwnedSlice();
+        return try premises.toOwnedSlice(allocator);
     }
 
     /// Get all conclusion nodes
     pub fn getConclusions(self: *const ReasoningGraph, allocator: Allocator) ![]const *const ThoughtNode {
-        var conclusions = std.ArrayList(*const ThoughtNode).empty;
-        defer conclusions.deinit();
+        var conclusions = std.ArrayListUnmanaged(*const ThoughtNode).empty;
+        defer conclusions.deinit(allocator);
 
         var iter = self.nodes.valueIterator();
         while (iter.next()) |node| {
             if (node.node_type == .conclusion) {
-                try conclusions.append(node);
+                try conclusions.append(allocator, node);
             }
         }
 
-        return try conclusions.toOwnedSlice();
+        return try conclusions.toOwnedSlice(allocator);
     }
 
     /// Find all paths from start to end node
     pub fn findPaths(self: *const ReasoningGraph, allocator: Allocator, start: usize, end: usize, max_length: usize) ![][]usize {
-        var paths = std.ArrayList([]usize).empty;
+        // toOwnedSlice() empties the list on success, so this defer only frees
+        // the accumulated paths on the error return.
+        var paths = std.ArrayListUnmanaged([]usize).empty;
         defer {
             for (paths.items) |path| {
                 allocator.free(path);
             }
-            paths.deinit();
+            paths.deinit(allocator);
         }
 
         var visited = std.AutoHashMap(usize, void).init(allocator);
         defer visited.deinit();
 
-        var current_path = std.ArrayList(usize).empty;
-        defer current_path.deinit();
+        var current_path = std.ArrayListUnmanaged(usize).empty;
+        defer current_path.deinit(allocator);
 
         try self.dfsPath(allocator, start, end, max_length, &visited, &current_path, &paths);
 
-        return try paths.toOwnedSlice();
+        return try paths.toOwnedSlice(allocator);
     }
 
     fn dfsPath(
@@ -207,18 +220,19 @@ pub const ReasoningGraph = struct {
         end: usize,
         max_length: usize,
         visited: *std.AutoHashMap(usize, void),
-        path: *std.ArrayList(usize),
-        paths: *std.ArrayList([]usize),
+        path: *std.ArrayListUnmanaged(usize),
+        paths: *std.ArrayListUnmanaged([]usize),
     ) !void {
         if (path.items.len > max_length) {
             return;
         }
 
         if (current == end) {
-            var complete_path = try allocator.alloc(usize, path.items.len + 1);
+            const complete_path = try allocator.alloc(usize, path.items.len + 1);
+            errdefer allocator.free(complete_path);
             @memcpy(complete_path[0..path.items.len], path.items);
             complete_path[path.items.len] = current;
-            try paths.append(complete_path);
+            try paths.append(allocator, complete_path);
             return;
         }
 
@@ -227,7 +241,7 @@ pub const ReasoningGraph = struct {
         }
 
         try visited.put(current, {});
-        try path.append(current);
+        try path.append(allocator, current);
 
         if (self.outgoing.get(current)) |neighbors| {
             for (neighbors.items) |neighbor| {
@@ -418,4 +432,95 @@ test "ReasoningGraph: statistics" {
     try std.testing.expectEqual(@as(usize, 3), stats.num_nodes);
     try std.testing.expectEqual(@as(usize, 2), stats.num_edges);
     try std.testing.expectEqual(@as(usize, 1), stats.premise_count);
+}
+
+test "ReasoningGraph: findPaths frees accumulated paths on allocation failure" {
+    // findPaths accumulates owned inner slices before handing them off with
+    // toOwnedSlice. If an allocation fails partway through the DFS, every path
+    // gathered so far must still be freed — a defer that only released the
+    // outer list leaked all of them, and only an OOM path exercises it.
+    const Runner = struct {
+        fn run(allocator: std.mem.Allocator) !void {
+            var graph = ReasoningGraph.init(allocator);
+            defer graph.deinit();
+
+            // A diamond with two extra hops, so the DFS finds several paths and
+            // allocates more than once before returning.
+            const a = try graph.addNode("a", .premise, 0.9);
+            const b = try graph.addNode("b", .intermediate, 0.8);
+            const c = try graph.addNode("c", .intermediate, 0.8);
+            const d = try graph.addNode("d", .intermediate, 0.7);
+            const e = try graph.addNode("e", .conclusion, 0.6);
+
+            try graph.addEdge(a, b, .supports, 0.9);
+            try graph.addEdge(a, c, .supports, 0.9);
+            try graph.addEdge(b, d, .supports, 0.8);
+            try graph.addEdge(c, d, .supports, 0.8);
+            try graph.addEdge(b, e, .supports, 0.8);
+            try graph.addEdge(d, e, .supports, 0.8);
+
+            const paths = try graph.findPaths(allocator, a, e, 6);
+            defer {
+                for (paths) |path| allocator.free(path);
+                allocator.free(paths);
+            }
+            try std.testing.expect(paths.len >= 2);
+        }
+    };
+
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, Runner.run, .{});
+}
+
+test "ReasoningGraph: a failed add leaves no partial node or edge" {
+    // addNode and addEdge each touch three collections. If one succeeds and a
+    // later one fails, the graph is left inconsistent: a node with no adjacency
+    // lists (which addEdge then unwraps as non-null and panics on), or an edge
+    // recorded in `edges` but invisible to traversal, so statistics and
+    // findPaths disagree about the graph's shape. Neither shows up without an
+    // allocation failure, so the fail index is swept rather than guessed.
+    var fail_index: usize = 0;
+    while (fail_index < 64) : (fail_index += 1) {
+        var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{
+            .fail_index = fail_index,
+        });
+        const allocator = failing.allocator();
+
+        var graph = ReasoningGraph.init(allocator);
+        defer graph.deinit();
+
+        var added = std.ArrayListUnmanaged(usize).empty;
+        defer added.deinit(std.testing.allocator);
+
+        for (0..4) |i| {
+            const id = graph.addNode("node content", .premise, 0.9) catch break;
+            try added.append(std.testing.allocator, id);
+            _ = i;
+        }
+
+        // Every node that was reported as added must be fully wired, or the
+        // `.?` unwraps inside addEdge are unsound.
+        for (added.items) |id| {
+            try std.testing.expect(graph.nodes.contains(id));
+            try std.testing.expect(graph.outgoing.contains(id));
+            try std.testing.expect(graph.incoming.contains(id));
+        }
+
+        if (added.items.len >= 2) {
+            for (added.items[1..], 0..) |to, prev| {
+                graph.addEdge(added.items[prev], to, .supports, 0.8) catch break;
+            }
+        }
+
+        // `edges` and the adjacency lists must describe the same edge set.
+        var outgoing_total: usize = 0;
+        var out_iter = graph.outgoing.valueIterator();
+        while (out_iter.next()) |list| outgoing_total += list.items.len;
+
+        var incoming_total: usize = 0;
+        var in_iter = graph.incoming.valueIterator();
+        while (in_iter.next()) |list| incoming_total += list.items.len;
+
+        try std.testing.expectEqual(graph.edges.items.len, outgoing_total);
+        try std.testing.expectEqual(graph.edges.items.len, incoming_total);
+    }
 }

@@ -283,10 +283,26 @@ pub const techniques = struct {
         pub const EvaluatorFunc = @import("techniques/reasoning/tree_of_thought.zig").EvaluatorFunc;
         pub const defaultEvaluator = @import("techniques/reasoning/tree_of_thought.zig").defaultEvaluator;
 
+        pub const PlanAndSolveAgent = @import("techniques/reasoning/plan_and_solve.zig").PlanAndSolveAgent;
+        pub const PlanAndSolveConfig = @import("techniques/reasoning/plan_and_solve.zig").PlanAndSolveConfig;
+        pub const Plan = @import("techniques/reasoning/plan_and_solve.zig").Plan;
+        pub const PlanStep = @import("techniques/reasoning/plan_and_solve.zig").PlanStep;
+
+        pub const GraphOfThoughtAgent = @import("techniques/reasoning/graph_of_thought.zig").GraphOfThoughtAgent;
+        pub const GraphOfThoughtConfig = @import("techniques/reasoning/graph_of_thought.zig").GraphOfThoughtConfig;
+        pub const AggregatorType = @import("techniques/reasoning/graph_of_thought.zig").AggregatorType;
+
         pub const ReasoningTree = @import("techniques/reasoning/reasoning_tree.zig").ReasoningTree;
         pub const ReasoningNode = @import("techniques/reasoning/reasoning_tree.zig").ReasoningNode;
         pub const NodeState = @import("techniques/reasoning/reasoning_tree.zig").NodeState;
         pub const TreeStatistics = @import("techniques/reasoning/reasoning_tree.zig").TreeStatistics;
+
+        pub const ReasoningGraph = @import("techniques/reasoning/reasoning_graph.zig").ReasoningGraph;
+        pub const ThoughtNode = @import("techniques/reasoning/reasoning_graph.zig").ThoughtNode;
+        pub const LogicalEdge = @import("techniques/reasoning/reasoning_graph.zig").LogicalEdge;
+        pub const NodeType = @import("techniques/reasoning/reasoning_graph.zig").NodeType;
+        pub const EdgeType = @import("techniques/reasoning/reasoning_graph.zig").EdgeType;
+        pub const GraphStatistics = @import("techniques/reasoning/reasoning_graph.zig").GraphStatistics;
     };
 };
 
@@ -337,10 +353,48 @@ test {
     _ = @import("skills.zig");
     _ = @import("skills/loader.zig");
     _ = @import("skills/agent.zig");
-    // Also test techniques
+    // Also test techniques.
+    //
+    // Every technique file must be listed here. Zig only analyses functions it
+    // reaches, and refAllDecls does not descend into method bodies, so a file
+    // that is not imported by a test block is never type-checked at all — which
+    // is how five of these shipped with agent() constructors that did not
+    // compile while `zig build test` reported all green (#811). Each file's own
+    // tests must also call through the Agent vtable, not merely reference
+    // `agent()`, or the same rot recurs.
     _ = @import("techniques/reasoning/self_consistency.zig");
     _ = @import("techniques/reasoning/chain_of_thought.zig");
     _ = @import("techniques/reasoning/least_to_most.zig");
+    _ = @import("techniques/reasoning/plan_and_solve.zig");
     _ = @import("techniques/reasoning/reasoning_tree.zig");
     _ = @import("techniques/reasoning/tree_of_thought.zig");
+    _ = @import("techniques/reasoning/reasoning_graph.zig");
+    _ = @import("techniques/reasoning/graph_of_thought.zig");
+}
+
+test "every reasoning technique in the manifest is reachable and its agent() compiles" {
+    // feature-manifest.json claims all eight of these under
+    // languages.zig.techniques. Two were not exported from root.zig at all, and
+    // five had agent() constructors that failed to compile in a consumer's build
+    // (#811). Referencing agent() through the *public* namespace is what a user
+    // does, so it is what the gate must check.
+    const reasoning = techniques.reasoning;
+
+    _ = &reasoning.ChainOfThoughtAgent.agent;
+    _ = &reasoning.GraphOfThoughtAgent.agent;
+    _ = &reasoning.LeastToMostAgent.agent;
+    _ = &reasoning.PlanAndSolveAgent.agent;
+    _ = &reasoning.SelfConsistencyAgent.agent;
+    _ = &reasoning.TreeOfThoughtAgent.agent;
+
+    // The two data structures have no agent(); assert the types resolve.
+    _ = reasoning.ReasoningGraph;
+    _ = reasoning.ReasoningTree;
+
+    // Configs travel with their agents — a user cannot call init without them.
+    _ = reasoning.ChainOfThoughtConfig;
+    _ = reasoning.GraphOfThoughtConfig;
+    _ = reasoning.LeastToMostConfig;
+    _ = reasoning.PlanAndSolveConfig;
+    _ = reasoning.TreeOfThoughtConfig;
 }

@@ -64,9 +64,9 @@ value the **LLM** received rather than anything the wrapper recorded on the way
 past — a test that only checks the wrapper's own state would pass even if the
 plumbing stopped one layer short, which was the bug.
 
-This lands in Python first as the reference, followed by Go, TypeScript and Rust
-below. The remaining five cores still accept an inert `temperature` (or lack the
-field entirely, in C#/Java/Scala); tracked on #801.
+This lands in Python first as the reference, followed by Go, TypeScript, Rust and
+C++ below. The remaining four cores still accept an inert `temperature` (or lack
+the field entirely, in C#/Java/Scala); tracked on #801.
 
 #### Go (`agenkit-go`)
 
@@ -255,6 +255,81 @@ recursive expansion — where a dropped forward would actually hide — went unt
 The `#[cfg(feature = "wasm")]` sample loops are unreachable from a native test run,
 so a mutation there survives by construction; both were verified separately by
 temporarily swapping the `cfg` gates.
+
+#### C++ (agenkit-cpp)
+
+- **New `CallOptions`** (`include/agenkit/core/call_options.hpp`,
+  `src/core/call_options.cpp`) — `temperature`, `max_tokens`, `top_p`, `seed`,
+  `stop` as `std::optional`, plus a `nlohmann::json extra` object for
+  provider-specific keys. Every field is tested with `has_value()`, never
+  truthiness: `temperature = 0.0` (greedy decoding) is a real request and is
+  forwarded, while an unset temperature is omitted from `to_params()` rather than
+  sent as `0`. `with_*` builders throw on out-of-range values; because the fields
+  are public, the aggregate-initialization path bypasses them, so `validate()` is
+  the guard there.
+- **New optional `core::OptionsAgent`** with a pure virtual
+  `process_with(message, options)`. C++ has RTTI, so `supports_options(agent)` is
+  `dynamic_cast<OptionsAgent*>(agent) != nullptr` — a genuine structural check
+  rather than a declaration. This is strictly stronger than Rust's
+  `as_options_agent()` shape: an agent can neither advertise the capability
+  without providing it nor provide it without being detected.
+- Also new: `process_with_options(agent, message, options)`, overloaded for a raw
+  `Agent*` and a `shared_ptr<Agent>`, so the capability check lives in one place
+  rather than at each wrapper call site. With an empty option set it takes the
+  plain `process()` path, so an `OptionsAgent` is never handed an empty
+  `CallOptions` just because the helper was used. A null agent returns an error
+  rather than dereferencing.
+- `CallOptions::merge` merges field by field. An unset field in the override means
+  "did not ask", not "clear it" — replacing the struct wholesale would let a
+  caller forwarding an optional variable erase the agent's own configuration.
+- All six reasoning techniques now derive from `core::OptionsAgent`, implement
+  `process_with`, and delegate `process()` to it with an empty option set. They
+  thread `CallOptions` through **every** internal LLM call path, including the
+  three an obvious test never reaches: Plan-and-Solve's replanning branch (3
+  further calls, entered only when validation rejects a plan), Tree-of-Thought's
+  recursive expansion under all three search strategies, and Graph-of-Thought's
+  node-cap-gated conclusion. Their private helpers (`create_plan`, `validate`,
+  `execute_plan`, `execute_step`, `llm_call`, `decompose`, `solve_subproblem`,
+  `generate_premises`, `generate_thoughts`, `identify_connection`, `build_graph`,
+  `generate_branches`, `expand_node`, `search_bfs`/`search_dfs`/
+  `search_best_first`) take a trailing `const core::CallOptions&`.
+- Options are **copied** into every lambda, never captured by reference, and
+  passed as an argument rather than stored on the agent. The caller's
+  `CallOptions` may be a temporary that is gone by the time the thread pool or
+  `std::async` task runs, and Self-Consistency's samples and Tree-of-Thought's
+  branches run concurrently against the same wrapped agent, where a member would
+  race.
+- `SelfConsistencyAgent` now forwards its `temperature` per sample and validates
+  it at construction — through the shared `CallOptions::validate()`, so the bounds
+  cannot drift apart from the ones the options themselves enforce. Its own
+  temperature wins over a caller's, since sampling diversity is what makes the
+  technique correct; every other option passes through untouched.
+- **New `SelfConsistencyAgent::temperature_applied()`** plus `temperature` and
+  `temperature_applied` response metadata, matching Python, Go, TypeScript and
+  Rust. `temperature` is reported even when it was dropped: an optional capability
+  reintroduces the risk of a silently discarded value, and `temperature_applied`
+  alone cannot distinguish "asked for 0.8 and did not get it" from "never asked".
+- The `temperature` field doc no longer says *"not used yet"*.
+
+40 new tests in `tests/techniques/reasoning/test_call_options.cpp` (registered as
+`call_options_tests`) — 1152 gtest cases across 69 test executables, all passing.
+They assert on which path each call *arrived by*, not on the returned message: a
+phase that drops its options still produces a response, so the entry path is the
+only thing distinguishing it from a working one. Each gated phase additionally
+asserts that it actually ran, and the recording agent's shared assertion helper
+fails outright on an empty call log, without which "every call forwarded" is
+trivially true for a phase that never executes.
+
+Verified by mutation: 15 mutations, each producing at least one test failure, with
+one mutation per forwarding site so each is killed only by its own test rather
+than en masse. Five were initially caught by `-Wunused-parameter -Werror` on the
+library target *before* any test ran; those were re-run with the parameter
+explicitly voided so the suite — not the compiler — had to catch the dropped
+forward. All five then failed the intended test. As in Rust, the Tree-of-Thought
+branch text needed the `+0.2` structure bonus (two numbered markers each at the
+*start of a line*) to clear `default_evaluator`'s 0.3 prune threshold; without it
+every depth-1 branch was pruned and the recursive expansion — where a dropped
+forward would actually hide — went untested.
 
 ### Fixed — Python reasoning techniques called `LLM.complete()` with the wrong type (Issue #802)
 

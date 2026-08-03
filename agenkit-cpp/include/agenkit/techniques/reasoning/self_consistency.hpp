@@ -13,6 +13,7 @@
 #define AGENKIT_TECHNIQUES_REASONING_SELF_CONSISTENCY_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include "agenkit/core/result.hpp"
 #include <functional>
@@ -68,7 +69,17 @@ struct SelfConsistencyConfig {
     /** Voting strategy for answer aggregation (default: Majority) */
     VotingStrategy voting_strategy = VotingStrategy::Majority;
 
-    /** Sampling temperature for diversity (optional, not used yet) */
+    /**
+     * Sampling temperature for diversity (optional)
+     *
+     * Forwarded to the wrapped agent on every sample, if that agent honours
+     * per-call options. `std::nullopt` means unset — no temperature is sent,
+     * rather than one being invented. See temperature_applied().
+     *
+     * Sample diversity is the mechanism this technique depends on: N samples
+     * at temperature 0 would all be the same answer, and voting over identical
+     * answers decides nothing.
+     */
     std::optional<double> temperature;
 
     /** Custom answer extraction function (optional) */
@@ -96,12 +107,16 @@ struct SelfConsistencyConfig {
  * }
  * @endcode
  */
-class SelfConsistencyAgent : public core::Agent {
+class SelfConsistencyAgent : public core::Agent, public core::OptionsAgent {
 public:
     /**
      * @brief Create a new Self-Consistency agent
      * @param agent Base agent to wrap
      * @param config Configuration options
+     *
+     * @throws std::invalid_argument if config.temperature is set and outside
+     *         0.0-2.0. Rejected here rather than on the first sample, so an
+     *         unusable configuration fails where it was written.
      */
     SelfConsistencyAgent(
         std::shared_ptr<core::Agent> agent,
@@ -132,6 +147,37 @@ public:
     std::future<core::Result<core::Message, core::AgentError>>
     process(core::Message message) override;
 
+    /**
+     * @brief Process a message with Self-Consistency, honouring per-call options
+     *
+     * The configured temperature wins over one supplied by the caller — sample
+     * diversity is what makes this technique correct, so it is not something a
+     * caller can flatten by accident. Every other option passes through
+     * untouched. process() is this method with an empty option set.
+     *
+     * @param message Input message
+     * @param options Per-call options; merged under the configured temperature
+     * @return Future containing Result<Message, AgentError>
+     */
+    std::future<core::Result<core::Message, core::AgentError>>
+    process_with(core::Message message, const core::CallOptions& options) override;
+
+    /**
+     * @brief Whether a configured temperature actually reaches the wrapped agent
+     *
+     * True when no temperature is configured (nothing to drop), and when one is
+     * configured and the wrapped agent honours per-call options. False when a
+     * temperature is set but the wrapped agent only implements process(), in
+     * which case the value is silently discarded.
+     *
+     * Exposed because honouring options is optional: without this, a dropped
+     * temperature would be invisible, which is the bug this method exists to
+     * make impossible to reintroduce quietly.
+     *
+     * @return true if the configured temperature (if any) is applied
+     */
+    bool temperature_applied() const;
+
 private:
     struct Sample {
         std::string full_response;
@@ -141,9 +187,20 @@ private:
     /**
      * @brief Generate multiple samples in parallel
      * @param message Input message
+     * @param options Per-call options forwarded to every sample
      * @return Vector of samples
      */
-    std::vector<Sample> generate_samples(const core::Message& message);
+    std::vector<Sample> generate_samples(
+        const core::Message& message,
+        const core::CallOptions& options
+    );
+
+    /**
+     * @brief Overlay the configured temperature on the caller's options
+     * @param caller Options supplied by the caller
+     * @return Merged options
+     */
+    core::CallOptions call_options(const core::CallOptions& caller) const;
 
     /**
      * @brief Vote using majority (most common answer wins)

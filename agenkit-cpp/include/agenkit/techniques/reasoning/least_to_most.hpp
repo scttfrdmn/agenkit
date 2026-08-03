@@ -16,6 +16,7 @@
 #define AGENKIT_TECHNIQUES_REASONING_LEAST_TO_MOST_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include "agenkit/core/result.hpp"
 #include <string>
@@ -109,7 +110,7 @@ struct LeastToMostConfig {
  * }
  * @endcode
  */
-class LeastToMostAgent : public core::Agent {
+class LeastToMostAgent : public core::Agent, public core::OptionsAgent {
 public:
     /**
      * @brief Create a new Least-to-Most agent
@@ -150,6 +151,20 @@ public:
     std::future<core::Result<core::Message, core::AgentError>>
     process(core::Message message) override;
 
+    /**
+     * @brief Process a message, forwarding per-call options to the wrapped agent
+     *
+     * Same as process(), except that `options` reaches the wrapped agent if it
+     * honours them, on both the decomposition call and every subproblem call.
+     * process() is this method with an empty option set.
+     *
+     * @param message Input message with problem content
+     * @param options Per-call options to forward
+     * @return Future with result containing response with metadata (see process())
+     */
+    std::future<core::Result<core::Message, core::AgentError>>
+    process_with(core::Message message, const core::CallOptions& options) override;
+
 private:
     std::shared_ptr<core::Agent> agent_;
     LeastToMostConfig config_;
@@ -163,7 +178,7 @@ private:
      * @return Result with vector of Subproblems ordered from easiest to hardest
      */
     core::Result<std::vector<Subproblem>, core::AgentError>
-    decompose(const std::string& problem);
+    decompose(const std::string& problem, const core::CallOptions& options);
 
     /**
      * @brief Parse subproblems from LLM response
@@ -190,7 +205,8 @@ private:
     core::Result<std::string, core::AgentError>
     solve_subproblem(
         const Subproblem& subproblem,
-        const std::vector<std::string>& previous_solutions
+        const std::vector<std::string>& previous_solutions,
+        const core::CallOptions& options
     );
 
     /**

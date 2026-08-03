@@ -46,7 +46,14 @@ std::vector<std::string> TreeOfThoughtAgent::capabilities() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 TreeOfThoughtAgent::process(core::Message message) {
-    return infrastructure::global_thread_pool().enqueue([this, msg = std::move(message)]() -> core::Result<core::Message, core::AgentError> {
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>>
+TreeOfThoughtAgent::process_with(core::Message message, const core::CallOptions& options) {
+    // Copied into the task rather than captured by reference: the caller's
+    // CallOptions may be a temporary that is gone by the time the pool runs this.
+    return infrastructure::global_thread_pool().enqueue([this, msg = std::move(message), options]() -> core::Result<core::Message, core::AgentError> {
         const std::string query = msg.content_as_str();
 
         // Create reasoning tree
@@ -57,13 +64,13 @@ TreeOfThoughtAgent::process(core::Message message) {
         try {
             switch (config_.strategy) {
                 case SearchStrategy::BFS:
-                    search_bfs(tree, root_id, query);
+                    search_bfs(tree, root_id, query, options);
                     break;
                 case SearchStrategy::DFS:
-                    search_dfs(tree, root_id, query);
+                    search_dfs(tree, root_id, query, options);
                     break;
                 case SearchStrategy::BestFirst:
-                    search_best_first(tree, root_id, query);
+                    search_best_first(tree, root_id, query, options);
                     break;
                 default:
                     return core::Result<core::Message, core::AgentError>::err(
@@ -150,18 +157,22 @@ double TreeOfThoughtAgent::default_evaluator(const std::string& text) const {
 
 std::vector<std::string> TreeOfThoughtAgent::generate_branches(
     const std::string& prompt,
-    int n
+    int n,
+    const core::CallOptions& options
 ) {
     // Launch parallel futures for branch generation
     std::vector<std::future<std::string>> futures;
     futures.reserve(n);
 
     for (int i = 0; i < n; ++i) {
-        futures.push_back(infrastructure::global_thread_pool().enqueue([this, prompt, i]() -> std::string {
+        // Copied per branch rather than shared by reference: these tasks run
+        // concurrently and outlive this loop.
+        futures.push_back(infrastructure::global_thread_pool().enqueue([this, prompt, i, options]() -> std::string {
             std::string varied_prompt = prompt + "\n\nAlternative approach #" +
                                        std::to_string(i + 1) + ":";
 
-            auto msg_future = agent_->process(core::Message::with_text("user", varied_prompt));
+            auto msg_future = core::process_with_options(
+                agent_, core::Message::with_text("user", varied_prompt), options);
             auto result = msg_future.get();
 
             if (!result.is_ok()) {
@@ -191,7 +202,8 @@ std::vector<std::string> TreeOfThoughtAgent::generate_branches(
 std::vector<int> TreeOfThoughtAgent::expand_node(
     ReasoningTree& tree,
     int node_id,
-    const std::string& query
+    const std::string& query,
+    const core::CallOptions& options
 ) {
     (void)query;  // Suppress unused parameter warning
 
@@ -210,7 +222,7 @@ std::vector<int> TreeOfThoughtAgent::expand_node(
 
     // Generate branches
     std::string prompt = tree.get_path_text(node_id);
-    auto branches = generate_branches(prompt, config_.branching_factor);
+    auto branches = generate_branches(prompt, config_.branching_factor, options);
 
     std::vector<int> child_ids;
     child_ids.reserve(branches.size());
@@ -243,7 +255,8 @@ std::vector<int> TreeOfThoughtAgent::expand_node(
 void TreeOfThoughtAgent::search_bfs(
     ReasoningTree& tree,
     int root_id,
-    const std::string& query
+    const std::string& query,
+    const core::CallOptions& options
 ) {
     std::queue<int> queue;
     queue.push(root_id);
@@ -264,7 +277,7 @@ void TreeOfThoughtAgent::search_bfs(
         }
 
         // Expand node
-        auto children = expand_node(tree, node_id, query);
+        auto children = expand_node(tree, node_id, query, options);
 
         // Add children to queue
         for (int child_id : children) {
@@ -276,7 +289,8 @@ void TreeOfThoughtAgent::search_bfs(
 void TreeOfThoughtAgent::search_dfs(
     ReasoningTree& tree,
     int root_id,
-    const std::string& query
+    const std::string& query,
+    const core::CallOptions& options
 ) {
     std::stack<int> stack;
     stack.push(root_id);
@@ -297,7 +311,7 @@ void TreeOfThoughtAgent::search_dfs(
         }
 
         // Expand node
-        auto children = expand_node(tree, node_id, query);
+        auto children = expand_node(tree, node_id, query, options);
 
         // Add children to stack (reverse order for left-to-right DFS)
         for (auto it = children.rbegin(); it != children.rend(); ++it) {
@@ -309,7 +323,8 @@ void TreeOfThoughtAgent::search_dfs(
 void TreeOfThoughtAgent::search_best_first(
     ReasoningTree& tree,
     int root_id,
-    const std::string& query
+    const std::string& query,
+    const core::CallOptions& options
 ) {
     // Priority queue ordered by score (highest first)
     auto comparator = [&tree](int a, int b) {
@@ -340,7 +355,7 @@ void TreeOfThoughtAgent::search_best_first(
         }
 
         // Expand node
-        auto children = expand_node(tree, node_id, query);
+        auto children = expand_node(tree, node_id, query, options);
 
         // Add children to priority queue
         for (int child_id : children) {

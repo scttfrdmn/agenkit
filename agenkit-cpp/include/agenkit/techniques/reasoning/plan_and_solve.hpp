@@ -14,6 +14,7 @@
 #define AGENKIT_TECHNIQUES_REASONING_PLAN_AND_SOLVE_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include "agenkit/core/result.hpp"
 #include <functional>
@@ -90,7 +91,7 @@ struct PlanAndSolveConfig {
  * auto result = pas->process(message).get();
  * @endcode
  */
-class PlanAndSolveAgent : public core::Agent {
+class PlanAndSolveAgent : public core::Agent, public core::OptionsAgent {
 public:
     /**
      * @brief Constructor
@@ -106,6 +107,21 @@ public:
     std::vector<std::string> capabilities() const override;
     std::future<core::Result<core::Message, core::AgentError>> process(core::Message message) override;
 
+    /**
+     * @brief Process a message, forwarding per-call options to the wrapped agent
+     *
+     * Same as process(), except that `options` reaches the wrapped agent if it
+     * honours them — on planning, validation, every step execution, and every
+     * call in the replanning branch. process() is this method with an empty
+     * option set.
+     *
+     * @param message Input message with problem content
+     * @param options Per-call options to forward
+     * @return Future with result containing response with metadata (see process())
+     */
+    std::future<core::Result<core::Message, core::AgentError>>
+    process_with(core::Message message, const core::CallOptions& options) override;
+
 private:
     std::shared_ptr<core::Agent> agent_;
     std::optional<PlannerFunc> planner_;
@@ -113,14 +129,23 @@ private:
     bool validate_plan_;
     bool allow_replanning_;
 
-    std::future<core::Result<std::string, core::AgentError>> llm_call(const std::string& prompt);
-    std::future<core::Result<Plan, core::AgentError>> create_plan(const std::string& problem);
-    std::future<core::Result<void, core::AgentError>> validate(Plan& plan);
+    std::future<core::Result<std::string, core::AgentError>> llm_call(
+        const std::string& prompt,
+        const core::CallOptions& options);
+    std::future<core::Result<Plan, core::AgentError>> create_plan(
+        const std::string& problem,
+        const core::CallOptions& options);
+    std::future<core::Result<void, core::AgentError>> validate(
+        Plan& plan,
+        const core::CallOptions& options);
     std::string format_plan(const Plan& plan);
     std::future<core::Result<std::string, core::AgentError>> execute_step(
         const PlanStep& step,
-        const std::vector<std::string>& previous_results);
-    std::future<core::Result<std::vector<std::string>, core::AgentError>> execute_plan(Plan& plan);
+        const std::vector<std::string>& previous_results,
+        const core::CallOptions& options);
+    std::future<core::Result<std::vector<std::string>, core::AgentError>> execute_plan(
+        Plan& plan,
+        const core::CallOptions& options);
 };
 
 } // namespace reasoning

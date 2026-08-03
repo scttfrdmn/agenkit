@@ -33,11 +33,16 @@ std::vector<std::string> GraphOfThoughtAgent::capabilities() const {
     };
 }
 
-std::future<core::Result<std::string, core::AgentError>> GraphOfThoughtAgent::llm_call(const std::string& prompt) {
-    return std::async(std::launch::async, [this, prompt]() -> core::Result<std::string, core::AgentError> {
+std::future<core::Result<std::string, core::AgentError>> GraphOfThoughtAgent::llm_call(
+    const std::string& prompt,
+    const core::CallOptions& options) {
+    // Options are copied into every task below rather than captured by
+    // reference: the caller's CallOptions may be a temporary that is gone by
+    // the time the async task runs.
+    return std::async(std::launch::async, [this, prompt, options]() -> core::Result<std::string, core::AgentError> {
         auto message = core::Message::with_text("user", prompt);
 
-        auto result_future = agent_->process(message);
+        auto result_future = core::process_with_options(agent_, message, options);
         auto result = result_future.get();
 
         if (!result.is_ok()) {
@@ -48,15 +53,17 @@ std::future<core::Result<std::string, core::AgentError>> GraphOfThoughtAgent::ll
     });
 }
 
-std::future<core::Result<std::vector<std::string>, core::AgentError>> GraphOfThoughtAgent::generate_premises(const std::string& problem) {
-    return std::async(std::launch::async, [this, problem]() -> core::Result<std::vector<std::string>, core::AgentError> {
+std::future<core::Result<std::vector<std::string>, core::AgentError>> GraphOfThoughtAgent::generate_premises(
+    const std::string& problem,
+    const core::CallOptions& options) {
+    return std::async(std::launch::async, [this, problem, options]() -> core::Result<std::vector<std::string>, core::AgentError> {
         std::stringstream prompt;
         prompt << "Identify the key facts and premises for this problem.\n"
                << "List 2-4 foundational facts or assumptions, one per line.\n\n"
                << "Problem: " << problem << "\n\n"
                << "Premises:";
 
-        auto result_future = llm_call(prompt.str());
+        auto result_future = llm_call(prompt.str(), options);
         auto result = result_future.get();
 
         if (!result.is_ok()) {
@@ -103,9 +110,10 @@ std::future<core::Result<std::vector<std::string>, core::AgentError>> GraphOfTho
 std::future<core::Result<std::vector<std::string>, core::AgentError>> GraphOfThoughtAgent::generate_thoughts(
     const std::string& problem,
     const std::vector<std::string>& existing_thoughts,
-    size_t max_new) {
+    size_t max_new,
+    const core::CallOptions& options) {
 
-    return std::async(std::launch::async, [this, problem, existing_thoughts, max_new]()
+    return std::async(std::launch::async, [this, problem, existing_thoughts, max_new, options]()
                       -> core::Result<std::vector<std::string>, core::AgentError> {
         std::stringstream prompt;
 
@@ -126,7 +134,7 @@ std::future<core::Result<std::vector<std::string>, core::AgentError>> GraphOfTho
                    << "Thoughts (one per line):";
         }
 
-        auto result_future = llm_call(prompt.str());
+        auto result_future = llm_call(prompt.str(), options);
         auto result = result_future.get();
 
         if (!result.is_ok()) {
@@ -170,9 +178,10 @@ std::future<core::Result<std::vector<std::string>, core::AgentError>> GraphOfTho
 
 std::future<core::Result<std::optional<EdgeType>, core::AgentError>> GraphOfThoughtAgent::identify_connection(
     const std::string& thought1,
-    const std::string& thought2) {
+    const std::string& thought2,
+    const core::CallOptions& options) {
 
-    return std::async(std::launch::async, [this, thought1, thought2]()
+    return std::async(std::launch::async, [this, thought1, thought2, options]()
                       -> core::Result<std::optional<EdgeType>, core::AgentError> {
         std::stringstream prompt;
         prompt << "Analyze the logical relationship between these two statements.\n\n"
@@ -186,7 +195,7 @@ std::future<core::Result<std::optional<EdgeType>, core::AgentError>> GraphOfThou
                << "- NO_RELATION (no clear logical connection)\n\n"
                << "Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION";
 
-        auto result_future = llm_call(prompt.str());
+        auto result_future = llm_call(prompt.str(), options);
         auto result = result_future.get();
 
         if (!result.is_ok()) {
@@ -210,12 +219,14 @@ std::future<core::Result<std::optional<EdgeType>, core::AgentError>> GraphOfThou
     });
 }
 
-std::future<core::Result<ReasoningGraph, core::AgentError>> GraphOfThoughtAgent::build_graph(const std::string& problem) {
-    return std::async(std::launch::async, [this, problem]() -> core::Result<ReasoningGraph, core::AgentError> {
+std::future<core::Result<ReasoningGraph, core::AgentError>> GraphOfThoughtAgent::build_graph(
+    const std::string& problem,
+    const core::CallOptions& options) {
+    return std::async(std::launch::async, [this, problem, options]() -> core::Result<ReasoningGraph, core::AgentError> {
         ReasoningGraph graph;
 
         // Step 1: Generate premises
-        auto premises_future = generate_premises(problem);
+        auto premises_future = generate_premises(problem, options);
         auto premises_result = premises_future.get();
 
         if (!premises_result.is_ok()) {
@@ -239,7 +250,7 @@ std::future<core::Result<ReasoningGraph, core::AgentError>> GraphOfThoughtAgent:
                 break;
             }
 
-            auto thoughts_future = generate_thoughts(problem, all_thoughts, max_new);
+            auto thoughts_future = generate_thoughts(problem, all_thoughts, max_new, options);
             auto thoughts_result = thoughts_future.get();
 
             if (!thoughts_result.is_ok()) {
@@ -273,7 +284,7 @@ std::future<core::Result<ReasoningGraph, core::AgentError>> GraphOfThoughtAgent:
                 const auto* node2 = graph.get_node(node2_id);
 
                 if (node1 && node2) {
-                    auto connection_future = identify_connection(node1->content, node2->content);
+                    auto connection_future = identify_connection(node1->content, node2->content, options);
                     auto connection_result = connection_future.get();
 
                     if (connection_result.is_ok() && connection_result.unwrap().has_value()) {
@@ -297,7 +308,7 @@ std::future<core::Result<ReasoningGraph, core::AgentError>> GraphOfThoughtAgent:
 
             conclusion_prompt << "\nFinal conclusion:";
 
-            auto conclusion_future = llm_call(conclusion_prompt.str());
+            auto conclusion_future = llm_call(conclusion_prompt.str(), options);
             auto conclusion_result = conclusion_future.get();
 
             if (conclusion_result.is_ok()) {
@@ -400,11 +411,17 @@ std::string GraphOfThoughtAgent::aggregate_paths(const ReasoningGraph& graph,
 }
 
 std::future<core::Result<core::Message, core::AgentError>> GraphOfThoughtAgent::process(core::Message message) {
-    return std::async(std::launch::async, [this, message]() -> core::Result<core::Message, core::AgentError> {
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>> GraphOfThoughtAgent::process_with(
+    core::Message message,
+    const core::CallOptions& options) {
+    return std::async(std::launch::async, [this, message, options]() -> core::Result<core::Message, core::AgentError> {
         std::string problem = message.content_as_str();
 
         // Step 1: Build reasoning graph
-        auto graph_future = build_graph(problem);
+        auto graph_future = build_graph(problem, options);
         auto graph_result = graph_future.get();
 
         if (!graph_result.is_ok()) {

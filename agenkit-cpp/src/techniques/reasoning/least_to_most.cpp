@@ -35,11 +35,18 @@ std::vector<std::string> LeastToMostAgent::capabilities() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 LeastToMostAgent::process(core::Message message) {
-    return infrastructure::global_thread_pool().enqueue([this, msg = std::move(message)]() -> core::Result<core::Message, core::AgentError> {
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>>
+LeastToMostAgent::process_with(core::Message message, const core::CallOptions& options) {
+    // Copied into the task rather than captured by reference: the caller's
+    // CallOptions may be a temporary that is gone by the time the pool runs this.
+    return infrastructure::global_thread_pool().enqueue([this, msg = std::move(message), options]() -> core::Result<core::Message, core::AgentError> {
         std::string problem = msg.content_as_str();
 
         // Step 1: Decompose problem
-        auto decompose_result = decompose(problem);
+        auto decompose_result = decompose(problem, options);
         if (!decompose_result.is_ok()) {
             return core::Result<core::Message, core::AgentError>::err(
                 decompose_result.unwrap_err()
@@ -50,7 +57,7 @@ LeastToMostAgent::process(core::Message message) {
         // Step 2: Solve subproblems sequentially
         std::vector<std::string> solutions;
         for (const auto& subproblem : subproblems) {
-            auto solution_result = solve_subproblem(subproblem, solutions);
+            auto solution_result = solve_subproblem(subproblem, solutions, options);
             if (!solution_result.is_ok()) {
                 return core::Result<core::Message, core::AgentError>::err(
                     solution_result.unwrap_err()
@@ -80,7 +87,7 @@ LeastToMostAgent::process(core::Message message) {
 }
 
 core::Result<std::vector<Subproblem>, core::AgentError>
-LeastToMostAgent::decompose(const std::string& problem) {
+LeastToMostAgent::decompose(const std::string& problem, const core::CallOptions& options) {
     if (config_.decomposer.has_value()) {
         // Use custom decomposer
         try {
@@ -112,7 +119,7 @@ LeastToMostAgent::decompose(const std::string& problem) {
                         << "Subproblems (from simplest to most complex):";
 
     auto prompt_message = core::Message::with_text("user", decomposition_prompt.str());
-    auto response_future = agent_->process(std::move(prompt_message));
+    auto response_future = core::process_with_options(agent_, std::move(prompt_message), options);
     auto response_result = response_future.get();
 
     if (!response_result.is_ok()) {
@@ -165,7 +172,8 @@ std::vector<Subproblem> LeastToMostAgent::parse_subproblems(
 core::Result<std::string, core::AgentError>
 LeastToMostAgent::solve_subproblem(
     const Subproblem& subproblem,
-    const std::vector<std::string>& previous_solutions
+    const std::vector<std::string>& previous_solutions,
+    const core::CallOptions& options
 ) {
     std::ostringstream prompt;
 
@@ -182,7 +190,7 @@ LeastToMostAgent::solve_subproblem(
     }
 
     auto prompt_message = core::Message::with_text("user", prompt.str());
-    auto response_future = agent_->process(std::move(prompt_message));
+    auto response_future = core::process_with_options(agent_, std::move(prompt_message), options);
     auto response_result = response_future.get();
 
     if (!response_result.is_ok()) {

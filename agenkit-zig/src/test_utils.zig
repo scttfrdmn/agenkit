@@ -8,6 +8,7 @@ const AgentError = @import("agent.zig").AgentError;
 const Result = @import("agent.zig").Result;
 const StreamCallbacks = @import("agent.zig").StreamCallbacks;
 const Message = @import("message.zig").Message;
+const CallOptions = @import("call_options.zig").CallOptions;
 const IntrospectionResult = @import("introspection.zig").IntrospectionResult;
 const Allocator = std.mem.Allocator;
 
@@ -30,6 +31,12 @@ fn putInt(allocator: Allocator, value: *std.json.Value, key: []const u8, n: usiz
 ///
 /// Provides configurable responses for testing agent interactions.
 /// Cycles through provided responses on each process() call.
+///
+/// Deliberately does *not* implement the optional `processWith` capability
+/// (#801) — it is the stand-in for the many agents that only ever implement
+/// `process()`, so tests can exercise the fallback path and assert that a
+/// dropped temperature is reported rather than hidden. Use
+/// `OptionsAwareMockAgent` when the options are what is under test.
 ///
 /// Example:
 /// ```zig
@@ -134,6 +141,148 @@ pub const MockAgent = struct {
     fn deinitImpl(ptr: *anyopaque) void {
         _ = ptr;
         // MockAgent deinit is handled by test cleanup
+    }
+};
+
+/// Mock agent that honours per-call options and records what it received.
+///
+/// The counterpart to `MockAgent`: it sets the optional `process_with` vtable
+/// slot, so `Agent.supportsOptions()` is true and options actually arrive. Every
+/// call's temperature is recorded in order, because the interesting assertions
+/// are about *which* calls got the options — a technique that forwards them on
+/// its first LLM call and drops them on the rest still looks correct if only the
+/// first is checked (#801).
+///
+/// Example:
+/// ```zig
+/// var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"answer"});
+/// defer mock.deinit();
+///
+/// _ = try mock.agent().processWith(message, &options);
+/// try std.testing.expectEqual(@as(f64, 0.9), mock.temperatures.items[0].?);
+/// ```
+pub const OptionsAwareMockAgent = struct {
+    allocator: Allocator,
+    responses: []const []const u8,
+    call_count: usize,
+    /// One entry per call, in call order. `null` means the call arrived through
+    /// `process()` with no options at all.
+    temperatures: std.ArrayListUnmanaged(?f64),
+    agent_name: []const u8,
+
+    pub fn init(allocator: Allocator, responses: []const []const u8) !*OptionsAwareMockAgent {
+        const self = try allocator.create(OptionsAwareMockAgent);
+        self.* = OptionsAwareMockAgent{
+            .allocator = allocator,
+            .responses = responses,
+            .call_count = 0,
+            .temperatures = .empty,
+            .agent_name = "options_aware_mock_agent",
+        };
+        return self;
+    }
+
+    pub fn deinit(self: *OptionsAwareMockAgent) void {
+        self.temperatures.deinit(self.allocator);
+        self.allocator.destroy(self);
+    }
+
+    pub fn agent(self: *OptionsAwareMockAgent) Agent {
+        return Agent{
+            .ptr = self,
+            .vtable = &.{
+                .name = nameImpl,
+                .capabilities = capabilitiesImpl,
+                .process = processImpl,
+                .process_stream = processStreamImpl,
+                .introspect = introspectImpl,
+                .deinit = deinitImpl,
+                .process_with = processWithImpl,
+            },
+        };
+    }
+
+    pub fn getCallCount(self: *const OptionsAwareMockAgent) usize {
+        return self.call_count;
+    }
+
+    /// Whether every recorded call saw `want` as its temperature.
+    ///
+    /// The assertion most tests want: "the options reached *all* of the LLM
+    /// calls", not just the one that was easy to check.
+    pub fn allTemperaturesEqual(self: *const OptionsAwareMockAgent, want: ?f64) bool {
+        if (self.temperatures.items.len == 0) return false;
+        for (self.temperatures.items) |seen| {
+            if (want) |w| {
+                if (seen == null or seen.? != w) return false;
+            } else if (seen != null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    fn nameImpl(ptr: *anyopaque) []const u8 {
+        const self: *OptionsAwareMockAgent = @ptrCast(@alignCast(ptr));
+        return self.agent_name;
+    }
+
+    fn capabilitiesImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error![]const []const u8 {
+        _ = ptr;
+        const caps = try allocator.alloc([]const u8, 3);
+        caps[0] = "mock";
+        caps[1] = "testing";
+        caps[2] = "call_options";
+        return caps;
+    }
+
+    fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
+        const self: *OptionsAwareMockAgent = @ptrCast(@alignCast(ptr));
+        return self.respond(message, null);
+    }
+
+    fn processWithImpl(ptr: *anyopaque, message: Message, options: *const CallOptions) AgentError!Result {
+        const self: *OptionsAwareMockAgent = @ptrCast(@alignCast(ptr));
+        return self.respond(message, options.temperature);
+    }
+
+    fn respond(self: *OptionsAwareMockAgent, message: Message, temperature: ?f64) AgentError!Result {
+        // The request is ignored on purpose: responses are scripted.
+        _ = message;
+
+        self.temperatures.append(self.allocator, temperature) catch {
+            return Result{ .err = AgentError.ProcessingFailed };
+        };
+
+        const response_text = self.responses[self.call_count % self.responses.len];
+        self.call_count += 1;
+
+        const response = Message.withText(self.allocator, .assistant, response_text) catch {
+            return Result{ .err = AgentError.ProcessingFailed };
+        };
+
+        return Result{ .ok = response };
+    }
+
+    fn processStreamImpl(ptr: *anyopaque, message: Message, callbacks: StreamCallbacks) AgentError!void {
+        _ = ptr;
+        _ = message;
+        _ = callbacks;
+        return AgentError.NotImplemented;
+    }
+
+    fn introspectImpl(ptr: *anyopaque, allocator: Allocator) Allocator.Error!IntrospectionResult {
+        const self: *OptionsAwareMockAgent = @ptrCast(@alignCast(ptr));
+        var result = try introspectBase(allocator, self.agent_name, self.agent());
+        errdefer result.deinit();
+        try putInt(allocator, &result.internal_state, "responses", self.responses.len);
+        try putInt(allocator, &result.internal_state, "calls", self.call_count);
+        return result;
+    }
+
+    fn deinitImpl(ptr: *anyopaque) void {
+        _ = ptr;
+        // Deinit is handled by test cleanup, matching MockAgent.
     }
 };
 

@@ -13,6 +13,7 @@ const Agent = @import("../../agent.zig").Agent;
 const AgentError = @import("../../agent.zig").AgentError;
 const Result = @import("../../agent.zig").Result;
 const Message = @import("../../message.zig").Message;
+const CallOptions = @import("../../call_options.zig").CallOptions;
 const Allocator = std.mem.Allocator;
 
 /// Represents a subproblem in the decomposition
@@ -69,6 +70,7 @@ pub const LeastToMostAgent = struct {
                 .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
+                .process_with = processWithImpl,
             },
         };
     }
@@ -92,13 +94,30 @@ pub const LeastToMostAgent = struct {
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
         const self: *LeastToMostAgent = @ptrCast(@alignCast(ptr));
 
+        var empty = CallOptions.init(self.allocator);
+        defer empty.deinit();
+        return self.run(message, &empty);
+    }
+
+    /// Implements the optional `processWith` capability (#801).
+    ///
+    /// Both LLM phases receive the options: decomposition and every subproblem
+    /// solve. Threading them into only the first would leave most of the calls
+    /// running at settings the caller never chose.
+    fn processWithImpl(ptr: *anyopaque, message: Message, options: *const CallOptions) AgentError!Result {
+        const self: *LeastToMostAgent = @ptrCast(@alignCast(ptr));
+        return self.run(message, options);
+    }
+
+    /// Shared body for both entry points.
+    fn run(self: *LeastToMostAgent, message: Message, options: *const CallOptions) AgentError!Result {
         // Get problem from message
         const problem = message.contentAsText() catch {
             return Result{ .err = AgentError.InvalidInput };
         };
 
         // Step 1: Decompose problem
-        const subproblems = self.decompose(problem) catch {
+        const subproblems = self.decompose(problem, options) catch {
             return Result{ .err = AgentError.ProcessingFailed };
         };
         defer {
@@ -119,7 +138,7 @@ pub const LeastToMostAgent = struct {
         }
 
         for (subproblems) |subproblem| {
-            const solution = self.solveSubproblem(subproblem, solutions.items) catch {
+            const solution = self.solveSubproblem(subproblem, solutions.items, options) catch {
                 return Result{ .err = AgentError.ProcessingFailed };
             };
             solutions.append(self.allocator, solution) catch {
@@ -238,7 +257,7 @@ pub const LeastToMostAgent = struct {
     }
 
     /// Decompose problem into subproblems
-    fn decompose(self: *LeastToMostAgent, problem: []const u8) ![]Subproblem {
+    fn decompose(self: *LeastToMostAgent, problem: []const u8, options: *const CallOptions) ![]Subproblem {
         if (self.config.decomposer) |decomposer_func| {
             // Use custom decomposer
             const subproblem_texts = try decomposer_func(self.allocator, problem);
@@ -286,7 +305,7 @@ pub const LeastToMostAgent = struct {
         var prompt_msg = try Message.withText(self.allocator, .user, decomposition_prompt);
         defer prompt_msg.deinit();
 
-        const result = self.base_agent.process(prompt_msg) catch {
+        const result = self.base_agent.processWithOptions(prompt_msg, options) catch {
             return AgentError.ProcessingFailed;
         };
 
@@ -362,6 +381,7 @@ pub const LeastToMostAgent = struct {
         self: *LeastToMostAgent,
         subproblem: Subproblem,
         previous_solutions: []const []const u8,
+        options: *const CallOptions,
     ) ![]const u8 {
         var prompt_buf = std.ArrayListUnmanaged(u8).empty;
         defer prompt_buf.deinit(self.allocator);
@@ -384,7 +404,7 @@ pub const LeastToMostAgent = struct {
         var prompt_msg = try Message.withText(self.allocator, .user, prompt);
         defer prompt_msg.deinit();
 
-        const result = self.base_agent.process(prompt_msg) catch {
+        const result = self.base_agent.processWithOptions(prompt_msg, options) catch {
             return AgentError.ProcessingFailed;
         };
 
@@ -1846,4 +1866,79 @@ test "LeastToMostAgent - metadata includes all fields" {
     try testing.expect(response.metadata.object.contains("subproblems"));
     try testing.expect(response.metadata.object.contains("subproblem_solutions"));
     try testing.expect(response.metadata.object.contains("compose_solutions"));
+}
+
+// ============================================================================
+// Per-call options forwarding (#801)
+// ============================================================================
+
+const OptionsAwareMockAgent = @import("../../test_utils.zig").OptionsAwareMockAgent;
+
+test "LeastToMost forwards call options to both LLM phases" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{
+        "1. First subproblem\n2. Second subproblem",
+        "Solution to the first",
+        "Solution to the second",
+    });
+    defer mock.deinit();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock.agent(), .{});
+    const ltm_agent = ltm.agent();
+    defer ltm_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "A hard problem");
+    defer msg.deinit();
+
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+    try options.withTemperature(0.55);
+
+    var response = try (try ltm_agent.processWith(msg, &options)).unwrap();
+    defer response.deinit();
+
+    // Decomposition plus one call per subproblem. Threading the options into
+    // decompose() alone would leave every solve running at settings the caller
+    // never chose, and the call count is what proves more than one path ran.
+    try testing.expect(mock.getCallCount() >= 3);
+    try testing.expect(mock.allTemperaturesEqual(0.55));
+}
+
+test "LeastToMost sends no options when called through process" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{
+        "1. Only subproblem",
+        "Solution",
+    });
+    defer mock.deinit();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock.agent(), .{});
+    const ltm_agent = ltm.agent();
+    defer ltm_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "q");
+    defer msg.deinit();
+
+    var response = try (try ltm_agent.process(msg)).unwrap();
+    defer response.deinit();
+
+    try testing.expect(mock.allTemperaturesEqual(null));
+}
+
+test "LeastToMost advertises the options capability" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"x"});
+    defer mock.deinit();
+
+    const ltm = try LeastToMostAgent.init(allocator, mock.agent(), .{});
+    const ltm_agent = ltm.agent();
+    defer ltm_agent.deinit();
+
+    try testing.expect(ltm_agent.supportsOptions());
 }

@@ -12,6 +12,7 @@ const AgentError = @import("../../agent.zig").AgentError;
 const Result = @import("../../agent.zig").Result;
 const StreamCallbacks = @import("../../agent.zig").StreamCallbacks;
 const Message = @import("../../message.zig").Message;
+const CallOptions = @import("../../call_options.zig").CallOptions;
 const IntrospectionResult = @import("../../introspection.zig").IntrospectionResult;
 const createDefaultIntrospectionResult = @import("../../introspection.zig").createDefaultIntrospectionResult;
 const Allocator = std.mem.Allocator;
@@ -130,6 +131,7 @@ pub const PlanAndSolveAgent = struct {
                 .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
+                .process_with = processWithImpl,
             },
         };
     }
@@ -153,10 +155,30 @@ pub const PlanAndSolveAgent = struct {
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
         const self: *PlanAndSolveAgent = @ptrCast(@alignCast(ptr));
 
-        // Allocation failures are mapped to ProcessingFailed rather than
-        // propagated: the vtable signature is AgentError!Result, which does not
-        // include Allocator.Error.
-        return self.processInner(message) catch |err| switch (err) {
+        var empty = CallOptions.init(self.allocator);
+        defer empty.deinit();
+        return self.run(message, &empty);
+    }
+
+    /// Implements the optional `processWith` capability (#801).
+    ///
+    /// The options reach every phase: planning, validation, each step's
+    /// execution, and the replanning branch — which issues a feedback call and
+    /// then a second plan-and-validate round. That branch is the easy one to
+    /// miss, and missing it would mean a retried problem silently ran at
+    /// different settings from the first attempt.
+    fn processWithImpl(ptr: *anyopaque, message: Message, options: *const CallOptions) AgentError!Result {
+        const self: *PlanAndSolveAgent = @ptrCast(@alignCast(ptr));
+        return self.run(message, options);
+    }
+
+    /// Shared body for both entry points.
+    ///
+    /// Allocation failures are mapped to ProcessingFailed rather than
+    /// propagated: the vtable signature is AgentError!Result, which does not
+    /// include Allocator.Error.
+    fn run(self: *PlanAndSolveAgent, message: Message, options: *const CallOptions) AgentError!Result {
+        return self.processInner(message, options) catch |err| switch (err) {
             error.OutOfMemory => Result{ .err = AgentError.ProcessingFailed },
             else => |e| Result{ .err = e },
         };
@@ -164,22 +186,22 @@ pub const PlanAndSolveAgent = struct {
 
     /// The real body, allowed to fail with Allocator.Error.
     ///
-    /// Split out so `try` can be used on allocating calls; processImpl narrows
-    /// the error set back down to what the Agent vtable declares.
-    fn processInner(self: *PlanAndSolveAgent, message: Message) (AgentError || Allocator.Error)!Result {
+    /// Split out so `try` can be used on allocating calls; `run` narrows the
+    /// error set back down to what the Agent vtable declares.
+    fn processInner(self: *PlanAndSolveAgent, message: Message, options: *const CallOptions) (AgentError || Allocator.Error)!Result {
         const problem = message.contentAsText() catch {
             return Result{ .err = AgentError.InvalidInput };
         };
 
         // Phase 1: create the plan
-        var plan = self.createPlan(problem) catch {
+        var plan = self.createPlan(problem, options) catch {
             return Result{ .err = AgentError.ProcessingFailed };
         };
         defer plan.deinit();
 
         // Phase 2: validate the plan, if configured
         if (self.config.validate_plan) {
-            self.validate(&plan) catch {
+            self.validate(&plan, options) catch {
                 return Result{ .err = AgentError.ProcessingFailed };
             };
 
@@ -197,24 +219,24 @@ pub const PlanAndSolveAgent = struct {
                 };
                 defer self.allocator.free(improved_prompt);
 
-                const feedback = self.llmCall(improved_prompt) catch {
+                const feedback = self.llmCall(improved_prompt, options) catch {
                     return Result{ .err = AgentError.ProcessingFailed };
                 };
                 self.allocator.free(feedback);
 
                 // Replace the plan wholesale, then validate the replacement.
                 plan.deinit();
-                plan = self.createPlan(problem) catch {
+                plan = self.createPlan(problem, options) catch {
                     return Result{ .err = AgentError.ProcessingFailed };
                 };
-                self.validate(&plan) catch {
+                self.validate(&plan, options) catch {
                     return Result{ .err = AgentError.ProcessingFailed };
                 };
             }
         }
 
         // Phase 3: execute the plan
-        const execution_results = self.executePlan(&plan) catch {
+        const execution_results = self.executePlan(&plan, options) catch {
             return Result{ .err = AgentError.ProcessingFailed };
         };
         defer {
@@ -316,11 +338,11 @@ pub const PlanAndSolveAgent = struct {
     ///
     /// The returned slice is duped: the response Message is freed here, and
     /// contentAsText only borrows from it.
-    fn llmCall(self: *PlanAndSolveAgent, prompt: []const u8) ![]const u8 {
+    fn llmCall(self: *PlanAndSolveAgent, prompt: []const u8, options: *const CallOptions) ![]const u8 {
         var message = try Message.withText(self.allocator, .user, prompt);
         defer message.deinit();
 
-        const result = try self.base_agent.process(message);
+        const result = try self.base_agent.processWithOptions(message, options);
         var response_msg = try result.unwrap();
         defer response_msg.deinit();
 
@@ -328,7 +350,7 @@ pub const PlanAndSolveAgent = struct {
         return try self.allocator.dupe(u8, text);
     }
 
-    fn createPlan(self: *PlanAndSolveAgent, problem: []const u8) !Plan {
+    fn createPlan(self: *PlanAndSolveAgent, problem: []const u8, options: *const CallOptions) !Plan {
         const prompt = try std.fmt.allocPrint(
             self.allocator,
             "Create a detailed step-by-step plan to solve this problem.\n" ++
@@ -340,7 +362,7 @@ pub const PlanAndSolveAgent = struct {
         );
         defer self.allocator.free(prompt);
 
-        const response = try self.llmCall(prompt);
+        const response = try self.llmCall(prompt, options);
         defer self.allocator.free(response);
 
         var plan = try Plan.init(self.allocator, problem);
@@ -377,7 +399,7 @@ pub const PlanAndSolveAgent = struct {
         return plan;
     }
 
-    fn validate(self: *PlanAndSolveAgent, plan: *Plan) !void {
+    fn validate(self: *PlanAndSolveAgent, plan: *Plan, options: *const CallOptions) !void {
         const plan_formatted = try self.formatPlan(plan);
         defer self.allocator.free(plan_formatted);
 
@@ -392,7 +414,7 @@ pub const PlanAndSolveAgent = struct {
         );
         defer self.allocator.free(prompt);
 
-        const response = try self.llmCall(prompt);
+        const response = try self.llmCall(prompt, options);
         defer self.allocator.free(response);
 
         // Check if response contains "VALID" or "YES" (case insensitive)
@@ -435,6 +457,7 @@ pub const PlanAndSolveAgent = struct {
         self: *PlanAndSolveAgent,
         step: *const PlanStep,
         previous_results: []const []const u8,
+        options: *const CallOptions,
     ) ![]const u8 {
         const prompt = if (previous_results.len > 0) blk: {
             var buffer = std.ArrayListUnmanaged(u8).empty;
@@ -465,14 +488,14 @@ pub const PlanAndSolveAgent = struct {
         };
         defer self.allocator.free(prompt);
 
-        const result = try self.llmCall(prompt);
+        const result = try self.llmCall(prompt, options);
         defer self.allocator.free(result);
 
         const trimmed = std.mem.trim(u8, result, &std.ascii.whitespace);
         return try self.allocator.dupe(u8, trimmed);
     }
 
-    fn executePlan(self: *PlanAndSolveAgent, plan: *Plan) ![][]const u8 {
+    fn executePlan(self: *PlanAndSolveAgent, plan: *Plan, options: *const CallOptions) ![][]const u8 {
         var results = std.ArrayListUnmanaged([]const u8).empty;
         errdefer {
             for (results.items) |result| {
@@ -482,7 +505,7 @@ pub const PlanAndSolveAgent = struct {
         }
 
         for (plan.steps.items) |*step| {
-            const result = try self.executeStep(step, results.items);
+            const result = try self.executeStep(step, results.items, options);
             errdefer self.allocator.free(result);
             try results.append(self.allocator, result);
 
@@ -848,7 +871,10 @@ test "PlanAndSolve parse period numbering" {
     const agent_struct = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = false });
     defer agent_struct.allocator.destroy(agent_struct);
 
-    var plan = try agent_struct.createPlan("Problem");
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    var plan = try agent_struct.createPlan("Problem", &options);
     defer plan.deinit();
 
     try testing.expectEqual(@as(usize, 3), plan.steps.items.len);
@@ -868,7 +894,10 @@ test "PlanAndSolve parse parenthesis numbering" {
     const agent_struct = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = false });
     defer agent_struct.allocator.destroy(agent_struct);
 
-    var plan = try agent_struct.createPlan("Problem");
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    var plan = try agent_struct.createPlan("Problem", &options);
     defer plan.deinit();
 
     try testing.expectEqual(@as(usize, 2), plan.steps.items.len);
@@ -887,7 +916,10 @@ test "PlanAndSolve skip empty lines" {
     const agent_struct = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = false });
     defer agent_struct.allocator.destroy(agent_struct);
 
-    var plan = try agent_struct.createPlan("Problem");
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+
+    var plan = try agent_struct.createPlan("Problem", &options);
     defer plan.deinit();
 
     try testing.expectEqual(@as(usize, 2), plan.steps.items.len);
@@ -1014,4 +1046,115 @@ test "PlanStep support optional result field" {
     step.result = try allocator.dupe(u8, "Test result");
 
     try testing.expectEqualStrings("Test result", step.result.?);
+}
+
+// ============================================================================
+// Per-call options forwarding (#801)
+// ============================================================================
+
+const OptionsAwareMockAgent = @import("../../test_utils.zig").OptionsAwareMockAgent;
+
+test "PlanAndSolve forwards call options to planning, validation and execution" {
+    const allocator = testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{
+        "1. First step\n2. Second step",
+        "VALID",
+        "First step done",
+        "Second step done",
+    });
+    defer mock.deinit();
+
+    const pas = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = true });
+    const pas_agent = pas.agent();
+    defer pas_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "A problem");
+    defer msg.deinit();
+
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+    try options.withTemperature(0.45);
+
+    var response = try (try pas_agent.processWith(msg, &options)).unwrap();
+    defer response.deinit();
+
+    // Plan, validate, then one call per step — at least four. Every one of them
+    // must have seen the options, not just the first.
+    try testing.expect(mock.getCallCount() >= 4);
+    try testing.expect(mock.allTemperaturesEqual(0.45));
+}
+
+test "PlanAndSolve forwards call options through the replanning branch" {
+    const allocator = testing.allocator;
+
+    // INVALID drives replanning: feedback call, second plan, second validate,
+    // then execution. This is the branch most easily left un-threaded, because
+    // it only runs when validation rejects the first plan.
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{
+        "1. Weak step",
+        "INVALID - missing steps",
+        "Feedback on how to improve",
+        "1. Better step\n2. Another step",
+        "VALID",
+        "Better step done",
+        "Another step done",
+    });
+    defer mock.deinit();
+
+    const pas = try PlanAndSolveAgent.init(allocator, mock.agent(), .{
+        .validate_plan = true,
+        .allow_replanning = true,
+    });
+    const pas_agent = pas.agent();
+    defer pas_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "A problem");
+    defer msg.deinit();
+
+    var options = CallOptions.init(allocator);
+    defer options.deinit();
+    try options.withTemperature(1.1);
+
+    var response = try (try pas_agent.processWith(msg, &options)).unwrap();
+    defer response.deinit();
+
+    // More calls than the non-replanning path, so the branch demonstrably ran.
+    try testing.expect(mock.getCallCount() >= 6);
+    try testing.expect(mock.allTemperaturesEqual(1.1));
+}
+
+test "PlanAndSolve sends no options when called through process" {
+    const allocator = testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{
+        "1. Step one",
+        "Step one done",
+    });
+    defer mock.deinit();
+
+    const pas = try PlanAndSolveAgent.init(allocator, mock.agent(), .{ .validate_plan = false });
+    const pas_agent = pas.agent();
+    defer pas_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "q");
+    defer msg.deinit();
+
+    var response = try (try pas_agent.process(msg)).unwrap();
+    defer response.deinit();
+
+    try testing.expect(mock.allTemperaturesEqual(null));
+}
+
+test "PlanAndSolve advertises the options capability" {
+    const allocator = testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"x"});
+    defer mock.deinit();
+
+    const pas = try PlanAndSolveAgent.init(allocator, mock.agent(), .{});
+    const pas_agent = pas.agent();
+    defer pas_agent.deinit();
+
+    try testing.expect(pas_agent.supportsOptions());
 }

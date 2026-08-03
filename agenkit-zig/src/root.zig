@@ -68,6 +68,13 @@ pub const Message = @import("message.zig").Message;
 pub const Role = @import("message.zig").Role;
 pub const Content = @import("message.zig").Content;
 
+// Per-call inference options (#801)
+//
+// Core rather than adapter-level: the optional `Agent.processWith` capability
+// takes this type, and core cannot depend on `adapter/`. `adapter.CallOptions`
+// re-exports the same type, so both spellings are the one thing.
+pub const CallOptions = @import("call_options.zig").CallOptions;
+
 // Agent interface and implementations
 pub const Agent = @import("agent.zig").Agent;
 pub const AgentError = @import("agent.zig").AgentError;
@@ -265,6 +272,7 @@ pub const techniques = struct {
     // Reasoning techniques
     pub const reasoning = struct {
         pub const SelfConsistencyAgent = @import("techniques/reasoning/self_consistency.zig").SelfConsistencyAgent;
+        pub const SelfConsistencyConfig = @import("techniques/reasoning/self_consistency.zig").SelfConsistencyConfig;
         pub const VotingStrategy = @import("techniques/reasoning/self_consistency.zig").VotingStrategy;
         pub const AnswerExtractor = @import("techniques/reasoning/self_consistency.zig").AnswerExtractor;
         pub const defaultAnswerExtractor = @import("techniques/reasoning/self_consistency.zig").defaultAnswerExtractor;
@@ -396,5 +404,14 @@ test "every reasoning technique in the manifest is reachable and its agent() com
     _ = reasoning.GraphOfThoughtConfig;
     _ = reasoning.LeastToMostConfig;
     _ = reasoning.PlanAndSolveConfig;
+    _ = reasoning.SelfConsistencyConfig;
     _ = reasoning.TreeOfThoughtConfig;
+}
+
+test "CallOptions is reachable under both its core and adapter spellings" {
+    // The type moved from `adapter/llm.zig` into core so `agent.zig` could use
+    // it (#801). `adapter.CallOptions` is kept as a re-export, and it has to
+    // stay the *same* type — a second declaration would compile and then fail
+    // the moment an adapter's options were handed to an agent.
+    try std.testing.expect(CallOptions == adapter.CallOptions);
 }

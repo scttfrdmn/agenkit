@@ -10,6 +10,7 @@ const Agent = @import("../../agent.zig").Agent;
 const AgentError = @import("../../agent.zig").AgentError;
 const Result = @import("../../agent.zig").Result;
 const Message = @import("../../message.zig").Message;
+const CallOptions = @import("../../call_options.zig").CallOptions;
 const ReasoningTree = @import("reasoning_tree.zig").ReasoningTree;
 const NodeState = @import("reasoning_tree.zig").NodeState;
 const Allocator = std.mem.Allocator;
@@ -141,6 +142,7 @@ pub const TreeOfThoughtAgent = struct {
                 .process_stream = processStreamImpl,
                 .introspect = introspectImpl,
                 .deinit = deinitImpl,
+                .process_with = processWithImpl,
             },
         };
     }
@@ -165,6 +167,24 @@ pub const TreeOfThoughtAgent = struct {
     fn processImpl(ptr: *anyopaque, message: Message) AgentError!Result {
         const self: *TreeOfThoughtAgent = @ptrCast(@alignCast(ptr));
 
+        var empty = CallOptions.init(self.allocator);
+        defer empty.deinit();
+        return self.run(message, &empty);
+    }
+
+    /// Implements the optional `processWith` capability (#801).
+    ///
+    /// The options follow the search down every branch: all three strategies
+    /// expand nodes recursively, and each expansion is a fresh set of LLM calls.
+    /// Threading them into only the root expansion would leave the whole tree
+    /// below depth 1 running at settings the caller never chose.
+    fn processWithImpl(ptr: *anyopaque, message: Message, options: *const CallOptions) AgentError!Result {
+        const self: *TreeOfThoughtAgent = @ptrCast(@alignCast(ptr));
+        return self.run(message, options);
+    }
+
+    /// Shared body for both entry points.
+    fn run(self: *TreeOfThoughtAgent, message: Message, options: *const CallOptions) AgentError!Result {
         const query = message.contentAsText() catch {
             return Result{ .err = AgentError.InvalidInput };
         };
@@ -179,13 +199,13 @@ pub const TreeOfThoughtAgent = struct {
 
         // Perform search based on strategy
         switch (self.config.strategy) {
-            .bfs => self.searchBFS(&tree, root_id) catch {
+            .bfs => self.searchBFS(&tree, root_id, options) catch {
                 return Result{ .err = AgentError.ProcessingFailed };
             },
-            .dfs => self.searchDFS(&tree, root_id) catch {
+            .dfs => self.searchDFS(&tree, root_id, options) catch {
                 return Result{ .err = AgentError.ProcessingFailed };
             },
-            .best_first => self.searchBestFirst(&tree, root_id) catch {
+            .best_first => self.searchBestFirst(&tree, root_id, options) catch {
                 return Result{ .err = AgentError.ProcessingFailed };
             },
         }
@@ -255,7 +275,7 @@ pub const TreeOfThoughtAgent = struct {
     }
 
     /// Generate N varied reasoning branches for a prompt (sequential in Zig)
-    fn generateBranches(self: *TreeOfThoughtAgent, prompt: []const u8, n: usize) ![][]const u8 {
+    fn generateBranches(self: *TreeOfThoughtAgent, prompt: []const u8, n: usize, options: *const CallOptions) ![][]const u8 {
         var branches = std.ArrayListUnmanaged([]const u8).empty;
         errdefer {
             for (branches.items) |branch| {
@@ -279,7 +299,7 @@ pub const TreeOfThoughtAgent = struct {
             var msg = try Message.withText(self.allocator, .user, varied_prompt);
             defer msg.deinit();
 
-            const result = self.base_agent.process(msg) catch continue;
+            const result = self.base_agent.processWithOptions(msg, options) catch continue;
             var response_msg = result.unwrap() catch continue;
             defer response_msg.deinit();
 
@@ -292,7 +312,7 @@ pub const TreeOfThoughtAgent = struct {
     }
 
     /// Expand a tree node by generating and adding children
-    fn expandNode(self: *TreeOfThoughtAgent, tree: *ReasoningTree, node_id: usize) ![]usize {
+    fn expandNode(self: *TreeOfThoughtAgent, tree: *ReasoningTree, node_id: usize, options: *const CallOptions) ![]usize {
         const node = tree.getNode(node_id) orelse return error.NodeNotFound;
 
         // Don't expand pruned nodes
@@ -307,7 +327,7 @@ pub const TreeOfThoughtAgent = struct {
         const prompt = try tree.getPathText(node_id, "\n", self.allocator);
         defer self.allocator.free(prompt);
 
-        const branches = try self.generateBranches(prompt, self.config.branching_factor);
+        const branches = try self.generateBranches(prompt, self.config.branching_factor, options);
         defer {
             for (branches) |branch| {
                 self.allocator.free(branch);
@@ -336,14 +356,22 @@ pub const TreeOfThoughtAgent = struct {
             }
         }
 
-        // Mark node as evaluated
-        node.state = .evaluated;
+        // Mark node as evaluated.
+        //
+        // Re-fetch rather than reusing the `node` pointer taken at the top of
+        // this function: `addChild` inserts into the tree's AutoHashMap, and a
+        // rehash moves every entry, so that pointer may be dangling by now
+        // (#817). `addChild` re-fetches its own parent pointer after its `put`
+        // for the same reason.
+        if (tree.getNode(node_id)) |evaluated| {
+            evaluated.state = .evaluated;
+        }
 
         return try child_ids.toOwnedSlice(self.allocator);
     }
 
     /// Perform breadth-first search on the tree
-    fn searchBFS(self: *TreeOfThoughtAgent, tree: *ReasoningTree, root_id: usize) !void {
+    fn searchBFS(self: *TreeOfThoughtAgent, tree: *ReasoningTree, root_id: usize, options: *const CallOptions) !void {
         var queue = std.ArrayListUnmanaged(usize).empty;
         defer queue.deinit(self.allocator);
 
@@ -360,7 +388,7 @@ pub const TreeOfThoughtAgent = struct {
             }
 
             // Expand node
-            const children = try self.expandNode(tree, node_id);
+            const children = try self.expandNode(tree, node_id, options);
             defer self.allocator.free(children);
 
             // Add children to queue
@@ -371,7 +399,7 @@ pub const TreeOfThoughtAgent = struct {
     }
 
     /// Perform depth-first search on the tree
-    fn searchDFS(self: *TreeOfThoughtAgent, tree: *ReasoningTree, root_id: usize) !void {
+    fn searchDFS(self: *TreeOfThoughtAgent, tree: *ReasoningTree, root_id: usize, options: *const CallOptions) !void {
         var stack = std.ArrayListUnmanaged(usize).empty;
         defer stack.deinit(self.allocator);
 
@@ -388,7 +416,7 @@ pub const TreeOfThoughtAgent = struct {
             }
 
             // Expand node
-            const children = try self.expandNode(tree, node_id);
+            const children = try self.expandNode(tree, node_id, options);
             defer self.allocator.free(children);
 
             // Add children to stack (reverse order for left-to-right DFS)
@@ -401,7 +429,7 @@ pub const TreeOfThoughtAgent = struct {
     }
 
     /// Perform best-first search on the tree
-    fn searchBestFirst(self: *TreeOfThoughtAgent, tree: *ReasoningTree, root_id: usize) !void {
+    fn searchBestFirst(self: *TreeOfThoughtAgent, tree: *ReasoningTree, root_id: usize, options: *const CallOptions) !void {
         var pq = std.PriorityQueue(ScoredNode, void, ScoredNode.compare).initContext({});
         defer pq.deinit(self.allocator);
 
@@ -418,7 +446,7 @@ pub const TreeOfThoughtAgent = struct {
             }
 
             // Expand node
-            const children = try self.expandNode(tree, scored.node_id);
+            const children = try self.expandNode(tree, scored.node_id, options);
             defer self.allocator.free(children);
 
             // Add children to priority queue
@@ -584,6 +612,45 @@ test "TreeOfThought prune_threshold drops low-scoring branches" {
     try testing.expectEqual(@as(i64, 1), response.getMetadata("total_nodes").?.integer);
     try testing.expectEqual(@as(i64, 1), response.getMetadata("num_steps").?.integer);
     try testing.expectEqualStrings("q", try response.contentAsText());
+}
+
+test "TreeOfThought expands past the root under every strategy (#817)" {
+    const testing = std.testing;
+
+    // Regression test for #817: `expandNode` used to hold the `*ReasoningNode`
+    // it fetched at entry across the `addChild` calls that insert into the
+    // tree's AutoHashMap, then write `state = .evaluated` through it. A rehash
+    // moves every entry, so that write segfaulted.
+    //
+    // Reaching it needs BOTH a depth past 1 and a threshold low enough to keep
+    // a child alive — every other test in this file pins `max_depth = 1` (see
+    // `shallow`) or leans on the default 0.3 threshold, which prunes the short
+    // mock replies. So the assertion here is not "process returned" but "the
+    // tree actually grew": a root-only tree cannot exercise the bug.
+    for ([_]SearchStrategy{ .bfs, .dfs, .best_first }) |strategy| {
+        const allocator = testing.allocator;
+
+        var mock = try MockAgent.init(allocator, &[_][]const u8{"1. first\n2. second"});
+        defer mock.deinit();
+
+        const tot = try TreeOfThoughtAgent.init(allocator, mock.agent(), .{
+            .strategy = strategy,
+            .branching_factor = 2,
+            .max_depth = 3,
+            .prune_threshold = 0.0,
+        });
+        const tot_agent = tot.agent();
+        defer tot_agent.deinit();
+
+        var msg = try Message.withText(allocator, .user, "Solve this");
+        defer msg.deinit();
+
+        var response = try (try tot_agent.process(msg)).unwrap();
+        defer response.deinit();
+
+        try testing.expect(response.getMetadata("max_depth").?.integer > 1);
+        try testing.expect(response.getMetadata("total_nodes").?.integer > 3);
+    }
 }
 
 test "defaultEvaluator scores empty text as zero" {
@@ -788,3 +855,94 @@ const TestSink = struct {
         };
     }
 };
+
+// ============================================================================
+// Per-call options forwarding (#801)
+// ============================================================================
+
+const OptionsAwareMockAgent = @import("../../test_utils.zig").OptionsAwareMockAgent;
+
+test "TreeOfThought forwards call options under every search strategy" {
+    const testing = std.testing;
+
+    // All three strategies expand nodes recursively, and each expansion is a
+    // fresh batch of LLM calls. Threading the options into only the root
+    // expansion would leave the whole tree below depth 1 running at settings the
+    // caller never chose — so each strategy is checked, not just the default.
+    for ([_]SearchStrategy{ .bfs, .dfs, .best_first }) |strategy| {
+        const allocator = testing.allocator;
+
+        var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{
+            "A promising thought",
+            "Another thought",
+        });
+        defer mock.deinit();
+
+        // prune_threshold 0.0 keeps the short mock replies alive: the default
+        // evaluator scores mainly on length, so with the default threshold every
+        // branch is pruned and the tree never leaves the root. That is what made
+        // the first draft of this test vacuous — a root-only forward passed it.
+        const tot = try TreeOfThoughtAgent.init(allocator, mock.agent(), .{
+            .strategy = strategy,
+            .branching_factor = 2,
+            .max_depth = 3,
+            .prune_threshold = 0.0,
+        });
+        const tot_agent = tot.agent();
+        defer tot_agent.deinit();
+
+        var msg = try Message.withText(allocator, .user, "A problem");
+        defer msg.deinit();
+
+        var options = CallOptions.init(allocator);
+        defer options.deinit();
+        try options.withTemperature(0.75);
+
+        var response = try (try tot_agent.processWith(msg, &options)).unwrap();
+        defer response.deinit();
+
+        // "Every call forwarded" is trivially true for a tree that only ever
+        // expanded its root, so assert the recursion actually happened: a depth
+        // past 1 means at least one non-root expansion issued LLM calls.
+        try testing.expect(response.getMetadata("max_depth").?.integer > 1);
+        try testing.expect(mock.getCallCount() > 2);
+        try testing.expect(mock.allTemperaturesEqual(0.75));
+    }
+}
+
+test "TreeOfThought sends no options when called through process" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var mock = try OptionsAwareMockAgent.init(allocator, &[_][]const u8{"A thought"});
+    defer mock.deinit();
+
+    const tot = try TreeOfThoughtAgent.init(allocator, mock.agent(), .{
+        .branching_factor = 2,
+        .max_depth = 2,
+    });
+    const tot_agent = tot.agent();
+    defer tot_agent.deinit();
+
+    var msg = try Message.withText(allocator, .user, "q");
+    defer msg.deinit();
+
+    var response = try (try tot_agent.process(msg)).unwrap();
+    defer response.deinit();
+
+    try testing.expect(mock.allTemperaturesEqual(null));
+}
+
+test "TreeOfThought advertises the options capability" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var mock = try MockAgent.init(allocator, &[_][]const u8{"A thought"});
+    defer mock.deinit();
+
+    const tot = try TreeOfThoughtAgent.init(allocator, mock.agent(), .{});
+    const tot_agent = tot.agent();
+    defer tot_agent.deinit();
+
+    try testing.expect(tot_agent.supportsOptions());
+}

@@ -331,6 +331,115 @@ branch text needed the `+0.2` structure bonus (two numbered markers each at the
 every depth-1 branch was pruned and the recursive expansion — where a dropped
 forward would actually hide — went untested.
 
+#### Zig (agenkit-zig)
+
+- **`CallOptions` moved to core** (`src/call_options.zig`, re-exported from
+  `src/adapter/llm.zig`) — `temperature`, `max_tokens`, `top_p` as optionals plus
+  a `StringHashMap` `extra`. `agent.zig` needs the type for the new capability and
+  core cannot depend on `adapter/`, so the type moved and the adapter layer kept
+  the old spelling: every existing `llm.CallOptions` reference is unchanged, and a
+  `root.zig` test asserts the two spellings are the same type rather than trusting
+  that they stayed in sync. New `validate()`, `isEmpty()` and `merge()` alongside
+  the existing `with*` builders — the builders validate on the way in, but the
+  fields are public, so direct assignment bypasses them and `validate()` is the
+  guard there.
+- **New optional `Agent.VTable.process_with` slot**, defaulted to `null`. Zig has
+  no structural capability query, but a defaulted-null function pointer is a
+  genuine check rather than a claim: the slot *holds* the implementation, so an
+  agent cannot advertise the capability without providing it. 90 of the 92 vtables
+  in the tree are anonymous `&.{...}` literals, so a defaulted field is purely
+  additive — nothing outside the six techniques changed.
+- `supportsOptions()` reports whether the slot is filled. `processWith()` returns
+  `AgentError.NotImplemented` when it is not — it does **not** quietly fall back,
+  because a caller who reached for the options path deserves to hear that the
+  options went nowhere. `processWithOptions()` is the explicit graceful path: it
+  takes the plain `process()` route for an unsupported agent *or* an empty option
+  set, so an options-aware agent is never handed an empty `CallOptions` merely
+  because the helper was used.
+- `merge()` merges field by field. An unset override field means "did not ask", not
+  "clear it". It borrows the winning `extra` map rather than combining the two —
+  merging maps needs an allocator and a failure path, which would make an
+  infallible helper fallible; the borrow is documented at the call site, and the
+  result must not be deinited.
+- All six reasoning techniques fill `process_with` and thread `CallOptions`
+  through **every** internal LLM call path, including the three an obvious test
+  never reaches: Plan-and-Solve's replanning branch, Tree-of-Thought's recursive
+  expansion under all three search strategies, and Graph-of-Thought's
+  node-cap-gated conclusion. `processImpl` now delegates to a shared `run` with an
+  empty option set, so the two entry points cannot drift.
+- `SelfConsistencyAgent.init` takes a `SelfConsistencyConfig`
+  (`num_samples`, `voting_strategy`, `temperature`, `answer_extractor`) instead of
+  positional arguments, forwards its temperature per sample, and validates it at
+  construction through the shared `CallOptions.validate()` so the bounds cannot
+  drift from the ones the options enforce. Its own temperature wins over a
+  caller's; every other option passes through untouched. **Breaking for direct
+  callers of the Zig `SelfConsistencyAgent.init`** — there are none in-tree.
+- **New `SelfConsistencyAgent.temperatureApplied()`** plus `temperature` and
+  `temperature_applied` response metadata, matching the other five cores.
+  `temperature` is reported even when it was dropped: `temperature_applied` alone
+  cannot distinguish "asked for 0.8 and did not get it" from "never asked".
+- `test_utils.zig` gains `OptionsAwareMockAgent`, which records the temperature of
+  every call it receives. `MockAgent` deliberately does **not** implement
+  `processWith` and is now documented as the stand-in for a `process()`-only
+  agent, so the degraded path stays covered rather than becoming untested by
+  accident.
+- Zig keeps `temperature`/`max_tokens`/`top_p` only. It did **not** gain the
+  `seed`/`stop` fields Python, TypeScript, Rust and C++ carry, because no adapter
+  in any language reads either one — adding them for field-count parity would ship
+  two more fields nobody honours, which is the defect this issue exists to remove.
+  Filed as #818 to wire the four that have them before adding them to the two that
+  do not.
+
+611 → 662 tests, all passing: `call_options.zig` has 27 (18 relocated from
+`adapter/llm.zig`, 9 new for `validate`/`isEmpty`/`merge`), `agent.zig` +8,
+`self_consistency.zig` +12, `plan_and_solve.zig` +4, `tree_of_thought.zig` +4,
+`chain_of_thought.zig`/`graph_of_thought.zig`/`least_to_most.zig` +3 each,
+`root.zig` +1. The tests assert on which path each call *arrived by*, not on the
+returned message: a phase that drops its options still produces a response, so the
+entry path is the only thing distinguishing it from a working one.
+
+Relocating the `CallOptions` tests would have left `adapter/llm.zig` with **zero**
+test blocks — which in Zig means the file stops being analysed at all, the exact
+rot #811 fixed. Four new tests were added there instead, covering the `LLM` and
+`StreamIterator` vtable wrappers that no test had ever called.
+
+Verified by mutation: 21 mutations, one per forwarding site so each is killed only
+by its own test. Mutations Zig would otherwise reject as unused-parameter errors
+include the `_ = param;` discard, so the suite rather than the compiler has to
+catch the dropped forward. The first Tree-of-Thought draft was **vacuously
+passing**: `default_evaluator` scores mainly on length, so the short mock replies
+fell below the default 0.3 prune threshold, the tree never left its root, and
+"every call forwarded" was trivially true for a one-node tree — a mutation that
+forwarded options only at `depth == 0` survived. The test now pins
+`prune_threshold = 0.0` and asserts the recursion actually happened before
+asserting anything about the options.
+
+### Fixed — Tree-of-Thought wrote through a hashmap pointer invalidated by its own insertions (Issue #817)
+
+Forcing that Tree-of-Thought test past the root — the first time any Zig test had
+done so — segfaulted. `expandNode` captured a `*ReasoningNode` from the tree's
+`AutoHashMap` at entry, called `addChild` (which ends in `nodes.put`) once per
+surviving branch, then wrote `state = .evaluated` through the captured pointer. A
+`put` that rehashes moves every entry, so that write went to freed memory.
+
+Reproduced on `main` at `769b983f` through the plain `Agent.process` path with no
+`CallOptions` involved, so it predates this work. `addChild` itself already
+re-fetched its own parent pointer after its `put`, so the hazard was understood one
+layer down — `expandNode` was the caller that did not honour it. The fix re-fetches
+by id. All three search strategies route through `expandNode`, so `bfs`, `dfs` and
+`best_first` were all affected, on the *shipped defaults* (`max_depth = 5`,
+`branching_factor = 3`) once replies are long enough to clear the prune threshold.
+
+Every existing Tree-of-Thought test pinned `max_depth = 1` — a documented
+concession that the default 5 × 3 "would expand into hundreds of mock calls" — so
+the root was expanded once, its children were immediately terminal, and the map
+never grew under a held pointer. The one test on the default config was saved by
+the default 0.3 threshold pruning its short replies. Triggering the bug needs a
+depth past 1 **and** a threshold low enough to keep a child alive; nothing in the
+suite had both. The regression test covers all three strategies and asserts the
+tree grew (`max_depth > 1`, `total_nodes > 3`) rather than merely that `process`
+returned, since a root-only tree cannot exercise the bug.
+
 ### Fixed — Five of six Zig reasoning technique agents did not compile; 34 of their tests never ran (Issue #811)
 
 `zig build test` reported 497/497 green while **five of the six Zig reasoning

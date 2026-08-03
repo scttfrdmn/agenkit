@@ -206,13 +206,10 @@ pub const NeedleInHaystackBenchmark = struct {
     ) anyerror!std.ArrayList(*core.TestCase) {
         const self: *NeedleInHaystackBenchmark = @ptrCast(@alignCast(ptr));
         var cases = std.ArrayList(*core.TestCase).empty;
-
-        // Generate needles (facts to hide in haystack)
-        const needles = [_][]const u8{
-            "The secret code is ALPHA-7",
-            "The magic number is 42",
-            "The password is swordfish",
-        };
+        errdefer {
+            for (cases.items) |tc| tc.deinit();
+            cases.deinit(allocator);
+        }
 
         // Generate haystack (filler content)
         var haystack = std.ArrayList(u8).empty;
@@ -225,42 +222,57 @@ pub const NeedleInHaystackBenchmark = struct {
             try haystack.appendSlice(allocator, filler);
         }
 
-        // Embed needles at different positions
-        for (needles[0..@min(needles.len, self.needle_count)]) |needle| {
-            try haystack.appendSlice(allocator, "\n");
+        // Embed one distinct needle per requested count.
+        //
+        // Needles are generated rather than drawn from a fixed array: this core used
+        // to hold three hardcoded strings and slice them to `@min(3, needle_count)`,
+        // so any `needle_count` above 3 silently embedded only 3. The wording matches
+        // Python, Go, Rust and TypeScript so the same benchmark measures the same
+        // thing in every core (#799).
+        for (0..self.needle_count) |i| {
+            const needle = try std.fmt.allocPrint(
+                allocator,
+                "\nThe secret code for vault {d} is ALPHA-{d:0>4}-OMEGA.\n",
+                .{ i, i },
+            );
+            defer allocator.free(needle);
             try haystack.appendSlice(allocator, needle);
-            try haystack.appendSlice(allocator, "\n");
         }
 
-        // Create test case for each needle
-        for (needles[0..@min(needles.len, self.needle_count)]) |needle| {
+        const context_tokens_str = try std.fmt.allocPrint(allocator, "{d}", .{self.context_length});
+        defer allocator.free(context_tokens_str);
+
+        const total_needles_str = try std.fmt.allocPrint(allocator, "{d}", .{self.needle_count});
+        defer allocator.free(total_needles_str);
+
+        // One test case per needle, each asking for *that* needle's fact.
+        //
+        // The loop used to `break` on its first iteration, so `needle_count` bounded a
+        // loop that ran once and the benchmark measured retrieval of a single fact
+        // N-times-embedded rather than of N distinct facts.
+        for (0..self.needle_count) |i| {
             const input = try std.fmt.allocPrint(
                 allocator,
-                "Context:\n{s}\n\nQuestion: What is the secret code mentioned in the context?",
-                .{haystack.items},
+                "Context:\n{s}\n\nQuestion: What is the secret code for vault {d}?",
+                .{ haystack.items, i },
             );
+            defer allocator.free(input);
 
-            const tc = try core.TestCase.initFunctional(
-                allocator,
-                input,
-                struct {
-                    fn validate(output: []const u8) bool {
-                        return std.mem.indexOf(u8, output, "ALPHA-7") != null;
-                    }
-                }.validate,
-            );
+            const expected = try std.fmt.allocPrint(allocator, "ALPHA-{d:0>4}-OMEGA", .{i});
+            defer allocator.free(expected);
+
+            const tc = try core.TestCase.initExact(allocator, input, expected);
+            errdefer tc.deinit();
+
             try tc.addMetadata("category", "retrieval");
-            const context_tokens_str = try std.fmt.allocPrint(
-                allocator,
-                "{d}",
-                .{self.context_length},
-            );
-            defer allocator.free(context_tokens_str);
             try tc.addMetadata("context_tokens", context_tokens_str);
+
+            const position_str = try std.fmt.allocPrint(allocator, "{d}", .{i});
+            defer allocator.free(position_str);
+            try tc.addMetadata("needle_position", position_str);
+            try tc.addMetadata("total_needles", total_needles_str);
+
             try cases.append(allocator, tc);
-            allocator.free(input);
-            _ = needle; // Use the needle variable
-            break; // Only create one test case for now
         }
 
         return cases;
@@ -575,6 +587,80 @@ test "NeedleInHaystackBenchmark configuration" {
     // Encodes context_length, matching Python, Go, Rust, C++ and TypeScript. This core
     // used to return a constant "Needle in Haystack" for every size (#790).
     try std.testing.expectEqualStrings("needle_in_haystack_1000", benchmark.asBenchmark().name());
+}
+
+test "NeedleInHaystackBenchmark generates one test case per needle" {
+    const allocator = std.testing.allocator;
+
+    // The count is the whole point of the parameter: `generateImpl` used to `break` on
+    // its first iteration, so every needle_count produced exactly one case (#799). A
+    // count above the 3 hardcoded needles this core used to hold is checked too, since
+    // that array is what bounded the old loop.
+    for ([_]usize{ 1, 3, 5 }) |needle_count| {
+        const benchmark = try NeedleInHaystackBenchmark.init(allocator, 1000, needle_count);
+        defer benchmark.deinit();
+
+        var cases = try benchmark.asBenchmark().generateTestCases(allocator);
+        defer {
+            for (cases.items) |tc| tc.deinit();
+            cases.deinit(allocator);
+        }
+
+        try std.testing.expectEqual(needle_count, cases.items.len);
+    }
+}
+
+test "NeedleInHaystackBenchmark asks for each needle by its own vault" {
+    const allocator = std.testing.allocator;
+
+    const benchmark = try NeedleInHaystackBenchmark.init(allocator, 1000, 4);
+    defer benchmark.deinit();
+
+    var cases = try benchmark.asBenchmark().generateTestCases(allocator);
+    defer {
+        for (cases.items) |tc| tc.deinit();
+        cases.deinit(allocator);
+    }
+
+    // Counting the cases is not enough: N copies of the *same* question would satisfy
+    // that while still measuring one fact N times, which is what this core did. Each
+    // case must name its own vault and expect its own code.
+    for (cases.items, 0..) |tc, i| {
+        const question = try std.fmt.allocPrint(allocator, "vault {d}?", .{i});
+        defer allocator.free(question);
+        try std.testing.expect(std.mem.indexOf(u8, tc.input, question) != null);
+
+        const code = try std.fmt.allocPrint(allocator, "ALPHA-{d:0>4}-OMEGA", .{i});
+        defer allocator.free(code);
+        try std.testing.expectEqualStrings(code, tc.expected.exact);
+
+        // Every needle is embedded in the shared context, so each case can be answered
+        // from its own input.
+        try std.testing.expect(std.mem.indexOf(u8, tc.input, code) != null);
+    }
+}
+
+test "NeedleInHaystackBenchmark records needle position and total in metadata" {
+    const allocator = std.testing.allocator;
+
+    const benchmark = try NeedleInHaystackBenchmark.init(allocator, 1000, 3);
+    defer benchmark.deinit();
+
+    var cases = try benchmark.asBenchmark().generateTestCases(allocator);
+    defer {
+        for (cases.items) |tc| tc.deinit();
+        cases.deinit(allocator);
+    }
+
+    for (cases.items, 0..) |tc, i| {
+        const want_position = try std.fmt.allocPrint(allocator, "{d}", .{i});
+        defer allocator.free(want_position);
+
+        try std.testing.expectEqualStrings("retrieval", tc.metadata.get("category").?);
+        try std.testing.expectEqualStrings("1000", tc.metadata.get("context_tokens").?);
+        try std.testing.expectEqualStrings(want_position, tc.metadata.get("needle_position").?);
+        try std.testing.expectEqualStrings("3", tc.metadata.get("total_needles").?);
+    }
 }
 
 test "ExtremeScaleBenchmark target tokens" {

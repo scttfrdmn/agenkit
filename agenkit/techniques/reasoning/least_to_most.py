@@ -33,7 +33,7 @@ Example:
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from agenkit import Agent, Message
+from agenkit import Agent, CallOptions, Message
 
 from ._llm_call import complete_text
 
@@ -110,19 +110,20 @@ class LeastToMost(Agent):
         """Return agent name."""
         return "least_to_most"
 
-    async def _llm_call(self, prompt: str) -> str:
+    async def _llm_call(self, prompt: str, options: CallOptions | None = None) -> str:
         """
         Call LLM with prompt.
 
         Args:
             prompt: Prompt to send to LLM
+            options: Optional per-call inference options to forward (#801)
 
         Returns:
             LLM response text
         """
-        return await complete_text(self.llm, prompt)
+        return await complete_text(self.llm, prompt, options)
 
-    async def decompose(self, problem: str) -> list[Subproblem]:
+    async def decompose(self, problem: str, options: CallOptions | None = None) -> list[Subproblem]:
         """
         Decompose problem into subproblems.
 
@@ -149,7 +150,7 @@ Problem: {problem}
 
 Subproblems (from simplest to most complex):"""
 
-        response = await self._llm_call(decomposition_prompt)
+        response = await self._llm_call(decomposition_prompt, options)
 
         # Parse subproblems from response
         subproblems = []
@@ -174,7 +175,12 @@ Subproblems (from simplest to most complex):"""
 
         return subproblems
 
-    async def solve_subproblem(self, subproblem: Subproblem, previous_solutions: list[str]) -> str:
+    async def solve_subproblem(
+        self,
+        subproblem: Subproblem,
+        previous_solutions: list[str],
+        options: CallOptions | None = None,
+    ) -> str:
         """
         Solve one subproblem, optionally using previous solutions as context.
 
@@ -207,18 +213,34 @@ Solution:"""
 
 Solution:"""
 
-        solution = await self._llm_call(prompt)
+        solution = await self._llm_call(prompt, options)
         return solution.strip()
 
     async def process(self, message: Message) -> Message:
         """
         Process message with Least-to-Most prompting.
 
-        Decomposes the problem, solves subproblems sequentially from easiest
-        to hardest, and composes the final solution.
+        Equivalent to :meth:`process_with` with no options set.
 
         Args:
             message: Input message with problem
+
+        Returns:
+            Message with final solution and metadata.
+        """
+        return await self.process_with(message, CallOptions())
+
+    async def process_with(self, message: Message, options: CallOptions) -> Message:
+        """
+        Process message with Least-to-Most prompting and per-call options.
+
+        Decomposes the problem, solves subproblems sequentially from easiest
+        to hardest, and composes the final solution. The options are forwarded to
+        decomposition and to every subproblem.
+
+        Args:
+            message: Input message with problem
+            options: Per-call inference options forwarded to the LLM (#801)
 
         Returns:
             Message with final solution and metadata. Metadata includes:
@@ -238,12 +260,12 @@ Solution:"""
         problem = message.content
 
         # Step 1: Decompose problem
-        subproblems = await self.decompose(problem)
+        subproblems = await self.decompose(problem, options)
 
         # Step 2: Solve subproblems sequentially
         solutions = []
         for subproblem in subproblems:
-            solution = await self.solve_subproblem(subproblem, solutions)
+            solution = await self.solve_subproblem(subproblem, solutions, options)
             solutions.append(solution)
 
         # Step 3: Final solution is the last one (hardest problem)

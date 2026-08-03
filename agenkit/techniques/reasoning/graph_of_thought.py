@@ -37,7 +37,7 @@ Example:
         paths = response.metadata['reasoning_paths']
 """
 
-from agenkit import Agent, Message
+from agenkit import Agent, CallOptions, Message
 
 from ._llm_call import complete_text
 from .reasoning_graph import EdgeType, NodeType, ReasoningGraph
@@ -105,19 +105,22 @@ class GraphOfThought(Agent):
         """Return agent name."""
         return "graph_of_thought"
 
-    async def _llm_call(self, prompt: str) -> str:
+    async def _llm_call(self, prompt: str, options: CallOptions | None = None) -> str:
         """
         Call LLM with prompt.
 
         Args:
             prompt: Prompt to send to LLM
+            options: Optional per-call inference options to forward (#801)
 
         Returns:
             LLM response text
         """
-        return await complete_text(self.llm, prompt)
+        return await complete_text(self.llm, prompt, options)
 
-    async def generate_premises(self, problem: str) -> list[str]:
+    async def generate_premises(
+        self, problem: str, options: CallOptions | None = None
+    ) -> list[str]:
         """
         Generate initial premises/facts for the problem.
 
@@ -134,7 +137,7 @@ Problem: {problem}
 
 Premises:"""
 
-        response = await self._llm_call(prompt)
+        response = await self._llm_call(prompt, options)
 
         # Parse premises
         premises = []
@@ -151,7 +154,11 @@ Premises:"""
         return premises[:4]  # Limit to 4 premises
 
     async def generate_thoughts(
-        self, problem: str, existing_thoughts: list[str], max_new: int = 3
+        self,
+        problem: str,
+        existing_thoughts: list[str],
+        max_new: int = 3,
+        options: CallOptions | None = None,
     ) -> list[str]:
         """
         Generate new intermediate thoughts based on existing ones.
@@ -181,7 +188,7 @@ Problem: {problem}
 
 Thoughts (one per line):"""
 
-        response = await self._llm_call(prompt)
+        response = await self._llm_call(prompt, options)
 
         # Parse new thoughts
         thoughts = []
@@ -196,7 +203,9 @@ Thoughts (one per line):"""
 
         return thoughts
 
-    async def identify_connections(self, thought1: str, thought2: str) -> EdgeType | None:
+    async def identify_connections(
+        self, thought1: str, thought2: str, options: CallOptions | None = None
+    ) -> EdgeType | None:
         """
         Identify logical connection between two thoughts.
 
@@ -222,7 +231,7 @@ Does statement 2:
 
 Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION"""
 
-        response = await self._llm_call(prompt)
+        response = await self._llm_call(prompt, options)
         response_upper = response.strip().upper()
 
         if "SUPPORT" in response_upper:
@@ -236,7 +245,7 @@ Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION"""
         else:
             return None
 
-    async def build_graph(self, problem: str) -> ReasoningGraph:
+    async def build_graph(self, problem: str, options: CallOptions | None = None) -> ReasoningGraph:
         """
         Build reasoning graph for the problem.
 
@@ -249,7 +258,7 @@ Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION"""
         graph = ReasoningGraph()
 
         # Step 1: Generate premises
-        premises = await self.generate_premises(problem)
+        premises = await self.generate_premises(problem, options)
         premise_ids = []
         for premise in premises:
             node_id = graph.add_node(content=premise, node_type=NodeType.PREMISE, confidence=0.9)
@@ -266,7 +275,10 @@ Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION"""
                 break
 
             new_thoughts = await self.generate_thoughts(
-                problem=problem, existing_thoughts=all_thoughts, max_new=max_new
+                problem=problem,
+                existing_thoughts=all_thoughts,
+                max_new=max_new,
+                options=options,
             )
 
             if not new_thoughts:
@@ -297,7 +309,7 @@ Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION"""
                 thought2 = graph.get_node(node2_id).content
 
                 # Check connection from node1 to node2
-                edge_type = await self.identify_connections(thought1, thought2)
+                edge_type = await self.identify_connections(thought1, thought2, options)
                 if edge_type:
                     graph.add_edge(node1_id, node2_id, edge_type, strength=0.8)
                     edge_count += 1
@@ -316,7 +328,7 @@ Thoughts:
 
 Final conclusion:"""
 
-            conclusion = await self._llm_call(conclusion_prompt)
+            conclusion = await self._llm_call(conclusion_prompt, options)
             conclusion_id = graph.add_node(
                 content=conclusion.strip(), node_type=NodeType.CONCLUSION, confidence=0.8
             )
@@ -350,7 +362,12 @@ Final conclusion:"""
 
         return all_paths
 
-    async def aggregate_paths(self, graph: ReasoningGraph, paths: list[list[int]]) -> str:
+    async def aggregate_paths(
+        self,
+        graph: ReasoningGraph,
+        paths: list[list[int]],
+        options: CallOptions | None = None,
+    ) -> str:
         """
         Aggregate multiple reasoning paths into final answer.
 
@@ -405,11 +422,27 @@ Final conclusion:"""
         """
         Process message with Graph-of-Thought reasoning.
 
-        Builds a reasoning graph, finds paths, and aggregates them
-        into a final answer.
+        Equivalent to :meth:`process_with` with no options set.
 
         Args:
             message: Input message with problem
+
+        Returns:
+            Message with final answer and metadata.
+        """
+        return await self.process_with(message, CallOptions())
+
+    async def process_with(self, message: Message, options: CallOptions) -> Message:
+        """
+        Process message with Graph-of-Thought reasoning and per-call options.
+
+        Builds a reasoning graph, finds paths, and aggregates them
+        into a final answer. The options are forwarded to every LLM call the graph
+        construction makes.
+
+        Args:
+            message: Input message with problem
+            options: Per-call inference options forwarded to the LLM (#801)
 
         Returns:
             Message with final answer and metadata. Metadata includes:
@@ -432,7 +465,7 @@ Final conclusion:"""
         problem = message.content
 
         # Step 1: Build reasoning graph
-        graph = await self.build_graph(problem)
+        graph = await self.build_graph(problem, options)
 
         # Step 2: Check for cycles (if not allowed)
         if not self.allow_cycles and graph.has_cycle():
@@ -444,7 +477,7 @@ Final conclusion:"""
         reasoning_paths = self.find_reasoning_paths(graph)
 
         # Step 4: Aggregate paths to final answer
-        final_answer = await self.aggregate_paths(graph, reasoning_paths)
+        final_answer = await self.aggregate_paths(graph, reasoning_paths, options)
 
         # Get statistics
         stats = graph.statistics()

@@ -41,7 +41,7 @@ import re
 from collections import Counter
 from collections.abc import Callable
 
-from agenkit import Agent, Message
+from agenkit import Agent, CallOptions, Message
 
 
 class SelfConsistency(Agent):
@@ -63,7 +63,7 @@ class SelfConsistency(Agent):
         agent: Base agent to sample from
         num_samples: Number of independent samples to generate
         voting_strategy: Strategy for aggregating answers
-        temperature: Sampling temperature for diversity
+        temperature: Sampling temperature for diversity, forwarded per sample
         answer_extractor: Function to extract final answer from response
     """
 
@@ -86,8 +86,13 @@ class SelfConsistency(Agent):
                 - "majority": Select most common answer (default)
                 - "weighted": Weight by answer confidence/length
                 - "first": Use first answer (no voting, for debugging)
-            temperature: Optional temperature for sampling diversity. If provided,
-                passed to agent if it supports temperature parameter.
+            temperature: Optional sampling temperature, 0.0-2.0. Sample diversity
+                is what makes this technique work — N samples of the same prompt
+                only inform a vote if they can differ — so this is the knob that
+                produces it. Forwarded to the wrapped agent per sample via
+                ``process_with()`` when the agent supports options; agents that
+                don't are called through ``process()`` unchanged, and
+                :attr:`temperature_applied` reports which happened (#801).
             answer_extractor: Custom function to extract final answer from
                 response text (str -> str). If None, uses default extraction
                 that looks for common answer patterns.
@@ -107,10 +112,36 @@ class SelfConsistency(Agent):
         self.temperature = temperature
         self.answer_extractor = answer_extractor or self._default_answer_extractor
 
+        # Validate eagerly: a bad temperature should fail at construction, not on
+        # the first sample. CallOptions owns the bounds so they stay in one place.
+        self._call_options = CallOptions(temperature=temperature)
+
     @property
     def name(self) -> str:
         """Return agent name."""
         return "self_consistency"
+
+    @property
+    def temperature_applied(self) -> bool:
+        """
+        Report whether the configured temperature actually reaches the LLM.
+
+        False when a temperature is set but the wrapped agent does not implement
+        :meth:`~agenkit.Agent.process_with` — the samples are then generated at
+        whatever temperature the agent is configured with, so the diversity this
+        technique depends on may not materialize.
+
+        Exposed rather than left implicit because a silently ignored temperature is
+        precisely the failure this fixes: the value was accepted and dropped for as
+        long as the class existed (#801).
+
+        Returns:
+            True if the temperature is unset (nothing to apply) or the wrapped
+            agent honours per-call options.
+        """
+        if self.temperature is None:
+            return True
+        return bool(getattr(self.agent, "supports_options", False))
 
     def _default_answer_extractor(self, text: str) -> str:
         """
@@ -158,8 +189,13 @@ class SelfConsistency(Agent):
         Returns:
             Tuple of (full_response, extracted_answer)
         """
-        # TODO: If temperature supported, pass it to agent
-        response = await self.agent.process(message)
+        # Pass the temperature per sample when the agent can honour it. Options are
+        # passed as an argument rather than stashed on self because samples run
+        # concurrently via asyncio.gather — shared mutable state would race.
+        if self._call_options.is_empty() or not getattr(self.agent, "supports_options", False):
+            response = await self.agent.process(message)
+        else:
+            response = await self.agent.process_with(message, self._call_options)
         full_response = response.content
         answer = self.answer_extractor(full_response)
         return (full_response, answer)
@@ -317,6 +353,8 @@ class SelfConsistency(Agent):
                 "extracted_answers": extracted_answers,
                 "answer_counts": dict(answer_counts),
                 "base_agent": self.agent.name if hasattr(self.agent, "name") else "unknown",
+                "temperature": self.temperature,
+                "temperature_applied": self.temperature_applied,
             },
         )
 

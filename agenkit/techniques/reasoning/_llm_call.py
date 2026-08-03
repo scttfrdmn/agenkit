@@ -22,10 +22,10 @@ happen instead of five.
 
 from typing import Any
 
-from agenkit import Message
+from agenkit import CallOptions, Message
 
 
-async def complete_text(llm: Any, prompt: str) -> str:
+async def complete_text(llm: Any, prompt: str, options: CallOptions | None = None) -> str:
     """
     Send a prompt to an LLM (or agent) and return the response as text.
 
@@ -38,6 +38,11 @@ async def complete_text(llm: Any, prompt: str) -> str:
             the :class:`~agenkit.adapters.llm.base.LLM` contract) or
             ``process()`` (the :class:`~agenkit.Agent` contract).
         prompt: Prompt text to send.
+        options: Optional per-call inference options (#801). Set options are passed
+            as keyword arguments to ``complete()``, which every shipped adapter
+            accepts. On the ``process()`` path they are forwarded via
+            ``process_with()`` when the object advertises it, and dropped otherwise
+            — an ``Agent`` has nowhere else to put them.
 
     Returns:
         Response text.
@@ -46,11 +51,15 @@ async def complete_text(llm: Any, prompt: str) -> str:
         AttributeError: If ``llm`` provides neither ``complete()`` nor ``process()``.
     """
     message = Message(role="user", content=prompt)
+    kwargs = options.to_kwargs() if options is not None else {}
 
     if hasattr(llm, "complete"):
-        response = await llm.complete([message])
+        response = await llm.complete([message], **kwargs)
     elif hasattr(llm, "process"):
-        response = await llm.process(message)
+        if kwargs and getattr(llm, "supports_options", False):
+            response = await llm.process_with(message, options)
+        else:
+            response = await llm.process(message)
     else:
         raise AttributeError("LLM must have either complete() or process() method")
 

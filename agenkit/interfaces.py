@@ -22,12 +22,148 @@ from typing import Any
 
 from agenkit.introspection import IntrospectionResult
 
-__all__ = ["Agent", "IntrospectionResult", "Message", "Tool", "ToolResult"]
+__all__ = ["Agent", "CallOptions", "IntrospectionResult", "Message", "Tool", "ToolResult"]
 
 
 # ============================================
 # Core Data Types
 # ============================================
+
+
+@dataclass(frozen=True)
+class CallOptions:
+    """
+    Per-call inference options for a single agent invocation.
+
+    The channel a caller uses to influence *how* one call runs, as opposed to
+    ``Message``, which carries *what* the call is about. It exists because
+    wrappers need to vary inference settings per invocation of an agent they did
+    not construct: ``SelfConsistency`` samples the same prompt N times and takes a
+    majority vote, so sample diversity is the technique, and temperature is the
+    knob that produces it (#801).
+
+    Passed via the optional :meth:`Agent.process_with` capability rather than by
+    widening ``process()``. Agents that do not implement it fall back to
+    ``process()`` and ignore the options, so nothing breaks — but a caller can
+    check with ``hasattr``/``supports_options`` when it needs to know.
+
+    Every field is optional and ``None`` means "unset", not a default. This is the
+    difference that matters: an agent must be able to tell "the caller did not ask
+    for a temperature" from "the caller asked for 0.0". Sending a defaulted value
+    downstream would silently override whatever the agent or provider was
+    configured with.
+
+    Field names and bounds deliberately match
+    :meth:`agenkit.adapters.llm.base.LLM._validate_llm_params`, so options pass
+    through to a provider without translation.
+
+    Attributes:
+        temperature: Sampling temperature, 0.0-2.0. Higher is more random.
+        max_tokens: Maximum tokens to generate. Must be positive.
+        top_p: Nucleus sampling probability mass, 0.0-1.0.
+        seed: Provider-side sampling seed, for reproducible sampling where the
+            provider supports it.
+        stop: Sequences that end generation.
+        extra: Provider-specific options with no cross-provider meaning. Kept
+            separate from the named fields so that a typo in a portable option is
+            a ``TypeError`` rather than a silently ignored key.
+
+    Usage:
+        >>> options = CallOptions(temperature=0.9)
+        >>> response = await agent.process_with(message, options)
+    """
+
+    temperature: float | None = None
+    max_tokens: int | None = None
+    top_p: float | None = None
+    seed: int | None = None
+    stop: tuple[str, ...] | None = None
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        """
+        Validate options at construction.
+
+        Validated here rather than at the provider so a bad value fails at the
+        call site that set it, where the fix is, instead of several layers down.
+
+        Raises:
+            ValueError: If any option is outside its documented range.
+        """
+        if self.temperature is not None:
+            if not isinstance(self.temperature, (int, float)) or isinstance(self.temperature, bool):
+                raise ValueError(
+                    f"temperature must be a number, got {type(self.temperature).__name__}"
+                )
+            if not 0.0 <= self.temperature <= 2.0:
+                raise ValueError(f"temperature must be between 0 and 2, got {self.temperature}")
+
+        if self.max_tokens is not None:
+            if not isinstance(self.max_tokens, int) or isinstance(self.max_tokens, bool):
+                raise ValueError(
+                    f"max_tokens must be an integer, got {type(self.max_tokens).__name__}"
+                )
+            if self.max_tokens <= 0:
+                raise ValueError(f"max_tokens must be positive, got {self.max_tokens}")
+
+        if self.top_p is not None:
+            if not isinstance(self.top_p, (int, float)) or isinstance(self.top_p, bool):
+                raise ValueError(f"top_p must be a number, got {type(self.top_p).__name__}")
+            if not 0.0 <= self.top_p <= 1.0:
+                raise ValueError(f"top_p must be between 0 and 1, got {self.top_p}")
+
+        if self.seed is not None and (
+            not isinstance(self.seed, int) or isinstance(self.seed, bool)
+        ):
+            raise ValueError(f"seed must be an integer, got {type(self.seed).__name__}")
+
+    def to_kwargs(self) -> dict[str, Any]:
+        """
+        Render as keyword arguments for :meth:`agenkit.adapters.llm.base.LLM.complete`.
+
+        Unset (``None``) fields are omitted rather than passed as ``None``, so an
+        option the caller never set cannot override the agent's or provider's own
+        default.
+
+        Returns:
+            Keyword arguments containing only the options that were set.
+
+        Example:
+            >>> CallOptions(temperature=0.7).to_kwargs()
+            {'temperature': 0.7}
+        """
+        kwargs: dict[str, Any] = {}
+        if self.temperature is not None:
+            kwargs["temperature"] = self.temperature
+        if self.max_tokens is not None:
+            kwargs["max_tokens"] = self.max_tokens
+        if self.top_p is not None:
+            kwargs["top_p"] = self.top_p
+        if self.seed is not None:
+            kwargs["seed"] = self.seed
+        if self.stop is not None:
+            kwargs["stop"] = list(self.stop)
+        kwargs.update(self.extra)
+        return kwargs
+
+    def is_empty(self) -> bool:
+        """
+        Report whether any option is set.
+
+        Lets a caller skip the ``process_with`` path entirely when it has nothing
+        to say, rather than sending an all-``None`` options object.
+
+        Returns:
+            True if no option is set.
+        """
+        return (
+            self.temperature is None
+            and self.max_tokens is None
+            and self.top_p is None
+            and self.seed is None
+            and self.stop is None
+            and not self.extra
+        )
 
 
 @dataclass(frozen=True)
@@ -292,6 +428,69 @@ class Agent(ABC):
             Can raise exceptions - caller handles error recovery
         """
         pass
+
+    async def process_with(self, message: Message, options: CallOptions) -> Message:
+        """
+        Process a message with per-call inference options. Override if supported.
+
+        This is an optional capability, in the same spirit as :meth:`stream` and
+        :meth:`introspect`: the core contract stays ``process(message)``, and an
+        agent that can honour per-call options advertises that by overriding this
+        method. Widening ``process()`` itself was rejected — roughly 500
+        implementations across the nine cores would have had to change, and every
+        one of Go's would break at compile time, to add something most agents have
+        no use for.
+
+        The default implementation **ignores the options and delegates to**
+        :meth:`process`. That makes the capability additive: existing agents keep
+        working untouched. The trade-off is that a caller cannot tell from a
+        successful return whether its options were applied, so check
+        :attr:`supports_options` when that matters.
+
+        Args:
+            message: Input message to process
+            options: Per-call inference options. May be empty.
+
+        Returns:
+            Response message
+
+        Example:
+            >>> class TunableAgent(Agent):
+            ...     @property
+            ...     def name(self) -> str:
+            ...         return "tunable"
+            ...
+            ...     async def process(self, message: Message) -> Message:
+            ...         return await self.process_with(message, CallOptions())
+            ...
+            ...     async def process_with(
+            ...         self, message: Message, options: CallOptions
+            ...     ) -> Message:
+            ...         response = await self.llm.complete(
+            ...             [message], **options.to_kwargs()
+            ...         )
+            ...         return response
+        """
+        return await self.process(message)
+
+    @property
+    def supports_options(self) -> bool:
+        """
+        Report whether this agent honours :class:`CallOptions`.
+
+        True when :meth:`process_with` is overridden — i.e. the agent does
+        something with the options rather than inheriting the ignoring default.
+        Checked structurally rather than requiring agents to declare a flag, so it
+        cannot fall out of sync with the implementation.
+
+        A caller that needs its options to actually take effect should check this
+        rather than assume, since the default ``process_with`` accepts and discards
+        them.
+
+        Returns:
+            True if the agent applies per-call options.
+        """
+        return type(self).process_with is not Agent.process_with
 
     async def stream(self, message: Message) -> AsyncIterator[Message]:
         """

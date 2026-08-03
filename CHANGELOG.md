@@ -684,6 +684,45 @@ Migration: if you wrote a custom client with `chat()`, rename it to `complete()`
 warning until v2.0. Go callers of `ModelOptimizer.Complete(ctx, msgs, nil)` drop the
 trailing `nil`; those passing a kwargs map use `agenkit.WithTemperature(...)` etc.
 
+### Fixed — Zig's `NeedleInHaystackBenchmark` ignored `needle_count` and always produced one test case (Issue #799)
+
+`needle_count` was accepted, stored, used to bound a loop, and then discarded: the
+body ended in `break; // Only create one test case for now`. At `needle_count = 3`
+Python, Go, Rust, C++ and TypeScript each generate 3 test cases; Zig generated 1,
+for every value of the parameter. `_ = needle` inside the loop was the tell — the
+loop variable was unused because the body did not vary per needle.
+
+Two independent defects, both fixed:
+
+- **The `break`.** One case was appended and the loop exited.
+- **A hardcoded 3-needle array**, sliced `needles[0..@min(needles.len, needle_count)]`,
+  so even without the `break` any count above 3 truncated silently. Needles are now
+  generated: `The secret code for vault {i} is ALPHA-{i:04d}-OMEGA.`, matching
+  Python's wording so the same benchmark measures the same thing in every core.
+
+Beyond the count, the Zig benchmark measured something different *in kind*. The
+other cores ask an agent to retrieve each of N distinct facts; Zig asked the same
+question ("What is the secret code mentioned in the context?") against one fact
+embedded N times. Each case now asks for its own vault and expects its own code,
+and carries `needle_position` / `total_needles` metadata mirroring Python.
+
+The `TestCase` also moves from `initFunctional` — whose validator was a bare
+function pointer hardcoding `indexOf(output, "ALPHA-7")`, and Zig has no closures
+to capture a per-case value with — to `initExact` with the fragment as `expected`,
+the shape Python and Rust use. Note that Zig's `initExact` is a strict
+`mem.eql`, while Python, Go and TypeScript treat a string `expected` as a
+case-insensitive substring; that three-way divergence is tracked separately in
+**#820** and is not changed here.
+
+This was invisible because `generateImpl` was never compiled until #790 added a
+test that calls `asBenchmark()` — Zig only type-checks functions it reaches, so the
+`break` had never executed in a test run.
+
+Zig suite: 662 → 665 tests. Negative-verified: 8 mutations (the original `break`,
+the `@min(3, ...)` cap on each of the two loops, a constant question, a constant
+expected value, an unpadded code, and two wrong metadata values) each fail the
+suite through a test assertion, none merely through the compiler.
+
 ### BREAKING — `NeedleInHaystackBenchmark` signature and name converged across cores (Issue #790)
 
 The six cores that implement this benchmark disagreed on both its constructor and

@@ -9,7 +9,7 @@
 // Reference: "Least-to-Most Prompting Enables Complex Reasoning in Large Language Models"
 // Zhou et al., 2022 - https://arxiv.org/abs/2205.10625
 
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{process_with_options, Agent, AgentError, CallOptions, Message, OptionsAgent};
 use async_trait::async_trait;
 use regex::Regex;
 use serde_json::json;
@@ -118,7 +118,11 @@ impl LeastToMostAgent {
     /// Decompose problem into subproblems.
     ///
     /// Uses custom decomposer if provided, otherwise uses LLM.
-    async fn decompose(&self, problem: &str) -> Result<Vec<Subproblem>, AgentError> {
+    async fn decompose(
+        &self,
+        problem: &str,
+        options: &CallOptions,
+    ) -> Result<Vec<Subproblem>, AgentError> {
         if let Some(decomposer) = &self.decomposer {
             // Use custom decomposer
             let subproblem_texts = decomposer(problem)?;
@@ -148,9 +152,7 @@ impl LeastToMostAgent {
         );
 
         let prompt_message = Message::with_text("user", decomposition_prompt);
-        let response = self
-            .agent
-            .process(prompt_message)
+        let response = process_with_options(self.agent.as_ref(), prompt_message, options)
             .await
             .map_err(|e| AgentError::Internal(format!("Decomposition failed: {}", e)))?;
 
@@ -210,6 +212,7 @@ impl LeastToMostAgent {
         &self,
         subproblem: &Subproblem,
         previous_solutions: &[String],
+        options: &CallOptions,
     ) -> Result<String, AgentError> {
         let prompt = if self.compose_solutions && !previous_solutions.is_empty() {
             // Include previous solutions as context
@@ -234,9 +237,7 @@ impl LeastToMostAgent {
         };
 
         let prompt_message = Message::with_text("user", prompt);
-        let response = self
-            .agent
-            .process(prompt_message)
+        let response = process_with_options(self.agent.as_ref(), prompt_message, options)
             .await
             .map_err(|e| AgentError::Internal(format!("Subproblem solving failed: {}", e)))?;
 
@@ -261,15 +262,32 @@ impl Agent for LeastToMostAgent {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        self.process_with(message, &CallOptions::new()).await
+    }
+
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        Some(self)
+    }
+}
+
+#[async_trait]
+impl OptionsAgent for LeastToMostAgent {
+    async fn process_with(
+        &self,
+        message: Message,
+        options: &CallOptions,
+    ) -> Result<Message, AgentError> {
         let problem = message.content_as_str().unwrap_or("").to_string();
 
         // Step 1: Decompose problem
-        let subproblems = self.decompose(&problem).await?;
+        let subproblems = self.decompose(&problem, options).await?;
 
         // Step 2: Solve subproblems sequentially
         let mut solutions = Vec::new();
         for subproblem in &subproblems {
-            let solution = self.solve_subproblem(subproblem, &solutions).await?;
+            let solution = self
+                .solve_subproblem(subproblem, &solutions, options)
+                .await?;
             solutions.push(solution);
         }
 

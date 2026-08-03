@@ -7,7 +7,7 @@
 // Reference: "Plan-and-Solve Prompting: Improving Zero-Shot Chain-of-Thought Reasoning"
 // Lei Wang et al., 2023 - https://arxiv.org/abs/2305.04091
 
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{process_with_options, Agent, AgentError, CallOptions, Message, OptionsAgent};
 use async_trait::async_trait;
 use regex::Regex;
 use serde_json::json;
@@ -72,9 +72,9 @@ impl PlanAndSolveAgent {
         }
     }
 
-    async fn llm_call(&self, prompt: &str) -> Result<String, AgentError> {
+    async fn llm_call(&self, prompt: &str, options: &CallOptions) -> Result<String, AgentError> {
         let message = Message::new("user", serde_json::Value::String(prompt.to_string()));
-        let response = self.agent.process(message).await?;
+        let response = process_with_options(self.agent.as_ref(), message, options).await?;
 
         match response.content {
             serde_json::Value::String(s) => Ok(s),
@@ -82,7 +82,7 @@ impl PlanAndSolveAgent {
         }
     }
 
-    async fn create_plan(&self, problem: &str) -> Result<Plan, AgentError> {
+    async fn create_plan(&self, problem: &str, options: &CallOptions) -> Result<Plan, AgentError> {
         if let Some(planner) = &self.planner {
             return planner(problem);
         }
@@ -96,7 +96,7 @@ impl PlanAndSolveAgent {
             problem
         );
 
-        let response = self.llm_call(&prompt).await?;
+        let response = self.llm_call(&prompt, options).await?;
         let number_pattern = Regex::new(r"^\d+[\.\)]\s*").unwrap();
 
         let steps: Vec<PlanStep> = response
@@ -134,7 +134,7 @@ impl PlanAndSolveAgent {
         })
     }
 
-    async fn validate(&self, plan: &mut Plan) -> Result<(), AgentError> {
+    async fn validate(&self, plan: &mut Plan, options: &CallOptions) -> Result<(), AgentError> {
         let plan_formatted = self.format_plan(plan);
         let prompt = format!(
             "Review this solution plan for completeness and feasibility.\n\
@@ -145,7 +145,7 @@ impl PlanAndSolveAgent {
             plan.problem, plan_formatted
         );
 
-        let response = self.llm_call(&prompt).await?;
+        let response = self.llm_call(&prompt, options).await?;
         let response_upper = response.to_uppercase();
         // Check for INVALID first to avoid matching "VALID" inside "INVALID"
         let is_valid = !response_upper.contains("INVALID")
@@ -173,6 +173,7 @@ impl PlanAndSolveAgent {
         &self,
         step: &PlanStep,
         previous_results: &[String],
+        options: &CallOptions,
     ) -> Result<String, AgentError> {
         if let Some(solver) = &self.solver {
             return solver(step, previous_results);
@@ -202,15 +203,19 @@ impl PlanAndSolveAgent {
             )
         };
 
-        let result = self.llm_call(&prompt).await?;
+        let result = self.llm_call(&prompt, options).await?;
         Ok(result.trim().to_string())
     }
 
-    async fn execute_plan(&self, plan: &mut Plan) -> Result<Vec<String>, AgentError> {
+    async fn execute_plan(
+        &self,
+        plan: &mut Plan,
+        options: &CallOptions,
+    ) -> Result<Vec<String>, AgentError> {
         let mut results = Vec::new();
 
         for step in &mut plan.steps {
-            let result = self.execute_step(step, &results).await?;
+            let result = self.execute_step(step, &results, options).await?;
             step.result = Some(result.clone());
             step.executed = true;
             results.push(result);
@@ -237,15 +242,30 @@ impl Agent for PlanAndSolveAgent {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        self.process_with(message, &CallOptions::new()).await
+    }
+
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        Some(self)
+    }
+}
+
+#[async_trait]
+impl OptionsAgent for PlanAndSolveAgent {
+    async fn process_with(
+        &self,
+        message: Message,
+        options: &CallOptions,
+    ) -> Result<Message, AgentError> {
         let problem = match &message.content {
             serde_json::Value::String(s) => s.clone(),
             other => other.to_string(),
         };
 
-        let mut plan = self.create_plan(&problem).await?;
+        let mut plan = self.create_plan(&problem, options).await?;
 
         if self.validate_plan {
-            self.validate(&mut plan).await?;
+            self.validate(&mut plan, options).await?;
 
             if !plan.validated && self.allow_replanning {
                 let improved_prompt = format!(
@@ -257,13 +277,13 @@ impl Agent for PlanAndSolveAgent {
                     plan.validation_notes.as_deref().unwrap_or("")
                 );
 
-                let _ = self.llm_call(&improved_prompt).await;
-                plan = self.create_plan(&problem).await?;
-                self.validate(&mut plan).await?;
+                let _ = self.llm_call(&improved_prompt, options).await;
+                plan = self.create_plan(&problem, options).await?;
+                self.validate(&mut plan, options).await?;
             }
         }
 
-        let execution_results = self.execute_plan(&mut plan).await?;
+        let execution_results = self.execute_plan(&mut plan, options).await?;
         let final_solution = execution_results
             .last()
             .cloned()
@@ -395,7 +415,10 @@ mod tests {
         };
 
         let agent = PlanAndSolveAgent::new(mock_agent, config);
-        let plan = agent.create_plan("Test problem").await.unwrap();
+        let plan = agent
+            .create_plan("Test problem", &CallOptions::new())
+            .await
+            .unwrap();
 
         assert_eq!(plan.steps.len(), 3);
         assert_eq!(plan.problem, "Test problem");
@@ -414,7 +437,10 @@ mod tests {
         };
 
         let agent = PlanAndSolveAgent::new(mock_agent, config);
-        let plan = agent.create_plan("Problem").await.unwrap();
+        let plan = agent
+            .create_plan("Problem", &CallOptions::new())
+            .await
+            .unwrap();
 
         assert_eq!(plan.steps.len(), 2);
         assert_eq!(plan.steps[0].description, "First step");
@@ -706,7 +732,10 @@ mod tests {
         };
 
         let agent = PlanAndSolveAgent::new(mock_agent, config);
-        let plan = agent.create_plan("Problem").await.unwrap();
+        let plan = agent
+            .create_plan("Problem", &CallOptions::new())
+            .await
+            .unwrap();
 
         assert_eq!(plan.steps.len(), 0);
     }
@@ -744,7 +773,10 @@ mod tests {
         };
 
         let agent = PlanAndSolveAgent::new(mock_agent, config);
-        let plan = agent.create_plan("Problem").await.unwrap();
+        let plan = agent
+            .create_plan("Problem", &CallOptions::new())
+            .await
+            .unwrap();
 
         assert_eq!(plan.steps.len(), 3);
         assert_eq!(plan.steps[0].description, "Step one");
@@ -762,7 +794,10 @@ mod tests {
         };
 
         let agent = PlanAndSolveAgent::new(mock_agent, config);
-        let plan = agent.create_plan("Problem").await.unwrap();
+        let plan = agent
+            .create_plan("Problem", &CallOptions::new())
+            .await
+            .unwrap();
 
         assert_eq!(plan.steps.len(), 2);
         assert_eq!(plan.steps[0].description, "Step one");
@@ -781,7 +816,10 @@ mod tests {
         };
 
         let agent = PlanAndSolveAgent::new(mock_agent, config);
-        let plan = agent.create_plan("Problem").await.unwrap();
+        let plan = agent
+            .create_plan("Problem", &CallOptions::new())
+            .await
+            .unwrap();
 
         assert_eq!(plan.steps.len(), 2);
     }

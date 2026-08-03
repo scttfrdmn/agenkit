@@ -6,7 +6,7 @@
 // Reference: "Tree of Thoughts: Deliberate Problem Solving with Large Language Models"
 // Yao et al., 2023 - https://arxiv.org/abs/2305.10601
 
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{process_with_options, Agent, AgentError, CallOptions, Message, OptionsAgent};
 use crate::techniques::reasoning::reasoning_tree::{NodeState, ReasoningTree};
 use async_trait::async_trait;
 use regex::Regex;
@@ -165,7 +165,12 @@ impl TreeOfThoughtAgent {
     }
 
     /// Generate N varied reasoning branches for a prompt.
-    async fn generate_branches(&self, prompt: &str, n: usize) -> Result<Vec<String>, AgentError> {
+    async fn generate_branches(
+        &self,
+        prompt: &str,
+        n: usize,
+        options: &CallOptions,
+    ) -> Result<Vec<String>, AgentError> {
         let mut branches = Vec::new();
 
         #[cfg(feature = "native")]
@@ -176,10 +181,14 @@ impl TreeOfThoughtAgent {
             for i in 0..n {
                 let agent = Arc::clone(&self.agent);
                 let varied_prompt = format!("{}\n\nAlternative approach #{}:", prompt, i + 1);
+                // Cloned per branch rather than shared by reference: the spawned task
+                // must own everything it touches, and the branches run concurrently
+                // against the same agent, so nothing here may be per-instance state.
+                let options = options.clone();
 
                 let handle = tokio::spawn(async move {
                     let msg = Message::with_text("user", varied_prompt);
-                    let response = agent.process(msg).await?;
+                    let response = process_with_options(agent.as_ref(), msg, &options).await?;
                     Ok::<String, AgentError>(response.content_as_str().unwrap_or("").to_string())
                 });
 
@@ -207,7 +216,7 @@ impl TreeOfThoughtAgent {
             for i in 0..n {
                 let varied_prompt = format!("{}\n\nAlternative approach #{}:", prompt, i + 1);
                 let msg = Message::with_text("user", varied_prompt);
-                let response = self.agent.process(msg).await?;
+                let response = process_with_options(self.agent.as_ref(), msg, options).await?;
                 branches.push(response.content_as_str().unwrap_or("").to_string());
             }
         }
@@ -220,6 +229,7 @@ impl TreeOfThoughtAgent {
         &self,
         tree: &mut ReasoningTree,
         node_id: usize,
+        options: &CallOptions,
     ) -> Result<Vec<usize>, AgentError> {
         let node = tree
             .get_node(node_id)
@@ -238,7 +248,7 @@ impl TreeOfThoughtAgent {
         // Generate branches
         let prompt = tree.get_path_text(node_id, "\n");
         let branches = self
-            .generate_branches(&prompt, self.branching_factor)
+            .generate_branches(&prompt, self.branching_factor, options)
             .await?;
 
         let mut child_ids = Vec::new();
@@ -272,7 +282,12 @@ impl TreeOfThoughtAgent {
     }
 
     /// Perform breadth-first search on the tree.
-    async fn search_bfs(&self, tree: &mut ReasoningTree, root_id: usize) -> Result<(), AgentError> {
+    async fn search_bfs(
+        &self,
+        tree: &mut ReasoningTree,
+        root_id: usize,
+        options: &CallOptions,
+    ) -> Result<(), AgentError> {
         let mut queue = VecDeque::new();
         queue.push_back(root_id);
 
@@ -290,7 +305,7 @@ impl TreeOfThoughtAgent {
             }
 
             // Expand node
-            let children = self.expand_node(tree, node_id).await?;
+            let children = self.expand_node(tree, node_id, options).await?;
 
             // Add children to queue
             for child_id in children {
@@ -302,7 +317,12 @@ impl TreeOfThoughtAgent {
     }
 
     /// Perform depth-first search on the tree.
-    async fn search_dfs(&self, tree: &mut ReasoningTree, root_id: usize) -> Result<(), AgentError> {
+    async fn search_dfs(
+        &self,
+        tree: &mut ReasoningTree,
+        root_id: usize,
+        options: &CallOptions,
+    ) -> Result<(), AgentError> {
         let mut stack = vec![root_id];
 
         while let Some(node_id) = stack.pop() {
@@ -319,7 +339,7 @@ impl TreeOfThoughtAgent {
             }
 
             // Expand node
-            let children = self.expand_node(tree, node_id).await?;
+            let children = self.expand_node(tree, node_id, options).await?;
 
             // Add children to stack (reverse order for left-to-right DFS)
             for child_id in children.into_iter().rev() {
@@ -335,6 +355,7 @@ impl TreeOfThoughtAgent {
         &self,
         tree: &mut ReasoningTree,
         root_id: usize,
+        options: &CallOptions,
     ) -> Result<(), AgentError> {
         let mut pq = BinaryHeap::new();
         pq.push(ScoredNode {
@@ -356,7 +377,7 @@ impl TreeOfThoughtAgent {
             }
 
             // Expand node
-            let children = self.expand_node(tree, scored.node_id).await?;
+            let children = self.expand_node(tree, scored.node_id, options).await?;
 
             // Add children to priority queue
             for child_id in children {
@@ -400,6 +421,21 @@ impl Agent for TreeOfThoughtAgent {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        self.process_with(message, &CallOptions::new()).await
+    }
+
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        Some(self)
+    }
+}
+
+#[async_trait]
+impl OptionsAgent for TreeOfThoughtAgent {
+    async fn process_with(
+        &self,
+        message: Message,
+        options: &CallOptions,
+    ) -> Result<Message, AgentError> {
         let query = message.content_as_str().unwrap_or("").to_string();
 
         // Create reasoning tree
@@ -408,9 +444,11 @@ impl Agent for TreeOfThoughtAgent {
 
         // Perform search based on strategy
         match self.strategy {
-            SearchStrategy::BFS => self.search_bfs(&mut tree, root_id).await?,
-            SearchStrategy::DFS => self.search_dfs(&mut tree, root_id).await?,
-            SearchStrategy::BestFirst => self.search_best_first(&mut tree, root_id).await?,
+            SearchStrategy::BFS => self.search_bfs(&mut tree, root_id, options).await?,
+            SearchStrategy::DFS => self.search_dfs(&mut tree, root_id, options).await?,
+            SearchStrategy::BestFirst => {
+                self.search_best_first(&mut tree, root_id, options).await?
+            }
         }
 
         // Get best leaf node

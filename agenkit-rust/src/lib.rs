@@ -114,8 +114,8 @@ pub mod observability;
 
 // Re-export commonly used types
 pub use core::{
-    create_default_introspection_result, Agent, AgentError, IntrospectionResult, Message, Tool,
-    ToolResult,
+    create_default_introspection_result, process_with_options, supports_options, Agent, AgentError,
+    CallOptions, IntrospectionResult, Message, OptionsAgent, Tool, ToolResult,
 };
 
 #[cfg(feature = "native")]

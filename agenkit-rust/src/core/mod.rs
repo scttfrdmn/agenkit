@@ -24,11 +24,13 @@
 //! }
 //! ```
 mod agent;
+mod call_options;
 mod introspection;
 #[cfg(test)]
 mod introspection_test;
 mod message;
 
 pub use agent::{Agent, AgentError, Debuggable, Tool};
+pub use call_options::{process_with_options, supports_options, CallOptions, OptionsAgent};
 pub use introspection::{create_default_introspection_result, IntrospectionResult};
 pub use message::{Message, MessageError, ToolResult};

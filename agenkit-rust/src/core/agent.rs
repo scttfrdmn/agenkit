@@ -2,6 +2,7 @@
 //!
 //! This module defines the core Agent trait that all agents must implement,
 //! following the same design as TypeScript and Go implementations.
+use super::call_options::OptionsAgent;
 use super::introspection::IntrospectionResult;
 use super::message::{Message, ToolResult};
 use async_trait::async_trait;
@@ -70,6 +71,7 @@ impl Clone for AgentError {
 /// Design decisions:
 /// - Only 2 required methods (name, process)
 /// - Optional streaming support via process_stream
+/// - Optional per-call inference options via as_options_agent
 /// - No state in trait (agents manage their own state)
 /// - Async process (agents typically do I/O)
 ///
@@ -210,6 +212,28 @@ pub trait Agent: Send + Sync {
                 "streaming not supported by this agent".to_string(),
             ))
         }))
+    }
+
+    /// Expose this agent's per-call options capability, if it has one (optional).
+    ///
+    /// Rust cannot ask a `dyn Agent` whether its concrete type also implements
+    /// [`OptionsAgent`] — there is no equivalent of Go's type assertion or
+    /// TypeScript's `typeof agent.processWith === 'function'`. This method is the
+    /// upcast that makes the capability discoverable behind a trait object.
+    ///
+    /// An agent that implements [`OptionsAgent`] overrides this with exactly
+    /// `Some(self)`; that body does not compile unless the type really does
+    /// implement it, so the capability cannot be advertised falsely. Callers should
+    /// go through [`super::process_with_options`], which falls back to
+    /// [`Agent::process`] when this returns `None`, and
+    /// [`super::supports_options`] when they need to know whether the options can
+    /// actually take effect (#801).
+    ///
+    /// # Default Implementation
+    /// Returns `None` — the agent does not honour per-call options, so a caller
+    /// handing it some must expect them to be dropped.
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        None
     }
 }
 

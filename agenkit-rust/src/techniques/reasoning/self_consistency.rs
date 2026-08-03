@@ -6,7 +6,9 @@
 // Reference: "Self-Consistency Improves Chain of Thought Reasoning in Language Models"
 // Wang et al., 2022 - https://arxiv.org/abs/2203.11171
 
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{
+    process_with_options, supports_options, Agent, AgentError, CallOptions, Message, OptionsAgent,
+};
 use async_trait::async_trait;
 use regex::Regex;
 use serde_json::json;
@@ -35,7 +37,13 @@ pub struct SelfConsistencyConfig {
     /// Voting strategy for answer aggregation (default: Majority)
     pub voting_strategy: VotingStrategy,
 
-    /// Sampling temperature for diversity (optional, not used yet)
+    /// Sampling temperature for diversity, 0.0-2.0 (optional).
+    ///
+    /// Forwarded to the wrapped agent when it implements
+    /// [`OptionsAgent`](crate::core::OptionsAgent). If it does not, the samples are
+    /// generated at whatever temperature the agent was configured with, so the
+    /// diversity this technique depends on may not materialize —
+    /// [`SelfConsistencyAgent::temperature_applied`] reports which happened.
     pub temperature: Option<f64>,
 
     /// Custom answer extraction function (optional)
@@ -94,16 +102,31 @@ pub struct SelfConsistencyAgent {
     agent: Arc<dyn Agent>,
     num_samples: usize,
     voting_strategy: VotingStrategy,
-    /// Never read. Python and Go carry the same TODO. #790 owns the cross-language
-    /// decision; until then the value the caller passes has no effect.
-    #[allow(dead_code)]
     temperature: Option<f64>,
     answer_extractor: AnswerExtractor,
 }
 
 impl SelfConsistencyAgent {
     /// Create a new Self-Consistency agent.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `config.temperature` is outside 0.0-2.0 (or is NaN). Rejecting it
+    /// here rather than at call time matches the adapter constructors, and a
+    /// temperature the provider will reject is a configuration error, not a runtime
+    /// one.
     pub fn new(agent: Arc<dyn Agent>, config: SelfConsistencyConfig) -> Self {
+        // Validated through the shared CallOptions type so the bounds cannot drift
+        // apart from the ones the options themselves enforce.
+        if let Err(e) = (CallOptions {
+            temperature: config.temperature,
+            ..Default::default()
+        })
+        .validate()
+        {
+            panic!("invalid SelfConsistencyConfig: {}", e);
+        }
+
         let answer_extractor = config
             .answer_extractor
             .unwrap_or_else(|| Arc::new(default_answer_extractor));
@@ -117,10 +140,49 @@ impl SelfConsistencyAgent {
         }
     }
 
+    /// Report whether the configured temperature actually reaches the LLM.
+    ///
+    /// False when a temperature is set but the wrapped agent does not implement
+    /// [`OptionsAgent`](crate::core::OptionsAgent) — the samples are then generated at
+    /// whatever temperature the agent was configured with, and this technique's
+    /// diversity guarantee does not hold.
+    ///
+    /// Exposed rather than left implicit because a silently ignored temperature is
+    /// precisely the failure this fixes: the value was accepted and dropped for as
+    /// long as the field existed, and a public config field is an explicit invitation
+    /// to set it (#801).
+    ///
+    /// Returns true when no temperature is set — there is nothing to apply, so
+    /// nothing was dropped.
+    pub fn temperature_applied(&self) -> bool {
+        if self.temperature.is_none() {
+            return true;
+        }
+        supports_options(self.agent.as_ref())
+    }
+
+    /// Merge the caller's options with the configured temperature.
+    ///
+    /// The configured temperature is applied last and therefore wins over a
+    /// temperature in the caller's options. That is deliberate: this technique's
+    /// correctness depends on sampling diversity, so a caller reaching through it
+    /// must not silently flatten the samples. Every other option passes through
+    /// untouched.
+    fn call_options(&self, caller: &CallOptions) -> CallOptions {
+        match self.temperature {
+            None => caller.clone(),
+            Some(temperature) => caller.merge(&CallOptions {
+                temperature: Some(temperature),
+                ..Default::default()
+            }),
+        }
+    }
+
     /// Generate multiple samples in parallel (native) or sequentially (WASM).
     async fn generate_samples(
         &self,
         message: &Message,
+        options: &CallOptions,
     ) -> Result<(Vec<String>, Vec<String>), AgentError> {
         let mut full_responses = Vec::new();
         let mut extracted_answers = Vec::new();
@@ -134,9 +196,12 @@ impl SelfConsistencyAgent {
                 let agent = Arc::clone(&self.agent);
                 let msg = message.clone();
                 let extractor = Arc::clone(&self.answer_extractor);
+                // Cloned per sample rather than shared by reference: the spawned task
+                // must own everything it touches.
+                let options = options.clone();
 
                 let handle = tokio::spawn(async move {
-                    let response = agent.process(msg).await?;
+                    let response = process_with_options(agent.as_ref(), msg, &options).await?;
                     let full_response = response.content_as_str().unwrap_or("").to_string();
                     let extracted_answer = extractor(&full_response);
                     Ok::<(String, String), AgentError>((full_response, extracted_answer))
@@ -162,7 +227,8 @@ impl SelfConsistencyAgent {
         {
             // Generate samples sequentially in WASM (spawn_local is fire-and-forget)
             for _ in 0..self.num_samples {
-                let response = self.agent.process(message.clone()).await?;
+                let response =
+                    process_with_options(self.agent.as_ref(), message.clone(), options).await?;
                 let full_response = response.content_as_str().unwrap_or("").to_string();
                 let extracted_answer = (self.answer_extractor)(&full_response);
 
@@ -282,8 +348,34 @@ impl Agent for SelfConsistencyAgent {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        self.process_with(message, &CallOptions::new()).await
+    }
+
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        Some(self)
+    }
+}
+
+#[async_trait]
+impl OptionsAgent for SelfConsistencyAgent {
+    /// Process the message with Self-Consistency and per-call options.
+    ///
+    /// Implemented so this technique can itself be wrapped by another that varies
+    /// options — the capability has to run in both directions or the chain breaks at
+    /// the first link that only consumes options (#801).
+    ///
+    /// The caller's options are merged with the configured temperature, which wins on
+    /// conflict; see [`SelfConsistencyAgent::call_options`].
+    async fn process_with(
+        &self,
+        message: Message,
+        options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        let sample_options = self.call_options(options);
+
         // Generate multiple samples
-        let (full_responses, extracted_answers) = self.generate_samples(&message).await?;
+        let (full_responses, extracted_answers) =
+            self.generate_samples(&message, &sample_options).await?;
 
         // Vote for consensus answer
         let (consensus_answer, consistency_score) = match self.voting_strategy {
@@ -322,6 +414,18 @@ impl Agent for SelfConsistencyAgent {
         response
             .metadata
             .insert("base_agent".to_string(), json!(self.agent.name()));
+
+        // Report the temperature and whether it reached the LLM, matching the Python
+        // core. temperature is null when unset — a caller must be able to tell "not
+        // requested" from "requested and dropped", which temperature_applied alone
+        // cannot express.
+        response
+            .metadata
+            .insert("temperature".to_string(), json!(self.temperature));
+        response.metadata.insert(
+            "temperature_applied".to_string(),
+            json!(self.temperature_applied()),
+        );
 
         Ok(response)
     }

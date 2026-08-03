@@ -64,8 +64,9 @@ value the **LLM** received rather than anything the wrapper recorded on the way
 past — a test that only checks the wrapper's own state would pass even if the
 plumbing stopped one layer short, which was the bug.
 
-This lands in Python first as the reference. The other eight cores still accept an
-inert `temperature` (or lack the field entirely, in C#/Java/Scala); tracked on #801.
+This lands in Python first as the reference, followed by Go, TypeScript and Rust
+below. The remaining five cores still accept an inert `temperature` (or lack the
+field entirely, in C#/Java/Scala); tracked on #801.
 
 #### Go (`agenkit-go`)
 
@@ -179,6 +180,81 @@ method that takes an `options` parameter and never passes it on, which is how th
 Graph-of-Thought call sites shipped their forward silently dropped in the first
 pass; and the field-by-field merge needed a case where the override key is present
 with value `undefined`, since an omitted key leaves a naive spread nothing to erase.
+
+#### Rust (`agenkit-rust`)
+
+Rust's `SelfConsistencyConfig::temperature` was the most explicit of the eight: the
+struct field carried `#[allow(dead_code)]` and a comment stating it is never read.
+The lint suppression was load-bearing — without it the compiler had been reporting
+the bug all along.
+
+- **New `CallOptions`** (`src/core/call_options.rs`) — `temperature`, `max_tokens`,
+  `top_p`, `seed`, `stop`, plus `extra` for provider-specific keys. `None` means
+  "unset", never a default, so `Some(0.0)` (greedy decoding) survives as a real
+  request while an unset temperature is omitted rather than sent as `0`. Builders
+  (`with_temperature`, …) panic on out-of-range values, matching the adapter
+  constructors' existing precedent; because the fields are public and the struct
+  derives `Default`, the struct-literal path bypasses the builders, so `validate()`
+  is the guard there.
+- **New optional `Agent::process_with(message, options)`** on a new
+  `OptionsAgent: Agent` extension trait, plus `Agent::as_options_agent()` — a
+  default method returning `None`. Rust cannot downcast a `dyn Agent` to another
+  trait, so a structural check like Go's type assertion or TypeScript's
+  `typeof agent.processWith` has no equivalent; the capability has to be declared.
+  An implementor overrides it with exactly `Some(self)`, and **that body does not
+  compile unless the type really implements `OptionsAgent`** — so the capability
+  cannot be advertised falsely, which a hand-written boolean flag could not
+  guarantee.
+- Also new: `supports_options(agent)` and `process_with_options(agent, message,
+  options)`, so the capability check lives in one place rather than at each wrapper
+  call site. `process_with_options` with an empty option set takes the plain
+  `process` path, so an `OptionsAgent` is never handed an empty `CallOptions` just
+  because the helper was used.
+- `CallOptions::merge` merges field by field. `None` in the override means "did not
+  ask", not "clear it" — replacing the struct wholesale would let a caller
+  forwarding an optional variable erase the agent's own configuration.
+- All six reasoning techniques implement `OptionsAgent` and thread `CallOptions`
+  through **every** internal LLM call path, including the three an obvious test
+  never reaches: Plan-and-Solve's replanning branch (3 further calls, entered only
+  when validation rejects a plan), Tree-of-Thought's recursive expansion under all
+  three search strategies, and Graph-of-Thought's node-cap-gated conclusion. Their
+  public step methods (`create_plan`, `validate`, `execute_plan`, `execute_step`,
+  `decompose`, `solve_subproblem`, `generate_premises`, `generate_thoughts`,
+  `identify_connection`, `build_graph`, `generate_branches`) take a trailing
+  `&CallOptions`.
+- Options are passed as an argument, never stored on the agent: `SelfConsistency`
+  samples and `TreeOfThought` branches both run under `tokio::spawn`, which requires
+  owned data, so each task clones the options rather than sharing them.
+- `SelfConsistencyAgent` now forwards its `temperature` per sample and validates it
+  at construction — through the shared `CallOptions::validate()`, so the bounds
+  cannot drift apart from the ones the options themselves enforce. Its own
+  temperature wins over a caller's, since sampling diversity is what makes the
+  technique correct; every other option passes through untouched.
+- **New `SelfConsistencyAgent::temperature_applied()`** plus `temperature` and
+  `temperature_applied` response metadata, matching Python, Go and TypeScript.
+  `temperature` is reported even when it was dropped: an optional capability
+  reintroduces the risk of a silently discarded value, and `temperature_applied`
+  alone cannot distinguish "asked for 0.8 and did not get it" from "never asked".
+
+49 new tests (`src/core/call_options.rs`, 27;
+`tests/test_reasoning_call_options.rs`, 22) — 1324 passing in total. They assert on
+which path each call *arrived by*, not on the returned message: a phase that drops
+its options still produces a response, so the entry path is the only thing
+distinguishing it from a working one. Each gated phase additionally asserts that it
+actually ran, without which "every call forwarded" is trivially true for a phase
+that never executes.
+
+Verified by mutation: 40 mutations, each producing at least one test failure, with
+one mutation per forwarding site — one per search strategy, one per replanning
+call — so each is killed only by its own test rather than en masse. The
+Tree-of-Thought test needed the branch text rewritten to survive the default
+evaluator's 0.3 prune threshold: length alone scores 138/500 = 0.276, so the text
+also needs the `+0.2` structure bonus, which requires two numbered markers each at
+the *start of a line*. Without that, every depth-1 branch was pruned and the
+recursive expansion — where a dropped forward would actually hide — went untested.
+The `#[cfg(feature = "wasm")]` sample loops are unreachable from a native test run,
+so a mutation there survives by construction; both were verified separately by
+temporarily swapping the `cfg` gates.
 
 ### Fixed — Python reasoning techniques called `LLM.complete()` with the wrong type (Issue #802)
 

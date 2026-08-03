@@ -6,7 +6,7 @@
 // Reference: "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
 // Wei et al., 2022 - https://arxiv.org/abs/2201.11903
 
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{process_with_options, Agent, AgentError, CallOptions, Message, OptionsAgent};
 use async_trait::async_trait;
 use regex::Regex;
 use serde_json::json;
@@ -164,6 +164,21 @@ impl Agent for ChainOfThoughtAgent {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        self.process_with(message, &CallOptions::new()).await
+    }
+
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        Some(self)
+    }
+}
+
+#[async_trait]
+impl OptionsAgent for ChainOfThoughtAgent {
+    async fn process_with(
+        &self,
+        message: Message,
+        options: &CallOptions,
+    ) -> Result<Message, AgentError> {
         // Validate prompt template
         if !self.prompt_template.contains("{query}") {
             return Err(AgentError::InvalidInput(
@@ -177,9 +192,11 @@ impl Agent for ChainOfThoughtAgent {
 
         // Get response from agent
         let prompt_message = Message::with_text("user", cot_prompt);
-        let response = self.agent.process(prompt_message).await.map_err(|e| {
-            AgentError::Internal(format!("Chain of thought processing failed: {}", e))
-        })?;
+        let response = process_with_options(self.agent.as_ref(), prompt_message, options)
+            .await
+            .map_err(|e| {
+                AgentError::Internal(format!("Chain of thought processing failed: {}", e))
+            })?;
 
         // Parse steps if requested
         let mut result = Message::with_text(

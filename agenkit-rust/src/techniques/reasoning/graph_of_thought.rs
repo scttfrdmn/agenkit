@@ -13,7 +13,7 @@
 // - Paper: https://arxiv.org/abs/2308.09687
 // - "Graph of Thoughts: Solving Elaborate Problems with Large Language Models"
 
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{process_with_options, Agent, AgentError, CallOptions, Message, OptionsAgent};
 use crate::techniques::reasoning::reasoning_graph::{EdgeType, NodeType, ReasoningGraph};
 use async_trait::async_trait;
 use serde_json::json;
@@ -114,9 +114,9 @@ impl GraphOfThoughtAgent {
     }
 
     /// Call LLM with prompt.
-    async fn llm_call(&self, prompt: &str) -> Result<String, AgentError> {
+    async fn llm_call(&self, prompt: &str, options: &CallOptions) -> Result<String, AgentError> {
         let message = Message::new("user", serde_json::Value::String(prompt.to_string()));
-        let response = self.agent.process(message).await?;
+        let response = process_with_options(self.agent.as_ref(), message, options).await?;
 
         // Extract string from content
         match response.content {
@@ -126,7 +126,11 @@ impl GraphOfThoughtAgent {
     }
 
     /// Generate initial premises/facts for the problem.
-    async fn generate_premises(&self, problem: &str) -> Result<Vec<String>, AgentError> {
+    async fn generate_premises(
+        &self,
+        problem: &str,
+        options: &CallOptions,
+    ) -> Result<Vec<String>, AgentError> {
         let prompt = format!(
             "Identify the key facts and premises for this problem.\n\
              List 2-4 foundational facts or assumptions, one per line.\n\n\
@@ -135,7 +139,7 @@ impl GraphOfThoughtAgent {
             problem
         );
 
-        let response = self.llm_call(&prompt).await?;
+        let response = self.llm_call(&prompt, options).await?;
 
         // Parse premises
         let premises: Vec<String> = response
@@ -171,6 +175,7 @@ impl GraphOfThoughtAgent {
         problem: &str,
         existing_thoughts: &[String],
         max_new: usize,
+        options: &CallOptions,
     ) -> Result<Vec<String>, AgentError> {
         let prompt = if !existing_thoughts.is_empty() {
             let context = existing_thoughts
@@ -195,7 +200,7 @@ impl GraphOfThoughtAgent {
             )
         };
 
-        let response = self.llm_call(&prompt).await?;
+        let response = self.llm_call(&prompt, options).await?;
 
         // Parse new thoughts
         let thoughts: Vec<String> = response
@@ -229,6 +234,7 @@ impl GraphOfThoughtAgent {
         &self,
         thought1: &str,
         thought2: &str,
+        options: &CallOptions,
     ) -> Result<Option<EdgeType>, AgentError> {
         let prompt = format!(
             "Analyze the logical relationship between these two statements.\n\n\
@@ -244,7 +250,7 @@ impl GraphOfThoughtAgent {
             thought1, thought2
         );
 
-        let response = self.llm_call(&prompt).await?;
+        let response = self.llm_call(&prompt, options).await?;
         let response_upper = response.trim().to_uppercase();
 
         if response_upper.contains("SUPPORT") {
@@ -261,11 +267,15 @@ impl GraphOfThoughtAgent {
     }
 
     /// Build reasoning graph for the problem.
-    async fn build_graph(&self, problem: &str) -> Result<ReasoningGraph, AgentError> {
+    async fn build_graph(
+        &self,
+        problem: &str,
+        options: &CallOptions,
+    ) -> Result<ReasoningGraph, AgentError> {
         let mut graph = ReasoningGraph::new();
 
         // Step 1: Generate premises
-        let premises = self.generate_premises(problem).await?;
+        let premises = self.generate_premises(problem, options).await?;
         let mut premise_ids = Vec::new();
         for premise in &premises {
             let node_id = graph.add_node(premise.clone(), NodeType::Premise, 0.9);
@@ -283,7 +293,7 @@ impl GraphOfThoughtAgent {
             }
 
             let new_thoughts = self
-                .generate_thoughts(problem, &all_thoughts, max_new)
+                .generate_thoughts(problem, &all_thoughts, max_new, options)
                 .await?;
 
             if new_thoughts.is_empty() {
@@ -321,7 +331,10 @@ impl GraphOfThoughtAgent {
                 let thought2 = &graph.get_node(node2_id).unwrap().content;
 
                 // Check connection from node1 to node2
-                if let Some(edge_type) = self.identify_connection(thought1, thought2).await? {
+                if let Some(edge_type) = self
+                    .identify_connection(thought1, thought2, options)
+                    .await?
+                {
                     graph
                         .add_edge(node1_id, node2_id, edge_type, 0.8)
                         .map_err(AgentError::ProcessingError)?;
@@ -346,7 +359,7 @@ impl GraphOfThoughtAgent {
                 problem, thoughts_list
             );
 
-            let conclusion = self.llm_call(&conclusion_prompt).await?;
+            let conclusion = self.llm_call(&conclusion_prompt, options).await?;
             let conclusion_id =
                 graph.add_node(conclusion.trim().to_string(), NodeType::Conclusion, 0.8);
 
@@ -457,6 +470,21 @@ impl Agent for GraphOfThoughtAgent {
     }
 
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
+        self.process_with(message, &CallOptions::new()).await
+    }
+
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        Some(self)
+    }
+}
+
+#[async_trait]
+impl OptionsAgent for GraphOfThoughtAgent {
+    async fn process_with(
+        &self,
+        message: Message,
+        options: &CallOptions,
+    ) -> Result<Message, AgentError> {
         // Extract problem string from content
         let problem = match &message.content {
             serde_json::Value::String(s) => s.clone(),
@@ -464,7 +492,7 @@ impl Agent for GraphOfThoughtAgent {
         };
 
         // Step 1: Build reasoning graph
-        let graph = self.build_graph(&problem).await?;
+        let graph = self.build_graph(&problem, options).await?;
 
         // Step 2: Check for cycles (if not allowed)
         if !self.allow_cycles && graph.has_cycle() {
@@ -588,7 +616,10 @@ mod tests {
         ]));
         let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
 
-        let premises = agent.generate_premises("Test problem").await.unwrap();
+        let premises = agent
+            .generate_premises("Test problem", &CallOptions::new())
+            .await
+            .unwrap();
         assert_eq!(premises.len(), 2);
         assert_eq!(premises[0], "Premise A");
         assert_eq!(premises[1], "Premise B");
@@ -602,7 +633,10 @@ mod tests {
         let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
 
         let existing = vec!["Premise A".to_string()];
-        let thoughts = agent.generate_thoughts("Test", &existing, 3).await.unwrap();
+        let thoughts = agent
+            .generate_thoughts("Test", &existing, 3, &CallOptions::new())
+            .await
+            .unwrap();
         assert_eq!(thoughts.len(), 2);
         assert_eq!(thoughts[0], "Thought 1");
     }
@@ -613,7 +647,7 @@ mod tests {
         let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
 
         let edge = agent
-            .identify_connection("Thought 1", "Thought 2")
+            .identify_connection("Thought 1", "Thought 2", &CallOptions::new())
             .await
             .unwrap();
         assert_eq!(edge, Some(EdgeType::Supports));
@@ -824,7 +858,10 @@ mod tests {
         let mock = Arc::new(MockAgent::new(vec!["SUPPORT".to_string()]));
         let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
 
-        let edge = agent.identify_connection("A", "B").await.unwrap();
+        let edge = agent
+            .identify_connection("A", "B", &CallOptions::new())
+            .await
+            .unwrap();
         assert_eq!(edge, Some(EdgeType::Supports));
     }
 
@@ -833,7 +870,10 @@ mod tests {
         let mock = Arc::new(MockAgent::new(vec!["DEPEND".to_string()]));
         let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
 
-        let edge = agent.identify_connection("A", "B").await.unwrap();
+        let edge = agent
+            .identify_connection("A", "B", &CallOptions::new())
+            .await
+            .unwrap();
         assert_eq!(edge, Some(EdgeType::DependsOn));
     }
 
@@ -842,7 +882,10 @@ mod tests {
         let mock = Arc::new(MockAgent::new(vec!["CONTRADICT".to_string()]));
         let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
 
-        let edge = agent.identify_connection("A", "B").await.unwrap();
+        let edge = agent
+            .identify_connection("A", "B", &CallOptions::new())
+            .await
+            .unwrap();
         assert_eq!(edge, Some(EdgeType::Contradicts));
     }
 
@@ -851,7 +894,10 @@ mod tests {
         let mock = Arc::new(MockAgent::new(vec!["REFINE".to_string()]));
         let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
 
-        let edge = agent.identify_connection("A", "B").await.unwrap();
+        let edge = agent
+            .identify_connection("A", "B", &CallOptions::new())
+            .await
+            .unwrap();
         assert_eq!(edge, Some(EdgeType::Refines));
     }
 
@@ -860,7 +906,10 @@ mod tests {
         let mock = Arc::new(MockAgent::new(vec!["UNKNOWN".to_string()]));
         let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
 
-        let edge = agent.identify_connection("A", "B").await.unwrap();
+        let edge = agent
+            .identify_connection("A", "B", &CallOptions::new())
+            .await
+            .unwrap();
         assert_eq!(edge, None);
     }
 
@@ -872,7 +921,10 @@ mod tests {
         let agent = GraphOfThoughtAgent::new(mock, GraphOfThoughtConfig::default());
 
         let existing = vec!["Premise".to_string()];
-        let thoughts = agent.generate_thoughts("Test", &existing, 2).await.unwrap();
+        let thoughts = agent
+            .generate_thoughts("Test", &existing, 2, &CallOptions::new())
+            .await
+            .unwrap();
 
         // Should respect max_new limit
         assert!(thoughts.len() <= 2);

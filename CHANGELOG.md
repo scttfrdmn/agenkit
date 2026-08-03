@@ -129,6 +129,57 @@ one per replanning call), plus `SupportsOptions` forced true, an unset temperatu
 forwarded as `0.0`, and the Graph-of-Thought conclusion phase made unreachable —
 each produce at least one test failure.
 
+#### TypeScript (`agenkit-ts`)
+
+TypeScript had no `CallOptions` type at all, and `SelfConsistencyAgent` carried the
+same `// TODO: If temperature supported, pass it to agent` as Python and Go,
+immediately above the `this.agent.process(message)` that ignored the configured
+`temperature`.
+
+- **New `CallOptions`** (`src/core/call-options.ts`) — `temperature`, `maxTokens`,
+  `topP`, `seed`, `stop`, plus `extra` for provider-specific keys. `undefined` means
+  "unset", never a default, so `temperature: 0` (greedy decoding) survives as a real
+  request. Fields are camelCase per TypeScript convention; `callOptionsToParams()`
+  translates to the snake_case wire shape `LLMParams` already uses, so the wire
+  format stays at the adapter boundary instead of leaking into the public API.
+- **New optional `Agent.processWith(message, options)`** — the same optional-method
+  idiom as the existing `processStream?`, so the required contract stays `name` plus
+  `process`. Also new: `supportsOptions(agent)`, `processWithOptions(agent, message,
+  options)`, `validateCallOptions()`, `isCallOptionsEmpty()` and
+  `mergeCallOptions()`, all exported from the package root.
+- `mergeCallOptions` merges field by field rather than by object spread. A spread
+  would let an override field that is present but `undefined` erase the base value —
+  and `{ temperature: maybeUndefined }` is exactly what a caller forwarding an
+  optional variable produces. `undefined` has to read as "did not ask", not "clear
+  it".
+- All six reasoning techniques implement `processWith` and thread options through
+  **every** internal call path, including the three that an obvious test never
+  reaches: Plan-and-Solve's replanning branch, Tree-of-Thought's recursive expansion
+  under all three search strategies, and Graph-of-Thought's node-cap-gated
+  conclusion.
+- `SelfConsistencyAgent` now forwards its `temperature` per sample, validates it at
+  construction via the shared `validateCallOptions`, and gained
+  **`temperatureApplied()`** plus `temperature` / `temperature_applied` response
+  metadata — matching Python and Go. Its own temperature wins over a caller's, since
+  sampling diversity is what makes the technique correct; every other option passes
+  through untouched. Options are passed as an argument rather than stored on the
+  instance, because samples run concurrently through `Promise.all` on the same
+  instance.
+
+64 new tests (`src/core/call-options.test.ts`, 40;
+`src/techniques/reasoning/call-options.test.ts`, 24). They assert on which path each
+call *arrived by* — a phase that drops its options still returns a response, so the
+entry path is the only thing distinguishing it from a working one — and on an
+explicit "this phase actually ran" fact for each gated phase, without which "every
+call forwarded" is trivially true for a phase that never executes.
+
+Verified by mutation: 28 mutations, each producing at least one test failure. Two
+were found only because a mutation *survived* the first draft: `tsc` accepts a
+method that takes an `options` parameter and never passes it on, which is how three
+Graph-of-Thought call sites shipped their forward silently dropped in the first
+pass; and the field-by-field merge needed a case where the override key is present
+with value `undefined`, since an omitted key leaves a naive spread nothing to erase.
+
 ### Fixed — Python reasoning techniques called `LLM.complete()` with the wrong type (Issue #802)
 
 The five reasoning techniques that own an LLM — `ChainOfThought`, `TreeOfThought`,

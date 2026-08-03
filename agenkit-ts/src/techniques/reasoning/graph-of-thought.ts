@@ -37,6 +37,8 @@
  */
 
 import type { Agent, Message } from '../../core/interfaces';
+import type { CallOptions } from '../../core/call-options';
+import { processWithOptions } from '../../core/call-options';
 import {
   EdgeType,
   NodeType,
@@ -126,12 +128,19 @@ export class GraphOfThought implements Agent {
 
   /**
    * Call LLM with prompt.
+   *
+   * Options are optional so every existing call site keeps compiling; they are
+   * forwarded to the wrapped agent when it can honour them (#801).
    */
-  private async llmCall(prompt: string): Promise<string> {
-    const response = await this.llm.process({
-      role: 'user',
-      content: prompt,
-    });
+  private async llmCall(prompt: string, options?: CallOptions): Promise<string> {
+    const response = await processWithOptions(
+      this.llm,
+      {
+        role: 'user',
+        content: prompt,
+      },
+      options,
+    );
     return String(response.content);
   }
 
@@ -141,7 +150,7 @@ export class GraphOfThought implements Agent {
    * @param problem - Problem to generate premises for
    * @returns Array of premise statements
    */
-  private async generatePremises(problem: string): Promise<string[]> {
+  private async generatePremises(problem: string, options?: CallOptions): Promise<string[]> {
     const prompt = `Identify the key facts and premises for this problem.
 List 2-4 foundational facts or assumptions, one per line.
 
@@ -149,7 +158,7 @@ Problem: ${problem}
 
 Premises:`;
 
-    const response = await this.llmCall(prompt);
+    const response = await this.llmCall(prompt, options);
 
     // Parse premises
     const premises: string[] = [];
@@ -178,7 +187,8 @@ Premises:`;
   private async generateThoughts(
     problem: string,
     existingThoughts: string[],
-    maxNew = 3
+    maxNew = 3,
+    options?: CallOptions
   ): Promise<string[]> {
     let prompt: string;
 
@@ -200,7 +210,7 @@ Problem: ${problem}
 Thoughts (one per line):`;
     }
 
-    const response = await this.llmCall(prompt);
+    const response = await this.llmCall(prompt, options);
 
     // Parse new thoughts
     const thoughts: string[] = [];
@@ -226,7 +236,8 @@ Thoughts (one per line):`;
    */
   private async identifyConnection(
     thought1: string,
-    thought2: string
+    thought2: string,
+    options?: CallOptions
   ): Promise<EdgeType | null> {
     const prompt = `Analyze the logical relationship between these two statements.
 
@@ -243,7 +254,7 @@ Does statement 2:
 
 Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION`;
 
-    const response = await this.llmCall(prompt);
+    const response = await this.llmCall(prompt, options);
     const responseUpper = response.trim().toUpperCase();
 
     if (responseUpper.includes('SUPPORT')) {
@@ -265,11 +276,11 @@ Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION`;
    * @param problem - Problem to build graph for
    * @returns Constructed ReasoningGraph
    */
-  private async buildGraph(problem: string): Promise<ReasoningGraph> {
+  private async buildGraph(problem: string, options?: CallOptions): Promise<ReasoningGraph> {
     const graph = new ReasoningGraph();
 
     // Step 1: Generate premises
-    const premises = await this.generatePremises(problem);
+    const premises = await this.generatePremises(problem, options);
     const premiseIds: number[] = [];
     for (const premise of premises) {
       const nodeId = graph.addNode(premise, NodeType.PREMISE, 0.9);
@@ -290,7 +301,8 @@ Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION`;
       const newThoughts = await this.generateThoughts(
         problem,
         allThoughts,
-        maxNew
+        maxNew,
+        options
       );
 
       if (newThoughts.length === 0) {
@@ -324,7 +336,7 @@ Answer with one word: SUPPORT, DEPEND, CONTRADICT, REFINE, or NO_RELATION`;
         const thought2 = graph.getNode(node2Id)!.content;
 
         // Check connection from node1 to node2
-        const edgeType = await this.identifyConnection(thought1, thought2);
+        const edgeType = await this.identifyConnection(thought1, thought2, options);
         if (edgeType) {
           graph.addEdge(node1Id, node2Id, edgeType, 0.8);
           edgeCount++;
@@ -347,7 +359,7 @@ ${allThoughts.map((t) => `- ${t}`).join('\n')}
 
 Final conclusion:`;
 
-      const conclusion = await this.llmCall(conclusionPrompt);
+      const conclusion = await this.llmCall(conclusionPrompt, options);
       const conclusionId = graph.addNode(
         conclusion.trim(),
         NodeType.CONCLUSION,
@@ -488,10 +500,26 @@ Final conclusion:`;
    * ```
    */
   async process(message: Message): Promise<Message> {
+    return this.processWith(message, {});
+  }
+
+  /**
+   * Process message with Graph-of-Thought reasoning and per-call options.
+   *
+   * Implements the optional `processWith` capability. The options reach every LLM
+   * call in the graph build — premises, thought expansion, edge identification and
+   * the conclusion — since a temperature applied to only some of them is not what
+   * the caller asked for (#801).
+   *
+   * @param message - Input message
+   * @param options - Per-call inference options
+   * @returns Response with final answer and graph metadata
+   */
+  async processWith(message: Message, options: CallOptions): Promise<Message> {
     const problem = String(message.content);
 
     // Step 1: Build reasoning graph
-    const graph = await this.buildGraph(problem);
+    const graph = await this.buildGraph(problem, options);
 
     // Step 2: Check for cycles (if not allowed)
     if (!this.allowCycles && graph.hasCycle()) {

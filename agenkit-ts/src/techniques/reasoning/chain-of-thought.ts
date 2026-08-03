@@ -33,6 +33,8 @@
  */
 
 import type { Agent, Message } from '../../core/interfaces';
+import type { CallOptions } from '../../core/call-options';
+import { processWithOptions } from '../../core/call-options';
 
 /**
  * Configuration options for Chain-of-Thought agent.
@@ -142,6 +144,22 @@ export class ChainOfThought implements Agent {
    * ```
    */
   async process(message: Message): Promise<Message> {
+    return this.processWith(message, {});
+  }
+
+  /**
+   * Process message with Chain-of-Thought reasoning and per-call options.
+   *
+   * Implements the optional `processWith` capability. This technique owns no LLM
+   * of its own, so it has to pass the options down to the agent that does — a
+   * break here leaves a wrapper above it (`SelfConsistencyAgent`, say) unable to
+   * vary the temperature at all (#801).
+   *
+   * @param message Input message with query content
+   * @param options Per-call inference options
+   * @returns Message with response content and metadata
+   */
+  async processWith(message: Message, options: CallOptions): Promise<Message> {
     // Apply CoT prompting
     const content = String(message.content);
     if (!this.config.promptTemplate.includes('{query}')) {
@@ -150,11 +168,15 @@ export class ChainOfThought implements Agent {
     const cotPrompt = this.config.promptTemplate.replace('{query}', content);
 
     // Get response from agent
-    const response = await this.agent.process({
-      role: 'user',
-      content: cotPrompt,
-      metadata: {},
-    });
+    const response = await processWithOptions(
+      this.agent,
+      {
+        role: 'user',
+        content: cotPrompt,
+        metadata: {},
+      },
+      options,
+    );
 
     // Parse steps if requested
     if (this.config.parseSteps) {

@@ -15,6 +15,13 @@
  */
 
 import { Agent, Message, createMessage } from '../../core/interfaces';
+import {
+  CallOptions,
+  mergeCallOptions,
+  processWithOptions,
+  supportsOptions,
+  validateCallOptions,
+} from '../../core/call-options';
 
 /**
  * Voting strategy for answer aggregation.
@@ -36,7 +43,16 @@ export interface SelfConsistencyConfig {
   /** Voting strategy for answer aggregation (default: 'majority') */
   votingStrategy?: VotingStrategy;
 
-  /** Sampling temperature for diversity (optional) */
+  /**
+   * Sampling temperature for diversity, 0-2 (optional).
+   *
+   * Forwarded per sample to the wrapped agent when that agent implements the
+   * optional `processWith` capability. An agent that does not generates its
+   * samples at whatever temperature it was configured with, so the diversity this
+   * technique depends on may not materialize — `temperatureApplied` reports which
+   * case applies. Until v0.88.0 this option was accepted and silently discarded
+   * (#801).
+   */
   temperature?: number;
 
   /** Custom answer extraction function (optional) */
@@ -119,8 +135,49 @@ export class SelfConsistencyAgent implements Agent {
 
     this.numSamples = config.numSamples ?? 5;
     this.votingStrategy = config.votingStrategy ?? 'majority';
+    // Validate at construction, not on the first sample, and reuse the shared
+    // validator so the two spellings of the bounds cannot drift apart.
+    validateCallOptions({ temperature: config.temperature });
     this.temperature = config.temperature;
     this.answerExtractor = config.answerExtractor ?? defaultAnswerExtractor;
+  }
+
+  /**
+   * Report whether the configured temperature actually reaches the LLM.
+   *
+   * False when a temperature is set but the wrapped agent has no `processWith`
+   * capability — the samples are then generated at whatever temperature the agent
+   * is configured with.
+   *
+   * Exposed rather than left implicit because a silently ignored temperature is
+   * precisely the failure this fixes: the value was accepted and dropped for as
+   * long as the config field existed, and a documented config option is an
+   * explicit invitation to set it (#801).
+   *
+   * @returns True when the temperature is applied, or when none is set — there is
+   *   then nothing to apply, so nothing was dropped.
+   */
+  temperatureApplied(): boolean {
+    if (this.temperature === undefined) {
+      return true;
+    }
+    return supportsOptions(this.agent);
+  }
+
+  /**
+   * Merge the caller's options with the configured temperature.
+   *
+   * The configured temperature is applied last and therefore wins over a
+   * temperature in the caller's options. That is deliberate: this technique's
+   * correctness depends on sampling diversity, so a caller reaching through it
+   * must not silently flatten the samples. Every other option passes through
+   * untouched.
+   */
+  private callOptions(callerOptions?: CallOptions): CallOptions {
+    if (this.temperature === undefined) {
+      return mergeCallOptions(callerOptions);
+    }
+    return mergeCallOptions(callerOptions, { temperature: this.temperature });
   }
 
   /**
@@ -130,8 +187,23 @@ export class SelfConsistencyAgent implements Agent {
    * voting to determine the most consistent answer.
    */
   async process(message: Message): Promise<Message> {
+    return this.processWith(message, {});
+  }
+
+  /**
+   * Process a message with Self-Consistency and per-call options.
+   *
+   * Implements the optional `processWith` capability, so this technique can itself
+   * be wrapped by another that varies options — the capability has to run in both
+   * directions, or the chain breaks at the first link that only consumes options
+   * (#801).
+   *
+   * The caller's options are merged with the configured temperature, which wins on
+   * conflict; see `callOptions`.
+   */
+  async processWith(message: Message, options: CallOptions): Promise<Message> {
     // Generate multiple samples in parallel
-    const { fullResponses, extractedAnswers } = await this.generateSamples(message);
+    const { fullResponses, extractedAnswers } = await this.generateSamples(message, options);
 
     // Vote for consensus answer
     let consensusAnswer: string;
@@ -167,6 +239,12 @@ export class SelfConsistencyAgent implements Agent {
       extracted_answers: extractedAnswers,
       answer_counts: answerCounts,
       base_agent: this.agent.name,
+      // Report the temperature and whether it reached the LLM, matching the
+      // Python and Go cores. undefined when unset — a caller must be able to tell
+      // "not requested" from "requested and dropped", which temperature_applied
+      // alone cannot express.
+      temperature: this.temperature,
+      temperature_applied: this.temperatureApplied(),
     });
   }
 
@@ -175,9 +253,12 @@ export class SelfConsistencyAgent implements Agent {
    */
   private async generateSamples(
     message: Message,
+    options?: CallOptions,
   ): Promise<{ fullResponses: string[]; extractedAnswers: string[] }> {
     // Generate samples in parallel
-    const samplePromises = Array.from({ length: this.numSamples }, () => this.sampleOnce(message));
+    const samplePromises = Array.from({ length: this.numSamples }, () =>
+      this.sampleOnce(message, options),
+    );
 
     try {
       const samples = await Promise.all(samplePromises);
@@ -193,12 +274,16 @@ export class SelfConsistencyAgent implements Agent {
 
   /**
    * Generate one sample from the base agent.
+   *
+   * The options are rebuilt per call rather than stored on the instance: samples
+   * run concurrently in `generateSamples`, and a shared mutable options object
+   * would be written by every one of them.
    */
   private async sampleOnce(
     message: Message,
+    options?: CallOptions,
   ): Promise<{ fullResponse: string; extractedAnswer: string }> {
-    // TODO: If temperature supported, pass it to agent
-    const response = await this.agent.process(message);
+    const response = await processWithOptions(this.agent, message, this.callOptions(options));
 
     const fullResponse = String(response.content);
     const extractedAnswer = this.answerExtractor(fullResponse);

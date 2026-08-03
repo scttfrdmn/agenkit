@@ -40,6 +40,8 @@
  */
 
 import type { Agent, Message } from '../../core/interfaces';
+import type { CallOptions } from '../../core/call-options';
+import { processWithOptions } from '../../core/call-options';
 import { ReasoningTree, NodeState, type ReasoningNode } from './reasoning-tree';
 
 /**
@@ -190,21 +192,28 @@ export class TreeOfThought implements Agent {
    *
    * @param prompt Prompt to generate from
    * @param n Number of branches to generate
+   * @param options Per-call inference options, forwarded to the wrapped agent
    * @returns Array of generated reasoning texts
    */
-  private async generateBranches(prompt: string, n: number): Promise<string[]> {
+  private async generateBranches(
+    prompt: string,
+    n: number,
+    options?: CallOptions,
+  ): Promise<string[]> {
     // Generate N branches in parallel for speed
     const branchPromises = Array.from({ length: n }, (_, i) => {
       // Add variation to prompt to encourage diversity
       const variedPrompt = `${prompt}\n\nAlternative approach #${i + 1}:`;
 
-      return this.agent
-        .process({
+      return processWithOptions(
+        this.agent,
+        {
           role: 'user',
           content: variedPrompt,
           metadata: {},
-        })
-        .then((response) => String(response.content));
+        },
+        options,
+      ).then((response) => String(response.content));
     });
 
     return Promise.all(branchPromises);
@@ -216,12 +225,14 @@ export class TreeOfThought implements Agent {
    * @param tree Reasoning tree
    * @param nodeId Node to expand
    * @param query Original query for context
+   * @param options Per-call inference options, forwarded to the wrapped agent
    * @returns Array of new child node IDs
    */
   private async expandNode(
     tree: ReasoningTree,
     nodeId: number,
     query: string,
+    options?: CallOptions,
   ): Promise<number[]> {
     const node = tree.getNode(nodeId);
     if (!node) {
@@ -233,7 +244,7 @@ export class TreeOfThought implements Agent {
     const prompt = `Original question: ${query}\n\nReasoning so far:\n${pathText}\n\nContinue reasoning:`;
 
     // Generate branches
-    const branches = await this.generateBranches(prompt, this.config.branchingFactor);
+    const branches = await this.generateBranches(prompt, this.config.branchingFactor, options);
 
     // Add branches as children
     const childIds: number[] = [];
@@ -266,7 +277,12 @@ export class TreeOfThought implements Agent {
    * @param rootId Root node ID
    * @param query Original query
    */
-  private async searchBFS(tree: ReasoningTree, rootId: number, query: string): Promise<void> {
+  private async searchBFS(
+    tree: ReasoningTree,
+    rootId: number,
+    query: string,
+    options?: CallOptions,
+  ): Promise<void> {
     const queue: number[] = [rootId];
 
     while (queue.length > 0) {
@@ -284,7 +300,7 @@ export class TreeOfThought implements Agent {
       }
 
       // Expand node
-      const childIds = await this.expandNode(tree, nodeId, query);
+      const childIds = await this.expandNode(tree, nodeId, query, options);
       queue.push(...childIds);
     }
   }
@@ -296,7 +312,12 @@ export class TreeOfThought implements Agent {
    * @param rootId Root node ID
    * @param query Original query
    */
-  private async searchDFS(tree: ReasoningTree, rootId: number, query: string): Promise<void> {
+  private async searchDFS(
+    tree: ReasoningTree,
+    rootId: number,
+    query: string,
+    options?: CallOptions,
+  ): Promise<void> {
     const stack: number[] = [rootId];
 
     while (stack.length > 0) {
@@ -314,7 +335,7 @@ export class TreeOfThought implements Agent {
       }
 
       // Expand node
-      const childIds = await this.expandNode(tree, nodeId, query);
+      const childIds = await this.expandNode(tree, nodeId, query, options);
       // Reverse to maintain left-to-right order
       stack.push(...childIds.reverse());
     }
@@ -331,6 +352,7 @@ export class TreeOfThought implements Agent {
     tree: ReasoningTree,
     rootId: number,
     query: string,
+    options?: CallOptions,
   ): Promise<void> {
     // Priority queue (list of node IDs, sorted by score)
     const openNodes: number[] = [rootId];
@@ -360,7 +382,7 @@ export class TreeOfThought implements Agent {
       }
 
       // Expand node
-      const childIds = await this.expandNode(tree, nodeId, query);
+      const childIds = await this.expandNode(tree, nodeId, query, options);
       openNodes.push(...childIds);
     }
   }
@@ -392,6 +414,22 @@ export class TreeOfThought implements Agent {
    * ```
    */
   async process(message: Message): Promise<Message> {
+    return this.processWith(message, {});
+  }
+
+  /**
+   * Process message with Tree-of-Thought reasoning and per-call options.
+   *
+   * Implements the optional `processWith` capability. Branch diversity is the
+   * whole point of this technique, so a temperature that reaches only some
+   * branches defeats it — the options are threaded through every search strategy
+   * and every level of the recursive expansion (#801).
+   *
+   * @param message Input message with query content
+   * @param options Per-call inference options
+   * @returns Message with best reasoning path and metadata
+   */
+  async processWith(message: Message, options: CallOptions): Promise<Message> {
     const query = String(message.content);
 
     // Create reasoning tree
@@ -400,11 +438,11 @@ export class TreeOfThought implements Agent {
 
     // Run search strategy
     if (this.config.strategy === 'bfs') {
-      await this.searchBFS(tree, rootId, query);
+      await this.searchBFS(tree, rootId, query, options);
     } else if (this.config.strategy === 'dfs') {
-      await this.searchDFS(tree, rootId, query);
+      await this.searchDFS(tree, rootId, query, options);
     } else if (this.config.strategy === 'best-first') {
-      await this.searchBestFirst(tree, rootId, query);
+      await this.searchBestFirst(tree, rootId, query, options);
     } else {
       throw new Error(`Invalid strategy: ${this.config.strategy}`);
     }

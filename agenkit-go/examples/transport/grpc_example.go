@@ -90,6 +90,10 @@ func (e *EchoAgent) Capabilities() []string {
 	return []string{"echo"}
 }
 
+func (e *EchoAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(e)
+}
+
 // StreamingEchoAgent is an echo agent that streams response word-by-word.
 type StreamingEchoAgent struct{}
 
@@ -139,6 +143,10 @@ func (s *StreamingEchoAgent) Capabilities() []string {
 	return []string{"echo", "stream"}
 }
 
+func (s *StreamingEchoAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(s)
+}
+
 // MetadataAgent processes and returns metadata.
 type MetadataAgent struct{}
 
@@ -170,6 +178,10 @@ func (m *MetadataAgent) Process(ctx context.Context, message *agenkit.Message) (
 
 func (m *MetadataAgent) Capabilities() []string {
 	return []string{"metadata"}
+}
+
+func (m *MetadataAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(m)
 }
 
 // Helper function to split string into words

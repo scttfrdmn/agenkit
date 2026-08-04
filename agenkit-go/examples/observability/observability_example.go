@@ -41,6 +41,11 @@ func (a *SimpleAgent) Capabilities() []string {
 	return []string{"process"}
 }
 
+// Introspect reports the agent's current internal state.
+func (a *SimpleAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 // Process processes a message.
 func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	a.logger.InfoContext(ctx, fmt.Sprintf("Agent %s processing message", a.name),

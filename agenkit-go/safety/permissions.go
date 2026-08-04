@@ -355,6 +355,9 @@ type PermissionMiddleware struct {
 	sandbox     *Sandbox
 }
 
+// Verify that PermissionMiddleware implements Agent interface.
+var _ agenkit.Agent = (*PermissionMiddleware)(nil)
+
 // NewPermissionMiddleware creates a new permission middleware.
 //
 // Args:
@@ -407,6 +410,11 @@ func (m *PermissionMiddleware) Name() string {
 // Capabilities returns capabilities of the underlying agent.
 func (m *PermissionMiddleware) Capabilities() []string {
 	return m.agent.Capabilities()
+}
+
+// Introspect returns the introspection result of the underlying agent.
+func (m *PermissionMiddleware) Introspect() *agenkit.IntrospectionResult {
+	return m.agent.Introspect()
 }
 
 // HasPermission checks if agent has permission.

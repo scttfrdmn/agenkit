@@ -87,6 +87,21 @@ func (f *FallbackAgent) Capabilities() []string {
 	return capabilities
 }
 
+// Introspect reports the fallback chain in attempt order.
+func (f *FallbackAgent) Introspect() *agenkit.IntrospectionResult {
+	result, _ := agenkit.NewIntrospectionResult(
+		f.Name(),
+		f.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"agent_count": len(f.agents),
+			"agent_names": agentNames(f.agents),
+		},
+		nil,
+	)
+	return result
+}
+
 // attemptResult holds the result of a single agent attempt.
 type attemptResult struct {
 	agentIndex int
@@ -231,6 +246,19 @@ func (r *RecoveryAgent) Name() string {
 func (r *RecoveryAgent) Capabilities() []string {
 	caps := r.agent.Capabilities()
 	return append(caps, "recovery", "error-handling")
+}
+
+// Introspect delegates to the wrapped agent, noting the recovery layer.
+func (r *RecoveryAgent) Introspect() *agenkit.IntrospectionResult {
+	result := r.agent.Introspect()
+	if result == nil {
+		return agenkit.DefaultIntrospectionResult(r)
+	}
+	if result.Metadata == nil {
+		result.Metadata = make(map[string]interface{})
+	}
+	result.Metadata["wrapped_by"] = r.Name()
+	return result
 }
 
 // Process executes the agent with recovery on failure.

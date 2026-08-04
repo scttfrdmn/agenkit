@@ -101,6 +101,11 @@ func (c *ChatAgent) Capabilities() []string {
 	return []string{}
 }
 
+// Introspect reports the agent's current internal state.
+func (c *ChatAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(c)
+}
+
 // StoryAgent is an agent that streams a story in chunks.
 type StoryAgent struct{}
 
@@ -164,6 +169,11 @@ func (s *StoryAgent) Stream(ctx context.Context, message *agenkit.Message) (<-ch
 // Capabilities returns the agent capabilities.
 func (s *StoryAgent) Capabilities() []string {
 	return []string{"streaming"}
+}
+
+// Introspect reports the agent's current internal state.
+func (s *StoryAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(s)
 }
 
 // runChatExample demonstrates basic WebSocket request/response.

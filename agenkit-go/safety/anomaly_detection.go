@@ -404,6 +404,11 @@ type AnomalyDetectionMiddleware struct {
 	onAnomaly AnomalyCallback
 }
 
+// Verify that AnomalyDetectionMiddleware implements Agent interface.
+// Without this, a missing method only surfaces where the middleware is stacked,
+// which for a long time was an example excluded from every build (#847).
+var _ agenkit.Agent = (*AnomalyDetectionMiddleware)(nil)
+
 // NewAnomalyDetectionMiddleware creates a new anomaly detection middleware.
 //
 // Args:
@@ -459,6 +464,11 @@ func (m *AnomalyDetectionMiddleware) Name() string {
 // Capabilities returns capabilities of the underlying agent.
 func (m *AnomalyDetectionMiddleware) Capabilities() []string {
 	return m.agent.Capabilities()
+}
+
+// Introspect returns the introspection result of the underlying agent.
+func (m *AnomalyDetectionMiddleware) Introspect() *agenkit.IntrospectionResult {
+	return m.agent.Introspect()
 }
 
 // Process processes message with anomaly detection.

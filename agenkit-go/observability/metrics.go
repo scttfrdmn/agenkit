@@ -68,6 +68,9 @@ type MetricsMiddleware struct {
 	messageSizeHist  metric.Int64Histogram
 }
 
+// Verify that MetricsMiddleware implements Agent interface.
+var _ agenkit.Agent = (*MetricsMiddleware)(nil)
+
 // NewMetricsMiddleware creates a new metrics middleware.
 func NewMetricsMiddleware(agent agenkit.Agent) (*MetricsMiddleware, error) {
 	meter := GetMeter("agenkit.observability")
@@ -130,6 +133,11 @@ func (m *MetricsMiddleware) Name() string {
 // Capabilities returns the agent capabilities.
 func (m *MetricsMiddleware) Capabilities() []string {
 	return m.agent.Capabilities()
+}
+
+// Introspect returns the agent's introspection result.
+func (m *MetricsMiddleware) Introspect() *agenkit.IntrospectionResult {
+	return m.agent.Introspect()
 }
 
 // Process processes a message with metrics collection.

@@ -134,6 +134,31 @@ func (c *ConversationalAgent) Capabilities() []string {
 	return []string{"conversational", "history-management"}
 }
 
+// Introspect reports the conversation history as memory state, since the retained
+// history is exactly what this agent "knows".
+func (c *ConversationalAgent) Introspect() *agenkit.IntrospectionResult {
+	roles := make([]string, len(c.history))
+	for i, msg := range c.history {
+		roles[i] = msg.Role
+	}
+
+	result, _ := agenkit.NewIntrospectionResult(
+		c.Name(),
+		c.Capabilities(),
+		map[string]interface{}{
+			"history_length": len(c.history),
+			"history_roles":  roles,
+			"max_history":    c.maxHistory,
+		},
+		map[string]interface{}{
+			"has_system_prompt": c.systemPrompt != "",
+			"include_system":    c.includeSystem,
+		},
+		nil,
+	)
+	return result
+}
+
 // Process processes a message with full conversation context.
 //
 // The message is added to history, and the LLM generates a response

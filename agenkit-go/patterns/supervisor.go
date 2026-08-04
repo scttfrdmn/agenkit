@@ -19,6 +19,7 @@ package patterns
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
@@ -120,6 +121,28 @@ func (s *SupervisorAgent) Capabilities() []string {
 	capabilities = append(capabilities, "supervisor", "hierarchical", "coordination")
 
 	return capabilities
+}
+
+// Introspect reports the planner and the specialist pool it dispatches to.
+func (s *SupervisorAgent) Introspect() *agenkit.IntrospectionResult {
+	specialists := make([]string, 0, len(s.specialists))
+	for key := range s.specialists {
+		specialists = append(specialists, key)
+	}
+	sort.Strings(specialists)
+
+	result, _ := agenkit.NewIntrospectionResult(
+		s.Name(),
+		s.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"planner":          s.planner.Name(),
+			"specialist_count": len(s.specialists),
+			"specialist_keys":  specialists,
+		},
+		nil,
+	)
+	return result
 }
 
 // Process executes the supervisor pattern: plan, delegate, synthesize.

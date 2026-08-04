@@ -25,6 +25,7 @@ package patterns
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
@@ -179,6 +180,37 @@ func (r *ReActAgent) Name() string {
 // Capabilities returns the agent's capabilities.
 func (r *ReActAgent) Capabilities() []string {
 	return []string{"reasoning", "tool-use", "react"}
+}
+
+// Introspect reports the reasoning loop's configuration and the trace of the most
+// recent Process call. steps is reset at the start of each Process, so step_count
+// describes the last run, not a cumulative total.
+func (r *ReActAgent) Introspect() *agenkit.IntrospectionResult {
+	toolNames := make([]string, 0, len(r.tools))
+	for name := range r.tools {
+		toolNames = append(toolNames, name)
+	}
+	sort.Strings(toolNames)
+
+	result, _ := agenkit.NewIntrospectionResult(
+		r.Name(),
+		r.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"max_steps":  r.maxSteps,
+			"step_count": len(r.steps),
+			"tool_count": len(r.tools),
+			"tool_names": toolNames,
+			"inner_agent": func() string {
+				if r.agent == nil {
+					return ""
+				}
+				return r.agent.Name()
+			}(),
+		},
+		nil,
+	)
+	return result
 }
 
 // Process executes the ReAct reasoning-acting loop.

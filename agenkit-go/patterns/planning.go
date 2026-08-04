@@ -314,6 +314,35 @@ func (p *PlanningAgent) Capabilities() []string {
 	return []string{"planning", "task_decomposition", "step_execution"}
 }
 
+// Introspect reports the current plan, if any, as the agent's working state.
+func (p *PlanningAgent) Introspect() *agenkit.IntrospectionResult {
+	internal := map[string]interface{}{
+		"max_steps":        p.maxSteps,
+		"allow_replanning": p.allowReplanning,
+		"has_plan":         p.currentPlan != nil,
+	}
+	if p.currentPlan != nil {
+		completed := 0
+		for _, step := range p.currentPlan.Steps {
+			if step.Status == StepStatusCompleted {
+				completed++
+			}
+		}
+		internal["plan_goal"] = p.currentPlan.Goal
+		internal["plan_step_count"] = len(p.currentPlan.Steps)
+		internal["plan_steps_completed"] = completed
+	}
+
+	result, _ := agenkit.NewIntrospectionResult(
+		p.Name(),
+		p.Capabilities(),
+		nil,
+		internal,
+		nil,
+	)
+	return result
+}
+
 // Process processes a task by creating and executing a plan.
 func (p *PlanningAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Create plan

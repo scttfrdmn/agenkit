@@ -101,6 +101,21 @@ func (p *ParallelAgent) Capabilities() []string {
 	return capabilities
 }
 
+// Introspect reports the fan-out set.
+func (p *ParallelAgent) Introspect() *agenkit.IntrospectionResult {
+	result, _ := agenkit.NewIntrospectionResult(
+		p.Name(),
+		p.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"agent_count": len(p.agents),
+			"agent_names": agentNames(p.agents),
+		},
+		nil,
+	)
+	return result
+}
+
 // agentResult holds the result or error from an agent execution.
 type agentResult struct {
 	agentName string

@@ -38,6 +38,10 @@ func (e *EchoAgent) Capabilities() []string {
 	return []string{"echo"}
 }
 
+func (e *EchoAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(e)
+}
+
 // GreetingAgent returns a personalized greeting.
 type GreetingAgent struct{}
 
@@ -52,6 +56,10 @@ func (g *GreetingAgent) Process(ctx context.Context, message *agenkit.Message) (
 
 func (g *GreetingAgent) Capabilities() []string {
 	return []string{"greet"}
+}
+
+func (g *GreetingAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(g)
 }
 
 func main() {

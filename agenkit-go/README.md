@@ -31,7 +31,7 @@ shape, and check the numbers for your pattern rather than assuming a blanket spe
 ## Installation
 
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 ## Documentation

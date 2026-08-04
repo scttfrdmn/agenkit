@@ -287,6 +287,11 @@ a fragment, matched case-insensitively. Go and Rust now delegate to
   Go score it `1.0` (consistent with "an empty `expected` matches everything" above);
   TypeScript's `expected && ...` short-circuits to `0.0`. Tracked in #827 along with
   the same question for `Metric` implementations generally.
+- **C++'s `ABTest` reached a `TestCase` that had no `validate()` at all** — the header
+  defined a second struct of that name, so `ABTest` could not honour this contract even
+  in principle. Unified in #831; there is now exactly one
+  `agenkit::evaluation::TestCase`, and wiring `ABTest` to score `expected` through it is
+  #829.
 
 ## Related Documentation
 

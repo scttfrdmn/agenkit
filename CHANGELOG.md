@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — C++ defined `TestCase` twice, corrupting the heap in any program using both headers (Issue #831)
+
+`agenkit::evaluation::TestCase` was defined **twice**, in the same namespace, with two
+different layouts:
+
+| Header | `sizeof` | `expected` | Extra members |
+|--------|---------|-----------|---------------|
+| `benchmarks.hpp:73` | **112** | `std::variant<std::string, std::function<...>>` | `tags`, `validate()`, `has_tag()`, `to_json()` |
+| `ab_testing.hpp:89` | **72** | `std::string` | — |
+
+Both had an inline two-string constructor, so both emitted the same mangled symbol for
+the implicit copy constructor — `_ZN7agenkit10evaluation8TestCaseC2ERKS1_`, weak in both
+objects, both objects in the same library target. The linker coalesced them with no
+diagnostic, so any binary containing both ran one type's copy constructor over the other
+type's storage. A program that used a benchmark *and* an A/B test — the obvious thing to
+do with this subsystem — linked with no compiler or linker warning and then aborted:
+
+```
+$ ./u
+[ab] expected=4
+u(62716) malloc: *** error for object 0x16fdfe740: pointer being freed was not allocated
+SIGABRT
+```
+
+Reversing the link order also aborted, so this was undefined behaviour either way rather
+than order-dependent luck.
+
+**Why 68/68 `ctest` was green.** No translation unit in the repo included both headers —
+verified with `c++ -MM` over every TU including either — and a static archive pulls only
+the object it needs, so every existing binary happened to get a self-consistent
+`TestCase`. The corruption was reachable only from user code. C++ was the only core with
+this: Rust also has two `TestCase` types, but distinct module paths make them distinct
+types; Python, Go and Zig have one each.
+
+`ab_testing.hpp` now includes `benchmarks.hpp` and its duplicate is deleted. There is no
+cycle — `benchmarks.hpp` pulls in no agenkit headers. Verified afterwards by scanning all
+83 library objects for weak symbols emitted at conflicting sizes: **zero**.
+
+The 3 new tests are deliberately spread over **three translation units** (driver plus one
+per header view). A single-file test would fail to *compile* when the duplicate returns,
+and compile-time redefinition is precisely the check that never ran — so it would pass
+for the wrong reason. The driver includes neither evaluation header, and the capability
+probes use SFINAE (this core is C++17, so no `requires`) with tag dispatch rather than
+`if constexpr`, since both branches of an `if constexpr` in a non-template function are
+still instantiated. Restoring the duplicate therefore still builds, and the suite fails
+at runtime the way the original defect did: `sizeof` **72 vs 112**, then SIGSEGV in the
+cross-TU copy test.
+
+Negative verification: the mutation restoring the exact pre-fix state is caught by
+assertion *and* crashes (signal 11). The other two mutations produce states that cannot
+compile, and are reported as compiler catches rather than counted as suite catches.
+
+70/70 `ctest` executables, 1159 gtest cases.
+
+**API note:** `TestCase::expected` reached through `ab_testing.hpp` is now the
+`std::variant`, not a `std::string`. Reads via `std::get<std::string>` are unaffected;
+direct string assignment needs updating. The struct also no longer default-constructs —
+the canonical one requires both arguments. No in-repo caller did either.
+
+This unblocks **#829** (make C++'s `ABTest` actually score `expected`), which could not
+be implemented as filed: its recommended fix is "score via `TestCase::validate`", but the
+`TestCase` that `ABTest` accepted had no `validate()` — it was the other struct.
+
 ### Fixed — A/B tests reported "inconclusive" because the scoring never ran (Issue #822)
 
 `ABTest` is a third `expected`-comparison site, and it did not honour the

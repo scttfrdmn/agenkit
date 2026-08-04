@@ -266,7 +266,7 @@ a fragment, matched case-insensitively. Go and Rust now delegate to
 | Go | `TestCase.Validate` | delegates (#822) |
 | TypeScript | `actual.toLowerCase().includes(expected.toLowerCase())` | inline |
 | Rust | `AccuracyMetric` via `metric_for(metric_name)` | delegates (#822) |
-| C++ | reads response **metadata**, never `expected` | divergent — #829 |
+| C++ | `AccuracyMetric` via `metric_for(metric_name)` | delegates (#829) |
 
 - **Rust's `ab_testing.rs` used trimmed, case-sensitive, whole-string equality** — a
   third semantics, distinct from both the table above and this core's own
@@ -279,10 +279,26 @@ a fragment, matched case-insensitively. Go and Rust now delegate to
   (`make([]rune, len(s))`) while ranging by byte offset, so every multi-byte rune left
   NUL padding — `"ПАРИЖ"` became `"П\x00А\x00Р\x00И\x00Ж\x00"`. That is worse than
   ASCII-only lowering, which at least leaves non-`A-Z` input intact. Fixed in #822.
-- **`metric_name` in Rust's `ABTest::run` selects the metric.** `"accuracy"`,
+- **`metric_name` in Rust's and C++'s `ABTest::run` selects the metric.** `"accuracy"`,
   `"quality"`, `"latency"` and `"context_length"` resolve to the corresponding
-  `Metric`; an unrecognised name is an `AgentError::InvalidInput`, not a silent
-  fallback to accuracy.
+  `Metric` via `metric_for`; an unrecognised name is an `AgentError::InvalidInput` /
+  `AgentErrorType::InvalidInput`, not a silent fallback to accuracy.
+- **C++'s `ABTest` read the score out of the agent's own response metadata**, under the
+  key `metric_name`, and never looked at `expected` at all — the agent was asked to grade
+  itself. No ordinary agent populates such a key, so every measurement was `0.0` for
+  *both* arms and the result was a complete, plausible `ABResult` reporting
+  `winner = "inconclusive"`. `TestCase::expected` was public API that did nothing here.
+  An agent that *failed* was also scored `0.0`, making a broken control arm
+  indistinguishable from a merely wrong one. Both are now errors rather than samples.
+  Fixed in #829.
+  - The unit suite could not catch it: its mock did
+    `response.with_metadata("accuracy", value)` and the collector read that key back, so
+    the only agent ever exercised was one grading itself — the same shape as Rust's
+    `Evaluator` in #823, whose own test asserted the wrong behaviour as correct.
+  - `agenkit-cpp/examples/evaluation/ab_testing_example.cpp` taught the anti-pattern
+    directly, pairing `with_metadata("accuracy", …)` with
+    `TestCase(input, "expected_output")` that no agent could ever match. Rewritten to
+    answer real questions and be scored against `expected`.
 - **An absent `expected` key is not yet consistent across the A/B sites.** Python and
   Go score it `1.0` (consistent with "an empty `expected` matches everything" above);
   TypeScript's `expected && ...` short-circuits to `0.0`. Tracked in #827 along with
@@ -290,8 +306,18 @@ a fragment, matched case-insensitively. Go and Rust now delegate to
 - **C++'s `ABTest` reached a `TestCase` that had no `validate()` at all** — the header
   defined a second struct of that name, so `ABTest` could not honour this contract even
   in principle. Unified in #831; there is now exactly one
-  `agenkit::evaluation::TestCase`, and wiring `ABTest` to score `expected` through it is
-  #829.
+  `agenkit::evaluation::TestCase`, which #829 then wired `ABTest` to score against.
+- **A `std::function` `expected` cannot cross a JSON `ctx`.** C++'s A/B collector
+  therefore scores the string alternative through the `Metric` (passing `expected` in
+  `ctx`, as a benchmark run does) and the function alternative through
+  `TestCase::validate` directly. `quality` keeps going through the `Metric` on both paths
+  — collapsing a multi-dimensional quality score to the validator's `0.0`/`1.0` would
+  report something other than a quality score.
+- **The t-test reports perfect separation as `p = 1.0`.** When one arm scores every case
+  and the other scores none, both variances are zero, so Welch's standard error is zero
+  and the `se < 1e-10` guard in C++, Go and Rust returns `1.0` — "no difference" for the
+  maximum-effect case. Mann-Whitney, chi-square and bootstrap all handle it correctly.
+  Pre-existing and tracked separately in #835.
 
 ## Related Documentation
 

@@ -39,6 +39,7 @@
 
 #include "agenkit/core/agent.hpp"
 #include "benchmarks.hpp"
+#include "context_metrics.hpp"
 #include "quality_metrics.hpp"
 #include <string>
 #include <vector>
@@ -271,15 +272,21 @@ public:
      * @param control_agent Baseline agent (control group)
      * @param treatment_agent Modified agent (treatment group)
      * @param test_cases Test cases to evaluate on
-     * @param metric_name Metric to compare (must be available from agent evaluation)
+     * @param metric_name Which metric scores each interaction: "accuracy", "quality",
+     *        "latency" or "context_length". Unrecognised names are an error, not a
+     *        silent fallback to accuracy.
      * @return Future with ABResult
      *
      * The test:
      * 1. Evaluates both agents on all test cases
-     * 2. Collects metric measurements
+     * 2. Scores each response against TestCase::expected via the named metric
      * 3. Runs statistical test
      * 4. Calculates effect size
      * 5. Determines winner
+     *
+     * @note The returned future rethrows on get() if metric_name is unrecognised or an
+     *       agent fails. Prior to #829 both cases produced 0.0 samples and an ABResult
+     *       that looked like a legitimate "inconclusive".
      *
      * @example
      * @code
@@ -347,6 +354,18 @@ public:
         double std_dev
     );
 
+    /**
+     * @brief Resolve a metric name to the Metric that scores it
+     *
+     * @param metric_name One of "accuracy", "quality", "latency", "context_length"
+     * @return The metric, or nullptr if the name is unrecognised
+     *
+     * An unrecognised name is deliberately distinguishable from a metric that scored
+     * zero: run() turns nullptr into a thrown AgentError rather than silently falling
+     * back to accuracy. Mirrors Rust's ABTest::metric_for (#822).
+     */
+    static std::unique_ptr<Metric> metric_for(const std::string& metric_name);
+
 private:
     /**
      * @brief Perform Student's t-test
@@ -402,11 +421,26 @@ private:
     );
 
     /**
-     * @brief Collect metric measurements from agent evaluation
+     * @brief Collect metric measurements by scoring each test case's expected output
      * @param agent Agent to evaluate
      * @param test_cases Test cases
-     * @param metric_name Metric to extract
-     * @return Vector of measurements
+     * @param metric_name Metric that scores each interaction
+     * @return Vector of measurements, one per test case
+     *
+     * Scores by delegating to the Metric named by metric_name, so an A/B test measures
+     * the same thing a benchmark run would.
+     *
+     * This used to read the score out of the agent's own response metadata under the key
+     * metric_name, and never looked at TestCase::expected at all — the agent was asked to
+     * self-report its score. No ordinary agent populates such a key, so every measurement
+     * was 0.0 for *both* arms; the statistical test then ran on two all-zero samples and
+     * returned a complete, plausible ABResult with winner = "inconclusive" and nothing to
+     * indicate the scoring had never run. TestCase::expected was public API that did
+     * nothing. Fixed in #829.
+     *
+     * @throws core::AgentError if metric_name is unrecognised, or if the agent fails on
+     *         any test case. An agent error used to be swallowed into a 0.0 sample, which
+     *         is indistinguishable from a wrong answer.
      */
     std::vector<double> collect_measurements(
         std::shared_ptr<core::Agent> agent,

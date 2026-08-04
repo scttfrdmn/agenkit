@@ -7,7 +7,9 @@
 #include "agenkit/infrastructure/thread_pool.hpp"
 #include "agenkit/utils/simd.hpp"  // SIMD-optimized statistical calculations
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <memory>
 #include <numeric>
 #include <random>
 #include <sstream>
@@ -536,56 +538,84 @@ std::pair<double, double> ABTest::bootstrap_confidence_interval(
     return {differences[lower_idx], differences[upper_idx]};
 }
 
+std::unique_ptr<Metric> ABTest::metric_for(const std::string& metric_name) {
+    if (metric_name == "accuracy") {
+        return std::make_unique<AccuracyMetric>();
+    }
+    if (metric_name == "quality") {
+        return std::make_unique<QualityMetrics>();
+    }
+    if (metric_name == "latency") {
+        return std::make_unique<LatencyMetric>();
+    }
+    if (metric_name == "context_length") {
+        return std::make_unique<ContextMetrics>();
+    }
+    return nullptr;
+}
+
 std::vector<double> ABTest::collect_measurements(
     std::shared_ptr<core::Agent> agent,
     const std::vector<TestCase>& test_cases,
     const std::string& metric_name
 ) {
+    auto metric = metric_for(metric_name);
+    if (!metric) {
+        throw core::AgentError(
+            core::AgentErrorType::InvalidInput,
+            "unknown metric \"" + metric_name + "\"; expected one of \"accuracy\", "
+            "\"quality\", \"latency\", \"context_length\""
+        );
+    }
+
     std::vector<double> measurements;
     measurements.reserve(test_cases.size());
 
     for (const auto& test_case : test_cases) {
-        // Create message
         core::Message input_msg("user", test_case.input);
 
-        // Process through agent
-        auto response_future = agent->process(input_msg);
+        auto started = std::chrono::steady_clock::now();
+        auto response_result = agent->process(input_msg).get();
+        auto latency_ms = std::chrono::duration<double, std::milli>(
+                              std::chrono::steady_clock::now() - started)
+                              .count();
 
-        try {
-            auto response_result = response_future.get();
+        // An agent that fails is not an agent that scored zero. Swallowing this into a
+        // 0.0 sample made a broken control arm indistinguishable from a wrong one, and
+        // the ABResult still named a winner.
+        if (!response_result.is_ok()) {
+            const auto& err = response_result.unwrap_err();
+            throw core::AgentError(
+                err.type(),
+                "agent \"" + agent->name() + "\" failed on test case \"" +
+                    test_case.input + "\": " + err.message()
+            );
+        }
 
-            if (response_result.is_ok()) {
-                auto response = response_result.unwrap();
+        auto response = response_result.unwrap();
 
-                // Extract metric from response metadata
-                const auto& metadata = response.metadata();
-                if (metadata.contains(metric_name)) {
-                    const auto& metric_value = metadata[metric_name];
-                    if (metric_value.is_number()) {
-                        measurements.push_back(metric_value.get<double>());
-                    } else if (metric_value.is_string()) {
-                        try {
-                            measurements.push_back(std::stod(metric_value.get<std::string>()));
-                        } catch (...) {
-                            // Failed to parse - use 0.0
-                            measurements.push_back(0.0);
-                        }
-                    } else if (metric_value.is_boolean()) {
-                        measurements.push_back(metric_value.get<bool>() ? 1.0 : 0.0);
-                    } else {
-                        measurements.push_back(0.0);
-                    }
-                } else {
-                    // Metric not found - use 0.0
-                    measurements.push_back(0.0);
-                }
-            } else {
-                // Error processing - use 0.0
-                measurements.push_back(0.0);
-            }
-        } catch (...) {
-            // Exception - use 0.0
-            measurements.push_back(0.0);
+        // `expected` reaches the metric through ctx, which is also how a benchmark run
+        // passes it. `latency_ms` is what LatencyMetric reads; supplying it
+        // unconditionally keeps metric_name = "latency" from silently measuring 0.0.
+        nlohmann::json ctx = nlohmann::json::object();
+        ctx["latency_ms"] = latency_ms;
+
+        if (std::holds_alternative<std::string>(test_case.expected)) {
+            ctx["expected"] = std::get<std::string>(test_case.expected);
+            measurements.push_back(metric->measure(agent, input_msg, response, ctx));
+        } else if (metric->name() == "accuracy") {
+            // A std::function `expected` cannot cross a JSON ctx, so score it through
+            // TestCase::validate rather than reimplementing the comparison here — two
+            // implementations of this contract is how the divergences in #820, #822 and
+            // #823 all arose.
+            measurements.push_back(
+                test_case.validate(response.content_as_str()) ? 1.0 : 0.0);
+        } else {
+            // Metrics that do not consult `expected` at all (latency, context_length),
+            // and quality — whose score is multi-dimensional, so collapsing it to the
+            // validator's 0.0/1.0 would report something other than a quality score.
+            // With no "expected" key, quality uses its neutral accuracy component.
+            measurements.push_back(metric->measure(agent, input_msg, response, ctx));
         }
     }
 

@@ -32,7 +32,7 @@ Safety features are included in the core Agenkit package:
 pip install agenkit
 
 # Go
-go get github.com/agenkit/agenkit-go/safety
+go get github.com/scttfrdmn/agenkit-go/safety
 ```
 
 ## Quick Start
@@ -79,7 +79,7 @@ package main
 
 import (
     "fmt"
-    "github.com/agenkit/agenkit-go/safety"
+    "github.com/scttfrdmn/agenkit-go/safety"
 )
 
 func main() {

@@ -115,7 +115,7 @@ print(response.content)  # "Processed: Hello!"
 
 ```bash
 # Install
-go get github.com/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 ```go
@@ -124,7 +124,7 @@ package main
 import (
     "context"
     "fmt"
-    "github.com/agenkit/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
 )
 
 type MyAgent struct{}
@@ -375,7 +375,7 @@ See [docs/observability.md](docs/observability.md) for details.
 
 ```bash
 # Clone repository
-git clone https://github.com/agenkit/agenkit.git
+git clone https://github.com/scttfrdmn/agenkit.git
 cd agenkit
 
 # Install Python dependencies
@@ -418,9 +418,9 @@ Apache License 2.0 - See [LICENSE](LICENSE) for details.
 
 ## Links
 
-- **GitHub**: https://github.com/agenkit/agenkit
+- **GitHub**: https://github.com/scttfrdmn/agenkit
 - **Documentation**: https://docs.agenkit.dev (coming soon)
-- **Issues**: https://github.com/agenkit/agenkit/issues
+- **Issues**: https://github.com/scttfrdmn/agenkit/issues
 
 ## Project Stats
 

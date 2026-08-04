@@ -6,7 +6,7 @@ A production-ready toolkit for building distributed AI agent systems with cross-
 
 [![Website](https://img.shields.io/badge/website-agenkit.dev-blue)](https://agenkit.dev)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Go 1.21+](https://img.shields.io/badge/go-1.21+-00ADD8.svg)](https://golang.org/)
+[![Go 1.25+](https://img.shields.io/badge/go-1.25+-00ADD8.svg)](https://golang.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Tests: 867 passing](https://img.shields.io/badge/tests-867%20passing-brightgreen.svg)](https://github.com/scttfrdmn/agenkit/tree/main/tests)
 
@@ -76,7 +76,7 @@ All 5 development phases complete:
 
     ```bash
     # Install
-    go get github.com/agenkit/agenkit-go
+    go get github.com/scttfrdmn/agenkit-go
     ```
 
     ```go
@@ -85,7 +85,7 @@ All 5 development phases complete:
     import (
         "context"
         "fmt"
-        "github.com/agenkit/agenkit-go/agenkit"
+        "github.com/scttfrdmn/agenkit-go/agenkit"
     )
 
     type MyAgent struct{}

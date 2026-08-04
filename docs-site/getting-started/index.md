@@ -22,7 +22,7 @@ Agenkit is a **production-ready framework** for building distributed AI agent sy
 
 === "Go"
 
-    - Go 1.21 or higher
+    - Go 1.25.12 or higher
     - Go modules enabled
 
 ## Installation

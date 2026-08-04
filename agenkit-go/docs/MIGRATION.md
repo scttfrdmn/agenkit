@@ -313,7 +313,7 @@ func (a *MyAgent) Introspect() *agenkit.IntrospectionResult {
     return agenkit.DefaultIntrospectionResult(a)
 }
 func (a *MyAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
-    return agenkit.NewMessage("assistant", "Response: "+msg.Content), nil
+    return agenkit.NewMessage("assistant", "Response: "+msg.ContentString()), nil
 }
 ```
 
@@ -473,7 +473,7 @@ func (a *MyAgent) Introspect() *agenkit.IntrospectionResult {
     return agenkit.DefaultIntrospectionResult(a)
 }
 func (a *MyAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
-    return agenkit.NewMessage("assistant", "Response: "+msg.Content), nil
+    return agenkit.NewMessage("assistant", "Response: "+msg.ContentString()), nil
 }
 ```
 
@@ -607,7 +607,7 @@ func (a *MyAgent) Introspect() *agenkit.IntrospectionResult {
     return agenkit.DefaultIntrospectionResult(a)
 }
 func (a *MyAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
-    return agenkit.NewMessage("assistant", "Response: "+msg.Content), nil
+    return agenkit.NewMessage("assistant", "Response: "+msg.ContentString()), nil
 }
 ```
 

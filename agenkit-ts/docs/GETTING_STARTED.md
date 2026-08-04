@@ -1121,7 +1121,7 @@ if (typeof response.content === 'string') {
 
 - **Documentation:** [API.md](API.md), [PATTERNS.md](PATTERNS.md), [OBSERVABILITY.md](OBSERVABILITY.md)
 - **Examples:** Check `examples/` directory
-- **Issues:** [GitHub Issues](https://github.com/agenkit/agenkit/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/agenkit/agenkit/discussions)
+- **Issues:** [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/scttfrdmn/agenkit/discussions)
 
 **Welcome to the Agenkit community! Happy building!**

@@ -66,7 +66,7 @@ Build your first Agenkit agent in less than 5 minutes!
     import (
         "context"
         "fmt"
-        "github.com/agenkit/agenkit-go/agenkit"
+        "github.com/scttfrdmn/agenkit-go/agenkit"
     )
 
     // EchoAgent is a simple agent that echoes messages
@@ -178,7 +178,7 @@ Let's add retry logic to make our agent more resilient:
 === "Go"
 
     ```go
-    import "github.com/agenkit/agenkit-go/middleware"
+    import "github.com/scttfrdmn/agenkit-go/middleware"
 
     // Create the agent
     agent := &EchoAgent{}
@@ -220,7 +220,7 @@ Connect to a remote agent over HTTP:
 === "Go"
 
     ```go
-    import "github.com/agenkit/agenkit-go/adapter/http"
+    import "github.com/scttfrdmn/agenkit-go/adapter/http"
 
     // Connect to remote agent
     remoteAgent := http.NewHTTPAgent(
@@ -257,7 +257,7 @@ Combine multiple agents into a workflow:
 === "Go"
 
     ```go
-    import "github.com/agenkit/agenkit-go/composition"
+    import "github.com/scttfrdmn/agenkit-go/composition"
 
     // Create a pipeline
     pipeline := composition.NewSequentialAgent([]agenkit.Agent{

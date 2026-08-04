@@ -10,7 +10,7 @@
   <packaging>jar</packaging>
   <name>Agenkit</name>
   <description>Minimal, composable interfaces for AI agents — Java</description>
-  <url>https://github.com/agenkit/agenkit</url>
+  <url>https://github.com/scttfrdmn/agenkit</url>
 
   <properties>
     <maven.compiler.source>17</maven.compiler.source>

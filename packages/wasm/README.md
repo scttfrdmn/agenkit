@@ -473,10 +473,10 @@ MIT
 
 ## Links
 
-- [Agenkit Documentation](https://github.com/agenkit/agenkit)
+- [Agenkit Documentation](https://github.com/scttfrdmn/agenkit)
 - [WASM Language Choices](../../docs/WASM_LANGUAGE_CHOICES.md)
 - [Zig WASM Guide](../../agenkit-zig/README.md#webassembly-wasm-build)
-- [Issue Tracker](https://github.com/agenkit/agenkit/issues)
+- [Issue Tracker](https://github.com/scttfrdmn/agenkit/issues)
 
 ## Contributing
 

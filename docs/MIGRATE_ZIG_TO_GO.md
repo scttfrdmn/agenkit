@@ -44,7 +44,7 @@ defer allocator.free(msg.content);
 
 ### Go
 ```go
-import "github.com/agenkit/agenkit-go"
+import "github.com/scttfrdmn/agenkit-go"
 
 // No allocator needed - GC handles memory
 func createMessage() agenkit.Message {
@@ -118,7 +118,7 @@ const MyAgent = struct {
 import (
     "context"
     "fmt"
-    "github.com/agenkit/agenkit-go"
+    "github.com/scttfrdmn/agenkit-go"
 )
 
 type MyAgent struct {
@@ -365,7 +365,7 @@ defer allocator.free(result.content);
 
 **Go**:
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 sequential := patterns.NewSequential([]agenkit.Agent{
     agent1,
@@ -677,7 +677,7 @@ func TestAgent_EmptyMessage(t *testing.T) {
 - [ ] Replace `std.Thread` with goroutines (`go func()`)
 - [ ] Convert error sets to `var Err = errors.New()` variables
 - [ ] Remove comptime parameters (use interfaces for polymorphism)
-- [ ] Update imports: `@import("agenkit")` → `import "github.com/agenkit/agenkit-go"`
+- [ ] Update imports: `@import("agenkit")` → `import "github.com/scttfrdmn/agenkit-go"`
 - [ ] Replace optionals `?T` with pointers `*T` (or zero values)
 
 ---

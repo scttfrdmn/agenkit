@@ -296,13 +296,13 @@ await adapter.deploy(port=8080)
 
 - [A2A Protocol Specification](../../docs/protocols/a2a_specification.md)
 - [Agent Patterns Guide](../../docs/patterns/)
-- [Agenkit Documentation](https://github.com/agenkit/agenkit)
+- [Agenkit Documentation](https://github.com/scttfrdmn/agenkit)
 - [Vertex AI Agent Builder](https://cloud.google.com/vertex-ai/docs/agents)
 - [AWS Bedrock Agents](https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html)
 
 ## Contributing
 
-Found a bug or have a suggestion? Please open an issue on the [Agenkit repository](https://github.com/agenkit/agenkit/issues).
+Found a bug or have a suggestion? Please open an issue on the [Agenkit repository](https://github.com/scttfrdmn/agenkit/issues).
 
 ## License
 

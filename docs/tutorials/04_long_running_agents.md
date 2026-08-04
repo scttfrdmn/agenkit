@@ -255,8 +255,8 @@ import (
     "fmt"
     "log"
 
-    "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-    "github.com/scttfrdmn/agenkit/agenkit-go/checkpointing"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/checkpointing"
 )
 
 // ResearchAgent simulates a long-running research task.
@@ -346,8 +346,8 @@ import (
     "fmt"
     "log"
 
-    "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-    "github.com/scttfrdmn/agenkit/agenkit-go/checkpointing"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/checkpointing"
 )
 
 func main() {

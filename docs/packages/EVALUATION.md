@@ -33,7 +33,7 @@ Evaluation is included in the core Agenkit package:
 pip install agenkit
 
 # Go
-go get github.com/agenkit/agenkit-go/evaluation
+go get github.com/scttfrdmn/agenkit-go/evaluation
 ```
 
 ## Quick Start
@@ -68,8 +68,8 @@ package main
 
 import (
     "fmt"
-    "github.com/agenkit/agenkit-go/agenkit"
-    "github.com/agenkit/agenkit-go/evaluation"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/evaluation"
 )
 
 func main() {
@@ -952,7 +952,7 @@ package evaluation_test
 
 import (
     "testing"
-    "github.com/agenkit/agenkit-go/evaluation"
+    "github.com/scttfrdmn/agenkit-go/evaluation"
 )
 
 func TestAgentAccuracy(t *testing.T) {

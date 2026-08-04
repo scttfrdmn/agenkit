@@ -615,7 +615,7 @@ See [examples/safety/](../../examples/safety/) for working code examples.
 
 ## Security Reporting
 
-Found a security vulnerability? Please report it responsibly via [GitHub Security Advisories](https://github.com/agenkit/agenkit/security/advisories).
+Found a security vulnerability? Please report it responsibly via [GitHub Security Advisories](https://github.com/scttfrdmn/agenkit/security/advisories).
 
 ## License
 

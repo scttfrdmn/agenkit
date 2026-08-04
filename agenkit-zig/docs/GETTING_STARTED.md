@@ -38,7 +38,7 @@ If you don't have Zig installed, download it from [ziglang.org](https://ziglang.
     .version = "0.1.0",
     .dependencies = .{
         .agenkit = .{
-            .url = "https://github.com/agenkit/agenkit/releases/download/v0.41.0/agenkit-zig.tar.gz",
+            .url = "https://github.com/scttfrdmn/agenkit/releases/download/v0.41.0/agenkit-zig.tar.gz",
             .hash = "1220...",  // Zig will tell you the correct hash
         },
     },
@@ -87,7 +87,7 @@ Zig will download Agenkit automatically and provide the correct hash if needed.
 Clone the repository and build:
 
 ```bash
-git clone https://github.com/agenkit/agenkit.git
+git clone https://github.com/scttfrdmn/agenkit.git
 cd agenkit/agenkit-zig
 zig build test  # Verify everything works
 ```
@@ -687,8 +687,8 @@ Try building:
 
 ### 6. Join the Community
 
-- [GitHub Issues](https://github.com/agenkit/agenkit/issues) - Report bugs, request features
-- [Discussions](https://github.com/agenkit/agenkit/discussions) - Ask questions
+- [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues) - Report bugs, request features
+- [Discussions](https://github.com/scttfrdmn/agenkit/discussions) - Ask questions
 - [Contributing](../CONTRIBUTING.md) - Contribute code
 
 ---
@@ -778,7 +778,7 @@ Run with: `zig build test`
 
 - **Documentation:** [API.md](API.md), [PATTERNS.md](PATTERNS.md)
 - **Examples:** Check `examples/` directory
-- **Issues:** [GitHub Issues](https://github.com/agenkit/agenkit/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/agenkit/agenkit/discussions)
+- **Issues:** [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/scttfrdmn/agenkit/discussions)
 
 **Welcome to the Agenkit community! Happy building! 🚀**

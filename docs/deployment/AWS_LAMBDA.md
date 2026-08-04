@@ -94,7 +94,7 @@ brew install terraform
 - pip
 
 **Go:**
-- Go 1.22+
+- Go 1.25.12+
 - Make
 
 ## Quick Start
@@ -976,12 +976,12 @@ go run main.go     # Go
 - **Python Guide**: `/examples/deployment/aws-lambda/python/README.md`
 - **Go Guide**: `/examples/deployment/aws-lambda/go/README.md`
 - **Terraform Guide**: `/examples/deployment/aws-lambda/terraform/README.md`
-- **GitHub Issues**: https://github.com/agenkit/agenkit/issues
+- **GitHub Issues**: https://github.com/scttfrdmn/agenkit/issues
 - **Documentation**: https://docs.agenkit.dev
 
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/agenkit/agenkit/issues
+- GitHub Issues: https://github.com/scttfrdmn/agenkit/issues
 - Documentation: https://docs.agenkit.dev
 - Community Discord: https://discord.gg/agenkit

@@ -666,7 +666,7 @@ response = traced.process(message)
 
 ### Go
 ```go
-import "github.com/agenkit/agenkit-go/observability"
+import "github.com/scttfrdmn/agenkit-go/observability"
 traced := observability.NewTracingMiddleware(agent, "my-service")
 response, _ := traced.Process(ctx, message)
 // traceparent propagates via message.Metadata

@@ -23,7 +23,7 @@
 
 ### Go
 ```go
-import "github.com/agenkit/agenkit-go"
+import "github.com/scttfrdmn/agenkit-go"
 
 msg := agenkit.Message{
     Role:    agenkit.RoleUser,

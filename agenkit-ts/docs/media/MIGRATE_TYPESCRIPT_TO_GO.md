@@ -37,7 +37,7 @@ const msg: Message = {
 
 ### Go
 ```go
-import "github.com/agenkit/agenkit-go"
+import "github.com/scttfrdmn/agenkit-go"
 
 msg := agenkit.Message{
     Role:    agenkit.RoleUser,
@@ -49,7 +49,7 @@ msg := agenkit.Message{
 ```
 
 **Changes**:
-- Import: `@agenkit/core` → `github.com/agenkit/agenkit-go`
+- Import: `@agenkit/core` → `github.com/scttfrdmn/agenkit-go`
 - Object literal → Struct literal
 - String constants: `'user'` → `agenkit.RoleUser`
 - Type: `Record<string, any>` → `map[string]interface{}`
@@ -87,7 +87,7 @@ class MyAgent implements Agent {
 ```go
 import (
     "context"
-    "github.com/agenkit/agenkit-go"
+    "github.com/scttfrdmn/agenkit-go"
 )
 
 type MyAgent struct {
@@ -105,7 +105,7 @@ func (a *MyAgent) Capabilities() []string {
 func (a *MyAgent) Process(ctx context.Context, msg agenkit.Message) (agenkit.Message, error) {
     return agenkit.Message{
         Role:    agenkit.RoleAssistant,
-        Content: "Processed: " + msg.Content,
+        Content: "Processed: " + msg.ContentString(),
     }, nil
 }
 ```
@@ -245,7 +245,7 @@ const result = await sequential.process(message);
 
 **Go**:
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 sequential := patterns.NewSequential([]agenkit.Agent{
     agent1,
@@ -274,7 +274,7 @@ const result = await parallel.process(message);
 
 **Go**:
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 parallel := patterns.NewParallel([]agenkit.Agent{
     agentA,
@@ -519,7 +519,7 @@ import (
     "strings"
     "testing"
 
-    "github.com/agenkit/agenkit-go"
+    "github.com/scttfrdmn/agenkit-go"
 )
 
 func TestMyAgent_Process(t *testing.T) {
@@ -560,7 +560,7 @@ func TestMyAgent_Process(t *testing.T) {
                 return
             }
 
-            if !tt.wantErr && !strings.Contains(result.Content, tt.want) {
+            if !tt.wantErr && !strings.Contains(result.ContentString(), tt.want) {
                 t.Errorf("Process() = %v, want to contain %v", result.Content, tt.want)
             }
         })
@@ -733,7 +733,7 @@ default:
 - [ ] Add `context.Context` as first parameter to all async operations
 - [ ] Change `Promise<T>` returns to `(T, error)` tuples
 - [ ] Replace `try/catch` with `if err != nil` checks
-- [ ] Update imports: `@agenkit/core` → `github.com/agenkit/agenkit-go`
+- [ ] Update imports: `@agenkit/core` → `github.com/scttfrdmn/agenkit-go`
 - [ ] Change string constants to typed constants (e.g., `agenkit.RoleUser`)
 - [ ] Convert object literals to struct literals
 - [ ] Replace `undefined`/`null` with `nil` (for pointers) or zero values
@@ -785,8 +785,8 @@ go build -o myagent
 npm install @agenkit/core @agenkit/patterns
 
 # Go
-go get github.com/agenkit/agenkit-go
-go get github.com/agenkit/agenkit-go/patterns
+go get github.com/scttfrdmn/agenkit-go
+go get github.com/scttfrdmn/agenkit-go/patterns
 ```
 
 ---

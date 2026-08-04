@@ -1,6 +1,6 @@
 # agenkit-java
 
-Java implementation of [agenkit](https://github.com/agenkit/agenkit) — a minimal, composable toolkit for building AI agents.
+Java implementation of [agenkit](https://github.com/scttfrdmn/agenkit) — a minimal, composable toolkit for building AI agents.
 
 ## Requirements
 

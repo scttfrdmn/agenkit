@@ -295,8 +295,8 @@ import (
     "fmt"
     "time"
 
-    "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-    "github.com/scttfrdmn/agenkit/agenkit-go/middleware"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/middleware"
 )
 
 // LLMAgent simulates a flaky upstream service.
@@ -314,7 +314,7 @@ func (a *LLMAgent) Process(
     if a.callCount < 3 {
         return nil, errors.New("upstream timeout")
     }
-    return agenkit.NewMessage("agent", "Answer to: "+msg.Content), nil
+    return agenkit.NewMessage("agent", "Answer to: "+msg.ContentString()), nil
 }
 
 func main() {
@@ -355,9 +355,9 @@ import (
     "fmt"
     "time"
 
-    "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-    "github.com/scttfrdmn/agenkit/agenkit-go/middleware"
-    "github.com/scttfrdmn/agenkit/agenkit-go/observability"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/middleware"
+    "github.com/scttfrdmn/agenkit-go/observability"
 )
 
 type ProductionAgent struct{}
@@ -370,7 +370,7 @@ func (a *ProductionAgent) Introspect() *agenkit.IntrospectionResult {
 func (a *ProductionAgent) Process(
     _ context.Context, msg *agenkit.Message,
 ) (*agenkit.Message, error) {
-    return agenkit.NewMessage("agent", "Processed: "+msg.Content), nil
+    return agenkit.NewMessage("agent", "Processed: "+msg.ContentString()), nil
 }
 
 func buildProductionAgent(inner agenkit.Agent) *middleware.MetricsDecorator {

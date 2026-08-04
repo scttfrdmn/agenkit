@@ -242,7 +242,7 @@ agent = RetryMiddleware(base_agent, max_retries=3, initial_delay=1.0)
 
 ```go
 // Go
-import "github.com/scttfrdmn/agenkit/agenkit-go/middleware"
+import "github.com/scttfrdmn/agenkit-go/middleware"
 agent = middleware.NewRetryMiddleware(baseAgent, middleware.RetryConfig{
     MaxAttempts:    3,
     InitialBackoff: time.Second,

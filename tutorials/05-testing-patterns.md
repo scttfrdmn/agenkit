@@ -360,24 +360,24 @@ async def test_agent_invariants(agent, content, role):
 package main
 
 import (
+    "context"
     "testing"
-    "github.com/agenkit/agenkit-go/transports"
+    "time"
+
+    "github.com/scttfrdmn/agenkit-go/adapter/remote"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
 )
 
 func TestPythonAgentFromGo(t *testing.T) {
-    // Connect to Python agent
-    agent, err := transports.NewHTTPAgent("http://localhost:8000")
+    // Connect to a Python agent served over HTTP. RemoteAgent satisfies
+    // agenkit.Agent, so a remote agent composes exactly like a local one.
+    agent, err := remote.NewRemoteAgent("python-agent", "http://localhost:8000", 30*time.Second)
     if err != nil {
         t.Fatal(err)
     }
+    defer func() { _ = agent.Close() }()
 
-    // Send message
-    message := &Message{
-        Role:    "user",
-        Content: "Hello from Go!",
-    }
-
-    response, err := agent.Process(context.Background(), message)
+    response, err := agent.Process(context.Background(), agenkit.NewMessage("user", "Hello from Go!"))
     if err != nil {
         t.Fatal(err)
     }

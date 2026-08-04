@@ -2,7 +2,7 @@
 
 Complete API reference for Agenkit's Go observability package.
 
-## Package: `github.com/agenkit/agenkit-go/observability`
+## Package: `github.com/scttfrdmn/agenkit-go/observability`
 
 ### Functions
 
@@ -25,7 +25,7 @@ func InitTracing(serviceName string, otlpEndpoint string, consoleExport bool) (*
 
 **Example:**
 ```go
-import "github.com/agenkit/agenkit-go/observability"
+import "github.com/scttfrdmn/agenkit-go/observability"
 
 // Development: console export
 tp, err := observability.InitTracing("my-agent", "", true)
@@ -632,7 +632,7 @@ import (
     "log"
     "log/slog"
 
-    "github.com/agenkit/agenkit-go/observability"
+    "github.com/scttfrdmn/agenkit-go/observability"
 )
 
 func main() {

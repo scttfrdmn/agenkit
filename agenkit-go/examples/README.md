@@ -63,7 +63,7 @@ Real LLM provider integrations for production use:
 
 ### Prerequisites
 
-- Go 1.21 or later
+- Go 1.25.12 or later
 - For adapter examples: API keys (OPENAI_API_KEY, ANTHROPIC_API_KEY)
 - For pattern examples: **No API keys required!** Uses mock agents
 
@@ -268,8 +268,8 @@ go run examples/transport/grpc_example.go
 
 ## Need Help?
 
-- **Issues**: [GitHub Issues](https://github.com/agenkit/agenkit/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/agenkit/agenkit/discussions)
+- **Issues**: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/scttfrdmn/agenkit/discussions)
 - **Documentation**: [/docs](../../docs/)
 - **Tests**: [/tests](../../tests/) - 137+ test examples
 

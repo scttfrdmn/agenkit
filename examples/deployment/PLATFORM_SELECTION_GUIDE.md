@@ -527,6 +527,6 @@ Before choosing a platform, ask yourself:
 ## Support
 
 For help choosing a platform:
-- GitHub Discussions: https://github.com/agenkit/agenkit/discussions
+- GitHub Discussions: https://github.com/scttfrdmn/agenkit/discussions
 - Community Discord: https://discord.gg/agenkit
 - Email: hello@agenkit.dev

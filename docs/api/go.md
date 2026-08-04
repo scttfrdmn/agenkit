@@ -1,6 +1,6 @@
 # Go API Reference
 
-**Module:** `github.com/scttfrdmn/agenkit/agenkit-go`
+**Module:** `github.com/scttfrdmn/agenkit-go`
 **Go:** 1.23+
 
 ---
@@ -10,7 +10,7 @@
 ### `agenkit.Message`
 
 ```go
-// Package: github.com/scttfrdmn/agenkit/agenkit-go/agenkit
+// Package: github.com/scttfrdmn/agenkit-go/agenkit
 
 type Message struct {
     Role     string
@@ -48,7 +48,7 @@ type IntrospectionResult struct {
 
 ## LLM Adapters
 
-**Package:** `github.com/scttfrdmn/agenkit/agenkit-go/adapter/llm`
+**Package:** `github.com/scttfrdmn/agenkit-go/adapter/llm`
 
 ### `NewAnthropicClient`
 
@@ -91,7 +91,7 @@ All adapters implement `agenkit.Agent`.
 
 ## Patterns
 
-**Package:** `github.com/scttfrdmn/agenkit/agenkit-go/patterns`
+**Package:** `github.com/scttfrdmn/agenkit-go/patterns`
 
 | Constructor | Key Parameters |
 |-------------|---------------|
@@ -120,7 +120,7 @@ The `patterns/reasoning` sub-package contains a separate `ReasoningAgent` type u
 
 ## Middleware
 
-**Package:** `github.com/scttfrdmn/agenkit/agenkit-go/middleware`
+**Package:** `github.com/scttfrdmn/agenkit-go/middleware`
 
 All middleware wrap an `Agent` and return an `Agent`.
 
@@ -198,7 +198,7 @@ func NewMetricsMiddleware(agent Agent, collector MetricsCollector) Agent
 
 ## Memory
 
-**Package:** `github.com/scttfrdmn/agenkit/agenkit-go/memory`
+**Package:** `github.com/scttfrdmn/agenkit-go/memory`
 
 ### `Memory` (interface)
 
@@ -230,7 +230,7 @@ type Memory interface {
 
 ## Checkpointing
 
-**Package:** `github.com/scttfrdmn/agenkit/agenkit-go/checkpointing`
+**Package:** `github.com/scttfrdmn/agenkit-go/checkpointing`
 
 ### `CheckpointManager`
 
@@ -273,7 +273,7 @@ Wraps any agent with automatic checkpoint save/restore on each `Process` call.
 
 ## Budget
 
-**Package:** `github.com/scttfrdmn/agenkit/agenkit-go/budget`
+**Package:** `github.com/scttfrdmn/agenkit-go/budget`
 
 ### `TokenBudget`
 
@@ -305,7 +305,7 @@ func (c *CostTracker) Reset()
 
 ## Infrastructure
 
-**Package:** `github.com/scttfrdmn/agenkit/agenkit-go/infrastructure`
+**Package:** `github.com/scttfrdmn/agenkit-go/infrastructure`
 
 ### `LoadBalancer`
 
@@ -332,7 +332,7 @@ func (h *HealthChecker) Stop()
 
 ## Reasoning Techniques
 
-**Package:** `github.com/scttfrdmn/agenkit/agenkit-go/techniques/reasoning`
+**Package:** `github.com/scttfrdmn/agenkit-go/techniques/reasoning`
 
 | Constructor | Key Parameters |
 |-------------|---------------|

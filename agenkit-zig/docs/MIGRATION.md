@@ -367,7 +367,7 @@ pub fn main() !void {
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go"
+import "github.com/scttfrdmn/agenkit-go"
 
 msg := agenkit.NewTextMessage("user", "Hello!")
 defer msg.Close()
@@ -1206,6 +1206,6 @@ std.debug.print("Duration: {d:.2}ms\n", .{duration});
 - **Examples:** Check `examples/` directory for complete examples
 - **API Docs:** See [API.md](API.md)
 - **Patterns:** See [PATTERNS.md](PATTERNS.md)
-- **Issues:** [GitHub Issues](https://github.com/agenkit/agenkit/issues)
+- **Issues:** [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 
 **Welcome to Agenkit-Zig! 🚀**

@@ -444,7 +444,7 @@ if "usage" in response.metadata:
 
 ## Examples
 
-See the [examples/llm/](https://github.com/agenkit/agenkit/tree/main/examples/llm) directory for complete working examples:
+See the [examples/llm/](https://github.com/scttfrdmn/agenkit/tree/main/examples/llm) directory for complete working examples:
 
 - `anthropic_example.py` - Basic Anthropic usage
 - `openai_example.py` - Basic OpenAI usage

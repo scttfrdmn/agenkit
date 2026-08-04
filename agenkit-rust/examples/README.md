@@ -77,7 +77,7 @@ Real LLM provider integrations for production use:
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone and build
-git clone https://github.com/agenkit/agenkit.git
+git clone https://github.com/scttfrdmn/agenkit.git
 cd agenkit/agenkit-rust
 
 # Build all examples
@@ -431,8 +431,8 @@ Agenkit Rust follows a conservative Minimum Supported Rust Version (MSRV) policy
 
 ## Need Help?
 
-- **Issues**: [GitHub Issues](https://github.com/agenkit/agenkit/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/agenkit/agenkit/discussions)
+- **Issues**: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/scttfrdmn/agenkit/discussions)
 - **Documentation**: [/docs](../../docs/)
 - **Cargo Docs**: `cargo doc --open`
 - **Tests**: [/tests](../../tests/) - 137+ test examples

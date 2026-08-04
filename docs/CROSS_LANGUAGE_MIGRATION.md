@@ -89,7 +89,8 @@ package main
 
 import (
     "context"
-    "github.com/scttfrdmn/agenkit/agenkit-go/core"
+
+    "github.com/scttfrdmn/agenkit-go/agenkit"
 )
 
 type GreetingAgent struct{}
@@ -98,11 +99,17 @@ func (a *GreetingAgent) Name() string {
     return "greeting"
 }
 
-func (a *GreetingAgent) Process(ctx context.Context, msg core.Message) (core.Message, error) {
-    return core.Message{
-        Role:    "assistant",
-        Content: "Hello, " + msg.Content.(string) + "!",
-    }, nil
+func (a *GreetingAgent) Capabilities() []string {
+    return []string{"greeting"}
+}
+
+func (a *GreetingAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
+    // Content is `any`, so use ContentString() rather than concatenating directly.
+    return agenkit.NewMessage("assistant", "Hello, "+msg.ContentString()+"!"), nil
+}
+
+func (a *GreetingAgent) Introspect() *agenkit.IntrospectionResult {
+    return agenkit.DefaultIntrospectionResult(a)
 }
 ```
 
@@ -258,8 +265,9 @@ import (
     "context"
     "errors"
     "fmt"
-    "github.com/scttfrdmn/agenkit/agenkit-go/core"
-    "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
+
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/patterns"
 )
 
 type Validator struct{}
@@ -268,31 +276,39 @@ func (v *Validator) Name() string {
     return "validator"
 }
 
-func (v *Validator) Process(ctx context.Context, msg core.Message) (core.Message, error) {
-    if msg.Content == "" {
-        return core.Message{}, errors.New("empty content")
+func (v *Validator) Capabilities() []string {
+    return []string{"validation"}
+}
+
+func (v *Validator) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
+    if msg.ContentString() == "" {
+        return nil, errors.New("empty content")
     }
-    return core.Message{Role: "assistant", Content: "Valid"}, nil
+    return agenkit.NewMessage("assistant", "Valid"), nil
+}
+
+func (v *Validator) Introspect() *agenkit.IntrospectionResult {
+    return agenkit.DefaultIntrospectionResult(v)
 }
 
 func main() {
-    pipeline := patterns.NewSequential(patterns.SequentialConfig{
-        Agents: []core.Agent{
-            &Validator{},
-            &ProcessorAgent{},
-            &FormatterAgent{},
-        },
-    })
-
-    result, err := pipeline.Process(context.Background(), core.Message{
-        Role:    "user",
-        Content: "data",
+    // NewSequentialAgent returns (agent, error) — a nil or empty agent list is an error,
+    // not a silently empty pipeline.
+    pipeline, err := patterns.NewSequentialAgent([]agenkit.Agent{
+        &Validator{},
+        &ProcessorAgent{},
+        &FormatterAgent{},
     })
     if err != nil {
         panic(err)
     }
 
-    fmt.Println(result.Content)
+    result, err := pipeline.Process(context.Background(), agenkit.NewMessage("user", "data"))
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println(result.ContentString())
 }
 ```
 
@@ -935,8 +951,8 @@ import (
     "fmt"
     "strings"
 
-    "github.com/scttfrdmn/agenkit/agenkit-go/core"
-    "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/patterns"
 )
 
 type BillingAgent struct{}
@@ -945,12 +961,17 @@ func (a *BillingAgent) Name() string {
     return "billing"
 }
 
-func (a *BillingAgent) Process(ctx context.Context, msg core.Message) (core.Message, error) {
+func (a *BillingAgent) Capabilities() []string {
+    return []string{"billing"}
+}
+
+func (a *BillingAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
     // Handle billing queries
-    return core.Message{
-        Role:    "assistant",
-        Content: "Billing: Your account balance is $50",
-    }, nil
+    return agenkit.NewMessage("assistant", "Billing: Your account balance is $50"), nil
+}
+
+func (a *BillingAgent) Introspect() *agenkit.IntrospectionResult {
+    return agenkit.DefaultIntrospectionResult(a)
 }
 
 type TechnicalAgent struct{}
@@ -959,43 +980,70 @@ func (a *TechnicalAgent) Name() string {
     return "technical"
 }
 
-func (a *TechnicalAgent) Process(ctx context.Context, msg core.Message) (core.Message, error) {
-    // Handle technical queries
-    return core.Message{
-        Role:    "assistant",
-        Content: "Technical: Troubleshooting...",
-    }, nil
+func (a *TechnicalAgent) Capabilities() []string {
+    return []string{"technical"}
 }
 
-func keywordRouter(msg core.Message, routes map[string]core.Agent) (string, error) {
-    content := strings.ToLower(msg.Content.(string))
+func (a *TechnicalAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
+    // Handle technical queries
+    return agenkit.NewMessage("assistant", "Technical: Troubleshooting..."), nil
+}
+
+func (a *TechnicalAgent) Introspect() *agenkit.IntrospectionResult {
+    return agenkit.DefaultIntrospectionResult(a)
+}
+
+// Routing is done by a ClassifierAgent — an agenkit.Agent that also implements
+// Classify. The returned key selects an entry in RouterConfig.Agents.
+type KeywordClassifier struct{}
+
+func (c *KeywordClassifier) Name() string { return "keyword-classifier" }
+
+func (c *KeywordClassifier) Capabilities() []string { return []string{"classification"} }
+
+func (c *KeywordClassifier) Classify(ctx context.Context, msg *agenkit.Message) (string, error) {
+    content := strings.ToLower(msg.ContentString())
     if strings.Contains(content, "bill") || strings.Contains(content, "payment") {
         return "billing", nil
     }
     if strings.Contains(content, "error") || strings.Contains(content, "broken") {
         return "technical", nil
     }
-    return "", nil  // Use default
+    return "", nil // falls back to DefaultKey
+}
+
+func (c *KeywordClassifier) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
+    category, err := c.Classify(ctx, msg)
+    if err != nil {
+        return nil, err
+    }
+    return agenkit.NewMessage("assistant", category), nil
+}
+
+func (c *KeywordClassifier) Introspect() *agenkit.IntrospectionResult {
+    return agenkit.DefaultIntrospectionResult(c)
 }
 
 func main() {
-    router := patterns.NewRouter(patterns.RouterConfig{
-        Routes: map[string]core.Agent{
+    router, err := patterns.NewRouterAgent(&patterns.RouterConfig{
+        Classifier: &KeywordClassifier{},
+        Agents: map[string]agenkit.Agent{
             "billing":   &BillingAgent{},
             "technical": &TechnicalAgent{},
         },
-        RoutingStrategy: keywordRouter,
-    })
-
-    result, err := router.Process(context.Background(), core.Message{
-        Role:    "user",
-        Content: "I need help with my bill",
+        DefaultKey: "technical",
     })
     if err != nil {
         panic(err)
     }
 
-    fmt.Println(result.Content)
+    result, err := router.Process(context.Background(),
+        agenkit.NewMessage("user", "I need help with my bill"))
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println(result.ContentString())
 }
 ```
 

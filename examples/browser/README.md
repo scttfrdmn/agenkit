@@ -352,6 +352,6 @@ MIT
 
 ## Links
 
-- [Agenkit Repository](https://github.com/agenkit/agenkit)
-- [Issue #288](https://github.com/agenkit/agenkit/issues/288)
+- [Agenkit Repository](https://github.com/scttfrdmn/agenkit)
+- [Issue #288](https://github.com/scttfrdmn/agenkit/issues/288)
 - [WASM Language Choices](../../docs/WASM_LANGUAGE_CHOICES.md)

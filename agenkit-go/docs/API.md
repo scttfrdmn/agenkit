@@ -120,7 +120,7 @@ func (a *MyAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.M
         return nil, fmt.Errorf("empty message content")
     }
 
-    return agenkit.NewMessage("assistant", "processed: "+msg.Content), nil
+    return agenkit.NewMessage("assistant", "processed: "+msg.ContentString()), nil
 }
 
 func (a *MyAgent) Introspect() *agenkit.IntrospectionResult {
@@ -752,7 +752,7 @@ auto := patterns.NewAutonomousAgent(&patterns.AutonomousConfig{
     Goal:      "Research and summarize the latest Go release",
     MaxSteps:  20,
     StopCriteria: func(resp *agenkit.Message) bool {
-        return strings.Contains(resp.Content, "DONE")
+        return strings.Contains(resp.ContentString(), "DONE")
     },
 })
 

@@ -500,6 +500,6 @@ class MyReasoningTechnique(Agent):
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/agenkit/agenkit/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/agenkit/agenkit/discussions)
+- **Issues:** [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/scttfrdmn/agenkit/discussions)
 - **Contributing:** See [CONTRIBUTING.md](../../CONTRIBUTING.md)

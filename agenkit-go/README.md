@@ -1,11 +1,11 @@
 # Agenkit Go
 
-**Production-grade AI agent framework for Go 1.21+**
+**Production-grade AI agent toolkit for Go 1.25.12+**
 
 The Go implementation of Agenkit provides exceptional performance (18x faster than Python) while maintaining 100% behavioral parity with the reference Python implementation.
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/scttfrdmn/agenkit/agenkit-go.svg)](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go)
-[![Go 1.21+](https://img.shields.io/badge/go-1.21+-00ADD8.svg)](https://golang.org/)
+[![Go 1.25+](https://img.shields.io/badge/go-1.25+-00ADD8.svg)](https://golang.org/)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 [![Cross-Language Parity](https://img.shields.io/badge/parity-100%25-success.svg)](../../tests/cross_language/)
 

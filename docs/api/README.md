@@ -7,7 +7,7 @@ This section contains per-language public API references for Agenkit. All six im
 | Language | Reference | Package / Module |
 |----------|-----------|-----------------|
 | Python | [python.md](python.md) | `agenkit` |
-| Go | [go.md](go.md) | `github.com/scttfrdmn/agenkit/agenkit-go` |
+| Go | [go.md](go.md) | `github.com/scttfrdmn/agenkit-go` |
 | TypeScript | [typescript.md](typescript.md) | `agenkit-ts` |
 | Rust | [rust.md](rust.md) | `agenkit` (crate) |
 | C++ | [cpp.md](cpp.md) | `agenkit::core`, `agenkit::adapters`, … |

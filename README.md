@@ -7,7 +7,7 @@ Agenkit is a lightweight, cross-language toolkit for building distributed AI age
 [![Website](https://img.shields.io/badge/website-agenkit.dev-blue)](https://agenkit.dev)
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![TypeScript 5.0+](https://img.shields.io/badge/typescript-5.0+-3178C6.svg)](https://www.typescriptlang.org/)
-[![Go 1.23+](https://img.shields.io/badge/go-1.23+-00ADD8.svg)](https://golang.org/)
+[![Go 1.25+](https://img.shields.io/badge/go-1.25+-00ADD8.svg)](https://golang.org/)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org/)
 [![Zig 0.15.2+](https://img.shields.io/badge/zig-0.15.2+-F7A41D.svg)](https://ziglang.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -281,14 +281,14 @@ WebSocketServer(agent, port=8765).start()  # Bidirectional streaming
 pip install agenkit
 
 # Go
-go get github.com/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 
 # TypeScript/Node.js
 npm install @agenkit/core
 
 # C++
 # Clone and build (CMake required)
-git clone https://github.com/agenkit/agenkit.git
+git clone https://github.com/scttfrdmn/agenkit.git
 cd agenkit/agenkit-cpp && mkdir build && cd build && cmake .. && make
 
 # Rust
@@ -296,7 +296,7 @@ cargo add agenkit
 
 # Zig
 # Clone and build (Zig 0.12+ required)
-git clone https://github.com/agenkit/agenkit.git
+git clone https://github.com/scttfrdmn/agenkit.git
 cd agenkit/agenkit-zig && zig build
 ```
 
@@ -498,9 +498,9 @@ We provide 27+ examples covering common use cases:
 ## Community
 
 - **Website:** [agenkit.dev](https://agenkit.dev)
-- **GitHub:** [github.com/agenkit/agenkit](https://github.com/agenkit/agenkit)
-- **Issues:** [Report bugs or request features](https://github.com/agenkit/agenkit/issues)
-- **Discussions:** [Ask questions](https://github.com/agenkit/agenkit/discussions)
+- **GitHub:** [github.com/scttfrdmn/agenkit](https://github.com/scttfrdmn/agenkit)
+- **Issues:** [Report bugs or request features](https://github.com/scttfrdmn/agenkit/issues)
+- **Discussions:** [Ask questions](https://github.com/scttfrdmn/agenkit/discussions)
 
 ## Contributing
 
@@ -510,7 +510,7 @@ We welcome contributions! See our [Contributing Guide](.github/CONTRIBUTING.md).
 
 ```bash
 # Clone repository
-git clone https://github.com/agenkit/agenkit.git
+git clone https://github.com/scttfrdmn/agenkit.git
 cd agenkit
 
 # Install dependencies

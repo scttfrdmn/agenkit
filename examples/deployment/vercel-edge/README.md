@@ -756,7 +756,7 @@ if (!body.agent_type || !body.message) {
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/agenkit/agenkit/issues
+- GitHub Issues: https://github.com/scttfrdmn/agenkit/issues
 - Vercel Docs: https://vercel.com/docs
 - Next.js Docs: https://nextjs.org/docs
 - Community Discord: https://discord.gg/agenkit
@@ -767,4 +767,4 @@ For issues and questions:
 - [Vercel KV](https://vercel.com/docs/storage/vercel-kv)
 - [Next.js App Router](https://nextjs.org/docs/app)
 - [Edge Runtime](https://edge-runtime.vercel.app/)
-- [Agenkit Documentation](https://github.com/agenkit/agenkit)
+- [Agenkit Documentation](https://github.com/scttfrdmn/agenkit)

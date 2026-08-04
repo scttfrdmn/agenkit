@@ -249,28 +249,28 @@ package main
 
 import (
     "context"
-    "github.com/scttfrdmn/agenkit/agenkit-go/core"
-    "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
+
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/patterns"
 )
 
 // Build pipeline in Go
-pipeline := patterns.NewSequential(
-    patterns.SequentialConfig{
-        Agents: []core.Agent{
-            &ExtractorAgent{},
-            &AnalyzerAgent{},
-            &SummarizerAgent{},
-        },
-    },
-)
+pipeline, err := patterns.NewSequentialAgent([]agenkit.Agent{
+    &ExtractorAgent{},
+    &AnalyzerAgent{},
+    &SummarizerAgent{},
+})
+if err != nil {
+    log.Fatal(err)
+}
 
 // Process document
-doc := core.Message{Role: "user", Content: "Q4 2024 Financial Report..."}
+doc := agenkit.NewMessage("user", "Q4 2024 Financial Report...")
 result, err := pipeline.Process(context.Background(), doc)
 if err != nil {
     log.Fatal(err)
 }
-fmt.Println(result.Content)
+fmt.Println(result.ContentString())
 ```
 
 **Pros:**

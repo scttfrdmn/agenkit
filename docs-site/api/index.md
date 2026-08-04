@@ -146,10 +146,13 @@ result = await go_agent.process(message)
 
 ```go
 // Go server
-import "github.com/scttfrdmn/agenkit/agenkit-go/transport/http"
+import "github.com/scttfrdmn/agenkit-go/adapter/http"
 
 server := http.NewHTTPAgent(agent, ":8080")
-server.ListenAndServe()
+if err := server.Start(ctx); err != nil {
+    log.Fatal(err)
+}
+defer func() { _ = server.Stop() }()
 ```
 
 ---

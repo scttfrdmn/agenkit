@@ -257,11 +257,11 @@ describe('GreetingAgent', () => {
 
 **Go:**
 ```bash
-go get github.com/agenkit/agenkit-go@v0.75.0
+go get github.com/scttfrdmn/agenkit-go@v0.75.0
 ```
 
 ```go
-import "github.com/agenkit/agenkit-go"
+import "github.com/scttfrdmn/agenkit-go"
 ```
 
 **TypeScript:**
@@ -779,7 +779,7 @@ try {
     .version = "0.1.0",
     .dependencies = .{
         .agenkit = .{
-            .url = "https://github.com/agenkit/agenkit/releases/...",
+            .url = "https://github.com/scttfrdmn/agenkit/releases/...",
             .hash = "1220...",
         },
     },
@@ -1176,7 +1176,7 @@ const workflow = new SequentialAgent(
 |----------|---------|-----------------|
 | TypeScript | `npm install @agenkit/core` | `package.json` |
 | Python | `pip install agenkit` | `pyproject.toml` |
-| Go | `go get github.com/agenkit/agenkit-go` | `go.mod` |
+| Go | `go get github.com/scttfrdmn/agenkit-go` | `go.mod` |
 | Rust | `cargo add agenkit-rs` | `Cargo.toml` |
 | C++ | CMake `find_package` | `CMakeLists.txt` |
 | Zig | `build.zig.zon` | `build.zig.zon` |

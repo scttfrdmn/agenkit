@@ -2,7 +2,7 @@
 
 **Target audience**: Go developers new to Agenkit
 **Time to first agent**: 15-30 minutes
-**Prerequisites**: Go 1.23+
+**Prerequisites**: Go 1.25.12+
 
 ---
 

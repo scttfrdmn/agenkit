@@ -81,7 +81,7 @@ msg = Message.with_text("user", "Hello!")
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go"
+import "github.com/scttfrdmn/agenkit-go"
 
 msg := agenkit.NewMessageWithText(agenkit.RoleUser, "Hello!")
 // Garbage collected (no manual cleanup needed)
@@ -112,7 +112,7 @@ class MyAgent(Agent):
 ```go
 package main
 
-import "github.com/agenkit/agenkit-go"
+import "github.com/scttfrdmn/agenkit-go"
 
 type MyAgent struct {
     name string
@@ -197,7 +197,7 @@ result = await seq.process(message)
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 seq := patterns.NewSequential()
 seq.AddAgent(agent1)
@@ -1263,7 +1263,7 @@ print(f"Success after {result.metadata['fallback_attempts']} attempts")
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 // Create fallback chain
 fallback := patterns.NewFallback()
@@ -1368,7 +1368,7 @@ print(f"Revisions: {result.metadata['supervisor_revisions']}")
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 supervisor := patterns.NewSupervisor(
     qaAgent,
@@ -1489,7 +1489,7 @@ result = await hitl.process(message)
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 func approvalCallback(action string, context map[string]interface{}) (bool, string, error) {
     fmt.Printf("Agent wants to: %s\n", action)
@@ -1655,7 +1655,7 @@ print(f"Routed to: {result.metadata['router_selected_agent']}")
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 router := patterns.NewRouter()
 router.AddRoute("technical", techAgent)
@@ -1796,7 +1796,7 @@ result = await orchestrator.process(message)
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 workflow := patterns.WorkflowDefinition{
     Stages: []patterns.WorkflowStage{
@@ -2021,7 +2021,7 @@ print(f"Reasoning steps: {len(result.metadata['reasoning_steps'])}")
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 // Chain of Thought
 cotAgent := patterns.NewReasoningWithTools(
@@ -2225,7 +2225,7 @@ for contrib in result.metadata['agent_contributions']:
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 // Sequential refinement
 team := patterns.NewCollaborative()

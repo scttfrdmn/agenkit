@@ -894,7 +894,7 @@ except ValueError as e:
 ### Go
 
 ```go
-import "github.com/agenkit/agenkit-go/agenkit"
+import "github.com/scttfrdmn/agenkit-go/agenkit"
 
 // Explicit validation required
 msg := agenkit.NewMessage("user", "Large content...")

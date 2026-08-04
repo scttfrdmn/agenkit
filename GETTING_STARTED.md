@@ -37,7 +37,7 @@ Agenkit is a production-ready framework for building distributed AI agent system
 pip install agenkit
 
 # Or install from source with development dependencies
-git clone https://github.com/agenkit/agenkit.git
+git clone https://github.com/scttfrdmn/agenkit.git
 cd agenkit
 pip install -e ".[dev]"
 ```
@@ -48,15 +48,15 @@ pip install -e ".[dev]"
 
 ```bash
 # Install the Go module
-go get github.com/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 
 # Or clone and use locally
-git clone https://github.com/agenkit/agenkit.git
+git clone https://github.com/scttfrdmn/agenkit.git
 cd agenkit/agenkit-go
 go mod download
 ```
 
-**Requirements:** Go 1.21+
+**Requirements:** Go 1.25.12+
 
 ### TypeScript
 
@@ -74,7 +74,7 @@ yarn add @agenkit/core
 
 ```bash
 # Clone and build with CMake
-git clone https://github.com/agenkit/agenkit.git
+git clone https://github.com/scttfrdmn/agenkit.git
 cd agenkit/agenkit-cpp
 mkdir build && cd build
 cmake ..
@@ -90,7 +90,7 @@ make
 cargo add agenkit
 
 # Or from source
-git clone https://github.com/agenkit/agenkit.git
+git clone https://github.com/scttfrdmn/agenkit.git
 cd agenkit/agenkit-rust
 cargo build --release
 ```
@@ -165,7 +165,7 @@ import (
     "fmt"
     "strings"
 
-    "github.com/agenkit/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
 )
 
 // QAAgent is a simple Q&A agent
@@ -180,13 +180,13 @@ func (a *QAAgent) Capabilities() []string {
 }
 
 func (a *QAAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
-    content := strings.ToLower(msg.Content)
+    content := strings.ToLower(msg.ContentString())
 
     var response string
     if strings.Contains(content, "capital of france") {
         response = "The capital of France is Paris."
     } else {
-        response = fmt.Sprintf("I received: %s", msg.Content)
+        response = fmt.Sprintf("I received: %s", msg.ContentString())
     }
 
     return &agenkit.Message{
@@ -210,7 +210,7 @@ func main() {
         panic(err)
     }
 
-    fmt.Printf("Agent: %s\n", response.Content)
+    fmt.Printf("Agent: %s\n", response.ContentString())
 }
 ```
 
@@ -336,7 +336,7 @@ result = await pipeline.process(input_message)
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 // Create pipeline
 pipeline := patterns.NewSequential([]agenkit.Agent{
@@ -443,7 +443,7 @@ response = await remote_agent.process(message)
 
 **Go Server:**
 ```go
-import "github.com/agenkit/agenkit-go/adapter/transport"
+import "github.com/scttfrdmn/agenkit-go/adapter/transport"
 
 // Start HTTP server
 server := transport.NewHTTPServer(agent, ":8080")
@@ -452,7 +452,7 @@ server.Start()
 
 **Go Client:**
 ```go
-import "github.com/agenkit/agenkit-go/adapter/transport"
+import "github.com/scttfrdmn/agenkit-go/adapter/transport"
 
 // Connect to remote agent
 client := transport.NewHTTPClient("http://localhost:8080")
@@ -472,7 +472,7 @@ server.start()
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/adapter/transport"
+import "github.com/scttfrdmn/agenkit-go/adapter/transport"
 
 // Start gRPC server
 server := transport.NewGRPCServer(agent, ":50051")
@@ -513,7 +513,7 @@ response = await protected_agent.process(message)
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/middleware"
+import "github.com/scttfrdmn/agenkit-go/middleware"
 
 // Wrap agent
 protectedAgent := middleware.NewCircuitBreaker(
@@ -654,7 +654,7 @@ memory.clear()
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/memory"
+import "github.com/scttfrdmn/agenkit-go/memory"
 
 // Create memory manager
 memoryMgr := memory.NewMemoryManager(
@@ -695,7 +695,7 @@ print(f"Budget remaining: {tracker.budget_remaining_percent():.1f}%")
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/budget"
+import "github.com/scttfrdmn/agenkit-go/budget"
 
 // Create tracker
 tracker := budget.NewBudgetTracker(
@@ -740,7 +740,7 @@ state = checkpoint_mgr.load_checkpoint("qa-agent-1")
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/checkpointing"
+import "github.com/scttfrdmn/agenkit-go/checkpointing"
 
 // Create manager
 storage := checkpointing.NewFileCheckpointStorage("./checkpoints")
@@ -788,7 +788,7 @@ safe_output = redactor.redact(agent_output)
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/safety"
+import "github.com/scttfrdmn/agenkit-go/safety"
 
 // Detect injection
 detector := safety.NewPromptInjectionDetector()
@@ -844,7 +844,7 @@ print(f"Avg Latency: {result.avg_latency_ms:.0f}ms")
 
 **Go:**
 ```go
-import "github.com/agenkit/agenkit-go/evaluation"
+import "github.com/scttfrdmn/agenkit-go/evaluation"
 
 // Create evaluator
 metrics := []evaluation.Metric{
@@ -963,9 +963,9 @@ Each autonomous agent package has detailed documentation:
 ### Community
 
 - **Website**: [https://agenkit.dev](https://agenkit.dev)
-- **GitHub**: https://github.com/agenkit/agenkit
-- **Issues**: https://github.com/agenkit/agenkit/issues
-- **Examples**: https://github.com/agenkit/agenkit/tree/main/examples
+- **GitHub**: https://github.com/scttfrdmn/agenkit
+- **Issues**: https://github.com/scttfrdmn/agenkit/issues
+- **Examples**: https://github.com/scttfrdmn/agenkit/tree/main/examples
 
 ### Quick Start Checklist
 
@@ -983,8 +983,8 @@ Each autonomous agent package has detailed documentation:
 Having issues? Here's how to get help:
 
 1. Check the [documentation](docs/)
-2. Search [existing issues](https://github.com/agenkit/agenkit/issues)
-3. Create a [new issue](https://github.com/agenkit/agenkit/issues/new)
+2. Search [existing issues](https://github.com/scttfrdmn/agenkit/issues)
+3. Create a [new issue](https://github.com/scttfrdmn/agenkit/issues/new)
 4. Review [examples](examples/)
 
 ---

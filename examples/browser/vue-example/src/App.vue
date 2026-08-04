@@ -149,8 +149,8 @@ watch(selectedModule, () => {
         <strong>Module size:</strong> 4.5KB-66KB per agent | <strong>Load time:</strong> &lt;10ms
       </p>
       <p>
-        Learn more: <a href="https://github.com/agenkit/agenkit" target="_blank" rel="noopener">
-          github.com/agenkit/agenkit
+        Learn more: <a href="https://github.com/scttfrdmn/agenkit" target="_blank" rel="noopener">
+          github.com/scttfrdmn/agenkit
         </a>
       </p>
     </footer>

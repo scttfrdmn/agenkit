@@ -120,7 +120,7 @@ func (a *ProcessingAgent) Introspect() *agenkit.IntrospectionResult {
     return agenkit.DefaultIntrospectionResult(a)
 }
 func (a *ProcessingAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
-    processed := "PROCESSED: " + msg.Content
+    processed := "PROCESSED: " + msg.ContentString()
     return agenkit.NewMessage("assistant", processed), nil
 }
 
@@ -595,7 +595,7 @@ func main() {
         Name:        "uppercase",
         Description: "Converts text to uppercase",
         Handler: func(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
-            return agenkit.NewMessage("assistant", strings.ToUpper(msg.Content)), nil
+            return agenkit.NewMessage("assistant", strings.ToUpper(msg.ContentString())), nil
         },
     })
 
@@ -603,7 +603,7 @@ func main() {
         Name:        "word-counter",
         Description: "Counts words in text",
         Handler: func(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
-            words := strings.Fields(msg.Content)
+            words := strings.Fields(msg.ContentString())
             return agenkit.NewMessage("assistant", fmt.Sprintf("%d words", len(words))), nil
         },
     })
@@ -786,7 +786,7 @@ func main() {
         MaxSteps:  15,
         StopCriteria: func(resp *agenkit.Message) bool {
             // Stop when agent signals completion
-            return strings.Contains(resp.Content, "TASK_COMPLETE")
+            return strings.Contains(resp.ContentString(), "TASK_COMPLETE")
         },
     })
 

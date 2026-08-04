@@ -388,6 +388,6 @@ MIT
 
 ## Links
 
-- [Issue #289](https://github.com/agenkit/agenkit/issues/289)
-- [Agenkit Repository](https://github.com/agenkit/agenkit)
+- [Issue #289](https://github.com/scttfrdmn/agenkit/issues/289)
+- [Agenkit Repository](https://github.com/scttfrdmn/agenkit)
 - [CI/CD Workflow](../../.github/workflows/wasm-ci.yml)

@@ -18,7 +18,7 @@ A beginner-friendly guide to building AI agents with Go.
 
 ### Prerequisites
 
-You need Go 1.21 or later. Check your version:
+You need Go 1.25.12 or later. Check your version:
 
 ```bash
 go version
@@ -357,7 +357,7 @@ type StatelessAgent struct {
 }
 
 func (a *StatelessAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
-    return agenkit.NewMessage("assistant", "processed: "+msg.Content), nil
+    return agenkit.NewMessage("assistant", "processed: "+msg.ContentString()), nil
 }
 ```
 
@@ -667,7 +667,7 @@ func TestGreetingAgentTableDriven(t *testing.T) {
             if err != nil {
                 t.Fatalf("unexpected error: %v", err)
             }
-            if tt.wantContain != "" && !strings.Contains(response.Content, tt.wantContain) {
+            if tt.wantContain != "" && !strings.Contains(response.ContentString(), tt.wantContain) {
                 t.Errorf("response %q does not contain %q", response.Content, tt.wantContain)
             }
         })

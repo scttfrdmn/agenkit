@@ -786,6 +786,6 @@ python examples/memory/conversational_agent.py
 
 ## Contributing
 
-Found an issue? Have a suggestion? [Open an issue](https://github.com/agenkit/agenkit/issues)
+Found an issue? Have a suggestion? [Open an issue](https://github.com/scttfrdmn/agenkit/issues)
 
 Want to add a new memory implementation? See [CONTRIBUTING.md](../CONTRIBUTING.md)

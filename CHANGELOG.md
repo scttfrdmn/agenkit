@@ -7,6 +7,115 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — every documented Go install path 404s; version floor contradicted the docs (Issue #834)
+
+`go get github.com/agenkit/agenkit-go` was the documented install command in `README.md`,
+`GETTING_STARTED.md`, `docs-site/`, and every migration guide. **The `agenkit/agenkit-go`
+repository does not exist** — nor does `agenkit/agenkit`, used for every clone command,
+issue link and badge. 212 occurrences across 82 files, so no Go user could install the
+toolkit as documented, and no reader could open a linked issue or clone the repo.
+
+Corrected to the paths that actually resolve, verified against the live module proxy:
+
+| Wrong | Right | Evidence |
+|-------|-------|----------|
+| `github.com/agenkit/agenkit-go` (113×) | `github.com/scttfrdmn/agenkit-go` | proxy lists `v0.9.0`, `v0.10.1`, `v0.85.0`, `v0.86.0`, `v0.87.0` |
+| `github.com/agenkit/agenkit` (99×) | `github.com/scttfrdmn/agenkit` | the actual monorepo |
+
+Verified by building a fresh consumer module outside the repo against
+`github.com/scttfrdmn/agenkit-go@v0.87.0`: `go get` resolves, `go build` succeeds, the
+binary runs. Nothing in `make test` exercises this, because the suite builds from inside
+the monorepo where the module resolves by directory — the published-consumer path had no
+coverage at all.
+
+Also corrected the OCI `org.opencontainers.image.source` label in `Dockerfile.go` and
+`Dockerfile.python`, which pointed published images at the nonexistent repo.
+
+**Which of the two live module paths is canonical is now written down once.** Both
+`github.com/scttfrdmn/agenkit-go` and `github.com/scttfrdmn/agenkit/agenkit-go` resolve,
+and the docs recommended each about equally with no statement of which to use — the
+ambiguity #834 item 4 describes. `docs/RELEASING_AGENKIT_GO.md` now owns the rule:
+
+- **`github.com/scttfrdmn/agenkit-go` (the mirror) is the canonical install path**, because
+  it is the only one a consumer can pin. The monorepo path has **zero** tagged versions on
+  the proxy: a nested module needs subdirectory-prefixed tags (`agenkit-go/v0.87.0`) and
+  this repo publishes bare `vX.Y.Z` tags, so `go get` succeeds but resolves to a
+  `v0.0.0-<timestamp>-<hash>` pseudo-version. (Tagging itself remains open as #834 item 3.)
+- **Inside `agenkit-go/`** — the monorepo path, because the sync workflow rewrites it on the
+  way out; writing the mirror path there would break the in-tree build *and* survive the
+  rewrite untouched.
+- **In-tree Go outside `agenkit-go/`** (`examples/apps/*/go/`, `harness_go/`) — also the
+  monorepo path; each carries a local `replace`, so it builds against the working tree.
+- **Prose and docs** — the mirror path, since nothing rewrites them.
+
+90 occurrences in reader-facing docs moved from the unpinnable monorepo path to the mirror.
+One had gone the other way: `agenkit-go/adapter/llm/README.md` sits inside the synced
+subtree, so it was restored to the monorepo path.
+
+`docs/MIGRATION_VERIFICATION.md` asserted the *opposite* — that
+`github.com/scttfrdmn/agenkit-go` "does not resolve", filed as Critical. It resolves and is
+the only pinnable path; that report is corrected rather than left as a trap for the next
+reader.
+
+**Generated protobuf was excluded from the mechanical rewrite.** The descriptor in both
+`agent.pb.go` files and in `proto/agent_pb2.py` is length-prefixed: `go_package` sits inside
+a `FileOptions` submessage, so the old 43-byte path encodes as `B-Z+` (0x2d/0x2b) and the
+new 53-byte path as `B7Z5` (0x37/0x35). A text substitution leaves a descriptor claiming the
+wrong length, which corrupts everything after it — and a corrupt descriptor panics during
+package init, so this would have failed loudly at import time rather than subtly. Both
+prefixes were recomputed and the result checked byte-for-byte against `protoc`/`grpc_tools`
+output. `proto/agent_pb2.py` was additionally *stale*: `proto/agent.proto` already carried
+the correct `go_package`, but the generated file still had the old one.
+
+`agenkit-ts/proto/agent.proto` was aligned to the monorepo path, so both `.proto` files are
+now byte-identical. Verified at runtime that each descriptor unmarshals, reports the
+expected `go_package`, and round-trips a message.
+
+**Go version floor.** `agenkit-go/go.mod` declares `go 1.25.12`, which is a hard floor:
+`GOTOOLCHAIN=go1.21.0 go build` refuses with `go.mod requires go >= 1.25.12`. Fifteen doc
+sites promised Go 1.21+, 1.22+ or 1.23+, and all four CI workflows already pin 1.25.12.
+Requirement statements and badges corrected; historical CHANGELOG/ROADMAP entries,
+benchmark host records, and prose about when a Go feature landed were deliberately left
+alone.
+
+### Fixed — Go doc snippets that could not compile
+
+Exposed while verifying the install paths above: correcting the module path made it possible
+to actually build the documented snippets, and several then failed.
+
+**`Message.Content` is `any`, not `string`.** Since the Content migration, string
+concatenation and `strings.*` calls need `ContentString()`:
+
+```go
+processed := "PROCESSED: " + msg.Content        // does not compile
+processed := "PROCESSED: " + msg.ContentString()
+```
+
+The `README.md`/`GETTING_STARTED.md` Go quickstart was among the casualties — it failed on
+`strings.ToLower(msg.Content)`, so the toolkit's primary Go example did not build. It now
+compiles and prints exactly the output the doc claims. 40 occurrences across 15 files.
+`fmt.Sprintf("%s", msg.Content)` and explicit `msg.Content.(string)` are legal Go and were
+left as-is — verified by compiling both forms rather than assuming.
+
+**Packages and APIs that have never existed.** Distinct from the rename: these named things
+absent from every version of the module.
+
+| Doc | Wrote | Reality |
+|-----|-------|---------|
+| `tutorials/05-testing-patterns.md` | `agenkit-go/transports` | no such package; `NewHTTPAgent` is a *server* wrapper taking an agent, not an HTTP client → `adapter/remote.RemoteAgent` |
+| `docs-site/api/go.md`, `docs-site/api/index.md` | `transport/http`, `transport/grpc`, bare `adapter` | `adapter/http`, `adapter/grpc`, `adapter/llm`, `adapter/remote` |
+| `docs-site/api/go.md` | `AnthropicAdapter`, `OpenAIAdapter`, `BedrockAdapter`, `GeminiAdapter` | `NewAnthropicLLM`, `NewOpenAILLM`, `NewBedrockLLM`, `NewGeminiLLM` |
+| `docs-site/api/*.md` | `server.ListenAndServe()` | `server.Start(ctx)` / `server.Stop()` |
+| `docs/CROSS_LANGUAGE_MIGRATION.md`, `docs/PATTERN_GUIDE.md` | `agenkit-go/core` | the package is `agenkit` |
+| both above | `patterns.NewSequential(SequentialConfig{Agents: …})` | `patterns.NewSequentialAgent([]agenkit.Agent)`, returning `(agent, error)` |
+| `docs/CROSS_LANGUAGE_MIGRATION.md` | `patterns.NewRouter(RouterConfig{Routes, RoutingStrategy})` | `NewRouterAgent(&RouterConfig{Classifier, Agents, DefaultKey})`; routing is a `ClassifierAgent`, not a func |
+| both above | `Process(ctx, core.Message) (core.Message, error)` | `Process(ctx, *agenkit.Message) (*agenkit.Message, error)` |
+
+Every corrected snippet was extracted verbatim into a throwaway module, compiled against
+`v0.87.0`, and **run** — not eyeballed. The rewritten pipeline and router print
+`Hello, world!` / `Hello, Valid!` / `Billing: Your account balance is $50`. Each documented
+import path was also checked to exist in the published module.
+
 ### Fixed — C++ `ABTest` asked the agent to grade itself; `TestCase::expected` did nothing (Issue #829)
 
 `ABTest::collect_measurements` read the score out of the agent's **own response
@@ -7027,6 +7136,6 @@ This is the first public release of Agenkit. All 5 development phases are comple
 - Router pattern overhead: ~8-12%
 - Production impact: <0.001% (microsecond-level overhead vs LLM calls)
 
-[unreleased]: https://github.com/agenkit/agenkit/compare/v0.9.0...HEAD
-[0.9.0]: https://github.com/agenkit/agenkit/releases/tag/v0.9.0
-[0.1.0]: https://github.com/agenkit/agenkit/releases/tag/v0.1.0
+[unreleased]: https://github.com/scttfrdmn/agenkit/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/scttfrdmn/agenkit/releases/tag/v0.9.0
+[0.1.0]: https://github.com/scttfrdmn/agenkit/releases/tag/v0.1.0

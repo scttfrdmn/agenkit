@@ -6,48 +6,146 @@
 #include <gtest/gtest.h>
 #include "agenkit/evaluation/ab_testing.hpp"
 #include "agenkit/adapters/echo_agent.hpp"
+#include <chrono>
 #include <cmath>
 #include <random>
+#include <string>
+#include <thread>
 
 using namespace agenkit::evaluation;
 using namespace agenkit::core;
 using namespace agenkit::adapters;
 
-// Mock agent for testing - returns metric in metadata
-class MockMetricAgent : public Agent {
+// Answers each test case correctly a fixed proportion of the time.
+//
+// This replaces a MockMetricAgent that returned a fixed response body and reported its
+// own score via `response.with_metadata("accuracy", value)`. That mock is why the bug in
+// #829 survived: ABTest::collect_measurements read the score straight out of response
+// metadata, so the suite only ever exercised an agent grading itself. Against any
+// ordinary agent every measurement was 0.0, for both arms.
+//
+// The test cases here carry a real `expected` fragment, and scoring goes through
+// AccuracyMetric, so `accuracy_` is now the rate at which the agent actually earns its
+// score rather than the number it claims.
+class PartiallyCorrectAgent : public Agent {
 public:
-    explicit MockMetricAgent(double base_metric, double variance = 0.0)
-        : base_metric_(base_metric), variance_(variance) {}
+    // seed is fixed per agent so the accuracy rate is deterministic across runs.
+    PartiallyCorrectAgent(double accuracy, unsigned seed)
+        : accuracy_(accuracy), gen_(seed) {}
 
-    ~MockMetricAgent() override = default;
+    ~PartiallyCorrectAgent() override = default;
 
     std::string name() const override {
-        return "mock_metric_agent";
+        return "partially_correct_agent";
     }
 
     std::future<Result<Message, AgentError>> process(Message message) override {
-        return std::async(std::launch::async, [this, msg = std::move(message)]() -> Result<Message, AgentError> {
-            // Add some random variance if specified
-            double metric_value = base_metric_;
-            if (variance_ > 0.0) {
-                std::random_device rd;
-                std::mt19937 gen(rd());
-                std::normal_distribution<> dist(0.0, variance_);
-                metric_value += dist(gen);
-            }
+        // Draw before going async: the generator is shared mutable state, and the
+        // thread pool runs both arms' test cases through here.
+        bool correct;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            correct = dist_(gen_) < accuracy_;
+        }
 
-            // Create response with metric in metadata
-            Message response("assistant", "Response");
-            response.with_metadata("accuracy", metric_value);
-
+        return std::async(std::launch::async,
+                          [correct, msg = std::move(message)]() -> Result<Message, AgentError> {
+            // The expected fragment for every case below is "42". Answering in prose is
+            // deliberate: `expected` is a fragment, not the whole output
+            // (docs/DEFAULTS.md), so a verbose correct answer must score 1.0.
+            Message response("assistant",
+                             correct ? "After working through it, the answer is 42."
+                                     : "After working through it, the answer is 7.");
             return Result<Message, AgentError>::ok(response);
         });
     }
 
 private:
-    double base_metric_;
-    double variance_;
+    double accuracy_;
+    std::mt19937 gen_;
+    std::uniform_real_distribution<> dist_{0.0, 1.0};
+    std::mutex mutex_;
 };
+
+// Always answers correctly, in prose.
+class CorrectButVerboseAgent : public Agent {
+public:
+    ~CorrectButVerboseAgent() override = default;
+
+    std::string name() const override { return "correct_but_verbose"; }
+
+    std::future<Result<Message, AgentError>> process(Message message) override {
+        return std::async(std::launch::async,
+                          [msg = std::move(message)]() -> Result<Message, AgentError> {
+            return Result<Message, AgentError>::ok(
+                Message("assistant", "Let me think. Carrying the one, the answer is 42."));
+        });
+    }
+};
+
+// Always answers wrongly.
+class AlwaysWrongAgent : public Agent {
+public:
+    ~AlwaysWrongAgent() override = default;
+
+    std::string name() const override { return "always_wrong"; }
+
+    std::future<Result<Message, AgentError>> process(Message message) override {
+        return std::async(std::launch::async,
+                          [msg = std::move(message)]() -> Result<Message, AgentError> {
+            return Result<Message, AgentError>::ok(
+                Message("assistant", "I believe the answer is 7."));
+        });
+    }
+};
+
+// Fails on every call.
+class FailingAgent : public Agent {
+public:
+    ~FailingAgent() override = default;
+
+    std::string name() const override { return "failing_agent"; }
+
+    std::future<Result<Message, AgentError>> process(Message message) override {
+        return std::async(std::launch::async,
+                          [msg = std::move(message)]() -> Result<Message, AgentError> {
+            return Result<Message, AgentError>::err(
+                AgentError(AgentErrorType::Transport, "upstream is down"));
+        });
+    }
+};
+
+// Sleeps before answering, so "latency" has something to measure.
+class SlowAgent : public Agent {
+public:
+    explicit SlowAgent(std::chrono::milliseconds delay) : delay_(delay) {}
+
+    ~SlowAgent() override = default;
+
+    std::string name() const override { return "slow_agent"; }
+
+    std::future<Result<Message, AgentError>> process(Message message) override {
+        return std::async(std::launch::async,
+                          [delay = delay_, msg = std::move(message)]()
+                              -> Result<Message, AgentError> {
+            std::this_thread::sleep_for(delay);
+            return Result<Message, AgentError>::ok(Message("assistant", "The answer is 42."));
+        });
+    }
+
+private:
+    std::chrono::milliseconds delay_;
+};
+
+// Builds `count` cases whose expected fragment is "42".
+static std::vector<TestCase> make_test_cases(int count) {
+    std::vector<TestCase> test_cases;
+    test_cases.reserve(static_cast<size_t>(count));
+    for (int i = 0; i < count; ++i) {
+        test_cases.push_back(TestCase("Question " + std::to_string(i) + ": what is 6*7?", "42"));
+    }
+    return test_cases;
+}
 
 // ABVariant Tests
 
@@ -162,15 +260,11 @@ TEST(ABTestTest, RunWithSignificantDifference) {
     // Create test with t-test
     ABTest test(StatisticalTestType::T_TEST, SignificanceLevel::P_0_05);
 
-    // Create agents with different metrics
-    std::shared_ptr<Agent> control(new MockMetricAgent(0.60, 0.05));
-    std::shared_ptr<Agent> treatment(new MockMetricAgent(0.80, 0.05));
+    // Agents that are correct 30% vs 90% of the time, scored against `expected`
+    std::shared_ptr<Agent> control(new PartiallyCorrectAgent(0.30, 11));
+    std::shared_ptr<Agent> treatment(new PartiallyCorrectAgent(0.90, 22));
 
-    // Create test cases
-    std::vector<TestCase> test_cases;
-    for (int i = 0; i < 30; ++i) {
-        test_cases.push_back(TestCase("input" + std::to_string(i), "output"));
-    }
+    auto test_cases = make_test_cases(30);
 
     // Run test
     auto result = test.run(control, treatment, test_cases, "accuracy").get();
@@ -178,10 +272,10 @@ TEST(ABTestTest, RunWithSignificantDifference) {
     EXPECT_EQ(result.control.sample_size, 30);
     EXPECT_EQ(result.treatment.sample_size, 30);
 
-    // Control should be around 0.60, treatment around 0.80
+    // Control should be around 0.30, treatment around 0.90
     EXPECT_GT(result.treatment.mean, result.control.mean);
 
-    // With 20% difference, should be significant
+    // With a 60-point difference, should be significant
     EXPECT_TRUE(result.is_significant);
     EXPECT_EQ(result.winner, "treatment");
     EXPECT_LT(result.p_value, 0.05);
@@ -191,21 +285,16 @@ TEST(ABTestTest, RunWithNoSignificantDifference) {
     // Create test
     ABTest test(StatisticalTestType::T_TEST, SignificanceLevel::P_0_05);
 
-    // Create agents with same metrics
-    std::shared_ptr<Agent> control(new MockMetricAgent(0.70, 0.1));
-    std::shared_ptr<Agent> treatment(new MockMetricAgent(0.71, 0.1));  // Very small difference
+    // Agents with the same accuracy rate
+    std::shared_ptr<Agent> control(new PartiallyCorrectAgent(0.50, 33));
+    std::shared_ptr<Agent> treatment(new PartiallyCorrectAgent(0.50, 44));
 
-    // Create test cases
-    std::vector<TestCase> test_cases;
-    for (int i = 0; i < 20; ++i) {
-        test_cases.push_back(TestCase("input" + std::to_string(i), "output"));
-    }
+    auto test_cases = make_test_cases(20);
 
     // Run test
     auto result = test.run(control, treatment, test_cases, "accuracy").get();
 
-    // With minimal difference, likely not significant
-    // (probabilistic test - may occasionally fail)
+    // With no real difference, should not be significant
     EXPECT_GE(result.p_value, 0.01);  // Very lenient threshold
 }
 
@@ -213,13 +302,10 @@ TEST(ABTestTest, RunWithMannWhitney) {
     // Create test with Mann-Whitney
     ABTest test(StatisticalTestType::MANN_WHITNEY, SignificanceLevel::P_0_05);
 
-    std::shared_ptr<Agent> control(new MockMetricAgent(0.60, 0.05));
-    std::shared_ptr<Agent> treatment(new MockMetricAgent(0.80, 0.05));
+    std::shared_ptr<Agent> control(new AlwaysWrongAgent());
+    std::shared_ptr<Agent> treatment(new CorrectButVerboseAgent());
 
-    std::vector<TestCase> test_cases;
-    for (int i = 0; i < 25; ++i) {
-        test_cases.push_back(TestCase("input" + std::to_string(i), "output"));
-    }
+    auto test_cases = make_test_cases(25);
 
     auto result = test.run(control, treatment, test_cases, "accuracy").get();
 
@@ -231,13 +317,10 @@ TEST(ABTestTest, RunWithBootstrap) {
     // Create test with bootstrap
     ABTest test(StatisticalTestType::BOOTSTRAP, SignificanceLevel::P_0_05);
 
-    std::shared_ptr<Agent> control(new MockMetricAgent(0.60, 0.05));
-    std::shared_ptr<Agent> treatment(new MockMetricAgent(0.80, 0.05));
+    std::shared_ptr<Agent> control(new PartiallyCorrectAgent(0.25, 55));
+    std::shared_ptr<Agent> treatment(new PartiallyCorrectAgent(0.95, 66));
 
-    std::vector<TestCase> test_cases;
-    for (int i = 0; i < 20; ++i) {
-        test_cases.push_back(TestCase("input" + std::to_string(i), "output"));
-    }
+    auto test_cases = make_test_cases(20);
 
     auto result = test.run(control, treatment, test_cases, "accuracy").get();
 
@@ -251,17 +334,14 @@ TEST(ABTestTest, RunWithBootstrap) {
 TEST(ABTestTest, EffectSizeCalculation) {
     ABTest test(StatisticalTestType::T_TEST, SignificanceLevel::P_0_05);
 
-    std::shared_ptr<Agent> control(new MockMetricAgent(0.60, 0.05));
-    std::shared_ptr<Agent> treatment(new MockMetricAgent(0.80, 0.05));
+    std::shared_ptr<Agent> control(new PartiallyCorrectAgent(0.30, 77));
+    std::shared_ptr<Agent> treatment(new PartiallyCorrectAgent(0.90, 88));
 
-    std::vector<TestCase> test_cases;
-    for (int i = 0; i < 30; ++i) {
-        test_cases.push_back(TestCase("input" + std::to_string(i), "output"));
-    }
+    auto test_cases = make_test_cases(30);
 
     auto result = test.run(control, treatment, test_cases, "accuracy").get();
 
-    // Should have large effect size given 20% difference
+    // Should have large effect size given the 60-point difference
     EXPECT_GT(std::abs(result.effect_size), 0.5);
 }
 
@@ -346,14 +426,18 @@ TEST(ABTestTest, SignificanceLevels) {
     ABTest test_05(StatisticalTestType::T_TEST, SignificanceLevel::P_0_05);
     ABTest test_10(StatisticalTestType::T_TEST, SignificanceLevel::P_0_10);
 
-    // Just verify they construct correctly and run
+    // Just verify they construct correctly and run.
+    //
+    // Partially-correct agents rather than an all-right/all-wrong pair: the latter gives
+    // both arms zero variance, which trips the t-test's `se < 1e-10` guard and reports
+    // p = 1.0 regardless of significance level (#835).
     EXPECT_NO_THROW({
-        std::shared_ptr<Agent> control(new MockMetricAgent(0.60, 0.05));
-        std::shared_ptr<Agent> treatment(new MockMetricAgent(0.80, 0.05));
-        std::vector<TestCase> test_cases(30, TestCase("input", "output"));
+        std::shared_ptr<Agent> control(new PartiallyCorrectAgent(0.25, 313));
+        std::shared_ptr<Agent> treatment(new PartiallyCorrectAgent(0.90, 414));
+        auto test_cases = make_test_cases(30);
 
         auto result = test_05.run(control, treatment, test_cases, "accuracy").get();
-        // With 20% difference and 30 samples, should be significant
+        // A 65-point difference over 30 samples must be significant
         EXPECT_TRUE(result.is_significant);
     });
 }
@@ -362,13 +446,10 @@ TEST(ABTestTest, ControlWinnerWhenHigherMean) {
     ABTest test(StatisticalTestType::T_TEST, SignificanceLevel::P_0_05);
 
     // Control better than treatment
-    std::shared_ptr<Agent> control(new MockMetricAgent(0.90, 0.02));
-    std::shared_ptr<Agent> treatment(new MockMetricAgent(0.70, 0.02));
+    std::shared_ptr<Agent> control(new PartiallyCorrectAgent(0.95, 99));
+    std::shared_ptr<Agent> treatment(new PartiallyCorrectAgent(0.35, 111));
 
-    std::vector<TestCase> test_cases;
-    for (int i = 0; i < 30; ++i) {
-        test_cases.push_back(TestCase("input" + std::to_string(i), "output"));
-    }
+    auto test_cases = make_test_cases(30);
 
     auto result = test.run(control, treatment, test_cases, "accuracy").get();
 
@@ -380,18 +461,185 @@ TEST(ABTestTest, ControlWinnerWhenHigherMean) {
 TEST(ABTestTest, ConfidenceIntervalContainsZeroWhenNoEffect) {
     ABTest test(StatisticalTestType::BOOTSTRAP, SignificanceLevel::P_0_05);
 
-    // Same metric for both with minimal variance
-    std::shared_ptr<Agent> control(new MockMetricAgent(0.75, 0.02));
-    std::shared_ptr<Agent> treatment(new MockMetricAgent(0.75, 0.02));
+    // Same accuracy rate for both arms
+    std::shared_ptr<Agent> control(new PartiallyCorrectAgent(0.50, 123));
+    std::shared_ptr<Agent> treatment(new PartiallyCorrectAgent(0.50, 234));
 
-    std::vector<TestCase> test_cases;
-    for (int i = 0; i < 30; ++i) {
-        test_cases.push_back(TestCase("input" + std::to_string(i), "output"));
-    }
+    auto test_cases = make_test_cases(30);
 
     auto result = test.run(control, treatment, test_cases, "accuracy").get();
 
-    // CI should contain 0 (with minimal variance and same means)
+    // CI should contain 0 (same underlying rate)
     EXPECT_LE(result.confidence_interval.first, 0.0);
     EXPECT_GE(result.confidence_interval.second, 0.0);
+}
+
+// #829 regression tests
+//
+// These pin the behaviour the old collect_measurements could not have: it read the score
+// from the agent's own response metadata and never touched TestCase::expected, so for
+// every agent below each measurement was 0.0 in both arms and the result was a
+// plausible-looking "inconclusive".
+
+// The headline case from #829: a correct agent answering in prose must score, and must
+// beat a wrong one. Under the old code both arms scored 0.0.
+TEST(ABTestTest, ScoresACorrectButVerboseAgentAboveAWrongOne) {
+    // Mann-Whitney rather than the t-test deliberately. With every case scoring 1.0 in
+    // one arm and 0.0 in the other, both variances are zero, so Welch's standard error
+    // is zero and t_test()'s `se < 1e-10` guard returns p = 1.0 — the maximum-effect
+    // case reported as no effect. That guard is a separate pre-existing bug (#835),
+    // shared with Go and Rust, and this test must not depend on it either way.
+    ABTest test(StatisticalTestType::MANN_WHITNEY, SignificanceLevel::P_0_05);
+
+    std::shared_ptr<Agent> correct(new CorrectButVerboseAgent());
+    std::shared_ptr<Agent> wrong(new AlwaysWrongAgent());
+
+    auto test_cases = make_test_cases(20);
+
+    auto result = test.run(wrong, correct, test_cases, "accuracy").get();
+
+    // `expected` is the fragment "42" and the answer is "...the answer is 42.", so a
+    // substring match scores 1.0 — this is the docs/DEFAULTS.md contract. These two
+    // assertions are the heart of #829: before the fix both were 0.0.
+    EXPECT_DOUBLE_EQ(result.treatment.mean, 1.0)
+        << "a correct agent must score 1.0; 0.0 means expected is still not being read";
+    EXPECT_DOUBLE_EQ(result.control.mean, 0.0);
+    EXPECT_EQ(result.winner, "treatment");
+    EXPECT_TRUE(result.is_significant);
+}
+
+// Scoring must agree with what AccuracyMetric would report for the same interaction —
+// there must not be a second implementation of the comparison inside ABTest.
+TEST(ABTestTest, ScoringAgreesWithTheAccuracyMetric) {
+    TestCase test_case("Question 0: what is 6*7?", "42");
+    Message input("user", test_case.input);
+    Message output("assistant", "Let me think. Carrying the one, the answer is 42.");
+
+    AccuracyMetric metric;
+    nlohmann::json ctx = nlohmann::json::object();
+    ctx["expected"] = "42";
+    std::shared_ptr<Agent> agent(new CorrectButVerboseAgent());
+    double via_metric = metric.measure(agent, input, output, ctx);
+
+    ABTest test(StatisticalTestType::T_TEST, SignificanceLevel::P_0_05);
+    std::vector<TestCase> test_cases{test_case};
+    auto result = test.run(agent, agent, test_cases, "accuracy").get();
+
+    EXPECT_DOUBLE_EQ(result.control.mean, via_metric);
+}
+
+// Case-insensitivity comes from the shared contract, not from ABTest.
+TEST(ABTestTest, ScoringIsCaseInsensitive) {
+    ABTest test(StatisticalTestType::T_TEST, SignificanceLevel::P_0_05);
+
+    // Expected is upper-case; the agent answers lower-case.
+    std::vector<TestCase> test_cases;
+    for (int i = 0; i < 5; ++i) {
+        test_cases.push_back(TestCase("Capital of France?", "PARIS"));
+    }
+
+    class LowerCaseParisAgent : public Agent {
+    public:
+        std::string name() const override { return "lower_case_paris"; }
+        std::future<Result<Message, AgentError>> process(Message message) override {
+            return std::async(std::launch::async,
+                              [msg = std::move(message)]() -> Result<Message, AgentError> {
+                return Result<Message, AgentError>::ok(
+                    Message("assistant", "it is paris, i think"));
+            });
+        }
+    };
+
+    std::shared_ptr<Agent> agent(new LowerCaseParisAgent());
+    auto result = test.run(agent, agent, test_cases, "accuracy").get();
+
+    EXPECT_DOUBLE_EQ(result.control.mean, 1.0);
+}
+
+// The validator-function variant of `expected` must be honoured too. It cannot cross a
+// JSON ctx, so this is the path that delegates to TestCase::validate.
+TEST(ABTestTest, ScoresTheValidatorFunctionVariant) {
+    ABTest test(StatisticalTestType::T_TEST, SignificanceLevel::P_0_05);
+
+    std::vector<TestCase> test_cases;
+    for (int i = 0; i < 10; ++i) {
+        // Deliberately case-sensitive, which the string variant would not be — proving
+        // the validator actually ran rather than falling through to a substring match.
+        test_cases.push_back(TestCase("Question: what is 6*7?",
+                                      std::function<bool(const std::string&)>{
+                                          [](const std::string& out) {
+                                              return out.find("42") != std::string::npos;
+                                          }}));
+    }
+
+    std::shared_ptr<Agent> correct(new CorrectButVerboseAgent());
+    std::shared_ptr<Agent> wrong(new AlwaysWrongAgent());
+
+    auto result = test.run(wrong, correct, test_cases, "accuracy").get();
+
+    EXPECT_DOUBLE_EQ(result.treatment.mean, 1.0);
+    EXPECT_DOUBLE_EQ(result.control.mean, 0.0);
+}
+
+// metric_name used to be a metadata key, so it selected nothing. It must now select the
+// metric: "latency" measures elapsed milliseconds, not accuracy's 0.0/1.0.
+TEST(ABTestTest, MetricNameSelectsTheMetric) {
+    ABTest test(StatisticalTestType::T_TEST, SignificanceLevel::P_0_05);
+
+    std::shared_ptr<Agent> fast(new CorrectButVerboseAgent());
+    std::shared_ptr<Agent> slow(new SlowAgent(std::chrono::milliseconds(25)));
+
+    auto test_cases = make_test_cases(5);
+
+    auto latency = test.run(fast, slow, test_cases, "latency").get();
+
+    // Both agents answer correctly, so accuracy would be 1.0 for both arms. Latency
+    // must instead report milliseconds and rank the slow agent higher.
+    EXPECT_GT(latency.treatment.mean, 20.0)
+        << "the slow agent sleeps 25ms per case; a mean near 1.0 means accuracy was "
+           "measured instead of latency";
+    EXPECT_GT(latency.treatment.mean, latency.control.mean);
+
+    auto accuracy = test.run(fast, slow, test_cases, "accuracy").get();
+    EXPECT_DOUBLE_EQ(accuracy.control.mean, 1.0);
+    EXPECT_DOUBLE_EQ(accuracy.treatment.mean, 1.0);
+}
+
+// An unrecognised metric must be an error, not a silent fallback to accuracy.
+TEST(ABTestTest, UnknownMetricIsAnErrorNotASilentFallback) {
+    ABTest test(StatisticalTestType::T_TEST, SignificanceLevel::P_0_05);
+
+    std::shared_ptr<Agent> agent(new CorrectButVerboseAgent());
+    auto test_cases = make_test_cases(5);
+
+    auto future = test.run(agent, agent, test_cases, "no_such_metric");
+    EXPECT_THROW(future.get(), AgentError);
+}
+
+// An agent that fails is not an agent that scored zero. This used to be swallowed into a
+// 0.0 sample, making a broken arm indistinguishable from a wrong one.
+TEST(ABTestTest, FailingAgentPropagatesRatherThanScoringZero) {
+    ABTest test(StatisticalTestType::T_TEST, SignificanceLevel::P_0_05);
+
+    std::shared_ptr<Agent> ok(new CorrectButVerboseAgent());
+    std::shared_ptr<Agent> broken(new FailingAgent());
+
+    auto test_cases = make_test_cases(5);
+
+    auto future = test.run(ok, broken, test_cases, "accuracy");
+    EXPECT_THROW(future.get(), AgentError);
+}
+
+// metric_for is the registry; nullptr is how an unknown name is signalled.
+TEST(ABTestTest, MetricForResolvesTheDocumentedNames) {
+    EXPECT_NE(ABTest::metric_for("accuracy"), nullptr);
+    EXPECT_NE(ABTest::metric_for("quality"), nullptr);
+    EXPECT_NE(ABTest::metric_for("latency"), nullptr);
+    EXPECT_NE(ABTest::metric_for("context_length"), nullptr);
+    EXPECT_EQ(ABTest::metric_for("no_such_metric"), nullptr);
+    EXPECT_EQ(ABTest::metric_for(""), nullptr);
+
+    // The resolved metric must be the one named.
+    EXPECT_EQ(ABTest::metric_for("accuracy")->name(), "accuracy");
+    EXPECT_EQ(ABTest::metric_for("latency")->name(), "latency");
 }

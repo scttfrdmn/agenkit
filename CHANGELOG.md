@@ -7,6 +7,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — C++ `ABTest` asked the agent to grade itself; `TestCase::expected` did nothing (Issue #829)
+
+`ABTest::collect_measurements` read the score out of the agent's **own response
+metadata**, under whatever key was passed as `metric_name`, and never looked at
+`TestCase::expected` at all:
+
+```cpp
+const auto& metadata = response.metadata();
+if (metadata.contains(metric_name)) {
+    // ... the agent's self-reported score
+} else {
+    measurements.push_back(0.0);   // metric not found
+}
+```
+
+No ordinary agent populates such a key, so every measurement was `0.0` — for **both**
+arms. The statistical test then ran on two all-zero samples and returned a complete,
+plausible `ABResult`: `winner = "inconclusive"`, with a p-value, an effect size and a
+confidence interval attached. Nothing indicated the scoring had never run.
+`TestCase::expected` was public API with no effect on the result.
+
+`collect_measurements` now resolves `metric_name` through a new public
+`ABTest::metric_for` and scores each response against `expected` via that `Metric` —
+matching Rust's `metric_for` from #822, so an A/B test measures what a benchmark run
+measures. Two silent-zero paths became errors:
+
+- **An unrecognised `metric_name`** throws `AgentErrorType::InvalidInput` rather than
+  silently falling back to accuracy.
+- **An agent that fails** propagates rather than being scored `0.0`. A broken control arm
+  was previously indistinguishable from a merely wrong one, and the result still named a
+  winner.
+
+`ctx["latency_ms"]` is now supplied unconditionally, so `metric_name = "latency"` measures
+real latency instead of `0.0`. A `std::function` `expected` cannot cross a JSON `ctx`, so
+that alternative is scored through `TestCase::validate` directly rather than by
+reimplementing the comparison — two implementations of "case-insensitive substring" is how
+the divergences in #820, #822 and #823 all arose.
+
+**Why 19/19 tests were green.** The suite's `MockMetricAgent` did
+`response.with_metadata("accuracy", value)`, and the collector read that same key back —
+so the only agent the suite ever exercised was one grading itself. The mock *ratified* the
+bug. It is replaced by agents that answer questions and are scored: `PartiallyCorrectAgent`
+(deterministic per-seed accuracy rate), `CorrectButVerboseAgent`, `AlwaysWrongAgent`,
+`FailingAgent` and `SlowAgent`. Applying the fix under the old mock fails 13 of 27 tests
+at **runtime** while still compiling — the compiler catches none of it.
+
+`examples/evaluation/ab_testing_example.cpp` taught the anti-pattern directly, pairing
+`with_metadata("accuracy", …)` with `TestCase(input, "expected_output")` that no agent
+could ever match. It now answers 10 real questions from a shared question→answer table and
+is scored against `expected`. Fixing the scoring exposed two further defects in it, both
+previously masked by every sample being `0.0`:
+
+- It passed `std_dev = 0.05` to `calculate_sample_size` for a metric that scores 0 or 1.
+  Accuracy is Bernoulli — at p≈0.78 its std dev is ≈0.42. Understating it 8x understated
+  the required sample size 70x, and the example declared 28 cases sufficient, then ran 40
+  and reported "inconclusive". It now derives the Bernoulli std dev, asks for 550, and runs
+  the 550 it asked for.
+- Steps 4–6 reused one agent pair across three tests. An agent carries an advancing
+  generator, so each test analysed *different* samples and the three appeared to disagree
+  about the same hypothesis. Each test now gets a freshly seeded pair.
+
+Tests: **19 → 27** in `test_ab_testing` (8 new, 8 existing rewritten), all passing; 70/70
+`ctest` green.
+
+Not fixed here: when one arm scores every case and the other scores none, both variances
+are zero, so Welch's standard error is zero and the `se < 1e-10` guard returns `p = 1.0` —
+the maximum-effect case reported as no effect. It is pre-existing, shared with Go and Rust,
+and filed as #835. The two regression tests that would otherwise hit it use Mann-Whitney,
+which handles the case correctly.
+
 ### Fixed — C++ defined `TestCase` twice, corrupting the heap in any program using both headers (Issue #831)
 
 `agenkit::evaluation::TestCase` was defined **twice**, in the same namespace, with two

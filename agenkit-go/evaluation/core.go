@@ -308,6 +308,12 @@ func (e *Evaluator) Evaluate(testCases []map[string]interface{}, evaluationID st
 
 // checkTest checks if output passes test case.
 //
+// Delegates to TestCase.Validate so the map form accepted by Evaluate and the
+// struct form used by benchmarks cannot drift apart. This used to compare with a
+// hand-rolled contains/toLower pair that lowered ASCII A-Z only, while
+// AccuracyMetric used strings.ToLower — so a Greek, Cyrillic or umlauted Expected
+// failed here and scored 1.0 there, in the same run on the same test case (#823).
+//
 // Args:
 //
 //	output: Agent output
@@ -322,14 +328,8 @@ func (e *Evaluator) checkTest(output *agenkit.Message, testCase map[string]inter
 		return true
 	}
 
-	// Simple string matching
-	if expectedStr, ok := expected.(string); ok {
-		return contains(output.ContentString(), expectedStr)
-	}
-
-	// Custom validator function (would need to support func type)
-	// For now, return true
-	return true
+	tc := &TestCase{Expected: expected}
+	return tc.Validate(output.ContentString())
 }
 
 // EvaluateSingle evaluates single interaction.
@@ -377,39 +377,4 @@ func sum(values []float64) float64 {
 		total += v
 	}
 	return total
-}
-
-func contains(haystack, needle string) bool {
-	// Case-insensitive substring matching
-	h := []rune(haystack)
-	n := []rune(needle)
-
-	if len(n) == 0 {
-		return true
-	}
-	if len(h) < len(n) {
-		return false
-	}
-
-	// Simple case-insensitive search
-	for i := 0; i <= len(h)-len(n); i++ {
-		match := true
-		for j := 0; j < len(n); j++ {
-			if toLower(h[i+j]) != toLower(n[j]) {
-				match = false
-				break
-			}
-		}
-		if match {
-			return true
-		}
-	}
-	return false
-}
-
-func toLower(r rune) rune {
-	if r >= 'A' && r <= 'Z' {
-		return r + ('a' - 'A')
-	}
-	return r
 }

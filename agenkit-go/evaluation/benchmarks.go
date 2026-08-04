@@ -15,6 +15,35 @@ type TestCase struct {
 	Tags     []string
 }
 
+// Validate reports whether agent output satisfies this test case's Expected value.
+//
+// A string Expected is a fragment to find in the output, compared
+// case-insensitively — not the whole output. An agent answering "The answer is 42."
+// passes Expected = "42". Benchmarks store the fact to look for; agents answer in
+// prose. This matches AccuracyMetric in this core and TestCase.validate in every
+// other, per docs/DEFAULTS.md (#820).
+//
+// An empty Expected matches anything, following strings.Contains(x, "").
+//
+// A func(interface{}) bool Expected is called with the output string. Any other
+// type is compared by its fmt %v form, matching AccuracyMetric's fallback.
+func (t *TestCase) Validate(actual string) bool {
+	switch expected := t.Expected.(type) {
+	case nil:
+		// Nothing was asked for, so nothing can fail.
+		return true
+	case string:
+		return strings.Contains(strings.ToLower(actual), strings.ToLower(expected))
+	case func(interface{}) bool:
+		return expected(actual)
+	default:
+		return strings.Contains(
+			strings.ToLower(actual),
+			strings.ToLower(fmt.Sprintf("%v", expected)),
+		)
+	}
+}
+
 // ToDict converts test case to dictionary.
 func (t *TestCase) ToDict() map[string]interface{} {
 	expected := t.Expected

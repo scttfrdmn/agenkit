@@ -36,6 +36,7 @@ use std::time::Instant;
 use uuid::Uuid;
 
 use crate::core::{Agent, AgentError, Message};
+use crate::evaluation::benchmarks::TestCase;
 
 /// Metric trait for evaluation metrics.
 ///
@@ -191,6 +192,27 @@ impl EvaluationResult {
     }
 }
 
+/// Checks whether an agent output satisfies a test case's `expected` value.
+///
+/// Delegates to [`TestCase::validate`] so the map form accepted by
+/// [`Evaluator::evaluate`] and the struct form used by benchmarks cannot drift
+/// apart. Reimplementing the comparison per call site is exactly how this core's
+/// three-way divergence arose (#820).
+///
+/// A test case with **no** `expected` key passes: nothing was asked for. A
+/// non-string `expected` (a JSON number, say) is compared by its serialized form,
+/// matching the `to_string()` fallback in `AccuracyMetric`.
+fn check_test(output: &Message, test_case: &HashMap<String, serde_json::Value>) -> bool {
+    let expected = match test_case.get("expected") {
+        Some(serde_json::Value::String(s)) => s.clone(),
+        Some(val) => val.to_string(),
+        None => return true,
+    };
+
+    let actual = output.content_as_str().unwrap_or("");
+    TestCase::new("", expected).validate(actual)
+}
+
 /// Core evaluation orchestrator.
 ///
 /// Runs benchmarks, collects metrics, and aggregates results.
@@ -332,8 +354,19 @@ impl Evaluator {
 
             match output_msg {
                 Ok(msg) => {
-                    result.passed_tests += 1;
                     latencies.push(latency.as_millis() as f64);
+
+                    // A test passes when the output satisfies `expected`, not merely
+                    // when the agent returned Ok. This used to be an unconditional
+                    // `passed_tests += 1` on any successful process(), so a wrong
+                    // answer scored success_rate() == 1.0 and the number a user reads
+                    // to decide whether their agent works measured only "did not
+                    // error" (#823).
+                    if check_test(&msg, test_case) {
+                        result.passed_tests += 1;
+                    } else {
+                        result.failed_tests += 1;
+                    }
 
                     // Collect metrics
                     let ctx = test_case.clone();
@@ -412,21 +445,107 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn test_evaluator_basic() {
-        let agent = Arc::new(MockAgent);
-        let evaluator = Evaluator::new(agent, vec![], None);
-
+    fn case(input: &str, expected: serde_json::Value) -> HashMap<String, serde_json::Value> {
         let mut test_case = HashMap::new();
-        test_case.insert("input".to_string(), serde_json::json!("test"));
-        test_case.insert("expected".to_string(), serde_json::json!("result"));
+        test_case.insert("input".to_string(), serde_json::json!(input));
+        test_case.insert("expected".to_string(), expected);
+        test_case
+    }
 
-        let result = evaluator.evaluate(vec![test_case], None).await.unwrap();
+    #[tokio::test]
+    async fn test_evaluator_counts_a_matching_output_as_passed() {
+        let evaluator = Evaluator::new(Arc::new(MockAgent), vec![], None);
+
+        // MockAgent answers "response", and `expected` is a substring of it.
+        let result = evaluator
+            .evaluate(vec![case("test", serde_json::json!("respon"))], None)
+            .await
+            .unwrap();
 
         assert_eq!(result.total_tests, 1);
         assert_eq!(result.passed_tests, 1);
         assert_eq!(result.failed_tests, 0);
         assert_eq!(result.success_rate(), 1.0);
+    }
+
+    #[tokio::test]
+    async fn test_evaluator_counts_a_wrong_output_as_failed() {
+        let evaluator = Evaluator::new(Arc::new(MockAgent), vec![], None);
+
+        // MockAgent answers "response"; nothing about that satisfies "result".
+        //
+        // This case previously asserted passed_tests == 1 and success_rate() == 1.0:
+        // the runner incremented passed_tests for any Ok(process()) and never looked
+        // at `expected`, so the test ratified a wrong answer as a perfect score
+        // (#823). It is the whole reason the bug survived.
+        let result = evaluator
+            .evaluate(vec![case("test", serde_json::json!("result"))], None)
+            .await
+            .unwrap();
+
+        assert_eq!(result.total_tests, 1);
+        assert_eq!(result.passed_tests, 0);
+        assert_eq!(result.failed_tests, 1);
+        assert_eq!(result.success_rate(), 0.0);
+    }
+
+    #[tokio::test]
+    async fn test_evaluator_matches_case_insensitively() {
+        let evaluator = Evaluator::new(Arc::new(MockAgent), vec![], None);
+
+        // Per docs/DEFAULTS.md (#820): a string `expected` is a case-insensitive
+        // fragment of the output, not the whole output.
+        let result = evaluator
+            .evaluate(vec![case("test", serde_json::json!("RESPONSE"))], None)
+            .await
+            .unwrap();
+
+        assert_eq!(result.passed_tests, 1);
+        assert_eq!(result.failed_tests, 0);
+    }
+
+    #[tokio::test]
+    async fn test_evaluator_passes_a_case_with_no_expected_value() {
+        let evaluator = Evaluator::new(Arc::new(MockAgent), vec![], None);
+
+        // Nothing was asked for, so nothing can fail. Matches Go's checkTest and
+        // TypeScript's checkTest, both of which return true for an absent expected.
+        let mut test_case = HashMap::new();
+        test_case.insert("input".to_string(), serde_json::json!("test"));
+
+        let result = evaluator.evaluate(vec![test_case], None).await.unwrap();
+
+        assert_eq!(result.passed_tests, 1);
+        assert_eq!(result.failed_tests, 0);
+    }
+
+    #[tokio::test]
+    async fn test_evaluator_accounts_for_every_case_exactly_once() {
+        let evaluator = Evaluator::new(Arc::new(MockAgent), vec![], None);
+
+        // A missing `input` fails, a wrong answer fails, a match passes. Asserted
+        // together because passed + failed drifting from total_tests is how a
+        // miscounted branch hides: success_rate() would still look plausible.
+        let result = evaluator
+            .evaluate(
+                vec![
+                    case("test", serde_json::json!("respon")),
+                    case("test", serde_json::json!("nope")),
+                    HashMap::new(),
+                ],
+                None,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(result.total_tests, 3);
+        assert_eq!(result.passed_tests, 1);
+        assert_eq!(result.failed_tests, 2);
+        assert_eq!(
+            result.passed_tests + result.failed_tests,
+            result.total_tests,
+            "every case must be counted exactly once"
+        );
     }
 
     #[tokio::test]

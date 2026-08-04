@@ -215,11 +215,16 @@ carries `expected="5",  # "5pm" or "5:00pm" both match`.
 | Core | Site | Comparison |
 |------|------|-----------|
 | Python | `_check_test` / `AccuracyMetric` | `expected.lower() in actual.lower()` |
-| Go | `AccuracyMetric` | `strings.Contains`, lowered unless `caseSensitive` |
+| Go | `TestCase.Validate` / `checkTest` / `AccuracyMetric` | `strings.Contains`, lowered unless `caseSensitive` |
 | TypeScript | `checkTest` / `AccuracyMetric` | `actual.includes(expected)`, lowered |
-| Rust | `AccuracyMetric` | `actual.contains(expected)`, lowered unless `case_sensitive` |
+| Rust | `TestCase::validate` / `check_test` / `AccuracyMetric` | `actual.contains(expected)`, lowered unless `case_sensitive` |
 | C++ | `TestCase::validate` / `AccuracyMetric` | `actual.find(expected) != npos`, lowered |
 | Zig | `TestCase.validate` / `AccuracyMetric` | case-insensitive `indexOf` |
+
+Where a core has both a `TestCase` method and a runner-side check, the runner
+**delegates** to the method rather than reimplementing the comparison. Two
+independent implementations of "case-insensitive substring" is precisely how the
+three-way divergence in #820 and the ASCII-vs-Unicode split in #823 arose.
 
 ### Notes
 
@@ -237,9 +242,18 @@ carries `expected="5",  # "5pm" or "5:00pm" both match`.
   site. C++ thereby contradicted its own `AccuracyMetric`, and Zig's `SimpleQABenchmark`
   — whose expected values are `"42"`, `"Paris"`, `"Not necessarily"` — scored a correct
   agent near zero. Fixed in #820.
+- Go and Rust gained a `TestCase.Validate()` / `TestCase::validate()` in #823, so all
+  six cores now expose the contract on the test case itself. Two runner-side bugs were
+  fixed with it:
+  - **Rust's `Evaluator` never consulted `expected` at all.** `passed_tests` was
+    incremented for any `Ok(process())`, so `success_rate()` measured "the agent did not
+    error" and a wrong answer scored `1.0`. Its own test asserted that as correct.
+  - **Go's `checkTest` lowered ASCII `A-Z` only**, via a hand-rolled helper, while
+    `AccuracyMetric` used `strings.ToLower`. A Greek, Cyrillic or umlauted `expected`
+    therefore failed the pass count and scored `1.0` on the metric in the same run.
 - **Not covered by this contract:** Rust's `ab_testing.rs` scores with trimmed
-  case-sensitive equality, and neither Go nor Rust has a `TestCase.validate()` method at
-  all. Both are tracked separately.
+  case-sensitive equality (tracked in #822). C++ has no `Evaluator`, so it has no
+  runner-side check to align; Zig validates directly via `TestCase.validate`.
 
 ## Related Documentation
 

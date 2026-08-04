@@ -58,6 +58,33 @@ impl TestCase {
         self
     }
 
+    /// Validates agent output against this test case's expected value.
+    ///
+    /// `expected` is a **fragment to find** in the output, compared
+    /// **case-insensitively** — not the whole output. An agent answering
+    /// `"The answer is 42."` passes `expected = "42"`. Benchmarks store the fact to
+    /// look for; agents answer in prose. This matches `AccuracyMetric` in this core
+    /// and `TestCase::validate` in every other, per `docs/DEFAULTS.md` (#820).
+    ///
+    /// An empty `expected` matches anything, following `str::contains("")`.
+    ///
+    /// For exact or case-sensitive comparison, use `AccuracyMetric`'s `validator`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use agenkit::evaluation::benchmarks::TestCase;
+    ///
+    /// let case = TestCase::new("What is 2+2?", "4");
+    /// assert!(case.validate("The answer is 4."));
+    /// assert!(!case.validate("The answer is 5."));
+    /// ```
+    pub fn validate(&self, actual: &str) -> bool {
+        actual
+            .to_lowercase()
+            .contains(&self.expected.to_lowercase())
+    }
+
     /// Converts test case to dictionary.
     pub fn to_dict(&self) -> HashMap<String, serde_json::Value> {
         let mut result = HashMap::new();
@@ -373,6 +400,67 @@ mod tests {
         assert_eq!(test_case.expected, "expected");
         assert_eq!(test_case.tags.len(), 1);
         assert_eq!(test_case.metadata.len(), 1);
+    }
+
+    #[test]
+    fn test_validate_matches_a_fragment_inside_agent_prose() {
+        // `expected` is the fact to look for, not the whole answer. This is what the
+        // benchmarks in this file rely on: SimpleQABenchmark's expected values are
+        // "42", "Paris", "Not necessarily" — an agent answering in prose must pass.
+        let test_case = TestCase::new("What is 15 + 27?", "42");
+
+        assert!(test_case.validate("42"));
+        assert!(test_case.validate("The answer is 42."));
+        assert!(test_case.validate("15 + 27 = 42, so the total is 42 items."));
+        assert!(!test_case.validate("The answer is 41."));
+    }
+
+    #[test]
+    fn test_validate_is_case_insensitive() {
+        let test_case = TestCase::new("Capital of France?", "Paris");
+
+        assert!(test_case.validate("paris"));
+        assert!(test_case.validate("PARIS"));
+        assert!(test_case.validate("The capital is PaRiS."));
+        assert!(!test_case.validate("Lyon"));
+    }
+
+    #[test]
+    fn test_validate_requires_the_whole_fragment() {
+        // A prefix of the expected fragment is not a match — the needle must appear
+        // whole, or "Paris" would be satisfied by "Par".
+        let test_case = TestCase::new("Capital of France?", "Paris");
+
+        assert!(!test_case.validate("Par"));
+        assert!(!test_case.validate(""));
+    }
+
+    #[test]
+    fn test_validate_with_an_empty_expected_matches_anything() {
+        // Documented in docs/DEFAULTS.md: `"".contains("")` is true in every core, so
+        // the contract follows suit rather than special-casing. Nothing was asked for.
+        let test_case = TestCase::new("input", "");
+
+        assert!(test_case.validate(""));
+        assert!(test_case.validate("anything at all"));
+    }
+
+    #[test]
+    fn test_validate_agrees_with_this_cores_accuracy_metric() {
+        // The two comparison sites in this core must not drift: AccuracyMetric already
+        // did case-insensitive `contains`, and a second, subtly different
+        // implementation here is precisely how #820's three-way divergence arose.
+        let benchmark = SimpleQABenchmark::new();
+
+        for case in benchmark.generate_test_cases() {
+            let embedded = format!("Well, {}, as it happens.", case.expected.to_uppercase());
+            assert!(
+                case.validate(&embedded),
+                "expected {:?} should be found in {:?}",
+                case.expected,
+                embedded
+            );
+        }
     }
 
     #[test]

@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — Rust's evaluator never checked `expected`, and Go's two comparison sites disagreed (Issue #823)
+
+Two ways an evaluation run reported a wrong answer as a pass.
+
+**Rust's `Evaluator` never consulted `expected` at all.** `passed_tests` was
+incremented for any `Ok(process())`:
+
+```rust
+match output_msg {
+    Ok(msg) => {
+        result.passed_tests += 1;   // <- expected never read
+```
+
+So `success_rate()` measured "the agent did not error", not "the agent was right",
+and a completely wrong answer scored `1.0`. The core's own test asserted this as
+correct — `MockAgent` answered `"response"`, the case expected `"result"`, and the
+test asserted `passed_tests == 1` and `success_rate() == 1.0`. That test is why the
+bug survived, so it was rewritten rather than extended.
+
+**Go's `checkTest` and `AccuracyMetric` disagreed on non-ASCII case.** `checkTest`
+lowered through a hand-rolled `toLower` that mapped ASCII `A-Z` only, while
+`AccuracyMetric` used `strings.ToLower`. A Greek, Cyrillic or umlauted `expected`
+therefore failed the pass count and scored `1.0` on the metric **in the same run on
+the same test case**:
+
+```
+   checkTest=true  AccuracyMetric=true   "Le café est CHAUD" ~ "chaud"
+<< checkTest=false AccuracyMetric=true   "ΑΘΗΝΑ is the capital" ~ "αθηνα"
+<< checkTest=false AccuracyMetric=true   "Ünïcode ÖÜÄ here" ~ "öüä"
+```
+
+Go and Rust also gained the `TestCase.Validate()` / `TestCase::validate()` that the
+other four cores already had, so all six now expose the `docs/DEFAULTS.md` substring
+contract on the test case itself. Both runners **delegate** to it rather than
+comparing inline — two independent implementations of "case-insensitive substring" is
+exactly how #820's three-way divergence and this ASCII/Unicode split arose. The
+hand-rolled `contains`/`toLower` helpers in `agenkit-go/evaluation/core.go` are gone.
+
+15 new tests (10 Go, 5 Rust) plus 5 rewritten Rust runner tests. Two of them pin the
+seam directly: `TestTestCaseValidateAgreesWithAccuracyMetric` compares both Go sites
+on the same inputs including non-ASCII, and `test_validate_agrees_with_this_cores_accuracy_metric`
+runs every shipped `SimpleQABenchmark` expected value through `validate` embedded in
+prose. 11/11 mutations caught by test assertions — none by the compiler — including
+`rs-original-defect-ok-is-pass`, `go-validate-ascii-only-lower`, and
+`rs-check-test-reimplements` (the drift that would undo the delegation).
+
+Not addressed here: `AccuracyMetric` still returns `1.0` when `expected` is absent,
+so an unwired benchmark reports a perfect run. Fixing that changes the `Metric`
+return type across 6 cores and ~30 implementors, so it is tracked separately in
+**#827**. Rust's `ab_testing.rs` third comparison remains **#822**.
+
 ### Fixed — integration fixtures leaked an orphaned server on every run (Issue #825)
 
 A machine running this suite had accumulated **965 orphaned server processes**

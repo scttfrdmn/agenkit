@@ -53,12 +53,38 @@ jobs:
           find "$WORK" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
           git archive HEAD:agenkit-go | tar -x -C "$WORK"
 
+          # The in-tree go.mod carries a `// Deprecated:` block steering consumers off
+          # the monorepo module path (#660). It must NOT reach the mirror: the path
+          # rewrite below would turn it into "module github.com/scttfrdmn/agenkit-go"
+          # marked deprecated in favour of itself, and `go get` would tell every user
+          # of the canonical path that it is deprecated. Strip the block first —
+          # the comment lines immediately preceding the `module` directive.
+          echo "Stripping the monorepo-only deprecation notice from go.mod ..."
+          awk '
+            !seen && /^\/\// { buf = buf $0 "\n"; next }
+            !seen && /^module / { seen = 1; print; next }
+            !seen { printf "%s", buf; buf = ""; seen = 1; print; next }
+            { print }
+          ' "$WORK/go.mod" > "$WORK/go.mod.stripped"
+          mv "$WORK/go.mod.stripped" "$WORK/go.mod"
+
+          if grep -q '^// Deprecated:' "$WORK/go.mod"; then
+            echo "::error::Deprecation notice survived stripping — the mirror would deprecate itself"
+            head -5 "$WORK/go.mod"
+            exit 1
+          fi
+
           echo "Transforming import paths in .go / .mod / .md ..."
           grep -rl "$OLD_PATH" "$WORK" --include='*.go' --include='*.mod' --include='*.md' \
             | xargs -r sed -i "s|${OLD_PATH}|${NEW_PATH}|g"
 
           echo "Verifying transform..."
           head -1 "$WORK/go.mod"
+          if [ "$(head -1 "$WORK/go.mod")" != "module ${NEW_PATH}" ]; then
+            echo "::error::go.mod line 1 is not the mirror module directive"
+            head -5 "$WORK/go.mod"
+            exit 1
+          fi
           if grep -rq "$OLD_PATH" "$WORK" --include='*.go' --include='*.mod' --include='*.md'; then
             echo "::error::Stale references to $OLD_PATH remain after transform"
             grep -rl "$OLD_PATH" "$WORK" --include='*.go' --include='*.mod' --include='*.md'

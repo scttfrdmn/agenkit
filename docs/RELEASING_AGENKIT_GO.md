@@ -10,7 +10,7 @@ single authority; other docs should link here rather than restate it.
 | Path | What it is | Can a consumer pin a release? |
 |------|-----------|-------------------------------|
 | **`github.com/scttfrdmn/agenkit-go`** | the published distribution mirror | **Yes** — `v0.9.0`, `v0.10.1`, `v0.85.0`, `v0.86.0`, `v0.87.0` |
-| `github.com/scttfrdmn/agenkit/agenkit-go` | the in-tree module in this monorepo | No — pseudo-versions only |
+| `github.com/scttfrdmn/agenkit/agenkit-go` | the in-tree module, **deprecated** for external use | No — pseudo-versions only |
 
 **`github.com/scttfrdmn/agenkit-go` is the canonical install path**, because it is the
 only one a user can pin. The monorepo path has **zero** tagged versions on the proxy:
@@ -18,6 +18,48 @@ a nested module needs subdirectory-prefixed tags (`agenkit-go/v0.87.0`), and thi
 publishes bare `vX.Y.Z` tags, which the Go tooling does not associate with a nested
 module. `go get github.com/scttfrdmn/agenkit/agenkit-go` therefore succeeds but resolves
 to a `v0.0.0-<timestamp>-<hash>` pseudo-version.
+
+### Why we deprecated the monorepo path instead of tagging it (#660)
+
+The obvious fix — start pushing `agenkit-go/vX.Y.Z` tags so the monorepo path becomes
+pinnable — was tried and rejected, because it makes a worse problem permanent.
+
+If both paths are pinnable, both are legitimate, and **a single build can import both**.
+The two `agenkit.Message` types are then byte-identical in definition and still not
+assignable to each other, because Go type identity includes the module path. The failure
+looks like this, and `go mod tidy` resolves it without comment:
+
+```
+cannot use msg (variable of type *"github.com/scttfrdmn/agenkit-go/agenkit".Message)
+    as *"github.com/scttfrdmn/agenkit/agenkit-go/agenkit".Message value
+```
+
+Two dependencies that each picked a different path cannot exchange a `Message`, and
+nothing in the error explains that the types are the same type. So rather than legitimise
+the second path, `agenkit-go/go.mod` carries a `// Deprecated:` block:
+
+```
+go: module github.com/scttfrdmn/agenkit/agenkit-go is deprecated:
+    ... Depend on the distribution mirror instead: go get github.com/scttfrdmn/agenkit-go@latest
+```
+
+Notes on how this behaves, all verified:
+
+- **It works without any tags.** Go reads the notice from the resolved version's
+  `go.mod`, so a pseudo-version carries it: `go get` prints the notice and
+  `go list -m -u` reports `(deprecated)`.
+- **In-tree builds stay silent.** `tests/cross_language/harness_go` and
+  `examples/apps/*/go` reach the core through a local `replace`, and a replaced module
+  never reports deprecation. They keep building against the working tree.
+- **`go mod tidy` preserves the block**, so it will not silently disappear.
+- **The notice must never reach the mirror.** The sync rewrites module paths in `.mod`
+  files, which would turn the block into "`github.com/scttfrdmn/agenkit-go` is
+  deprecated — use `github.com/scttfrdmn/agenkit-go`". `sync-agenkit-go.yml` therefore
+  strips the comment block before the rewrite and fails the job if it survives, or if
+  line 1 of the mirror's `go.mod` is not the expected `module` directive.
+
+**Do not add `agenkit-go/vX.Y.Z` tags.** If that decision is ever revisited, the
+diamond-import problem above has to be solved first.
 
 ### Which path a given file should use
 

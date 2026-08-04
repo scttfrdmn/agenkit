@@ -1,3 +1,15 @@
+// Deprecated: use github.com/scttfrdmn/agenkit-go instead.
+//
+// Keep that first line self-contained: `go get` prints only up to the first newline.
+//
+// A nested module needs subdirectory-prefixed tags (agenkit-go/vX.Y.Z), which this
+// repository does not publish, so `go get github.com/scttfrdmn/agenkit/agenkit-go`
+// only ever resolves a v0.0.0-<timestamp>-<hash> pseudo-version.
+//
+// The two paths are also not interchangeable: both resolve, so one build can import
+// both, and their identically-defined types are not assignable to each other because
+// Go type identity includes the module path. See issue #660 and
+// docs/RELEASING_AGENKIT_GO.md.
 module github.com/scttfrdmn/agenkit/agenkit-go
 
 go 1.25.12

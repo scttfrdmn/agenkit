@@ -4,8 +4,14 @@ The `agenkit-go` directory is developed in the main monorepo but also distribute
 
 ## Why Two Repositories?
 
-- **Monorepo** (`github.com/scttfrdmn/agenkit/agenkit-go`): Development happens here
-- **Standalone** (`github.com/scttfrdmn/agenkit-go`): Distribution for Go users who only want the Go SDK
+- **Monorepo** (`github.com/scttfrdmn/agenkit/agenkit-go`): Development happens here.
+  **Deprecated for external consumption** — it cannot be pinned to a release (#660).
+- **Standalone** (`github.com/scttfrdmn/agenkit-go`): the canonical path for Go users,
+  and the only one with tagged versions
+
+Consumers should always `go get github.com/scttfrdmn/agenkit-go`. See
+[RELEASING_AGENKIT_GO.md](RELEASING_AGENKIT_GO.md#which-module-path-is-canonical) for
+why the monorepo path is deprecated rather than tagged.
 
 ## Import Path Transformation
 
@@ -18,6 +24,11 @@ import "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 // Standalone uses:
 import "github.com/scttfrdmn/agenkit-go/agenkit"
 ```
+
+It also **strips the `// Deprecated:` block** from `go.mod` before rewriting paths.
+Without that step the rewrite would produce `module github.com/scttfrdmn/agenkit-go`
+marked deprecated in favour of itself, and every user of the canonical path would be
+told it was deprecated. The workflow fails if the block survives.
 
 ## Automated Sync (Recommended)
 

@@ -40,7 +40,7 @@ go mod init example.com/my-agent
 2. **Add Agenkit:**
 
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 3. **Verify installation:**
@@ -99,7 +99,7 @@ Let's build a simple echo agent that responds to messages.
 mkdir my-first-agent
 cd my-first-agent
 go mod init example.com/my-first-agent
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 ### Step 2: Write the Agent Code
@@ -806,7 +806,7 @@ mkdir my-agent && cd my-agent
 go mod init example.com/my-agent
 
 # Add agenkit
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 
 # Run
 go run main.go

@@ -66,7 +66,7 @@ pip install agenkit
 
 **Go:**
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 ### Message Creation
@@ -266,7 +266,7 @@ yarn add @agenkit/core
 
 **Go:**
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 ### Message Creation
@@ -419,7 +419,7 @@ agenkit = "0.75"
 
 **Go:**
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 ### Message Creation
@@ -556,7 +556,7 @@ target_link_libraries(my_agent agenkit::agenkit)
 
 **Go:**
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 ### Message Creation
@@ -716,7 +716,7 @@ result, err := parallel.Process(ctx, msg)
 
 **Go:**
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 ### Message Creation

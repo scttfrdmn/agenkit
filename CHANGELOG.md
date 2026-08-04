@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — A/B tests reported "inconclusive" because the scoring never ran (Issue #822)
+
+`ABTest` is a third `expected`-comparison site, and it did not honour the
+`docs/DEFAULTS.md` substring contract in either Go or Rust. Both arms scored `0.0`, so
+the run came back with a p-value, an effect size, and `winner = "inconclusive"` —
+indistinguishable from a completed experiment that found no difference.
+
+**Rust used trimmed, case-sensitive, whole-string equality** — a fourth semantics,
+distinct from the contract *and* from this core's own `AccuracyMetric`:
+
+```rust
+let response_content = response.content.as_str().unwrap_or("").trim();
+let expected_content = test_case.expected.trim();
+Ok(if response_content == expected_content { 1.0 } else { 0.0 })
+```
+
+Since `expected` holds a *fragment* (`SimpleQABenchmark` ships `"4"`, `"Paris"`;
+needle-in-haystack ships `ALPHA-0000-OMEGA`), a correct agent answering in prose scored
+zero. It also ignored `metric_name` outright — the parameter was spelled
+`_metric_name`, so a caller asking for `"latency"` got hardcoded accuracy. Scoring now
+delegates to the named `Metric` (`"accuracy"`, `"quality"`, `"latency"`,
+`"context_length"`); an unrecognised name is an `AgentError::InvalidInput`, not a
+silent fallback.
+
+**Go had its own hand-rolled lowering**, distinct from the ASCII-only one #823 removed
+from `checkTest`, and worse: it sized the rune buffer by *byte* length while `range`
+indexes by byte offset, so every multi-byte rune left NUL padding.
+
+```
+"ПАРИЖ"   -> "П\x00А\x00Р\x00И\x00Ж\x00"
+"Ähnlich" -> "Ä\x00hnlich"
+```
+
+ASCII-only lowering at least leaves non-`A-Z` input intact; this corrupted it. A
+Cyrillic or umlauted `expected` therefore scored `0.0` for both arms. The site now
+delegates to `TestCase.Validate`, and the four dead helpers
+(`stringContainsIgnoreCase`, `stringToLower`, `stringContains`, `indexOfSubstring`) are
+gone.
+
+**Two further bugs found while fixing it, neither in the issue:**
+
+- **Go panicked with SIGSEGV on any erroring agent.** `response.ContentString()` was
+  called unconditionally in the results map, outside the `err == nil` branch;
+  `Process` returns `(nil, err)` and `ContentString` dereferences its receiver. A
+  broken treatment arm is a *normal* A/B outcome — the one case the comparison most
+  needs to survive. There was no test file for `ab_testing.go` at all, which is how it
+  shipped.
+- **Rust's `t_test` failed the whole run whenever the two arms tied.** Zero variance in
+  both arms gives `se == 0`, and `statrs` returns NaN variance for `n == 1`, so either
+  way the Welch–Satterthwaite `df` is NaN and `StudentsT::new` rejects it:
+  `"Degrees of freedom are NaN"`. Accuracy samples are 0.0/1.0, so ties are the common
+  case, not an exotic one. Now returns `p = 1.0` ("no detectable difference"), matching
+  the `se == 0` / `n == 0` guards Go's `tTest` already had. Confirmed pre-existing on
+  `main` before fixing.
+
+15 new tests (7 Go with 4 subtests, 8 Rust): `agenkit-go/evaluation` coverage 63.3% →
+69.5%, `agenkit-rust` lib 715 → 723. 14/14 mutations caught by test assertions, none by
+the compiler. Three initially **survived**, and each exposed a real weakness rather
+than noise: `rust-guard-only-checks-se` proved my own `n < 2.0` clause was dead code
+(`statrs`'s NaN variance already covers it) so the guard was simplified rather than
+tested around; `rust-drop-latency-from-ctx` showed `assert!(mean >= 0.0)` was vacuous —
+`LatencyMetric`'s 0.0 fallback satisfies it — so a `SlowAgent(25ms)` fixture and a
+`>= 20.0` bound replaced it; `go-erroring-agent-scores-one` slipped through because
+with a non-empty `expected` a failed `Process` scores zero anyway, so a test using an
+*absent* `expected` was added to distinguish "did not answer" from "answered
+acceptably".
+
+Not addressed here: **C++'s `ABTest` never reads `TestCase::expected`** — it looks up
+accuracy in the *response metadata*, so `expected` is public API that does nothing and
+both arms score all-zero on any real agent. That is a design choice (score `expected`
+vs. delete the field), so it is **#829**. The absent-`expected` disagreement between
+the A/B sites (Python and Go score `1.0`, TypeScript `0.0`) rides with **#827**.
+
 ### Fixed — Rust's evaluator never checked `expected`, and Go's two comparison sites disagreed (Issue #823)
 
 Two ways an evaluation run reported a wrong answer as a pass.
@@ -56,7 +129,7 @@ prose. 11/11 mutations caught by test assertions — none by the compiler — in
 Not addressed here: `AccuracyMetric` still returns `1.0` when `expected` is absent,
 so an unwired benchmark reports a perfect run. Fixing that changes the `Metric`
 return type across 6 cores and ~30 implementors, so it is tracked separately in
-**#827**. Rust's `ab_testing.rs` third comparison remains **#822**.
+**#827**. Rust's `ab_testing.rs` third comparison is fixed above (#822).
 
 ### Fixed — integration fixtures leaked an orphaned server on every run (Issue #825)
 

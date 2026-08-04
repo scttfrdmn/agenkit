@@ -74,6 +74,24 @@ jobs:
           # Quick tests without race detector for speed
           go test -short $(go list ./... | grep -v /examples/) -failfast
 
+      - name: Compile Go README snippets (blocking)
+        working-directory: agenkit-go
+        # examples/readme/ is the compiled source of truth for every snippet in
+        # agenkit-go/README.md — the mirror's landing page. The Go smoke test above
+        # excludes ./examples/..., so without this gate the snippets are built by
+        # nothing. Before #839 that let the README accumulate nine wrong or
+        # fictional constructors (NewRetryMiddleware, ConversationalConfig,
+        # transport/http, ...), all of them plausible enough to survive review.
+        #
+        # `go run` as well as `go build`: a nil aggregator passed to
+        # NewParallelAgent compiles fine and only fails when executed, so
+        # compiling alone would not have caught it.
+        env:
+          GOTOOLCHAIN: auto
+        run: |
+          go vet ./examples/readme/
+          go run ./examples/readme/
+
       - name: Build Go cross-language harness (blocking)
         working-directory: tests/cross_language/harness_go
         # These harnesses build against the agenkit-go core via a local `replace`.

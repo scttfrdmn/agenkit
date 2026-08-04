@@ -38,6 +38,7 @@
 #define AGENKIT_EVALUATION_AB_TESTING_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "benchmarks.hpp"
 #include "quality_metrics.hpp"
 #include <string>
 #include <vector>
@@ -81,24 +82,18 @@ enum class SignificanceLevel {
     P_0_10 = 10    ///< 90% confidence
 };
 
-/**
- * @brief Test case for A/B testing
- *
- * Represents a single test case with input and expected output.
- */
-struct TestCase {
-    std::string input;                    ///< Input to agent
-    std::string expected;                 ///< Expected output
-    std::map<std::string, std::any> metadata;  ///< Additional metadata
-
-    /**
-     * @brief Create a test case
-     * @param inp Input string
-     * @param exp Expected output string
-     */
-    TestCase(const std::string& inp = "", const std::string& exp = "")
-        : input(inp), expected(exp) {}
-};
+// TestCase for A/B testing comes from benchmarks.hpp — there is exactly one
+// agenkit::evaluation::TestCase.
+//
+// This header used to define a second struct of the same name in the same namespace:
+// 72 bytes with a plain std::string `expected`, against benchmarks.hpp's 112 bytes with
+// a std::variant. Both had an inline two-string constructor, so both emitted the same
+// mangled symbol for the implicit copy constructor
+// (_ZN7agenkit10evaluation8TestCaseC2ERKS1_), both weak, both in the same library
+// target. The linker coalesced them without a diagnostic, so any program including both
+// headers ran one type's copy constructor over the other type's storage and corrupted
+// the heap. No translation unit in this repo included both, which is why the suite
+// stayed green and the bug only fired in user code (#831).
 
 /**
  * @brief Statistics for a single A/B test variant

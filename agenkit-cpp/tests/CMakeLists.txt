@@ -232,6 +232,21 @@ add_executable(test_benchmarks unit/test_benchmarks.cpp)
 target_link_libraries(test_benchmarks agenkit gtest_main)
 add_test(NAME benchmarks_tests COMMAND test_benchmarks)
 
+# Evaluation tests - TestCase ODR regression (#831)
+#
+# Deliberately three translation units: one including only ab_testing.hpp, one including
+# only benchmarks.hpp, and the gtest driver. The duplicate TestCase definitions were
+# invisible precisely because no single TU saw both headers, so a one-file test would
+# check a compile-time redefinition rather than the silent weak-symbol coalescing that
+# actually corrupted the heap.
+add_executable(test_testcase_odr
+    unit/test_testcase_odr.cpp
+    unit/testcase_odr_ab_tu.cpp
+    unit/testcase_odr_benchmarks_tu.cpp
+)
+target_link_libraries(test_testcase_odr agenkit gtest_main)
+add_test(NAME testcase_odr_tests COMMAND test_testcase_odr)
+
 # Evaluation tests - Bayesian Optimizer
 add_executable(test_bayesian_optimizer unit/test_bayesian_optimizer.cpp)
 target_link_libraries(test_bayesian_optimizer agenkit gtest_main)

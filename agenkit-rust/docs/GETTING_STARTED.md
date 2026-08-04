@@ -86,7 +86,7 @@ cargo build --release
 Clone the repository and link locally:
 
 ```bash
-git clone https://github.com/agenkit/agenkit.git
+git clone https://github.com/scttfrdmn/agenkit.git
 cd agenkit/agenkit-rust
 cargo build
 cargo test  # Verify everything works
@@ -1077,4 +1077,4 @@ use agenkit::memory::{MemoryHierarchy, WorkingMemory, LongTermMemory};
 **Last Updated**: March 17, 2026
 **Rust Edition**: 2021 (Rust 1.75+)
 
-For help: Open an issue at https://github.com/agenkit/agenkit/issues
+For help: Open an issue at https://github.com/scttfrdmn/agenkit/issues

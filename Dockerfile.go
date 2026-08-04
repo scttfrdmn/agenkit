@@ -30,7 +30,7 @@ FROM alpine:3.19
 LABEL org.opencontainers.image.title="Agenkit Go"
 LABEL org.opencontainers.image.description="Foundation layer for AI agents - Go runtime"
 LABEL org.opencontainers.image.authors="Scott Friedman <scttfrdmn@users.noreply.github.com>"
-LABEL org.opencontainers.image.source="https://github.com/agenkit/agenkit"
+LABEL org.opencontainers.image.source="https://github.com/scttfrdmn/agenkit"
 LABEL org.opencontainers.image.version="0.1.0"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 

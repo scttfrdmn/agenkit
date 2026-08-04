@@ -36,8 +36,8 @@ import (
     "fmt"
     "log"
 
-    "github.com/agenkit/agenkit-go/adapter/llm"
-    "github.com/agenkit/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit/agenkit-go/adapter/llm"
+    "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 func main() {

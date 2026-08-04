@@ -31,7 +31,7 @@ Checkpointing is included in the core Agenkit package:
 pip install agenkit
 
 # Go
-go get github.com/agenkit/agenkit-go/checkpointing
+go get github.com/scttfrdmn/agenkit-go/checkpointing
 ```
 
 ## Quick Start
@@ -71,7 +71,7 @@ package main
 
 import (
     "fmt"
-    "github.com/agenkit/agenkit-go/checkpointing"
+    "github.com/scttfrdmn/agenkit-go/checkpointing"
 )
 
 func main() {

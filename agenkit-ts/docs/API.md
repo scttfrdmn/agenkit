@@ -1508,7 +1508,7 @@ Agenkit TypeScript maintains API parity with all other language implementations:
 | Language | Package |
 |----------|---------|
 | Python | `agenkit` (pip) |
-| Go | `github.com/agenkit/agenkit-go` |
+| Go | `github.com/scttfrdmn/agenkit-go` |
 | Rust | `agenkit-rs` (crates.io) |
 | C++ | `agenkit-cpp` (CMake) |
 | Zig | `agenkit-zig` (build.zig.zon) |

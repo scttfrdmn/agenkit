@@ -375,10 +375,10 @@ This is a reference implementation for issue #65. Contributions welcome:
 
 ## 🔗 Related
 
-- [AgentKit Documentation](https://github.com/agenkit/agenkit)
+- [AgentKit Documentation](https://github.com/scttfrdmn/agenkit)
 - [Research Assistant](../research-assistant/) - Apply this pattern
 - [Code Review Bot](../code-review-bot/) - Apply this pattern
-- [Issue #65](https://github.com/agenkit/agenkit/issues/65) - Original request
+- [Issue #65](https://github.com/scttfrdmn/agenkit/issues/65) - Original request
 
 ---
 

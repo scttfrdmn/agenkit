@@ -30,7 +30,7 @@ Memory management is included in the core Agenkit package:
 pip install agenkit
 
 # Go
-go get github.com/agenkit/agenkit-go/memory
+go get github.com/scttfrdmn/agenkit-go/memory
 ```
 
 ## Quick Start
@@ -72,8 +72,8 @@ package main
 
 import (
     "fmt"
-    "github.com/agenkit/agenkit-go/agenkit"
-    "github.com/agenkit/agenkit-go/memory"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/memory"
 )
 
 func main() {

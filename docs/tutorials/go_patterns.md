@@ -29,10 +29,10 @@ For background services handling many concurrent LLM requests, Go is an excellen
 ### Prerequisites
 
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go@latest
+go get github.com/scttfrdmn/agenkit-go@latest
 ```
 
-Go 1.22+ is required. All examples compile and run with `go run main.go`.
+Go 1.25.12+ is required. All examples compile and run with `go run main.go`.
 
 ---
 
@@ -53,7 +53,7 @@ import (
     "fmt"
     "log"
 
-    agenkit "github.com/scttfrdmn/agenkit/agenkit-go"
+    agenkit "github.com/scttfrdmn/agenkit-go"
 )
 
 func main() {
@@ -87,7 +87,7 @@ import (
     "log"
     "sync"
 
-    agenkit "github.com/scttfrdmn/agenkit/agenkit-go"
+    agenkit "github.com/scttfrdmn/agenkit-go"
     "golang.org/x/sync/errgroup"
 )
 
@@ -151,7 +151,7 @@ import (
     "log"
     "time"
 
-    agenkit "github.com/scttfrdmn/agenkit/agenkit-go"
+    agenkit "github.com/scttfrdmn/agenkit-go"
 )
 
 type agentResult struct {
@@ -242,7 +242,7 @@ import (
     "log"
     "time"
 
-    agenkit "github.com/scttfrdmn/agenkit/agenkit-go"
+    agenkit "github.com/scttfrdmn/agenkit-go"
 )
 
 // retryAgent wraps an agent and retries transient failures.
@@ -408,7 +408,7 @@ import (
     "fmt"
     "log"
 
-    agenkit "github.com/scttfrdmn/agenkit/agenkit-go"
+    agenkit "github.com/scttfrdmn/agenkit-go"
 )
 
 // stage runs an agent on every message from in, sending results to out.
@@ -595,7 +595,7 @@ import (
     "strings"
     "testing"
 
-    agenkit "github.com/scttfrdmn/agenkit/agenkit-go"
+    agenkit "github.com/scttfrdmn/agenkit-go"
     "pgregory.net/rapid"
 )
 
@@ -758,7 +758,7 @@ import (
     "syscall"
     "time"
 
-    agenkit "github.com/scttfrdmn/agenkit/agenkit-go"
+    agenkit "github.com/scttfrdmn/agenkit-go"
 )
 
 func main() {

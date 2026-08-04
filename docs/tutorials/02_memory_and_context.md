@@ -278,8 +278,8 @@ import (
     "fmt"
     "strings"
 
-    "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-    "github.com/scttfrdmn/agenkit/agenkit-go/memory"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/memory"
 )
 
 // SupportAgent holds conversation state in EphemeralMemory.
@@ -382,8 +382,8 @@ import (
     "context"
     "fmt"
 
-    "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-    "github.com/scttfrdmn/agenkit/agenkit-go/checkpointing"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/checkpointing"
 )
 
 type EchoAgent struct{}
@@ -396,7 +396,7 @@ func (e *EchoAgent) Introspect() *agenkit.IntrospectionResult {
 func (e *EchoAgent) Process(
     _ context.Context, msg *agenkit.Message,
 ) (*agenkit.Message, error) {
-    return agenkit.NewMessage("agent", "Acknowledged: "+msg.Content), nil
+    return agenkit.NewMessage("agent", "Acknowledged: "+msg.ContentString()), nil
 }
 
 func main() {

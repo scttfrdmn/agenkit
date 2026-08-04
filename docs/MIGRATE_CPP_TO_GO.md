@@ -41,7 +41,7 @@ msg.timestamp = std::chrono::system_clock::now();
 
 ### Go
 ```go
-import "github.com/agenkit/agenkit-go"
+import "github.com/scttfrdmn/agenkit-go"
 import "time"
 
 msg := agenkit.Message{
@@ -105,7 +105,7 @@ public:
 import (
     "context"
     "fmt"
-    "github.com/agenkit/agenkit-go"
+    "github.com/scttfrdmn/agenkit-go"
 )
 
 type MyAgent struct {
@@ -503,7 +503,7 @@ auto result = sequential.process(msg).get();
 
 **Go**:
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 sequential := patterns.NewSequential([]agenkit.Agent{
     NewAgent1(),

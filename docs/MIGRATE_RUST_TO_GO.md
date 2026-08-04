@@ -36,7 +36,7 @@ let msg = Message {
 
 ### Go
 ```go
-import "github.com/agenkit/agenkit-go"
+import "github.com/scttfrdmn/agenkit-go"
 
 msg := agenkit.Message{
     Role:    agenkit.RoleUser,
@@ -91,7 +91,7 @@ impl Agent for MyAgent {
 import (
     "context"
     "fmt"
-    "github.com/agenkit/agenkit-go"
+    "github.com/scttfrdmn/agenkit-go"
 )
 
 type MyAgent struct {
@@ -255,7 +255,7 @@ let result = sequential.process(msg).await?;
 
 **Go**:
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 sequential := patterns.NewSequential([]agenkit.Agent{
     agent1,
@@ -283,7 +283,7 @@ let result = parallel.process(msg).await?;
 
 **Go**:
 ```go
-import "github.com/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 parallel := patterns.NewParallel([]agenkit.Agent{
     agent_a,
@@ -700,7 +700,7 @@ go build -o myagent
 cargo add agenkit
 
 # Go
-go get github.com/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 ---

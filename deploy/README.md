@@ -334,5 +334,5 @@ metrics:
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/agenkit/agenkit/issues
+- GitHub Issues: https://github.com/scttfrdmn/agenkit/issues
 - Documentation: https://docs.agenkit.dev

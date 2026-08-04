@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/agenkit/agenkit/schemas/message.json",
+  "$id": "https://github.com/scttfrdmn/agenkit/schemas/message.json",
   "title": "Agenkit Message",
   "description": "Cross-language serialization schema for Agenkit messages",
   "type": "object",

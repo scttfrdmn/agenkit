@@ -35,7 +35,7 @@ msg = Message(
 
 ### Go
 ```go
-import "github.com/agenkit/agenkit-go"
+import "github.com/scttfrdmn/agenkit-go"
 
 msg := agenkit.Message{
     Role:    agenkit.RoleUser,
@@ -457,7 +457,7 @@ func TestAgent(t *testing.T) {
 - [ ] Convert exception handling to `(result, error)` returns
 - [ ] Add `context.Context` as first parameter to all async functions
 - [ ] Change `async/await` to goroutines (or keep synchronous)
-- [ ] Update imports: `agenkit` → `github.com/agenkit/agenkit-go`
+- [ ] Update imports: `agenkit` → `github.com/scttfrdmn/agenkit-go`
 - [ ] Replace duck typing with explicit interfaces
 - [ ] Convert tests: `pytest` → `testing` package
 - [ ] Update error handling: `try/except` → `if err != nil`
@@ -662,7 +662,7 @@ pytest tests/
 go mod init myproject
 
 # Install dependencies (automatic on build)
-go get github.com/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 
 # Build
 go build -o myapp
@@ -714,7 +714,7 @@ module myproject
 go 1.22
 
 require (
-    github.com/agenkit/agenkit-go v0.46.0
+    github.com/scttfrdmn/agenkit-go v0.46.0
 )
 
 // No need to specify transitive dependencies
@@ -761,7 +761,7 @@ package main
 import (
     "context"
     "fmt"
-    "github.com/agenkit/agenkit-go"
+    "github.com/scttfrdmn/agenkit-go"
 )
 
 type MyAgent struct{}

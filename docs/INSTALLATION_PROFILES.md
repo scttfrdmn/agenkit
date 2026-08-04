@@ -259,7 +259,7 @@ npm install @agenkit/core --no-optional
 ### Base Installation
 
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 **Includes**:
@@ -928,7 +928,7 @@ pip install agenkit[aws]==0.46.0
 npm install @agenkit/core@0.46.0
 
 # Go
-go get github.com/scttfrdmn/agenkit/agenkit-go@v0.46.0
+go get github.com/scttfrdmn/agenkit-go@v0.46.0
 
 # Rust
 [dependencies]

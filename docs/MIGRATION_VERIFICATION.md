@@ -54,43 +54,24 @@ throughout.
 import "github.com/agenkit/agenkit-go"
 ```
 
-**Actual path** (from `agenkit-go/go.mod` line 1):
-```go
-module github.com/scttfrdmn/agenkit/agenkit-go
-```
+**Impact**: the `agenkit/agenkit-go` module does not exist — neither does the
+`agenkit/agenkit` repo used by the accompanying `git clone` lines — so every guide that
+led with this path sent the reader straight into a 404.
 
-**Impact**: Any developer following these guides will encounter `go get` failures and
-import resolution errors because the module path does not exist at the documented URL.
-
-**Correct usage**:
+**Correct usage** — for a doc *outside* `agenkit-go/`, the published mirror:
 ```go
-import agenkit "github.com/scttfrdmn/agenkit/agenkit-go"
+import "github.com/scttfrdmn/agenkit-go/agenkit"
 ```
 
 ```bash
-# Correct go get command
-go get github.com/scttfrdmn/agenkit/agenkit-go@latest
+go get github.com/scttfrdmn/agenkit-go@latest
 ```
 
-**Also affects**: `go.mod` dependency examples, e.g.:
-```go
-// Current (wrong):
-require (
-    github.com/agenkit/agenkit-go v0.46.0
-)
+This was originally filed as "the path should be
+`github.com/scttfrdmn/agenkit/agenkit-go`", which was **wrong in the other direction**.
+Both paths resolve, but they are not interchangeable — see the rule below.
 
-// Correct:
-require (
-    github.com/scttfrdmn/agenkit/agenkit-go v0.76.0
-)
-```
-
-This same incorrect path pattern appears in 16 other documentation files (see grep
-results: `docs/MIGRATE_ZIG_TO_GO.md`, `docs/MIGRATE_CPP_TO_GO.md`,
-`docs/MIGRATE_TYPESCRIPT_TO_GO.md`, `docs/MIGRATE_GO_TO_ZIG.md`,
-`docs/MIGRATE_GO_TO_CPP.md`, `docs/MIGRATE_GO_TO_RUST.md`,
-`docs/MIGRATE_GO_TO_TYPESCRIPT.md`, `docs/MIGRATE_GO_TO_PYTHON.md`,
-`docs/MIGRATION.md`, and docs package files).
+Fixed in #834 across 82 files.
 
 ---
 
@@ -189,7 +170,7 @@ C++, Zig, C#, Java, Scala.
 
 Priority order:
 
-1. **High — Fix Go import path** in all affected files. The path `github.com/agenkit/agenkit-go`
+1. **High — Fix Go import path** in all affected files. The path `github.com/scttfrdmn/agenkit-go`
    does not resolve; it should be `github.com/scttfrdmn/agenkit/agenkit-go`. This breaks
    any developer following the migration guides.
 

@@ -79,7 +79,7 @@ pytest tests/
 
 ### Go Setup
 
-**Requirements:** Go 1.21+
+**Requirements:** Go 1.25.12+
 
 ```bash
 cd agenkit-go

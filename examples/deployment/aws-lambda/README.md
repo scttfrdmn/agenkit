@@ -473,6 +473,6 @@ jobs:
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/agenkit/agenkit/issues
+- GitHub Issues: https://github.com/scttfrdmn/agenkit/issues
 - Documentation: https://docs.agenkit.dev
-- Examples: https://github.com/agenkit/agenkit/tree/main/examples
+- Examples: https://github.com/scttfrdmn/agenkit/tree/main/examples

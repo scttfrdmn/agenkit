@@ -38,7 +38,7 @@ We'll create a **Text Analyzer Agent** that:
 
     import (
         "context"
-        "github.com/agenkit/agenkit-go/agenkit"
+        "github.com/scttfrdmn/agenkit-go/agenkit"
     )
 
     type TextAnalyzerAgent struct{}

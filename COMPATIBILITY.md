@@ -464,7 +464,7 @@ github.com/redis/go-redis/v9 v9.0.5         // Redis memory
 - Python 3.9 support (end of life Oct 2025)
 
 **New Requirements**:
-- Go 1.21+ (for workspace support)
+- Go 1.25.12+ (declared floor in `agenkit-go/go.mod`)
 - Python 3.10+ (for match statements, improved typing)
 
 ### Upgrade Path

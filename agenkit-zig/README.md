@@ -29,7 +29,7 @@ Add to your `build.zig.zon`:
 ```zig
 .dependencies = .{
     .agenkit = .{
-        .url = "https://github.com/agenkit/agenkit/releases/download/v0.41.0/agenkit-zig.tar.gz",
+        .url = "https://github.com/scttfrdmn/agenkit/releases/download/v0.41.0/agenkit-zig.tar.gz",
         .hash = "...",
     },
 },
@@ -49,7 +49,7 @@ exe.root_module.addImport("agenkit", agenkit.module("agenkit"));
 ### Building from Source
 
 ```bash
-git clone https://github.com/agenkit/agenkit.git
+git clone https://github.com/scttfrdmn/agenkit.git
 cd agenkit/agenkit-zig
 zig build test
 ```
@@ -544,9 +544,9 @@ MIT License - See LICENSE file for details
 
 ## Links
 
-- [Agenkit Documentation](https://github.com/agenkit/agenkit)
+- [Agenkit Documentation](https://github.com/scttfrdmn/agenkit)
 - [Zig Language](https://ziglang.org/)
-- [Issue Tracker](https://github.com/agenkit/agenkit/issues)
+- [Issue Tracker](https://github.com/scttfrdmn/agenkit/issues)
 
 ## Agent Patterns
 

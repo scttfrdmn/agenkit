@@ -37,7 +37,7 @@ print(agenkit.__version__)
 ### Using go get
 
 ```bash
-go get github.com/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 ### From Source
@@ -61,7 +61,7 @@ package main
 
 import (
     "fmt"
-    "github.com/agenkit/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
 )
 
 func main() {

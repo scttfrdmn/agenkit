@@ -131,8 +131,8 @@ import (
     "fmt"
     "strings"
 
-    "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-    "github.com/scttfrdmn/agenkit/agenkit-go/composition"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/composition"
 )
 
 type ValidatorAgent struct{}
@@ -145,7 +145,7 @@ func (v *ValidatorAgent) Introspect() *agenkit.IntrospectionResult {
 func (v *ValidatorAgent) Process(
     _ context.Context, msg *agenkit.Message,
 ) (*agenkit.Message, error) {
-    if len(strings.Fields(msg.Content)) < 3 {
+    if len(strings.Fields(msg.ContentString())) < 3 {
         r := agenkit.NewMessage("agent", "ERROR: input must be at least 3 words")
         r.Metadata["valid"] = false
         return r, nil
@@ -168,7 +168,7 @@ func (e *EnricherAgent) Process(
     if valid, _ := msg.Metadata["valid"].(bool); !valid {
         return msg, nil
     }
-    words := strings.Fields(msg.Content)
+    words := strings.Fields(msg.ContentString())
     enriched := fmt.Sprintf(
         "%s [words=%d, chars=%d]",
         msg.Content, len(words), len(msg.Content),
@@ -188,10 +188,10 @@ func (f *FormatterAgent) Introspect() *agenkit.IntrospectionResult {
 func (f *FormatterAgent) Process(
     _ context.Context, msg *agenkit.Message,
 ) (*agenkit.Message, error) {
-    if strings.HasPrefix(msg.Content, "ERROR:") {
+    if strings.HasPrefix(msg.ContentString(), "ERROR:") {
         return msg, nil
     }
-    r := agenkit.NewMessage("agent", "RESULT: "+strings.ToUpper(msg.Content))
+    r := agenkit.NewMessage("agent", "RESULT: "+strings.ToUpper(msg.ContentString()))
     return r, nil
 }
 
@@ -329,8 +329,8 @@ import (
     "fmt"
     "strings"
 
-    "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-    "github.com/scttfrdmn/agenkit/agenkit-go/composition"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/composition"
 )
 
 type SentimentAgent struct{}
@@ -343,7 +343,7 @@ func (a *SentimentAgent) Introspect() *agenkit.IntrospectionResult {
 func (a *SentimentAgent) Process(
     _ context.Context, msg *agenkit.Message,
 ) (*agenkit.Message, error) {
-    lower := strings.ToLower(msg.Content)
+    lower := strings.ToLower(msg.ContentString())
     score := "neutral"
     for _, word := range []string{"good", "great", "love"} {
         if strings.Contains(lower, word) {
@@ -365,7 +365,7 @@ func (a *KeywordAgent) Process(
     _ context.Context, msg *agenkit.Message,
 ) (*agenkit.Message, error) {
     var keywords []string
-    for _, w := range strings.Fields(msg.Content) {
+    for _, w := range strings.Fields(msg.ContentString()) {
         if len(w) > 4 {
             keywords = append(keywords, w)
         }
@@ -518,8 +518,8 @@ import (
     "errors"
     "fmt"
 
-    "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
-    "github.com/scttfrdmn/agenkit/agenkit-go/composition"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/composition"
 )
 
 type PrimaryLLMAgent struct{ Healthy bool }
@@ -535,7 +535,7 @@ func (a *PrimaryLLMAgent) Process(
     if !a.Healthy {
         return nil, errors.New("rate limit exceeded")
     }
-    return agenkit.NewMessage("agent", "[Primary] Answer to: "+msg.Content), nil
+    return agenkit.NewMessage("agent", "[Primary] Answer to: "+msg.ContentString()), nil
 }
 
 type BackupLLMAgent struct{}
@@ -548,7 +548,7 @@ func (a *BackupLLMAgent) Introspect() *agenkit.IntrospectionResult {
 func (a *BackupLLMAgent) Process(
     _ context.Context, msg *agenkit.Message,
 ) (*agenkit.Message, error) {
-    return agenkit.NewMessage("agent", "[Backup] Answer to: "+msg.Content), nil
+    return agenkit.NewMessage("agent", "[Backup] Answer to: "+msg.ContentString()), nil
 }
 
 func runFallbackDemo(ctx context.Context, primaryHealthy bool) {

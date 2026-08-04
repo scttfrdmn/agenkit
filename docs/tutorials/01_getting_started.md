@@ -20,7 +20,7 @@ calls or middleware.
 | Language   | Tool required                     |
 |------------|-----------------------------------|
 | Python     | Python 3.11+ and `uv`             |
-| Go         | Go 1.23+                          |
+| Go         | Go 1.25.12+                       |
 | TypeScript | Node 22+ and `npm`                |
 | Rust       | Rust 1.75+ (`rustup`)             |
 | C++        | CMake 3.20+ and a C++17 compiler  |
@@ -91,7 +91,7 @@ Output: [9 words] The quick brown fox jumps over the lazy dog
 **Install:**
 
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 **`summary_agent.go`:**
@@ -104,7 +104,7 @@ import (
     "fmt"
     "strings"
 
-    "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
 )
 
 // SummaryAgent returns the input with a word count prepended.
@@ -118,7 +118,7 @@ func (s *SummaryAgent) Process(
     ctx context.Context,
     message *agenkit.Message,
 ) (*agenkit.Message, error) {
-    words := strings.Fields(message.Content)
+    words := strings.Fields(message.ContentString())
     response := fmt.Sprintf("[%d words] %s", len(words), message.Content)
     return agenkit.NewMessage("agent", response), nil
 }

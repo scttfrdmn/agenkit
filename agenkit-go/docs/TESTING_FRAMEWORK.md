@@ -330,7 +330,7 @@ func (f *funcAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit
 // Usage in test:
 agent := &funcAgent{
     process: func(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
-        return agenkit.NewMessage("assistant", "mocked: "+msg.Content), nil
+        return agenkit.NewMessage("assistant", "mocked: "+msg.ContentString()), nil
     },
 }
 ```

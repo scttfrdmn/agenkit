@@ -607,6 +607,6 @@ wrangler d1 execute agenkit-db --local --command "SELECT * FROM metrics LIMIT 1"
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/agenkit/agenkit/issues
+- GitHub Issues: https://github.com/scttfrdmn/agenkit/issues
 - Cloudflare Workers Docs: https://developers.cloudflare.com/workers
 - Community Discord: https://discord.gg/agenkit

@@ -277,7 +277,7 @@ package main
 import (
     "context"
     "fmt"
-    agenkit "github.com/agenkit/agenkit-go"
+    agenkit "github.com/scttfrdmn/agenkit-go"
 )
 
 type EchoAgent struct {
@@ -878,7 +878,7 @@ match agent.process(message).await {
     .version = "0.1.0",
     .dependencies = .{
         .agenkit = .{
-            .url = "https://github.com/agenkit/agenkit/releases/download/v0.75.0/agenkit-zig.tar.gz",
+            .url = "https://github.com/scttfrdmn/agenkit/releases/download/v0.75.0/agenkit-zig.tar.gz",
             .hash = "1220...",
         },
     },

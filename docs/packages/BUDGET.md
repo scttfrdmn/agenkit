@@ -31,7 +31,7 @@ Budget tracking is included in the core Agenkit package:
 pip install agenkit
 
 # Go
-go get github.com/agenkit/agenkit-go/budget
+go get github.com/scttfrdmn/agenkit-go/budget
 ```
 
 ## Quick Start
@@ -78,7 +78,7 @@ package main
 
 import (
     "fmt"
-    "github.com/agenkit/agenkit-go/budget"
+    "github.com/scttfrdmn/agenkit-go/budget"
 )
 
 func main() {

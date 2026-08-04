@@ -163,9 +163,9 @@ The same patterns work in both languages:
 
     ```go
     import (
-        "github.com/agenkit/agenkit-go/agenkit"
-        "github.com/agenkit/agenkit-go/middleware"
-        "github.com/agenkit/agenkit-go/composition"
+        "github.com/scttfrdmn/agenkit-go/agenkit"
+        "github.com/scttfrdmn/agenkit-go/middleware"
+        "github.com/scttfrdmn/agenkit-go/composition"
     )
 
     agent := composition.NewSequentialAgent([]agenkit.Agent{

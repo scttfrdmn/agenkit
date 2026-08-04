@@ -202,7 +202,7 @@ export default function Home() {
           <p>
             Powered by{' '}
             <a
-              href="https://github.com/agenkit/agenkit"
+              href="https://github.com/scttfrdmn/agenkit"
               className="text-blue-500 hover:underline"
             >
               Agenkit

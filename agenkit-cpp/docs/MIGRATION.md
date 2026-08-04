@@ -308,11 +308,11 @@ module my-agent
 
 go 1.21
 
-require github.com/scttfrdmn/agenkit/agenkit-go v0.75.0
+require github.com/scttfrdmn/agenkit-go v0.75.0
 ```
 
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 go run main.go
 ```
 
@@ -330,7 +330,7 @@ package main
 
 import (
     "context"
-    agenkit "github.com/scttfrdmn/agenkit/agenkit-go"
+    agenkit "github.com/scttfrdmn/agenkit-go"
 )
 
 type EchoAgent struct{}

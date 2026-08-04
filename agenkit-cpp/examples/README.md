@@ -398,8 +398,8 @@ All examples are production-ready and well-tested. See [tests/](../../tests/) fo
 
 ## Need Help?
 
-- **Issues**: [GitHub Issues](https://github.com/agenkit/agenkit/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/agenkit/agenkit/discussions)
+- **Issues**: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/scttfrdmn/agenkit/discussions)
 - **Documentation**: [/docs](../../docs/)
 - **Tests**: [/tests](../../tests/) - 137+ test examples
 

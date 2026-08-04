@@ -190,6 +190,6 @@ print(middleware.has_permission(Permission.READ_FILES))
 
 ## Contributing
 
-Found a security issue? Please report it responsibly via [GitHub Security Advisories](https://github.com/agenkit/agenkit/security/advisories).
+Found a security issue? Please report it responsibly via [GitHub Security Advisories](https://github.com/scttfrdmn/agenkit/security/advisories).
 
 Want to add more examples? Submit a pull request!

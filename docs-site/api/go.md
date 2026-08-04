@@ -6,7 +6,7 @@ Complete API documentation for Agenkit Go implementation.
 
 The Go implementation maintains complete API documentation on pkg.go.dev, automatically generated from Go doc comments.
 
-[📚 View Go API Documentation on pkg.go.dev](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go){ .md-button .md-button--primary }
+[📚 View Go API Documentation on pkg.go.dev](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go){ .md-button .md-button--primary }
 
 ---
 
@@ -14,9 +14,9 @@ The Go implementation maintains complete API documentation on pkg.go.dev, automa
 
 ### Core Package
 
-[**agenkit**](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go/agenkit) - Core interfaces and types
+[**agenkit**](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go/agenkit) - Core interfaces and types
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+import "github.com/scttfrdmn/agenkit-go/agenkit"
 ```
 
 Key types:
@@ -28,9 +28,9 @@ Key types:
 
 ### Patterns
 
-[**patterns**](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go/patterns) - Agent patterns and compositions
+[**patterns**](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go/patterns) - Agent patterns and compositions
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 ```
 
 Available patterns:
@@ -51,9 +51,9 @@ Available patterns:
 
 ### Reasoning Techniques
 
-[**techniques/reasoning**](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go/techniques/reasoning) - Advanced reasoning
+[**techniques/reasoning**](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go/techniques/reasoning) - Advanced reasoning
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/techniques/reasoning"
+import "github.com/scttfrdmn/agenkit-go/techniques/reasoning"
 ```
 
 Available techniques:
@@ -65,9 +65,9 @@ Available techniques:
 
 ### Middleware
 
-[**middleware**](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go/middleware) - Production middleware
+[**middleware**](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go/middleware) - Production middleware
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/middleware"
+import "github.com/scttfrdmn/agenkit-go/middleware"
 ```
 
 Available middleware:
@@ -81,34 +81,43 @@ Available middleware:
 
 ### LLM Adapters
 
-[**adapter**](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go/adapter) - LLM provider adapters
+[**adapter/llm**](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go/adapter/llm) - LLM provider adapters
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/adapter"
+import "github.com/scttfrdmn/agenkit-go/adapter/llm"
 ```
 
 Available adapters:
-- `AnthropicAdapter` - Claude API
-- `OpenAIAdapter` - OpenAI API
-- `BedrockAdapter` - AWS Bedrock
-- `GeminiAdapter` - Google Gemini
+- `NewAnthropicLLM(apiKey, model, opts...)` - Claude API
+- `NewOpenAILLM(apiKey, model)` - OpenAI API
+- `NewBedrockLLM(ctx, cfg)` - AWS Bedrock
+- `NewGeminiLLM(apiKey, model)` - Google Gemini
+- `NewOllamaLLM(model, baseURL)`, `NewVllmLLM(model, baseURL)`,
+  `NewSGLangLLM(model, baseURL)` - local models
+- `NewLiteLLMLLM(baseURL, model)`, `NewOpenAICompatibleLLM(baseURL, model, provider, apiKey)`
 
 ### Transport
 
-[**transport/http**](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go/transport/http) - HTTP server/client
+[**adapter/http**](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go/adapter/http) - HTTP server
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/transport/http"
+import "github.com/scttfrdmn/agenkit-go/adapter/http"
 ```
 
-[**transport/grpc**](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go/transport/grpc) - gRPC server/client
+[**adapter/grpc**](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go/adapter/grpc) - gRPC server
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/transport/grpc"
+import "github.com/scttfrdmn/agenkit-go/adapter/grpc"
+```
+
+[**adapter/remote**](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go/adapter/remote) - client for a
+remote agent (satisfies `agenkit.Agent`, so it composes like a local one)
+```go
+import "github.com/scttfrdmn/agenkit-go/adapter/remote"
 ```
 
 ### Observability
 
-[**observability**](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go/observability) - Tracing and metrics
+[**observability**](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go/observability) - Tracing and metrics
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/observability"
+import "github.com/scttfrdmn/agenkit-go/observability"
 ```
 
 Features:
@@ -117,9 +126,9 @@ Features:
 
 ### Evaluation
 
-[**evaluation**](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go/evaluation) - Testing and optimization
+[**evaluation**](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go/evaluation) - Testing and optimization
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/evaluation"
+import "github.com/scttfrdmn/agenkit-go/evaluation"
 ```
 
 Features:
@@ -130,9 +139,9 @@ Features:
 
 ### Memory
 
-[**memory**](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go/memory) - Memory management
+[**memory**](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go/memory) - Memory management
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/memory"
+import "github.com/scttfrdmn/agenkit-go/memory"
 ```
 
 Features:
@@ -143,9 +152,9 @@ Features:
 
 ### Budget
 
-[**budget**](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go/budget) - Cost management
+[**budget**](https://pkg.go.dev/github.com/scttfrdmn/agenkit-go/budget) - Cost management
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/budget"
+import "github.com/scttfrdmn/agenkit-go/budget"
 ```
 
 ---
@@ -155,7 +164,7 @@ import "github.com/scttfrdmn/agenkit/agenkit-go/budget"
 ### Installation
 
 ```bash
-go get github.com/scttfrdmn/agenkit/agenkit-go
+go get github.com/scttfrdmn/agenkit-go
 ```
 
 ### Basic Example
@@ -167,7 +176,7 @@ import (
     "context"
     "fmt"
 
-    "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+    "github.com/scttfrdmn/agenkit-go/agenkit"
 )
 
 type EchoAgent struct{}
@@ -211,7 +220,7 @@ func main() {
 Go agents leverage goroutines for true parallel execution:
 
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
+import "github.com/scttfrdmn/agenkit-go/patterns"
 
 // Execute 3 agents concurrently
 parallel := patterns.NewParallelAgent([]agenkit.Agent{
@@ -417,19 +426,29 @@ Go agents can communicate with Python, TypeScript, and other language implementa
 ### Call Python Agent from Go
 
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/transport/http"
+import (
+	"time"
 
-pythonAgent := http.NewHTTPClient("http://localhost:8000")
+	"github.com/scttfrdmn/agenkit-go/adapter/remote"
+)
+
+pythonAgent, err := remote.NewRemoteAgent("python-agent", "http://localhost:8000", 30*time.Second)
+if err != nil {
+	return err
+}
 result, err := pythonAgent.Process(ctx, message)
 ```
 
 ### Expose Go Agent to Python
 
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/transport/http"
+import "github.com/scttfrdmn/agenkit-go/adapter/http"
 
 server := http.NewHTTPAgent(agent, ":8080")
-server.ListenAndServe()
+if err := server.Start(ctx); err != nil {
+	return err
+}
+defer func() { _ = server.Stop() }()
 ```
 
 ---

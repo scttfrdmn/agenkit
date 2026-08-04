@@ -1815,8 +1815,8 @@ Checkpointing is essential for production-grade agent systems. Key takeaways:
 
 - **Examples**: See `examples/checkpointing/` in each language directory
 - **API Docs**: Full API reference at [agenkit.dev/api](https://agenkit.dev/api)
-- **Issues**: Report bugs at [github.com/agenkit/agenkit/issues](https://github.com/agenkit/agenkit/issues)
-- **Discussions**: Ask questions at [github.com/agenkit/agenkit/discussions](https://github.com/agenkit/agenkit/discussions)
+- **Issues**: Report bugs at [github.com/scttfrdmn/agenkit/issues](https://github.com/scttfrdmn/agenkit/issues)
+- **Discussions**: Ask questions at [github.com/scttfrdmn/agenkit/discussions](https://github.com/scttfrdmn/agenkit/discussions)
 
 ---
 

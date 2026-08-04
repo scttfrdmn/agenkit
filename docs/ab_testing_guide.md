@@ -36,7 +36,7 @@ if results["accuracy"].is_significant:
 ### Go
 
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/evaluation"
+import "github.com/scttfrdmn/agenkit-go/evaluation"
 
 // Create test
 abTest := evaluation.NewABTest(

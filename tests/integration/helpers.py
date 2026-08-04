@@ -1,7 +1,9 @@
 """Test helpers for cross-language integration tests."""
 
 import asyncio
+import contextlib
 import os
+import signal
 import socket
 import subprocess
 import time
@@ -61,6 +63,110 @@ def wait_for_port(
     return False
 
 
+def popen_server(cmd: list[str], cwd: str | None = None, **kwargs) -> subprocess.Popen:
+    """Start a test server subprocess in its own process group.
+
+    Always use this instead of :class:`subprocess.Popen` for a server that must be
+    torn down, and pair it with :func:`terminate_server`. ``go run`` compiles the
+    source and then *execs* the built binary as its own child, so signalling only
+    the ``go`` wrapper leaves that binary alive, reparented to PID 1, still holding
+    its port. A machine running this suite accumulated 965 such orphans holding
+    11.7 GB before anyone noticed, because the wrapper does exit on SIGTERM and the
+    teardown therefore reported success (#825).
+
+    ``start_new_session`` makes the child a process-group leader so the whole tree
+    can be signalled at once.
+    """
+    # Test infrastructure — cmd is built from literals and test-chosen ports.
+    process = subprocess.Popen(cmd, cwd=cwd, start_new_session=True, **kwargs)
+    # Record the group id now, while the process is certainly alive.
+    # `start_new_session` makes the child its own group leader, so pgid == pid.
+    # terminate_server cannot recover this later: once the wrapper is reaped,
+    # os.getpgid(pid) raises ProcessLookupError even though the group still has live
+    # members — and a `go run` wrapper routinely exits before its server does.
+    process.agenkit_pgid = process.pid
+    return process
+
+
+def _wait_for_group_exit(pgid: int, timeout: float) -> bool:
+    """Poll until no process remains in `pgid`. True if the group drained in time.
+
+    Signal 0 to the group observes the grandchild that owns the port, not just the
+    wrapper -- which is the whole point (#825).
+
+    The caller must reap its own ``Popen`` first. On Linux a dead-but-unreaped
+    process is still a group member, so an unwaited wrapper keeps
+    ``killpg(pgid, 0)`` succeeding after everything has exited, and this burns its
+    full timeout on *every* teardown before an unnecessary SIGKILL. macOS reports
+    such a group as gone, so the ordering bug is invisible locally and only appears
+    in CI -- which is how it got here.
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            os.killpg(pgid, 0)
+        except ProcessLookupError:
+            return True
+        except PermissionError:
+            return False
+        time.sleep(0.05)
+    return False
+
+
+def terminate_server(process: subprocess.Popen) -> None:
+    """Stop a server started by :func:`popen_server`, and everything it spawned.
+
+    Signals the whole process group, not just ``process``: under ``go run`` the
+    process that owns the port is a *child* of the one Popen returned, and it does
+    not die with its parent (#825).
+
+    The group signal is sent unconditionally rather than only after
+    :meth:`~subprocess.Popen.wait` times out. Waiting first would always succeed —
+    the wrapper exits promptly — and that misleading success is exactly what hid
+    this leak.
+    """
+    if process.poll() is None:
+        process.terminate()
+
+    # Prefer the pgid captured at spawn: os.getpgid() fails once the wrapper is
+    # reaped, which is exactly when the surviving grandchild still needs killing.
+    pgid = getattr(process, "agenkit_pgid", None)
+    if pgid is None:
+        try:
+            pgid = os.getpgid(process.pid)
+        except (ProcessLookupError, PermissionError):
+            pgid = None
+
+    # Never group-kill our own group: that would take down the test runner. This
+    # can only happen if a caller used bare Popen instead of popen_server, and it
+    # must fail as a surviving orphan (which the tests assert on) rather than as a
+    # dead pytest.
+    if pgid is not None and pgid == os.getpgid(0):
+        pgid = None
+
+    if pgid is not None:
+        with contextlib.suppress(ProcessLookupError, PermissionError):
+            os.killpg(pgid, signal.SIGTERM)
+
+    # Reap the wrapper *before* polling the group. On Linux its unreaped zombie
+    # would still count as a group member and stall the poll below for its full
+    # timeout on every teardown.
+    try:
+        process.wait(timeout=5.0)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+
+    # Escalation is driven by the *group*, not by `process`. `process.wait()` above
+    # always returns promptly -- the `go run` wrapper exits on SIGTERM -- so using it
+    # as the escalation trigger would mean SIGKILL never fires and a grandchild that
+    # ignores SIGTERM survives indefinitely. That is the same "the wrapper's exit
+    # proves nothing" mistake that caused #825 in the first place.
+    if pgid is not None and not _wait_for_group_exit(pgid, timeout=5.0):
+        with contextlib.suppress(ProcessLookupError, PermissionError):
+            os.killpg(pgid, signal.SIGKILL)
+
+
 async def wait_for_server(
     url: str,
     timeout: float = 10.0,
@@ -111,13 +217,11 @@ async def go_http_server(port: int | None = None):
 
     # Start Go server
     # Get the path to the agenkit-go directory
-    import os
-
     current_dir = os.path.dirname(os.path.abspath(__file__))
     go_test_dir = os.path.join(current_dir, "..", "..", "agenkit-go", "tests", "integration")
 
-    # S603, S607, ASYNC220: Safe in test infrastructure - port is test parameter, not user input
-    process = subprocess.Popen(
+    # S607, ASYNC220: Safe in test infrastructure - port is test parameter, not user input
+    process = popen_server(
         ["go", "run", "test_server.go", str(port)],
         cwd=go_test_dir,
         stdout=subprocess.PIPE,
@@ -128,7 +232,10 @@ async def go_http_server(port: int | None = None):
         # Wait for server to be ready
         server_url = f"http://localhost:{port}/health"
         if not await wait_for_server(server_url, timeout=10.0):
-            process.kill()
+            # Stop the tree first, then drain: communicate() on a server that is alive
+            # but not listening would block for its full timeout. The pipes stay
+            # readable after the process dies, so no diagnostic output is lost.
+            terminate_server(process)
             stdout, stderr = process.communicate()
             raise RuntimeError(
                 f"Go server failed to start on port {port}\n"
@@ -138,13 +245,7 @@ async def go_http_server(port: int | None = None):
 
         yield port, process
     finally:
-        # Cleanup
-        process.terminate()
-        try:
-            process.wait(timeout=5.0)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
+        terminate_server(process)
 
 
 @asynccontextmanager
@@ -412,8 +513,8 @@ async def go_grpc_server(port: int | None = None):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     go_test_dir = os.path.join(current_dir, "..", "..", "agenkit-go", "tests", "integration")
 
-    # S603, S607, ASYNC220: Safe in test infrastructure - port is test parameter, not user input
-    process = subprocess.Popen(
+    # S607, ASYNC220: Safe in test infrastructure - port is test parameter, not user input
+    process = popen_server(
         ["go", "run", "test_grpc_server.go", str(port)],
         cwd=go_test_dir,
         stdout=subprocess.PIPE,
@@ -423,7 +524,7 @@ async def go_grpc_server(port: int | None = None):
     try:
         # Wait for server to be ready with proper health checking
         if not await wait_for_grpc_server(port, process, timeout=10.0):
-            process.kill()
+            terminate_server(process)
             stdout, stderr = process.communicate()
             raise RuntimeError(
                 f"Go gRPC server failed to start on port {port}\n"
@@ -433,10 +534,4 @@ async def go_grpc_server(port: int | None = None):
 
         yield port, process
     finally:
-        # Cleanup
-        process.terminate()
-        try:
-            process.wait(timeout=5.0)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
+        terminate_server(process)

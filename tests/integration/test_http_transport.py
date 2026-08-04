@@ -17,7 +17,7 @@ from agenkit.adapters.python.local_agent import LocalAgent
 from agenkit.adapters.python.remote_agent import RemoteAgent
 from agenkit.interfaces import Agent, Message
 
-from .helpers import find_free_port, wait_for_port
+from .helpers import find_free_port, popen_server, terminate_server, wait_for_port
 
 # ============================================
 # Test Fixtures
@@ -119,8 +119,7 @@ asyncio.run(main())
         # Set working directory for Go processes (Go files are in agenkit-go/)
         working_dir = "agenkit-go" if self.language == "go" else None
 
-        # S603: Safe in test infrastructure - cmd contains test server command
-        self.process = subprocess.Popen(
+        self.process = popen_server(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -134,6 +133,7 @@ asyncio.run(main())
         # compile before it listens — under full-suite parallelism that
         # regularly exceeds a 2s sleep, which is what made these tests flaky.
         if not wait_for_port(self.port, process=self.process):
+            self.stop()
             stdout, stderr = self.process.communicate()
             raise RuntimeError(
                 f"{self.language} server failed to start on port {self.port}:\n"
@@ -141,14 +141,9 @@ asyncio.run(main())
             )
 
     def stop(self):
-        """Stop the server process."""
+        """Stop the server process and everything it spawned."""
         if self.process:
-            self.process.terminate()
-            try:
-                self.process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self.process.kill()
-                self.process.wait()
+            terminate_server(self.process)
 
 
 @pytest.fixture

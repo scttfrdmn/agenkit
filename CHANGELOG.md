@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — integration fixtures leaked an orphaned server on every run (Issue #825)
+
+A machine running this suite had accumulated **965 orphaned server processes**
+holding **11.7 GB RSS**, each still bound to its port.
+
+`go run X.go` compiles the source and then *execs* the built binary as its own
+child. Every fixture signalled only the `go` wrapper:
+
+- `tests/integration/helpers.py` — `go_http_server`, `go_grpc_server`
+- `tests/integration/test_http_transport.py` — `ServerProcess.stop`
+
+`SIGTERM` to the wrapper does not reach the binary it exec'd. The wrapper exited
+promptly, `process.wait()` returned success, and the fixture reported clean
+teardown — while the process actually holding the port survived, reparented to
+PID 1. The teardown *looked* correct, which is why 965 accumulated unnoticed;
+nothing in the fixture could observe the process it needed to kill. Because each
+leaked server kept its listener, repeated runs also starved `find_free_port()`.
+
+Servers now start via `popen_server()` (`start_new_session=True`) and stop via
+`terminate_server()`, which signals the whole process group. Two details matter
+beyond "call `killpg`":
+
+- The pgid is **captured at spawn**. `os.getpgid(pid)` raises `ProcessLookupError`
+  once the wrapper is reaped — which is exactly the moment the surviving
+  grandchild still needs killing.
+- SIGKILL escalation is driven by **polling the group**, not by
+  `process.wait()`. Waiting on the wrapper always succeeds, so escalation would
+  never fire and a server ignoring SIGTERM would survive indefinitely — the same
+  "the wrapper's exit proves nothing" mistake that caused the original leak.
+- The wrapper is **reaped before** the group is polled. On Linux a dead-but-unreaped
+  process is still a group member, so an unwaited wrapper keeps `killpg(pgid, 0)`
+  succeeding after everything has exited, burning the full timeout on *every*
+  teardown. macOS reports a zombie-only group as gone, so this ordering bug is
+  invisible locally and only surfaces in CI — where the new tests' elapsed-time
+  bound caught it.
+
+`terminate_server()` also refuses to group-kill its own group, so a caller who
+uses bare `Popen` gets a detectable orphan rather than a dead test runner.
+
+Verified against the real suite, not just the new tests: with the pre-fix
+teardown restored, `test_http_transport.py` reports **`8 passed` while leaking 2
+orphans**; with the fix, the before/after PPID-1 orphan count is unchanged at 0.
+6 new regression tests (integration collection 90 → **96**), each asserting on the
+*grandchild* rather than the wrapper. 7/8 teardown mutations caught by test
+assertions on macOS, including three that a naive fix would pass:
+`escalate-on-wrapper-not-group`, `no-sigkill-escalation`, and `kill-pid-not-group`.
+The 8th, `poll-group-before-reaping-wrapper`, cannot be caught on macOS at all —
+a zombie-only process group already reports as gone there. It is caught on Linux
+by the elapsed-time bound in `test_terminate_server_kills_the_grandchild`, which
+is not a hypothetical: the first version of this fix had that ordering and failed
+CI with `assert 5.011 < 2.0`.
+
+Still open: the orphaned `multiprocessing` workers described in #825 are a
+separate leak and are not addressed here.
+
 ### BREAKING — `TestCase.expected` is a case-insensitive substring in C++ and Zig, as it already was elsewhere (Issue #820)
 
 A string `TestCase.expected` was compared **three different ways** across the cores

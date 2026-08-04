@@ -91,8 +91,15 @@ def popen_server(cmd: list[str], cwd: str | None = None, **kwargs) -> subprocess
 def _wait_for_group_exit(pgid: int, timeout: float) -> bool:
     """Poll until no process remains in `pgid`. True if the group drained in time.
 
-    `os.killpg(pgid, 0)` succeeds while any member survives, so this observes the
-    grandchild that owns the port -- not just the wrapper.
+    Signal 0 to the group observes the grandchild that owns the port, not just the
+    wrapper -- which is the whole point (#825).
+
+    The caller must reap its own ``Popen`` first. On Linux a dead-but-unreaped
+    process is still a group member, so an unwaited wrapper keeps
+    ``killpg(pgid, 0)`` succeeding after everything has exited, and this burns its
+    full timeout on *every* teardown before an unnecessary SIGKILL. macOS reports
+    such a group as gone, so the ordering bug is invisible locally and only appears
+    in CI -- which is how it got here.
     """
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -141,20 +148,23 @@ def terminate_server(process: subprocess.Popen) -> None:
         with contextlib.suppress(ProcessLookupError, PermissionError):
             os.killpg(pgid, signal.SIGTERM)
 
-    # Escalation is driven by the *group*, not by `process`. Waiting on `process`
-    # alone would always return promptly -- the `go run` wrapper exits on SIGTERM --
-    # so SIGKILL would never fire and a grandchild that ignores SIGTERM would
-    # survive indefinitely. That is the same "the wrapper's exit proves nothing"
-    # mistake that caused #825 in the first place.
-    if pgid is not None and not _wait_for_group_exit(pgid, timeout=5.0):
-        with contextlib.suppress(ProcessLookupError, PermissionError):
-            os.killpg(pgid, signal.SIGKILL)
-
+    # Reap the wrapper *before* polling the group. On Linux its unreaped zombie
+    # would still count as a group member and stall the poll below for its full
+    # timeout on every teardown.
     try:
         process.wait(timeout=5.0)
     except subprocess.TimeoutExpired:
         process.kill()
         process.wait()
+
+    # Escalation is driven by the *group*, not by `process`. `process.wait()` above
+    # always returns promptly -- the `go run` wrapper exits on SIGTERM -- so using it
+    # as the escalation trigger would mean SIGKILL never fires and a grandchild that
+    # ignores SIGTERM survives indefinitely. That is the same "the wrapper's exit
+    # proves nothing" mistake that caused #825 in the first place.
+    if pgid is not None and not _wait_for_group_exit(pgid, timeout=5.0):
+        with contextlib.suppress(ProcessLookupError, PermissionError):
+            os.killpg(pgid, signal.SIGKILL)
 
 
 async def wait_for_server(

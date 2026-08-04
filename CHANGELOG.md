@@ -36,6 +36,12 @@ beyond "call `killpg`":
   `process.wait()`. Waiting on the wrapper always succeeds, so escalation would
   never fire and a server ignoring SIGTERM would survive indefinitely — the same
   "the wrapper's exit proves nothing" mistake that caused the original leak.
+- The wrapper is **reaped before** the group is polled. On Linux a dead-but-unreaped
+  process is still a group member, so an unwaited wrapper keeps `killpg(pgid, 0)`
+  succeeding after everything has exited, burning the full timeout on *every*
+  teardown. macOS reports a zombie-only group as gone, so this ordering bug is
+  invisible locally and only surfaces in CI — where the new tests' elapsed-time
+  bound caught it.
 
 `terminate_server()` also refuses to group-kill its own group, so a caller who
 uses bare `Popen` gets a detectable orphan rather than a dead test runner.
@@ -44,9 +50,14 @@ Verified against the real suite, not just the new tests: with the pre-fix
 teardown restored, `test_http_transport.py` reports **`8 passed` while leaking 2
 orphans**; with the fix, the before/after PPID-1 orphan count is unchanged at 0.
 6 new regression tests (integration collection 90 → **96**), each asserting on the
-*grandchild* rather than the wrapper. 7/7 teardown mutations caught by test
-assertions, including three that a naive fix would pass:
+*grandchild* rather than the wrapper. 7/8 teardown mutations caught by test
+assertions on macOS, including three that a naive fix would pass:
 `escalate-on-wrapper-not-group`, `no-sigkill-escalation`, and `kill-pid-not-group`.
+The 8th, `poll-group-before-reaping-wrapper`, cannot be caught on macOS at all —
+a zombie-only process group already reports as gone there. It is caught on Linux
+by the elapsed-time bound in `test_terminate_server_kills_the_grandchild`, which
+is not a hypothetical: the first version of this fix had that ordering and failed
+CI with `assert 5.011 < 2.0`.
 
 Still open: the orphaned `multiprocessing` workers described in #825 are a
 separate leak and are not addressed here.

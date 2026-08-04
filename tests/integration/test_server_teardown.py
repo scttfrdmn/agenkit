@@ -159,6 +159,11 @@ def test_terminate_server_kills_the_grandchild(spawned_tree):
     process group. Without it, a teardown that signals only `process.pid` still
     passes, because the SIGKILL fallback eventually sweeps the group — five seconds
     later, and without ever giving the server a chance to shut down gracefully.
+
+    That bound also catches a Linux-only ordering bug: polling the group before
+    reaping the wrapper sees the wrapper's own zombie as a live group member and
+    stalls for the full timeout. macOS reports a zombie-only group as gone, so this
+    assertion is the only thing standing between that bug and a green local run.
     """
     wrapper, child_pid = spawned_tree
     assert _pid_alive(child_pid)
